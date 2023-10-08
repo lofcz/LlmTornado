@@ -49,7 +49,7 @@ public class ChatRequest
 	///     The model to use for this request
 	/// </summary>
 	[JsonProperty("model")]
-    public string Model { get; set; } = Models.Model.ChatGPTTurbo;
+    public string? Model { get; set; } = Models.Model.ChatGPTTurbo;
 
 	/// <summary>
 	///     The messages to send with this Chat Request
@@ -154,13 +154,13 @@ public class ChatRequest
 	///     selection; values like -100 or 100 should result in a ban or exclusive selection of the relevant token.
 	/// </summary>
 	[JsonProperty("logit_bias")]
-    public IReadOnlyDictionary<string, float> LogitBias { get; set; }
+    public IReadOnlyDictionary<string, float>? LogitBias { get; set; }
 
 	/// <summary>
 	///     A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse.
 	/// </summary>
 	[JsonProperty("user")]
-    public string? user { get; set; }
+    public string? User { get; set; }
 
 	/// <summary>
 	///     A list of functions the model may generate JSON inputs for.
@@ -180,7 +180,7 @@ public class ChatRequest
 	/// </remarks>
 	[JsonProperty("function_call")]
     [JsonConverter(typeof(FunctionCallConverter))]
-    public FunctionCall FunctionCall { get; set; }
+    public FunctionCall? FunctionCall { get; set; }
 
 	/// <summary>
 	///     If set the functions part of the outbound request encoded as JSON are stored here.

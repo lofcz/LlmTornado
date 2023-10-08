@@ -45,7 +45,8 @@ public class ChatMessage
         Id = id ?? Guid.NewGuid();
     }
 
-    [JsonProperty("role")] internal string rawRole { get; set; }
+    [JsonProperty("role")] 
+    internal string? rawRole { get; set; }
 
     /// <summary>
     ///     The role of the message, which can be "system", "assistant", "user" or "function"

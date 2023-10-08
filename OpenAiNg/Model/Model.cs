@@ -290,5 +290,6 @@ public class Permissions
     [JsonProperty("group")]
     public string Group { get; set; }
 
-    [JsonProperty("is_blocking")] public bool IsBlocking { get; set; }
+    [JsonProperty("is_blocking")] 
+    public bool IsBlocking { get; set; }
 }

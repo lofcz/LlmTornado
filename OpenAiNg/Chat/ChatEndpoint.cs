@@ -32,7 +32,10 @@ public class ChatEndpoint : EndpointBase, IChatEndpoint
 	///     tokens.  For every request, if you do not have a parameter set on the request but do have it set here as a default,
 	///     the request will automatically pick up the default value.
 	/// </summary>
-	public ChatRequest DefaultChatRequestArgs { get; set; } = new() { Model = Model.ChatGPTTurbo };
+	public ChatRequest DefaultChatRequestArgs { get; set; } = new()
+    {
+        Model = Model.ChatGPTTurbo
+    };
 
 	/// <summary>
 	///     Creates an ongoing chat which can easily encapsulate the conversation.  This is the simplest way to use the Chat
@@ -52,16 +55,6 @@ public class ChatEndpoint : EndpointBase, IChatEndpoint
         return new Conversation(this, defaultChatRequestArgs: defaultChatRequestArgs ?? DefaultChatRequestArgs);
     }
 
-    public Task<ChatResult> CreateChatCompletionAsync(ChatRequest request)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<ChatResult> CreateChatCompletionAsync(ChatRequest request, int numOutputs = 5)
-    {
-        throw new NotImplementedException();
-    }
-
     #region Non-streaming
 
     /// <summary>
@@ -75,11 +68,14 @@ public class ChatEndpoint : EndpointBase, IChatEndpoint
     ///     Asynchronously returns the completion result. Look in its <see cref="ChatResult.Choices" /> property for the
     ///     results.
     /// </returns>
-    public async Task<ChatResult?> CreateChatCompletionAsync(ChatRequest request, ApiAuthentication? auth)
+    public async Task<ChatResult?> CreateChatCompletionAsync(ChatRequest request)
     {
-        ChatResult result = await HttpPost<ChatResult>(postData: request);
+        ChatResult? result = await HttpPost<ChatResult>(postData: request);
 
-        if (Api.ChatRequestInterceptor is not null) await Api.ChatRequestInterceptor.Invoke(request, result);
+        if (Api.ChatRequestInterceptor is not null)
+        {
+            await Api.ChatRequestInterceptor.Invoke(request, result);
+        }
 
         return result;
     }
@@ -129,15 +125,15 @@ public class ChatEndpoint : EndpointBase, IChatEndpoint
     ///     results.
     /// </returns>
     public Task<ChatResult> CreateChatCompletionAsync(IList<ChatMessage> messages,
-        Model model = null,
+        Model? model = null,
         double? temperature = null,
         double? top_p = null,
         int? numOutputs = null,
         int? max_tokens = null,
         double? frequencyPenalty = null,
         double? presencePenalty = null,
-        IReadOnlyDictionary<string, float> logitBias = null,
-        params string[] stopSequences)
+        IReadOnlyDictionary<string, float>? logitBias = null,
+        params string[]? stopSequences)
     {
         ChatRequest request = new(DefaultChatRequestArgs)
         {
@@ -294,15 +290,15 @@ public class ChatEndpoint : EndpointBase, IChatEndpoint
     ///     for more details on how to consume an async enumerable.
     /// </returns>
     public IAsyncEnumerable<ChatResult> StreamChatEnumerableAsync(IList<ChatMessage> messages,
-        Model model = null,
+        Model? model = null,
         double? temperature = null,
         double? top_p = null,
         int? numOutputs = null,
         int? max_tokens = null,
         double? frequencyPenalty = null,
         double? presencePenalty = null,
-        IReadOnlyDictionary<string, float> logitBias = null,
-        params string[] stopSequences)
+        IReadOnlyDictionary<string, float>? logitBias = null,
+        params string[]? stopSequences)
     {
         ChatRequest request = new(DefaultChatRequestArgs)
         {

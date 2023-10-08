@@ -31,7 +31,7 @@ public interface IChatEndpoint
 	///     </see>
 	/// </param>
 	/// <returns>A <see cref="Conversation" /> which encapulates a back and forth chat betwen a user and an assistant.</returns>
-	Conversation CreateConversation(ChatRequest defaultChatRequestArgs = null);
+	Conversation CreateConversation(ChatRequest? defaultChatRequestArgs = null);
 
 
 	/// <summary>
@@ -45,20 +45,7 @@ public interface IChatEndpoint
 	///     results.
 	/// </returns>
 	Task<ChatResult> CreateChatCompletionAsync(ChatRequest request);
-
-	/// <summary>
-	///     Ask the API to complete the request using the specified parameters. This is non-streaming, so it will wait until
-	///     the API returns the full result. Any non-specified parameters will fall back to default values specified in
-	///     <see cref="DefaultChatRequestArgs" /> if present.
-	/// </summary>
-	/// <param name="request">The request to send to the API.</param>
-	/// <param name="numOutputs">Overrides <see cref="ChatRequest.NumChoicesPerMessage" /> as a convenience.</param>
-	/// <returns>
-	///     Asynchronously returns the completion result. Look in its <see cref="ChatResult.Choices" /> property for the
-	///     results.
-	/// </returns>
-	Task<ChatResult> CreateChatCompletionAsync(ChatRequest request, int numOutputs = 5);
-
+	
 	/// <summary>
 	///     Ask the API to complete the request using the specified parameters. This is non-streaming, so it will wait until
 	///     the API returns the full result. Any non-specified parameters will fall back to default values specified in
@@ -103,7 +90,7 @@ public interface IChatEndpoint
 	///     Asynchronously returns the completion result. Look in its <see cref="ChatResult.Choices" /> property for the
 	///     results.
 	/// </returns>
-	Task<ChatResult> CreateChatCompletionAsync(IList<ChatMessage> messages, Model model = null, double? temperature = null, double? top_p = null, int? numOutputs = null, int? max_tokens = null, double? frequencyPenalty = null, double? presencePenalty = null, IReadOnlyDictionary<string, float> logitBias = null, params string[] stopSequences);
+	Task<ChatResult> CreateChatCompletionAsync(IList<ChatMessage> messages, Model? model = null, double? temperature = null, double? top_p = null, int? numOutputs = null, int? max_tokens = null, double? frequencyPenalty = null, double? presencePenalty = null, IReadOnlyDictionary<string, float>? logitBias = null, params string[]? stopSequences);
 
 	/// <summary>
 	///     Ask the API to complete the request using the specified message(s).  Any parameters will fall back to default
@@ -202,7 +189,7 @@ public interface IChatEndpoint
 	///     <see href="https://docs.microsoft.com/en-us/dotnet/csharp/whats-new/csharp-8#asynchronous-streams">the C# docs</see>
 	///     for more details on how to consume an async enumerable.
 	/// </returns>
-	IAsyncEnumerable<ChatResult> StreamChatEnumerableAsync(IList<ChatMessage> messages, Model model = null, double? temperature = null, double? top_p = null, int? numOutputs = null, int? max_tokens = null, double? frequencyPenalty = null, double? presencePenalty = null, IReadOnlyDictionary<string, float> logitBias = null, params string[] stopSequences);
+	IAsyncEnumerable<ChatResult> StreamChatEnumerableAsync(IList<ChatMessage> messages, Model? model = null, double? temperature = null, double? top_p = null, int? numOutputs = null, int? max_tokens = null, double? frequencyPenalty = null, double? presencePenalty = null, IReadOnlyDictionary<string, float>? logitBias = null, params string[]? stopSequences);
 
 	/// <summary>
 	///     Ask the API to complete the message(s) using the specified request, and stream the results to the

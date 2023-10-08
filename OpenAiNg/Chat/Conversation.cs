@@ -78,7 +78,7 @@ public class Conversation
     /// <summary>
     ///     If not null, this func is called after a function is resolved
     /// </summary>
-    public Func<FunctionResult, ChatMessage, Task> OnAfterFunctionCall { get; set; }
+    public Func<FunctionResult, ChatMessage, Task>? OnAfterFunctionCall { get; set; }
 
     /// <summary>
     ///     After calling <see cref="GetResponseFromChatbotAsync" />, this contains the full response object which can contain
@@ -384,7 +384,13 @@ public class Conversation
             Messages = _messages.ToList()
         };
 
-        ChatResult res = await _endpoint.CreateChatCompletionAsync(req, Auth);
+        ChatResult? res = await _endpoint.CreateChatCompletionAsync(req);
+
+        if (res is null)
+        {
+            return null;
+        }
+        
         MostRecentApiResult = res;
 
         if (res.Choices is null) return null;
@@ -411,7 +417,13 @@ public class Conversation
             Messages = _messages.ToList()
         };
 
-        ChatResult res = await _endpoint.CreateChatCompletionAsync(req, Auth);
+        ChatResult? res = await _endpoint.CreateChatCompletionAsync(req);
+
+        if (res is null)
+        {
+            return null;
+        }
+        
         MostRecentApiResult = res;
 
         if (res.Choices is null) return null;
@@ -424,9 +436,9 @@ public class Conversation
 
             AppendMessage(newMsg);
 
-            if (newMsg.FunctionCall != null && newMsg.FunctionCall.Name.Length > 0 && newMsg.FunctionCall.Name != "none" && newMsg.FunctionCall.Name != "auto")
+            if (newMsg.FunctionCall is { Name.Length: > 0 } && newMsg.FunctionCall.Name != "none" && newMsg.FunctionCall.Name != "auto")
             {
-                FunctionResult result = await functionCallHandler.Invoke(new List<FunctionCall> { newMsg.FunctionCall });
+                FunctionResult? result = await functionCallHandler.Invoke(new List<FunctionCall> { newMsg.FunctionCall });
                 return new ChatResponse { Kind = ChatResponseKinds.Function, FunctionResult = result };
             }
 
@@ -448,7 +460,13 @@ public class Conversation
             Messages = _messages.ToList()
         };
 
-        ChatResult res = await _endpoint.CreateChatCompletionAsync(req, Auth);
+        ChatResult? res = await _endpoint.CreateChatCompletionAsync(req);
+
+        if (res is null)
+        {
+            return null;
+        }
+        
         MostRecentApiResult = res;
 
         if (res.Choices is null) return null;
@@ -469,7 +487,7 @@ public class Conversation
     /// </summary>
     /// <returns>The string of the response from the chatbot API</returns>
     [Obsolete("Conversation.GetResponseFromChatbot() has been renamed to GetResponseFromChatbotAsync to follow .NET naming guidelines.  Please update any references to GetResponseFromChatbotAsync().  This alias will be removed in a future version.", false)]
-    public Task<string> GetResponseFromChatbot()
+    public Task<string?> GetResponseFromChatbot()
     {
         return GetResponseFromChatbotAsync();
     }
@@ -540,7 +558,7 @@ public class Conversation
             {
                 if (responseRole == null && delta.Role != null) responseRole = delta.Role;
 
-                string deltaContent = delta.Content;
+                string? deltaContent = delta.Content;
 
                 if (!string.IsNullOrEmpty(deltaContent))
                 {
@@ -573,7 +591,7 @@ public class Conversation
     ///     settings
     /// </param>
     /// <param name="outboundRequest">set to an empty <see cref="Ref" /> to receive the outbound request as well</param>
-    public async Task StreamResponseEnumerableFromChatbotAsyncWithFunctions(Guid? messageId, Func<string, Task> messageTokenHandler, Func<List<FunctionCall>, Task<FunctionResult?>> functionCallHandler, Func<ChatMessageRole, Task> messageTypeResolvedHandler, Func<ChatRequest, Task<ChatRequest>> chatRequestHandler, Ref<string>? outboundRequest = null)
+    public async Task StreamResponseEnumerableFromChatbotAsyncWithFunctions(Guid? messageId, Func<string?, Task> messageTokenHandler, Func<List<FunctionCall>, Task<FunctionResult?>> functionCallHandler, Func<ChatMessageRole, Task> messageTypeResolvedHandler, Func<ChatRequest, Task<ChatRequest>> chatRequestHandler, Ref<string>? outboundRequest = null)
     {
         ChatRequest req = new(RequestParameters)
         {
@@ -584,9 +602,9 @@ public class Conversation
         req = await chatRequestHandler.Invoke(req);
 
         StringBuilder responseStringBuilder = new();
-        ChatMessageRole responseRole = null;
+        ChatMessageRole? responseRole = null;
         string? currentFunction = "";
-        Dictionary<string?, StringBuilder> functionCalls = new();
+        Dictionary<string, StringBuilder> functionCalls = new();
         bool typeResolved = false;
 
         await foreach (ChatResult res in _endpoint.StreamChatEnumerableAsync(req))
@@ -608,7 +626,7 @@ public class Conversation
             if (choice.Delta != null)
             {
                 ChatMessage delta = choice.Delta;
-                string deltaContent = delta.Content;
+                string? deltaContent = delta.Content;
                 string? finishReason = choice.FinishReason;
                 bool empty = string.IsNullOrEmpty(deltaContent);
 
@@ -677,7 +695,10 @@ public class Conversation
                     ChatMessage msg = new(responseRole, fr.Content, Guid.NewGuid()) { Name = fr.Name };
                     AppendMessage(msg);
 
-                    if (OnAfterFunctionCall != null) await OnAfterFunctionCall(fr, msg);
+                    if (OnAfterFunctionCall is not null)
+                    {
+                        await OnAfterFunctionCall(fr, msg);
+                    }
                 }
 
                 return;
