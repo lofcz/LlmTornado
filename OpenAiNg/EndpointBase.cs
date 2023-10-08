@@ -114,6 +114,8 @@ public abstract class EndpointBase
         HttpClient client = GetClient();
         using HttpRequestMessage req = new(verb, url);
 
+        req.Headers.Add("User-Agent", UserAgent);
+        
         if (Api.Auth is not null)
         {
             if (Api.Auth.ApiKey is not null)
@@ -122,8 +124,6 @@ public abstract class EndpointBase
                 req.Headers.Add("api-key", Api.Auth.ApiKey);   
             }
             
-            req.Headers.Add("User-Agent", UserAgent);
-
             if (Api.Auth.Organization is not null)
             {
                 req.Headers.Add("OpenAI-Organization", Api.Auth.Organization);

@@ -43,6 +43,7 @@ public class ChatRequest
         Functions = basedOn.Functions;
         FunctionCall = basedOn.FunctionCall;
         OuboundFunctionsContent = basedOn.OuboundFunctionsContent;
+        Adapter = basedOn.Adapter;
     }
 
 	/// <summary>
@@ -190,4 +191,10 @@ public class ChatRequest
 	/// </summary>
 	[JsonIgnore]
     public Ref<string>? OuboundFunctionsContent { get; internal set; }
+	
+	/// <summary>
+	///		This can be any API provider specific data.
+	/// </summary>
+	[JsonProperty("adapter")]
+	public Dictionary<string, object?>? Adapter { get; set; }
 }
