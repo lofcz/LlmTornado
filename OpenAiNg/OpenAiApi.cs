@@ -57,8 +57,8 @@ public class OpenAiApi : IOpenAiApi
     /// <summary>
     ///     Base url for OpenAI
     ///     for OpenAI, should be "https://api.openai.com/{0}/{1}"
-    ///     for Azure, should be
-    ///     "https://(your-resource-name.openai.azure.com/openai/deployments/(deployment-id)/{1}?api-version={0}"
+    ///     for Azure, should be "https://(your-resource-name.openai.azure.com/openai/deployments/(deployment-id)/{1}?api-version={0}"
+    ///     this will be formatted as {0} = <see cref="ApiVersion"/>, {1} = <see cref="EndpointBase.Endpoint"/>
     /// </summary>
     public string ApiUrlFormat { get; set; } = "https://api.openai.com/{0}/{1}";
 
