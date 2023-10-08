@@ -1,25 +1,21 @@
 ﻿using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace OpenAiNg
+namespace OpenAiNg;
+
+/// <summary>
+///     Usage statistics of how many tokens have been used for this request.
+/// </summary>
+public class Usage
 {
 	/// <summary>
-	/// Usage statistics of how many tokens have been used for this request.
+	///     How many tokens did the prompt consist of
 	/// </summary>
-	public class Usage
-	{
-		/// <summary>
-		/// How many tokens did the prompt consist of
-		/// </summary>
-		[JsonProperty("prompt_tokens")]
-		public int PromptTokens { get; set; }
+	[JsonProperty("prompt_tokens")]
+    public int PromptTokens { get; set; }
 
-		/// <summary>
-		/// How many tokens did the request consume total
-		/// </summary>
-		[JsonProperty("total_tokens")]
-		public int TotalTokens { get; set; }
-	}
+	/// <summary>
+	///     How many tokens did the request consume total
+	/// </summary>
+	[JsonProperty("total_tokens")]
+    public int TotalTokens { get; set; }
 }

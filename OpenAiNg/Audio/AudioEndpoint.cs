@@ -1,6 +1,8 @@
-﻿using System.Net.Http;
+﻿using System.Globalization;
+using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
+using OpenAiNg.Code;
 
 namespace OpenAiNg.Audio;
 
@@ -25,7 +27,7 @@ public class AudioEndpoint : EndpointBase, IAudioEndpoint
     /// <summary>
     ///     Sends transcript request to openai and returns verbose_json result.
     /// </summary>
-    public Task<TranscriptionVerboseJsonResult> CreateTranscriptionAsync(TranscriptionRequest request)
+    public Task<TranscriptionVerboseJsonResult?> CreateTranscriptionAsync(TranscriptionRequest request)
     {
         return PostAudioAsync($"{Url}/transcriptions", request);
     }
@@ -33,7 +35,7 @@ public class AudioEndpoint : EndpointBase, IAudioEndpoint
     /// <summary>
     ///     Translates audio into English.
     /// </summary>
-    public Task<TranscriptionVerboseJsonResult> CreateTranslationAsync(TranslationRequest request)
+    public Task<TranscriptionVerboseJsonResult?> CreateTranslationAsync(TranslationRequest request)
     {
         return PostAudioAsync($"{Url}/translations", new TranscriptionRequest
             {
@@ -46,7 +48,7 @@ public class AudioEndpoint : EndpointBase, IAudioEndpoint
         );
     }
 
-    private Task<TranscriptionVerboseJsonResult> PostAudioAsync(string url, TranscriptionRequest request)
+    private Task<TranscriptionVerboseJsonResult?> PostAudioAsync(string url, TranscriptionRequest request)
     {
         MultipartFormDataContent content = new MultipartFormDataContent();
 
@@ -58,23 +60,18 @@ public class AudioEndpoint : EndpointBase, IAudioEndpoint
         content.Add(fileContent, "file", request.File.Name);
         content.Add(new StringContent(request.Model), "model");
 
-        if (!IsNullOrWhiteSpace(request.Prompt))
+        if (!request.Prompt.IsNullOrWhiteSpace())
             content.Add(new StringContent(request.Prompt), "prompt");
 
-        if (!IsNullOrWhiteSpace(request.ResponseFormat))
+        if (!request.ResponseFormat.IsNullOrWhiteSpace())
             content.Add(new StringContent(request.ResponseFormat), "response_format");
 
         if (!request.Temperature.HasValue)
-            content.Add(new StringContent(request.Temperature.ToString()), "temperature");
+            content.Add(new StringContent((request.Temperature ?? 0f).ToString(CultureInfo.InvariantCulture)), "temperature");
 
-        if (!IsNullOrWhiteSpace(request.Language))
+        if (!request.Language.IsNullOrWhiteSpace())
             content.Add(new StringContent(request.Language), "language");
 
         return HttpPost<TranscriptionVerboseJsonResult>(url, content);
-    }
-
-    private bool IsNullOrWhiteSpace(string str)
-    {
-        return string.IsNullOrWhiteSpace(str);
     }
 }

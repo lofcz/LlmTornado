@@ -1,47 +1,47 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-	<PropertyGroup>
-		<LangVersion>latestmajor</LangVersion>
-		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-		<Authors>Matěj Štágl, OpenAi-API-dotnet contributors</Authors>
-		<Product>OpenAiNg</Product>
-		<Description>A simple C# / .NET library to use with OpenAI's API, including GPT-4, GPT-3.5-turbo, GPT-3.5-instruct, DALL·E, etc. Supports commercial and self hosted API providers such as OpenAI, Azure OpenAI, KoboldCpp, AI Horde and others. Formerly a fork of Open-AI-Dotnet, hard-forked due to extensive changes and stale upstream.</Description>
-		<Copyright>This library is licensed MIT</Copyright>
-		<PackageLicenseExpression>CC0-1.0</PackageLicenseExpression>
-		<PackageProjectUrl>https://github.com/lofcz/OpenAiNg</PackageProjectUrl>
-		<RepositoryUrl>https://github.com/lofcz/OpenAiNg</RepositoryUrl>
-		<PackageTags>OpenAI, GPT3, GPT-3, GPT4, GPT-4, GPT3.5, GPT-3.5, GPT-3.5-Turbo, GPT-3.5-Instruct, KoboldCpp, Kobold, AI, ML, API, ChatGPT, DALLE, DALL-E</PackageTags>
-		<Title>OpenAI NextGeneration</Title>
-		<PackageReleaseNotes>Hard fork</PackageReleaseNotes>
-		<PackageId>OpenAiNg</PackageId>
-		<Version>2.2.0</Version>
-		<AssemblyVersion>2.2.0.0</AssemblyVersion>
-		<FileVersion>2.2.0.0</FileVersion>
-		<GenerateDocumentationFile>True</GenerateDocumentationFile>
-		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<ProduceReferenceAssembly>True</ProduceReferenceAssembly>
-		<RepositoryType>git</RepositoryType>
-		<PublishRepositoryUrl>true</PublishRepositoryUrl>
-		<IncludeSymbols>true</IncludeSymbols>
-		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
-		<Deterministic>true</Deterministic>
-		<TargetFrameworks>net8.0;net6.0;net7.0</TargetFrameworks>
-		<Nullable>enable</Nullable>
-	</PropertyGroup>
-	<PropertyGroup>
-		<PackageIcon>nuget_logo.png</PackageIcon>
-	</PropertyGroup>
-	<ItemGroup>
-		<None Include="nuget_logo.png" Pack="true" PackagePath="\" />
-	</ItemGroup>
-	<ItemGroup>
-		<None Include="..\README.md">
-			<Pack>True</Pack>
-			<PackagePath>\</PackagePath>
-		</None>
-	</ItemGroup>
-	<ItemGroup>
-		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
-		<PackageReference Include="Microsoft.Extensions.Http" Version="2.1.0" />
-	</ItemGroup>
+    <PropertyGroup>
+        <LangVersion>latestmajor</LangVersion>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <Authors>Matěj Štágl, OpenAi-API-dotnet contributors</Authors>
+        <Product>OpenAiNg</Product>
+        <Description>A simple C# / .NET library to use with OpenAI's API, including GPT-4, GPT-3.5-turbo, GPT-3.5-instruct, DALL·E, etc. Supports commercial and self hosted API providers such as OpenAI, Azure OpenAI, KoboldCpp, AI Horde and others. Formerly a fork of Open-AI-Dotnet, hard-forked due to extensive changes and stale upstream.</Description>
+        <Copyright>This library is licensed MIT</Copyright>
+        <PackageLicenseExpression>CC0-1.0</PackageLicenseExpression>
+        <PackageProjectUrl>https://github.com/lofcz/OpenAiNg</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/lofcz/OpenAiNg</RepositoryUrl>
+        <PackageTags>OpenAI, GPT3, GPT-3, GPT4, GPT-4, GPT3.5, GPT-3.5, GPT-3.5-Turbo, GPT-3.5-Instruct, KoboldCpp, Kobold, AI, ML, API, ChatGPT, DALLE, DALL-E</PackageTags>
+        <Title>OpenAI NextGeneration</Title>
+        <PackageReleaseNotes>Hard fork</PackageReleaseNotes>
+        <PackageId>OpenAiNg</PackageId>
+        <Version>2.2.0</Version>
+        <AssemblyVersion>2.2.0.0</AssemblyVersion>
+        <FileVersion>2.2.0.0</FileVersion>
+        <GenerateDocumentationFile>True</GenerateDocumentationFile>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <ProduceReferenceAssembly>True</ProduceReferenceAssembly>
+        <RepositoryType>git</RepositoryType>
+        <PublishRepositoryUrl>true</PublishRepositoryUrl>
+        <IncludeSymbols>true</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+        <Deterministic>true</Deterministic>
+        <TargetFrameworks>net8.0;net6.0;net7.0</TargetFrameworks>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+    <PropertyGroup>
+        <PackageIcon>nuget_logo.png</PackageIcon>
+    </PropertyGroup>
+    <ItemGroup>
+        <None Include="nuget_logo.png" Pack="true" PackagePath="\"/>
+    </ItemGroup>
+    <ItemGroup>
+        <None Include="..\README.md">
+            <Pack>True</Pack>
+            <PackagePath>\</PackagePath>
+        </None>
+    </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.3"/>
+        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All"/>
+        <PackageReference Include="Microsoft.Extensions.Http" Version="2.1.0"/>
+    </ItemGroup>
 </Project>
