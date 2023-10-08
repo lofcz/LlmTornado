@@ -26,7 +26,9 @@ public abstract class EndpointBase
     {
         MaxConnectionsPerServer = 10000,
         PooledConnectionLifetime = TimeSpan.FromMinutes(2)
-    }) { Timeout = TimeSpan.FromSeconds(240) };
+    }) {
+        Timeout = TimeSpan.FromSeconds(240)
+    };
 
     /// <summary>
     ///     Constructor of the api endpoint base, to be called from the contructor of any devived classes.  Rather than
@@ -70,23 +72,7 @@ public abstract class EndpointBase
     ///     Thrown if there is no valid authentication.  Please refer to
     ///     <see href="https://github.com/OkGoDoIt/OpenAI-API-dotnet#authentication" /> for details.
     /// </exception>
-    private HttpClient GetClient()
-    {
-        if (Api.Auth?.ApiKey is null) throw new AuthenticationException("You must provide API authentication.  Please refer to https://github.com/OkGoDoIt/OpenAI-API-dotnet#authentication for details.");
-
-        return EndpointClient;
-    }
-
-    internal static void UpdateDefaultAuth(ApiAuthentication auth)
-    {
-        EndpointClient.DefaultRequestHeaders.Clear();
-
-        EndpointClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth.ApiKey);
-        EndpointClient.DefaultRequestHeaders.Add("api-key", auth.ApiKey);
-        EndpointClient.DefaultRequestHeaders.Add("User-Agent", UserAgent);
-
-        if (!string.IsNullOrEmpty(auth.Organization)) EndpointClient.DefaultRequestHeaders.Add("OpenAI-Organization", auth.Organization);
-    }
+    private static HttpClient GetClient() => EndpointClient;
 
     /// <summary>
     ///     Formats a human-readable error message relating to calling the API and parsing the response
@@ -118,7 +104,6 @@ public abstract class EndpointBase
     ///     (optional) If true, streams the response.  Otherwise waits for the entire response before
     ///     returning.
     /// </param>
-    /// <param name="auth">(optional) Auth to override default settings.</param>
     /// <returns>The HttpResponseMessage of the response, which is confirmed to be successful.</returns>
     /// <exception cref="HttpRequestException">Throws an exception if a non-success HTTP response was returned</exception>
     private async Task<HttpResponseMessage> HttpRequestRaw(string? url = null, HttpMethod? verb = null, object? postData = null, bool streaming = false)
@@ -131,11 +116,18 @@ public abstract class EndpointBase
 
         if (Api.Auth is not null)
         {
-            req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Api.Auth.ApiKey);
-            req.Headers.Add("api-key", Api.Auth.ApiKey);
+            if (Api.Auth.ApiKey is not null)
+            {
+                req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Api.Auth.ApiKey);
+                req.Headers.Add("api-key", Api.Auth.ApiKey);   
+            }
+            
             req.Headers.Add("User-Agent", UserAgent);
 
-            if (!string.IsNullOrEmpty(Api.Auth.Organization)) req.Headers.Add("OpenAI-Organization", Api.Auth.Organization);
+            if (Api.Auth.Organization is not null)
+            {
+                req.Headers.Add("OpenAI-Organization", Api.Auth.Organization);
+            }
         }
         else
         {
@@ -193,8 +185,7 @@ public abstract class EndpointBase
         using HttpResponseMessage response = await HttpRequestRaw(url);
         return await response.Content.ReadAsStringAsync();
     }
-
-
+    
     /// <summary>
     ///     Sends an HTTP Request and does initial parsing
     /// </summary>
@@ -208,7 +199,6 @@ public abstract class EndpointBase
     ///     "GET" is assumed.
     /// </param>
     /// <param name="postData">(optional) A json-serializable object to include in the request body.</param>
-    /// <param name="auth">(optional) Auth that overrides the default auth.</param>
     /// <returns>An awaitable Task with the parsed result of type <typeparamref name="T" /></returns>
     /// <exception cref="HttpRequestException">
     ///     Throws an exception if a non-success HTTP response was returned or if the result
@@ -264,9 +254,9 @@ public abstract class EndpointBase
     ///     Throws an exception if a non-success HTTP response was returned or if the result
     ///     couldn't be parsed.
     /// </exception>
-    internal async Task<T?> HttpGet<T>(string? url = null) where T : ApiResultBase
+    internal Task<T?> HttpGet<T>(string? url = null) where T : ApiResultBase
     {
-        return await HttpRequest<T>(url, HttpMethod.Get);
+        return HttpRequest<T>(url, HttpMethod.Get);
     }
 
     /// <summary>
@@ -278,15 +268,14 @@ public abstract class EndpointBase
     ///     <see cref="Url" /> will be used.
     /// </param>
     /// <param name="postData">(optional) A json-serializable object to include in the request body.</param>
-    /// <param name="auth">(optional) Auth that overrides the default auth.</param>
     /// <returns>An awaitable Task with the parsed result of type <typeparamref name="T" /></returns>
     /// <exception cref="HttpRequestException">
     ///     Throws an exception if a non-success HTTP response was returned or if the result
     ///     couldn't be parsed.
     /// </exception>
-    internal async Task<T?> HttpPost<T>(string? url = null, object? postData = null) where T : ApiResultBase
+    internal Task<T?> HttpPost<T>(string? url = null, object? postData = null) where T : ApiResultBase
     {
-        return await HttpRequest<T>(url, HttpMethod.Post, postData);
+        return HttpRequest<T>(url, HttpMethod.Post, postData);
     }
 
     /// <summary>
@@ -298,15 +287,14 @@ public abstract class EndpointBase
     ///     <see cref="Url" /> will be used.
     /// </param>
     /// <param name="postData">(optional) A json-serializable object to include in the request body.</param>
-    /// <param name="auth">(optional) Auth that overrides the default auth.</param>
     /// <returns>An awaitable Task with the parsed result of type <typeparamref name="T" /></returns>
     /// <exception cref="HttpRequestException">
     ///     Throws an exception if a non-success HTTP response was returned or if the result
     ///     couldn't be parsed.
     /// </exception>
-    internal async Task<T?> HttpDelete<T>(string? url = null, object? postData = null) where T : ApiResultBase
+    internal Task<T?> HttpDelete<T>(string? url = null, object? postData = null) where T : ApiResultBase
     {
-        return await HttpRequest<T>(url, HttpMethod.Delete, postData);
+        return HttpRequest<T>(url, HttpMethod.Delete, postData);
     }
 
 
@@ -319,15 +307,14 @@ public abstract class EndpointBase
     ///     <see cref="Url" /> will be used.
     /// </param>
     /// <param name="postData">(optional) A json-serializable object to include in the request body.</param>
-    /// <param name="auth">(optional) Auth that overrides the default auth.</param>
     /// <returns>An awaitable Task with the parsed result of type <typeparamref name="T" /></returns>
     /// <exception cref="HttpRequestException">
     ///     Throws an exception if a non-success HTTP response was returned or if the result
     ///     couldn't be parsed.
     /// </exception>
-    internal async Task<T?> HttpPut<T>(string? url = null, object? postData = null) where T : ApiResultBase
+    internal Task<T?> HttpPut<T>(string? url = null, object? postData = null) where T : ApiResultBase
     {
-        return await HttpRequest<T>(url, HttpMethod.Put, postData);
+        return HttpRequest<T>(url, HttpMethod.Put, postData);
     }
 
     /// <summary>
