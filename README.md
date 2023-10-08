@@ -1,9 +1,9 @@
-# .NET SDK for accessing the OpenAI Compatible APIs such as GPT-4, GPT-3.5-intruct and DALL-E 3
+# .NET SDK for accessing the OpenAI Compatible APIs such as GPT-4, GPT-3.5-intruct, and DALL-E 3
 
-A simple .NET library to use with various OpenAI compatible providers, such as [OpenAI](https://platform.openai.com/docs/api-reference), [Azure OpenAI](https://azure.microsoft.com/en-us/products/ai-services/openai-service), [KoboldCpp](https://github.com/LostRuins/koboldcpp/releases) (v1.45.2+). Supports features such as function calling in conjunction with streaming, caches is's own `HttpClient`s.
+A simple .NET library to use with various OpenAI compatible providers, such as [OpenAI](https://platform.openai.com/docs/api-reference), [Azure OpenAI](https://azure.microsoft.com/en-us/products/ai-services/openai-service), [KoboldCpp](https://github.com/LostRuins/koboldcpp/releases) (v1.45.2+). Supports features such as function calling in conjunction with streaming, caches its own `HttpClient`s.
 
-Features scheduled for open sourcing:
-- High level plugin API.
+Features scheduled for open-sourcing:
+- High-level plugin API.
 - Approximate token counting for streaming & function calling.
 
 ## Quick Example
@@ -26,7 +26,7 @@ Console.WriteLine(result);
 ## Status
 [![OpenAI](https://badgen.net/nuget/v/OpenAiNg)](https://www.nuget.org/packages/OpenAiNg/)
 
-Hard-forked from [OpenAI-API-DotNet](https://github.com/OkGoDoIt/OpenAI-API-dotnet) after over six month of maintainance in a [https://github.com/lofcz/OpenAI-API-dotnet](semi-personal fork).
+Hard-forked from [OpenAI-API-DotNet](https://github.com/OkGoDoIt/OpenAI-API-dotnet) after over six months of maintenance in a [semi-personal fork](https://github.com/lofcz/OpenAI-API-dotnet).
 
 ## Requirements
 
@@ -36,7 +36,7 @@ Unlike the original library, OpenAiNg supports only .NET Core >= 6.0, if you nee
 
 ### Install from NuGet
 
-Install package [`OpenAiNg` from Nuget](https://www.nuget.org/packages/OpenAiNg/).  Here's how via commandline:
+Install package [`OpenAiNg` from Nuget](https://www.nuget.org/packages/OpenAiNg/).  Here's how via the command line:
 ```powershell
 Install-Package OpenAiNg
 ```
@@ -53,7 +53,7 @@ var api = new OpenAiApi("YOUR_API_KEY"); // shorthand
 var api = new OpenAiApi(new APIAuthentication("YOUR_API_KEY")); // create object manually
 ```
 
-You may optionally include an OpenAIOrganization if you have multiple Organizations under one account.
+You may optionally include an OpenAiOrganization if you have multiple Organizations under one account.
 ```csharp
 // for example
 var api = new OpenAiApi(new ApiAuthentication("YOUR_API_KEY", "org-yourOrgHere"));
