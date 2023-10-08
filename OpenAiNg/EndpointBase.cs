@@ -83,7 +83,7 @@ public abstract class EndpointBase
     /// <param name="description">Additional details about the endpoint of this request (optional)</param>
     /// <param name="input">Additional details about the endpoint of this request (optional)</param>
     /// <returns>A human-readable string error message.</returns>
-    private static string GetErrorMessage(string resultAsString, HttpResponseMessage response, string name, string description, HttpRequestMessage input)
+    private static string GetErrorMessage(string? resultAsString, HttpResponseMessage response, string name, string description, HttpRequestMessage input)
     {
         return $"Error at {name} ({description}) with HTTP status code: {response.StatusCode}. Content: {resultAsString ?? "<no content>"}. Request: {JsonConvert.SerializeObject(input.Headers)}";
     }
@@ -129,10 +129,6 @@ public abstract class EndpointBase
                 req.Headers.Add("OpenAI-Organization", Api.Auth.Organization);
             }
         }
-        else
-        {
-            throw new AuthenticationException("OpenAI rejected your authorization, most likely due to an invalid API Key.  Try checking your API Key and see https://github.com/OkGoDoIt/OpenAI-API-dotnet#authentication for guidance.");
-        }
 
         if (postData != null)
         {
@@ -165,8 +161,8 @@ public abstract class EndpointBase
 
         throw response.StatusCode switch
         {
-            HttpStatusCode.Unauthorized => new AuthenticationException("OpenAI rejected your authorization, most likely due to an invalid API Key.  Try checking your API Key and see https://github.com/OkGoDoIt/OpenAI-API-dotnet#authentication for guidance.  Full API response follows: " + resultAsString),
-            HttpStatusCode.InternalServerError => new HttpRequestException("OpenAI had an internal server error, which can happen occasionally.  Please retry your request.  " + GetErrorMessage(resultAsString, response, Endpoint, url, req)),
+            HttpStatusCode.Unauthorized => new AuthenticationException($"The API provider rejected your authorization, most likely due to an invalid API Key. Check your API Key and see https://github.com/lofcz/OpenAiNg#authentication for guidance. Full API response follows: {resultAsString}"),
+            HttpStatusCode.InternalServerError => new HttpRequestException($"The API provider had an internal server error. Please retry your request. Server response: {GetErrorMessage(resultAsString, response, Endpoint, url, req)}"),
             _ => new HttpRequestException(GetErrorMessage(resultAsString, response, Endpoint, url, req))
         };
     }
@@ -208,7 +204,6 @@ public abstract class EndpointBase
     {
         using HttpResponseMessage response = await HttpRequestRaw(url, verb, postData);
         string resultAsString = await response.Content.ReadAsStringAsync();
-
         T? res = JsonConvert.DeserializeObject<T>(resultAsString);
 
         try
@@ -216,21 +211,22 @@ public abstract class EndpointBase
             if (res != null)
             {
                 if (response.Headers.TryGetValues("Openai-Organization", out IEnumerable<string>? orgH)) res.Organization = orgH.FirstOrDefault();
-
                 if (response.Headers.TryGetValues("X-Request-ID", out IEnumerable<string>? xreqId)) res.RequestId = xreqId.FirstOrDefault();
 
                 if (response.Headers.TryGetValues("Openai-Processing-Ms", out IEnumerable<string>? pms))
                 {
                     string? processing = pms.FirstOrDefault();
-
                     if (processing is not null && int.TryParse(processing, out int n)) res.ProcessingTime = TimeSpan.FromMilliseconds(n);
                 }
 
                 if (response.Headers.TryGetValues("Openai-Version", out IEnumerable<string>? oav)) res.RequestId = oav.FirstOrDefault();
-
                 if (res.Model != null && string.IsNullOrEmpty(res.Model))
+                {
                     if (response.Headers.TryGetValues("Openai-Model", out IEnumerable<string>? omd))
+                    {
                         res.Model = omd.FirstOrDefault();
+                    }
+                }
             }
         }
         catch (Exception e)
@@ -297,7 +293,6 @@ public abstract class EndpointBase
         return HttpRequest<T>(url, HttpMethod.Delete, postData);
     }
 
-
     /// <summary>
     ///     Sends an HTTP Put request and does initial parsing
     /// </summary>
@@ -345,18 +340,15 @@ public abstract class EndpointBase
         try
         {
             if (response.Headers.TryGetValues("Openai-Organization", out IEnumerable<string>? orgH)) organization = orgH.FirstOrDefault();
-
             if (response.Headers.TryGetValues("X-Request-ID", out IEnumerable<string>? xreqId)) requestId = xreqId.FirstOrDefault();
 
             if (response.Headers.TryGetValues("Openai-Processing-Ms", out IEnumerable<string>? pms))
             {
                 string? processing = pms.FirstOrDefault();
-
                 if (processing is not null && int.TryParse(processing, out int n)) processingTime = TimeSpan.FromMilliseconds(n);
             }
 
             if (response.Headers.TryGetValues("Openai-Version", out IEnumerable<string>? oav)) openaiVersion = oav.FirstOrDefault();
-
             if (response.Headers.TryGetValues("Openai-Model", out IEnumerable<string>? omd)) modelFromHeaders = omd.FirstOrDefault();
         }
         catch (Exception e)
@@ -375,24 +367,32 @@ public abstract class EndpointBase
 
             if (line == "[DONE]") yield break;
 
-            if (!line.StartsWith(':') && !string.IsNullOrWhiteSpace(line))
+            if (line.StartsWith(':') || string.IsNullOrWhiteSpace(line))
             {
-                T? res = JsonConvert.DeserializeObject<T>(line);
+                continue;
+            }
+            
+            T? res = JsonConvert.DeserializeObject<T>(line);
 
-                if (res != null)
+            if (res is null)
+            {
+                continue;
+            }
+            
+            res.Organization = organization;
+            res.RequestId = requestId;
+            res.ProcessingTime = processingTime;
+            res.OpenaiVersion = openaiVersion;
+
+            if (res.Model != null && string.IsNullOrEmpty(res.Model))
+            {
+                if (modelFromHeaders != null)
                 {
-                    res.Organization = organization;
-                    res.RequestId = requestId;
-                    res.ProcessingTime = processingTime;
-                    res.OpenaiVersion = openaiVersion;
-
-                    if (res.Model != null && string.IsNullOrEmpty(res.Model))
-                        if (modelFromHeaders != null)
-                            res.Model = modelFromHeaders;
-
-                    yield return res;
+                    res.Model = modelFromHeaders;
                 }
             }
+
+            yield return res;
         }
     }
 }

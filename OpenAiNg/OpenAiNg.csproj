@@ -13,9 +13,9 @@
         <Title>OpenAI NextGeneration</Title>
         <PackageReleaseNotes>Hard fork</PackageReleaseNotes>
         <PackageId>OpenAiNg</PackageId>
-        <Version>2.2.0</Version>
-        <AssemblyVersion>2.2.0.0</AssemblyVersion>
-        <FileVersion>2.2.0.0</FileVersion>
+        <Version>2.2.2</Version>
+        <AssemblyVersion>2.2.2.0</AssemblyVersion>
+        <FileVersion>2.2.2.0</FileVersion>
         <GenerateDocumentationFile>True</GenerateDocumentationFile>
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <ProduceReferenceAssembly>True</ProduceReferenceAssembly>
