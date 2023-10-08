@@ -1,61 +1,64 @@
-﻿using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System;
+using Newtonsoft.Json;
 
-namespace OpenAiNg.Images
+namespace OpenAiNg.Images;
+
+/// <summary>
+///     Represents available sizes for image generation endpoints
+/// </summary>
+public class ImageSize
 {
-	/// <summary>
-	/// Represents available sizes for image generation endpoints
-	/// </summary>
-	public class ImageSize
-	{
-		private ImageSize(string value) { Value = value; }
+    private ImageSize(string value)
+    {
+        Value = value;
+    }
 
-		private string Value { get; set; }
+    private string Value { get; }
 
-		/// <summary>
-		/// Requests an image that is 256x256
-		/// </summary>
-		public static ImageSize _256 { get { return new ImageSize("256x256"); } }
-		/// <summary>
-		/// Requests an image that is 512x512
-		/// </summary>
-		public static ImageSize _512 { get { return new ImageSize("512x512"); } }
-		/// <summary>
-		/// Requests and image that is 1024x1024
-		/// </summary>
-		public static ImageSize _1024 { get { return new ImageSize("1024x1024"); } }
+    /// <summary>
+    ///     Requests an image that is 256x256
+    /// </summary>
+    public static ImageSize _256 => new("256x256");
 
-		/// <summary>
-		/// Gets the string value for this size to pass to the API
-		/// </summary>
-		/// <returns>The size as a string</returns>
-		public override string ToString()
-		{
-			return Value;
-		}
+    /// <summary>
+    ///     Requests an image that is 512x512
+    /// </summary>
+    public static ImageSize _512 => new("512x512");
+
+    /// <summary>
+    ///     Requests and image that is 1024x1024
+    /// </summary>
+    public static ImageSize _1024 => new("1024x1024");
+
+    /// <summary>
+    ///     Gets the string value for this size to pass to the API
+    /// </summary>
+    /// <returns>The size as a string</returns>
+    public override string ToString()
+    {
+        return Value;
+    }
 
 
+    /// <summary>
+    ///     Gets the string value for this size to pass to the API
+    /// </summary>
+    /// <param name="value">The ImageSize to convert</param>
+    public static implicit operator string(ImageSize value)
+    {
+        return value;
+    }
 
-		/// <summary>
-		/// Gets the string value for this size to pass to the API
-		/// </summary>
-		/// <param name="value">The ImageSize to convert</param>
-		public static implicit operator String(ImageSize value) { return value; }
+    internal class ImageSizeJsonConverter : JsonConverter<ImageSize>
+    {
+        public override void WriteJson(JsonWriter writer, ImageSize value, JsonSerializer serializer)
+        {
+            writer.WriteValue(value.ToString());
+        }
 
-		internal class ImageSizeJsonConverter : JsonConverter<ImageSize>
-		{
-			public override void WriteJson(JsonWriter writer, ImageSize value, JsonSerializer serializer)
-			{
-				writer.WriteValue(value.ToString());
-			}
-
-			public override ImageSize ReadJson(JsonReader reader, Type objectType, ImageSize existingValue, bool hasExistingValue, JsonSerializer serializer)
-			{
-				return new ImageSize(reader.ReadAsString());
-			}
-		}
-	}
-
+        public override ImageSize ReadJson(JsonReader reader, Type objectType, ImageSize existingValue, bool hasExistingValue, JsonSerializer serializer)
+        {
+            return new ImageSize(reader.ReadAsString());
+        }
+    }
 }
