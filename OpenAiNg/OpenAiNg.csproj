@@ -1,5 +1,4 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
 	<PropertyGroup>
 		<LangVersion>latestmajor</LangVersion>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
@@ -21,44 +20,28 @@
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<ProduceReferenceAssembly>True</ProduceReferenceAssembly>
 		<RepositoryType>git</RepositoryType>
-
-		<!-- Optional: Publish the repository URL in the built .nupkg (in the NuSpec <Repository> element) -->
 		<PublishRepositoryUrl>true</PublishRepositoryUrl>
-		<!-- Optional: Build symbol package (.snupkg) to distribute the PDB containing Source Link -->
 		<IncludeSymbols>true</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
-
 		<Deterministic>true</Deterministic>
-
 		<TargetFrameworks>net8.0;net6.0;net7.0</TargetFrameworks>
-
 		<Nullable>enable</Nullable>
-
 	</PropertyGroup>
-
 	<PropertyGroup>
 		<PackageIcon>nuget_logo.png</PackageIcon>
 	</PropertyGroup>
-
 	<ItemGroup>
 		<None Include="nuget_logo.png" Pack="true" PackagePath="\" />
 	</ItemGroup>
-
 	<ItemGroup>
 		<None Include="..\README.md">
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>
 		</None>
 	</ItemGroup>
-
-	<ItemGroup>
-		<InternalsVisibleTo Include="OpenAI_Tests" />
-	</ItemGroup>
-
 	<ItemGroup>
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
 		<PackageReference Include="Microsoft.Extensions.Http" Version="2.1.0" />
 	</ItemGroup>
-
 </Project>
