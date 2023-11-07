@@ -29,6 +29,16 @@ public class ImageSize
     ///     Requests and image that is 1024x1024
     /// </summary>
     public static ImageSize _1024 => new("1024x1024");
+    
+    /// <summary>
+    ///     Requests and image that is 1792x1024, only for dalle3
+    /// </summary>
+    public static ImageSize _1792x1024 => new("1792x1024");
+    
+    /// <summary>
+    ///     Requests and image that is 1024x1792
+    /// </summary>
+    public static ImageSize _1024x1792 => new("1024x1792");
 
     /// <summary>
     ///     Gets the string value for this size to pass to the API

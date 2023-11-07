@@ -28,7 +28,7 @@ public class ImageGenerationRequest
 	/// <param name="model">Model to use, this should be either <see cref="Models.Model.Dalle2"/> or <see cref="Models.Model.Dalle3"/></param>
 	/// <param name="quality">Empty or "hd" for dalle3</param>
 	/// <param name="style">Empty or "vivid" / "natural" for dalle3</param>
-	public ImageGenerationRequest(string prompt, int? numOfImages = 1, ImageSize? size = null, string? user = null, ImageResponseFormat? responseFormat = null, Model? model = null, string? quality = null, string? style = null)
+	public ImageGenerationRequest(string prompt, int? numOfImages = 1, ImageSize? size = null, string? user = null, ImageResponseFormat? responseFormat = null, Model? model = null, ImageQuality? quality = null, ImageStyles? style = null)
     {
         Prompt = prompt;
         NumOfImages = numOfImages;
@@ -82,11 +82,13 @@ public class ImageGenerationRequest
 	///     Either empty or "hd" for dalle3.
 	/// </summary>
 	[JsonProperty("quality")]
-	public string? Quality { get; set; }
+	[JsonConverter(typeof(ImageQuality.ImageQualityJsonConverter))]
+	public ImageQuality? Quality { get; set; }
 	
 	/// <summary>
 	///     Either empty or "vivid" or "natural" for dalle3.
 	/// </summary>
 	[JsonProperty("style")]
-	public string? Style { get; set; }
+	[JsonConverter(typeof(ImageStyles.ImageStyleJsonConverter))]
+	public ImageStyles? Style { get; set; }
 }
