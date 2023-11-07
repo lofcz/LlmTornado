@@ -27,7 +27,8 @@ public class ImageGenerationRequest
 	/// <param name="responseFormat">The format in which the generated images are returned. Must be one of url or b64_json.</param>
 	/// <param name="model">Model to use, this should be either <see cref="Models.Model.Dalle2"/> or <see cref="Models.Model.Dalle3"/></param>
 	/// <param name="quality">Empty or "hd" for dalle3</param>
-	public ImageGenerationRequest(string prompt, int? numOfImages = 1, ImageSize? size = null, string? user = null, ImageResponseFormat? responseFormat = null, Model? model = null, string? quality = null)
+	/// <param name="style">Empty or "vivid" / "natural" for dalle3</param>
+	public ImageGenerationRequest(string prompt, int? numOfImages = 1, ImageSize? size = null, string? user = null, ImageResponseFormat? responseFormat = null, Model? model = null, string? quality = null, string? style = null)
     {
         Prompt = prompt;
         NumOfImages = numOfImages;
@@ -36,6 +37,7 @@ public class ImageGenerationRequest
         ResponseFormat = responseFormat ?? ImageResponseFormat.Url;
         Model = model?.ModelID ?? Models.Model.Dalle2.ModelID;
         Quality = quality;
+        Style = style;
     }
 
 	/// <summary>
@@ -81,4 +83,10 @@ public class ImageGenerationRequest
 	/// </summary>
 	[JsonProperty("quality")]
 	public string? Quality { get; set; }
+	
+	/// <summary>
+	///     Either empty or "vivid" or "natural" for dalle3.
+	/// </summary>
+	[JsonProperty("style")]
+	public string? Style { get; set; }
 }
