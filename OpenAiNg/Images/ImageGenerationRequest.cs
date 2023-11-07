@@ -26,7 +26,8 @@ public class ImageGenerationRequest
 	/// <param name="user">A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse.</param>
 	/// <param name="responseFormat">The format in which the generated images are returned. Must be one of url or b64_json.</param>
 	/// <param name="model">Model to use, this should be either <see cref="Models.Model.Dalle2"/> or <see cref="Models.Model.Dalle3"/></param>
-	public ImageGenerationRequest(string prompt, int? numOfImages = 1, ImageSize? size = null, string? user = null, ImageResponseFormat? responseFormat = null, Model? model = null)
+	/// <param name="quality">Empty or "hd" for dalle3</param>
+	public ImageGenerationRequest(string prompt, int? numOfImages = 1, ImageSize? size = null, string? user = null, ImageResponseFormat? responseFormat = null, Model? model = null, string? quality = null)
     {
         Prompt = prompt;
         NumOfImages = numOfImages;
@@ -34,6 +35,7 @@ public class ImageGenerationRequest
         Size = size ?? ImageSize._1024;
         ResponseFormat = responseFormat ?? ImageResponseFormat.Url;
         Model = model?.ModelID ?? Models.Model.Dalle2.ModelID;
+        Quality = quality;
     }
 
 	/// <summary>
@@ -73,4 +75,10 @@ public class ImageGenerationRequest
 	/// </summary>
 	[JsonProperty("model")]
 	public string Model { get; set; }
+	
+	/// <summary>
+	///     Either empty or "hd" for dalle3.
+	/// </summary>
+	[JsonProperty("quality")]
+	public string? Quality { get; set; }
 }
