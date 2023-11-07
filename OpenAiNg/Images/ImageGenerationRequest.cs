@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using OpenAiNg.Models;
 
 namespace OpenAiNg.Images;
 
@@ -24,18 +25,15 @@ public class ImageGenerationRequest
 	/// <param name="size">The size of the generated images. Must be one of 256x256, 512x512, or 1024x1024.</param>
 	/// <param name="user">A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse.</param>
 	/// <param name="responseFormat">The format in which the generated images are returned. Must be one of url or b64_json.</param>
-	public ImageGenerationRequest(
-        string prompt,
-        int? numOfImages = 1,
-        ImageSize size = null,
-        string user = null,
-        ImageResponseFormat responseFormat = null)
+	/// <param name="model">Model to use, this should be either <see cref="Models.Model.Dalle2"/> or <see cref="Models.Model.Dalle3"/></param>
+	public ImageGenerationRequest(string prompt, int? numOfImages = 1, ImageSize? size = null, string? user = null, ImageResponseFormat? responseFormat = null, Model? model = null)
     {
         Prompt = prompt;
         NumOfImages = numOfImages;
         User = user;
         Size = size ?? ImageSize._1024;
         ResponseFormat = responseFormat ?? ImageResponseFormat.Url;
+        Model = model?.ModelID ?? Models.Model.Dalle2.ModelID;
     }
 
 	/// <summary>
@@ -54,7 +52,7 @@ public class ImageGenerationRequest
 	///     A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse. Optional.
 	/// </summary>
 	[JsonProperty("user")]
-    public string User { get; set; }
+    public string? User { get; set; }
 
 	/// <summary>
 	///     The size of the generated images. Must be one of 256x256, 512x512, or 1024x1024. Defauls to 1024x1024
@@ -69,4 +67,10 @@ public class ImageGenerationRequest
 	[JsonProperty("response_format")]
     [JsonConverter(typeof(ImageResponseFormat.ImageResponseJsonConverter))]
     public ImageResponseFormat ResponseFormat { get; set; }
+	
+	/// <summary>
+	///     A model to use.
+	/// </summary>
+	[JsonProperty("model")]
+	public string Model { get; set; }
 }

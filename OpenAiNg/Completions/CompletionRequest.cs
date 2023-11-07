@@ -92,10 +92,10 @@ public class CompletionRequest
 	/// </param>
 	public CompletionRequest(
         string prompt,
-        Model model = null,
+        Model? model = null,
         int? max_tokens = null,
         double? temperature = null,
-        string suffix = null,
+        string? suffix = null,
         double? top_p = null,
         int? numOutputs = null,
         double? presencePenalty = null,

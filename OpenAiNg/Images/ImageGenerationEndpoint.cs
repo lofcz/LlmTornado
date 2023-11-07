@@ -26,10 +26,10 @@ public class ImageGenerationEndpoint : EndpointBase, IImageGenerationEndpoint
 	/// </summary>
 	/// <param name="input">A text description of the desired image(s)</param>
 	/// <returns>Asynchronously returns the image result. Look in its <see cref="Data.Url" /> </returns>
-	public async Task<ImageResult> CreateImageAsync(string input)
+	public Task<ImageResult?> CreateImageAsync(string input)
     {
         ImageGenerationRequest req = new(input);
-        return await CreateImageAsync(req);
+        return CreateImageAsync(req);
     }
 
 	/// <summary>
@@ -37,8 +37,8 @@ public class ImageGenerationEndpoint : EndpointBase, IImageGenerationEndpoint
 	/// </summary>
 	/// <param name="request">Request to be send</param>
 	/// <returns>Asynchronously returns the image result. Look in its <see cref="Data.Url" /> </returns>
-	public async Task<ImageResult> CreateImageAsync(ImageGenerationRequest request)
+	public Task<ImageResult?> CreateImageAsync(ImageGenerationRequest request)
     {
-        return await HttpPost<ImageResult>(postData: request);
+        return HttpPost<ImageResult>(postData: request);
     }
 }
