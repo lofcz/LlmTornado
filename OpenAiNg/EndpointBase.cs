@@ -353,7 +353,7 @@ public abstract class EndpointBase
         }
         catch (Exception e)
         {
-            Debug.Print($"Issue parsing metadata of OpenAi Response.  Url: {url}, Error: {e}.  This is probably ignorable.");
+            Debug.Print($"Issue parsing metadata of OpenAi Response. Url: {url}, Error: {e}. This is probably ignorable.");
         }
 
         await using Stream stream = await response.Content.ReadAsStreamAsync();
@@ -361,11 +361,17 @@ public abstract class EndpointBase
 
         while (await reader.ReadLineAsync() is { } line)
         {
-            if (line.StartsWith("data:")) line = line["data:".Length..];
+            if (line.StartsWith("data:"))
+            {
+                line = line["data:".Length..];
+            }
 
             line = line.TrimStart();
 
-            if (line == "[DONE]") yield break;
+            if (line is "[DONE]")
+            {
+                yield break;
+            }
 
             if (line.StartsWith(':') || string.IsNullOrWhiteSpace(line))
             {

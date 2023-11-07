@@ -27,8 +27,10 @@ public class ChatRequest
 	/// <param name="basedOn"></param>
 	public ChatRequest(ChatRequest? basedOn)
     {
-        if (basedOn == null)
-            return;
+	    if (basedOn is null)
+	    {
+		    return;
+	    }
 
         Model = basedOn.Model;
         Messages = basedOn.Messages;
@@ -40,8 +42,8 @@ public class ChatRequest
         FrequencyPenalty = basedOn.FrequencyPenalty;
         PresencePenalty = basedOn.PresencePenalty;
         LogitBias = basedOn.LogitBias;
-        Functions = basedOn.Functions;
-        FunctionCall = basedOn.FunctionCall;
+        Tools = basedOn.Tools;
+        ToolChoice = basedOn.ToolChoice;
         OuboundFunctionsContent = basedOn.OuboundFunctionsContent;
         Adapter = basedOn.Adapter;
     }
@@ -79,7 +81,19 @@ public class ChatRequest
 	/// </summary>
 	[JsonProperty("n")]
     public int? NumChoicesPerMessage { get; set; }
-
+	
+	/// <summary>
+	///     The seed to use for for deterministic requests.
+	/// </summary>
+	[JsonProperty("seed")]
+	public int? Seed { get; set; }
+	
+	/// <summary>
+	///     The response format to use.
+	/// </summary>
+	[JsonProperty("response_format")]
+	public ChatRequestResponseFormats? ResponseFormat { get; set; }
+	
 	/// <summary>
 	///     Specifies where the results should stream and be returned at one time.  Do not set this yourself, use the
 	///     appropriate methods on <see cref="CompletionEndpoint" /> instead.
@@ -164,24 +178,24 @@ public class ChatRequest
     public string? User { get; set; }
 
 	/// <summary>
-	///     A list of functions the model may generate JSON inputs for.
+	///     A list of tools the model may generate JSON inputs for.
 	/// </summary>
-	[JsonProperty("functions")]
-    public List<Function>? Functions { get; set; }
+	[JsonProperty("tools")]
+    public List<Tool>? Tools { get; set; }
 
 	/// <summary>
-	///     Represents an optional field when sending a function prompt.
+	///     Represents an optional field when sending tools calling prompt.
 	///     This field determines which function to call.
 	/// </summary>
 	/// <remarks>
 	///     If this field is not specified, the default behavior ("auto") allows the model to automatically decide whether to
-	///     call a function or not.
+	///     call tools or not.
 	///     Specify the name of the function to call in the "Name" attribute of the FunctionCall object.
 	///     If you do not want the model to call any function, pass "None" for the "Name" attribute.
 	/// </remarks>
-	[JsonProperty("function_call")]
-    [JsonConverter(typeof(FunctionCallConverter))]
-    public FunctionCall? FunctionCall { get; set; }
+	[JsonProperty("tool_choice")]
+    [JsonConverter(typeof(OutboundToolCall.OutboundToolCallConverter))]
+    public OutboundToolCall? ToolChoice { get; set; }
 
 	/// <summary>
 	///     If set the functions part of the outbound request encoded as JSON are stored here.
@@ -193,7 +207,7 @@ public class ChatRequest
     public Ref<string>? OuboundFunctionsContent { get; internal set; }
 	
 	/// <summary>
-	///		This can be any API provider specific data.
+	///		This can be any API provider specific data. Currently used in KoboldCpp.
 	/// </summary>
 	[JsonProperty("adapter")]
 	public Dictionary<string, object?>? Adapter { get; set; }

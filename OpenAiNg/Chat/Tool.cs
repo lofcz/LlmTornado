@@ -54,8 +54,35 @@ public class FunctionResult
 }
 
 /// <summary>
-///     Represents a Function object for the OpenAI API.
-///     A Function contains information about the function to be called, its description and parameters.
+/// Represents a tool object
+/// </summary>
+public class Tool
+{
+    /// <summary>
+    /// Creates a new tool
+    /// </summary>
+    /// <param name="function"></param>
+    public Tool(ToolFunction function)
+    {
+        Function = function;
+    }
+    
+    /// <summary>
+    /// Type of the tool, should be always "function"
+    /// </summary>
+    [JsonProperty("type", Required = Required.Default)]
+    public string Type { get; set; } = "function";
+    
+    /// <summary>
+    /// Function description
+    /// </summary>
+    [JsonProperty("function", Required = Required.Default)]
+    public ToolFunction Function { get; set; }
+}
+
+/// <summary>
+///     Represents a Tool function object for the OpenAI API.
+///     A tool contains information about the function to be called, its description and parameters.
 /// </summary>
 /// <remarks>
 ///     The 'Name' property represents the name of the function and must consist of alphanumeric characters, underscores,
@@ -72,7 +99,7 @@ public class FunctionResult
 ///     JSON Schema <see href="https://json-schema.org/understanding-json-schema/">reference</see> for more details on the
 ///     format of the parameters.
 /// </remarks>
-public class Function
+public class ToolFunction
 {
     private static readonly JsonSerializerSettings serializerSettings = new() { NullValueHandling = NullValueHandling.Ignore };
 
@@ -82,7 +109,7 @@ public class Function
     /// <param name="name"></param>
     /// <param name="description"></param>
     /// <param name="parameters">JSON serialized object, will be deserialized into <see cref="JObject" /> </param>
-    public Function(string name, string description, string parameters)
+    public ToolFunction(string name, string description, string parameters)
     {
         Name = name;
         Description = description;
@@ -95,7 +122,7 @@ public class Function
     /// <param name="name"></param>
     /// <param name="description"></param>
     /// <param name="parameters"></param>
-    public Function(string name, string description, JObject parameters)
+    public ToolFunction(string name, string description, JObject parameters)
     {
         Name = name;
         Description = description;
@@ -108,7 +135,7 @@ public class Function
     /// <param name="name"></param>
     /// <param name="description"></param>
     /// <param name="parameters">A JSON-serializable object</param>
-    public Function(string name, string description, object parameters)
+    public ToolFunction(string name, string description, object parameters)
     {
         Name = name;
         Description = description;
@@ -118,7 +145,7 @@ public class Function
     /// <summary>
     ///     Creates an empty Function object.
     /// </summary>
-    private Function()
+    private ToolFunction()
     {
     }
 

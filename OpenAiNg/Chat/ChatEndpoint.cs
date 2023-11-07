@@ -238,9 +238,6 @@ public class ChatEndpoint : EndpointBase, IChatEndpoint
     public IAsyncEnumerable<ChatResult> StreamChatEnumerableAsync(ChatRequest request)
     {
         request = new ChatRequest(request) { Stream = true };
-
-        if (request.OuboundFunctionsContent is not null) request.OuboundFunctionsContent.Ptr = request.Functions is null ? string.Empty : JsonConvert.SerializeObject(request.Functions, NullSettings);
-
         return HttpStreamingRequest<ChatResult>(Url, HttpMethod.Post, request, request.OuboundFunctionsContent);
     }
 

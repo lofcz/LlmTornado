@@ -436,9 +436,9 @@ public class Conversation
 
             AppendMessage(newMsg);
 
-            if (newMsg.FunctionCall is { Name.Length: > 0 } && newMsg.FunctionCall.Name != "none" && newMsg.FunctionCall.Name != "auto")
+            if (newMsg.ToolCalls is { Count: > 0 } && newMsg.ToolCalls[0].FunctionCall.Name is not ("none" or "auto"))
             {
-                FunctionResult? result = await functionCallHandler.Invoke(new List<FunctionCall> { newMsg.FunctionCall });
+                FunctionResult? result = await functionCallHandler.Invoke(new List<FunctionCall> { newMsg.ToolCalls[0].FunctionCall });
                 return new ChatResponse { Kind = ChatResponseKinds.Function, FunctionResult = result };
             }
 
@@ -603,7 +603,7 @@ public class Conversation
 
         StringBuilder responseStringBuilder = new();
         ChatMessageRole? responseRole = null;
-        string? currentFunction = "";
+        string currentFunction = "";
         Dictionary<string, StringBuilder> functionCalls = new();
         bool typeResolved = false;
 
@@ -630,9 +630,12 @@ public class Conversation
                 string? finishReason = choice.FinishReason;
                 bool empty = string.IsNullOrEmpty(deltaContent);
 
-                if (responseRole == null && finishReason == "function_call") responseRole = ChatMessageRole.Function;
+                if (responseRole == null && finishReason is "function_call" or "tool_calls")
+                {
+                    responseRole = ChatMessageRole.Function;
+                }
 
-                if (choice.Delta.FunctionCall != null)
+                if (choice.Delta.ToolCalls is not null)
                 {
                     responseRole ??= ChatMessageRole.Function;
 
@@ -643,18 +646,24 @@ public class Conversation
                         if (messageTypeResolvedHandler != null) await messageTypeResolvedHandler(ChatMessageRole.Function);
                     }
 
-                    if (choice.Delta.FunctionCall.Name != null)
+                    if (choice.Delta.ToolCalls.Count > 0)
                     {
-                        currentFunction = choice.Delta.FunctionCall.Name;
-                        functionCalls.Add(currentFunction, new StringBuilder());
-                    }
-                    else
-                    {
-                        functionCalls[currentFunction].Append(choice.Delta.FunctionCall.Arguments);
+                        if (choice.Delta.ToolCalls[0].FunctionCall.Name is not null)
+                        {
+                            currentFunction = choice.Delta.ToolCalls[0].FunctionCall.Name;
+                            functionCalls.TryAdd(currentFunction, new StringBuilder());   
+                        }
+                        else
+                        {
+                            if (functionCalls.TryGetValue(currentFunction, out StringBuilder? sb))
+                            {
+                                sb.Append(choice.Delta.ToolCalls[0].FunctionCall.Arguments);       
+                            }
+                        }
                     }
                 }
 
-                if (responseRole == null && delta.Role != null)
+                if (responseRole is null && delta.Role is not null)
                 {
                     responseRole = delta.Role;
 
@@ -662,12 +671,18 @@ public class Conversation
                     {
                         typeResolved = true;
 
-                        if (messageTypeResolvedHandler != null) await messageTypeResolvedHandler(responseRole);
+                        if (messageTypeResolvedHandler != null)
+                        {
+                            await messageTypeResolvedHandler(responseRole);
+                        }
                     }
 
                     if (functionCallHandler != null && responseRole == "function")
                     {
-                        if (!empty) responseStringBuilder.Append(deltaContent);
+                        if (!empty)
+                        {
+                            responseStringBuilder.Append(deltaContent);
+                        }
 
                         continue;
                     }
@@ -677,34 +692,44 @@ public class Conversation
                 {
                     responseStringBuilder.Append(deltaContent);
 
-                    if (messageTokenHandler != null) await messageTokenHandler.Invoke(deltaContent);
+                    if (messageTokenHandler is not null)
+                    {
+                        await messageTokenHandler.Invoke(deltaContent);
+                    }
                 }
             }
 
             MostRecentApiResult = res;
         }
 
-        if (responseRole != null && responseRole.Equals(ChatMessageRole.Function))
+        if (responseRole is not null && responseRole.Equals(ChatMessageRole.Function))
+        {
             if (functionCallHandler != null)
             {
                 List<FunctionCall> calls = functionCalls.Select(pair => new FunctionCall { Name = pair.Key, Arguments = pair.Value.ToString() }).ToList();
                 FunctionResult? fr = await functionCallHandler.Invoke(calls);
 
-                if (fr != null)
+                if (fr is null)
                 {
-                    ChatMessage msg = new(responseRole, fr.Content, Guid.NewGuid()) { Name = fr.Name };
-                    AppendMessage(msg);
+                    return;
+                }
+                
+                ChatMessage msg = new(responseRole, fr.Content, Guid.NewGuid()) { Name = fr.Name };
+                AppendMessage(msg);
 
-                    if (OnAfterFunctionCall is not null)
-                    {
-                        await OnAfterFunctionCall(fr, msg);
-                    }
+                if (OnAfterFunctionCall is not null)
+                {
+                    await OnAfterFunctionCall(fr, msg);
                 }
 
                 return;
             }
+        }
 
-        if (responseRole != null) AppendMessage(responseRole, responseStringBuilder.ToString(), messageId);
+        if (responseRole is not null)
+        {
+            AppendMessage(responseRole, responseStringBuilder.ToString(), messageId);
+        }
     }
 
     #endregion

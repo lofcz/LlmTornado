@@ -1,26 +1,31 @@
 using Newtonsoft.Json;
-
 namespace OpenAiNg.ChatFunctions;
 
 /// <summary>
 ///     An optional class to be used with models that support returning function calls.
 /// </summary>
-public class FunctionCall
+public class ToolCall
 {
     [JsonIgnore] 
     private string? JsonEncoded { get; set; }
     
     /// <summary>
-    ///     The name of the function.
+    ///     The ID of the tool.
     /// </summary>
-    [JsonProperty("name")]
-    public string? Name { get; set; } = default!;
+    [JsonProperty("id")]
+    public string Id { get; set; } = default!;
+    
+    /// <summary>
+    ///     The type of the tool. Currently, this should be always "function".
+    /// </summary>
+    [JsonProperty("type")]
+    public string Type { get; set; } = default!;
 
     /// <summary>
-    ///     Any arguments that need to be passed to the function. This needs to be in JSON format.
+    ///     The type of the tool. Currently, this should be always "function".
     /// </summary>
-    [JsonProperty("arguments")]
-    public string Arguments { get; set; } = default!;
+    [JsonProperty("function")]
+    public FunctionCall FunctionCall { get; set; } = default!;
     
     /// <summary>
     ///     Gets the json encoded function call, this is cached to avoid serializing the function over and over.
