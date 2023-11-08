@@ -6,6 +6,17 @@ OpenAiNextGeneration is a simple .NET library to use with various OpenAI compati
 as [OpenAI](https://platform.openai.com/docs/api-reference), [Azure OpenAI](https://azure.microsoft.com/en-us/products/ai-services/openai-service), and [KoboldCpp](https://github.com/LostRuins/koboldcpp/releases) (
 v1.45.2+). Supports features such as function calling in conjunction with streaming, caches its own `HttpClient`s.
 
+Supported features compared to [OpenAI-API-dotnet](https://github.com/OkGoDoIt/OpenAI-API-dotnet):
+- Supports new models.
+- Parallel function calling.
+- Improved memory usage, and function calling in conjunction with streaming.
+- Manages its pool of HttpClients.
+- Improved credentials passing.
+- Supports OpenAI-compatible API providers, such as KoboldCpp.
+- Improved Azure OpenAI integration.
+- Nullability annotations.
+- Actively maintained, backed by a company I work for.
+
 Features scheduled for open-sourcing:
 
 - High-level plugin API.
