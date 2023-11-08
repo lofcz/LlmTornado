@@ -11,7 +11,15 @@ Features scheduled for open-sourcing:
 - High-level plugin API.
 - Approximate token counting for streaming & function calling.
 
-## Quick Example
+## ⚡Getting Started
+
+Install the library via NuGet:
+
+```
+Install-Package OpenAiNg
+```
+
+## 🔮 Quick Inference
 
 ```csharp
 var api = new OpenAiNg.OpenAiApi("YOUR_API_KEY");
@@ -20,7 +28,7 @@ Console.WriteLine(result);
 // should print something starting with "Three"
 ```
 
-## Readme
+## 📖 Readme
 
 * [Requirements](#requirements)
 * [Installation](#install-from-nuget)
