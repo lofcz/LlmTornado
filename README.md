@@ -15,7 +15,7 @@ Supported features compared to [OpenAI-API-dotnet](https://github.com/OkGoDoIt/O
 - Supports OpenAI-compatible API providers, such as KoboldCpp.
 - Improved Azure OpenAI integration.
 - Nullability annotations.
-- Actively maintained, backed by a company I work for.
+- Actively maintained, [backed by a company I work for](https://www.scio.cz/).
 
 Features scheduled for open-sourcing:
 
