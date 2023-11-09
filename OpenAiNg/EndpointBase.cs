@@ -208,7 +208,7 @@ public abstract class EndpointBase
 
         try
         {
-            if (res != null)
+            if (res is not null)
             {
                 if (response.Headers.TryGetValues("Openai-Organization", out IEnumerable<string>? orgH)) res.Organization = orgH.FirstOrDefault();
                 if (response.Headers.TryGetValues("X-Request-ID", out IEnumerable<string>? xreqId)) res.RequestId = xreqId.FirstOrDefault();
@@ -226,6 +226,46 @@ public abstract class EndpointBase
                     {
                         res.Model = omd.FirstOrDefault();
                     }
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            throw new Exception($"Error parsing metadata: {e.Message}");
+        }
+
+        return res;
+    }
+    
+    private async Task<StreamResponse?> HttpRequestStream(string? url = null, HttpMethod? verb = null, object? postData = null)
+    {
+        HttpResponseMessage response = await HttpRequestRaw(url, verb, postData);
+        Stream resultAsStream = await response.Content.ReadAsStreamAsync();
+
+        StreamResponse res = new StreamResponse
+        {
+            Headers = new ApiResultBase(),
+            Stream = resultAsStream,
+            Response = response
+        };
+        
+        try
+        {
+            if (response.Headers.TryGetValues("Openai-Organization", out IEnumerable<string>? orgH)) res.Headers.Organization = orgH.FirstOrDefault();
+            if (response.Headers.TryGetValues("X-Request-ID", out IEnumerable<string>? xreqId)) res.Headers.RequestId = xreqId.FirstOrDefault();
+
+            if (response.Headers.TryGetValues("Openai-Processing-Ms", out IEnumerable<string>? pms))
+            {
+                string? processing = pms.FirstOrDefault();
+                if (processing is not null && int.TryParse(processing, out int n)) res.Headers.ProcessingTime = TimeSpan.FromMilliseconds(n);
+            }
+
+            if (response.Headers.TryGetValues("Openai-Version", out IEnumerable<string>? oav)) res.Headers.RequestId = oav.FirstOrDefault();
+            if (res.Headers.Model != null && string.IsNullOrEmpty(res.Headers.Model))
+            {
+                if (response.Headers.TryGetValues("Openai-Model", out IEnumerable<string>? omd))
+                {
+                    res.Headers.Model = omd.FirstOrDefault();
                 }
             }
         }
@@ -272,6 +312,11 @@ public abstract class EndpointBase
     internal Task<T?> HttpPost<T>(string? url = null, object? postData = null) where T : ApiResultBase
     {
         return HttpRequest<T>(url, HttpMethod.Post, postData);
+    }
+    
+    internal Task<StreamResponse?> HttpPostStream(string? url = null, object? postData = null) 
+    {
+        return HttpRequestStream(url, HttpMethod.Post, postData);
     }
 
     /// <summary>

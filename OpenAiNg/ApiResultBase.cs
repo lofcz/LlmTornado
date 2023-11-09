@@ -7,7 +7,7 @@ namespace OpenAiNg;
 /// <summary>
 ///     Represents a result from calling the OpenAI API, with all the common metadata returned from every endpoint
 /// </summary>
-public abstract class ApiResultBase
+public class ApiResultBase
 {
     /// The time when the result was generated
     [JsonIgnore]

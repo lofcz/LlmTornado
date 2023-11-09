@@ -14,6 +14,11 @@ public static class SpeechDemo
             Voice = SpeechVoice.Alloy
         });
 
+        if (result is not null)
+        {
+            await result.SaveAndDispose("ttsdemo.mp3");
+        }
+        
         int z = 0;
     }
 }

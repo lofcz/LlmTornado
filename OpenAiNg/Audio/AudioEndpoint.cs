@@ -56,9 +56,10 @@ public class AudioEndpoint : EndpointBase, IAudioEndpoint
         return PostSpeechAsync(request);
     }
 
-    private Task<SpeechTtsResult?> PostSpeechAsync(SpeechRequest request)
+    private async Task<SpeechTtsResult?> PostSpeechAsync(SpeechRequest request)
     {
-        return HttpPost<SpeechTtsResult>($"{Url}/speech", request);
+        StreamResponse? x = await HttpPostStream($"{Url}/speech", request);
+        return x is null ? null : new SpeechTtsResult(x);
     }
 
     private Task<TranscriptionVerboseJsonResult?> PostAudioAsync(string url, TranscriptionRequest request)
