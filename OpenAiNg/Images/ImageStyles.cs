@@ -40,7 +40,7 @@ public class ImageStyles
     /// <param name="value">The ImageStyles to convert</param>
     public static implicit operator string(ImageStyles value)
     {
-        return value;
+        return value.Value;
     }
 
     internal class ImageStyleJsonConverter : JsonConverter<ImageStyles>

@@ -18,7 +18,6 @@ public class OpenAiApi : IOpenAiApi
 {
     private IAudioEndpoint? _audioEndpoint;
     private IChatEndpoint? _chat;
-
     private ICompletionEndpoint? _completionEndpoint;
     private IEmbeddingEndpoint? _embedding;
     private IFilesEndpoint? _files;
@@ -31,12 +30,30 @@ public class OpenAiApi : IOpenAiApi
     ///     Creates a new entry point to the OpenAPI API, handling auth and allowing access to the various API endpoints
     /// </summary>
     /// <param name="apiKeys">
-    ///     The API authentication information to use for API calls, or <see langword="null" /> to attempt to
-    ///     use the <see cref="ApiAuthentication.Default" />, potentially loading from environment vars or from a config file.
+    ///     The API authentication information to use for API calls, or <see langword="null" /> when using self-hosted provider such as KoboldCpp
     /// </param>
     public OpenAiApi(ApiAuthentication? apiKeys)
     {
         Auth = apiKeys;
+    }
+    
+    /// <summary>
+    /// Create a new OpenAiApi via API key, suitable for OpenAI as a provider
+    /// </summary>
+    /// <param name="apiKey">API key</param>
+    public OpenAiApi(string apiKey)
+    {
+        Auth = new ApiAuthentication(apiKey);
+    }
+    
+    /// <summary>
+    /// Create a new OpenAiApi via API key and organization key, suitable for Azure OpenAI
+    /// </summary>
+    /// <param name="apiKey">API key</param>
+    /// <param name="organizationKey">Organization key</param>
+    public OpenAiApi(string apiKey, string organizationKey)
+    {
+        Auth = new ApiAuthentication(apiKey, organizationKey);
     }
 
     /// <summary>

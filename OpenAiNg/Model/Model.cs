@@ -16,7 +16,7 @@ public class Model
 	/// <param name="name">
 	///     The id/<see cref="ModelID" /> to use.
 	/// </param>
-	public Model(string? name)
+	public Model(string name)
     {
         ModelID = name;
     }
@@ -32,7 +32,7 @@ public class Model
 	///     The id/name of the model
 	/// </summary>
 	[JsonProperty("id")]
-    public string ModelID { get; set; }
+	public string ModelID { get; set; }
 
 	/// <summary>
 	///     The owner of this model.  Generally "openai" is a generic OpenAI model, or the organization if a custom or
@@ -204,6 +204,16 @@ public class Model
     public static Model Whisper_1 => new("whisper-1") { OwnedBy = "openai" };
     
     /// <summary>
+    ///     TTS-1 model. This model generates speech from text.
+    /// </summary>
+    public static Model TTS_1 => new("tts-1") { OwnedBy = "openai" };
+    
+    /// <summary>
+    ///      TTS-1-HD model. This model generates speech from text, higer quality than <see cref="TTS_1"/>
+    /// </summary>
+    public static Model TTS_1_HD => new("tts-1-hd") { OwnedBy = "openai" };
+    
+    /// <summary>
     ///     Dalle2 model. This model generates images.
     /// </summary>
     public static Model Dalle2 => new("dall-e-2") { OwnedBy = "openai" };
@@ -217,9 +227,9 @@ public class Model
     ///     Allows an model to be implicitly cast to the string of its <see cref="ModelID" />
     /// </summary>
     /// <param name="model">The <see cref="Model" /> to cast to a string.</param>
-    public static implicit operator string?(Model model)
+    public static implicit operator string(Model model)
     {
-        return model?.ModelID;
+        return model.ModelID;
     }
 
     /// <summary>
@@ -237,9 +247,9 @@ public class Model
     /// </summary>
     /// <param name="api">An instance of the API with authentication in order to call the endpoint.</param>
     /// <returns>Asynchronously returns an Model with all relevant properties filled in</returns>
-    public async Task<Model> RetrieveModelDetailsAsync(OpenAiApi api)
+    public Task<Model> RetrieveModelDetailsAsync(OpenAiApi api)
     {
-        return await api.Models.RetrieveModelDetailsAsync(ModelID);
+        return api.Models.RetrieveModelDetailsAsync(ModelID);
     }
 }
 

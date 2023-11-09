@@ -55,7 +55,7 @@ public class ImageSize
     /// <param name="value">The ImageSize to convert</param>
     public static implicit operator string(ImageSize value)
     {
-        return value;
+        return value.Value;
     }
 
     internal class ImageSizeJsonConverter : JsonConverter<ImageSize>

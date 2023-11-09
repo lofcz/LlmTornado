@@ -40,7 +40,7 @@ public class ImageQuality
     /// <param name="value">The ImageQuality to convert</param>
     public static implicit operator string(ImageQuality value)
     {
-        return value;
+        return value.Value;
     }
 
     internal class ImageQualityJsonConverter : JsonConverter<ImageQuality>

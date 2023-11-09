@@ -51,7 +51,7 @@ public class ChatRequestResponseFormatTypes
     /// <param name="value">The ChatRequestResponseFormatTypes to convert</param>
     public static implicit operator string(ChatRequestResponseFormatTypes value)
     {
-        return value;
+        return value.Value;
     }
 
     internal class ChatRequestResponseFormatTypesJsonConverter : JsonConverter<ChatRequestResponseFormatTypes>

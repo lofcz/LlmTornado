@@ -47,30 +47,48 @@ public class AudioEndpoint : EndpointBase, IAudioEndpoint
             }
         );
     }
+    
+    /// <summary>
+    ///     Converts string text into speech (tts)
+    /// </summary>
+    public Task<SpeechTtsResult?> CreateSpeechAsync(SpeechRequest request)
+    {
+        return PostSpeechAsync(request);
+    }
+
+    private Task<SpeechTtsResult?> PostSpeechAsync(SpeechRequest request)
+    {
+        return HttpPost<SpeechTtsResult>($"{Url}/speech", request);
+    }
 
     private Task<TranscriptionVerboseJsonResult?> PostAudioAsync(string url, TranscriptionRequest request)
     {
         MultipartFormDataContent content = new MultipartFormDataContent();
-
         StreamContent fileContent = new StreamContent(request.File.File);
         fileContent.Headers.ContentLength = request.File.ContentLength;
-        fileContent.Headers.ContentType =
-            new MediaTypeHeaderValue(request.File.ContentType);
-
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue(request.File.ContentType);
         content.Add(fileContent, "file", request.File.Name);
         content.Add(new StringContent(request.Model), "model");
 
         if (!request.Prompt.IsNullOrWhiteSpace())
+        {
             content.Add(new StringContent(request.Prompt), "prompt");
+        }
 
         if (!request.ResponseFormat.IsNullOrWhiteSpace())
+        {
             content.Add(new StringContent(request.ResponseFormat), "response_format");
+        }
 
         if (!request.Temperature.HasValue)
+        {
             content.Add(new StringContent((request.Temperature ?? 0f).ToString(CultureInfo.InvariantCulture)), "temperature");
+        }
 
         if (!request.Language.IsNullOrWhiteSpace())
+        {
             content.Add(new StringContent(request.Language), "language");
+        }
 
         return HttpPost<TranscriptionVerboseJsonResult>(url, content);
     }

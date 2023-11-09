@@ -11,9 +11,9 @@
         <RepositoryUrl>https://github.com/lofcz/OpenAiNg</RepositoryUrl>
         <PackageTags>OpenAI, GPT3, GPT-3, GPT4, GPT-4, GPT3.5, GPT-3.5, GPT-3.5-Turbo, GPT-3.5-Instruct, KoboldCpp, Kobold, AI, ML, API, ChatGPT, DALLE, DALL-E</PackageTags>
         <Title>OpenAI NextGeneration</Title>
-        <PackageReleaseNotes>Hard fork</PackageReleaseNotes>
+        <PackageReleaseNotes></PackageReleaseNotes>
         <PackageId>OpenAiNg</PackageId>
-        <Version>2.2.7</Version>
+        <Version>2.2.8</Version>
         <AssemblyVersion>2.2.2.0</AssemblyVersion>
         <FileVersion>2.2.2.0</FileVersion>
         <GenerateDocumentationFile>True</GenerateDocumentationFile>

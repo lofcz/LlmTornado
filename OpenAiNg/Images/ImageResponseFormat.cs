@@ -41,7 +41,7 @@ public class ImageResponseFormat
     /// <param name="value">The ImageResponseFormat to convert</param>
     public static implicit operator string(ImageResponseFormat value)
     {
-        return value;
+        return value.Value;
     }
 
     internal class ImageResponseJsonConverter : JsonConverter<ImageResponseFormat>
