@@ -4,7 +4,7 @@ namespace OpenAiNg.Demo;
 
 public static class SpeechDemo
 {
-    public async static Task Tts()
+    public static async Task Tts()
     {
         SpeechTtsResult? result = await Program.Connect().Audio.CreateSpeechAsync(new SpeechRequest
         {
