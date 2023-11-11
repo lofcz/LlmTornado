@@ -18,7 +18,7 @@ public class AudioFile
     public long ContentLength => File.Length;
 
     /// <summary>
-    ///     Type of audio file.Must be mp3, mp4, mpeg, mpga, m4a, wav, or webm.
+    ///     Type of audio file. Must be 'audio/mp3', 'video/mp4', 'video/mpeg', 'audio/mpga', 'audio/m4a', 'audio/wav', or 'video/webm'.
     /// </summary>
     public string ContentType { get; set; }
 
