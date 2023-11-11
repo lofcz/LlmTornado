@@ -82,54 +82,6 @@ You may optionally include an OpenAiOrganization if you have multiple Organizati
 var api = new OpenAiApi(new ApiAuthentication("YOUR_API_KEY", "org-yourOrgHere"));
 ```
 
-### Audio Transcription
-
-You can transcribe an audio file with OpenAiNg using the following code snippet:
-
-```csharp
-// Create the audioFile object
-AudioFile audioFile = new()
-{
-    File = fileStream,       // your FileStream instance here
-    ContentType = "audio/ogg",  // content type may vary depending on the file type
-    Name = Path.GetFileName(filePath) // name of the file
-};
-
-// Create the transcriptionRequest object
-TranscriptionRequest transcriptionRequest = new()
-{
-    File = audioFile, // the audio file to be transcribed
-    Model = OpenAiNg.Models.Model.Whisper_1, // the model to be used for transcription
-};
-
-// Async call to create transcriptions
-TranscriptionVerboseJsonResult? result =
-    await api.Audio.CreateTranscriptionAsync(transcriptionRequest);
-
-// Get the transcript text from the result
-return result.Text;
-```
-
-### Create a Speech
-
-Here is an example of how you can generate speech from a given text.
-
-```csharp
-SpeechTtsResult? ttsResult = await api.Audio.CreateSpeechAsync(new SpeechRequest
-{
-    Input = text,  // Text that need to convert into speech
-    Model = OpenAiNg.Models.Model.TTS_1_HD,  // Model that will be used for text-to-speech conversation
-    Voice = SpeechVoice.Nova,  // OpenAi's Nova voice will be used for speech output
-    ResponseFormat = SpeechResponseFormat.Mp3,  // Output will be in Mp3 format
-});
-
-string path = Path.Combine(Path.GetTempPath(), // getting directory path for temp files
-    Path.ChangeExtension(Path.GetTempFileName(), "mp3"));  // Generating a unique temp file and changing its extension to .mp3
-
-// Save the audio and dispose the source stream
-await ttsResult.SaveAndDispose(path);
-```
-
 ## Documentation
 
 Every single class, method, and property has extensive XML documentation, so it should show up automatically in
