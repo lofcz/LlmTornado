@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
@@ -58,6 +59,7 @@ public class ChatRequest
 	///     The messages to send with this Chat Request
 	/// </summary>
 	[JsonProperty("messages")]
+	[JsonConverter(typeof(ChatMessageRequestMessagesJsonConverter))]
     public IList<ChatMessage>? Messages { get; set; }
 
 	/// <summary>
@@ -211,4 +213,74 @@ public class ChatRequest
 	/// </summary>
 	[JsonProperty("adapter")]
 	public Dictionary<string, object?>? Adapter { get; set; }
+	
+	internal class ChatMessageRequestMessagesJsonConverter : JsonConverter<IList<ChatMessage>?>
+	{
+		public override void WriteJson(JsonWriter writer, IList<ChatMessage>? value, JsonSerializer serializer)
+		{
+			if (value is null)
+			{
+				writer.WriteNull();
+				return;
+			}
+			
+			writer.WriteStartArray();
+
+			foreach (ChatMessage msg in value)
+			{
+				writer.WriteStartObject();
+				
+				writer.WritePropertyName("role");
+				writer.WriteValue(msg.rawRole);
+				writer.WritePropertyName("content");
+				
+				if (msg.Parts?.Count > 0)
+				{
+					writer.WriteStartArray();
+					
+					foreach (ChatMessagePart part in msg.Parts)
+					{
+						writer.WriteStartObject();
+						
+						writer.WritePropertyName("type");
+						writer.WriteValue(part.Type);
+
+						if (part.Type.Value == ChatMessageTypes.Text.Value)
+						{
+							writer.WritePropertyName("text");
+							writer.WriteValue(part.Text);	
+						}
+						else if (part.Type.Value == ChatMessageTypes.Image.Value)
+						{
+							writer.WritePropertyName("image_url");
+							writer.WriteStartObject();
+							
+							writer.WritePropertyName("url");
+							writer.WriteValue(part.Image?.Url);	
+							
+							writer.WriteEndObject();
+						}
+						
+						writer.WriteEndObject();
+					}
+					
+					writer.WriteEndArray();
+				}
+				else
+				{
+					writer.WriteValue(msg.Content);
+				}
+				
+				writer.WriteEndObject();
+			}
+			
+			writer.WriteEndArray();
+		}
+
+		public override IList<ChatMessage>? ReadJson(JsonReader reader, Type objectType, IList<ChatMessage>? existingValue, bool hasExistingValue,
+			JsonSerializer serializer)
+		{
+			return existingValue;
+		}
+	}
 }
