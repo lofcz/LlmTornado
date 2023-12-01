@@ -9,7 +9,7 @@ public static class VisionDemo
 {
     public static async Task Vision()
     {
-        var result = await Program.Connect().Chat.CreateChatCompletionAsync(new ChatMessage[]
+        ChatResult result = await Program.Connect().Chat.CreateChatCompletionAsync(new ChatMessage[]
         {
             new ChatMessage(ChatMessageRole.User, [
                 new ChatMessagePart(new Uri("https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcSGfpQ3m-QWiXgCBJJbrcUFdNdWAhj7rcUqjeNUC6eKcXZDAtWm")),
