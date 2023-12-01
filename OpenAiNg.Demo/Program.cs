@@ -47,6 +47,6 @@ class Program
             return;
         }
 
-        await SpeechDemo.Tts();
+        await VisionDemo.Vision();
     }
 }

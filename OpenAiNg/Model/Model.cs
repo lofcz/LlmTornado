@@ -164,6 +164,13 @@ public class Model
     ///     the latest model iteration.  Currently in limited beta so your OpenAI account needs to be whitelisted to use this.
     /// </summary>
     public static Model GPT4_1106_Preview => new("gpt-4-1106-preview") { OwnedBy = "openai" };
+    
+    /// <summary>
+    ///     More capable than any GPT-3.5 model, able to do more complex tasks, and optimized for chat. Will be updated with
+    ///     the latest model iteration.  Currently in limited beta so your OpenAI account needs to be whitelisted to use this.
+    ///		Supports images.
+    /// </summary>
+    public static Model GPT4_Vision_Preview => new("gpt-4-vision-preview") { OwnedBy = "openai" };
 
     /// <summary>
     ///     Same capabilities as the base gpt-4 mode but with 4x the context length. Will be updated with the latest model

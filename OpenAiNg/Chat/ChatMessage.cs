@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Newtonsoft.Json;
 using OpenAiNg.ChatFunctions;
+using OpenAiNg.Code;
 
 namespace OpenAiNg.Chat;
 
@@ -16,10 +18,10 @@ public class ChatMessage
 	///     <see cref="ChatMessageRole.User" />
 	/// </summary>
 	public ChatMessage()
-    {
-        Role = ChatMessageRole.User;
-        Id = Guid.NewGuid();
-    }
+	{
+		Role = ChatMessageRole.User;
+		Id = Guid.NewGuid();
+	}
 
 	/// <summary>
 	///     Constructor for a new Chat Message
@@ -27,11 +29,24 @@ public class ChatMessage
 	/// <param name="role">The role of the message, which can be "system", "assistant, "user", or "function".</param>
 	/// <param name="content">The text to send in the message</param>
 	public ChatMessage(ChatMessageRole role, string content)
-    {
-        Role = role;
-        Content = content;
-        Id = Guid.NewGuid();
-    }
+	{
+		Role = role;
+		Content = content;
+		Id = Guid.NewGuid();
+	}
+
+	/// <summary>
+	///		Constructor for a new Chat Message with multiple parts
+	/// </summary>
+	/// <param name="role">The role of the message, which can be "system", "assistant, "user", or "function".</param>
+	/// <param name="parts">Parts the message consists of</param>
+	public ChatMessage(ChatMessageRole role, IEnumerable<ChatMessagePart> parts)
+	{
+		Role = role;
+		Parts = parts.ToList();
+		Id = Guid.NewGuid();
+		Type = ChatMessageTypes.Image;
+	}
 
 	/// <summary>
 	///     Constructor for a new Chat Message
@@ -40,13 +55,20 @@ public class ChatMessage
 	/// <param name="content">The text to send in the message</param>
 	/// <param name="id">Unique guid acting as an identifier. If null, assigned automatically.</param>
 	public ChatMessage(ChatMessageRole role, string content, Guid? id)
-    {
-        Role = role;
-        Content = content;
-        Id = id ?? Guid.NewGuid();
-    }
+	{
+		Role = role;
+		Content = content;
+		Id = id ?? Guid.NewGuid();
+	}
 
-    [JsonProperty("role")] 
+	/// <summary>
+	/// The type of the message, which can be "text" or "chatImage"
+	/// </summary>
+	[JsonProperty("type")]
+	[JsonConverter(typeof(ChatMessageTypes.ChatMessageTypesJsonConverter))]
+	public ChatMessageTypes Type { get; set; } = ChatMessageTypes.Text;
+	
+	[JsonProperty("role")] 
     internal string? rawRole { get; set; }
 
     /// <summary>
@@ -64,6 +86,11 @@ public class ChatMessage
     /// </summary>
     [JsonProperty("content", NullValueHandling = NullValueHandling.Include)]
     public string? Content { get; set; }
+    /// <summary>
+    ///		The chatImage if the message is an chatImage
+    /// </summary>
+    [JsonIgnore]
+    public List<ChatMessagePart>? Parts { get; set; }
 
     /// <summary>
     ///     An optional name of the user in a multi-user chat
