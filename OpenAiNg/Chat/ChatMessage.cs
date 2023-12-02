@@ -47,6 +47,20 @@ public class ChatMessage
 		Id = Guid.NewGuid();
 		Type = ChatMessageTypes.Image;
 	}
+	
+	/// <summary>
+	///		Constructor for a new Chat Message with multiple parts
+	/// </summary>
+	/// <param name="role">The role of the message, which can be "system", "assistant, "user", or "function".</param>
+	/// <param name="parts">Parts the message consists of</param>
+	/// <param name="id">Unique guid acting as an identifier. If null, assigned automatically.</param>
+	public ChatMessage(ChatMessageRole role, IEnumerable<ChatMessagePart> parts, Guid? id)
+	{
+		Role = role;
+		Parts = parts.ToList();
+		Id = id ?? Guid.NewGuid();
+		Type = ChatMessageTypes.Image;
+	}
 
 	/// <summary>
 	///     Constructor for a new Chat Message
