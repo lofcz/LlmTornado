@@ -1,5 +1,10 @@
 # Changelog
 
+### 2.3.1 - 12/2/23
+- added a few convenience methods in `Conversation` to make API on par with older models
+- added a missing ctor in `ChatMessage`
+- fixed typos in XML doc
+
 ### 2.3.0 - 12/1/23
 - implemented [message parts](https://platform.openai.com/docs/api-reference/chat/create) for outbound image messages
 - added `gpt4-vision-preview` model
