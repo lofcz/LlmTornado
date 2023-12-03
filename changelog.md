@@ -1,5 +1,8 @@
 # Changelog
 
+### 2.3.2 - 12/3/23
+- completed the transition to `tools` from `function`
+
 ### 2.3.1 - 12/2/23
 - added a few convenience methods in `Conversation` to make API on par with older models
 - added a missing ctor in `ChatMessage`
