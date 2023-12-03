@@ -77,8 +77,9 @@ public class Conversation
 
     /// <summary>
     ///     If not null, this func is called after a function is resolved
+    ///     The message list represents tool responses, the message is assistent's one
     /// </summary>
-    public Func<FunctionResult, ChatMessage, Task>? OnAfterFunctionCall { get; set; }
+    public Func<FunctionResult, List<ChatMessage>, ChatMessage, Task>? OnAfterFunctionCall { get; set; }
 
     /// <summary>
     ///     After calling <see cref="GetResponseFromChatbotAsync" />, this contains the full response object which can contain
@@ -412,14 +413,14 @@ public class Conversation
 
     /// <summary>
     ///     Creates and appends a <see cref="ChatMessage" /> to the chat history with the Role of
-    ///     <see cref="ChatMessageRole.Function" />.  The function message is a response to a request from the system for
+    ///     <see cref="ChatMessageRole.Tool" />.  The function message is a response to a request from the system for
     ///     output from a predefined function.
     /// </summary>
     /// <param name="functionName">The name of the function for which the content has been generated as the result</param>
     /// <param name="content">The text content (usually JSON)</param>
     public void AppendFunctionMessage(string functionName, string content)
     {
-        AppendMessage(new ChatMessage(ChatMessageRole.Function, content) { Name = functionName });
+        AppendMessage(new ChatMessage(ChatMessageRole.Tool, content) { Name = functionName });
     }
 
     /// <summary>
@@ -708,18 +709,18 @@ public class Conversation
 
                 if (responseRole == null && finishReason is "function_call" or "tool_calls")
                 {
-                    responseRole = ChatMessageRole.Function;
+                    responseRole = ChatMessageRole.Tool;
                 }
 
                 if (choice.Delta.ToolCalls is not null)
                 {
-                    responseRole ??= ChatMessageRole.Function;
+                    responseRole ??= ChatMessageRole.Tool;
 
                     if (!typeResolved)
                     {
                         typeResolved = true;
 
-                        if (messageTypeResolvedHandler != null) await messageTypeResolvedHandler(ChatMessageRole.Function);
+                        if (messageTypeResolvedHandler != null) await messageTypeResolvedHandler(ChatMessageRole.Tool);
                     }
 
                     if (choice.Delta.ToolCalls.Count > 0)
@@ -778,7 +779,7 @@ public class Conversation
             MostRecentApiResult = res;
         }
 
-        if (responseRole is not null && responseRole.Equals(ChatMessageRole.Function))
+        if (responseRole is not null && responseRole.Equals(ChatMessageRole.Tool))
         {
             if (functionCallHandler != null)
             {
@@ -790,12 +791,36 @@ public class Conversation
                     return;
                 }
                 
-                ChatMessage msg = new(responseRole, fr.Content, Guid.NewGuid()) { Name = fr.Name };
-                AppendMessage(msg);
+                ChatMessage fnCallMsg = new(ChatMessageRole.Assistant, responseStringBuilder.ToString(), Guid.NewGuid())
+                {
+                    Name = fr.Name,
+                    ToolCalls = []
+                };
 
+                foreach (FunctionCall fc in calls)
+                {
+                    fnCallMsg.ToolCalls.Add(new ToolCall { FunctionCall = fc, Type = "function", Id = fc.Name ?? string.Empty });
+                }
+                
+                AppendMessage(fnCallMsg);
+
+                List<ChatMessage> functionResultMessages = [];
+                
+                foreach (FunctionCall fc in calls)
+                {
+                    ChatMessage fnResultMsg = new(ChatMessageRole.Tool, string.Empty, Guid.NewGuid())
+                    {
+                        Name = fr.Name,
+                        ToolCallId = fc.Name
+                    };
+
+                    AppendMessage(fnResultMsg);
+                    functionResultMessages.Add(fnResultMsg);
+                }
+                
                 if (OnAfterFunctionCall is not null)
                 {
-                    await OnAfterFunctionCall(fr, msg);
+                    await OnAfterFunctionCall(fr, functionResultMessages, fnCallMsg);
                 }
 
                 return;

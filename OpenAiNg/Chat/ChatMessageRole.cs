@@ -39,9 +39,9 @@ public class ChatMessageRole : IEquatable<ChatMessageRole>
     public static ChatMessageRole Assistant { get; } = new("assistant");
 
     /// <summary>
-    ///     The function role can be used in models which support function access.
+    ///     The tool role can be used in models which support function access.
     /// </summary>
-    public static ChatMessageRole Function { get; } = new("function");
+    public static ChatMessageRole Tool { get; } = new("tool");
 
     /// <summary>
     ///     Determines whether this instance and a specified object have the same value.
@@ -68,7 +68,8 @@ public class ChatMessageRole : IEquatable<ChatMessageRole>
             "system" => System,
             "user" => User,
             "assistant" => Assistant,
-            "function" => Function,
+            "function" => Tool,
+            "tool" => Tool,
             _ => null
         };
     }

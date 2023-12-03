@@ -124,4 +124,11 @@ public class ChatMessage
     /// </summary>
     [JsonProperty("tool_calls")]
     public List<ToolCall>? ToolCalls { get; set; }
+    
+    /// <summary>
+    ///     Optional field tool call id
+    ///     This is used after an assistant message with tools
+    /// </summary>
+    [JsonProperty("tool_call_id")]
+    public string? ToolCallId { get; set; }
 }

@@ -232,6 +232,62 @@ public class ChatRequest
 				
 				writer.WritePropertyName("role");
 				writer.WriteValue(msg.rawRole);
+
+				if (msg.Role is not null)
+				{
+					if (ChatMessageRole.Tool.Equals(msg.Role))
+					{
+						writer.WritePropertyName("tool_call_id");
+						writer.WriteValue(msg.Name);	
+					}
+					else if (ChatMessageRole.Assistant.Equals(msg.Role))
+					{
+						if (msg.ToolCalls is not null)
+						{
+							writer.WritePropertyName("tool_calls");
+							
+							writer.WriteStartArray();
+
+							foreach (ToolCall call in msg.ToolCalls)
+							{
+								writer.WriteStartObject();
+								
+									writer.WritePropertyName("id");
+									writer.WriteValue(call.Id);
+									
+									writer.WritePropertyName("type");
+									writer.WriteValue(call.Type);
+									
+									writer.WritePropertyName("function");
+									writer.WriteStartObject();
+									
+									writer.WritePropertyName("name");
+									writer.WriteValue(call.FunctionCall.Name);
+									
+									writer.WritePropertyName("arguments");
+									writer.WriteValue(call.FunctionCall.Arguments);
+									
+									writer.WriteEndObject();
+								
+								writer.WriteEndObject();
+							}
+							
+							writer.WriteEndArray();
+						}
+					}
+					else if (ChatMessageRole.Tool.Equals(msg.Role))
+					{
+						writer.WritePropertyName("tool_call_id");
+						writer.WriteValue(msg.ToolCallId);
+					}
+				}
+				
+				if (!string.IsNullOrWhiteSpace(msg.Name))
+				{
+					writer.WritePropertyName("name");
+					writer.WriteValue(msg.Name);	
+				}
+				
 				writer.WritePropertyName("content");
 				
 				if (msg.Parts?.Count > 0)
