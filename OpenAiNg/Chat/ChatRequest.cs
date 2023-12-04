@@ -91,7 +91,7 @@ public class ChatRequest
 	public int? Seed { get; set; }
 	
 	/// <summary>
-	///     The response format to use.
+	///     The response format to use. If <see cref="ChatRequestResponseFormats.Json"/>, either system or user message in the conversation must contain "JSON".
 	/// </summary>
 	[JsonProperty("response_format")]
 	public ChatRequestResponseFormats? ResponseFormat { get; set; }
