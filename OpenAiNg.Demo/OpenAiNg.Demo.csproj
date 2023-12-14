@@ -11,4 +11,7 @@
       <ProjectReference Include="..\OpenAiNg\OpenAiNg.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <None Update="Static\**" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
 </Project>

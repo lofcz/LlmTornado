@@ -47,6 +47,6 @@ class Program
             return;
         }
 
-        await VisionDemo.Vision();
+        await VisionDemo.VisionBase64();
     }
 }
