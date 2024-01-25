@@ -22,12 +22,31 @@ public abstract class EndpointBase
     private const string UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36";
     internal static readonly JsonSerializerSettings NullSettings = new() { NullValueHandling = NullValueHandling.Ignore };
 
+    /// <summary>
+    /// Gets the timeout for all http requests
+    /// </summary>
+    /// <returns></returns>
+    public static int GetRequestsTimeout()
+    {
+        return (int)EndpointClient.Timeout.TotalSeconds;
+    }
+
+    /// <summary>
+    /// Sets the timeout for all http requests
+    /// </summary>
+    /// <returns></returns>
+    public static void SetRequestsTimeout(int seconds)
+    {
+        EndpointClient.Timeout = TimeSpan.FromSeconds(seconds);
+    }
+
+    
     private static readonly HttpClient EndpointClient = new(new SocketsHttpHandler
     {
         MaxConnectionsPerServer = 10000,
         PooledConnectionLifetime = TimeSpan.FromMinutes(2)
     }) {
-        Timeout = TimeSpan.FromSeconds(240)
+        Timeout = TimeSpan.FromSeconds(600)
     };
 
     /// <summary>
