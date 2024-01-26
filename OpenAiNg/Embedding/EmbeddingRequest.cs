@@ -21,7 +21,7 @@ public class EmbeddingRequest
 	/// </summary>
 	/// <param name="model">
 	///     The model to use. You can use <see cref="ModelsEndpoint.GetModelsAsync()" /> to see all of your
-	///     available models, or use a standard model like <see cref="Model.AdaTextEmbedding" />.
+	///     available models, or use a standard model like <see cref="Model.TextEmbedding3Small" />, <see cref="Model.TextEmbedding3Large"/> or (legacy) <see cref="Model.AdaTextEmbedding" />.
 	/// </param>
 	/// <param name="input">The prompt to transform</param>
 	public EmbeddingRequest(Model model, string input)
@@ -43,7 +43,7 @@ public class EmbeddingRequest
 
 	/// <summary>
 	///     ID of the model to use. You can use <see cref="ModelsEndpoint.GetModelsAsync()" /> to see all of your available
-	///     models, or use a standard model like <see cref="Model.AdaTextEmbedding" />.
+	///     models, or use a standard model like <see cref="Model.TextEmbedding3Small" />, <see cref="Model.TextEmbedding3Large"/> or (legacy) <see cref="Model.AdaTextEmbedding" />.
 	/// </summary>
 	[JsonProperty("model")]
     public string Model { get; set; }

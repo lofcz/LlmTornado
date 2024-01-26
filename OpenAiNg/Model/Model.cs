@@ -132,12 +132,25 @@ public class Model
 
     /// <summary>
     ///     OpenAI offers one second-generation embedding model for use with the embeddings API endpoint.
+    ///		Dimensions: 1536
     /// </summary>
     public static Model AdaTextEmbedding => new("text-embedding-ada-002") { OwnedBy = "openai" };
+    
+    /// <summary>
+    ///     Model released in 01/24 update, superseeds <see cref="AdaTextEmbedding"/> at a cheaper price.
+    ///		Dimensions: 1536 (end of the sequence numbers can be removed and dimensions reduced up to 256 at a reasonable perplexity increase)
+    /// </summary>
+    public static Model TextEmbedding3Small => new("text-embedding-3-small") { OwnedBy = "openai" };
+    
+    /// <summary>
+    ///     Model released in 01/24 update, superseeds <see cref="AdaTextEmbedding"/>, comes at a 33% price increase but is even more powerful that <see cref="TextEmbedding3Small"/>
+    ///		Dimensions: 3072 (end of the sequence numbers can be removed and dimensions reduced up to 256 at a reasonable perplexity increase)
+    /// </summary>
+    public static Model TextEmbedding3Large => new("text-embedding-3-large") { OwnedBy = "openai" };
 
     /// <summary>
     ///     Most capable GPT-3.5 model and optimized for chat at 1/10th the cost of text-davinci-003. Will be updated with the
-    ///     latest model iteration.
+    ///     latest model iteration. Currently <see cref="ChatGPTTurbo_4_0125"/>
     /// </summary>
     public static Model ChatGPTTurbo => new("gpt-3.5-turbo") { OwnedBy = "openai" };
 
@@ -160,8 +173,7 @@ public class Model
     public static Model GPT4_VisionPreview => new("gpt-4-vision-preview") { OwnedBy = "openai" };
     
     /// <summary>
-    ///     More capable than any GPT-3.5 model, able to do more complex tasks, and optimized for chat. Will be updated with
-    ///     the latest model iteration.  Currently in limited beta so your OpenAI account needs to be whitelisted to use this.
+    ///     More capable than any GPT-3.5 model, able to do more complex tasks, and optimized for chat.
     /// </summary>
     public static Model GPT4_1106_Preview => new("gpt-4-1106-preview") { OwnedBy = "openai" };
     
@@ -173,20 +185,36 @@ public class Model
     public static Model GPT4_Vision_Preview => new("gpt-4-vision-preview") { OwnedBy = "openai" };
 
     /// <summary>
+    ///     More capable than any GPT-3.5 model, able to do more complex tasks, and optimized for chat.
+    ///     This model completes tasks like code generation more thoroughly than the previous preview model and is intended to reduce cases of “laziness” where the model doesn’t complete a task. 
+    /// </summary>
+    public static Model GPT4_4_0125_Preview => new("gpt-4-0125-preview") { OwnedBy = "openai" };
+    
+    /// <summary>
+    ///     Currently <see cref="GPT4_4_0125_Preview"/> will be autoaupdated to the latest GPT4 preview.
+    /// </summary>
+    public static Model GPT4_Turbo_Preview => new("gpt-4-turbo-preview") { OwnedBy = "openai" };
+    
+    /// <summary>
     ///     Same capabilities as the base gpt-4 mode but with 4x the context length. Will be updated with the latest model
     ///     iteration.  Currently in limited beta so your OpenAI account needs to be whitelisted to use this.
     /// </summary>
     public static Model GPT4_32k_Context => new("gpt-4-32k") { OwnedBy = "openai" };
 
-    // <summary>
+    /// <summary>
     /// Snapshot of gpt-3.5-turbo from June 13th 2023. This model allows the use of function calling as well as more reliable steering via the system message.
     /// </summary>
     public static Model ChatGPTTurbo0613 => new("gpt-3.5-turbo-0613") { OwnedBy = "openai" };
     
-    // <summary>
+    /// <summary>
     /// Snapshot of gpt-3.5-turbo from 11/6/23. This model allows the use of parallel function calling as well as more reliable steering via the system message, and returns up to 4096 tokens.
     /// </summary>
     public static Model ChatGPTTurbo1106 => new("gpt-3.5-turbo-1106") { OwnedBy = "openai" };
+    
+    /// <summary>
+    /// Snapshot of gpt-3.5-turbo from 25/01/24. Fixes a bug in <see cref="ChatGPTTurbo1106"/> with function calling.
+    /// </summary>
+    public static Model ChatGPTTurbo_4_0125 => new("gpt-3.5-turbo-1106") { OwnedBy = "openai" };
 
     /// <summary>
     ///     Snapshot of gpt-4 from June 13th 2023. This model allows the use of function calling as well as more reliable
@@ -204,6 +232,11 @@ public class Model
     ///     The latest text moderation model. This model will be automatically upgraded over time.
     /// </summary>
     public static Model TextModerationLatest => new("text-moderation-latest") { OwnedBy = "openai" };
+    
+    /// <summary>
+    ///     The 01/24 text moderation model.
+    /// </summary>
+    public static Model TextModeration007 => new("text-moderation-007") { OwnedBy = "openai" };
 
     /// <summary>
     ///     Whisper model. This model generates transcript from audio.
