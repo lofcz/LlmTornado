@@ -1,5 +1,7 @@
 using System.Collections.Generic;
+using System.Net.Http;
 using System.Threading.Tasks;
+using OpenAiNg.Images;
 
 namespace OpenAiNg.Files;
 
@@ -13,14 +15,14 @@ public interface IFilesEndpoint
 	/// </summary>
 	/// <returns></returns>
 	/// <exception cref="HttpRequestException"></exception>
-	Task<List<File>> GetFilesAsync();
+	Task<List<File>?> GetFilesAsync();
 
 	/// <summary>
 	///     Returns information about a specific file
 	/// </summary>
 	/// <param name="fileId">The ID of the file to use for this request</param>
 	/// <returns></returns>
-	Task<File> GetFileAsync(string fileId);
+	Task<File?> GetFileAsync(string fileId);
 
 	/// <summary>
 	///     Returns the contents of the specific file as string
@@ -34,7 +36,7 @@ public interface IFilesEndpoint
 	/// </summary>
 	/// <param name="fileId">The ID of the file to use for this request</param>
 	/// <returns></returns>
-	Task<File> DeleteFileAsync(string fileId);
+	Task<File?> DeleteFileAsync(string fileId);
 
 	/// <summary>
 	///     Upload a file that contains document(s) to be used across various endpoints/features. Currently, the size of all
@@ -44,7 +46,7 @@ public interface IFilesEndpoint
 	/// <param name="filePath">The name of the file to use for this request</param>
 	/// <param name="purpose">
 	///     The intendend purpose of the uploaded documents. Use "fine-tune" for Fine-tuning. This allows us
-	///     to validate the format of the uploaded file.
+	///     to validate the format of the uploaded file. Use "assistants" for Assistants and Messages.
 	/// </param>
-	Task<File> UploadFileAsync(string filePath, string purpose = "fine-tune");
+	Task<File?> UploadFileAsync(string filePath, FilePurpose purpose = FilePurpose.Finetune);
 }

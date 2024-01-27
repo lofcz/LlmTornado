@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using OpenAiNg.Assistants;
 using OpenAiNg.Audio;
 using OpenAiNg.Chat;
 using OpenAiNg.Completions;
@@ -25,7 +26,8 @@ public class OpenAiApi : IOpenAiApi
     private IImageGenerationEndpoint? _imageGenerationEndpoint;
     private IModelsEndpoint? _models;
     private IModerationEndpoint? _moderation;
-
+    private IAssistantsEndpoint? _assistantsEndpoint;
+    
     /// <summary>
     ///     Creates a new entry point to the OpenAPI API, handling auth and allowing access to the various API endpoints
     /// </summary>
@@ -70,6 +72,11 @@ public class OpenAiApi : IOpenAiApi
     ///     Manages audio operations such as transcipt,translate.
     /// </summary>
     public IAudioEndpoint Audio => _audioEndpoint ??= new AudioEndpoint(this);
+    
+    /// <summary>
+    ///     Manages audio operations such as transcipt,translate.
+    /// </summary>
+    public IAssistantsEndpoint Assistants => _assistantsEndpoint ??= new AssistantsEndpoint(this);
 
     /// <summary>
     ///     Base url for OpenAI

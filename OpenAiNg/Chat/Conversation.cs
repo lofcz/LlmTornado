@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using OpenAiNg.ChatFunctions;
 using OpenAiNg.Code;
+using OpenAiNg.Common;
 using OpenAiNg.Models;
 
 namespace OpenAiNg.Chat;
@@ -32,7 +33,7 @@ public class Conversation
     /// </param>
     /// <param name="model">
     ///     Optionally specify the model to use for ChatGPT requests.  If not specified, used
-    ///     <paramref name="defaultChatRequestArgs" />.Model or falls back to <see cref="OpenAiNg.Models.Model.ChatGPTTurbo" />
+    ///     <paramref name="defaultChatRequestArgs" />.Model or falls back to <see cref="Models.Model.GPT35_Turbo" />
     /// </param>
     /// <param name="defaultChatRequestArgs">
     ///     Allows setting the parameters to use when calling the ChatGPT API.  Can be useful for setting temperature,
@@ -47,7 +48,7 @@ public class Conversation
         RequestParameters = new ChatRequest(defaultChatRequestArgs);
         if (model != null)
             RequestParameters.Model = model;
-        RequestParameters.Model ??= Model.ChatGPTTurbo;
+        RequestParameters.Model ??= Model.GPT35_Turbo;
 
         _messages = new List<ChatMessage>();
         _endpoint = endpoint;

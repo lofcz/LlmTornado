@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 namespace OpenAiNg.Images;
 
 /// <summary>
-///     An interface for <see cref="IImageEditEndpoint" />.  Given a prompt, the model will generate a new image.
+///     An interface for <see cref="IImageEditEndpoint" />. Given a prompt, the model will generate a new image.
 /// </summary>
 public interface IImageEditEndpoint
 {
@@ -12,5 +12,5 @@ public interface IImageEditEndpoint
     /// </summary>
     /// <param name="request">Request to be send</param>
     /// <returns>Asynchronously returns the image result. Look in its <see cref="Data.Url" /> </returns>
-    Task<ImageResult> EditImageAsync(ImageEditRequest request);
+    Task<ImageResult?> EditImageAsync(ImageEditRequest request);
 }

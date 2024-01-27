@@ -4,6 +4,7 @@ using System.Linq;
 using Newtonsoft.Json;
 using OpenAiNg.ChatFunctions;
 using OpenAiNg.Code;
+using OpenAiNg.Common;
 using OpenAiNg.Completions;
 
 namespace OpenAiNg.Chat;
@@ -53,7 +54,7 @@ public class ChatRequest
 	///     The model to use for this request
 	/// </summary>
 	[JsonProperty("model")]
-    public string? Model { get; set; } = Models.Model.ChatGPTTurbo;
+    public string? Model { get; set; } = Models.Model.GPT35_Turbo;
 
 	/// <summary>
 	///     The messages to send with this Chat Request

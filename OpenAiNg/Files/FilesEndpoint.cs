@@ -3,6 +3,7 @@ using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using OpenAiNg.Images;
 
 namespace OpenAiNg.Files;
 
@@ -30,9 +31,9 @@ public class FilesEndpoint : EndpointBase, IFilesEndpoint
 	/// </summary>
 	/// <returns></returns>
 	/// <exception cref="HttpRequestException"></exception>
-	public async Task<List<File>> GetFilesAsync()
+	public async Task<List<File>?> GetFilesAsync()
     {
-        return (await HttpGet<FilesData>()).Data;
+        return (await HttpGet<FilesData>().ConfigureAwait(ConfigureAwaitOptions.None))?.Data;
     }
 
 	/// <summary>
@@ -40,20 +41,19 @@ public class FilesEndpoint : EndpointBase, IFilesEndpoint
 	/// </summary>
 	/// <param name="fileId">The ID of the file to use for this request</param>
 	/// <returns></returns>
-	public async Task<File> GetFileAsync(string fileId)
+	public Task<File?> GetFileAsync(string fileId)
     {
-        return await HttpGet<File>($"{Url}/{fileId}");
+        return HttpGet<File>($"{Url}/{fileId}");
     }
-
-
+	
 	/// <summary>
 	///     Returns the contents of the specific file as string
 	/// </summary>
 	/// <param name="fileId">The ID of the file to use for this request</param>
 	/// <returns></returns>
-	public async Task<string> GetFileContentAsStringAsync(string fileId)
+	public Task<string> GetFileContentAsStringAsync(string fileId)
     {
-        return await HttpGetContent($"{Url}/{fileId}/content");
+        return HttpGetContent($"{Url}/{fileId}/content");
     }
 
 	/// <summary>
@@ -61,9 +61,9 @@ public class FilesEndpoint : EndpointBase, IFilesEndpoint
 	/// </summary>
 	/// <param name="fileId">The ID of the file to use for this request</param>
 	/// <returns></returns>
-	public async Task<File> DeleteFileAsync(string fileId)
+	public Task<File?> DeleteFileAsync(string fileId)
     {
-        return await HttpDelete<File>($"{Url}/{fileId}");
+        return HttpDelete<File>($"{Url}/{fileId}");
     }
 
 
@@ -77,24 +77,26 @@ public class FilesEndpoint : EndpointBase, IFilesEndpoint
 	///     The intendend purpose of the uploaded documents. Use "fine-tune" for Fine-tuning. This allows us
 	///     to validate the format of the uploaded file.
 	/// </param>
-	public async Task<File> UploadFileAsync(string filePath, string purpose = "fine-tune")
+	public async Task<File?> UploadFileAsync(string filePath, FilePurpose purpose = FilePurpose.Finetune)
     {
         MultipartFormDataContent content = new()
         {
-            { new StringContent(purpose), "purpose" },
-            { new ByteArrayContent(await System.IO.File.ReadAllBytesAsync(filePath)), "file", Path.GetFileName(filePath) }
+            { new StringContent(purpose is FilePurpose.Finetune ? "fine-tune" : "assistants"), "purpose" },
+            { new ByteArrayContent(await System.IO.File.ReadAllBytesAsync(filePath).ConfigureAwait(ConfigureAwaitOptions.None)), "file", Path.GetFileName(filePath) }
         };
 
-        return await HttpPost<File>(Url, content);
+        return await HttpPost<File>(Url, content).ConfigureAwait(ConfigureAwaitOptions.None);
     }
 
 	/// <summary>
-	///     A helper class to deserialize the JSON API responses.  This should not be used directly.
+	///     A helper class to deserialize the JSON API responses. This should not be used directly.
 	/// </summary>
 	private class FilesData : ApiResultBase
     {
-        [JsonProperty("data")] public List<File> Data { get; set; }
+        [JsonProperty("data")] 
+        public List<File> Data { get; set; }
 
-        [JsonProperty("object")] public string Obj { get; set; }
+        [JsonProperty("object")] 
+        public string Obj { get; set; }
     }
 }

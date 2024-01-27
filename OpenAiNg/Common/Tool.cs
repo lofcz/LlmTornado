@@ -1,7 +1,7 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace OpenAiNg.Chat;
+namespace OpenAiNg.Common;
 
 /// <summary>
 ///     Represents a function call result
@@ -68,7 +68,38 @@ public class Tool
     }
     
     /// <summary>
-    /// Type of the tool, should be always "function"
+    /// Creates a new too
+    /// </summary>
+    /// <param name="type"></param>
+    public Tool(string type)
+    {
+        Type = type;
+    }
+    
+    public Tool()
+    {
+  
+    }
+    
+    /// <summary>
+    /// Creates a tool from <see cref="ToolFunction"/>
+    /// </summary>
+    /// <param name="function"></param>
+    /// <returns></returns>
+    public static implicit operator Tool(ToolFunction function) => new Tool(function);
+
+    /// <summary>
+    /// The code interpreter tool used by assistants
+    /// </summary>
+    public static Tool Retrieval { get; } = new Tool("retrieval");
+
+    /// <summary>
+    /// The code interpreter tool used by assistants
+    /// </summary>
+    public static Tool CodeInterpreter { get; } = new Tool("code_interpreter");
+    
+    /// <summary>
+    /// Type of the tool, should be always "function" for chat, assistants accepts values "code_interpreter" and "retrieval"
     /// </summary>
     [JsonProperty("type", Required = Required.Default)]
     public string Type { get; set; } = "function";
@@ -77,7 +108,7 @@ public class Tool
     /// Function description
     /// </summary>
     [JsonProperty("function", Required = Required.Default)]
-    public ToolFunction Function { get; set; }
+    public ToolFunction? Function { get; set; }
 }
 
 /// <summary>
@@ -102,7 +133,7 @@ public class Tool
 public class ToolFunction
 {
     private static readonly JsonSerializerSettings serializerSettings = new() { NullValueHandling = NullValueHandling.Ignore };
-
+    
     /// <summary>
     ///     Create a function which can be applied to
     /// </summary>

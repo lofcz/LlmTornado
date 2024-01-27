@@ -27,7 +27,7 @@ public class ImageEditEndpoint : EndpointBase, IImageEditEndpoint
     /// </summary>
     /// <param name="request">Request to be send</param>
     /// <returns>Asynchronously returns the image result. Look in its <see cref="Data.Url" /> </returns>
-    public async Task<ImageResult> EditImageAsync(ImageEditRequest request)
+    public async Task<ImageResult?> EditImageAsync(ImageEditRequest request)
     {
         return await HttpPost<ImageResult>(postData: request);
     }

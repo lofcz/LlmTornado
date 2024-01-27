@@ -8,16 +8,16 @@ namespace OpenAiNg.Images;
 public interface IImageGenerationEndpoint
 {
 	/// <summary>
-	///     Ask the API to Creates an image given a prompt.
+	///     Ask the API to create an image given a prompt.
 	/// </summary>
 	/// <param name="request">Request to be send</param>
 	/// <returns>Asynchronously returns the image result. Look in its <see cref="Data.Url" /> </returns>
 	Task<ImageResult?> CreateImageAsync(ImageGenerationRequest request);
 
 	/// <summary>
-	///     Ask the API to Creates an image given a prompt.
+	///     Ask the API to create an image given a prompt.
 	/// </summary>
-	/// <param name="input">A text description of the desired image(s)</param>
+	/// <param name="input">A text description of the desired image</param>
 	/// <returns>Asynchronously returns the image result. Look in its <see cref="Data.Url" /> </returns>
 	Task<ImageResult?> CreateImageAsync(string input);
 }

@@ -1,3 +1,5 @@
+using OpenAiNg.Common;
+
 namespace OpenAiNg.Chat;
 
 public enum ChatResponseKinds

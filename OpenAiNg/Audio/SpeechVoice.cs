@@ -64,12 +64,12 @@ public class SpeechVoice
 
     internal class SpeechVoiceJsonConverter : JsonConverter<SpeechVoice>
     {
-        public override void WriteJson(JsonWriter writer, SpeechVoice? value, JsonSerializer serializer)
+        public override void WriteJson(JsonWriter writer, SpeechVoice value, JsonSerializer serializer)
         {
             writer.WriteValue(value?.ToString());
         }
 
-        public override SpeechVoice ReadJson(JsonReader reader, Type objectType, SpeechVoice? existingValue, bool hasExistingValue, JsonSerializer serializer)
+        public override SpeechVoice ReadJson(JsonReader reader, Type objectType, SpeechVoice existingValue, bool hasExistingValue, JsonSerializer serializer)
         {
             return new SpeechVoice(reader.ReadAsString());
         }

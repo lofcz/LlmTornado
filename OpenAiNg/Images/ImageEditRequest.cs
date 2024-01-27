@@ -21,17 +21,11 @@ public class ImageEditRequest
 	/// </summary>
 	/// <param name="image"></param>
 	/// <param name="prompt">A text description of the desired image(s). The maximum length is 1000 characters.</param>
-	/// <param name="numOfImages">How many different choices to request for each prompt.  Defaults to 1.</param>
+	/// <param name="numOfImages">How many different choices to request for each prompt. Defaults to 1.</param>
 	/// <param name="size">The size of the generated images. Must be one of 256x256, 512x512, or 1024x1024.</param>
 	/// <param name="user">A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse.</param>
 	/// <param name="responseFormat">The format in which the generated images are returned. Must be one of url or b64_json.</param>
-	public ImageEditRequest(
-        string image,
-        string prompt,
-        int? numOfImages = 1,
-        ImageSize size = null,
-        string user = null,
-        ImageResponseFormat responseFormat = null)
+	public ImageEditRequest(string image, string prompt, int numOfImages = 1, ImageSize? size = null, string? user = null, ImageResponseFormat? responseFormat = null)
     {
         Image = image;
         Prompt = prompt;
@@ -62,7 +56,11 @@ public class ImageEditRequest
     public string Prompt { get; set; }
 
 
-    [JsonProperty("n")] public int? NumOfImages { get; set; } = 1;
+	/// <summary>
+	/// Number of images to generate
+	/// </summary>
+    [JsonProperty("n")] 
+    public int NumOfImages { get; set; } = 1;
 
     /// <summary>
     ///     The size of the generated images. Must be one of 256x256, 512x512, or 1024x1024. Defauls to 1024x1024
@@ -82,5 +80,5 @@ public class ImageEditRequest
     ///     A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse. Optional.
     /// </summary>
     [JsonProperty("user")]
-    public string User { get; set; }
+    public string? User { get; set; }
 }

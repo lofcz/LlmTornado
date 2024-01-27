@@ -39,14 +39,62 @@ class Program
         ApiKey = apiKey;
         return true;
     }
+
+    private enum Demos
+    {
+        Unknown,
+        ChatVision,
+        ChatVisionBase64,
+        AssistantList,
+        AssistantCreate,
+        AssistantCreateWithCustomFunction,
+        AssistantRetrieve,
+        AssistantModify,
+        AssistantDelete,
+        FilesUpload,
+        ImagesGenerate,
+        AssistantCreateWithFile,
+        AssistantListFiles,
+        AssistantAttachFile,
+        AssistantRetriveFile,
+        AssistantRemoveFile,
+        Last
+    }
+
+    private static Demos selectedDemo = Demos.Unknown;
     
-    static async Task Main(string[] args)
+    public static async Task Main(string[] args)
     {
         if (!await SetupApi())
         {
             return;
         }
 
-        await VisionDemo.VisionBase64();
+        selectedDemo = Demos.Last - 1;
+
+        Task? task = selectedDemo switch
+        {
+            Demos.ChatVisionBase64 => VisionDemo.VisionBase64(),
+            Demos.ChatVision => VisionDemo.VisionBase64(),
+            Demos.AssistantList => AssistantsDemo.List(),
+            Demos.AssistantCreate => AssistantsDemo.Create(),
+            Demos.AssistantCreateWithCustomFunction => AssistantsDemo.CreateWithCustomFunction(),
+            Demos.AssistantRetrieve => AssistantsDemo.Retrieve(),
+            Demos.AssistantModify => AssistantsDemo.Modify(),
+            Demos.AssistantDelete => AssistantsDemo.Delete(),
+            Demos.FilesUpload => FilesDemo.Upload(),
+            Demos.ImagesGenerate => ImagesDemo.Generate(),
+            Demos.AssistantCreateWithFile => AssistantsDemo.CreateWithFile(),
+            Demos.AssistantListFiles => AssistantsDemo.ListFiles(),
+            Demos.AssistantAttachFile => AssistantsDemo.AttachFile(),
+            Demos.AssistantRetriveFile => AssistantsDemo.RetrieveFile(),
+            Demos.AssistantRemoveFile => AssistantsDemo.RemoveFile(),
+            _ => null
+        };
+
+        if (task is not null)
+        {
+            await task;   
+        }
     }
 }

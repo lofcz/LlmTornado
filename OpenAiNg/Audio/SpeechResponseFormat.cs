@@ -54,12 +54,12 @@ public class SpeechResponseFormat
 
     internal class SpeechResponseFormatJsonConverter : JsonConverter<SpeechResponseFormat>
     {
-        public override void WriteJson(JsonWriter writer, SpeechResponseFormat? value, JsonSerializer serializer)
+        public override void WriteJson(JsonWriter writer, SpeechResponseFormat value, JsonSerializer serializer)
         {
             writer.WriteValue(value?.ToString());
         }
 
-        public override SpeechResponseFormat ReadJson(JsonReader reader, Type objectType, SpeechResponseFormat? existingValue, bool hasExistingValue, JsonSerializer serializer)
+        public override SpeechResponseFormat ReadJson(JsonReader reader, Type objectType, SpeechResponseFormat existingValue, bool hasExistingValue, JsonSerializer serializer)
         {
             return new SpeechResponseFormat(reader.ReadAsString());
         }

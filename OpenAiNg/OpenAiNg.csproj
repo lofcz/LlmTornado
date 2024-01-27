@@ -24,8 +24,8 @@
         <IncludeSymbols>true</IncludeSymbols>
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>
         <Deterministic>true</Deterministic>
-        <TargetFrameworks>net8.0;net6.0;net7.0</TargetFrameworks>
         <Nullable>enable</Nullable>
+        <TargetFramework>net8.0</TargetFramework>
     </PropertyGroup>
     <PropertyGroup>
         <PackageIcon>nuget_logo.png</PackageIcon>

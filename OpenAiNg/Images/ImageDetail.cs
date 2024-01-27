@@ -50,12 +50,12 @@ public class ImageDetail
 
     internal class ImageDetailJsonConverter : JsonConverter<ImageDetail>
     {
-        public override ImageDetail ReadJson(JsonReader reader, Type objectType, ImageDetail? existingValue, bool hasExistingValue, JsonSerializer serializer)
+        public override ImageDetail ReadJson(JsonReader reader, Type objectType, ImageDetail existingValue, bool hasExistingValue, JsonSerializer serializer)
         {
             return new ImageDetail(reader.ReadAsString() ?? Auto);
         }
 
-        public override void WriteJson(JsonWriter writer, ImageDetail? value, JsonSerializer serializer)
+        public override void WriteJson(JsonWriter writer, ImageDetail value, JsonSerializer serializer)
         {
             if (value is not null)
             {

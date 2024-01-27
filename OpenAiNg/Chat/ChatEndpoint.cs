@@ -34,7 +34,7 @@ public class ChatEndpoint : EndpointBase, IChatEndpoint
 	/// </summary>
 	public ChatRequest DefaultChatRequestArgs { get; set; } = new()
     {
-        Model = Model.ChatGPTTurbo
+        Model = Model.GPT35_Turbo
     };
 
 	/// <summary>
