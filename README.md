@@ -9,7 +9,8 @@ v1.45.2+). Supports features such as function calling in conjunction with stream
 
 Supported features compared to [OpenAI-API-dotnet](https://github.com/OkGoDoIt/OpenAI-API-dotnet):
 
-- Supports new models.
+- Assistants, threads, and messages support.
+- Includes new models.
 - Parallel function calling.
 - Improved memory usage, and function calling in conjunction with streaming.
 - Manages its pool of HttpClients.
@@ -17,6 +18,7 @@ Supported features compared to [OpenAI-API-dotnet](https://github.com/OkGoDoIt/O
 - Supports OpenAI-compatible API providers, such as KoboldCpp.
 - Improved Azure OpenAI integration.
 - Nullability annotations.
+- Calls are guaranteed not to throw, full response is included in the call result.
 - Actively maintained, [backed by a company I work for](https://www.scio.cz/).
 
 Features scheduled for open-sourcing:
@@ -77,59 +79,11 @@ var api = new OpenAiApi("YOUR_API_KEY"); // shorthand
 var api = new OpenAiApi(new APIAuthentication("YOUR_API_KEY")); // create object manually
 ```
 
-You may optionally include an OpenAiOrganization if you have multiple Organizations under one account.
+You may optionally include an OpenAi Organization if multiple Organizations are under one account.
 
 ```csharp
 // for example
 var api = new OpenAiApi(new ApiAuthentication("YOUR_API_KEY", "org-yourOrgHere"));
-```
-
-### Audio Transcription
-
-You can transcribe an audio file with OpenAiNg using the following code snippet:
-
-```csharp
-// Create the audioFile object
-AudioFile audioFile = new()
-{
-    File = fileStream,       // your FileStream instance here
-    ContentType = "audio/ogg",  // content type may vary depending on the file type
-    Name = Path.GetFileName(filePath) // name of the file
-};
-
-// Create the transcriptionRequest object
-TranscriptionRequest transcriptionRequest = new()
-{
-    File = audioFile, // the audio file to be transcribed
-    Model = OpenAiNg.Models.Model.Whisper_1, // the model to be used for transcription
-};
-
-// Async call to create transcriptions
-TranscriptionVerboseJsonResult? result =
-    await api.Audio.CreateTranscriptionAsync(transcriptionRequest);
-
-// Get the transcript text from the result
-return result.Text;
-```
-
-### Create a Speech
-
-Here is an example of how you can generate speech from a given text.
-
-```csharp
-SpeechTtsResult? ttsResult = await api.Audio.CreateSpeechAsync(new SpeechRequest
-{
-    Input = text,  // Text that need to convert into speech
-    Model = OpenAiNg.Models.Model.TTS_1_HD,  // Model that will be used for text-to-speech conversation
-    Voice = SpeechVoice.Nova,  // OpenAi's Nova voice will be used for speech output
-    ResponseFormat = SpeechResponseFormat.Mp3,  // Output will be in Mp3 format
-});
-
-string path = Path.Combine(Path.GetTempPath(), // getting directory path for temp files
-    Path.ChangeExtension(Path.GetTempFileName(), "mp3"));  // Generating a unique temp file and changing its extension to .mp3
-
-// Save the audio and dispose the source stream
-await ttsResult.SaveAndDispose(path);
 ```
 
 ## Documentation
