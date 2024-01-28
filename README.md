@@ -1,6 +1,6 @@
 [![OpenAI](https://badgen.net/nuget/v/OpenAiNg)](https://www.nuget.org/packages/OpenAiNg/)
 
-# .NET SDK for accessing the OpenAI Compatible APIs such as GPT-4 (Vision), GPT-3.5-instruct, and DALL-E 3
+# .NET SDK for accessing the OpenAI Compatible APIs such as GPT-4 (Vision), Assistants and DALL-E 3
 
 OpenAiNextGeneration is a simple .NET library to use with various OpenAI compatible providers, such
 as [OpenAI](https://platform.openai.com/docs/api-reference), [Azure OpenAI](https://azure.microsoft.com/en-us/products/ai-services/openai-service),
