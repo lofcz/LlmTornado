@@ -19,12 +19,12 @@ public class ChatMessageTypes
     ///     Text message
     /// </summary>
     public static ChatMessageTypes Text => new("text");
-    
+
     /// <summary>
     ///     ChatImage chatImage
     /// </summary>
     public static ChatMessageTypes Image => new("image_url");
-    
+
     /// <summary>
     ///     Gets the string value for this message type to pass to the API
     /// </summary>
@@ -33,7 +33,7 @@ public class ChatMessageTypes
     {
         return Value;
     }
-    
+
     /// <summary>
     ///     Gets the string value for this message type to pass to the API
     /// </summary>

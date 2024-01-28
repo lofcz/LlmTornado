@@ -20,11 +20,8 @@ public class ImageResult : ApiResultBase
 	/// <returns></returns>
 	public override string? ToString()
     {
-	    if (Data?.Count > 0)
-	    {
-		    return Data[0].Url ?? Data[0].Base64Data;
-	    }
-	    
+        if (Data?.Count > 0) return Data[0].Url ?? Data[0].Base64Data;
+
         return null;
     }
 }

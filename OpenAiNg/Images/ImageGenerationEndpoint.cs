@@ -39,6 +39,6 @@ public class ImageGenerationEndpoint : EndpointBase, IImageGenerationEndpoint
 	/// <returns>Asynchronously returns the image result. Look in its <see cref="Data.Url" /> </returns>
 	public Task<ImageResult?> CreateImageAsync(ImageGenerationRequest request)
     {
-        return HttpPost<ImageResult>(postData: request);
+        return HttpPost1<ImageResult>(postData: request);
     }
 }

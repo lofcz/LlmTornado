@@ -7,7 +7,7 @@ namespace OpenAiNg;
 public class ApiResultRef
 {
     /// <summary>
-    /// The <see cref="OpenAiApi"/> this response was generated from.
+    ///     The <see cref="OpenAiApi" /> this response was generated from.
     /// </summary>
     [JsonIgnore]
     public OpenAiApi Api { get; internal set; }

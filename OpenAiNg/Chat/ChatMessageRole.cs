@@ -10,11 +10,11 @@ namespace OpenAiNg.Chat;
 /// </summary>
 public class ChatMessageRole : IEquatable<ChatMessageRole>
 {
-	/// <summary>
-	///     Contructor is private to force usage of strongly typed values
-	/// </summary>
-	/// <param name="value"></param>
-	private ChatMessageRole(string value)
+    /// <summary>
+    ///     Contructor is private to force usage of strongly typed values
+    /// </summary>
+    /// <param name="value"></param>
+    private ChatMessageRole(string value)
     {
         Value = value;
     }

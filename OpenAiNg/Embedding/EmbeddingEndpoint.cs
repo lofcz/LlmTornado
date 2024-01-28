@@ -70,7 +70,7 @@ public class EmbeddingEndpoint : EndpointBase, IEmbeddingEndpoint
 	/// </returns>
 	public async Task<EmbeddingResult> CreateEmbeddingAsync(EmbeddingRequest request)
     {
-        return await HttpPost<EmbeddingResult>(postData: request);
+        return await HttpPost1<EmbeddingResult>(postData: request);
     }
 
 	/// <summary>
@@ -107,6 +107,6 @@ public class EmbeddingEndpoint : EndpointBase, IEmbeddingEndpoint
 	/// </returns>
 	public async Task<EmbeddingResult> CreateEmbeddingAsync(EmbeddingRequestArray request)
     {
-        return await HttpPost<EmbeddingResult>(postData: request);
+        return await HttpPost1<EmbeddingResult>(postData: request);
     }
 }

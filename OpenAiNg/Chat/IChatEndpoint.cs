@@ -45,7 +45,7 @@ public interface IChatEndpoint
 	///     results.
 	/// </returns>
 	Task<ChatResult> CreateChatCompletionAsync(ChatRequest request);
-	
+
 	/// <summary>
 	///     Ask the API to complete the request using the specified parameters. This is non-streaming, so it will wait until
 	///     the API returns the full result. Any non-specified parameters will fall back to default values specified in

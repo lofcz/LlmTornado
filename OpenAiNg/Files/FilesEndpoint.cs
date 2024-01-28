@@ -3,7 +3,7 @@ using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
-using OpenAiNg.Images;
+using OpenAiNg.Common;
 
 namespace OpenAiNg.Files;
 
@@ -45,7 +45,7 @@ public class FilesEndpoint : EndpointBase, IFilesEndpoint
     {
         return HttpGet<File>($"{Url}/{fileId}");
     }
-	
+
 	/// <summary>
 	///     Returns the contents of the specific file as string
 	/// </summary>
@@ -77,7 +77,7 @@ public class FilesEndpoint : EndpointBase, IFilesEndpoint
 	///     The intendend purpose of the uploaded documents. Use "fine-tune" for Fine-tuning. This allows us
 	///     to validate the format of the uploaded file.
 	/// </param>
-	public async Task<File?> UploadFileAsync(string filePath, FilePurpose purpose = FilePurpose.Finetune)
+	public async Task<HttpCallResult<File>> UploadFileAsync(string filePath, FilePurpose purpose = FilePurpose.Finetune)
     {
         MultipartFormDataContent content = new()
         {
@@ -93,10 +93,8 @@ public class FilesEndpoint : EndpointBase, IFilesEndpoint
 	/// </summary>
 	private class FilesData : ApiResultBase
     {
-        [JsonProperty("data")] 
-        public List<File> Data { get; set; }
+        [JsonProperty("data")] public List<File> Data { get; set; }
 
-        [JsonProperty("object")] 
-        public string Obj { get; set; }
+        [JsonProperty("object")] public string Obj { get; set; }
     }
 }

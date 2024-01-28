@@ -1,30 +1,29 @@
-// Licensed under the MIT License. See LICENSE in the project root for license information.
-
 using System.Collections.Generic;
+
 namespace OpenAiNg.Common;
 
 public sealed class ListQuery
 {
     /// <summary>
-    /// List Query.
+    ///     List Query.
     /// </summary>
     /// <param name="limit">
-    /// A limit on the number of objects to be returned.
-    /// Limit can range between 1 and 100, and the default is 20.
+    ///     A limit on the number of objects to be returned.
+    ///     Limit can range between 1 and 100, and the default is 20.
     /// </param>
     /// <param name="order">
-    /// Sort order by the 'created_at' timestamp of the objects.
+    ///     Sort order by the 'created_at' timestamp of the objects.
     /// </param>
     /// <param name="after">
-    /// A cursor for use in pagination.
-    /// after is an object ID that defines your place in the list.
-    /// For instance, if you make a list request and receive 100 objects, ending with obj_foo,
-    /// your subsequent call can include after=obj_foo in order to fetch the next page of the list.
+    ///     A cursor for use in pagination.
+    ///     after is an object ID that defines your place in the list.
+    ///     For instance, if you make a list request and receive 100 objects, ending with obj_foo,
+    ///     your subsequent call can include after=obj_foo in order to fetch the next page of the list.
     /// </param>
     /// <param name="before">
-    /// A cursor for use in pagination. before is an object ID that defines your place in the list.
-    /// For instance, if you make a list request and receive 100 objects, ending with obj_foo,
-    /// your subsequent call can include before=obj_foo in order to fetch the previous page of the list.
+    ///     A cursor for use in pagination. before is an object ID that defines your place in the list.
+    ///     For instance, if you make a list request and receive 100 objects, ending with obj_foo,
+    ///     your subsequent call can include before=obj_foo in order to fetch the previous page of the list.
     /// </param>
     public ListQuery(int? limit = null, SortOrder order = SortOrder.Descending, string? after = null, string? before = null)
     {
@@ -44,17 +43,11 @@ public sealed class ListQuery
 
     public static implicit operator Dictionary<string, string>?(ListQuery? query)
     {
-        if (query is null)
-        {
-            return null;
-        }
-        
-        Dictionary<string, string> parameters = new Dictionary<string, string>();
+        if (query is null) return null;
 
-        if (query.Limit is not null)
-        {
-            parameters.Add("limit", query.Limit.ToString());
-        }
+        Dictionary<string, string> parameters = new();
+
+        if (query.Limit is not null) parameters.Add("limit", query.Limit.ToString());
 
         switch (query.Order)
         {
@@ -66,15 +59,9 @@ public sealed class ListQuery
                 break;
         }
 
-        if (!string.IsNullOrEmpty(query.After))
-        {
-            parameters.Add("after", query.After);
-        }
+        if (!string.IsNullOrEmpty(query.After)) parameters.Add("after", query.After);
 
-        if (!string.IsNullOrEmpty(query.Before))
-        {
-            parameters.Add("before", query.Before);
-        }
+        if (!string.IsNullOrEmpty(query.Before)) parameters.Add("before", query.Before);
 
         return parameters;
     }

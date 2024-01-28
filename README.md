@@ -3,10 +3,12 @@
 # .NET SDK for accessing the OpenAI Compatible APIs such as GPT-4 (Vision), GPT-3.5-instruct, and DALL-E 3
 
 OpenAiNextGeneration is a simple .NET library to use with various OpenAI compatible providers, such
-as [OpenAI](https://platform.openai.com/docs/api-reference), [Azure OpenAI](https://azure.microsoft.com/en-us/products/ai-services/openai-service), and [KoboldCpp](https://github.com/LostRuins/koboldcpp/releases) (
+as [OpenAI](https://platform.openai.com/docs/api-reference), [Azure OpenAI](https://azure.microsoft.com/en-us/products/ai-services/openai-service),
+and [KoboldCpp](https://github.com/LostRuins/koboldcpp/releases) (
 v1.45.2+). Supports features such as function calling in conjunction with streaming, caches its own `HttpClient`s.
 
 Supported features compared to [OpenAI-API-dotnet](https://github.com/OkGoDoIt/OpenAI-API-dotnet):
+
 - Supports new models.
 - Parallel function calling.
 - Improved memory usage, and function calling in conjunction with streaming.

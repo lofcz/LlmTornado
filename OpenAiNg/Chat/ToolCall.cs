@@ -1,4 +1,5 @@
 using Newtonsoft.Json;
+
 namespace OpenAiNg.ChatFunctions;
 
 /// <summary>
@@ -6,15 +7,14 @@ namespace OpenAiNg.ChatFunctions;
 /// </summary>
 public class ToolCall
 {
-    [JsonIgnore] 
-    private string? JsonEncoded { get; set; }
-    
+    [JsonIgnore] private string? JsonEncoded { get; set; }
+
     /// <summary>
     ///     The ID of the tool.
     /// </summary>
     [JsonProperty("id")]
     public string Id { get; set; } = default!;
-    
+
     /// <summary>
     ///     The type of the tool. Currently, this should be always "function".
     /// </summary>
@@ -26,7 +26,7 @@ public class ToolCall
     /// </summary>
     [JsonProperty("function")]
     public FunctionCall FunctionCall { get; set; } = default!;
-    
+
     /// <summary>
     ///     Gets the json encoded function call, this is cached to avoid serializing the function over and over.
     /// </summary>

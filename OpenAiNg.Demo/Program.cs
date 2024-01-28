@@ -1,7 +1,8 @@
 ﻿namespace OpenAiNg.Demo;
 
-class Program
+internal class Program
 {
+    private static Demos selectedDemo = Demos.Unknown;
     private static string ApiKey { get; set; }
 
     public static OpenAiApi Connect()
@@ -9,7 +10,7 @@ class Program
         return new OpenAiApi(ApiKey);
     }
 
-    static async Task<bool> SetupApi()
+    private static async Task<bool> SetupApi()
     {
         string? projectDirectory = Directory.GetParent(Environment.CurrentDirectory)?.Parent?.Parent?.FullName;
 
@@ -19,14 +20,14 @@ class Program
             Console.ReadKey();
             return false;
         }
-        
+
         if (!File.Exists($"{projectDirectory}\\apiKey.json"))
         {
             Console.WriteLine("Please copy and paste apiKeyPrototype.json file in the same folder, rename the copy as apiKey.json and replace the string inside with your API key");
             Console.ReadKey();
             return false;
         }
-        
+
         string apiKey = (await File.ReadAllTextAsync($"{projectDirectory}\\apiKey.json")).Replace("\"", "");
 
         if (string.IsNullOrWhiteSpace(apiKey))
@@ -40,35 +41,9 @@ class Program
         return true;
     }
 
-    private enum Demos
-    {
-        Unknown,
-        ChatVision,
-        ChatVisionBase64,
-        AssistantList,
-        AssistantCreate,
-        AssistantCreateWithCustomFunction,
-        AssistantRetrieve,
-        AssistantModify,
-        AssistantDelete,
-        FilesUpload,
-        ImagesGenerate,
-        AssistantCreateWithFile,
-        AssistantListFiles,
-        AssistantAttachFile,
-        AssistantRetriveFile,
-        AssistantRemoveFile,
-        Last
-    }
-
-    private static Demos selectedDemo = Demos.Unknown;
-    
     public static async Task Main(string[] args)
     {
-        if (!await SetupApi())
-        {
-            return;
-        }
+        if (!await SetupApi()) return;
 
         selectedDemo = Demos.Last - 1;
 
@@ -89,12 +64,32 @@ class Program
             Demos.AssistantAttachFile => AssistantsDemo.AttachFile(),
             Demos.AssistantRetriveFile => AssistantsDemo.RetrieveFile(),
             Demos.AssistantRemoveFile => AssistantsDemo.RemoveFile(),
+            Demos.ThreadsCreate => ThreadsDemo.Create(),
             _ => null
         };
 
-        if (task is not null)
-        {
-            await task;   
-        }
+        if (task is not null) await task;
+    }
+
+    private enum Demos
+    {
+        Unknown,
+        ChatVision,
+        ChatVisionBase64,
+        AssistantList,
+        AssistantCreate,
+        AssistantCreateWithCustomFunction,
+        AssistantRetrieve,
+        AssistantModify,
+        AssistantDelete,
+        FilesUpload,
+        ImagesGenerate,
+        AssistantCreateWithFile,
+        AssistantListFiles,
+        AssistantAttachFile,
+        AssistantRetriveFile,
+        AssistantRemoveFile,
+        ThreadsCreate,
+        Last
     }
 }

@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
-using OpenAiNg.Images;
+using OpenAiNg.Common;
 
 namespace OpenAiNg.Files;
 
@@ -48,5 +48,5 @@ public interface IFilesEndpoint
 	///     The intendend purpose of the uploaded documents. Use "fine-tune" for Fine-tuning. This allows us
 	///     to validate the format of the uploaded file. Use "assistants" for Assistants and Messages.
 	/// </param>
-	Task<File?> UploadFileAsync(string filePath, FilePurpose purpose = FilePurpose.Finetune);
+	Task<HttpCallResult<File>> UploadFileAsync(string filePath, FilePurpose purpose = FilePurpose.Finetune);
 }

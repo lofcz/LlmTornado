@@ -10,43 +10,43 @@ namespace OpenAiNg.Models;
 /// </summary>
 public class Model
 {
-	public const string OpenAi = "openai";
-	
-	/// <summary>
-	///     Represents an Model with the given id/<see cref="ModelID" />
-	/// </summary>
-	/// <param name="name">The id/<see cref="ModelID" /> to use.</param>
-	/// <param name="ownedBy">Either</param>
-	public Model(string name, string? ownedBy = OpenAi)
+    public const string OpenAi = "openai";
+
+    /// <summary>
+    ///     Represents an Model with the given id/<see cref="ModelID" />
+    /// </summary>
+    /// <param name="name">The id/<see cref="ModelID" /> to use.</param>
+    /// <param name="ownedBy">Either</param>
+    public Model(string name, string? ownedBy = OpenAi)
     {
         ModelID = name;
         OwnedBy = ownedBy;
     }
 
-	/// <summary>
-	///     Represents a generic Model/model
-	/// </summary>
-	public Model()
+    /// <summary>
+    ///     Represents a generic Model/model
+    /// </summary>
+    public Model()
     {
     }
 
-	/// <summary>
-	///     The id/name of the model
-	/// </summary>
-	[JsonProperty("id")]
-	public string ModelID { get; set; }
+    /// <summary>
+    ///     The id/name of the model
+    /// </summary>
+    [JsonProperty("id")]
+    public string ModelID { get; set; }
 
-	/// <summary>
-	///     The owner of this model.  Generally "openai" is a generic OpenAI model, or the organization if a custom or
-	///     finetuned model.
-	/// </summary>
-	[JsonProperty("owned_by")]
+    /// <summary>
+    ///     The owner of this model.  Generally "openai" is a generic OpenAI model, or the organization if a custom or
+    ///     finetuned model.
+    /// </summary>
+    [JsonProperty("owned_by")]
     public string? OwnedBy { get; set; }
 
-	/// <summary>
-	///     The type of object. Should always be 'model'.
-	/// </summary>
-	[JsonProperty("object")]
+    /// <summary>
+    ///     The type of object. Should always be 'model'.
+    /// </summary>
+    [JsonProperty("object")]
     public string Object { get; set; }
 
     /// The time when the model was created
@@ -76,16 +76,6 @@ public class Model
     /// </summary>
     [JsonProperty("parent")]
     public string Parent { get; set; }
-
-    /// <summary>
-    /// A custom model, equivalent of instantiating <see cref="Model"/>
-    /// </summary>
-    /// <param name="name">The name of the model</param>
-    /// <returns></returns>
-    public static Model Custom(string name, string? ownedBy = null)
-    {
-	    return new Model(name);
-    }
 
     /// <summary>
     ///     The default model to use in requests if no other model is specified.
@@ -144,25 +134,28 @@ public class Model
 
     /// <summary>
     ///     OpenAI offers one second-generation embedding model for use with the embeddings API endpoint.
-    ///		Dimensions: 1536
+    ///     Dimensions: 1536
     /// </summary>
     public static Model AdaTextEmbedding => new("text-embedding-ada-002");
 
     /// <summary>
-    ///     Model released in 01/24 update, superseeds <see cref="AdaTextEmbedding"/> at a cheaper price.
-    ///		Dimensions: 1536 (end of the sequence numbers can be removed and dimensions reduced up to 256 at a reasonable perplexity increase)
+    ///     Model released in 01/24 update, superseeds <see cref="AdaTextEmbedding" /> at a cheaper price.
+    ///     Dimensions: 1536 (end of the sequence numbers can be removed and dimensions reduced up to 256 at a reasonable
+    ///     perplexity increase)
     /// </summary>
     public static Model TextEmbedding3Small => new("text-embedding-3-small");
 
     /// <summary>
-    ///     Model released in 01/24 update, superseeds <see cref="AdaTextEmbedding"/>, comes at a 33% price increase but is even more powerful that <see cref="TextEmbedding3Small"/>
-    ///		Dimensions: 3072 (end of the sequence numbers can be removed and dimensions reduced up to 256 at a reasonable perplexity increase)
+    ///     Model released in 01/24 update, superseeds <see cref="AdaTextEmbedding" />, comes at a 33% price increase but is
+    ///     even more powerful that <see cref="TextEmbedding3Small" />
+    ///     Dimensions: 3072 (end of the sequence numbers can be removed and dimensions reduced up to 256 at a reasonable
+    ///     perplexity increase)
     /// </summary>
     public static Model TextEmbedding3Large => new("text-embedding-3-large");
 
     /// <summary>
     ///     Most capable GPT-3.5 model and optimized for chat at 1/10th the cost of text-davinci-003. Will be updated with the
-    ///     latest model iteration. Currently <see cref="GPT35_Turbo_1106"/>
+    ///     latest model iteration. Currently <see cref="GPT35_Turbo_1106" />
     /// </summary>
     public static Model GPT35_Turbo => new("gpt-3.5-turbo");
 
@@ -192,18 +185,19 @@ public class Model
     /// <summary>
     ///     More capable than any GPT-3.5 model, able to do more complex tasks, and optimized for chat. Will be updated with
     ///     the latest model iteration.  Currently in limited beta so your OpenAI account needs to be whitelisted to use this.
-    ///		Supports images.
+    ///     Supports images.
     /// </summary>
     public static Model GPT4_Vision_Preview => new("gpt-4-vision-preview");
 
     /// <summary>
     ///     More capable than any GPT-3.5 model, able to do more complex tasks, and optimized for chat.
-    ///     This model completes tasks like code generation more thoroughly than the previous preview model and is intended to reduce cases of “laziness” where the model doesn’t complete a task. 
+    ///     This model completes tasks like code generation more thoroughly than the previous preview model and is intended to
+    ///     reduce cases of “laziness” where the model doesn’t complete a task.
     /// </summary>
     public static Model GPT4_4_0125_Preview => new("gpt-4-0125-preview");
 
     /// <summary>
-    ///     Currently <see cref="GPT4_4_0125_Preview"/> will be autoaupdated to the latest GPT4 preview.
+    ///     Currently <see cref="GPT4_4_0125_Preview" /> will be autoaupdated to the latest GPT4 preview.
     /// </summary>
     public static Model GPT4_Turbo_Preview => new("gpt-4-turbo-preview");
 
@@ -214,19 +208,21 @@ public class Model
     public static Model GPT4_32k_Context => new("gpt-4-32k");
 
     /// <summary>
-    /// Snapshot of gpt-3.5-turbo from June 13th 2023. This model allows the use of function calling as well as more reliable steering via the system message.
+    ///     Snapshot of gpt-3.5-turbo from June 13th 2023. This model allows the use of function calling as well as more
+    ///     reliable steering via the system message.
     /// </summary>
     [Obsolete("Use Gpt_3_5_Turbo_1106 or Gpt_3_5_Turbo")]
     public static Model ChatGPTTurbo0613 => new("gpt-3.5-turbo-0613");
 
     /// <summary>
-    /// Snapshot of gpt-3.5-turbo from 11/6/23. This model allows the use of parallel function calling as well as more reliable steering via the system message, and returns up to 4096 tokens.
+    ///     Snapshot of gpt-3.5-turbo from 11/6/23. This model allows the use of parallel function calling as well as more
+    ///     reliable steering via the system message, and returns up to 4096 tokens.
     /// </summary>
     [Obsolete("Use Gpt_3_5_Turbo_1106 or Gpt_3_5_Turbo")]
     public static Model ChatGPTTurbo1106 => new("gpt-3.5-turbo-1106");
 
     /// <summary>
-    /// Snapshot of gpt-3.5-turbo from 25/01/24. Fixes a bug in <see cref="ChatGPTTurbo1106"/> with function calling.
+    ///     Snapshot of gpt-3.5-turbo from 25/01/24. Fixes a bug in <see cref="ChatGPTTurbo1106" /> with function calling.
     /// </summary>
     public static Model GPT35_Turbo_1106 => new("gpt-3.5-turbo-1106");
 
@@ -263,7 +259,7 @@ public class Model
     public static Model TTS_1 => new("tts-1");
 
     /// <summary>
-    ///      TTS-1-HD model. This model generates speech from text, higer quality than <see cref="TTS_1"/>
+    ///     TTS-1-HD model. This model generates speech from text, higer quality than <see cref="TTS_1" />
     /// </summary>
     public static Model TTS_1_HD => new("tts-1-hd");
 
@@ -276,6 +272,16 @@ public class Model
     ///     Dalle2 model. This model generates images.
     /// </summary>
     public static Model Dalle3 => new("dall-e-3");
+
+    /// <summary>
+    ///     A custom model, equivalent of instantiating <see cref="Model" />
+    /// </summary>
+    /// <param name="name">The name of the model</param>
+    /// <returns></returns>
+    public static Model Custom(string name, string? ownedBy = null)
+    {
+        return new Model(name);
+    }
 
     /// <summary>
     ///     Allows an model to be implicitly cast to the string of its <see cref="ModelID" />
@@ -381,6 +387,5 @@ public class Permissions
     [JsonProperty("group")]
     public string Group { get; set; }
 
-    [JsonProperty("is_blocking")] 
-    public bool IsBlocking { get; set; }
+    [JsonProperty("is_blocking")] public bool IsBlocking { get; set; }
 }

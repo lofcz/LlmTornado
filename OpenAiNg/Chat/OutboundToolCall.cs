@@ -1,5 +1,6 @@
 using System;
 using Newtonsoft.Json;
+
 namespace OpenAiNg.ChatFunctions;
 
 /// <summary>
@@ -30,7 +31,7 @@ public class OutboundToolCall
     /// </summary>
     [JsonProperty("function")]
     public OutboundToolCallFunction? Function { get; set; }
-    
+
     internal class OutboundToolCallConverter : JsonConverter
     {
         public override bool CanConvert(Type objectType)
@@ -43,13 +44,9 @@ public class OutboundToolCall
             OutboundToolCall? functionCall = value as OutboundToolCall;
 
             if (functionCall?.Function is { Name: "none" or "auto" })
-            {
                 serializer.Serialize(writer, functionCall.Function.Name);
-            }
             else
-            {
                 serializer.Serialize(writer, functionCall);
-            }
         }
 
         public override object? ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
@@ -60,10 +57,7 @@ public class OutboundToolCall
                 {
                     string? functionCallType = (string?)serializer.Deserialize(reader, typeof(string));
 
-                    if (functionCallType is "none" or "auto")
-                    {
-                        return new OutboundToolCall { Function = new OutboundToolCallFunction { Name = functionCallType } };
-                    }
+                    if (functionCallType is "none" or "auto") return new OutboundToolCall { Function = new OutboundToolCallFunction { Name = functionCallType } };
 
                     break;
                 }

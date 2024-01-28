@@ -1,6 +1,5 @@
 using System;
 using Newtonsoft.Json;
-using OpenAiNg.Images;
 
 namespace OpenAiNg.ChatFunctions;
 
@@ -19,23 +18,23 @@ public class ChatRequestResponseFormats
 
 public class ChatRequestResponseFormatTypes
 {
-    private string Value { get; }
-    
     private ChatRequestResponseFormatTypes(string value)
     {
         Value = value;
     }
-    
+
+    private string Value { get; }
+
     /// <summary>
     ///     Response should be in plaintext format, default.
     /// </summary>
     public static ChatRequestResponseFormatTypes Text => new("text");
-    
+
     /// <summary>
     ///     Response should be in JSON. System prompt must include "JSON" substring.
     /// </summary>
     public static ChatRequestResponseFormatTypes Json => new("json_object");
-    
+
     /// <summary>
     ///     Gets the string value for this response format to pass to the API
     /// </summary>
@@ -44,7 +43,7 @@ public class ChatRequestResponseFormatTypes
     {
         return Value;
     }
-    
+
     /// <summary>
     ///     Gets the string value for this response format to pass to the API
     /// </summary>

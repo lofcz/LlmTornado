@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
 using OpenAiNg.Models;
 
 namespace OpenAiNg.Chat;
@@ -13,44 +12,44 @@ namespace OpenAiNg.Chat;
 /// </summary>
 public class ChatEndpoint : EndpointBase, IChatEndpoint
 {
-	/// <summary>
-	///     Constructor of the api endpoint.  Rather than instantiating this yourself, access it through an instance of
-	///     <see cref="OpenAiApi" /> as <see cref="OpenAiApi.Completions" />.
-	/// </summary>
-	/// <param name="api"></param>
-	internal ChatEndpoint(OpenAiApi api) : base(api)
+    /// <summary>
+    ///     Constructor of the api endpoint.  Rather than instantiating this yourself, access it through an instance of
+    ///     <see cref="OpenAiApi" /> as <see cref="OpenAiApi.Completions" />.
+    /// </summary>
+    /// <param name="api"></param>
+    internal ChatEndpoint(OpenAiApi api) : base(api)
     {
     }
 
-	/// <summary>
-	///     The name of the endpoint, which is the final path segment in the API URL.  For example, "completions".
-	/// </summary>
-	protected override string Endpoint => "chat/completions";
+    /// <summary>
+    ///     The name of the endpoint, which is the final path segment in the API URL.  For example, "completions".
+    /// </summary>
+    protected override string Endpoint => "chat/completions";
 
-	/// <summary>
-	///     This allows you to set default parameters for every request, for example to set a default temperature or max
-	///     tokens.  For every request, if you do not have a parameter set on the request but do have it set here as a default,
-	///     the request will automatically pick up the default value.
-	/// </summary>
-	public ChatRequest DefaultChatRequestArgs { get; set; } = new()
+    /// <summary>
+    ///     This allows you to set default parameters for every request, for example to set a default temperature or max
+    ///     tokens.  For every request, if you do not have a parameter set on the request but do have it set here as a default,
+    ///     the request will automatically pick up the default value.
+    /// </summary>
+    public ChatRequest DefaultChatRequestArgs { get; set; } = new()
     {
         Model = Model.GPT35_Turbo
     };
 
-	/// <summary>
-	///     Creates an ongoing chat which can easily encapsulate the conversation.  This is the simplest way to use the Chat
-	///     endpoint.
-	/// </summary>
-	/// <param name="defaultChatRequestArgs">
-	///     Allows setting the parameters to use when calling the ChatGPT API.  Can be useful for setting temperature,
-	///     presence_penalty, and more.  See
-	///     <see href="https://platform.openai.com/docs/api-reference/chat/create">
-	///         OpenAI documentation for a list of possible
-	///         parameters to tweak.
-	///     </see>
-	/// </param>
-	/// <returns>A <see cref="Conversation" /> which encapulates a back and forth chat betwen a user and an assistant.</returns>
-	public Conversation CreateConversation(ChatRequest defaultChatRequestArgs = null)
+    /// <summary>
+    ///     Creates an ongoing chat which can easily encapsulate the conversation.  This is the simplest way to use the Chat
+    ///     endpoint.
+    /// </summary>
+    /// <param name="defaultChatRequestArgs">
+    ///     Allows setting the parameters to use when calling the ChatGPT API.  Can be useful for setting temperature,
+    ///     presence_penalty, and more.  See
+    ///     <see href="https://platform.openai.com/docs/api-reference/chat/create">
+    ///         OpenAI documentation for a list of possible
+    ///         parameters to tweak.
+    ///     </see>
+    /// </param>
+    /// <returns>A <see cref="Conversation" /> which encapulates a back and forth chat betwen a user and an assistant.</returns>
+    public Conversation CreateConversation(ChatRequest defaultChatRequestArgs = null)
     {
         return new Conversation(this, defaultChatRequestArgs: defaultChatRequestArgs ?? DefaultChatRequestArgs);
     }
@@ -70,12 +69,9 @@ public class ChatEndpoint : EndpointBase, IChatEndpoint
     /// </returns>
     public async Task<ChatResult?> CreateChatCompletionAsync(ChatRequest request)
     {
-        ChatResult? result = await HttpPost<ChatResult>(postData: request);
+        ChatResult? result = await HttpPost1<ChatResult>(postData: request);
 
-        if (Api.ChatRequestInterceptor is not null)
-        {
-            await Api.ChatRequestInterceptor.Invoke(request, result);
-        }
+        if (Api.ChatRequestInterceptor is not null) await Api.ChatRequestInterceptor.Invoke(request, result);
 
         return result;
     }

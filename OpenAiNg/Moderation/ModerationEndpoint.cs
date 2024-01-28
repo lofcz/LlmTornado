@@ -46,6 +46,6 @@ public class ModerationEndpoint : EndpointBase, IModerationEndpoint
 	/// <returns>Asynchronously returns the classification result</returns>
 	public async Task<ModerationResult> CallModerationAsync(ModerationRequest request)
     {
-        return await HttpPost<ModerationResult>(postData: request);
+        return await HttpPost1<ModerationResult>(postData: request);
     }
 }

@@ -16,7 +16,8 @@ public class ImageDetail
     private string Value { get; }
 
     /// <summary>
-    ///     If the image is exactly 512x512 or lower, the image is processed as <see cref="Low"/>, <see cref="High"/> otherwise
+    ///     If the image is exactly 512x512 or lower, the image is processed as <see cref="Low" />, <see cref="High" />
+    ///     otherwise
     /// </summary>
     public static ImageDetail Auto => new("auto");
 
@@ -24,7 +25,7 @@ public class ImageDetail
     ///     The image will be automatically split into 512x512 chunks, each chunk is billed separately
     /// </summary>
     public static ImageDetail High => new("high");
-    
+
     /// <summary>
     ///     The image should be 512x512
     /// </summary>
@@ -57,10 +58,7 @@ public class ImageDetail
 
         public override void WriteJson(JsonWriter writer, ImageDetail value, JsonSerializer serializer)
         {
-            if (value is not null)
-            {
-                writer.WriteValue(value.ToString());   
-            }
+            if (value is not null) writer.WriteValue(value.ToString());
         }
     }
 }

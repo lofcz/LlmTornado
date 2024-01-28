@@ -1,40 +1,39 @@
-// Licensed under the MIT License. See LICENSE in the project root for license information.
-
 using Newtonsoft.Json;
 
-namespace OpenAiNg.Threads
+namespace OpenAiNg.Threads;
+
+/// <summary>
+///     Tool function call output
+/// </summary>
+public sealed class ToolOutput
 {
     /// <summary>
-    /// Tool function call output
+    ///     Constructor.
     /// </summary>
-    public sealed class ToolOutput
+    /// <param name="toolCallId">
+    ///     The ID of the tool call in the <see cref="RequiredAction" /> within the <see cref="RunResponse" /> the output is
+    ///     being submitted for.
+    /// </param>
+    /// <param name="output">
+    ///     The output of the tool call to be submitted to continue the run.
+    /// </param>
+    [System.Text.Json.Serialization.JsonConstructor]
+    public ToolOutput(string toolCallId, string output)
     {
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="toolCallId">
-        /// The ID of the tool call in the <see cref="RequiredAction"/> within the <see cref="RunResponse"/> the output is being submitted for.
-        /// </param>
-        /// <param name="output">
-        /// The output of the tool call to be submitted to continue the run.
-        /// </param>
-        [System.Text.Json.Serialization.JsonConstructor]
-        public ToolOutput(string toolCallId, string output)
-        {
-            ToolCallId = toolCallId;
-            Output = output;
-        }
-
-        /// <summary>
-        /// The ID of the tool call in the <see cref="RequiredAction"/> within the <see cref="RunResponse"/> the output is being submitted for.
-        /// </summary>
-        [JsonProperty("tool_call_id")]
-        public string ToolCallId { get; }
-
-        /// <summary>
-        /// The output of the tool call to be submitted to continue the run.
-        /// </summary>
-        [JsonProperty("output")]
-        public string Output { get; }
+        ToolCallId = toolCallId;
+        Output = output;
     }
+
+    /// <summary>
+    ///     The ID of the tool call in the <see cref="RequiredAction" /> within the <see cref="RunResponse" /> the output is
+    ///     being submitted for.
+    /// </summary>
+    [JsonProperty("tool_call_id")]
+    public string ToolCallId { get; }
+
+    /// <summary>
+    ///     The output of the tool call to be submitted to continue the run.
+    /// </summary>
+    [JsonProperty("output")]
+    public string Output { get; }
 }

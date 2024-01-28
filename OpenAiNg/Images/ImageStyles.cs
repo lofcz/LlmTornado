@@ -19,12 +19,12 @@ public class ImageStyles
     ///     Standard image
     /// </summary>
     public static ImageStyles Natural => new("natural");
-    
+
     /// <summary>
     ///     Standard image
     /// </summary>
     public static ImageStyles Vivid => new("vivid");
-    
+
     /// <summary>
     ///     Gets the string value for this style to pass to the API
     /// </summary>
@@ -33,7 +33,7 @@ public class ImageStyles
     {
         return Value;
     }
-    
+
     /// <summary>
     ///     Gets the string value for this styles to pass to the API
     /// </summary>

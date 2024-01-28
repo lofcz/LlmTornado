@@ -14,26 +14,26 @@ namespace OpenAiNg.Completions;
 /// </summary>
 public class CompletionEndpoint : EndpointBase, ICompletionEndpoint
 {
-	/// <summary>
-	///     Constructor of the api endpoint.  Rather than instantiating this yourself, access it through an instance of
-	///     <see cref="OpenAiApi" /> as <see cref="OpenAiApi.Completions" />.
-	/// </summary>
-	/// <param name="api"></param>
-	internal CompletionEndpoint(OpenAiApi api) : base(api)
+    /// <summary>
+    ///     Constructor of the api endpoint.  Rather than instantiating this yourself, access it through an instance of
+    ///     <see cref="OpenAiApi" /> as <see cref="OpenAiApi.Completions" />.
+    /// </summary>
+    /// <param name="api"></param>
+    internal CompletionEndpoint(OpenAiApi api) : base(api)
     {
     }
 
-	/// <summary>
-	///     The name of the endpoint, which is the final path segment in the API URL.  For example, "completions".
-	/// </summary>
-	protected override string Endpoint => "completions";
+    /// <summary>
+    ///     The name of the endpoint, which is the final path segment in the API URL.  For example, "completions".
+    /// </summary>
+    protected override string Endpoint => "completions";
 
-	/// <summary>
-	///     This allows you to set default parameters for every request, for example to set a default temperature or max
-	///     tokens.  For every request, if you do not have a parameter set on the request but do have it set here as a default,
-	///     the request will automatically pick up the default value.
-	/// </summary>
-	public CompletionRequest DefaultCompletionRequestArgs { get; set; } = new() { Model = Model.DavinciText };
+    /// <summary>
+    ///     This allows you to set default parameters for every request, for example to set a default temperature or max
+    ///     tokens.  For every request, if you do not have a parameter set on the request but do have it set here as a default,
+    ///     the request will automatically pick up the default value.
+    /// </summary>
+    public CompletionRequest DefaultCompletionRequestArgs { get; set; } = new() { Model = Model.DavinciText };
 
     #region Non-streaming
 
@@ -49,9 +49,9 @@ public class CompletionEndpoint : EndpointBase, ICompletionEndpoint
     ///     Asynchronously returns the completion result.  Look in its <see cref="CompletionResult.Completions" />
     ///     property for the completions.
     /// </returns>
-    public async Task<CompletionResult> CreateCompletionAsync(CompletionRequest request)
+    public async Task<CompletionResult?> CreateCompletionAsync(CompletionRequest request)
     {
-        return await HttpPost<CompletionResult>(postData: request);
+        return await HttpPost1<CompletionResult>(postData: request);
     }
 
     /// <summary>

@@ -29,10 +29,7 @@ public class ChatRequest
 	/// <param name="basedOn"></param>
 	public ChatRequest(ChatRequest? basedOn)
     {
-	    if (basedOn is null)
-	    {
-		    return;
-	    }
+        if (basedOn is null) return;
 
         Model = basedOn.Model;
         Messages = basedOn.Messages;
@@ -60,7 +57,7 @@ public class ChatRequest
 	///     The messages to send with this Chat Request
 	/// </summary>
 	[JsonProperty("messages")]
-	[JsonConverter(typeof(ChatMessageRequestMessagesJsonConverter))]
+    [JsonConverter(typeof(ChatMessageRequestMessagesJsonConverter))]
     public IList<ChatMessage>? Messages { get; set; }
 
 	/// <summary>
@@ -84,19 +81,20 @@ public class ChatRequest
 	/// </summary>
 	[JsonProperty("n")]
     public int? NumChoicesPerMessage { get; set; }
-	
+
 	/// <summary>
 	///     The seed to use for for deterministic requests.
 	/// </summary>
 	[JsonProperty("seed")]
-	public int? Seed { get; set; }
-	
+    public int? Seed { get; set; }
+
 	/// <summary>
-	///     The response format to use. If <see cref="ChatRequestResponseFormats.Json"/>, either system or user message in the conversation must contain "JSON".
+	///     The response format to use. If <see cref="ChatRequestResponseFormats.Json" />, either system or user message in the
+	///     conversation must contain "JSON".
 	/// </summary>
 	[JsonProperty("response_format")]
-	public ChatRequestResponseFormats? ResponseFormat { get; set; }
-	
+    public ChatRequestResponseFormats? ResponseFormat { get; set; }
+
 	/// <summary>
 	///     Specifies where the results should stream and be returned at one time.  Do not set this yourself, use the
 	///     appropriate methods on <see cref="CompletionEndpoint" /> instead.
@@ -208,136 +206,136 @@ public class ChatRequest
 	/// </summary>
 	[JsonIgnore]
     public Ref<string>? OuboundFunctionsContent { get; internal set; }
-	
+
 	/// <summary>
-	///		This can be any API provider specific data. Currently used in KoboldCpp.
+	///     This can be any API provider specific data. Currently used in KoboldCpp.
 	/// </summary>
 	[JsonProperty("adapter")]
-	public Dictionary<string, object?>? Adapter { get; set; }
-	
-	internal class ChatMessageRequestMessagesJsonConverter : JsonConverter<IList<ChatMessage>?>
-	{
-		public override void WriteJson(JsonWriter writer, IList<ChatMessage>? value, JsonSerializer serializer)
-		{
-			if (value is null)
-			{
-				writer.WriteNull();
-				return;
-			}
-			
-			writer.WriteStartArray();
+    public Dictionary<string, object?>? Adapter { get; set; }
 
-			foreach (ChatMessage msg in value)
-			{
-				writer.WriteStartObject();
-				
-				writer.WritePropertyName("role");
-				writer.WriteValue(msg.rawRole);
+    internal class ChatMessageRequestMessagesJsonConverter : JsonConverter<IList<ChatMessage>?>
+    {
+        public override void WriteJson(JsonWriter writer, IList<ChatMessage>? value, JsonSerializer serializer)
+        {
+            if (value is null)
+            {
+                writer.WriteNull();
+                return;
+            }
 
-				if (msg.Role is not null)
-				{
-					if (ChatMessageRole.Tool.Equals(msg.Role))
-					{
-						writer.WritePropertyName("tool_call_id");
-						writer.WriteValue(msg.Name);	
-					}
-					else if (ChatMessageRole.Assistant.Equals(msg.Role))
-					{
-						if (msg.ToolCalls is not null)
-						{
-							writer.WritePropertyName("tool_calls");
-							
-							writer.WriteStartArray();
+            writer.WriteStartArray();
 
-							foreach (ToolCall call in msg.ToolCalls)
-							{
-								writer.WriteStartObject();
-								
-									writer.WritePropertyName("id");
-									writer.WriteValue(call.Id);
-									
-									writer.WritePropertyName("type");
-									writer.WriteValue(call.Type);
-									
-									writer.WritePropertyName("function");
-									writer.WriteStartObject();
-									
-									writer.WritePropertyName("name");
-									writer.WriteValue(call.FunctionCall.Name);
-									
-									writer.WritePropertyName("arguments");
-									writer.WriteValue(call.FunctionCall.Arguments);
-									
-									writer.WriteEndObject();
-								
-								writer.WriteEndObject();
-							}
-							
-							writer.WriteEndArray();
-						}
-					}
-					else if (ChatMessageRole.Tool.Equals(msg.Role))
-					{
-						writer.WritePropertyName("tool_call_id");
-						writer.WriteValue(msg.ToolCallId);
-					}
-				}
-				
-				if (!string.IsNullOrWhiteSpace(msg.Name))
-				{
-					writer.WritePropertyName("name");
-					writer.WriteValue(msg.Name);	
-				}
-				
-				writer.WritePropertyName("content");
-				
-				if (msg.Parts?.Count > 0)
-				{
-					writer.WriteStartArray();
-					
-					foreach (ChatMessagePart part in msg.Parts)
-					{
-						writer.WriteStartObject();
-						
-						writer.WritePropertyName("type");
-						writer.WriteValue(part.Type);
+            foreach (ChatMessage msg in value)
+            {
+                writer.WriteStartObject();
 
-						if (part.Type.Value == ChatMessageTypes.Text.Value)
-						{
-							writer.WritePropertyName("text");
-							writer.WriteValue(part.Text);	
-						}
-						else if (part.Type.Value == ChatMessageTypes.Image.Value)
-						{
-							writer.WritePropertyName("image_url");
-							writer.WriteStartObject();
-							
-							writer.WritePropertyName("url");
-							writer.WriteValue(part.Image?.Url);	
-							
-							writer.WriteEndObject();
-						}
-						
-						writer.WriteEndObject();
-					}
-					
-					writer.WriteEndArray();
-				}
-				else
-				{
-					writer.WriteValue(msg.Content);
-				}
-				
-				writer.WriteEndObject();
-			}
-			
-			writer.WriteEndArray();
-		}
+                writer.WritePropertyName("role");
+                writer.WriteValue(msg.rawRole);
 
-		public override IList<ChatMessage>? ReadJson(JsonReader reader, Type objectType, IList<ChatMessage>? existingValue, bool hasExistingValue,
-			JsonSerializer serializer)
-		{
-			return existingValue;
-		}
-	}
+                if (msg.Role is not null)
+                {
+                    if (ChatMessageRole.Tool.Equals(msg.Role))
+                    {
+                        writer.WritePropertyName("tool_call_id");
+                        writer.WriteValue(msg.Name);
+                    }
+                    else if (ChatMessageRole.Assistant.Equals(msg.Role))
+                    {
+                        if (msg.ToolCalls is not null)
+                        {
+                            writer.WritePropertyName("tool_calls");
+
+                            writer.WriteStartArray();
+
+                            foreach (ToolCall call in msg.ToolCalls)
+                            {
+                                writer.WriteStartObject();
+
+                                writer.WritePropertyName("id");
+                                writer.WriteValue(call.Id);
+
+                                writer.WritePropertyName("type");
+                                writer.WriteValue(call.Type);
+
+                                writer.WritePropertyName("function");
+                                writer.WriteStartObject();
+
+                                writer.WritePropertyName("name");
+                                writer.WriteValue(call.FunctionCall.Name);
+
+                                writer.WritePropertyName("arguments");
+                                writer.WriteValue(call.FunctionCall.Arguments);
+
+                                writer.WriteEndObject();
+
+                                writer.WriteEndObject();
+                            }
+
+                            writer.WriteEndArray();
+                        }
+                    }
+                    else if (ChatMessageRole.Tool.Equals(msg.Role))
+                    {
+                        writer.WritePropertyName("tool_call_id");
+                        writer.WriteValue(msg.ToolCallId);
+                    }
+                }
+
+                if (!string.IsNullOrWhiteSpace(msg.Name))
+                {
+                    writer.WritePropertyName("name");
+                    writer.WriteValue(msg.Name);
+                }
+
+                writer.WritePropertyName("content");
+
+                if (msg.Parts?.Count > 0)
+                {
+                    writer.WriteStartArray();
+
+                    foreach (ChatMessagePart part in msg.Parts)
+                    {
+                        writer.WriteStartObject();
+
+                        writer.WritePropertyName("type");
+                        writer.WriteValue(part.Type);
+
+                        if (part.Type.Value == ChatMessageTypes.Text.Value)
+                        {
+                            writer.WritePropertyName("text");
+                            writer.WriteValue(part.Text);
+                        }
+                        else if (part.Type.Value == ChatMessageTypes.Image.Value)
+                        {
+                            writer.WritePropertyName("image_url");
+                            writer.WriteStartObject();
+
+                            writer.WritePropertyName("url");
+                            writer.WriteValue(part.Image?.Url);
+
+                            writer.WriteEndObject();
+                        }
+
+                        writer.WriteEndObject();
+                    }
+
+                    writer.WriteEndArray();
+                }
+                else
+                {
+                    writer.WriteValue(msg.Content);
+                }
+
+                writer.WriteEndObject();
+            }
+
+            writer.WriteEndArray();
+        }
+
+        public override IList<ChatMessage>? ReadJson(JsonReader reader, Type objectType, IList<ChatMessage>? existingValue, bool hasExistingValue,
+            JsonSerializer serializer)
+        {
+            return existingValue;
+        }
+    }
 }

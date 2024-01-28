@@ -1,5 +1,6 @@
 ﻿using System;
 using Newtonsoft.Json;
+
 namespace OpenAiNg.Audio;
 
 /// <summary>
@@ -28,17 +29,17 @@ public class SpeechVoice
     ///     Requests a voice named Fabled
     /// </summary>
     public static SpeechVoice Fable => new("fable");
-    
+
     /// <summary>
     ///     Requests a voice named Onyx
     /// </summary>
     public static SpeechVoice Onyx => new("onyx");
-    
+
     /// <summary>
     ///     Requests a voice named Nova
     /// </summary>
     public static SpeechVoice Nova => new("nova");
-    
+
     /// <summary>
     ///     Requests a voice named Shimmer
     /// </summary>
@@ -52,7 +53,7 @@ public class SpeechVoice
     {
         return Value;
     }
-    
+
     /// <summary>
     ///     Gets the string value for this size to pass to the API
     /// </summary>

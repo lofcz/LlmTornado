@@ -25,7 +25,10 @@ public class ImageGenerationRequest
 	/// <param name="size">The size of the generated images. Must be one of 256x256, 512x512, or 1024x1024.</param>
 	/// <param name="user">A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse.</param>
 	/// <param name="responseFormat">The format in which the generated images are returned. Must be one of url or b64_json.</param>
-	/// <param name="model">Model to use, this should be either <see cref="Models.Model.Dalle2"/> or <see cref="Models.Model.Dalle3"/></param>
+	/// <param name="model">
+	///     Model to use, this should be either <see cref="Models.Model.Dalle2" /> or
+	///     <see cref="Models.Model.Dalle3" />
+	/// </param>
 	/// <param name="quality">Empty or "hd" for dalle3</param>
 	/// <param name="style">Empty or "vivid" / "natural" for dalle3</param>
 	public ImageGenerationRequest(string prompt, int? numOfImages = 1, ImageSize? size = null, string? user = null, ImageResponseFormat? responseFormat = null, Model? model = null, ImageQuality? quality = null, ImageStyles? style = null)
@@ -71,24 +74,24 @@ public class ImageGenerationRequest
 	[JsonProperty("response_format")]
     [JsonConverter(typeof(ImageResponseFormat.ImageResponseJsonConverter))]
     public ImageResponseFormat ResponseFormat { get; set; }
-	
+
 	/// <summary>
 	///     A model to use.
 	/// </summary>
 	[JsonProperty("model")]
-	public string Model { get; set; }
-	
+    public string Model { get; set; }
+
 	/// <summary>
 	///     Either empty or "hd" for dalle3.
 	/// </summary>
 	[JsonProperty("quality")]
-	[JsonConverter(typeof(ImageQuality.ImageQualityJsonConverter))]
-	public ImageQuality? Quality { get; set; }
-	
+    [JsonConverter(typeof(ImageQuality.ImageQualityJsonConverter))]
+    public ImageQuality? Quality { get; set; }
+
 	/// <summary>
 	///     Either empty or "vivid" or "natural" for dalle3.
 	/// </summary>
 	[JsonProperty("style")]
-	[JsonConverter(typeof(ImageStyles.ImageStyleJsonConverter))]
-	public ImageStyles? Style { get; set; }
+    [JsonConverter(typeof(ImageStyles.ImageStyleJsonConverter))]
+    public ImageStyles? Style { get; set; }
 }

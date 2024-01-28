@@ -54,61 +54,64 @@ public class FunctionResult
 }
 
 /// <summary>
-/// Represents a tool object
+///     Represents a tool object
 /// </summary>
 public class Tool
 {
     /// <summary>
-    /// Creates a new tool
+    ///     Creates a new tool
     /// </summary>
     /// <param name="function"></param>
     public Tool(ToolFunction function)
     {
         Function = function;
     }
-    
+
     /// <summary>
-    /// Creates a new too
+    ///     Creates a new too
     /// </summary>
     /// <param name="type"></param>
     public Tool(string type)
     {
         Type = type;
     }
-    
+
     public Tool()
     {
-  
     }
-    
-    /// <summary>
-    /// Creates a tool from <see cref="ToolFunction"/>
-    /// </summary>
-    /// <param name="function"></param>
-    /// <returns></returns>
-    public static implicit operator Tool(ToolFunction function) => new Tool(function);
 
     /// <summary>
-    /// The code interpreter tool used by assistants
+    ///     The code interpreter tool used by assistants
     /// </summary>
-    public static Tool Retrieval { get; } = new Tool("retrieval");
+    public static Tool Retrieval { get; } = new("retrieval");
 
     /// <summary>
-    /// The code interpreter tool used by assistants
+    ///     The code interpreter tool used by assistants
     /// </summary>
-    public static Tool CodeInterpreter { get; } = new Tool("code_interpreter");
-    
+    public static Tool CodeInterpreter { get; } = new("code_interpreter");
+
     /// <summary>
-    /// Type of the tool, should be always "function" for chat, assistants accepts values "code_interpreter" and "retrieval"
+    ///     Type of the tool, should be always "function" for chat, assistants accepts values "code_interpreter" and
+    ///     "retrieval"
     /// </summary>
     [JsonProperty("type", Required = Required.Default)]
     public string Type { get; set; } = "function";
-    
+
     /// <summary>
-    /// Function description
+    ///     Function description
     /// </summary>
     [JsonProperty("function", Required = Required.Default)]
     public ToolFunction? Function { get; set; }
+
+    /// <summary>
+    ///     Creates a tool from <see cref="ToolFunction" />
+    /// </summary>
+    /// <param name="function"></param>
+    /// <returns></returns>
+    public static implicit operator Tool(ToolFunction function)
+    {
+        return new Tool(function);
+    }
 }
 
 /// <summary>
@@ -133,7 +136,7 @@ public class Tool
 public class ToolFunction
 {
     private static readonly JsonSerializerSettings serializerSettings = new() { NullValueHandling = NullValueHandling.Ignore };
-    
+
     /// <summary>
     ///     Create a function which can be applied to
     /// </summary>

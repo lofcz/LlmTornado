@@ -1,5 +1,6 @@
 ﻿using System;
 using Newtonsoft.Json;
+
 namespace OpenAiNg.Audio;
 
 /// <summary>
@@ -28,12 +29,12 @@ public class SpeechResponseFormat
     ///     Requests a response in aac format
     /// </summary>
     public static SpeechResponseFormat Aac => new("aac");
-    
+
     /// <summary>
     ///     Requests a response in flac format
     /// </summary>
     public static SpeechResponseFormat Flac => new("flac");
-    
+
     /// <summary>
     ///     Gets the string value for this size to pass to the API
     /// </summary>
@@ -42,7 +43,7 @@ public class SpeechResponseFormat
     {
         return Value;
     }
-    
+
     /// <summary>
     ///     Gets the string value for this format to pass to the API
     /// </summary>

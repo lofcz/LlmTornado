@@ -18,38 +18,39 @@ public class StreamResponse
 }
 
 /// <summary>
-/// Represents a chat image
+///     Represents a chat image
 /// </summary>
 public class ChatImage
 {
     /// <summary>
-    /// Publicly available URL to the image or base64 encoded content
-    /// </summary>
-    [JsonProperty("url")]
-    public string Url { get; set; }
-    /// <summary>
-    /// Publicly available URL to the image or base64 encoded content
-    /// </summary>
-    [JsonProperty("detail")]
-    public ImageDetail? Detail { get; set; }
-
-    /// <summary>
-    /// Creates a new chat image
+    ///     Creates a new chat image
     /// </summary>
     /// <param name="content">Publicly available URL to the image or base64 encoded content</param>
     public ChatImage(string content)
     {
         Url = content;
     }
-    
+
     /// <summary>
-    /// Creates a new chat image
+    ///     Creates a new chat image
     /// </summary>
     /// <param name="content">Publicly available URL to the image or base64 encoded content</param>
-    /// <param name="detail">The detail level to use, defaults to <see cref="ImageDetail.Auto"/></param>
+    /// <param name="detail">The detail level to use, defaults to <see cref="ImageDetail.Auto" /></param>
     public ChatImage(string content, ImageDetail? detail)
     {
         Url = content;
         Detail = detail;
     }
+
+    /// <summary>
+    ///     Publicly available URL to the image or base64 encoded content
+    /// </summary>
+    [JsonProperty("url")]
+    public string Url { get; set; }
+
+    /// <summary>
+    ///     Publicly available URL to the image or base64 encoded content
+    /// </summary>
+    [JsonProperty("detail")]
+    public ImageDetail? Detail { get; set; }
 }

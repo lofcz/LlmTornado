@@ -9,6 +9,7 @@ using OpenAiNg.Files;
 using OpenAiNg.Images;
 using OpenAiNg.Models;
 using OpenAiNg.Moderation;
+using OpenAiNg.Threads;
 
 namespace OpenAiNg;
 
@@ -17,6 +18,7 @@ namespace OpenAiNg;
 /// </summary>
 public class OpenAiApi : IOpenAiApi
 {
+    private IAssistantsEndpoint? _assistantsEndpoint;
     private IAudioEndpoint? _audioEndpoint;
     private IChatEndpoint? _chat;
     private ICompletionEndpoint? _completionEndpoint;
@@ -26,30 +28,31 @@ public class OpenAiApi : IOpenAiApi
     private IImageGenerationEndpoint? _imageGenerationEndpoint;
     private IModelsEndpoint? _models;
     private IModerationEndpoint? _moderation;
-    private IAssistantsEndpoint? _assistantsEndpoint;
-    
+    private IThreadsEndpoint? _threadsEndpoint;
+
     /// <summary>
     ///     Creates a new entry point to the OpenAPI API, handling auth and allowing access to the various API endpoints
     /// </summary>
     /// <param name="apiKeys">
-    ///     The API authentication information to use for API calls, or <see langword="null" /> when using self-hosted provider such as KoboldCpp
+    ///     The API authentication information to use for API calls, or <see langword="null" /> when using self-hosted provider
+    ///     such as KoboldCpp
     /// </param>
     public OpenAiApi(ApiAuthentication? apiKeys)
     {
         Auth = apiKeys;
     }
-    
+
     /// <summary>
-    /// Create a new OpenAiApi via API key, suitable for OpenAI as a provider
+    ///     Create a new OpenAiApi via API key, suitable for OpenAI as a provider
     /// </summary>
     /// <param name="apiKey">API key</param>
     public OpenAiApi(string apiKey)
     {
         Auth = new ApiAuthentication(apiKey);
     }
-    
+
     /// <summary>
-    /// Create a new OpenAiApi via API key and organization key, suitable for Azure OpenAI
+    ///     Create a new OpenAiApi via API key and organization key, suitable for Azure OpenAI
     /// </summary>
     /// <param name="apiKey">API key</param>
     /// <param name="organizationKey">Organization key</param>
@@ -69,20 +72,28 @@ public class OpenAiApi : IOpenAiApi
     public IImageEditEndpoint ImageEdit => _imageEditEndpoint ??= new ImageEditEndpoint(this);
 
     /// <summary>
-    ///     Manages audio operations such as transcipt,translate.
+    ///     Manages audio operations such as transcipt and translate.
     /// </summary>
     public IAudioEndpoint Audio => _audioEndpoint ??= new AudioEndpoint(this);
-    
+
     /// <summary>
-    ///     Manages audio operations such as transcipt,translate.
+    ///     Assistants are higher-level API than <see cref="ChatEndpoint" /> featuring automatic context management, code
+    ///     interpreter and file based retrieval.
     /// </summary>
     public IAssistantsEndpoint Assistants => _assistantsEndpoint ??= new AssistantsEndpoint(this);
 
     /// <summary>
+    ///     Assistants are higher-level API than <see cref="ChatEndpoint" /> featuring automatic context management, code
+    ///     interpreter and file based retrieval.
+    /// </summary>
+    public IThreadsEndpoint Threads => _threadsEndpoint ??= new ThreadsEndpoint(this);
+
+    /// <summary>
     ///     Base url for OpenAI
     ///     for OpenAI, should be "https://api.openai.com/{0}/{1}"
-    ///     for Azure, should be "https://(your-resource-name.openai.azure.com/openai/deployments/(deployment-id)/{1}?api-version={0}"
-    ///     this will be formatted as {0} = <see cref="ApiVersion"/>, {1} = <see cref="EndpointBase.Endpoint"/>
+    ///     for Azure, should be
+    ///     "https://(your-resource-name.openai.azure.com/openai/deployments/(deployment-id)/{1}?api-version={0}"
+    ///     this will be formatted as {0} = <see cref="ApiVersion" />, {1} = <see cref="EndpointBase.Endpoint" />
     /// </summary>
     public string ApiUrlFormat { get; set; } = "https://api.openai.com/{0}/{1}";
 

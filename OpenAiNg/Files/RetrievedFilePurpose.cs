@@ -1,6 +1,5 @@
 using System;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace OpenAiNg.Files;
 
@@ -20,24 +19,24 @@ public class RetrievedFilePurpose
     ///     Finetuning
     /// </summary>
     public static RetrievedFilePurpose Finetune => new("fine-tune");
-    
+
     /// <summary>
     ///     Finetuning results
     /// </summary>
     public static RetrievedFilePurpose FinetuneResults => new("fine-tune-results");
-    
+
     /// <summary>
     ///     Assistants input file
     /// </summary>
     public static RetrievedFilePurpose Assistants => new("assistants");
-    
+
     /// <summary>
     ///     Assistants output file
     /// </summary>
     public static RetrievedFilePurpose AssistantsOutput => new("assistants_output");
 
     /// <summary>
-    /// Converts <see cref="FilePurpose"/> into <see cref="RetrievedFilePurpose"/>
+    ///     Converts <see cref="FilePurpose" /> into <see cref="RetrievedFilePurpose" />
     /// </summary>
     /// <param name="purpose"></param>
     /// <returns></returns>
@@ -45,7 +44,7 @@ public class RetrievedFilePurpose
     {
         return purpose is FilePurpose.Assistants ? Assistants : Finetune;
     }
-    
+
     /// <summary>
     ///     Gets the string value for this file purpose to pass to the API
     /// </summary>
@@ -54,7 +53,7 @@ public class RetrievedFilePurpose
     {
         return Value;
     }
-    
+
     /// <summary>
     ///     Gets the string value for this file purpose to pass to the API
     /// </summary>
@@ -76,10 +75,10 @@ public class RetrievedFilePurpose
             if (reader.TokenType is JsonToken.String)
             {
                 string? str = reader.Value as string;
-                return new RetrievedFilePurpose(str);   
+                return new RetrievedFilePurpose(str);
             }
 
-            return new RetrievedFilePurpose(reader.ReadAsString());   
+            return new RetrievedFilePurpose(reader.ReadAsString());
         }
     }
 }

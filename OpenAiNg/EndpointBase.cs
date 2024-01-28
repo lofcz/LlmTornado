@@ -21,49 +21,17 @@ namespace OpenAiNg;
 /// </summary>
 public abstract class EndpointBase
 {
+    private const string DataString = "data:";
+    private const string DoneString = "[DONE]";
     private static string userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36";
     internal static readonly JsonSerializerSettings NullSettings = new() { NullValueHandling = NullValueHandling.Ignore };
-    
-    /// <summary>
-    /// Gets the timeout for all http requests
-    /// </summary>
-    /// <returns></returns>
-    public static int GetRequestsTimeout()
-    {
-        return (int)EndpointClient.Timeout.TotalSeconds;
-    }
-    
-    /// <summary>
-    /// Sets the timeout for all http requests
-    /// </summary>
-    /// <returns></returns>
-    public static void SetRequestsTimeout(int seconds)
-    {
-        EndpointClient.Timeout = TimeSpan.FromSeconds(seconds);
-    }
-
-    /// <summary>
-    /// Sets the user agent header used in all http requests
-    /// </summary>
-    /// <param name="ua">User agent</param>
-    public static void SetUserAgent(string ua)
-    {
-        userAgent = ua;
-    }
-    
-    /// <summary>
-    /// Gets the user agent header used in all http requests
-    /// </summary>
-    public static string GetUserAgent()
-    {
-        return userAgent;
-    }
 
     private static readonly HttpClient EndpointClient = new(new SocketsHttpHandler
     {
         MaxConnectionsPerServer = 10000,
         PooledConnectionLifetime = TimeSpan.FromMinutes(2)
-    }) {
+    })
+    {
         Timeout = TimeSpan.FromSeconds(600)
     };
 
@@ -94,6 +62,41 @@ public abstract class EndpointBase
     protected string Url => string.Format(Api.ApiUrlFormat, Api.ApiVersion, Endpoint);
 
     /// <summary>
+    ///     Gets the timeout for all http requests
+    /// </summary>
+    /// <returns></returns>
+    public static int GetRequestsTimeout()
+    {
+        return (int)EndpointClient.Timeout.TotalSeconds;
+    }
+
+    /// <summary>
+    ///     Sets the timeout for all http requests
+    /// </summary>
+    /// <returns></returns>
+    public static void SetRequestsTimeout(int seconds)
+    {
+        EndpointClient.Timeout = TimeSpan.FromSeconds(seconds);
+    }
+
+    /// <summary>
+    ///     Sets the user agent header used in all http requests
+    /// </summary>
+    /// <param name="ua">User agent</param>
+    public static void SetUserAgent(string ua)
+    {
+        userAgent = ua;
+    }
+
+    /// <summary>
+    ///     Gets the user agent header used in all http requests
+    /// </summary>
+    public static string GetUserAgent()
+    {
+        return userAgent;
+    }
+
+    /// <summary>
     ///     Default max processing time of a http request in seconds
     /// </summary>
     public static void SetDefaultHttpTimeout(int timeoutSec)
@@ -109,7 +112,10 @@ public abstract class EndpointBase
     ///     Thrown if there is no valid authentication.  Please refer to
     ///     <see href="https://github.com/OkGoDoIt/OpenAI-API-dotnet#authentication" /> for details.
     /// </exception>
-    private static HttpClient GetClient() => EndpointClient;
+    private static HttpClient GetClient()
+    {
+        return EndpointClient;
+    }
 
     /// <summary>
     ///     Formats a human-readable error message relating to calling the API and parsing the response
@@ -124,19 +130,16 @@ public abstract class EndpointBase
     {
         return $"Error at {name} ({description}) with HTTP status code: {response.StatusCode}. Content: {resultAsString ?? "<no content>"}. Request: {JsonConvert.SerializeObject(input.Headers)}";
     }
-    
+
     /// <summary>
-    /// Gets the full formatted url for the API endpoint.
+    ///     Gets the full formatted url for the API endpoint.
     /// </summary>
     /// <param name="endpoint">The endpoint url.</param>
     /// <param name="queryParameters">Optional, parameters to add to the endpoint.</param>
     protected string GetUrl(string? endpoint = null, Dictionary<string, string>? queryParameters = null)
     {
-        if (endpoint is null && queryParameters is null)
-        {
-            return Url;
-        }
-        
+        if (endpoint is null && queryParameters is null) return Url;
+
         return queryParameters?.Count > 0 ? $"{Url}{endpoint}?{string.Join("&", queryParameters.Select(parameter => $"{parameter.Key}={parameter.Value}"))}" : $"{Url}{endpoint}";
     }
 
@@ -169,19 +172,16 @@ public abstract class EndpointBase
 
         req.Headers.Add("User-Agent", userAgent);
         req.Headers.Add("OpenAI-Beta", "assistants=v1");
-        
+
         if (Api.Auth is not null)
         {
             if (Api.Auth.ApiKey is not null)
             {
                 req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Api.Auth.ApiKey);
-                req.Headers.Add("api-key", Api.Auth.ApiKey);   
+                req.Headers.Add("api-key", Api.Auth.ApiKey);
             }
-            
-            if (Api.Auth.Organization is not null)
-            {
-                req.Headers.Add("OpenAI-Organization", Api.Auth.Organization);
-            }
+
+            if (Api.Auth.Organization is not null) req.Headers.Add("OpenAI-Organization", Api.Auth.Organization);
         }
 
         if (postData != null)
@@ -200,10 +200,7 @@ public abstract class EndpointBase
 
         HttpResponseMessage response = await client.SendAsync(req, streaming ? HttpCompletionOption.ResponseHeadersRead : HttpCompletionOption.ResponseContentRead, ct ?? CancellationToken.None).ConfigureAwait(ConfigureAwaitOptions.None);
 
-        if (response.IsSuccessStatusCode)
-        {
-            return response;
-        }
+        if (response.IsSuccessStatusCode) return response;
 
         string resultAsString;
 
@@ -223,7 +220,7 @@ public abstract class EndpointBase
             _ => new HttpRequestException(GetErrorMessage(resultAsString, response, Endpoint, url, req))
         };
     }
-    
+
     private async Task<HttpResponseMessage> HttpRequestRawWithCodes(string? url = null, HttpMethod? verb = null, object? postData = null, bool streaming = false, CancellationToken? ct = null)
     {
         url ??= Url;
@@ -234,19 +231,16 @@ public abstract class EndpointBase
 
         req.Headers.Add("User-Agent", userAgent);
         req.Headers.Add("OpenAI-Beta", "assistants=v1");
-        
+
         if (Api.Auth is not null)
         {
             if (Api.Auth.ApiKey is not null)
             {
                 req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Api.Auth.ApiKey);
-                req.Headers.Add("api-key", Api.Auth.ApiKey);   
+                req.Headers.Add("api-key", Api.Auth.ApiKey);
             }
-            
-            if (Api.Auth.Organization is not null)
-            {
-                req.Headers.Add("OpenAI-Organization", Api.Auth.Organization);
-            }
+
+            if (Api.Auth.Organization is not null) req.Headers.Add("OpenAI-Organization", Api.Auth.Organization);
         }
 
         if (postData != null)
@@ -265,10 +259,7 @@ public abstract class EndpointBase
 
         HttpResponseMessage response = await client.SendAsync(req, streaming ? HttpCompletionOption.ResponseHeadersRead : HttpCompletionOption.ResponseContentRead, ct ?? CancellationToken.None).ConfigureAwait(ConfigureAwaitOptions.None);
 
-        if (response.IsSuccessStatusCode || response.StatusCode is HttpStatusCode.NotFound)
-        {
-            return response;
-        }
+        if (response.IsSuccessStatusCode || response.StatusCode is HttpStatusCode.NotFound) return response;
 
         string resultAsString;
 
@@ -287,6 +278,52 @@ public abstract class EndpointBase
             HttpStatusCode.InternalServerError => new HttpRequestException($"The API provider had an internal server error. Please retry your request. Server response: {GetErrorMessage(resultAsString, response, Endpoint, url, req)}"),
             _ => new HttpRequestException(GetErrorMessage(resultAsString, response, Endpoint, url, req))
         };
+    }
+
+    private async Task<DataOrException<HttpResponseMessage>> HttpRequestRawWithAllCodes(string? url = null, HttpMethod? verb = null, object? content = null, bool streaming = false, CancellationToken? ct = null)
+    {
+        url ??= Url;
+        verb ??= HttpMethod.Get;
+
+        HttpClient client = GetClient();
+        using HttpRequestMessage req = new(verb, url);
+
+        req.Headers.Add("User-Agent", userAgent);
+        req.Headers.Add("OpenAI-Beta", "assistants=v1");
+
+        if (Api.Auth is not null)
+        {
+            if (Api.Auth.ApiKey is not null)
+            {
+                req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Api.Auth.ApiKey);
+                req.Headers.Add("api-key", Api.Auth.ApiKey);
+            }
+
+            if (Api.Auth.Organization is not null) req.Headers.Add("OpenAI-Organization", Api.Auth.Organization);
+        }
+
+        if (content is not null)
+        {
+            if (content is HttpContent data)
+            {
+                req.Content = data;
+            }
+            else
+            {
+                string jsonContent = JsonConvert.SerializeObject(content, NullSettings);
+                StringContent stringContent = new(jsonContent, Encoding.UTF8, "application/json");
+                req.Content = stringContent;
+            }
+        }
+
+        try
+        {
+            return new DataOrException<HttpResponseMessage>(await client.SendAsync(req, streaming ? HttpCompletionOption.ResponseHeadersRead : HttpCompletionOption.ResponseContentRead, ct ?? CancellationToken.None).ConfigureAwait(ConfigureAwaitOptions.None));
+        }
+        catch (Exception e)
+        {
+            return new DataOrException<HttpResponseMessage>(e);
+        }
     }
 
     /// <summary>
@@ -304,7 +341,7 @@ public abstract class EndpointBase
         using HttpResponseMessage response = await HttpRequestRaw(url, ct: ct).ConfigureAwait(ConfigureAwaitOptions.None);
         return await response.Content.ReadAsStringAsync().ConfigureAwait(ConfigureAwaitOptions.None);
     }
-    
+
     /// <summary>
     ///     Sends an HTTP Request and does initial parsing
     /// </summary>
@@ -345,12 +382,8 @@ public abstract class EndpointBase
 
                 if (response.Headers.TryGetValues("Openai-Version", out IEnumerable<string>? oav)) res.RequestId = oav.FirstOrDefault();
                 if (res.Model != null && string.IsNullOrEmpty(res.Model))
-                {
                     if (response.Headers.TryGetValues("Openai-Model", out IEnumerable<string>? omd))
-                    {
                         res.Model = omd.FirstOrDefault();
-                    }
-                }
             }
         }
         catch (Exception e)
@@ -360,41 +393,38 @@ public abstract class EndpointBase
 
         return res;
     }
-    
-    private async Task<T?> HttpRequestRaw<T>(string? url = null, HttpMethod? verb = null, object? postData = null, CancellationToken? ct = null, bool allowNon200Codes = false)
-    {
-        if (!allowNon200Codes)
-        {
-            using HttpResponseMessage response2 = await HttpRequestRaw(url, verb, postData, false, ct).ConfigureAwait(ConfigureAwaitOptions.None);
-            string resultAsString2 = await response2.Content.ReadAsStringAsync().ConfigureAwait(ConfigureAwaitOptions.None);
-            T? res2 = JsonConvert.DeserializeObject<T>(resultAsString2);
-            return res2;   
-        }
-        
-        using HttpResponseMessage response = await HttpRequestRawWithCodes(url, verb, postData, false, ct).ConfigureAwait(ConfigureAwaitOptions.None);
 
-        if (!response.IsSuccessStatusCode)
-        {
-            return default;
-        }
-        
-        string resultAsString = await response.Content.ReadAsStringAsync().ConfigureAwait(ConfigureAwaitOptions.None);
-        T? res = JsonConvert.DeserializeObject<T>(resultAsString);
-        return res;    
+    private async Task<HttpCallResult<T>> HttpRequestRaw<T>(string? url = null, HttpMethod? verb = null, object? postData = null, CancellationToken? ct = null)
+    {
+        DataOrException<HttpResponseMessage> response = await HttpRequestRawWithAllCodes(url, verb, postData, false, ct).ConfigureAwait(ConfigureAwaitOptions.None);
+
+        if (response.Exception is not null)
+            return new HttpCallResult<T>(HttpStatusCode.ServiceUnavailable, null, default, false)
+            {
+                Exception = response.Exception
+            };
+
+        string resultAsString = await response.Data.Content.ReadAsStringAsync().ConfigureAwait(ConfigureAwaitOptions.None);
+        HttpCallResult<T> result = new(response.Data.StatusCode, resultAsString, default, response.Data.StatusCode is >= HttpStatusCode.OK and < HttpStatusCode.InternalServerError);
+
+        if (response.Data.IsSuccessStatusCode) result.Data = JsonConvert.DeserializeObject<T>(resultAsString);
+
+        response.Data?.Dispose();
+        return result;
     }
-    
+
     private async Task<StreamResponse?> HttpRequestStream(string? url = null, HttpMethod? verb = null, object? postData = null, CancellationToken ct = default)
     {
         HttpResponseMessage response = await HttpRequestRaw(url, verb, postData, ct: ct).ConfigureAwait(ConfigureAwaitOptions.None);
         Stream resultAsStream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(ConfigureAwaitOptions.None);
 
-        StreamResponse res = new StreamResponse
+        StreamResponse res = new()
         {
             Headers = new ApiResultBase(),
             Stream = resultAsStream,
             Response = response
         };
-        
+
         try
         {
             if (response.Headers.TryGetValues("Openai-Organization", out IEnumerable<string>? orgH)) res.Headers.Organization = orgH.FirstOrDefault();
@@ -408,12 +438,8 @@ public abstract class EndpointBase
 
             if (response.Headers.TryGetValues("Openai-Version", out IEnumerable<string>? oav)) res.Headers.RequestId = oav.FirstOrDefault();
             if (res.Headers.Model != null && string.IsNullOrEmpty(res.Headers.Model))
-            {
                 if (response.Headers.TryGetValues("Openai-Model", out IEnumerable<string>? omd))
-                {
                     res.Headers.Model = omd.FirstOrDefault();
-                }
-            }
         }
         catch (Exception e)
         {
@@ -441,10 +467,15 @@ public abstract class EndpointBase
     {
         return HttpRequest<T>(url, HttpMethod.Get, ct: ct);
     }
-    
-    internal Task<T?> HttpGetRaw<T>(string? url = null, CancellationToken? ct = null, bool allowNon200Codes = false)
+
+    internal Task<HttpCallResult<T>> HttpGetRaw<T>(string? url = null, CancellationToken? ct = null, bool allowNon200Codes = false)
     {
-        return HttpRequestRaw<T>(url, HttpMethod.Get, ct: ct, allowNon200Codes: allowNon200Codes);
+        return HttpRequestRaw<T>(url, HttpMethod.Get, ct: ct);
+    }
+
+    internal Task<T?> HttpPost1<T>(string? url = null, object? postData = null, CancellationToken? ct = default) where T : ApiResultBase
+    {
+        return HttpRequest<T>(url, HttpMethod.Post, postData, ct);
     }
 
     /// <summary>
@@ -462,17 +493,17 @@ public abstract class EndpointBase
     ///     Throws an exception if a non-success HTTP response was returned or if the result
     ///     couldn't be parsed.
     /// </exception>
-    internal Task<T?> HttpPost<T>(string? url = null, object? postData = null, CancellationToken? ct = default) where T : ApiResultBase
+    internal Task<HttpCallResult<T>> HttpPost<T>(string? url = null, object? postData = null, CancellationToken? ct = default) where T : ApiResultBase
     {
-        return HttpRequest<T>(url, HttpMethod.Post, postData, ct);
+        return HttpRequestRaw<T>(url, HttpMethod.Post, postData, ct);
     }
-    
-    internal Task<T?> HttpPostRaw<T>(string? url = null, object? postData = null, CancellationToken? ct = default, bool allowNon200Codes = false)
+
+    internal Task<HttpCallResult<T>> HttpPostRaw<T>(string? url = null, object? postData = null, CancellationToken? ct = default, bool allowNon200Codes = false)
     {
-        return HttpRequestRaw<T>(url, HttpMethod.Post, postData, ct, allowNon200Codes);
+        return HttpRequestRaw<T>(url, HttpMethod.Post, postData, ct);
     }
-    
-    internal Task<StreamResponse?> HttpPostStream(string? url = null, object? postData = null, CancellationToken ct = default) 
+
+    internal Task<StreamResponse?> HttpPostStream(string? url = null, object? postData = null, CancellationToken ct = default)
     {
         return HttpRequestStream(url, HttpMethod.Post, postData, ct);
     }
@@ -495,10 +526,10 @@ public abstract class EndpointBase
     {
         return HttpRequest<T>(url, HttpMethod.Delete, postData, ct);
     }
-    
-    internal Task<T?> HttpAtomic<T>(HttpMethod method, string? url = null, object? postData = null, CancellationToken? ct = default, bool allowNon200Codes = false)
+
+    internal Task<HttpCallResult<T>> HttpAtomic<T>(HttpMethod method, string? url = null, object? postData = null, CancellationToken? ct = default, bool allowNon200Codes = false)
     {
-        return HttpRequestRaw<T>(url, method, postData, ct, allowNon200Codes);
+        return HttpRequestRaw<T>(url, method, postData, ct);
     }
 
     /// <summary>
@@ -520,9 +551,6 @@ public abstract class EndpointBase
         return HttpRequest<T>(url, HttpMethod.Put, postData, ct);
     }
 
-    private const string DataString = "data:";
-    private const string DoneString = "[DONE]";
-    
     /// <summary>
     ///     Sends an HTTP request and handles a streaming response.  Does basic line splitting and error handling.
     /// </summary>
@@ -556,10 +584,7 @@ public abstract class EndpointBase
             if (response.Headers.TryGetValues("Openai-Processing-Ms", out IEnumerable<string>? pms))
             {
                 string? processing = pms.FirstOrDefault();
-                if (processing is not null && int.TryParse(processing, out int n))
-                {
-                    processingTime = TimeSpan.FromMilliseconds(n);
-                }
+                if (processing is not null && int.TryParse(processing, out int n)) processingTime = TimeSpan.FromMilliseconds(n);
             }
 
             if (response.Headers.TryGetValues("Openai-Version", out IEnumerable<string>? oav)) openaiVersion = oav.FirstOrDefault();
@@ -575,42 +600,26 @@ public abstract class EndpointBase
 
         while (await reader.ReadLineAsync() is { } line)
         {
-            if (line.StartsWith(DataString))
-            {
-                line = line[5..];
-            }
+            if (line.StartsWith(DataString)) line = line[5..];
 
             line = line.TrimStart();
 
-            if (line is DoneString)
-            {
-                yield break;
-            }
+            if (line is DoneString) yield break;
 
-            if (line.StartsWith(':') || string.IsNullOrWhiteSpace(line))
-            {
-                continue;
-            }
-            
+            if (line.StartsWith(':') || string.IsNullOrWhiteSpace(line)) continue;
+
             T? res = JsonConvert.DeserializeObject<T>(line);
 
-            if (res is null)
-            {
-                continue;
-            }
-            
+            if (res is null) continue;
+
             res.Organization = organization;
             res.RequestId = requestId;
             res.ProcessingTime = processingTime;
             res.OpenaiVersion = openaiVersion;
 
             if (res.Model != null && string.IsNullOrEmpty(res.Model))
-            {
                 if (modelFromHeaders != null)
-                {
                     res.Model = modelFromHeaders;
-                }
-            }
 
             yield return res;
         }

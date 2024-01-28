@@ -1,35 +1,33 @@
-// Licensed under the MIT License. See LICENSE in the project root for license information.
-
-using System.Collections.Generic;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using OpenAiNg.Common;
 
-namespace OpenAiNg.Threads
+namespace OpenAiNg.Threads;
+
+/// <summary>
+///     Create threads that assistants can interact with.<br />
+///     <see href="https://platform.openai.com/docs/api-reference/threads" />
+/// </summary>
+public sealed class ThreadsEndpoint : EndpointBase, IThreadsEndpoint
 {
+    internal ThreadsEndpoint(OpenAiApi api) : base(api)
+    {
+    }
+
+    protected override string Endpoint => "threads";
+
+
     /// <summary>
-    /// Create threads that assistants can interact with.<br/>
-    /// <see href="https://platform.openai.com/docs/api-reference/threads"/>
+    ///     Create a thread.
     /// </summary>
-    public sealed class ThreadsEndpoint
-    {/*
-        public ThreadsEndpoint(OpenAIClient client) : base(client) { }
-
-        protected override string Root => "threads";
-
-        /// <summary>
-        /// Create a thread.
-        /// </summary>
-        /// <param name="request"><see cref="CreateThreadRequest"/>.</param>
-        /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
-        /// <returns><see cref="ThreadResponse"/>.</returns>
-        public async Task<ThreadResponse> CreateThreadAsync(CreateThreadRequest request = null, CancellationToken cancellationToken = default)
-        {
-            var response = await client.Client.PostAsync(GetUrl(), request != null ? JsonSerializer.Serialize(request, OpenAIClient.JsonSerializationOptions).ToJsonStringContent(EnableDebug) : null, cancellationToken).ConfigureAwait(false);
-            var responseAsString = await response.ReadAsStringAsync(EnableDebug, cancellationToken).ConfigureAwait(false);
-            return response.Deserialize<ThreadResponse>(responseAsString, client);
-        }
-
+    /// <param name="request"><see cref="CreateThreadRequest" />.</param>
+    /// <param name="cancellationToken">Optional, <see cref="CancellationToken" />.</param>
+    /// <returns><see cref="ThreadResponse" />.</returns>
+    public Task<HttpCallResult<ThreadResponse>> CreateThreadAsync(CreateThreadRequest? request = null, CancellationToken? cancellationToken = default)
+    {
+        return HttpPostRaw<ThreadResponse>(Url, request, cancellationToken);
+    }
+/*
         /// <summary>
         /// Retrieves a thread.
         /// </summary>
@@ -351,5 +349,4 @@ namespace OpenAiNg.Threads
         }
 
         #endregion Runs*/
-    }
 }

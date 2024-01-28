@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+
 namespace OpenAiNg.Audio;
 
 /// <summary>
@@ -13,7 +14,7 @@ public class SpeechRequest
     public string Input { get; set; }
 
     /// <summary>
-    ///     ID of the model to use. Either <see cref="Models.Model.TTS_1"/> or <see cref="Models.Model.TTS_1"/>
+    ///     ID of the model to use. Either <see cref="Models.Model.TTS_1" /> or <see cref="Models.Model.TTS_1" />
     /// </summary>
     [JsonProperty("model")]
     public string Model { get; set; } = Models.Model.TTS_1;

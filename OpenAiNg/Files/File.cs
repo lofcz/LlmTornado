@@ -12,8 +12,8 @@ public class File : ApiResultBase
 	///     This is always "file"
 	/// </summary>
 	[JsonProperty("object")]
-	public string? Object { get; set; } = "file";
-    
+    public string? Object { get; set; } = "file";
+
 	/// <summary>
 	///     Unique id for this file, so that it can be referenced in other operations
 	/// </summary>
@@ -24,9 +24,9 @@ public class File : ApiResultBase
 	///     What is the purpose of this file, fine-tune, fine-tune-results, assistants or assistants_output
 	/// </summary>
 	[JsonProperty("purpose")]
-	[JsonConverter(typeof(RetrievedFilePurpose.RetrievedFilePurposeJsonConverter))]
-	public RetrievedFilePurpose Purpose { get; set; }
-    
+    [JsonConverter(typeof(RetrievedFilePurpose.RetrievedFilePurposeJsonConverter))]
+    public RetrievedFilePurpose Purpose { get; set; }
+
 	/// <summary>
 	///     The name of the file
 	/// </summary>

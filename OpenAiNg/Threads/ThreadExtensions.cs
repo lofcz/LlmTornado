@@ -1,14 +1,8 @@
-// Licensed under the MIT License. See LICENSE in the project root for license information.
+namespace OpenAiNg.Threads;
 
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-
-namespace OpenAiNg.Threads
+public static class ThreadExtensions
 {
-    public static class ThreadExtensions
-    {/*
+    /*
         /// <summary>
         /// Updates this thread with the latest snapshot from OpenAI.
         /// </summary>
@@ -333,5 +327,4 @@ namespace OpenAiNg.Threads
             => await run.Client.ThreadsEndpoint.ListMessagesAsync(run.ThreadId, query, cancellationToken);
 
         #endregion Runs*/
-    }
 }

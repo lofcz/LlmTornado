@@ -17,7 +17,7 @@ public interface IAudioEndpoint
     ///     Translates audio into into English.
     /// </summary>
     public Task<TranscriptionVerboseJsonResult?> CreateTranslationAsync(TranslationRequest request);
-    
+
     /// <summary>
     ///     Generates speech from text.
     /// </summary>
