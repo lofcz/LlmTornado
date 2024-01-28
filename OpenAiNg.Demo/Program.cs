@@ -40,6 +40,31 @@ internal class Program
         ApiKey = apiKey;
         return true;
     }
+    
+    private enum Demos
+    {
+        Unknown,
+        ChatVision,
+        ChatVisionBase64,
+        AssistantList,
+        AssistantCreate,
+        AssistantCreateWithCustomFunction,
+        AssistantRetrieve,
+        AssistantModify,
+        AssistantDelete,
+        FilesUpload,
+        ImagesGenerate,
+        AssistantCreateWithFile,
+        AssistantListFiles,
+        AssistantAttachFile,
+        AssistantRetriveFile,
+        AssistantRemoveFile,
+        ThreadsCreate,
+        ThreadsRetrieve,
+        ThreadsModify,
+        ThreadsDelete,
+        Last
+    }
 
     public static async Task Main(string[] args)
     {
@@ -65,31 +90,12 @@ internal class Program
             Demos.AssistantRetriveFile => AssistantsDemo.RetrieveFile(),
             Demos.AssistantRemoveFile => AssistantsDemo.RemoveFile(),
             Demos.ThreadsCreate => ThreadsDemo.Create(),
+            Demos.ThreadsRetrieve => ThreadsDemo.Retrieve(),
+            Demos.ThreadsModify => ThreadsDemo.Modify(),
+            Demos.ThreadsDelete => ThreadsDemo.Delete(),
             _ => null
         };
 
         if (task is not null) await task;
-    }
-
-    private enum Demos
-    {
-        Unknown,
-        ChatVision,
-        ChatVisionBase64,
-        AssistantList,
-        AssistantCreate,
-        AssistantCreateWithCustomFunction,
-        AssistantRetrieve,
-        AssistantModify,
-        AssistantDelete,
-        FilesUpload,
-        ImagesGenerate,
-        AssistantCreateWithFile,
-        AssistantListFiles,
-        AssistantAttachFile,
-        AssistantRetriveFile,
-        AssistantRemoveFile,
-        ThreadsCreate,
-        Last
     }
 }
