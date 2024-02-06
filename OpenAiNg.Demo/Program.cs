@@ -65,6 +65,7 @@ internal class Program
         ThreadsDelete,
         ThreadsCreateMessage,
         ChatCompletion,
+        ChatStreamWithFunctions,
         Last
     }
 
@@ -97,6 +98,7 @@ internal class Program
             Demos.ThreadsDelete => ThreadsDemo.Delete(),
             Demos.ThreadsCreateMessage => ThreadsDemo.CreateMessage(),
             Demos.ChatCompletion => ChatDemo.Completion(),
+            Demos.ChatStreamWithFunctions => ChatDemo.StreamWithFunctions(),
             _ => null
         };
 

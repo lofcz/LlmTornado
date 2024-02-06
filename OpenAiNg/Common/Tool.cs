@@ -138,7 +138,19 @@ public class ToolFunction
     private static readonly JsonSerializerSettings serializerSettings = new() { NullValueHandling = NullValueHandling.Ignore };
 
     /// <summary>
-    ///     Create a function which can be applied to
+    ///     Create a parameterless function.
+    /// </summary>
+    /// <param name="name"></param>
+    /// <param name="description"></param>
+    public ToolFunction(string name, string description)
+    {
+        Name = name;
+        Description = description;
+        Parameters = null;
+    }
+    
+    /// <summary>
+    ///     Create a function with parameters.
     /// </summary>
     /// <param name="name"></param>
     /// <param name="description"></param>
@@ -151,7 +163,7 @@ public class ToolFunction
     }
 
     /// <summary>
-    ///     Create a function which can be applied to
+    ///     Create a function with parameters.
     /// </summary>
     /// <param name="name"></param>
     /// <param name="description"></param>
@@ -164,7 +176,7 @@ public class ToolFunction
     }
 
     /// <summary>
-    ///     Create a function which can be applied to
+    ///     Create a function with parameters.
     /// </summary>
     /// <param name="name"></param>
     /// <param name="description"></param>
@@ -193,9 +205,12 @@ public class ToolFunction
     /// <summary>
     ///     The description of what the function does.
     /// </summary>
-    [JsonProperty("description", Required = Required.Default)]
+    [JsonProperty("description")]
     public string Description { get; set; }
 
-    [JsonProperty("parameters", Required = Required.Default)]
-    public JObject Parameters { get; set; }
+    /// <summary>
+    ///     The input parameters of the tool, if any.
+    /// </summary>
+    [JsonProperty("parameters")]
+    public JObject? Parameters { get; set; }
 }

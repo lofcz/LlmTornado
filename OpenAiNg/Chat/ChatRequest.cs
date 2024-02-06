@@ -237,7 +237,7 @@ public class ChatRequest
                     if (ChatMessageRole.Tool.Equals(msg.Role))
                     {
                         writer.WritePropertyName("tool_call_id");
-                        writer.WriteValue(msg.Name);
+                        writer.WriteValue(msg.ToolCallId);
                     }
                     else if (ChatMessageRole.Assistant.Equals(msg.Role))
                     {
@@ -273,11 +273,6 @@ public class ChatRequest
 
                             writer.WriteEndArray();
                         }
-                    }
-                    else if (ChatMessageRole.Tool.Equals(msg.Role))
-                    {
-                        writer.WritePropertyName("tool_call_id");
-                        writer.WriteValue(msg.ToolCallId);
                     }
                 }
 

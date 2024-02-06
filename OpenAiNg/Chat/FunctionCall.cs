@@ -7,13 +7,14 @@ namespace OpenAiNg.ChatFunctions;
 /// </summary>
 public class FunctionCall
 {
-    [JsonIgnore] private string? JsonEncoded { get; set; }
+    [JsonIgnore] 
+    private string? JsonEncoded { get; set; }
 
     /// <summary>
     ///     The name of the function.
     /// </summary>
     [JsonProperty("name")]
-    public string? Name { get; set; }
+    public string Name { get; set; }
 
     /// <summary>
     ///     Any arguments that need to be passed to the function. This needs to be in JSON format.

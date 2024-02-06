@@ -77,10 +77,9 @@ public class Conversation
     }
 
     /// <summary>
-    ///     If not null, this func is called after a function is resolved
-    ///     The message list represents tool responses, the message is assistent's one
+    ///     Called after one or more tools are requested by the model and the corresponding results are resolved.
     /// </summary>
-    public Func<FunctionResult, List<ChatMessage>, ChatMessage, Task>? OnAfterFunctionCall { get; set; }
+    public Func<ResolvedToolsCall, Task>? OnAfterToolsCall { get; set; }
 
     /// <summary>
     ///     After calling <see cref="GetResponseFromChatbotAsync" />, this contains the full response object which can contain
@@ -550,17 +549,6 @@ public class Conversation
         return null;
     }
 
-    /// <summary>
-    ///     OBSOLETE: GetResponseFromChatbot() has been renamed to <see cref="GetResponseFromChatbotAsync" /> to follow .NET
-    ///     naming guidelines.  This alias will be removed in a future version.
-    /// </summary>
-    /// <returns>The string of the response from the chatbot API</returns>
-    [Obsolete("Conversation.GetResponseFromChatbot() has been renamed to GetResponseFromChatbotAsync to follow .NET naming guidelines.  Please update any references to GetResponseFromChatbotAsync().  This alias will be removed in a future version.", false)]
-    public Task<string?> GetResponseFromChatbot()
-    {
-        return GetResponseFromChatbotAsync();
-    }
-
     #endregion
 
     #region Streaming
@@ -660,7 +648,7 @@ public class Conversation
     ///     settings
     /// </param>
     /// <param name="outboundRequest">set to an empty <see cref="Ref" /> to receive the outbound request as well</param>
-    public async Task StreamResponseEnumerableFromChatbotAsyncWithFunctions(Guid? messageId, Func<string?, Task> messageTokenHandler, Func<List<FunctionCall>, Task<FunctionResult?>> functionCallHandler, Func<ChatMessageRole, Task> messageTypeResolvedHandler, Func<ChatRequest, Task<ChatRequest>> chatRequestHandler, Ref<string>? outboundRequest = null)
+    public async Task StreamResponseEnumerableFromChatbotAsyncWithFunctions(Guid? messageId, Func<string?, Task>? messageTokenHandler, Func<List<FunctionCall>, Task<List<FunctionResult>>>? functionCallHandler, Func<ChatMessageRole, Task>? messageTypeResolvedHandler, Func<ChatRequest, Task<ChatRequest>>? chatRequestHandler, Ref<string>? outboundRequest = null)
     {
         ChatRequest req = new(RequestParameters)
         {
@@ -668,7 +656,7 @@ public class Conversation
             OuboundFunctionsContent = outboundRequest
         };
 
-        req = await chatRequestHandler.Invoke(req);
+        req = chatRequestHandler is not null ? await chatRequestHandler.Invoke(req) : req;
 
         StringBuilder responseStringBuilder = new();
         ChatMessageRole? responseRole = null;
@@ -721,7 +709,10 @@ public class Conversation
                         }
                         else
                         {
-                            if (functionCalls.TryGetValue(currentFunction, out StringBuilder? sb)) sb.Append(choice.Delta.ToolCalls[0].FunctionCall.Arguments);
+                            if (functionCalls.TryGetValue(currentFunction, out StringBuilder? sb))
+                            {
+                                sb.Append(choice.Delta.ToolCalls[0].FunctionCall.Arguments);
+                            }
                         }
                     }
                 }
@@ -737,9 +728,12 @@ public class Conversation
                         if (messageTypeResolvedHandler != null) await messageTypeResolvedHandler(responseRole);
                     }
 
-                    if (functionCallHandler != null && responseRole == "function")
+                    if (functionCallHandler is not null && responseRole == "function")
                     {
-                        if (!empty) responseStringBuilder.Append(deltaContent);
+                        if (!empty)
+                        {
+                            responseStringBuilder.Append(deltaContent);
+                        }
 
                         continue;
                     }
@@ -749,7 +743,10 @@ public class Conversation
                 {
                     responseStringBuilder.Append(deltaContent);
 
-                    if (messageTokenHandler is not null) await messageTokenHandler.Invoke(deltaContent);
+                    if (messageTokenHandler is not null)
+                    {
+                        await messageTokenHandler.Invoke(deltaContent);
+                    }
                 }
             }
 
@@ -757,43 +754,53 @@ public class Conversation
         }
 
         if (responseRole is not null && responseRole.Equals(ChatMessageRole.Tool))
-            if (functionCallHandler != null)
+        {
+            if (functionCallHandler is not null)
             {
+                ResolvedToolsCall result = new ResolvedToolsCall();
+                
                 List<FunctionCall> calls = functionCalls.Select(pair => new FunctionCall { Name = pair.Key, Arguments = pair.Value.ToString() }).ToList();
-                FunctionResult? fr = await functionCallHandler.Invoke(calls);
-
-                if (fr is null) return;
-
-                ChatMessage fnCallMsg = new(ChatMessageRole.Assistant, responseStringBuilder.ToString(), Guid.NewGuid())
+                List<FunctionResult> frs = await functionCallHandler.Invoke(calls);
+                
+                ChatMessage fnCallMsg = new(ChatMessageRole.Assistant, string.Empty, Guid.NewGuid())
                 {
-                    Name = fr.Name,
-                    ToolCalls = []
+                    ToolCalls = calls.Select(x => new ToolCall { FunctionCall = x, Type = "function", Id = x.Name ?? string.Empty }).ToList(),
+                    Content = null
                 };
 
-                foreach (FunctionCall fc in calls) fnCallMsg.ToolCalls.Add(new ToolCall { FunctionCall = fc, Type = "function", Id = fc.Name ?? string.Empty });
-
+                result.AssistantMessage = fnCallMsg;
                 AppendMessage(fnCallMsg);
-
-                List<ChatMessage> functionResultMessages = [];
-
-                foreach (FunctionCall fc in calls)
+    
+                for (int i = 0; i < Math.Min(calls.Count, frs.Count); i++)
                 {
-                    ChatMessage fnResultMsg = new(ChatMessageRole.Tool, string.Empty, Guid.NewGuid())
+                    ChatMessage fnResultMsg = new(ChatMessageRole.Tool, frs[i].Content, Guid.NewGuid())
                     {
-                        Name = fr.Name,
-                        ToolCallId = fc.Name
+                        ToolCallId = calls[i].Name
                     };
-
+                    
                     AppendMessage(fnResultMsg);
-                    functionResultMessages.Add(fnResultMsg);
+
+                    result.ToolResults.Add(new ResolvedToolCall
+                    {
+                        Call = calls[i],
+                        Result = frs[i],
+                        ToolMessage = fnResultMsg
+                    });
                 }
 
-                if (OnAfterFunctionCall is not null) await OnAfterFunctionCall(fr, functionResultMessages, fnCallMsg);
+                if (OnAfterToolsCall is not null)
+                {
+                    await OnAfterToolsCall(result);
+                }   
 
                 return;
             }
+        }
 
-        if (responseRole is not null) AppendMessage(responseRole, responseStringBuilder.ToString(), messageId);
+        if (responseRole is not null)
+        {
+            AppendMessage(responseRole, responseStringBuilder.ToString(), messageId);
+        }
     }
 
     #endregion
