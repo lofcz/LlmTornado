@@ -109,7 +109,7 @@ public class ChatMessage
     ///     An optional name of the user in a multi-user chat
     /// </summary>
     [JsonProperty("name")]
-    public string Name { get; set; }
+    public string? Name { get; set; }
 
     /// <summary>
     ///     Assigned in ctor. Use to remove / update messages from conversation.s
