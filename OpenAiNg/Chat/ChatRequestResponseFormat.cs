@@ -14,8 +14,29 @@ public class ChatRequestResponseFormats
     [JsonProperty("type")]
     [JsonConverter(typeof(ChatRequestResponseFormatTypes.ChatRequestResponseFormatTypesJsonConverter))]
     public ChatRequestResponseFormatTypes? Type { get; set; }
+
+    internal ChatRequestResponseFormats() { }
+    
+    /// <summary>
+    ///     Signals the output should be plaintext.
+    /// </summary>
+    public static ChatRequestResponseFormats Text = new ChatRequestResponseFormats
+    {
+        Type = ChatRequestResponseFormatTypes.Text
+    };
+
+    /// <summary>
+    ///     Signals output should be JSON. The string "JSON" needs to be included in either system or user message in the conversation.
+    /// </summary>
+    public static ChatRequestResponseFormats Json = new ChatRequestResponseFormats
+    {
+        Type = ChatRequestResponseFormatTypes.Json
+    };
 }
 
+/// <summary>
+///     Represents response types 
+/// </summary>
 public class ChatRequestResponseFormatTypes
 {
     private ChatRequestResponseFormatTypes(string value)
