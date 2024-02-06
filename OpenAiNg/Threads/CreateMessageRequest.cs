@@ -28,6 +28,7 @@ public sealed class CreateMessageRequest
     ///     Currently only user is supported.
     /// </remarks>
     [JsonProperty("role")]
+    [JsonConverter(typeof(ChatMessageRole.ChatMessageRoleJsonConverter))]
     public ChatMessageRole Role { get; }
 
     /// <summary>

@@ -49,4 +49,13 @@ public interface IThreadsEndpoint
     /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
     /// <returns>True, if was successfully deleted.</returns>
     public Task<HttpCallResult<bool>> DeleteThreadAsync(string threadId, CancellationToken? cancellationToken = default);
+
+    /// <summary>
+    /// Create a message.
+    /// </summary>
+    /// <param name="threadId">The id of the thread to create a message for.</param>
+    /// <param name="request"></param>
+    /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
+    /// <returns><see cref="MessageResponse"/>.</returns>
+    public Task<HttpCallResult<MessageResponse>> CreateMessageAsync(string threadId, CreateMessageRequest request, CancellationToken? cancellationToken = default);
 }

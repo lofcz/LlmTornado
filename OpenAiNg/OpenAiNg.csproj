@@ -13,7 +13,7 @@
         <Title>OpenAI NextGeneration</Title>
         <PackageReleaseNotes>TTS endpoint</PackageReleaseNotes>
         <PackageId>OpenAiNg</PackageId>
-        <Version>2.3.3</Version>
+        <Version>3.0.0-beta1</Version>
         <AssemblyVersion>2.2.2.0</AssemblyVersion>
         <FileVersion>2.2.2.0</FileVersion>
         <GenerateDocumentationFile>True</GenerateDocumentationFile>
@@ -41,7 +41,6 @@
     </ItemGroup>
     <ItemGroup>
         <PackageReference Include="Newtonsoft.Json" Version="13.0.3"/>
-        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All"/>
-        <PackageReference Include="Microsoft.Extensions.Http" Version="2.1.0"/>
+        <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.0" />
     </ItemGroup>
 </Project>

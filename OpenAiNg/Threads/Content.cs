@@ -8,12 +8,13 @@ namespace OpenAiNg.Threads;
 public sealed class Content
 {
     [JsonProperty("type")]
-    [Newtonsoft.Json.JsonConverter(typeof(JsonStringEnumConverter<ContentType>))]
     public ContentType Type { get; private set; }
 
-    [JsonProperty("text")] public TextContent Text { get; private set; }
+    [JsonProperty("text")] 
+    public TextContent Text { get; private set; }
 
-    [JsonProperty("image_file")] public ImageFile ImageFile { get; private set; }
+    [JsonProperty("image_file")] 
+    public ImageFile ImageFile { get; private set; }
 
     public override string? ToString()
     {

@@ -510,7 +510,7 @@ public class Conversation
 
             if (newMsg.ToolCalls is { Count: > 0 } && newMsg.ToolCalls[0].FunctionCall.Name is not ("none" or "auto"))
             {
-                FunctionResult? result = await functionCallHandler.Invoke(new List<FunctionCall> { newMsg.ToolCalls[0].FunctionCall });
+                FunctionResult? result = await functionCallHandler.Invoke([newMsg.ToolCalls[0].FunctionCall]);
                 return new ChatResponse { Kind = ChatResponseKinds.Function, FunctionResult = result };
             }
 

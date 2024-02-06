@@ -30,10 +30,23 @@ public static class ThreadsDemo
         return response;
     }
     
+    public static async Task<bool> Delete(ThreadResponse thread)
+    {
+        HttpCallResult<bool> deleted = await Program.Connect().Threads.DeleteThreadAsync(thread.Id);
+        return deleted.Data;
+    }
+    
     public static async Task Delete()
     {
         ThreadResponse? response = await Create();
         HttpCallResult<bool> deleted = await Program.Connect().Threads.DeleteThreadAsync(response.Id);
         HttpCallResult<ThreadResponse> retrieveResponse = await Program.Connect().Threads.RetrieveThreadAsync(response.Id);
+    }
+    
+    public static async Task CreateMessage()
+    {
+        ThreadResponse? response = await Create();
+        HttpCallResult<MessageResponse> msg = await Program.Connect().Threads.CreateMessageAsync(response.Id, new CreateMessageRequest("my message"));
+        await Delete(response);
     }
 }

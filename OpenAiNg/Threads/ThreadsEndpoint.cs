@@ -70,7 +70,6 @@ public sealed class ThreadsEndpoint : EndpointBase, IThreadsEndpoint
         return new HttpCallResult<bool>(status.Code, status.Response, status.Data?.Deleted ?? false, status.Ok);
     }
 
-/*
     /// <summary>
     /// Create a message.
     /// </summary>
@@ -78,14 +77,12 @@ public sealed class ThreadsEndpoint : EndpointBase, IThreadsEndpoint
     /// <param name="request"></param>
     /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
     /// <returns><see cref="MessageResponse"/>.</returns>
-    public async Task<MessageResponse> CreateMessageAsync(string threadId, CreateMessageRequest request, CancellationToken cancellationToken = default)
+    public Task<HttpCallResult<MessageResponse>> CreateMessageAsync(string threadId, CreateMessageRequest request, CancellationToken? cancellationToken = default)
     {
-        var jsonContent = JsonSerializer.Serialize(request, OpenAIClient.JsonSerializationOptions).ToJsonStringContent(EnableDebug);
-        var response = await client.Client.PostAsync(GetUrl($"/{threadId}/messages"), jsonContent, cancellationToken).ConfigureAwait(false);
-        var responseAsString = await response.ReadAsStringAsync(EnableDebug, cancellationToken).ConfigureAwait(false);
-        return response.Deserialize<MessageResponse>(responseAsString, client);
+        return HttpPostRaw<MessageResponse>(GetUrl($"/{threadId}/messages"), request, cancellationToken);
     }
 
+    /*
     /// <summary>
     /// Returns a list of messages for a given thread.
     /// </summary>

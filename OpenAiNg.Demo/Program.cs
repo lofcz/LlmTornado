@@ -63,6 +63,7 @@ internal class Program
         ThreadsRetrieve,
         ThreadsModify,
         ThreadsDelete,
+        ThreadsCreateMessage,
         Last
     }
 
@@ -93,9 +94,13 @@ internal class Program
             Demos.ThreadsRetrieve => ThreadsDemo.Retrieve(),
             Demos.ThreadsModify => ThreadsDemo.Modify(),
             Demos.ThreadsDelete => ThreadsDemo.Delete(),
+            Demos.ThreadsCreateMessage => ThreadsDemo.CreateMessage(),
             _ => null
         };
 
-        if (task is not null) await task;
+        if (task is not null)
+        {
+            await task;
+        }
     }
 }

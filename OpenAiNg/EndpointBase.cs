@@ -32,7 +32,8 @@ public abstract class EndpointBase
         PooledConnectionLifetime = TimeSpan.FromMinutes(2)
     })
     {
-        Timeout = TimeSpan.FromSeconds(600)
+        Timeout = TimeSpan.FromSeconds(600),
+        DefaultRequestVersion = new Version(2, 0)
     };
 
     /// <summary>
@@ -399,15 +400,20 @@ public abstract class EndpointBase
         DataOrException<HttpResponseMessage> response = await HttpRequestRawWithAllCodes(url, verb, postData, false, ct).ConfigureAwait(ConfigureAwaitOptions.None);
 
         if (response.Exception is not null)
+        {
             return new HttpCallResult<T>(HttpStatusCode.ServiceUnavailable, null, default, false)
             {
                 Exception = response.Exception
             };
+        }
 
-        string resultAsString = await response.Data.Content.ReadAsStringAsync().ConfigureAwait(ConfigureAwaitOptions.None);
+        string resultAsString = await response.Data!.Content.ReadAsStringAsync().ConfigureAwait(ConfigureAwaitOptions.None);
         HttpCallResult<T> result = new(response.Data.StatusCode, resultAsString, default, response.Data.StatusCode is >= HttpStatusCode.OK and < HttpStatusCode.InternalServerError);
 
-        if (response.Data.IsSuccessStatusCode) result.Data = JsonConvert.DeserializeObject<T>(resultAsString);
+        if (response.Data.IsSuccessStatusCode)
+        {
+            result.Data = JsonConvert.DeserializeObject<T>(resultAsString);
+        }
 
         response.Data?.Dispose();
         return result;

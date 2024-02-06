@@ -1,4 +1,5 @@
 ﻿using System;
+using Newtonsoft.Json;
 
 namespace OpenAiNg.Chat;
 
@@ -112,5 +113,24 @@ public class ChatMessageRole : IEquatable<ChatMessageRole>
     public static implicit operator string(ChatMessageRole value)
     {
         return value.Value;
+    }
+    
+    internal class ChatMessageRoleJsonConverter : JsonConverter<ChatMessageRole>
+    {
+        public override void WriteJson(JsonWriter writer, ChatMessageRole? value, JsonSerializer serializer)
+        {
+            writer.WriteValue(value?.ToString());
+        }
+
+        public override ChatMessageRole ReadJson(JsonReader reader, Type objectType, ChatMessageRole? existingValue, bool hasExistingValue, JsonSerializer serializer)
+        {
+            if (reader.TokenType is JsonToken.String)
+            {
+                string? str = reader.Value as string;
+                return new ChatMessageRole(str);
+            }
+
+            return new ChatMessageRole(reader.ReadAsString());
+        }
     }
 }
