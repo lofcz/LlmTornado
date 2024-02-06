@@ -18,7 +18,7 @@ Supported features compared to [OpenAI-API-dotnet](https://github.com/OkGoDoIt/O
 - Supports OpenAI-compatible API providers, such as KoboldCpp.
 - Improved Azure OpenAI integration.
 - Nullability annotations.
-- Calls are guaranteed not to throw, full response is included in the call result.
+- Calls are guaranteed not to throw, full response is included in the call result. (Fully supported in 3.0+)
 - Actively maintained, [backed by a company I work for](https://www.scio.cz/).
 
 Features scheduled for open-sourcing:
