@@ -66,6 +66,7 @@ internal class Program
         ThreadsCreateMessage,
         ChatCompletion,
         ChatStreamWithFunctions,
+        ChatAnthropic,
         Last
     }
 
@@ -99,6 +100,7 @@ internal class Program
             Demos.ThreadsCreateMessage => ThreadsDemo.CreateMessage(),
             Demos.ChatCompletion => ChatDemo.Completion(),
             Demos.ChatStreamWithFunctions => ChatDemo.StreamWithFunctions(),
+            Demos.ChatAnthropic => ChatDemo.Anthropic(),
             _ => null
         };
 

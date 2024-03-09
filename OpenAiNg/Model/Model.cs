@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using OpenAiNg.Code;
 
 namespace OpenAiNg.Models;
 
@@ -17,10 +18,23 @@ public class Model
     /// </summary>
     /// <param name="name">The id/<see cref="ModelID" /> to use.</param>
     /// <param name="ownedBy">Either</param>
-    public Model(string name, string? ownedBy = OpenAi)
+    /// <param name="provider">Either</param>
+    public Model(string name, string? ownedBy = OpenAi, LLmProviders provider = LLmProviders.OpenAi)
     {
         ModelID = name;
         OwnedBy = ownedBy;
+        Provider = provider;
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="name"></param>
+    /// <param name="provider"></param>
+    public Model(string name, LLmProviders provider)
+    {
+        ModelID = name;
+        Provider = provider;
     }
 
     /// <summary>
@@ -53,6 +67,12 @@ public class Model
     [JsonIgnore]
     public DateTime? Created => CreatedUnixTime.HasValue ? DateTimeOffset.FromUnixTimeSeconds(CreatedUnixTime.Value).DateTime : null;
 
+    /// <summary>
+    ///     The type of object. Should always be 'model'.
+    /// </summary>
+    [JsonIgnore]
+    public LLmProviders Provider { get; set; }
+    
     /// <summary>
     ///     The time when the model was created in unix epoch format
     /// </summary>
@@ -184,7 +204,7 @@ public class Model
 
     /// <summary>
     ///     More capable than any GPT-3.5 model, able to do more complex tasks, and optimized for chat. Will be updated with
-    ///     the latest model iteration.  Currently in limited beta so your OpenAI account needs to be whitelisted to use this.
+    ///     the latest model iteration. Currently in limited beta so your OpenAI account needs to be whitelisted to use this.
     ///     Supports images.
     /// </summary>
     public static Model GPT4_Vision_Preview => new("gpt-4-vision-preview");
@@ -272,6 +292,17 @@ public class Model
     ///     Dalle2 model. This model generates images.
     /// </summary>
     public static Model Dalle3 => new("dall-e-3");
+    
+    /// <summary>
+    ///     Dalle2 model. This model generates images.
+    /// </summary>
+    public static Model Claude3Sonnet => new("claude-3-sonnet-20240229", LLmProviders.Anthropic);
+    
+    /// <summary>
+    ///     Dalle2 model. This model generates images.
+    /// </summary>
+    public static Model Claude3Opus => new("claude-3-opus-20240229", LLmProviders.Anthropic);
+    
 
     /// <summary>
     ///     A custom model, equivalent of instantiating <see cref="Model" />
@@ -292,13 +323,22 @@ public class Model
         return model.ModelID;
     }
 
+    private static readonly HashSet<string> AnthropicModels = [Claude3Sonnet, Claude3Opus];
+
     /// <summary>
     ///     Allows a string to be implicitly cast as an <see cref="Model" /> with that <see cref="ModelID" />
     /// </summary>
     /// <param name="name">The id/<see cref="ModelID" /> to use</param>
     public static implicit operator Model(string? name)
     {
-        return new Model(name);
+        LLmProviders provider = LLmProviders.OpenAi; 
+        
+        if (AnthropicModels.Contains(name))
+        {
+            provider = LLmProviders.Anthropic;
+        }
+        
+        return new Model(name, provider);
     }
 
     /// <summary>

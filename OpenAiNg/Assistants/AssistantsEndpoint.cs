@@ -2,6 +2,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using OpenAiNg.Chat;
+using OpenAiNg.Code;
 using OpenAiNg.Common;
 using OpenAiNg.Files;
 
@@ -19,6 +20,13 @@ public sealed class AssistantsEndpoint : EndpointBase, IAssistantsEndpoint
 
     protected override string Endpoint => "assistants";
 
+    
+    /// <summary>
+    /// 
+    /// </summary>
+    protected override CapabilityEndpoints CapabilityEndpoint => CapabilityEndpoints.Assistants;
+    
+
     /// <summary>
     ///     Get list of assistants.
     /// </summary>
@@ -29,7 +37,7 @@ public sealed class AssistantsEndpoint : EndpointBase, IAssistantsEndpoint
     /// </returns>
     public Task<HttpCallResult<ListResponse<AssistantResponse>>> ListAssistantsAsync(ListQuery? query = null, CancellationToken? cancellationToken = default)
     {
-        return HttpGetRaw<ListResponse<AssistantResponse>>(GetUrl(queryParameters: query), cancellationToken);
+        return HttpGetRaw<ListResponse<AssistantResponse>>(Api.EndpointProvider, GetUrl(queryParameters: query), cancellationToken);
     }
 
     /// <summary>
@@ -40,7 +48,7 @@ public sealed class AssistantsEndpoint : EndpointBase, IAssistantsEndpoint
     /// <returns><see cref="AssistantResponse" />.</returns>
     public Task<HttpCallResult<AssistantResponse>> CreateAssistantAsync(CreateAssistantRequest request, CancellationToken? cancellationToken = default)
     {
-        return HttpPostRaw<AssistantResponse>(Url, request, cancellationToken);
+        return HttpPostRaw<AssistantResponse>(Api.EndpointProvider, Url, request, cancellationToken);
     }
 
     /// <summary>
@@ -51,7 +59,7 @@ public sealed class AssistantsEndpoint : EndpointBase, IAssistantsEndpoint
     /// <returns><see cref="AssistantResponse" />.</returns>
     public Task<HttpCallResult<AssistantResponse>> RetrieveAssistantAsync(string assistantId, CancellationToken? cancellationToken = default)
     {
-        return HttpGetRaw<AssistantResponse>(GetUrl($"/{assistantId}"), cancellationToken, true);
+        return HttpGetRaw<AssistantResponse>(Api.EndpointProvider, GetUrl($"/{assistantId}"), cancellationToken, true);
     }
 
     /// <summary>
@@ -64,7 +72,7 @@ public sealed class AssistantsEndpoint : EndpointBase, IAssistantsEndpoint
     /// <returns><see cref="AssistantResponse" />.</returns>
     public Task<HttpCallResult<AssistantResponse>> ModifyAssistantAsync(string assistantId, CreateAssistantRequest request, CancellationToken? cancellationToken = default)
     {
-        return HttpPostRaw<AssistantResponse>(GetUrl($"/{assistantId}"), request, cancellationToken);
+        return HttpPostRaw<AssistantResponse>(Api.EndpointProvider, GetUrl($"/{assistantId}"), request, cancellationToken);
     }
 
     /// <summary>
@@ -75,7 +83,7 @@ public sealed class AssistantsEndpoint : EndpointBase, IAssistantsEndpoint
     /// <returns>True, if the assistant was deleted.</returns>
     public async Task<HttpCallResult<bool>> DeleteAssistantAsync(string assistantId, CancellationToken? cancellationToken = default)
     {
-        HttpCallResult<DeletionStatus> status = await HttpAtomic<DeletionStatus>(HttpMethod.Delete, GetUrl($"/{assistantId}"), ct: cancellationToken).ConfigureAwait(ConfigureAwaitOptions.None);
+        HttpCallResult<DeletionStatus> status = await HttpAtomic<DeletionStatus>(Api.EndpointProvider, HttpMethod.Delete, GetUrl($"/{assistantId}"), ct: cancellationToken).ConfigureAwait(ConfigureAwaitOptions.None);
         return new HttpCallResult<bool>(status.Code, status.Response, status.Data?.Deleted ?? false, status.Ok);
     }
 
@@ -88,7 +96,7 @@ public sealed class AssistantsEndpoint : EndpointBase, IAssistantsEndpoint
     /// <returns><see cref="ListResponse{AssistantFile}" />.</returns>
     public Task<HttpCallResult<ListResponse<AssistantFileResponse>>> ListFilesAsync(string assistantId, ListQuery? query = null, CancellationToken? cancellationToken = default)
     {
-        return HttpGetRaw<ListResponse<AssistantFileResponse>>(GetUrl($"/{assistantId}/files", query), cancellationToken, true);
+        return HttpGetRaw<ListResponse<AssistantFileResponse>>(Api.EndpointProvider, GetUrl($"/{assistantId}/files", query), cancellationToken, true);
     }
 
     /// <summary>
@@ -103,7 +111,7 @@ public sealed class AssistantsEndpoint : EndpointBase, IAssistantsEndpoint
     /// <returns><see cref="AssistantFileResponse" />.</returns>
     public Task<HttpCallResult<AssistantFileResponse>> AttachFileAsync(string assistantId, File file, CancellationToken? cancellationToken = default)
     {
-        return HttpPostRaw<AssistantFileResponse>(GetUrl($"/{assistantId}/files"), new { file_id = file.Id }, cancellationToken);
+        return HttpPostRaw<AssistantFileResponse>(Api.EndpointProvider, GetUrl($"/{assistantId}/files"), new { file_id = file.Id }, cancellationToken);
     }
 
     /// <summary>
@@ -117,7 +125,7 @@ public sealed class AssistantsEndpoint : EndpointBase, IAssistantsEndpoint
     /// <returns><see cref="AssistantFileResponse" />.</returns>
     public Task<HttpCallResult<AssistantFileResponse>> AttachFileAsync(string assistantId, string fileId, CancellationToken? cancellationToken = default)
     {
-        return HttpPostRaw<AssistantFileResponse>(GetUrl($"/{assistantId}/files"), new { file_id = fileId }, cancellationToken);
+        return HttpPostRaw<AssistantFileResponse>(Api.EndpointProvider, GetUrl($"/{assistantId}/files"), new { file_id = fileId }, cancellationToken);
     }
 
     /// <summary>
@@ -129,7 +137,7 @@ public sealed class AssistantsEndpoint : EndpointBase, IAssistantsEndpoint
     /// <returns><see cref="AssistantFileResponse" />.</returns>
     public Task<HttpCallResult<AssistantFileResponse>> RetrieveFileAsync(string assistantId, string fileId, CancellationToken? cancellationToken = default)
     {
-        return HttpGetRaw<AssistantFileResponse>(GetUrl($"/{assistantId}/files/{fileId}"), cancellationToken, true);
+        return HttpGetRaw<AssistantFileResponse>(Api.EndpointProvider, GetUrl($"/{assistantId}/files/{fileId}"), cancellationToken, true);
     }
 
     /// <summary>
@@ -146,7 +154,7 @@ public sealed class AssistantsEndpoint : EndpointBase, IAssistantsEndpoint
     /// <returns>True, if file was removed.</returns>
     public async Task<HttpCallResult<bool>> RemoveFileAsync(string assistantId, string fileId, CancellationToken? cancellationToken = default)
     {
-        HttpCallResult<DeletionStatus> status = await HttpAtomic<DeletionStatus>(HttpMethod.Delete, GetUrl($"/{assistantId}/files/{fileId}"), ct: cancellationToken).ConfigureAwait(ConfigureAwaitOptions.None);
+        HttpCallResult<DeletionStatus> status = await HttpAtomic<DeletionStatus>(Api.EndpointProvider, HttpMethod.Delete, GetUrl($"/{assistantId}/files/{fileId}"), ct: cancellationToken).ConfigureAwait(ConfigureAwaitOptions.None);
         return new HttpCallResult<bool>(status.Code, status.Response, status.Data?.Deleted ?? false, status.Ok);
     }
 
@@ -164,7 +172,7 @@ public sealed class AssistantsEndpoint : EndpointBase, IAssistantsEndpoint
     /// <returns>True, if file was removed.</returns>
     public async Task<HttpCallResult<bool>> RemoveFileAsync(string assistantId, File file, CancellationToken? cancellationToken = default)
     {
-        HttpCallResult<DeletionStatus> status = await HttpAtomic<DeletionStatus>(HttpMethod.Delete, GetUrl($"/{assistantId}/files/{file.Id}"), ct: cancellationToken).ConfigureAwait(ConfigureAwaitOptions.None);
+        HttpCallResult<DeletionStatus> status = await HttpAtomic<DeletionStatus>(Api.EndpointProvider, HttpMethod.Delete, GetUrl($"/{assistantId}/files/{file.Id}"), ct: cancellationToken).ConfigureAwait(ConfigureAwaitOptions.None);
         return new HttpCallResult<bool>(status.Code, status.Response, status.Data?.Deleted ?? false, status.Ok);
     }
 }

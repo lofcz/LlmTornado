@@ -54,3 +54,31 @@ public class ChatImage
     [JsonProperty("detail")]
     public ImageDetail? Detail { get; set; }
 }
+
+/// <summary>
+/// 
+/// </summary>
+public enum LLmProviders
+{
+    Unknown,
+    OpenAi,
+    Anthropic
+}
+
+/// <summary>
+/// 
+/// </summary>
+public enum CapabilityEndpoints
+{
+    Chat,
+    Moderation,
+    Completions,
+    Embeddings,
+    Models,
+    Files,
+    ImageGeneration,
+    Audio,
+    Assistants,
+    ImageEdit,
+    Threads
+}

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using OpenAiNg.Code;
 using OpenAiNg.Models;
 
 namespace OpenAiNg.Chat;
@@ -25,6 +26,11 @@ public class ChatEndpoint : EndpointBase, IChatEndpoint
     ///     The name of the endpoint, which is the final path segment in the API URL.  For example, "completions".
     /// </summary>
     protected override string Endpoint => "chat/completions";
+    
+    /// <summary>
+    /// 
+    /// </summary>
+    protected override CapabilityEndpoints CapabilityEndpoint => CapabilityEndpoints.Chat;
 
     /// <summary>
     ///     This allows you to set default parameters for every request, for example to set a default temperature or max
@@ -69,7 +75,7 @@ public class ChatEndpoint : EndpointBase, IChatEndpoint
     /// </returns>
     public async Task<ChatResult?> CreateChatCompletionAsync(ChatRequest request)
     {
-        ChatResult? result = await HttpPost1<ChatResult>(postData: request);
+        ChatResult? result = await HttpPost1<ChatResult>(Api.GetProvider(request.Model), CapabilityEndpoint, postData: request);
 
         if (Api.ChatRequestInterceptor is not null) await Api.ChatRequestInterceptor.Invoke(request, result);
 
@@ -234,7 +240,7 @@ public class ChatEndpoint : EndpointBase, IChatEndpoint
     public IAsyncEnumerable<ChatResult> StreamChatEnumerableAsync(ChatRequest request)
     {
         request = new ChatRequest(request) { Stream = true };
-        return HttpStreamingRequest<ChatResult>(Url, HttpMethod.Post, request, request.OuboundFunctionsContent);
+        return HttpStreamingRequest<ChatResult>(Api.GetProvider(request.Model), CapabilityEndpoint, Url, HttpMethod.Post, request, request.OuboundFunctionsContent);
     }
 
     /// <summary>

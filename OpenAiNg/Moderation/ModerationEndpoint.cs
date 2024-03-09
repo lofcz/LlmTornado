@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks;
+using OpenAiNg.Code;
 using OpenAiNg.Models;
 
 namespace OpenAiNg.Moderation;
@@ -21,6 +22,12 @@ public class ModerationEndpoint : EndpointBase, IModerationEndpoint
 	///     The name of the endpoint, which is the final path segment in the API URL.  For example, "completions".
 	/// </summary>
 	protected override string Endpoint => "moderations";
+
+    
+	/// <summary>
+    /// 
+    /// </summary>
+    protected override CapabilityEndpoints CapabilityEndpoint => CapabilityEndpoints.Moderation;
 
 	/// <summary>
 	///     This allows you to send request to the recommended model without needing to specify. OpenAI recommends using the
@@ -46,6 +53,6 @@ public class ModerationEndpoint : EndpointBase, IModerationEndpoint
 	/// <returns>Asynchronously returns the classification result</returns>
 	public async Task<ModerationResult> CallModerationAsync(ModerationRequest request)
     {
-        return await HttpPost1<ModerationResult>(postData: request);
+        return await HttpPost1<ModerationResult>(Api.EndpointProvider, CapabilityEndpoint, postData: request);
     }
 }

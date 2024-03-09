@@ -23,6 +23,20 @@ public static class ChatDemo
         return result;
     }
 
+
+    public static async Task Anthropic()
+    {
+       Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+       {
+           Model = Models.Model.Claude3Sonnet
+       });
+       chat.AppendSystemMessage("You are a dog and you woof");
+       chat.AppendUserInput("Who are you?");
+
+       string? str = await chat.GetResponseFromChatbotAsync();
+    }
+
+
     public static async Task<string> StreamWithFunctions()
     {
         StringBuilder sb = new StringBuilder();

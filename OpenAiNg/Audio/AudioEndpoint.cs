@@ -23,6 +23,13 @@ public class AudioEndpoint : EndpointBase, IAudioEndpoint
     ///     Audio endpoint.
     /// </summary>
     protected override string Endpoint => "audio";
+    
+    
+    /// <summary>
+    /// 
+    /// </summary>
+    protected override CapabilityEndpoints CapabilityEndpoint => CapabilityEndpoints.Audio;
+    
 
     /// <summary>
     ///     Sends transcript request to openai and returns verbose_json result.
@@ -58,7 +65,7 @@ public class AudioEndpoint : EndpointBase, IAudioEndpoint
 
     private async Task<SpeechTtsResult?> PostSpeechAsync(SpeechRequest request)
     {
-        StreamResponse? x = await HttpPostStream($"{Url}/speech", request);
+        StreamResponse? x = await HttpPostStream(Api.EndpointProvider, CapabilityEndpoint, $"{Url}/speech", request);
         return x is null ? null : new SpeechTtsResult(x);
     }
 
@@ -79,6 +86,6 @@ public class AudioEndpoint : EndpointBase, IAudioEndpoint
 
         if (!request.Language.IsNullOrWhiteSpace()) content.Add(new StringContent(request.Language), "language");
 
-        return HttpPost1<TranscriptionVerboseJsonResult>(url, content);
+        return HttpPost1<TranscriptionVerboseJsonResult>(Api.EndpointProvider, CapabilityEndpoint, url, content);
     }
 }
