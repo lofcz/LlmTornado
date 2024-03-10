@@ -1,5 +1,7 @@
 ﻿using System.Collections.Generic;
 using Newtonsoft.Json;
+using OpenAiNg.Code;
+using OpenAiNg.Vendor.Anthropic;
 
 namespace OpenAiNg.Chat;
 
@@ -18,7 +20,7 @@ public class ChatResult : ApiResultBase
 	///     The list of choices that the user was presented with during the chat interaction
 	/// </summary>
 	[JsonProperty("choices")]
-    public IReadOnlyList<ChatChoice>? Choices { get; set; }
+    public List<ChatChoice>? Choices { get; set; }
 
 	/// <summary>
 	///     The usage statistics for the chat interaction
@@ -34,6 +36,16 @@ public class ChatResult : ApiResultBase
     {
         return Choices is { Count: > 0 } ? Choices[0].ToString() : null;
     }
+
+	internal static ChatResult? Deserialize(LLmProviders provider, string jsonData)
+	{
+		return provider switch
+		{
+			LLmProviders.OpenAi => JsonConvert.DeserializeObject<ChatResult>(jsonData),
+			LLmProviders.Anthropic => JsonConvert.DeserializeObject<VendorAnthropicChatResult>(jsonData)?.ToChatResult(),
+			_ => JsonConvert.DeserializeObject<ChatResult>(jsonData)
+		};
+	}
 }
 
 /// <summary>
@@ -99,4 +111,16 @@ public class ChatUsage : Usage
 	/// </summary>
 	[JsonProperty("total_tokens")]
     public int TotalTokens { get; set; }
+
+	public ChatUsage()
+	{
+		
+	}
+	
+	internal ChatUsage(VendorAnthropicUsage usage)
+	{
+		CompletionTokens = usage.OutputTokens;
+		PromptTokens = usage.InputTokens;
+		TotalTokens = CompletionTokens + PromptTokens;
+	}
 }

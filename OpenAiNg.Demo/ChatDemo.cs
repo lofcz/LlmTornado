@@ -2,6 +2,7 @@ using System.Text;
 using Newtonsoft.Json;
 using OpenAiNg.Chat;
 using OpenAiNg.ChatFunctions;
+using OpenAiNg.Code;
 using OpenAiNg.Common;
 
 namespace OpenAiNg.Demo;
@@ -22,6 +23,59 @@ public static class ChatDemo
 
         return result;
     }
+
+
+    public static async Task Anthropic()
+    {
+       Conversation chat = Program.Connect(LLmProviders.Anthropic).Chat.CreateConversation(new ChatRequest
+       {
+           Model = Models.Model.Claude3Sonnet
+       });
+       chat.AppendSystemMessage("Pretend you are a dog. Sound authentic.");
+       chat.AppendUserInput("Who are you?");
+
+       string? str = await chat.GetResponseFromChatbotAsync();
+       
+       Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
+       {
+           Model = Models.Model.GPT4_Turbo_Preview
+       });
+       chat2.AppendSystemMessage("Pretend you are a dog. Sound authentic.");
+       chat2.AppendUserInput("Who are you?");
+       
+       string? str2 = await chat2.GetResponseFromChatbotAsync();
+
+       Console.WriteLine("Anthropic:");
+       Console.WriteLine(str);
+       Console.WriteLine("OpenAI:");
+       Console.WriteLine(str2);
+    }
+    
+    public static async Task AnthropicStreaming()
+    {
+        Conversation chat = Program.Connect(LLmProviders.Anthropic).Chat.CreateConversation(new ChatRequest
+        {
+            Model = Models.Model.Claude3Sonnet
+        });
+        chat.AppendSystemMessage("Pretend you are a dog. Sound authentic.");
+        chat.AppendUserInput("Who are you?");
+
+        Console.WriteLine("Anthropic:");
+        await chat.StreamResponseFromChatbotAsync(Console.Write);
+        Console.WriteLine();
+       
+        Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = Models.Model.GPT4_Turbo_Preview
+        });
+        chat2.AppendSystemMessage("Pretend you are a dog. Sound authentic.");
+        chat2.AppendUserInput("Who are you?");
+       
+        Console.WriteLine("OpenAI:");
+        await chat2.StreamResponseFromChatbotAsync(Console.Write);
+        Console.WriteLine();
+    }
+
 
     public static async Task<string> StreamWithFunctions()
     {

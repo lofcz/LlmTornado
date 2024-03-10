@@ -6,6 +6,7 @@ using OpenAiNg.ChatFunctions;
 using OpenAiNg.Code;
 using OpenAiNg.Common;
 using OpenAiNg.Completions;
+using OpenAiNg.Vendor.Anthropic;
 
 namespace OpenAiNg.Chat;
 
@@ -213,6 +214,21 @@ public class ChatRequest
 	[JsonProperty("adapter")]
     public Dictionary<string, object?>? Adapter { get; set; }
 
+	/// <summary>
+	///		Serializes the chat request into a http body, based on the conventions used by a LLM provider.
+	/// </summary>
+	/// <param name="provider"></param>
+	/// <returns></returns>
+	public string Serialize(LLmProviders provider)
+	{
+		return provider switch
+		{
+			LLmProviders.OpenAi => JsonConvert.SerializeObject(this, EndpointBase.NullSettings),
+			LLmProviders.Anthropic => JsonConvert.SerializeObject(new VendorAnthropicChatRequest(this), EndpointBase.NullSettings),
+			_ => string.Empty
+		};
+	}
+    
     internal class ChatMessageRequestMessagesJsonConverter : JsonConverter<IList<ChatMessage>?>
     {
         public override void WriteJson(JsonWriter writer, IList<ChatMessage>? value, JsonSerializer serializer)

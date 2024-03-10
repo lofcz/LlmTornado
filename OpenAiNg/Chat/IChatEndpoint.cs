@@ -17,7 +17,7 @@ public interface IChatEndpoint
 	///     the request will automatically pick up the default value.
 	/// </summary>
 	ChatRequest DefaultChatRequestArgs { get; set; }
-
+	
 	/// <summary>
 	///     Creates an ongoing chat which can easily encapsulate the conversation.  This is the simplest way to use the Chat
 	///     endpoint.

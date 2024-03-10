@@ -339,3 +339,4 @@ ASALocalRun/
 # BeatPulse healthcheck temp database
 healthchecksdb
 OpenAiNg.Demo/apiKey.json
+OpenAiNg.Tests/apiKey.json

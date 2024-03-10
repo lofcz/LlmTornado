@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using OpenAiNg.Assistants;
 using OpenAiNg.Audio;
 using OpenAiNg.Chat;
+using OpenAiNg.Code;
 using OpenAiNg.Completions;
 using OpenAiNg.Embedding;
 using OpenAiNg.Files;
@@ -29,6 +30,8 @@ public class OpenAiApi : IOpenAiApi
     private IModelsEndpoint? _models;
     private IModerationEndpoint? _moderation;
     private IThreadsEndpoint? _threadsEndpoint;
+    private IEndpointProvider _endpointProvider;
+
 
     /// <summary>
     ///     Creates a new entry point to the OpenAPI API, handling auth and allowing access to the various API endpoints
@@ -40,6 +43,7 @@ public class OpenAiApi : IOpenAiApi
     public OpenAiApi(ApiAuthentication? apiKeys)
     {
         Auth = apiKeys;
+        _endpointProvider = new OpenAiEndpointProvider(this);
     }
 
     /// <summary>
@@ -49,6 +53,7 @@ public class OpenAiApi : IOpenAiApi
     public OpenAiApi(string apiKey)
     {
         Auth = new ApiAuthentication(apiKey);
+        _endpointProvider = new OpenAiEndpointProvider(this);
     }
 
     /// <summary>
@@ -59,6 +64,7 @@ public class OpenAiApi : IOpenAiApi
     public OpenAiApi(string apiKey, string organizationKey)
     {
         Auth = new ApiAuthentication(apiKey, organizationKey);
+        _endpointProvider = new OpenAiEndpointProvider(this);
     }
 
     /// <summary>
@@ -114,6 +120,42 @@ public class OpenAiApi : IOpenAiApi
     {
         Auth = auth;
     }
+
+    // fieldEndpointProvider
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="provider"></param>
+    public void SetEndpointProvider(IEndpointProvider provider)
+    {
+        _endpointProvider = provider;
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="model"></param>
+    /// <returns></returns>
+    public IEndpointProvider SetEndpointProvider(Model model)
+    {
+        if (model.Provider != _endpointProvider.Provider)
+        {
+            SetEndpointProvider(EndpointProviderConverter.CreateProvider(model.Provider, this));
+        }
+
+        return _endpointProvider;
+    }
+
+    public IEndpointProvider GetProvider(Model model)
+    {
+        return EndpointProviderConverter.CreateProvider(model.Provider, this);
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    public IEndpointProvider EndpointProvider => _endpointProvider;
 
     /// <summary>
     ///     Text generation is the core function of the API. You give the API a prompt, and it generates a completion. The way

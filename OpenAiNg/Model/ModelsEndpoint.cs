@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using OpenAiNg.Code;
 
 namespace OpenAiNg.Models;
 
@@ -23,6 +24,12 @@ public class ModelsEndpoint : EndpointBase, IModelsEndpoint
 	///     The name of the endpoint, which is the final path segment in the API URL.  For example, "models".
 	/// </summary>
 	protected override string Endpoint => "models";
+    
+	/// <summary>
+    /// 
+    /// </summary>
+    protected override CapabilityEndpoints CapabilityEndpoint => CapabilityEndpoints.Models;
+	
 
 	/// <summary>
 	///     Get details about a particular Model from the API, specifically properties such as <see cref="Model.OwnedBy" /> and
@@ -32,7 +39,7 @@ public class ModelsEndpoint : EndpointBase, IModelsEndpoint
 	/// <returns>Asynchronously returns the <see cref="Model" /> with all available properties</returns>
 	public async Task<Model> RetrieveModelDetailsAsync(string? id)
     {
-        string resultAsString = await HttpGetContent($"{Url}/{id}");
+        string resultAsString = await HttpGetContent(Api.EndpointProvider, CapabilityEndpoint, $"{Url}/{id}");
         Model? model = JsonConvert.DeserializeObject<Model>(resultAsString);
         return model;
     }
@@ -43,7 +50,7 @@ public class ModelsEndpoint : EndpointBase, IModelsEndpoint
 	/// <returns>Asynchronously returns the list of all <see cref="Model" />s</returns>
 	public async Task<List<Model>> GetModelsAsync()
     {
-        return (await HttpGet<JsonHelperRoot>())?.data;
+        return (await HttpGet<JsonHelperRoot>(Api.EndpointProvider, CapabilityEndpoint))?.data;
     }
 
 	/// <summary>

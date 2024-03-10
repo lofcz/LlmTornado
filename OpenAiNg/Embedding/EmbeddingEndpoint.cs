@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using OpenAiNg.Code;
 using OpenAiNg.Models;
 
 namespace OpenAiNg.Embedding;
@@ -25,6 +26,12 @@ public class EmbeddingEndpoint : EndpointBase, IEmbeddingEndpoint
 	///     The name of the endpoint, which is the final path segment in the API URL.  For example, "embeddings".
 	/// </summary>
 	protected override string Endpoint => "embeddings";
+    
+	/// <summary>
+	/// 
+	/// </summary>
+	protected override CapabilityEndpoints CapabilityEndpoint => CapabilityEndpoints.Embeddings;
+	
 
 	/// <summary>
 	///     This allows you to send request to the recommended model without needing to specify. Every request uses the
@@ -70,7 +77,7 @@ public class EmbeddingEndpoint : EndpointBase, IEmbeddingEndpoint
 	/// </returns>
 	public async Task<EmbeddingResult> CreateEmbeddingAsync(EmbeddingRequest request)
     {
-        return await HttpPost1<EmbeddingResult>(postData: request);
+        return await HttpPost1<EmbeddingResult>(Api.EndpointProvider, CapabilityEndpoint, postData: request);
     }
 
 	/// <summary>
@@ -107,6 +114,6 @@ public class EmbeddingEndpoint : EndpointBase, IEmbeddingEndpoint
 	/// </returns>
 	public async Task<EmbeddingResult> CreateEmbeddingAsync(EmbeddingRequestArray request)
     {
-        return await HttpPost1<EmbeddingResult>(postData: request);
+        return await HttpPost1<EmbeddingResult>(Api.EndpointProvider, CapabilityEndpoint, postData: request);
     }
 }

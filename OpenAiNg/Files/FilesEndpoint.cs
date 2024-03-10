@@ -3,6 +3,7 @@ using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using OpenAiNg.Code;
 using OpenAiNg.Common;
 
 namespace OpenAiNg.Files;
@@ -25,6 +26,12 @@ public class FilesEndpoint : EndpointBase, IFilesEndpoint
 	///     The name of the endpoint, which is the final path segment in the API URL.  For example, "files".
 	/// </summary>
 	protected override string Endpoint => "files";
+    
+	/// <summary>
+	/// 
+	/// </summary>
+	protected override CapabilityEndpoints CapabilityEndpoint => CapabilityEndpoints.Files;
+	
 
 	/// <summary>
 	///     Get the list of all files
@@ -33,7 +40,7 @@ public class FilesEndpoint : EndpointBase, IFilesEndpoint
 	/// <exception cref="HttpRequestException"></exception>
 	public async Task<List<File>?> GetFilesAsync()
     {
-        return (await HttpGet<FilesData>().ConfigureAwait(ConfigureAwaitOptions.None))?.Data;
+        return (await HttpGet<FilesData>(Api.EndpointProvider, CapabilityEndpoint).ConfigureAwait(ConfigureAwaitOptions.None))?.Data;
     }
 
 	/// <summary>
@@ -43,7 +50,7 @@ public class FilesEndpoint : EndpointBase, IFilesEndpoint
 	/// <returns></returns>
 	public Task<File?> GetFileAsync(string fileId)
     {
-        return HttpGet<File>($"{Url}/{fileId}");
+        return HttpGet<File>(Api.EndpointProvider, CapabilityEndpoint, $"{Url}/{fileId}");
     }
 
 	/// <summary>
@@ -53,7 +60,7 @@ public class FilesEndpoint : EndpointBase, IFilesEndpoint
 	/// <returns></returns>
 	public Task<string> GetFileContentAsStringAsync(string fileId)
     {
-        return HttpGetContent($"{Url}/{fileId}/content");
+        return HttpGetContent(Api.EndpointProvider, CapabilityEndpoint, $"{Url}/{fileId}/content");
     }
 
 	/// <summary>
@@ -63,7 +70,7 @@ public class FilesEndpoint : EndpointBase, IFilesEndpoint
 	/// <returns></returns>
 	public Task<File?> DeleteFileAsync(string fileId)
     {
-        return HttpDelete<File>($"{Url}/{fileId}");
+        return HttpDelete<File>(Api.EndpointProvider, CapabilityEndpoint,$"{Url}/{fileId}");
     }
 
 
@@ -85,7 +92,7 @@ public class FilesEndpoint : EndpointBase, IFilesEndpoint
             { new ByteArrayContent(await System.IO.File.ReadAllBytesAsync(filePath).ConfigureAwait(ConfigureAwaitOptions.None)), "file", Path.GetFileName(filePath) }
         };
 
-        return await HttpPost<File>(Url, content).ConfigureAwait(ConfigureAwaitOptions.None);
+        return await HttpPost<File>(Api.EndpointProvider, CapabilityEndpoints.Files, Url, content).ConfigureAwait(ConfigureAwaitOptions.None);
     }
 
 	/// <summary>

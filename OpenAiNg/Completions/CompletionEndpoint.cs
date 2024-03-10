@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
+using OpenAiNg.Code;
 using OpenAiNg.Models;
 
 namespace OpenAiNg.Completions;
@@ -29,6 +30,11 @@ public class CompletionEndpoint : EndpointBase, ICompletionEndpoint
     protected override string Endpoint => "completions";
 
     /// <summary>
+    /// 
+    /// </summary>
+    protected override CapabilityEndpoints CapabilityEndpoint => CapabilityEndpoints.Completions;
+    
+    /// <summary>
     ///     This allows you to set default parameters for every request, for example to set a default temperature or max
     ///     tokens.  For every request, if you do not have a parameter set on the request but do have it set here as a default,
     ///     the request will automatically pick up the default value.
@@ -51,7 +57,8 @@ public class CompletionEndpoint : EndpointBase, ICompletionEndpoint
     /// </returns>
     public async Task<CompletionResult?> CreateCompletionAsync(CompletionRequest request)
     {
-        return await HttpPost1<CompletionResult>(postData: request);
+        return await HttpPost1<CompletionResult>(Api.EndpointProvider, CapabilityEndpoint, postData: request);
+        
     }
 
     /// <summary>
@@ -222,7 +229,7 @@ public class CompletionEndpoint : EndpointBase, ICompletionEndpoint
     public IAsyncEnumerable<CompletionResult> StreamCompletionEnumerableAsync(CompletionRequest request)
     {
         request = new CompletionRequest(request) { Stream = true };
-        return HttpStreamingRequest<CompletionResult>(Url, HttpMethod.Post, request);
+        return HttpStreamingRequest<CompletionResult>(Api.EndpointProvider, CapabilityEndpoint, Url, HttpMethod.Post, request);
     }
 
     /// <summary>
