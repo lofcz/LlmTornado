@@ -313,20 +313,6 @@ public abstract class EndpointBase
             }
         }
 
-        req.Headers.Add("User-Agent", userAgent);
-        req.Headers.Add("OpenAI-Beta", "assistants=v1");
-
-        if (Api.Auth is not null)
-        {
-            if (Api.Auth.ApiKey is not null)
-            {
-                req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Api.Auth.ApiKey);
-                req.Headers.Add("api-key", Api.Auth.ApiKey);
-            }
-
-            if (Api.Auth.Organization is not null) req.Headers.Add("OpenAI-Organization", Api.Auth.Organization);
-        }
-
         if (content is not null)
         {
             if (content is HttpContent data)
