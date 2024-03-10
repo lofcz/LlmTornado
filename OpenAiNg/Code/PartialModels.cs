@@ -80,5 +80,6 @@ public enum CapabilityEndpoints
     Audio,
     Assistants,
     ImageEdit,
-    Threads
+    Threads,
+    FineTuning
 }

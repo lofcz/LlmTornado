@@ -33,7 +33,7 @@ public sealed class ThreadsEndpoint : EndpointBase, IThreadsEndpoint
     /// <returns><see cref="ThreadResponse" />.</returns>
     public Task<HttpCallResult<ThreadResponse>> CreateThreadAsync(CreateThreadRequest? request = null, CancellationToken? cancellationToken = default)
     {
-        return HttpPostRaw<ThreadResponse>(Api.EndpointProvider, Url, request, cancellationToken);
+        return HttpPostRaw<ThreadResponse>(Api.EndpointProvider, CapabilityEndpoints.Threads, Url, request, cancellationToken);
     }
 
     /// <summary>
@@ -44,7 +44,7 @@ public sealed class ThreadsEndpoint : EndpointBase, IThreadsEndpoint
     /// <returns><see cref="ThreadResponse"/>.</returns>
     public Task<HttpCallResult<ThreadResponse>> RetrieveThreadAsync(string threadId, CancellationToken? cancellationToken = default)
     {
-        return HttpGetRaw<ThreadResponse>(Api.EndpointProvider, GetUrl($"/{threadId}"), cancellationToken);
+        return HttpGetRaw<ThreadResponse>(Api.EndpointProvider, CapabilityEndpoints.Threads, GetUrl($"/{threadId}"), cancellationToken);
     }
 
     /// <summary>
@@ -62,7 +62,7 @@ public sealed class ThreadsEndpoint : EndpointBase, IThreadsEndpoint
     /// <returns><see cref="ThreadResponse"/>.</returns>
     public Task<HttpCallResult<ThreadResponse>> ModifyThreadAsync(string threadId, IDictionary<string, string> metadata, CancellationToken? cancellationToken = default)
     {
-        return HttpPostRaw<ThreadResponse>(Api.EndpointProvider, GetUrl($"/{threadId}"), new { metadata }, cancellationToken);
+        return HttpPostRaw<ThreadResponse>(Api.EndpointProvider, CapabilityEndpoints.Threads, GetUrl($"/{threadId}"), new { metadata }, cancellationToken);
     }
 
     /// <summary>
@@ -73,7 +73,7 @@ public sealed class ThreadsEndpoint : EndpointBase, IThreadsEndpoint
     /// <returns>True, if was successfully deleted.</returns>
     public async Task<HttpCallResult<bool>> DeleteThreadAsync(string threadId, CancellationToken? cancellationToken = default)
     {        
-        HttpCallResult<DeletionStatus> status = await HttpAtomic<DeletionStatus>(Api.EndpointProvider, HttpMethod.Delete, GetUrl($"/{threadId}"), ct: cancellationToken).ConfigureAwait(ConfigureAwaitOptions.None);
+        HttpCallResult<DeletionStatus> status = await HttpAtomic<DeletionStatus>(Api.EndpointProvider, CapabilityEndpoints.Threads, HttpMethod.Delete, GetUrl($"/{threadId}"), ct: cancellationToken).ConfigureAwait(ConfigureAwaitOptions.None);
         return new HttpCallResult<bool>(status.Code, status.Response, status.Data?.Deleted ?? false, status.Ok);
     }
 
@@ -86,7 +86,7 @@ public sealed class ThreadsEndpoint : EndpointBase, IThreadsEndpoint
     /// <returns><see cref="MessageResponse"/>.</returns>
     public Task<HttpCallResult<MessageResponse>> CreateMessageAsync(string threadId, CreateMessageRequest request, CancellationToken? cancellationToken = default)
     {
-        return HttpPostRaw<MessageResponse>(Api.EndpointProvider, GetUrl($"/{threadId}/messages"), request, cancellationToken);
+        return HttpPostRaw<MessageResponse>(Api.EndpointProvider, CapabilityEndpoints.Threads, GetUrl($"/{threadId}/messages"), request, cancellationToken);
     }
 
     /*

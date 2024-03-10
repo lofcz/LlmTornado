@@ -1,1 +1,4 @@
-"replace content of this string with your API key"
+{
+  "OpenAi": "",
+  "Anthropic": ""
+}

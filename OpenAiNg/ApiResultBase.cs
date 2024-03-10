@@ -4,19 +4,11 @@ using OpenAiNg.Models;
 
 namespace OpenAiNg;
 
-public class ApiResultRef
-{
-    /// <summary>
-    ///     The <see cref="OpenAiApi" /> this response was generated from.
-    /// </summary>
-    [JsonIgnore]
-    public OpenAiApi Api { get; internal set; }
-}
 
 /// <summary>
 ///     Represents a result from calling the OpenAI API, with all the common metadata returned from every endpoint
 /// </summary>
-public class ApiResultBase : ApiResultRef
+public class ApiResultBase
 {
     /// The time when the result was generated
     [JsonIgnore]

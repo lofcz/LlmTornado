@@ -75,7 +75,8 @@ public class ChatEndpoint : EndpointBase, IChatEndpoint
     /// </returns>
     public async Task<ChatResult?> CreateChatCompletionAsync(ChatRequest request)
     {
-        ChatResult? result = await HttpPost1<ChatResult>(Api.GetProvider(request.Model), CapabilityEndpoint, postData: request);
+        IEndpointProvider provider = Api.GetProvider(request.Model);
+        ChatResult? result = await HttpPost1<ChatResult>(provider, CapabilityEndpoint, postData: request.Serialize(provider.Provider));
 
         if (Api.ChatRequestInterceptor is not null) await Api.ChatRequestInterceptor.Invoke(request, result);
 

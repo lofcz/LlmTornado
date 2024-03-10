@@ -1,13 +1,22 @@
-﻿namespace OpenAiNg.Demo;
+﻿using Newtonsoft.Json;
+using OpenAiNg.Code;
+
+namespace OpenAiNg.Demo;
 
 internal class Program
 {
     private static Demos selectedDemo = Demos.Unknown;
-    private static string ApiKey { get; set; }
+    private static Keys ApiKeys { get; set; }
 
-    public static OpenAiApi Connect()
+    class Keys
     {
-        return new OpenAiApi(ApiKey);
+        public string OpenAi { get; set; }
+        public string Anthropic { get; set; }
+    }
+
+    public static OpenAiApi Connect(LLmProviders provider = LLmProviders.OpenAi)
+    {
+        return new OpenAiApi(provider is LLmProviders.OpenAi ? ApiKeys.OpenAi : ApiKeys.Anthropic);
     }
 
     private static async Task<bool> SetupApi()
@@ -28,7 +37,7 @@ internal class Program
             return false;
         }
 
-        string apiKey = (await File.ReadAllTextAsync($"{projectDirectory}\\apiKey.json")).Replace("\"", "");
+        string apiKey = await File.ReadAllTextAsync($"{projectDirectory}\\apiKey.json");
 
         if (string.IsNullOrWhiteSpace(apiKey))
         {
@@ -37,7 +46,7 @@ internal class Program
             return false;
         }
 
-        ApiKey = apiKey;
+        ApiKeys = JsonConvert.DeserializeObject<Keys>(apiKey) ?? throw new Exception("Invalid content of apiKey.json");
         return true;
     }
     
@@ -108,5 +117,7 @@ internal class Program
         {
             await task;
         }
+
+        Console.ReadKey();
     }
 }

@@ -33,8 +33,7 @@ public class CompletionEndpoint : EndpointBase, ICompletionEndpoint
     /// 
     /// </summary>
     protected override CapabilityEndpoints CapabilityEndpoint => CapabilityEndpoints.Completions;
-
-
+    
     /// <summary>
     ///     This allows you to set default parameters for every request, for example to set a default temperature or max
     ///     tokens.  For every request, if you do not have a parameter set on the request but do have it set here as a default,

@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using OpenAiNg.Chat;
 
 namespace OpenAiNg.Code;
 
@@ -24,6 +25,8 @@ public interface IEndpointProvider
     /// <param name="streaming"></param>
     /// <returns></returns>
     public HttpRequestMessage OutboundMessage(string url, HttpMethod verb, object? data, bool streaming);
+
+    public T? InboundMessage<T>(string jsonData);
     public OpenAiApi Api { get; set; }
     public LLmProviders Provider { get; set; }
     public string ApiUrl(CapabilityEndpoints endpoint, string? url);
@@ -41,6 +44,7 @@ public abstract class BaseEndpointProvider : IEndpointProvider
     }
 
     public abstract string ApiUrl(CapabilityEndpoints endpoint, string? url);
+    public abstract T? InboundMessage<T>(string jsonData);
     public abstract HttpRequestMessage OutboundMessage(string url, HttpMethod verb, object? data, bool streaming);
 }
 
@@ -64,7 +68,7 @@ public class AnthropicEndpointProvider : BaseEndpointProvider
 {
     public AnthropicEndpointProvider(OpenAiApi api) : base(api)
     {
-        Provider = LLmProviders.OpenAi;
+        Provider = LLmProviders.Anthropic;
     }
 
     /// <summary>
@@ -98,21 +102,17 @@ public class AnthropicEndpointProvider : BaseEndpointProvider
             } 
         }
 
-        if (data is not null)
-        {
-            if (data is HttpContent hData)
-            {
-                req.Content = hData;
-            }
-            else
-            {
-                string jsonContent = JsonConvert.SerializeObject(data, NullSettings);
-                StringContent stringContent = new(jsonContent, Encoding.UTF8, "application/json");
-                req.Content = stringContent;
-            }
-        }
-
         return req;
+    }
+
+    public override T? InboundMessage<T>(string jsonData) where T : default
+    {
+        if (typeof(T) == typeof(ChatResult))
+        {
+            return (T?)(dynamic)ChatResult.Deserialize(LLmProviders.Anthropic, jsonData);
+        }
+        
+        return JsonConvert.DeserializeObject<T>(jsonData);
     }
 }
 
@@ -135,8 +135,18 @@ public class OpenAiEndpointProvider : BaseEndpointProvider
     {
         string eStr = endpoint switch
         {
-            CapabilityEndpoints.Chat => "messages",
-            CapabilityEndpoints.Completions => "complete",
+            CapabilityEndpoints.Audio => "audio",
+            CapabilityEndpoints.Chat => "chat/completions",
+            CapabilityEndpoints.Completions => "completions",
+            CapabilityEndpoints.Embeddings => "embeddings",
+            CapabilityEndpoints.FineTuning => "fine_tuning",
+            CapabilityEndpoints.Files => "files",
+            CapabilityEndpoints.ImageGeneration => "images",
+            CapabilityEndpoints.ImageEdit => "images",
+            CapabilityEndpoints.Models => "models",
+            CapabilityEndpoints.Moderation => "moderations",
+            CapabilityEndpoints.Assistants => "assistants",
+            CapabilityEndpoints.Threads => "threads",
             _ => throw new Exception($"OpenAI doesn't support endpoint {endpoint}")
         };
 
@@ -159,21 +169,12 @@ public class OpenAiEndpointProvider : BaseEndpointProvider
 
             if (Api.Auth.Organization is not null) req.Headers.Add("OpenAI-Organization", Api.Auth.Organization);
         }
-
-        if (data is not null)
-        {
-            if (data is HttpContent hData)
-            {
-                req.Content = hData;
-            }
-            else
-            {
-                string jsonContent = JsonConvert.SerializeObject(data, NullSettings);
-                StringContent stringContent = new(jsonContent, Encoding.UTF8, "application/json");
-                req.Content = stringContent;
-            }
-        }
-
+        
         return req;
+    }
+    
+    public override T? InboundMessage<T>(string jsonData) where T : default
+    {
+        return JsonConvert.DeserializeObject<T>(jsonData);
     }
 }

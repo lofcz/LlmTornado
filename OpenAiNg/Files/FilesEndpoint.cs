@@ -92,7 +92,7 @@ public class FilesEndpoint : EndpointBase, IFilesEndpoint
             { new ByteArrayContent(await System.IO.File.ReadAllBytesAsync(filePath).ConfigureAwait(ConfigureAwaitOptions.None)), "file", Path.GetFileName(filePath) }
         };
 
-        return await HttpPost<File>(Api.EndpointProvider, Url, content).ConfigureAwait(ConfigureAwaitOptions.None);
+        return await HttpPost<File>(Api.EndpointProvider, CapabilityEndpoints.Files, Url, content).ConfigureAwait(ConfigureAwaitOptions.None);
     }
 
 	/// <summary>
