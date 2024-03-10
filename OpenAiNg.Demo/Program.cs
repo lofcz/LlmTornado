@@ -30,6 +30,7 @@ public enum Demos
     ChatCompletion,
     ChatStreamWithFunctions,
     ChatAnthropic,
+    ChatStreamingAnthropic,
     Last
 }
 
@@ -104,6 +105,7 @@ public class Program
             Demos.ChatCompletion => ChatDemo.Completion,
             Demos.ChatStreamWithFunctions => ChatDemo.StreamWithFunctions,
             Demos.ChatAnthropic => ChatDemo.Anthropic,
+            Demos.ChatStreamingAnthropic => ChatDemo.AnthropicStreaming,
             _ => null
         };
 

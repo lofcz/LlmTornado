@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -8,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using OpenAiNg.Chat;
+using OpenAiNg.Vendor.Anthropic;
 
 namespace OpenAiNg.Code;
 
@@ -27,6 +30,7 @@ public interface IEndpointProvider
     public HttpRequestMessage OutboundMessage(string url, HttpMethod verb, object? data, bool streaming);
 
     public T? InboundMessage<T>(string jsonData);
+    public IAsyncEnumerable<T?> InboundStream<T>(StreamReader streamReader) where T : ApiResultBase;
     public OpenAiApi Api { get; set; }
     public LLmProviders Provider { get; set; }
     public string ApiUrl(CapabilityEndpoints endpoint, string? url);
@@ -45,6 +49,7 @@ public abstract class BaseEndpointProvider : IEndpointProvider
 
     public abstract string ApiUrl(CapabilityEndpoints endpoint, string? url);
     public abstract T? InboundMessage<T>(string jsonData);
+    public abstract IAsyncEnumerable<T?> InboundStream<T>(StreamReader streamReader) where T : ApiResultBase;
     public abstract HttpRequestMessage OutboundMessage(string url, HttpMethod verb, object? data, bool streaming);
 }
 
@@ -66,9 +71,73 @@ internal static class EndpointProviderConverter
 /// </summary>
 public class AnthropicEndpointProvider : BaseEndpointProvider
 {
+    private const string Event = "event:";
+    private const string Data = "data:";
+    private const string StreamMsgStart = $"{Event} message_start";
+    private const string StreamMsgStop = $"{Event} message_stop";
+    private const string StreamPing = $"{Event} ping";
+    private const string StreamContentBlockDelta = $"{Event} content_block_delta";
+    private const string StreamContentBlockStart = $"{Event} content_block_start";
+    private const string StreamContentBlockStop = $"{Event} content_block_stop";
+    private static readonly HashSet<string> StreamSkip = [StreamMsgStart, StreamMsgStop, StreamPing];
+
+    private enum StreamNextAction
+    {
+        Read,
+        BlockStart,
+        BlockDelta,
+        BlockStop,
+        Skip,
+        MsgStart
+    }
+    
     public AnthropicEndpointProvider(OpenAiApi api) : base(api)
     {
         Provider = LLmProviders.Anthropic;
+    }
+
+    private class AnthropicStreamBlockStart
+    {
+        public class AnthropicStreamBlockStartData
+        {
+            [JsonProperty("type")]
+            public string Type { get; set; }
+            [JsonProperty("text")]
+            public string Text { get; set; }
+        }
+        
+        [JsonProperty("index")]
+        public int Index { get; set; }
+        [JsonProperty("content_block")]
+        public AnthropicStreamBlockStartData ContentBlock { get; set; }
+    }
+
+    private class AnthropicStreamBlockDelta
+    {
+        public class AnthropicStreamBlockDeltaData
+        {
+            [JsonProperty("type")]
+            public string Type { get; set; }
+            [JsonProperty("text")]
+            public string Text { get; set; }
+        }
+        
+        [JsonProperty("index")]
+        public int Index { get; set; }
+        [JsonProperty("delta")]
+        public AnthropicStreamBlockDeltaData Delta { get; set; }
+    }
+
+    private class AnthropicStreamBlockStop
+    {
+        [JsonProperty("index")]
+        public int Index { get; set; }
+    }
+
+    private class AnthropicStreamMsgStart
+    {
+        [JsonProperty("message")]
+        public VendorAnthropicChatResult Message { get; set; }
     }
 
     /// <summary>
@@ -86,6 +155,100 @@ public class AnthropicEndpointProvider : BaseEndpointProvider
         };
 
         return $"https://api.anthropic.com/v1/{eStr}{url}";
+    }
+
+    public override async IAsyncEnumerable<T?> InboundStream<T>(StreamReader reader) where T : class
+    {
+        StreamNextAction nextAction = StreamNextAction.Read;
+        
+        while (await reader.ReadLineAsync() is { } line)
+        {
+            if (line.IsNullOrWhiteSpace())
+            {
+                continue;
+            }
+            
+            line = line.TrimStart();
+            
+            switch (nextAction)
+            {
+                case StreamNextAction.Read when line.StartsWith(StreamContentBlockStart):
+                    nextAction = StreamNextAction.BlockStart;
+                    continue;
+                case StreamNextAction.Read when line.StartsWith(StreamMsgStart):
+                    nextAction = StreamNextAction.MsgStart;
+                    continue;
+                case StreamNextAction.Read when line.StartsWith(StreamPing) || line.StartsWith(StreamMsgStop):
+                    nextAction = StreamNextAction.Skip;
+                    continue;
+                case StreamNextAction.Read when line.StartsWith(StreamContentBlockStart):
+                    nextAction = StreamNextAction.BlockStart;
+                    continue;
+                case StreamNextAction.Read when line.StartsWith(StreamContentBlockStop):
+                    nextAction = StreamNextAction.BlockStop;
+                    continue;
+                case StreamNextAction.Read:
+                {
+                    if (line.StartsWith(StreamContentBlockDelta))
+                    {
+                        nextAction = StreamNextAction.BlockDelta;
+                    }
+
+                    break;
+                }
+                case StreamNextAction.Skip:
+                    nextAction = StreamNextAction.Read;
+                    break;
+                case StreamNextAction.BlockStart:
+                {
+                    line = line.Substring(Data.Length);
+                    AnthropicStreamBlockStart? res = JsonConvert.DeserializeObject<AnthropicStreamBlockStart>(line);
+
+                    if (!res?.ContentBlock.Text.IsNullOrWhiteSpace() ?? false)
+                    {
+                        //yield return (T)(dynamic)res.ContentBlock.Text;
+                    }
+                    
+                    nextAction = StreamNextAction.Read;
+                    break;
+                }
+                case StreamNextAction.BlockDelta:
+                {
+                    line = line.Substring(Data.Length);
+                    AnthropicStreamBlockDelta? res = JsonConvert.DeserializeObject<AnthropicStreamBlockDelta>(line);
+                    
+                    if (!res?.Delta.Text.IsNullOrWhiteSpace() ?? false)
+                    {
+                        if (typeof(T) == typeof(ChatResult))
+                        {
+                            yield return (T)(dynamic) new ChatResult
+                            {
+                                Choices = [
+                                    new ChatChoice { Delta = new ChatMessage(ChatMessageRole.Assistant, res.Delta.Text) }
+                                ]
+                            };
+                        }
+                    }
+                    
+                    nextAction = StreamNextAction.Read;
+                    break;
+                }
+                case StreamNextAction.BlockStop:
+                {
+                    line = line.Substring(Data.Length);
+                    AnthropicStreamBlockDelta? res = JsonConvert.DeserializeObject<AnthropicStreamBlockDelta>(line);
+                    nextAction = StreamNextAction.Read;
+                    break;
+                }
+                case StreamNextAction.MsgStart:
+                {
+                    line = line.Substring(Data.Length);
+                    AnthropicStreamMsgStart? res = JsonConvert.DeserializeObject<AnthropicStreamMsgStart>(line);
+                    nextAction = StreamNextAction.Read;
+                    break;
+                }
+            }
+        }
     }
 
     public override HttpRequestMessage OutboundMessage(string url, HttpMethod verb, object? data, bool streaming)
@@ -121,6 +284,9 @@ public class AnthropicEndpointProvider : BaseEndpointProvider
 /// </summary>
 public class OpenAiEndpointProvider : BaseEndpointProvider
 {
+    private const string DataString = "data:";
+    private const string DoneString = "[DONE]";
+    
     public OpenAiEndpointProvider(OpenAiApi api) : base(api)
     {
         Provider = LLmProviders.OpenAi;
@@ -176,5 +342,46 @@ public class OpenAiEndpointProvider : BaseEndpointProvider
     public override T? InboundMessage<T>(string jsonData) where T : default
     {
         return JsonConvert.DeserializeObject<T>(jsonData);
+    }
+    
+    public override async IAsyncEnumerable<T?> InboundStream<T>(StreamReader reader) where T : class
+    {
+        while (await reader.ReadLineAsync() is { } line)
+        {
+            if (line.StartsWith(DataString))
+            {
+                line = line[DataString.Length..];
+            }
+
+            line = line.TrimStart();
+
+            if (line is DoneString)
+            {
+                yield break;
+            }
+
+            if (line.StartsWith(':') || string.IsNullOrWhiteSpace(line))
+            {
+                continue;
+            }
+
+            T? res = JsonConvert.DeserializeObject<T>(line);
+
+            if (res is null)
+            {
+                continue;
+            }
+
+            /*res.Organization = organization;
+            res.RequestId = requestId;
+            res.ProcessingTime = processingTime;
+            res.OpenaiVersion = openaiVersion;
+
+            if (res.Model != null && string.IsNullOrEmpty(res.Model))
+                if (modelFromHeaders != null)
+                    res.Model = modelFromHeaders;*/
+
+            yield return res;
+        }
     }
 }

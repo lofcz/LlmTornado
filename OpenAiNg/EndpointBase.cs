@@ -614,30 +614,14 @@ public abstract class EndpointBase
         await using Stream stream = await response.Content.ReadAsStreamAsync();
         using StreamReader reader = new(stream);
 
-        while (await reader.ReadLineAsync() is { } line)
+        await foreach (T? x in provider.InboundStream<T>(reader))
         {
-            if (line.StartsWith(DataString)) line = line[5..];
-
-            line = line.TrimStart();
-
-            if (line is DoneString) yield break;
-
-            if (line.StartsWith(':') || string.IsNullOrWhiteSpace(line)) continue;
-
-            T? res = JsonConvert.DeserializeObject<T>(line);
-
-            if (res is null) continue;
-
-            res.Organization = organization;
-            res.RequestId = requestId;
-            res.ProcessingTime = processingTime;
-            res.OpenaiVersion = openaiVersion;
-
-            if (res.Model != null && string.IsNullOrEmpty(res.Model))
-                if (modelFromHeaders != null)
-                    res.Model = modelFromHeaders;
-
-            yield return res;
+            if (x is null)
+            {
+                continue;
+            }
+            
+            yield return x;
         }
     }
 }

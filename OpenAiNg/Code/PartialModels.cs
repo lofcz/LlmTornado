@@ -83,3 +83,20 @@ public enum CapabilityEndpoints
     Threads,
     FineTuning
 }
+
+internal class StreamToken<T>
+{
+    public T? Data { get; set; }
+    public bool Break { get; set; }
+
+    public StreamToken(T? data, bool brk)
+    {
+        Data = data;
+        Break = brk;
+    } 
+}
+
+public class StreamChoicesBase
+{
+    
+}

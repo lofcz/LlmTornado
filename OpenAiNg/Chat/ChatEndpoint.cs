@@ -241,7 +241,8 @@ public class ChatEndpoint : EndpointBase, IChatEndpoint
     public IAsyncEnumerable<ChatResult> StreamChatEnumerableAsync(ChatRequest request)
     {
         request = new ChatRequest(request) { Stream = true };
-        return HttpStreamingRequest<ChatResult>(Api.GetProvider(request.Model), CapabilityEndpoint, Url, HttpMethod.Post, request, request.OuboundFunctionsContent);
+        IEndpointProvider provider = Api.GetProvider(request.Model);
+        return HttpStreamingRequest<ChatResult>(Api.GetProvider(request.Model), CapabilityEndpoint, null, HttpMethod.Post, request.Serialize(provider.Provider), request.OuboundFunctionsContent);
     }
 
     /// <summary>

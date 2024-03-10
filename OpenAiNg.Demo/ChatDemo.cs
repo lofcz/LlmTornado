@@ -50,6 +50,31 @@ public static class ChatDemo
        Console.WriteLine("OpenAI:");
        Console.WriteLine(str2);
     }
+    
+    public static async Task AnthropicStreaming()
+    {
+        Conversation chat = Program.Connect(LLmProviders.Anthropic).Chat.CreateConversation(new ChatRequest
+        {
+            Model = Models.Model.Claude3Sonnet
+        });
+        chat.AppendSystemMessage("Pretend you are a dog. Sound authentic.");
+        chat.AppendUserInput("Who are you?");
+
+        Console.WriteLine("Anthropic:");
+        await chat.StreamResponseFromChatbotAsync(Console.Write);
+        Console.WriteLine();
+       
+        Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = Models.Model.GPT4_Turbo_Preview
+        });
+        chat2.AppendSystemMessage("Pretend you are a dog. Sound authentic.");
+        chat2.AppendUserInput("Who are you?");
+       
+        Console.WriteLine("OpenAI:");
+        await chat2.StreamResponseFromChatbotAsync(Console.Write);
+        Console.WriteLine();
+    }
 
 
     public static async Task<string> StreamWithFunctions()
