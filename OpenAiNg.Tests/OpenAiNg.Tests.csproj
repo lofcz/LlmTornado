@@ -28,4 +28,10 @@
       <ProjectReference Include="..\OpenAiNg\OpenAiNg.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <None Update="apiKey.json">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
+
 </Project>
