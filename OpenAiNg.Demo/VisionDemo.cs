@@ -17,9 +17,6 @@ public static class VisionDemo
         }, Model.GPT4_Vision_Preview, max_tokens: 256);
 
         Console.WriteLine(result.Choices[0].Message.Content);
-        Console.ReadKey();
-
-        int z = 0;
     }
 
     public static async Task VisionBase64()
@@ -36,8 +33,5 @@ public static class VisionDemo
         }, Model.GPT4_Vision_Preview, max_tokens: 256);
 
         Console.WriteLine(result.Choices[0].Message.Content);
-        Console.ReadKey();
-
-        int z = 0;
     }
 }
