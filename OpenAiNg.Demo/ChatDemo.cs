@@ -50,7 +50,23 @@ public static class ChatDemo
        Console.WriteLine("OpenAI:");
        Console.WriteLine(str2);
     }
-    
+
+    public static async Task Azure()
+    {
+        Conversation chat = Program.Connect(LLmProviders.AzureOpenAi).Chat.CreateConversation(new ChatRequest
+        {
+            Model = Models.Model.GPT4
+        });
+        
+        chat.AppendSystemMessage("Pretend you are a dog. Sound authentic.");
+        chat.AppendUserInput("Who are you?");
+        
+        string? str = await chat.GetResponseFromChatbotAsync();
+
+        Console.WriteLine("Azure OpenAI:");
+        Console.WriteLine(str);
+    }
+
     public static async Task AnthropicStreaming()
     {
         Conversation chat = Program.Connect(LLmProviders.Anthropic).Chat.CreateConversation(new ChatRequest

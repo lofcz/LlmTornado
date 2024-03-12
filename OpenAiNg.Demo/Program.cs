@@ -31,6 +31,7 @@ public enum Demos
     ChatStreamWithFunctions,
     ChatAnthropic,
     ChatStreamingAnthropic,
+    ChatAzure,
     Last
 }
 
@@ -39,14 +40,31 @@ public class Program
     private static Demos selectedDemo = Demos.Unknown;
     private static Keys ApiKeys { get; set; }
 
+    class AzureKey
+    {
+        public string Version { get; set; }
+        public string ApiUrlFormat { get; set; }
+        public string Key { get; set; }
+    }
+    
     class Keys
     {
         public string OpenAi { get; set; }
         public string Anthropic { get; set; }
+        public AzureKey Azure { get; set; }
     }
 
     public static OpenAiApi Connect(LLmProviders provider = LLmProviders.OpenAi)
     {
+        if (provider is LLmProviders.AzureOpenAi)
+        {
+            return new OpenAiApi(ApiKeys.Azure.Key)
+            {
+                ApiVersion = ApiKeys.Azure.Version,
+                ApiUrlFormat = ApiKeys.Azure.ApiUrlFormat
+            };
+        }
+        
         return new OpenAiApi(provider is LLmProviders.OpenAi ? ApiKeys.OpenAi : ApiKeys.Anthropic);
     }
 
@@ -106,6 +124,7 @@ public class Program
             Demos.ChatStreamWithFunctions => ChatDemo.StreamWithFunctions,
             Demos.ChatAnthropic => ChatDemo.Anthropic,
             Demos.ChatStreamingAnthropic => ChatDemo.AnthropicStreaming,
+            Demos.ChatAzure => ChatDemo.Azure,
             _ => null
         };
 

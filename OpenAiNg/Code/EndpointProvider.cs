@@ -316,7 +316,7 @@ public class OpenAiEndpointProvider : BaseEndpointProvider
             _ => throw new Exception($"OpenAI doesn't support endpoint {endpoint}")
         };
 
-        return $"https://api.openai.com/v1/{eStr}{url}";
+        return $"{string.Format(Api.ApiUrlFormat ?? "https://api.openai.com/{0}/{1}", Api.ApiVersion, eStr)}{url}";
     }
     
     public override HttpRequestMessage OutboundMessage(string url, HttpMethod verb, object? data, bool streaming)

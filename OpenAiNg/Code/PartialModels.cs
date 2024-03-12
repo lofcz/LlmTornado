@@ -62,7 +62,8 @@ public enum LLmProviders
 {
     Unknown,
     OpenAi,
-    Anthropic
+    Anthropic,
+    AzureOpenAi
 }
 
 /// <summary>
