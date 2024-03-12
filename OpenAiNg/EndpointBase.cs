@@ -65,7 +65,7 @@ public abstract class EndpointBase
     ///     Gets the URL of the endpoint, based on the base OpenAI API URL followed by the endpoint name.  For example
     ///     "https://api.openai.com/v1/completions"
     /// </summary>
-    protected string Url => string.Format(Api.ApiUrlFormat, Api.ApiVersion, Endpoint);
+    protected string Url => Api.EndpointProvider.ApiUrl(CapabilityEndpoint, null);
 
     /// <summary>
     ///     Gets the timeout for all http requests

@@ -1,4 +1,9 @@
 {
   "OpenAi": "",
-  "Anthropic": ""
+  "Anthropic": "",
+  "Azure": {
+    "Version": "",
+    "ApiUrlFormat": "",
+    "Key": ""
+  }
 }

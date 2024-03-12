@@ -95,13 +95,13 @@ public class OpenAiApi : IOpenAiApi
     public IThreadsEndpoint Threads => _threadsEndpoint ??= new ThreadsEndpoint(this);
 
     /// <summary>
-    ///     Base url for OpenAI
+    ///     Base url for Provider. If null, default specified by the provider is used.
     ///     for OpenAI, should be "https://api.openai.com/{0}/{1}"
     ///     for Azure, should be
     ///     "https://(your-resource-name.openai.azure.com/openai/deployments/(deployment-id)/{1}?api-version={0}"
     ///     this will be formatted as {0} = <see cref="ApiVersion" />, {1} = <see cref="EndpointBase.Endpoint" />
     /// </summary>
-    public string ApiUrlFormat { get; set; } = "https://api.openai.com/{0}/{1}";
+    public string? ApiUrlFormat { get; set; }
 
     /// <summary>
     ///     Version of the Rest Api
