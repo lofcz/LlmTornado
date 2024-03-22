@@ -322,18 +322,18 @@ public class OpenAiEndpointProvider : BaseEndpointProvider
     public override HttpRequestMessage OutboundMessage(string url, HttpMethod verb, object? data, bool streaming)
     {
         HttpRequestMessage req = new(verb, url);
-        req.Headers.Add("User-Agent", EndpointBase.GetUserAgent());
+        req.Headers.Add("User-Agent", EndpointBase.GetUserAgent().Trim());
         req.Headers.Add("OpenAI-Beta", "assistants=v1");
 
         if (Api.Auth is not null)
         {
             if (Api.Auth.ApiKey is not null)
             {
-                req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Api.Auth.ApiKey);
+                req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Api.Auth.ApiKey.Trim());
                 req.Headers.Add("api-key", Api.Auth.ApiKey);
             }
 
-            if (Api.Auth.Organization is not null) req.Headers.Add("OpenAI-Organization", Api.Auth.Organization);
+            if (Api.Auth.Organization is not null) req.Headers.Add("OpenAI-Organization", Api.Auth.Organization.Trim());
         }
         
         return req;
