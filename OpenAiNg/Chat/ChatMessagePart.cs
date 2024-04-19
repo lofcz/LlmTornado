@@ -70,3 +70,35 @@ public class ChatMessagePart
     [JsonProperty("image_url")]
     public ChatImage? Image { get; set; }
 }
+
+public class VendorAntropicChatMessagePart : ChatMessagePart
+{
+    public VendorAntropicChatMessagePart(string? id, string? name, string? input) : base("")
+    {
+        Id = id;
+        Name = name;
+        Input = input;
+        Text = null;
+        Type = VendorAntropicChatMessageTypes.ToolUse;
+    }
+
+    public VendorAntropicChatMessagePart(string text) : base(text)
+    {
+    }
+
+    /// <summary>
+    ///     Text of the message part if type is <see cref="ChatMessageTypes.Text" />
+    /// </summary>
+    [JsonProperty("id")]
+    public string? Id { get; set; }
+    /// <summary>
+    ///     Text of the message part if type is <see cref="ChatMessageTypes.Text" />
+    /// </summary>
+    [JsonProperty("name")]
+    public string? Name { get; set; }
+    /// <summary>
+    ///     Text of the message part if type is <see cref="ChatMessageTypes.Text" />
+    /// </summary>
+    [JsonProperty("input")]
+    public string? Input { get; set; }
+}

@@ -32,6 +32,7 @@ public enum Demos
     ChatAnthropic,
     ChatStreamingAnthropic,
     ChatAzure,
+    ChatAnthropicFunctions,
     Last
 }
 
@@ -125,6 +126,7 @@ public class Program
             Demos.ChatAnthropic => ChatDemo.Anthropic,
             Demos.ChatStreamingAnthropic => ChatDemo.AnthropicStreaming,
             Demos.ChatAzure => ChatDemo.Azure,
+            Demos.ChatAnthropicFunctions => ChatDemo.AnthropicFunctions,
             _ => null
         };
 

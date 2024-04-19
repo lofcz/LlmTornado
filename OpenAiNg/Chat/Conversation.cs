@@ -679,16 +679,17 @@ public class Conversation
             }
 
             ChatChoice choice = res.Choices[0];
+            
+            string? finishReason = choice.FinishReason;
+            if (responseRole == null && finishReason is "function_call" or "tool_calls" or "tool_use") responseRole = ChatMessageRole.Tool;
 
             if (choice.Delta != null)
             {
                 ChatMessage delta = choice.Delta;
                 string? deltaContent = delta.Content;
-                string? finishReason = choice.FinishReason;
                 bool empty = string.IsNullOrEmpty(deltaContent);
 
-                if (responseRole == null && finishReason is "function_call" or "tool_calls") responseRole = ChatMessageRole.Tool;
-
+                
                 if (choice.Delta.ToolCalls is not null)
                 {
                     responseRole ??= ChatMessageRole.Tool;
@@ -749,7 +750,35 @@ public class Conversation
                     }
                 }
             }
+            else if (responseRole != null && responseRole.Equals(ChatMessageRole.Tool)) 
+            {
+                foreach (ChatChoice iChoice in res.Choices.Where(ch => ch.Message?.ToolCalls != null) )
+                {
+                    if (iChoice.Message != null && iChoice.Message.ToolCalls != null)
+                    {
+                        if (iChoice.Message.ToolCalls[0].FunctionCall.Name is not null)
+                        {
+                            var sb = new StringBuilder();
+                            currentFunction = iChoice.Message.ToolCalls[0].Id;
+                            sb.Append(iChoice.Message.ToolCalls[0].FunctionCall.Arguments);
+                            functionCalls.TryAdd(currentFunction, sb);
+                        }
+                    }
 
+                }
+            }
+            else if (responseRole is null && res.Choices[0].Message.Role is not null)
+            {
+                if (string.IsNullOrEmpty(res.Choices[0].Message.Content))
+                {
+                    responseStringBuilder.Append(res.Choices[0].Message.Content);
+
+                    if (messageTokenHandler is not null)
+                    {
+                        await messageTokenHandler.Invoke(res.Choices[0].Message.Content);
+                    }
+                }
+            }
             MostRecentApiResult = res;
         }
 
@@ -767,6 +796,11 @@ public class Conversation
                     ToolCalls = calls.Select(x => new ToolCall { FunctionCall = x, Type = "function", Id = x.Name ?? string.Empty }).ToList(),
                     Content = null
                 };
+
+                if (MostRecentApiResult.Choices[0].FinishReason == VendorAntropicChatMessageTypes.ToolUse)
+                {
+                    fnCallMsg.Content = MostRecentApiResult.Object;
+                }
 
                 result.AssistantMessage = fnCallMsg;
                 AppendMessage(fnCallMsg);

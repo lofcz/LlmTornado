@@ -256,6 +256,7 @@ public class AnthropicEndpointProvider : BaseEndpointProvider
         HttpRequestMessage req = new(verb, url);
         req.Headers.Add("User-Agent", EndpointBase.GetUserAgent());
         req.Headers.Add("anthropic-version", "2023-06-01");
+        req.Headers.Add("anthropic-beta", "tools-2024-04-04");
 
         if (Api.Auth is not null)
         {

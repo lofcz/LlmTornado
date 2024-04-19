@@ -242,8 +242,21 @@ public class ChatEndpoint : EndpointBase, IChatEndpoint
     {
         request = new ChatRequest(request) { Stream = true };
         IEndpointProvider provider = Api.GetProvider(request.Model);
+
+        if (request.Tools != null && provider.Provider == LLmProviders.Anthropic)
+        {
+            return AntropicTool(provider, request);
+        }
         return HttpStreamingRequest<ChatResult>(Api.GetProvider(request.Model), CapabilityEndpoint, null, HttpMethod.Post, request.Serialize(provider.Provider), request.OuboundFunctionsContent);
     }
+
+    private async IAsyncEnumerable<ChatResult> AntropicTool(IEndpointProvider provider, ChatRequest request)
+    {
+        var result = await HttpPost1<ChatResult>(provider, CapabilityEndpoint, null, request.Serialize(provider.Provider));
+        yield return result;
+    }
+
+
 
     /// <summary>
     ///     Ask the API to complete the message(s) using the specified request, and stream the results as they come in.

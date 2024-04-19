@@ -8,7 +8,7 @@ namespace OpenAiNg.Chat;
 /// </summary>
 public class ChatMessageTypes
 {
-    private ChatMessageTypes(string? value)
+    protected ChatMessageTypes(string? value)
     {
         Value = value;
     }
@@ -55,4 +55,20 @@ public class ChatMessageTypes
             return new ChatMessageTypes(reader.ReadAsString());
         }
     }
+}
+
+public class VendorAntropicChatMessageTypes : ChatMessageTypes
+{
+    public VendorAntropicChatMessageTypes(string? value) : base(value)
+    {
+    }
+
+    /// <summary>
+    ///     Chat Tool use
+    /// </summary>
+    public static VendorAntropicChatMessageTypes ToolUse => new("tool_use");
+    /// <summary>
+    ///     Chat Tool result
+    /// </summary>
+    public static VendorAntropicChatMessageTypes ToolResult => new("tool_result");
 }
