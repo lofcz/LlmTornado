@@ -87,17 +87,17 @@ public class VendorAntropicChatMessagePart : ChatMessagePart
     }
 
     /// <summary>
-    ///     Text of the message part if type is <see cref="ChatMessageTypes.Text" />
+    ///     Id of tool which wil be used for parring with result
     /// </summary>
     [JsonProperty("id")]
     public string? Id { get; set; }
     /// <summary>
-    ///     Text of the message part if type is <see cref="ChatMessageTypes.Text" />
+    ///     Name of tool(function) to be called
     /// </summary>
     [JsonProperty("name")]
     public string? Name { get; set; }
     /// <summary>
-    ///     Text of the message part if type is <see cref="ChatMessageTypes.Text" />
+    ///     Parameters of tool(function)
     /// </summary>
     [JsonProperty("input")]
     public string? Input { get; set; }
