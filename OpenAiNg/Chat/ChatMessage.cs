@@ -8,7 +8,7 @@ namespace OpenAiNg.Chat;
 
 /// <summary>
 ///     Chat message sent or received from the API. Includes who is speaking in the "role" and the message text in the
-///     "content"
+///     "content".
 /// </summary>
 public class ChatMessage
 {
@@ -21,9 +21,19 @@ public class ChatMessage
         Role = ChatMessageRole.User;
         Id = Guid.NewGuid();
     }
+	
+	/// <summary>
+	///     Constructor for a new Chat Message.
+	/// </summary>
+	/// <param name="role">The role of the message, which can be "system", "assistant, "user", or "function".</param>
+	public ChatMessage(ChatMessageRole role)
+	{
+		Role = role;
+		Id = Guid.NewGuid();
+	}
 
 	/// <summary>
-	///     Constructor for a new Chat Message
+	///     Constructor for a new Chat Message.
 	/// </summary>
 	/// <param name="role">The role of the message, which can be "system", "assistant, "user", or "function".</param>
 	/// <param name="content">The text to send in the message</param>
@@ -35,7 +45,7 @@ public class ChatMessage
     }
 
 	/// <summary>
-	///     Constructor for a new Chat Message with multiple parts
+	///     Constructor for a new Chat Message with multiple parts.
 	/// </summary>
 	/// <param name="role">The role of the message, which can be "system", "assistant, "user", or "function".</param>
 	/// <param name="parts">Parts the message consists of</param>
@@ -48,7 +58,7 @@ public class ChatMessage
     }
 
 	/// <summary>
-	///     Constructor for a new Chat Message with multiple parts
+	///     Constructor for a new Chat Message with multiple parts.
 	/// </summary>
 	/// <param name="role">The role of the message, which can be "system", "assistant, "user", or "function".</param>
 	/// <param name="parts">Parts the message consists of</param>
@@ -62,7 +72,7 @@ public class ChatMessage
     }
 
 	/// <summary>
-	///     Constructor for a new Chat Message
+	///     Constructor for a new Chat Message.
 	/// </summary>
 	/// <param name="role">The role of the message, which can be "system", "assistant, "user", or "function".</param>
 	/// <param name="content">The text to send in the message</param>
@@ -75,7 +85,7 @@ public class ChatMessage
     }
 
 	/// <summary>
-	///     The type of the message, which can be "text" or "chatImage"
+	///     The type of the message, which can be "text" or "chatImage".
 	/// </summary>
 	[JsonProperty("type")]
     [JsonConverter(typeof(ChatMessageTypes.ChatMessageTypesJsonConverter))]
@@ -84,7 +94,7 @@ public class ChatMessage
     [JsonProperty("role")] internal string? rawRole { get; set; }
 
     /// <summary>
-    ///     The role of the message, which can be "system", "assistant", "user" or "function"
+    ///     The role of the message, which can be "system", "assistant", "user" or "function".
     /// </summary>
     [JsonIgnore]
     public ChatMessageRole? Role
@@ -100,19 +110,19 @@ public class ChatMessage
     public string? Content { get; set; }
 
     /// <summary>
-    ///     The chatImage if the message is an chatImage
+    ///     The chatImage if the message is an chatImage.
     /// </summary>
     [JsonIgnore]
     public List<ChatMessagePart>? Parts { get; set; }
 
     /// <summary>
-    ///     An optional name of the user in a multi-user chat
+    ///     An optional name of the user in a multi-user chat.
     /// </summary>
     [JsonProperty("name")]
     public string? Name { get; set; }
 
     /// <summary>
-    ///     Assigned in ctor. Use to remove / update messages from conversation.s
+    ///     Assigned in ctor. Use to remove / update messages from conversation.
     /// </summary>
     [JsonIgnore]
     public Guid Id { get; }
@@ -125,9 +135,15 @@ public class ChatMessage
     public List<ToolCall>? ToolCalls { get; set; }
 
     /// <summary>
-    ///     Optional field tool call id
-    ///     This is used after an assistant message with tools
+    ///     Optional field tool call id.
+    ///     This is used after an assistant message with tools.
     /// </summary>
     [JsonProperty("tool_call_id")]
     public string? ToolCallId { get; set; }
+    
+    /// <summary>
+    ///     Optional flag indicating whether <see cref="ToolCallId"/> invocation succeeded.
+    /// </summary>
+    [JsonIgnore]
+    public bool? ToolInvocationSucceeded { get; set; }
 }

@@ -811,15 +811,14 @@ public class Conversation
                 List<FunctionCall> calls = functionCalls.Select(pair => new FunctionCall { Name = pair.Key, Arguments = pair.Value.ToString() }).ToList();
                 List<FunctionResult> frs = await functionCallHandler.Invoke(calls);
                 
-                ChatMessage fnCallMsg = new(ChatMessageRole.Assistant, string.Empty, Guid.NewGuid())
+                ChatMessage fnCallMsg = new(ChatMessageRole.Assistant)
                 {
                     ToolCalls = calls.Select(x => new ToolCall
                     {
                         FunctionCall = x, 
                         Type = "function", 
                         Id = x.Name
-                    }).ToList(),
-                    Content = null
+                    }).ToList()
                 };
 
                 if (MostRecentApiResult.Choices?.Count > 0 && MostRecentApiResult.Choices[0].FinishReason == VendorAnthropicChatMessageTypes.ToolUse)
@@ -834,7 +833,8 @@ public class Conversation
                 {
                     ChatMessage fnResultMsg = new(ChatMessageRole.Tool, frs[i].Content, Guid.NewGuid())
                     {
-                        ToolCallId = calls[i].Name
+                        ToolCallId = calls[i].Name,
+                        ToolInvocationSucceeded = frs[i].InvocationSucceeded
                     };
                     
                     AppendMessage(fnResultMsg);

@@ -78,7 +78,7 @@ internal class VendorAnthropicChatRequest
                         
                         writer.WriteEndArray();
                     }
-                    else if (value.Msg.ToolCallId != null)
+                    else if (value.Msg.ToolCallId is not null)
                     {
                         writer.WriteStartArray();
                         writer.WriteStartObject();
@@ -88,6 +88,13 @@ internal class VendorAnthropicChatRequest
                         writer.WriteValue(value.Msg.ToolCallId);
                         writer.WritePropertyName("content");
                         writer.WriteRawValue(value.Msg.Content);
+
+                        if (value.Msg.ToolInvocationSucceeded is false)
+                        {
+                            writer.WritePropertyName("is_error");
+                            writer.WriteValue(true);
+                        } 
+                        
                         writer.WriteEndObject();
                         writer.WriteEndArray();
                     }
@@ -171,10 +178,10 @@ internal class VendorAnthropicChatRequest
             }   
         }
 
-        if (request.Tools != null)
+        if (request.Tools is not null)
         {
-            Stream = false;
-            Tools = request.Tools.Select(t => new VendorAnthropicToolFunction(t.Function)).ToList();
+            Stream = false; // Claude 3 models (Haiku, Sonnet, Opus) doesn't support streaming in conjunction with tools.
+            Tools = request.Tools.Where(x => x.Function is not null).Select(t => new VendorAnthropicToolFunction(t.Function!)).ToList();
         }
     }
  }

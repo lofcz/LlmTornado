@@ -1,5 +1,6 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using OpenAiNg.ChatFunctions;
 
 namespace OpenAiNg.Common;
 
@@ -19,38 +20,85 @@ public class FunctionResult
     public FunctionResult(string name, object? content)
     {
         Name = name;
-        Content = content == null ? "{}" : JsonConvert.SerializeObject(content);
+        Content = content is null ? "{}" : JsonConvert.SerializeObject(content);
     }
 
     /// <summary>
     /// </summary>
     /// <param name="name">Name of the function that was called. Can differ from the originally intended function.</param>
     /// <param name="content">A serializable object (e.g. class / dict / anonymous object) that will be serialized into JSON</param>
-    /// <param name="data">Any data you might want to work with later but not include in the generated chat message</param>
-    public FunctionResult(string name, object? content, object? data)
+    /// <param name="passthroughData">Any data you might want to work with later but not include in the generated chat message</param>
+    public FunctionResult(string name, object? content, object? passthroughData)
     {
         Name = name;
-        Content = content == null ? "{}" : JsonConvert.SerializeObject(content);
-        Data = data;
+        Content = content is null ? "{}" : JsonConvert.SerializeObject(content);
+        PassthroughData = passthroughData;
+    }
+    
+    /// <summary>
+    /// </summary>
+    /// <param name="name">Name of the function that was called. Can differ from the originally intended function.</param>
+    /// <param name="content">A serializable object (e.g. class / dict / anonymous object) that will be serialized into JSON</param>
+    /// <param name="passthroughData">Any data you might want to work with later but not include in the generated chat message</param>
+    /// <param name="invocationSucceeded">An indicator whether the tool invocation succeeded or not.</param>
+    public FunctionResult(string name, object? content, object? passthroughData, bool invocationSucceeded)
+    {
+        Name = name;
+        Content = content is null ? "{}" : JsonConvert.SerializeObject(content);
+        PassthroughData = passthroughData;
+        InvocationSucceeded = invocationSucceeded;
+    }
+    
+    /// <summary>
+    /// </summary>
+    /// <param name="call">The function call this result maps to.</param>
+    /// <param name="content">A serializable object (e.g. class / dict / anonymous object) that will be serialized into JSON</param>
+    /// <param name="passthroughData">Any data you might want to work with later but not include in the generated chat message</param>
+    public FunctionResult(FunctionCall call, object? content, object? passthroughData)
+    {
+        Name = call.Name;
+        Content = content is null ? "{}" : JsonConvert.SerializeObject(content);
+        PassthroughData = passthroughData;
+    }
+    
+    /// <summary>
+    /// </summary>
+    /// <param name="call">The function call this result maps to.</param>
+    /// <param name="content">A serializable object (e.g. class / dict / anonymous object) that will be serialized into JSON</param>
+    /// <param name="passthroughData">Any data you might want to work with later but not include in the generated chat message</param>
+    /// <param name="invocationSucceeded">An indicator whether the tool invocation succeeded or not.</param>
+    public FunctionResult(FunctionCall call, object? content, object? passthroughData, bool invocationSucceeded)
+    {
+        Name = call.Name;
+        Content = content is null ? "{}" : JsonConvert.SerializeObject(content);
+        PassthroughData = passthroughData;
+        InvocationSucceeded = invocationSucceeded;
     }
 
     /// <summary>
-    ///     Name of the function used; passtrough
+    ///     Name of the function used; passthrough.
     /// </summary>
     [JsonProperty("name", Required = Required.Always)]
     public string Name { get; set; }
 
     /// <summary>
-    ///     JSON of the function output
+    ///     JSON of the function output.
     /// </summary>
     [JsonProperty("content", Required = Required.Always)]
     public string Content { get; set; }
 
     /// <summary>
-    ///     A passtrough arbitrary data
+    ///     A passthrough arbitrary data.
     /// </summary>
     [JsonIgnore]
-    public object? Data { get; set; }
+    public object? PassthroughData { get; set; }
+    
+    /// <summary>
+    ///     A flag which, if implemented by the vendor, provides the model with information whether the tool invocation succeded
+    ///     or not.
+    /// </summary>
+    [JsonIgnore]
+    public bool? InvocationSucceeded { get; set; }
 }
 
 /// <summary>
@@ -212,25 +260,5 @@ public class ToolFunction
     ///     The input parameters of the tool, if any.
     /// </summary>
     [JsonProperty("parameters")]
-    public virtual JObject? Parameters { get; set; }
-}
-
-public class VendorAnthropicToolFunction : ToolFunction
-{
-    /// <summary>
-    ///     Create a function for antropic.
-    /// </summary>
-    /// <param name="name"></param>
-    /// <param name="description"></param>
-    public VendorAnthropicToolFunction(ToolFunction toolFunction) : base(toolFunction.Name, toolFunction.Description)
-    {
-        Parameters = toolFunction.Parameters;
-
-    }
-
-    /// <summary>
-    ///     The input parameters of the tool, if any.
-    /// </summary>
-    [JsonProperty("input_schema")]
-    public override JObject? Parameters { get; set; }
+    public JObject? Parameters { get; set; }
 }

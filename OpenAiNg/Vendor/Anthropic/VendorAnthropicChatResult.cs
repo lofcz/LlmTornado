@@ -12,19 +12,48 @@ internal class VendorAnthropicChatResult
     {
         [JsonProperty("type")]
         public string Type { get; set; }
+        
+        /// <summary>
+        /// Text block.
+        /// </summary>
         [JsonProperty("text")]
-        public string Text { get; set; }
+        public string? Text { get; set; }
+        
+        /// <summary>
+        /// Tool out.
+        /// </summary>
         [JsonProperty("id")]
-        public string Id { get; set; }
+        public string? Id { get; set; }
+        
+        /// <summary>
+        /// Tool in.
+        /// </summary>
         [JsonProperty("name")]
-        public string Name { get; set; }
+        public string? Name { get; set; }
+        
+        /// <summary>
+        /// JSON schema of tool out.
+        /// </summary>
         [JsonProperty("input")]
-        public object Arguments { get; set; }
+        public object? Input { get; set; }
+        
+        /// <summary>
+        /// Tool in name + nanoid to be referenced in the tool response.
+        /// </summary>
         [JsonProperty("tool_use_id")]
-        public string Tool_use_id { get; set; }
+        public string? ToolUseId { get; set; }
+        
+        /// <summary>
+        /// Tool out response.
+        /// </summary>
         [JsonProperty("content")]
-        public string Content { get; set; }
-
+        public string? Content { get; set; }
+        
+        /// <summary>
+        /// Tool out invocation failed flag.
+        /// </summary>
+        [JsonProperty("is_error")]
+        public bool? IsError { get; set; }
     }
     
     [JsonProperty("id")]
@@ -59,32 +88,42 @@ internal class VendorAnthropicChatResult
 
         foreach (VendorAnthropicChatResultContentBlock contentBlock in Content)
         {
-                result.Choices.Add(new ChatChoice
+            ChatMessage blockMsg;
+            
+            if (contentBlock.Type == VendorAnthropicChatMessageTypes.ToolUse)
+            {
+                blockMsg = new ChatMessage(ChatMessageRole.Tool)
                 {
-                    Delta = null,
-                    FinishReason = StopReason,
-                    Index = result.Choices.Count + 1,
-                    Message = contentBlock.Type == VendorAnthropicChatMessageTypes.ToolUse
-                        ? new ChatMessage(ChatMessageRole.Tool, (string?)null) { ToolCalls = CreateToolCals(contentBlock) } 
-                        : new ChatMessage(ChatMessageRole.Assistant, contentBlock.Text)
-                });
+                    ToolCalls = [ ParseToolCall(contentBlock) ] // Claude3 models (Haiku, Sonnet, Opus) call tools one at a time.
+                };
+            }
+            else
+            {
+                blockMsg = new ChatMessage(ChatMessageRole.Assistant, contentBlock.Text ?? string.Empty);
+            }
+            
+            result.Choices.Add(new ChatChoice
+            {
+                FinishReason = StopReason,
+                Index = result.Choices.Count + 1,
+                Message = blockMsg
+            });
         }
 
         return result;
     }
 
-    private List<ToolCall> CreateToolCals(VendorAnthropicChatResultContentBlock contentBlock)
+    private static ToolCall ParseToolCall(VendorAnthropicChatResultContentBlock contentBlock)
     {
-        var toolCall = new ToolCall()
+        return new ToolCall
         {
-            Id = contentBlock.Id,
+            Id = contentBlock.Id ?? string.Empty,
             Type = "function",
-            FunctionCall = new FunctionCall()
+            FunctionCall = new FunctionCall
             {
-                Name = contentBlock.Name,
-                Arguments = contentBlock.Arguments.ToString()
+                Name = contentBlock.Name ?? string.Empty, // out tool name is equal to tool_use_id in Claude3 models
+                Arguments = contentBlock.Input?.ToString() ?? string.Empty
             }
         };
-        return new List<ToolCall>(){ toolCall };
     }
 }

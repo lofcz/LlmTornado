@@ -34,6 +34,7 @@ public enum Demos
     ChatAzure,
     ChatOpenAiFunctions,
     ChatAnthropicFunctions,
+    ChatAnthropicFailFunctions,
     Last
 }
 
@@ -129,6 +130,7 @@ public class Program
             Demos.ChatAzure => ChatDemo.Azure,
             Demos.ChatOpenAiFunctions => ChatDemo.OpenAiFunctions,
             Demos.ChatAnthropicFunctions => ChatDemo.AnthropicFunctions,
+            Demos.ChatAnthropicFailFunctions => ChatDemo.AnthropicFailFunctions,
             _ => null
         };
 
