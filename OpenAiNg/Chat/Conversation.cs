@@ -497,7 +497,7 @@ public class Conversation
     ///     <see cref="ChatMessageRole.Assistant" /> <see cref="ChatMessage" />.
     /// </summary>
     /// <returns>The string of the response from the chatbot API</returns>
-    public async Task<ChatResponse?> GetResponseFromChatbotAsyncWithFunctions(Func<List<FunctionCall>, Task<FunctionResult?>> functionCallHandler)
+    public async Task<ChatBlocksResponse> GetResponseFromChatbotAsyncWithFunctions(Func<List<FunctionCall>, Task<List<FunctionResult>>> functionCallHandler)
     {
         ChatRequest req = new(RequestParameters)
         {
@@ -506,30 +506,48 @@ public class Conversation
 
         ChatResult? res = await _endpoint.CreateChatCompletionAsync(req);
 
-        if (res is null) return null;
+        if (res is null)
+        {
+            return new ChatBlocksResponse();
+        }
 
         MostRecentApiResult = res;
 
-        if (res.Choices is null) return null;
-
-        if (res.Choices.Count > 0)
+        if (res.Choices is null)
         {
-            ChatMessage? newMsg = res.Choices[0].Message;
-
-            if (newMsg is null) return null;
-
-            AppendMessage(newMsg);
-
-            if (newMsg.ToolCalls is { Count: > 0 } && newMsg.ToolCalls[0].FunctionCall.Name is not ("none" or "auto"))
-            {
-                FunctionResult? result = await functionCallHandler.Invoke([newMsg.ToolCalls[0].FunctionCall]);
-                return new ChatResponse { Kind = ChatResponseKinds.Function, FunctionResult = result };
-            }
-
-            return new ChatResponse { Kind = ChatResponseKinds.Message, Message = newMsg.Content };
+            return new ChatBlocksResponse();
         }
 
-        return null;
+        ChatBlocksResponse response = new ChatBlocksResponse();
+        
+        if (res.Choices.Count > 0)
+        {
+            foreach (ChatChoice choice in res.Choices)
+            {
+                ChatMessage? newMsg = choice.Message;
+
+                if (newMsg is null)
+                {
+                    continue;
+                }
+
+                AppendMessage(newMsg);
+
+                if (newMsg.ToolCalls is { Count: > 0 } && newMsg.ToolCalls[0].FunctionCall.Name is not ("none" or "auto"))
+                {
+                    List<FunctionResult> result = await functionCallHandler.Invoke(newMsg.ToolCalls.Select(x => x.FunctionCall).ToList());
+
+                    foreach (FunctionResult fr in result)
+                    {
+                        response.Blocks.Add(new ChatResponse { Kind = ChatResponseKinds.Function, FunctionResult = fr });   
+                    }
+                }
+
+                response.Blocks.Add(new ChatResponse { Kind = ChatResponseKinds.Message, Message = newMsg.Content });
+            }
+        }
+
+        return response;
     }
 
     /// <summary>
