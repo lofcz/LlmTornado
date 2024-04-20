@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Http;
 using Newtonsoft.Json;
 using OpenAiNg.Chat;
+using OpenAiNg.Common;
 using OpenAiNg.Images;
 
 namespace OpenAiNg.Vendor.Anthropic;
@@ -23,7 +24,7 @@ internal class VendorAnthropicChatRequest
         internal class VendorAnthropicChatRequestMessageContent
         {
             public ChatMessage Msg { get; set; }
-            
+
             public VendorAnthropicChatRequestMessageContent(ChatMessage msg)
             {
                 Msg = msg;
@@ -33,7 +34,7 @@ internal class VendorAnthropicChatRequest
             {
                 
             }
-            
+
             internal class VendorAnthropicChatRequestMessageContentJsonConverter : JsonConverter<VendorAnthropicChatRequestMessageContent>
             {
                 public override void WriteJson(JsonWriter writer, VendorAnthropicChatRequestMessageContent value, JsonSerializer serializer)
@@ -77,6 +78,23 @@ internal class VendorAnthropicChatRequest
                         
                         writer.WriteEndArray();
                     }
+                    else if (value.Msg.ToolCallId != null)
+                    {
+                        writer.WriteStartArray();
+                        writer.WriteStartObject();
+                        writer.WritePropertyName("type");
+                        writer.WriteValue(VendorAnthropicChatMessageTypes.ToolResult);
+                        writer.WritePropertyName("tool_use_id");
+                        writer.WriteValue(value.Msg.ToolCallId);
+                        writer.WritePropertyName("content");
+                        writer.WriteRawValue(value.Msg.Content);
+                        writer.WriteEndObject();
+                        writer.WriteEndArray();
+                    }
+                    else if (value.Msg.ToolCalls?.Count > 0)
+                    {
+                        writer.WriteRawValue(value.Msg.Content ?? string.Empty);
+                    }
                     else
                     {
                         writer.WriteValue(value.Msg.Content ?? string.Empty);   
@@ -90,9 +108,9 @@ internal class VendorAnthropicChatRequest
             }
         }
         
-        public VendorAnthropicChatRequestMessage(ChatMessage msg)
+        public VendorAnthropicChatRequestMessage(ChatMessageRole role, ChatMessage msg)
         {
-            Role = msg.Role ?? ChatMessageRole.User;
+            Role = role;
             Content = new VendorAnthropicChatRequestMessageContent(msg);
         }
     }
@@ -123,6 +141,8 @@ internal class VendorAnthropicChatRequest
     public double? TopP { get; set; }
     [JsonProperty("top_k")]
     public int? TopK { get; set; }
+    [JsonProperty("tools")]
+    public List<VendorAnthropicToolFunction>? Tools { get; set; }
 
     public VendorAnthropicChatRequest(ChatRequest request)
     {
@@ -142,9 +162,19 @@ internal class VendorAnthropicChatRequest
             {
                 if (msg.Role == ChatMessageRole.Assistant || msg.Role == ChatMessageRole.User)
                 {
-                    Messages.Add(new VendorAnthropicChatRequestMessage(msg));
+                    Messages.Add(new VendorAnthropicChatRequestMessage(msg.Role, msg));
+                }
+                else if (msg.Role == ChatMessageRole.Tool)
+                {
+                    Messages.Add(new VendorAnthropicChatRequestMessage(ChatMessageRole.User, msg));
                 }
             }   
         }
+
+        if (request.Tools != null)
+        {
+            Stream = false;
+            Tools = request.Tools.Select(t => new VendorAnthropicToolFunction(t.Function)).ToList();
+        }
     }
-}
+ }

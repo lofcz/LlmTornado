@@ -8,7 +8,7 @@ namespace OpenAiNg.Chat;
 /// </summary>
 public class ChatMessageTypes
 {
-    private ChatMessageTypes(string? value)
+    protected ChatMessageTypes(string? value)
     {
         Value = value;
     }

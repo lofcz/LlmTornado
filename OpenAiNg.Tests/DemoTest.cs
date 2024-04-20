@@ -20,7 +20,7 @@ public class Tests
             {
                 TestCaseData testCase = new TestCaseData(string.Empty, task) 
                 {
-                    TestName = task.Method.Name
+                    TestName = $"{demo} - {task.Method.Name}"
                 };
                 
                 yield return testCase;

@@ -212,5 +212,25 @@ public class ToolFunction
     ///     The input parameters of the tool, if any.
     /// </summary>
     [JsonProperty("parameters")]
-    public JObject? Parameters { get; set; }
+    public virtual JObject? Parameters { get; set; }
+}
+
+public class VendorAnthropicToolFunction : ToolFunction
+{
+    /// <summary>
+    ///     Create a function for antropic.
+    /// </summary>
+    /// <param name="name"></param>
+    /// <param name="description"></param>
+    public VendorAnthropicToolFunction(ToolFunction toolFunction) : base(toolFunction.Name, toolFunction.Description)
+    {
+        Parameters = toolFunction.Parameters;
+
+    }
+
+    /// <summary>
+    ///     The input parameters of the tool, if any.
+    /// </summary>
+    [JsonProperty("input_schema")]
+    public override JObject? Parameters { get; set; }
 }

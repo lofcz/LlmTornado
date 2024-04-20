@@ -4,6 +4,7 @@ using OpenAiNg.Assistants;
 using OpenAiNg.Audio;
 using OpenAiNg.Chat;
 using OpenAiNg.Code;
+using OpenAiNg.Code.Vendor;
 using OpenAiNg.Completions;
 using OpenAiNg.Embedding;
 using OpenAiNg.Files;
