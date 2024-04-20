@@ -1,5 +1,6 @@
 ﻿using System;
 using Newtonsoft.Json;
+using OpenAiNg.Code;
 using OpenAiNg.Models;
 
 namespace OpenAiNg;
@@ -57,4 +58,10 @@ public class ApiResultBase
     /// </summary>
     [JsonIgnore]
     public string? OpenaiVersion { get; internal set; }
+    
+    /// <summary>
+    ///		The provider used to execute the request.
+    /// </summary>
+    [JsonIgnore]
+    public IEndpointProvider? Provider { get; set; }
 }

@@ -7,6 +7,7 @@ using OpenAiNg.ChatFunctions;
 using OpenAiNg.Code;
 using OpenAiNg.Common;
 using OpenAiNg.Models;
+using OpenAiNg.Vendor.Anthropic;
 
 namespace OpenAiNg.Chat;
 
@@ -22,6 +23,9 @@ public class Conversation
     /// </summary>
     private readonly ChatEndpoint _endpoint;
 
+    /// <summary>
+    ///     An internal handle to the messages currently enlisted in the conversation.
+    /// </summary>
     private readonly List<ChatMessage> _messages;
 
     /// <summary>
@@ -46,8 +50,12 @@ public class Conversation
     public Conversation(ChatEndpoint endpoint, Model? model = null, ChatRequest? defaultChatRequestArgs = null)
     {
         RequestParameters = new ChatRequest(defaultChatRequestArgs);
-        if (model != null)
+        
+        if (model is not null)
+        {
             RequestParameters.Model = model;
+        }
+        
         RequestParameters.Model ??= Model.GPT35_Turbo;
 
         _messages = new List<ChatMessage>();
@@ -128,7 +136,7 @@ public class Conversation
     {
         ChatMessage? msg = _messages.FirstOrDefault(x => x.Id == message.Id);
 
-        if (msg != null)
+        if (msg is not null)
         {
             _messages.Remove(msg);
             return true;
@@ -146,7 +154,7 @@ public class Conversation
     {
         ChatMessage? msg = _messages.FirstOrDefault(x => x.Id == id);
 
-        if (msg != null)
+        if (msg is not null)
         {
             _messages.Remove(msg);
             return true;
@@ -187,7 +195,7 @@ public class Conversation
     {
         ChatMessage? msg = _messages.FirstOrDefault(x => x.Id == id);
 
-        if (msg != null)
+        if (msg is not null)
         {
             msg.Content = content;
             return true;
@@ -216,7 +224,7 @@ public class Conversation
     {
         ChatMessage? msg = _messages.FirstOrDefault(x => x.Id == id);
 
-        if (msg != null)
+        if (msg is not null)
         {
             msg.Role = role;
             return true;
@@ -471,9 +479,14 @@ public class Conversation
 
         if (res.Choices.Count > 0)
         {
-            ChatMessage newMsg = res.Choices[0].Message;
-            AppendMessage(newMsg);
-            return newMsg.Content;
+            ChatMessage? newMsg = res.Choices[0].Message;
+
+            if (newMsg is not null)
+            {
+                AppendMessage(newMsg);    
+            }
+            
+            return newMsg?.Content;
         }
 
         return null;
@@ -541,8 +554,13 @@ public class Conversation
 
         if (res.Choices.Count > 0)
         {
-            ChatMessage newMsg = res.Choices[0].Message;
-            AppendMessage(newMsg);
+            ChatMessage? newMsg = res.Choices[0].Message;
+
+            if (newMsg is not null)
+            {
+                AppendMessage(newMsg);    
+            }
+            
             return res.Choices[0];
         }
 
@@ -660,7 +678,7 @@ public class Conversation
 
         StringBuilder responseStringBuilder = new();
         ChatMessageRole? responseRole = null;
-        string currentFunction = "";
+        string currentFunction = string.Empty;
         Dictionary<string, StringBuilder> functionCalls = new();
         bool typeResolved = false;
 
@@ -672,23 +690,25 @@ public class Conversation
                 continue;
             }
 
-            if (!res.Choices.Any())
+            if (res.Choices.Count is 0)
             {
                 MostRecentApiResult = res;
                 continue;
             }
 
             ChatChoice choice = res.Choices[0];
-            
             string? finishReason = choice.FinishReason;
-            if (responseRole == null && finishReason is "function_call" or "tool_calls" or "tool_use") responseRole = ChatMessageRole.Tool;
 
-            if (choice.Delta != null)
+            if (finishReason is not null && (res.Provider?.ToolFinishReasons.Contains(finishReason) ?? false))
+            {
+                responseRole = ChatMessageRole.Tool;
+            }
+
+            if (choice.Delta is not null)
             {
                 ChatMessage delta = choice.Delta;
                 string? deltaContent = delta.Content;
                 bool empty = string.IsNullOrEmpty(deltaContent);
-
                 
                 if (choice.Delta.ToolCalls is not null)
                 {
@@ -703,7 +723,7 @@ public class Conversation
 
                     if (choice.Delta.ToolCalls.Count > 0)
                     {
-                        if (choice.Delta.ToolCalls[0].FunctionCall.Name is not null)
+                        if (!choice.Delta.ToolCalls[0].FunctionCall.Name.IsNullOrWhiteSpace())
                         {
                             currentFunction = choice.Delta.ToolCalls[0].FunctionCall.Name;
                             functionCalls.TryAdd(currentFunction, new StringBuilder());
@@ -754,11 +774,11 @@ public class Conversation
             {
                 foreach (ChatChoice iChoice in res.Choices.Where(ch => ch.Message?.ToolCalls != null) )
                 {
-                    if (iChoice.Message != null && iChoice.Message.ToolCalls != null)
+                    if (iChoice.Message is { ToolCalls: not null })
                     {
-                        if (iChoice.Message.ToolCalls[0].FunctionCall.Name is not null)
+                        if (!iChoice.Message.ToolCalls[0].FunctionCall.Name.IsNullOrWhiteSpace())
                         {
-                            var sb = new StringBuilder();
+                            StringBuilder sb = new StringBuilder();
                             currentFunction = iChoice.Message.ToolCalls[0].Id;
                             sb.Append(iChoice.Message.ToolCalls[0].FunctionCall.Arguments);
                             functionCalls.TryAdd(currentFunction, sb);
@@ -767,15 +787,15 @@ public class Conversation
 
                 }
             }
-            else if (responseRole is null && res.Choices[0].Message.Role is not null)
+            else if (responseRole is null && res.Choices[0].Message?.Role is not null)
             {
-                if (string.IsNullOrEmpty(res.Choices[0].Message.Content))
+                if (string.IsNullOrEmpty(res.Choices[0].Message?.Content))
                 {
-                    responseStringBuilder.Append(res.Choices[0].Message.Content);
+                    responseStringBuilder.Append(res.Choices[0].Message?.Content);
 
                     if (messageTokenHandler is not null)
                     {
-                        await messageTokenHandler.Invoke(res.Choices[0].Message.Content);
+                        await messageTokenHandler.Invoke(res.Choices[0].Message?.Content);
                     }
                 }
             }
@@ -793,11 +813,16 @@ public class Conversation
                 
                 ChatMessage fnCallMsg = new(ChatMessageRole.Assistant, string.Empty, Guid.NewGuid())
                 {
-                    ToolCalls = calls.Select(x => new ToolCall { FunctionCall = x, Type = "function", Id = x.Name ?? string.Empty }).ToList(),
+                    ToolCalls = calls.Select(x => new ToolCall
+                    {
+                        FunctionCall = x, 
+                        Type = "function", 
+                        Id = x.Name
+                    }).ToList(),
                     Content = null
                 };
 
-                if (MostRecentApiResult.Choices[0].FinishReason == VendorAntropicChatMessageTypes.ToolUse)
+                if (MostRecentApiResult.Choices?.Count > 0 && MostRecentApiResult.Choices[0].FinishReason == VendorAnthropicChatMessageTypes.ToolUse)
                 {
                     fnCallMsg.Content = MostRecentApiResult.Object;
                 }

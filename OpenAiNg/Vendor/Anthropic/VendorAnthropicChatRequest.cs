@@ -83,7 +83,7 @@ internal class VendorAnthropicChatRequest
                         writer.WriteStartArray();
                         writer.WriteStartObject();
                         writer.WritePropertyName("type");
-                        writer.WriteValue(VendorAntropicChatMessageTypes.ToolResult);
+                        writer.WriteValue(VendorAnthropicChatMessageTypes.ToolResult);
                         writer.WritePropertyName("tool_use_id");
                         writer.WriteValue(value.Msg.ToolCallId);
                         writer.WritePropertyName("content");

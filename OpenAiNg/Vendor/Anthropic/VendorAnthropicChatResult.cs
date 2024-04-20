@@ -64,7 +64,7 @@ internal class VendorAnthropicChatResult
                     Delta = null,
                     FinishReason = StopReason,
                     Index = result.Choices.Count + 1,
-                    Message = contentBlock.Type == VendorAntropicChatMessageTypes.ToolUse
+                    Message = contentBlock.Type == VendorAnthropicChatMessageTypes.ToolUse
                         ? new ChatMessage(ChatMessageRole.Tool, (string?)null) { ToolCalls = CreateToolCals(contentBlock) } 
                         : new ChatMessage(ChatMessageRole.Assistant, contentBlock.Text)
                 });

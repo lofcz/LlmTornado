@@ -56,19 +56,3 @@ public class ChatMessageTypes
         }
     }
 }
-
-public class VendorAntropicChatMessageTypes : ChatMessageTypes
-{
-    public VendorAntropicChatMessageTypes(string? value) : base(value)
-    {
-    }
-
-    /// <summary>
-    ///     Chat Tool use
-    /// </summary>
-    public static VendorAntropicChatMessageTypes ToolUse => new("tool_use");
-    /// <summary>
-    ///     Chat Tool result
-    /// </summary>
-    public static VendorAntropicChatMessageTypes ToolResult => new("tool_result");
-}

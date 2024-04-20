@@ -215,9 +215,21 @@ public class Model
     ///     reduce cases of “laziness” where the model doesn’t complete a task.
     /// </summary>
     public static Model GPT4_4_0125_Preview => new("gpt-4-0125-preview");
+    
+    /// <summary>
+    ///     GPT-4 Turbo with Vision model. Vision requests can now use JSON mode and function calling.
+    ///     <see cref="GPT4_Turbo"/> currently points to this version.
+    /// </summary>
+    public static Model GPT4_4_0409_Preview => new("gpt-4-turbo-2024-04-09");
 
     /// <summary>
-    ///     Currently <see cref="GPT4_4_0125_Preview" /> will be autoaupdated to the latest GPT4 preview.
+    ///     The latest GPT-4 Turbo model with vision capabilities. Vision requests can now use JSON mode and function calling.
+    ///     Currently points to <see cref="GPT4_4_0409_Preview"/>.
+    /// </summary>
+    public static Model GPT4_Turbo => new("gpt-4-turbo");
+    
+    /// <summary>
+    ///     Currently <see cref="GPT4_4_0125_Preview" /> will be auto updated to the latest GPT4 preview.
     /// </summary>
     public static Model GPT4_Turbo_Preview => new("gpt-4-turbo-preview");
 

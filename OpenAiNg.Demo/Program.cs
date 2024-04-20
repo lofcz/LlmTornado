@@ -32,6 +32,7 @@ public enum Demos
     ChatAnthropic,
     ChatStreamingAnthropic,
     ChatAzure,
+    ChatOpenAiFunctions,
     ChatAnthropicFunctions,
     Last
 }
@@ -126,6 +127,7 @@ public class Program
             Demos.ChatAnthropic => ChatDemo.Anthropic,
             Demos.ChatStreamingAnthropic => ChatDemo.AnthropicStreaming,
             Demos.ChatAzure => ChatDemo.Azure,
+            Demos.ChatOpenAiFunctions => ChatDemo.OpenAiFunctions,
             Demos.ChatAnthropicFunctions => ChatDemo.AnthropicFunctions,
             _ => null
         };
@@ -135,7 +137,10 @@ public class Program
     
     public static async Task Main(string[] args)
     {
-        if (!await SetupApi()) return;
+        if (!await SetupApi())
+        {
+            return;
+        }
 
         selectedDemo = Demos.Last - 1;
         Func<Task>? task = GetDemo(selectedDemo);

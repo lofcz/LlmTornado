@@ -240,23 +240,33 @@ public class ChatEndpoint : EndpointBase, IChatEndpoint
     /// </returns>
     public IAsyncEnumerable<ChatResult> StreamChatEnumerableAsync(ChatRequest request)
     {
-        request = new ChatRequest(request) { Stream = true };
+        request = new ChatRequest(request)
+        {
+            Stream = true
+        };
+        
         IEndpointProvider provider = Api.GetProvider(request.Model);
 
-        if (request.Tools != null && provider.Provider == LLmProviders.Anthropic)
+        if (request.Tools is not null && provider.Provider is LLmProviders.Anthropic) // Anthropic doesn't support streaming with functions as of 4/24
         {
-            return AntropicTool(provider, request);
+            return HttpFakeStreamingRequest(provider, request);
         }
+        
         return HttpStreamingRequest<ChatResult>(Api.GetProvider(request.Model), CapabilityEndpoint, null, HttpMethod.Post, request.Serialize(provider.Provider), request.OuboundFunctionsContent);
     }
 
-    private async IAsyncEnumerable<ChatResult> AntropicTool(IEndpointProvider provider, ChatRequest request)
+    /// <summary>
+    ///     Yields a single http result. Used for cases where streaming capability is in the public API but the vendor targeted by the request doesn't support streaming in
+    ///     the given scenario.
+    /// </summary>
+    /// <param name="provider"></param>
+    /// <param name="request"></param>
+    /// <returns></returns>
+    private async IAsyncEnumerable<ChatResult> HttpFakeStreamingRequest(IEndpointProvider provider, ChatRequest request)
     {
-        var result = await HttpPost1<ChatResult>(provider, CapabilityEndpoint, null, request.Serialize(provider.Provider));
+        ChatResult result = await HttpPost1<ChatResult>(provider, CapabilityEndpoint, null, request.Serialize(provider.Provider)) ?? new ChatResult();
         yield return result;
     }
-
-
 
     /// <summary>
     ///     Ask the API to complete the message(s) using the specified request, and stream the results as they come in.

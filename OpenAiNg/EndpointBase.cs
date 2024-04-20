@@ -232,7 +232,7 @@ public abstract class EndpointBase
         using HttpRequestMessage req = new(verb, url);
 
         req.Headers.Add("User-Agent", userAgent);
-        req.Headers.Add("OpenAI-Beta", "assistants=v1");
+        req.Headers.Add("OpenAI-Beta", "assistants=v2");
 
         if (Api.Auth is not null)
         {
@@ -382,6 +382,8 @@ public abstract class EndpointBase
         {
             if (res is not null)
             {
+                res.Provider = provider;
+                
                 if (response.Headers.TryGetValues("Openai-Organization", out IEnumerable<string>? orgH)) res.Organization = orgH.FirstOrDefault();
                 if (response.Headers.TryGetValues("X-Request-ID", out IEnumerable<string>? xreqId)) res.RequestId = xreqId.FirstOrDefault();
 
@@ -620,7 +622,8 @@ public abstract class EndpointBase
             {
                 continue;
             }
-            
+
+            x.Provider = provider;
             yield return x;
         }
     }
