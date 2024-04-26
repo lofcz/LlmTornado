@@ -9,23 +9,41 @@ public enum Demos
     Unknown,
     ChatVision,
     ChatVisionBase64,
+    [Flaky]
     AssistantList,
+    [Flaky]
     AssistantCreate,
+    [Flaky]
     AssistantCreateWithCustomFunction,
+    [Flaky]
     AssistantRetrieve,
+    [Flaky]
     AssistantModify,
+    [Flaky]
     AssistantDelete,
+    [Flaky]
     FilesUpload,
+    [Flaky]
     ImagesGenerate,
+    [Flaky]
     AssistantCreateWithFile,
+    [Flaky]
     AssistantListFiles,
+    [Flaky]
     AssistantAttachFile,
-    AssistantRetriveFile,
+    [Flaky]
+    AssistantRetrieveFile,
+    [Flaky]
     AssistantRemoveFile,
+    [Flaky]
     ThreadsCreate,
+    [Flaky]
     ThreadsRetrieve,
+    [Flaky]
     ThreadsModify,
+    [Flaky]
     ThreadsDelete,
+    [Flaky]
     ThreadsCreateMessage,
     ChatCompletion,
     ChatStreamWithFunctions,
@@ -116,7 +134,7 @@ public class Program
             Demos.AssistantCreateWithFile => AssistantsDemo.CreateWithFile,
             Demos.AssistantListFiles => AssistantsDemo.ListFiles,
             Demos.AssistantAttachFile => AssistantsDemo.AttachFile,
-            Demos.AssistantRetriveFile => AssistantsDemo.RetrieveFile,
+            Demos.AssistantRetrieveFile => AssistantsDemo.RetrieveFile,
             Demos.AssistantRemoveFile => AssistantsDemo.RemoveFile,
             Demos.ThreadsCreate => ThreadsDemo.Create,
             Demos.ThreadsRetrieve => ThreadsDemo.Retrieve,
