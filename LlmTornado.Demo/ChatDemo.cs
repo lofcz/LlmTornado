@@ -50,29 +50,22 @@ public static class ChatDemo
             new ProviderAuthentication(LLmProviders.Cohere, Program.ApiKeys.Cohere)
         });
 
-        string? responseOpenAi = await api.Chat.CreateConversation(ChatModel.OpenAi.Gpt4.Turbo)
-            .AppendSystemMessage("You are a fortune teller.")
-            .AppendUserInput("What will my future bring?")
-            .GetResponse();
+        List<ChatModel> models =
+        [
+            ChatModel.OpenAi.Gpt4.Turbo,
+            ChatModel.Anthropic.Claude3.Sonnet,
+            ChatModel.Cohere.CommandRPlus
+        ];
         
-        string? responseAnthropic = await api.Chat.CreateConversation(ChatModel.Anthropic.Claude3.Sonnet)
-            .AppendSystemMessage("You are a fortune teller.")
-            .AppendUserInput("What will my future bring?")
-            .GetResponse();
-        
-        string? responseCohere = await api.Chat.CreateConversation(ChatModel.Cohere.CommandRPlus)
-            .AppendSystemMessage("You are a fortune teller.")
-            .AppendUserInput("What will my future bring?")
-            .GetResponse();
-        
-        Console.WriteLine("Open AI:");
-        Console.WriteLine(responseOpenAi);
-
-        Console.WriteLine("Anthropic:");
-        Console.WriteLine(responseAnthropic);
-        
-        Console.WriteLine("Cohere:");
-        Console.WriteLine(responseCohere);
+        foreach (ChatModel model in models)
+        {
+            string? response = await api.Chat.CreateConversation(model)
+                .AppendSystemMessage("You are a fortune teller.")
+                .AppendUserInput("What will my future bring?")
+                .GetResponse();
+            
+            Console.WriteLine(response);
+        }
     }
     
     public static async Task CohereStreaming()

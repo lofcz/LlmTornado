@@ -4,16 +4,16 @@
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <Authors>Matěj Štágl, LlmTornado contributors</Authors>
         <Product>LlmTornado</Product>
-        <Description>A simple C# / .NET library to use with OpenAI's API, including GPT-4, GPT-3.5-turbo, GPT-3.5-instruct, DALL·E, etc. Supports commercial and self hosted API providers such as OpenAI, Azure OpenAI, KoboldCpp, AI Horde and others. Formerly a fork of Open-AI-Dotnet, hard-forked due to extensive changes and stale upstream.</Description>
+        <Description>One .NET library to consume OpenAI, Anthropic, Cohere, Azure, and self-hosed APIs.</Description>
         <Copyright>This library is licensed MIT</Copyright>
         <PackageLicenseExpression>CC0-1.0</PackageLicenseExpression>
         <PackageProjectUrl>https://github.com/lofcz/LlmTornado</PackageProjectUrl>
         <RepositoryUrl>https://github.com/lofcz/LlmTornado</RepositoryUrl>
-        <PackageTags>OpenAI, GPT4 Turbo, GPT3, GPT-3, GPT4, GPT-4, GPT3.5, GPT-3.5, GPT-3.5-Turbo, GPT-3.5-Instruct, KoboldCpp, Kobold, AI, ML, API, ChatGPT, DALLE, DALL-E</PackageTags>
+        <PackageTags>OpenAI, Cohere, Anthropic, Azure, LLM, GPT4, GPT Turbo, DALL-E, Coral, Claude3, Command R Plus</PackageTags>
         <Title>OpenAI NextGeneration</Title>
-        <PackageReleaseNotes>TTS endpoint</PackageReleaseNotes>
+        <PackageReleaseNotes>V3 release</PackageReleaseNotes>
         <PackageId>LlmTornado</PackageId>
-        <Version>3.0.0</Version>
+        <Version>3.0.1</Version>
         <AssemblyVersion>2.2.2.0</AssemblyVersion>
         <FileVersion>2.2.2.0</FileVersion>
         <GenerateDocumentationFile>True</GenerateDocumentationFile>
