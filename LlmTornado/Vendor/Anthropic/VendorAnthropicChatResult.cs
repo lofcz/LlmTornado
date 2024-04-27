@@ -73,7 +73,7 @@ internal class VendorAnthropicChatResult
     [JsonProperty("usage")]
     public VendorAnthropicUsage Usage { get; set; }
     
-    public ChatResult ToChatResult()
+    public ChatResult ToChatResult(string? postData)
     {
         ChatResult result = new ChatResult
         {

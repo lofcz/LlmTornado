@@ -11,6 +11,21 @@ namespace LlmTornado.Chat.Models;
 public class ChatModel : ModelBase
 {
     /// <summary>
+    /// Models from OpenAI.
+    /// </summary>
+    public static readonly ChatModelOpenAi OpenAi = new ChatModelOpenAi();
+
+    /// <summary>
+    /// Models from Anthropic.
+    /// </summary>
+    public static readonly ChatModelAnthropic Anthropic = new ChatModelAnthropic();
+    
+    /// <summary>
+    /// Models from Cohere.
+    /// </summary>
+    public static readonly ChatModelCohereCoral Cohere = new ChatModelCohereCoral();
+    
+    /// <summary>
     /// All known models keyed by name.
     /// </summary>
     public static readonly Dictionary<string, IModel> AllModelsMap = [];
@@ -24,24 +39,15 @@ public class ChatModel : ModelBase
     {
         AllModels = [
             ..OpenAi.AllModels,
-            ..Anthropic.AllModels
+            ..Anthropic.AllModels,
+            ..Cohere.AllModels
         ];
         
-        foreach (IModel x in AllModels)
+        AllModels.ForEach(x =>
         {
             AllModelsMap.TryAdd(x.Name, x);
-        }
+        });
     }
-    
-    /// <summary>
-    /// Models from OpenAI.
-    /// </summary>
-    public static readonly ChatModelOpenAi OpenAi = new ChatModelOpenAi();
-
-    /// <summary>
-    /// Models from Anthropic.
-    /// </summary>
-    public static readonly ChatModelAnthropic Anthropic = new ChatModelAnthropic();
     
     /// <summary>
     /// Represents an Model with the given name.

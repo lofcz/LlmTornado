@@ -3,6 +3,7 @@ using LlmTornado.Code;
 using LlmTornado.Vendor.Anthropic;
 using LlmTornado;
 using LlmTornado.Vendor.Anthropic;
+using LlmTornado.Vendor.Cohere;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Chat;
@@ -39,12 +40,13 @@ public class ChatResult : ApiResultBase
         return Choices is { Count: > 0 } ? Choices[0].ToString() : null;
     }
 
-	internal static ChatResult? Deserialize(LLmProviders provider, string jsonData)
+	internal static ChatResult? Deserialize(LLmProviders provider, string jsonData, string? postData)
 	{
 		return provider switch
 		{
 			LLmProviders.OpenAi => JsonConvert.DeserializeObject<ChatResult>(jsonData),
-			LLmProviders.Anthropic => JsonConvert.DeserializeObject<VendorAnthropicChatResult>(jsonData)?.ToChatResult(),
+			LLmProviders.Anthropic => JsonConvert.DeserializeObject<VendorAnthropicChatResult>(jsonData)?.ToChatResult(postData),
+			LLmProviders.Cohere => JsonConvert.DeserializeObject<VendorCohereChatResult>(jsonData)?.ToChatResult(postData),
 			_ => JsonConvert.DeserializeObject<ChatResult>(jsonData)
 		};
 	}
@@ -123,6 +125,13 @@ public class ChatUsage : Usage
 	{
 		CompletionTokens = usage.OutputTokens;
 		PromptTokens = usage.InputTokens;
+		TotalTokens = CompletionTokens + PromptTokens;
+	}
+	
+	internal ChatUsage(VendorCohereUsage usage)
+	{
+		CompletionTokens = usage.BilledUnits.OutputTokens;
+		PromptTokens = usage.BilledUnits.OutputTokens;
 		TotalTokens = CompletionTokens + PromptTokens;
 	}
 }

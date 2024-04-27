@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using LlmTornado.Chat;
 using LlmTornado.Vendor.Anthropic;
 using Newtonsoft.Json;
@@ -11,7 +12,7 @@ namespace LlmTornado.Code.Vendor;
 /// <summary>
 /// 
 /// </summary>
-internal class AnthropicEndpointProvider : BaseEndpointProvider
+internal class CohereEndpointProvider : BaseEndpointProvider
 {
     private const string Event = "event:";
     private const string Data = "data:";
@@ -36,9 +37,9 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider
         MsgStart
     }
     
-    public AnthropicEndpointProvider(TornadoApi api) : base(api)
+    public CohereEndpointProvider(TornadoApi api) : base(api)
     {
-        Provider = LLmProviders.Anthropic;
+        Provider = LLmProviders.Cohere;
     }
 
     private class AnthropicStreamBlockStart
@@ -94,12 +95,11 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider
     {
         string eStr = endpoint switch
         {
-            CapabilityEndpoints.Chat => "messages",
-            CapabilityEndpoints.Completions => "complete",
-            _ => throw new Exception($"Anthropic doesn't support endpoint {endpoint}")
+            CapabilityEndpoints.Chat => "chat",
+            _ => throw new Exception($"Cohere doesn't support endpoint {endpoint}")
         };
 
-        return $"https://api.anthropic.com/v1/{eStr}{url}";
+        return $"https://api.cohere.ai/v1/{eStr}{url}";
     }
 
     public override async IAsyncEnumerable<T?> InboundStream<T>(StreamReader reader) where T : class
@@ -200,15 +200,10 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider
     {
         HttpRequestMessage req = new(verb, url);
         req.Headers.Add("User-Agent", EndpointBase.GetUserAgent());
-        req.Headers.Add("anthropic-version", "2023-06-01");
-        req.Headers.Add("anthropic-beta", "tools-2024-04-04");
 
-        if (Api.Auth is not null)
+        if (Api.Auth?.ApiKey is not null)
         {
-            if (Api.Auth.ApiKey is not null)
-            {
-                req.Headers.Add("x-api-key", Api.Auth.ApiKey);
-            } 
+            req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Api.Auth.ApiKey.Trim());
         }
 
         return req;
@@ -218,7 +213,7 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider
     {
         if (typeof(T) == typeof(ChatResult))
         {
-            return (T?)(dynamic)ChatResult.Deserialize(LLmProviders.Anthropic, jsonData, postData);
+            return (T?)(dynamic)ChatResult.Deserialize(LLmProviders.Cohere, jsonData, postData);
         }
         
         return JsonConvert.DeserializeObject<T>(jsonData);

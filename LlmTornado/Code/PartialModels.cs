@@ -57,14 +57,34 @@ public class ChatImage
 }
 
 /// <summary>
-/// 
+/// Known LLM providers.
 /// </summary>
 public enum LLmProviders
 {
+    /// <summary>
+    /// Provider not resolved.
+    /// </summary>
     Unknown,
+    /// <summary>
+    /// OpenAI.
+    /// </summary>
     OpenAi,
+    /// <summary>
+    /// Anthropic.
+    /// </summary>
     Anthropic,
-    AzureOpenAi
+    /// <summary>
+    /// Azure OpenAI.
+    /// </summary>
+    AzureOpenAi,
+    /// <summary>
+    /// Cohere.
+    /// </summary>
+    Cohere,
+    /// <summary>
+    /// KoboldCpp, Ollama and other self-hosted providers.
+    /// </summary>
+    Custom
 }
 
 /// <summary>

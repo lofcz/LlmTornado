@@ -10,7 +10,7 @@ namespace LlmTornado.Code.Vendor;
 /// <summary>
 /// 
 /// </summary>
-public class OpenAiEndpointProvider : BaseEndpointProvider
+internal class OpenAiEndpointProvider : BaseEndpointProvider
 {
     private const string DataString = "data:";
     private const string DoneString = "[DONE]";
@@ -70,7 +70,7 @@ public class OpenAiEndpointProvider : BaseEndpointProvider
         return req;
     }
     
-    public override T? InboundMessage<T>(string jsonData) where T : default
+    public override T? InboundMessage<T>(string jsonData, string? postData) where T : default
     {
         return JsonConvert.DeserializeObject<T>(jsonData);
     }

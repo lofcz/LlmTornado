@@ -40,7 +40,7 @@ public class ChatModelAnthropicClaude3 : IVendorModelClassProvider
     public readonly ChatModel Opus = ModelOpus;
 
     /// <summary>
-    /// All known GPT 3.5 models from OpenAI.
+    /// All known Claude 3 models from Anthropic.
     /// </summary>
     public static readonly List<IModel> ModelsAll =
     [

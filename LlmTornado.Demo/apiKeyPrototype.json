@@ -1,6 +1,7 @@
 {
   "OpenAi": "",
   "Anthropic": "",
+  "Cohere": "",
   "Azure": {
     "Version": "",
     "ApiUrlFormat": "",

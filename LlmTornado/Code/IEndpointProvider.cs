@@ -19,7 +19,7 @@ public interface IEndpointProvider
     /// <returns></returns>
     public HttpRequestMessage OutboundMessage(string url, HttpMethod verb, object? data, bool streaming);
 
-    public T? InboundMessage<T>(string jsonData);
+    public T? InboundMessage<T>(string jsonData, string? postData);
     public IAsyncEnumerable<T?> InboundStream<T>(StreamReader streamReader) where T : ApiResultBase;
     public TornadoApi Api { get; set; }
     public LLmProviders Provider { get; set; }

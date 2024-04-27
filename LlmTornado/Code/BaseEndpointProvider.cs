@@ -27,7 +27,7 @@ public abstract class BaseEndpointProvider : IEndpointProvider
     }
 
     public abstract string ApiUrl(CapabilityEndpoints endpoint, string? url);
-    public abstract T? InboundMessage<T>(string jsonData);
+    public abstract T? InboundMessage<T>(string jsonData, string? postData);
     public abstract IAsyncEnumerable<T?> InboundStream<T>(StreamReader streamReader) where T : ApiResultBase;
     public abstract HttpRequestMessage OutboundMessage(string url, HttpMethod verb, object? data, bool streaming);
     public abstract HashSet<string> ToolFinishReasons { get;  }

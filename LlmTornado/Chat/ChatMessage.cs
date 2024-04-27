@@ -146,4 +146,10 @@ public class ChatMessage
     /// </summary>
     [JsonIgnore]
     public bool? ToolInvocationSucceeded { get; set; }
+    
+    /// <summary>
+    ///		Flags the message as excluded from the final request.
+    /// </summary>
+    [JsonIgnore]
+    internal bool ExcludeFromRequest { get; set; }
 }

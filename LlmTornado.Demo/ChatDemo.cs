@@ -26,6 +26,20 @@ public static class ChatDemo
         return result;
     }
 
+    public static async Task Cohere()
+    {
+        Conversation chat = Program.Connect(LLmProviders.Cohere).Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Cohere.CommandRPlus
+        });
+        chat.AppendSystemMessage("Pretend you are a dog. Sound authentic.");
+        chat.AppendUserInput("Who are you?");
+
+        string? str = await chat.GetResponseFromChatbotAsync();
+
+        Console.WriteLine("Cohere:");
+        Console.WriteLine(str);
+    }
 
     public static async Task Anthropic()
     {

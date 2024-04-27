@@ -203,7 +203,10 @@ public abstract class EndpointBase
         
         HttpResponseMessage response = await client.SendAsync(req, streaming ? HttpCompletionOption.ResponseHeadersRead : HttpCompletionOption.ResponseContentRead, ct ?? CancellationToken.None).ConfigureAwait(ConfigureAwaitOptions.None);
 
-        if (response.IsSuccessStatusCode) return response;
+        if (response.IsSuccessStatusCode)
+        {
+            return response;
+        }
 
         string resultAsString;
 
@@ -377,7 +380,7 @@ public abstract class EndpointBase
     {
         using HttpResponseMessage response = await HttpRequestRaw(provider, endpoint, url, verb, postData, false, ct).ConfigureAwait(ConfigureAwaitOptions.None);
         string resultAsString = await response.Content.ReadAsStringAsync().ConfigureAwait(ConfigureAwaitOptions.None);
-        T? res = provider.InboundMessage<T>(resultAsString);
+        T? res = provider.InboundMessage<T>(resultAsString, postData?.ToString());
 
         try
         {
@@ -425,7 +428,7 @@ public abstract class EndpointBase
 
         if (response.Data.IsSuccessStatusCode)
         {
-            result.Data = provider.InboundMessage<T>(resultAsString);
+            result.Data = provider.InboundMessage<T>(resultAsString, postData?.ToString());
         }
 
         response.Data?.Dispose();

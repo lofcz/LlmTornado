@@ -53,6 +53,7 @@ public enum Demos
     ChatOpenAiFunctions,
     ChatAnthropicFunctions,
     ChatAnthropicFailFunctions,
+    ChatCohere,
     Last
 }
 
@@ -72,21 +73,20 @@ public class Program
     {
         public string OpenAi { get; set; }
         public string Anthropic { get; set; }
+        public string Cohere { get; set; }
         public AzureKey Azure { get; set; }
     }
 
     public static TornadoApi Connect(LLmProviders provider = LLmProviders.OpenAi)
     {
-        if (provider is LLmProviders.AzureOpenAi)
+        return provider switch
         {
-            return new TornadoApi(ApiKeys.Azure.Key)
-            {
-                ApiVersion = ApiKeys.Azure.Version,
-                ApiUrlFormat = ApiKeys.Azure.ApiUrlFormat
-            };
-        }
-        
-        return new TornadoApi(provider is LLmProviders.OpenAi ? ApiKeys.OpenAi : ApiKeys.Anthropic);
+            LLmProviders.AzureOpenAi => new TornadoApi(ApiKeys.Azure.Key) { ApiVersion = ApiKeys.Azure.Version, ApiUrlFormat = ApiKeys.Azure.ApiUrlFormat },
+            LLmProviders.OpenAi => new TornadoApi(ApiKeys.OpenAi),
+            LLmProviders.Anthropic => new TornadoApi(ApiKeys.Anthropic),
+            LLmProviders.Cohere => new TornadoApi(ApiKeys.Cohere),
+            _ => new TornadoApi(string.Empty)
+        };
     }
 
     public static async Task<bool> SetupApi()
@@ -149,6 +149,7 @@ public class Program
             Demos.ChatOpenAiFunctions => ChatDemo.OpenAiFunctions,
             Demos.ChatAnthropicFunctions => ChatDemo.AnthropicFunctions,
             Demos.ChatAnthropicFailFunctions => ChatDemo.AnthropicFailFunctions,
+            Demos.ChatCohere => ChatDemo.Cohere,
             _ => null
         };
 

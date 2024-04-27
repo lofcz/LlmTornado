@@ -10,6 +10,7 @@ using Newtonsoft.Json;
 using LlmTornado.Code.Models;
 using LlmTornado;
 using LlmTornado.Vendor.Anthropic;
+using LlmTornado.Vendor.Cohere;
 
 namespace LlmTornado.Chat;
 
@@ -229,6 +230,7 @@ public class ChatRequest
 		{
 			LLmProviders.OpenAi => JsonConvert.SerializeObject(this, EndpointBase.NullSettings),
 			LLmProviders.Anthropic => JsonConvert.SerializeObject(new VendorAnthropicChatRequest(this), EndpointBase.NullSettings),
+			LLmProviders.Cohere => JsonConvert.SerializeObject(new VendorCohereChatRequest(this), EndpointBase.NullSettings),
 			_ => string.Empty
 		};
 	}
