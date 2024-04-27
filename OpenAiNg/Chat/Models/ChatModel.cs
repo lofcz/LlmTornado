@@ -13,7 +13,7 @@ public class ChatModel : ModelBase
     /// <summary>
     /// All known models keyed by name.
     /// </summary>
-    public static readonly Dictionary<string, IModel> AllModelsMap = new Dictionary<string, IModel>();
+    public static readonly Dictionary<string, IModel> AllModelsMap = [];
 
     /// <summary>
     /// All known chat models.
@@ -44,20 +44,20 @@ public class ChatModel : ModelBase
     public static readonly ChatModelAnthropic Anthropic = new ChatModelAnthropic();
     
     /// <summary>
-    /// Represents an Model with the given id/<see cref="ModelID" />
+    /// Represents an Model with the given name.
     /// </summary>
-    /// <param name="name">The id/<see cref="ModelID" /> to use.</param>
-    /// <param name="ownedBy">Either</param>
-    /// <param name="provider">Either</param>
-    public ChatModel(string name, string? ownedBy = null, LLmProviders provider = LLmProviders.OpenAi)
+    /// <param name="name">The id/name of the model.</param>
+    /// <param name="ownedBy"></param>
+    /// <param name="provider"></param>
+    public ChatModel(string name, string? ownedBy = null, LLmProviders? provider = null)
     {
         Name = name;
         OwnedBy = ownedBy ?? "openai";
-        Provider = provider;
+        Provider = provider ?? GetProvider(name) ?? LLmProviders.OpenAi;
     }
 
     /// <summary>
-    /// 
+    /// Creates a new model identified by name and provider.
     /// </summary>
     /// <param name="name"></param>
     /// <param name="provider"></param>
@@ -65,6 +65,16 @@ public class ChatModel : ModelBase
     {
         Name = name;
         Provider = provider;
+    }
+    
+    /// <summary>
+    /// Creates a new model identified by name. The provider of the model is inferred automatically.
+    /// </summary>
+    /// <param name="name"></param>
+    public ChatModel(string name)
+    {
+        Name = name;
+        Provider = GetProvider(name) ?? LLmProviders.OpenAi;
     }
 
     /// <summary>
@@ -82,6 +92,21 @@ public class ChatModel : ModelBase
     {
         return model.Name;
     }
+
+    /// <summary>
+    /// Looks up the model provider. Only works for known models.
+    /// </summary>
+    /// <param name="modelName"></param>
+    /// <returns></returns>
+    public static LLmProviders? GetProvider(string? modelName)
+    {
+        if (modelName is not null && AllModelsMap.TryGetValue(modelName, out IModel? protoModel))
+        {
+            return protoModel.Provider;
+        }
+
+        return null;
+    }
     
     /// <summary>
     /// Allows a string to be implicitly cast as an <see cref="Model" /> with that <see cref="IModel.Name" />
@@ -89,13 +114,6 @@ public class ChatModel : ModelBase
     /// <param name="name">The id/<see cref="IModel.Name" /> to use</param>
     public static implicit operator ChatModel(string? name)
     {
-        LLmProviders provider = LLmProviders.OpenAi; 
-        
-        if (name is not null && AllModelsMap.TryGetValue(name, out IModel? protoModel))
-        {
-            provider = protoModel.Provider;
-        }
-        
-        return new ChatModel(name ?? string.Empty, provider);
+        return new ChatModel(name ?? string.Empty, name is null ? LLmProviders.OpenAi : GetProvider(name) ?? LLmProviders.OpenAi);
     }
 }
