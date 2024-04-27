@@ -1,4 +1,4 @@
-[![OpenAI](https://badgen.net/nuget/v/OpenAiNg)](https://www.nuget.org/packages/OpenAiNg/)
+[![OpenAI](https://badgen.net/nuget/v/LlmTornado)](https://www.nuget.org/packages/LlmTornado/)
 
 # .NET SDK for accessing the OpenAI Compatible APIs such as GPT-4 Turbo, Assistants, and DALL-E 3
 
@@ -31,13 +31,13 @@ Features scheduled for open-sourcing:
 Install the library via NuGet:
 
 ```
-Install-Package OpenAiNg
+Install-Package LlmTornado
 ```
 
 ## 🔮 Quick Inference
 
 ```csharp
-var api = new OpenAiNg.OpenAiApi("YOUR_API_KEY");
+var api = new LlmTornado.OpenAiApi("YOUR_API_KEY");
 var result = await api.Completions.GetCompletion("One Two Three One Two");
 Console.WriteLine(result);
 // should print something starting with "Three"
@@ -53,17 +53,17 @@ Console.WriteLine(result);
 
 ## Requirements
 
-Unlike the original library, OpenAiNg supports only .NET Core >= 6.0, if you need .NET Standard 2.0 /.NET Framework
+Unlike the original library, LlmTornado supports only .NET Core >= 6.0, if you need .NET Standard 2.0 /.NET Framework
 support, please use [OpenAI-API-DotNet](https://github.com/OkGoDoIt/OpenAI-API-dotnet).
 
 ## Getting started
 
 ### Install from NuGet
 
-Install package [`OpenAiNg` from Nuget](https://www.nuget.org/packages/OpenAiNg/). Here's how via the command line:
+Install package [`LlmTornado` from Nuget](https://www.nuget.org/packages/LlmTornado/). Here's how via the command line:
 
 ```powershell
-Install-Package OpenAiNg
+Install-Package LlmTornado
 ```
 
 ### Authentication
@@ -94,4 +94,4 @@ issue here if you have any questions.
 
 ## License
 
-This library is licensed under [MIT license](https://github.com/lofcz/OpenAiNg/blob/master/LICENSE).
+This library is licensed under [MIT license](https://github.com/lofcz/LlmTornado/blob/master/LICENSE).
