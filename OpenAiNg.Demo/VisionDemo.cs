@@ -1,4 +1,6 @@
 using OpenAiNg.Chat;
+using OpenAiNg.Chat.Models;
+using OpenAiNg.Code.Models;
 using OpenAiNg.Images;
 using OpenAiNg.Models;
 
@@ -14,7 +16,7 @@ public static class VisionDemo
                 new ChatMessagePart(new Uri("https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcSGfpQ3m-QWiXgCBJJbrcUFdNdWAhj7rcUqjeNUC6eKcXZDAtWm"))
             ]),
             new(ChatMessageRole.User, "What is on this image?")
-        }, Model.GPT4_Vision_Preview, max_tokens: 256);
+        }, ChatModel.OpenAi.Gpt4.VisionPreview, max_tokens: 256);
 
         Console.WriteLine(result.Choices[0].Message.Content);
     }
@@ -30,7 +32,7 @@ public static class VisionDemo
                 new ChatMessagePart(base64, ImageDetail.Auto)
             ]),
             new(ChatMessageRole.User, "What is on this image?")
-        }, Model.GPT4_Vision_Preview, max_tokens: 256);
+        }, ChatModel.OpenAi.Gpt4.VisionPreview, max_tokens: 256);
 
         Console.WriteLine(result.Choices[0].Message.Content);
     }

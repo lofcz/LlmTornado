@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using OpenAiNg.Chat.Models;
+using OpenAiNg.Code.Models;
 using OpenAiNg.Models;
 
 namespace OpenAiNg.Chat;
@@ -90,7 +92,7 @@ public interface IChatEndpoint
 	///     Asynchronously returns the completion result. Look in its <see cref="ChatResult.Choices" /> property for the
 	///     results.
 	/// </returns>
-	Task<ChatResult> CreateChatCompletionAsync(IList<ChatMessage> messages, Model? model = null, double? temperature = null, double? top_p = null, int? numOutputs = null, int? max_tokens = null, double? frequencyPenalty = null, double? presencePenalty = null, IReadOnlyDictionary<string, float>? logitBias = null, params string[]? stopSequences);
+	Task<ChatResult> CreateChatCompletionAsync(IList<ChatMessage> messages, ChatModel? model = null, double? temperature = null, double? top_p = null, int? numOutputs = null, int? max_tokens = null, double? frequencyPenalty = null, double? presencePenalty = null, IReadOnlyDictionary<string, float>? logitBias = null, params string[]? stopSequences);
 
 	/// <summary>
 	///     Ask the API to complete the request using the specified message(s).  Any parameters will fall back to default
@@ -189,7 +191,7 @@ public interface IChatEndpoint
 	///     <see href="https://docs.microsoft.com/en-us/dotnet/csharp/whats-new/csharp-8#asynchronous-streams">the C# docs</see>
 	///     for more details on how to consume an async enumerable.
 	/// </returns>
-	IAsyncEnumerable<ChatResult> StreamChatEnumerableAsync(IList<ChatMessage> messages, Model? model = null, double? temperature = null, double? top_p = null, int? numOutputs = null, int? max_tokens = null, double? frequencyPenalty = null, double? presencePenalty = null, IReadOnlyDictionary<string, float>? logitBias = null, params string[]? stopSequences);
+	IAsyncEnumerable<ChatResult> StreamChatEnumerableAsync(IList<ChatMessage> messages, ChatModel? model = null, double? temperature = null, double? top_p = null, int? numOutputs = null, int? max_tokens = null, double? frequencyPenalty = null, double? presencePenalty = null, IReadOnlyDictionary<string, float>? logitBias = null, params string[]? stopSequences);
 
 	/// <summary>
 	///     Ask the API to complete the message(s) using the specified request, and stream the results to the

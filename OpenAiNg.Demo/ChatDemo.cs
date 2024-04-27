@@ -1,8 +1,10 @@
 using System.Text;
 using Newtonsoft.Json;
 using OpenAiNg.Chat;
+using OpenAiNg.Chat.Models;
 using OpenAiNg.ChatFunctions;
 using OpenAiNg.Code;
+using OpenAiNg.Code.Models;
 using OpenAiNg.Common;
 
 namespace OpenAiNg.Demo;
@@ -13,7 +15,7 @@ public static class ChatDemo
     {
         ChatResult result = await Program.Connect().Chat.CreateChatCompletionAsync(new ChatRequest
         {
-            Model = Models.Model.GPT4_Turbo_Preview,
+            Model = ChatModel.OpenAi.Gpt4.Turbo,
             ResponseFormat = ChatRequestResponseFormats.Json,
             Messages = [
                 new ChatMessage(ChatMessageRole.System, "Solve the math problem given by user, respond in JSON format."),
@@ -29,7 +31,7 @@ public static class ChatDemo
     {
        Conversation chat = Program.Connect(LLmProviders.Anthropic).Chat.CreateConversation(new ChatRequest
        {
-           Model = Models.Model.Claude3Sonnet
+           Model = ChatModel.Anthropic.Claude3.Sonnet
        });
        chat.AppendSystemMessage("Pretend you are a dog. Sound authentic.");
        chat.AppendUserInput("Who are you?");
@@ -38,7 +40,7 @@ public static class ChatDemo
        
        Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
        {
-           Model = Models.Model.GPT4_Turbo_Preview
+           Model = ChatModel.OpenAi.Gpt4.Turbo
        });
        chat2.AppendSystemMessage("Pretend you are a dog. Sound authentic.");
        chat2.AppendUserInput("Who are you?");
@@ -57,7 +59,7 @@ public static class ChatDemo
 
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = Models.Model.GPT4_Turbo,
+            Model = ChatModel.OpenAi.Gpt4.Turbo,
             Tools = [
                 new Tool(new ToolFunction("get_weather", "gets the current weather", new
                 {
@@ -116,7 +118,7 @@ public static class ChatDemo
 
         Conversation chat = Program.Connect(LLmProviders.Anthropic).Chat.CreateConversation(new ChatRequest
         {
-            Model = Models.Model.Claude3Sonnet,
+            Model = ChatModel.Anthropic.Claude3.Sonnet,
             Tools = [
                 new Tool(new ToolFunction("get_weather", "gets the current weather", new
                 {
@@ -175,7 +177,7 @@ public static class ChatDemo
 
         Conversation chat = Program.Connect(LLmProviders.Anthropic).Chat.CreateConversation(new ChatRequest
         {
-            Model = Models.Model.Claude3Sonnet,
+            Model = ChatModel.Anthropic.Claude3.Sonnet,
             Tools = [
                 new Tool(new ToolFunction("get_weather", "gets the current weather", new
                 {
@@ -233,7 +235,7 @@ public static class ChatDemo
     {
         Conversation chat = Program.Connect(LLmProviders.AzureOpenAi).Chat.CreateConversation(new ChatRequest
         {
-            Model = Models.Model.GPT4
+            Model = ChatModel.OpenAi.Gpt4.Default
         });
         
         chat.AppendSystemMessage("Pretend you are a dog. Sound authentic.");
@@ -249,7 +251,7 @@ public static class ChatDemo
     {
         Conversation chat = Program.Connect(LLmProviders.Anthropic).Chat.CreateConversation(new ChatRequest
         {
-            Model = Models.Model.Claude3Sonnet
+            Model = ChatModel.Anthropic.Claude3.Sonnet
         });
         chat.AppendSystemMessage("Pretend you are a dog. Sound authentic.");
         chat.AppendUserInput("Who are you?");
@@ -260,7 +262,7 @@ public static class ChatDemo
        
         Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = Models.Model.GPT4_Turbo_Preview
+            Model = ChatModel.OpenAi.Gpt4.Turbo
         });
         chat2.AppendSystemMessage("Pretend you are a dog. Sound authentic.");
         chat2.AppendUserInput("Who are you?");

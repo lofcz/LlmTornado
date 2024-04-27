@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using OpenAiNg.Chat.Models;
 using OpenAiNg.Code;
+using OpenAiNg.Code.Models;
 using OpenAiNg.Models;
 
 namespace OpenAiNg.Chat;
@@ -39,7 +41,7 @@ public class ChatEndpoint : EndpointBase, IChatEndpoint
     /// </summary>
     public ChatRequest DefaultChatRequestArgs { get; set; } = new()
     {
-        Model = Model.GPT35_Turbo
+        Model = ChatModel.OpenAi.Gpt35.Turbo
     };
 
     /// <summary>
@@ -54,8 +56,8 @@ public class ChatEndpoint : EndpointBase, IChatEndpoint
     ///         parameters to tweak.
     ///     </see>
     /// </param>
-    /// <returns>A <see cref="Conversation" /> which encapulates a back and forth chat betwen a user and an assistant.</returns>
-    public Conversation CreateConversation(ChatRequest defaultChatRequestArgs = null)
+    /// <returns>A <see cref="Conversation" /> which encapsulates a back and forth chat between a user and an assistant.</returns>
+    public Conversation CreateConversation(ChatRequest? defaultChatRequestArgs = null)
     {
         return new Conversation(this, defaultChatRequestArgs: defaultChatRequestArgs ?? DefaultChatRequestArgs);
     }
@@ -75,7 +77,7 @@ public class ChatEndpoint : EndpointBase, IChatEndpoint
     /// </returns>
     public async Task<ChatResult?> CreateChatCompletionAsync(ChatRequest request)
     {
-        IEndpointProvider provider = Api.GetProvider(request.Model);
+        IEndpointProvider provider = Api.GetProvider(request.Model ?? ChatModel.OpenAi.Gpt35.Turbo);
         ChatResult? result = await HttpPost1<ChatResult>(provider, CapabilityEndpoint, postData: request.Serialize(provider.Provider));
 
         if (Api.ChatRequestInterceptor is not null) await Api.ChatRequestInterceptor.Invoke(request, result);
@@ -128,7 +130,7 @@ public class ChatEndpoint : EndpointBase, IChatEndpoint
     ///     results.
     /// </returns>
     public Task<ChatResult> CreateChatCompletionAsync(IList<ChatMessage> messages,
-        Model? model = null,
+        ChatModel? model = null,
         double? temperature = null,
         double? top_p = null,
         int? numOutputs = null,
@@ -314,7 +316,7 @@ public class ChatEndpoint : EndpointBase, IChatEndpoint
     ///     for more details on how to consume an async enumerable.
     /// </returns>
     public IAsyncEnumerable<ChatResult> StreamChatEnumerableAsync(IList<ChatMessage> messages,
-        Model? model = null,
+        ChatModel? model = null,
         double? temperature = null,
         double? top_p = null,
         int? numOutputs = null,

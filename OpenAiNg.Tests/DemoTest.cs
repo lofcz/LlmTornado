@@ -1,3 +1,5 @@
+using OpenAiNg.Chat.Models;
+using OpenAiNg.Code.Models;
 using OpenAiNg.Demo;
 
 namespace OpenAiNg.Tests;

@@ -4,6 +4,7 @@ using OpenAiNg.Assistants;
 using OpenAiNg.Audio;
 using OpenAiNg.Chat;
 using OpenAiNg.Code;
+using OpenAiNg.Code.Models;
 using OpenAiNg.Code.Vendor;
 using OpenAiNg.Completions;
 using OpenAiNg.Embedding;
@@ -147,8 +148,8 @@ public class OpenAiApi : IOpenAiApi
 
         return _endpointProvider;
     }
-
-    public IEndpointProvider GetProvider(Model model)
+    
+    public IEndpointProvider GetProvider(IModel model)
     {
         return EndpointProviderConverter.CreateProvider(model.Provider, this);
     }

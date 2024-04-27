@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using OpenAiNg.Chat.Models;
 using OpenAiNg.ChatFunctions;
 using OpenAiNg.Code;
+using OpenAiNg.Code.Models;
 using OpenAiNg.Common;
 using OpenAiNg.Models;
 using OpenAiNg.Vendor.Anthropic;
@@ -37,7 +39,7 @@ public class Conversation
     /// </param>
     /// <param name="model">
     ///     Optionally specify the model to use for ChatGPT requests.  If not specified, used
-    ///     <paramref name="defaultChatRequestArgs" />.Model or falls back to <see cref="Models.Model.GPT35_Turbo" />
+    ///     <paramref name="defaultChatRequestArgs" />.Model or falls back to <see cref="OpenAiNg.Models.Model.GPT35_Turbo" />
     /// </param>
     /// <param name="defaultChatRequestArgs">
     ///     Allows setting the parameters to use when calling the ChatGPT API.  Can be useful for setting temperature,
@@ -47,7 +49,7 @@ public class Conversation
     ///         parameters to tweak.
     ///     </see>
     /// </param>
-    public Conversation(ChatEndpoint endpoint, Model? model = null, ChatRequest? defaultChatRequestArgs = null)
+    public Conversation(ChatEndpoint endpoint, ChatModel? model = null, ChatRequest? defaultChatRequestArgs = null)
     {
         RequestParameters = new ChatRequest(defaultChatRequestArgs);
         
@@ -55,8 +57,8 @@ public class Conversation
         {
             RequestParameters.Model = model;
         }
-        
-        RequestParameters.Model ??= Model.GPT35_Turbo;
+
+        RequestParameters.Model ??= ChatModel.OpenAi.Gpt35.Turbo; 
 
         _messages = new List<ChatMessage>();
         _endpoint = endpoint;
@@ -78,9 +80,9 @@ public class Conversation
     ///     Specifies the model to use for ChatGPT requests.  This is just a shorthand to access
     ///     <see cref="RequestParameters" />.Model
     /// </summary>
-    public Model Model
+    public ChatModel Model
     {
-        get => RequestParameters.Model;
+        get => RequestParameters.Model ?? ChatModel.OpenAi.Gpt35.Turbo;
         set => RequestParameters.Model = value;
     }
 

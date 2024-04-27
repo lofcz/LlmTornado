@@ -2,8 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
+using OpenAiNg.Chat.Models;
 using OpenAiNg.ChatFunctions;
 using OpenAiNg.Code;
+using OpenAiNg.Code.Models;
 using OpenAiNg.Common;
 using OpenAiNg.Completions;
 using OpenAiNg.Vendor.Anthropic;
@@ -52,7 +54,8 @@ public class ChatRequest
 	///     The model to use for this request
 	/// </summary>
 	[JsonProperty("model")]
-    public string? Model { get; set; } = Models.Model.GPT35_Turbo;
+	[JsonConverter(typeof(ModelJsonConverter))]
+	public ChatModel? Model { get; set; } = ChatModel.OpenAi.Gpt35.Turbo;
 
 	/// <summary>
 	///     The messages to send with this Chat Request
@@ -227,6 +230,19 @@ public class ChatRequest
 			LLmProviders.Anthropic => JsonConvert.SerializeObject(new VendorAnthropicChatRequest(this), EndpointBase.NullSettings),
 			_ => string.Empty
 		};
+	}
+	
+	internal class ModelJsonConverter : JsonConverter<ChatModel>
+	{
+		public override void WriteJson(JsonWriter writer, ChatModel? value, JsonSerializer serializer)
+		{
+			writer.WriteValue(value?.Name);
+		}
+
+		public override ChatModel? ReadJson(JsonReader reader, Type objectType, ChatModel? existingValue, bool hasExistingValue, JsonSerializer serializer)
+		{
+			return existingValue;
+		}
 	}
     
     internal class ChatMessageRequestMessagesJsonConverter : JsonConverter<IList<ChatMessage>?>

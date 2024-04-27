@@ -6,6 +6,8 @@ using System.Net;
 using System.Net.Http;
 using Newtonsoft.Json;
 using OpenAiNg.Chat;
+using OpenAiNg.Chat.Models;
+using OpenAiNg.Code.Models;
 using OpenAiNg.Common;
 using OpenAiNg.Images;
 
@@ -153,7 +155,7 @@ internal class VendorAnthropicChatRequest
 
     public VendorAnthropicChatRequest(ChatRequest request)
     {
-        Model = request.Model ?? Models.Model.Claude3Sonnet;
+        Model = request.Model?.Name ?? ChatModel.Anthropic.Claude3.Opus.Name;
         System = request.Messages?.FirstOrDefault(x => x.Role == ChatMessageRole.System)?.Content;
         MaxTokens = request.MaxTokens ?? 1024;
         StopSequences = request.StopSequence?.Split(',').ToList();
