@@ -1,6 +1,6 @@
 [![LlmTornado](https://badgen.net/nuget/v/LlmTornado)](https://www.nuget.org/packages/LlmTornado)
 
-# LLM Tornado - One .NET library to consume OpenAI, Anthropic, Cohere, Azure, and self-hosted APIs.
+# 🌪️ LLM Tornado - One .NET library to consume OpenAI, Anthropic, Cohere, Azure, and self-hosted APIs.
 
 OpenAiNextGeneration is a simple .NET library to use with various OpenAI compatible providers, such
 as [OpenAI](https://platform.openai.com/docs/api-reference), [Azure OpenAI](https://azure.microsoft.com/en-us/products/ai-services/openai-service),
