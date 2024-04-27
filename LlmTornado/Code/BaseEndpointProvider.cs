@@ -31,4 +31,18 @@ public abstract class BaseEndpointProvider : IEndpointProvider
     public abstract IAsyncEnumerable<T?> InboundStream<T>(StreamReader streamReader) where T : ApiResultBase;
     public abstract HttpRequestMessage OutboundMessage(string url, HttpMethod verb, object? data, bool streaming);
     public abstract HashSet<string> ToolFinishReasons { get;  }
+
+    private static Dictionary<Type, StreamRequestTypes> StreamTypes = new Dictionary<Type, StreamRequestTypes> {
+        { typeof(ChatResult), StreamRequestTypes.Chat }
+    };
+    
+    /// <summary>
+    /// Returns stream kind based on the expected yield type.
+    /// </summary>
+    /// <param name="t"></param>
+    /// <returns></returns>
+    public static StreamRequestTypes GetStreamType(Type t)
+    {
+        return StreamTypes.GetValueOrDefault(t, StreamRequestTypes.Unknown);
+    }
 }

@@ -103,15 +103,6 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider
                 continue;
             }
 
-            /*res.Organization = organization;
-            res.RequestId = requestId;
-            res.ProcessingTime = processingTime;
-            res.OpenaiVersion = openaiVersion;
-
-            if (res.Model != null && string.IsNullOrEmpty(res.Model))
-                if (modelFromHeaders != null)
-                    res.Model = modelFromHeaders;*/
-
             yield return res;
         }
     }

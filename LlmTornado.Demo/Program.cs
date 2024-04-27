@@ -54,6 +54,7 @@ public enum Demos
     ChatAnthropicFunctions,
     ChatAnthropicFailFunctions,
     ChatCohere,
+    ChatCohereStreaming,
     Last
 }
 
@@ -150,6 +151,7 @@ public class Program
             Demos.ChatAnthropicFunctions => ChatDemo.AnthropicFunctions,
             Demos.ChatAnthropicFailFunctions => ChatDemo.AnthropicFailFunctions,
             Demos.ChatCohere => ChatDemo.Cohere,
+            Demos.ChatCohereStreaming => ChatDemo.CohereStreaming,
             _ => null
         };
 

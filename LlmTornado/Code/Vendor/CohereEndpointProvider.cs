@@ -102,9 +102,43 @@ internal class CohereEndpointProvider : BaseEndpointProvider
         return $"https://api.cohere.ai/v1/{eStr}{url}";
     }
 
+    enum ChatStreamEventTypes
+    {
+        Unknown,
+        TextGeneration,
+        SearchQueriesGeneration,
+        SearchResults,
+        StreamStart,
+        StreamEnd,
+        CitationGeneration
+    }
+
+    static readonly Dictionary<string, ChatStreamEventTypes> EventsMap = new Dictionary<string, ChatStreamEventTypes>
+    {
+        { "stream-start", ChatStreamEventTypes.StreamStart },
+        { "stream-end", ChatStreamEventTypes.StreamEnd },
+        { "text-generation", ChatStreamEventTypes.TextGeneration },
+        { "search-queries-generation", ChatStreamEventTypes.SearchQueriesGeneration },
+        { "search-results", ChatStreamEventTypes.SearchResults },
+        { "citation-generation", ChatStreamEventTypes.CitationGeneration }
+    };
+
+    internal class ChatTextGenerationEventData
+    {
+        public string Text { get; set; }
+    }
+
+    internal class ChatStreamEventBase
+    {
+        [JsonProperty("is_finished")]
+        public bool IsFinished { get; set; }
+        [JsonProperty("event_type")]
+        public string EventType { get; set; }
+    }
+
     public override async IAsyncEnumerable<T?> InboundStream<T>(StreamReader reader) where T : class
     {
-        StreamNextAction nextAction = StreamNextAction.Read;
+        StreamRequestTypes requestType = GetStreamType(typeof(T));
         
         while (await reader.ReadLineAsync() is { } line)
         {
@@ -113,85 +147,44 @@ internal class CohereEndpointProvider : BaseEndpointProvider
                 continue;
             }
             
-            line = line.TrimStart();
-            
-            switch (nextAction)
+            ChatStreamEventBase? baseEvent = JsonConvert.DeserializeObject<ChatStreamEventBase>(line);
+
+            if (baseEvent is null)
             {
-                case StreamNextAction.Read when line.StartsWith(StreamContentBlockStart):
-                    nextAction = StreamNextAction.BlockStart;
-                    continue;
-                case StreamNextAction.Read when line.StartsWith(StreamMsgStart):
-                    nextAction = StreamNextAction.MsgStart;
-                    continue;
-                case StreamNextAction.Read when line.StartsWith(StreamPing) || line.StartsWith(StreamMsgStop):
-                    nextAction = StreamNextAction.Skip;
-                    continue;
-                case StreamNextAction.Read when line.StartsWith(StreamContentBlockStart):
-                    nextAction = StreamNextAction.BlockStart;
-                    continue;
-                case StreamNextAction.Read when line.StartsWith(StreamContentBlockStop):
-                    nextAction = StreamNextAction.BlockStop;
-                    continue;
-                case StreamNextAction.Read:
-                {
-                    if (line.StartsWith(StreamContentBlockDelta))
-                    {
-                        nextAction = StreamNextAction.BlockDelta;
-                    }
+                continue;
+            }
 
-                    break;
-                }
-                case StreamNextAction.Skip:
-                    nextAction = StreamNextAction.Read;
-                    break;
-                case StreamNextAction.BlockStart:
-                {
-                    line = line.Substring(Data.Length);
-                    AnthropicStreamBlockStart? res = JsonConvert.DeserializeObject<AnthropicStreamBlockStart>(line);
+            if (!EventsMap.TryGetValue(baseEvent.EventType, out ChatStreamEventTypes eventType))
+            {
+                continue;
+            }
 
-                    if (!res?.ContentBlock.Text.IsNullOrWhiteSpace() ?? false)
-                    {
-                        //yield return (T)(dynamic)res.ContentBlock.Text;
-                    }
-                    
-                    nextAction = StreamNextAction.Read;
-                    break;
-                }
-                case StreamNextAction.BlockDelta:
+            if (eventType is ChatStreamEventTypes.TextGeneration)
+            {
+                ChatTextGenerationEventData? data = JsonConvert.DeserializeObject<ChatTextGenerationEventData>(line);
+
+                if (data is null)
                 {
-                    line = line.Substring(Data.Length);
-                    AnthropicStreamBlockDelta? res = JsonConvert.DeserializeObject<AnthropicStreamBlockDelta>(line);
-                    
-                    if (!res?.Delta.Text.IsNullOrWhiteSpace() ?? false)
+                    continue;
+                }
+
+                if (requestType is StreamRequestTypes.Chat)
+                {
+                    yield return (T)(dynamic) new ChatResult
                     {
-                        if (typeof(T) == typeof(ChatResult))
-                        {
-                            yield return (T)(dynamic) new ChatResult
+                        Choices = [
+                            new ChatChoice
                             {
-                                Choices = [
-                                    new ChatChoice { Delta = new ChatMessage(ChatMessageRole.Assistant, res.Delta.Text) }
-                                ]
-                            };
-                        }
-                    }
-                    
-                    nextAction = StreamNextAction.Read;
-                    break;
+                                Delta = new ChatMessage(ChatMessageRole.Assistant, data.Text)
+                            }
+                        ]
+                    };
                 }
-                case StreamNextAction.BlockStop:
-                {
-                    line = line.Substring(Data.Length);
-                    AnthropicStreamBlockDelta? res = JsonConvert.DeserializeObject<AnthropicStreamBlockDelta>(line);
-                    nextAction = StreamNextAction.Read;
-                    break;
-                }
-                case StreamNextAction.MsgStart:
-                {
-                    line = line.Substring(Data.Length);
-                    AnthropicStreamMsgStart? res = JsonConvert.DeserializeObject<AnthropicStreamMsgStart>(line);
-                    nextAction = StreamNextAction.Read;
-                    break;
-                }
+            }
+
+            if (baseEvent.IsFinished)
+            {
+                break;
             }
         }
     }

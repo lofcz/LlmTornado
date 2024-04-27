@@ -106,6 +106,21 @@ public enum CapabilityEndpoints
     FineTuning
 }
 
+/// <summary>
+/// Types of inbound streams.
+/// </summary>
+public enum StreamRequestTypes
+{
+    /// <summary>
+    /// Unrecognized stream.
+    /// </summary>
+    Unknown,
+    /// <summary>
+    /// Chat/completion stream.
+    /// </summary>
+    Chat
+}
+
 internal class StreamToken<T>
 {
     public T? Data { get; set; }

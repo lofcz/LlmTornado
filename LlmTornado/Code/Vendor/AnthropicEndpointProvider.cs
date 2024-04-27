@@ -105,6 +105,7 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider
     public override async IAsyncEnumerable<T?> InboundStream<T>(StreamReader reader) where T : class
     {
         StreamNextAction nextAction = StreamNextAction.Read;
+        StreamRequestTypes requestType = GetStreamType(typeof(T));
         
         while (await reader.ReadLineAsync() is { } line)
         {
@@ -112,8 +113,6 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider
             {
                 continue;
             }
-            
-            line = line.TrimStart();
             
             switch (nextAction)
             {
@@ -164,7 +163,7 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider
                     
                     if (!res?.Delta.Text.IsNullOrWhiteSpace() ?? false)
                     {
-                        if (typeof(T) == typeof(ChatResult))
+                        if (requestType is StreamRequestTypes.Chat)
                         {
                             yield return (T)(dynamic) new ChatResult
                             {

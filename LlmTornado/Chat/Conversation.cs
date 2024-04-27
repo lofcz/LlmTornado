@@ -601,7 +601,10 @@ public class Conversation
     /// <param name="resultHandler">An action to be called as each new result arrives.</param>
     public async Task StreamResponseFromChatbotAsync(Action<string> resultHandler)
     {
-        await foreach (string res in StreamResponseEnumerableFromChatbotAsync()) resultHandler(res);
+        await foreach (string res in StreamResponseEnumerableFromChatbotAsync()) 
+        {
+            resultHandler(res);
+        }
     }
 
     /// <summary>
@@ -618,7 +621,11 @@ public class Conversation
     public async Task StreamResponseFromChatbotAsync(Action<int, string> resultHandler)
     {
         int index = 0;
-        await foreach (string res in StreamResponseEnumerableFromChatbotAsync()) resultHandler(index++, res);
+        
+        await foreach (string res in StreamResponseEnumerableFromChatbotAsync())
+        {
+            resultHandler(index++, res);        
+        }
     }
 
     /// <summary>
@@ -665,7 +672,10 @@ public class Conversation
             MostRecentApiResult = res;
         }
 
-        if (responseRole != null) AppendMessage(responseRole, responseStringBuilder.ToString(), messageId);
+        if (responseRole is not null) 
+        {
+            AppendMessage(responseRole, responseStringBuilder.ToString(), messageId);
+        }
     }
 
     /// <summary>

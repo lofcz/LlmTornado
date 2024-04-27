@@ -40,6 +40,20 @@ public static class ChatDemo
         Console.WriteLine("Cohere:");
         Console.WriteLine(str);
     }
+    
+    public static async Task CohereStreaming()
+    {
+        Conversation chat = Program.Connect(LLmProviders.Cohere).Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Cohere.CommandRPlus,
+        });
+        chat.AppendSystemMessage("Pretend you are a dog. Sound authentic.");
+        chat.AppendUserInput("Bark 10 times. Each bark should look like: [BARK {{i}}]: {{random text here}}");
+
+        Console.WriteLine("Cohere:");
+        await chat.StreamResponseFromChatbotAsync(Console.Write);
+        Console.WriteLine();
+    }
 
     public static async Task Anthropic()
     {
