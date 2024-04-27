@@ -1,6 +1,6 @@
-[![OpenAI](https://badgen.net/nuget/v/LlmTornado)](https://www.nuget.org/packages/LlmTornado/)
+[![OpenAI](https://badgen.net/nuget/v1/LlmTornado)](https://www.nuget.org/packages/LlmTornado/)
 
-# .NET SDK for accessing the OpenAI Compatible APIs such as GPT-4 Turbo, Assistants, and DALL-E 3
+# LLM Tornado - One .NET library to consume OpenAI, Anthropic, Cohere, Azure, and self-hosed APIs.
 
 OpenAiNextGeneration is a simple .NET library to use with various OpenAI compatible providers, such
 as [OpenAI](https://platform.openai.com/docs/api-reference), [Azure OpenAI](https://azure.microsoft.com/en-us/products/ai-services/openai-service),
