@@ -31,6 +31,7 @@ Console.WriteLine(result);
 - The license will never change. Looking at you HashiCorp and Tiny.
 - Supports streaming, functions/tools, and strongly typed LLM plugins/connectors.
 - Great performance, nullability annotations.
+- Extensive tests suite.
 - Maintained actively for over half a year.
 
 ## Documentation
