@@ -24,17 +24,19 @@ public interface IChatEndpoint
 	///     Creates an ongoing chat which can easily encapsulate the conversation.  This is the simplest way to use the Chat
 	///     endpoint.
 	/// </summary>
-	/// <param name="defaultChatRequestArgs">
-	///     Allows setting the parameters to use when calling the ChatGPT API.  Can be useful for setting temperature,
-	///     presence_penalty, and more.  See
-	///     <see href="https://platform.openai.com/docs/api-reference/chat/create">
-	///         OpenAI documentation for a list of possible
-	///         parameters to tweak.
-	///     </see>
-	/// </param>
-	/// <returns>A <see cref="Conversation" /> which encapulates a back and forth chat betwen a user and an assistant.</returns>
+	/// <param name="defaultChatRequestArgs">The request to send to the API.</param>
+	/// <returns>A <see cref="Conversation" /> which encapsulates a back and forth chat between a user and an assistant.</returns>
 	Conversation CreateConversation(ChatRequest? defaultChatRequestArgs = null);
 
+	/// <summary>
+	///     Creates an ongoing chat which can easily encapsulate the conversation.  This is the simplest way to use the Chat
+	///     endpoint.
+	/// </summary>
+	/// <param name="model">The model to use.</param>
+	/// <param name="temperature">The temperature.</param>
+	/// <param name="maxTokens">The maximum amount of tokens to be used in response.</param>
+	/// <returns>A <see cref="Conversation" /> which encapsulates a back and forth chat between a user and an assistant.</returns>
+	Conversation CreateConversation(ChatModel model, double? temperature = null, int? maxTokens = null);
 
 	/// <summary>
 	///     Ask the API to complete the request using the specified parameters. This is non-streaming, so it will wait until

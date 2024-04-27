@@ -21,6 +21,7 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider
     public OpenAiEndpointProvider(TornadoApi api) : base(api)
     {
         Provider = LLmProviders.OpenAi;
+        StoreApiAuth();
     }
     
     /// <summary>
@@ -56,15 +57,20 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider
         req.Headers.Add("User-Agent", EndpointBase.GetUserAgent().Trim());
         req.Headers.Add("OpenAI-Beta", "assistants=v2");
 
-        if (Api.Auth is not null)
+        ProviderAuthentication? auth = Api.GetProvider(LLmProviders.OpenAi).Auth;
+        
+        if (auth is not null)
         {
-            if (Api.Auth.ApiKey is not null)
+            if (auth.ApiKey is not null)
             {
-                req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Api.Auth.ApiKey.Trim());
-                req.Headers.Add("api-key", Api.Auth.ApiKey);
+                req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", auth.ApiKey.Trim());
+                req.Headers.Add("api-key", auth.ApiKey.Trim());
             }
 
-            if (Api.Auth.Organization is not null) req.Headers.Add("OpenAI-Organization", Api.Auth.Organization.Trim());
+            if (auth.Organization is not null)
+            {
+                req.Headers.Add("OpenAI-Organization", auth.Organization.Trim());
+            }
         }
         
         return req;

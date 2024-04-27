@@ -1,4 +1,6 @@
 using LlmTornado.Chat;
+using LlmTornado.Code;
+using LlmTornado.Code.Models;
 using LlmTornado.Completions;
 using LlmTornado.Embedding;
 using LlmTornado.Files;
@@ -25,11 +27,6 @@ public interface ITornadoApi
 	///     Version of the Rest Api
 	/// </summary>
 	string ApiVersion { get; set; }
-
-	/// <summary>
-	///     The API authentication information to use for API calls
-	/// </summary>
-	ApiAuthentication? Auth { get; }
 
 	/// <summary>
 	///     Text generation in the form of chat messages. This interacts with the ChatGPT API.
@@ -73,7 +70,16 @@ public interface ITornadoApi
 	IImageGenerationEndpoint ImageGenerations { get; }
 
 	/// <summary>
-	///     Sets the default API authentication information to use for API calls
+	/// Returns a concrete implementation of endpoint provider for a given known provider.
 	/// </summary>
-	void SetAuth(ApiAuthentication auth);
+	/// <param name="provider"></param>
+	/// <returns></returns>
+	public IEndpointProvider GetProvider(LLmProviders provider);
+
+	/// <summary>
+	/// Returns a concrete implementation of endpoint provider for a given known model.
+	/// </summary>
+	/// <param name="model"></param>
+	/// <returns></returns>
+	public IEndpointProvider GetProvider(IModel model);
 }

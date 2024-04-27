@@ -23,16 +23,11 @@ public class CompletionEndpoint : EndpointBase, ICompletionEndpoint
     internal CompletionEndpoint(TornadoApi api) : base(api)
     {
     }
-
-    /// <summary>
-    ///     The name of the endpoint, which is the final path segment in the API URL.  For example, "completions".
-    /// </summary>
-    protected override string Endpoint => "completions";
-
+    
     /// <summary>
     /// 
     /// </summary>
-    protected override CapabilityEndpoints CapabilityEndpoint => CapabilityEndpoints.Completions;
+    protected override CapabilityEndpoints Endpoint => CapabilityEndpoints.Completions;
     
     /// <summary>
     ///     This allows you to set default parameters for every request, for example to set a default temperature or max
@@ -57,7 +52,7 @@ public class CompletionEndpoint : EndpointBase, ICompletionEndpoint
     /// </returns>
     public async Task<CompletionResult?> CreateCompletionAsync(CompletionRequest request)
     {
-        return await HttpPost1<CompletionResult>(Api.EndpointProvider, CapabilityEndpoint, postData: request);
+        return await HttpPost1<CompletionResult>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, postData: request);
         
     }
 
@@ -228,8 +223,9 @@ public class CompletionEndpoint : EndpointBase, ICompletionEndpoint
     /// </returns>
     public IAsyncEnumerable<CompletionResult> StreamCompletionEnumerableAsync(CompletionRequest request)
     {
+        IEndpointProvider provider = Api.GetProvider(LLmProviders.OpenAi);
         request = new CompletionRequest(request) { Stream = true };
-        return HttpStreamingRequest<CompletionResult>(Api.EndpointProvider, CapabilityEndpoint, Url, HttpMethod.Post, request);
+        return HttpStreamingRequest<CompletionResult>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, GetUrl(provider), HttpMethod.Post, request);
     }
 
     /// <summary>

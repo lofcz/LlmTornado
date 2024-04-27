@@ -35,23 +35,58 @@ public static class ChatDemo
         chat.AppendSystemMessage("Pretend you are a dog. Sound authentic.");
         chat.AppendUserInput("Who are you?");
 
-        string? str = await chat.GetResponseFromChatbotAsync();
+        string? str = await chat.GetResponse();
 
         Console.WriteLine("Cohere:");
         Console.WriteLine(str);
+    }
+
+    public static async Task AllChatVendors()
+    {
+        TornadoApi api = new TornadoApi(new List<ProviderAuthentication>
+        {
+            new ProviderAuthentication(LLmProviders.OpenAi, Program.ApiKeys.OpenAi),
+            new ProviderAuthentication(LLmProviders.Anthropic, Program.ApiKeys.Anthropic),
+            new ProviderAuthentication(LLmProviders.Cohere, Program.ApiKeys.Cohere)
+        });
+
+        string? responseOpenAi = await api.Chat.CreateConversation(ChatModel.OpenAi.Gpt4.Turbo)
+            .AppendSystemMessage("You are a fortune teller.")
+            .AppendUserInput("What will my future bring?")
+            .GetResponse();
+        
+        string? responseAnthropic = await api.Chat.CreateConversation(ChatModel.Anthropic.Claude3.Sonnet)
+            .AppendSystemMessage("You are a fortune teller.")
+            .AppendUserInput("What will my future bring?")
+            .GetResponse();
+        
+        string? responseCohere = await api.Chat.CreateConversation(ChatModel.Cohere.CommandRPlus)
+            .AppendSystemMessage("You are a fortune teller.")
+            .AppendUserInput("What will my future bring?")
+            .GetResponse();
+        
+        Console.WriteLine("Open AI:");
+        Console.WriteLine(responseOpenAi);
+
+        Console.WriteLine("Anthropic:");
+        Console.WriteLine(responseAnthropic);
+        
+        Console.WriteLine("Cohere:");
+        Console.WriteLine(responseCohere);
     }
     
     public static async Task CohereStreaming()
     {
         Conversation chat = Program.Connect(LLmProviders.Cohere).Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.Cohere.CommandRPlus,
+            Model = ChatModel.Cohere.CommandRPlus
         });
+        
         chat.AppendSystemMessage("Pretend you are a dog. Sound authentic.");
         chat.AppendUserInput("Bark 10 times. Each bark should look like: [BARK {{i}}]: {{random text here}}");
 
         Console.WriteLine("Cohere:");
-        await chat.StreamResponseFromChatbotAsync(Console.Write);
+        await chat.StreamResponse(Console.Write);
         Console.WriteLine();
     }
 
@@ -64,7 +99,7 @@ public static class ChatDemo
        chat.AppendSystemMessage("Pretend you are a dog. Sound authentic.");
        chat.AppendUserInput("Who are you?");
 
-       string? str = await chat.GetResponseFromChatbotAsync();
+       string? str = await chat.GetResponse();
        
        Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
        {
@@ -73,7 +108,7 @@ public static class ChatDemo
        chat2.AppendSystemMessage("Pretend you are a dog. Sound authentic.");
        chat2.AppendUserInput("Who are you?");
        
-       string? str2 = await chat2.GetResponseFromChatbotAsync();
+       string? str2 = await chat2.GetResponse();
 
        Console.WriteLine("Anthropic:");
        Console.WriteLine(str);
@@ -107,7 +142,7 @@ public static class ChatDemo
 
         chat.OnAfterToolsCall = async (result) =>
         {
-            string? str = await chat.GetResponseFromChatbotAsync();
+            string? str = await chat.GetResponse();
 
             if (str is not null)
             {
@@ -119,7 +154,7 @@ public static class ChatDemo
         Guid msgId = Guid.NewGuid();
         chat.AppendMessage(ChatMessageRole.User, "What is the weather like today in Prague?", msgId);
 
-        await chat.StreamResponseEnumerableFromChatbotAsyncWithFunctions(msgId, (x) =>
+        await chat.StreamResponseEnumerableWithFunctions(msgId, (x) =>
         {
             sb.Append(x);
             return Task.CompletedTask;
@@ -166,7 +201,7 @@ public static class ChatDemo
 
         chat.OnAfterToolsCall = async (result) =>
         {
-            string? str = await chat.GetResponseFromChatbotAsync();
+            string? str = await chat.GetResponse();
 
             if (str is not null)
             {
@@ -178,7 +213,7 @@ public static class ChatDemo
         Guid msgId = Guid.NewGuid();
         chat.AppendMessage(ChatMessageRole.User, "What is the weather like today in Prague?", msgId);
 
-        await chat.StreamResponseEnumerableFromChatbotAsyncWithFunctions(msgId, (x) =>
+        await chat.StreamResponseEnumerableWithFunctions(msgId, (x) =>
         {
             sb.Append(x);
             return Task.CompletedTask;
@@ -225,7 +260,7 @@ public static class ChatDemo
 
         chat.OnAfterToolsCall = async (result) =>
         {
-            string? str = await chat.GetResponseFromChatbotAsync();
+            string? str = await chat.GetResponse();
 
             if (str is not null)
             {
@@ -237,7 +272,7 @@ public static class ChatDemo
         Guid msgId = Guid.NewGuid();
         chat.AppendMessage(ChatMessageRole.User, "What is the weather like today in Prague?", msgId);
 
-        await chat.StreamResponseEnumerableFromChatbotAsyncWithFunctions(msgId, (x) =>
+        await chat.StreamResponseEnumerableWithFunctions(msgId, (x) =>
         {
             sb.Append(x);
             return Task.CompletedTask;
@@ -269,7 +304,7 @@ public static class ChatDemo
         chat.AppendSystemMessage("Pretend you are a dog. Sound authentic.");
         chat.AppendUserInput("Who are you?");
         
-        string? str = await chat.GetResponseFromChatbotAsync();
+        string? str = await chat.GetResponse();
 
         Console.WriteLine("Azure OpenAI:");
         Console.WriteLine(str);
@@ -285,7 +320,7 @@ public static class ChatDemo
         chat.AppendUserInput("Who are you?");
 
         Console.WriteLine("Anthropic:");
-        await chat.StreamResponseFromChatbotAsync(Console.Write);
+        await chat.StreamResponse(Console.Write);
         Console.WriteLine();
        
         Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
@@ -296,7 +331,7 @@ public static class ChatDemo
         chat2.AppendUserInput("Who are you?");
        
         Console.WriteLine("OpenAI:");
-        await chat2.StreamResponseFromChatbotAsync(Console.Write);
+        await chat2.StreamResponse(Console.Write);
         Console.WriteLine();
     }
 
@@ -323,7 +358,7 @@ public static class ChatDemo
         ];
         chat.OnAfterToolsCall = async (result) =>
         {
-            string? str = await chat.GetResponseFromChatbotAsync();
+            string? str = await chat.GetResponse();
 
             if (str is not null)
             {
@@ -335,7 +370,7 @@ public static class ChatDemo
         Guid msgId = Guid.NewGuid(); 
         chat.AppendMessage(ChatMessageRole.User, "What is the weather like today?", msgId);
         
-        await chat.StreamResponseEnumerableFromChatbotAsyncWithFunctions(msgId, (x) =>
+        await chat.StreamResponseEnumerableWithFunctions(msgId, (x) =>
         {
             sb.Append(x);
             return Task.CompletedTask;

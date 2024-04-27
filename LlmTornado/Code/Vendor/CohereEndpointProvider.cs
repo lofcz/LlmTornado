@@ -40,6 +40,7 @@ internal class CohereEndpointProvider : BaseEndpointProvider
     public CohereEndpointProvider(TornadoApi api) : base(api)
     {
         Provider = LLmProviders.Cohere;
+        StoreApiAuth();
     }
 
     private class AnthropicStreamBlockStart
@@ -194,9 +195,11 @@ internal class CohereEndpointProvider : BaseEndpointProvider
         HttpRequestMessage req = new(verb, url);
         req.Headers.Add("User-Agent", EndpointBase.GetUserAgent());
 
-        if (Api.Auth?.ApiKey is not null)
+        ProviderAuthentication? auth = Api.GetProvider(LLmProviders.Cohere).Auth;
+        
+        if (auth?.ApiKey is not null)
         {
-            req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Api.Auth.ApiKey.Trim());
+            req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", auth.ApiKey.Trim());
         }
 
         return req;

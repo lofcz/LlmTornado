@@ -19,25 +19,18 @@ public class AudioEndpoint : EndpointBase, IAudioEndpoint
     public AudioEndpoint(TornadoApi api) : base(api)
     {
     }
-
+    
     /// <summary>
     ///     Audio endpoint.
     /// </summary>
-    protected override string Endpoint => "audio";
+    protected override CapabilityEndpoints Endpoint => CapabilityEndpoints.Audio;
     
-    
-    /// <summary>
-    /// 
-    /// </summary>
-    protected override CapabilityEndpoints CapabilityEndpoint => CapabilityEndpoints.Audio;
-    
-
     /// <summary>
     ///     Sends transcript request to openai and returns verbose_json result.
     /// </summary>
     public Task<TranscriptionVerboseJsonResult?> CreateTranscriptionAsync(TranscriptionRequest request)
     {
-        return PostAudioAsync($"{Url}/transcriptions", request);
+        return PostAudioAsync($"/transcriptions", request);
     }
 
     /// <summary>
@@ -45,7 +38,7 @@ public class AudioEndpoint : EndpointBase, IAudioEndpoint
     /// </summary>
     public Task<TranscriptionVerboseJsonResult?> CreateTranslationAsync(TranslationRequest request)
     {
-        return PostAudioAsync($"{Url}/translations", new TranscriptionRequest
+        return PostAudioAsync($"/translations", new TranscriptionRequest
             {
                 File = request.File,
                 Model = request.Model,
@@ -66,7 +59,7 @@ public class AudioEndpoint : EndpointBase, IAudioEndpoint
 
     private async Task<SpeechTtsResult?> PostSpeechAsync(SpeechRequest request)
     {
-        StreamResponse? x = await HttpPostStream(Api.EndpointProvider, CapabilityEndpoint, $"{Url}/speech", request);
+        StreamResponse? x = await HttpPostStream(Api.GetProvider(LLmProviders.OpenAi), Endpoint, $"/speech", request);
         return x is null ? null : new SpeechTtsResult(x);
     }
 
@@ -87,6 +80,6 @@ public class AudioEndpoint : EndpointBase, IAudioEndpoint
 
         if (!request.Language.IsNullOrWhiteSpace()) content.Add(new StringContent(request.Language), "language");
 
-        return HttpPost1<TranscriptionVerboseJsonResult>(Api.EndpointProvider, CapabilityEndpoint, url, content);
+        return HttpPost1<TranscriptionVerboseJsonResult>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, url, content);
     }
 }

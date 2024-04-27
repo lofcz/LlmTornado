@@ -26,11 +26,20 @@ public abstract class BaseEndpointProvider : IEndpointProvider
         Api = api;
     }
 
+    public void StoreApiAuth()
+    {
+        if (Api.Authentications.TryGetValue(Provider, out ProviderAuthentication? auth))
+        {
+            Auth = auth;
+        }
+    }
+
     public abstract string ApiUrl(CapabilityEndpoints endpoint, string? url);
     public abstract T? InboundMessage<T>(string jsonData, string? postData);
     public abstract IAsyncEnumerable<T?> InboundStream<T>(StreamReader streamReader) where T : ApiResultBase;
     public abstract HttpRequestMessage OutboundMessage(string url, HttpMethod verb, object? data, bool streaming);
     public abstract HashSet<string> ToolFinishReasons { get;  }
+    public ProviderAuthentication Auth { get; set; }
 
     private static Dictionary<Type, StreamRequestTypes> StreamTypes = new Dictionary<Type, StreamRequestTypes> {
         { typeof(ChatResult), StreamRequestTypes.Chat }

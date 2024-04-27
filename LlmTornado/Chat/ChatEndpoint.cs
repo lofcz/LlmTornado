@@ -28,13 +28,8 @@ public class ChatEndpoint : EndpointBase, IChatEndpoint
     /// <summary>
     ///     The name of the endpoint, which is the final path segment in the API URL.  For example, "completions".
     /// </summary>
-    protected override string Endpoint => "chat/completions";
+    protected override CapabilityEndpoints Endpoint => CapabilityEndpoints.Chat;
     
-    /// <summary>
-    /// 
-    /// </summary>
-    protected override CapabilityEndpoints CapabilityEndpoint => CapabilityEndpoints.Chat;
-
     /// <summary>
     ///     This allows you to set default parameters for every request, for example to set a default temperature or max
     ///     tokens.  For every request, if you do not have a parameter set on the request but do have it set here as a default,
@@ -49,18 +44,29 @@ public class ChatEndpoint : EndpointBase, IChatEndpoint
     ///     Creates an ongoing chat which can easily encapsulate the conversation.  This is the simplest way to use the Chat
     ///     endpoint.
     /// </summary>
-    /// <param name="defaultChatRequestArgs">
-    ///     Allows setting the parameters to use when calling the ChatGPT API.  Can be useful for setting temperature,
-    ///     presence_penalty, and more.  See
-    ///     <see href="https://platform.openai.com/docs/api-reference/chat/create">
-    ///         OpenAI documentation for a list of possible
-    ///         parameters to tweak.
-    ///     </see>
-    /// </param>
+    /// <param name="defaultChatRequestArgs">The request to send to the API.</param>
     /// <returns>A <see cref="Conversation" /> which encapsulates a back and forth chat between a user and an assistant.</returns>
     public Conversation CreateConversation(ChatRequest? defaultChatRequestArgs = null)
     {
         return new Conversation(this, defaultChatRequestArgs: defaultChatRequestArgs ?? DefaultChatRequestArgs);
+    }
+    
+    /// <summary>
+    ///     Creates an ongoing chat which can easily encapsulate the conversation.  This is the simplest way to use the Chat
+    ///     endpoint.
+    /// </summary>
+    /// <param name="model">The model to use.</param>
+    /// <param name="temperature">The temperature.</param>
+    /// <param name="maxTokens">The maximum amount of tokens to be used in response.</param>
+    /// <returns>A <see cref="Conversation" /> which encapsulates a back and forth chat between a user and an assistant.</returns>
+    public Conversation CreateConversation(ChatModel model, double? temperature = null, int? maxTokens = null)
+    {
+        return new Conversation(this, model, new ChatRequest
+        {
+            Model = model,
+            Temperature = temperature,
+            MaxTokens = maxTokens
+        });
     }
 
     #region Non-streaming
@@ -79,7 +85,7 @@ public class ChatEndpoint : EndpointBase, IChatEndpoint
     public async Task<ChatResult?> CreateChatCompletionAsync(ChatRequest request)
     {
         IEndpointProvider provider = Api.GetProvider(request.Model ?? ChatModel.OpenAi.Gpt35.Turbo);
-        ChatResult? result = await HttpPost1<ChatResult>(provider, CapabilityEndpoint, postData: request.Serialize(provider.Provider));
+        ChatResult? result = await HttpPost1<ChatResult>(provider, Endpoint, postData: request.Serialize(provider.Provider));
 
         if (Api.ChatRequestInterceptor is not null) await Api.ChatRequestInterceptor.Invoke(request, result);
 
@@ -255,7 +261,7 @@ public class ChatEndpoint : EndpointBase, IChatEndpoint
             return HttpFakeStreamingRequest(provider, request);
         }
         
-        return HttpStreamingRequest<ChatResult>(Api.GetProvider(request.Model), CapabilityEndpoint, null, HttpMethod.Post, request.Serialize(provider.Provider), request.OuboundFunctionsContent);
+        return HttpStreamingRequest<ChatResult>(Api.GetProvider(request.Model), Endpoint, null, HttpMethod.Post, request.Serialize(provider.Provider), request.OuboundFunctionsContent);
     }
 
     /// <summary>
@@ -267,7 +273,7 @@ public class ChatEndpoint : EndpointBase, IChatEndpoint
     /// <returns></returns>
     private async IAsyncEnumerable<ChatResult> HttpFakeStreamingRequest(IEndpointProvider provider, ChatRequest request)
     {
-        ChatResult result = await HttpPost1<ChatResult>(provider, CapabilityEndpoint, null, request.Serialize(provider.Provider)) ?? new ChatResult();
+        ChatResult result = await HttpPost1<ChatResult>(provider, Endpoint, null, request.Serialize(provider.Provider)) ?? new ChatResult();
         yield return result;
     }
 

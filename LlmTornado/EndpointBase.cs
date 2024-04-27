@@ -47,6 +47,11 @@ public abstract class EndpointBase
         Api = api;
     }
 
+    internal string GetUrl(IEndpointProvider provider, string? url = null)
+    {
+        return provider.ApiUrl(Endpoint, url);
+    }
+
     /// <summary>
     ///     The internal reference to the API, mostly used for authentication
     /// </summary>
@@ -55,18 +60,7 @@ public abstract class EndpointBase
     /// <summary>
     ///     The name of the endpoint, which is the final path segment in the API URL.  Must be overriden in a derived class.
     /// </summary>
-    protected abstract string Endpoint { get; }
-    
-    /// <summary>
-    ///     
-    /// </summary>
-    protected abstract CapabilityEndpoints CapabilityEndpoint { get; }
-
-    /// <summary>
-    ///     Gets the URL of the endpoint, based on the base OpenAI API URL followed by the endpoint name.  For example
-    ///     "https://api.openai.com/v1/completions"
-    /// </summary>
-    protected string Url => Api.EndpointProvider.ApiUrl(CapabilityEndpoint, null);
+    protected abstract CapabilityEndpoints Endpoint { get; }
 
     /// <summary>
     ///     Gets the timeout for all http requests
@@ -136,18 +130,6 @@ public abstract class EndpointBase
     private static string GetErrorMessage(string? resultAsString, HttpResponseMessage response, string name, string description, HttpRequestMessage input)
     {
         return $"Error at {name} ({description}) with HTTP status code: {response.StatusCode}. Content: {resultAsString ?? "<no content>"}. Request: {JsonConvert.SerializeObject(input.Headers)}";
-    }
-
-    /// <summary>
-    ///     Gets the full formatted url for the API endpoint.
-    /// </summary>
-    /// <param name="endpoint">The endpoint url.</param>
-    /// <param name="queryParameters">Optional, parameters to add to the endpoint.</param>
-    protected string GetUrl(string? endpoint = null, Dictionary<string, string>? queryParameters = null)
-    {
-        if (endpoint is null && queryParameters is null) return Url;
-
-        return queryParameters?.Count > 0 ? $"{Url}{endpoint}?{string.Join("&", queryParameters.Select(parameter => $"{parameter.Key}={parameter.Value}"))}" : $"{Url}{endpoint}";
     }
 
     /// <summary>
@@ -222,12 +204,12 @@ public abstract class EndpointBase
         throw response.StatusCode switch
         {
             HttpStatusCode.Unauthorized => new AuthenticationException($"The API provider rejected your authorization, most likely due to an invalid API Key. Check your API Key and see https://github.com/lofcz/LlmTornado#authentication for guidance. Full API response follows: {resultAsString}"),
-            HttpStatusCode.InternalServerError => new HttpRequestException($"The API provider had an internal server error. Please retry your request. Server response: {GetErrorMessage(resultAsString, response, Endpoint, url, req)}"),
-            _ => new HttpRequestException(GetErrorMessage(resultAsString, response, Endpoint, url, req))
+            HttpStatusCode.InternalServerError => new HttpRequestException($"The API provider had an internal server error. Please retry your request. Server response: {GetErrorMessage(resultAsString, response, Endpoint.ToString(), url, req)}"),
+            _ => new HttpRequestException(GetErrorMessage(resultAsString, response, Endpoint.ToString(), url, req))
         };
     }
 
-    private async Task<HttpResponseMessage> HttpRequestRawWithCodes(string? url = null, HttpMethod? verb = null, object? postData = null, bool streaming = false, CancellationToken? ct = null)
+    /*private async Task<HttpResponseMessage> HttpRequestRawWithCodes(string? url = null, HttpMethod? verb = null, object? postData = null, bool streaming = false, CancellationToken? ct = null)
     {
         url ??= Url;
         verb ??= HttpMethod.Get;
@@ -284,7 +266,7 @@ public abstract class EndpointBase
             HttpStatusCode.InternalServerError => new HttpRequestException($"The API provider had an internal server error. Please retry your request. Server response: {GetErrorMessage(resultAsString, response, Endpoint, url, req)}"),
             _ => new HttpRequestException(GetErrorMessage(resultAsString, response, Endpoint, url, req))
         };
-    }
+    }*/
 
     private async Task<DataOrException<HttpResponseMessage>> HttpRequestRawWithAllCodes(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, HttpMethod? verb = null, object? content = null, bool streaming = false, CancellationToken? ct = null)
     {

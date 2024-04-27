@@ -39,6 +39,7 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider
     public AnthropicEndpointProvider(TornadoApi api) : base(api)
     {
         Provider = LLmProviders.Anthropic;
+        StoreApiAuth();
     }
 
     private class AnthropicStreamBlockStart
@@ -202,12 +203,11 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider
         req.Headers.Add("anthropic-version", "2023-06-01");
         req.Headers.Add("anthropic-beta", "tools-2024-04-04");
 
-        if (Api.Auth is not null)
+        ProviderAuthentication? auth = Api.GetProvider(LLmProviders.Anthropic).Auth;
+
+        if (auth?.ApiKey != null)
         {
-            if (Api.Auth.ApiKey is not null)
-            {
-                req.Headers.Add("x-api-key", Api.Auth.ApiKey);
-            } 
+            req.Headers.Add("x-api-key", auth.ApiKey);
         }
 
         return req;

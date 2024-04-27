@@ -24,7 +24,8 @@ public interface IEndpointProvider
     public TornadoApi Api { get; set; }
     public LLmProviders Provider { get; set; }
     public string ApiUrl(CapabilityEndpoints endpoint, string? url);
-    public HashSet<string> ToolFinishReasons { get;  }
+    public HashSet<string> ToolFinishReasons { get; }
+    public ProviderAuthentication? Auth { get; set; }
 
     private static HashSet<string> toolFinishReasons;
 }

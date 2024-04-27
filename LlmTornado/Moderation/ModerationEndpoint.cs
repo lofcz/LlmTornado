@@ -21,13 +21,7 @@ public class ModerationEndpoint : EndpointBase, IModerationEndpoint
 	/// <summary>
 	///     The name of the endpoint, which is the final path segment in the API URL.  For example, "completions".
 	/// </summary>
-	protected override string Endpoint => "moderations";
-
-    
-	/// <summary>
-    /// 
-    /// </summary>
-    protected override CapabilityEndpoints CapabilityEndpoint => CapabilityEndpoints.Moderation;
+	protected override CapabilityEndpoints Endpoint => CapabilityEndpoints.Moderation;
 
 	/// <summary>
 	///     This allows you to send request to the recommended model without needing to specify. OpenAI recommends using the
@@ -40,7 +34,7 @@ public class ModerationEndpoint : EndpointBase, IModerationEndpoint
 	/// </summary>
 	/// <param name="input">Text to classify</param>
 	/// <returns>Asynchronously returns the classification result</returns>
-	public async Task<ModerationResult> CallModerationAsync(string input)
+	public async Task<ModerationResult?> CallModerationAsync(string input)
     {
         ModerationRequest req = new(input, DefaultModerationRequestArgs.Model);
         return await CallModerationAsync(req);
@@ -51,8 +45,8 @@ public class ModerationEndpoint : EndpointBase, IModerationEndpoint
 	/// </summary>
 	/// <param name="request">Request to send to the API</param>
 	/// <returns>Asynchronously returns the classification result</returns>
-	public async Task<ModerationResult> CallModerationAsync(ModerationRequest request)
+	public async Task<ModerationResult?> CallModerationAsync(ModerationRequest request)
     {
-        return await HttpPost1<ModerationResult>(Api.EndpointProvider, CapabilityEndpoint, postData: request);
+        return await HttpPost1<ModerationResult>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, postData: request);
     }
 }

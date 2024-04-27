@@ -23,13 +23,7 @@ public class ModelsEndpoint : EndpointBase, IModelsEndpoint
 	/// <summary>
 	///     The name of the endpoint, which is the final path segment in the API URL.  For example, "models".
 	/// </summary>
-	protected override string Endpoint => "models";
-    
-	/// <summary>
-    /// 
-    /// </summary>
-    protected override CapabilityEndpoints CapabilityEndpoint => CapabilityEndpoints.Models;
-	
+	protected override CapabilityEndpoints Endpoint => CapabilityEndpoints.Models;
 
 	/// <summary>
 	///     Get details about a particular Model from the API, specifically properties such as <see cref="Model.OwnedBy" /> and
@@ -39,7 +33,7 @@ public class ModelsEndpoint : EndpointBase, IModelsEndpoint
 	/// <returns>Asynchronously returns the <see cref="Model" /> with all available properties</returns>
 	public async Task<Model> RetrieveModelDetailsAsync(string? id)
     {
-        string resultAsString = await HttpGetContent(Api.EndpointProvider, CapabilityEndpoint, $"{Url}/{id}");
+        string resultAsString = await HttpGetContent(Api.GetProvider(LLmProviders.OpenAi), Endpoint, $"/{id}");
         Model? model = JsonConvert.DeserializeObject<Model>(resultAsString);
         return model;
     }
@@ -48,9 +42,9 @@ public class ModelsEndpoint : EndpointBase, IModelsEndpoint
 	///     List all models via the API
 	/// </summary>
 	/// <returns>Asynchronously returns the list of all <see cref="Model" />s</returns>
-	public async Task<List<Model>> GetModelsAsync()
+	public async Task<List<Model>?> GetModelsAsync()
     {
-        return (await HttpGet<JsonHelperRoot>(Api.EndpointProvider, CapabilityEndpoint))?.data;
+        return (await HttpGet<JsonHelperRoot>(Api.GetProvider(LLmProviders.OpenAi), Endpoint))?.data;
     }
 
 	/// <summary>

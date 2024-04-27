@@ -20,13 +20,7 @@ public class ImageEditEndpoint : EndpointBase, IImageEditEndpoint
     /// <summary>
     ///     The name of the endpoint, which is the final path segment in the API URL.  For example, "image".
     /// </summary>
-    protected override string Endpoint => "images/edits";
-
-    /// <summary>
-    /// 
-    /// </summary>
-    protected override CapabilityEndpoints CapabilityEndpoint => CapabilityEndpoints.ImageEdit;
-
+    protected override CapabilityEndpoints Endpoint => CapabilityEndpoints.ImageEdit;
 
     /// <summary>
     ///     Ask the API to Creates an image given a prompt.
@@ -35,6 +29,6 @@ public class ImageEditEndpoint : EndpointBase, IImageEditEndpoint
     /// <returns>Asynchronously returns the image result. Look in its <see cref="Data.Url" /> </returns>
     public async Task<ImageResult?> EditImageAsync(ImageEditRequest request)
     {
-        return await HttpPost1<ImageResult>(Api.EndpointProvider, CapabilityEndpoint, postData: request);
+        return await HttpPost1<ImageResult>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, postData: request);
     }
 }

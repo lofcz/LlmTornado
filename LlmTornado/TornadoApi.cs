@@ -1,4 +1,8 @@
 using System;
+using System.Collections;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using LlmTornado.Assistants;
 using LlmTornado.Audio;
@@ -21,6 +25,9 @@ namespace LlmTornado;
 /// </summary>
 public class TornadoApi : ITornadoApi
 {
+    internal readonly ConcurrentDictionary<LLmProviders, ProviderAuthentication> Authentications = [];
+    internal ConcurrentDictionary<LLmProviders, IEndpointProvider> EndpointProviders = [];
+    
     private IAssistantsEndpoint? _assistantsEndpoint;
     private IAudioEndpoint? _audioEndpoint;
     private IChatEndpoint? _chat;
@@ -32,40 +39,67 @@ public class TornadoApi : ITornadoApi
     private IModelsEndpoint? _models;
     private IModerationEndpoint? _moderation;
     private IThreadsEndpoint? _threadsEndpoint;
-    private IEndpointProvider _endpointProvider;
 
     /// <summary>
-    ///     Creates a new entry point to the OpenAPI API, handling auth and allowing access to the various API endpoints
+    ///     Creates a new Tornado API without any authentication. Use this with self-hosted models.
     /// </summary>
-    /// <param name="apiKeys">
-    ///     The API authentication information to use for API calls, or <see langword="null" /> when using self-hosted provider
-    ///     such as KoboldCpp
-    /// </param>
-    public TornadoApi(ApiAuthentication? apiKeys)
+    public TornadoApi()
     {
-        Auth = apiKeys;
-        _endpointProvider = new OpenAiEndpointProvider(this);
+        
+    }
+    
+    /// <summary>
+    ///     Creates a new Tornado API with a specific provider authentication. Use when the API will be used only with a single provider.
+    /// </summary>
+    public TornadoApi(LLmProviders provider, string apiKey, string? organization = null)
+    {
+        Authentications.TryAdd(provider, new ProviderAuthentication(provider, apiKey, organization));
+    }
+    
+    /// <summary>
+    ///     Creates a new Tornado API with a specific provider authentication. Use when the API will be used only with a single provider.
+    /// </summary>
+    public TornadoApi(IEnumerable<ProviderAuthentication> providerKeys)
+    {
+        foreach (ProviderAuthentication provider in providerKeys)
+        {
+            Authentications.TryAdd(provider.Provider, provider);
+        }
+
+        if (Authentications.Count is 1)
+        {
+            KeyValuePair<LLmProviders, ProviderAuthentication> first = Authentications.FirstOrDefault();
+        }
     }
 
     /// <summary>
     ///     Create a new Tornado API via API key. Use this constructor if in the lifetime of the object only one provider will be used. The API key should match this provider.
     /// </summary>
     /// <param name="apiKey">API key</param>
-    public TornadoApi(string apiKey)
+    /// <param name="provider">Provider</param>
+    public TornadoApi(string apiKey, LLmProviders provider = LLmProviders.OpenAi)
     {
-        Auth = new ApiAuthentication(apiKey);
-        _endpointProvider = new OpenAiEndpointProvider(this);
+        Authentications.TryAdd(provider, new ProviderAuthentication(provider, apiKey));
     }
 
     /// <summary>
-    ///     Create a new OpenAiApi via API key and organization key, suitable for Azure OpenAI
+    ///     Create a new OpenAiApi via API key and organization key, suitable for Azure OpenAI.
     /// </summary>
     /// <param name="apiKey">API key</param>
     /// <param name="organizationKey">Organization key</param>
-    public TornadoApi(string apiKey, string organizationKey)
+    /// <param name="provider">Provider</param>
+    public TornadoApi(string apiKey, string organizationKey, LLmProviders provider = LLmProviders.OpenAi)
     {
-        Auth = new ApiAuthentication(apiKey, organizationKey);
-        _endpointProvider = new OpenAiEndpointProvider(this);
+        
+    }
+
+    /// <summary>
+    ///     Gets authentication for a given provider.
+    /// </summary>
+    /// <returns></returns>
+    public ProviderAuthentication? GetProviderAuthentication(LLmProviders provider)
+    {
+        return Authentications!.GetValueOrDefault(provider, null);
     }
 
     /// <summary>
@@ -108,55 +142,34 @@ public class TornadoApi : ITornadoApi
     ///     Version of the Rest Api
     /// </summary>
     public string ApiVersion { get; set; } = "v1";
-
+    
     /// <summary>
-    ///     The API authentication information to use for API calls
-    /// </summary>
-    public ApiAuthentication? Auth { get; private set; }
-
-    /// <summary>
-    ///     Sets the API authentication information to use for API calls
-    /// </summary>
-    public void SetAuth(ApiAuthentication auth)
-    {
-        Auth = auth;
-    }
-
-    // fieldEndpointProvider
-
-    /// <summary>
-    /// 
+    /// Returns a concrete implementation of endpoint provider for a given known provider.
     /// </summary>
     /// <param name="provider"></param>
-    public void SetEndpointProvider(IEndpointProvider provider)
+    /// <returns></returns>
+    public IEndpointProvider GetProvider(LLmProviders provider)
     {
-        _endpointProvider = provider;
+        if (EndpointProviders.TryGetValue(provider, out IEndpointProvider? p))
+        {
+            return p;
+        }
+        
+        IEndpointProvider newProvider = EndpointProviderConverter.CreateProvider(provider, this);
+        EndpointProviders.TryAdd(provider, newProvider);
+        
+        return newProvider;
     }
-
+    
     /// <summary>
-    /// 
+    /// Returns a concrete implementation of endpoint provider for a given known model.
     /// </summary>
     /// <param name="model"></param>
     /// <returns></returns>
-    public IEndpointProvider SetEndpointProvider(Model model)
-    {
-        if (model.Provider != _endpointProvider.Provider)
-        {
-            SetEndpointProvider(EndpointProviderConverter.CreateProvider(model.Provider, this));
-        }
-
-        return _endpointProvider;
-    }
-    
     public IEndpointProvider GetProvider(IModel model)
     {
-        return EndpointProviderConverter.CreateProvider(model.Provider, this);
+        return GetProvider(model.Provider);
     }
-
-    /// <summary>
-    /// 
-    /// </summary>
-    public IEndpointProvider EndpointProvider => _endpointProvider;
 
     /// <summary>
     ///     Text generation is the core function of the API. You give the API a prompt, and it generates a completion. The way

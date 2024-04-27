@@ -23,15 +23,9 @@ public class EmbeddingEndpoint : EndpointBase, IEmbeddingEndpoint
     }
 
 	/// <summary>
-	///     The name of the endpoint, which is the final path segment in the API URL.  For example, "embeddings".
+	///     The name of the endpoint, which is the final path segment in the API URL.
 	/// </summary>
-	protected override string Endpoint => "embeddings";
-    
-	/// <summary>
-	/// 
-	/// </summary>
-	protected override CapabilityEndpoints CapabilityEndpoint => CapabilityEndpoints.Embeddings;
-	
+	protected override CapabilityEndpoints Endpoint => CapabilityEndpoints.Embeddings;
 
 	/// <summary>
 	///     This allows you to send request to the recommended model without needing to specify. Every request uses the
@@ -75,9 +69,9 @@ public class EmbeddingEndpoint : EndpointBase, IEmbeddingEndpoint
 	///     Asynchronously returns the embedding result. Look in its <see cref="Data.Embedding" /> property of
 	///     <see cref="EmbeddingResult.Data" /> to find the vector of floating point numbers
 	/// </returns>
-	public async Task<EmbeddingResult> CreateEmbeddingAsync(EmbeddingRequest request)
+	public async Task<EmbeddingResult?> CreateEmbeddingAsync(EmbeddingRequest request)
     {
-        return await HttpPost1<EmbeddingResult>(Api.EndpointProvider, CapabilityEndpoint, postData: request);
+        return await HttpPost1<EmbeddingResult>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, postData: request);
     }
 
 	/// <summary>
@@ -100,7 +94,7 @@ public class EmbeddingEndpoint : EndpointBase, IEmbeddingEndpoint
 	public async Task<List<float[]>> GetEmbeddingsAsync(IEnumerable<string> input)
     {
         EmbeddingRequestArray req = new(DefaultEmbeddingRequestArgs.Model, input);
-        EmbeddingResult embeddingResult = await CreateEmbeddingAsync(req);
+        EmbeddingResult? embeddingResult = await CreateEmbeddingAsync(req);
         return embeddingResult?.Data.Select(x => x.Embedding).ToList() ?? new List<float[]>();
     }
 
@@ -112,8 +106,8 @@ public class EmbeddingEndpoint : EndpointBase, IEmbeddingEndpoint
 	///     Asynchronously returns the embedding result. Look in its <see cref="Data.Embedding" /> property of
 	///     <see cref="EmbeddingResult.Data" /> to find the vector of floating point numbers
 	/// </returns>
-	public async Task<EmbeddingResult> CreateEmbeddingAsync(EmbeddingRequestArray request)
+	public async Task<EmbeddingResult?> CreateEmbeddingAsync(EmbeddingRequestArray request)
     {
-        return await HttpPost1<EmbeddingResult>(Api.EndpointProvider, CapabilityEndpoint, postData: request);
+        return await HttpPost1<EmbeddingResult>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, postData: request);
     }
 }

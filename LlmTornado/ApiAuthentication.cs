@@ -25,7 +25,7 @@ public class ApiAuthentication
 	///     The Organization ID to count API requests against.  This can be found at
 	///     https://beta.openai.com/account/org-settings.
 	/// </param>
-	public ApiAuthentication(string? apiKey, string organization)
+	public ApiAuthentication(string? apiKey, string? organization)
     {
         ApiKey = apiKey;
         Organization = organization;

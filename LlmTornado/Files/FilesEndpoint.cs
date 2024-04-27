@@ -25,14 +25,8 @@ public class FilesEndpoint : EndpointBase, IFilesEndpoint
 	/// <summary>
 	///     The name of the endpoint, which is the final path segment in the API URL.  For example, "files".
 	/// </summary>
-	protected override string Endpoint => "files";
-    
-	/// <summary>
-	/// 
-	/// </summary>
-	protected override CapabilityEndpoints CapabilityEndpoint => CapabilityEndpoints.Files;
+	protected override CapabilityEndpoints Endpoint => CapabilityEndpoints.Files;
 	
-
 	/// <summary>
 	///     Get the list of all files
 	/// </summary>
@@ -40,7 +34,7 @@ public class FilesEndpoint : EndpointBase, IFilesEndpoint
 	/// <exception cref="HttpRequestException"></exception>
 	public async Task<List<File>?> GetFilesAsync()
     {
-        return (await HttpGet<FilesData>(Api.EndpointProvider, CapabilityEndpoint).ConfigureAwait(ConfigureAwaitOptions.None))?.Data;
+        return (await HttpGet<FilesData>(Api.GetProvider(LLmProviders.OpenAi), Endpoint).ConfigureAwait(ConfigureAwaitOptions.None))?.Data;
     }
 
 	/// <summary>
@@ -50,7 +44,7 @@ public class FilesEndpoint : EndpointBase, IFilesEndpoint
 	/// <returns></returns>
 	public Task<File?> GetFileAsync(string fileId)
     {
-        return HttpGet<File>(Api.EndpointProvider, CapabilityEndpoint, $"{Url}/{fileId}");
+        return HttpGet<File>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{fileId}"));
     }
 
 	/// <summary>
@@ -60,7 +54,7 @@ public class FilesEndpoint : EndpointBase, IFilesEndpoint
 	/// <returns></returns>
 	public Task<string> GetFileContentAsStringAsync(string fileId)
     {
-        return HttpGetContent(Api.EndpointProvider, CapabilityEndpoint, $"{Url}/{fileId}/content");
+        return HttpGetContent(Api.GetProvider(LLmProviders.OpenAi), Endpoint, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{fileId}/content"));
     }
 
 	/// <summary>
@@ -70,7 +64,7 @@ public class FilesEndpoint : EndpointBase, IFilesEndpoint
 	/// <returns></returns>
 	public Task<File?> DeleteFileAsync(string fileId)
     {
-        return HttpDelete<File>(Api.EndpointProvider, CapabilityEndpoint,$"{Url}/{fileId}");
+        return HttpDelete<File>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{fileId}"));
     }
 
 
@@ -92,7 +86,7 @@ public class FilesEndpoint : EndpointBase, IFilesEndpoint
             { new ByteArrayContent(await System.IO.File.ReadAllBytesAsync(filePath).ConfigureAwait(ConfigureAwaitOptions.None)), "file", Path.GetFileName(filePath) }
         };
 
-        return await HttpPost<File>(Api.EndpointProvider, CapabilityEndpoints.Files, Url, content).ConfigureAwait(ConfigureAwaitOptions.None);
+        return await HttpPost<File>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Files, GetUrl(Api.GetProvider(LLmProviders.OpenAi)), content).ConfigureAwait(ConfigureAwaitOptions.None);
     }
 
 	/// <summary>

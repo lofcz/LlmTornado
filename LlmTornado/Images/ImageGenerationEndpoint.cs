@@ -20,14 +20,8 @@ public class ImageGenerationEndpoint : EndpointBase, IImageGenerationEndpoint
 	/// <summary>
 	///     The name of the endpoint, which is the final path segment in the API URL.  For example, "image".
 	/// </summary>
-	protected override string Endpoint => "images/generations";
-    
-	/// <summary>
-    /// 
-    /// </summary>
-    protected override CapabilityEndpoints CapabilityEndpoint => CapabilityEndpoints.ImageGeneration;
+	protected override CapabilityEndpoints Endpoint => CapabilityEndpoints.ImageGeneration;
 	
-
 	/// <summary>
 	///     Ask the API to Creates an image given a prompt.
 	/// </summary>
@@ -46,6 +40,6 @@ public class ImageGenerationEndpoint : EndpointBase, IImageGenerationEndpoint
 	/// <returns>Asynchronously returns the image result. Look in its <see cref="Data.Url" /> </returns>
 	public Task<ImageResult?> CreateImageAsync(ImageGenerationRequest request)
     {
-        return HttpPost1<ImageResult>(Api.EndpointProvider, CapabilityEndpoint, postData: request);
+        return HttpPost1<ImageResult>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, postData: request);
     }
 }

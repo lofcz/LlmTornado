@@ -107,6 +107,29 @@ public enum CapabilityEndpoints
 }
 
 /// <summary>
+/// Represents authentication to a single provider.
+/// </summary>
+public class ProviderAuthentication
+{
+    public LLmProviders Provider { get; set; }
+    public string? ApiKey { get; set; }
+    public string? Organization { get; set; }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="providers"></param>
+    /// <param name="ApiKey"></param>
+    /// <param name="organization"></param>
+    public ProviderAuthentication(LLmProviders provider, string apiKey, string? organization = null)
+    {
+        Provider = provider;
+        ApiKey = apiKey;
+        Organization = organization;
+    }
+}
+
+/// <summary>
 /// Types of inbound streams.
 /// </summary>
 public enum StreamRequestTypes

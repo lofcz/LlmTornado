@@ -55,22 +55,24 @@ public enum Demos
     ChatAnthropicFailFunctions,
     ChatCohere,
     ChatCohereStreaming,
+    [Flaky] // covered by other tests, takes a long time to finish 
+    ChatAllVendors,
     Last
 }
 
 public class Program
 {
     private static Demos selectedDemo = Demos.Unknown;
-    private static Keys ApiKeys { get; set; }
+    public static Keys ApiKeys { get; set; }
 
-    class AzureKey
+    public class AzureKey
     {
         public string Version { get; set; }
         public string ApiUrlFormat { get; set; }
         public string Key { get; set; }
     }
     
-    class Keys
+    public class Keys
     {
         public string OpenAi { get; set; }
         public string Anthropic { get; set; }
@@ -82,10 +84,14 @@ public class Program
     {
         return provider switch
         {
-            LLmProviders.AzureOpenAi => new TornadoApi(ApiKeys.Azure.Key) { ApiVersion = ApiKeys.Azure.Version, ApiUrlFormat = ApiKeys.Azure.ApiUrlFormat },
+            LLmProviders.AzureOpenAi => new TornadoApi(ApiKeys.Azure.Key)
+            {
+                ApiVersion = ApiKeys.Azure.Version, 
+                ApiUrlFormat = ApiKeys.Azure.ApiUrlFormat
+            },
             LLmProviders.OpenAi => new TornadoApi(ApiKeys.OpenAi),
-            LLmProviders.Anthropic => new TornadoApi(ApiKeys.Anthropic),
-            LLmProviders.Cohere => new TornadoApi(ApiKeys.Cohere),
+            LLmProviders.Anthropic => new TornadoApi(ApiKeys.Anthropic, LLmProviders.Anthropic),
+            LLmProviders.Cohere => new TornadoApi(ApiKeys.Cohere, LLmProviders.Cohere),
             _ => new TornadoApi(string.Empty)
         };
     }
@@ -152,6 +158,7 @@ public class Program
             Demos.ChatAnthropicFailFunctions => ChatDemo.AnthropicFailFunctions,
             Demos.ChatCohere => ChatDemo.Cohere,
             Demos.ChatCohereStreaming => ChatDemo.CohereStreaming,
+            Demos.ChatAllVendors => ChatDemo.AllChatVendors,
             _ => null
         };
 
