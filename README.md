@@ -1,4 +1,4 @@
-[![OpenAI](https://badgen.net/nuget/v1/LlmTornado)](https://www.nuget.org/packages/LlmTornado/)
+[![LlmTornado](https://badgen.net/nuget/v/LlmTornado)](https://www.nuget.org/packages/LlmTornado)
 
 # LLM Tornado - One .NET library to consume OpenAI, Anthropic, Cohere, Azure, and self-hosted APIs.
 
