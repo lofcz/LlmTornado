@@ -16,7 +16,7 @@ public class AudioEndpoint : EndpointBase, IAudioEndpoint
     ///     Creates audio endpoint object.
     /// </summary>
     /// <param name="api"></param>
-    public AudioEndpoint(OpenAiApi api) : base(api)
+    public AudioEndpoint(TornadoApi api) : base(api)
     {
     }
 

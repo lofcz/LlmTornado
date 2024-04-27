@@ -13,7 +13,7 @@ namespace LlmTornado.Threads;
 /// </summary>
 public sealed class ThreadsEndpoint : EndpointBase, IThreadsEndpoint
 {
-    internal ThreadsEndpoint(OpenAiApi api) : base(api)
+    internal ThreadsEndpoint(TornadoApi api) : base(api)
     {
     }
 

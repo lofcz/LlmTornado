@@ -19,7 +19,7 @@ namespace LlmTornado;
 /// <summary>
 ///     Entry point to the OpenAPI API, handling auth and allowing access to the various API endpoints
 /// </summary>
-public class OpenAiApi : IOpenAiApi
+public class TornadoApi : ITornadoApi
 {
     private IAssistantsEndpoint? _assistantsEndpoint;
     private IAudioEndpoint? _audioEndpoint;
@@ -34,7 +34,6 @@ public class OpenAiApi : IOpenAiApi
     private IThreadsEndpoint? _threadsEndpoint;
     private IEndpointProvider _endpointProvider;
 
-
     /// <summary>
     ///     Creates a new entry point to the OpenAPI API, handling auth and allowing access to the various API endpoints
     /// </summary>
@@ -42,17 +41,17 @@ public class OpenAiApi : IOpenAiApi
     ///     The API authentication information to use for API calls, or <see langword="null" /> when using self-hosted provider
     ///     such as KoboldCpp
     /// </param>
-    public OpenAiApi(ApiAuthentication? apiKeys)
+    public TornadoApi(ApiAuthentication? apiKeys)
     {
         Auth = apiKeys;
         _endpointProvider = new OpenAiEndpointProvider(this);
     }
 
     /// <summary>
-    ///     Create a new OpenAiApi via API key, suitable for OpenAI as a provider
+    ///     Create a new Tornado API via API key. Use this constructor if in the lifetime of the object only one provider will be used. The API key should match this provider.
     /// </summary>
     /// <param name="apiKey">API key</param>
-    public OpenAiApi(string apiKey)
+    public TornadoApi(string apiKey)
     {
         Auth = new ApiAuthentication(apiKey);
         _endpointProvider = new OpenAiEndpointProvider(this);
@@ -63,7 +62,7 @@ public class OpenAiApi : IOpenAiApi
     /// </summary>
     /// <param name="apiKey">API key</param>
     /// <param name="organizationKey">Organization key</param>
-    public OpenAiApi(string apiKey, string organizationKey)
+    public TornadoApi(string apiKey, string organizationKey)
     {
         Auth = new ApiAuthentication(apiKey, organizationKey);
         _endpointProvider = new OpenAiEndpointProvider(this);

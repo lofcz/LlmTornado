@@ -359,7 +359,7 @@ public class Model
     /// </summary>
     /// <param name="api">An instance of the API with authentication in order to call the endpoint.</param>
     /// <returns>Asynchronously returns an Model with all relevant properties filled in</returns>
-    public Task<Model> RetrieveModelDetailsAsync(OpenAiApi api)
+    public Task<Model> RetrieveModelDetailsAsync(TornadoApi api)
     {
         return api.Models.RetrieveModelDetailsAsync(ModelID);
     }

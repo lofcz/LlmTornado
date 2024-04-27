@@ -18,7 +18,7 @@ public class OpenAiEndpointProvider : BaseEndpointProvider
 
     public override HashSet<string> ToolFinishReasons => toolFinishReasons;
     
-    public OpenAiEndpointProvider(OpenAiApi api) : base(api)
+    public OpenAiEndpointProvider(TornadoApi api) : base(api)
     {
         Provider = LLmProviders.OpenAi;
     }

@@ -35,7 +35,7 @@ public class Conversation
     /// </summary>
     /// <param name="endpoint">
     ///     A reference to the API endpoint, needed for API requests.  Generally should be
-    ///     <see cref="OpenAiApi.Chat" />.
+    ///     <see cref="TornadoApi.Chat" />.
     /// </param>
     /// <param name="model">
     ///     Optionally specify the model to use for ChatGPT requests.  If not specified, used

@@ -11,10 +11,10 @@ public class ModerationEndpoint : EndpointBase, IModerationEndpoint
 {
 	/// <summary>
 	///     Constructor of the api endpoint. Rather than instantiating this yourself, access it through an instance of
-	///     <see cref="OpenAiApi" /> as <see cref="OpenAiApi.Moderation" />.
+	///     <see cref="TornadoApi" /> as <see cref="TornadoApi.Moderation" />.
 	/// </summary>
 	/// <param name="api"></param>
-	internal ModerationEndpoint(OpenAiApi api) : base(api)
+	internal ModerationEndpoint(TornadoApi api) : base(api)
     {
     }
 

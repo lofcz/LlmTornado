@@ -5,8 +5,8 @@ namespace LlmTornado.Common;
 public abstract class BaseResponse
 {
     /// <summary>
-    ///     The <see cref="OpenAiApi" /> this response was generated from.
+    ///     The <see cref="TornadoApi" /> this response was generated from.
     /// </summary>
     [JsonIgnore]
-    public OpenAiApi Api { get; internal set; }
+    public TornadoApi Api { get; internal set; }
 }

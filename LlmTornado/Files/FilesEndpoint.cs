@@ -15,10 +15,10 @@ public class FilesEndpoint : EndpointBase, IFilesEndpoint
 {
 	/// <summary>
 	///     Constructor of the api endpoint.  Rather than instantiating this yourself, access it through an instance of
-	///     <see cref="OpenAiApi" /> as <see cref="OpenAiApi.Files" />.
+	///     <see cref="TornadoApi" /> as <see cref="TornadoApi.Files" />.
 	/// </summary>
 	/// <param name="api"></param>
-	internal FilesEndpoint(OpenAiApi api) : base(api)
+	internal FilesEndpoint(TornadoApi api) : base(api)
     {
     }
 

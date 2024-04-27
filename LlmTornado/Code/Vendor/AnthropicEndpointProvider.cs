@@ -36,7 +36,7 @@ public class AnthropicEndpointProvider : BaseEndpointProvider
         MsgStart
     }
     
-    public AnthropicEndpointProvider(OpenAiApi api) : base(api)
+    public AnthropicEndpointProvider(TornadoApi api) : base(api)
     {
         Provider = LLmProviders.Anthropic;
     }

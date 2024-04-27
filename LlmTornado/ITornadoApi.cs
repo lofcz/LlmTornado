@@ -9,9 +9,9 @@ using LlmTornado.Moderation;
 namespace LlmTornado;
 
 /// <summary>
-///     An interface for <see cref="OpenAiApi" />, for ease of mock testing, etc
+///     An interface for <see cref="TornadoApi" />, for ease of mock testing, etc
 /// </summary>
-public interface IOpenAiApi
+public interface ITornadoApi
 {
 	/// <summary>
 	///     Base url for OpenAI

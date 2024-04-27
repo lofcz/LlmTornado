@@ -10,10 +10,10 @@ public class ImageGenerationEndpoint : EndpointBase, IImageGenerationEndpoint
 {
 	/// <summary>
 	///     Constructor of the api endpoint.  Rather than instantiating this yourself, access it through an instance of
-	///     <see cref="OpenAiApi" /> as <see cref="OpenAiApi.ImageGenerations" />.
+	///     <see cref="TornadoApi" /> as <see cref="TornadoApi.ImageGenerations" />.
 	/// </summary>
 	/// <param name="api"></param>
-	internal ImageGenerationEndpoint(OpenAiApi api) : base(api)
+	internal ImageGenerationEndpoint(TornadoApi api) : base(api)
     {
     }
 

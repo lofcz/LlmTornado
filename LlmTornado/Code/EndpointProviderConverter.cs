@@ -4,7 +4,7 @@ namespace LlmTornado.Code;
 
 internal static class EndpointProviderConverter
 {
-    public static IEndpointProvider CreateProvider(LLmProviders provider, OpenAiApi api)
+    public static IEndpointProvider CreateProvider(LLmProviders provider, TornadoApi api)
     {
         return provider switch
         {

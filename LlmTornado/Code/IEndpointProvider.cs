@@ -21,7 +21,7 @@ public interface IEndpointProvider
 
     public T? InboundMessage<T>(string jsonData);
     public IAsyncEnumerable<T?> InboundStream<T>(StreamReader streamReader) where T : ApiResultBase;
-    public OpenAiApi Api { get; set; }
+    public TornadoApi Api { get; set; }
     public LLmProviders Provider { get; set; }
     public string ApiUrl(CapabilityEndpoints endpoint, string? url);
     public HashSet<string> ToolFinishReasons { get;  }

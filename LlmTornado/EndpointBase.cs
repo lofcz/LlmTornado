@@ -39,10 +39,10 @@ public abstract class EndpointBase
 
     /// <summary>
     ///     Constructor of the api endpoint base, to be called from the contructor of any devived classes.  Rather than
-    ///     instantiating any endpoint yourself, access it through an instance of <see cref="OpenAiApi" />.
+    ///     instantiating any endpoint yourself, access it through an instance of <see cref="TornadoApi" />.
     /// </summary>
     /// <param name="api"></param>
-    internal EndpointBase(OpenAiApi api)
+    internal EndpointBase(TornadoApi api)
     {
         Api = api;
     }
@@ -50,7 +50,7 @@ public abstract class EndpointBase
     /// <summary>
     ///     The internal reference to the API, mostly used for authentication
     /// </summary>
-    internal OpenAiApi Api { get; }
+    internal TornadoApi Api { get; }
 
     /// <summary>
     ///     The name of the endpoint, which is the final path segment in the API URL.  Must be overriden in a derived class.

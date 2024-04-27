@@ -16,12 +16,12 @@ namespace LlmTornado.Code;
 
 public abstract class BaseEndpointProvider : IEndpointProvider
 {
-    public OpenAiApi Api { get; set; }
+    public TornadoApi Api { get; set; }
     public LLmProviders Provider { get; set; } = LLmProviders.Unknown;
     
     internal static readonly JsonSerializerSettings NullSettings = new() { NullValueHandling = NullValueHandling.Ignore };
     
-    public BaseEndpointProvider(OpenAiApi api)
+    public BaseEndpointProvider(TornadoApi api)
     {
         Api = api;
     }

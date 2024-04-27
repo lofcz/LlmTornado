@@ -13,10 +13,10 @@ public class ModelsEndpoint : EndpointBase, IModelsEndpoint
 {
 	/// <summary>
 	///     Constructor of the api endpoint.  Rather than instantiating this yourself, access it through an instance of
-	///     <see cref="OpenAiApi" /> as <see cref="OpenAiApi.Models" />.
+	///     <see cref="TornadoApi" /> as <see cref="TornadoApi.Models" />.
 	/// </summary>
 	/// <param name="api"></param>
-	internal ModelsEndpoint(OpenAiApi api) : base(api)
+	internal ModelsEndpoint(TornadoApi api) : base(api)
     {
     }
 

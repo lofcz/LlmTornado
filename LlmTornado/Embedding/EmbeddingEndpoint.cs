@@ -15,10 +15,10 @@ public class EmbeddingEndpoint : EndpointBase, IEmbeddingEndpoint
 {
 	/// <summary>
 	///     Constructor of the api endpoint.  Rather than instantiating this yourself, access it through an instance of
-	///     <see cref="OpenAiApi" /> as <see cref="OpenAiApi.Embeddings" />.
+	///     <see cref="TornadoApi" /> as <see cref="TornadoApi.Embeddings" />.
 	/// </summary>
 	/// <param name="api"></param>
-	internal EmbeddingEndpoint(OpenAiApi api) : base(api)
+	internal EmbeddingEndpoint(TornadoApi api) : base(api)
     {
     }
 

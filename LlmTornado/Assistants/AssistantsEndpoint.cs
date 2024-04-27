@@ -15,7 +15,7 @@ namespace LlmTornado.Assistants;
 /// </summary>
 public sealed class AssistantsEndpoint : EndpointBase, IAssistantsEndpoint
 {
-    internal AssistantsEndpoint(OpenAiApi api) : base(api)
+    internal AssistantsEndpoint(TornadoApi api) : base(api)
     {
     }
 

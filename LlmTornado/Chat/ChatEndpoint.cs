@@ -18,10 +18,10 @@ public class ChatEndpoint : EndpointBase, IChatEndpoint
 {
     /// <summary>
     ///     Constructor of the api endpoint.  Rather than instantiating this yourself, access it through an instance of
-    ///     <see cref="OpenAiApi" /> as <see cref="OpenAiApi.Completions" />.
+    ///     <see cref="TornadoApi" /> as <see cref="TornadoApi.Completions" />.
     /// </summary>
     /// <param name="api"></param>
-    internal ChatEndpoint(OpenAiApi api) : base(api)
+    internal ChatEndpoint(TornadoApi api) : base(api)
     {
     }
 

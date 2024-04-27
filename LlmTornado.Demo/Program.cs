@@ -75,18 +75,18 @@ public class Program
         public AzureKey Azure { get; set; }
     }
 
-    public static OpenAiApi Connect(LLmProviders provider = LLmProviders.OpenAi)
+    public static TornadoApi Connect(LLmProviders provider = LLmProviders.OpenAi)
     {
         if (provider is LLmProviders.AzureOpenAi)
         {
-            return new OpenAiApi(ApiKeys.Azure.Key)
+            return new TornadoApi(ApiKeys.Azure.Key)
             {
                 ApiVersion = ApiKeys.Azure.Version,
                 ApiUrlFormat = ApiKeys.Azure.ApiUrlFormat
             };
         }
         
-        return new OpenAiApi(provider is LLmProviders.OpenAi ? ApiKeys.OpenAi : ApiKeys.Anthropic);
+        return new TornadoApi(provider is LLmProviders.OpenAi ? ApiKeys.OpenAi : ApiKeys.Anthropic);
     }
 
     public static async Task<bool> SetupApi()
