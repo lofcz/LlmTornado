@@ -150,6 +150,7 @@ public abstract class EndpointBase
     /// </param>
     /// <param name="ct">(optional) A cancellation token.</param>
     /// <param name="provider"></param>
+    /// <param name="endpoint"></param>
     /// <returns>The HttpResponseMessage of the response, which is confirmed to be successful.</returns>
     /// <exception cref="HttpRequestException">Throws an exception if a non-success HTTP response was returned</exception>
     private async Task<HttpResponseMessage> HttpRequestRaw(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, HttpMethod? verb = null, object? postData = null, bool streaming = false, CancellationToken? ct = null)
@@ -295,7 +296,7 @@ public abstract class EndpointBase
         };
     }*/
 
-    private async Task<DataOrException<HttpResponseMessage>> HttpRequestRawWithAllCodes(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, HttpMethod? verb = null, object? content = null, bool streaming = false, CancellationToken? ct = null)
+    private async Task<RestDataOrException<HttpResponseMessage>> HttpRequestRawWithAllCodes(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, HttpMethod? verb = null, object? content = null, bool streaming = false, CancellationToken? ct = null)
     {
         url ??= url?.StartsWith("http") ?? false ? url : provider.ApiUrl(endpoint, url);
         verb ??= HttpMethod.Get;
@@ -342,11 +343,11 @@ public abstract class EndpointBase
 
         try
         {
-            return new DataOrException<HttpResponseMessage>(await client.SendAsync(req, streaming ? HttpCompletionOption.ResponseHeadersRead : HttpCompletionOption.ResponseContentRead, ct ?? CancellationToken.None).ConfigureAwait(ConfigureAwaitOptions.None));
+            return new RestDataOrException<HttpResponseMessage>(await client.SendAsync(req, streaming ? HttpCompletionOption.ResponseHeadersRead : HttpCompletionOption.ResponseContentRead, ct ?? CancellationToken.None).ConfigureAwait(ConfigureAwaitOptions.None));
         }
         catch (Exception e)
         {
-            return new DataOrException<HttpResponseMessage>(e);
+            return new RestDataOrException<HttpResponseMessage>(e);
         }
     }
 
@@ -422,7 +423,7 @@ public abstract class EndpointBase
 
     private async Task<HttpCallResult<T>> HttpRequestRaw<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, HttpMethod? verb = null, object? postData = null, CancellationToken? ct = null)
     {
-        DataOrException<HttpResponseMessage> response = await HttpRequestRawWithAllCodes(provider, endpoint, url, verb, postData, false, ct).ConfigureAwait(ConfigureAwaitOptions.None);
+        RestDataOrException<HttpResponseMessage> response = await HttpRequestRawWithAllCodes(provider, endpoint, url, verb, postData, false, ct).ConfigureAwait(ConfigureAwaitOptions.None);
 
         if (response.Exception is not null)
         {

@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using LlmTornado.Chat.Models;
 using LlmTornado.Models;
 using LlmTornado.Code.Models;
+using LlmTornado.Common;
 
 namespace LlmTornado.Chat;
 
@@ -48,7 +49,19 @@ public interface IChatEndpoint
 	///     Asynchronously returns the completion result. Look in its <see cref="ChatResult.Choices" /> property for the
 	///     results.
 	/// </returns>
-	Task<ChatResult> CreateChatCompletionAsync(ChatRequest request);
+	Task<ChatResult?> CreateChatCompletionAsync(ChatRequest request);
+	
+	/// <summary>
+	///     Ask the API to complete the request using the specified parameters. This is non-streaming, so it will wait until
+	///     the API returns the full result. Any non-specified parameters will fall back to default values specified in
+	///     <see cref="DefaultChatRequestArgs" /> if present. This method doesn't throw exceptions (even if the network layer fails).
+	/// </summary>
+	/// <param name="request">The request to send to the API.</param>
+	/// <returns>
+	///     Asynchronously returns the completion result. Look in its <see cref="ChatResult.Choices" /> property for the
+	///     results.
+	/// </returns>
+	Task<HttpCallResult<ChatResult>> CreateChatCompletionAsyncSafe(ChatRequest request);
 
 	/// <summary>
 	///     Ask the API to complete the request using the specified parameters. This is non-streaming, so it will wait until
@@ -63,15 +76,15 @@ public interface IChatEndpoint
 	/// <param name="temperature">
 	///     What sampling temperature to use. Higher values means the model will take more risks. Try 0.9
 	///     for more creative applications, and 0 (argmax sampling) for ones with a well-defined answer. It is generally
-	///     recommend to use this or <paramref name="top_p" /> but not both.
+	///     recommend to use this or <paramref name="topP" /> but not both.
 	/// </param>
-	/// <param name="top_p">
+	/// <param name="topP">
 	///     An alternative to sampling with temperature, called nucleus sampling, where the model considers the
 	///     results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10% probability
 	///     mass are considered. It is generally recommend to use this or <paramref name="temperature" /> but not both.
 	/// </param>
 	/// <param name="numOutputs">How many different choices to request for each prompt.</param>
-	/// <param name="max_tokens">How many tokens to complete to. Can return fewer if a stop sequence is hit.</param>
+	/// <param name="maxTokens">How many tokens to complete to. Can return fewer if a stop sequence is hit.</param>
 	/// <param name="frequencyPenalty">
 	///     The scale of the penalty for how often a token is used.  Should generally be between 0
 	///     and 1, although negative numbers are allowed to encourage token reuse.
@@ -94,7 +107,7 @@ public interface IChatEndpoint
 	///     Asynchronously returns the completion result. Look in its <see cref="ChatResult.Choices" /> property for the
 	///     results.
 	/// </returns>
-	Task<ChatResult> CreateChatCompletionAsync(IList<ChatMessage> messages, ChatModel? model = null, double? temperature = null, double? top_p = null, int? numOutputs = null, int? max_tokens = null, double? frequencyPenalty = null, double? presencePenalty = null, IReadOnlyDictionary<string, float>? logitBias = null, params string[]? stopSequences);
+	Task<ChatResult> CreateChatCompletionAsync(IList<ChatMessage> messages, ChatModel? model = null, double? temperature = null, double? topP = null, int? numOutputs = null, int? maxTokens = null, double? frequencyPenalty = null, double? presencePenalty = null, IReadOnlyDictionary<string, float>? logitBias = null, params string[]? stopSequences);
 
 	/// <summary>
 	///     Ask the API to complete the request using the specified message(s).  Any parameters will fall back to default

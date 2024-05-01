@@ -3,16 +3,24 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace LlmTornado.Common;
 
-public class DataOrException<T>
+public class RestDataOrException<T>
 {
-    public DataOrException(T data)
+    public RestDataOrException(T data, IHttpCallResult? httpCall)
     {
         Data = data;
+        HttpCall = httpCall;
     }
 
-    public DataOrException(Exception e)
+    public RestDataOrException(Exception e, IHttpCallResult? httpCall)
     {
         Exception = e;
+        HttpCall = httpCall;
+    }
+    
+    public RestDataOrException(IHttpCallResult httpCall)
+    {
+        Exception = httpCall.Exception;
+        HttpCall = httpCall;
     }
 
     private bool exceptionIsNull => Exception is null;
@@ -24,4 +32,6 @@ public class DataOrException<T>
 
     [MemberNotNullWhen(true, nameof(dataIsNull))]
     public Exception? Exception { get; set; }
+    
+    public IHttpCallResult? HttpCall { get; set; }
 }

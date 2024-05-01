@@ -505,7 +505,7 @@ public class Conversation
     ///     <see cref="ChatMessageRole.Assistant" /> <see cref="ChatMessage" />.
     /// </summary>
     /// <returns>The string of the response from the chatbot API</returns>
-    public async Task<ChatBlocksResponse> GetResponseWithFunctions()
+    public async Task<ChatRichResponse> GetResponseRich()
     {
         ChatRequest req = new(RequestParameters)
         {
@@ -516,17 +516,17 @@ public class Conversation
 
         if (res is null)
         {
-            return new ChatBlocksResponse();
+            return new ChatRichResponse();
         }
 
         MostRecentApiResult = res;
 
         if (res.Choices is null)
         {
-            return new ChatBlocksResponse();
+            return new ChatRichResponse();
         }
 
-        ChatBlocksResponse response = new ChatBlocksResponse();
+        ChatRichResponse response = new ChatRichResponse();
         
         if (res.Choices.Count > 0)
         {
@@ -545,9 +545,9 @@ public class Conversation
                 {
                     foreach (ToolCall x in newMsg.ToolCalls)
                     {
-                        response.Blocks.Add(new ChatResponse
+                        response.Blocks.Add(new ChatRichResponseBlock
                         {
-                            Type = ChatResponseBlockTypes.Function, 
+                            Type = ChatRichResponseBlockTypes.Function, 
                             FunctionCall = x.FunctionCall
                         });   
                     }
@@ -555,9 +555,9 @@ public class Conversation
 
                 if (!newMsg.Content.IsNullOrWhiteSpace())
                 {
-                    response.Blocks.Add(new ChatResponse
+                    response.Blocks.Add(new ChatRichResponseBlock
                     {
-                        Type = ChatResponseBlockTypes.Message,
+                        Type = ChatRichResponseBlockTypes.Message,
                         Message = newMsg.Content
                     });
                 }
@@ -566,7 +566,150 @@ public class Conversation
 
         return response;
     }
+    
+    
+    /// <summary>
+    ///     Calls the API to get a response. The response is split into text & tools blocks.
+    ///     The entire response is appended to the current chat's <see cref="Messages" /> as an
+    ///     <see cref="ChatMessageRole.Assistant" /> <see cref="ChatMessage" />. This method does't throw on network level.
+    /// </summary>
+    /// <returns>The string of the response from the chatbot API</returns>
+    public async Task<RestDataOrException<ChatRichResponse>> GetResponseRichSafe()
+    {
+        ChatRequest req = new(RequestParameters)
+        {
+            Messages = _messages.ToList()
+        };
 
+        HttpCallResult<ChatResult> res = await _endpoint.CreateChatCompletionAsyncSafe(req);
+
+        if (!res.Ok)
+        {
+            return new RestDataOrException<ChatRichResponse>(res);
+        }
+
+        MostRecentApiResult = res.Data;
+
+        if (res.Data.Choices is null)
+        {
+            return new RestDataOrException<ChatRichResponse>(new Exception("The service returned no choices"), res);
+        }
+
+        ChatRichResponse response = new ChatRichResponse();
+        
+        if (res.Data.Choices.Count > 0)
+        {
+            foreach (ChatChoice choice in res.Data.Choices)
+            {
+                ChatMessage? newMsg = choice.Message;
+
+                if (newMsg is null)
+                {
+                    continue;
+                }
+
+                AppendMessage(newMsg);
+
+                if (newMsg.ToolCalls is { Count: > 0 } && !OutboundToolChoice.OutboundToolChoiceConverter.KnownFunctionNames.Contains(newMsg.ToolCalls[0].FunctionCall.Name))
+                {
+                    foreach (ToolCall x in newMsg.ToolCalls)
+                    {
+                        response.Blocks.Add(new ChatRichResponseBlock
+                        {
+                            Type = ChatRichResponseBlockTypes.Function, 
+                            FunctionCall = x.FunctionCall
+                        });   
+                    }
+                }
+
+                if (!newMsg.Content.IsNullOrWhiteSpace())
+                {
+                    response.Blocks.Add(new ChatRichResponseBlock
+                    {
+                        Type = ChatRichResponseBlockTypes.Message,
+                        Message = newMsg.Content
+                    });
+                }
+            }
+        }
+
+        return new RestDataOrException<ChatRichResponse>(response, res);
+    }
+
+    /// <summary>
+    ///     Calls the API to get a response. Thr response is split into text & tools blocks.
+    ///     The entire response is appended to the current chat's <see cref="Messages" /> as an
+    ///     <see cref="ChatMessageRole.Assistant" /> <see cref="ChatMessage" />.
+    ///     Use this overload when resolving the function calls requested by the model can be done immediately.
+    ///     This method doesn't throw on network level.
+    /// </summary>
+    /// <returns>The string of the response from the chatbot API</returns>
+    public async Task<RestDataOrException<ChatRichResponse>> GetResponseRichSafe(Func<List<FunctionCall>, Task<List<FunctionResult>>> functionCallHandler)
+    {
+        ChatRequest req = new(RequestParameters)
+        {
+            Messages = _messages.ToList()
+        };
+
+        HttpCallResult<ChatResult> res = await _endpoint.CreateChatCompletionAsyncSafe(req);
+
+        if (!res.Ok)
+        {
+            return new RestDataOrException<ChatRichResponse>(res);
+        }
+
+        MostRecentApiResult = res.Data;
+
+        if (res.Data.Choices is null)
+        {
+            return new RestDataOrException<ChatRichResponse>(new Exception("The service returned no choices"), res);
+        }
+
+        ChatRichResponse response = new ChatRichResponse();
+        
+        if (res.Data.Choices.Count > 0)
+        {
+            foreach (ChatChoice choice in res.Data.Choices)
+            {
+                ChatMessage? newMsg = choice.Message;
+
+                if (newMsg is null)
+                {
+                    continue;
+                }
+
+                AppendMessage(newMsg);
+
+                if (newMsg.ToolCalls is { Count: > 0 } && !OutboundToolChoice.OutboundToolChoiceConverter.KnownFunctionNames.Contains(newMsg.ToolCalls[0].FunctionCall.Name))
+                {
+                    List<FunctionCall> functionsToResolve = newMsg.ToolCalls.Select(x => x.FunctionCall).ToList();
+                    List<FunctionResult> result = await functionCallHandler.Invoke(functionsToResolve);
+
+                    for (int i = 0; i < result.Count; i++)
+                    {
+                        response.Blocks.Add(new ChatRichResponseBlock
+                        {
+                            Type = ChatRichResponseBlockTypes.Function, 
+                            FunctionResult = result[i],
+                            FunctionCall = functionsToResolve.Count > i ? functionsToResolve[i] : null
+                        });   
+                    }
+                }
+
+                if (!newMsg.Content.IsNullOrWhiteSpace())
+                {
+                    response.Blocks.Add(new ChatRichResponseBlock
+                    {
+                        Type = ChatRichResponseBlockTypes.Message,
+                        Message = newMsg.Content
+                    });   
+                }
+            }
+        }
+
+        return new RestDataOrException<ChatRichResponse>(response, res);
+    }
+    
     /// <summary>
     ///     Calls the API to get a response. Thr response is split into text & tools blocks.
     ///     The entire response is appended to the current chat's <see cref="Messages" /> as an
@@ -574,7 +717,7 @@ public class Conversation
     ///     Use this overload when resolving the function calls requested by the model can be done immediately.
     /// </summary>
     /// <returns>The string of the response from the chatbot API</returns>
-    public async Task<ChatBlocksResponse> GetResponseWithFunctions(Func<List<FunctionCall>, Task<List<FunctionResult>>> functionCallHandler)
+    public async Task<ChatRichResponse> GetResponseRich(Func<List<FunctionCall>, Task<List<FunctionResult>>> functionCallHandler)
     {
         ChatRequest req = new(RequestParameters)
         {
@@ -585,17 +728,17 @@ public class Conversation
 
         if (res is null)
         {
-            return new ChatBlocksResponse();
+            return new ChatRichResponse();
         }
 
         MostRecentApiResult = res;
 
         if (res.Choices is null)
         {
-            return new ChatBlocksResponse();
+            return new ChatRichResponse();
         }
 
-        ChatBlocksResponse response = new ChatBlocksResponse();
+        ChatRichResponse response = new ChatRichResponse();
         
         if (res.Choices.Count > 0)
         {
@@ -610,16 +753,16 @@ public class Conversation
 
                 AppendMessage(newMsg);
 
-                if (newMsg.ToolCalls is { Count: > 0 } && newMsg.ToolCalls[0].FunctionCall.Name is not ("none" or "auto"))
+                if (newMsg.ToolCalls is { Count: > 0 } && !OutboundToolChoice.OutboundToolChoiceConverter.KnownFunctionNames.Contains(newMsg.ToolCalls[0].FunctionCall.Name))
                 {
                     List<FunctionCall> functionsToResolve = newMsg.ToolCalls.Select(x => x.FunctionCall).ToList();
                     List<FunctionResult> result = await functionCallHandler.Invoke(functionsToResolve);
 
                     for (int i = 0; i < result.Count; i++)
                     {
-                        response.Blocks.Add(new ChatResponse
+                        response.Blocks.Add(new ChatRichResponseBlock
                         {
-                            Type = ChatResponseBlockTypes.Function, 
+                            Type = ChatRichResponseBlockTypes.Function, 
                             FunctionResult = result[i],
                             FunctionCall = functionsToResolve.Count > i ? functionsToResolve[i] : null
                         });   
@@ -628,9 +771,9 @@ public class Conversation
 
                 if (!newMsg.Content.IsNullOrWhiteSpace())
                 {
-                    response.Blocks.Add(new ChatResponse
+                    response.Blocks.Add(new ChatRichResponseBlock
                     {
-                        Type = ChatResponseBlockTypes.Message,
+                        Type = ChatRichResponseBlockTypes.Message,
                         Message = newMsg.Content
                     });   
                 }
@@ -645,34 +788,40 @@ public class Conversation
     ///     <see cref="ChatMessageRole.Assistant" /> <see cref="ChatMessage" />.
     /// </summary>
     /// <returns>The string of the response from the chatbot API</returns>
-    public async Task<ChatChoice?> GetResponseRaw()
+    public async Task<RestDataOrException<ChatChoice>> GetResponseSafe()
     {
         ChatRequest req = new(RequestParameters)
         {
             Messages = _messages.ToList()
         };
 
-        ChatResult? res = await _endpoint.CreateChatCompletionAsync(req);
+        HttpCallResult<ChatResult> res = await _endpoint.CreateChatCompletionAsyncSafe(req);
 
-        if (res is null) return null;
-
-        MostRecentApiResult = res;
-
-        if (res.Choices is null) return null;
-
-        if (res.Choices.Count > 0)
+        if (!res.Ok)
         {
-            ChatMessage? newMsg = res.Choices[0].Message;
+            return new RestDataOrException<ChatChoice>(res);
+        }
+        
+        MostRecentApiResult = res.Data;
+
+        if (res.Data.Choices is null)
+        {
+            return new RestDataOrException<ChatChoice>(new Exception("No choices returned by the service."), res);
+        }
+
+        if (res.Data.Choices.Count > 0)
+        {
+            ChatMessage? newMsg = res.Data.Choices[0].Message;
 
             if (newMsg is not null)
             {
                 AppendMessage(newMsg);    
             }
-            
-            return res.Choices[0];
+
+            return new RestDataOrException<ChatChoice>(res.Data.Choices[0], res);
         }
 
-        return null;
+        return new RestDataOrException<ChatChoice>(new Exception("No choices returned by the service."), res);
     }
 
     #endregion

@@ -42,9 +42,9 @@ public static class ChatDemo
         });
         chat.AppendUserInput("Who are you?"); // user asks something unrelated, but we force the model to use the tool
 
-        ChatBlocksResponse response = await chat.GetResponseWithFunctions();
+        ChatRichResponse response = await chat.GetResponseRich();
 
-        if (response.Blocks.Any(x => x.Type is ChatResponseBlockTypes.Function))
+        if (response.Blocks.Any(x => x.Type is ChatRichResponseBlockTypes.Function))
         {
             return true;
         }

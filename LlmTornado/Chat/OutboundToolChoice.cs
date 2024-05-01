@@ -103,7 +103,7 @@ public class OutboundToolChoice
 
     internal class OutboundToolChoiceConverter : JsonConverter
     {
-        private static readonly HashSet<string> KnownFunctionNames = [ "none", "auto", "required" ];
+        internal static readonly HashSet<string> KnownFunctionNames = [ "none", "auto", "required" ];
         
         public override bool CanConvert(Type objectType)
         {

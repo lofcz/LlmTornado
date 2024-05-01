@@ -9,7 +9,7 @@ namespace LlmTornado.Chat;
 /// <summary>
 /// Response blocks are of various types but generally a block represents a feature such as text, image, function call, etc.
 /// </summary>
-public enum ChatResponseBlockTypes
+public enum ChatRichResponseBlockTypes
 {
     /// <summary>
     /// Unknown or unsupported block.
@@ -28,12 +28,12 @@ public enum ChatResponseBlockTypes
 /// <summary>
 /// The response is represented by one or more blocks.
 /// </summary>
-public class ChatBlocksResponse
+public class ChatRichResponse
 {
     /// <summary>
     /// The blocks which together constitute the received response.
     /// </summary>
-    public List<ChatResponse> Blocks { get; set; } = [];
+    public List<ChatRichResponseBlock> Blocks { get; set; } = [];
 
     /// <summary>
     /// Gets the text parts and joins them by a separator.
@@ -41,29 +41,29 @@ public class ChatBlocksResponse
     /// <returns></returns>
     public string GetText(string blockSeparator = " ")
     {
-        return string.Join(blockSeparator, Blocks.Where(x => x.Type is ChatResponseBlockTypes.Message && !x.Message.IsNullOrWhiteSpace()).Select(x => x.Message));
+        return string.Join(blockSeparator, Blocks.Where(x => x.Type is ChatRichResponseBlockTypes.Message && !x.Message.IsNullOrWhiteSpace()).Select(x => x.Message));
     }
 }
 
 /// <summary>
 /// A single block of the LLM's response.
 /// </summary>
-public class ChatResponse
+public class ChatRichResponseBlock
 {
     /// <summary>
     /// Kind of the block.
     /// </summary>
-    public ChatResponseBlockTypes Type { get; set; }
+    public ChatRichResponseBlockTypes Type { get; set; }
     /// <summary>
-    /// If the <see cref="Type"/> is <see cref="ChatResponseBlockTypes.Message"/>, this is the text content.
+    /// If the <see cref="Type"/> is <see cref="ChatRichResponseBlockTypes.Message"/>, this is the text content.
     /// </summary>
     public string? Message { get; set; }
     /// <summary>
-    /// If the <see cref="Type"/> is <see cref="ChatResponseBlockTypes.Function"/> and the function already resolved via a handler, this the resolved value.
+    /// If the <see cref="Type"/> is <see cref="ChatRichResponseBlockTypes.Function"/> and the function already resolved via a handler, this the resolved value.
     /// </summary>
     public FunctionResult? FunctionResult { get; set; }
     /// <summary>
-    /// If the <see cref="Type"/> is <see cref="ChatResponseBlockTypes.Function"/>, this is the function the tool requested calling.
+    /// If the <see cref="Type"/> is <see cref="ChatRichResponseBlockTypes.Function"/>, this is the function the tool requested calling.
     /// </summary>
     public FunctionCall? FunctionCall { get; set; }
 }
