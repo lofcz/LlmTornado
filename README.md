@@ -56,7 +56,27 @@ await api.Chat.CreateConversation(ChatModel.Anthropic.Claude3.Sonnet)
     .StreamResponse(Console.Write);
 ```
 
-### Functions
+### Functions with deferred resolve
+
+```cs
+Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+{
+    Model = ChatModel.OpenAi.Gpt4.Turbo,
+    Tools = new List<Tool>
+    {
+        new Tool
+        {
+            Function = new ToolFunction("get_weather", "gets the current weather")
+        }
+    },
+    ToolChoice = new OutboundToolChoice(OutboundToolChoiceModes.Required)
+});
+
+chat.AppendUserInput("Who are you?"); // user asks something unrelated, but we force the model to use the tool
+ChatBlocksResponse response = await chat.GetResponseWithFunctions(); // the response contains one block of type Function
+```
+
+### Functions with immediate resolve
 
 ```cs
 StringBuilder sb = new StringBuilder();
