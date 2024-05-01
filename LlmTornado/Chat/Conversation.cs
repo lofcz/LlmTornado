@@ -500,8 +500,78 @@ public class Conversation
     }
 
     /// <summary>
-    ///     Calls the API to get a response, which is appended to the current chat's <see cref="Messages" /> as an
+    ///     Calls the API to get a response. Thr response is split into text & tools blocks.
+    ///     The entire response is appended to the current chat's <see cref="Messages" /> as an
     ///     <see cref="ChatMessageRole.Assistant" /> <see cref="ChatMessage" />.
+    /// </summary>
+    /// <returns>The string of the response from the chatbot API</returns>
+    public async Task<ChatBlocksResponse> GetResponseWithFunctions()
+    {
+        ChatRequest req = new(RequestParameters)
+        {
+            Messages = _messages.ToList()
+        };
+
+        ChatResult? res = await _endpoint.CreateChatCompletionAsync(req);
+
+        if (res is null)
+        {
+            return new ChatBlocksResponse();
+        }
+
+        MostRecentApiResult = res;
+
+        if (res.Choices is null)
+        {
+            return new ChatBlocksResponse();
+        }
+
+        ChatBlocksResponse response = new ChatBlocksResponse();
+        
+        if (res.Choices.Count > 0)
+        {
+            foreach (ChatChoice choice in res.Choices)
+            {
+                ChatMessage? newMsg = choice.Message;
+
+                if (newMsg is null)
+                {
+                    continue;
+                }
+
+                AppendMessage(newMsg);
+
+                if (newMsg.ToolCalls is { Count: > 0 } && newMsg.ToolCalls[0].FunctionCall.Name is not ("none" or "auto"))
+                {
+                    foreach (ToolCall x in newMsg.ToolCalls)
+                    {
+                        response.Blocks.Add(new ChatResponse
+                        {
+                            Type = ChatResponseBlockTypes.Function, 
+                            FunctionCall = x.FunctionCall
+                        });   
+                    }
+                }
+
+                if (!newMsg.Content.IsNullOrWhiteSpace())
+                {
+                    response.Blocks.Add(new ChatResponse
+                    {
+                        Type = ChatResponseBlockTypes.Message,
+                        Message = newMsg.Content
+                    });
+                }
+            }
+        }
+
+        return response;
+    }
+
+    /// <summary>
+    ///     Calls the API to get a response. Thr response is split into text & tools blocks.
+    ///     The entire response is appended to the current chat's <see cref="Messages" /> as an
+    ///     <see cref="ChatMessageRole.Assistant" /> <see cref="ChatMessage" />.
+    ///     Use this overload when resolving the function calls requested by the model can be done immediately.
     /// </summary>
     /// <returns>The string of the response from the chatbot API</returns>
     public async Task<ChatBlocksResponse> GetResponseWithFunctions(Func<List<FunctionCall>, Task<List<FunctionResult>>> functionCallHandler)
@@ -542,15 +612,28 @@ public class Conversation
 
                 if (newMsg.ToolCalls is { Count: > 0 } && newMsg.ToolCalls[0].FunctionCall.Name is not ("none" or "auto"))
                 {
-                    List<FunctionResult> result = await functionCallHandler.Invoke(newMsg.ToolCalls.Select(x => x.FunctionCall).ToList());
+                    List<FunctionCall> functionsToResolve = newMsg.ToolCalls.Select(x => x.FunctionCall).ToList();
+                    List<FunctionResult> result = await functionCallHandler.Invoke(functionsToResolve);
 
-                    foreach (FunctionResult fr in result)
+                    for (int i = 0; i < result.Count; i++)
                     {
-                        response.Blocks.Add(new ChatResponse { Kind = ChatResponseKinds.Function, FunctionResult = fr });   
+                        response.Blocks.Add(new ChatResponse
+                        {
+                            Type = ChatResponseBlockTypes.Function, 
+                            FunctionResult = result[i],
+                            FunctionCall = functionsToResolve.Count > i ? functionsToResolve[i] : null
+                        });   
                     }
                 }
 
-                response.Blocks.Add(new ChatResponse { Kind = ChatResponseKinds.Message, Message = newMsg.Content });
+                if (!newMsg.Content.IsNullOrWhiteSpace())
+                {
+                    response.Blocks.Add(new ChatResponse
+                    {
+                        Type = ChatResponseBlockTypes.Message,
+                        Message = newMsg.Content
+                    });   
+                }
             }
         }
 

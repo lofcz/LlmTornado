@@ -25,6 +25,32 @@ public static class ChatDemo
 
         return result;
     }
+    
+    public static async Task<bool> ChatFunctionRequired()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.OpenAi.Gpt4.Turbo,
+            Tools = new List<Tool>
+            {
+                new Tool
+                {
+                    Function = new ToolFunction("get_weather", "gets the current weather")
+                }
+            },
+            ToolChoice = new OutboundToolChoice(OutboundToolChoiceModes.Required)
+        });
+        chat.AppendUserInput("Who are you?"); // user asks something unrelated, but we force the model to use the tool
+
+        ChatBlocksResponse response = await chat.GetResponseWithFunctions();
+
+        if (response.Blocks.Any(x => x.Type is ChatResponseBlockTypes.Function))
+        {
+            return true;
+        }
+
+        return false;
+    }
 
     public static async Task Cohere()
     {

@@ -58,6 +58,7 @@ public enum Demos
     [Flaky] // covered by other tests, takes a long time to finish 
     ChatAllVendors,
     Embedding,
+    ChatFunctionRequired,
     Last
 }
 
@@ -161,6 +162,7 @@ public class Program
             Demos.ChatCohereStreaming => ChatDemo.CohereStreaming,
             Demos.ChatAllVendors => ChatDemo.AllChatVendors,
             Demos.Embedding => EmbeddingDemo.Embed,
+            Demos.ChatFunctionRequired => ChatDemo.ChatFunctionRequired,
             _ => null
         };
 

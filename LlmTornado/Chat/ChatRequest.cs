@@ -201,8 +201,8 @@ public class ChatRequest
 	///     If you do not want the model to call any function, pass "None" for the "Name" attribute.
 	/// </remarks>
 	[JsonProperty("tool_choice")]
-    [JsonConverter(typeof(OutboundToolCall.OutboundToolCallConverter))]
-    public OutboundToolCall? ToolChoice { get; set; }
+    [JsonConverter(typeof(OutboundToolChoice.OutboundToolChoiceConverter))]
+    public OutboundToolChoice? ToolChoice { get; set; }
 
 	/// <summary>
 	///     If set the functions part of the outbound request encoded as JSON are stored here.
