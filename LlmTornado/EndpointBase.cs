@@ -182,31 +182,58 @@ public abstract class EndpointBase
                 }
             }
         }
-        
-        HttpResponseMessage response = await client.SendAsync(req, streaming ? HttpCompletionOption.ResponseHeadersRead : HttpCompletionOption.ResponseContentRead, ct ?? CancellationToken.None).ConfigureAwait(ConfigureAwaitOptions.None);
-
-        if (response.IsSuccessStatusCode)
-        {
-            return response;
-        }
-
-        string resultAsString;
 
         try
         {
-            resultAsString = await response.Content.ReadAsStringAsync();
+            HttpResponseMessage response = await client.SendAsync(req, streaming ? HttpCompletionOption.ResponseHeadersRead : HttpCompletionOption.ResponseContentRead, ct ?? CancellationToken.None).ConfigureAwait(ConfigureAwaitOptions.None);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return response;
+            }
+
+            string resultAsString;
+
+            try
+            {
+                resultAsString = await response.Content.ReadAsStringAsync();
+            }
+            catch (Exception e)
+            {
+                resultAsString = $"Additionally, the following error was thrown when attempting to read the response content: {e}";
+            }
+
+            ProviderAuthentication? auth = Api.GetProvider(provider.Provider).Auth;
+
+            if (auth is not null)
+            {
+                if (auth.ApiKey is not null)
+                {
+                    resultAsString = resultAsString.Replace(auth.ApiKey, "[API KEY REDACTED FOR SECURITY]");   
+                }
+
+                if (auth.Organization is not null)
+                {
+                    resultAsString = resultAsString.Replace(auth.Organization, "[ORGANIZATION REDACTED FOR SECURITY]");   
+                }
+            }
+     
+            throw response.StatusCode switch
+            {
+                HttpStatusCode.Unauthorized => new AuthenticationException($"The API provider rejected your authorization, most likely due to an invalid API Key. Check your API key and/or other authentication requirements of the service. Full API response follows: {resultAsString}"),
+                HttpStatusCode.InternalServerError => new HttpRequestException($"The API provider had an internal server error. Please retry your request. Server response: {GetErrorMessage(resultAsString, response, Endpoint.ToString(), url, req)}"),
+                _ => new HttpRequestException(GetErrorMessage(resultAsString, response, Endpoint.ToString(), url, req))
+            };
         }
         catch (Exception e)
         {
-            resultAsString = $"Additionally, the following error was thrown when attemping to read the response content: {e}";
+            throw e switch
+            {
+                HttpRequestException => new HttpRequestException($"An error occured when trying to contact {verb.Method} {url}. Message: {e.Message}. {(e.InnerException is not null ? $" Inner exception: {e.InnerException.Message}" : string.Empty)}"),
+                TaskCanceledException => new TaskCanceledException($"An error occured when trying to contact {verb.Method} {url}. The operation timed out. Consider increasing the timeout in TornadoApi config. {(e.InnerException is not null ? $" Inner exception: {e.InnerException.Message}" : string.Empty)}"),
+                _ => new Exception($"An error occured when trying to contact {verb.Method} {url}. Exception type: {e.GetType()}. Message: {e.Message}. {(e.InnerException is not null ? $" Inner exception: {e.InnerException.Message}" : string.Empty)}")
+            };
         }
-
-        throw response.StatusCode switch
-        {
-            HttpStatusCode.Unauthorized => new AuthenticationException($"The API provider rejected your authorization, most likely due to an invalid API Key. Check your API Key and see https://github.com/lofcz/LlmTornado#authentication for guidance. Full API response follows: {resultAsString}"),
-            HttpStatusCode.InternalServerError => new HttpRequestException($"The API provider had an internal server error. Please retry your request. Server response: {GetErrorMessage(resultAsString, response, Endpoint.ToString(), url, req)}"),
-            _ => new HttpRequestException(GetErrorMessage(resultAsString, response, Endpoint.ToString(), url, req))
-        };
     }
 
     /*private async Task<HttpResponseMessage> HttpRequestRawWithCodes(string? url = null, HttpMethod? verb = null, object? postData = null, bool streaming = false, CancellationToken? ct = null)
