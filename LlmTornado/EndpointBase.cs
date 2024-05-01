@@ -127,7 +127,7 @@ public abstract class EndpointBase
     /// <param name="description">Additional details about the endpoint of this request (optional)</param>
     /// <param name="input">Additional details about the endpoint of this request (optional)</param>
     /// <returns>A human-readable string error message.</returns>
-    private static string GetErrorMessage(string? resultAsString, HttpResponseMessage response, string name, string description, HttpRequestMessage input)
+    private static string GetErrorMessage(string? resultAsString, HttpResponseMessage response, string name, string description, HttpCallRequest input)
     {
         return $"Error at {name} ({description}) with HTTP status code: {response.StatusCode}. Content: {resultAsString ?? "<no content>"}. Request: {JsonConvert.SerializeObject(input.Headers)}";
     }
@@ -210,20 +210,27 @@ public abstract class EndpointBase
             {
                 if (auth.ApiKey is not null)
                 {
-                    resultAsString = resultAsString.Replace(auth.ApiKey, "[API KEY REDACTED FOR SECURITY]");   
+                    resultAsString = resultAsString.Replace(auth.ApiKey, "[API KEY REDACTED FOR SECURITY]");
                 }
 
                 if (auth.Organization is not null)
                 {
-                    resultAsString = resultAsString.Replace(auth.Organization, "[ORGANIZATION REDACTED FOR SECURITY]");   
+                    resultAsString = resultAsString.Replace(auth.Organization, "[ORGANIZATION REDACTED FOR SECURITY]");
                 }
             }
-     
+            
+            HttpCallRequest httpRequest = new HttpCallRequest
+            {
+                Method = req.Method,
+                Url = req.RequestUri?.AbsolutePath ?? string.Empty,
+                Headers = req.Headers.ToDictionary()
+            };
+
             throw response.StatusCode switch
             {
                 HttpStatusCode.Unauthorized => new AuthenticationException($"The API provider rejected your authorization, most likely due to an invalid API Key. Check your API key and/or other authentication requirements of the service. Full API response follows: {resultAsString}"),
-                HttpStatusCode.InternalServerError => new HttpRequestException($"The API provider had an internal server error. Please retry your request. Server response: {GetErrorMessage(resultAsString, response, Endpoint.ToString(), url, req)}"),
-                _ => new HttpRequestException(GetErrorMessage(resultAsString, response, Endpoint.ToString(), url, req))
+                HttpStatusCode.InternalServerError => new HttpRequestException($"The API provider had an internal server error. Please retry your request. Server response: {GetErrorMessage(resultAsString, response, Endpoint.ToString(), url, httpRequest)}"),
+                _ => new HttpRequestException(GetErrorMessage(resultAsString, response, Endpoint.ToString(), url, httpRequest))
             };
         }
         catch (Exception e)
@@ -343,7 +350,7 @@ public abstract class EndpointBase
 
         try
         {
-            using HttpResponseMessage result = await client.SendAsync(req, streaming ? HttpCompletionOption.ResponseHeadersRead : HttpCompletionOption.ResponseContentRead, ct ?? CancellationToken.None).ConfigureAwait(ConfigureAwaitOptions.None);
+            HttpResponseMessage result = await client.SendAsync(req, streaming ? HttpCompletionOption.ResponseHeadersRead : HttpCompletionOption.ResponseContentRead, ct ?? CancellationToken.None).ConfigureAwait(ConfigureAwaitOptions.None);
             return new RestDataOrException<HttpResponseMessage>(result, req);
         }
         catch (Exception e)
