@@ -343,11 +343,12 @@ public abstract class EndpointBase
 
         try
         {
-            return new RestDataOrException<HttpResponseMessage>(await client.SendAsync(req, streaming ? HttpCompletionOption.ResponseHeadersRead : HttpCompletionOption.ResponseContentRead, ct ?? CancellationToken.None).ConfigureAwait(ConfigureAwaitOptions.None));
+            using HttpResponseMessage result = await client.SendAsync(req, streaming ? HttpCompletionOption.ResponseHeadersRead : HttpCompletionOption.ResponseContentRead, ct ?? CancellationToken.None).ConfigureAwait(ConfigureAwaitOptions.None);
+            return new RestDataOrException<HttpResponseMessage>(result, req);
         }
         catch (Exception e)
         {
-            return new RestDataOrException<HttpResponseMessage>(e);
+            return new RestDataOrException<HttpResponseMessage>(e, req);
         }
     }
 
@@ -427,14 +428,14 @@ public abstract class EndpointBase
 
         if (response.Exception is not null)
         {
-            return new HttpCallResult<T>(HttpStatusCode.ServiceUnavailable, null, default, false)
+            return new HttpCallResult<T>(HttpStatusCode.ServiceUnavailable, null, default, false, response)
             {
                 Exception = response.Exception
             };
         }
 
         string resultAsString = await response.Data!.Content.ReadAsStringAsync().ConfigureAwait(ConfigureAwaitOptions.None);
-        HttpCallResult<T> result = new(response.Data.StatusCode, resultAsString, default, response.Data.StatusCode is >= HttpStatusCode.OK and < HttpStatusCode.InternalServerError);
+        HttpCallResult<T> result = new(response.Data.StatusCode, resultAsString, default, response.Data.StatusCode is >= HttpStatusCode.OK and < HttpStatusCode.InternalServerError, response);
 
         if (response.Data.IsSuccessStatusCode)
         {

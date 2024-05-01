@@ -1,6 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
 
 namespace LlmTornado.Common;
 
@@ -26,6 +29,16 @@ public interface IHttpCallResult
 }
 
 /// <summary>
+/// REST call request.
+/// </summary>
+public class HttpCallRequest
+{
+    public string Url { get; set; }
+    public HttpMethod Method { get; set; }
+    public Dictionary<string, IEnumerable<string>> Headers { get; set; }
+}
+
+/// <summary>
 /// REST call result.
 /// </summary>
 /// <typeparam name="T"></typeparam>
@@ -38,13 +51,20 @@ public class HttpCallResult<T> : IHttpCallResult
     /// <param name="response"></param>
     /// <param name="data"></param>
     /// <param name="ok"></param>
-    public HttpCallResult(HttpStatusCode code, string? response, T? data, bool ok)
+    /// <param name="request"></param>
+    public HttpCallResult(HttpStatusCode code, string? response, T? data, bool ok, RestDataOrException<HttpResponseMessage> request)
     {
         Code = code;
         Response = response;
         Data = data;
         Ok = ok;
+        Request = request;
     }
+    
+    /// <summary>
+    ///     The raw request.
+    /// </summary>
+    public RestDataOrException<HttpResponseMessage> Request { get; set; }
 
     /// <summary>
     ///     Status code received.

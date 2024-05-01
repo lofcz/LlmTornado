@@ -69,7 +69,7 @@ public sealed class ThreadsEndpoint : EndpointBase, IThreadsEndpoint
     public async Task<HttpCallResult<bool>> DeleteThreadAsync(string threadId, CancellationToken? cancellationToken = default)
     {        
         HttpCallResult<DeletionStatus> status = await HttpAtomic<DeletionStatus>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads, HttpMethod.Delete, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}"), ct: cancellationToken).ConfigureAwait(ConfigureAwaitOptions.None);
-        return new HttpCallResult<bool>(status.Code, status.Response, status.Data?.Deleted ?? false, status.Ok);
+        return new HttpCallResult<bool>(status.Code, status.Response, status.Data?.Deleted ?? false, status.Ok, null);
     }
 
     /// <summary>

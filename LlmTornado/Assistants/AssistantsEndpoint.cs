@@ -78,7 +78,7 @@ public sealed class AssistantsEndpoint : EndpointBase, IAssistantsEndpoint
     public async Task<HttpCallResult<bool>> DeleteAssistantAsync(string assistantId, CancellationToken? cancellationToken = default)
     {
         HttpCallResult<DeletionStatus> status = await HttpAtomic<DeletionStatus>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Assistants, HttpMethod.Delete, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{assistantId}"), ct: cancellationToken).ConfigureAwait(ConfigureAwaitOptions.None);
-        return new HttpCallResult<bool>(status.Code, status.Response, status.Data?.Deleted ?? false, status.Ok);
+        return new HttpCallResult<bool>(status.Code, status.Response, status.Data?.Deleted ?? false, status.Ok, null);
     }
 
     /// <summary>
@@ -149,7 +149,7 @@ public sealed class AssistantsEndpoint : EndpointBase, IAssistantsEndpoint
     public async Task<HttpCallResult<bool>> RemoveFileAsync(string assistantId, string fileId, CancellationToken? cancellationToken = default)
     {
         HttpCallResult<DeletionStatus> status = await HttpAtomic<DeletionStatus>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Assistants, HttpMethod.Delete, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{assistantId}/files/{fileId}"), ct: cancellationToken).ConfigureAwait(ConfigureAwaitOptions.None);
-        return new HttpCallResult<bool>(status.Code, status.Response, status.Data?.Deleted ?? false, status.Ok);
+        return new HttpCallResult<bool>(status.Code, status.Response, status.Data?.Deleted ?? false, status.Ok, null);
     }
 
     /// <summary>
@@ -167,6 +167,6 @@ public sealed class AssistantsEndpoint : EndpointBase, IAssistantsEndpoint
     public async Task<HttpCallResult<bool>> RemoveFileAsync(string assistantId, File file, CancellationToken? cancellationToken = default)
     {
         HttpCallResult<DeletionStatus> status = await HttpAtomic<DeletionStatus>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Assistants, HttpMethod.Delete, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{assistantId}/files/{file.Id}"), ct: cancellationToken).ConfigureAwait(ConfigureAwaitOptions.None);
-        return new HttpCallResult<bool>(status.Code, status.Response, status.Data?.Deleted ?? false, status.Ok);
+        return new HttpCallResult<bool>(status.Code, status.Response, status.Data?.Deleted ?? false, status.Ok, null);
     }
 }
