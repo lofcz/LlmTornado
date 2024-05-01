@@ -27,15 +27,24 @@ public abstract class EndpointBase
     private static string userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36";
     internal static readonly JsonSerializerSettings NullSettings = new() { NullValueHandling = NullValueHandling.Ignore };
 
-    private static readonly HttpClient EndpointClient = new(new SocketsHttpHandler
+    private static readonly Dictionary<LLmProviders, HttpClient> EndpointClients = new Dictionary<LLmProviders, HttpClient>((int)LLmProviders.Length + 1);
+    private static TimeSpan EndpointTimeout = TimeSpan.FromSeconds(600);
+    
+    static EndpointBase()
     {
-        MaxConnectionsPerServer = 10000,
-        PooledConnectionLifetime = TimeSpan.FromMinutes(2)
-    })
-    {
-        Timeout = TimeSpan.FromSeconds(600),
-        DefaultRequestVersion = new Version(2, 0)
-    };
+        foreach (LLmProviders provider in Enum.GetValues<LLmProviders>())
+        {
+            EndpointClients.Add(provider, new(new SocketsHttpHandler
+            {
+                MaxConnectionsPerServer = 10000,
+                PooledConnectionLifetime = TimeSpan.FromMinutes(2)
+            })
+            {
+                Timeout = EndpointTimeout,
+                DefaultRequestVersion = new Version(2, 0)
+            });
+        }
+    }
 
     /// <summary>
     ///     Constructor of the api endpoint base, to be called from the contructor of any devived classes.  Rather than
@@ -68,16 +77,22 @@ public abstract class EndpointBase
     /// <returns></returns>
     public static int GetRequestsTimeout()
     {
-        return (int)EndpointClient.Timeout.TotalSeconds;
+        return (int)EndpointTimeout.TotalSeconds;
     }
 
     /// <summary>
-    ///     Sets the timeout for all http requests
+    ///     Sets the timeout for all http requests.
+    ///     This is not thread safe! Use only in app startup logic.
     /// </summary>
     /// <returns></returns>
     public static void SetRequestsTimeout(int seconds)
     {
-        EndpointClient.Timeout = TimeSpan.FromSeconds(seconds);
+        foreach (KeyValuePair<LLmProviders, HttpClient> x in EndpointClients)
+        {
+            x.Value.Timeout = TimeSpan.FromSeconds(seconds);
+        }
+        
+        EndpointTimeout = TimeSpan.FromSeconds(seconds);
     }
 
     /// <summary>
@@ -98,14 +113,6 @@ public abstract class EndpointBase
     }
 
     /// <summary>
-    ///     Default max processing time of a http request in seconds
-    /// </summary>
-    public static void SetDefaultHttpTimeout(int timeoutSec)
-    {
-        EndpointClient.Timeout = TimeSpan.FromSeconds(timeoutSec);
-    }
-
-    /// <summary>
     ///     Gets an HTTPClient with the appropriate authorization and other headers set
     /// </summary>
     /// <returns>The fully initialized HttpClient</returns>
@@ -113,9 +120,9 @@ public abstract class EndpointBase
     ///     Thrown if there is no valid authentication.  Please refer to
     ///     <see href="https://github.com/OkGoDoIt/OpenAI-API-dotnet#authentication" /> for details.
     /// </exception>
-    private static HttpClient GetClient()
+    private static HttpClient GetClient(LLmProviders provider)
     {
-        return EndpointClient;
+        return EndpointClients[provider];
     }
 
     /// <summary>
@@ -158,7 +165,7 @@ public abstract class EndpointBase
         url ??= url?.StartsWith("http") ?? false ? url : provider.ApiUrl(endpoint, url);
         verb ??= HttpMethod.Get;
 
-        HttpClient client = GetClient();
+        HttpClient client = GetClient(provider.Provider);
         using HttpRequestMessage req = provider.OutboundMessage(url, verb, postData, streaming);
         
         if (postData is not null)
@@ -308,7 +315,7 @@ public abstract class EndpointBase
         url ??= url?.StartsWith("http") ?? false ? url : provider.ApiUrl(endpoint, url);
         verb ??= HttpMethod.Get;
 
-        HttpClient client = GetClient();
+        HttpClient client = GetClient(provider.Provider);
         using HttpRequestMessage req = provider.OutboundMessage(url, verb, content, streaming);
         
         if (content is not null)

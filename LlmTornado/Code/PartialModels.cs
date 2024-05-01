@@ -84,7 +84,11 @@ public enum LLmProviders
     /// <summary>
     /// KoboldCpp, Ollama and other self-hosted providers.
     /// </summary>
-    Custom
+    Custom,
+    /// <summary>
+    /// Internal value.
+    /// </summary>
+    Length
 }
 
 /// <summary>
