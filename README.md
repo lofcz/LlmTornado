@@ -73,7 +73,7 @@ Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
 });
 
 chat.AppendUserInput("Who are you?"); // user asks something unrelated, but we force the model to use the tool
-ChatBlocksResponse response = await chat.GetResponseWithFunctions(); // the response contains one block of type Function
+ChatRichResponse response = await chat.GetResponseRich(); // the response contains one block of type Function
 ```
 
 ### Functions with immediate resolve
