@@ -22,25 +22,22 @@ namespace LlmTornado;
 /// </summary>
 public abstract class EndpointBase
 {
-    private const string DataString = "data:";
-    private const string DoneString = "[DONE]";
-    private static string userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36";
+    private static string userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36";
     internal static readonly JsonSerializerSettings NullSettings = new() { NullValueHandling = NullValueHandling.Ignore };
-
     private static readonly Dictionary<LLmProviders, HttpClient> EndpointClients = new Dictionary<LLmProviders, HttpClient>((int)LLmProviders.Length + 1);
-    private static TimeSpan EndpointTimeout = TimeSpan.FromSeconds(600);
+    private static TimeSpan endpointTimeout = TimeSpan.FromSeconds(600);
     
     static EndpointBase()
     {
         foreach (LLmProviders provider in Enum.GetValues<LLmProviders>())
         {
-            EndpointClients.Add(provider, new(new SocketsHttpHandler
+            EndpointClients.Add(provider, new HttpClient(new SocketsHttpHandler
             {
                 MaxConnectionsPerServer = 10000,
                 PooledConnectionLifetime = TimeSpan.FromMinutes(2)
             })
             {
-                Timeout = EndpointTimeout,
+                Timeout = endpointTimeout,
                 DefaultRequestVersion = HttpVersion.Version20
             });
         }
@@ -77,7 +74,7 @@ public abstract class EndpointBase
     /// <returns></returns>
     public static int GetRequestsTimeout()
     {
-        return (int)EndpointTimeout.TotalSeconds;
+        return (int)endpointTimeout.TotalSeconds;
     }
 
     /// <summary>
@@ -92,7 +89,7 @@ public abstract class EndpointBase
             x.Value.Timeout = TimeSpan.FromSeconds(seconds);
         }
         
-        EndpointTimeout = TimeSpan.FromSeconds(seconds);
+        endpointTimeout = TimeSpan.FromSeconds(seconds);
     }
 
     /// <summary>
@@ -296,6 +293,8 @@ public abstract class EndpointBase
     /// <summary>
     ///     Sends an HTTP Get request and return the string content of the response without parsing, and does error handling.
     /// </summary>
+    /// <param name="provider"></param>
+    /// <param name="endpoint">(</param>
     /// <param name="url">
     ///     (optional) If provided, overrides the url endpoint for this request.  If omitted, then
     ///     <see cref="Url" /> will be used.
@@ -387,28 +386,8 @@ public abstract class EndpointBase
             Stream = resultAsStream,
             Response = response
         };
-
-        try
-        {
-            if (response.Headers.TryGetValues("Openai-Organization", out IEnumerable<string>? orgH)) res.Headers.Organization = orgH.FirstOrDefault();
-            if (response.Headers.TryGetValues("X-Request-ID", out IEnumerable<string>? xreqId)) res.Headers.RequestId = xreqId.FirstOrDefault();
-
-            if (response.Headers.TryGetValues("Openai-Processing-Ms", out IEnumerable<string>? pms))
-            {
-                string? processing = pms.FirstOrDefault();
-                if (processing is not null && int.TryParse(processing, out int n)) res.Headers.ProcessingTime = TimeSpan.FromMilliseconds(n);
-            }
-
-            if (response.Headers.TryGetValues("Openai-Version", out IEnumerable<string>? oav)) res.Headers.RequestId = oav.FirstOrDefault();
-            if (res.Headers.Model != null && string.IsNullOrEmpty(res.Headers.Model))
-                if (response.Headers.TryGetValues("Openai-Model", out IEnumerable<string>? omd))
-                    res.Headers.Model = omd.FirstOrDefault();
-        }
-        catch (Exception e)
-        {
-            throw new Exception($"Error parsing metadata: {e.Message}");
-        }
-
+        
+        provider.ParseInboundHeaders(res.Headers, response);
         return res;
     }
 
@@ -416,6 +395,8 @@ public abstract class EndpointBase
     ///     Sends an HTTP Get request and does initial parsing
     /// </summary>
     /// <typeparam name="T">The <see cref="ApiResultBase" />-derived class for the result</typeparam>
+    /// <param name="provider"></param>
+    /// <param name="endpoint">(</param>
     /// <param name="url">
     ///     (optional) If provided, overrides the url endpoint for this request.  If omitted, then
     ///     <see cref="Url" /> will be used.
@@ -445,6 +426,8 @@ public abstract class EndpointBase
     ///     Sends an HTTP Post request and does initial parsing
     /// </summary>
     /// <typeparam name="T">The <see cref="ApiResultBase" />-derived class for the result</typeparam>
+    /// <param name="provider"></param>
+    /// <param name="endpoint">(</param>
     /// <param name="url">
     ///     (optional) If provided, overrides the url endpoint for this request.  If omitted, then
     ///     <see cref="Url" /> will be used.
@@ -475,6 +458,8 @@ public abstract class EndpointBase
     ///     Sends an HTTP Delete request and does initial parsing
     /// </summary>
     /// <typeparam name="T">The <see cref="ApiResultBase" />-derived class for the result</typeparam>
+    /// <param name="provider"></param>
+    /// <param name="endpoint">(</param>
     /// <param name="url">
     ///     (optional) If provided, overrides the url endpoint for this request.  If omitted, then
     ///     <see cref="Url" /> will be used.
@@ -498,6 +483,8 @@ public abstract class EndpointBase
     /// <summary>
     ///     Sends an HTTP Put request and does initial parsing
     /// </summary>
+    /// <param name="provider"></param>
+    /// <param name="endpoint">(</param>
     /// <typeparam name="T">The <see cref="ApiResultBase" />-derived class for the result</typeparam>
     /// <param name="url">
     ///     (optional) If provided, overrides the url endpoint for this request.  If omitted, then
@@ -517,6 +504,8 @@ public abstract class EndpointBase
     /// <summary>
     ///     Sends an HTTP request and handles a streaming response.  Does basic line splitting and error handling.
     /// </summary>
+    /// <param name="provider"></param>
+    /// <param name="endpoint">(</param>
     /// <param name="url">
     ///     (optional) If provided, overrides the url endpoint for this request. If omitted, then
     ///     <see cref="Url" /> will be used.
@@ -532,32 +521,6 @@ public abstract class EndpointBase
     protected async IAsyncEnumerable<T> HttpStreamingRequest<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, HttpMethod? verb = null, object? postData = null, Ref<string>? requestRef = null) where T : ApiResultBase
     {
         using HttpResponseMessage response = await HttpRequestRaw(provider, endpoint, url, verb, postData, true).ConfigureAwait(ConfigureAwaitOptions.None);
-
-        string? organization = null;
-        string? requestId = null;
-        TimeSpan processingTime = TimeSpan.Zero;
-        string? openaiVersion = null;
-        string? modelFromHeaders = null;
-
-        try
-        {
-            if (response.Headers.TryGetValues("Openai-Organization", out IEnumerable<string>? orgH)) organization = orgH.FirstOrDefault();
-            if (response.Headers.TryGetValues("X-Request-ID", out IEnumerable<string>? xreqId)) requestId = xreqId.FirstOrDefault();
-
-            if (response.Headers.TryGetValues("Openai-Processing-Ms", out IEnumerable<string>? pms))
-            {
-                string? processing = pms.FirstOrDefault();
-                if (processing is not null && int.TryParse(processing, out int n)) processingTime = TimeSpan.FromMilliseconds(n);
-            }
-
-            if (response.Headers.TryGetValues("Openai-Version", out IEnumerable<string>? oav)) openaiVersion = oav.FirstOrDefault();
-            if (response.Headers.TryGetValues("Openai-Model", out IEnumerable<string>? omd)) modelFromHeaders = omd.FirstOrDefault();
-        }
-        catch (Exception e)
-        {
-            Debug.Print($"Issue parsing metadata of OpenAi Response. Url: {url}, Error: {e}. This is probably ignorable.");
-        }
-
         await using Stream stream = await response.Content.ReadAsStreamAsync();
         using StreamReader reader = new(stream);
 
