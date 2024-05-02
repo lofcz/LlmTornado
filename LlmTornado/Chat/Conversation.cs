@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using LlmTornado.Chat.Models;
@@ -10,6 +11,7 @@ using LlmTornado.Common;
 using LlmTornado.Models;
 using LlmTornado.Vendor.Anthropic;
 using LlmTornado.Code.Models;
+using LlmTornado.Code.Vendor;
 
 namespace LlmTornado.Chat;
 

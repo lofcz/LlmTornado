@@ -14,6 +14,9 @@ using LlmTornado.Vendor.Anthropic;
 
 namespace LlmTornado.Code;
 
+/// <summary>
+/// Shared base used by built-in providers. Custom providers can either inherit this and override the required methods or implement <see cref="IEndpointProvider"/> directly.
+/// </summary>
 public abstract class BaseEndpointProvider : IEndpointProvider
 {
     public TornadoApi Api { get; set; }
@@ -36,10 +39,11 @@ public abstract class BaseEndpointProvider : IEndpointProvider
 
     public abstract string ApiUrl(CapabilityEndpoints endpoint, string? url);
     public abstract T? InboundMessage<T>(string jsonData, string? postData);
-    public abstract IAsyncEnumerable<T?> InboundStream<T>(StreamReader streamReader) where T : ApiResultBase;
+    public abstract IAsyncEnumerable<T?> InboundStream<T>(StreamReader streamReader) where T : class;
     public abstract HttpRequestMessage OutboundMessage(string url, HttpMethod verb, object? data, bool streaming);
     public abstract HashSet<string> ToolFinishReasons { get;  }
-    public ProviderAuthentication Auth { get; set; }
+    public ProviderAuthentication? Auth { get; set; }
+    static Version IEndpointProvider.OutboundVersion { get; set; } = HttpVersion.Version20;
 
     private static Dictionary<Type, StreamRequestTypes> StreamTypes = new Dictionary<Type, StreamRequestTypes> {
         { typeof(ChatResult), StreamRequestTypes.Chat }

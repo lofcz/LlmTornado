@@ -41,7 +41,7 @@ public abstract class EndpointBase
             })
             {
                 Timeout = EndpointTimeout,
-                DefaultRequestVersion = new Version(2, 0)
+                DefaultRequestVersion = HttpVersion.Version20
             });
         }
     }
@@ -251,65 +251,6 @@ public abstract class EndpointBase
         }
     }
 
-    /*private async Task<HttpResponseMessage> HttpRequestRawWithCodes(string? url = null, HttpMethod? verb = null, object? postData = null, bool streaming = false, CancellationToken? ct = null)
-    {
-        url ??= Url;
-        verb ??= HttpMethod.Get;
-
-        HttpClient client = GetClient();
-        using HttpRequestMessage req = new(verb, url);
-
-        req.Headers.Add("User-Agent", userAgent);
-        req.Headers.Add("OpenAI-Beta", "assistants=v2");
-
-        if (Api.Auth is not null)
-        {
-            if (Api.Auth.ApiKey is not null)
-            {
-                req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Api.Auth.ApiKey);
-                req.Headers.Add("api-key", Api.Auth.ApiKey);
-            }
-
-            if (Api.Auth.Organization is not null) req.Headers.Add("OpenAI-Organization", Api.Auth.Organization);
-        }
-
-        if (postData != null)
-        {
-            if (postData is HttpContent data)
-            {
-                req.Content = data;
-            }
-            else
-            {
-                string jsonContent = JsonConvert.SerializeObject(postData, NullSettings);
-                StringContent stringContent = new(jsonContent, Encoding.UTF8, "application/json");
-                req.Content = stringContent;
-            }
-        }
-
-        HttpResponseMessage response = await client.SendAsync(req, streaming ? HttpCompletionOption.ResponseHeadersRead : HttpCompletionOption.ResponseContentRead, ct ?? CancellationToken.None).ConfigureAwait(ConfigureAwaitOptions.None);
-
-        if (response.IsSuccessStatusCode || response.StatusCode is HttpStatusCode.NotFound) return response;
-
-        string resultAsString;
-
-        try
-        {
-            resultAsString = await response.Content.ReadAsStringAsync();
-        }
-        catch (Exception e)
-        {
-            resultAsString = $"Additionally, the following error was thrown when attemping to read the response content: {e}";
-        }
-
-        throw response.StatusCode switch
-        {
-            HttpStatusCode.Unauthorized => new AuthenticationException($"The API provider rejected your authorization, most likely due to an invalid API Key. Check your API Key and see https://github.com/lofcz/LlmTornado#authentication for guidance. Full API response follows: {resultAsString}"),
-            HttpStatusCode.InternalServerError => new HttpRequestException($"The API provider had an internal server error. Please retry your request. Server response: {GetErrorMessage(resultAsString, response, Endpoint, url, req)}"),
-            _ => new HttpRequestException(GetErrorMessage(resultAsString, response, Endpoint, url, req))
-        };
-    }*/
-
     private async Task<RestDataOrException<HttpResponseMessage>> HttpRequestRawWithAllCodes(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, HttpMethod? verb = null, object? content = null, bool streaming = false, CancellationToken? ct = null)
     {
         url ??= url?.StartsWith("http") ?? false ? url : provider.ApiUrl(endpoint, url);
@@ -338,20 +279,6 @@ public abstract class EndpointBase
                     req.Content = stringContent;
                     break;
                 }
-            }
-        }
-
-        if (content is not null)
-        {
-            if (content is HttpContent data)
-            {
-                req.Content = data;
-            }
-            else
-            {
-                string jsonContent = JsonConvert.SerializeObject(content, NullSettings);
-                StringContent stringContent = new(jsonContent, Encoding.UTF8, "application/json");
-                req.Content = stringContent;
             }
         }
 
@@ -448,8 +375,16 @@ public abstract class EndpointBase
             };
         }
 
-        string resultAsString = await response.Data!.Content.ReadAsStringAsync().ConfigureAwait(ConfigureAwaitOptions.None);
-        HttpCallResult<T> result = new(response.Data.StatusCode, resultAsString, default, response.Data.StatusCode is >= HttpStatusCode.OK and < HttpStatusCode.InternalServerError, response);
+        if (response.Data is null)
+        {
+            return new HttpCallResult<T>(response.Data?.StatusCode ?? HttpStatusCode.Found, null, default, false, response)
+            {
+                Exception = new Exception("Data is null")
+            };
+        }
+        
+        string resultAsString = await response.Data.Content.ReadAsStringAsync().ConfigureAwait(ConfigureAwaitOptions.None);
+        HttpCallResult<T> result = new(response.Data.StatusCode, resultAsString, default, response.Data.IsSuccessStatusCode, response);
 
         if (response.Data.IsSuccessStatusCode)
         {

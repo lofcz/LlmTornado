@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using LlmTornado.Chat;
@@ -12,7 +13,7 @@ namespace LlmTornado.Code.Vendor;
 /// <summary>
 /// 
 /// </summary>
-internal class CohereEndpointProvider : BaseEndpointProvider
+internal class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider
 {
     private const string Event = "event:";
     private const string Data = "data:";
@@ -25,6 +26,7 @@ internal class CohereEndpointProvider : BaseEndpointProvider
     private static readonly HashSet<string> StreamSkip = [StreamMsgStart, StreamMsgStop, StreamPing];
     private static readonly HashSet<string> toolFinishReasons = [ "tool_use" ];
     
+    public static Version OutboundVersion { get; set; } = HttpVersion.Version20;
     public override HashSet<string> ToolFinishReasons => toolFinishReasons;
     
     private enum StreamNextAction
@@ -192,7 +194,10 @@ internal class CohereEndpointProvider : BaseEndpointProvider
 
     public override HttpRequestMessage OutboundMessage(string url, HttpMethod verb, object? data, bool streaming)
     {
-        HttpRequestMessage req = new(verb, url);
+        HttpRequestMessage req = new(verb, url) 
+        {
+            Version = OutboundVersion
+        };
         req.Headers.Add("User-Agent", EndpointBase.GetUserAgent());
 
         ProviderAuthentication? auth = Api.GetProvider(LLmProviders.Cohere).Auth;

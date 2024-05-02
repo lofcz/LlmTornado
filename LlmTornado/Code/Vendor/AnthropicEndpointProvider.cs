@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
 using System.Net.Http;
 using LlmTornado.Chat;
 using LlmTornado.Vendor.Anthropic;
@@ -11,7 +12,7 @@ namespace LlmTornado.Code.Vendor;
 /// <summary>
 /// 
 /// </summary>
-internal class AnthropicEndpointProvider : BaseEndpointProvider
+internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
 {
     private const string Event = "event:";
     private const string Data = "data:";
@@ -23,6 +24,8 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider
     private const string StreamContentBlockStop = $"{Event} content_block_stop";
     private static readonly HashSet<string> StreamSkip = [StreamMsgStart, StreamMsgStop, StreamPing];
     private static readonly HashSet<string> toolFinishReasons = [ "tool_use" ];
+    
+    public static Version OutboundVersion { get; set; } = HttpVersion.Version20;
     
     public override HashSet<string> ToolFinishReasons => toolFinishReasons;
     
@@ -198,14 +201,18 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider
 
     public override HttpRequestMessage OutboundMessage(string url, HttpMethod verb, object? data, bool streaming)
     {
-        HttpRequestMessage req = new(verb, url);
+        HttpRequestMessage req = new(verb, url)
+        {
+            Version = OutboundVersion
+        };
+        
         req.Headers.Add("User-Agent", EndpointBase.GetUserAgent());
         req.Headers.Add("anthropic-version", "2023-06-01");
         req.Headers.Add("anthropic-beta", "tools-2024-04-04");
 
         ProviderAuthentication? auth = Api.GetProvider(LLmProviders.Anthropic).Auth;
 
-        if (auth?.ApiKey != null)
+        if (auth?.ApiKey is not null)
         {
             req.Headers.Add("x-api-key", auth.ApiKey);
         }

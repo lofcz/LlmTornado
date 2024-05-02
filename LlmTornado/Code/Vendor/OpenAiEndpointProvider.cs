@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using Newtonsoft.Json;
@@ -10,12 +11,13 @@ namespace LlmTornado.Code.Vendor;
 /// <summary>
 /// 
 /// </summary>
-internal class OpenAiEndpointProvider : BaseEndpointProvider
+internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider
 {
     private const string DataString = "data:";
     private const string DoneString = "[DONE]";
     private static readonly HashSet<string> toolFinishReasons = [ "function_call", "tool_calls" ];
 
+    public static Version OutboundVersion { get; set; } = HttpVersion.Version20;
     public override HashSet<string> ToolFinishReasons => toolFinishReasons;
     
     public OpenAiEndpointProvider(TornadoApi api) : base(api)
@@ -53,7 +55,10 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider
     
     public override HttpRequestMessage OutboundMessage(string url, HttpMethod verb, object? data, bool streaming)
     {
-        HttpRequestMessage req = new(verb, url);
+        HttpRequestMessage req = new(verb, url)
+        {
+            Version = OutboundVersion
+        };
         req.Headers.Add("User-Agent", EndpointBase.GetUserAgent().Trim());
         req.Headers.Add("OpenAI-Beta", "assistants=v2");
 
