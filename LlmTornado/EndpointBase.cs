@@ -313,9 +313,11 @@ public abstract class EndpointBase
     ///     Sends an HTTP Request and does initial parsing
     /// </summary>
     /// <typeparam name="T">The <see cref="ApiResultBase" />-derived class for the result</typeparam>
+    /// <param name="provider">A concrete provider responsible for handling the request.</param>
+    /// <param name="endpoint">Which endpoint will be used. Used to resolve routing in cases where the full url is not provided.</param>
     /// <param name="url">
-    ///     (optional) If provided, overrides the url endpoint for this request.  If omitted, then
-    ///     <see cref="Url" /> will be used.
+    ///     (optional) If provided, overrides the url endpoint for this request. If omitted, then
+    ///     <see cref="url" /> will be used.
     /// </param>
     /// <param name="verb">
     ///     (optional) The HTTP verb to use, for example "<see cref="HttpMethod.Get" />".  If omitted, then
@@ -333,31 +335,10 @@ public abstract class EndpointBase
         using HttpResponseMessage response = await HttpRequestRaw(provider, endpoint, url, verb, postData, false, ct).ConfigureAwait(ConfigureAwaitOptions.None);
         string resultAsString = await response.Content.ReadAsStringAsync().ConfigureAwait(ConfigureAwaitOptions.None);
         T? res = provider.InboundMessage<T>(resultAsString, postData?.ToString());
-
-        try
+        
+        if (res is not null)
         {
-            if (res is not null)
-            {
-                res.Provider = provider;
-                
-                if (response.Headers.TryGetValues("Openai-Organization", out IEnumerable<string>? orgH)) res.Organization = orgH.FirstOrDefault();
-                if (response.Headers.TryGetValues("X-Request-ID", out IEnumerable<string>? xreqId)) res.RequestId = xreqId.FirstOrDefault();
-
-                if (response.Headers.TryGetValues("Openai-Processing-Ms", out IEnumerable<string>? pms))
-                {
-                    string? processing = pms.FirstOrDefault();
-                    if (processing is not null && int.TryParse(processing, out int n)) res.ProcessingTime = TimeSpan.FromMilliseconds(n);
-                }
-
-                if (response.Headers.TryGetValues("Openai-Version", out IEnumerable<string>? oav)) res.RequestId = oav.FirstOrDefault();
-                if (res.Model != null && string.IsNullOrEmpty(res.Model))
-                    if (response.Headers.TryGetValues("Openai-Model", out IEnumerable<string>? omd))
-                        res.Model = omd.FirstOrDefault();
-            }
-        }
-        catch (Exception e)
-        {
-            throw new Exception($"Error parsing metadata: {e.Message}");
+            provider.ParseInboundHeaders(res, response);
         }
 
         return res;

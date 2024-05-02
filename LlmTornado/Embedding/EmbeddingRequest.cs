@@ -34,7 +34,7 @@ public class EmbeddingRequest
         Model = model;
         Input = input;
 
-        if (model.ModelID == Models.Model.AdaTextEmbedding.ModelID) dimensions = null;
+        if (model.Name == Models.Model.AdaTextEmbedding.Name) dimensions = null;
     }
 
 	/// <summary>

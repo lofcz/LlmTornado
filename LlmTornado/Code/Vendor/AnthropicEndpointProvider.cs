@@ -12,7 +12,7 @@ namespace LlmTornado.Code.Vendor;
 /// <summary>
 /// 
 /// </summary>
-internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
+internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider, IEndpointProviderExtended
 {
     private const string Event = "event:";
     private const string Data = "data:";
@@ -220,6 +220,11 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
         return req;
     }
 
+    public override void ParseInboundHeaders<T>(T res, HttpResponseMessage response)
+    {
+        res.Provider = this;
+    }
+    
     public override T? InboundMessage<T>(string jsonData, string? postData) where T : default
     {
         if (typeof(T) == typeof(ChatResult))

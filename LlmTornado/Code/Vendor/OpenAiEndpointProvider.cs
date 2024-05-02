@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Reflection;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Code.Vendor;
@@ -11,7 +13,7 @@ namespace LlmTornado.Code.Vendor;
 /// <summary>
 /// 
 /// </summary>
-internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider
+internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, IEndpointProviderExtended
 {
     private const string DataString = "data:";
     private const string DoneString = "[DONE]";
@@ -79,6 +81,36 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider
         }
         
         return req;
+    }
+
+    public override void ParseInboundHeaders<T>(T res, HttpResponseMessage response)
+    {
+        res.Provider = this;
+
+        if (response.Headers.TryGetValues("Openai-Organization", out IEnumerable<string>? orgH))
+        {
+            res.Organization = orgH.FirstOrDefault();
+        }
+
+        if (response.Headers.TryGetValues("X-Request-ID", out IEnumerable<string>? reqId))
+        {
+            res.RequestId = reqId.FirstOrDefault();
+        }
+
+        if (response.Headers.TryGetValues("Openai-Processing-Ms", out IEnumerable<string>? pms))
+        {
+            string? processing = pms.FirstOrDefault();
+            
+            if (processing is not null && int.TryParse(processing, out int n))
+            {
+                res.ProcessingTime = TimeSpan.FromMilliseconds(n);
+            }
+        }
+
+        if (response.Headers.TryGetValues("Openai-Version", out IEnumerable<string>? oav))
+        {
+            res.RequestId = oav.FirstOrDefault();
+        }
     }
     
     public override T? InboundMessage<T>(string jsonData, string? postData) where T : default

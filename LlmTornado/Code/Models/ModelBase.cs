@@ -80,19 +80,7 @@ public abstract class ModelBase : IModel
     ///     Permissions for use of the model
     /// </summary>
     [JsonProperty("permission")]
-    public List<Permissions> Permission { get; set; } = new();
-
-    /// <summary>
-    ///     Currently (2023-01-27) seems like this is duplicate of <see cref="Name" /> but including for completeness.
-    /// </summary>
-    [JsonProperty("root")]
-    public string Root { get; set; }
-
-    /// <summary>
-    ///     Currently (2023-01-27) seems unused, probably intended for nesting of models in a later release
-    /// </summary>
-    [JsonProperty("parent")]
-    public string Parent { get; set; }
+    public List<Permissions>? Permission { get; set; }
 
     /// <summary>
     ///     Allows an model to be implicitly cast to the string of its <see cref="Name" />

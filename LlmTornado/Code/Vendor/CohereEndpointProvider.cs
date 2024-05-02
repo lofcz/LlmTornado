@@ -13,7 +13,7 @@ namespace LlmTornado.Code.Vendor;
 /// <summary>
 /// 
 /// </summary>
-internal class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider
+internal class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider, IEndpointProviderExtended
 {
     private const string Event = "event:";
     private const string Data = "data:";
@@ -210,6 +210,11 @@ internal class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider
         return req;
     }
 
+    public override void ParseInboundHeaders<T>(T res, HttpResponseMessage response)
+    {
+        res.Provider = this;
+    }
+    
     public override T? InboundMessage<T>(string jsonData, string? postData) where T : default
     {
         if (typeof(T) == typeof(ChatResult))

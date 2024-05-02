@@ -1,7 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Threading.Tasks;
+using LlmTornado.Chat.Models;
 using LlmTornado.Code;
+using LlmTornado.Code.Models;
+using LlmTornado.Code.Vendor;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Models;
@@ -9,19 +13,19 @@ namespace LlmTornado.Models;
 /// <summary>
 ///     Represents a language model
 /// </summary>
-public class Model
+public class Model : ModelBase
 {
     public const string OpenAi = "openai";
 
     /// <summary>
-    ///     Represents an Model with the given id/<see cref="ModelID" />
+    ///     Represents an Model with the given id/<see cref="Name" />
     /// </summary>
-    /// <param name="name">The id/<see cref="ModelID" /> to use.</param>
+    /// <param name="name">The id/<see cref="Name" /> to use.</param>
     /// <param name="ownedBy">Either</param>
     /// <param name="provider">Either</param>
     public Model(string name, string? ownedBy = OpenAi, LLmProviders provider = LLmProviders.OpenAi)
     {
-        ModelID = name;
+        Name = name;
         OwnedBy = ownedBy;
         Provider = provider;
     }
@@ -33,7 +37,7 @@ public class Model
     /// <param name="provider"></param>
     public Model(string name, LLmProviders provider)
     {
-        ModelID = name;
+        Name = name;
         Provider = provider;
     }
 
@@ -43,59 +47,6 @@ public class Model
     public Model()
     {
     }
-
-    /// <summary>
-    ///     The id/name of the model
-    /// </summary>
-    [JsonProperty("id")]
-    public string ModelID { get; set; }
-
-    /// <summary>
-    ///     The owner of this model.  Generally "openai" is a generic OpenAI model, or the organization if a custom or
-    ///     finetuned model.
-    /// </summary>
-    [JsonProperty("owned_by")]
-    public string? OwnedBy { get; set; }
-
-    /// <summary>
-    ///     The type of object. Should always be 'model'.
-    /// </summary>
-    [JsonProperty("object")]
-    public string Object { get; set; }
-
-    /// The time when the model was created
-    [JsonIgnore]
-    public DateTime? Created => CreatedUnixTime.HasValue ? DateTimeOffset.FromUnixTimeSeconds(CreatedUnixTime.Value).DateTime : null;
-
-    /// <summary>
-    ///     The type of object. Should always be 'model'.
-    /// </summary>
-    [JsonIgnore]
-    public LLmProviders Provider { get; set; }
-    
-    /// <summary>
-    ///     The time when the model was created in unix epoch format
-    /// </summary>
-    [JsonProperty("created")]
-    public long? CreatedUnixTime { get; set; }
-
-    /// <summary>
-    ///     Permissions for use of the model
-    /// </summary>
-    [JsonProperty("permission")]
-    public List<Permissions> Permission { get; set; } = new();
-
-    /// <summary>
-    ///     Currently (2023-01-27) seems like this is duplicate of <see cref="ModelID" /> but including for completeness.
-    /// </summary>
-    [JsonProperty("root")]
-    public string Root { get; set; }
-
-    /// <summary>
-    ///     Currently (2023-01-27) seems unused, probably intended for nesting of models in a later release
-    /// </summary>
-    [JsonProperty("parent")]
-    public string Parent { get; set; }
 
     /// <summary>
     ///     The default model to use in requests if no other model is specified.
@@ -181,19 +132,19 @@ public class Model
 
     /// <summary>
     ///     Snapshot of gpt-3.5-turbo from March 1st 2023. Unlike gpt-3.5-turbo, this model will not receive updates, and will
-    ///     only be supported for a three month period ending on June 1st 2023.
+    ///     only be supported for a three-month period ending on June 1st 2023.
     /// </summary>
     public static Model ChatGPTTurbo0301 => new("gpt-3.5-turbo-0301");
 
     /// <summary>
     ///     More capable than any GPT-3.5 model, able to do more complex tasks, and optimized for chat. Will be updated with
-    ///     the latest model iteration.  Currently in limited beta so your OpenAI account needs to be whitelisted to use this.
+    ///     the latest model iteration.
     /// </summary>
     public static Model GPT4 => new("gpt-4");
 
     /// <summary>
     ///     More capable than any GPT-3.5 model, able to do more complex tasks, and optimized for chat. Will be updated with
-    ///     the latest model iteration.  Currently in limited beta so your OpenAI account needs to be whitelisted to use this.
+    ///     the latest model iteration.
     /// </summary>
     public static Model GPT4_VisionPreview => new("gpt-4-vision-preview");
 
@@ -327,30 +278,37 @@ public class Model
     }
 
     /// <summary>
-    ///     Allows an model to be implicitly cast to the string of its <see cref="ModelID" />
+    ///     Allows an model to be implicitly cast to the string of its <see cref="Name" />
     /// </summary>
     /// <param name="model">The <see cref="Model" /> to cast to a string.</param>
     public static implicit operator string(Model model)
     {
-        return model.ModelID;
+        return model.Name;
     }
-
-    private static readonly HashSet<string> AnthropicModels = [Claude3Sonnet, Claude3Opus];
-
+    
     /// <summary>
-    ///     Allows a string to be implicitly cast as an <see cref="Model" /> with that <see cref="ModelID" />
+    /// Looks up the model provider. Only works for known models.
     /// </summary>
-    /// <param name="name">The id/<see cref="ModelID" /> to use</param>
+    /// <param name="modelName"></param>
+    /// <returns></returns>
+    public static IModel? GetModel(string? modelName)
+    {
+        // [todo] bake all classes of models into one map statically
+        if (modelName is not null && ChatModel.AllModelsMap.TryGetValue(modelName, out IModel? protoModel))
+        {
+            return protoModel;
+        }
+
+        return null;
+    }
+    
+    /// <summary>
+    ///     Allows a string to be implicitly cast as an <see cref="Model" /> with that <see cref="name" />
+    /// </summary>
+    /// <param name="name">The id/<see cref="name" /> to use</param>
     public static implicit operator Model(string? name)
     {
-        LLmProviders provider = LLmProviders.OpenAi; 
-        
-        if (AnthropicModels.Contains(name))
-        {
-            provider = LLmProviders.Anthropic;
-        }
-        
-        return new Model(name, provider);
+        return new Model(name ?? string.Empty, name is null ? LLmProviders.OpenAi : GetModel(name)?.Provider ?? LLmProviders.OpenAi);
     }
 
     /// <summary>
@@ -358,10 +316,10 @@ public class Model
     ///     permissions.
     /// </summary>
     /// <param name="api">An instance of the API with authentication in order to call the endpoint.</param>
-    /// <returns>Asynchronously returns an Model with all relevant properties filled in</returns>
+    /// <returns>Asynchronously returns a Model with all relevant properties filled in</returns>
     public Task<Model> RetrieveModelDetailsAsync(TornadoApi api)
     {
-        return api.Models.RetrieveModelDetailsAsync(ModelID);
+        return api.Models.RetrieveModelDetailsAsync(Name);
     }
 }
 
@@ -380,7 +338,7 @@ public class Permissions
 	///     Object type, should always be 'model_permission'
 	/// </summary>
 	[JsonProperty("object")]
-    public string Object { get; set; }
+    public string? Object { get; set; }
 
     /// The time when the permission was created
     [JsonIgnore]
@@ -439,5 +397,6 @@ public class Permissions
     [JsonProperty("group")]
     public string Group { get; set; }
 
-    [JsonProperty("is_blocking")] public bool IsBlocking { get; set; }
+    [JsonProperty("is_blocking")] 
+    public bool IsBlocking { get; set; }
 }

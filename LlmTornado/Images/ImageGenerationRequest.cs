@@ -38,7 +38,7 @@ public class ImageGenerationRequest
         User = user;
         Size = size ?? ImageSize._1024;
         ResponseFormat = responseFormat ?? ImageResponseFormat.Url;
-        Model = model?.ModelID ?? Models.Model.Dalle2.ModelID;
+        Model = model?.Name ?? Models.Model.Dalle2.Name;
         Quality = quality;
         Style = style;
     }

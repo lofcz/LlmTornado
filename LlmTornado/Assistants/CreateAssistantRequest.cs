@@ -89,7 +89,7 @@ public sealed class CreateAssistantRequest
     /// </param>
     public CreateAssistantRequest(Model? model = null, string? name = null, string? description = null, string? instructions = null, IEnumerable<Tool>? tools = null, IEnumerable<string>? files = null, IReadOnlyDictionary<string, string>? metadata = null)
     {
-        Model = string.IsNullOrWhiteSpace(model?.ModelID) ? Models.Model.GPT35_Turbo : model;
+        Model = string.IsNullOrWhiteSpace(model?.Name) ? Models.Model.GPT35_Turbo : model;
         Name = name;
         Description = description;
         Instructions = instructions;
