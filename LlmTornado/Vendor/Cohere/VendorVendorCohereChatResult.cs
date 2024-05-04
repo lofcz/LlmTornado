@@ -27,12 +27,13 @@ internal class VendorCohereChatResult
         
         if (postData is not null)
         {
-            VendorCohereChatRequest? request = JsonConvert.DeserializeObject<VendorCohereChatRequest>(postData);
+            // [todo] crashes on deserialization, the content is not the type specified here, prolly one wrapper deeper
+            /*VendorCohereChatRequest? request = JsonConvert.DeserializeObject<VendorCohereChatRequest>(postData);
 
             if (request is not null)
             {
                 model = request.Model;
-            }
+            }*/
         }
         
         ChatResult result = new ChatResult
