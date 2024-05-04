@@ -159,6 +159,8 @@ internal class VendorCohereChatRequest
 
         if (request.Messages is not null && request.Messages.Any(x => !x.ExcludeFromRequest))
         {
+            ChatHistory = [];
+            
             foreach (ChatMessage msg in msgs.Where(x => !x.ExcludeFromRequest))
             {
                 if (msg.Role == ChatMessageRole.Assistant || msg.Role == ChatMessageRole.User)

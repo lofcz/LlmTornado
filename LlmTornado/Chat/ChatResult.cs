@@ -42,6 +42,11 @@ public class ChatResult : ApiResultBase
 
 	internal static ChatResult? Deserialize(LLmProviders provider, string jsonData, string? postData)
 	{
+		if (provider is LLmProviders.Cohere)
+		{
+			var test = JsonConvert.DeserializeObject<VendorCohereChatResult>(jsonData);
+		}
+		
 		return provider switch
 		{
 			LLmProviders.OpenAi => JsonConvert.DeserializeObject<ChatResult>(jsonData),

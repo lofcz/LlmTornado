@@ -91,7 +91,8 @@ public class ChatMessage
     [JsonConverter(typeof(ChatMessageTypes.ChatMessageTypesJsonConverter))]
     public ChatMessageTypes Type { get; set; } = ChatMessageTypes.Text;
 
-    [JsonProperty("role")] internal string? rawRole { get; set; }
+    [JsonProperty("role")] 
+    internal string? rawRole { get; set; }
 
     /// <summary>
     ///     The role of the message, which can be "system", "assistant", "user" or "function".
