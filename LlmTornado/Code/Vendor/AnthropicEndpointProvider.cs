@@ -18,6 +18,7 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
     private const string Data = "data:";
     private const string StreamMsgStart = $"{Event} message_start";
     private const string StreamMsgStop = $"{Event} message_stop";
+    private const string StreamError = $"{Event} error";
     private const string StreamPing = $"{Event} ping";
     private const string StreamContentBlockDelta = $"{Event} content_block_delta";
     private const string StreamContentBlockStart = $"{Event} content_block_start";
@@ -117,6 +118,12 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
             {
                 continue;
             }
+
+            if (line.StartsWith(StreamError))
+            {
+                nextAction = StreamNextAction.Skip;
+                continue;
+            }
             
             switch (nextAction)
             {
@@ -184,14 +191,14 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
                 case StreamNextAction.BlockStop:
                 {
                     line = line.Substring(Data.Length);
-                    AnthropicStreamBlockDelta? res = JsonConvert.DeserializeObject<AnthropicStreamBlockDelta>(line);
+                    //AnthropicStreamBlockDelta? res = JsonConvert.DeserializeObject<AnthropicStreamBlockDelta>(line);
                     nextAction = StreamNextAction.Read;
                     break;
                 }
                 case StreamNextAction.MsgStart:
                 {
                     line = line.Substring(Data.Length);
-                    AnthropicStreamMsgStart? res = JsonConvert.DeserializeObject<AnthropicStreamMsgStart>(line);
+                    //AnthropicStreamMsgStart? res = JsonConvert.DeserializeObject<AnthropicStreamMsgStart>(line);
                     nextAction = StreamNextAction.Read;
                     break;
                 }
