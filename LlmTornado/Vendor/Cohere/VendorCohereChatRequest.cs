@@ -157,7 +157,7 @@ internal class VendorCohereChatRequest
         P = request.TopP;
         ChatHistory = null;
 
-        if (request.Messages is not null && request.Messages.Any(x => !x.ExcludeFromRequest))
+        if (msgs is not null && request.Messages is not null && request.Messages.Any(x => !x.ExcludeFromRequest))
         {
             ChatHistory = [];
             
