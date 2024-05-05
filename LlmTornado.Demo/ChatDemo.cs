@@ -2,6 +2,7 @@ using System.Text;
 using Newtonsoft.Json;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
+using LlmTornado.Chat.Vendors.Cohere;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
@@ -50,6 +51,42 @@ public static class ChatDemo
         }
 
         return false;
+    }
+    
+    public static async Task CohereWebSearch()
+    {
+        Conversation chat = Program.Connect(LLmProviders.Cohere).Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Cohere.CommandRPlus,
+            VendorExtensions = new ChatRequestVendorExtensions(new ChatRequestVendorCohereExtensions([
+                ChatVendorCohereExtensionConnector.WebConnector
+            ]))
+        });
+        
+        chat.AppendSystemMessage("You are a helpful assistant connected to the internet tasked with fetching the latest information as requested by the user.");
+        chat.AppendUserInput("Search for the latest version of .net core, including preview version. Respond with the latest version number and date of release.");
+
+        ChatRichResponse response = await chat.GetResponseRich();
+        List<VendorCohereCitationBlock>? blocks = response.VendorExtensions?.Cohere?.ParseCitations();
+        
+        Console.WriteLine("Raw:");
+        Console.WriteLine(response.Text);
+
+        if (blocks is not null)
+        {
+            Console.WriteLine("Structured:");
+            
+            foreach (VendorCohereCitationBlock block in blocks)
+            {
+                if (block.Citation is not null)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                }
+                
+                Console.Write(block.Text);
+                Console.ResetColor();
+            }
+        }
     }
 
     public static async Task Cohere()

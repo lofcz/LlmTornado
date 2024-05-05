@@ -59,6 +59,7 @@ public enum Demos
     ChatAllVendors,
     Embedding,
     ChatFunctionRequired,
+    ChatCohereWebSearch,
     Last
 }
 
@@ -163,6 +164,7 @@ public class Program
             Demos.ChatAllVendors => ChatDemo.AllChatVendors,
             Demos.Embedding => EmbeddingDemo.Embed,
             Demos.ChatFunctionRequired => ChatDemo.ChatFunctionRequired,
+            Demos.ChatCohereWebSearch => ChatDemo.CohereWebSearch,
             _ => null
         };
 
@@ -183,5 +185,7 @@ public class Program
         {
             await task.Invoke();
         }
+
+        Console.ReadKey();
     }
 }

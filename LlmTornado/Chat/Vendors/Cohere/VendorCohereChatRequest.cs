@@ -6,13 +6,10 @@ using System.Net;
 using System.Net.Http;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
-using LlmTornado.Code.Models;
-using LlmTornado.Common;
-using LlmTornado.Images;
-using LlmTornado.Vendor.Anthropic;
+using LlmTornado.Chat.Vendors.Cohere;
 using Newtonsoft.Json;
 
-namespace LlmTornado.Vendor.Cohere;
+namespace LlmTornado.Chat.Vendors.Cohere;
 
 internal class VendorCohereChatRequest
 {
@@ -96,7 +93,8 @@ internal class VendorCohereChatRequest
     public string? Preamble { get; set; }
     [JsonProperty("prompt_truncation")]
     public string? PromptTruncation { get; set; }
-    // [todo] connectors
+    [JsonProperty("connectors")]
+    public List<ChatVendorCohereExtensionConnector>? Connectors { get; set; }
     [JsonProperty("max_tokens")]
     public int MaxTokens { get; set; }
     [JsonProperty("max_input_tokens")]
@@ -180,6 +178,14 @@ internal class VendorCohereChatRequest
             foreach (ChatMessage msg in msgs)
             {
                 msg.ExcludeFromRequest = false;
+            }
+        }
+
+        if (request.VendorExtensions?.Cohere is not null)
+        {
+            if (request.VendorExtensions.Cohere.Connectors?.Count > 0)
+            {
+                Connectors = request.VendorExtensions.Cohere.Connectors;
             }
         }
     }

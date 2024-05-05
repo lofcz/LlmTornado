@@ -5,6 +5,7 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using LlmTornado.Chat.Models;
+using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Common;
@@ -502,11 +503,11 @@ public class Conversation
     }
 
     /// <summary>
-    ///     Calls the API to get a response. Thr response is split into text & tools blocks.
-    ///     The entire response is appended to the current chat's <see cref="Messages" /> as an
-    ///     <see cref="ChatMessageRole.Assistant" /> <see cref="ChatMessage" />.
+    ///     Calls the API to get a response. The response is split into multiple blocks.
+    ///     Unlike <see cref="GetResponse"/> the returned object also contains vendor specific extensions.
+    ///     Use this function to get more details about the returned data.
     /// </summary>
-    /// <returns>The string of the response from the chatbot API</returns>
+    /// <returns>The response from the chatbot API</returns>
     public async Task<ChatRichResponse> GetResponseRich()
     {
         ChatRequest req = new(RequestParameters)
@@ -518,17 +519,17 @@ public class Conversation
 
         if (res is null)
         {
-            return new ChatRichResponse();
+            return new ChatRichResponse(null, null);
         }
 
         MostRecentApiResult = res;
 
         if (res.Choices is null)
         {
-            return new ChatRichResponse();
+            return new ChatRichResponse(res, null);
         }
 
-        ChatRichResponse response = new ChatRichResponse();
+        ChatRichResponse response = new ChatRichResponse(res, []);
         
         if (res.Choices.Count > 0)
         {
@@ -543,11 +544,11 @@ public class Conversation
 
                 AppendMessage(newMsg);
 
-                if (newMsg.ToolCalls is { Count: > 0 } && newMsg.ToolCalls[0].FunctionCall.Name is not ("none" or "auto"))
+                if (newMsg.ToolCalls is { Count: > 0 } && !OutboundToolChoice.OutboundToolChoiceConverter.KnownFunctionNames.Contains(newMsg.ToolCalls[0].FunctionCall.Name))
                 {
                     foreach (ToolCall x in newMsg.ToolCalls)
                     {
-                        response.Blocks.Add(new ChatRichResponseBlock
+                        response.Blocks!.Add(new ChatRichResponseBlock
                         {
                             Type = ChatRichResponseBlockTypes.Function, 
                             FunctionCall = x.FunctionCall
@@ -557,7 +558,7 @@ public class Conversation
 
                 if (!newMsg.Content.IsNullOrWhiteSpace())
                 {
-                    response.Blocks.Add(new ChatRichResponseBlock
+                    response.Blocks!.Add(new ChatRichResponseBlock
                     {
                         Type = ChatRichResponseBlockTypes.Message,
                         Message = newMsg.Content
@@ -597,7 +598,7 @@ public class Conversation
             return new RestDataOrException<ChatRichResponse>(new Exception("The service returned no choices"), res);
         }
 
-        ChatRichResponse response = new ChatRichResponse();
+        ChatRichResponse response = new ChatRichResponse(res.Data, []);
         
         if (res.Data.Choices.Count > 0)
         {
@@ -616,7 +617,7 @@ public class Conversation
                 {
                     foreach (ToolCall x in newMsg.ToolCalls)
                     {
-                        response.Blocks.Add(new ChatRichResponseBlock
+                        response.Blocks!.Add(new ChatRichResponseBlock
                         {
                             Type = ChatRichResponseBlockTypes.Function, 
                             FunctionCall = x.FunctionCall
@@ -626,7 +627,7 @@ public class Conversation
 
                 if (!newMsg.Content.IsNullOrWhiteSpace())
                 {
-                    response.Blocks.Add(new ChatRichResponseBlock
+                    response.Blocks!.Add(new ChatRichResponseBlock
                     {
                         Type = ChatRichResponseBlockTypes.Message,
                         Message = newMsg.Content
@@ -667,7 +668,7 @@ public class Conversation
             return new RestDataOrException<ChatRichResponse>(new Exception("The service returned no choices"), res);
         }
 
-        ChatRichResponse response = new ChatRichResponse();
+        ChatRichResponse response = new ChatRichResponse(res.Data, []);
         
         if (res.Data.Choices.Count > 0)
         {
@@ -689,7 +690,7 @@ public class Conversation
 
                     for (int i = 0; i < result.Count; i++)
                     {
-                        response.Blocks.Add(new ChatRichResponseBlock
+                        response.Blocks!.Add(new ChatRichResponseBlock
                         {
                             Type = ChatRichResponseBlockTypes.Function, 
                             FunctionResult = result[i],
@@ -700,7 +701,7 @@ public class Conversation
 
                 if (!newMsg.Content.IsNullOrWhiteSpace())
                 {
-                    response.Blocks.Add(new ChatRichResponseBlock
+                    response.Blocks!.Add(new ChatRichResponseBlock
                     {
                         Type = ChatRichResponseBlockTypes.Message,
                         Message = newMsg.Content
@@ -730,17 +731,17 @@ public class Conversation
 
         if (res is null)
         {
-            return new ChatRichResponse();
+            return new ChatRichResponse(null, null);
         }
 
         MostRecentApiResult = res;
 
         if (res.Choices is null)
         {
-            return new ChatRichResponse();
+            return new ChatRichResponse(res, null);
         }
 
-        ChatRichResponse response = new ChatRichResponse();
+        ChatRichResponse response = new ChatRichResponse(res, []);
         
         if (res.Choices.Count > 0)
         {
@@ -762,7 +763,7 @@ public class Conversation
 
                     for (int i = 0; i < result.Count; i++)
                     {
-                        response.Blocks.Add(new ChatRichResponseBlock
+                        response.Blocks!.Add(new ChatRichResponseBlock
                         {
                             Type = ChatRichResponseBlockTypes.Function, 
                             FunctionResult = result[i],
@@ -773,7 +774,7 @@ public class Conversation
 
                 if (!newMsg.Content.IsNullOrWhiteSpace())
                 {
-                    response.Blocks.Add(new ChatRichResponseBlock
+                    response.Blocks!.Add(new ChatRichResponseBlock
                     {
                         Type = ChatRichResponseBlockTypes.Message,
                         Message = newMsg.Content
@@ -872,7 +873,7 @@ public class Conversation
     ///     <see cref="ChatMessageRole.Assistant" /> <see cref="ChatMessage" />, and streams the results as they come in.
     ///     <br />
     ///     If you are not using C# 8 supporting async enumerables or if you are using the .NET Framework, you may need to use
-    ///     <see cref="StreamResponse" /> instead.
+    ///     <see cref="Code.StreamResponse" /> instead.
     /// </summary>
     /// <returns>
     ///     An async enumerable with each of the results as they come in.  See

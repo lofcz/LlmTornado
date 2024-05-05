@@ -2,8 +2,8 @@
 using LlmTornado.Code;
 using LlmTornado.Vendor.Anthropic;
 using LlmTornado;
-using LlmTornado.Vendor.Anthropic;
-using LlmTornado.Vendor.Cohere;
+using LlmTornado.Chat.Vendors.Anthropic;
+using LlmTornado.Chat.Vendors.Cohere;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Chat;
@@ -30,6 +30,12 @@ public class ChatResult : ApiResultBase
 	/// </summary>
 	[JsonProperty("usage")]
     public ChatUsage? Usage { get; set; }
+	
+	/// <summary>
+	///		Features supported only by a specific/few providers with no shared equivalent.
+	/// </summary>
+	[JsonIgnore]
+	public ChatResponseVendorExtensions? VendorExtensions { get; set; }
 
 	/// <summary>
 	///     A convenience method to return the content of the message in the first choice of this response

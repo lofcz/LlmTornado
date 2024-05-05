@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using LlmTornado.Chat;
+using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Vendor.Anthropic;
 using Newtonsoft.Json;
 

@@ -1,12 +1,14 @@
 using System;
 using System.Collections.Generic;
 using LlmTornado.Chat;
+using LlmTornado.Chat.Vendors;
 using LlmTornado.ChatFunctions;
+using LlmTornado.Vendor.Anthropic;
 using Newtonsoft.Json;
 
-namespace LlmTornado.Vendor.Anthropic;
+namespace LlmTornado.Chat.Vendors.Anthropic;
 
-internal class VendorAnthropicChatResult
+internal class VendorAnthropicChatResult : VendorChatResult
 {
     internal class VendorAnthropicChatResultContentBlock
     {
@@ -73,7 +75,7 @@ internal class VendorAnthropicChatResult
     [JsonProperty("usage")]
     public VendorAnthropicUsage Usage { get; set; }
     
-    public ChatResult ToChatResult(string? postData)
+    public override ChatResult ToChatResult(string? postData)
     {
         ChatResult result = new ChatResult
         {
@@ -110,6 +112,7 @@ internal class VendorAnthropicChatResult
             });
         }
 
+        ChatResult = result;
         return result;
     }
 

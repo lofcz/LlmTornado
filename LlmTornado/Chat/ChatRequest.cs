@@ -9,8 +9,9 @@ using LlmTornado.Completions;
 using Newtonsoft.Json;
 using LlmTornado.Code.Models;
 using LlmTornado;
+using LlmTornado.Chat.Vendors.Anthropic;
+using LlmTornado.Chat.Vendors.Cohere;
 using LlmTornado.Vendor.Anthropic;
-using LlmTornado.Vendor.Cohere;
 
 namespace LlmTornado.Chat;
 
@@ -34,7 +35,10 @@ public class ChatRequest
 	/// <param name="basedOn"></param>
 	public ChatRequest(ChatRequest? basedOn)
     {
-        if (basedOn is null) return;
+	    if (basedOn is null)
+	    {
+		    return;
+	    }
 
         Model = basedOn.Model;
         Messages = basedOn.Messages;
@@ -50,6 +54,7 @@ public class ChatRequest
         ToolChoice = basedOn.ToolChoice;
         OuboundFunctionsContent = basedOn.OuboundFunctionsContent;
         Adapter = basedOn.Adapter;
+        VendorExtensions = basedOn.VendorExtensions;
     }
 
 	/// <summary>
@@ -218,6 +223,12 @@ public class ChatRequest
 	/// </summary>
 	[JsonProperty("adapter")]
     public Dictionary<string, object?>? Adapter { get; set; }
+	
+	/// <summary>
+	///		Features supported only by a single/few providers with no shared equivalent.
+	/// </summary>
+	[JsonIgnore]
+	public ChatRequestVendorExtensions? VendorExtensions { get; set; } 
 
 	/// <summary>
 	///		Serializes the chat request into a http body, based on the conventions used by a LLM provider.

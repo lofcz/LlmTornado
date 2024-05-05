@@ -1,6 +1,6 @@
 using LlmTornado.Chat;
 
-namespace LlmTornado.Vendor.Anthropic;
+namespace LlmTornado.Chat.Vendors.Anthropic;
 
 internal class VendorAnthropicChatMessageTypes : ChatMessageTypes
 {

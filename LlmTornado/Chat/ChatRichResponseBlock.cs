@@ -26,22 +26,52 @@ public enum ChatRichResponseBlockTypes
 }
 
 /// <summary>
-/// The response is represented by one or more blocks.
+///     The response is represented by one or more blocks.
 /// </summary>
 public class ChatRichResponse
 {
+    private string? text;
+    
     /// <summary>
-    /// The blocks which together constitute the received response.
+    ///     The blocks, which together constitute the received response. A block can be either textual, tool call or an image.
+    ///     Different providers support different block types.
     /// </summary>
-    public List<ChatRichResponseBlock> Blocks { get; set; } = [];
+    public List<ChatRichResponseBlock>? Blocks { get; set; }
 
+    /// <summary>
+    ///     Extension information if the vendor used returns any.
+    /// </summary>
+    public ChatResponseVendorExtensions? VendorExtensions => Result?.VendorExtensions;
+    
+    /// <summary>
+    ///     The full result.
+    /// </summary>
+    public ChatResult? Result { get; set; }
+
+    /// <summary>
+    ///     Constructs rich response.
+    /// </summary>
+    /// <param name="result"></param>
+    /// <param name="blocks"></param>
+    public ChatRichResponse(ChatResult? result, List<ChatRichResponseBlock>? blocks)
+    {
+        Result = result;
+        Blocks = blocks;
+    }
+
+    /// <summary>
+    /// Text of the response.
+    /// </summary>
+    public string Text => text ?? GetText();
+    
     /// <summary>
     /// Gets the text parts and joins them by a separator.
     /// </summary>
     /// <returns></returns>
-    public string GetText(string blockSeparator = " ")
+    internal string GetText(string blockSeparator = " ")
     {
-        return string.Join(blockSeparator, Blocks.Where(x => x.Type is ChatRichResponseBlockTypes.Message && !x.Message.IsNullOrWhiteSpace()).Select(x => x.Message));
+        text = Blocks is null ? string.Empty : string.Join(blockSeparator, Blocks.Where(x => x.Type is ChatRichResponseBlockTypes.Message && !x.Message.IsNullOrWhiteSpace()).Select(x => x.Message));
+        return text;
     }
 }
 

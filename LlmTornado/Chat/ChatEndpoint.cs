@@ -87,7 +87,10 @@ public class ChatEndpoint : EndpointBase, IChatEndpoint
         IEndpointProvider provider = Api.GetProvider(request.Model ?? ChatModel.OpenAi.Gpt35.Turbo);
         ChatResult? result = await HttpPost1<ChatResult>(provider, Endpoint, postData: request.Serialize(provider.Provider));
 
-        if (Api.ChatRequestInterceptor is not null) await Api.ChatRequestInterceptor.Invoke(request, result);
+        if (Api.ChatRequestInterceptor is not null)
+        {
+            await Api.ChatRequestInterceptor.Invoke(request, result);
+        }
 
         return result;
     }

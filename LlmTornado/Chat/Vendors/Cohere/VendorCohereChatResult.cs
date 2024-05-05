@@ -6,9 +6,9 @@ using LlmTornado.ChatFunctions;
 using LlmTornado.Vendor.Anthropic;
 using Newtonsoft.Json;
 
-namespace LlmTornado.Vendor.Cohere;
+namespace LlmTornado.Chat.Vendors.Cohere;
 
-internal class VendorCohereChatResult
+internal class VendorCohereChatResult : VendorChatResult
 {
     [JsonProperty("response_id")]
     public string ResponseId { get; set; }
@@ -20,8 +20,16 @@ internal class VendorCohereChatResult
     public string FinishReason { get; set; }
     [JsonProperty("meta")]
     public VendorCohereUsage Meta { get; set; }
+    [JsonProperty("citations")]
+    public List<VendorCohereChatCitation>? Citations { get; set; }
+    [JsonProperty("documents")]
+    public List<VendorCohereChatDocument>? Documents { get; set; }
+    [JsonProperty("search_results")]
+    public List<VendorCohereChatSearchResult>? SearchResults { get; set; }
+    [JsonProperty("search_queries")]
+    public List<VendorCohereChatSearchQuery>? SearchQueries { get; set; }
     
-    public ChatResult ToChatResult(string? postData)
+    public override ChatResult ToChatResult(string? postData)
     {
         string model = ChatModel.Cohere.CommandRPlus;
         
@@ -44,7 +52,11 @@ internal class VendorCohereChatResult
             Usage = new ChatUsage(Meta),
             Model = model,
             ProcessingTime = TimeSpan.Zero,
-            Object = string.Empty
+            Object = string.Empty,
+            VendorExtensions = new ChatResponseVendorExtensions
+            {
+                Cohere = new ChatResponseVendorCohereExtensions(this)
+            }
         };
 
         if (Text is not null)
@@ -63,6 +75,7 @@ internal class VendorCohereChatResult
             });
         }
 
+        ChatResult = result;
         return result;
     }
 }

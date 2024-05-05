@@ -9,9 +9,10 @@ using LlmTornado.Chat.Models;
 using LlmTornado.Code.Models;
 using LlmTornado.Common;
 using LlmTornado.Images;
+using LlmTornado.Vendor.Anthropic;
 using Newtonsoft.Json;
 
-namespace LlmTornado.Vendor.Anthropic;
+namespace LlmTornado.Chat.Vendors.Anthropic;
 
 internal class VendorAnthropicChatRequest
 {
