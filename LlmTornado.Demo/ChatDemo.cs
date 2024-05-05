@@ -2,6 +2,7 @@ using System.Text;
 using Newtonsoft.Json;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
+using LlmTornado.Chat.Plugins;
 using LlmTornado.Chat.Vendors.Cohere;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
@@ -87,6 +88,31 @@ public static class ChatDemo
                 Console.ResetColor();
             }
         }
+    }
+
+    public static async Task CohereFunctionsStreaming()
+    {
+        ChatPluginCompiler compiler = new ChatPluginCompiler();
+        compiler.SetFunctions([
+            new ChatPluginFunction("get_weather", "gets the current weather in a given city", [
+                new ChatFunctionParam("city_name", "name of the city", ChatPluginFunctionAtomicParamTypes.String)
+            ])
+        ]);
+        
+        Conversation chat = Program.Connect(LLmProviders.Cohere).Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Cohere.CommandRPlus,
+            Tools = compiler.GetFunctions()
+        }).AppendUserInput("What is the weather today in Prague?");
+
+        await chat.StreamResponseRich(async (token) =>
+        {
+            Console.Write(token);
+        }, async (x) =>
+        {
+            
+            return [];
+        }, null, null, null);
     }
     
     public static async Task CohereWebSearchStreaming()

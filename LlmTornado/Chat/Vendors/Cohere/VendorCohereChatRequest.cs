@@ -6,8 +6,11 @@ using System.Net;
 using System.Net.Http;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
+using LlmTornado.Chat.Plugins;
 using LlmTornado.Chat.Vendors.Cohere;
+using LlmTornado.Common;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace LlmTornado.Chat.Vendors.Cohere;
 
@@ -113,7 +116,8 @@ internal class VendorCohereChatRequest
     public double? FrequencyPenalty { get; set; }
     [JsonProperty("presence_penalty")]
     public double? PresencePenalty { get; set; }
-    // [todo] tools
+    [JsonProperty("tools")]
+    public List<VendorCohereChatTool>? Tools { get; set; }
 
     public VendorCohereChatRequest()
     {
@@ -186,6 +190,47 @@ internal class VendorCohereChatRequest
             if (request.VendorExtensions.Cohere.Connectors?.Count > 0)
             {
                 Connectors = request.VendorExtensions.Cohere.Connectors;
+            }
+        }
+
+        if (request.Tools is not null)
+        {
+            Tools = [];
+
+            foreach (Tool tool in request.Tools)
+            {
+                if (tool.Function is null)
+                {
+                    continue;
+                }
+                
+                VendorCohereChatTool cohereTool = new VendorCohereChatTool
+                {
+                    Name = tool.Function.Name,
+                    Description = tool.Function.Description
+                };
+
+                if (tool.Function.RawParameters is ChatPluginFunctionTypeObject obj)
+                {
+                    foreach (ChatFunctionParam prop in obj.Properties)
+                    {
+                        cohereTool.ParameterDefinitions ??= [];
+
+                        object compiled = prop.Type.Compile(ChatPluginCompileBackends.Python);
+
+                        if (compiled is VendorCohereChatToolParameter param)
+                        {
+                            cohereTool.ParameterDefinitions.Add(prop.Name, param);
+                        }
+                        
+                        cohereTool.ParameterDefinitions.Add(prop.Name, new VendorCohereChatToolParameter
+                        {
+                            Required = prop.Name
+                        });
+                    }
+                }
+
+                Tools.Add(cohereTool);
             }
         }
     }

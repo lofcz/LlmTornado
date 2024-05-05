@@ -61,6 +61,7 @@ public enum Demos
     ChatFunctionRequired,
     ChatCohereWebSearch,
     ChatCohereWebSearchStreaming,
+    ChatCohereFunctionsStreaming,
     Last
 }
 
@@ -167,6 +168,7 @@ public class Program
             Demos.ChatFunctionRequired => ChatDemo.ChatFunctionRequired,
             Demos.ChatCohereWebSearch => ChatDemo.CohereWebSearch,
             Demos.ChatCohereWebSearchStreaming => ChatDemo.CohereWebSearchStreaming,
+            Demos.ChatCohereFunctionsStreaming => ChatDemo.CohereFunctionsStreaming,
             _ => null
         };
 

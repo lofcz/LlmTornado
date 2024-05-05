@@ -176,8 +176,15 @@ internal class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider,
         {
             ChatResult baseResult = new ChatResult();
             
-            while (await reader.ReadLineAsync() is { } line)
+            while (true)
             {
+                string? line = await reader.ReadLineAsync();
+
+                if (line is null)
+                {
+                    yield break;
+                }
+                
                 if (line.IsNullOrWhiteSpace())
                 {
                     continue;
@@ -301,11 +308,15 @@ internal class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider,
                         // [todo]
                         break;
                     }
+                    case ChatStreamEventTypes.StreamEnd:
+                    {
+                        yield break;
+                    }
                 }
                 
                 if (baseEvent.IsFinished)
                 {
-                    break;
+                    yield break;
                 }
             }
         }

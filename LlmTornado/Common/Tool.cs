@@ -186,6 +186,28 @@ public class ToolFunction
     private static readonly JsonSerializerSettings serializerSettings = new() { NullValueHandling = NullValueHandling.Ignore };
 
     /// <summary>
+    ///     The name of the function to be called. Must be a-z, A-Z, 0-9, or contain underscores and dashes, with a maximum
+    ///     length of 64.
+    /// </summary>
+    [JsonProperty("name", Required = Required.Always)]
+    public string Name { get; set; }
+
+    /// <summary>
+    ///     The description of what the function does.
+    /// </summary>
+    [JsonProperty("description")]
+    public string Description { get; set; }
+
+    /// <summary>
+    ///     The input parameters of the tool, if any.
+    /// </summary>
+    [JsonProperty("parameters")]
+    public JObject? Parameters { get; set; }
+    
+    [JsonIgnore]
+    internal object? RawParameters { get; set; }
+    
+    /// <summary>
     ///     Create a parameterless function.
     /// </summary>
     /// <param name="name"></param>
@@ -221,6 +243,7 @@ public class ToolFunction
         Name = name;
         Description = description;
         Parameters = parameters;
+        RawParameters = parameters;
     }
 
     /// <summary>
@@ -242,23 +265,4 @@ public class ToolFunction
     private ToolFunction()
     {
     }
-
-    /// <summary>
-    ///     The name of the function to be called. Must be a-z, A-Z, 0-9, or contain underscores and dashes, with a maximum
-    ///     length of 64.
-    /// </summary>
-    [JsonProperty("name", Required = Required.Always)]
-    public string Name { get; set; }
-
-    /// <summary>
-    ///     The description of what the function does.
-    /// </summary>
-    [JsonProperty("description")]
-    public string Description { get; set; }
-
-    /// <summary>
-    ///     The input parameters of the tool, if any.
-    /// </summary>
-    [JsonProperty("parameters")]
-    public JObject? Parameters { get; set; }
 }
