@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Vendors.Anthropic;
+using LlmTornado.Chat.Vendors.Cohere;
 using LlmTornado.Vendor.Anthropic;
 using Newtonsoft.Json;
 
@@ -114,7 +115,8 @@ internal class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider,
         SearchResults,
         StreamStart,
         StreamEnd,
-        CitationGeneration
+        CitationGeneration,
+        ToolCallsGeneration
     }
 
     static readonly Dictionary<string, ChatStreamEventTypes> EventsMap = new Dictionary<string, ChatStreamEventTypes>
@@ -124,12 +126,38 @@ internal class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider,
         { "text-generation", ChatStreamEventTypes.TextGeneration },
         { "search-queries-generation", ChatStreamEventTypes.SearchQueriesGeneration },
         { "search-results", ChatStreamEventTypes.SearchResults },
-        { "citation-generation", ChatStreamEventTypes.CitationGeneration }
+        { "citation-generation", ChatStreamEventTypes.CitationGeneration },
+        { "tool-calls-generation", ChatStreamEventTypes.ToolCallsGeneration }
     };
 
     internal class ChatTextGenerationEventData
     {
+        [JsonProperty("text")]
         public string Text { get; set; }
+    }
+    
+    internal class ChatStreamStartEventData
+    {
+        [JsonProperty("generation_id")]
+        public string GenerationId { get; set; }
+    }
+    
+    internal class ChatSearchQueriesGenerationEventData
+    {
+        [JsonProperty("search_queries")]
+        public List<VendorCohereChatSearchQuery> SearchQueries { get; set; }
+    }
+    
+    internal class ChatSearchResultsEventData
+    {
+        [JsonProperty("search_results")]
+        public List<VendorCohereChatSearchResult> SearchResults { get; set; }
+    }
+
+    internal class ChatCitationGenerationEventData
+    {
+        [JsonProperty("citations")]
+        public List<VendorCohereChatCitation> Citations { get; set; }
     }
 
     internal class ChatStreamEventBase
@@ -143,52 +171,142 @@ internal class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider,
     public override async IAsyncEnumerable<T?> InboundStream<T>(StreamReader reader) where T : class
     {
         StreamRequestTypes requestType = GetStreamType(typeof(T));
-        
-        while (await reader.ReadLineAsync() is { } line)
+
+        if (requestType is StreamRequestTypes.Chat)
         {
-            if (line.IsNullOrWhiteSpace())
-            {
-                continue;
-            }
+            ChatResult baseResult = new ChatResult();
             
-            ChatStreamEventBase? baseEvent = JsonConvert.DeserializeObject<ChatStreamEventBase>(line);
-
-            if (baseEvent is null)
+            while (await reader.ReadLineAsync() is { } line)
             {
-                continue;
-            }
+                if (line.IsNullOrWhiteSpace())
+                {
+                    continue;
+                }
+                
+                ChatStreamEventBase? baseEvent = JsonConvert.DeserializeObject<ChatStreamEventBase>(line);
 
-            if (!EventsMap.TryGetValue(baseEvent.EventType, out ChatStreamEventTypes eventType))
-            {
-                continue;
-            }
-
-            if (eventType is ChatStreamEventTypes.TextGeneration)
-            {
-                ChatTextGenerationEventData? data = JsonConvert.DeserializeObject<ChatTextGenerationEventData>(line);
-
-                if (data is null)
+                if (baseEvent is null)
                 {
                     continue;
                 }
 
-                if (requestType is StreamRequestTypes.Chat)
+                if (!EventsMap.TryGetValue(baseEvent.EventType, out ChatStreamEventTypes eventType))
                 {
-                    yield return (T)(dynamic) new ChatResult
-                    {
-                        Choices = [
-                            new ChatChoice
-                            {
-                                Delta = new ChatMessage(ChatMessageRole.Assistant, data.Text)
-                            }
-                        ]
-                    };
+                    continue;
                 }
-            }
 
-            if (baseEvent.IsFinished)
-            {
-                break;
+                switch (eventType)
+                {
+                    case ChatStreamEventTypes.TextGeneration:
+                    {
+                        ChatTextGenerationEventData? data = JsonConvert.DeserializeObject<ChatTextGenerationEventData>(line);
+
+                        if (data is null)
+                        {
+                            continue;
+                        }
+
+                        yield return (T)(dynamic)new ChatResult
+                        {
+                            Choices =
+                            [
+                                new ChatChoice
+                                {
+                                    Delta = new ChatMessage(ChatMessageRole.Assistant, data.Text)
+                                }
+                            ]
+                        };
+                        break;
+                    }
+                    case ChatStreamEventTypes.StreamStart:
+                    {
+                        ChatStreamStartEventData? data = JsonConvert.DeserializeObject<ChatStreamStartEventData>(line);
+
+                        if (data is null)
+                        {
+                            continue;
+                        }
+
+                        baseResult.Id = data.GenerationId;
+                        break;
+                    }
+                    case ChatStreamEventTypes.SearchQueriesGeneration:
+                    {
+                        ChatSearchQueriesGenerationEventData? data = JsonConvert.DeserializeObject<ChatSearchQueriesGenerationEventData>(line);
+
+                        if (data is null)
+                        {
+                            continue;
+                        }
+
+                        yield return (T)(dynamic)new ChatResult
+                        {
+                            VendorExtensions = new ChatResponseVendorExtensions
+                            {
+                                Cohere = new ChatResponseVendorCohereExtensions(new VendorCohereChatResult
+                                {
+                                    SearchQueries = data.SearchQueries
+                                })
+                            }
+                        };
+                        
+                        break;
+                    }
+                    case ChatStreamEventTypes.SearchResults:
+                    {
+                        ChatSearchResultsEventData? data = JsonConvert.DeserializeObject<ChatSearchResultsEventData>(line);
+
+                        if (data is null)
+                        {
+                            continue;
+                        }
+
+                        yield return (T)(dynamic)new ChatResult
+                        {
+                            VendorExtensions = new ChatResponseVendorExtensions
+                            {
+                                Cohere = new ChatResponseVendorCohereExtensions(new VendorCohereChatResult
+                                {
+                                    SearchResults = data.SearchResults
+                                })
+                            }
+                        };
+                        
+                        break;
+                    }
+                    case ChatStreamEventTypes.CitationGeneration:
+                    {
+                        ChatCitationGenerationEventData? data = JsonConvert.DeserializeObject<ChatCitationGenerationEventData>(line);
+
+                        if (data is null)
+                        {
+                            continue;
+                        }
+
+                        yield return (T)(dynamic)new ChatResult
+                        {
+                            VendorExtensions = new ChatResponseVendorExtensions
+                            {
+                                Cohere = new ChatResponseVendorCohereExtensions(new VendorCohereChatResult
+                                {
+                                    Citations = data.Citations
+                                })
+                            }
+                        };
+                        
+                        break;
+                    }
+                    case ChatStreamEventTypes.ToolCallsGeneration:
+                    {
+                        // [todo]
+                        break;
+                    }
+                }
+                
+                if (baseEvent.IsFinished)
+                {
+                    break;
+                }
             }
         }
     }

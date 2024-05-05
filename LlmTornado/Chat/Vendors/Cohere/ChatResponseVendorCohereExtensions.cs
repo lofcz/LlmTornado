@@ -44,24 +44,29 @@ public class ChatResponseVendorCohereExtensions
     /// <summary>
     ///     Returns a list of blocks where each block is either uncited or cited by one or more document.
     ///     Also clears citation markers which are not intended for the end users.
+    ///     This overload can only be used in non-streaming scenarios.
     /// </summary>
     /// <returns></returns>
     public List<VendorCohereCitationBlock> ParseCitations()
     {
+        return ParseCitations(Response.Text ?? string.Empty);
+    }
+
+    /// <summary>
+    ///     Returns a list of blocks where each block is either uncited or cited by one or more document.
+    ///     Also clears citation markers which are not intended for the end users.
+    /// </summary>
+    /// <returns></returns>
+    public List<VendorCohereCitationBlock> ParseCitations(string text)
+    {
         List<VendorCohereCitationBlock> blocks = [];
         int pos = 0;
-        string text = Response.Text ?? string.Empty;
 
-        string ClearSnippet(string text)
-        {
-            return CitationRegex.Replace(text, string.Empty);
-        }
-        
         if (Citations is not null && Citations.Count > 0)
         {
             foreach (VendorCohereChatCitation citation in Citations.OrderBy(x => x.Start))
             {
-                if (citation.Start > pos)
+                if (text.Length > 0 && citation.Start > pos)
                 {
                     string beforeSnippet = ClearSnippet(text.Substring(pos, citation.Start - pos));
 
@@ -112,6 +117,11 @@ public class ChatResponseVendorCohereExtensions
         }
 
         return blocks;
+
+        string ClearSnippet(string txt)
+        {
+            return CitationRegex.Replace(txt, string.Empty);
+        }
     }
     
     internal VendorCohereChatResult Response { get; set; }

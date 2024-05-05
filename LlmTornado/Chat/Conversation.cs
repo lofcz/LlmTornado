@@ -5,6 +5,7 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using LlmTornado.Chat.Models;
+using LlmTornado.Chat.Vendors;
 using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
@@ -924,6 +925,27 @@ public class Conversation
     ///     Otherwise the message is intended for the end user and <see cref="messageTokenHandler" /> is called for each
     ///     incoming token
     /// </summary>
+    /// <param name="messageTokenHandler"></param>
+    /// <param name="functionCallHandler"></param>
+    /// <param name="messageTypeResolvedHandler">
+    ///     This is called typically after the first token arrives signaling type of the
+    ///     incoming message
+    /// </param>
+    /// <param name="chatRequestHandler">
+    ///     if false, functions won't be allowed to execute regardless of the conversation
+    ///     settings
+    /// </param>
+    public async Task StreamResponseRich(Func<string?, Task>? messageTokenHandler, Func<List<FunctionCall>, Task<List<FunctionResult>>>? functionCallHandler, Func<ChatMessageRole, Task>? messageTypeResolvedHandler, Func<ChatRequest, Task<ChatRequest>>? chatRequestHandler, Func<ChatResponseVendorExtensions, Task>? vendorFeaturesHandler)
+    {
+        await StreamResponseRich(Guid.NewGuid(), messageTokenHandler, functionCallHandler, messageTypeResolvedHandler, chatRequestHandler, null, vendorFeaturesHandler);
+    }
+
+    /// <summary>
+    ///     Stream LLM response. If the response is of type "function", entire response is buffered and then
+    ///     <see cref="functionCallHandler" /> is invoked.
+    ///     Otherwise the message is intended for the end user and <see cref="messageTokenHandler" /> is called for each
+    ///     incoming token
+    /// </summary>
     /// <param name="messageId"></param>
     /// <param name="messageTokenHandler"></param>
     /// <param name="functionCallHandler"></param>
@@ -936,7 +958,7 @@ public class Conversation
     ///     settings
     /// </param>
     /// <param name="outboundRequest">set to an empty <see cref="Ref{T}" /> to receive the outbound request as well</param>
-    public async Task StreamResponseEnumerableWithFunctions(Guid? messageId, Func<string?, Task>? messageTokenHandler, Func<List<FunctionCall>, Task<List<FunctionResult>>>? functionCallHandler, Func<ChatMessageRole, Task>? messageTypeResolvedHandler, Func<ChatRequest, Task<ChatRequest>>? chatRequestHandler, Ref<string>? outboundRequest = null)
+    public async Task StreamResponseRich(Guid? messageId, Func<string?, Task>? messageTokenHandler, Func<List<FunctionCall>, Task<List<FunctionResult>>>? functionCallHandler, Func<ChatMessageRole, Task>? messageTypeResolvedHandler, Func<ChatRequest, Task<ChatRequest>>? chatRequestHandler, Ref<string>? outboundRequest = null, Func<ChatResponseVendorExtensions, Task>? vendorFeaturesHandler = null)
     {
         ChatRequest req = new(RequestParameters)
         {
@@ -954,18 +976,17 @@ public class Conversation
 
         await foreach (ChatResult res in _endpoint.StreamChatEnumerableAsync(req))
         {
-            if (res.Choices is null)
+            if (res.Choices is null || res.Choices.Count is 0)
             {
+                if (res.VendorExtensions is not null && vendorFeaturesHandler is not null)
+                {
+                    await vendorFeaturesHandler.Invoke(res.VendorExtensions);
+                }
+
                 MostRecentApiResult = res;
                 continue;
             }
-
-            if (res.Choices.Count is 0)
-            {
-                MostRecentApiResult = res;
-                continue;
-            }
-
+            
             ChatChoice choice = res.Choices[0];
             string? finishReason = choice.FinishReason;
 
@@ -988,7 +1009,10 @@ public class Conversation
                     {
                         typeResolved = true;
 
-                        if (messageTypeResolvedHandler != null) await messageTypeResolvedHandler(ChatMessageRole.Tool);
+                        if (messageTypeResolvedHandler is not null)
+                        {
+                            await messageTypeResolvedHandler(ChatMessageRole.Tool);
+                        }
                     }
 
                     if (choice.Delta.ToolCalls.Count > 0)
@@ -1040,9 +1064,9 @@ public class Conversation
                     }
                 }
             }
-            else if (responseRole != null && responseRole.Equals(ChatMessageRole.Tool)) 
+            else if (responseRole is not null && responseRole.Equals(ChatMessageRole.Tool)) 
             {
-                foreach (ChatChoice iChoice in res.Choices.Where(ch => ch.Message?.ToolCalls != null) )
+                foreach (ChatChoice iChoice in res.Choices.Where(ch => ch.Message?.ToolCalls is not null))
                 {
                     if (iChoice.Message is { ToolCalls: not null })
                     {
@@ -1069,6 +1093,7 @@ public class Conversation
                     }
                 }
             }
+            
             MostRecentApiResult = res;
         }
 
@@ -1078,7 +1103,11 @@ public class Conversation
             {
                 ResolvedToolsCall result = new ResolvedToolsCall();
                 
-                List<FunctionCall> calls = functionCalls.Select(pair => new FunctionCall { Name = pair.Key, Arguments = pair.Value.ToString() }).ToList();
+                List<FunctionCall> calls = functionCalls.Select(pair => new FunctionCall
+                {
+                    Name = pair.Key,
+                    Arguments = pair.Value.ToString()
+                }).ToList();
                 List<FunctionResult> frs = await functionCallHandler.Invoke(calls);
                 
                 ChatMessage fnCallMsg = new(ChatMessageRole.Assistant)

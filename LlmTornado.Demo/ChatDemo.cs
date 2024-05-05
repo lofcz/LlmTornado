@@ -88,6 +88,60 @@ public static class ChatDemo
             }
         }
     }
+    
+    public static async Task CohereWebSearchStreaming()
+    {
+        Conversation chat = Program.Connect(LLmProviders.Cohere).Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Cohere.CommandRPlus,
+            VendorExtensions = new ChatRequestVendorExtensions(new ChatRequestVendorCohereExtensions([
+                ChatVendorCohereExtensionConnector.WebConnector
+            ]))
+        });
+        
+        chat.AppendSystemMessage("You are a helpful assistant connected to the internet tasked with fetching the latest information as requested by the user.");
+        chat.AppendUserInput("Search for the latest version of .net core, including preview version. Respond with the latest version number and date of release.");
+
+        StringBuilder sb = new StringBuilder();
+      
+        await chat.StreamResponseRich((str) =>
+        {
+            sb.Append(str);
+            Console.Write(str);
+            return Task.CompletedTask;
+        }, null, null, null, (ext) =>
+        {
+            if (ext.Cohere?.Citations is not null)
+            {
+                string str = sb.ToString();
+                List<VendorCohereCitationBlock> blocks = ext.Cohere.ParseCitations(str);
+
+                foreach (VendorCohereCitationBlock block in blocks)
+                {
+                    if (block.Citation is not null)
+                    {
+                        str = str.Replace(block.Text, $"<span>{block.Text}</span>");   
+                    }
+                }
+
+                sb.Clear();
+                sb.Append(str);
+
+                try
+                {
+                    Console.Clear();
+                }
+                catch (Exception e)
+                {
+                    
+                }
+                
+                Console.WriteLine(str);
+            }
+            
+            return Task.CompletedTask;
+        });
+    }
 
     public static async Task Cohere()
     {
@@ -210,7 +264,7 @@ public static class ChatDemo
         Guid msgId = Guid.NewGuid();
         chat.AppendMessage(ChatMessageRole.User, "What is the weather like today in Prague?", msgId);
 
-        await chat.StreamResponseEnumerableWithFunctions(msgId, (x) =>
+        await chat.StreamResponseRich(msgId, (x) =>
         {
             sb.Append(x);
             return Task.CompletedTask;
@@ -269,7 +323,7 @@ public static class ChatDemo
         Guid msgId = Guid.NewGuid();
         chat.AppendMessage(ChatMessageRole.User, "What is the weather like today in Prague?", msgId);
 
-        await chat.StreamResponseEnumerableWithFunctions(msgId, (x) =>
+        await chat.StreamResponseRich(msgId, (x) =>
         {
             sb.Append(x);
             return Task.CompletedTask;
@@ -328,7 +382,7 @@ public static class ChatDemo
         Guid msgId = Guid.NewGuid();
         chat.AppendMessage(ChatMessageRole.User, "What is the weather like today in Prague?", msgId);
 
-        await chat.StreamResponseEnumerableWithFunctions(msgId, (x) =>
+        await chat.StreamResponseRich(msgId, (x) =>
         {
             sb.Append(x);
             return Task.CompletedTask;
@@ -426,7 +480,7 @@ public static class ChatDemo
         Guid msgId = Guid.NewGuid(); 
         chat.AppendMessage(ChatMessageRole.User, "What is the weather like today?", msgId);
         
-        await chat.StreamResponseEnumerableWithFunctions(msgId, (x) =>
+        await chat.StreamResponseRich(msgId, (x) =>
         {
             sb.Append(x);
             return Task.CompletedTask;
