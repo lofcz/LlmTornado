@@ -115,7 +115,7 @@ chat.AppendMessage(ChatMessageRole.System, "You are a helpful assistant");
 Guid msgId = Guid.NewGuid();
 chat.AppendMessage(ChatMessageRole.User, "What is the weather like today in Prague?", msgId);
 
-await chat.StreamResponseEnumerableWithFunctions(msgId, (x) =>
+await chat.StreamResponseRich(msgId, (x) =>
 {
     sb.Append(x);
     return Task.CompletedTask;
@@ -129,7 +129,7 @@ await chat.StreamResponseEnumerableWithFunctions(msgId, (x) =>
     }
 
     return Task.FromResult(results);
-}, null, null);
+}, null, null, null);
 
 
 string response = sb.ToString();
