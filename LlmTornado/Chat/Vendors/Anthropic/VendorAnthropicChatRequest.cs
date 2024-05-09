@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Http;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
+using LlmTornado.Code;
 using LlmTornado.Code.Models;
 using LlmTornado.Common;
 using LlmTornado.Images;
@@ -118,9 +119,9 @@ internal class VendorAnthropicChatRequest
             }
         }
         
-        public VendorAnthropicChatRequestMessage(ChatMessageRole role, ChatMessage msg)
+        public VendorAnthropicChatRequestMessage(ChatMessageRoles role, ChatMessage msg)
         {
-            Role = role;
+            Role = ChatMessageRole.MemberToString(role) ?? "user";
             Content = new VendorAnthropicChatRequestMessageContent(msg);
         }
     }
@@ -157,7 +158,7 @@ internal class VendorAnthropicChatRequest
     public VendorAnthropicChatRequest(ChatRequest request)
     {
         Model = request.Model?.Name ?? ChatModel.Anthropic.Claude3.Opus.Name;
-        System = request.Messages?.FirstOrDefault(x => x.Role == ChatMessageRole.System)?.Content;
+        System = request.Messages?.FirstOrDefault(x => x.Role is ChatMessageRoles.System)?.Content;
         MaxTokens = request.MaxTokens ?? 1024;
         StopSequences = request.StopSequence?.Split(',').ToList();
         Stream = request.Stream;
@@ -170,13 +171,18 @@ internal class VendorAnthropicChatRequest
         {
             foreach (ChatMessage msg in request.Messages)
             {
-                if (msg.Role == ChatMessageRole.Assistant || msg.Role == ChatMessageRole.User)
+                switch (msg.Role)
                 {
-                    Messages.Add(new VendorAnthropicChatRequestMessage(msg.Role, msg));
-                }
-                else if (msg.Role == ChatMessageRole.Tool)
-                {
-                    Messages.Add(new VendorAnthropicChatRequestMessage(ChatMessageRole.User, msg));
+                    case ChatMessageRoles.Assistant or ChatMessageRoles.User:
+                    {
+                        Messages.Add(new VendorAnthropicChatRequestMessage(msg.Role ?? ChatMessageRoles.Unknown, msg));
+                        break;
+                    }
+                    case ChatMessageRoles.Tool:
+                    {
+                        Messages.Add(new VendorAnthropicChatRequestMessage(ChatMessageRoles.User, msg));
+                        break;
+                    }
                 }
             }   
         }

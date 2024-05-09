@@ -9,7 +9,7 @@ public enum Demos
     Unknown,
     ChatVision,
     ChatVisionBase64,
-    [Flaky]
+    [Flaky("only assistants v1 are supported")]
     AssistantList,
     [Flaky]
     AssistantCreate,
@@ -43,7 +43,7 @@ public enum Demos
     ThreadsModify,
     [Flaky]
     ThreadsDelete,
-    [Flaky]
+    [Flaky("only assistants v1 are supported")]
     ThreadsCreateMessage,
     ChatCompletion,
     ChatStreamWithFunctions,
@@ -55,13 +55,14 @@ public enum Demos
     ChatAnthropicFailFunctions,
     ChatCohere,
     ChatCohereStreaming,
-    [Flaky] // covered by other tests, takes a long time to finish 
+    [Flaky("covered by other tests, takes a long time to finish ")]
     ChatAllVendors,
     Embedding,
     ChatFunctionRequired,
     ChatCohereWebSearch,
     ChatCohereWebSearchStreaming,
-    ChatCohereFunctionsStreaming,
+    [Flaky("interactive demo")]
+    OpenAiFunctionsStreamingInteractive,
     Last
 }
 
@@ -168,7 +169,7 @@ public class Program
             Demos.ChatFunctionRequired => ChatDemo.ChatFunctionRequired,
             Demos.ChatCohereWebSearch => ChatDemo.CohereWebSearch,
             Demos.ChatCohereWebSearchStreaming => ChatDemo.CohereWebSearchStreaming,
-            Demos.ChatCohereFunctionsStreaming => ChatDemo.CohereFunctionsStreaming,
+            Demos.OpenAiFunctionsStreamingInteractive => ChatDemo.OpenAiFunctionsStreamingInteractive,
             _ => null
         };
 

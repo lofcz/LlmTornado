@@ -535,4 +535,18 @@ public abstract class EndpointBase
             yield return x;
         }
     }
+    
+    protected async Task<StreamRequest> HttpStreamingRequestData(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, HttpMethod? verb = null, object? postData = null)
+    {
+        HttpResponseMessage response = await HttpRequestRaw(provider, endpoint, url, verb, postData, true).ConfigureAwait(ConfigureAwaitOptions.None);
+        Stream stream = await response.Content.ReadAsStreamAsync();
+        StreamReader reader = new(stream);
+
+        return new StreamRequest
+        {
+            Response = response,
+            Stream = stream,
+            StreamReader = reader
+        };
+    }
 }

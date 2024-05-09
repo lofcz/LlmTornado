@@ -1,5 +1,6 @@
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
+using LlmTornado.Code;
 using LlmTornado.Code.Models;
 using LlmTornado.Images;
 using LlmTornado.Models;
@@ -12,10 +13,10 @@ public static class VisionDemo
     {
         ChatResult result = await Program.Connect().Chat.CreateChatCompletionAsync(new ChatMessage[]
         {
-            new(ChatMessageRole.User, [
+            new(ChatMessageRoles.User, [
                 new ChatMessagePart(new Uri("https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcSGfpQ3m-QWiXgCBJJbrcUFdNdWAhj7rcUqjeNUC6eKcXZDAtWm"))
             ]),
-            new(ChatMessageRole.User, "What is on this image?")
+            new(ChatMessageRoles.User, "What is on this image?")
         }, ChatModel.OpenAi.Gpt4.VisionPreview, maxTokens: 256);
 
         Console.WriteLine(result.Choices[0].Message.Content);
@@ -28,10 +29,10 @@ public static class VisionDemo
 
         ChatResult result = await Program.Connect().Chat.CreateChatCompletionAsync(new ChatMessage[]
         {
-            new(ChatMessageRole.User, [
+            new(ChatMessageRoles.User, [
                 new ChatMessagePart(base64, ImageDetail.Auto)
             ]),
-            new(ChatMessageRole.User, "What is on this image?")
+            new(ChatMessageRoles.User, "What is on this image?")
         }, ChatModel.OpenAi.Gpt4.VisionPreview, maxTokens: 256);
 
         Console.WriteLine(result.Choices[0].Message.Content);

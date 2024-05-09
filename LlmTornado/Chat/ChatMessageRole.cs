@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using LlmTornado.Code;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Chat;
@@ -73,6 +75,32 @@ public class ChatMessageRole : IEquatable<ChatMessageRole>
             "tool" => Tool,
             _ => null
         };
+    }
+
+    internal static readonly Dictionary<string, ChatMessageRoles> MemberRolesDict = new Dictionary<string, ChatMessageRoles>
+    {
+        { "system", ChatMessageRoles.System },
+        { "user", ChatMessageRoles.User },
+        { "assistant", ChatMessageRoles.Assistant },
+        { "tool", ChatMessageRoles.Tool }
+    };
+    
+    internal static readonly Dictionary<ChatMessageRoles, string> MemberRolesDictInverse = new Dictionary<ChatMessageRoles, string>
+    {
+        { ChatMessageRoles.System, "system" },
+        { ChatMessageRoles.User, "user" },
+        { ChatMessageRoles.Assistant, "assistant" },
+        { ChatMessageRoles.Tool, "tool" }
+    };
+    
+    internal static ChatMessageRoles? MemberFromString(string? roleName)
+    {
+        return MemberRolesDict.GetValueOrDefault(roleName?.ToLowerInvariant().Trim() ?? string.Empty);
+    }
+    
+    internal static string? MemberToString(ChatMessageRoles? role)
+    {
+        return MemberRolesDictInverse.GetValueOrDefault(role ?? ChatMessageRoles.User);
     }
 
     /// <summary>

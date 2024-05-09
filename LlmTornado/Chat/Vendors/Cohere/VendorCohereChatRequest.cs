@@ -8,6 +8,7 @@ using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Chat.Plugins;
 using LlmTornado.Chat.Vendors.Cohere;
+using LlmTornado.Code;
 using LlmTornado.Common;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -67,21 +68,16 @@ internal class VendorCohereChatRequest
             }
         }
         
-        public VendorCohereChatRequestMessage(ChatMessageRole role, ChatMessage msg)
+        public VendorCohereChatRequestMessage(ChatMessageRoles role, ChatMessage msg)
         {
-            if (role.Equals(ChatMessageRole.Assistant))
+            Role = role switch
             {
-                Role = "CHATBOT";
-            }
-            else if (role.Equals(ChatMessageRole.System))
-            {
-                Role = "SYSTEM";
-            }
-            else if (role.Equals(ChatMessageRole.User))
-            {
-                Role = "USER";
-            }
-            
+                ChatMessageRoles.Assistant => "CHATBOT",
+                ChatMessageRoles.System => "SYSTEM",
+                ChatMessageRoles.User => "USER",
+                _ => "USER"
+            };
+
             Content = new VendorCohereChatRequestMessageContent(msg);
         }
     }
@@ -132,7 +128,7 @@ internal class VendorCohereChatRequest
         
         if (msgs is not null)
         {
-            ChatMessage? systemMsg = msgs.FirstOrDefault(x => x.Role == ChatMessageRole.System);
+            ChatMessage? systemMsg = msgs.FirstOrDefault(x => x.Role is ChatMessageRoles.System);
 
             if (systemMsg is not null)
             {
@@ -140,7 +136,7 @@ internal class VendorCohereChatRequest
                 preamble = systemMsg.Content;
             }
 
-            ChatMessage? lastMsg = msgs.LastOrDefault(x => x.Role == ChatMessageRole.User || x.Role == ChatMessageRole.Assistant);
+            ChatMessage? lastMsg = msgs.LastOrDefault(x => x.Role is ChatMessageRoles.User or ChatMessageRoles.Assistant);
 
             if (lastMsg is not null)
             {
@@ -165,17 +161,23 @@ internal class VendorCohereChatRequest
             
             foreach (ChatMessage msg in msgs.Where(x => !x.ExcludeFromRequest))
             {
-                if (msg.Role == ChatMessageRole.Assistant || msg.Role == ChatMessageRole.User)
+                switch (msg.Role)
                 {
-                    ChatHistory.Add(new VendorCohereChatRequestMessage(msg.Role, msg));
-                }
-                else if (msg.Role == ChatMessageRole.System)
-                {
-                    ChatHistory.Add(new VendorCohereChatRequestMessage(ChatMessageRole.System, msg));
-                }
-                else if (msg.Role == ChatMessageRole.Tool)
-                {
-                    ChatHistory.Add(new VendorCohereChatRequestMessage(ChatMessageRole.User, msg));
+                    case ChatMessageRoles.Assistant or ChatMessageRoles.User:
+                    {
+                        ChatHistory.Add(new VendorCohereChatRequestMessage(msg.Role ?? ChatMessageRoles.Unknown, msg));
+                        break;
+                    }
+                    case ChatMessageRoles.System:
+                    {
+                        ChatHistory.Add(new VendorCohereChatRequestMessage(ChatMessageRoles.System, msg));
+                        break;
+                    }
+                    case ChatMessageRoles.Tool:
+                    {
+                        ChatHistory.Add(new VendorCohereChatRequestMessage(ChatMessageRoles.User, msg));
+                        break;
+                    }
                 }
             }
 
@@ -225,7 +227,7 @@ internal class VendorCohereChatRequest
                         
                         cohereTool.ParameterDefinitions.Add(prop.Name, new VendorCohereChatToolParameter
                         {
-                            Required = prop.Name
+                            Required = prop.Required
                         });
                     }
                 }

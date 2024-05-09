@@ -7,13 +7,20 @@ namespace LlmTornado.ChatFunctions;
 /// </summary>
 public class ToolCall
 {
-    [JsonIgnore] private string? JsonEncoded { get; set; }
+    [JsonIgnore] 
+    private string? JsonEncoded { get; set; }
 
+    /// <summary>
+    ///     Index of the tool call.
+    /// </summary>
+    [JsonProperty("index")]
+    public int? Index { get; set; }
+    
     /// <summary>
     ///     The ID of the tool.
     /// </summary>
     [JsonProperty("id")]
-    public string Id { get; set; } = default!;
+    public string? Id { get; set; } = default!;
 
     /// <summary>
     ///     The type of the tool. Currently, this should be always "function".

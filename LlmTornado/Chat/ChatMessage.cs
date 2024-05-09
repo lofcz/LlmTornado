@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using LlmTornado.ChatFunctions;
+using LlmTornado.Code;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Chat;
@@ -18,7 +19,7 @@ public class ChatMessage
 	/// </summary>
 	public ChatMessage()
     {
-        Role = ChatMessageRole.User;
+        Role = ChatMessageRoles.User;
         Id = Guid.NewGuid();
     }
 	
@@ -26,7 +27,7 @@ public class ChatMessage
 	///     Constructor for a new Chat Message.
 	/// </summary>
 	/// <param name="role">The role of the message, which can be "system", "assistant, "user", or "function".</param>
-	public ChatMessage(ChatMessageRole role)
+	public ChatMessage(ChatMessageRoles role)
 	{
 		Role = role;
 		Id = Guid.NewGuid();
@@ -37,7 +38,7 @@ public class ChatMessage
 	/// </summary>
 	/// <param name="role">The role of the message, which can be "system", "assistant, "user", or "function".</param>
 	/// <param name="content">The text to send in the message</param>
-	public ChatMessage(ChatMessageRole role, string content)
+	public ChatMessage(ChatMessageRoles role, string content)
     {
         Role = role;
         Content = content;
@@ -49,7 +50,7 @@ public class ChatMessage
 	/// </summary>
 	/// <param name="role">The role of the message, which can be "system", "assistant, "user", or "function".</param>
 	/// <param name="parts">Parts the message consists of</param>
-	public ChatMessage(ChatMessageRole role, IEnumerable<ChatMessagePart> parts)
+	public ChatMessage(ChatMessageRoles role, IEnumerable<ChatMessagePart> parts)
     {
         Role = role;
         Parts = parts.ToList();
@@ -63,7 +64,7 @@ public class ChatMessage
 	/// <param name="role">The role of the message, which can be "system", "assistant, "user", or "function".</param>
 	/// <param name="parts">Parts the message consists of</param>
 	/// <param name="id">Unique guid acting as an identifier. If null, assigned automatically.</param>
-	public ChatMessage(ChatMessageRole role, IEnumerable<ChatMessagePart> parts, Guid? id)
+	public ChatMessage(ChatMessageRoles role, IEnumerable<ChatMessagePart> parts, Guid? id)
     {
         Role = role;
         Parts = parts.ToList();
@@ -77,7 +78,7 @@ public class ChatMessage
 	/// <param name="role">The role of the message, which can be "system", "assistant, "user", or "function".</param>
 	/// <param name="content">The text to send in the message</param>
 	/// <param name="id">Unique guid acting as an identifier. If null, assigned automatically.</param>
-	public ChatMessage(ChatMessageRole role, string content, Guid? id)
+	public ChatMessage(ChatMessageRoles role, string content, Guid? id)
     {
         Role = role;
         Content = content;
@@ -98,10 +99,10 @@ public class ChatMessage
     ///     The role of the message, which can be "system", "assistant", "user" or "function".
     /// </summary>
     [JsonIgnore]
-    public ChatMessageRole? Role
+    public ChatMessageRoles? Role
     {
-        get => ChatMessageRole.FromString(rawRole);
-        set => rawRole = value?.ToString();
+        get => ChatMessageRole.MemberFromString(rawRole);
+        set => rawRole = ChatMessageRole.MemberToString(value);
     }
 
     /// <summary>
@@ -126,7 +127,7 @@ public class ChatMessage
     ///     Assigned in ctor. Use to remove / update messages from conversation.
     /// </summary>
     [JsonIgnore]
-    public Guid Id { get; }
+    public Guid Id { get; internal set; }
 
     /// <summary>
     ///     Optional field tool calls
@@ -153,4 +154,7 @@ public class ChatMessage
     /// </summary>
     [JsonIgnore]
     internal bool ExcludeFromRequest { get; set; }
+
+    [JsonIgnore] 
+    internal Dictionary<string, ToolCallInboundAccumulator>? ToolCallsDict;
 }

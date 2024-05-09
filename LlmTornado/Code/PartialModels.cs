@@ -1,8 +1,15 @@
-﻿using System.IO;
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Net.Http;
+using System.Text;
+using System.Threading.Tasks;
 using LlmTornado.Images;
 using LlmTornado;
+using LlmTornado.ChatFunctions;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace LlmTornado.Code;
 
@@ -16,6 +23,110 @@ public class StreamResponse
     public Stream Stream { get; set; }
     public ApiResultBase Headers { get; set; }
     public HttpResponseMessage Response { get; set; }
+}
+
+public class StreamRequest : IAsyncDisposable
+{
+    public Stream Stream { get; set; }
+    public HttpResponseMessage Response { get; set; }
+    public StreamReader StreamReader { get; set; }
+
+    public async ValueTask DisposeAsync()
+    {
+        await Stream.DisposeAsync();
+        Response.Dispose();
+        StreamReader.Dispose();
+    }
+}
+
+/// <summary>
+///     Roles of chat participants.
+/// </summary>
+public enum ChatMessageRoles
+{
+    /// <summary>
+    ///     Unknown role.
+    /// </summary>
+    Unknown,
+    /// <summary>
+    ///     System prompt / preamble.
+    /// </summary>
+    System,
+    /// <summary>
+    ///     Messages written by user.
+    /// </summary>
+    User,
+    /// <summary>
+    ///     Assistant messages.
+    /// </summary>
+    Assistant,
+    /// <summary>
+    ///     Messages representing tool/function/connector usage.
+    /// </summary>
+    Tool
+}
+
+internal enum ChatResultStreamInternalKinds
+{
+    Unknown,
+    None,
+    AppendAssistantMessage
+}
+
+public class ChatFunctionParamsGetter
+{
+    private readonly Dictionary<string, object?>? source;
+
+    public ChatFunctionParamsGetter(Dictionary<string, object?>? pars)
+    {
+        source = pars;
+    }
+
+    public bool Get<T>(string param, [NotNullWhen(returnValue: true)] out T? data, out Exception? exception)
+    {
+        exception = null;
+        
+        if (source is null)
+        {
+            data = default;
+            return false; 
+        }
+        
+        if (!source.TryGetValue(param, out object? rawData))
+        {
+            data = default;
+            return false;
+        }
+
+        if (rawData is T obj)
+        {
+            data = obj;
+        }
+
+        if (rawData is JArray jArr)
+        {
+            data = jArr.ToObject<T?>();
+            return true;
+        }
+
+        try
+        {
+            data = (T?)rawData.ChangeType(typeof(T));
+            return true;
+        }
+        catch (Exception e)
+        {
+            data = default;
+            exception = e;
+            return false;
+        }
+    }
+}
+
+internal class ToolCallInboundAccumulator
+{
+    public ToolCall ToolCall { get; set; }
+    public StringBuilder ArgumentsBuilder { get; set; } = new StringBuilder();
 }
 
 /// <summary>

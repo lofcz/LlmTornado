@@ -13,18 +13,20 @@ namespace LlmTornado.Demo;
 
 public static class ChatDemo
 {
-    public static async Task<ChatResult> Completion()
+    public static async Task<ChatResult?> Completion()
     {
-        ChatResult result = await Program.Connect().Chat.CreateChatCompletionAsync(new ChatRequest
+        ChatResult? result = await Program.Connect().Chat.CreateChatCompletionAsync(new ChatRequest
         {
             Model = ChatModel.OpenAi.Gpt4.Turbo,
             ResponseFormat = ChatRequestResponseFormats.Json,
             Messages = [
-                new ChatMessage(ChatMessageRole.System, "Solve the math problem given by user, respond in JSON format."),
-                new ChatMessage(ChatMessageRole.User, "2+2=?")
+                new ChatMessage(ChatMessageRoles.System, "Solve the math problem given by user, respond in JSON format."),
+                new ChatMessage(ChatMessageRoles.User, "2+2=?")
             ]
         });
 
+        Console.WriteLine(result?.Choices?.Count > 0 ? result.Choices?[0].Message?.Content : "no response");
+        
         return result;
     }
     
@@ -90,8 +92,9 @@ public static class ChatDemo
         }
     }
 
-    public static async Task CohereFunctionsStreaming()
+    public static async Task OpenAiFunctionsStreamingInteractive()
     {
+        // 1. set up a sample tool using strongly typed model
         ChatPluginCompiler compiler = new ChatPluginCompiler();
         compiler.SetFunctions([
             new ChatPluginFunction("get_weather", "gets the current weather in a given city", [
@@ -99,20 +102,75 @@ public static class ChatDemo
             ])
         ]);
         
-        Conversation chat = Program.Connect(LLmProviders.Cohere).Chat.CreateConversation(new ChatRequest
+        // 2. in this scenario, the conversation starts with the user asking for the current weather in two of the supported cities.
+        // we can try asking for the weather in the third supported city (Paris) later.
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.Cohere.CommandRPlus,
+            Model = ChatModel.OpenAi.Gpt4.Turbo,
             Tools = compiler.GetFunctions()
-        }).AppendUserInput("What is the weather today in Prague?");
+        }).AppendUserInput("Please call functions get_weather for Prague and Bratislava (two function calls).");
 
-        await chat.StreamResponseRich(async (token) =>
+        // 3. repl
+        while (true)
         {
-            Console.Write(token);
-        }, async (x) =>
+            // 3.1 stream the response from llm
+            await StreamResponse();
+
+            // 3.2 read input
+            while (true)
+            {
+                Console.WriteLine();
+                Console.Write("> ");
+                string? input = Console.ReadLine();
+
+                if (input?.ToLowerInvariant() is "q" or "quit")
+                {
+                    return;
+                }
+                
+                if (!string.IsNullOrWhiteSpace(input))
+                {
+                    chat.AppendUserInput(input);
+                    break;
+                }
+            }
+        }
+
+        async Task StreamResponse()
         {
-            
-            return [];
-        }, null, null, null);
+            await chat.StreamResponseRich(new ChatStreamEventHandler
+            {
+                MessageTokenHandler = async (token) =>
+                {
+                    Console.Write(token);
+                },
+                FunctionCallHandler = async (fnCalls) =>
+                {
+                    foreach (FunctionCall x in fnCalls)
+                    {
+                        if (!x.TryGetArgument("city_name", out string? cityName))
+                        {
+                            x.Result = new FunctionResult(x, new
+                            {
+                                result = "error",
+                                message = "expected city_name argument"
+                            }, null, true);
+                            continue;
+                        }
+
+                        x.Result = new FunctionResult(x, new
+                        {
+                            result = "ok",
+                            weather = cityName.ToLowerInvariant() is "prague" ? "A mild rain" : cityName.ToLowerInvariant() is "paris" ? "Foggy, cloudy" : "A sunny day"
+                        }, null, true);
+                    }
+                },
+                AfterFunctionCallsResolvedHandler = async (fnResults, handler) =>
+                {
+                    await chat.StreamResponseRich(handler);
+                }
+            });
+        }
     }
     
     public static async Task CohereWebSearchStreaming()
@@ -129,7 +187,7 @@ public static class ChatDemo
         chat.AppendUserInput("Search for the latest version of .net core, including preview version. Respond with the latest version number and date of release.");
 
         StringBuilder sb = new StringBuilder();
-      
+        
         await chat.StreamResponseRich((str) =>
         {
             sb.Append(str);
@@ -286,9 +344,9 @@ public static class ChatDemo
             }
         };
         
-        chat.AppendMessage(ChatMessageRole.System, "You are a helpful assistant");
+        chat.AppendMessage(ChatMessageRoles.System, "You are a helpful assistant");
         Guid msgId = Guid.NewGuid();
-        chat.AppendMessage(ChatMessageRole.User, "What is the weather like today in Prague?", msgId);
+        chat.AppendMessage(ChatMessageRoles.User, "What is the weather like today in Prague?", msgId);
 
         await chat.StreamResponseRich(msgId, (x) =>
         {
@@ -296,15 +354,9 @@ public static class ChatDemo
             return Task.CompletedTask;
         }, functions =>
         {
-            List<FunctionResult> results = [];
-
-            foreach (FunctionCall fn in functions)
-            {
-                results.Add(new FunctionResult(fn.Name, "A mild rain is expected around noon."));
-            }
-
+            List<FunctionResult> results = functions.Select(fn => new FunctionResult(fn.Name, "A mild rain is expected around noon.")).ToList();
             return Task.FromResult(results);
-        }, null, null);
+        }, null);
 
 
         string response = sb.ToString();
@@ -345,9 +397,9 @@ public static class ChatDemo
             }
         };
         
-        chat.AppendMessage(ChatMessageRole.System, "You are a helpful assistant");
+        chat.AppendMessage(ChatMessageRoles.System, "You are a helpful assistant");
         Guid msgId = Guid.NewGuid();
-        chat.AppendMessage(ChatMessageRole.User, "What is the weather like today in Prague?", msgId);
+        chat.AppendMessage(ChatMessageRoles.User, "What is the weather like today in Prague?", msgId);
 
         await chat.StreamResponseRich(msgId, (x) =>
         {
@@ -404,9 +456,9 @@ public static class ChatDemo
             }
         };
         
-        chat.AppendMessage(ChatMessageRole.System, "You are a helpful assistant");
+        chat.AppendMessage(ChatMessageRoles.System, "You are a helpful assistant");
         Guid msgId = Guid.NewGuid();
-        chat.AppendMessage(ChatMessageRole.User, "What is the weather like today in Prague?", msgId);
+        chat.AppendMessage(ChatMessageRoles.User, "What is the weather like today in Prague?", msgId);
 
         await chat.StreamResponseRich(msgId, (x) =>
         {
@@ -501,10 +553,10 @@ public static class ChatDemo
                 sb.Append(str);
             }
         };
-        chat.AppendMessage(ChatMessageRole.System, "You are a helpful assistant");
+        chat.AppendMessage(ChatMessageRoles.System, "You are a helpful assistant");
         
         Guid msgId = Guid.NewGuid(); 
-        chat.AppendMessage(ChatMessageRole.User, "What is the weather like today?", msgId);
+        chat.AppendMessage(ChatMessageRoles.User, "What is the weather like today?", msgId);
         
         await chat.StreamResponseRich(msgId, (x) =>
         {

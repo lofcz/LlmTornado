@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Http;
+using LlmTornado.Chat;
 
 namespace LlmTornado.Code;
 
@@ -24,6 +25,7 @@ public interface IEndpointProvider
     public T? InboundMessage<T>(string jsonData, string? postData);
     public void ParseInboundHeaders<T>(T res, HttpResponseMessage response) where T : ApiResultBase;
     public IAsyncEnumerable<T?> InboundStream<T>(StreamReader streamReader) where T : class;
+    IAsyncEnumerable<ChatResult?> InboundStream(StreamReader reader, ChatRequest request);
     public TornadoApi Api { get; set; }
     public LLmProviders Provider { get; set; }
     public string ApiUrl(CapabilityEndpoints endpoint, string? url);

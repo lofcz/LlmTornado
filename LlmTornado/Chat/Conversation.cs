@@ -100,7 +100,7 @@ public class Conversation
     ///     useful metadata like token usages, <see cref="ChatChoice.FinishReason" />, etc.  This is overwritten with every
     ///     call to <see cref="GetResponse" /> and only contains the most recent result.
     /// </summary>
-    public ChatResult MostRecentApiResult { get; private set; }
+    public ChatResult? MostRecentApiResult { get; private set; }
 
     /// <summary>
     ///     If not null, overrides the default OpenAI auth
@@ -219,7 +219,7 @@ public class Conversation
     /// </summary>
     /// <param name="message">Message to update</param>
     /// <param name="role">New role</param>
-    public Conversation EditMessageRole(ChatMessage message, ChatMessageRole role)
+    public Conversation EditMessageRole(ChatMessage message, ChatMessageRoles role)
     {
         message.Role = role;
         return this;
@@ -231,7 +231,7 @@ public class Conversation
     /// <param name="id">Message to update</param>
     /// <param name="role">New role</param>
     /// <returns>Whether message was updated</returns>
-    public bool EditMessageRole(Guid id, ChatMessageRole role)
+    public bool EditMessageRole(Guid id, ChatMessageRoles role)
     {
         ChatMessage? msg = _messages.FirstOrDefault(x => x.Id == id);
 
@@ -254,7 +254,7 @@ public class Conversation
     ///     usage.
     /// </param>
     /// <param name="content">The content of the message)</param>
-    public Conversation AppendMessage(ChatMessageRole role, string content)
+    public Conversation AppendMessage(ChatMessageRoles role, string content)
     {
         return AppendMessage(new ChatMessage(role, content));
     }
@@ -270,7 +270,7 @@ public class Conversation
     /// </param>
     /// <param name="content">The content of the message</param>
     /// <param name="id">Id of the message</param>
-    public Conversation AppendMessage(ChatMessageRole role, string content, Guid? id)
+    public Conversation AppendMessage(ChatMessageRoles role, string content, Guid? id)
     {
         return AppendMessage(new ChatMessage(role, content, id));
     }
@@ -286,7 +286,7 @@ public class Conversation
     /// </param>
     public Conversation AppendUserInput(string content)
     {
-        return AppendMessage(new ChatMessage(ChatMessageRole.User, content));
+        return AppendMessage(new ChatMessage(ChatMessageRoles.User, content));
     }
 
     /// <summary>
@@ -301,7 +301,7 @@ public class Conversation
     /// <param name="id">id of the message</param>
     public Conversation AppendUserInput(string content, Guid id)
     {
-        return AppendMessage(new ChatMessage(ChatMessageRole.User, content, id));
+        return AppendMessage(new ChatMessage(ChatMessageRoles.User, content, id));
     }
 
     /// <summary>
@@ -315,7 +315,7 @@ public class Conversation
     /// <param name="id">id of the message</param>
     public Conversation AppendUserInput(IEnumerable<ChatMessagePart> parts, Guid id)
     {
-        return AppendMessage(new ChatMessage(ChatMessageRole.User, parts, id));
+        return AppendMessage(new ChatMessage(ChatMessageRoles.User, parts, id));
     }
 
     /// <summary>
@@ -330,7 +330,7 @@ public class Conversation
     /// </param>
     public Conversation AppendUserInputWithName(string userName, string content)
     {
-        return AppendMessage(new ChatMessage(ChatMessageRole.User, content) { Name = userName });
+        return AppendMessage(new ChatMessage(ChatMessageRoles.User, content) { Name = userName });
     }
 
     /// <summary>
@@ -346,7 +346,7 @@ public class Conversation
     /// <param name="id">id of the message</param>
     public Conversation AppendUserInputWithName(string userName, string content, Guid id)
     {
-        return AppendMessage(new ChatMessage(ChatMessageRole.User, content, id) { Name = userName });
+        return AppendMessage(new ChatMessage(ChatMessageRoles.User, content, id) { Name = userName });
     }
 
     /// <summary>
@@ -362,7 +362,7 @@ public class Conversation
     /// <param name="id">id of the message</param>
     public Conversation AppendUserInputWithName(string userName, IEnumerable<ChatMessagePart> parts, Guid id)
     {
-        return AppendMessage(new ChatMessage(ChatMessageRole.User, parts, id) { Name = userName });
+        return AppendMessage(new ChatMessage(ChatMessageRoles.User, parts, id) { Name = userName });
     }
 
     /// <summary>
@@ -372,7 +372,7 @@ public class Conversation
     /// <param name="content">text content that helps set the behavior of the assistant</param>
     public Conversation AppendSystemMessage(string content)
     {
-        return AppendMessage(new ChatMessage(ChatMessageRole.System, content));
+        return AppendMessage(new ChatMessage(ChatMessageRoles.System, content));
     }
 
     /// <summary>
@@ -383,7 +383,7 @@ public class Conversation
     /// <param name="id">id of the message</param>
     public Conversation AppendSystemMessage(string content, Guid id)
     {
-        return AppendMessage(new ChatMessage(ChatMessageRole.System, content, id));
+        return AppendMessage(new ChatMessage(ChatMessageRoles.System, content, id));
     }
 
     /// <summary>
@@ -394,7 +394,7 @@ public class Conversation
     /// <param name="id">id of the message</param>
     public Conversation AppendSystemMessage(IEnumerable<ChatMessagePart> parts, Guid id)
     {
-        return AppendMessage(new ChatMessage(ChatMessageRole.System, parts, id));
+        return AppendMessage(new ChatMessage(ChatMessageRoles.System, parts, id));
     }
 
     /// <summary>
@@ -405,7 +405,7 @@ public class Conversation
     /// <param name="id">id of the message</param>
     public Conversation PrependSystemMessage(string content, Guid id)
     {
-        return AppendMessage(new ChatMessage(ChatMessageRole.System, content, id), 0);
+        return AppendMessage(new ChatMessage(ChatMessageRoles.System, content, id), 0);
     }
 
     /// <summary>
@@ -416,7 +416,7 @@ public class Conversation
     /// <param name="id">id of the message</param>
     public Conversation PrependSystemMessage(IEnumerable<ChatMessagePart> parts, Guid id)
     {
-        return AppendMessage(new ChatMessage(ChatMessageRole.System, parts, id), 0);
+        return AppendMessage(new ChatMessage(ChatMessageRoles.System, parts, id), 0);
     }
 
     /// <summary>
@@ -427,7 +427,7 @@ public class Conversation
     /// <param name="content">Text content written by a developer to help give examples of desired behavior</param>
     public Conversation AppendExampleChatbotOutput(string content)
     {
-        return AppendMessage(new ChatMessage(ChatMessageRole.Assistant, content));
+        return AppendMessage(new ChatMessage(ChatMessageRoles.Assistant, content));
     }
 
     /// <summary>
@@ -439,7 +439,7 @@ public class Conversation
     /// <param name="content">The text content (usually JSON)</param>
     public Conversation AppendFunctionMessage(string functionName, string content)
     {
-        return AppendMessage(new ChatMessage(ChatMessageRole.Tool, content) { Name = functionName });
+        return AppendMessage(new ChatMessage(ChatMessageRoles.Tool, content) { Name = functionName });
     }
 
     /// <summary>
@@ -451,7 +451,7 @@ public class Conversation
     /// <param name="id">id of the message</param>
     public Conversation AppendExampleChatbotOutput(string content, Guid id)
     {
-        return AppendMessage(new ChatMessage(ChatMessageRole.Assistant, content, id));
+        return AppendMessage(new ChatMessage(ChatMessageRoles.Assistant, content, id));
     }
 
     /// <summary>
@@ -463,7 +463,7 @@ public class Conversation
     /// <param name="id">id of the message</param>
     public Conversation AppendExampleChatbotOutput(IEnumerable<ChatMessagePart> parts, Guid id)
     {
-        return AppendMessage(new ChatMessage(ChatMessageRole.Assistant, parts, id));
+        return AppendMessage(new ChatMessage(ChatMessageRoles.Assistant, parts, id));
     }
 
     #region Non-streaming
@@ -889,7 +889,7 @@ public class Conversation
         };
 
         StringBuilder responseStringBuilder = new();
-        ChatMessageRole? responseRole = null;
+        ChatMessageRoles? responseRole = null;
 
         await foreach (ChatResult res in _endpoint.StreamChatEnumerableAsync(req))
         {
@@ -899,7 +899,10 @@ public class Conversation
 
             if (res.Choices[0].Delta is { } delta)
             {
-                if (responseRole == null && delta.Role != null) responseRole = delta.Role;
+                if (responseRole is null && delta.Role is not null)
+                {
+                    responseRole = delta.Role;
+                }
 
                 string? deltaContent = delta.Content;
 
@@ -915,250 +918,169 @@ public class Conversation
 
         if (responseRole is not null) 
         {
-            AppendMessage(responseRole, responseStringBuilder.ToString(), messageId);
+            AppendMessage((ChatMessageRoles)responseRole, responseStringBuilder.ToString(), messageId);
         }
     }
-
+    
     /// <summary>
-    ///     Stream LLM response. If the response is of type "function", entire response is buffered and then
-    ///     <see cref="functionCallHandler" /> is invoked.
-    ///     Otherwise the message is intended for the end user and <see cref="messageTokenHandler" /> is called for each
-    ///     incoming token
+    ///     Stream LLM response as a series of events. The raw events from Provider are abstracted away and only high-level events are reported such as inbound plaintext tokens, complete tool requests, etc.
     /// </summary>
-    /// <param name="messageTokenHandler"></param>
-    /// <param name="functionCallHandler"></param>
-    /// <param name="messageTypeResolvedHandler">
-    ///     This is called typically after the first token arrives signaling type of the
-    ///     incoming message
-    /// </param>
-    /// <param name="chatRequestHandler">
-    ///     if false, functions won't be allowed to execute regardless of the conversation
-    ///     settings
-    /// </param>
-    public async Task StreamResponseRich(Func<string?, Task>? messageTokenHandler, Func<List<FunctionCall>, Task<List<FunctionResult>>>? functionCallHandler, Func<ChatMessageRole, Task>? messageTypeResolvedHandler, Func<ChatRequest, Task<ChatRequest>>? chatRequestHandler, Func<ChatResponseVendorExtensions, Task>? vendorFeaturesHandler)
+    public async Task StreamResponseRich(Guid msgId, Func<string?, Task>? messageTokenHandler, Func<List<FunctionCall>, Task<List<FunctionResult>>>? functionCallHandler, Func<ChatMessageRoles, Task>? messageTypeResolvedHandler, Ref<string>? outboundRequest = null, Func<ChatResponseVendorExtensions, Task>? vendorFeaturesHandler = null)
     {
-        await StreamResponseRich(Guid.NewGuid(), messageTokenHandler, functionCallHandler, messageTypeResolvedHandler, chatRequestHandler, null, vendorFeaturesHandler);
+        await StreamResponseRich(new ChatStreamEventHandler
+        {
+            MessageTokenHandler = messageTokenHandler,
+            FunctionCallHandler = functionCallHandler,
+            MessageTypeResolvedHandler = messageTypeResolvedHandler,
+            VendorFeaturesHandler = vendorFeaturesHandler,
+            MessageId = msgId
+        });
     }
 
     /// <summary>
-    ///     Stream LLM response. If the response is of type "function", entire response is buffered and then
-    ///     <see cref="functionCallHandler" /> is invoked.
-    ///     Otherwise the message is intended for the end user and <see cref="messageTokenHandler" /> is called for each
-    ///     incoming token
+    ///     Stream LLM response as a series of events. The raw events from Provider are abstracted away and only high-level events are reported such as inbound plaintext tokens, complete tool requests, etc.
     /// </summary>
-    /// <param name="messageId"></param>
-    /// <param name="messageTokenHandler"></param>
-    /// <param name="functionCallHandler"></param>
-    /// <param name="messageTypeResolvedHandler">
-    ///     This is called typically after the first token arrives signaling type of the
-    ///     incoming message
-    /// </param>
-    /// <param name="chatRequestHandler">
-    ///     if false, functions won't be allowed to executed regardless of the conversation
-    ///     settings
-    /// </param>
-    /// <param name="outboundRequest">set to an empty <see cref="Ref{T}" /> to receive the outbound request as well</param>
-    public async Task StreamResponseRich(Guid? messageId, Func<string?, Task>? messageTokenHandler, Func<List<FunctionCall>, Task<List<FunctionResult>>>? functionCallHandler, Func<ChatMessageRole, Task>? messageTypeResolvedHandler, Func<ChatRequest, Task<ChatRequest>>? chatRequestHandler, Ref<string>? outboundRequest = null, Func<ChatResponseVendorExtensions, Task>? vendorFeaturesHandler = null)
+    public async Task StreamResponseRich(Func<string?, Task>? messageTokenHandler, Func<List<FunctionCall>, Task<List<FunctionResult>>>? functionCallHandler, Func<ChatMessageRoles, Task>? messageTypeResolvedHandler, Ref<string>? outboundRequest = null, Func<ChatResponseVendorExtensions, Task>? vendorFeaturesHandler = null)
+    {
+        await StreamResponseRich(new ChatStreamEventHandler
+        {
+            MessageTokenHandler = messageTokenHandler,
+            FunctionCallHandler = functionCallHandler,
+            MessageTypeResolvedHandler = messageTypeResolvedHandler,
+            VendorFeaturesHandler = vendorFeaturesHandler
+        });
+    }
+
+    /// <summary>
+    ///     Stream LLM response as a series of events. The raw events from Provider are abstracted away and only high-level events are reported such as inbound plaintext tokens, complete tool requests, etc.
+    /// </summary>
+    /// <param name="eventsHandler"></param>
+    public async Task StreamResponseRich(ChatStreamEventHandler? eventsHandler)
     {
         ChatRequest req = new(RequestParameters)
         {
-            Messages = _messages.ToList(),
-            OuboundFunctionsContent = outboundRequest
+            Messages = _messages.ToList()
         };
 
-        req = chatRequestHandler is not null ? await chatRequestHandler.Invoke(req) : req;
-
-        StringBuilder responseStringBuilder = new();
-        ChatMessageRole? responseRole = null;
-        string currentFunction = string.Empty;
-        Dictionary<string, StringBuilder> functionCalls = new();
-        bool typeResolved = false;
-
+        req = eventsHandler?.OutboundRequestHandler is not null ? await eventsHandler.OutboundRequestHandler.Invoke(req) : req;
+        bool isFirst = true;
+        Guid currentMsgId = eventsHandler?.MessageId ?? Guid.NewGuid();
+        
         await foreach (ChatResult res in _endpoint.StreamChatEnumerableAsync(req))
         {
+            // internal events are resolved immediately, we never return control to the user.
+            if (res.StreamInternalKind is not null)
+            {
+                ChatMessage? internalDelta = res.Choices?.Count > 0 ? res.Choices[0].Delta : null;
+                
+                if (res.StreamInternalKind is ChatResultStreamInternalKinds.AppendAssistantMessage && internalDelta is not null)
+                {
+                    internalDelta.Role = ChatMessageRoles.Assistant;
+                    internalDelta.Id = currentMsgId;
+                    currentMsgId = Guid.NewGuid();
+                    AppendMessage(internalDelta);
+                }
+                
+                continue;
+            }
+            
             if (res.Choices is null || res.Choices.Count is 0)
             {
-                if (res.VendorExtensions is not null && vendorFeaturesHandler is not null)
+                if (res.VendorExtensions is not null && eventsHandler?.VendorFeaturesHandler is not null)
                 {
-                    await vendorFeaturesHandler.Invoke(res.VendorExtensions);
+                    await eventsHandler.VendorFeaturesHandler.Invoke(res.VendorExtensions);
                 }
 
                 MostRecentApiResult = res;
                 continue;
             }
+
+            ChatMessage? delta = res.Choices[0].Delta;
             
-            ChatChoice choice = res.Choices[0];
-            string? finishReason = choice.FinishReason;
-
-            if (finishReason is not null && (res.Provider?.ToolFinishReasons.Contains(finishReason) ?? false))
+            if (isFirst && delta?.Role is not null)
             {
-                responseRole = ChatMessageRole.Tool;
+                if (eventsHandler?.MessageTypeResolvedHandler is not null)
+                {
+                    await eventsHandler.MessageTypeResolvedHandler(res.Choices[0].Delta!.Role ?? ChatMessageRoles.Unknown);
+                }
+
+                isFirst = false;
             }
 
-            if (choice.Delta is not null)
+            if (delta is not null && eventsHandler is not null)
             {
-                ChatMessage delta = choice.Delta;
-                string? deltaContent = delta.Content;
-                bool empty = string.IsNullOrEmpty(deltaContent);
-                
-                if (choice.Delta.ToolCalls is not null)
+                if (delta.Role is ChatMessageRoles.Assistant)
                 {
-                    responseRole ??= ChatMessageRole.Tool;
-
-                    if (!typeResolved)
+                    if (eventsHandler.MessageTokenHandler is not null)
                     {
-                        typeResolved = true;
-
-                        if (messageTypeResolvedHandler is not null)
-                        {
-                            await messageTypeResolvedHandler(ChatMessageRole.Tool);
-                        }
+                        await eventsHandler.MessageTokenHandler.Invoke(res.Choices[0].Delta?.Content ?? res.Choices[0].Message?.Content);
                     }
-
-                    if (choice.Delta.ToolCalls.Count > 0)
-                    {
-                        if (!choice.Delta.ToolCalls[0].FunctionCall.Name.IsNullOrWhiteSpace())
-                        {
-                            currentFunction = choice.Delta.ToolCalls[0].FunctionCall.Name;
-                            functionCalls.TryAdd(currentFunction, new StringBuilder());
-                        }
-                        else
-                        {
-                            if (functionCalls.TryGetValue(currentFunction, out StringBuilder? sb))
-                            {
-                                sb.Append(choice.Delta.ToolCalls[0].FunctionCall.Arguments);
-                            }
-                        }
-                    }
-                }
-
-                if (responseRole is null && delta.Role is not null)
-                {
-                    responseRole = delta.Role;
-
-                    if (!typeResolved)
-                    {
-                        typeResolved = true;
-
-                        if (messageTypeResolvedHandler != null) await messageTypeResolvedHandler(responseRole);
-                    }
-
-                    if (functionCallHandler is not null && responseRole == "function")
-                    {
-                        if (!empty)
-                        {
-                            responseStringBuilder.Append(deltaContent);
-                        }
-
-                        continue;
-                    }
-                }
-
-                if (!empty)
-                {
-                    responseStringBuilder.Append(deltaContent);
-
-                    if (messageTokenHandler is not null)
-                    {
-                        await messageTokenHandler.Invoke(deltaContent);
-                    }
-                }
-            }
-            else if (responseRole is not null && responseRole.Equals(ChatMessageRole.Tool)) 
-            {
-                foreach (ChatChoice iChoice in res.Choices.Where(ch => ch.Message?.ToolCalls is not null))
-                {
-                    if (iChoice.Message is { ToolCalls: not null })
-                    {
-                        if (!iChoice.Message.ToolCalls[0].FunctionCall.Name.IsNullOrWhiteSpace())
-                        {
-                            StringBuilder sb = new StringBuilder();
-                            currentFunction = iChoice.Message.ToolCalls[0].Id;
-                            sb.Append(iChoice.Message.ToolCalls[0].FunctionCall.Arguments);
-                            functionCalls.TryAdd(currentFunction, sb);
-                        }
-                    }
-
-                }
-            }
-            else if (responseRole is null && res.Choices[0].Message?.Role is not null)
-            {
-                if (string.IsNullOrEmpty(res.Choices[0].Message?.Content))
-                {
-                    responseStringBuilder.Append(res.Choices[0].Message?.Content);
-
-                    if (messageTokenHandler is not null)
-                    {
-                        await messageTokenHandler.Invoke(res.Choices[0].Message?.Content);
-                    }
-                }
-            }
-            
-            MostRecentApiResult = res;
-        }
-
-        if (responseRole is not null && responseRole.Equals(ChatMessageRole.Tool))
-        {
-            if (functionCallHandler is not null)
-            {
-                ResolvedToolsCall result = new ResolvedToolsCall();
-                
-                List<FunctionCall> calls = functionCalls.Select(pair => new FunctionCall
-                {
-                    Name = pair.Key,
-                    Arguments = pair.Value.ToString()
-                }).ToList();
-                List<FunctionResult> frs = await functionCallHandler.Invoke(calls);
-                
-                ChatMessage fnCallMsg = new(ChatMessageRole.Assistant)
-                {
-                    ToolCalls = calls.Select(x => new ToolCall
-                    {
-                        FunctionCall = x, 
-                        Type = "function", 
-                        Id = x.Name
-                    }).ToList()
-                };
-
-                if (MostRecentApiResult.Choices?.Count > 0 && MostRecentApiResult.Choices[0].FinishReason == VendorAnthropicChatMessageTypes.ToolUse)
-                {
-                    fnCallMsg.Content = MostRecentApiResult.Object;
-                }
-
-                result.AssistantMessage = fnCallMsg;
-                AppendMessage(fnCallMsg);
-    
-                for (int i = 0; i < Math.Min(calls.Count, frs.Count); i++)
-                {
-                    ChatMessage fnResultMsg = new(ChatMessageRole.Tool, frs[i].Content, Guid.NewGuid())
-                    {
-                        ToolCallId = calls[i].Name,
-                        ToolInvocationSucceeded = frs[i].InvocationSucceeded
-                    };
-                    
-                    AppendMessage(fnResultMsg);
-
-                    result.ToolResults.Add(new ResolvedToolCall
-                    {
-                        Call = calls[i],
-                        Result = frs[i],
-                        ToolMessage = fnResultMsg
-                    });
-                }
-
-                if (OnAfterToolsCall is not null)
-                {
-                    await OnAfterToolsCall(result);
                 }   
+                else if (delta.Role is ChatMessageRoles.Tool)
+                {
+                    delta.Role = ChatMessageRoles.Assistant;
+                    
+                    if (eventsHandler.FunctionCallHandler is not null)
+                    {
+                        ResolvedToolsCall result = new ResolvedToolsCall();
+                        
+                        List<FunctionCall>? calls = delta.ToolCalls?.Select(x => new FunctionCall
+                        {
+                            Name = x.FunctionCall.Name,
+                            Arguments = x.FunctionCall.Arguments,
+                            ToolCall = x
+                        }).ToList();
 
-                return;
+                        if (calls is not null)
+                        {
+                            await eventsHandler.FunctionCallHandler.Invoke(calls);
+                            
+                            if (MostRecentApiResult?.Choices?.Count > 0 && MostRecentApiResult.Choices[0].FinishReason == VendorAnthropicChatMessageTypes.ToolUse)
+                            {
+                                delta.Content = MostRecentApiResult.Object;
+                            }
+
+                            result.AssistantMessage = delta;
+                            AppendMessage(delta);
+
+                            foreach (FunctionCall call in calls)
+                            {
+                                ChatMessage fnResultMsg = new(ChatMessageRoles.Tool, call.Result?.Content ?? "The service returned no data.", Guid.NewGuid())
+                                {
+                                    Id = currentMsgId,
+                                    ToolCallId = call.ToolCall?.Id ?? call.Name,
+                                    ToolInvocationSucceeded = call.Result?.InvocationSucceeded ?? false
+                                };
+
+                                currentMsgId = Guid.NewGuid();
+                                AppendMessage(fnResultMsg);
+                                
+                                result.ToolResults.Add(new ResolvedToolCall
+                                {
+                                    Call = call,
+                                    Result = call.Result ?? new FunctionResult(call, null, null, false),
+                                    ToolMessage = fnResultMsg
+                                });
+                            }
+
+                            if (eventsHandler.AfterFunctionCallsResolvedHandler is not null)
+                            {
+                                await eventsHandler.AfterFunctionCallsResolvedHandler.Invoke(result, eventsHandler);
+                            }
+
+                            if (OnAfterToolsCall is not null)
+                            {
+                                await OnAfterToolsCall(result);
+                            }      
+                        }
+
+                        return;
+                    }
+                }
             }
         }
-
-        if (responseRole is not null)
-        {
-            AppendMessage(responseRole, responseStringBuilder.ToString(), messageId);
-        }
+        
+        // AppendMessage(delta);
     }
 
     #endregion

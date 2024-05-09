@@ -280,46 +280,52 @@ public class ChatRequest
 
                 if (msg.Role is not null)
                 {
-                    if (ChatMessageRole.Tool.Equals(msg.Role))
-                    {
-                        writer.WritePropertyName("tool_call_id");
-                        writer.WriteValue(msg.ToolCallId);
-                    }
-                    else if (ChatMessageRole.Assistant.Equals(msg.Role))
-                    {
-                        if (msg.ToolCalls is not null)
-                        {
-                            writer.WritePropertyName("tool_calls");
+	                switch (msg.Role)
+	                {
+		                case ChatMessageRoles.Tool:
+		                {
+			                writer.WritePropertyName("tool_call_id");
+			                writer.WriteValue(msg.ToolCallId);
+			                break;
+		                }
+		                case ChatMessageRoles.Assistant:
+		                {
+			                if (msg.ToolCalls is not null)
+			                {
+				                writer.WritePropertyName("tool_calls");
 
-                            writer.WriteStartArray();
+				                writer.WriteStartArray();
 
-                            foreach (ToolCall call in msg.ToolCalls)
-                            {
-                                writer.WriteStartObject();
+				                foreach (ToolCall call in msg.ToolCalls)
+				                {
+					                writer.WriteStartObject();
 
-                                writer.WritePropertyName("id");
-                                writer.WriteValue(call.Id);
+					                writer.WritePropertyName("id");
+					                writer.WriteValue(call.Id);
 
-                                writer.WritePropertyName("type");
-                                writer.WriteValue(call.Type);
+					                writer.WritePropertyName("type");
+					                writer.WriteValue(call.Type);
 
-                                writer.WritePropertyName("function");
-                                writer.WriteStartObject();
+					                writer.WritePropertyName("function");
+					                writer.WriteStartObject();
 
-                                writer.WritePropertyName("name");
-                                writer.WriteValue(call.FunctionCall.Name);
+					                writer.WritePropertyName("name");
+					                writer.WriteValue(call.FunctionCall.Name);
 
-                                writer.WritePropertyName("arguments");
-                                writer.WriteValue(call.FunctionCall.Arguments);
+					                writer.WritePropertyName("arguments");
+					                writer.WriteValue(call.FunctionCall.Arguments);
 
-                                writer.WriteEndObject();
+					                writer.WriteEndObject();
 
-                                writer.WriteEndObject();
-                            }
+					                writer.WriteEndObject();
+				                }
 
-                            writer.WriteEndArray();
-                        }
-                    }
+				                writer.WriteEndArray();
+			                }
+
+			                break;
+		                }
+	                }
                 }
 
                 if (!string.IsNullOrWhiteSpace(msg.Name))
@@ -328,6 +334,11 @@ public class ChatRequest
                     writer.WriteValue(msg.Name);
                 }
 
+                if (msg is { Role: ChatMessageRoles.Tool, Content: null })
+                {
+	                continue;
+                }
+                
                 writer.WritePropertyName("content");
 
                 if (msg.Parts?.Count > 0)
@@ -373,8 +384,7 @@ public class ChatRequest
             writer.WriteEndArray();
         }
 
-        public override IList<ChatMessage>? ReadJson(JsonReader reader, Type objectType, IList<ChatMessage>? existingValue, bool hasExistingValue,
-            JsonSerializer serializer)
+        public override IList<ChatMessage>? ReadJson(JsonReader reader, Type objectType, IList<ChatMessage>? existingValue, bool hasExistingValue, JsonSerializer serializer)
         {
             return existingValue;
         }

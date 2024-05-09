@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Vendors;
 using LlmTornado.ChatFunctions;
+using LlmTornado.Code;
 using LlmTornado.Vendor.Anthropic;
 using Newtonsoft.Json;
 
@@ -94,14 +95,14 @@ internal class VendorAnthropicChatResult : VendorChatResult
             
             if (contentBlock.Type == VendorAnthropicChatMessageTypes.ToolUse)
             {
-                blockMsg = new ChatMessage(ChatMessageRole.Tool)
+                blockMsg = new ChatMessage(ChatMessageRoles.Tool)
                 {
                     ToolCalls = [ ParseToolCall(contentBlock) ] // Claude3 models (Haiku, Sonnet, Opus) call tools one at a time.
                 };
             }
             else
             {
-                blockMsg = new ChatMessage(ChatMessageRole.Assistant, contentBlock.Text ?? string.Empty);
+                blockMsg = new ChatMessage(ChatMessageRoles.Assistant, contentBlock.Text ?? string.Empty);
             }
             
             result.Choices.Add(new ChatChoice

@@ -107,12 +107,11 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
 
         return $"https://api.anthropic.com/v1/{eStr}{url}";
     }
-
-    public override async IAsyncEnumerable<T?> InboundStream<T>(StreamReader reader) where T : class
+    
+    public override async IAsyncEnumerable<ChatResult?> InboundStream(StreamReader reader, ChatRequest request)
     {
         StreamNextAction nextAction = StreamNextAction.Read;
-        StreamRequestTypes requestType = GetStreamType(typeof(T));
-        
+      
         while (await reader.ReadLineAsync() is { } line)
         {
             if (line.IsNullOrWhiteSpace())
@@ -159,11 +158,6 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
                 {
                     line = line.Substring(Data.Length);
                     AnthropicStreamBlockStart? res = JsonConvert.DeserializeObject<AnthropicStreamBlockStart>(line);
-
-                    if (!res?.ContentBlock.Text.IsNullOrWhiteSpace() ?? false)
-                    {
-                        //yield return (T)(dynamic)res.ContentBlock.Text;
-                    }
                     
                     nextAction = StreamNextAction.Read;
                     break;
@@ -175,15 +169,15 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
                     
                     if (!res?.Delta.Text.IsNullOrWhiteSpace() ?? false)
                     {
-                        if (requestType is StreamRequestTypes.Chat)
+                        yield return new ChatResult
                         {
-                            yield return (T)(dynamic) new ChatResult
-                            {
-                                Choices = [
-                                    new ChatChoice { Delta = new ChatMessage(ChatMessageRole.Assistant, res.Delta.Text) }
-                                ]
-                            };
-                        }
+                            Choices = [
+                                new ChatChoice
+                                {
+                                    Delta = new ChatMessage(ChatMessageRoles.Assistant, res.Delta.Text)
+                                }
+                            ]
+                        };
                     }
                     
                     nextAction = StreamNextAction.Read;
@@ -205,6 +199,11 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
                 }
             }
         }
+    }
+
+    public override async IAsyncEnumerable<T?> InboundStream<T>(StreamReader reader) where T : class
+    {
+        yield break;
     }
 
     public override HttpRequestMessage OutboundMessage(string url, HttpMethod verb, object? data, bool streaming)

@@ -15,6 +15,14 @@ internal class VendorCohereChatTool
     public Dictionary<string, VendorCohereChatToolParameter>? ParameterDefinitions { get; set; }
 }
 
+internal class VendorCohereChatInboundTool
+{
+    [JsonProperty("name")]
+    public string Name { get; set; }
+    [JsonProperty("parameters")] 
+    public Dictionary<string, object?> Parameters { get; set; } = [];
+}
+
 internal class VendorCohereChatToolParameter
 {
     [JsonProperty("description")]

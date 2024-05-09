@@ -216,7 +216,7 @@ public class ChatEndpoint : EndpointBase, IChatEndpoint
     /// <returns>The <see cref="ChatResult" /> with the API response.</returns>
     public Task<ChatResult?> CreateChatCompletionAsync(params string[] userMessages)
     {
-        return CreateChatCompletionAsync(userMessages.Select(m => new ChatMessage(ChatMessageRole.User, m)).ToArray());
+        return CreateChatCompletionAsync(userMessages.Select(m => new ChatMessage(ChatMessageRoles.User, m)).ToArray());
     }
 
     #endregion
@@ -281,16 +281,33 @@ public class ChatEndpoint : EndpointBase, IChatEndpoint
             Stream = true
         };
         
-        IEndpointProvider provider = Api.GetProvider(request.Model);
+        IEndpointProvider provider = Api.GetProvider(request.Model ?? ChatModel.OpenAi.Gpt35.Turbo);
 
-        if (request.Tools is not null && provider.Provider is LLmProviders.Anthropic) // Anthropic doesn't support streaming with functions as of 4/24
+        if (provider.Provider is LLmProviders.Anthropic && request.Tools is not null) // Anthropic doesn't support streaming with functions as of 4/24
         {
-            return HttpFakeStreamingRequest(provider, request);
+            return StreamChatFake(provider, request);
         }
-        
-        return HttpStreamingRequest<ChatResult>(Api.GetProvider(request.Model), Endpoint, null, HttpMethod.Post, request.Serialize(provider.Provider), request.OuboundFunctionsContent);
+
+        return StreamChatReal(provider, request);
     }
 
+    private async IAsyncEnumerable<ChatResult> StreamChatReal(IEndpointProvider provider, ChatRequest request)
+    {
+        StreamRequest streamRequest = await HttpStreamingRequestData(Api.GetProvider(request.Model ?? ChatModel.OpenAi.Gpt35.Turbo), Endpoint, null, HttpMethod.Post, request.Serialize(provider.Provider));
+        
+        await foreach (ChatResult? x in provider.InboundStream(streamRequest.StreamReader, request))
+        {
+            if (x is null)
+            {
+                continue;
+            }
+            
+            yield return x;
+        }
+        
+        await streamRequest.DisposeAsync();
+    }
+    
     /// <summary>
     ///     Yields a single http result. Used for cases where streaming capability is in the public API but the vendor targeted by the request doesn't support streaming in
     ///     the given scenario.
@@ -298,7 +315,7 @@ public class ChatEndpoint : EndpointBase, IChatEndpoint
     /// <param name="provider"></param>
     /// <param name="request"></param>
     /// <returns></returns>
-    private async IAsyncEnumerable<ChatResult> HttpFakeStreamingRequest(IEndpointProvider provider, ChatRequest request)
+    private async IAsyncEnumerable<ChatResult> StreamChatFake(IEndpointProvider provider, ChatRequest request)
     {
         ChatResult result = await HttpPost1<ChatResult>(provider, Endpoint, null, request.Serialize(provider.Provider)) ?? new ChatResult();
         yield return result;
