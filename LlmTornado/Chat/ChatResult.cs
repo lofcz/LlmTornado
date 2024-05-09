@@ -124,7 +124,7 @@ public class ChatUsage : Usage
 	/// </summary>
 	[JsonProperty("total_tokens")]
     public int TotalTokens { get; set; }
-
+	
 	public ChatUsage()
 	{
 		

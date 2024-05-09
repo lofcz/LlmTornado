@@ -55,6 +55,7 @@ public class ChatRequest
         OuboundFunctionsContent = basedOn.OuboundFunctionsContent;
         Adapter = basedOn.Adapter;
         VendorExtensions = basedOn.VendorExtensions;
+        StreamOptions = basedOn.StreamOptions;
     }
 
 	/// <summary>
@@ -107,12 +108,31 @@ public class ChatRequest
     public ChatRequestResponseFormats? ResponseFormat { get; set; }
 
 	/// <summary>
-	///     Specifies where the results should stream and be returned at one time.  Do not set this yourself, use the
-	///     appropriate methods on <see cref="CompletionEndpoint" /> instead.
+	///     Specifies the response should be streamed. This is set automatically by the library.
 	/// </summary>
 	[JsonProperty("stream")]
     public bool Stream { get; internal set; }
 
+	/// <summary>
+	///     The stream configuration.
+	/// </summary>
+	[JsonIgnore]
+	public ChatStreamOptions? StreamOptions
+	{
+		get => StreamOptionsInternal;
+		set
+		{
+			StreamOptionsInternal = value;
+			StreamOptionsInternalSerialized = StreamOptionsInternal;
+		}
+	}
+
+	[JsonIgnore]
+	internal ChatStreamOptions? StreamOptionsInternal { get; set; }
+	
+	[JsonProperty("stream_options")]
+	internal object? StreamOptionsInternalSerialized { get; set; }
+	
 	/// <summary>
 	///     This is only used for serializing the request into JSON, do not use it directly.
 	/// </summary>

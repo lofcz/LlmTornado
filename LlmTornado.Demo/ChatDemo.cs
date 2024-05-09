@@ -107,7 +107,8 @@ public static class ChatDemo
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
             Model = ChatModel.OpenAi.Gpt4.Turbo,
-            Tools = compiler.GetFunctions()
+            Tools = compiler.GetFunctions(),
+            StreamOptions = ChatStreamOptions.KnownOptionsIncludeUsage
         }).AppendUserInput("Please call functions get_weather for Prague and Bratislava (two function calls).");
 
         // 3. repl
@@ -168,6 +169,10 @@ public static class ChatDemo
                 AfterFunctionCallsResolvedHandler = async (fnResults, handler) =>
                 {
                     await chat.StreamResponseRich(handler);
+                },
+                OnUsageReceived = async (usage) =>
+                {
+                    Console.WriteLine($"[used tokens: input - {usage.PromptTokens}, output - {usage.CompletionTokens}, total - {usage.TotalTokens}]");
                 }
             });
         }

@@ -965,6 +965,7 @@ public class Conversation
         req = eventsHandler?.OutboundRequestHandler is not null ? await eventsHandler.OutboundRequestHandler.Invoke(req) : req;
         bool isFirst = true;
         Guid currentMsgId = eventsHandler?.MessageId ?? Guid.NewGuid();
+        ChatMessage? lastUserMessage = _messages.LastOrDefault(x => x.Role is ChatMessageRoles.User);
         
         await foreach (ChatResult res in _endpoint.StreamChatEnumerableAsync(req))
         {
@@ -977,6 +978,18 @@ public class Conversation
                 {
                     internalDelta.Role = ChatMessageRoles.Assistant;
                     internalDelta.Id = currentMsgId;
+                    internalDelta.Tokens = res.Usage?.CompletionTokens;
+
+                    if (lastUserMessage is not null)
+                    {
+                        lastUserMessage.Tokens = res.Usage?.PromptTokens;
+                    }
+
+                    if (res.Usage is not null && eventsHandler?.OnUsageReceived is not null)
+                    {
+                        await eventsHandler.OnUsageReceived.Invoke(res.Usage);
+                    }
+                    
                     currentMsgId = Guid.NewGuid();
                     AppendMessage(internalDelta);
                 }
@@ -1040,6 +1053,17 @@ public class Conversation
                                 delta.Content = MostRecentApiResult.Object;
                             }
 
+                            if (lastUserMessage is not null)
+                            {
+                                lastUserMessage.Tokens = res.Usage?.PromptTokens;
+                            }
+                            
+                            if (res.Usage is not null && eventsHandler.OnUsageReceived is not null)
+                            {
+                                await eventsHandler.OnUsageReceived.Invoke(res.Usage);
+                            }
+                            
+                            delta.Tokens = res.Usage?.CompletionTokens;
                             result.AssistantMessage = delta;
                             AppendMessage(delta);
 

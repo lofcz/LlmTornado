@@ -134,7 +134,8 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider,
         ChatResult? toolsAccumulator = null;
         ChatMessage? toolsMessage = null;
         StringBuilder? plaintextBuilder = null;
-
+        ChatUsage? usage = null;
+        
         List<string> data = [];
         
         while (await reader.ReadLineAsync() is { } line)
@@ -170,6 +171,15 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider,
                 continue;
             }
 
+            if (request.StreamOptions?.IncludeUsage ?? false)
+            {
+                if (usage is null && res.Choices is null || res.Choices?.Count is 0)
+                {
+                    usage = res.Usage;
+                    continue;
+                }
+            }
+            
             if (parseTools)
             {
                 switch (state)
@@ -262,9 +272,11 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider,
             {
                 toolsAccumulator.Choices[0].FinishReason = "function_call";
             }
-            
+
+            toolsAccumulator.Usage = usage;
             toolsMessage.Role = ChatMessageRoles.Tool;
             yield return toolsAccumulator;
+            yield break;
         }
 
         string? accuPlaintext = plaintextBuilder?.ToString();
@@ -273,6 +285,7 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider,
         {
             yield return new ChatResult
             {
+                Usage = usage,
                 Choices =
                 [
                     new ChatChoice

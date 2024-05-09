@@ -104,6 +104,12 @@ public class ChatMessage
         get => ChatMessageRole.MemberFromString(rawRole);
         set => rawRole = ChatMessageRole.MemberToString(value);
     }
+    
+    /// <summary>
+    ///		The amount of tokens used for this message.
+    /// </summary>
+    [JsonIgnore]
+    public int? Tokens { get; set; }
 
     /// <summary>
     ///     The content of the message

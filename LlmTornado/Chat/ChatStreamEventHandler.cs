@@ -43,6 +43,11 @@ public class ChatStreamEventHandler
     public Func<ChatResponseVendorExtensions, Task>? VendorFeaturesHandler { get; set; }
     
     /// <summary>
+    ///     Called whenever the bill arrives.
+    /// </summary>
+    public Func<ChatUsage, Task>? OnUsageReceived { get; set; }
+    
+    /// <summary>
     ///     The ID of the message that will be appended to the conversation, if null a random GUID is used.
     /// </summary>
     public Guid? MessageId { get; set; }
