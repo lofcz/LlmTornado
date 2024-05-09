@@ -121,9 +121,9 @@ chat.OnAfterToolsCall = async (result) =>
     }
 };
 
-chat.AppendMessage(ChatMessageRole.System, "You are a helpful assistant");
+chat.AppendMessage(ChatMessageRoles.System, "You are a helpful assistant");
 Guid msgId = Guid.NewGuid();
-chat.AppendMessage(ChatMessageRole.User, "What is the weather like today in Prague?", msgId);
+chat.AppendMessage(ChatMessageRoles.User, "What is the weather like today in Prague?", msgId);
 
 await chat.StreamResponseRich(msgId, (x) =>
 {
@@ -131,15 +131,9 @@ await chat.StreamResponseRich(msgId, (x) =>
     return Task.CompletedTask;
 }, functions =>
 {
-    List<FunctionResult> results = [];
-
-    foreach (FunctionCall fn in functions)
-    {
-        results.Add(new FunctionResult(fn.Name, "A mild rain is expected around noon."));
-    }
-
+    List<FunctionResult> results = functions.Select(fn => new FunctionResult(fn.Name, "A mild rain is expected around noon.")).ToList();
     return Task.FromResult(results);
-}, null, null, null);
+}, null);
 
 
 string response = sb.ToString();
