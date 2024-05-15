@@ -10,6 +10,26 @@ namespace LlmTornado.Chat.Models;
 public class ChatModelOpenAiGpt4 : IVendorModelClassProvider
 {
     /// <summary>
+    /// Most advanced, multimodal flagship model that’s cheaper and faster than GPT-4 Turbo. Currently points to gpt-4o-2024-05-13.
+    /// </summary>
+    public static readonly ChatModel ModelO = new ChatModel("gpt-4o", LLmProviders.OpenAi);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelO"/>
+    /// </summary>
+    public readonly ChatModel O = ModelO;
+    
+    /// <summary>
+    /// Most advanced, multimodal flagship model that’s cheaper and faster than GPT-4 Turbo. gpt-4o currently points to this version.
+    /// </summary>
+    public static readonly ChatModel ModelO240513 = new ChatModel("gpt-4o-2024-05-13", LLmProviders.OpenAi);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelO240513"/>
+    /// </summary>
+    public readonly ChatModel O240513 = ModelO240513;
+    
+    /// <summary>
     /// The latest GPT-4 Turbo model with vision capabilities. Vision requests can now use JSON mode and function calling. Currently points to gpt-4-turbo-2024-04-09.
     /// </summary>
     public static readonly ChatModel ModelTurbo = new ChatModel("gpt-4-turbo", LLmProviders.OpenAi);
@@ -113,6 +133,8 @@ public class ChatModelOpenAiGpt4 : IVendorModelClassProvider
     /// All known GPT 3.5 models from OpenAI.
     /// </summary>
     public static readonly List<IModel> ModelsAll = [
+        ModelO,
+        ModelO240513,
         ModelTurbo,
         ModelTurbo240409,
         ModelPreview240125,

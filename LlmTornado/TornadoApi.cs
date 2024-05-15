@@ -65,11 +65,6 @@ public class TornadoApi : ITornadoApi
         {
             Authentications.TryAdd(provider.Provider, provider);
         }
-
-        if (Authentications.Count is 1)
-        {
-            KeyValuePair<LLmProviders, ProviderAuthentication> first = Authentications.FirstOrDefault();
-        }
     }
 
     /// <summary>
@@ -83,14 +78,14 @@ public class TornadoApi : ITornadoApi
     }
 
     /// <summary>
-    ///     Create a new OpenAiApi via API key and organization key, suitable for Azure OpenAI.
+    ///     Create a new OpenAiApi via API key and organization key, suitable for (Azure) OpenAI.
     /// </summary>
     /// <param name="apiKey">API key</param>
     /// <param name="organizationKey">Organization key</param>
     /// <param name="provider">Provider</param>
     public TornadoApi(string apiKey, string organizationKey, LLmProviders provider = LLmProviders.OpenAi)
     {
-        
+        Authentications.TryAdd(provider, new ProviderAuthentication(provider, organizationKey, apiKey));
     }
 
     /// <summary>
