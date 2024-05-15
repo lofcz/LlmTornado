@@ -85,7 +85,7 @@ public class TornadoApi : ITornadoApi
     /// <param name="provider">Provider</param>
     public TornadoApi(string apiKey, string organizationKey, LLmProviders provider = LLmProviders.OpenAi)
     {
-        Authentications.TryAdd(provider, new ProviderAuthentication(provider, organizationKey, apiKey));
+        Authentications.TryAdd(provider, new ProviderAuthentication(provider, apiKey, organizationKey));
     }
 
     /// <summary>
