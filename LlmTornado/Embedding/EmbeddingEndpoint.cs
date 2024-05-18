@@ -11,7 +11,7 @@ namespace LlmTornado.Embedding;
 ///     (list) of floating point numbers. The distance between two vectors measures their relatedness. Small distances
 ///     suggest high relatedness and large distances suggest low relatedness.
 /// </summary>
-public class EmbeddingEndpoint : EndpointBase, IEmbeddingEndpoint
+public class EmbeddingEndpoint : EndpointBase
 {
 	/// <summary>
 	///     Constructor of the api endpoint.  Rather than instantiating this yourself, access it through an instance of

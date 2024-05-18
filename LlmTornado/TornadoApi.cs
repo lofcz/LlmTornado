@@ -23,35 +23,45 @@ namespace LlmTornado;
 /// <summary>
 ///     Entry point to the OpenAPI API, handling auth and allowing access to the various API endpoints
 /// </summary>
-public class TornadoApi : ITornadoApi
+public class TornadoApi
 {
     internal readonly ConcurrentDictionary<LLmProviders, ProviderAuthentication> Authentications = [];
-    internal ConcurrentDictionary<LLmProviders, IEndpointProvider> EndpointProviders = [];
-    
-    private IAssistantsEndpoint? _assistantsEndpoint;
-    private IAudioEndpoint? _audioEndpoint;
-    private IChatEndpoint? _chat;
-    private ICompletionEndpoint? _completionEndpoint;
-    private IEmbeddingEndpoint? _embedding;
-    private IFilesEndpoint? _files;
-    private IImageEditEndpoint? _imageEditEndpoint;
-    private IImageGenerationEndpoint? _imageGenerationEndpoint;
-    private IModelsEndpoint? _models;
-    private IModerationEndpoint? _moderation;
-    private IThreadsEndpoint? _threadsEndpoint;
+    internal readonly ConcurrentDictionary<LLmProviders, IEndpointProvider> EndpointProviders = [];
 
+    private readonly Lazy<AssistantsEndpoint> assistants;
+    private readonly Lazy<AudioEndpoint> audio;
+    private readonly Lazy<ChatEndpoint> chat;
+    private readonly Lazy<CompletionEndpoint> completion;
+    private readonly Lazy<EmbeddingEndpoint> embedding;
+    private readonly Lazy<FilesEndpoint> files;
+    private readonly Lazy<ImageEditEndpoint> imageEdit;
+    private readonly Lazy<ImageGenerationEndpoint> imageGeneration;
+    private readonly Lazy<ModelsEndpoint> models;
+    private readonly Lazy<ModerationEndpoint> moderation;
+    private readonly Lazy<ThreadsEndpoint> threadsEndpoint;
+    
     /// <summary>
     ///     Creates a new Tornado API without any authentication. Use this with self-hosted models.
     /// </summary>
     public TornadoApi()
     {
-        
+        assistants = new Lazy<AssistantsEndpoint>(() => new AssistantsEndpoint(this));
+        audio = new Lazy<AudioEndpoint>(() => new AudioEndpoint(this));
+        chat = new Lazy<ChatEndpoint>(() => new ChatEndpoint(this));
+        completion = new Lazy<CompletionEndpoint>(() => new CompletionEndpoint(this));
+        embedding = new Lazy<EmbeddingEndpoint>(() => new EmbeddingEndpoint(this));
+        files = new Lazy<FilesEndpoint>(() => new FilesEndpoint(this));
+        imageEdit = new Lazy<ImageEditEndpoint>(() => new ImageEditEndpoint(this));
+        imageGeneration = new Lazy<ImageGenerationEndpoint>(() => new ImageGenerationEndpoint(this));
+        models = new Lazy<ModelsEndpoint>(() => new ModelsEndpoint(this));
+        moderation = new Lazy<ModerationEndpoint>(() => new ModerationEndpoint(this));
+        threadsEndpoint = new Lazy<ThreadsEndpoint>(() => new ThreadsEndpoint(this));
     }
     
     /// <summary>
     ///     Creates a new Tornado API with a specific provider authentication. Use when the API will be used only with a single provider.
     /// </summary>
-    public TornadoApi(LLmProviders provider, string apiKey, string? organization = null)
+    public TornadoApi(LLmProviders provider, string apiKey, string? organization = null) : this()
     {
         Authentications.TryAdd(provider, new ProviderAuthentication(provider, apiKey, organization));
     }
@@ -59,7 +69,7 @@ public class TornadoApi : ITornadoApi
     /// <summary>
     ///     Creates a new Tornado API with a specific provider authentication. Use when the API will be used only with a single provider.
     /// </summary>
-    public TornadoApi(IEnumerable<ProviderAuthentication> providerKeys)
+    public TornadoApi(IEnumerable<ProviderAuthentication> providerKeys) : this()
     {
         foreach (ProviderAuthentication provider in providerKeys)
         {
@@ -72,7 +82,7 @@ public class TornadoApi : ITornadoApi
     /// </summary>
     /// <param name="apiKey">API key</param>
     /// <param name="provider">Provider</param>
-    public TornadoApi(string apiKey, LLmProviders provider = LLmProviders.OpenAi)
+    public TornadoApi(string apiKey, LLmProviders provider = LLmProviders.OpenAi) : this()
     {
         Authentications.TryAdd(provider, new ProviderAuthentication(provider, apiKey));
     }
@@ -83,7 +93,7 @@ public class TornadoApi : ITornadoApi
     /// <param name="apiKey">API key</param>
     /// <param name="organizationKey">Organization key</param>
     /// <param name="provider">Provider</param>
-    public TornadoApi(string apiKey, string organizationKey, LLmProviders provider = LLmProviders.OpenAi)
+    public TornadoApi(string apiKey, string organizationKey, LLmProviders provider = LLmProviders.OpenAi) : this()
     {
         Authentications.TryAdd(provider, new ProviderAuthentication(provider, apiKey, organizationKey));
     }
@@ -96,34 +106,7 @@ public class TornadoApi : ITornadoApi
     {
         return Authentications!.GetValueOrDefault(provider, null);
     }
-
-    /// <summary>
-    ///     Interceptor
-    /// </summary>
-    public Func<ChatRequest, ChatResult?, Task>? ChatRequestInterceptor { get; set; }
-
-    /// <summary>
-    ///     The API lets you do operations with images. Given a prompt and an input image, the model will edit a new image.
-    /// </summary>
-    public IImageEditEndpoint ImageEdit => _imageEditEndpoint ??= new ImageEditEndpoint(this);
-
-    /// <summary>
-    ///     Manages audio operations such as transcipt and translate.
-    /// </summary>
-    public IAudioEndpoint Audio => _audioEndpoint ??= new AudioEndpoint(this);
-
-    /// <summary>
-    ///     Assistants are higher-level API than <see cref="ChatEndpoint" /> featuring automatic context management, code
-    ///     interpreter and file based retrieval.
-    /// </summary>
-    public IAssistantsEndpoint Assistants => _assistantsEndpoint ??= new AssistantsEndpoint(this);
-
-    /// <summary>
-    ///     Assistants are higher-level API than <see cref="ChatEndpoint" /> featuring automatic context management, code
-    ///     interpreter and file based retrieval.
-    /// </summary>
-    public IThreadsEndpoint Threads => _threadsEndpoint ??= new ThreadsEndpoint(this);
-
+    
     /// <summary>
     ///     Base url for Provider. If null, default specified by the provider is used.
     ///     for OpenAI, should be "https://api.openai.com/{0}/{1}"
@@ -167,43 +150,70 @@ public class TornadoApi : ITornadoApi
     }
 
     /// <summary>
+    ///     Interceptor
+    /// </summary>
+    public Func<ChatRequest, ChatResult?, Task>? ChatRequestInterceptor { get; set; }
+
+    /// <summary>
+    ///     The API lets you do operations with images. Given a prompt and an input image, the model will edit a new image.
+    /// </summary>
+    public ImageEditEndpoint ImageEdit => imageEdit.Value;
+
+    /// <summary>
+    ///     Manages audio operations such as transcipt and translate.
+    /// </summary>
+    public AudioEndpoint Audio => audio.Value;
+
+    /// <summary>
+    ///     Assistants are higher-level API than <see cref="ChatEndpoint" /> featuring automatic context management, code
+    ///     interpreter and file based retrieval.
+    /// </summary>
+    public AssistantsEndpoint Assistants => assistants.Value;
+
+    /// <summary>
+    ///     Assistants are higher-level API than <see cref="ChatEndpoint" /> featuring automatic context management, code
+    ///     interpreter and file based retrieval.
+    /// </summary>
+    public ThreadsEndpoint Threads => threadsEndpoint.Value;
+
+    /// <summary>
     ///     Text generation is the core function of the API. You give the API a prompt, and it generates a completion. The way
     ///     you “program” the API to do a task is by simply describing the task in plain english or providing a few written
     ///     examples. This simple approach works for a wide range of use cases, including summarization, translation, grammar
     ///     correction, question answering, chatbots, composing emails, and much more (see the prompt library for inspiration).
     /// </summary>
-    public ICompletionEndpoint Completions => _completionEndpoint ??= new CompletionEndpoint(this);
+    public CompletionEndpoint Completions => completion.Value;
 
     /// <summary>
     ///     The API lets you transform text into a vector (list) of floating point numbers. The distance between two vectors
     ///     measures their relatedness. Small distances suggest high relatedness and large distances suggest low relatedness.
     /// </summary>
-    public IEmbeddingEndpoint Embeddings => _embedding ??= new EmbeddingEndpoint(this);
+    public EmbeddingEndpoint Embeddings => embedding.Value;
 
     /// <summary>
     ///     Text generation in the form of chat messages. This interacts with the ChatGPT API.
     /// </summary>
-    public IChatEndpoint Chat => _chat ??= new ChatEndpoint(this);
+    public ChatEndpoint Chat => chat.Value;
 
     /// <summary>
     ///     Classify text against the OpenAI Content Policy.
     /// </summary>
-    public IModerationEndpoint Moderation => _moderation ??= new ModerationEndpoint(this);
+    public ModerationEndpoint Moderation => moderation.Value;
 
     /// <summary>
     ///     The API endpoint for querying available Engines/models
     /// </summary>
-    public IModelsEndpoint Models => _models ??= new ModelsEndpoint(this);
+    public ModelsEndpoint Models => models.Value;
 
     /// <summary>
     ///     The API lets you do operations with files. You can upload, delete or retrieve files. Files can be used for
     ///     fine-tuning, search, etc.
     /// </summary>
-    public IFilesEndpoint Files => _files ??= new FilesEndpoint(this);
+    public FilesEndpoint Files => files.Value;
 
     /// <summary>
     ///     The API lets you do operations with images. Given a prompt and/or an input image, the model will generate a new
     ///     image.
     /// </summary>
-    public IImageGenerationEndpoint ImageGenerations => _imageGenerationEndpoint ??= new ImageGenerationEndpoint(this);
+    public ImageGenerationEndpoint ImageGenerations => imageGeneration.Value;
 }

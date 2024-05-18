@@ -13,7 +13,7 @@ namespace LlmTornado.Completions;
 ///     examples. This simple approach works for a wide range of use cases, including summarization, translation, grammar
 ///     correction, question answering, chatbots, composing emails, and much more (see the prompt library for inspiration).
 /// </summary>
-public class CompletionEndpoint : EndpointBase, ICompletionEndpoint
+public class CompletionEndpoint : EndpointBase
 {
     /// <summary>
     ///     Constructor of the api endpoint.  Rather than instantiating this yourself, access it through an instance of

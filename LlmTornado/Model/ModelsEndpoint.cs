@@ -9,7 +9,7 @@ namespace LlmTornado.Models;
 /// <summary>
 ///     The API endpoint for querying available models
 /// </summary>
-public class ModelsEndpoint : EndpointBase, IModelsEndpoint
+public class ModelsEndpoint : EndpointBase
 {
 	/// <summary>
 	///     Constructor of the api endpoint.  Rather than instantiating this yourself, access it through an instance of

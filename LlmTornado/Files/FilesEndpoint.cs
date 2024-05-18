@@ -11,7 +11,7 @@ namespace LlmTornado.Files;
 /// <summary>
 ///     The API endpoint for operations List, Upload, Delete, Retrieve files
 /// </summary>
-public class FilesEndpoint : EndpointBase, IFilesEndpoint
+public class FilesEndpoint : EndpointBase
 {
 	/// <summary>
 	///     Constructor of the api endpoint.  Rather than instantiating this yourself, access it through an instance of

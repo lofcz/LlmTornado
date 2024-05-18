@@ -6,7 +6,7 @@ namespace LlmTornado.Images;
 /// <summary>
 ///     Given a prompt, the model will generate a new image.
 /// </summary>
-public class ImageEditEndpoint : EndpointBase, IImageEditEndpoint
+public class ImageEditEndpoint : EndpointBase
 {
     /// <summary>
     ///     Constructor of the api endpoint.  Rather than instantiating this yourself, access it through an instance of

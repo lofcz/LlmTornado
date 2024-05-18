@@ -15,7 +15,7 @@ namespace LlmTornado.Chat;
 /// <summary>
 ///     ChatGPT API endpoint. Use this endpoint to send multiple messages and carry on a conversation.
 /// </summary>
-public class ChatEndpoint : EndpointBase, IChatEndpoint
+public class ChatEndpoint : EndpointBase
 {
     /// <summary>
     ///     Constructor of the api endpoint.  Rather than instantiating this yourself, access it through an instance of

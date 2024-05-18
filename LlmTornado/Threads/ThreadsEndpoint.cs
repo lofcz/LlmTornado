@@ -11,7 +11,7 @@ namespace LlmTornado.Threads;
 ///     Create threads that assistants can interact with.<br />
 ///     <see href="https://platform.openai.com/docs/api-reference/threads" />
 /// </summary>
-public sealed class ThreadsEndpoint : EndpointBase, IThreadsEndpoint
+public sealed class ThreadsEndpoint : EndpointBase
 {
     internal ThreadsEndpoint(TornadoApi api) : base(api)
     {

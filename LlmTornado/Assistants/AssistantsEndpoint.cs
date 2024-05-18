@@ -13,7 +13,7 @@ namespace LlmTornado.Assistants;
 ///     Assistants are higher-level API than <see cref="ChatEndpoint" /> featuring automatic context management, code
 ///     interpreter and file based retrieval.
 /// </summary>
-public sealed class AssistantsEndpoint : EndpointBase, IAssistantsEndpoint
+public sealed class AssistantsEndpoint : EndpointBase
 {
     internal AssistantsEndpoint(TornadoApi api) : base(api)
     {

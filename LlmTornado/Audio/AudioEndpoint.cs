@@ -10,7 +10,7 @@ namespace LlmTornado.Audio;
 /// <summary>
 ///     You can use this endpoint for audio transcription or translation.
 /// </summary>
-public class AudioEndpoint : EndpointBase, IAudioEndpoint
+public class AudioEndpoint : EndpointBase
 {
     /// <summary>
     ///     Creates audio endpoint object.

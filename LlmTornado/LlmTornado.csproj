@@ -9,11 +9,11 @@
         <PackageLicenseExpression>CC0-1.0</PackageLicenseExpression>
         <PackageProjectUrl>https://github.com/lofcz/LlmTornado</PackageProjectUrl>
         <RepositoryUrl>https://github.com/lofcz/LlmTornado</RepositoryUrl>
-        <PackageTags>OpenAI, Cohere, Anthropic, Azure, LLM, GPT4, GPT Turbo, DALL-E, Coral, Claude3, Command R Plus</PackageTags>
+        <PackageTags>OpenAI, Cohere, Anthropic, Azure, LLM, GPT-4O, GPT-4, GPT-Turbo, DALL-E, Coral, Claude3, Command-R-Plus</PackageTags>
         <Title>OpenAI NextGeneration</Title>
         <PackageReleaseNotes>OAI: support gpt-4o</PackageReleaseNotes>
         <PackageId>LlmTornado</PackageId>
-        <Version>3.0.9</Version>
+        <Version>3.0.10</Version>
         <AssemblyVersion>3.0.5</AssemblyVersion>
         <FileVersion>3.0.5</FileVersion>
         <GenerateDocumentationFile>True</GenerateDocumentationFile>

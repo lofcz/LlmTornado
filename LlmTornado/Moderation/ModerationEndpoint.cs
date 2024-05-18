@@ -7,7 +7,7 @@ namespace LlmTornado.Moderation;
 /// <summary>
 ///     This endpoint classifies text against the OpenAI Content Policy
 /// </summary>
-public class ModerationEndpoint : EndpointBase, IModerationEndpoint
+public class ModerationEndpoint : EndpointBase
 {
 	/// <summary>
 	///     Constructor of the api endpoint. Rather than instantiating this yourself, access it through an instance of

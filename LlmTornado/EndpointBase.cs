@@ -6,6 +6,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Net.Security;
 using System.Security.Authentication;
 using System.Text;
 using System.Threading;
@@ -24,24 +25,28 @@ public abstract class EndpointBase
 {
     private static string userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36";
     internal static readonly JsonSerializerSettings NullSettings = new() { NullValueHandling = NullValueHandling.Ignore };
-    private static readonly Dictionary<LLmProviders, HttpClient> EndpointClients = new Dictionary<LLmProviders, HttpClient>((int)LLmProviders.Length + 1);
     private static TimeSpan endpointTimeout = TimeSpan.FromSeconds(600);
-    
-    static EndpointBase()
+    private static readonly Lazy<Dictionary<LLmProviders, HttpClient>> EndpointClients = new Lazy<Dictionary<LLmProviders, HttpClient>>(() =>
     {
+        Dictionary<LLmProviders, HttpClient> dict = new Dictionary<LLmProviders, HttpClient>((int)LLmProviders.Length + 1);
+
         foreach (LLmProviders provider in Enum.GetValues<LLmProviders>())
         {
-            EndpointClients.Add(provider, new HttpClient(new SocketsHttpHandler
+            HttpClient client = TornadoConfig.CreateClient is null ? new HttpClient(new SocketsHttpHandler
             {
                 MaxConnectionsPerServer = 10000,
-                PooledConnectionLifetime = TimeSpan.FromMinutes(2)
+                PooledConnectionLifetime = TimeSpan.FromMinutes(3)
             })
             {
                 Timeout = endpointTimeout,
                 DefaultRequestVersion = HttpVersion.Version20
-            });
+            } : TornadoConfig.CreateClient.Invoke(provider);
+            
+            dict.Add(provider, client);
         }
-    }
+        
+        return dict;
+    });
 
     /// <summary>
     ///     Constructor of the api endpoint base, to be called from the contructor of any devived classes.  Rather than
@@ -84,7 +89,7 @@ public abstract class EndpointBase
     /// <returns></returns>
     public static void SetRequestsTimeout(int seconds)
     {
-        foreach (KeyValuePair<LLmProviders, HttpClient> x in EndpointClients)
+        foreach (KeyValuePair<LLmProviders, HttpClient> x in EndpointClients.Value)
         {
             x.Value.Timeout = TimeSpan.FromSeconds(seconds);
         }
@@ -119,7 +124,7 @@ public abstract class EndpointBase
     /// </exception>
     private static HttpClient GetClient(LLmProviders provider)
     {
-        return EndpointClients[provider];
+        return EndpointClients.Value[provider];
     }
 
     /// <summary>
