@@ -8,7 +8,8 @@ using System.Threading.Tasks;
 using LlmTornado.Images;
 using LlmTornado;
 using LlmTornado.ChatFunctions;
-using Argon;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace LlmTornado.Code;
 

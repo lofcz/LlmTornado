@@ -40,8 +40,8 @@
         </None>
     </ItemGroup>
     <ItemGroup>
-        <PackageReference Include="Argon" Version="0.17.0" />
         <PackageReference Include="Enums.NET" Version="5.0.0" />
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.3"/>
         <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.0" />
     </ItemGroup>
 </Project>

@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using Argon;
+using Newtonsoft.Json;
 
 namespace LlmTornado.Chat.Vendors.Cohere;
 

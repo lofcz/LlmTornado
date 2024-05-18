@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using LlmTornado.Audio;
 using LlmTornado.Code;
-using Argon;
+using Newtonsoft.Json;
 
 namespace LlmTornado.Chat.Vendors.Cohere;
 

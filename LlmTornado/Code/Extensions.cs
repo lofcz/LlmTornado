@@ -7,7 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using EnumsNET;
-using Argon;
+using Newtonsoft.Json;
 
 namespace LlmTornado.Code;
 

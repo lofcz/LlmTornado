@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using LlmTornado.Vendor.Anthropic;
-using Argon;
+using Newtonsoft.Json;
 
 namespace LlmTornado.Chat.Vendors.Cohere;
 
