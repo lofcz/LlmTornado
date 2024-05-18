@@ -26,23 +26,26 @@ public abstract class EndpointBase
     private static string userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36";
     internal static readonly JsonSerializerSettings NullSettings = new() { NullValueHandling = NullValueHandling.Ignore };
     private static TimeSpan endpointTimeout = TimeSpan.FromSeconds(600);
-    private static readonly Lazy<Dictionary<LLmProviders, HttpClient>> EndpointClients = new Lazy<Dictionary<LLmProviders, HttpClient>>(() =>
+    private static readonly Lazy<Dictionary<LLmProviders, Lazy<HttpClient>>> EndpointClients = new Lazy<Dictionary<LLmProviders, Lazy<HttpClient>>>(() =>
     {
-        Dictionary<LLmProviders, HttpClient> dict = new Dictionary<LLmProviders, HttpClient>((int)LLmProviders.Length + 1);
+        Dictionary<LLmProviders, Lazy<HttpClient>> dict = new Dictionary<LLmProviders, Lazy<HttpClient>>((int)LLmProviders.Length + 1);
 
         foreach (LLmProviders provider in Enum.GetValues<LLmProviders>())
         {
-            HttpClient client = TornadoConfig.CreateClient is null ? new HttpClient(new SocketsHttpHandler
+            dict.Add(provider, new Lazy<HttpClient>(() =>
             {
-                MaxConnectionsPerServer = 10000,
-                PooledConnectionLifetime = TimeSpan.FromMinutes(3)
-            })
-            {
-                Timeout = endpointTimeout,
-                DefaultRequestVersion = HttpVersion.Version20
-            } : TornadoConfig.CreateClient.Invoke(provider);
-            
-            dict.Add(provider, client);
+                HttpClient client = TornadoConfig.CreateClient is null ? new HttpClient(new SocketsHttpHandler
+                {
+                    MaxConnectionsPerServer = 10000,
+                    PooledConnectionLifetime = TimeSpan.FromMinutes(3)
+                })
+                {
+                    Timeout = endpointTimeout,
+                    DefaultRequestVersion = HttpVersion.Version20
+                } : TornadoConfig.CreateClient.Invoke(provider);
+
+                return client;
+            }));
         }
         
         return dict;
@@ -89,9 +92,9 @@ public abstract class EndpointBase
     /// <returns></returns>
     public static void SetRequestsTimeout(int seconds)
     {
-        foreach (KeyValuePair<LLmProviders, HttpClient> x in EndpointClients.Value)
+        foreach (KeyValuePair<LLmProviders, Lazy<HttpClient>> x in EndpointClients.Value)
         {
-            x.Value.Timeout = TimeSpan.FromSeconds(seconds);
+            x.Value.Value.Timeout = TimeSpan.FromSeconds(seconds);
         }
         
         endpointTimeout = TimeSpan.FromSeconds(seconds);
@@ -124,7 +127,7 @@ public abstract class EndpointBase
     /// </exception>
     private static HttpClient GetClient(LLmProviders provider)
     {
-        return EndpointClients.Value[provider];
+        return EndpointClients.Value[provider].Value;
     }
 
     /// <summary>
