@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using LlmTornado.Models;
-using Newtonsoft.Json;
+using Argon;
 
 namespace LlmTornado.Code.Models;
 

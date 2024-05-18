@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using LlmTornado.Common;
-using Newtonsoft.Json;
+using Argon;
 
 namespace LlmTornado.Threads;
 

@@ -9,7 +9,7 @@ using System.Reflection;
 using System.Text;
 using LlmTornado.Chat;
 using LlmTornado.ChatFunctions;
-using Newtonsoft.Json;
+using Argon;
 
 namespace LlmTornado.Code.Vendor;
 

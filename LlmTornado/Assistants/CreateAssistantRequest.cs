@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using LlmTornado.Common;
 using LlmTornado.Models;
-using Newtonsoft.Json;
+using Argon;
 
 namespace LlmTornado.Assistants;
 

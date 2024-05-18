@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using LlmTornado.Code;
-using Newtonsoft.Json;
+using Argon;
 
 namespace LlmTornado.Chat;
 

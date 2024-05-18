@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using LlmTornado;
-using Newtonsoft.Json;
+using Argon;
 
 namespace LlmTornado.Audio;
 

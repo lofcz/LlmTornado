@@ -6,7 +6,7 @@ using System.Net.Http;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Vendor.Anthropic;
-using Newtonsoft.Json;
+using Argon;
 
 namespace LlmTornado.Code.Vendor;
 

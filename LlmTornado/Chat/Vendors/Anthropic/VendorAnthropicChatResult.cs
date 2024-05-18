@@ -5,7 +5,7 @@ using LlmTornado.Chat.Vendors;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Vendor.Anthropic;
-using Newtonsoft.Json;
+using Argon;
 
 namespace LlmTornado.Chat.Vendors.Anthropic;
 

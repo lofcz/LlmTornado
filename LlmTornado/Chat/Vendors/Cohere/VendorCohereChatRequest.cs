@@ -10,8 +10,7 @@ using LlmTornado.Chat.Plugins;
 using LlmTornado.Chat.Vendors.Cohere;
 using LlmTornado.Code;
 using LlmTornado.Common;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using Argon;
 
 namespace LlmTornado.Chat.Vendors.Cohere;
 

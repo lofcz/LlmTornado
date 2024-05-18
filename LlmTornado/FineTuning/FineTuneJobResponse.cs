@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json.Serialization;
 using LlmTornado.Common;
-using Newtonsoft.Json;
+using Argon;
 
 namespace LlmTornado.FineTuning;
 

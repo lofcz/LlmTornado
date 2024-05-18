@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
-using Newtonsoft.Json;
+using Argon;
 
 namespace LlmTornado.Chat;
 

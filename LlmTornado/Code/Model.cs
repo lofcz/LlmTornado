@@ -6,7 +6,7 @@ using LlmTornado.Chat.Models;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
 using LlmTornado.Code.Vendor;
-using Newtonsoft.Json;
+using Argon;
 
 namespace LlmTornado.Models;
 

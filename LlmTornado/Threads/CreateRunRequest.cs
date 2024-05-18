@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using LlmTornado.Common;
-using Newtonsoft.Json;
+using Argon;
 
 namespace LlmTornado.Threads;
 

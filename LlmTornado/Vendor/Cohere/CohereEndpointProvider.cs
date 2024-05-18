@@ -9,7 +9,7 @@ using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Chat.Vendors.Cohere;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Vendor.Anthropic;
-using Newtonsoft.Json;
+using Argon;
 
 namespace LlmTornado.Code.Vendor;
 

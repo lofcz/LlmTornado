@@ -1,6 +1,6 @@
 ﻿using System.Linq;
 using LlmTornado.Models;
-using Newtonsoft.Json;
+using Argon;
 
 namespace LlmTornado.Moderation;
 

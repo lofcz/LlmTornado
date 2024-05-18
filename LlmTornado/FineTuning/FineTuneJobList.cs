@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
-using Newtonsoft.Json;
+using Argon;
 
 namespace LlmTornado.FineTuning;
 
