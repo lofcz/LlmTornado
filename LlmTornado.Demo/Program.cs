@@ -185,7 +185,7 @@ public class Program
             return;
         }
 
-        Demos? forceDemo = Demos.OpenAiFunctionsStreamingInteractive;
+        Demos? forceDemo = null;
         
         selectedDemo = forceDemo ?? Demos.Last - 1;
         Func<Task>? task = GetDemo(selectedDemo);

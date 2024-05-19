@@ -56,6 +56,7 @@ public class ChatRequest
         Adapter = basedOn.Adapter;
         VendorExtensions = basedOn.VendorExtensions;
         StreamOptions = basedOn.StreamOptions;
+        TrimResponseStart = basedOn.TrimResponseStart;
     }
 
 	/// <summary>
@@ -248,7 +249,15 @@ public class ChatRequest
 	///		Features supported only by a single/few providers with no shared equivalent.
 	/// </summary>
 	[JsonIgnore]
-	public ChatRequestVendorExtensions? VendorExtensions { get; set; } 
+	public ChatRequestVendorExtensions? VendorExtensions { get; set; }
+
+	/// <summary>
+	///		Trims the leading whitespace and newline characters in the response. Unless you need to work with responses
+	///		with leading whitespace it is recommended to keep this switch on. When streaming, some providers/models incorrectly
+	///		produce leading whitespace if the text part of the streamed response is preceded with tool blocks.
+	/// </summary>
+	[JsonIgnore]
+	public bool TrimResponseStart { get; set; } = true; 
 
 	/// <summary>
 	///		Serializes the chat request into a http body, based on the conventions used by a LLM provider.

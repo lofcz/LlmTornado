@@ -65,7 +65,15 @@ internal class VendorAnthropicChatRequest
                             writer.WritePropertyName("tool_use_id");
                             writer.WriteValue(block.ToolCallId);
                             writer.WritePropertyName("content");
-                            writer.WriteRawValue(block.Content);
+
+                            if (block.Content.TrimStart().StartsWith('"')) // [todo] hack?
+                            {
+                                writer.WriteRawValue(block.Content);
+                            }
+                            else
+                            {
+                                writer.WriteValue(block.Content);   
+                            }
 
                             if (block.ToolInvocationSucceeded is false)
                             {
@@ -162,8 +170,6 @@ internal class VendorAnthropicChatRequest
                             writer.WriteValue(toolCall.FunctionCall.Name);
                             writer.WritePropertyName("input");
                             writer.WriteRawValue(toolCall.FunctionCall.Arguments.IsNullOrWhiteSpace() ? "{}" : toolCall.FunctionCall.Arguments);
-                            
-                            string toolJson = toolCall.ToJson();
                             writer.WriteEndObject();
                         }
                         

@@ -1003,6 +1003,17 @@ public class Conversation
                             solved = true;
                             break;
                         }
+                        
+                        if (res.StreamInternalKind is ChatResultStreamInternalKinds.AppendAssistantMessage)
+                        {
+                            if (res.Usage is not null && eventsHandler?.OnUsageReceived is not null)
+                            {
+                                await eventsHandler.OnUsageReceived.Invoke(res.Usage);
+                            }
+                            
+                            solved = true;
+                            break;
+                        }
                     }   
                 }
             }
@@ -1053,7 +1064,7 @@ public class Conversation
 
                             if (msg is not null)
                             {
-                                if (isFirstMessageToken)
+                                if (RequestParameters.TrimResponseStart && isFirstMessageToken)
                                 {
                                     msg = msg.TrimStart();
                                     isFirstMessageToken = false;
@@ -1107,7 +1118,8 @@ public class Conversation
                                     {
                                         Id = currentMsgId,
                                         ToolCallId = call.ToolCall?.Id ?? call.Name,
-                                        ToolInvocationSucceeded = call.Result?.InvocationSucceeded ?? false
+                                        ToolInvocationSucceeded = call.Result?.InvocationSucceeded ?? false,
+                                        ContentJsonType = call.Result?.ContentJsonType ?? typeof(string)
                                     };
 
                                     currentMsgId = Guid.NewGuid();

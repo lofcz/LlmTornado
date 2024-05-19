@@ -131,6 +131,8 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
     {
         StreamNextAction nextAction = StreamNextAction.Read;
         ChatMessage? accuToolsMessage = null;
+        ChatMessage? accuPlaintext = null;
+        ChatUsage? plaintextUsage = null;
       
         while (await reader.ReadLineAsync() is { } line)
         {
@@ -238,6 +240,10 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
                     }
                     else if (!res?.Delta.Text.IsNullOrWhiteSpace() ?? false)
                     {
+                        accuPlaintext ??= new ChatMessage(ChatMessageRoles.Assistant);
+                        accuPlaintext.ContentBuilder ??= new StringBuilder();
+                        accuPlaintext.ContentBuilder.Append(res.Delta.Text);
+                        
                         yield return new ChatResult
                         {
                             Choices = [
@@ -259,7 +265,7 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
 
                     if (accuToolsMessage is not null)
                     {
-                        ToolCall? lastCall = accuToolsMessage.ToolCalls?.LastOrDefault();
+                        ToolCall? lastCall = accuToolsMessage.ToolCalls?.FirstOrDefault(x => x.Index == res?.Index);
 
                         if (lastCall is not null)
                         {
@@ -276,6 +282,17 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
                 {
                     line = line[Data.Length..];
                     AnthropicStreamMsgStart? res = JsonConvert.DeserializeObject<AnthropicStreamMsgStart>(line);
+  
+                    if (res is not null && res.Message.Usage.InputTokens + res.Message.Usage.OutputTokens > 0)
+                    {
+                        plaintextUsage = new ChatUsage
+                        {
+                            TotalTokens = res.Message.Usage.InputTokens + res.Message.Usage.OutputTokens,
+                            CompletionTokens = res.Message.Usage.OutputTokens,
+                            PromptTokens = res.Message.Usage.InputTokens
+                        };
+                    }
+                    
                     nextAction = StreamNextAction.Read;
                     break;
                 }
@@ -291,6 +308,24 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
                                     Delta = accuToolsMessage
                                 }
                             ]
+                        };
+                    }
+
+                    if (accuPlaintext is not null)
+                    {
+                        accuPlaintext.Content = accuPlaintext.ContentBuilder?.ToString() ?? string.Empty;
+                        
+                        yield return new ChatResult
+                        {
+                            Choices =
+                            [
+                                new ChatChoice
+                                {
+                                    Delta = accuPlaintext
+                                }
+                            ],
+                            StreamInternalKind = ChatResultStreamInternalKinds.AppendAssistantMessage,
+                            Usage = plaintextUsage
                         };
                     }
                     

@@ -104,12 +104,12 @@ public static class ChatDemo
         
         // 2. in this scenario, the conversation starts with the user asking for the current weather in two of the supported cities.
         // we can try asking for the weather in the third supported city (Paris) later.
-        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        Conversation chat = Program.Connect(LLmProviders.OpenAi).Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.OpenAi.Gpt4.Turbo,
+            Model = ChatModel.OpenAi.Gpt4.O,
             Tools = compiler.GetFunctions(),
             StreamOptions = ChatStreamOptions.KnownOptionsIncludeUsage
-        }).AppendUserInput("Please call functions get_weather for Prague and Bratislava (two function calls).");
+        }).AppendUserInput("Please check the weather in Prague and Bratislava.");
 
         // 3. repl
         while (true)

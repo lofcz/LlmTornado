@@ -1,3 +1,4 @@
+using System;
 using LlmTornado.ChatFunctions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -20,7 +21,7 @@ public class FunctionResult
     public FunctionResult(string name, object? content)
     {
         Name = name;
-        Content = content is null ? "{}" : JsonConvert.SerializeObject(content);
+        SetContent(content);
         InvocationSucceeded = true;
     }
 
@@ -32,7 +33,7 @@ public class FunctionResult
     public FunctionResult(string name, object? content, object? passthroughData)
     {
         Name = name;
-        Content = content is null ? "{}" : JsonConvert.SerializeObject(content);
+        SetContent(content);
         PassthroughData = passthroughData;
         InvocationSucceeded = true;
     }
@@ -46,7 +47,7 @@ public class FunctionResult
     public FunctionResult(string name, object? content, object? passthroughData, bool invocationSucceeded)
     {
         Name = name;
-        Content = content is null ? "{}" : JsonConvert.SerializeObject(content);
+        SetContent(content);
         PassthroughData = passthroughData;
         InvocationSucceeded = invocationSucceeded;
     }
@@ -59,7 +60,7 @@ public class FunctionResult
     public FunctionResult(FunctionCall call, object? content, object? passthroughData)
     {
         Name = call.Name;
-        Content = content is null ? "{}" : JsonConvert.SerializeObject(content);
+        SetContent(content);
         PassthroughData = passthroughData;
         InvocationSucceeded = true;
     }
@@ -73,7 +74,7 @@ public class FunctionResult
     public FunctionResult(FunctionCall call, object? content, object? passthroughData, bool invocationSucceeded)
     {
         Name = call.Name;
-        Content = content is null ? "{}" : JsonConvert.SerializeObject(content);
+        SetContent(content);
         PassthroughData = passthroughData;
         InvocationSucceeded = invocationSucceeded;
     }
@@ -102,6 +103,15 @@ public class FunctionResult
     /// </summary>
     [JsonIgnore]
     public bool? InvocationSucceeded { get; set; }
+    
+    [JsonIgnore]
+    internal Type? ContentJsonType { get; set; }
+
+    private void SetContent(object? content)
+    {
+        ContentJsonType = content?.GetType();
+        Content = content is null ? "{}" : JsonConvert.SerializeObject(content);
+    }
 }
 
 /// <summary>

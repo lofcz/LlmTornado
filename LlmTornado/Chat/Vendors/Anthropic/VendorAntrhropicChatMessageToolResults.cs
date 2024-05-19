@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace LlmTornado.Chat.Vendors.Anthropic;
@@ -14,6 +15,11 @@ internal class VendorAnthropicChatMessageToolResult
     /// </summary>
     public string Content { get; set; }
     
+    /// <summary>
+    ///     Type of the data from which <see cref="Content"/> was serialized.
+    /// </summary>
+    public Type? ContentType { get; set; }
+    
     public string ToolCallId { get; set; }
     
     public bool? ToolInvocationSucceeded { get; set; }
@@ -21,6 +27,7 @@ internal class VendorAnthropicChatMessageToolResult
     public VendorAnthropicChatMessageToolResult(ChatMessage msg)
     {
         Content = msg.Content;
+        ContentType = msg.ContentJsonType;
         ToolCallId = msg.ToolCallId;
         ToolInvocationSucceeded = msg.ToolInvocationSucceeded;
     }

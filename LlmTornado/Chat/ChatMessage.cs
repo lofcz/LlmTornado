@@ -170,4 +170,7 @@ public class ChatMessage
     
     [JsonIgnore]
     internal StringBuilder? ContentBuilder { get; set; }
+    
+    [JsonIgnore]
+    internal Type? ContentJsonType { get; set; }
 }
