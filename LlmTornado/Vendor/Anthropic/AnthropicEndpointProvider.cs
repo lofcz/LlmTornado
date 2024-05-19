@@ -22,19 +22,44 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
     private const string Data = "data:";
     private const string StreamMsgStart = $"{Event} message_start";
     private const string StreamMsgStop = $"{Event} message_stop";
+    private const string StreamMsgDelta = $"{Event} message_delta";
     private const string StreamError = $"{Event} error";
     private const string StreamPing = $"{Event} ping";
     private const string StreamContentBlockDelta = $"{Event} content_block_delta";
     private const string StreamContentBlockStart = $"{Event} content_block_start";
     private const string StreamContentBlockStop = $"{Event} content_block_stop";
-    private static readonly HashSet<string> StreamSkip = [StreamMsgStart, StreamMsgStop, StreamPing];
     private static readonly HashSet<string> toolFinishReasons = [ "tool_use" ];
+
+    private static readonly Dictionary<string, StreamRawActions> StreamEventsMap = new Dictionary<string, StreamRawActions>
+    {
+        { StreamMsgStart, StreamRawActions.MsgStart },
+        { StreamMsgStop, StreamRawActions.MsgStop },
+        { StreamMsgDelta, StreamRawActions.MsgDelta },
+        { StreamError, StreamRawActions.Error },
+        { StreamPing, StreamRawActions.Ping },
+        { StreamContentBlockDelta, StreamRawActions.ContentBlockDelta },
+        { StreamContentBlockStart, StreamRawActions.ContentBlockStart },
+        { StreamContentBlockStop, StreamRawActions.ContentBlockEnd }
+    };
     
     public static Version OutboundVersion { get; set; } = HttpVersion.Version20;
     
     public override HashSet<string> ToolFinishReasons => toolFinishReasons;
+
+    private enum StreamRawActions
+    {
+        Unknown,
+        MsgStart,
+        MsgStop,
+        MsgDelta,
+        Error,
+        Ping,
+        ContentBlockDelta,
+        ContentBlockStart,
+        ContentBlockEnd
+    }
     
-    private enum StreamNextAction
+    private enum StreamNextActions
     {
         Read,
         BlockStart,
@@ -129,7 +154,7 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
     
     public override async IAsyncEnumerable<ChatResult?> InboundStream(StreamReader reader, ChatRequest request)
     {
-        StreamNextAction nextAction = StreamNextAction.Read;
+        StreamNextActions nextAction = StreamNextActions.Read;
         ChatMessage? accuToolsMessage = null;
         ChatMessage? accuPlaintext = null;
         ChatUsage? plaintextUsage = null;
@@ -141,59 +166,52 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
                 continue;
             }
 
-            if (line.StartsWith(StreamError))
+            StreamRawActions rawAction = nextAction is StreamNextActions.Read ? StreamEventsMap.GetValueOrDefault(line.Trim(), StreamRawActions.Unknown) : StreamRawActions.Unknown;
+            
+            if (rawAction is StreamRawActions.Error)
             {
-                nextAction = StreamNextAction.Skip;
+                nextAction = StreamNextActions.Skip;
                 continue;
             }
             
             switch (nextAction)
             {
-                case StreamNextAction.Read when line.StartsWith(StreamContentBlockStart):
+                case StreamNextActions.Read when rawAction is StreamRawActions.ContentBlockStart:
                 {
-                    nextAction = StreamNextAction.BlockStart;
+                    nextAction = StreamNextActions.BlockStart;
                     continue;
                 }
-                case StreamNextAction.Read when line.StartsWith(StreamMsgStart):
+                case StreamNextActions.Read when rawAction is StreamRawActions.MsgStart:
                 {
-                    nextAction = StreamNextAction.MsgStart;
+                    nextAction = StreamNextActions.MsgStart;
                     continue;
                 }
-                case StreamNextAction.Read when line.StartsWith(StreamPing):
+                case StreamNextActions.Read when rawAction is StreamRawActions.Ping:
                 {
-                    nextAction = StreamNextAction.Skip;
+                    nextAction = StreamNextActions.Skip;
                     continue;
                 }
-                case StreamNextAction.Read when line.StartsWith(StreamMsgStop):
+                case StreamNextActions.Read when rawAction is StreamRawActions.MsgStop:
                 {
-                    nextAction = StreamNextAction.MsgStop;
+                    nextAction = StreamNextActions.MsgStop;
                     continue;
                 }
-                case StreamNextAction.Read when line.StartsWith(StreamContentBlockStart):
+                case StreamNextActions.Read when rawAction is StreamRawActions.ContentBlockEnd:
                 {
-                    nextAction = StreamNextAction.BlockStart;
+                    nextAction = StreamNextActions.BlockStop;
                     continue;
                 }
-                case StreamNextAction.Read when line.StartsWith(StreamContentBlockStop):
+                case StreamNextActions.Read when rawAction is StreamRawActions.ContentBlockDelta:
                 {
-                    nextAction = StreamNextAction.BlockStop;
-                    continue;
-                }
-                case StreamNextAction.Read:
-                {
-                    if (line.StartsWith(StreamContentBlockDelta))
-                    {
-                        nextAction = StreamNextAction.BlockDelta;
-                    }
-
+                    nextAction = StreamNextActions.BlockDelta;
                     break;
                 }
-                case StreamNextAction.Skip:
+                case StreamNextActions.Skip:
                 {
-                    nextAction = StreamNextAction.Read;
+                    nextAction = StreamNextActions.Read;
                     break;
                 }
-                case StreamNextAction.BlockStart:
+                case StreamNextActions.BlockStart:
                 {
                     line = line[Data.Length..];
                     AnthropicStreamBlockStart? res = JsonConvert.DeserializeObject<AnthropicStreamBlockStart>(line);
@@ -225,10 +243,10 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
                         accuToolsMessage.ContentBuilder.Clear();
                     }                    
                     
-                    nextAction = StreamNextAction.Read;
+                    nextAction = StreamNextActions.Read;
                     break;
                 }
-                case StreamNextAction.BlockDelta:
+                case StreamNextActions.BlockDelta:
                 {
                     line = line[Data.Length..];
                     AnthropicStreamBlockDelta? res = JsonConvert.DeserializeObject<AnthropicStreamBlockDelta>(line);
@@ -255,10 +273,10 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
                         };
                     }
                     
-                    nextAction = StreamNextAction.Read;
+                    nextAction = StreamNextActions.Read;
                     break;
                 }
-                case StreamNextAction.BlockStop:
+                case StreamNextActions.BlockStop:
                 {
                     line = line[Data.Length..];
                     AnthropicStreamBlockStop? res = JsonConvert.DeserializeObject<AnthropicStreamBlockStop>(line);
@@ -275,10 +293,10 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
                         accuToolsMessage.ContentBuilder?.Clear();
                     }
                     
-                    nextAction = StreamNextAction.Read;
+                    nextAction = StreamNextActions.Read;
                     break;
                 }
-                case StreamNextAction.MsgStart:
+                case StreamNextActions.MsgStart:
                 {
                     line = line[Data.Length..];
                     AnthropicStreamMsgStart? res = JsonConvert.DeserializeObject<AnthropicStreamMsgStart>(line);
@@ -293,10 +311,10 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
                         };
                     }
                     
-                    nextAction = StreamNextAction.Read;
+                    nextAction = StreamNextActions.Read;
                     break;
                 }
-                case StreamNextAction.MsgStop:
+                case StreamNextActions.MsgStop:
                 {
                     if (accuToolsMessage is not null)
                     {

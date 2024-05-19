@@ -94,6 +94,16 @@ public static class ChatDemo
 
     public static async Task OpenAiFunctionsStreamingInteractive()
     {
+        await InternalFunctionsStreamingInteractive(LLmProviders.OpenAi, ChatModel.OpenAi.Gpt4.O);
+    }
+    
+    public static async Task AnthropicFunctionsStreamingInteractive()
+    {
+        await InternalFunctionsStreamingInteractive(LLmProviders.Anthropic, ChatModel.Anthropic.Claude3.Sonnet);
+    }
+
+    private static async Task InternalFunctionsStreamingInteractive(LLmProviders provider, ChatModel model)
+    {
         // 1. set up a sample tool using strongly typed model
         ChatPluginCompiler compiler = new ChatPluginCompiler();
         compiler.SetFunctions([
@@ -104,9 +114,9 @@ public static class ChatDemo
         
         // 2. in this scenario, the conversation starts with the user asking for the current weather in two of the supported cities.
         // we can try asking for the weather in the third supported city (Paris) later.
-        Conversation chat = Program.Connect(LLmProviders.OpenAi).Chat.CreateConversation(new ChatRequest
+        Conversation chat = Program.Connect(provider).Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.OpenAi.Gpt4.O,
+            Model = model,
             Tools = compiler.GetFunctions(),
             StreamOptions = ChatStreamOptions.KnownOptionsIncludeUsage
         }).AppendUserInput("Please check the weather in Prague and Bratislava.");

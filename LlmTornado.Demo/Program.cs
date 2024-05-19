@@ -64,6 +64,8 @@ public enum Demos
     [Flaky("interactive demo")]
     OpenAiFunctionsStreamingInteractive,
     ChatAnthropicParallelFunctions,
+    [Flaky("interactive demo")]
+    AnthropicFunctionsStreamingInteractive,
     Last
 }
 
@@ -172,6 +174,7 @@ public class Program
             Demos.ChatCohereWebSearchStreaming => ChatDemo.CohereWebSearchStreaming,
             Demos.OpenAiFunctionsStreamingInteractive => ChatDemo.OpenAiFunctionsStreamingInteractive,
             Demos.ChatAnthropicParallelFunctions => ChatDemo.AnthropicFunctionsParallel,
+            Demos.AnthropicFunctionsStreamingInteractive => ChatDemo.AnthropicFunctionsStreamingInteractive,
             _ => null
         };
 
