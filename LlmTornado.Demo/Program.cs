@@ -63,6 +63,7 @@ public enum Demos
     ChatCohereWebSearchStreaming,
     [Flaky("interactive demo")]
     OpenAiFunctionsStreamingInteractive,
+    ChatAnthropicParallelFunctions,
     Last
 }
 
@@ -170,6 +171,7 @@ public class Program
             Demos.ChatCohereWebSearch => ChatDemo.CohereWebSearch,
             Demos.ChatCohereWebSearchStreaming => ChatDemo.CohereWebSearchStreaming,
             Demos.OpenAiFunctionsStreamingInteractive => ChatDemo.OpenAiFunctionsStreamingInteractive,
+            Demos.ChatAnthropicParallelFunctions => ChatDemo.AnthropicFunctionsParallel,
             _ => null
         };
 
@@ -183,7 +185,9 @@ public class Program
             return;
         }
 
-        selectedDemo = Demos.Last - 1;
+        Demos? forceDemo = Demos.OpenAiFunctionsStreamingInteractive;
+        
+        selectedDemo = forceDemo ?? Demos.Last - 1;
         Func<Task>? task = GetDemo(selectedDemo);
 
         if (task is not null)

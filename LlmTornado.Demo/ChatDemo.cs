@@ -368,6 +368,68 @@ public static class ChatDemo
         Console.WriteLine(response);
     }
     
+    public static async Task AnthropicFunctionsParallel()
+    {
+        StringBuilder sb = new StringBuilder();
+
+        Conversation chat = Program.Connect(LLmProviders.Anthropic).Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Anthropic.Claude3.Sonnet,
+            Tools = [
+                new Tool(new ToolFunction("get_weather", "gets the current weather", new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        location = new
+                        {
+                            type = "string",
+                            description = "The location for which the weather information is required."
+                        }
+                    },
+                    required = new List<string> { "location" }
+                }))
+            ],
+            ToolChoice = new OutboundToolChoice("get_weather")
+        });
+
+        ChatStreamEventHandler eventsHandler = new ChatStreamEventHandler
+        {
+            MessageTokenHandler = (x) =>
+            {
+                Console.Write(x);
+                return Task.CompletedTask;
+            },
+            FunctionCallHandler = (functions) =>
+            {
+                foreach (FunctionCall fn in functions)
+                {
+                    if (fn.TryGetArgument("location", out string? str) && str.ToLowerInvariant() is "prague")
+                    {
+                        fn.Result = new FunctionResult(fn.Name, "A mild rain is expected around noon.");  
+                    }
+                    else
+                    {
+                        fn.Result = new FunctionResult(fn.Name, "A sunny, hot day is expected, 28 \u00b0C");
+                    }
+                }
+
+                return Task.CompletedTask;
+            }
+        };
+
+        chat.OnAfterToolsCall = async (result) =>
+        {
+            chat.RequestParameters.ToolChoice = null; // stop forcing the model to use the get_weather tool
+            await chat.StreamResponseRich(eventsHandler);
+        };
+        
+        chat.AppendMessage(ChatMessageRoles.System, "You are a helpful assistant");
+        chat.AppendMessage(ChatMessageRoles.User, "What is the weather like today in Prague and Paris?");
+
+        await chat.StreamResponseRich(eventsHandler);
+    }
+    
     public static async Task AnthropicFunctions()
     {
         StringBuilder sb = new StringBuilder();
@@ -389,11 +451,13 @@ public static class ChatDemo
                     },
                     required = new List<string> { "location" }
                 }))
-            ]
+            ],
+            ToolChoice = new OutboundToolChoice("get_weather")
         });
 
         chat.OnAfterToolsCall = async (result) =>
         {
+            chat.RequestParameters.ToolChoice = null; // stop forcing the model to use the get_weather tool
             string? str = await chat.GetResponse();
 
             if (str is not null)
@@ -412,14 +476,12 @@ public static class ChatDemo
             return Task.CompletedTask;
         }, functions =>
         {
-            List<FunctionResult> results = [];
-
             foreach (FunctionCall fn in functions)
             {
-                results.Add(new FunctionResult(fn.Name, "A mild rain is expected around noon."));
+                fn.Result = new FunctionResult(fn.Name, "A mild rain is expected around noon.");
             }
 
-            return Task.FromResult(results);
+            return Task.CompletedTask;
         }, null, null);
 
 
@@ -471,14 +533,7 @@ public static class ChatDemo
             return Task.CompletedTask;
         }, functions =>
         {
-            List<FunctionResult> results = [];
-
-            foreach (FunctionCall fn in functions)
-            {
-                results.Add(new FunctionResult(fn, "Service not available.", null, false));
-            }
-
-            return Task.FromResult(results);
+            return Task.CompletedTask;
         }, null, null);
 
 
@@ -514,17 +569,6 @@ public static class ChatDemo
 
         Console.WriteLine("Anthropic:");
         await chat.StreamResponse(Console.Write);
-        Console.WriteLine();
-       
-        Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
-        {
-            Model = ChatModel.OpenAi.Gpt4.Turbo
-        });
-        chat2.AppendSystemMessage("Pretend you are a dog. Sound authentic.");
-        chat2.AppendUserInput("Who are you?");
-       
-        Console.WriteLine("OpenAI:");
-        await chat2.StreamResponse(Console.Write);
         Console.WriteLine();
     }
 

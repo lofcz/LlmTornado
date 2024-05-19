@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Http;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
+using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
 using LlmTornado.Common;
@@ -17,6 +18,15 @@ namespace LlmTornado.Chat.Vendors.Anthropic;
 
 internal class VendorAnthropicChatRequest
 {
+    internal static Dictionary<OutboundToolChoiceModes, string> toolChoiceMap = new Dictionary<OutboundToolChoiceModes, string>
+    {
+        { OutboundToolChoiceModes.Auto, "auto" },
+        { OutboundToolChoiceModes.Legacy, "auto" },
+        { OutboundToolChoiceModes.None, "auto" },
+        { OutboundToolChoiceModes.Required, "any" },
+        { OutboundToolChoiceModes.ToolFunction, "tool" }
+    };
+    
     internal class VendorAnthropicChatRequestMessage
     {
         [JsonProperty("role")]
@@ -43,7 +53,32 @@ internal class VendorAnthropicChatRequest
             {
                 public override void WriteJson(JsonWriter writer, VendorAnthropicChatRequestMessageContent value, JsonSerializer serializer)
                 {
-                    if (value.Msg.Parts?.Count > 0)
+                    if (value.Msg.ChatMessageSerializeData is VendorAnthropicChatMessageToolResults vd)
+                    {
+                        writer.WriteStartArray();
+                        
+                        foreach (VendorAnthropicChatMessageToolResult block in vd.ToolResults)
+                        {
+                            writer.WriteStartObject();
+                            writer.WritePropertyName("type");
+                            writer.WriteValue("tool_result");
+                            writer.WritePropertyName("tool_use_id");
+                            writer.WriteValue(block.ToolCallId);
+                            writer.WritePropertyName("content");
+                            writer.WriteRawValue(block.Content);
+
+                            if (block.ToolInvocationSucceeded is false)
+                            {
+                                writer.WritePropertyName("is_error");
+                                writer.WriteValue(true);
+                            } 
+                        
+                            writer.WriteEndObject();
+                        }
+                        
+                        writer.WriteEndArray();
+                    }
+                    else if (value.Msg.Parts?.Count > 0)
                     {
                         writer.WriteStartArray();
                         
@@ -87,7 +122,7 @@ internal class VendorAnthropicChatRequest
                         writer.WriteStartArray();
                         writer.WriteStartObject();
                         writer.WritePropertyName("type");
-                        writer.WriteValue(VendorAnthropicChatMessageTypes.ToolResult);
+                        writer.WriteValue("tool_result");
                         writer.WritePropertyName("tool_use_id");
                         writer.WriteValue(value.Msg.ToolCallId);
                         writer.WritePropertyName("content");
@@ -104,7 +139,35 @@ internal class VendorAnthropicChatRequest
                     }
                     else if (value.Msg.ToolCalls?.Count > 0)
                     {
-                        writer.WriteRawValue(value.Msg.Content ?? string.Empty);
+                        writer.WriteStartArray();
+                        
+                        if (value.Msg.Content is not null)
+                        {
+                            writer.WriteStartObject();
+                            writer.WritePropertyName("type");
+                            writer.WriteValue("text");
+                            writer.WritePropertyName("text");
+                            writer.WriteValue(value.Msg.Content);
+                            writer.WriteEndObject();
+                        }
+
+                        foreach (ToolCall toolCall in value.Msg.ToolCalls)
+                        {
+                            writer.WriteStartObject();
+                            writer.WritePropertyName("type");
+                            writer.WriteValue("tool_use");
+                            writer.WritePropertyName("id");
+                            writer.WriteValue(toolCall.Id);
+                            writer.WritePropertyName("name");
+                            writer.WriteValue(toolCall.FunctionCall.Name);
+                            writer.WritePropertyName("input");
+                            writer.WriteRawValue(toolCall.FunctionCall.Arguments.IsNullOrWhiteSpace() ? "{}" : toolCall.FunctionCall.Arguments);
+                            
+                            string toolJson = toolCall.ToJson();
+                            writer.WriteEndObject();
+                        }
+                        
+                        writer.WriteEndArray();
                     }
                     else
                     {
@@ -131,6 +194,14 @@ internal class VendorAnthropicChatRequest
         [JsonProperty("user_id")]
         public string UserId { get; set; }
     }
+
+    internal class VendorAnthropicChatRequestToolChoice
+    {
+        [JsonProperty("type")]
+        public string Type { get; set; }
+        [JsonProperty("name")]
+        public string? Name { get; set; }
+    }
     
     [JsonProperty("messages")]
     public List<VendorAnthropicChatRequestMessage> Messages { get; set; }
@@ -152,6 +223,8 @@ internal class VendorAnthropicChatRequest
     public double? TopP { get; set; }
     [JsonProperty("top_k")]
     public int? TopK { get; set; }
+    [JsonProperty("tool_choice")]
+    public VendorAnthropicChatRequestToolChoice? ToolChoice { get; set; }
     [JsonProperty("tools")]
     public List<VendorAnthropicToolFunction>? Tools { get; set; }
 
@@ -169,27 +242,68 @@ internal class VendorAnthropicChatRequest
 
         if (request.Messages is not null)
         {
+            ChatMessage? toolsMessage = null;
+            
             foreach (ChatMessage msg in request.Messages)
             {
                 switch (msg.Role)
                 {
                     case ChatMessageRoles.Assistant or ChatMessageRoles.User:
                     {
+                        if (toolsMessage is not null)
+                        {
+                            Messages.Add(new VendorAnthropicChatRequestMessage(ChatMessageRoles.User, toolsMessage));
+                        }
+                        
                         Messages.Add(new VendorAnthropicChatRequestMessage(msg.Role ?? ChatMessageRoles.Unknown, msg));
+                        toolsMessage = null;
                         break;
                     }
-                    case ChatMessageRoles.Tool:
+                    case ChatMessageRoles.Tool: // multiple tool messages must be compressed into one
                     {
-                        Messages.Add(new VendorAnthropicChatRequestMessage(ChatMessageRoles.User, msg));
+                        if (toolsMessage is null)
+                        {
+                            toolsMessage = msg;
+                            toolsMessage.ChatMessageSerializeData = new VendorAnthropicChatMessageToolResults
+                            {
+                                ToolResults =
+                                [
+                                    new VendorAnthropicChatMessageToolResult(msg)
+                                ]
+                            };
+                            
+                            continue;
+                        }
+
+                        if (toolsMessage.ChatMessageSerializeData is VendorAnthropicChatMessageToolResults vd)
+                        {
+                            vd.ToolResults.Add(new VendorAnthropicChatMessageToolResult(msg));
+                        }
+                        
                         break;
                     }
                 }
-            }   
+            } 
+            
+            if (toolsMessage is not null)
+            {
+                Messages.Add(new VendorAnthropicChatRequestMessage(ChatMessageRoles.User, toolsMessage));
+                toolsMessage = null;
+            }
+        }
+
+        if (request.ToolChoice is not null)
+        {
+            ToolChoice = new VendorAnthropicChatRequestToolChoice
+            {
+                Type = toolChoiceMap.GetValueOrDefault(request.ToolChoice.Mode) ?? "auto",
+                Name = request.ToolChoice.Mode is OutboundToolChoiceModes.ToolFunction ? request.ToolChoice.Function?.Name : null
+            };
         }
 
         if (request.Tools is not null)
         {
-            Stream = false; // Claude 3 models (Haiku, Sonnet, Opus) don't support streaming in conjunction with tools.
+            //Stream = false; // Claude 3 models (Haiku, Sonnet, Opus) don't support streaming in conjunction with tools.
             Tools = request.Tools.Where(x => x.Function is not null).Select(t => new VendorAnthropicToolFunction(t.Function!)).ToList();
         }
     }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using Newtonsoft.Json;
@@ -163,4 +164,10 @@ public class ChatMessage
 
     [JsonIgnore] 
     internal Dictionary<string, ToolCallInboundAccumulator>? ToolCallsDict;
+    
+    [JsonIgnore]
+    internal object? ChatMessageSerializeData { get; set; }
+    
+    [JsonIgnore]
+    internal StringBuilder? ContentBuilder { get; set; }
 }

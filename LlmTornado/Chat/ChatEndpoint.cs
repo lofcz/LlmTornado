@@ -285,7 +285,7 @@ public class ChatEndpoint : EndpointBase
 
         if (provider.Provider is LLmProviders.Anthropic && request.Tools is not null) // Anthropic doesn't support streaming with functions as of 4/24
         {
-            return StreamChatFake(provider, request);
+            //return StreamChatFake(provider, request);
         }
 
         return StreamChatReal(provider, request);

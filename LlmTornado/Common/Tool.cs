@@ -21,6 +21,7 @@ public class FunctionResult
     {
         Name = name;
         Content = content is null ? "{}" : JsonConvert.SerializeObject(content);
+        InvocationSucceeded = true;
     }
 
     /// <summary>
@@ -33,6 +34,7 @@ public class FunctionResult
         Name = name;
         Content = content is null ? "{}" : JsonConvert.SerializeObject(content);
         PassthroughData = passthroughData;
+        InvocationSucceeded = true;
     }
     
     /// <summary>
@@ -59,6 +61,7 @@ public class FunctionResult
         Name = call.Name;
         Content = content is null ? "{}" : JsonConvert.SerializeObject(content);
         PassthroughData = passthroughData;
+        InvocationSucceeded = true;
     }
     
     /// <summary>

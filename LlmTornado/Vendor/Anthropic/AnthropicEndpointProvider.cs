@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Text;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Vendors.Anthropic;
+using LlmTornado.ChatFunctions;
 using LlmTornado.Vendor.Anthropic;
 using Newtonsoft.Json;
 
@@ -38,7 +41,8 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
         BlockDelta,
         BlockStop,
         Skip,
-        MsgStart
+        MsgStart,
+        MsgStop
     }
     
     public AnthropicEndpointProvider(TornadoApi api) : base(api)
@@ -53,8 +57,21 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
         {
             [JsonProperty("type")]
             public string Type { get; set; }
+            
             [JsonProperty("text")]
             public string Text { get; set; }
+            
+            /// <summary>
+            /// For tools
+            /// </summary>
+            [JsonProperty("name")]
+            public string? Name { get; set; }
+            
+            /// <summary>
+            /// For tools
+            /// </summary>
+            [JsonProperty("id")]
+            public string? Id { get; set; }
         }
         
         [JsonProperty("index")]
@@ -71,6 +88,8 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
             public string Type { get; set; }
             [JsonProperty("text")]
             public string Text { get; set; }
+            [JsonProperty("partial_json")]
+            public string? PartialJson { get; set; }
         }
         
         [JsonProperty("index")]
@@ -111,6 +130,7 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
     public override async IAsyncEnumerable<ChatResult?> InboundStream(StreamReader reader, ChatRequest request)
     {
         StreamNextAction nextAction = StreamNextAction.Read;
+        ChatMessage? accuToolsMessage = null;
       
         while (await reader.ReadLineAsync() is { } line)
         {
@@ -128,20 +148,35 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
             switch (nextAction)
             {
                 case StreamNextAction.Read when line.StartsWith(StreamContentBlockStart):
+                {
                     nextAction = StreamNextAction.BlockStart;
                     continue;
+                }
                 case StreamNextAction.Read when line.StartsWith(StreamMsgStart):
+                {
                     nextAction = StreamNextAction.MsgStart;
                     continue;
-                case StreamNextAction.Read when line.StartsWith(StreamPing) || line.StartsWith(StreamMsgStop):
+                }
+                case StreamNextAction.Read when line.StartsWith(StreamPing):
+                {
                     nextAction = StreamNextAction.Skip;
                     continue;
+                }
+                case StreamNextAction.Read when line.StartsWith(StreamMsgStop):
+                {
+                    nextAction = StreamNextAction.MsgStop;
+                    continue;
+                }
                 case StreamNextAction.Read when line.StartsWith(StreamContentBlockStart):
+                {
                     nextAction = StreamNextAction.BlockStart;
                     continue;
+                }
                 case StreamNextAction.Read when line.StartsWith(StreamContentBlockStop):
+                {
                     nextAction = StreamNextAction.BlockStop;
                     continue;
+                }
                 case StreamNextAction.Read:
                 {
                     if (line.StartsWith(StreamContentBlockDelta))
@@ -152,22 +187,56 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
                     break;
                 }
                 case StreamNextAction.Skip:
+                {
                     nextAction = StreamNextAction.Read;
                     break;
+                }
                 case StreamNextAction.BlockStart:
                 {
-                    line = line.Substring(Data.Length);
+                    line = line[Data.Length..];
                     AnthropicStreamBlockStart? res = JsonConvert.DeserializeObject<AnthropicStreamBlockStart>(line);
+
+                    if (res?.ContentBlock.Type is "tool_use")
+                    {
+                        ToolCall tc = new ToolCall
+                        {
+                            Id = res.ContentBlock.Id,
+                            Index = res.Index,
+                        };
+
+                        FunctionCall fc = new FunctionCall
+                        {
+                            Name = res.ContentBlock.Name,
+                            ToolCall = tc
+                        };
+
+                        tc.FunctionCall = fc;
+                        
+                        accuToolsMessage ??= new ChatMessage(ChatMessageRoles.Tool)
+                        {
+                            ToolCalls = []
+                        };
+
+                        accuToolsMessage.ToolCalls?.Add(tc);
+                        
+                        accuToolsMessage.ContentBuilder ??= new StringBuilder();
+                        accuToolsMessage.ContentBuilder.Clear();
+                    }                    
                     
                     nextAction = StreamNextAction.Read;
                     break;
                 }
                 case StreamNextAction.BlockDelta:
                 {
-                    line = line.Substring(Data.Length);
+                    line = line[Data.Length..];
                     AnthropicStreamBlockDelta? res = JsonConvert.DeserializeObject<AnthropicStreamBlockDelta>(line);
-                    
-                    if (!res?.Delta.Text.IsNullOrWhiteSpace() ?? false)
+
+                    if (accuToolsMessage is not null)
+                    {
+                        accuToolsMessage.ContentBuilder ??= new StringBuilder();
+                        accuToolsMessage.ContentBuilder.Append(res?.Delta.PartialJson);
+                    }
+                    else if (!res?.Delta.Text.IsNullOrWhiteSpace() ?? false)
                     {
                         yield return new ChatResult
                         {
@@ -185,16 +254,46 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
                 }
                 case StreamNextAction.BlockStop:
                 {
-                    line = line.Substring(Data.Length);
-                    //AnthropicStreamBlockDelta? res = JsonConvert.DeserializeObject<AnthropicStreamBlockDelta>(line);
+                    line = line[Data.Length..];
+                    AnthropicStreamBlockStop? res = JsonConvert.DeserializeObject<AnthropicStreamBlockStop>(line);
+
+                    if (accuToolsMessage is not null)
+                    {
+                        ToolCall? lastCall = accuToolsMessage.ToolCalls?.LastOrDefault();
+
+                        if (lastCall is not null)
+                        {
+                            lastCall.FunctionCall.Arguments = accuToolsMessage.ContentBuilder?.ToString() ?? string.Empty;
+                        }
+
+                        accuToolsMessage.ContentBuilder?.Clear();
+                    }
+                    
                     nextAction = StreamNextAction.Read;
                     break;
                 }
                 case StreamNextAction.MsgStart:
                 {
-                    line = line.Substring(Data.Length);
-                    //AnthropicStreamMsgStart? res = JsonConvert.DeserializeObject<AnthropicStreamMsgStart>(line);
+                    line = line[Data.Length..];
+                    AnthropicStreamMsgStart? res = JsonConvert.DeserializeObject<AnthropicStreamMsgStart>(line);
                     nextAction = StreamNextAction.Read;
+                    break;
+                }
+                case StreamNextAction.MsgStop:
+                {
+                    if (accuToolsMessage is not null)
+                    {
+                        yield return new ChatResult
+                        {
+                            Choices = [
+                                new ChatChoice
+                                {
+                                    Delta = accuToolsMessage
+                                }
+                            ]
+                        };
+                    }
+                    
                     break;
                 }
             }
@@ -215,7 +314,7 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
         
         req.Headers.Add("User-Agent", EndpointBase.GetUserAgent());
         req.Headers.Add("anthropic-version", "2023-06-01");
-        req.Headers.Add("anthropic-beta", "tools-2024-04-04");
+        req.Headers.Add("anthropic-beta", "tools-2024-05-16");
 
         ProviderAuthentication? auth = Api.GetProvider(LLmProviders.Anthropic).Auth;
 

@@ -65,8 +65,8 @@ internal class VendorAnthropicChatResult : VendorChatResult
     public string Type { get; set; }
     [JsonProperty("role")]
     public string Role { get; set; }
-    [JsonProperty("content")]
-    public List<VendorAnthropicChatResultContentBlock> Content { get; set; }
+    [JsonProperty("content")] 
+    public List<VendorAnthropicChatResultContentBlock> Content { get; set; } = [];
     [JsonProperty("model")]
     public string Model { get; set; }
     [JsonProperty("stop_reason")]
@@ -89,27 +89,41 @@ internal class VendorAnthropicChatResult : VendorChatResult
             Object = JsonConvert.SerializeObject(Content, EndpointBase.NullSettings)
         };
 
-        foreach (VendorAnthropicChatResultContentBlock contentBlock in Content)
+        ChatMessage? toolsMsg = null;
+
+        foreach (VendorAnthropicChatResultContentBlock contentBlock in Content) // we need to merge all tool blocks into one
         {
-            ChatMessage blockMsg;
-            
             if (contentBlock.Type == VendorAnthropicChatMessageTypes.ToolUse)
             {
-                blockMsg = new ChatMessage(ChatMessageRoles.Tool)
+                toolsMsg ??= new ChatMessage(ChatMessageRoles.Tool)
                 {
-                    ToolCalls = [ ParseToolCall(contentBlock) ] // Claude3 models (Haiku, Sonnet, Opus) call tools one at a time.
+                    ToolCalls = []
                 };
+
+                toolsMsg.ToolCalls?.Add(ParseToolCall(contentBlock));
             }
             else
             {
-                blockMsg = new ChatMessage(ChatMessageRoles.Assistant, contentBlock.Text ?? string.Empty);
+                ChatMessage textBlockMsg = new ChatMessage(ChatMessageRoles.Assistant, contentBlock.Text ?? string.Empty);
+                
+                result.Choices.Add(new ChatChoice
+                {
+                    FinishReason = StopReason,
+                    Index = result.Choices.Count + 1,
+                    Message = textBlockMsg,
+                    Delta = textBlockMsg
+                });
             }
-            
+        }
+
+        if (toolsMsg is not null)
+        {
             result.Choices.Add(new ChatChoice
             {
                 FinishReason = StopReason,
                 Index = result.Choices.Count + 1,
-                Message = blockMsg
+                Message = toolsMsg,
+                Delta = toolsMsg
             });
         }
 
