@@ -21,7 +21,7 @@ public class FunctionResult
     public FunctionResult(string name, object? content)
     {
         Name = name;
-        SetContent(content);
+        Content = SetContent(content);
         InvocationSucceeded = true;
     }
 
@@ -33,7 +33,7 @@ public class FunctionResult
     public FunctionResult(string name, object? content, object? passthroughData)
     {
         Name = name;
-        SetContent(content);
+        Content = SetContent(content);
         PassthroughData = passthroughData;
         InvocationSucceeded = true;
     }
@@ -47,7 +47,7 @@ public class FunctionResult
     public FunctionResult(string name, object? content, object? passthroughData, bool invocationSucceeded)
     {
         Name = name;
-        SetContent(content);
+        Content = SetContent(content);
         PassthroughData = passthroughData;
         InvocationSucceeded = invocationSucceeded;
     }
@@ -60,9 +60,32 @@ public class FunctionResult
     public FunctionResult(FunctionCall call, object? content, object? passthroughData)
     {
         Name = call.Name;
-        SetContent(content);
+        Content = SetContent(content);
         PassthroughData = passthroughData;
         InvocationSucceeded = true;
+    }
+    
+    /// <summary>
+    /// </summary>
+    /// <param name="call">The function call this result maps to.</param>
+    /// <param name="content">A serializable object (e.g. class / dict / anonymous object) that will be serialized into JSON</param>
+    public FunctionResult(FunctionCall call, object? content)
+    {
+        Name = call.Name;
+        Content = SetContent(content);
+        InvocationSucceeded = true;
+    }
+    
+    /// <summary>
+    /// </summary>
+    /// <param name="call">The function call this result maps to.</param>
+    /// <param name="content">A serializable object (e.g. class / dict / anonymous object) that will be serialized into JSON</param>
+    /// <param name="invocationSucceeded">An indicator whether the tool invocation succeeded or not.</param>
+    public FunctionResult(FunctionCall call, object? content, bool invocationSucceeded)
+    {
+        Name = call.Name;
+        Content = SetContent(content);
+        InvocationSucceeded = invocationSucceeded;
     }
     
     /// <summary>
@@ -74,7 +97,7 @@ public class FunctionResult
     public FunctionResult(FunctionCall call, object? content, object? passthroughData, bool invocationSucceeded)
     {
         Name = call.Name;
-        SetContent(content);
+        Content = SetContent(content);
         PassthroughData = passthroughData;
         InvocationSucceeded = invocationSucceeded;
     }
@@ -107,10 +130,10 @@ public class FunctionResult
     [JsonIgnore]
     internal Type? ContentJsonType { get; set; }
 
-    private void SetContent(object? content)
+    private string SetContent(object? content)
     {
         ContentJsonType = content?.GetType();
-        Content = content is null ? "{}" : JsonConvert.SerializeObject(content);
+        return content is null ? "{}" : JsonConvert.SerializeObject(content);
     }
 }
 

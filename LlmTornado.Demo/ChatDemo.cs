@@ -448,55 +448,45 @@ public static class ChatDemo
     
     public static async Task OpenAiFunctions()
     {
-        StringBuilder sb = new StringBuilder();
-
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
-        {
-            Model = ChatModel.OpenAi.Gpt4.Turbo,
-            Tools = [
-                new Tool(new ToolFunction("get_weather", "gets the current weather", new
-                {
-                    type = "object",
-                    properties = new
-                    {
-                        location = new
-                        {
-                            type = "string",
-                            description = "The location for which the weather information is required."
-                        }
-                    },
-                    required = new List<string> { "location" }
-                }))
-            ]
-        });
-
-        chat.OnAfterToolsCall = async (result) =>
-        {
-            string? str = await chat.GetResponse();
-
-            if (str is not null)
             {
-                sb.Append(str);
-            }
+                Model = ChatModel.OpenAi.Gpt4.O,
+                Tools =
+                [
+                    new Tool(new ToolFunction("get_weather", "gets the current weather", new
+                    {
+                        type = "object",
+                        properties = new
+                        {
+                            location = new
+                            {
+                                type = "string",
+                                description = "The location for which the weather information is required."
+                            }
+                        },
+                        required = new List<string> { "location" }
+                    }))
+                ]
+            })
+            .AppendSystemMessage("You are a helpful assistant")
+            .AppendUserInput("What is the weather like today in Prague?");
+
+        ChatStreamEventHandler handler = new ChatStreamEventHandler
+        {
+            MessageTokenHandler = (x) =>
+            {
+                Console.Write(x);
+                return Task.CompletedTask;
+            },
+            FunctionCallHandler = (calls) =>
+            {
+                calls.ForEach(x => x.Result = new FunctionResult(x, "A mild rain is expected around noon.", null));
+                return Task.CompletedTask;
+            },
+            AfterFunctionCallsResolvedHandler = async (results, handler) => { await chat.StreamResponseRich(handler); }
         };
-        
-        chat.AppendMessage(ChatMessageRoles.System, "You are a helpful assistant");
-        Guid msgId = Guid.NewGuid();
-        chat.AppendMessage(ChatMessageRoles.User, "What is the weather like today in Prague?", msgId);
 
-        await chat.StreamResponseRich(msgId, (x) =>
-        {
-            sb.Append(x);
-            return Task.CompletedTask;
-        }, functions =>
-        {
-            List<FunctionResult> results = functions.Select(fn => new FunctionResult(fn.Name, "A mild rain is expected around noon.")).ToList();
-            return Task.FromResult(results);
-        }, null);
-
-
-        string response = sb.ToString();
-        Console.WriteLine(response);
+        await chat.StreamResponseRich(handler);
     }
     
     public static async Task AnthropicFunctionsParallel()
