@@ -226,7 +226,7 @@ internal class VendorCohereChatRequest
                             {
                                 Call = new VendorCohereChatToolResultCallObject
                                 {
-                                    Name = msg.ToolCallId ?? string.Empty,
+                                    Name = toolCall.FunctionCall.Name,
                                     Parameters = toolCall.FunctionCall.Arguments.JsonDecode<object>()
                                 },
                                 Outputs = []

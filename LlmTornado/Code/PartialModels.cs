@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using LlmTornado.Images;
 using LlmTornado;
 using LlmTornado.ChatFunctions;
+using LlmTornado.Common;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -18,11 +19,37 @@ public class Ref<T>
     public T? Ptr { get; set; }
 }
 
-public class StreamResponse
+internal class StreamResponse
 {
     public Stream Stream { get; set; }
     public ApiResultBase Headers { get; set; }
     public HttpResponseMessage Response { get; set; }
+}
+
+/// <summary>
+///     A failed HTTP request.
+/// </summary>
+public class HttpFailedRequest
+{
+    /// <summary>
+    ///     The exception with details what went wrong.
+    /// </summary>
+    public Exception Exception { get; set; }
+    
+    /// <summary>
+    ///     The request that failed.
+    /// </summary>
+    public HttpCallRequest? Request { get; set; }
+    
+    /// <summary>
+    ///     Result of the failed request.
+    /// </summary>
+    public IHttpCallResult? Result { get; set; }
+    
+    /// <summary>
+    ///     Raw message of the failed request. Do not dispose this, it will be disposed automatically by Tornado.
+    /// </summary>
+    public HttpResponseMessage RawMessage { get; set; }
 }
 
 public class StreamRequest : IAsyncDisposable
@@ -30,6 +57,9 @@ public class StreamRequest : IAsyncDisposable
     public Stream Stream { get; set; }
     public HttpResponseMessage Response { get; set; }
     public StreamReader StreamReader { get; set; }
+    public Exception? Exception { get; set; }
+    public HttpCallRequest? CallRequest { get; set; }
+    public IHttpCallResult? CallResponse { get; set; }
 
     public async ValueTask DisposeAsync()
     {

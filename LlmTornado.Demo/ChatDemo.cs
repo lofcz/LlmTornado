@@ -202,7 +202,7 @@ public static class ChatDemo
         // 1. set up a sample tool using strongly typed model
         ChatPluginCompiler compiler = new ChatPluginCompiler();
         compiler.SetFunctions([
-            new ChatPluginFunction("get_weather", "gets the current weather in a given city", [
+            new ChatPluginFunction("get_weather", "gets the current weather in one given city", [
                 new ChatFunctionParam("city_name", "name of the city", ChatPluginFunctionAtomicParamTypes.String)
             ])
         ]);
@@ -304,6 +304,13 @@ public static class ChatDemo
                 OnUsageReceived = async (usage) =>
                 {
                     Console.WriteLine($"[used tokens: input - {usage.PromptTokens}, output - {usage.CompletionTokens}, total - {usage.TotalTokens}]");
+                },
+                OutboundHttpRequestHandler = (call) =>
+                {
+                    Console.ForegroundColor = ConsoleColor.DarkGray;
+                    Console.WriteLine($"{call.Method} {call.Url}");
+                    Console.ResetColor();
+                    return Task.CompletedTask;
                 }
             });
         }

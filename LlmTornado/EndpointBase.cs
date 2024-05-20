@@ -144,6 +144,34 @@ public abstract class EndpointBase
         return $"Error at {name} ({description}) with HTTP status code: {response.StatusCode}. Content: {resultAsString ?? "<no content>"}. Request: {JsonConvert.SerializeObject(input.Headers)}";
     }
 
+    private static void SetRequestContent(HttpRequestMessage msg, object? payload)
+    {
+        if (payload is not null)
+        {
+            switch (payload)
+            {
+                case HttpContent hData:
+                {
+                    msg.Content = hData;
+                    break;
+                }
+                case string str:
+                {
+                    StringContent stringContent = new(str, Encoding.UTF8, "application/json");
+                    msg.Content = stringContent;
+                    break;
+                }
+                default:
+                {
+                    string jsonContent = JsonConvert.SerializeObject(payload, NullSettings);
+                    StringContent stringContent = new(jsonContent, Encoding.UTF8, "application/json");
+                    msg.Content = stringContent;
+                    break;
+                }
+            }
+        }
+    }
+
     /// <summary>
     ///     Sends an HTTP request and returns the response.  Does not do any parsing, but does do error handling.
     /// </summary>
@@ -172,30 +200,9 @@ public abstract class EndpointBase
 
         HttpClient client = GetClient(provider.Provider);
         using HttpRequestMessage req = provider.OutboundMessage(url, verb, postData, streaming);
-        
-        if (postData is not null)
-        {
-            switch (postData)
-            {
-                case HttpContent hData:
-                    req.Content = hData;
-                    break;
-                case string str:
-                {
-                    StringContent stringContent = new(str, Encoding.UTF8, "application/json");
-                    req.Content = stringContent;
-                    break;
-                }
-                default:
-                {
-                    string jsonContent = JsonConvert.SerializeObject(postData, NullSettings);
-                    StringContent stringContent = new(jsonContent, Encoding.UTF8, "application/json");
-                    req.Content = stringContent;
-                    break;
-                }
-            }
-        }
 
+        SetRequestContent(req, postData);
+        
         try
         {
             HttpResponseMessage response = await client.SendAsync(req, streaming ? HttpCompletionOption.ResponseHeadersRead : HttpCompletionOption.ResponseContentRead, ct ?? CancellationToken.None).ConfigureAwait(ConfigureAwaitOptions.None);
@@ -264,33 +271,44 @@ public abstract class EndpointBase
         HttpClient client = GetClient(provider.Provider);
         using HttpRequestMessage req = provider.OutboundMessage(url, verb, content, streaming);
         
-        if (content is not null)
-        {
-            switch (content)
-            {
-                case HttpContent hData:
-                    req.Content = hData;
-                    break;
-                case string str:
-                {
-                    StringContent stringContent = new(str, Encoding.UTF8, "application/json");
-                    req.Content = stringContent;
-                    break;
-                }
-                default:
-                {
-                    string jsonContent = JsonConvert.SerializeObject(content, NullSettings);
-                    StringContent stringContent = new(jsonContent, Encoding.UTF8, "application/json");
-                    req.Content = stringContent;
-                    break;
-                }
-            }
-        }
-
+        SetRequestContent(req, content);
+        
         try
         {
             HttpResponseMessage result = await client.SendAsync(req, streaming ? HttpCompletionOption.ResponseHeadersRead : HttpCompletionOption.ResponseContentRead, ct ?? CancellationToken.None).ConfigureAwait(ConfigureAwaitOptions.None);
-            return new RestDataOrException<HttpResponseMessage>(result, req);
+            
+            if (result.IsSuccessStatusCode)
+            {
+                return new RestDataOrException<HttpResponseMessage>(result, req);
+            }
+
+            string resultAsString;
+
+            try
+            {
+                resultAsString = await result.Content.ReadAsStringAsync();
+            }
+            catch (Exception e)
+            {
+                resultAsString = $"Additionally, the following error was thrown when attempting to read the response content: {e}";
+            }
+
+            ProviderAuthentication? auth = Api.GetProvider(provider.Provider).Auth;
+
+            if (auth is not null)
+            {
+                if (auth.ApiKey is not null)
+                {
+                    resultAsString = resultAsString.Replace(auth.ApiKey, "[API KEY REDACTED FOR SECURITY]");
+                }
+
+                if (auth.Organization is not null)
+                {
+                    resultAsString = resultAsString.Replace(auth.Organization, "[ORGANIZATION REDACTED FOR SECURITY]");
+                }
+            }
+            
+            return new RestDataOrException<HttpResponseMessage>(new Exception($"Http call failed. Code: {(int)result.StatusCode}, Message: {resultAsString}."), req);
         }
         catch (Exception e)
         {
@@ -546,15 +564,28 @@ public abstract class EndpointBase
     
     protected async Task<StreamRequest> HttpStreamingRequestData(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, HttpMethod? verb = null, object? postData = null)
     {
-        HttpResponseMessage response = await HttpRequestRaw(provider, endpoint, url, verb, postData, true).ConfigureAwait(ConfigureAwaitOptions.None);
-        Stream stream = await response.Content.ReadAsStreamAsync();
+        RestDataOrException<HttpResponseMessage> response = await HttpRequestRawWithAllCodes(provider, endpoint, url, verb, postData, true).ConfigureAwait(ConfigureAwaitOptions.None);
+
+        if (response.Exception is not null || response.Data is null)
+        {
+            return new StreamRequest
+            {
+                Exception = response.Exception ?? new Exception("HttpStreamingRequestData returned no data and no exception"),
+                CallRequest = response.HttpRequest,
+                CallResponse = response.HttpResult
+            };
+        }
+        
+        Stream stream = await response.Data.Content.ReadAsStreamAsync();
         StreamReader reader = new(stream);
 
         return new StreamRequest
         {
-            Response = response,
+            CallRequest = response.HttpRequest,
+            Response = response.Data,
             Stream = stream,
-            StreamReader = reader
+            StreamReader = reader,
+            CallResponse = response.HttpResult
         };
     }
 }

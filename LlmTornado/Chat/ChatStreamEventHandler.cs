@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
+using LlmTornado.Common;
 
 namespace LlmTornado.Chat;
 
@@ -35,7 +36,7 @@ public class ChatStreamEventHandler
     /// <summary>
     ///     Called once, before the streaming request is established. Use this to mutate the request if necessary. 
     /// </summary>
-    public Func<ChatRequest, Task<ChatRequest>>? OutboundRequestHandler { get; set; }
+    public Func<ChatRequest, Task<ChatRequest>>? MutateChatRequestHandler { get; set; }
     
     /// <summary>
     ///     Called for events supported only by specific vendors with no shared equivalent.
@@ -46,6 +47,16 @@ public class ChatStreamEventHandler
     ///     Called whenever the bill arrives.
     /// </summary>
     public Func<ChatUsage, Task>? OnUsageReceived { get; set; }
+    
+    /// <summary>
+    ///     Called whenever a successful HTTP request is made. In case of streaming requests this is called before the stream is read.
+    /// </summary>
+    public Func<HttpCallRequest, Task>? OutboundHttpRequestHandler { get; set; }
+    
+    /// <summary>
+    ///     If this is set, HTTP level exceptions are caught and returned via this handler.
+    /// </summary>
+    public Func<HttpFailedRequest, Task>? HttpExceptionHandler { get; set; }
     
     /// <summary>
     ///     The ID of the message that will be appended to the conversation, if null a random GUID is used.

@@ -27,12 +27,12 @@ public class Conversation
     /// <summary>
     ///     An internal reference to the API endpoint, needed for API requests
     /// </summary>
-    private readonly ChatEndpoint _endpoint;
+    private readonly ChatEndpoint endpoint;
 
     /// <summary>
     ///     An internal handle to the messages currently enlisted in the conversation.
     /// </summary>
-    private readonly List<ChatMessage> _messages;
+    private readonly List<ChatMessage> messages;
 
     /// <summary>
     ///     Creates a new conversation with ChatGPT chat
@@ -64,8 +64,8 @@ public class Conversation
 
         RequestParameters.Model ??= ChatModel.OpenAi.Gpt35.Turbo; 
 
-        _messages = new List<ChatMessage>();
-        _endpoint = endpoint;
+        messages = new List<ChatMessage>();
+        this.endpoint = endpoint;
         RequestParameters.NumChoicesPerMessage = 1;
         RequestParameters.Stream = false;
     }
@@ -112,7 +112,7 @@ public class Conversation
     ///     <see cref="AppendMessage(ChatMessage)" />, <see cref="AppendUserInput(string)" />,
     ///     <see cref="AppendSystemMessage(string)" />, or <see cref="AppendExampleChatbotOutput(string)" />.
     /// </summary>
-    public IReadOnlyList<ChatMessage> Messages => _messages.ToList();
+    public IReadOnlyList<ChatMessage> Messages => messages.ToList();
 
     /// <summary>
     ///     Appends a <see cref="ChatMessage" /> to the chat history
@@ -120,7 +120,7 @@ public class Conversation
     /// <param name="message">The <see cref="ChatMessage" /> to append to the chat history</param>
     public Conversation AppendMessage(ChatMessage message)
     {
-        _messages.Add(message);
+        messages.Add(message);
         return this;
     }
 
@@ -131,7 +131,7 @@ public class Conversation
     /// <param name="position">Zero-based index at which to insert the message</param>
     public Conversation AppendMessage(ChatMessage message, int position)
     {
-        _messages.Insert(position, message);
+        messages.Insert(position, message);
         return this;
     }
 
@@ -142,11 +142,11 @@ public class Conversation
     /// <returns>Whether message was removed</returns>
     public bool RemoveMessage(ChatMessage message)
     {
-        ChatMessage? msg = _messages.FirstOrDefault(x => x.Id == message.Id);
+        ChatMessage? msg = messages.FirstOrDefault(x => x.Id == message.Id);
 
         if (msg is not null)
         {
-            _messages.Remove(msg);
+            messages.Remove(msg);
             return true;
         }
 
@@ -160,11 +160,11 @@ public class Conversation
     /// <returns>Whether message was removed</returns>
     public bool RemoveMessage(Guid id)
     {
-        ChatMessage? msg = _messages.FirstOrDefault(x => x.Id == id);
+        ChatMessage? msg = messages.FirstOrDefault(x => x.Id == id);
 
         if (msg is not null)
         {
-            _messages.Remove(msg);
+            messages.Remove(msg);
             return true;
         }
 
@@ -203,7 +203,7 @@ public class Conversation
     /// <returns>Whether message was updated</returns>
     public bool EditMessageContent(Guid id, string content)
     {
-        ChatMessage? msg = _messages.FirstOrDefault(x => x.Id == id);
+        ChatMessage? msg = messages.FirstOrDefault(x => x.Id == id);
 
         if (msg is not null)
         {
@@ -233,7 +233,7 @@ public class Conversation
     /// <returns>Whether message was updated</returns>
     public bool EditMessageRole(Guid id, ChatMessageRoles role)
     {
-        ChatMessage? msg = _messages.FirstOrDefault(x => x.Id == id);
+        ChatMessage? msg = messages.FirstOrDefault(x => x.Id == id);
 
         if (msg is not null)
         {
@@ -477,10 +477,10 @@ public class Conversation
     {
         ChatRequest req = new(RequestParameters)
         {
-            Messages = _messages.ToList()
+            Messages = messages.ToList()
         };
 
-        ChatResult? res = await _endpoint.CreateChatCompletionAsync(req);
+        ChatResult? res = await endpoint.CreateChatCompletionAsync(req);
 
         if (res is null) return null;
 
@@ -513,10 +513,10 @@ public class Conversation
     {
         ChatRequest req = new(RequestParameters)
         {
-            Messages = _messages.ToList()
+            Messages = messages.ToList()
         };
 
-        ChatResult? res = await _endpoint.CreateChatCompletionAsync(req);
+        ChatResult? res = await endpoint.CreateChatCompletionAsync(req);
 
         if (res is null)
         {
@@ -582,10 +582,10 @@ public class Conversation
     {
         ChatRequest req = new(RequestParameters)
         {
-            Messages = _messages.ToList()
+            Messages = messages.ToList()
         };
 
-        HttpCallResult<ChatResult> res = await _endpoint.CreateChatCompletionAsyncSafe(req);
+        HttpCallResult<ChatResult> res = await endpoint.CreateChatCompletionAsyncSafe(req);
 
         if (!res.Ok)
         {
@@ -652,10 +652,10 @@ public class Conversation
     {
         ChatRequest req = new(RequestParameters)
         {
-            Messages = _messages.ToList()
+            Messages = messages.ToList()
         };
 
-        HttpCallResult<ChatResult> res = await _endpoint.CreateChatCompletionAsyncSafe(req);
+        HttpCallResult<ChatResult> res = await endpoint.CreateChatCompletionAsyncSafe(req);
 
         if (!res.Ok)
         {
@@ -725,10 +725,10 @@ public class Conversation
     {
         ChatRequest req = new(RequestParameters)
         {
-            Messages = _messages.ToList()
+            Messages = messages.ToList()
         };
 
-        ChatResult? res = await _endpoint.CreateChatCompletionAsync(req);
+        ChatResult? res = await endpoint.CreateChatCompletionAsync(req);
 
         if (res is null)
         {
@@ -796,10 +796,10 @@ public class Conversation
     {
         ChatRequest req = new(RequestParameters)
         {
-            Messages = _messages.ToList()
+            Messages = messages.ToList()
         };
 
-        HttpCallResult<ChatResult> res = await _endpoint.CreateChatCompletionAsyncSafe(req);
+        HttpCallResult<ChatResult> res = await endpoint.CreateChatCompletionAsyncSafe(req);
 
         if (!res.Ok)
         {
@@ -885,13 +885,13 @@ public class Conversation
     {
         ChatRequest req = new(RequestParameters)
         {
-            Messages = _messages.ToList()
+            Messages = messages.ToList()
         };
 
         StringBuilder responseStringBuilder = new();
         ChatMessageRoles? responseRole = null;
 
-        await foreach (ChatResult res in _endpoint.StreamChatEnumerableAsync(req))
+        await foreach (ChatResult res in endpoint.StreamChatEnumerableAsync(req))
         {
             if (res.Choices is null) yield break;
 
@@ -959,16 +959,16 @@ public class Conversation
     {
         ChatRequest req = new(RequestParameters)
         {
-            Messages = _messages.ToList()
+            Messages = messages.ToList()
         };
 
-        req = eventsHandler?.OutboundRequestHandler is not null ? await eventsHandler.OutboundRequestHandler.Invoke(req) : req;
+        req = eventsHandler?.MutateChatRequestHandler is not null ? await eventsHandler.MutateChatRequestHandler.Invoke(req) : req;
         bool isFirst = true;
         Guid currentMsgId = eventsHandler?.MessageId ?? Guid.NewGuid();
-        ChatMessage? lastUserMessage = _messages.LastOrDefault(x => x.Role is ChatMessageRoles.User);
+        ChatMessage? lastUserMessage = messages.LastOrDefault(x => x.Role is ChatMessageRoles.User);
         bool isFirstMessageToken = true;
         
-        await foreach (ChatResult res in _endpoint.StreamChatEnumerableAsync(req))
+        await foreach (ChatResult res in endpoint.StreamChatEnumerableAsync(req, eventsHandler))
         {
             bool solved = false;
             

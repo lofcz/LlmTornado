@@ -35,7 +35,7 @@ public class HttpCallRequest
 {
     public string Url { get; set; }
     public HttpMethod Method { get; set; }
-    public Dictionary<string, IEnumerable<string>> Headers { get; set; }
+    public Dictionary<string, IEnumerable<string>> Headers { get; set; } = [];
 }
 
 /// <summary>

@@ -42,7 +42,7 @@ public class RestDataOrException<T>
         HttpRequest = new HttpCallRequest
         {
             Method = httpRequest.Method,
-            Url = httpRequest.RequestUri?.AbsolutePath ?? string.Empty,
+            Url = httpRequest.RequestUri?.AbsoluteUri ?? string.Empty,
             Headers = httpRequest.Headers.ToDictionary()
         };
     }

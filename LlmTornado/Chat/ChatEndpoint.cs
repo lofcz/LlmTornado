@@ -276,24 +276,47 @@ public class ChatEndpoint : EndpointBase
     /// </returns>
     public IAsyncEnumerable<ChatResult> StreamChatEnumerableAsync(ChatRequest request)
     {
+        return StreamChatEnumerableAsync(request, null);
+    }
+    
+    internal IAsyncEnumerable<ChatResult> StreamChatEnumerableAsync(ChatRequest request, ChatStreamEventHandler? handler)
+    {
         request = new ChatRequest(request)
         {
             Stream = true
         };
         
         IEndpointProvider provider = Api.GetProvider(request.Model ?? ChatModel.OpenAi.Gpt35.Turbo);
-
-        if (provider.Provider is LLmProviders.Anthropic && request.Tools is not null) // Anthropic doesn't support streaming with functions as of 4/24
-        {
-            //return StreamChatFake(provider, request);
-        }
-
-        return StreamChatReal(provider, request);
+        return StreamChatReal(provider, request, handler);
     }
 
-    private async IAsyncEnumerable<ChatResult> StreamChatReal(IEndpointProvider provider, ChatRequest request)
+    private async IAsyncEnumerable<ChatResult> StreamChatReal(IEndpointProvider provider, ChatRequest request, ChatStreamEventHandler? handler)
     {
         StreamRequest streamRequest = await HttpStreamingRequestData(Api.GetProvider(request.Model ?? ChatModel.OpenAi.Gpt35.Turbo), Endpoint, null, HttpMethod.Post, request.Serialize(provider.Provider));
+
+        if (streamRequest.Exception is not null)
+        {
+            if (handler?.HttpExceptionHandler is null)
+            {
+                throw streamRequest.Exception;
+            }
+
+            await handler.HttpExceptionHandler(new HttpFailedRequest
+            {
+                Exception = streamRequest.Exception,
+                Result = streamRequest.CallResponse,
+                Request = streamRequest.CallRequest,
+                RawMessage = streamRequest.Response
+            });
+            
+            await streamRequest.DisposeAsync();
+            yield break;
+        }
+
+        if (handler?.OutboundHttpRequestHandler is not null && streamRequest.CallRequest is not null)
+        {
+            await handler.OutboundHttpRequestHandler(streamRequest.CallRequest);
+        }
         
         await foreach (ChatResult? x in provider.InboundStream(streamRequest.StreamReader, request))
         {
