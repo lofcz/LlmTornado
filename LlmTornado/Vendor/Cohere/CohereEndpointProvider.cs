@@ -335,7 +335,7 @@ internal class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider,
                         ToolCall call = new ToolCall
                         {
                             Type = "function",
-                            Id = x.Name,
+                            Id = $"{x.Name}{General.IIID()}", // cohere doesn't return a unique tool ID, so we make one up
                             FunctionCall = new FunctionCall
                             {
                                 Name = x.Name,

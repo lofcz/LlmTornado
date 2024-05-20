@@ -68,6 +68,8 @@ public enum Demos
     AnthropicFunctionsStreamingInteractive,
     [Flaky("interactive demo")]
     CohereFunctionsStreamingInteractive,
+    [Flaky("interactive demo")]
+    CrossVendorFunctionsStreamingInteractive,
     Last
 }
 
@@ -91,6 +93,15 @@ public class Program
         public AzureKey Azure { get; set; }
     }
 
+    public static TornadoApi ConnectMulti()
+    {
+        return new TornadoApi([
+            new ProviderAuthentication(LLmProviders.OpenAi, ApiKeys.OpenAi),
+            new ProviderAuthentication(LLmProviders.Anthropic, ApiKeys.Anthropic),
+            new ProviderAuthentication(LLmProviders.Cohere, ApiKeys.Cohere)
+        ]);
+    }
+    
     public static TornadoApi Connect(LLmProviders provider = LLmProviders.OpenAi)
     {
         return provider switch
@@ -178,6 +189,7 @@ public class Program
             Demos.ChatAnthropicParallelFunctions => ChatDemo.AnthropicFunctionsParallel,
             Demos.AnthropicFunctionsStreamingInteractive => ChatDemo.AnthropicFunctionsStreamingInteractive,
             Demos.CohereFunctionsStreamingInteractive => ChatDemo.CohereFunctionsStreamingInteractive,
+            Demos.CrossVendorFunctionsStreamingInteractive => ChatDemo.CrossVendorFunctionsStreamingInteractive,
             _ => null
         };
 
@@ -186,6 +198,8 @@ public class Program
     
     public static async Task Main(string[] args)
     {
+        Console.Title = "LlmTornado Demo";
+        
         if (!await SetupApi())
         {
             return;

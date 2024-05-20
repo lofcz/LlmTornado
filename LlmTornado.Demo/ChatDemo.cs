@@ -124,15 +124,14 @@ public static class ChatDemo
             Model = model,
             Tools = compiler.GetFunctions(),
             StreamOptions = ChatStreamOptions.KnownOptionsIncludeUsage
-        }).AppendUserInput("Please check the weather in Prague and Bratislava.");
+        });
+        
+        Console.WriteLine("Try asking for weather in one of the supported cities: Prague, Bratislava, Paris. Try asking for multiple cities in one turn!");
 
         // 3. repl
         while (true)
         {
-            // 3.1 stream the response from llm
-            await StreamResponse();
-
-            // 3.2 read input
+            // 3.1 read input
             while (true)
             {
                 Console.WriteLine();
@@ -150,6 +149,9 @@ public static class ChatDemo
                     break;
                 }
             }
+            
+            // 3.2 stream the response from llm
+            await StreamResponse();
         }
 
         async Task StreamResponse()
@@ -178,6 +180,120 @@ public static class ChatDemo
                         {
                             result = "ok",
                             weather = cityName.ToLowerInvariant() is "prague" ? "A mild rain" : cityName.ToLowerInvariant() is "paris" ? "Foggy, cloudy" : "A sunny day"
+                        }, null, true);
+                    }
+                },
+                AfterFunctionCallsResolvedHandler = async (fnResults, handler) =>
+                {
+                    await chat.StreamResponseRich(handler);
+                },
+                OnUsageReceived = async (usage) =>
+                {
+                    Console.WriteLine($"[used tokens: input - {usage.PromptTokens}, output - {usage.CompletionTokens}, total - {usage.TotalTokens}]");
+                }
+            });
+        }
+    }
+    
+    public static async Task CrossVendorFunctionsStreamingInteractive()
+    {
+        ChatModel startModel = ChatModel.OpenAi.Gpt4.O;
+        
+        // 1. set up a sample tool using strongly typed model
+        ChatPluginCompiler compiler = new ChatPluginCompiler();
+        compiler.SetFunctions([
+            new ChatPluginFunction("get_weather", "gets the current weather in a given city", [
+                new ChatFunctionParam("city_name", "name of the city", ChatPluginFunctionAtomicParamTypes.String)
+            ])
+        ]);
+        
+        // 2. in this scenario, the conversation starts with the user asking for the current weather in two of the supported cities.
+        // we can try asking for the weather in the third supported city (Paris) later.
+        Conversation chat = Program.ConnectMulti().Chat.CreateConversation(new ChatRequest
+        {
+            Model = startModel,
+            Tools = compiler.GetFunctions(),
+            StreamOptions = ChatStreamOptions.KnownOptionsIncludeUsage
+        });
+        
+        Console.WriteLine("Try asking for weather in one of the supported cities: Prague, Tokyo, Paris. Try asking for multiple cities in one turn!");
+        Console.WriteLine("Special commands: q(uit) - exit REPL, openai - switch to OpenAI, anthropic - switch to Anthropic, cohere - switch to Cohere");
+        Console.WriteLine($"Current model is: {startModel.Name}");
+
+        // in real application this would be some async service
+        Dictionary<string, string> mockCities = new Dictionary<string, string>
+        {
+            { "prague", "A mild rain" },
+            { "tokyo", "Foggy, cloudy" },
+            { "paris", "A sunny day" },
+        };
+        
+        // 3. repl
+        while (true)
+        {
+            // 3.1 read input
+            while (true)
+            {
+                Console.WriteLine();
+                Console.Write("> ");
+                string? input = Console.ReadLine();
+                string normalized = input?.ToLowerInvariant() ?? string.Empty;
+
+                switch (normalized)
+                {
+                    case "q" or "quit":
+                        return;
+                    case "openai":
+                        chat.Model = ChatModel.OpenAi.Gpt4.O;
+                        Console.WriteLine($"Switched to model: {chat.Model.Name}");
+                        continue;
+                    case "cohere":
+                        chat.Model = ChatModel.Cohere.CommandRPlus;
+                        Console.WriteLine($"Switched to model: {chat.Model.Name}");
+                        continue;
+                    case "anthropic":
+                        chat.Model = ChatModel.Anthropic.Claude3.Sonnet;
+                        Console.WriteLine($"Switched to model: {chat.Model.Name}");
+                        continue;
+                }
+
+                if (!string.IsNullOrWhiteSpace(input))
+                {
+                    chat.AppendUserInput(input);
+                    break;
+                }
+            }
+            
+            // 3.2 stream the response from llm
+            await StreamResponse();
+        }
+
+        async Task StreamResponse()
+        {
+            await chat.StreamResponseRich(new ChatStreamEventHandler
+            {
+                MessageTokenHandler = async (token) =>
+                {
+                    Console.Write(token);
+                },
+                FunctionCallHandler = async (fnCalls) =>
+                {
+                    foreach (FunctionCall x in fnCalls)
+                    {
+                        if (!x.TryGetArgument("city_name", out string? cityName))
+                        {
+                            x.Result = new FunctionResult(x, new
+                            {
+                                result = "error",
+                                message = "expected city_name argument"
+                            }, null, true);
+                            continue;
+                        }
+
+                        x.Result = new FunctionResult(x, new
+                        {
+                            result = "ok",
+                            weather = mockCities.GetValueOrDefault(cityName.ToLowerInvariant(), "A blizzard is expected")
                         }, null, true);
                     }
                 },

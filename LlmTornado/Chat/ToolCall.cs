@@ -20,16 +20,16 @@ public class ToolCall
     ///     The ID of the tool.
     /// </summary>
     [JsonProperty("id")]
-    public string? Id { get; set; } = default!;
+    public string? Id { get; set; }
 
     /// <summary>
     ///     The type of the tool. Currently, this should be always "function".
     /// </summary>
     [JsonProperty("type")]
-    public string Type { get; set; } = default!;
+    public string Type { get; set; } = "function";
 
     /// <summary>
-    ///     The type of the tool. Currently, this should be always "function".
+    ///     The underlying function call.
     /// </summary>
     [JsonProperty("function")]
     public FunctionCall FunctionCall { get; set; } = default!;

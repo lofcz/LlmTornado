@@ -365,7 +365,12 @@ public class ChatRequest
 
                 if (msg is { Role: ChatMessageRoles.Tool, Content: null })
                 {
-	                continue;
+	                goto closeMsgObj;
+                }
+
+                if (msg is { Role: ChatMessageRoles.Assistant, Content: null, ToolCalls: not null })
+                {
+	                goto closeMsgObj;
                 }
                 
                 writer.WritePropertyName("content");
@@ -407,6 +412,7 @@ public class ChatRequest
                     writer.WriteValue(msg.Content);
                 }
 
+                closeMsgObj:
                 writer.WriteEndObject();
             }
 
