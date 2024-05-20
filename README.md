@@ -72,7 +72,7 @@ _Examples listed below use `Program.Connect()` to construct the Tornado instance
 When plaintext is insufficient, switch to `GetResponseRich()` or `StreamResponseRich()` APIs. Tools requested by the model can be resolved later and never returned to the model. This is useful in scenarios where we use the tools without intending to continue the conversation.
 
 ```cs
-Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+Conversation chat = api.Chat.CreateConversation((new ChatRequest
 {
     Model = ChatModel.OpenAi.Gpt4.Turbo,
     Tools = new List<Tool>
@@ -120,7 +120,7 @@ Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
 
 chat.OnAfterToolsCall = async (result) =>
 {
-    string? str = await chat.GetResponse();
+    string? str = ((ChatRichResponse)(await chat.GetResponseRich())).Text;
 
     if (str is not null)
     {
