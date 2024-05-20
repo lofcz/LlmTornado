@@ -7,6 +7,13 @@ LLM Tornado acts as an aggregator allowing you to do just that. Think [SearX](ht
 
 OpenAI, Cohere, Anthropic, and Azure are currently supported along with [KoboldCpp](https://github.com/LostRuins/koboldcpp) and [Ollama](https://github.com/ollama/ollama).
 
+The following video captures **one conversation**, running across OpenAI, Cohere, and Anthropic: 
+
+https://github.com/lofcz/LlmTornado/assets/10260230/f6ed0048-c0dd-424c-8a82-25304da75982
+
+
+Try it, the code of the demo is [here](https://github.com/lofcz/LlmTornado/blob/9c53e2e6918eef1b02ce9457cc14c932d79639a2/LlmTornado.Demo/ChatDemo.cs#L198-L310)! Try asking for previously fetched information and verify the context is correctly constructed even when switching Providers mid-conversation.
+
 ## ⚡Getting Started
 
 Install LLM Tornado via NuGet:
