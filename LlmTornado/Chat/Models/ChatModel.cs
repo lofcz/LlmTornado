@@ -74,6 +74,19 @@ public class ChatModel : ModelBase
     }
     
     /// <summary>
+    /// Creates a new model identified by name and provider.
+    /// </summary>
+    /// <param name="name"></param>
+    /// <param name="provider"></param>
+    /// <param name="contextTokens"></param>
+    public ChatModel(string name, LLmProviders provider, int contextTokens)
+    {
+        Name = name;
+        Provider = provider;
+        ContextTokens = contextTokens;
+    }
+    
+    /// <summary>
     /// Creates a new model identified by name. The provider of the model is inferred automatically.
     /// </summary>
     /// <param name="name"></param>

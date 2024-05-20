@@ -12,7 +12,7 @@ public class ChatModelAnthropicClaude3 : IVendorModelClassProvider
     /// <summary>
     /// Fastest and most compact model, designed for near-instant responsiveness and seamless AI experiences that mimic human interactions.
     /// </summary>
-    public static readonly ChatModel ModelHaiku = new ChatModel("claude-3-haiku-20240307", LLmProviders.Anthropic);
+    public static readonly ChatModel ModelHaiku = new ChatModel("claude-3-haiku-20240307", LLmProviders.Anthropic, 200_000);
 
     /// <summary>
     /// <inheritdoc cref="ModelHaiku"/>
@@ -22,7 +22,7 @@ public class ChatModelAnthropicClaude3 : IVendorModelClassProvider
     /// <summary>
     /// Most balanced model between intelligence and speed, a great choice for enterprise workloads and scaled AI deployments.
     /// </summary>
-    public static readonly ChatModel ModelSonnet = new ChatModel("claude-3-sonnet-20240229", LLmProviders.Anthropic);
+    public static readonly ChatModel ModelSonnet = new ChatModel("claude-3-sonnet-20240229", LLmProviders.Anthropic, 200_000);
 
     /// <summary>
     /// <inheritdoc cref="ModelSonnet"/>
@@ -32,7 +32,7 @@ public class ChatModelAnthropicClaude3 : IVendorModelClassProvider
     /// <summary>
     /// Most powerful model, delivering state-of-the-art performance on highly complex tasks and demonstrating fluency and human-like understanding.
     /// </summary>
-    public static readonly ChatModel ModelOpus = new ChatModel("claude-3-opus-20240229", LLmProviders.Anthropic);
+    public static readonly ChatModel ModelOpus = new ChatModel("claude-3-opus-20240229", LLmProviders.Anthropic, 200_000);
 
     /// <summary>
     /// <inheritdoc cref="ModelSonnet"/>

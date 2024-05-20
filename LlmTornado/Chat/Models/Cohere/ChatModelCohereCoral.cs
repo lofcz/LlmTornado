@@ -12,7 +12,7 @@ public class ChatModelCohereCoral : IVendorModelClassProvider
     /// <summary>
     /// Command R+ is an instruction-following conversational model that performs language tasks at a higher quality, more reliably, and with a longer context than previous models. It is best suited for complex RAG workflows and multi-step tool use.
     /// </summary>
-    public static readonly ChatModel ModelCommandRPlus = new ChatModel("command-r-plus", LLmProviders.Cohere);
+    public static readonly ChatModel ModelCommandRPlus = new ChatModel("command-r-plus", LLmProviders.Cohere, 128_000);
 
     /// <summary>
     /// <inheritdoc cref="ModelCommandRPlus"/>

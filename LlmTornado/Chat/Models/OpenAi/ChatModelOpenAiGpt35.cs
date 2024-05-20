@@ -12,7 +12,7 @@ public class ChatModelOpenAiGpt35 : IVendorModelClassProvider
     /// <summary>
     /// Currently points to gpt-3.5-turbo-0125.
     /// </summary>
-    public static readonly ChatModel ModelTurbo = new ChatModel("gpt-3.5-turbo", LLmProviders.OpenAi);
+    public static readonly ChatModel ModelTurbo = new ChatModel("gpt-3.5-turbo", LLmProviders.OpenAi, 16_385);
 
     /// <summary>
     /// <inheritdoc cref="ModelTurbo"/>
@@ -22,7 +22,7 @@ public class ChatModelOpenAiGpt35 : IVendorModelClassProvider
     /// <summary>
     /// The latest GPT-3.5 Turbo model with higher accuracy at responding in requested formats and a fix for a bug which caused a text encoding issue for non-English language function calls. Returns a maximum of 4,096 output tokens.
     /// </summary>
-    public static readonly ChatModel ModelTurbo240125 = new ChatModel("gpt-3.5-turbo-0125", LLmProviders.OpenAi);
+    public static readonly ChatModel ModelTurbo240125 = new ChatModel("gpt-3.5-turbo-0125", LLmProviders.OpenAi, 16_385);
 
     /// <summary>
     /// <inheritdoc cref="ModelTurbo240125"/>
@@ -32,7 +32,7 @@ public class ChatModelOpenAiGpt35 : IVendorModelClassProvider
     /// <summary>
     /// GPT-3.5 Turbo model with improved instruction following, JSON mode, reproducible outputs, parallel function calling, and more. Returns a maximum of 4,096 output tokens.
     /// </summary>
-    public static readonly ChatModel ModelTurbo231106 = new ChatModel("gpt-3.5-turbo-1106", LLmProviders.OpenAi);
+    public static readonly ChatModel ModelTurbo231106 = new ChatModel("gpt-3.5-turbo-1106", LLmProviders.OpenAi, 16_385);
 
     /// <summary>
     /// <inheritdoc cref="ModelTurbo231106"/>
@@ -42,7 +42,7 @@ public class ChatModelOpenAiGpt35 : IVendorModelClassProvider
     /// <summary>
     /// Similar capabilities as GPT-3 era models. Compatible with legacy Completions endpoint and not Chat Completions.
     /// </summary>
-    public static readonly ChatModel ModelTurboInstruct = new ChatModel("gpt-3.5-turbo-instruct", LLmProviders.OpenAi);
+    public static readonly ChatModel ModelTurboInstruct = new ChatModel("gpt-3.5-turbo-instruct", LLmProviders.OpenAi, 4_096);
 
     /// <summary>
     /// <inheritdoc cref="ModelTurboInstruct"/>
