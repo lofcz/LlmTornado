@@ -96,12 +96,11 @@ _`GetResponseRichSafe()` API is also available, which is guaranteed not to throw
 Tools requested by the model can also be resolved and the results returned immediately. This has the benefit of automatically continuing the conversation.
 
 ```cs
-StringBuilder sb = new StringBuilder();
-
 Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
 {
-    Model = ChatModel.OpenAi.Gpt4.Turbo,
-    Tools = [
+    Model = ChatModel.OpenAi.Gpt4.O,
+    Tools =
+    [
         new Tool(new ToolFunction("get_weather", "gets the current weather", new
         {
             type = "object",
@@ -116,35 +115,26 @@ Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
             required = new List<string> { "location" }
         }))
     ]
-});
+})
+.AppendSystemMessage("You are a helpful assistant")
+.AppendUserInput("What is the weather like today in Prague?");
 
-chat.OnAfterToolsCall = async (result) =>
+ChatStreamEventHandler handler = new ChatStreamEventHandler
 {
-    string? str = ((ChatRichResponse)(await chat.GetResponseRich())).Text;
-
-    if (str is not null)
-    {
-        sb.Append(str);
-    }
+  MessageTokenHandler = (x) =>
+  {
+      Console.Write(x);
+      return Task.CompletedTask;
+  },
+  FunctionCallHandler = (calls) =>
+  {
+      calls.ForEach(x => x.Result = new FunctionResult(x, "A mild rain is expected around noon.", null));
+      return Task.CompletedTask;
+  },
+  AfterFunctionCallsResolvedHandler = async (results, handler) => { await chat.StreamResponseRich(handler); }
 };
 
-chat.AppendMessage(ChatMessageRoles.System, "You are a helpful assistant");
-Guid msgId = Guid.NewGuid();
-chat.AppendMessage(ChatMessageRoles.User, "What is the weather like today in Prague?", msgId);
-
-await chat.StreamResponseRich(msgId, (x) =>
-{
-    sb.Append(x);
-    return Task.CompletedTask;
-}, functions =>
-{
-    List<FunctionResult> results = functions.Select(fn => new FunctionResult(fn.Name, "A mild rain is expected around noon.")).ToList();
-    return Task.FromResult(results);
-}, null);
-
-
-string response = sb.ToString();
-Console.WriteLine(response);
+await chat.StreamResponseRich(handler);
 ```
 
 ### REPL
