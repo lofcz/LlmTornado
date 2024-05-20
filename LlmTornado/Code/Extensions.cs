@@ -135,6 +135,11 @@ internal static class Extensions
         return obj is null ? "{}" : JsonConvert.SerializeObject(obj, prettify ? Formatting.Indented : Formatting.None, JsonSettingsIgnoreNulls);
     }
     
+    public static T? JsonDecode<T>(this string? obj)
+    {
+        return obj is null ? default : JsonConvert.DeserializeObject<T>(obj);
+    }
+    
     public static void AddOrUpdate<TKey, TVal>(this Dictionary<TKey, TVal> dict, TKey key, TVal val)
     {
         dict[key] = val;

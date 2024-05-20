@@ -101,6 +101,11 @@ public static class ChatDemo
     {
         await InternalFunctionsStreamingInteractive(LLmProviders.Anthropic, ChatModel.Anthropic.Claude3.Sonnet);
     }
+    
+    public static async Task CohereFunctionsStreamingInteractive()
+    {
+        await InternalFunctionsStreamingInteractive(LLmProviders.Cohere, ChatModel.Cohere.CommandRPlus);
+    }
 
     private static async Task InternalFunctionsStreamingInteractive(LLmProviders provider, ChatModel model)
     {

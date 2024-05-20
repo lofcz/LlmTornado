@@ -8,6 +8,7 @@ using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Chat.Plugins;
 using LlmTornado.Chat.Vendors.Cohere;
+using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Common;
 using Newtonsoft.Json;
@@ -114,6 +115,8 @@ internal class VendorCohereChatRequest
     public double? PresencePenalty { get; set; }
     [JsonProperty("tools")]
     public List<VendorCohereChatTool>? Tools { get; set; }
+    [JsonProperty("tool_results")]
+    public List<VendorCohereChatToolResult>? ToolResults { get; set; }
 
     public VendorCohereChatRequest()
     {
@@ -125,9 +128,15 @@ internal class VendorCohereChatRequest
         IList<ChatMessage>? msgs = request.Messages;
         string? preamble = null;
         string? respondMsg = null;
+        ChatMessage? lastToolCallsMsg = null;
         
         if (msgs is not null)
         {
+            foreach (ChatMessage msg in msgs)
+            {
+                msg.ExcludeFromRequest = false;
+            }
+            
             ChatMessage? systemMsg = msgs.FirstOrDefault(x => x.Role is ChatMessageRoles.System);
 
             if (systemMsg is not null)
@@ -136,13 +145,29 @@ internal class VendorCohereChatRequest
                 preamble = systemMsg.Content;
             }
 
-            ChatMessage? lastMsg = msgs.LastOrDefault(x => x.Role is ChatMessageRoles.User or ChatMessageRoles.Assistant);
-
+            ChatMessage? lastMsg = msgs.LastOrDefault(x => x.Role is ChatMessageRoles.User);
+            int? lastUserMsgIndex;
+            
             if (lastMsg is not null)
             {
                 lastMsg.ExcludeFromRequest = true;
                 respondMsg = lastMsg.Content;
+                lastUserMsgIndex = msgs.IndexOf(lastMsg);
+
+                for (int i = 0; i < lastUserMsgIndex; i++)
+                {
+                    ChatMessage msg = msgs[i];
+
+                    msg.ExcludeFromRequest = msg.Role switch
+                    {
+                        ChatMessageRoles.Tool => true,
+                        ChatMessageRoles.Assistant when msg.ToolCalls?.Count > 0 => true,
+                        _ => msg.ExcludeFromRequest
+                    };
+                }
             }
+
+            lastToolCallsMsg = msgs.LastOrDefault(x => x is { Role: ChatMessageRoles.Assistant, ToolCalls.Count: > 0 });
         }
 
         Message = respondMsg;
@@ -158,14 +183,26 @@ internal class VendorCohereChatRequest
         if (msgs is not null && request.Messages is not null && request.Messages.Any(x => !x.ExcludeFromRequest))
         {
             ChatHistory = [];
+            int toolCallIndex = 0;
+            ChatMessage? lastAssistantMsg = null;
             
             foreach (ChatMessage msg in msgs.Where(x => !x.ExcludeFromRequest))
             {
                 switch (msg.Role)
                 {
-                    case ChatMessageRoles.Assistant or ChatMessageRoles.User:
+                    case ChatMessageRoles.Assistant:
                     {
-                        ChatHistory.Add(new VendorCohereChatRequestMessage(msg.Role ?? ChatMessageRoles.Unknown, msg));
+                        if (msg.Content is not null && msg != lastToolCallsMsg)
+                        {
+                            ChatHistory.Add(new VendorCohereChatRequestMessage(ChatMessageRoles.Assistant, msg));
+                        }
+
+                        lastAssistantMsg = msg;
+                        break;
+                    }
+                    case ChatMessageRoles.User:
+                    {
+                        ChatHistory.Add(new VendorCohereChatRequestMessage(ChatMessageRoles.User, msg));
                         break;
                     }
                     case ChatMessageRoles.System:
@@ -175,7 +212,35 @@ internal class VendorCohereChatRequest
                     }
                     case ChatMessageRoles.Tool:
                     {
-                        ChatHistory.Add(new VendorCohereChatRequestMessage(ChatMessageRoles.User, msg));
+                        if (lastAssistantMsg != lastToolCallsMsg)
+                        {
+                            continue;
+                        }
+                        
+                        ToolResults ??= [];
+                        ToolCall? toolCall = lastToolCallsMsg?.ToolCalls?.Count > toolCallIndex ? lastToolCallsMsg.ToolCalls[toolCallIndex] : null;
+
+                        if (toolCall is not null)
+                        {
+                            VendorCohereChatToolResult vr = new VendorCohereChatToolResult
+                            {
+                                Call = new VendorCohereChatToolResultCallObject
+                                {
+                                    Name = msg.ToolCallId ?? string.Empty,
+                                    Parameters = toolCall.FunctionCall.Arguments.JsonDecode<object>()
+                                },
+                                Outputs = []
+                            };
+                            
+                            if (msg.Content is not null)
+                            {
+                                vr.Outputs.Add(msg.Content.JsonDecode<object>());
+                            }
+                            
+                            ToolResults.Add(vr);
+                        }
+
+                        toolCallIndex++;
                         break;
                     }
                 }

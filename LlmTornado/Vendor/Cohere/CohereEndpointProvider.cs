@@ -4,6 +4,7 @@ using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Text;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Chat.Vendors.Cohere;
@@ -175,9 +176,17 @@ internal class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider,
         public string EventType { get; set; }
     }
 
+    internal class ChatStreamEventComplete
+    {
+        [JsonProperty("response")]
+        public VendorCohereChatResult? Response { get; set; }
+    }
+
     public override async IAsyncEnumerable<ChatResult?> InboundStream(StreamReader reader, ChatRequest request)
     {
         ChatResult baseResult = new ChatResult();
+        ChatMessage? plaintextAccu = null;
+        ChatUsage? usage = null;
             
         while (true)
         {
@@ -226,6 +235,10 @@ internal class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider,
                             }
                         ]
                     };
+                    
+                    plaintextAccu ??= new ChatMessage();
+                    plaintextAccu.ContentBuilder ??= new StringBuilder();
+                    plaintextAccu.ContentBuilder.Append(data.Text);
                     break;
                 }
                 case ChatStreamEventTypes.StreamStart:
@@ -333,7 +346,6 @@ internal class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider,
                         calls.Add(call);
                     }
                     
-
                     yield return new ChatResult
                     {
                         Choices = [
@@ -351,14 +363,46 @@ internal class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider,
                 }
                 case ChatStreamEventTypes.StreamEnd:
                 {
-                    yield break;
+                    ChatStreamEventComplete? result = JsonConvert.DeserializeObject<ChatStreamEventComplete>(line);
+
+                    if (result?.Response is not null)
+                    {
+                        usage = new ChatUsage
+                        {
+                            TotalTokens = result.Response.Meta.BilledUnits.InputTokens + result.Response.Meta.BilledUnits.OutputTokens,
+                            PromptTokens = result.Response.Meta.BilledUnits.InputTokens,
+                            CompletionTokens = result.Response.Meta.BilledUnits.OutputTokens
+                        };
+                    }
+                    
+                    goto finalizer;
                 }
             }
             
             if (baseEvent.IsFinished)
             {
-                yield break;
+                goto finalizer;
             }
+        }
+     
+        finalizer:
+        if (plaintextAccu is not null)
+        {
+            yield return new ChatResult
+            {
+                Choices =
+                [
+                    new ChatChoice
+                    {
+                        Delta = new ChatMessage
+                        {
+                            Content = plaintextAccu.ContentBuilder?.ToString()
+                        }
+                    }
+                ],
+                StreamInternalKind = ChatResultStreamInternalKinds.AppendAssistantMessage,
+                Usage = usage
+            };
         }
     }
 

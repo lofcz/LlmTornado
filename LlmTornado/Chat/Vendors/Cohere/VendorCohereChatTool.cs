@@ -34,3 +34,30 @@ internal class VendorCohereChatToolParameter
     [JsonProperty("required")]
     public bool Required { get; set; }
 }
+
+internal class VendorCohereChatToolResult
+{
+    [JsonProperty("call")] 
+    public VendorCohereChatToolResultCallObject Call { get; set; } = new VendorCohereChatToolResultCallObject();
+
+    [JsonProperty("outputs")]
+    public List<object> Outputs { get; set; } = [];
+}
+
+internal class VendorCohereChatToolResultCallObject
+{
+    [JsonProperty("name")]
+    public string Name { get; set; }
+    
+    /// <summary>
+    ///     JSON.
+    /// </summary>
+    [JsonProperty("parameters")]
+    public object? Parameters { get; set; }
+    
+    /// <summary>
+    ///     Only passed to the model when we got this from it? Connectors are know to produce this.
+    /// </summary>
+    [JsonProperty("generation_id")]
+    public string? GenerationId { get; set; }
+}
