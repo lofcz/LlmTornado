@@ -7,7 +7,7 @@ LLM Tornado acts as an aggregator allowing you to do just that. Think [SearX](ht
 
 OpenAI, Cohere, Anthropic, and Azure are currently supported along with [KoboldCpp](https://github.com/LostRuins/koboldcpp) and [Ollama](https://github.com/ollama/ollama).
 
-The following video captures **one conversation**, running across OpenAI, Cohere, and Anthropic: 
+The following video captures **one conversation**, running across OpenAI, Cohere, and Anthropic, with parallel tools calling & streaming: 
 
 https://github.com/lofcz/LlmTornado/assets/10260230/f6ed0048-c0dd-424c-8a82-25304da75982
 
