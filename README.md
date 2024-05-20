@@ -9,7 +9,8 @@ OpenAI, Cohere, Anthropic, and Azure are currently supported along with [KoboldC
 
 The following video captures **one conversation**, running across OpenAI, Cohere, and Anthropic, with parallel tools calling & streaming: 
 
-https://github.com/lofcz/LlmTornado/assets/10260230/f6ed0048-c0dd-424c-8a82-25304da75982
+
+https://github.com/lofcz/LlmTornado/assets/10260230/05c27b37-397d-4b4c-96a4-4138ade48dbe
 
 
 Try it, the code of the demo is [here](https://github.com/lofcz/LlmTornado/blob/9c53e2e6918eef1b02ce9457cc14c932d79639a2/LlmTornado.Demo/ChatDemo.cs#L198-L310)! Try asking for previously fetched information and verify the context is correctly constructed even when switching Providers mid-conversation.
