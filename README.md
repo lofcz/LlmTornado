@@ -66,14 +66,12 @@ await api.Chat.CreateConversation(ChatModel.Anthropic.Claude3.Sonnet)
     .StreamResponse(Console.Write);
 ```
 
-_Examples listed below use `Program.Connect()` to construct the Tornado instance. Please use `new TornadoApi("API_KEY", LLmProviders.XXX)` instead._
-
 ### Tools with deferred resolve
 
 When plaintext is insufficient, switch to `GetResponseRich()` or `StreamResponseRich()` APIs. Tools requested by the model can be resolved later and never returned to the model. This is useful in scenarios where we use the tools without intending to continue the conversation.
 
 ```cs
-Conversation chat = api.Chat.CreateConversation((new ChatRequest
+Conversation chat = api.Chat.CreateConversation(new ChatRequest
 {
     Model = ChatModel.OpenAi.Gpt4.Turbo,
     Tools = new List<Tool>
@@ -97,7 +95,7 @@ _`GetResponseRichSafe()` API is also available, which is guaranteed not to throw
 Tools requested by the model can also be resolved and the results returned immediately. This has the benefit of automatically continuing the conversation.
 
 ```cs
-Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+Conversation chat = api.Chat.CreateConversation(new ChatRequest
 {
     Model = ChatModel.OpenAi.Gpt4.O,
     Tools =
@@ -156,7 +154,7 @@ public static async Task OpenAiFunctionsStreamingInteractive()
     
     // 2. in this scenario, the conversation starts with the user asking for the current weather in two of the supported cities.
     // we can try asking for the weather in the third supported city (Paris) later.
-    Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+    Conversation chat = api.Chat.CreateConversation(new ChatRequest
     {
         Model = ChatModel.OpenAi.Gpt4.Turbo,
         Tools = compiler.GetFunctions()
