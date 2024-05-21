@@ -170,7 +170,7 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider,
             {
                 continue;
             }
-
+            
             if (request.StreamOptions?.IncludeUsage ?? false)
             {
                 if (usage is null && res.Choices is null || res.Choices?.Count is 0)
@@ -254,6 +254,16 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider,
                 }
                 
                 continue;
+            }
+            
+            if (res.Choices is not null)
+            {
+                foreach (ChatChoice x in res.Choices)
+                {
+                    plaintextBuilder ??= new StringBuilder();
+                    plaintextBuilder.Append(x.Delta!.Content);
+                    x.Delta!.Role = ChatMessageRoles.Assistant;
+                }
             }
 
             yield return res;
