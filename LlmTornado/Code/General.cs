@@ -1,6 +1,6 @@
 namespace LlmTornado.Code;
 
-public class General
+internal class General
 {
     public static string IIID()
     {
