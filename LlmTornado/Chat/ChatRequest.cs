@@ -45,6 +45,7 @@ public class ChatRequest
         Temperature = basedOn.Temperature;
         TopP = basedOn.TopP;
         NumChoicesPerMessage = basedOn.NumChoicesPerMessage;
+        StopSequence = basedOn.StopSequence;
         MultipleStopSequences = basedOn.MultipleStopSequences;
         MaxTokens = basedOn.MaxTokens;
         FrequencyPenalty = basedOn.FrequencyPenalty;
@@ -52,11 +53,14 @@ public class ChatRequest
         LogitBias = basedOn.LogitBias;
         Tools = basedOn.Tools;
         ToolChoice = basedOn.ToolChoice;
-        OuboundFunctionsContent = basedOn.OuboundFunctionsContent;
+        OutboundFunctionsContent = basedOn.OutboundFunctionsContent;
         Adapter = basedOn.Adapter;
         VendorExtensions = basedOn.VendorExtensions;
         StreamOptions = basedOn.StreamOptions;
         TrimResponseStart = basedOn.TrimResponseStart;
+        ParallelToolCalls = basedOn.ParallelToolCalls;
+        Seed = basedOn.Seed;
+        User = basedOn.User;
     }
 
 	/// <summary>
@@ -169,7 +173,7 @@ public class ChatRequest
         set
         {
             if (value != null)
-                MultipleStopSequences = new[] { value };
+                MultipleStopSequences = [value];
         }
     }
 
@@ -217,6 +221,13 @@ public class ChatRequest
     public List<Tool>? Tools { get; set; }
 
 	/// <summary>
+	///     Parallel function calling can be disabled / enabled for vendors supporting the feature.
+	///		As of 6/24, the only vendor supporting the feature is OpenAI.
+	/// </summary>
+	[JsonProperty("parallel_tool_calls")]
+	public bool ParallelToolCalls { get; set; } = true;
+
+	/// <summary>
 	///     Represents an optional field when sending tools calling prompt.
 	///     This field determines which function to call.
 	/// </summary>
@@ -237,7 +248,7 @@ public class ChatRequest
 	///     somewhat lower.
 	/// </summary>
 	[JsonIgnore]
-    public Ref<string>? OuboundFunctionsContent { get; internal set; }
+    public Ref<string>? OutboundFunctionsContent { get; internal set; }
 
 	/// <summary>
 	///     This can be any API provider specific data. Currently used in KoboldCpp.

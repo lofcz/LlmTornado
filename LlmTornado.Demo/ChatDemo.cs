@@ -496,6 +496,50 @@ public static class ChatDemo
         await chat.StreamResponseRich(handler);
     }
     
+    public static async Task OpenAiDisableParallelFunctions()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+            {
+                Model = ChatModel.OpenAi.Gpt4.O,
+                Tools =
+                [
+                    new Tool(new ToolFunction("get_weather", "gets the current weather", new
+                    {
+                        type = "object",
+                        properties = new
+                        {
+                            location = new
+                            {
+                                type = "string",
+                                description = "The location for which the weather information is required."
+                            }
+                        },
+                        required = new List<string> { "location" }
+                    }))
+                ],
+                ParallelToolCalls = false
+            })
+            .AppendSystemMessage("You are a helpful assistant")
+            .AppendUserInput("What is the weather like today in Prague and Paris?");
+
+        ChatStreamEventHandler handler = new ChatStreamEventHandler
+        {
+            MessageTokenHandler = (x) =>
+            {
+                Console.Write(x);
+                return Task.CompletedTask;
+            },
+            FunctionCallHandler = (calls) =>
+            {
+                calls.ForEach(x => x.Result = new FunctionResult(x, "A mild rain is expected around noon.", null));
+                return Task.CompletedTask;
+            },
+            AfterFunctionCallsResolvedHandler = async (results, handler) => { await chat.StreamResponseRich(handler); }
+        };
+
+        await chat.StreamResponseRich(handler);
+    }
+    
     public static async Task AnthropicFunctionsParallel()
     {
         StringBuilder sb = new StringBuilder();

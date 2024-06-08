@@ -70,6 +70,7 @@ public enum Demos
     CohereFunctionsStreamingInteractive,
     [Flaky("interactive demo")]
     CrossVendorFunctionsStreamingInteractive,
+    DisableParallelTools,
     Last
 }
 
@@ -190,6 +191,7 @@ public class Program
             Demos.AnthropicFunctionsStreamingInteractive => ChatDemo.AnthropicFunctionsStreamingInteractive,
             Demos.CohereFunctionsStreamingInteractive => ChatDemo.CohereFunctionsStreamingInteractive,
             Demos.CrossVendorFunctionsStreamingInteractive => ChatDemo.CrossVendorFunctionsStreamingInteractive,
+            Demos.DisableParallelTools => ChatDemo.OpenAiDisableParallelFunctions,
             _ => null
         };
 
