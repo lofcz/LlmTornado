@@ -158,7 +158,7 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
         ChatMessage? accuToolsMessage = null;
         ChatMessage? accuPlaintext = null;
         ChatUsage? plaintextUsage = null;
-      
+        
         while (await reader.ReadLineAsync() is { } line)
         {
             if (line.IsNullOrWhiteSpace())
@@ -256,7 +256,7 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
                         accuToolsMessage.ContentBuilder ??= new StringBuilder();
                         accuToolsMessage.ContentBuilder.Append(res?.Delta.PartialJson);
                     }
-                    else if (!res?.Delta.Text.IsNullOrWhiteSpace() ?? false)
+                    else if (res?.Delta.Text is not null)
                     {
                         accuPlaintext ??= new ChatMessage(ChatMessageRoles.Assistant);
                         accuPlaintext.ContentBuilder ??= new StringBuilder();
