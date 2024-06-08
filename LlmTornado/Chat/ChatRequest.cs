@@ -225,7 +225,7 @@ public class ChatRequest
 	///		As of 6/24, the only vendor supporting the feature is OpenAI.
 	/// </summary>
 	[JsonProperty("parallel_tool_calls")]
-	public bool ParallelToolCalls { get; set; } = true;
+	public bool? ParallelToolCalls { get; set; }
 
 	/// <summary>
 	///     Represents an optional field when sending tools calling prompt.
