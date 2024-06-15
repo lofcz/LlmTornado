@@ -171,7 +171,7 @@ internal class VendorCohereChatRequest
         }
 
         Message = respondMsg;
-        Model = request.Model?.Name ?? ChatModel.Cohere.CommandRPlus.Name;
+        Model = request.Model?.Name ?? ChatModel.Cohere.Claude3.CommandRPlus.Name;
         Preamble = preamble;
         MaxTokens = request.MaxTokens ?? 1024;
         StopSequences = request.StopSequence?.Split(',').ToList();
