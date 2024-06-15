@@ -23,7 +23,7 @@ public class ChatModel : ModelBase
     /// <summary>
     /// Models from Cohere.
     /// </summary>
-    public static readonly ChatModelCohereCoral Cohere = new ChatModelCohereCoral();
+    public static readonly ChatModelCohere Cohere = new ChatModelCohere();
     
     /// <summary>
     /// Models from Google.

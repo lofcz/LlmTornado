@@ -11,13 +11,13 @@ public class ChatModelCohere: IVendorModelProvider
     /// <summary>
     /// Coral models.
     /// </summary>
-    public readonly ChatModelCohereCoral Coral = new ChatModelCohereCoral();
+    public readonly ChatModelCohereClaude3 Claude3 = new ChatModelCohereClaude3();
     
     /// <summary>
     /// All known chat models from Cohere.
     /// </summary>
     public List<IModel> AllModels { get; } = [
-        ..ChatModelCohereCoral.ModelsAll
+        ..ChatModelCohereClaude3.ModelsAll
     ];
     
     internal ChatModelCohere()
