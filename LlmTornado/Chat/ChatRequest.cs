@@ -406,8 +406,17 @@ public class ChatRequest
                         writer.WriteStartObject();
 
                         writer.WritePropertyName("type");
-                        writer.WriteValue(part.Type);
 
+                        string type = part.Type switch
+                        {
+	                        ChatMessageTypes.Text => "text",
+	                        ChatMessageTypes.Image => "image_url",
+	                        ChatMessageTypes.Audio => "audio_url",
+	                        _ => "text"
+                        };
+                        
+	                    writer.WriteValue(type);   
+	                    
                         switch (part.Type)
                         {
 	                        case ChatMessageTypes.Text:

@@ -52,20 +52,31 @@ public class HttpFailedRequest
     public HttpResponseMessage RawMessage { get; set; }
 }
 
-public class StreamRequest : IAsyncDisposable
+/// <summary>
+///     Streaming HTTP request.
+/// </summary>
+public class TornadoStreamRequest : IAsyncDisposable
 {
-    public Stream Stream { get; set; }
-    public HttpResponseMessage Response { get; set; }
-    public StreamReader StreamReader { get; set; }
+    public Stream? Stream { get; set; }
+    public HttpResponseMessage? Response { get; set; }
+    public StreamReader? StreamReader { get; set; }
     public Exception? Exception { get; set; }
     public HttpCallRequest? CallRequest { get; set; }
     public IHttpCallResult? CallResponse { get; set; }
 
+    /// <summary>
+    ///     Disposes the underlying stream.
+    /// </summary>
     public async ValueTask DisposeAsync()
     {
-        await Stream.DisposeAsync();
-        Response.Dispose();
-        StreamReader.Dispose();
+        if (Stream is not null)
+        {
+            await Stream.DisposeAsync().ConfigureAwait(false);   
+        }
+
+        Response?.Dispose();
+        StreamReader?.Dispose();
+        GC.SuppressFinalize(this);
     }
 }
 

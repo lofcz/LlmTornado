@@ -15,5 +15,9 @@ public enum ChatMessageTypes
     /// <summary>
     /// Message part is either base64 encoded image or a publicly available URL pointing to an image.
     /// </summary>
-    Image
+    Image,
+    /// <summary>
+    /// Message part is an audio fragment.
+    /// </summary>
+    Audio
 }

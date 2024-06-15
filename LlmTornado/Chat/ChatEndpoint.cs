@@ -295,33 +295,33 @@ public class ChatEndpoint : EndpointBase
     private async IAsyncEnumerable<ChatResult> StreamChatReal(IEndpointProvider provider, ChatRequest request, ChatStreamEventHandler? handler)
     {
         TornadoRequestContent requestBody = request.Serialize(provider);
-        StreamRequest streamRequest = await HttpStreamingRequestData(Api.GetProvider(request.Model ?? ChatModel.OpenAi.Gpt35.Turbo), Endpoint, requestBody.Url, HttpMethod.Post, requestBody.Body);
+        TornadoStreamRequest tornadoStreamRequest = await HttpStreamingRequestData(Api.GetProvider(request.Model ?? ChatModel.OpenAi.Gpt35.Turbo), Endpoint, requestBody.Url, HttpMethod.Post, requestBody.Body);
 
-        if (streamRequest.Exception is not null)
+        if (tornadoStreamRequest.Exception is not null)
         {
             if (handler?.HttpExceptionHandler is null)
             {
-                throw streamRequest.Exception;
+                throw tornadoStreamRequest.Exception;
             }
 
             await handler.HttpExceptionHandler(new HttpFailedRequest
             {
-                Exception = streamRequest.Exception,
-                Result = streamRequest.CallResponse,
-                Request = streamRequest.CallRequest,
-                RawMessage = streamRequest.Response
+                Exception = tornadoStreamRequest.Exception,
+                Result = tornadoStreamRequest.CallResponse,
+                Request = tornadoStreamRequest.CallRequest,
+                RawMessage = tornadoStreamRequest.Response
             });
             
-            await streamRequest.DisposeAsync();
+            await tornadoStreamRequest.DisposeAsync();
             yield break;
         }
 
-        if (handler?.OutboundHttpRequestHandler is not null && streamRequest.CallRequest is not null)
+        if (handler?.OutboundHttpRequestHandler is not null && tornadoStreamRequest.CallRequest is not null)
         {
-            await handler.OutboundHttpRequestHandler(streamRequest.CallRequest);
+            await handler.OutboundHttpRequestHandler(tornadoStreamRequest.CallRequest);
         }
         
-        await foreach (ChatResult? x in provider.InboundStream(streamRequest.StreamReader, request))
+        await foreach (ChatResult? x in provider.InboundStream(tornadoStreamRequest.StreamReader, request))
         {
             if (x is null)
             {
@@ -331,7 +331,7 @@ public class ChatEndpoint : EndpointBase
             yield return x;
         }
         
-        await streamRequest.DisposeAsync();
+        await tornadoStreamRequest.DisposeAsync();
     }
     
     /// <summary>

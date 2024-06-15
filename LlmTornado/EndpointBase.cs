@@ -562,13 +562,13 @@ public abstract class EndpointBase
         }
     }
     
-    protected async Task<StreamRequest> HttpStreamingRequestData(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, HttpMethod? verb = null, object? postData = null)
+    protected async Task<TornadoStreamRequest> HttpStreamingRequestData(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, HttpMethod? verb = null, object? postData = null)
     {
         RestDataOrException<HttpResponseMessage> response = await HttpRequestRawWithAllCodes(provider, endpoint, url, verb, postData, true).ConfigureAwait(ConfigureAwaitOptions.None);
 
         if (response.Exception is not null || response.Data is null)
         {
-            return new StreamRequest
+            return new TornadoStreamRequest
             {
                 Exception = response.Exception ?? new Exception("HttpStreamingRequestData returned no data and no exception"),
                 CallRequest = response.HttpRequest,
@@ -579,7 +579,7 @@ public abstract class EndpointBase
         Stream stream = await response.Data.Content.ReadAsStreamAsync();
         StreamReader reader = new(stream);
 
-        return new StreamRequest
+        return new TornadoStreamRequest
         {
             CallRequest = response.HttpRequest,
             Response = response.Data,
