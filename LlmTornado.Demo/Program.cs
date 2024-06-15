@@ -73,6 +73,7 @@ public enum Demos
     DisableParallelTools,
     ChatGoogle,
     ChatGoogleFunctions,
+    ChatGoogleStream,
     Last
 }
 
@@ -199,6 +200,7 @@ public class Program
             Demos.DisableParallelTools => ChatDemo.OpenAiDisableParallelFunctions,
             Demos.ChatGoogle => ChatDemo.Google,
             Demos.ChatGoogleFunctions => ChatDemo.GoogleFunctions,
+            Demos.ChatGoogleStream => ChatDemo.GoogleStream,
             _ => null
         };
 

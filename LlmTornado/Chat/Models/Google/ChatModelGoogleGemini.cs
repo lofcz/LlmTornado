@@ -12,7 +12,7 @@ public class ChatModelGoogleGemini : IVendorModelClassProvider
     /// <summary>
     /// Fast and versatile performance across a diverse variety of tasks.
     /// </summary>
-    public static readonly ChatModel ModelGemini15Flash = new ChatModel("gemini-1.5-flash", LLmProviders.Google, 1_000_000);
+    public static readonly ChatModel ModelGemini15Flash = new ChatModel("gemini-1.5-flash-latest", LLmProviders.Google, 1_000_000);
     
     /// <summary>
     /// <inheritdoc cref="ModelGemini15Flash"/>
@@ -20,9 +20,9 @@ public class ChatModelGoogleGemini : IVendorModelClassProvider
     public readonly ChatModel Gemini15Flash = ModelGemini15Flash;
     
     /// <summary>
-    /// Complex reasoning tasks such as code and text generation, text editing, problem solving, data extraction and generation.
+    /// Complex reasoning tasks such as code and text generation, text editing, problem-solving, data extraction and generation.
     /// </summary>
-    public static readonly ChatModel ModelGemini15Pro = new ChatModel("gemini-1.5-pro", LLmProviders.Google, 1_000_000);
+    public static readonly ChatModel ModelGemini15Pro = new ChatModel("gemini-1.5-pro-latest", LLmProviders.Google, 1_000_000);
     
     /// <summary>
     /// <inheritdoc cref="ModelGemini15Pro"/>

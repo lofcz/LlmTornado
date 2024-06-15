@@ -436,7 +436,7 @@ internal class VendorGoogleChatRequest
     
     public VendorGoogleChatRequest(ChatRequest request, IEndpointProvider provider)
     {
-        request.OverrideUrl($"{provider.ApiUrl(CapabilityEndpoints.Chat, null)}/{request.Model?.Name}:generateContent");
+        request.OverrideUrl($"{provider.ApiUrl(CapabilityEndpoints.Chat, null)}/{request.Model?.Name}:{(request.Stream ? "streamGenerateContent" : "generateContent")}");
         
         IList<ChatMessage>? msgs = request.Messages;
 

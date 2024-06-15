@@ -47,6 +47,7 @@ internal class VendorGoogleChatResult : VendorChatResult
             result.Choices.Add(new ChatChoice
             {
                 Message = msg,
+                Delta = msg,
                 FinishReason = candidate.FinishReason
             });
         }

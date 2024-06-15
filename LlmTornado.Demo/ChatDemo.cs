@@ -370,6 +370,19 @@ public static class ChatDemo
         });
     }
     
+    public static async Task GoogleStream()
+    {
+        Conversation chat = Program.Connect(LLmProviders.Google).Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Google.Gemini.Gemini15Flash
+        });
+        chat.AppendSystemMessage("Pretend you are a dog. Sound authentic.");
+        chat.AppendUserInput("Who are you?");
+
+        Console.WriteLine("Google:");
+        await chat.StreamResponse(Console.Write);
+    }
+    
     public static async Task Google()
     {
         Conversation chat = Program.Connect(LLmProviders.Google).Chat.CreateConversation(new ChatRequest
