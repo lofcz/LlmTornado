@@ -1,5 +1,10 @@
 # Changelog
 
+For newer versions see [releases](https://github.com/lofcz/LlmTornado/releases).
+
+### 3.0
+- rebranded from `OpenAING` to `LLMTornado`
+
 ### 2.3.2 - 12/3/23
 - completed the transition to `tools` from `function`
 
