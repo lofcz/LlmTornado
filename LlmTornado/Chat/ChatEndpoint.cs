@@ -85,7 +85,8 @@ public class ChatEndpoint : EndpointBase
     public async Task<ChatResult?> CreateChatCompletionAsync(ChatRequest request)
     {
         IEndpointProvider provider = Api.GetProvider(request.Model ?? ChatModel.OpenAi.Gpt35.Turbo);
-        ChatResult? result = await HttpPost1<ChatResult>(provider, Endpoint, postData: request.Serialize(provider.Provider));
+        TornadoRequestContent requestBody = request.Serialize(provider);
+        ChatResult? result = await HttpPost1<ChatResult>(provider, Endpoint, requestBody.Url, requestBody.Body);
 
         if (Api.ChatRequestInterceptor is not null)
         {
@@ -108,7 +109,8 @@ public class ChatEndpoint : EndpointBase
     public async Task<HttpCallResult<ChatResult>> CreateChatCompletionAsyncSafe(ChatRequest request)
     {
         IEndpointProvider provider = Api.GetProvider(request.Model ?? ChatModel.OpenAi.Gpt35.Turbo);
-        HttpCallResult<ChatResult> result = await HttpPost<ChatResult>(provider, Endpoint, postData: request.Serialize(provider.Provider));
+        TornadoRequestContent requestBody = request.Serialize(provider);
+        HttpCallResult<ChatResult> result = await HttpPost<ChatResult>(provider, Endpoint, requestBody.Url, requestBody.Body);
 
         if (Api.ChatRequestInterceptor is not null && result.Ok)
         {
@@ -292,7 +294,8 @@ public class ChatEndpoint : EndpointBase
 
     private async IAsyncEnumerable<ChatResult> StreamChatReal(IEndpointProvider provider, ChatRequest request, ChatStreamEventHandler? handler)
     {
-        StreamRequest streamRequest = await HttpStreamingRequestData(Api.GetProvider(request.Model ?? ChatModel.OpenAi.Gpt35.Turbo), Endpoint, null, HttpMethod.Post, request.Serialize(provider.Provider));
+        TornadoRequestContent requestBody = request.Serialize(provider);
+        StreamRequest streamRequest = await HttpStreamingRequestData(Api.GetProvider(request.Model ?? ChatModel.OpenAi.Gpt35.Turbo), Endpoint, requestBody.Url, HttpMethod.Post, requestBody.Body);
 
         if (streamRequest.Exception is not null)
         {
@@ -340,7 +343,8 @@ public class ChatEndpoint : EndpointBase
     /// <returns></returns>
     private async IAsyncEnumerable<ChatResult> StreamChatFake(IEndpointProvider provider, ChatRequest request)
     {
-        ChatResult result = await HttpPost1<ChatResult>(provider, Endpoint, null, request.Serialize(provider.Provider)) ?? new ChatResult();
+        TornadoRequestContent requestBody = request.Serialize(provider);
+        ChatResult result = await HttpPost1<ChatResult>(provider, Endpoint, requestBody.Url, requestBody.Body) ?? new ChatResult();
         yield return result;
     }
 

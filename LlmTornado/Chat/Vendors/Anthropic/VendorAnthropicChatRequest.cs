@@ -97,27 +97,32 @@ internal class VendorAnthropicChatRequest
                             writer.WritePropertyName("type");
                             writer.WriteValue(part.Type == ChatMessageTypes.Text ? "text" : "image");
 
-                            if (part.Type == ChatMessageTypes.Text)
+                            switch (part.Type)
                             {
-                                writer.WritePropertyName("text");
-                                writer.WriteValue(part.Text);
-                            }
-                            else if (part.Type == ChatMessageTypes.Image)
-                            {
-                                writer.WritePropertyName("source");
-                                writer.WriteStartObject();
+                                case ChatMessageTypes.Text:
+                                {
+                                    writer.WritePropertyName("text");
+                                    writer.WriteValue(part.Text);
+                                    break;
+                                }
+                                case ChatMessageTypes.Image:
+                                {
+                                    writer.WritePropertyName("source");
+                                    writer.WriteStartObject();
                                 
-                                writer.WritePropertyName("type");
-                                writer.WriteValue("base64");
+                                    writer.WritePropertyName("type");
+                                    writer.WriteValue("base64");
                                 
-                                writer.WritePropertyName("media_type");
-                                writer.WriteValue("image/png");
+                                    writer.WritePropertyName("media_type");
+                                    writer.WriteValue("image/png");
                                 
-                                // [todo] async pre-fetch url content, expects url to be base64 encoded img now
-                                writer.WritePropertyName("data");
-                                writer.WriteValue(part.Image?.Url ?? string.Empty);
+                                    // [todo] async pre-fetch url content, expects url to be base64 encoded img now
+                                    writer.WritePropertyName("data");
+                                    writer.WriteValue(part.Image?.Url ?? string.Empty);
                                 
-                                writer.WriteEndObject();
+                                    writer.WriteEndObject();
+                                    break;
+                                }
                             }
                             
                             writer.WriteEndObject();
@@ -234,7 +239,7 @@ internal class VendorAnthropicChatRequest
     [JsonProperty("tools")]
     public List<VendorAnthropicToolFunction>? Tools { get; set; }
 
-    public VendorAnthropicChatRequest(ChatRequest request)
+    public VendorAnthropicChatRequest(ChatRequest request, IEndpointProvider provider)
     {
         Model = request.Model?.Name ?? ChatModel.Anthropic.Claude3.Opus.Name;
         System = request.Messages?.FirstOrDefault(x => x.Role is ChatMessageRoles.System)?.Content;

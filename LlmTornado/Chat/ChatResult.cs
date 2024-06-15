@@ -56,6 +56,7 @@ public class ChatResult : ApiResultBase
 			LLmProviders.OpenAi => JsonConvert.DeserializeObject<ChatResult>(jsonData),
 			LLmProviders.Anthropic => JsonConvert.DeserializeObject<VendorAnthropicChatResult>(jsonData)?.ToChatResult(postData),
 			LLmProviders.Cohere => JsonConvert.DeserializeObject<VendorCohereChatResult>(jsonData)?.ToChatResult(postData),
+			LLmProviders.Google => JsonConvert.DeserializeObject<VendorGoogleChatResult>(jsonData)?.ToChatResult(postData),
 			_ => JsonConvert.DeserializeObject<ChatResult>(jsonData)
 		};
 	}
@@ -141,6 +142,13 @@ public class ChatUsage : Usage
 	{
 		CompletionTokens = usage.BilledUnits.OutputTokens;
 		PromptTokens = usage.BilledUnits.OutputTokens;
+		TotalTokens = CompletionTokens + PromptTokens;
+	}
+
+	internal ChatUsage(VendorGoogleUsage usage)
+	{
+		CompletionTokens = usage.CandidatesTokenCount;
+		PromptTokens = usage.PromptTokenCount;
 		TotalTokens = CompletionTokens + PromptTokens;
 	}
 }

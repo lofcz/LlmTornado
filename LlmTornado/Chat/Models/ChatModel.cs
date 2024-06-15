@@ -26,6 +26,11 @@ public class ChatModel : ModelBase
     public static readonly ChatModelCohereCoral Cohere = new ChatModelCohereCoral();
     
     /// <summary>
+    /// Models from Google.
+    /// </summary>
+    public static readonly ChatModelGoogle Google = new ChatModelGoogle();
+    
+    /// <summary>
     /// All known models keyed by name.
     /// </summary>
     public static readonly Dictionary<string, IModel> AllModelsMap = [];
@@ -40,7 +45,8 @@ public class ChatModel : ModelBase
         AllModels = [
             ..OpenAi.AllModels,
             ..Anthropic.AllModels,
-            ..Cohere.AllModels
+            ..Cohere.AllModels,
+            ..Google.AllModels
         ];
         
         AllModels.ForEach(x =>
@@ -50,7 +56,7 @@ public class ChatModel : ModelBase
     }
     
     /// <summary>
-    /// Represents an Model with the given name.
+    /// Represents a Model with the given name.
     /// </summary>
     /// <param name="name">The id/name of the model.</param>
     /// <param name="ownedBy"></param>
@@ -104,7 +110,7 @@ public class ChatModel : ModelBase
     }
     
     /// <summary>
-    /// Allows an model to be implicitly cast to the string of its <see cref="ModelBase.Name" />
+    /// Allows a model to be implicitly cast to the string of its <see cref="ModelBase.Name" />
     /// </summary>
     /// <param name="model">The <see cref="ChatModel" /> to cast to a string.</param>
     public static implicit operator string(ChatModel model)

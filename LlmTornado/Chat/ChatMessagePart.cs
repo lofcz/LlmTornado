@@ -11,6 +11,14 @@ namespace LlmTornado.Chat;
 public class ChatMessagePart
 {
     /// <summary>
+    ///     Part with unset content. When using empty ctor you are responsible for providing the correct type before sending the request.
+    /// </summary>
+    public ChatMessagePart()
+    {
+        
+    }
+    
+    /// <summary>
     ///     The part is a specific fragment without content.
     /// </summary>
     /// <param name="type">Type of the message part</param>

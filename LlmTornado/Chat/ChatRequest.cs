@@ -269,21 +269,32 @@ public class ChatRequest
 	/// </summary>
 	[JsonIgnore]
 	public bool TrimResponseStart { get; set; } = true; 
+	
+	[JsonIgnore]
+	internal string? UrlOverride { get; set; }
+
+	internal void OverrideUrl(string url)
+	{
+		UrlOverride = url;
+	}
 
 	/// <summary>
-	///		Serializes the chat request into a http body, based on the conventions used by a LLM provider.
+	///		Serializes the chat request into the request body, based on the conventions used by the LLM provider.
 	/// </summary>
 	/// <param name="provider"></param>
 	/// <returns></returns>
-	public string Serialize(LLmProviders provider)
+	public TornadoRequestContent Serialize(IEndpointProvider provider)
 	{
-		return provider switch
+		string content = provider.Provider switch
 		{
 			LLmProviders.OpenAi => JsonConvert.SerializeObject(this, EndpointBase.NullSettings),
-			LLmProviders.Anthropic => JsonConvert.SerializeObject(new VendorAnthropicChatRequest(this), EndpointBase.NullSettings),
-			LLmProviders.Cohere => JsonConvert.SerializeObject(new VendorCohereChatRequest(this), EndpointBase.NullSettings),
+			LLmProviders.Anthropic => JsonConvert.SerializeObject(new VendorAnthropicChatRequest(this, provider), EndpointBase.NullSettings),
+			LLmProviders.Cohere => JsonConvert.SerializeObject(new VendorCohereChatRequest(this, provider), EndpointBase.NullSettings),
+			LLmProviders.Google => JsonConvert.SerializeObject(new VendorGoogleChatRequest(this, provider), EndpointBase.NullSettings),
 			_ => string.Empty
 		};
+		
+		return new TornadoRequestContent(content, UrlOverride);
 	}
 	
 	internal class ModelJsonConverter : JsonConverter<ChatModel>
@@ -397,20 +408,25 @@ public class ChatRequest
                         writer.WritePropertyName("type");
                         writer.WriteValue(part.Type);
 
-                        if (part.Type.Value == ChatMessageTypes.Text.Value)
+                        switch (part.Type)
                         {
-                            writer.WritePropertyName("text");
-                            writer.WriteValue(part.Text);
-                        }
-                        else if (part.Type.Value == ChatMessageTypes.Image.Value)
-                        {
-                            writer.WritePropertyName("image_url");
-                            writer.WriteStartObject();
+	                        case ChatMessageTypes.Text:
+	                        {
+		                        writer.WritePropertyName("text");
+		                        writer.WriteValue(part.Text);
+		                        break;
+	                        }
+	                        case ChatMessageTypes.Image:
+	                        {
+		                        writer.WritePropertyName("image_url");
+		                        writer.WriteStartObject();
 
-                            writer.WritePropertyName("url");
-                            writer.WriteValue(part.Image?.Url);
+		                        writer.WritePropertyName("url");
+		                        writer.WriteValue(part.Image?.Url);
 
-                            writer.WriteEndObject();
+		                        writer.WriteEndObject();
+		                        break;
+	                        }
                         }
 
                         writer.WriteEndObject();

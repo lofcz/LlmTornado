@@ -369,6 +369,21 @@ public static class ChatDemo
             return Task.CompletedTask;
         });
     }
+    
+    public static async Task Google()
+    {
+        Conversation chat = Program.Connect(LLmProviders.Google).Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Google.Gemini.Gemini15Flash
+        });
+        chat.AppendSystemMessage("Pretend you are a dog. Sound authentic.");
+        chat.AppendUserInput("Who are you?");
+
+        string? str = await chat.GetResponse();
+
+        Console.WriteLine("Google:");
+        Console.WriteLine(str);
+    }
 
     public static async Task Cohere()
     {

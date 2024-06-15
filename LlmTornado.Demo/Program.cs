@@ -71,6 +71,7 @@ public enum Demos
     [Flaky("interactive demo")]
     CrossVendorFunctionsStreamingInteractive,
     DisableParallelTools,
+    ChatGoogle,
     Last
 }
 
@@ -91,6 +92,7 @@ public class Program
         public string OpenAi { get; set; }
         public string Anthropic { get; set; }
         public string Cohere { get; set; }
+        public string Google { get; set; }
         public AzureKey Azure { get; set; }
     }
 
@@ -99,7 +101,8 @@ public class Program
         return new TornadoApi([
             new ProviderAuthentication(LLmProviders.OpenAi, ApiKeys.OpenAi),
             new ProviderAuthentication(LLmProviders.Anthropic, ApiKeys.Anthropic),
-            new ProviderAuthentication(LLmProviders.Cohere, ApiKeys.Cohere)
+            new ProviderAuthentication(LLmProviders.Cohere, ApiKeys.Cohere),
+            new ProviderAuthentication(LLmProviders.Google, ApiKeys.Google)
         ]);
     }
     
@@ -115,6 +118,7 @@ public class Program
             LLmProviders.OpenAi => new TornadoApi(ApiKeys.OpenAi),
             LLmProviders.Anthropic => new TornadoApi(ApiKeys.Anthropic, LLmProviders.Anthropic),
             LLmProviders.Cohere => new TornadoApi(ApiKeys.Cohere, LLmProviders.Cohere),
+            LLmProviders.Google => new TornadoApi(ApiKeys.Google, LLmProviders.Google),
             _ => new TornadoApi(string.Empty)
         };
     }
@@ -192,6 +196,7 @@ public class Program
             Demos.CohereFunctionsStreamingInteractive => ChatDemo.CohereFunctionsStreamingInteractive,
             Demos.CrossVendorFunctionsStreamingInteractive => ChatDemo.CrossVendorFunctionsStreamingInteractive,
             Demos.DisableParallelTools => ChatDemo.OpenAiDisableParallelFunctions,
+            Demos.ChatGoogle => ChatDemo.Google,
             _ => null
         };
 

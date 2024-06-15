@@ -56,7 +56,6 @@ public class ChatMessage
         Role = role;
         Parts = parts.ToList();
         Id = Guid.NewGuid();
-        Type = ChatMessageTypes.Image;
     }
 
 	/// <summary>
@@ -70,7 +69,6 @@ public class ChatMessage
         Role = role;
         Parts = parts.ToList();
         Id = id ?? Guid.NewGuid();
-        Type = ChatMessageTypes.Image;
     }
 
 	/// <summary>
@@ -85,13 +83,6 @@ public class ChatMessage
         Content = content;
         Id = id ?? Guid.NewGuid();
     }
-
-	/// <summary>
-	///     The type of the message, which can be "text" or "chatImage".
-	/// </summary>
-	[JsonProperty("type")]
-    [JsonConverter(typeof(ChatMessageTypes.ChatMessageTypesJsonConverter))]
-    public ChatMessageTypes Type { get; set; } = ChatMessageTypes.Text;
 
     [JsonProperty("role")] 
     internal string? rawRole { get; set; }
@@ -119,7 +110,7 @@ public class ChatMessage
     public string? Content { get; set; }
 
     /// <summary>
-    ///     The chatImage if the message is an chatImage.
+    ///     The parts of the message. When serializing, <see cref="Parts"/> have priority over <see cref="Content"/>
     /// </summary>
     [JsonIgnore]
     public List<ChatMessagePart>? Parts { get; set; }

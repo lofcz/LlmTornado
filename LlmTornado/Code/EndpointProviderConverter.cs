@@ -11,6 +11,7 @@ internal static class EndpointProviderConverter
             LLmProviders.OpenAi => new OpenAiEndpointProvider(api),
             LLmProviders.Anthropic => new AnthropicEndpointProvider(api),
             LLmProviders.Cohere => new CohereEndpointProvider(api),
+            LLmProviders.Google => new GoogleEndpointProvider(api),
             _ => new OpenAiEndpointProvider(api)
         };
     }

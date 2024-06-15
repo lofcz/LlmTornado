@@ -227,6 +227,10 @@ public enum LLmProviders
     /// </summary>
     Custom,
     /// <summary>
+    /// Google.
+    /// </summary>
+    Google,
+    /// <summary>
     /// Internal value.
     /// </summary>
     Length
@@ -289,19 +293,29 @@ public enum StreamRequestTypes
     Chat
 }
 
-internal class StreamToken<T>
+/// <summary>
+///  A Tornado HTTP request.
+/// </summary>
+public class TornadoRequestContent
 {
-    public T? Data { get; set; }
-    public bool Break { get; set; }
-
-    public StreamToken(T? data, bool brk)
-    {
-        Data = data;
-        Break = brk;
-    } 
-}
-
-public class StreamChoicesBase
-{
+    /// <summary>
+    /// Content of the request.
+    /// </summary>
+    public string Body { get; set; }
     
+    /// <summary>
+    /// Forces the URl to differ from the one inferred further down the pipeline.
+    /// </summary>
+    public string? Url { get; set; }
+
+    internal TornadoRequestContent(string body, string? url = null)
+    {
+        Body = body;
+        Url = url;
+    }
+
+    internal TornadoRequestContent()
+    {
+        
+    }
 }

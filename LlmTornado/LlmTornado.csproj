@@ -13,7 +13,7 @@
         <Title>OpenAI NextGeneration</Title>
         <PackageReleaseNotes>support disabling parallel tools calling, Anthropic streaming improvements</PackageReleaseNotes>
         <PackageId>LlmTornado</PackageId>
-        <Version>3.0.16</Version>
+        <Version>3.0.17</Version>
         <AssemblyVersion>3.0.5</AssemblyVersion>
         <FileVersion>3.0.5</FileVersion>
         <GenerateDocumentationFile>True</GenerateDocumentationFile>

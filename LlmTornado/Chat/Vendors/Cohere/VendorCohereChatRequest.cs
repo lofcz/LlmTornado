@@ -123,7 +123,7 @@ internal class VendorCohereChatRequest
         
     }
     
-    public VendorCohereChatRequest(ChatRequest request)
+    public VendorCohereChatRequest(ChatRequest request, IEndpointProvider provider)
     {
         IList<ChatMessage>? msgs = request.Messages;
         string? preamble = null;
