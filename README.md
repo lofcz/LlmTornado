@@ -1,11 +1,11 @@
 [![LlmTornado](https://badgen.net/nuget/v/LlmTornado?v=301)](https://www.nuget.org/packages/LlmTornado)
 
-# 🌪️ LLM Tornado - one .NET library to consume OpenAI, Anthropic, Cohere, Azure, and self-hosted APIs.
+# 🌪️ LLM Tornado - one .NET library to consume OpenAI, Anthropic, Cohere, Google, Azure, and self-hosted APIs.
 
 Each month at least one new large language model is released. Would it be awesome if using the new model was as easy as switching one argument?
 LLM Tornado acts as an aggregator allowing you to do just that. Think [SearX](https://github.com/searxng/searxng) but for LLMs!
 
-OpenAI, Cohere, Anthropic, and Azure are currently supported along with [KoboldCpp](https://github.com/LostRuins/koboldcpp) and [Ollama](https://github.com/ollama/ollama).
+OpenAI, Anthropic, Cohere, Google and Azure are currently supported along with [KoboldCpp](https://github.com/LostRuins/koboldcpp) and [Ollama](https://github.com/ollama/ollama).
 
 The following video captures **one conversation**, running across OpenAI, Cohere, and Anthropic, with parallel tools calling & streaming: 
 
@@ -32,16 +32,18 @@ Switching the vendor is as easy as changing `ChatModel` argument. Tornado instan
 ```csharp
 TornadoApi api = new TornadoApi(new List<ProviderAuthentication>
 {
-    new ProviderAuthentication(LLmProviders.OpenAi, Program.ApiKeys.OpenAi),
-    new ProviderAuthentication(LLmProviders.Anthropic, Program.ApiKeys.Anthropic),
-    new ProviderAuthentication(LLmProviders.Cohere, Program.ApiKeys.Cohere)
+    new ProviderAuthentication(LLmProviders.OpenAi, "OPEN_AI_KEY"),
+    new ProviderAuthentication(LLmProviders.Anthropic, "ANTHROPIC_KEY"),
+    new ProviderAuthentication(LLmProviders.Cohere, "COHERE_KEY"),
+    new ProviderAuthentication(LLmProviders.Google, "GOOGLE_KEY")
 });
 
 List<ChatModel> models =
 [
     ChatModel.OpenAi.Gpt4.Turbo,
     ChatModel.Anthropic.Claude3.Sonnet,
-    ChatModel.Cohere.CommandRPlus
+    ChatModel.Cohere.CommandRPlus,
+    ChatModels.Google.Gemini.Gemini15Flash
 ];
 
 foreach (ChatModel model in models)
