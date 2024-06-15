@@ -27,6 +27,7 @@ internal class VendorGoogleChatResult : VendorChatResult
     
     [JsonProperty("candidates")] 
     public List<VendorGoogleChatResultMessage> Candidates { get; set; } = [];
+    
     [JsonProperty("usageMetadata")]
     public VendorGoogleUsage Meta { get; set; }
     

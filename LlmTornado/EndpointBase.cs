@@ -185,7 +185,7 @@ public abstract class EndpointBase
     /// </param>
     /// <param name="postData">(optional) A json-serializable object to include in the request body.</param>
     /// <param name="streaming">
-    ///     (optional) If true, streams the response.  Otherwise waits for the entire response before
+    ///     (optional) If true, streams the response. Otherwise waits for the entire response before
     ///     returning.
     /// </param>
     /// <param name="ct">(optional) A cancellation token.</param>

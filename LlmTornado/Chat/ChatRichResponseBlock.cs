@@ -22,7 +22,11 @@ public enum ChatRichResponseBlockTypes
     /// <summary>
     /// Function call, optionally paired with the response if the function already resolved.
     /// </summary>
-    Function
+    Function,
+    /// <summary>
+    /// Image block.
+    /// </summary>
+    Image
 }
 
 /// <summary>
@@ -68,7 +72,7 @@ public class ChatRichResponse
     /// Gets the text parts and joins them by a separator.
     /// </summary>
     /// <returns></returns>
-    internal string GetText(string blockSeparator = " ")
+    public string GetText(string blockSeparator = " ")
     {
         text = Blocks is null ? string.Empty : string.Join(blockSeparator, Blocks.Where(x => x.Type is ChatRichResponseBlockTypes.Message && !x.Message.IsNullOrWhiteSpace()).Select(x => x.Message));
         return text;
@@ -84,14 +88,17 @@ public class ChatRichResponseBlock
     /// Kind of the block.
     /// </summary>
     public ChatRichResponseBlockTypes Type { get; set; }
+    
     /// <summary>
     /// If the <see cref="Type"/> is <see cref="ChatRichResponseBlockTypes.Message"/>, this is the text content.
     /// </summary>
     public string? Message { get; set; }
+    
     /// <summary>
-    /// If the <see cref="Type"/> is <see cref="ChatRichResponseBlockTypes.Function"/> and the function already resolved via a handler, this the resolved value.
+    /// If the <see cref="Type"/> is <see cref="ChatRichResponseBlockTypes.Image"/>, this is the image.
     /// </summary>
-    public FunctionResult? FunctionResult { get; set; }
+    public ChatImage? ChatImage { get; set; }
+    
     /// <summary>
     /// If the <see cref="Type"/> is <see cref="ChatRichResponseBlockTypes.Function"/>, this is the function the tool requested calling.
     /// </summary>

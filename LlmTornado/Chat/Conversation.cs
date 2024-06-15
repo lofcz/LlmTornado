@@ -542,7 +542,7 @@ public class Conversation
                 {
                     continue;
                 }
-
+                
                 AppendMessage(newMsg);
 
                 if (newMsg.ToolCalls is { Count: > 0 } && !OutboundToolChoice.OutboundToolChoiceConverter.KnownFunctionNames.Contains(newMsg.ToolCalls[0].FunctionCall.Name))
@@ -564,6 +564,17 @@ public class Conversation
                         Type = ChatRichResponseBlockTypes.Message,
                         Message = newMsg.Content
                     });
+                }
+                else if (newMsg.Parts?.Count > 0)
+                {
+                    foreach (ChatMessagePart part in newMsg.Parts)
+                    {
+                        response.Blocks!.Add(new ChatRichResponseBlock
+                        {
+                            Type = ChatRichResponseBlockTypes.Message,
+                            Message = part.Text
+                        });
+                    }
                 }
             }
         }
@@ -694,7 +705,6 @@ public class Conversation
                         response.Blocks!.Add(new ChatRichResponseBlock
                         {
                             Type = ChatRichResponseBlockTypes.Function, 
-                            FunctionResult = result[i],
                             FunctionCall = functionsToResolve.Count > i ? functionsToResolve[i] : null
                         });   
                     }
@@ -721,7 +731,7 @@ public class Conversation
     ///     Use this overload when resolving the function calls requested by the model can be done immediately.
     /// </summary>
     /// <returns>The string of the response from the chatbot API</returns>
-    public async Task<ChatRichResponse> GetResponseRich(Func<List<FunctionCall>, Task<List<FunctionResult>>> functionCallHandler)
+    public async Task<ChatRichResponse> GetResponseRich(Func<List<FunctionCall>, Task>? functionCallHandler)
     {
         ChatRequest req = new(RequestParameters)
         {
@@ -742,7 +752,8 @@ public class Conversation
             return new ChatRichResponse(res, null);
         }
 
-        ChatRichResponse response = new ChatRichResponse(res, []);
+        List<ChatRichResponseBlock> blocks = [];
+        ChatRichResponse response = new ChatRichResponse(res, blocks);
         
         if (res.Choices.Count > 0)
         {
@@ -759,27 +770,76 @@ public class Conversation
 
                 if (newMsg.ToolCalls is { Count: > 0 } && !OutboundToolChoice.OutboundToolChoiceConverter.KnownFunctionNames.Contains(newMsg.ToolCalls[0].FunctionCall.Name))
                 {
-                    List<FunctionCall> functionsToResolve = newMsg.ToolCalls.Select(x => x.FunctionCall).ToList();
-                    List<FunctionResult> result = await functionCallHandler.Invoke(functionsToResolve);
-
-                    for (int i = 0; i < result.Count; i++)
+                    ResolvedToolsCall result = new ResolvedToolsCall();
+                    List<FunctionCall>? calls = newMsg.ToolCalls?.Select(x => new FunctionCall
                     {
-                        response.Blocks!.Add(new ChatRichResponseBlock
+                        Name = x.FunctionCall.Name,
+                        Arguments = x.FunctionCall.Arguments,
+                        ToolCall = x
+                    }).ToList();
+
+                    if (calls is not null)
+                    {
+                        Guid currentMsgId = Guid.NewGuid();
+
+                        if (functionCallHandler is not null)
                         {
-                            Type = ChatRichResponseBlockTypes.Function, 
-                            FunctionResult = result[i],
-                            FunctionCall = functionsToResolve.Count > i ? functionsToResolve[i] : null
-                        });   
+                            await functionCallHandler.Invoke(calls);   
+                        }
+                        
+                        foreach (FunctionCall call in calls)
+                        {
+                            blocks.Add(new ChatRichResponseBlock
+                            {
+                                Type = ChatRichResponseBlockTypes.Function,
+                                FunctionCall = call
+                            });
+                            
+                            ChatMessage fnResultMsg = new(ChatMessageRoles.Tool, call.Result?.Content ?? "The service returned no data.".ToJson(), Guid.NewGuid())
+                            {
+                                Id = currentMsgId,
+                                ToolCallId = call.ToolCall?.Id ?? call.Name,
+                                ToolInvocationSucceeded = call.Result?.InvocationSucceeded ?? false,
+                                ContentJsonType = call.Result?.ContentJsonType ?? typeof(string)
+                            };
+
+                            currentMsgId = Guid.NewGuid();
+                            AppendMessage(fnResultMsg);
+                                    
+                            result.ToolResults.Add(new ResolvedToolCall
+                            {
+                                Call = call,
+                                Result = call.Result ?? new FunctionResult(call, null, null, false),
+                                ToolMessage = fnResultMsg
+                            });
+                        }
+                        
+                        if (OnAfterToolsCall is not null)
+                        {
+                            await OnAfterToolsCall(result);
+                        } 
                     }
                 }
 
-                if (!newMsg.Content.IsNullOrWhiteSpace())
+                if (newMsg.Parts?.Count > 0)
                 {
-                    response.Blocks!.Add(new ChatRichResponseBlock
+                    foreach (ChatMessagePart part in newMsg.Parts)
+                    {
+                        blocks.Add(new ChatRichResponseBlock
+                        {
+                            Type = part.Type is ChatMessageTypes.Text ? ChatRichResponseBlockTypes.Message : ChatRichResponseBlockTypes.Image,
+                            Message = part.Type is ChatMessageTypes.Text ? part.Text : null,
+                            ChatImage = part.Type is ChatMessageTypes.Image ? part.Image : null
+                        });
+                    }
+                }
+                else if (newMsg.Content is not null)
+                {
+                    blocks.Add(new ChatRichResponseBlock
                     {
                         Type = ChatRichResponseBlockTypes.Message,
                         Message = newMsg.Content
-                    });   
+                    });
                 }
             }
         }

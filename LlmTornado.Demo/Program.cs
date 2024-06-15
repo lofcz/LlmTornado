@@ -72,6 +72,7 @@ public enum Demos
     CrossVendorFunctionsStreamingInteractive,
     DisableParallelTools,
     ChatGoogle,
+    ChatGoogleFunctions,
     Last
 }
 
@@ -181,7 +182,7 @@ public class Program
             Demos.ChatStreamingAnthropic => ChatDemo.AnthropicStreaming,
             Demos.ChatAzure => ChatDemo.Azure,
             Demos.ChatOpenAiFunctions => ChatDemo.OpenAiFunctions,
-            Demos.ChatAnthropicFunctions => ChatDemo.AnthropicFunctions,
+            Demos.ChatAnthropicFunctions => ChatDemo.AnthropicStreamingFunctions,
             Demos.ChatAnthropicFailFunctions => ChatDemo.AnthropicFailFunctions,
             Demos.ChatCohere => ChatDemo.Cohere,
             Demos.ChatCohereStreaming => ChatDemo.CohereStreaming,
@@ -197,6 +198,7 @@ public class Program
             Demos.CrossVendorFunctionsStreamingInteractive => ChatDemo.CrossVendorFunctionsStreamingInteractive,
             Demos.DisableParallelTools => ChatDemo.OpenAiDisableParallelFunctions,
             Demos.ChatGoogle => ChatDemo.Google,
+            Demos.ChatGoogleFunctions => ChatDemo.GoogleFunctions,
             _ => null
         };
 

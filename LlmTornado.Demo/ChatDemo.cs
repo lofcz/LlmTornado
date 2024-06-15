@@ -617,7 +617,59 @@ public static class ChatDemo
         await chat.StreamResponseRich(eventsHandler);
     }
     
-    public static async Task AnthropicFunctions()
+    public static async Task GoogleFunctions()
+    {
+        Conversation chat = Program.Connect(LLmProviders.Google).Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Google.Gemini.Gemini15Flash,
+            Tools = [
+                new Tool(new ToolFunction("get_weather", "gets the current weather", new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        location = new
+                        {
+                            type = "string",
+                            description = "The location for which the weather information is required."
+                        }
+                    },
+                    required = new List<string> { "location" }
+                }))
+            ],
+            ToolChoice = new OutboundToolChoice("get_weather")
+        });
+
+        chat.OnAfterToolsCall = async (result) =>
+        {
+            chat.RequestParameters.ToolChoice = null; // stop forcing the model to use the get_weather tool
+            string? str = await chat.GetResponse();
+
+            if (str is not null)
+            {
+                Console.WriteLine(str);
+            }
+        };
+        
+        chat.AppendMessage(ChatMessageRoles.System, "You are a helpful assistant");
+        Guid msgId = Guid.NewGuid();
+        chat.AppendMessage(ChatMessageRoles.User, "Fetch the weather information for Prague and Paris.", msgId);
+
+        ChatRichResponse response = await chat.GetResponseRich(functions =>
+        {
+            foreach (FunctionCall fn in functions)
+            {
+                fn.Result = new FunctionResult(fn.Name, "A mild rain is expected around noon.");
+            }
+
+            return Task.CompletedTask;
+        });
+
+        string r = response.GetText();
+        Console.WriteLine(r);
+    }
+    
+    public static async Task AnthropicStreamingFunctions()
     {
         StringBuilder sb = new StringBuilder();
 

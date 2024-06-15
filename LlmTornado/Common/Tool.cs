@@ -129,10 +129,14 @@ public class FunctionResult
     
     [JsonIgnore]
     internal Type? ContentJsonType { get; set; }
+    
+    [JsonIgnore]
+    internal object? RawContent { get; set; }
 
     private string SetContent(object? content)
     {
         ContentJsonType = content?.GetType();
+        RawContent = content;
         return content is null ? "{}" : JsonConvert.SerializeObject(content);
     }
 }

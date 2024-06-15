@@ -13,10 +13,10 @@ namespace LlmTornado.ChatFunctions;
 public class FunctionCall
 {
     [JsonIgnore] 
-    private Lazy<ChatFunctionParamsGetter> argGetter;
+    private readonly Lazy<ChatFunctionParamsGetter> argGetter;
 
     [JsonIgnore] 
-    private Lazy<Dictionary<string, object?>?> decodedArguments;
+    private readonly Lazy<Dictionary<string, object?>?> decodedArguments;
 
     public FunctionCall()
     {
@@ -51,6 +51,15 @@ public class FunctionCall
     [JsonIgnore]
     public ToolCall? ToolCall { get; set; }
 
+    /// <summary>
+    ///     Gets all arguments passed to the function call as a dictionary.
+    /// </summary>
+    /// <returns></returns>
+    public Dictionary<string, object?> GetArguments()
+    {
+        return argGetter.Value.Source ?? [];
+    }
+    
     /// <summary>
     ///     Attempts to get value of a given argument. If the argument is of incompatible type, <see cref="exception"/> is returned.
     /// </summary>

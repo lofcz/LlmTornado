@@ -105,24 +105,24 @@ internal enum ChatResultStreamInternalKinds
 
 public class ChatFunctionParamsGetter
 {
-    private readonly Dictionary<string, object?>? source;
+    internal Dictionary<string, object?>? Source { get; set; }
 
     public ChatFunctionParamsGetter(Dictionary<string, object?>? pars)
     {
-        source = pars;
+        Source = pars;
     }
 
     public bool Get<T>(string param, [NotNullWhen(returnValue: true)] out T? data, out Exception? exception)
     {
         exception = null;
         
-        if (source is null)
+        if (Source is null)
         {
             data = default;
             return false; 
         }
         
-        if (!source.TryGetValue(param, out object? rawData))
+        if (!Source.TryGetValue(param, out object? rawData))
         {
             data = default;
             return false;
