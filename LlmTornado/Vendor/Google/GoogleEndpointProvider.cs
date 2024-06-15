@@ -67,7 +67,23 @@ internal class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider,
 
                     if (obj is not null)
                     {
-                        yield return obj.ToChatResult(null);
+                        foreach (VendorGoogleChatResult.VendorGoogleChatResultMessage candidate in obj.Candidates)
+                        {
+                            foreach (VendorGoogleChatRequest.VendorGoogleChatRequestMessagePart part in candidate.Content.Parts)
+                            {
+                                if (part.Text is not null)
+                                {
+                                    plaintextAccu ??= new ChatMessage();
+                                    plaintextAccu.ContentBuilder ??= new StringBuilder();
+                                    plaintextAccu.ContentBuilder.Append(part.Text);
+                                }
+                            }
+                        }
+                        
+                        ChatResult chatResult = obj.ToChatResult(null);
+                        usage = chatResult.Usage;
+                        
+                        yield return chatResult;
                     }
                 }
                 else if (jsonReader.TokenType is JsonToken.EndArray)
@@ -75,6 +91,25 @@ internal class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider,
                     break;
                 }
             }
+        }
+
+        if (plaintextAccu is not null)
+        {
+            yield return new ChatResult
+            {
+                Choices =
+                [
+                    new ChatChoice
+                    {
+                        Delta = new ChatMessage
+                        {
+                            Content = plaintextAccu.ContentBuilder?.ToString()
+                        }
+                    }
+                ],
+                StreamInternalKind = ChatResultStreamInternalKinds.AppendAssistantMessage,
+                Usage = usage
+            };
         }
     }
 

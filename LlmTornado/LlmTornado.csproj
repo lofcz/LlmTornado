@@ -11,9 +11,9 @@
         <RepositoryUrl>https://github.com/lofcz/LlmTornado</RepositoryUrl>
         <PackageTags>OpenAI, Cohere, Anthropic, Azure, LLM, GPT-4O, GPT-4, GPT-Turbo, DALL-E, Coral, Claude3, Command-R-Plus</PackageTags>
         <Title>OpenAI NextGeneration</Title>
-        <PackageReleaseNotes>support Google Gemini models</PackageReleaseNotes>
+        <PackageReleaseNotes>hotfix release</PackageReleaseNotes>
         <PackageId>LlmTornado</PackageId>
-        <Version>3.1.0</Version>
+        <Version>3.1.2</Version>
         <AssemblyVersion>3.0.5</AssemblyVersion>
         <FileVersion>3.0.5</FileVersion>
         <GenerateDocumentationFile>True</GenerateDocumentationFile>
