@@ -14,10 +14,16 @@ public class ChatModelAnthropic: IVendorModelProvider
     public readonly ChatModelAnthropicClaude3 Claude3 = new ChatModelAnthropicClaude3();
     
     /// <summary>
+    /// Claude 3.5 models.
+    /// </summary>
+    public readonly ChatModelAnthropicClaude35 Claude35 = new ChatModelAnthropicClaude35();
+    
+    /// <summary>
     /// All known chat models from Anthropic.
     /// </summary>
     public List<IModel> AllModels { get; } = [
-        ..ChatModelAnthropicClaude3.ModelsAll
+        ..ChatModelAnthropicClaude3.ModelsAll,
+        ..ChatModelAnthropicClaude35.ModelsAll
     ];
     
     internal ChatModelAnthropic()

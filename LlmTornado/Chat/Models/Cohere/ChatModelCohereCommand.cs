@@ -7,68 +7,68 @@ namespace LlmTornado.Chat.Models;
 /// <summary>
 /// Claude 3 class models from Anthropic.
 /// </summary>
-public class ChatModelCohereClaude3 : IVendorModelClassProvider
+public class ChatModelCohereCommand : IVendorModelClassProvider
 {
     /// <summary>
     /// Command R+ is an instruction-following conversational model that performs language tasks at a higher quality, more reliably, and with a longer context than previous models. It is best suited for complex RAG workflows and multi-step tool use.
     /// </summary>
-    public static readonly ChatModel ModelCommandRPlus = new ChatModel("command-r-plus", LLmProviders.Cohere, 128_000);
+    public static readonly ChatModel ModelRPlus = new ChatModel("command-r-plus", LLmProviders.Cohere, 128_000);
     
     /// <summary>
-    /// <inheritdoc cref="ModelCommandRPlus"/>
+    /// <inheritdoc cref="CommandRPlus"/>
     /// </summary>
-    public readonly ChatModel CommandRPlus = ModelCommandRPlus;
+    public readonly ChatModel RPlus = ModelRPlus;
     
     /// <summary>
     /// Be advised that command-nightly is the latest, most experimental, and (possibly) unstable version of its default counterpart. Nightly releases are updated regularly, without warning, and are not recommended for production use.
     /// </summary>
-    public static readonly ChatModel ModelCommandNightly = new ChatModel("command-nightly", LLmProviders.Cohere, 128_000);
+    public static readonly ChatModel ModelNightly = new ChatModel("command-nightly", LLmProviders.Cohere, 128_000);
     
     /// <summary>
-    /// <inheritdoc cref="ModelCommandNightly"/>
+    /// <inheritdoc cref="ModelNightly"/>
     /// </summary>
-    public readonly ChatModel CommandNightly = ModelCommandNightly;
+    public readonly ChatModel CommandNightly = ModelNightly;
     
     /// <summary>
     /// An instruction-following conversational model that performs language tasks with high quality, more reliably and with a longer context than our base generative models.
     /// </summary>
-    public static readonly ChatModel ModelCommand = new ChatModel("command", LLmProviders.Cohere, 4_000);
+    public static readonly ChatModel ModelDefault = new ChatModel("command", LLmProviders.Cohere, 4_000);
 
     /// <summary>
-    /// <inheritdoc cref="ModelCommand"/>
+    /// <inheritdoc cref="ModelDefault"/>
     /// </summary>
-    public readonly ChatModel Command = ModelCommand;
+    public readonly ChatModel Default = ModelDefault;
     
     /// <summary>
     /// A smaller, faster version of command. Almost as capable, but a lot faster.
     /// </summary>
-    public static readonly ChatModel ModelCommandLight = new ChatModel("command-light", LLmProviders.Cohere, 4_000);
+    public static readonly ChatModel ModelLight = new ChatModel("command-light", LLmProviders.Cohere, 4_000);
 
     /// <summary>
-    /// <inheritdoc cref="ModelCommandLight"/>
+    /// <inheritdoc cref="ModelLight"/>
     /// </summary>
-    public readonly ChatModel CommandLight = ModelCommandLight;
+    public readonly ChatModel CommandLight = ModelLight;
     
     /// <summary>
     /// Be advised that command-light-nightly is the latest, most experimental, and (possibly) unstable version of its default counterpart. Nightly releases are updated regularly, without warning, and are not recommended for production use.
     /// </summary>
-    public static readonly ChatModel ModelCommandLightNightly = new ChatModel("command-light-nightly", LLmProviders.Cohere, 4_000);
+    public static readonly ChatModel ModelLightNightly = new ChatModel("command-light-nightly", LLmProviders.Cohere, 4_000);
 
     /// <summary>
-    /// <inheritdoc cref="ModelCommandLightNightly"/>
+    /// <inheritdoc cref="ModelLightNightly"/>
     /// </summary>
-    public readonly ChatModel CommandLightNightly = ModelCommandLightNightly;
+    public readonly ChatModel CommandLightNightly = ModelLightNightly;
     
     /// <summary>
     /// All known Coral models from Cohere.
     /// </summary>
     public static readonly List<IModel> ModelsAll =
     [
-        ModelCommandRPlus,
-        ModelCommandNightly,
-        ModelCommand,
-        ModelCommandLight,
-        ModelCommandLightNightly
+        ModelRPlus,
+        ModelNightly,
+        ModelDefault,
+        ModelLight,
+        ModelLightNightly
     ];
 
     /// <summary>
@@ -76,7 +76,7 @@ public class ChatModelCohereClaude3 : IVendorModelClassProvider
     /// </summary>
     public List<IModel> AllModels => ModelsAll;
 
-    internal ChatModelCohereClaude3()
+    internal ChatModelCohereCommand()
     {
 
     }

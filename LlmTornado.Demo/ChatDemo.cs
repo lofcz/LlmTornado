@@ -60,7 +60,7 @@ public static class ChatDemo
     {
         Conversation chat = Program.Connect(LLmProviders.Cohere).Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.Cohere.Claude3.CommandRPlus,
+            Model = ChatModel.Cohere.Command.Default,
             VendorExtensions = new ChatRequestVendorExtensions(new ChatRequestVendorCohereExtensions([
                 ChatVendorCohereExtensionConnector.WebConnector
             ]))
@@ -104,7 +104,7 @@ public static class ChatDemo
     
     public static async Task CohereFunctionsStreamingInteractive()
     {
-        await InternalFunctionsStreamingInteractive(LLmProviders.Cohere, ChatModel.Cohere.Claude3.CommandRPlus);
+        await InternalFunctionsStreamingInteractive(LLmProviders.Cohere, ChatModel.Cohere.Command.Default);
     }
 
     private static async Task InternalFunctionsStreamingInteractive(LLmProviders provider, ChatModel model)
@@ -248,7 +248,7 @@ public static class ChatDemo
                         Console.WriteLine($"Switched to model: {chat.Model.Name}");
                         continue;
                     case "cohere":
-                        chat.Model = ChatModel.Cohere.Claude3.CommandRPlus;
+                        chat.Model = ChatModel.Cohere.Command.Default;
                         Console.WriteLine($"Switched to model: {chat.Model.Name}");
                         continue;
                     case "anthropic":
@@ -320,7 +320,7 @@ public static class ChatDemo
     {
         Conversation chat = Program.Connect(LLmProviders.Cohere).Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.Cohere.Claude3.CommandRPlus,
+            Model = ChatModel.Cohere.Command.Default,
             VendorExtensions = new ChatRequestVendorExtensions(new ChatRequestVendorCohereExtensions([
                 ChatVendorCohereExtensionConnector.WebConnector
             ]))
@@ -402,7 +402,7 @@ public static class ChatDemo
     {
         Conversation chat = Program.Connect(LLmProviders.Cohere).Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.Cohere.Claude3.CommandRPlus
+            Model = ChatModel.Cohere.Command.Default
         });
         chat.AppendSystemMessage("Pretend you are a dog. Sound authentic.");
         chat.AppendUserInput("Who are you?");
@@ -426,7 +426,7 @@ public static class ChatDemo
         [
             ChatModel.OpenAi.Gpt4.Turbo,
             ChatModel.Anthropic.Claude3.Sonnet,
-            ChatModel.Cohere.Claude3.CommandRPlus,
+            ChatModel.Cohere.Command.Default,
             ChatModel.Google.Gemini.Gemini15Flash
         ];
         
@@ -447,7 +447,7 @@ public static class ChatDemo
     {
         Conversation chat = Program.Connect(LLmProviders.Cohere).Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.Cohere.Claude3.CommandRPlus
+            Model = ChatModel.Cohere.Command.Default
         });
         
         chat.AppendSystemMessage("Pretend you are a dog. Sound authentic.");

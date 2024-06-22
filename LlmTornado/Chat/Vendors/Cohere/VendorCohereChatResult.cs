@@ -31,7 +31,7 @@ internal class VendorCohereChatResult : VendorChatResult
     
     public override ChatResult ToChatResult(string? postData)
     {
-        string model = ChatModel.Cohere.Claude3.CommandRPlus;
+        string model = ChatModel.Cohere.Command.Default;
         
         if (postData is not null)
         {

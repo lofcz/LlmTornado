@@ -9,15 +9,15 @@ namespace LlmTornado.Chat.Models;
 public class ChatModelCohere: IVendorModelProvider
 {
     /// <summary>
-    /// Coral models.
+    /// Command models.
     /// </summary>
-    public readonly ChatModelCohereClaude3 Claude3 = new ChatModelCohereClaude3();
+    public readonly ChatModelCohereCommand Command = new ChatModelCohereCommand();
     
     /// <summary>
     /// All known chat models from Cohere.
     /// </summary>
     public List<IModel> AllModels { get; } = [
-        ..ChatModelCohereClaude3.ModelsAll
+        ..ChatModelCohereCommand.ModelsAll
     ];
     
     internal ChatModelCohere()
