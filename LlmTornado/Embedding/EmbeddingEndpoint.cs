@@ -29,7 +29,7 @@ public class EmbeddingEndpoint : EndpointBase
 	protected override CapabilityEndpoints Endpoint => CapabilityEndpoints.Embeddings;
 
 	/// <summary>
-	///     Ask the API to embed text using the default embedding model <see cref="Model.AdaTextEmbedding" />
+	///     Ask the API to embed text using the default embedding model <see cref="Model.AdaTextEmbedding" />.
 	/// </summary>
 	/// <param name="model">Model to be used</param>
 	/// <param name="input">Text to be embedded</param>
@@ -42,24 +42,58 @@ public class EmbeddingEndpoint : EndpointBase
         EmbeddingRequest req = new EmbeddingRequest(model, input);
         return await CreateEmbedding(req);
     }
+	
+	/// <summary>
+	///     Ask the API to embed text using the default embedding model <see cref="Model.AdaTextEmbedding" />.
+	/// </summary>
+	/// <param name="model">Model to be used</param>
+	/// <param name="input">Text to be embedded</param>
+	/// <param name="extensions">Vendor specific extensions. The vendor must much <see cref="model"/></param>
+	/// <returns>
+	///     Asynchronously returns the embedding result. Look in its <see cref="EmbeddingEntry.Embedding" /> property of
+	///     <see cref="EmbeddingResult.Data" /> to find the vector of floating point numbers
+	/// </returns>
+	public async Task<EmbeddingResult?> CreateEmbedding(EmbeddingModel model, string input, EmbeddingRequestVendorExtensions extensions)
+	{
+		EmbeddingRequest req = new EmbeddingRequest(model, input, extensions);
+		return await CreateEmbedding(req);
+	}
 
 	/// <summary>
-	///     Ask the API to embed text using the default embedding model <see cref="Model.AdaTextEmbedding" />
+	///     Ask the API to embed text using the default embedding model <see cref="Model.AdaTextEmbedding" />.
 	/// </summary>
+	/// <param name="model">The model to use</param>
+	/// <param name="input">Text to be embedded</param>
+	/// <param name="extensions">Vendor extensions</param>
+	/// <returns>
+	///     Asynchronously returns the embedding result. Look in its <see cref="EmbeddingEntry.Embedding" /> property of
+	///     <see cref="EmbeddingResult.Data" /> to find the vector of floating point numbers
+	/// </returns>
+	public async Task<EmbeddingResult?> CreateEmbedding(EmbeddingModel model, IEnumerable<string> input, EmbeddingRequestVendorExtensions extensions)
+    {
+	    EmbeddingRequest req = new EmbeddingRequest(model, input, extensions);
+        return await CreateEmbedding(req);
+    }
+	
+	/// <summary>
+	///     Ask the API to embed text using the default embedding model <see cref="Model.AdaTextEmbedding" />.
+	/// </summary>
+	/// <param name="model">The model to use</param>
 	/// <param name="input">Text to be embedded</param>
 	/// <returns>
 	///     Asynchronously returns the embedding result. Look in its <see cref="EmbeddingEntry.Embedding" /> property of
 	///     <see cref="EmbeddingResult.Data" /> to find the vector of floating point numbers
 	/// </returns>
 	public async Task<EmbeddingResult?> CreateEmbedding(EmbeddingModel model, IEnumerable<string> input)
-    {
-	    EmbeddingRequest req = new EmbeddingRequest(model, input);
-        return await CreateEmbedding(req);
-    }
+	{
+		EmbeddingRequest req = new EmbeddingRequest(model, input);
+		return await CreateEmbedding(req);
+	}
 
 	/// <summary>
-	///     Ask the API to embed text using the default embedding model <see cref="Model.AdaTextEmbedding" />
+	///     Ask the API to embed text using the default embedding model <see cref="Model.AdaTextEmbedding" />.
 	/// </summary>
+	/// <param name="model">Text model to use</param>
 	/// <param name="input">Text to be embedded</param>
 	/// <returns>Asynchronously returns the first embedding result as an array of floats.</returns>
 	public async Task<float[]> GetEmbeddings(EmbeddingModel model, string input)
@@ -68,9 +102,23 @@ public class EmbeddingEndpoint : EndpointBase
         EmbeddingResult? embeddingResult = await CreateEmbedding(req);
         return embeddingResult?.Data?[0]?.Embedding ?? [];
     }
+	
+	/// <summary>
+	///     Ask the API to embed text using the default embedding model <see cref="Model.AdaTextEmbedding" />.
+	/// </summary>
+	/// <param name="model">Text model to use</param>
+	/// <param name="input">Text to be embedded</param>
+	/// <param name="extensions">Vendor extensions</param>
+	/// <returns>Asynchronously returns the first embedding result as an array of floats.</returns>
+	public async Task<float[]> GetEmbeddings(EmbeddingModel model, string input, EmbeddingRequestVendorExtensions extensions)
+	{
+		EmbeddingRequest req = new EmbeddingRequest(model, input, extensions);
+		EmbeddingResult? embeddingResult = await CreateEmbedding(req);
+		return embeddingResult?.Data?[0]?.Embedding ?? [];
+	}
 
 	/// <summary>
-	///     Ask the API to embed text using the default embedding model <see cref="Model.AdaTextEmbedding" />
+	///     Ask the API to embed text using the default embedding model <see cref="Model.AdaTextEmbedding" />.
 	/// </summary>
 	/// <param name="input">Text to be embedded</param>
 	/// <returns>Asynchronously returns the first embedding result as an array of floats.</returns>
@@ -80,9 +128,23 @@ public class EmbeddingEndpoint : EndpointBase
         EmbeddingResult? embeddingResult = await CreateEmbedding(req);
         return embeddingResult?.Data.Select(x => x.Embedding).ToList() ?? [];
     }
+	
+	/// <summary>
+	///     Ask the API to embed text using the default embedding model <see cref="Model.AdaTextEmbedding" />.
+	/// </summary>
+	/// <param name="model">The model to use</param>
+	/// <param name="input">Text to be embedded</param>
+	/// <param name="extensions">Vendor extensions</param>
+	/// <returns>Asynchronously returns the first embedding result as an array of floats.</returns>
+	public async Task<List<float[]>> GetEmbeddings(EmbeddingModel model, IEnumerable<string> input, EmbeddingRequestVendorExtensions extensions)
+	{
+		EmbeddingRequest req = new EmbeddingRequest(model, input, extensions);
+		EmbeddingResult? embeddingResult = await CreateEmbedding(req);
+		return embeddingResult?.Data.Select(x => x.Embedding).ToList() ?? [];
+	}
 
 	/// <summary>
-	///     Ask the API to embed text using a custom request
+	///     Ask the API to embed text using a custom request.
 	/// </summary>
 	/// <param name="request">Request to be sent</param>
 	/// <returns>

@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using LlmTornado.Code;
 using LlmTornado.Embedding.Models;
+using LlmTornado.Embedding.Vendors.Cohere;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Embedding.Vendors.OpenAi;
@@ -39,6 +40,21 @@ internal class VendorCohereEmbeddingRequest
     /// </summary>
     [JsonProperty("truncate")]
     internal string? Truncate { get; set; }
+
+    private static readonly Dictionary<EmbeddingVendorCohereExtensionInputTypes, string> inputTypesMap = new Dictionary<EmbeddingVendorCohereExtensionInputTypes, string>
+    {
+        { EmbeddingVendorCohereExtensionInputTypes.SearchDocument, "search_document" },
+        { EmbeddingVendorCohereExtensionInputTypes.SearchQuery, "search_query" },
+        { EmbeddingVendorCohereExtensionInputTypes.Classification, "classification" },
+        { EmbeddingVendorCohereExtensionInputTypes.Clustering, "clustering" }
+    };
+    
+    private static readonly Dictionary<EmbeddingVendorCohereExtensionTruncation, string> truncateMap = new Dictionary<EmbeddingVendorCohereExtensionTruncation, string>
+    {
+        { EmbeddingVendorCohereExtensionTruncation.None, "NONE" },
+        { EmbeddingVendorCohereExtensionTruncation.Start, "START" },
+        { EmbeddingVendorCohereExtensionTruncation.End, "END" }
+    };
     
     public VendorCohereEmbeddingRequest(EmbeddingRequest request, IEndpointProvider provider)
     {
@@ -55,9 +71,17 @@ internal class VendorCohereEmbeddingRequest
             ];
         }
 
-        if (EmbeddingModel.Cohere.Gen3.OwnsModel(request.Model.Name))
+        InputType = request.VendorExtensions?.Cohere is not null ? inputTypesMap.GetValueOrDefault(request.VendorExtensions.Cohere.InputType, "search_document") : "search_document";
+
+        if (request.VendorExtensions?.Cohere is not null)
         {
-            InputType = "search_document";
+            if (request.VendorExtensions.Cohere.Truncate is not null)
+            {
+                if (truncateMap.TryGetValue(request.VendorExtensions.Cohere.Truncate.Value, out string? str))
+                {
+                    Truncate = str;
+                }
+            }
         }
     }
 }

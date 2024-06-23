@@ -2,17 +2,17 @@ using System.Collections.Generic;
 using LlmTornado.Chat.Models;
 using LlmTornado.Code.Models;
 
-namespace LlmTornado.Embedding.Models.Anthropic;
+namespace LlmTornado.Embedding.Models.Voyage;
 
 /// <summary>
-/// Known embedding models from Anthropic.
+/// Known embedding models from Voyage.
 /// </summary>
-public class EmbeddingModelAnthropic : BaseVendorModelProvider
+public class EmbeddingModelVoyage : BaseVendorModelProvider
 {
     /// <summary>
     /// Voyage 2 models.
     /// </summary>
-    public readonly EmbeddingModelAnthropicVoyage2 Voyage2 = new EmbeddingModelAnthropicVoyage2();
+    public readonly EmbeddingModelVoyageGen2 Gen2 = new EmbeddingModelVoyageGen2();
     
     /// <summary>
     /// All known embedding models from Antjropic.
@@ -38,10 +38,10 @@ public class EmbeddingModelAnthropic : BaseVendorModelProvider
     /// <inheritdoc cref="AllModels"/>
     /// </summary>
     public static readonly List<IModel> ModelsAll = [
-        ..EmbeddingModelAnthropicVoyage2.ModelsAll
+        ..EmbeddingModelVoyageGen2.ModelsAll
     ];
     
-    static EmbeddingModelAnthropic()
+    static EmbeddingModelVoyage()
     {
         ModelsAll.ForEach(x =>
         {
@@ -49,7 +49,7 @@ public class EmbeddingModelAnthropic : BaseVendorModelProvider
         });
     }
     
-    internal EmbeddingModelAnthropic()
+    internal EmbeddingModelVoyage()
     {
         AllModels = ModelsAll;
     }

@@ -41,6 +41,28 @@ public class EmbeddingRequest
         InputScalar = input;
         Dimensions = dimensions;
     }
+	
+	/// <summary>
+	///     Creates a new <see cref="EmbeddingRequest" /> with the specified parameters
+	/// </summary>
+	/// <param name="model">
+	///     The model to use. You can use <see cref="ModelsEndpoint.GetModelsAsync()" /> to see all of your
+	///     available models, or use a standard model like <see cref="Model.TextEmbedding3Small" />,
+	///     <see cref="Model.TextEmbedding3Large" /> or (legacy) <see cref="Model.AdaTextEmbedding" />.
+	/// </param>
+	/// <param name="input">The prompt to transform</param>
+	/// <param name="dimensions">
+	///     The dimensions length to return. The maximum value is the size supported by model. This is
+	///     only supported in newer embedding models.
+	/// </param>
+	/// <param name="extensions">Vendor extensions</param>
+	public EmbeddingRequest(EmbeddingModel model, string input, int dimensions, EmbeddingRequestVendorExtensions extensions)
+	{
+		Model = model;
+		InputScalar = input;
+		Dimensions = dimensions;
+		VendorExtensions = extensions;
+	}
 
 	/// <summary>
 	///     Creates a new <see cref="EmbeddingRequest" /> with the specified input and the
@@ -60,10 +82,38 @@ public class EmbeddingRequest
 	/// </summary>
 	/// <param name="model">The model to use</param>
 	/// <param name="input">The prompt to transform</param>
+	/// <param name="extensions">Vendor extensions</param>
+	public EmbeddingRequest(EmbeddingModel model, string input, EmbeddingRequestVendorExtensions extensions)
+	{
+		Model = model;
+		InputScalar = input;
+		VendorExtensions = extensions;
+	}
+	
+	/// <summary>
+	///     Creates a new <see cref="EmbeddingRequest" /> with the specified input and the
+	///     <see cref="Model.AdaTextEmbedding" /> model.
+	/// </summary>
+	/// <param name="model">The model to use</param>
+	/// <param name="input">The prompt to transform</param>
 	public EmbeddingRequest(EmbeddingModel model, IEnumerable<string> input)
 	{
 		Model = model;
 		InputVector = input;
+	}
+	
+	/// <summary>
+	///     Creates a new <see cref="EmbeddingRequest" /> with the specified input and the
+	///     <see cref="Model.AdaTextEmbedding" /> model.
+	/// </summary>
+	/// <param name="model">The model to use</param>
+	/// <param name="input">The prompt to transform</param>
+	/// <param name="extensions">Vendor extensions</param>
+	public EmbeddingRequest(EmbeddingModel model, IEnumerable<string> input, EmbeddingRequestVendorExtensions extensions)
+	{
+		Model = model;
+		InputVector = input;
+		VendorExtensions = extensions;
 	}
 	
 	/// <summary>
@@ -79,6 +129,22 @@ public class EmbeddingRequest
 		InputVector = input;
 		Dimensions = dimensions;
 	}
+	
+	/// <summary>
+	///     Creates a new <see cref="EmbeddingRequest" /> with the specified input and the
+	///     <see cref="Model.AdaTextEmbedding" /> model.
+	/// </summary>
+	/// <param name="model">The model to use</param>
+	/// <param name="input">The prompt to transform</param>
+	/// <param name="dimensions">Output dimensions</param>
+	/// <param name="extensions">Vendor extensions</param>
+	public EmbeddingRequest(EmbeddingModel model, IEnumerable<string> input, int dimensions, EmbeddingRequestVendorExtensions extensions)
+	{
+		Model = model;
+		InputVector = input;
+		Dimensions = dimensions;
+		VendorExtensions = extensions;
+	}
 
 	/// <summary>
 	///     Model to use.
@@ -87,6 +153,12 @@ public class EmbeddingRequest
 	[JsonConverter(typeof(ModelJsonConverter))]
     public EmbeddingModel Model { get; set; }
 
+	/// <summary>
+	///		Features supported only by a single/few providers with no shared equivalent.
+	/// </summary>
+	[JsonIgnore]
+	public EmbeddingRequestVendorExtensions? VendorExtensions { get; set; }
+	
 	/// <summary>
 	///     Main text to be embedded
 	/// </summary>

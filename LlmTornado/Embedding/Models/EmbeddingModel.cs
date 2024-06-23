@@ -2,10 +2,10 @@ using System.Collections.Generic;
 using LlmTornado.Chat.Models;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
-using LlmTornado.Embedding.Models.Anthropic;
 using LlmTornado.Embedding.Models.Cohere;
 using LlmTornado.Embedding.Models.Google;
 using LlmTornado.Embedding.Models.OpenAi;
+using LlmTornado.Embedding.Models.Voyage;
 using LlmTornado.Models;
 
 namespace LlmTornado.Embedding.Models;
@@ -21,9 +21,9 @@ public class EmbeddingModel : ModelEmbeddingBase
     public static readonly EmbeddingModelOpenAi OpenAi = new EmbeddingModelOpenAi();
 
     /// <summary>
-    /// Models from Anthropic.
+    /// Models from Voyage.
     /// </summary>
-    public static readonly EmbeddingModelAnthropic Anthropic = new EmbeddingModelAnthropic();
+    public static readonly EmbeddingModelVoyage Voyage = new EmbeddingModelVoyage();
     
     /// <summary>
     /// Models from Cohere.
@@ -49,7 +49,7 @@ public class EmbeddingModel : ModelEmbeddingBase
     {
         AllModels = [
             ..OpenAi.AllModels,
-            ..Anthropic.AllModels,
+            ..Voyage.AllModels,
             ..Cohere.AllModels,
             ..Google.AllModels
         ];

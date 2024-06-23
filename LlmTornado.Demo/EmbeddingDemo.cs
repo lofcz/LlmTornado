@@ -1,5 +1,6 @@
 using LlmTornado.Embedding;
 using LlmTornado.Embedding.Models;
+using LlmTornado.Embedding.Vendors.Cohere;
 
 namespace LlmTornado.Demo;
 
@@ -28,6 +29,50 @@ public static class EmbeddingDemo
     public static async Task EmbedCohere()
     {
         EmbeddingResult? result = await Program.ConnectMulti().Embeddings.CreateEmbedding(EmbeddingModel.Cohere.Gen3.Multilingual, "lorem ipsum");
+        Console.WriteLine($"Count: {result?.Data.Count ?? 0}, dims: {result?.Data.FirstOrDefault()?.Embedding.Length ?? 0}");
+        
+        if (result is not null)
+        {
+            for (int i = 0; i < 10; i++)
+            {
+                Console.WriteLine(result.Data[0].Embedding[i]);
+            }
+            
+            Console.WriteLine("...");
+        }
+    }
+    
+    public static async Task EmbedCohereExtensions()
+    {
+        foreach (EmbeddingVendorCohereExtensionInputTypes mode in Enum.GetValues<EmbeddingVendorCohereExtensionInputTypes>())
+        {
+            EmbeddingResult? result = await Program.ConnectMulti().Embeddings.CreateEmbedding(EmbeddingModel.Cohere.Gen3.Multilingual, "lorem ipsum", new EmbeddingRequestVendorExtensions
+            {
+                Cohere = new EmbeddingRequestVendorCohereExtensions
+                {
+                    InputType = mode,
+                    Truncate = EmbeddingVendorCohereExtensionTruncation.End
+                }
+            });
+            
+            Console.WriteLine($"Mode: {mode}");
+            Console.WriteLine($"Count: {result?.Data.Count ?? 0}, dims: {result?.Data.FirstOrDefault()?.Embedding.Length ?? 0}");
+        
+            if (result is not null)
+            {
+                for (int i = 0; i < 10; i++)
+                {
+                    Console.WriteLine(result.Data[0].Embedding[i]);
+                }
+            
+                Console.WriteLine("...");
+            }   
+        }
+    }
+    
+    public static async Task EmbedCohereVector()
+    {
+        EmbeddingResult? result = await Program.ConnectMulti().Embeddings.CreateEmbedding(EmbeddingModel.Cohere.Gen3.Multilingual, [ "lorem ipsum", "dolor sit amet" ]);
         Console.WriteLine($"Count: {result?.Data.Count ?? 0}, dims: {result?.Data.FirstOrDefault()?.Embedding.Length ?? 0}");
         
         if (result is not null)

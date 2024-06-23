@@ -77,6 +77,8 @@ public enum Demos
     EmbeddingOpenAiScalar,
     EmbeddingOpenAiVector,
     EmbeddingCohereScalar,
+    EmbeddingCohereVector,
+    EmbeddingCohereScalarExtensions,
     Last
 }
 
@@ -207,6 +209,8 @@ public class Program
             Demos.EmbeddingOpenAiScalar => EmbeddingDemo.Embed,
             Demos.EmbeddingOpenAiVector => EmbeddingDemo.EmbedVector,
             Demos.EmbeddingCohereScalar => EmbeddingDemo.EmbedCohere,
+            Demos.EmbeddingCohereVector => EmbeddingDemo.EmbedCohereVector,
+            Demos.EmbeddingCohereScalarExtensions => EmbeddingDemo.EmbedCohereExtensions,
             _ => null
         };
 

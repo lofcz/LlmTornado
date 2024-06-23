@@ -3,12 +3,12 @@ using LlmTornado.Code;
 using LlmTornado.Code.Models;
 using LlmTornado.Embedding.Models;
 
-namespace LlmTornado.Embedding.Models.Anthropic;
+namespace LlmTornado.Embedding.Models.Voyage;
 
 /// <summary>
-/// Voyage 2 embedding models from Anthropic.
+/// Voyage 2 embedding models from Voyage.
 /// </summary>
-public class EmbeddingModelAnthropicVoyage2 : BaseVendorModelProvider
+public class EmbeddingModelVoyageGen2 : BaseVendorModelProvider
 {
     /// <summary>
     /// Voyage AI’s most powerful generalist embedding model.
@@ -80,7 +80,7 @@ public class EmbeddingModelAnthropicVoyage2 : BaseVendorModelProvider
         ModelLiteInstruct
     ];
 
-    static EmbeddingModelAnthropicVoyage2()
+    static EmbeddingModelVoyageGen2()
     {
         ModelsAll.ForEach(x =>
         {
@@ -88,7 +88,7 @@ public class EmbeddingModelAnthropicVoyage2 : BaseVendorModelProvider
         });
     }
     
-    internal EmbeddingModelAnthropicVoyage2()
+    internal EmbeddingModelVoyageGen2()
     {
         AllModels = ModelsAll;
     }
