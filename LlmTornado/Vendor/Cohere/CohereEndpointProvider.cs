@@ -9,6 +9,7 @@ using LlmTornado.Chat;
 using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Chat.Vendors.Cohere;
 using LlmTornado.ChatFunctions;
+using LlmTornado.Embedding;
 using LlmTornado.Vendor.Anthropic;
 using Newtonsoft.Json;
 
@@ -103,6 +104,7 @@ internal class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider,
         string eStr = endpoint switch
         {
             CapabilityEndpoints.Chat => "chat",
+            CapabilityEndpoints.Embeddings => "embed",
             _ => throw new Exception($"Cohere doesn't support endpoint {endpoint}")
         };
 
@@ -433,14 +435,27 @@ internal class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider,
     {
         res.Provider = this;
     }
+
+    private static readonly Dictionary<Type, Func<string, string?, object?>> inboundMessageHandlers = new Dictionary<Type, Func<string, string?, object?>>
+    {
+        { typeof(ChatResult), (jsonData, postData) => ChatResult.Deserialize(LLmProviders.Cohere, jsonData, postData) },
+        { typeof(EmbeddingResult), (jsonData, postData) => EmbeddingResult.Deserialize(LLmProviders.Cohere, jsonData, postData) }
+    };
     
     public override T? InboundMessage<T>(string jsonData, string? postData) where T : default
     {
-        if (typeof(T) == typeof(ChatResult))
+        if (inboundMessageHandlers.TryGetValue(typeof(T), out Func<string, string?, object?>? fn))
         {
-            return (T?)(dynamic)ChatResult.Deserialize(LLmProviders.Cohere, jsonData, postData);
+            object? result = fn.Invoke(jsonData, postData);
+
+            if (result is null)
+            {
+                return default;
+            }
+
+            return (dynamic)result;
         }
-        
-        return JsonConvert.DeserializeObject<T>(jsonData);
+
+        return default;
     }
 }

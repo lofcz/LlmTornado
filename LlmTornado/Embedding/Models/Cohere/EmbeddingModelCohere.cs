@@ -1,25 +1,26 @@
 using System.Collections.Generic;
+using LlmTornado.Chat.Models;
 using LlmTornado.Code.Models;
 
-namespace LlmTornado.Chat.Models;
+namespace LlmTornado.Embedding.Models.Cohere;
 
 /// <summary>
-/// Known chat models from Anthropic.
+/// Known embedding models from Cohere.
 /// </summary>
-public class ChatModelAnthropic : BaseVendorModelProvider
+public class EmbeddingModelCohere : BaseVendorModelProvider
 {
     /// <summary>
-    /// Claude 3 models.
+    /// Generation 2 models.
     /// </summary>
-    public readonly ChatModelAnthropicClaude3 Claude3 = new ChatModelAnthropicClaude3();
+    public readonly EmbeddingModelCohereGen2 Gen2 = new EmbeddingModelCohereGen2();
     
     /// <summary>
-    /// Claude 3.5 models.
+    /// Generation 2 models.
     /// </summary>
-    public readonly ChatModelAnthropicClaude35 Claude35 = new ChatModelAnthropicClaude35();
+    public readonly EmbeddingModelCohereGen3 Gen3 = new EmbeddingModelCohereGen3();
     
     /// <summary>
-    /// All known chat models from Anthropic.
+    /// All known embedding models from Cohere.
     /// </summary>
     public override List<IModel> AllModels { get; }
     
@@ -42,11 +43,11 @@ public class ChatModelAnthropic : BaseVendorModelProvider
     /// <inheritdoc cref="AllModels"/>
     /// </summary>
     public static readonly List<IModel> ModelsAll = [
-        ..ChatModelAnthropicClaude3.ModelsAll,
-        ..ChatModelAnthropicClaude35.ModelsAll
+        ..EmbeddingModelCohereGen2.ModelsAll,
+        ..EmbeddingModelCohereGen3.ModelsAll
     ];
-    
-    static ChatModelAnthropic()
+
+    static EmbeddingModelCohere()
     {
         ModelsAll.ForEach(x =>
         {
@@ -54,7 +55,7 @@ public class ChatModelAnthropic : BaseVendorModelProvider
         });
     }
     
-    internal ChatModelAnthropic()
+    internal EmbeddingModelCohere()
     {
         AllModels = ModelsAll;
     }

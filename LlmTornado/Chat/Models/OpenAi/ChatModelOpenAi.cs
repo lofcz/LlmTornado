@@ -6,7 +6,7 @@ namespace LlmTornado.Chat.Models;
 /// <summary>
 /// Known chat models from OpenAI.
 /// </summary>
-public class ChatModelOpenAi : IVendorModelProvider
+public class ChatModelOpenAi : BaseVendorModelProvider
 {
     /// <summary>
     /// GPT 3.5 (Turbo) models.
@@ -21,18 +21,41 @@ public class ChatModelOpenAi : IVendorModelProvider
     /// <summary>
     /// All known chat models from OpenAI.
     /// </summary>
+    public override List<IModel> AllModels { get; }
+    
+    /// <summary>
+    /// Checks whether the model is owned by the provider.
+    /// </summary>
+    /// <param name="model"></param>
+    /// <returns></returns>
+    public override bool OwnsModel(string model)
+    {
+        return AllModelsMap.Contains(model);
+    }
+
+    /// <summary>
+    /// Map of models owned by the provider.
+    /// </summary>
+    public static readonly HashSet<string> AllModelsMap = [];
+    
+    /// <summary>
+    /// <inheritdoc cref="AllModels"/>
+    /// </summary>
     public static readonly List<IModel> ModelsAll = [
         ..ChatModelOpenAiGpt35.ModelsAll,
         ..ChatModelOpenAiGpt4.ModelsAll
     ];
-
-    /// <summary>
-    /// <inheritdoc cref="ModelsAll"/>
-    /// </summary>
-    public List<IModel> AllModels => ModelsAll;
+    
+    static ChatModelOpenAi()
+    {
+        ModelsAll.ForEach(x =>
+        {
+            AllModelsMap.Add(x.Name);
+        });
+    }
     
     internal ChatModelOpenAi()
     {
-        
+        AllModels = ModelsAll;
     }
 }

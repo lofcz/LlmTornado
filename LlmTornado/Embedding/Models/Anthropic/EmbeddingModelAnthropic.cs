@@ -1,25 +1,21 @@
 using System.Collections.Generic;
+using LlmTornado.Chat.Models;
 using LlmTornado.Code.Models;
 
-namespace LlmTornado.Chat.Models;
+namespace LlmTornado.Embedding.Models.Anthropic;
 
 /// <summary>
-/// Known chat models from Anthropic.
+/// Known embedding models from Anthropic.
 /// </summary>
-public class ChatModelAnthropic : BaseVendorModelProvider
+public class EmbeddingModelAnthropic : BaseVendorModelProvider
 {
     /// <summary>
-    /// Claude 3 models.
+    /// Voyage 2 models.
     /// </summary>
-    public readonly ChatModelAnthropicClaude3 Claude3 = new ChatModelAnthropicClaude3();
+    public readonly EmbeddingModelAnthropicVoyage2 Voyage2 = new EmbeddingModelAnthropicVoyage2();
     
     /// <summary>
-    /// Claude 3.5 models.
-    /// </summary>
-    public readonly ChatModelAnthropicClaude35 Claude35 = new ChatModelAnthropicClaude35();
-    
-    /// <summary>
-    /// All known chat models from Anthropic.
+    /// All known embedding models from Antjropic.
     /// </summary>
     public override List<IModel> AllModels { get; }
     
@@ -42,11 +38,10 @@ public class ChatModelAnthropic : BaseVendorModelProvider
     /// <inheritdoc cref="AllModels"/>
     /// </summary>
     public static readonly List<IModel> ModelsAll = [
-        ..ChatModelAnthropicClaude3.ModelsAll,
-        ..ChatModelAnthropicClaude35.ModelsAll
+        ..EmbeddingModelAnthropicVoyage2.ModelsAll
     ];
     
-    static ChatModelAnthropic()
+    static EmbeddingModelAnthropic()
     {
         ModelsAll.ForEach(x =>
         {
@@ -54,7 +49,7 @@ public class ChatModelAnthropic : BaseVendorModelProvider
         });
     }
     
-    internal ChatModelAnthropic()
+    internal EmbeddingModelAnthropic()
     {
         AllModels = ModelsAll;
     }

@@ -18,9 +18,8 @@ using LlmTornado.Code.Vendor;
 namespace LlmTornado.Chat;
 
 /// <summary>
-///     Represents on ongoing chat with back-and-forth interactions between the user and the chatbot.  This is the simplest
-///     way to interact with the ChatGPT API, rather than manually using the ChatEnpoint methods.  You do lose some
-///     flexibility though.
+///     Represents on ongoing chat with back-and-forth interactions between the user and the chatbot.
+///     This is the simplest way to interact with the Chat APIs, rather than manually using the ChatEndpoint methods.
 /// </summary>
 public class Conversation
 {
@@ -35,18 +34,18 @@ public class Conversation
     private readonly List<ChatMessage> messages;
 
     /// <summary>
-    ///     Creates a new conversation with ChatGPT chat
+    ///     Creates a new conversation.
     /// </summary>
     /// <param name="endpoint">
-    ///     A reference to the API endpoint, needed for API requests.  Generally should be
+    ///     A reference to the API endpoint, needed for API requests. Generally should be
     ///     <see cref="TornadoApi.Chat" />.
     /// </param>
     /// <param name="model">
-    ///     Optionally specify the model to use for ChatGPT requests.  If not specified, used
+    ///     Optionally specify the model to use for Chat requests. If not specified, used
     ///     <paramref name="defaultChatRequestArgs" />.Model or falls back to <see cref="LlmTornado.Models.Model.GPT35_Turbo" />
     /// </param>
     /// <param name="defaultChatRequestArgs">
-    ///     Allows setting the parameters to use when calling the ChatGPT API.  Can be useful for setting temperature,
+    ///     Allows setting the parameters to use when calling the Chat API. Can be useful for setting temperature,
     ///     presence_penalty, and more.  See
     ///     <see href="https://platform.openai.com/docs/api-reference/chat/create">
     ///         OpenAI documentation for a list of possible
@@ -71,7 +70,7 @@ public class Conversation
     }
 
     /// <summary>
-    ///     Allows setting the parameters to use when calling the ChatGPT API.  Can be useful for setting temperature,
+    ///     Allows setting the parameters to use when calling the Chat API. Can be useful for setting temperature,
     ///     presence_penalty, and more.
     ///     <see href="https://platform.openai.com/docs/api-reference/chat/create">
     ///         Se  OpenAI documentation for a list of
@@ -81,7 +80,7 @@ public class Conversation
     public ChatRequest RequestParameters { get; }
 
     /// <summary>
-    ///     Specifies the model to use for ChatGPT requests.  This is just a shorthand to access
+    ///     Specifies the model to use for Chat requests. This is just a shorthand to access
     ///     <see cref="RequestParameters" />.Model
     /// </summary>
     public ChatModel Model
@@ -953,9 +952,15 @@ public class Conversation
 
         await foreach (ChatResult res in endpoint.StreamChatEnumerableAsync(req))
         {
-            if (res.Choices is null) yield break;
+            if (res.Choices is null)
+            {
+                yield break;
+            }
 
-            if (res.Choices.Count <= 0) yield break;
+            if (res.Choices.Count <= 0)
+            {
+                yield break;
+            }
 
             if (res.Choices[0].Delta is { } delta)
             {

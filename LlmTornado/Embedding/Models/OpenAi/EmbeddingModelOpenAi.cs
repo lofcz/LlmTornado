@@ -1,28 +1,29 @@
 using System.Collections.Generic;
+using LlmTornado.Chat.Models;
 using LlmTornado.Code.Models;
 
-namespace LlmTornado.Chat.Models;
+namespace LlmTornado.Embedding.Models.OpenAi;
 
 /// <summary>
-/// Known chat models from Anthropic.
+/// Known embedding models from OpenAI.
 /// </summary>
-public class ChatModelAnthropic : BaseVendorModelProvider
+public class EmbeddingModelOpenAi : BaseVendorModelProvider
 {
     /// <summary>
-    /// Claude 3 models.
+    /// Generation 2 models (Ada).
     /// </summary>
-    public readonly ChatModelAnthropicClaude3 Claude3 = new ChatModelAnthropicClaude3();
-    
+    public readonly EmbeddingModelOpenAiGen2 Gen2 = new EmbeddingModelOpenAiGen2();
+
     /// <summary>
-    /// Claude 3.5 models.
+    /// Generation 3 models.
     /// </summary>
-    public readonly ChatModelAnthropicClaude35 Claude35 = new ChatModelAnthropicClaude35();
-    
+    public readonly EmbeddingModelOpenAiGen3 Gen3 = new EmbeddingModelOpenAiGen3();
+
     /// <summary>
-    /// All known chat models from Anthropic.
+    /// All known embedding models from OpenAI.
     /// </summary>
     public override List<IModel> AllModels { get; }
-    
+
     /// <summary>
     /// Checks whether the model is owned by the provider.
     /// </summary>
@@ -42,19 +43,19 @@ public class ChatModelAnthropic : BaseVendorModelProvider
     /// <inheritdoc cref="AllModels"/>
     /// </summary>
     public static readonly List<IModel> ModelsAll = [
-        ..ChatModelAnthropicClaude3.ModelsAll,
-        ..ChatModelAnthropicClaude35.ModelsAll
+        ..EmbeddingModelOpenAiGen2.ModelsAll,
+        ..EmbeddingModelOpenAiGen3.ModelsAll
     ];
     
-    static ChatModelAnthropic()
+    static EmbeddingModelOpenAi()
     {
         ModelsAll.ForEach(x =>
         {
             AllModelsMap.Add(x.Name);
         });
     }
-    
-    internal ChatModelAnthropic()
+
+    internal EmbeddingModelOpenAi()
     {
         AllModels = ModelsAll;
     }

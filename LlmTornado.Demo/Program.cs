@@ -74,6 +74,9 @@ public enum Demos
     ChatGoogle,
     ChatGoogleFunctions,
     ChatGoogleStream,
+    EmbeddingOpenAiScalar,
+    EmbeddingOpenAiVector,
+    EmbeddingCohereScalar,
     Last
 }
 
@@ -201,6 +204,9 @@ public class Program
             Demos.ChatGoogle => ChatDemo.Google,
             Demos.ChatGoogleFunctions => ChatDemo.GoogleFunctions,
             Demos.ChatGoogleStream => ChatDemo.GoogleStream,
+            Demos.EmbeddingOpenAiScalar => EmbeddingDemo.Embed,
+            Demos.EmbeddingOpenAiVector => EmbeddingDemo.EmbedVector,
+            Demos.EmbeddingCohereScalar => EmbeddingDemo.EmbedCohere,
             _ => null
         };
 

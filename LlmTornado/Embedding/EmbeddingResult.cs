@@ -1,5 +1,11 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using LlmTornado.Chat;
+using LlmTornado.Chat.Vendors.Anthropic;
+using LlmTornado.Chat.Vendors.Cohere;
+using LlmTornado.Code;
+using LlmTornado.Embedding.Vendors.Cohere;
+using LlmTornado.Vendor.Anthropic;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Embedding;
@@ -13,7 +19,7 @@ public class EmbeddingResult : ApiResultBase
 	///     List of results of the embedding
 	/// </summary>
 	[JsonProperty("data")]
-    public List<Data> Data { get; set; }
+	public List<EmbeddingEntry> Data { get; set; } = [];
 
 	/// <summary>
 	///     Usage statistics of how many tokens have been used for this request
@@ -21,6 +27,18 @@ public class EmbeddingResult : ApiResultBase
 	[JsonProperty("usage")]
     public Usage Usage { get; set; }
 
+	internal static EmbeddingResult? Deserialize(LLmProviders provider, string jsonData, string? postData)
+	{
+		return provider switch
+		{
+			LLmProviders.OpenAi => JsonConvert.DeserializeObject<EmbeddingResult>(jsonData),
+			//LLmProviders.Anthropic => JsonConvert.DeserializeObject<VendorAnthropicChatResult>(jsonData)?.ToChatResult(postData),
+			LLmProviders.Cohere => JsonConvert.DeserializeObject<VendorCohereEmbeddingResult>(jsonData)?.ToResult(postData),
+			//LLmProviders.Google => JsonConvert.DeserializeObject<VendorGoogleChatResult>(jsonData)?.ToChatResult(postData),
+			_ => JsonConvert.DeserializeObject<EmbeddingResult>(jsonData)
+		};
+	}
+	
 	/// <summary>
 	///     Allows an EmbeddingResult to be implicitly cast to the array of floats repsresenting the first ebmedding result
 	/// </summary>
@@ -32,24 +50,36 @@ public class EmbeddingResult : ApiResultBase
 }
 
 /// <summary>
+///		Billed units for the embedding request.
+/// </summary>
+public class EmbeddingUsage : Usage
+{
+	internal EmbeddingUsage(VendorCohereUsage usage)
+	{
+		PromptTokens = usage.BilledUnits.InputTokens;
+		TotalTokens = PromptTokens;
+	}
+}
+
+/// <summary>
 ///     Data returned from the Embedding API.
 /// </summary>
-public class Data
+public class EmbeddingEntry
 {
 	/// <summary>
-	///     Type of the response. In case of Data, this will be "embedding"
+	///     Type of the response.
 	/// </summary>
 	[JsonProperty("object")]
-    public string Object { get; set; }
+    public string? Object { get; set; }
 
 	/// <summary>
-	///     The input text represented as a vector (list) of floating point numbers
+	///     The input text represented as a vector (list) of floating point numbers.
 	/// </summary>
 	[JsonProperty("embedding")]
     public float[] Embedding { get; set; }
 
 	/// <summary>
-	///     Index
+	///     Index.
 	/// </summary>
 	[JsonProperty("index")]
     public int Index { get; set; }

@@ -23,5 +23,7 @@ internal class VendorCohereUsage
     [JsonProperty("billed_units")]
     public VendorCohereUsageTokens BilledUnits { get; set; }
     [JsonProperty("tokens")]
-    public VendorCohereUsageTokens Tokens { get; set; }
+    public VendorCohereUsageTokens? Tokens { get; set; }
+    [JsonProperty("response_type")]
+    public string? ResponseType { get; set; }
 }

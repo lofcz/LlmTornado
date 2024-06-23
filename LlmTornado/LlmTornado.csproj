@@ -44,4 +44,8 @@
         <PackageReference Include="Enums.NET" Version="5.0.0" />
         <PackageReference Include="Newtonsoft.Json" Version="13.0.3"/>
     </ItemGroup>
+    <ItemGroup>
+      <Folder Include="Embedding\Vendors\Anthropic\" />
+      <Folder Include="Embedding\Vendors\Google\" />
+    </ItemGroup>
 </Project>

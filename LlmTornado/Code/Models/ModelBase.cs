@@ -26,9 +26,39 @@ public interface IModel
     public LLmProviders Provider { get; }
 }
 
+/// <summary>
+/// Shared base class for vendor model providers.
+/// </summary>
+public abstract class BaseVendorModelProvider : IVendorModelProvider
+{
+    /// <summary>
+    /// All models owned by the provider.
+    /// </summary>
+    public abstract List<IModel> AllModels { get; }
+
+    /// <summary>
+    /// Checks whether the vendor owns given model.
+    /// </summary>
+    /// <param name="model"></param>
+    /// <returns></returns>
+    public bool OwnsModel(IModel model)
+    {
+        return OwnsModel(model.Name);
+    }
+
+    /// <summary>
+    /// Checks whether the vendor owns given model.
+    /// </summary>
+    /// <param name="model"></param>
+    /// <returns></returns>
+    public abstract bool OwnsModel(string model);
+}
+
 interface IVendorModelProvider
 {
     public List<IModel> AllModels { get; }
+    public bool OwnsModel(IModel model);
+    public bool OwnsModel(string model);
 }
 
 interface IVendorModelClassProvider
@@ -93,11 +123,23 @@ public abstract class ModelBase : IModel
     public int? ContextTokens { get; set; }
 
     /// <summary>
-    ///     Allows an model to be implicitly cast to the string of its <see cref="Name" />
+    ///     Allows a model to be implicitly cast to the string of its <see cref="Name" />
     /// </summary>
     /// <param name="model">The <see cref="Model" /> to cast to a string.</param>
     public static implicit operator string(ModelBase model)
     {
         return model.Name;
     }
+}
+
+/// <summary>
+///     Shared base for embedding models.
+/// </summary>
+public abstract class ModelEmbeddingBase : ModelBase
+{
+    /// <summary>
+    ///     The length of the output vector.
+    /// </summary>
+    [JsonIgnore]
+    public int? OutputDimensions { get; set; } 
 }
