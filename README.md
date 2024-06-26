@@ -43,7 +43,7 @@ List<ChatModel> models =
     ChatModel.OpenAi.Gpt4.Turbo,
     ChatModel.Anthropic.Claude3.Sonnet,
     ChatModel.Cohere.Claude3.CommandRPlus,
-    ChatModels.Google.Gemini.Gemini15Flash
+    ChatModel.Google.Gemini.Gemini15Flash
 ];
 
 foreach (ChatModel model in models)
