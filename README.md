@@ -1,11 +1,11 @@
 [![LlmTornado](https://badgen.net/nuget/v/LlmTornado?v=301)](https://www.nuget.org/packages/LlmTornado)
 
-# 🌪️ LLM Tornado - one .NET library to consume OpenAI, Anthropic, Cohere, Google, Azure, and self-hosted APIs.
+# 🌪️ LLM Tornado - one .NET library to consume OpenAI, Anthropic, Cohere, Google, Azure, Groq, and self-hosted APIs.
 
 Each month at least one new large language model is released. Would it be awesome if using the new model was as easy as switching one argument?
 LLM Tornado acts as an aggregator allowing you to do just that. Think [SearX](https://github.com/searxng/searxng) but for LLMs!
 
-OpenAI, Anthropic, Cohere, Google and Azure are currently supported along with [KoboldCpp](https://github.com/LostRuins/koboldcpp) and [Ollama](https://github.com/ollama/ollama).
+OpenAI, Anthropic, Cohere, Google, Azure, and Groq (LLama 3, Mixtral, Gemma 2..) are currently supported along with [KoboldCpp](https://github.com/LostRuins/koboldcpp) and [Ollama](https://github.com/ollama/ollama).
 
 The following video captures **one conversation**, running across OpenAI, Cohere, and Anthropic, with parallel tools calling & streaming: 
 
@@ -35,7 +35,8 @@ TornadoApi api = new TornadoApi(new List<ProviderAuthentication>
     new ProviderAuthentication(LLmProviders.OpenAi, "OPEN_AI_KEY"),
     new ProviderAuthentication(LLmProviders.Anthropic, "ANTHROPIC_KEY"),
     new ProviderAuthentication(LLmProviders.Cohere, "COHERE_KEY"),
-    new ProviderAuthentication(LLmProviders.Google, "GOOGLE_KEY")
+    new ProviderAuthentication(LLmProviders.Google, "GOOGLE_KEY"),
+    new ProviderAuthentication(LLmProviders.Groq, "GROQ_KEY")
 });
 
 List<ChatModel> models =
@@ -43,7 +44,8 @@ List<ChatModel> models =
     ChatModel.OpenAi.Gpt4.Turbo,
     ChatModel.Anthropic.Claude3.Sonnet,
     ChatModel.Cohere.Claude3.CommandRPlus,
-    ChatModel.Google.Gemini.Gemini15Flash
+    ChatModel.Google.Gemini.Gemini15Flash,
+    ChatModel.Groq.Meta.Llama370B
 ];
 
 foreach (ChatModel model in models)
