@@ -867,7 +867,7 @@ public static class ChatDemo
         {
             Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
             {
-                Model = ChatModel.Anthropic.Claude3.Sonnet
+                Model = (ChatModel)x
             });
             chat.AppendSystemMessage("Pretend you are a dog. Sound authentic.");
             chat.AppendUserInput("Who are you?");
@@ -875,6 +875,7 @@ public static class ChatDemo
             Console.WriteLine($"{x.Name} ({x.ApiName}):");
             await chat.StreamResponse(Console.Write);
             Console.WriteLine();   
+            Console.WriteLine();
         }
     }
 
