@@ -10,6 +10,26 @@ namespace LlmTornado.Chat.Models;
 public class ChatModelOpenAiGpt4 : IVendorModelClassProvider
 {
     /// <summary>
+    /// GPT-4o mini (“o” for “omni”) is our most advanced model in the small models category, and our cheapest model yet. It is multimodal (accepting text or image inputs and outputting text), has higher intelligence than gpt-3.5-turbo but is just as fast. It is meant to be used for smaller tasks, including vision tasks.
+    /// </summary>
+    public static readonly ChatModel ModelOMini = new ChatModel("gpt-4o-mini", LLmProviders.OpenAi, 128_000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelOMini"/>
+    /// </summary>
+    public readonly ChatModel OMini = ModelOMini;
+    
+    /// <summary>
+    /// <see cref="ModelOMini"/> currently points to this version.
+    /// </summary>
+    public static readonly ChatModel ModelOMini240718 = new ChatModel("gpt-4o-mini-2024-07-18", LLmProviders.OpenAi, 128_000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelOMini"/>
+    /// </summary>
+    public readonly ChatModel OMini240718 = ModelOMini240718;
+    
+    /// <summary>
     /// Most advanced, multimodal flagship model that’s cheaper and faster than GPT-4 Turbo. Currently points to gpt-4o-2024-05-13.
     /// </summary>
     public static readonly ChatModel ModelO = new ChatModel("gpt-4o", LLmProviders.OpenAi, 128_000);

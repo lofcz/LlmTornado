@@ -79,6 +79,7 @@ public enum Demos
     EmbeddingCohereScalar,
     EmbeddingCohereVector,
     EmbeddingCohereScalarExtensions,
+    Chat4OMini,
     Last
 }
 
@@ -211,6 +212,7 @@ public class Program
             Demos.EmbeddingCohereScalar => EmbeddingDemo.EmbedCohere,
             Demos.EmbeddingCohereVector => EmbeddingDemo.EmbedCohereVector,
             Demos.EmbeddingCohereScalarExtensions => EmbeddingDemo.EmbedCohereExtensions,
+            Demos.Chat4OMini => ChatDemo.Completion4Mini,
             _ => null
         };
 
