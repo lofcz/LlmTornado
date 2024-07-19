@@ -80,6 +80,8 @@ public enum Demos
     EmbeddingCohereVector,
     EmbeddingCohereScalarExtensions,
     Chat4OMini,
+    ChatGroq,
+    ChatGroqStreaming,
     Last
 }
 
@@ -101,6 +103,7 @@ public class Program
         public string Anthropic { get; set; }
         public string Cohere { get; set; }
         public string Google { get; set; }
+        public string Groq { get; set; }
         public AzureKey Azure { get; set; }
     }
 
@@ -110,25 +113,14 @@ public class Program
             new ProviderAuthentication(LLmProviders.OpenAi, ApiKeys.OpenAi),
             new ProviderAuthentication(LLmProviders.Anthropic, ApiKeys.Anthropic),
             new ProviderAuthentication(LLmProviders.Cohere, ApiKeys.Cohere),
-            new ProviderAuthentication(LLmProviders.Google, ApiKeys.Google)
+            new ProviderAuthentication(LLmProviders.Google, ApiKeys.Google),
+            new ProviderAuthentication(LLmProviders.Groq, ApiKeys.Groq)
         ]);
     }
     
     public static TornadoApi Connect(LLmProviders provider = LLmProviders.OpenAi)
     {
-        return provider switch
-        {
-            LLmProviders.AzureOpenAi => new TornadoApi(ApiKeys.Azure.Key)
-            {
-                ApiVersion = ApiKeys.Azure.Version, 
-                ApiUrlFormat = ApiKeys.Azure.ApiUrlFormat
-            },
-            LLmProviders.OpenAi => new TornadoApi(ApiKeys.OpenAi),
-            LLmProviders.Anthropic => new TornadoApi(ApiKeys.Anthropic, LLmProviders.Anthropic),
-            LLmProviders.Cohere => new TornadoApi(ApiKeys.Cohere, LLmProviders.Cohere),
-            LLmProviders.Google => new TornadoApi(ApiKeys.Google, LLmProviders.Google),
-            _ => new TornadoApi(string.Empty)
-        };
+        return ConnectMulti();
     }
 
     public static async Task<bool> SetupApi()
@@ -213,6 +205,8 @@ public class Program
             Demos.EmbeddingCohereVector => EmbeddingDemo.EmbedCohereVector,
             Demos.EmbeddingCohereScalarExtensions => EmbeddingDemo.EmbedCohereExtensions,
             Demos.Chat4OMini => ChatDemo.Completion4Mini,
+            Demos.ChatGroq => ChatDemo.CompletionGroq,
+            Demos.ChatGroqStreaming => ChatDemo.GroqStreaming,
             _ => null
         };
 

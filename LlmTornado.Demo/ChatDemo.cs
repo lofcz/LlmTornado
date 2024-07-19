@@ -47,6 +47,23 @@ public static class ChatDemo
         return result;
     }
     
+    public static async Task<ChatResult?> CompletionGroq()
+    {
+        ChatResult? result = await Program.Connect().Chat.CreateChatCompletionAsync(new ChatRequest
+        {
+            Model =  ChatModel.Groq.Meta.Llama370B,
+            ResponseFormat = ChatRequestResponseFormats.Json,
+            Messages = [
+                new ChatMessage(ChatMessageRoles.System, "Solve the math problem given by user, respond in JSON format."),
+                new ChatMessage(ChatMessageRoles.User, "2+2=?")
+            ]
+        });
+
+        Console.WriteLine(result?.Choices?.Count > 0 ? result.Choices?[0].Message?.Content : "no response");
+        
+        return result;
+    }
+    
     public static async Task<bool> ChatFunctionRequired()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
@@ -844,6 +861,22 @@ public static class ChatDemo
         Console.WriteLine();
     }
 
+    public static async Task GroqStreaming()
+    {
+        foreach (IModel x in ChatModel.Groq.AllModels)
+        {
+            Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+            {
+                Model = ChatModel.Anthropic.Claude3.Sonnet
+            });
+            chat.AppendSystemMessage("Pretend you are a dog. Sound authentic.");
+            chat.AppendUserInput("Who are you?");
+
+            Console.WriteLine($"{x.Name} ({x.ApiName}):");
+            await chat.StreamResponse(Console.Write);
+            Console.WriteLine();   
+        }
+    }
 
     public static async Task<string> StreamWithFunctions()
     {

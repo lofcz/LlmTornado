@@ -20,9 +20,26 @@ public class ModelVendor<T> where T : ModelBase
     }
 }
 
+/// <summary>
+/// LLM model.
+/// </summary>
 public interface IModel
 {
+    /// <summary>
+    /// Name of the model. This must be globally unique.
+    /// </summary>
     public string Name { get; }
+    /// <summary>
+    /// In case a model is hosted by multiple vendor, this is the vendor-specific name.
+    /// </summary>
+    public string? ApiName { get; }
+    /// <summary>
+    /// Gets the vendor specific name.
+    /// </summary>
+    public string GetApiName { get; }
+    /// <summary>
+    /// Provider hosting the model.
+    /// </summary>
     public LLmProviders Provider { get; }
 }
 
@@ -74,8 +91,20 @@ public abstract class ModelBase : IModel
     /// <summary>
     ///     The id/name of the model.
     /// </summary>
-    [JsonProperty("id")]
+    [JsonIgnore]
     public string Name { get; set; }
+    
+    /// <summary>
+    /// Gets the vendor specific name.
+    /// </summary>
+    [JsonProperty("id")]
+    public string GetApiName => ApiName ?? Name;
+    
+    /// <summary>
+    ///     In case a model is hosted by multiple vendor, this is the vendor-specific name.
+    /// </summary>
+    [JsonIgnore]
+    public string? ApiName { get; set; }
 
     /// <summary>
     ///     The owner of this model.  Generally "openai" is a generic OpenAI model, or the organization if a custom or

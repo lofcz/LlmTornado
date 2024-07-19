@@ -961,20 +961,50 @@ public class Conversation
             {
                 yield break;
             }
+            
+            bool solved = false;
 
-            if (res.Choices[0].Delta is { } delta)
+            foreach (ChatChoice choice in res.Choices)
             {
-                if (responseRole is null && delta.Role is not null)
+                ChatMessage? internalDelta = choice.Delta;
+
+                if (res.StreamInternalKind is ChatResultStreamInternalKinds.AppendAssistantMessage)
                 {
-                    responseRole = delta.Role;
+                    if (internalDelta is not null)
+                    {
+                        internalDelta.Role = ChatMessageRoles.Assistant;
+                        internalDelta.Tokens = res.Usage?.CompletionTokens;
+                        AppendMessage(internalDelta);
+                    }
+
+                    solved = true;
+                    break;
                 }
+            }
+            
+            if (solved)
+            {
+                continue;
+            }
 
-                string? deltaContent = delta.Content;
-
-                if (!string.IsNullOrEmpty(deltaContent))
+            foreach (ChatChoice choice in res.Choices)
+            {
+                if (choice.Delta is not null)
                 {
-                    responseStringBuilder.Append(deltaContent);
-                    yield return deltaContent;
+                    ChatMessage delta = choice.Delta;
+                    
+                    if (responseRole is null && delta.Role is not null)
+                    {
+                        responseRole = delta.Role;
+                    }
+                    
+                    string? deltaContent = delta.Content;
+
+                    if (!string.IsNullOrEmpty(deltaContent))
+                    {
+                        responseStringBuilder.Append(deltaContent);
+                        yield return deltaContent;
+                    }
                 }
             }
 

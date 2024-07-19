@@ -32,6 +32,7 @@ public interface IEndpointProvider
     public HashSet<string> ToolFinishReasons { get; }
     public ProviderAuthentication? Auth { get; set; }
     private static HashSet<string> toolFinishReasons;
+    public Func<CapabilityEndpoints, string?, string>? UrlResolver { get; set; }
 }
 
 /// <summary>

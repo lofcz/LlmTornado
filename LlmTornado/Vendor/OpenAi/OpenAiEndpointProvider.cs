@@ -24,10 +24,17 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider,
 
     public static Version OutboundVersion { get; set; } = HttpVersion.Version20;
     public override HashSet<string> ToolFinishReasons => toolFinishReasons;
+    public Func<CapabilityEndpoints, string?, string>? UrlResolver { get; set; } 
     
     public OpenAiEndpointProvider(TornadoApi api) : base(api)
     {
-        Provider = LLmProviders.OpenAi;
+        Provider = LLmProviders.OpenAi;   
+        StoreApiAuth();
+    }
+    
+    public OpenAiEndpointProvider(TornadoApi api, LLmProviders provider) : base(api)
+    {
+        Provider = provider;
         StoreApiAuth();
     }
 
@@ -36,15 +43,10 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider,
         Text,
         Tools
     }
-    
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="endpoint"></param>
-    /// <returns></returns>
-    public override string ApiUrl(CapabilityEndpoints endpoint, string? url)
+
+    public static string GetEndpointUrlFragment(CapabilityEndpoints endpoint)
     {
-        string eStr = endpoint switch
+        return endpoint switch
         {
             CapabilityEndpoints.Audio => "audio",
             CapabilityEndpoints.Chat => "chat/completions",
@@ -60,8 +62,16 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider,
             CapabilityEndpoints.Threads => "threads",
             _ => throw new Exception($"OpenAI doesn't support endpoint {endpoint}")
         };
-
-        return $"{string.Format(Api.ApiUrlFormat ?? "https://api.openai.com/{0}/{1}", Api.ApiVersion, eStr)}{url}";
+    }
+    
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="endpoint"></param>
+    /// <returns></returns>
+    public override string ApiUrl(CapabilityEndpoints endpoint, string? url)
+    {
+        return UrlResolver is not null ? UrlResolver.Invoke(endpoint, url) : $"{string.Format(Api.ApiUrlFormat ?? "https://api.openai.com/{0}/{1}", Api.ApiVersion, GetEndpointUrlFragment(endpoint))}{url}";
     }
     
     public override HttpRequestMessage OutboundMessage(string url, HttpMethod verb, object? data, bool streaming)
@@ -73,7 +83,7 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider,
         req.Headers.Add("User-Agent", EndpointBase.GetUserAgent().Trim());
         req.Headers.Add("OpenAI-Beta", "assistants=v2");
 
-        ProviderAuthentication? auth = Api.GetProvider(LLmProviders.OpenAi).Auth;
+        ProviderAuthentication? auth = Api.GetProvider(Provider).Auth;
         
         if (auth is not null)
         {

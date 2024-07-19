@@ -242,6 +242,10 @@ public enum LLmProviders
     /// </summary>
     Google,
     /// <summary>
+    /// Groq.
+    /// </summary>
+    Groq,
+    /// <summary>
     /// Internal value.
     /// </summary>
     Length

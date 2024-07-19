@@ -33,6 +33,7 @@ internal class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider,
     
     public static Version OutboundVersion { get; set; } = HttpVersion.Version20;
     public override HashSet<string> ToolFinishReasons => toolFinishReasons;
+    public Func<CapabilityEndpoints, string?, string>? UrlResolver { get; set; } 
     
     private enum StreamNextAction
     {
@@ -108,7 +109,7 @@ internal class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider,
             _ => throw new Exception($"Cohere doesn't support endpoint {endpoint}")
         };
 
-        return $"https://api.cohere.ai/v1/{eStr}{url}";
+        return UrlResolver is not null ? UrlResolver.Invoke(endpoint, url) : $"https://api.cohere.ai/v1/{eStr}{url}";
     }
 
     enum ChatStreamEventTypes

@@ -278,6 +278,21 @@ public class ChatRequest
 		UrlOverride = url;
 	}
 
+	private static readonly Dictionary<LLmProviders, Func<ChatRequest, IEndpointProvider, string>> SerializeMap = new Dictionary<LLmProviders, Func<ChatRequest, IEndpointProvider, string>>
+	{
+		{ LLmProviders.OpenAi, (x, y) => JsonConvert.SerializeObject(x, EndpointBase.NullSettings) },
+		{ LLmProviders.Anthropic, (x, y) => JsonConvert.SerializeObject(new VendorAnthropicChatRequest(x, y), EndpointBase.NullSettings) },
+		{ LLmProviders.Cohere, (x, y) => JsonConvert.SerializeObject(new VendorCohereChatRequest(x, y), EndpointBase.NullSettings) },
+		{ LLmProviders.Google, (x, y) => JsonConvert.SerializeObject(new VendorGoogleChatRequest(x, y), EndpointBase.NullSettings) },
+		{ LLmProviders.Groq, (x, y) =>
+			{
+				// fields unsupported by groq
+				x.LogitBias = null; 
+				return JsonConvert.SerializeObject(x, EndpointBase.NullSettings);
+			} 
+		}
+	};
+
 	/// <summary>
 	///		Serializes the chat request into the request body, based on the conventions used by the LLM provider.
 	/// </summary>
@@ -285,23 +300,14 @@ public class ChatRequest
 	/// <returns></returns>
 	public TornadoRequestContent Serialize(IEndpointProvider provider)
 	{
-		string content = provider.Provider switch
-		{
-			LLmProviders.OpenAi => JsonConvert.SerializeObject(this, EndpointBase.NullSettings),
-			LLmProviders.Anthropic => JsonConvert.SerializeObject(new VendorAnthropicChatRequest(this, provider), EndpointBase.NullSettings),
-			LLmProviders.Cohere => JsonConvert.SerializeObject(new VendorCohereChatRequest(this, provider), EndpointBase.NullSettings),
-			LLmProviders.Google => JsonConvert.SerializeObject(new VendorGoogleChatRequest(this, provider), EndpointBase.NullSettings),
-			_ => string.Empty
-		};
-		
-		return new TornadoRequestContent(content, UrlOverride);
+		return SerializeMap.TryGetValue(provider.Provider, out Func<ChatRequest, IEndpointProvider, string>? serializerFn) ? new TornadoRequestContent(serializerFn.Invoke(this, provider), UrlOverride) : new TornadoRequestContent(string.Empty, UrlOverride);
 	}
 	
 	internal class ModelJsonConverter : JsonConverter<ChatModel>
 	{
 		public override void WriteJson(JsonWriter writer, ChatModel? value, JsonSerializer serializer)
 		{
-			writer.WriteValue(value?.Name);
+			writer.WriteValue(value?.GetApiName);
 		}
 
 		public override ChatModel? ReadJson(JsonReader reader, Type objectType, ChatModel? existingValue, bool hasExistingValue, JsonSerializer serializer)

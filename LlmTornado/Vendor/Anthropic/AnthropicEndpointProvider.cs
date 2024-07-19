@@ -44,6 +44,7 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
     
     public static Version OutboundVersion { get; set; } = HttpVersion.Version20;
     
+    public Func<CapabilityEndpoints, string?, string>? UrlResolver { get; set; } 
     public override HashSet<string> ToolFinishReasons => toolFinishReasons;
 
     private enum StreamRawActions
@@ -149,7 +150,7 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
             _ => throw new Exception($"Anthropic doesn't support endpoint {endpoint}")
         };
 
-        return $"https://api.anthropic.com/v1/{eStr}{url}";
+        return UrlResolver is not null ? UrlResolver.Invoke(endpoint, url) : $"https://api.anthropic.com/v1/{eStr}{url}";
     }
     
     public override async IAsyncEnumerable<ChatResult?> InboundStream(StreamReader reader, ChatRequest request)

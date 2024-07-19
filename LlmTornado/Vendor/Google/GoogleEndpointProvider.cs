@@ -25,6 +25,7 @@ internal class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider,
     
     public static Version OutboundVersion { get; set; } = HttpVersion.Version20;
     public override HashSet<string> ToolFinishReasons => toolFinishReasons;
+    public Func<CapabilityEndpoints, string?, string>? UrlResolver { get; set; } 
     
     public GoogleEndpointProvider(TornadoApi api) : base(api)
     {
@@ -46,7 +47,7 @@ internal class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider,
         };
         
         
-        return $"https://generativelanguage.googleapis.com/v1beta/{eStr}{url}";
+        return UrlResolver is not null ? UrlResolver.Invoke(endpoint, url) : $"https://generativelanguage.googleapis.com/v1beta/{eStr}{url}";
     }
 
     public override async IAsyncEnumerable<ChatResult?> InboundStream(StreamReader reader, ChatRequest request)

@@ -153,6 +153,8 @@ public class ChatModelOpenAiGpt4 : IVendorModelClassProvider
     /// All known GPT 3.5 models from OpenAI.
     /// </summary>
     public static readonly List<IModel> ModelsAll = [
+        ModelOMini,
+        ModelOMini240718,
         ModelO,
         ModelO240513,
         ModelTurbo,

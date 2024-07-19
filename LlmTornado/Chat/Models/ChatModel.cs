@@ -31,6 +31,11 @@ public class ChatModel : ModelBase
     public static readonly ChatModelGoogle Google = new ChatModelGoogle();
     
     /// <summary>
+    /// Models provided by Groq.
+    /// </summary>
+    public static readonly ChatModelGroq Groq = new ChatModelGroq();
+    
+    /// <summary>
     /// All known models keyed by name.
     /// </summary>
     public static readonly Dictionary<string, IModel> AllModelsMap = [];
@@ -46,7 +51,8 @@ public class ChatModel : ModelBase
             ..OpenAi.AllModels,
             ..Anthropic.AllModels,
             ..Cohere.AllModels,
-            ..Google.AllModels
+            ..Google.AllModels,
+            ..Groq.AllModels
         ];
         
         AllModels.ForEach(x =>

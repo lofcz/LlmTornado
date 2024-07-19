@@ -12,6 +12,10 @@ internal static class EndpointProviderConverter
             LLmProviders.Anthropic => new AnthropicEndpointProvider(api),
             LLmProviders.Cohere => new CohereEndpointProvider(api),
             LLmProviders.Google => new GoogleEndpointProvider(api),
+            LLmProviders.Groq => new OpenAiEndpointProvider(api, LLmProviders.Groq)
+            {
+                UrlResolver = (endpoint, url) => $"{string.Format(api.ApiUrlFormat ?? "https://api.groq.com/openai/{0}/{1}", api.ApiVersion, OpenAiEndpointProvider.GetEndpointUrlFragment(endpoint))}{url}"
+            },
             _ => new OpenAiEndpointProvider(api)
         };
     }
