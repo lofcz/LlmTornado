@@ -96,12 +96,18 @@ internal class VendorGoogleChatRequest
                 {
                     if (part.Image is not null)
                     {
+                        if (part.Image.MimeType is null)
+                        {
+                            throw new Exception("Google requires MIME type of all images to be set, supported values are: image/png, image/jpeg");
+                        }
+                        
                         InlineData = new VendorGoogleChatRequestMessagePartInlineData
                         {
-                            MimeType = "image/png", // todo
+                            MimeType = part.Image.MimeType,
                             Data = part.Image.Url
                         };
                     }
+                    
                     break;
                 }
             }

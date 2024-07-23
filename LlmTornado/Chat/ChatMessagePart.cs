@@ -51,8 +51,8 @@ public class ChatMessagePart
     ///     The part is an image with publicly available URL.
     /// </summary>
     /// <param name="uri">Absolute uri to the image</param>
-    /// <param name="imageDetail">Type of the message part</param>
-    public ChatMessagePart(Uri uri, ImageDetail? imageDetail)
+    /// <param name="imageDetail">Image settings</param>
+    public ChatMessagePart(Uri uri, ImageDetail imageDetail = ImageDetail.Auto)
     {
         Image = new ChatImage(uri.AbsoluteUri, imageDetail);
         Type = ChatMessageTypes.Image;
@@ -62,10 +62,25 @@ public class ChatMessagePart
     ///     The part is an image with either publicly available URL or encoded as base64.
     /// </summary>
     /// <param name="content">Publicly available URL to the image or base64 encoded content</param>
-    /// <param name="imageDetail">Type of the message part</param>
-    public ChatMessagePart(string content, ImageDetail? imageDetail)
+    /// <param name="imageDetail">Image settings</param>
+    public ChatMessagePart(string content, ImageDetail imageDetail)
     {
         Image = new ChatImage(content, imageDetail);
+        Type = ChatMessageTypes.Image;
+    }
+    
+    /// <summary>
+    ///     The part is an image with either publicly available URL or encoded as base64.
+    /// </summary>
+    /// <param name="content">Publicly available URL to the image or base64 encoded content</param>
+    /// <param name="imageDetail">Image settings</param>
+    /// <param name="mimeType">MIME type of the image</param>
+    public ChatMessagePart(string content, ImageDetail imageDetail, string? mimeType)
+    {
+        Image = new ChatImage(content, imageDetail)
+        {
+            MimeType = mimeType
+        };
         Type = ChatMessageTypes.Image;
     }
 

@@ -10,6 +10,7 @@ using LlmTornado;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Common;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
 
 namespace LlmTornado.Code;
@@ -194,6 +195,13 @@ public class ChatImage
         Url = content;
         Detail = detail;
     }
+    
+    /// <summary>
+    ///     When using base64 encoding in <see cref="Url"/>, certain providers such as Google require <see cref="MimeType"/> to be set.
+    ///     Values supported by Google: image/png, image/jpeg
+    /// </summary>
+    [JsonIgnore]
+    public string? MimeType { get; set; }
 
     /// <summary>
     ///     Publicly available URL to the image or base64 encoded content
@@ -205,6 +213,7 @@ public class ChatImage
     ///     Publicly available URL to the image or base64 encoded content
     /// </summary>
     [JsonProperty("detail")]
+    [JsonConverter(typeof(StringEnumConverter))]
     public ImageDetail? Detail { get; set; }
 }
 
