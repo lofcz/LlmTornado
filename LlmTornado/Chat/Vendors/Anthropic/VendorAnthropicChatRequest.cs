@@ -95,7 +95,7 @@ internal class VendorAnthropicChatRequest
                             writer.WriteStartObject();
                             
                             writer.WritePropertyName("type");
-                            writer.WriteValue(part.Type == ChatMessageTypes.Text ? "text" : "image");
+                            writer.WriteValue(part.Type is ChatMessageTypes.Text ? "text" : "image");
 
                             switch (part.Type)
                             {
@@ -107,6 +107,16 @@ internal class VendorAnthropicChatRequest
                                 }
                                 case ChatMessageTypes.Image:
                                 {
+                                    if (part.Image is null)
+                                    {
+                                        throw new Exception("Image property of ChatMessagePart is null and cannot be encoded.");
+                                    }
+
+                                    if (part.Image.MimeType is null)
+                                    {
+                                        throw new Exception("MIME type of the image must be set, supported values for Anthropic are: image/jpeg, image/png, image/gif, image/webp");
+                                    }
+                                    
                                     writer.WritePropertyName("source");
                                     writer.WriteStartObject();
                                 
@@ -114,11 +124,10 @@ internal class VendorAnthropicChatRequest
                                     writer.WriteValue("base64");
                                 
                                     writer.WritePropertyName("media_type");
-                                    writer.WriteValue("image/png");
-                                
-                                    // [todo] async pre-fetch url content, expects url to be base64 encoded img now
+                                    writer.WriteValue(part.Image.MimeType);
+                                    
                                     writer.WritePropertyName("data");
-                                    writer.WriteValue(part.Image?.Url ?? string.Empty);
+                                    writer.WriteValue(part.Image.Url);
                                 
                                     writer.WriteEndObject();
                                     break;
