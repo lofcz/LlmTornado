@@ -358,7 +358,7 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
     {
         yield break;
     }
-
+    
     public override HttpRequestMessage OutboundMessage(string url, HttpMethod verb, object? data, bool streaming)
     {
         HttpRequestMessage req = new(verb, url)
@@ -368,7 +368,7 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
         
         req.Headers.Add("User-Agent", EndpointBase.GetUserAgent());
         req.Headers.Add("anthropic-version", "2023-06-01");
-        req.Headers.Add("anthropic-beta", "tools-2024-05-16"); // <-- as of 6/24 maybe not needed?
+        req.Headers.Add("anthropic-beta", "max-tokens-3-5-sonnet-2024-07-15"); // 8k output tokens for Sonnet 3.5
 
         ProviderAuthentication? auth = Api.GetProvider(LLmProviders.Anthropic).Auth;
 
