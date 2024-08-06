@@ -82,6 +82,7 @@ public enum Demos
     Chat4OMini,
     ChatGroq,
     ChatGroqStreaming,
+    Chat4OStructuredJson,
     Last
 }
 
@@ -207,6 +208,7 @@ public class Program
             Demos.Chat4OMini => ChatDemo.Completion4Mini,
             Demos.ChatGroq => ChatDemo.CompletionGroq,
             Demos.ChatGroqStreaming => ChatDemo.GroqStreaming,
+            Demos.Chat4OStructuredJson => ChatDemo.Completion4OStructuredJson,
             _ => null
         };
 

@@ -63,6 +63,31 @@ public static class ChatDemo
         
         return result;
     }
+
+    public static async Task Completion4OStructuredJson()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.OpenAi.Gpt4.O240806,
+            ResponseFormat = ChatRequestResponseFormats.StructuredJson("get_weather", new
+            {
+                type = "object",
+                properties = new
+                {
+                    city = new
+                    {
+                        type = "string"
+                    }
+                },
+                required = new List<string> { "city" },
+                additionalProperties = false
+            }, true)
+        });
+        chat.AppendUserInput("what is 2+2, also what is the weather in prague"); // user asks something unrelated, but we force the model to use the tool
+
+        ChatRichResponse response = await chat.GetResponseRich();
+        int z = 1;
+    }
     
     public static async Task<bool> ChatFunctionRequired()
     {

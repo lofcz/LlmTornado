@@ -1,13 +1,23 @@
 using System;
 using Newtonsoft.Json;
 
-namespace LlmTornado.ChatFunctions;
+namespace LlmTornado.Chat;
 
 /// <summary>
 ///     Represents requested type of response
 /// </summary>
 public class ChatRequestResponseFormats
 {
+    internal class ChatRequestResponseJsonSchema
+    {
+        [JsonProperty("strict")]
+        public bool? Strict { get; set; }
+        [JsonProperty("name")]
+        public string Name { get; set; }
+        [JsonProperty("schema")]
+        public object Schema { get; set; }
+    }
+    
     /// <summary>
     ///     Type of the response
     /// </summary>
@@ -15,6 +25,9 @@ public class ChatRequestResponseFormats
     [JsonConverter(typeof(ChatRequestResponseFormatTypes.ChatRequestResponseFormatTypesJsonConverter))]
     public ChatRequestResponseFormatTypes? Type { get; set; }
 
+    [JsonProperty("json_schema", NullValueHandling = NullValueHandling.Ignore)]
+    internal ChatRequestResponseJsonSchema? Schema { get; set; }
+    
     internal ChatRequestResponseFormats() { }
     
     /// <summary>
@@ -28,10 +41,31 @@ public class ChatRequestResponseFormats
     /// <summary>
     ///     Signals output should be JSON. The string "JSON" needs to be included in either system or user message in the conversation.
     /// </summary>
-    public static ChatRequestResponseFormats Json = new ChatRequestResponseFormats
+    public static readonly ChatRequestResponseFormats Json = new ChatRequestResponseFormats
     {
         Type = ChatRequestResponseFormatTypes.Json
     };
+    
+    /// <summary>
+    ///     Signals output should be structured JSON. The provided schema will always be followed.
+    /// </summary>
+    /// <param name="name"></param>
+    /// <param name="schema">JSON serializable class / anonymous object.</param>
+    /// <param name="strict"></param>
+    /// <returns></returns>
+    public static ChatRequestResponseFormats StructuredJson(string name, object schema, bool strict)
+    {
+        return new ChatRequestResponseFormats
+        {
+            Type = ChatRequestResponseFormatTypes.StructuredJson,
+            Schema = new ChatRequestResponseJsonSchema
+            {
+                Name = name,
+                Strict = strict,
+                Schema = schema
+            }
+        };
+    }
 }
 
 /// <summary>
@@ -55,6 +89,11 @@ public class ChatRequestResponseFormatTypes
     ///     Response should be in JSON. System prompt must include "JSON" substring.
     /// </summary>
     public static ChatRequestResponseFormatTypes Json => new("json_object");
+    
+    /// <summary>
+    ///     Response should be in structured JSON. The model will always follow the provided schema.
+    /// </summary>
+    public static ChatRequestResponseFormatTypes StructuredJson => new("json_schema");
 
     /// <summary>
     ///     Gets the string value for this response format to pass to the API

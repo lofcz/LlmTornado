@@ -61,6 +61,7 @@ public class ChatRequest
         ParallelToolCalls = basedOn.ParallelToolCalls;
         Seed = basedOn.Seed;
         User = basedOn.User;
+        ResponseFormat = basedOn.ResponseFormat;
     }
 
 	/// <summary>
@@ -100,7 +101,7 @@ public class ChatRequest
     public int? NumChoicesPerMessage { get; set; }
 
 	/// <summary>
-	///     The seed to use for for deterministic requests.
+	///     The seed to use for deterministic requests.
 	/// </summary>
 	[JsonProperty("seed")]
     public int? Seed { get; set; }

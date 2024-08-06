@@ -110,6 +110,12 @@ public class ChatMessage
     public string? Content { get; set; }
 
     /// <summary>
+    ///     The reason why model refused to respond.
+    /// </summary>
+    [JsonProperty("refusal")]
+    public string? Refusal { get; set; }
+    
+    /// <summary>
     ///     The parts of the message. When serializing, <see cref="Parts"/> have priority over <see cref="Content"/>
     /// </summary>
     [JsonIgnore]
