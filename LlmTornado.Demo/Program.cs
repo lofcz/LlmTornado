@@ -224,7 +224,7 @@ public class Program
             return;
         }
 
-        Demos? forceDemo = null;
+        Demos? forceDemo = Demos.ChatFunctionRequired;
         
         selectedDemo = forceDemo ?? Demos.Last - 1;
         Func<Task>? task = GetDemo(selectedDemo);

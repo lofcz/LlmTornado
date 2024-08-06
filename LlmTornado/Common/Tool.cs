@@ -147,16 +147,27 @@ public class FunctionResult
 public class Tool
 {
     /// <summary>
-    ///     Creates a new tool
+    ///     Creates a new function type tool.
     /// </summary>
     /// <param name="function"></param>
     public Tool(ToolFunction function)
     {
         Function = function;
     }
+    
+    /// <summary>
+    ///     Creates a new function type tool with strict mode enabled/disabled.
+    /// </summary>
+    /// <param name="function"></param>
+    /// <param name="strict">Whether to use structured output or not</param>
+    public Tool(ToolFunction function, bool strict)
+    {
+        Function = function;
+        Strict = strict;
+    }
 
     /// <summary>
-    ///     Creates a new too
+    ///     Creates a new tool of a given type.
     /// </summary>
     /// <param name="type"></param>
     public Tool(string type)
@@ -191,6 +202,12 @@ public class Tool
     [JsonProperty("function", Required = Required.Default)]
     public ToolFunction? Function { get; set; }
 
+    /// <summary>
+    ///     Whether the function should run in structured response mode or not.
+    /// </summary>
+    [JsonProperty("strict")]
+    public bool? Strict { get; set; }
+    
     /// <summary>
     ///     Creates a tool from <see cref="ToolFunction" />
     /// </summary>

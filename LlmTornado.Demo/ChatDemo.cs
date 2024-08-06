@@ -93,13 +93,10 @@ public static class ChatDemo
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.OpenAi.Gpt4.Turbo,
+            Model = ChatModel.OpenAi.Gpt4.O240806,
             Tools = new List<Tool>
             {
-                new Tool
-                {
-                    Function = new ToolFunction("get_weather", "gets the current weather")
-                }
+                new Tool(new ToolFunction("get_weather", "gets the current weather"), true)
             },
             ToolChoice = new OutboundToolChoice(OutboundToolChoiceModes.Required)
         });
