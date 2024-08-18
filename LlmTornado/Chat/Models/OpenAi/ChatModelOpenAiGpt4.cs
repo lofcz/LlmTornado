@@ -60,6 +60,16 @@ public class ChatModelOpenAiGpt4 : IVendorModelClassProvider
     public readonly ChatModel O240806 = ModelO240806;
     
     /// <summary>
+    /// Dynamic model continuously updated to the current version of GPT-4o in ChatGPT.
+    /// </summary>
+    public static readonly ChatModel ModelChatGptLatest = new ChatModel("chatgpt-4o-latest", LLmProviders.OpenAi, 128_000);
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelChatGptLatest"/>
+    /// </summary>
+    public readonly ChatModel ChatGptLatest = ModelChatGptLatest;
+    
+    /// <summary>
     /// The latest GPT-4 Turbo model with vision capabilities. Vision requests can now use JSON mode and function calling. Currently points to gpt-4-turbo-2024-04-09.
     /// </summary>
     public static readonly ChatModel ModelTurbo = new ChatModel("gpt-4-turbo", LLmProviders.OpenAi, 128_000);
@@ -160,7 +170,7 @@ public class ChatModelOpenAiGpt4 : IVendorModelClassProvider
     public readonly ChatModel Context32K230613 = ModelContext32K230613;
     
     /// <summary>
-    /// All known GPT 3.5 models from OpenAI.
+    /// All known GPT 4 models from OpenAI.
     /// </summary>
     public static readonly List<IModel> ModelsAll = [
         ModelOMini,
@@ -168,6 +178,7 @@ public class ChatModelOpenAiGpt4 : IVendorModelClassProvider
         ModelO,
         ModelO240513,
         ModelO240806,
+        ModelChatGptLatest,
         ModelTurbo,
         ModelTurbo240409,
         ModelPreview240125,
