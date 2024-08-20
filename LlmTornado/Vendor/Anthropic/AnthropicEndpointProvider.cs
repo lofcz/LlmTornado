@@ -162,6 +162,11 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
         
         while (await reader.ReadLineAsync() is { } line)
         {
+            if (request.CancellationToken.IsCancellationRequested)
+            {
+                yield break;
+            }
+            
             if (line.IsNullOrWhiteSpace())
             {
                 continue;

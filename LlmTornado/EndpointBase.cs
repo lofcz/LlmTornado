@@ -544,13 +544,13 @@ public abstract class EndpointBase
     /// <param name="requestRef">(optional) A container for JSON-encoded outbound request.</param>
     /// <returns>The HttpResponseMessage of the response, which is confirmed to be successful.</returns>
     /// <exception cref="HttpRequestException">Throws an exception if a non-success HTTP response was returned</exception>
-    protected async IAsyncEnumerable<T> HttpStreamingRequest<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, HttpMethod? verb = null, object? postData = null, Ref<string>? requestRef = null) where T : ApiResultBase
+    protected async IAsyncEnumerable<T> HttpStreamingRequest<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, HttpMethod? verb = null, object? postData = null, Ref<string>? requestRef = null, CancellationToken token = default) where T : ApiResultBase
     {
         using HttpResponseMessage response = await HttpRequestRaw(provider, endpoint, url, verb, postData, true).ConfigureAwait(ConfigureAwaitOptions.None);
-        await using Stream stream = await response.Content.ReadAsStreamAsync();
+        await using Stream stream = await response.Content.ReadAsStreamAsync(token);
         using StreamReader reader = new(stream);
 
-        await foreach (T? x in provider.InboundStream<T>(reader))
+        await foreach (T? x in provider.InboundStream<T>(reader).WithCancellation(token))
         {
             if (x is null)
             {
@@ -562,9 +562,9 @@ public abstract class EndpointBase
         }
     }
     
-    protected async Task<TornadoStreamRequest> HttpStreamingRequestData(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, HttpMethod? verb = null, object? postData = null)
+    protected async Task<TornadoStreamRequest> HttpStreamingRequestData(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, HttpMethod? verb = null, object? postData = null, CancellationToken token = default)
     {
-        RestDataOrException<HttpResponseMessage> response = await HttpRequestRawWithAllCodes(provider, endpoint, url, verb, postData, true).ConfigureAwait(ConfigureAwaitOptions.None);
+        RestDataOrException<HttpResponseMessage> response = await HttpRequestRawWithAllCodes(provider, endpoint, url, verb, postData, true, token).ConfigureAwait(ConfigureAwaitOptions.None);
 
         if (response.Exception is not null || response.Data is null)
         {
@@ -576,7 +576,7 @@ public abstract class EndpointBase
             };
         }
         
-        Stream stream = await response.Data.Content.ReadAsStreamAsync();
+        Stream stream = await response.Data.Content.ReadAsStreamAsync(token);
         StreamReader reader = new(stream);
 
         return new TornadoStreamRequest

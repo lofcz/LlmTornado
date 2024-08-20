@@ -151,6 +151,11 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider,
         while (await reader.ReadLineAsync() is { } line)
         {
             data.Add(line);
+         
+            if (request.CancellationToken.IsCancellationRequested)
+            {
+                yield break;
+            }
             
             if (line.IsNullOrWhiteSpace())
             {

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using LlmTornado.Chat.Models;
 using LlmTornado.Chat.Vendors;
@@ -472,11 +473,12 @@ public class Conversation
     ///     <see cref="ChatMessageRole.Assistant" /> <see cref="ChatMessage" />.
     /// </summary>
     /// <returns>The string of the response from the chatbot API</returns>
-    public async Task<string?> GetResponse()
+    public async Task<string?> GetResponse(CancellationToken token = default)
     {
         ChatRequest req = new(RequestParameters)
         {
-            Messages = messages.ToList()
+            Messages = messages.ToList(),
+            CancellationToken = token
         };
 
         ChatResult? res = await endpoint.CreateChatCompletionAsync(req);
@@ -508,11 +510,12 @@ public class Conversation
     ///     Use this function to get more details about the returned data.
     /// </summary>
     /// <returns>The response from the chatbot API</returns>
-    public async Task<ChatRichResponse> GetResponseRich()
+    public async Task<ChatRichResponse> GetResponseRich(CancellationToken token = default)
     {
         ChatRequest req = new(RequestParameters)
         {
-            Messages = messages.ToList()
+            Messages = messages.ToList(),
+            CancellationToken = token
         };
 
         ChatResult? res = await endpoint.CreateChatCompletionAsync(req);
@@ -585,14 +588,15 @@ public class Conversation
     /// <summary>
     ///     Calls the API to get a response. The response is split into text & tools blocks.
     ///     The entire response is appended to the current chat's <see cref="Messages" /> as an
-    ///     <see cref="ChatMessageRole.Assistant" /> <see cref="ChatMessage" />. This method does't throw on network level.
+    ///     <see cref="ChatMessageRole.Assistant" /> <see cref="ChatMessage" />. This method doesn't throw on network level.
     /// </summary>
     /// <returns>The string of the response from the chatbot API</returns>
-    public async Task<RestDataOrException<ChatRichResponse>> GetResponseRichSafe()
+    public async Task<RestDataOrException<ChatRichResponse>> GetResponseRichSafe(CancellationToken token = default)
     {
         ChatRequest req = new(RequestParameters)
         {
-            Messages = messages.ToList()
+            Messages = messages.ToList(),
+            CancellationToken = token
         };
 
         HttpCallResult<ChatResult> res = await endpoint.CreateChatCompletionAsyncSafe(req);
@@ -658,11 +662,12 @@ public class Conversation
     ///     This method doesn't throw on network level.
     /// </summary>
     /// <returns>The string of the response from the chatbot API</returns>
-    public async Task<RestDataOrException<ChatRichResponse>> GetResponseRichSafe(Func<List<FunctionCall>, Task<List<FunctionResult>>> functionCallHandler)
+    public async Task<RestDataOrException<ChatRichResponse>> GetResponseRichSafe(Func<List<FunctionCall>, Task<List<FunctionResult>>> functionCallHandler, CancellationToken token = default)
     {
         ChatRequest req = new(RequestParameters)
         {
-            Messages = messages.ToList()
+            Messages = messages.ToList(),
+            CancellationToken = token
         };
 
         HttpCallResult<ChatResult> res = await endpoint.CreateChatCompletionAsyncSafe(req);
@@ -730,11 +735,12 @@ public class Conversation
     ///     Use this overload when resolving the function calls requested by the model can be done immediately.
     /// </summary>
     /// <returns>The string of the response from the chatbot API</returns>
-    public async Task<ChatRichResponse> GetResponseRich(Func<List<FunctionCall>, Task>? functionCallHandler)
+    public async Task<ChatRichResponse> GetResponseRich(Func<List<FunctionCall>, Task>? functionCallHandler, CancellationToken token = default)
     {
         ChatRequest req = new(RequestParameters)
         {
-            Messages = messages.ToList()
+            Messages = messages.ToList(),
+            CancellationToken = token
         };
 
         ChatResult? res = await endpoint.CreateChatCompletionAsync(req);
@@ -851,11 +857,12 @@ public class Conversation
     ///     <see cref="ChatMessageRole.Assistant" /> <see cref="ChatMessage" />.
     /// </summary>
     /// <returns>The string of the response from the chatbot API</returns>
-    public async Task<RestDataOrException<ChatChoice>> GetResponseSafe()
+    public async Task<RestDataOrException<ChatChoice>> GetResponseSafe(CancellationToken token = default)
     {
         ChatRequest req = new(RequestParameters)
         {
-            Messages = messages.ToList()
+            Messages = messages.ToList(),
+            CancellationToken = token
         };
 
         HttpCallResult<ChatResult> res = await endpoint.CreateChatCompletionAsyncSafe(req);
@@ -899,9 +906,10 @@ public class Conversation
     ///     <see cref="StreamResponseEnumerable" /> instead.
     /// </summary>
     /// <param name="resultHandler">An action to be called as each new result arrives.</param>
-    public async Task StreamResponse(Action<string> resultHandler)
+    /// <param name="token"></param>
+    public async Task StreamResponse(Action<string> resultHandler, CancellationToken token = default)
     {
-        await foreach (string res in StreamResponseEnumerable()) 
+        await foreach (string res in StreamResponseEnumerable().WithCancellation(token)) 
         {
             resultHandler(res);
         }
@@ -918,11 +926,12 @@ public class Conversation
     ///     An action to be called as each new result arrives, which includes the index of the result
     ///     in the overall result set.
     /// </param>
-    public async Task StreamResponse(Action<int, string> resultHandler)
+    /// <param name="token"></param>
+    public async Task StreamResponse(Action<int, string> resultHandler, CancellationToken token = default)
     {
         int index = 0;
         
-        await foreach (string res in StreamResponseEnumerable())
+        await foreach (string res in StreamResponseEnumerable().WithCancellation(token))
         {
             resultHandler(index++, res);        
         }
@@ -940,17 +949,18 @@ public class Conversation
     ///     <see href="https://docs.microsoft.com/en-us/dotnet/csharp/whats-new/csharp-8#asynchronous-streams" /> for more
     ///     details on how to consume an async enumerable.
     /// </returns>
-    public async IAsyncEnumerable<string> StreamResponseEnumerable(Guid? messageId = null)
+    public async IAsyncEnumerable<string> StreamResponseEnumerable(Guid? messageId = null, CancellationToken token = default)
     {
         ChatRequest req = new(RequestParameters)
         {
-            Messages = messages.ToList()
+            Messages = messages.ToList(),
+            CancellationToken = token
         };
 
         StringBuilder responseStringBuilder = new();
         ChatMessageRoles? responseRole = null;
 
-        await foreach (ChatResult res in endpoint.StreamChatEnumerableAsync(req))
+        await foreach (ChatResult res in endpoint.StreamChatEnumerableAsync(req).WithCancellation(token))
         {
             if (res.Choices is null)
             {
@@ -1020,7 +1030,7 @@ public class Conversation
     /// <summary>
     ///     Stream LLM response as a series of events. The raw events from Provider are abstracted away and only high-level events are reported such as inbound plaintext tokens, complete tool requests, etc.
     /// </summary>
-    public async Task StreamResponseRich(Guid msgId, Func<string?, Task>? messageTokenHandler, Func<List<FunctionCall>, Task>? functionCallHandler, Func<ChatMessageRoles, Task>? messageTypeResolvedHandler, Ref<string>? outboundRequest = null, Func<ChatResponseVendorExtensions, Task>? vendorFeaturesHandler = null)
+    public async Task StreamResponseRich(Guid msgId, Func<string?, Task>? messageTokenHandler, Func<List<FunctionCall>, Task>? functionCallHandler, Func<ChatMessageRoles, Task>? messageTypeResolvedHandler, Ref<string>? outboundRequest = null, Func<ChatResponseVendorExtensions, Task>? vendorFeaturesHandler = null, CancellationToken token = default)
     {
         await StreamResponseRich(new ChatStreamEventHandler
         {
@@ -1028,14 +1038,14 @@ public class Conversation
             FunctionCallHandler = functionCallHandler,
             MessageTypeResolvedHandler = messageTypeResolvedHandler,
             VendorFeaturesHandler = vendorFeaturesHandler,
-            MessageId = msgId
-        });
+            MessageId = msgId,
+        }, token);
     }
 
     /// <summary>
     ///     Stream LLM response as a series of events. The raw events from Provider are abstracted away and only high-level events are reported such as inbound plaintext tokens, complete tool requests, etc.
     /// </summary>
-    public async Task StreamResponseRich(Func<string?, Task>? messageTokenHandler, Func<List<FunctionCall>, Task>? functionCallHandler, Func<ChatMessageRoles, Task>? messageTypeResolvedHandler, Ref<string>? outboundRequest = null, Func<ChatResponseVendorExtensions, Task>? vendorFeaturesHandler = null)
+    public async Task StreamResponseRich(Func<string?, Task>? messageTokenHandler, Func<List<FunctionCall>, Task>? functionCallHandler, Func<ChatMessageRoles, Task>? messageTypeResolvedHandler, Ref<string>? outboundRequest = null, Func<ChatResponseVendorExtensions, Task>? vendorFeaturesHandler = null, CancellationToken token = default)
     {
         await StreamResponseRich(new ChatStreamEventHandler
         {
@@ -1043,18 +1053,20 @@ public class Conversation
             FunctionCallHandler = functionCallHandler,
             MessageTypeResolvedHandler = messageTypeResolvedHandler,
             VendorFeaturesHandler = vendorFeaturesHandler
-        });
+        }, token);
     }
 
     /// <summary>
     ///     Stream LLM response as a series of events. The raw events from Provider are abstracted away and only high-level events are reported such as inbound plaintext tokens, complete tool requests, etc.
     /// </summary>
     /// <param name="eventsHandler"></param>
-    public async Task StreamResponseRich(ChatStreamEventHandler? eventsHandler)
+    /// <param name="token"></param>
+    public async Task StreamResponseRich(ChatStreamEventHandler? eventsHandler, CancellationToken token = default)
     {
         ChatRequest req = new(RequestParameters)
         {
-            Messages = messages.ToList()
+            Messages = messages.ToList(),
+            CancellationToken = token
         };
 
         req = eventsHandler?.MutateChatRequestHandler is not null ? await eventsHandler.MutateChatRequestHandler.Invoke(req) : req;
@@ -1063,7 +1075,7 @@ public class Conversation
         ChatMessage? lastUserMessage = messages.LastOrDefault(x => x.Role is ChatMessageRoles.User);
         bool isFirstMessageToken = true;
         
-        await foreach (ChatResult res in endpoint.StreamChatEnumerableAsync(req, eventsHandler))
+        await foreach (ChatResult res in endpoint.StreamChatEnumerableAsync(req, eventsHandler).WithCancellation(token))
         {
             bool solved = false;
             

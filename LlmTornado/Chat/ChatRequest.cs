@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using LlmTornado.Chat.Models;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
@@ -269,7 +270,13 @@ public class ChatRequest
 	///		produce leading whitespace if the text part of the streamed response is preceded with tool blocks.
 	/// </summary>
 	[JsonIgnore]
-	public bool TrimResponseStart { get; set; } = true; 
+	public bool TrimResponseStart { get; set; } = true;
+
+	/// <summary>
+	///		Cancellation token to use with the request.
+	/// </summary>
+	[JsonIgnore]
+	public CancellationToken CancellationToken { get; set; } = CancellationToken.None;
 	
 	[JsonIgnore]
 	internal string? UrlOverride { get; set; }
