@@ -468,6 +468,28 @@ public static class ChatDemo
         Console.WriteLine("Cohere:");
         Console.WriteLine(str);
     }
+    
+    public static async Task Cohere2408()
+    {
+        Conversation chat = Program.Connect(LLmProviders.Cohere).Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Cohere.Command.RPlus2408,
+            VendorExtensions = new ChatRequestVendorExtensions
+            {
+                Cohere = new ChatRequestVendorCohereExtensions
+                {
+                    SafetyMode = ChatVendorCohereExtensionSafetyMode.None
+                }
+            }
+        });
+        chat.AppendSystemMessage("Pretend you are a dog. Sound authentic.");
+        chat.AppendUserInput("Who are you?");
+
+        string? str = await chat.GetResponse();
+
+        Console.WriteLine("Cohere:");
+        Console.WriteLine(str);
+    }
 
     public static async Task AllChatVendors()
     {

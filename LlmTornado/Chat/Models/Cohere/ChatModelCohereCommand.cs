@@ -15,9 +15,19 @@ public class ChatModelCohereCommand : IVendorModelClassProvider
     public static readonly ChatModel ModelRPlus = new ChatModel("command-r-plus", LLmProviders.Cohere, 128_000);
     
     /// <summary>
-    /// <inheritdoc cref="CommandRPlus"/>
+    /// <inheritdoc cref="ModelRPlus"/>
     /// </summary>
     public readonly ChatModel RPlus = ModelRPlus;
+    
+    /// <summary>
+    /// Newest model from 24/08. Command R+ is an instruction-following conversational model that performs language tasks at a higher quality, more reliably, and with a longer context than previous models. It is best suited for complex RAG workflows and multi-step tool use.
+    /// </summary>
+    public static readonly ChatModel ModelRPlus2408 = new ChatModel("command-r-plus-08-2024", LLmProviders.Cohere, 128_000);
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelRPlus2408"/>
+    /// </summary>
+    public readonly ChatModel RPlus2408 = ModelRPlus2408;
     
     /// <summary>
     /// Be advised that command-nightly is the latest, most experimental, and (possibly) unstable version of its default counterpart. Nightly releases are updated regularly, without warning, and are not recommended for production use.
@@ -38,6 +48,16 @@ public class ChatModelCohereCommand : IVendorModelClassProvider
     /// <inheritdoc cref="ModelDefault"/>
     /// </summary>
     public readonly ChatModel Default = ModelDefault;
+    
+    /// <summary>
+    /// Newest model from 24/08. An instruction-following conversational model that performs language tasks with high quality, more reliably and with a longer context than our base generative models.
+    /// </summary>
+    public static readonly ChatModel ModelDefault2408 = new ChatModel("command-r-08-2024", LLmProviders.Cohere, 4_000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelDefault2408"/>
+    /// </summary>
+    public readonly ChatModel Default2408 = ModelDefault2408;
     
     /// <summary>
     /// A smaller, faster version of command. Almost as capable, but a lot faster.
@@ -65,8 +85,10 @@ public class ChatModelCohereCommand : IVendorModelClassProvider
     public static readonly List<IModel> ModelsAll =
     [
         ModelRPlus,
+        ModelRPlus2408,
         ModelNightly,
         ModelDefault,
+        ModelDefault2408,
         ModelLight,
         ModelLightNightly
     ];

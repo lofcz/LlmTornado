@@ -28,6 +28,11 @@ internal class VendorCohereChatResult : VendorChatResult
     public List<VendorCohereChatSearchResult>? SearchResults { get; set; }
     [JsonProperty("search_queries")]
     public List<VendorCohereChatSearchQuery>? SearchQueries { get; set; }
+    [JsonProperty("is_search_required")]
+    public bool? IsSearchRequired { get; set; }
+    [JsonProperty("tool_calls")]
+    public List<object>? ToolCalls { get; set; } // TODO: map me
+
     
     public override ChatResult ToChatResult(string? postData)
     {

@@ -92,7 +92,7 @@ internal class VendorCohereChatRequest
     [JsonProperty("preamble")]
     public string? Preamble { get; set; }
     [JsonProperty("prompt_truncation")]
-    public string? PromptTruncation { get; set; }
+    public ChatVendorCohereExtensionPromptTruncation? PromptTruncation { get; set; }
     [JsonProperty("connectors")]
     public List<ChatVendorCohereExtensionConnector>? Connectors { get; set; }
     [JsonProperty("max_tokens")]
@@ -117,6 +117,20 @@ internal class VendorCohereChatRequest
     public List<VendorCohereChatTool>? Tools { get; set; }
     [JsonProperty("tool_results")]
     public List<VendorCohereChatToolResult>? ToolResults { get; set; }
+    [JsonProperty("safety_mode")]
+    public ChatVendorCohereExtensionSafetyMode? SafetyMode { get; set; }
+    [JsonProperty("response_format")]
+    public object? ResponseFormat { get; set; } // TODO: map me
+    [JsonProperty("force_single_step")]
+    public bool? ForceSingleStep { get; set; }
+    [JsonProperty("citation_quality")]
+    public ChatVendorCohereExtensionCitationQuality? CitationQuality { get; set; }
+    [JsonProperty("documents")]
+    public List<object>? Documents { get; set; } // TODO: map me
+    [JsonProperty("search_queries_only")]
+    public bool? SearchQueriesOnly { get; set; }
+    [JsonProperty("conversation_id")]
+    public string? ConversationId { get; set; }
 
     public VendorCohereChatRequest()
     {
@@ -146,13 +160,12 @@ internal class VendorCohereChatRequest
             }
 
             ChatMessage? lastMsg = msgs.LastOrDefault(x => x.Role is ChatMessageRoles.User);
-            int? lastUserMsgIndex;
-            
+
             if (lastMsg is not null)
             {
                 lastMsg.ExcludeFromRequest = true;
                 respondMsg = lastMsg.Content;
-                lastUserMsgIndex = msgs.IndexOf(lastMsg);
+                int? lastUserMsgIndex = msgs.IndexOf(lastMsg);
 
                 for (int i = 0; i < lastUserMsgIndex; i++)
                 {
@@ -179,6 +192,11 @@ internal class VendorCohereChatRequest
         Temperature = request.Temperature;
         P = request.TopP;
         ChatHistory = null;
+        SafetyMode = request.VendorExtensions?.Cohere?.SafetyMode;
+        ForceSingleStep = request.VendorExtensions?.Cohere?.ForceSingleStep;
+        CitationQuality = request.VendorExtensions?.Cohere?.CitationQuality;
+        ConversationId = request.VendorExtensions?.Cohere?.ConversationId;
+        PromptTruncation = request.VendorExtensions?.Cohere?.PromptTruncation;
 
         if (msgs is not null && request.Messages is not null && request.Messages.Any(x => !x.ExcludeFromRequest))
         {

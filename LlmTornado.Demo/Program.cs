@@ -83,6 +83,7 @@ public enum Demos
     ChatGroq,
     ChatGroqStreaming,
     Chat4OStructuredJson,
+    ChatCohere2408,
     Last
 }
 
@@ -209,6 +210,7 @@ public class Program
             Demos.ChatGroq => ChatDemo.CompletionGroq,
             Demos.ChatGroqStreaming => ChatDemo.GroqStreaming,
             Demos.Chat4OStructuredJson => ChatDemo.Completion4OStructuredJson,
+            Demos.ChatCohere2408 => ChatDemo.Cohere2408,
             _ => null
         };
 
@@ -224,7 +226,7 @@ public class Program
             return;
         }
 
-        Demos? forceDemo = Demos.ChatFunctionRequired;
+        Demos? forceDemo = null;
         
         selectedDemo = forceDemo ?? Demos.Last - 1;
         Func<Task>? task = GetDemo(selectedDemo);
