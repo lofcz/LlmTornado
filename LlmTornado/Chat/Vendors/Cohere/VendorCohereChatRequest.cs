@@ -18,6 +18,12 @@ namespace LlmTornado.Chat.Vendors.Cohere;
 
 internal class VendorCohereChatRequest
 {
+    private static readonly HashSet<ChatModel> Gen1Models = [ 
+        ChatModel.Cohere.Command.Default, 
+        ChatModel.Cohere.Command.CommandLight, 
+        ChatModel.Cohere.Command.RPlus
+    ];
+    
     internal class VendorCohereChatRequestMessage
     {
         [JsonProperty("role")]
@@ -192,7 +198,12 @@ internal class VendorCohereChatRequest
         Temperature = request.Temperature;
         P = request.TopP;
         ChatHistory = null;
-        SafetyMode = request.VendorExtensions?.Cohere?.SafetyMode;
+
+        if (!(request.Model is not null && Gen1Models.Contains(request.Model)))
+        {
+            SafetyMode = request.VendorExtensions?.Cohere?.SafetyMode;    
+        }
+        
         ForceSingleStep = request.VendorExtensions?.Cohere?.ForceSingleStep;
         CitationQuality = request.VendorExtensions?.Cohere?.CitationQuality;
         ConversationId = request.VendorExtensions?.Cohere?.ConversationId;
