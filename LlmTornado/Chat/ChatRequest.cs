@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Threading;
 using LlmTornado.Chat.Models;
 using LlmTornado.ChatFunctions;
@@ -180,10 +181,16 @@ public class ChatRequest
     }
 
 	/// <summary>
-	///     How many tokens to complete to. Can return fewer if a stop sequence is hit.  Defaults to 16.
+	///     How many tokens to complete to. Can return fewer if a stop sequence is hit.
 	/// </summary>
 	[JsonProperty("max_tokens")]
     public int? MaxTokens { get; set; }
+
+	/// <summary>
+	///		Strategy for serializing <see cref="MaxTokens"/>.
+	/// </summary>
+	[JsonIgnore] 
+	public ChatRequestMaxTokensSerializers MaxTokensSerializer { get; set; } = ChatRequestMaxTokensSerializers.Auto;
 
 	/// <summary>
 	///     The scale of the penalty for how often a token is used.  Should generally be between 0 and 1, although negative
@@ -285,10 +292,48 @@ public class ChatRequest
 	{
 		UrlOverride = url;
 	}
+	
+	private static readonly PropertyRenameAndIgnoreSerializerContractResolver MaxTokensRenamer = new PropertyRenameAndIgnoreSerializerContractResolver();
+	private static readonly JsonSerializerSettings MaxTokensRenamerSettings = new JsonSerializerSettings
+	{
+		ContractResolver = MaxTokensRenamer,
+		NullValueHandling = NullValueHandling.Ignore
+	};
+	
+	static ChatRequest()
+	{
+		MaxTokensRenamer.RenameProperty(typeof(ChatRequest), "max_tokens", "max_completion_tokens");	
+	}
 
 	private static readonly Dictionary<LLmProviders, Func<ChatRequest, IEndpointProvider, string>> SerializeMap = new Dictionary<LLmProviders, Func<ChatRequest, IEndpointProvider, string>>
 	{
-		{ LLmProviders.OpenAi, (x, y) => JsonConvert.SerializeObject(x, EndpointBase.NullSettings) },
+		{ LLmProviders.OpenAi, (x, y) =>
+			{
+				switch (x.MaxTokensSerializer)
+				{
+					case ChatRequestMaxTokensSerializers.Auto:
+					{
+						if (x.Model is not null)
+						{
+							if (ChatModelOpenAiGpt4.ReasoningModels.Contains(x.Model))
+							{
+								return JsonConvert.SerializeObject(x, MaxTokensRenamerSettings);
+							}	
+						}
+
+						return JsonConvert.SerializeObject(x, EndpointBase.NullSettings);
+					}
+					case ChatRequestMaxTokensSerializers.MaxCompletionTokens:
+					{
+						return JsonConvert.SerializeObject(x, MaxTokensRenamerSettings);
+					}
+					default:
+					{
+						return JsonConvert.SerializeObject(x, EndpointBase.NullSettings);
+					}
+				}
+			}
+		},
 		{ LLmProviders.Anthropic, (x, y) => JsonConvert.SerializeObject(new VendorAnthropicChatRequest(x, y), EndpointBase.NullSettings) },
 		{ LLmProviders.Cohere, (x, y) => JsonConvert.SerializeObject(new VendorCohereChatRequest(x, y), EndpointBase.NullSettings) },
 		{ LLmProviders.Google, (x, y) => JsonConvert.SerializeObject(new VendorGoogleChatRequest(x, y), EndpointBase.NullSettings) },

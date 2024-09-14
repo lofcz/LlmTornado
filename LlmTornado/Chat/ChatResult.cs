@@ -104,6 +104,18 @@ public class ChatChoice
 }
 
 /// <summary>
+/// Token usage for a specialized prompting strategy used.
+/// </summary>
+public class ChatUsageTokenDetails
+{
+	/// <summary>
+	///		How many tokens were used for COT.
+	/// </summary>
+	[JsonProperty("reasoning_tokens")]
+	public int? ReasoningTokens { get; set; }
+}
+
+/// <summary>
 ///     How many tokens were used in this chat message.
 /// </summary>
 public class ChatUsage : Usage
@@ -125,6 +137,12 @@ public class ChatUsage : Usage
 	/// </summary>
 	[JsonProperty("total_tokens")]
     public int TotalTokens { get; set; }
+	
+	/// <summary>
+	///     Number of tokens in the generated completion.
+	/// </summary>
+	[JsonProperty("completion_tokens_details")]
+	public ChatUsageTokenDetails? CompletionTokensDetails { get; set; }
 	
 	public ChatUsage()
 	{

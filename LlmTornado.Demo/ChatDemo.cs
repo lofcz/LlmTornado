@@ -453,6 +453,21 @@ public static class ChatDemo
         Console.WriteLine("Google:");
         Console.WriteLine(str);
     }
+    
+    public static async Task OpenAiO1()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.OpenAi.Gpt4.O1Mini,
+            MaxTokens = 2000
+        });
+        chat.AppendUserInput("Who are you?");
+
+        string? str = await chat.GetResponse();
+
+        Console.WriteLine("OpenAI O1:");
+        Console.WriteLine(str);
+    }
 
     public static async Task Cohere()
     {
@@ -582,7 +597,8 @@ public static class ChatDemo
                         },
                         required = new List<string> { "location" }
                     }))
-                ]
+                ],
+                MaxTokens = 256
             })
             .AppendSystemMessage("You are a helpful assistant")
             .AppendUserInput("What is the weather like today in Prague?");

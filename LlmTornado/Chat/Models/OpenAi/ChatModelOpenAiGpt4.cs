@@ -10,6 +10,46 @@ namespace LlmTornado.Chat.Models;
 public class ChatModelOpenAiGpt4 : IVendorModelClassProvider
 {
     /// <summary>
+    /// Points to the most recent snapshot of the o1 model: o1-preview-2024-09-12
+    /// </summary>
+    public static readonly ChatModel ModelO1 = new ChatModel("o1-preview", LLmProviders.OpenAi, 128_000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelO1"/>
+    /// </summary>
+    public readonly ChatModel O1 = ModelO1;
+    
+    /// <summary>
+    /// Latest o1 model snapshot
+    /// </summary>
+    public static readonly ChatModel ModelO1240912 = new ChatModel("o1-preview-2024-09-12", LLmProviders.OpenAi, 128_000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelO1240912"/>
+    /// </summary>
+    public readonly ChatModel O1240912 = ModelO1240912;
+    
+    /// <summary>
+    /// Points to the most recent o1-mini snapshot: o1-mini-2024-09-12
+    /// </summary>
+    public static readonly ChatModel ModelO1Mini = new ChatModel("o1-mini", LLmProviders.OpenAi, 128_000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelO1Mini"/>
+    /// </summary>
+    public readonly ChatModel O1Mini = ModelO1Mini;
+    
+    /// <summary>
+    /// Points to the most recent o1-mini snapshot: o1-mini-2024-09-12
+    /// </summary>
+    public static readonly ChatModel ModelO1Mini240912 = new ChatModel("o1-mini-2024-09-12", LLmProviders.OpenAi, 128_000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelO1Mini240912"/>
+    /// </summary>
+    public readonly ChatModel O1Mini240912 = ModelO1Mini240912;
+    
+    /// <summary>
     /// GPT-4o mini (“o” for “omni”) is our most advanced model in the small models category, and our cheapest model yet. It is multimodal (accepting text or image inputs and outputting text), has higher intelligence than gpt-3.5-turbo but is just as fast. It is meant to be used for smaller tasks, including vision tasks.
     /// </summary>
     public static readonly ChatModel ModelOMini = new ChatModel("gpt-4o-mini", LLmProviders.OpenAi, 128_000);
@@ -188,7 +228,22 @@ public class ChatModelOpenAiGpt4 : IVendorModelClassProvider
         ModelDefault,
         ModelPreview230613,
         ModelContext32K,
-        ModelContext32K230613
+        ModelContext32K230613,
+        ModelO1,
+        ModelO1240912,
+        ModelO1Mini,
+        ModelO1Mini240912
+    ];
+
+    /// <summary>
+    /// Models using max_completion_tokens instead of max_tokens.
+    /// </summary>
+    public static readonly HashSet<IModel> ReasoningModels =
+    [
+        ModelO1,
+        ModelO1240912,
+        ModelO1Mini,
+        ModelO1Mini240912
     ];
 
     /// <summary>

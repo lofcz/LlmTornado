@@ -84,6 +84,7 @@ public enum Demos
     ChatGroqStreaming,
     Chat4OStructuredJson,
     ChatCohere2408,
+    ChatOpenAiO1,
     Last
 }
 
@@ -211,6 +212,7 @@ public class Program
             Demos.ChatGroqStreaming => ChatDemo.GroqStreaming,
             Demos.Chat4OStructuredJson => ChatDemo.Completion4OStructuredJson,
             Demos.ChatCohere2408 => ChatDemo.Cohere2408,
+            Demos.ChatOpenAiO1 => ChatDemo.OpenAiO1,
             _ => null
         };
 
