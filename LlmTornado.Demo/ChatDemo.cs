@@ -519,6 +519,7 @@ public static class ChatDemo
         [
             ChatModel.OpenAi.Gpt4.Turbo,
             ChatModel.Anthropic.Claude3.Sonnet,
+            ChatModel.Anthropic.Claude35.Sonnet241022,
             ChatModel.Cohere.Command.Default,
             ChatModel.Google.Gemini.Gemini15Flash
         ];

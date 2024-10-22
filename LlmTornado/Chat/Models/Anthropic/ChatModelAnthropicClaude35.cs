@@ -15,16 +15,39 @@ public class ChatModelAnthropicClaude35 : IVendorModelClassProvider
     public static readonly ChatModel ModelSonnet = new ChatModel("claude-3-5-sonnet-20240620", LLmProviders.Anthropic, 200_000);
 
     /// <summary>
+    /// New snapshot of Sonnet 3.5.
+    /// </summary>
+    public static readonly ChatModel ModelSonnet241022 = new ChatModel("claude-3-5-sonnet-20241022", LLmProviders.Anthropic, 200_000);
+
+    /// <summary>
+    /// Points to <see cref="ModelSonnet241022"/>.
+    /// </summary>
+    public static readonly ChatModel ModelSonnetLatest = new ChatModel("claude-3-5-sonnet-latest", LLmProviders.Anthropic, 200_000);
+
+    
+    /// <summary>
     /// <inheritdoc cref="ModelSonnet"/>
     /// </summary>
     public readonly ChatModel Sonnet = ModelSonnet;
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelSonnet241022"/>
+    /// </summary>
+    public readonly ChatModel Sonnet241022 = ModelSonnet241022;
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelSonnetLatest"/>
+    /// </summary>
+    public readonly ChatModel SonnetLatest = ModelSonnetLatest;
     
     /// <summary>
     /// All known Claude 3 models from Anthropic.
     /// </summary>
     public static readonly List<IModel> ModelsAll =
     [
-        ModelSonnet
+        ModelSonnet,
+        ModelSonnet241022,
+        ModelSonnetLatest
     ];
 
     /// <summary>
