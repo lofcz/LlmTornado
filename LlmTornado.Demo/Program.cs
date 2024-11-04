@@ -85,6 +85,7 @@ public enum Demos
     Chat4OStructuredJson,
     ChatCohere2408,
     ChatOpenAiO1,
+    ChatHaiku35,
     Last
 }
 
@@ -213,6 +214,7 @@ public class Program
             Demos.Chat4OStructuredJson => ChatDemo.Completion4OStructuredJson,
             Demos.ChatCohere2408 => ChatDemo.Cohere2408,
             Demos.ChatOpenAiO1 => ChatDemo.OpenAiO1,
+            Demos.ChatHaiku35 => ChatDemo.Haiku35,
             _ => null
         };
 

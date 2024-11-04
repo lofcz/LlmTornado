@@ -454,6 +454,21 @@ public static class ChatDemo
         Console.WriteLine(str);
     }
     
+    public static async Task Haiku35()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Anthropic.Claude35.Haiku,
+            MaxTokens = 2000
+        });
+        chat.AppendUserInput("Who are you?");
+
+        string? str = await chat.GetResponse();
+
+        Console.WriteLine("Haiku35:");
+        Console.WriteLine(str);
+    }
+    
     public static async Task OpenAiO1()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest

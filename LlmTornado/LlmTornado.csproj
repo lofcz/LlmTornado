@@ -11,9 +11,9 @@
         <RepositoryUrl>https://github.com/lofcz/LlmTornado</RepositoryUrl>
         <PackageTags>OpenAI, Cohere, Anthropic, Azure, LLM, GPT-4O, GPT-4, GPT-Turbo, DALL-E, Coral, Claude3, Command-R-Plus</PackageTags>
         <Title>OpenAI NextGeneration</Title>
-        <PackageReleaseNotes>anthropic: new sonnet 3.5, sonnet 3.5-latest</PackageReleaseNotes>
+        <PackageReleaseNotes>anthropic: haiku 3.5</PackageReleaseNotes>
         <PackageId>LlmTornado</PackageId>
-        <Version>3.1.15</Version>
+        <Version>3.1.16</Version>
         <AssemblyVersion>3.0.5</AssemblyVersion>
         <FileVersion>3.0.5</FileVersion>
         <GenerateDocumentationFile>True</GenerateDocumentationFile>
