@@ -13,7 +13,7 @@
         <Title>OpenAI NextGeneration</Title>
         <PackageReleaseNotes>anthropic: haiku 3.5</PackageReleaseNotes>
         <PackageId>LlmTornado</PackageId>
-        <Version>3.1.16</Version>
+        <Version>3.1.17</Version>
         <AssemblyVersion>3.0.5</AssemblyVersion>
         <FileVersion>3.0.5</FileVersion>
         <GenerateDocumentationFile>True</GenerateDocumentationFile>

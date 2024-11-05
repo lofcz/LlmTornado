@@ -56,7 +56,8 @@ public class ChatModelAnthropicClaude35 : IVendorModelClassProvider
     [
         ModelSonnet,
         ModelSonnet241022,
-        ModelSonnetLatest
+        ModelSonnetLatest,
+        ModelHaiku
     ];
 
     /// <summary>
