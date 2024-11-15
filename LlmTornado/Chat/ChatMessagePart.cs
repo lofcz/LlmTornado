@@ -1,4 +1,9 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using LlmTornado.Code;
 using LlmTornado.Images;
 using Newtonsoft.Json;
@@ -35,6 +40,28 @@ public class ChatMessagePart
     {
         Text = text;
         Type = ChatMessageTypes.Text;
+    }
+    
+    /// <summary>
+    ///     The part is an audio fragment.
+    /// </summary>
+    /// <param name="base64EncodedAudio">Audio data</param>
+    /// <param name="format">Audio format</param>
+    public ChatMessagePart(string base64EncodedAudio, ChatAudioFormats format)
+    {
+        Type = ChatMessageTypes.Audio;
+        Audio = new ChatAudio(base64EncodedAudio, format);
+    }
+    
+    /// <summary>
+    ///     The part is an audio fragment.
+    /// </summary>
+    /// <param name="audioBytes">Audio data</param>
+    /// <param name="format">Audio format</param>
+    public ChatMessagePart(byte[] audioBytes, ChatAudioFormats format)
+    {
+        Type = ChatMessageTypes.Audio;
+        Audio = new ChatAudio(Convert.ToBase64String(audioBytes), format);
     }
 
     /// <summary>
@@ -101,4 +128,58 @@ public class ChatMessagePart
     /// </summary>
     [JsonProperty("image_url")]
     public ChatImage? Image { get; set; }
+    
+    /// <summary>
+    ///     Audio of the message part if type is <see cref="ChatMessageTypes.Audio" />.
+    /// </summary>
+    [JsonProperty("input_audio")]
+    public ChatAudio? Audio { get; set; }
+
+    /// <summary>
+    ///     Creates an audio part from a given stream.
+    /// </summary>
+    /// <param name="stream"></param>
+    /// <param name="format"></param>
+    /// <returns></returns>
+    public static async Task<ChatMessagePart> Create(Stream stream, ChatAudioFormats format)
+    {
+        using MemoryStream ms = new MemoryStream();
+        await stream.CopyToAsync(ms);
+        byte[] data = ms.ToArray();
+
+        return new ChatMessagePart(data, format);
+    }
+    
+    /// <summary>
+    ///     Creates an audio part from a given byte array.
+    /// </summary>
+    /// <param name="data"></param>
+    /// <param name="format"></param>
+    /// <returns></returns>
+    public static ChatMessagePart Create(byte[] data, ChatAudioFormats format)
+    {
+        return new ChatMessagePart(data, format);
+    }
+    
+    /// <summary>
+    ///     Creates an audio part from a given byte enumerable.
+    /// </summary>
+    /// <param name="data"></param>
+    /// <param name="format"></param>
+    /// <returns></returns>
+    public static ChatMessagePart Create(IEnumerable<byte> data, ChatAudioFormats format)
+    {
+        return new ChatMessagePart(data.ToArray(), format);
+    }
+    
+    /// <summary>
+    ///     Creates an audio part from a given byte enumerable.
+    /// </summary>
+    /// <param name="base64EncodedAudio"></param>
+    /// <param name="format"></param>
+    /// <returns></returns>
+    public static ChatMessagePart Create(string base64EncodedAudio, ChatAudioFormats format)
+    {
+        return new ChatMessagePart(base64EncodedAudio, format);
+    }
 }

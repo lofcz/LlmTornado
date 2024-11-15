@@ -72,6 +72,13 @@ public class ChatRequest
 	[JsonProperty("model")]
 	[JsonConverter(typeof(ModelJsonConverter))]
 	public ChatModel? Model { get; set; } = ChatModel.OpenAi.Gpt35.Turbo;
+	
+	/// <summary>
+	///		Modalities of the model. Can be omitted for text only conversations.
+	/// </summary>
+	[JsonProperty("modalities")]
+	[JsonConverter(typeof(ModalitiesJsonConverter))]
+	public HashSet<ChatModelModalities>? Modalities { get; set; }
 
 	/// <summary>
 	///     The messages to send with this Chat Request
@@ -368,6 +375,45 @@ public class ChatRequest
 			return existingValue;
 		}
 	}
+	
+	internal class ModalitiesJsonConverter : JsonConverter<HashSet<ChatModelModalities>>
+	{
+		public override void WriteJson(JsonWriter writer, HashSet<ChatModelModalities>? value, JsonSerializer serializer)
+		{
+			if (value is null)
+			{
+				return;
+			}
+
+			if (value.Count is 0)
+			{
+				return;
+			}
+			
+			writer.WritePropertyName("modalities");
+			writer.WriteStartArray();
+
+			foreach (ChatModelModalities x in value)
+			{
+				switch (x)
+				{
+					case ChatModelModalities.Audio:
+						writer.WriteValue("audio");
+						break;
+					case ChatModelModalities.Text:
+						writer.WriteValue("text");
+						break;
+				}
+			}
+			
+			writer.WriteEndArray();
+		}
+
+		public override HashSet<ChatModelModalities>? ReadJson(JsonReader reader, Type objectType, HashSet<ChatModelModalities>? existingValue, bool hasExistingValue, JsonSerializer serializer)
+		{
+			return existingValue;
+		}
+	}
     
     internal class ChatMessageRequestMessagesJsonConverter : JsonConverter<IList<ChatMessage>?>
     {
@@ -470,7 +516,7 @@ public class ChatRequest
                         {
 	                        ChatMessageTypes.Text => "text",
 	                        ChatMessageTypes.Image => "image_url",
-	                        ChatMessageTypes.Audio => "audio_url",
+	                        ChatMessageTypes.Audio => "input_audio",
 	                        _ => "text"
                         };
                         
@@ -491,6 +537,40 @@ public class ChatRequest
 
 		                        writer.WritePropertyName("url");
 		                        writer.WriteValue(part.Image?.Url);
+
+		                        writer.WriteEndObject();
+		                        break;
+	                        }
+	                        case ChatMessageTypes.Audio:
+	                        {
+		                        writer.WritePropertyName("input_audio");
+		                        writer.WriteStartObject();
+								
+		                        writer.WritePropertyName("data");
+		                        writer.WriteValue(part.Audio?.Data);
+
+		                        writer.WritePropertyName("format");
+
+		                        if (part.Audio is not null)
+		                        {
+			                        switch (part.Audio.Format)
+			                        {
+				                        case ChatAudioFormats.Wav:
+				                        {
+					                        writer.WriteValue("wav");
+					                        break;
+				                        }
+				                        case ChatAudioFormats.Mp3:
+				                        {
+					                        writer.WriteValue("mp3");
+					                        break;
+				                        }
+			                        }
+		                        }
+		                        else
+		                        {
+			                        writer.WriteValue(string.Empty);
+		                        }
 
 		                        writer.WriteEndObject();
 		                        break;

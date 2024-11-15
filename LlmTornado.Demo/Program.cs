@@ -86,6 +86,8 @@ public enum Demos
     ChatCohere2408,
     ChatOpenAiO1,
     ChatHaiku35,
+    ChatAudioWav,
+    ChatAudioMp3,
     Last
 }
 
@@ -215,6 +217,8 @@ public class Program
             Demos.ChatCohere2408 => ChatDemo.Cohere2408,
             Demos.ChatOpenAiO1 => ChatDemo.OpenAiO1,
             Demos.ChatHaiku35 => ChatDemo.Haiku35,
+            Demos.ChatAudioWav => ChatDemo.AudioInWav,
+            Demos.ChatAudioMp3 => ChatDemo.AudioInMp3,
             _ => null
         };
 

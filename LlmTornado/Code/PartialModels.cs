@@ -172,6 +172,71 @@ internal class ToolCallInboundAccumulator
 }
 
 /// <summary>
+///     Represents modalities of chat models.
+/// </summary>
+public enum ChatModelModalities
+{
+    /// <summary>
+    ///     Model is capable of generating text.
+    /// </summary>
+    Text,
+    /// <summary>
+    ///     Model is capable of generating audio.
+    /// </summary>
+    Audio
+}
+
+/// <summary>
+///     Represents an audio part of a chat message.
+/// </summary>
+public class ChatAudio
+{
+    /// <summary>
+    ///     Base64 encoded audio data.
+    /// </summary>
+    public string Data { get; set; }
+    
+    /// <summary>
+    ///     Format of the encoded audio data.
+    /// </summary>
+    public ChatAudioFormats Format { get; set; }
+
+    /// <summary>
+    ///     Creates an empty audio instance.
+    /// </summary>
+    public ChatAudio()
+    {
+        
+    }
+
+    /// <summary>
+    ///     Creates an audio instance from data and format.
+    /// </summary>
+    /// <param name="data">Base64 encoded audio data</param>
+    /// <param name="format">Format of the audio</param>
+    public ChatAudio(string data, ChatAudioFormats format)
+    {
+        Data = data;
+        Format = format;
+    }
+}
+
+/// <summary>
+///     Supported audio formats.
+/// </summary>
+public enum ChatAudioFormats
+{
+    /// <summary>
+    /// Wavelet
+    /// </summary>
+    Wav,
+    /// <summary>
+    /// MP3
+    /// </summary>
+    Mp3
+}
+
+/// <summary>
 ///     Represents a chat image
 /// </summary>
 public class ChatImage

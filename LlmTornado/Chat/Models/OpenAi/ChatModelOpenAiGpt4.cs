@@ -100,6 +100,26 @@ public class ChatModelOpenAiGpt4 : IVendorModelClassProvider
     public readonly ChatModel O240806 = ModelO240806;
     
     /// <summary>
+    /// Preview release for audio inputs in chat completions.
+    /// </summary>
+    public static readonly ChatModel ModelAudioPreview = new ChatModel("gpt-4o-audio-preview", LLmProviders.OpenAi, 128_000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelAudioPreview"/>
+    /// </summary>
+    public readonly ChatModel AudioPreview = ModelAudioPreview;
+    
+    /// <summary>
+    /// Current snapshot for the Audio API model.
+    /// </summary>
+    public static readonly ChatModel ModelAudioPreview241001 = new ChatModel("gpt-4o-audio-preview-2024-10-01", LLmProviders.OpenAi, 128_000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelAudioPreview241001"/>
+    /// </summary>
+    public readonly ChatModel AudioPreview241001 = ModelAudioPreview241001;
+    
+    /// <summary>
     /// Dynamic model continuously updated to the current version of GPT-4o in ChatGPT.
     /// </summary>
     public static readonly ChatModel ModelChatGptLatest = new ChatModel("chatgpt-4o-latest", LLmProviders.OpenAi, 128_000);
@@ -232,7 +252,9 @@ public class ChatModelOpenAiGpt4 : IVendorModelClassProvider
         ModelO1,
         ModelO1240912,
         ModelO1Mini,
-        ModelO1Mini240912
+        ModelO1Mini240912,
+        ModelAudioPreview,
+        ModelAudioPreview241001
     ];
 
     /// <summary>
@@ -244,6 +266,15 @@ public class ChatModelOpenAiGpt4 : IVendorModelClassProvider
         ModelO1240912,
         ModelO1Mini,
         ModelO1Mini240912
+    ];
+    
+    /// <summary>
+    /// Models with audio capability.
+    /// </summary>
+    public static readonly HashSet<IModel> AudioModels =
+    [
+        ModelAudioPreview,
+        ModelAudioPreview241001
     ];
 
     /// <summary>

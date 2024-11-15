@@ -453,6 +453,44 @@ public static class ChatDemo
         Console.WriteLine("Google:");
         Console.WriteLine(str);
     }
+
+    public static async Task AudioInWav()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.OpenAi.Gpt4.AudioPreview241001,
+            Modalities = [ ChatModelModalities.Text ],
+            MaxTokens = 2000
+        });
+
+        byte[] audioData = await File.ReadAllBytesAsync("Static/Audio/sample.wav");
+        
+        chat.AppendUserInput([
+            new ChatMessagePart(audioData, ChatAudioFormats.Wav)
+        ]);
+        
+        string? str = await chat.GetResponse();
+        Console.WriteLine(str);
+    }
+    
+    public static async Task AudioInMp3()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.OpenAi.Gpt4.AudioPreview241001,
+            Modalities = [ ChatModelModalities.Text ],
+            MaxTokens = 2000
+        });
+
+        byte[] audioData = await File.ReadAllBytesAsync("Static/Audio/sample.mp3");
+        
+        chat.AppendUserInput([
+            new ChatMessagePart(audioData, ChatAudioFormats.Mp3)
+        ]);
+        
+        string? str = await chat.GetResponse();
+        Console.WriteLine(str);
+    }
     
     public static async Task Haiku35()
     {
