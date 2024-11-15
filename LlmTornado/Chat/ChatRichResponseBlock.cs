@@ -26,7 +26,11 @@ public enum ChatRichResponseBlockTypes
     /// <summary>
     /// Image block.
     /// </summary>
-    Image
+    Image,
+    /// <summary>
+    /// Audio block.
+    /// </summary>
+    Audio
 }
 
 /// <summary>
@@ -103,4 +107,42 @@ public class ChatRichResponseBlock
     /// If the <see cref="Type"/> is <see cref="ChatRichResponseBlockTypes.Function"/>, this is the function the tool requested calling.
     /// </summary>
     public FunctionCall? FunctionCall { get; set; }
+    
+    /// <summary>
+    /// If the <see cref="Type"/> is <see cref="ChatRichResponseBlockTypes.Audio"/>, this is the audio.
+    /// </summary>
+    public ChatMessageAudio? ChatAudio { get; set; }
+
+    /// <summary>
+    ///     Creates an empty block.
+    /// </summary>
+    public ChatRichResponseBlock()
+    {
+        
+    }
+    
+    /// <summary>
+    ///     Creates a block from a message part and a message.
+    /// </summary>
+    /// <param name="part"></param>
+    /// <param name="msg"></param>
+    public ChatRichResponseBlock(ChatMessagePart part, ChatMessage msg)
+    {
+        Type = part.Type switch
+        {
+            ChatMessageTypes.Text => ChatRichResponseBlockTypes.Message,
+            ChatMessageTypes.Image => ChatRichResponseBlockTypes.Image,
+            ChatMessageTypes.Audio => ChatRichResponseBlockTypes.Audio,
+            _ => ChatRichResponseBlockTypes.Unknown
+        };
+        
+        Message = part.Type is ChatMessageTypes.Text ? part.Text : null;
+        ChatImage = part.Type is ChatMessageTypes.Image ? part.Image : null;
+        
+        if (msg.Audio is not null)
+        {
+            Type = ChatRichResponseBlockTypes.Audio;
+            ChatAudio = msg.Audio;
+        }
+    }
 }

@@ -64,7 +64,7 @@ public class Conversation
 
         RequestParameters.Model ??= ChatModel.OpenAi.Gpt35.Turbo; 
 
-        messages = new List<ChatMessage>();
+        messages = [];
         this.endpoint = endpoint;
         RequestParameters.NumChoicesPerMessage = 1;
         RequestParameters.Stream = false;
@@ -525,7 +525,7 @@ public class Conversation
     /// <returns>The response from the chatbot API</returns>
     public async Task<ChatRichResponse> GetResponseRich(CancellationToken token = default)
     {
-        ChatRequest req = new(RequestParameters)
+        ChatRequest req = new ChatRequest(RequestParameters)
         {
             Messages = messages.ToList(),
             CancellationToken = token
@@ -590,6 +590,14 @@ public class Conversation
                             Message = part.Text
                         });
                     }
+                }
+                else if (newMsg.Audio is not null)
+                {
+                    response.Blocks!.Add(new ChatRichResponseBlock
+                    {
+                        Type = ChatRichResponseBlockTypes.Audio,
+                        ChatAudio = newMsg.Audio
+                    });
                 }
             }
         }
@@ -813,7 +821,7 @@ public class Conversation
                                 FunctionCall = call
                             });
                             
-                            ChatMessage fnResultMsg = new(ChatMessageRoles.Tool, call.Result?.Content ?? "The service returned no data.".ToJson(), Guid.NewGuid())
+                            ChatMessage fnResultMsg = new ChatMessage(ChatMessageRoles.Tool, call.Result?.Content ?? "The service returned no data.".ToJson(), Guid.NewGuid())
                             {
                                 Id = currentMsgId,
                                 ToolCallId = call.ToolCall?.Id ?? call.Name,
@@ -841,15 +849,7 @@ public class Conversation
 
                 if (newMsg.Parts?.Count > 0)
                 {
-                    foreach (ChatMessagePart part in newMsg.Parts)
-                    {
-                        blocks.Add(new ChatRichResponseBlock
-                        {
-                            Type = part.Type is ChatMessageTypes.Text ? ChatRichResponseBlockTypes.Message : ChatRichResponseBlockTypes.Image,
-                            Message = part.Type is ChatMessageTypes.Text ? part.Text : null,
-                            ChatImage = part.Type is ChatMessageTypes.Image ? part.Image : null
-                        });
-                    }
+                    blocks.AddRange(newMsg.Parts.Select(x => new ChatRichResponseBlock(x, newMsg)));
                 }
                 else if (newMsg.Content is not null)
                 {

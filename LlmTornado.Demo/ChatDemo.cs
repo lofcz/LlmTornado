@@ -473,6 +473,41 @@ public static class ChatDemo
         Console.WriteLine(str);
     }
     
+    public static async Task AudioInAudioOutWav()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.OpenAi.Gpt4.AudioPreview241001,
+            Modalities = [ ChatModelModalities.Text, ChatModelModalities.Audio ],
+            Audio = new ChatRequestAudio(ChatAudioRequestKnownVoices.Ash, ChatRequestAudioFormats.Wav),
+            MaxTokens = 2000
+        });
+
+        byte[] audioData = await File.ReadAllBytesAsync("Static/Audio/sample.wav");
+        
+        chat.AppendUserInput([
+            new ChatMessagePart(audioData, ChatAudioFormats.Wav)
+        ]);
+        
+        ChatRichResponse data = await chat.GetResponseRich();
+
+        if (data.Blocks is not null)
+        {
+            ChatRichResponseBlock? audioBlock = data.Blocks.FirstOrDefault(x => x.Type is ChatRichResponseBlockTypes.Audio);
+
+            if (audioBlock is not null)
+            {
+                if (audioBlock.ChatAudio is not null)
+                {
+                    Console.WriteLine($"transcript: {audioBlock.ChatAudio.Transcript}");
+                    
+                    byte[] outAudioData = audioBlock.ChatAudio.ByteData;
+                    await File.WriteAllBytesAsync("AudioInAudioOutWav.wav", outAudioData);
+                }
+            }
+        }
+    }
+    
     public static async Task AudioInMp3()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest

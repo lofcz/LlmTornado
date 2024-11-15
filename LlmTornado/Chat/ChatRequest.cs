@@ -64,6 +64,10 @@ public class ChatRequest
         Seed = basedOn.Seed;
         User = basedOn.User;
         ResponseFormat = basedOn.ResponseFormat;
+        Audio = basedOn.Audio;
+        Modalities = basedOn.Modalities;
+        Metadata = basedOn.Metadata;
+        Store = basedOn.Store;
     }
 
 	/// <summary>
@@ -75,10 +79,32 @@ public class ChatRequest
 	
 	/// <summary>
 	///		Modalities of the model. Can be omitted for text only conversations.
+	///		For audio, OpenAI requires both: <see cref="ChatModelModalities.Text"/> and <see cref="ChatModelModalities.Audio"/>, using only <see cref="ChatModelModalities.Audio"/> is invalid.
 	/// </summary>
 	[JsonProperty("modalities")]
 	[JsonConverter(typeof(ModalitiesJsonConverter))]
-	public HashSet<ChatModelModalities>? Modalities { get; set; }
+	public List<ChatModelModalities>? Modalities { get; set; }
+	
+	/// <summary>
+	///		Parameters for audio output. Required when audio output is requested with <see cref="Modalities"/>: ["<see cref="ChatModelModalities.Audio"/>"].
+	///		Currently only works with OpenAI models.
+	/// </summary>
+	[JsonProperty("audio")]
+	public ChatRequestAudio? Audio { get; set; }
+	
+	/// <summary>
+	///		Developer-defined tags and values used for filtering completions in the dashboard.
+	///		Currently only works with OpenAI models. Can be any object, e.g. new { test = 1 }
+	/// </summary>
+	[JsonProperty("metadata")]
+	public object? Metadata { get; set; }
+	
+	/// <summary>
+	///		Whether to store the output of this chat completion request for use in our model distillation or evals products.
+	///		Currently only works with OpenAI models.
+	/// </summary>
+	[JsonProperty("store")]
+	public bool? Store { get; set; }
 
 	/// <summary>
 	///     The messages to send with this Chat Request
@@ -376,9 +402,9 @@ public class ChatRequest
 		}
 	}
 	
-	internal class ModalitiesJsonConverter : JsonConverter<HashSet<ChatModelModalities>>
+	internal class ModalitiesJsonConverter : JsonConverter<List<ChatModelModalities>>
 	{
-		public override void WriteJson(JsonWriter writer, HashSet<ChatModelModalities>? value, JsonSerializer serializer)
+		public override void WriteJson(JsonWriter writer, List<ChatModelModalities>? value, JsonSerializer serializer)
 		{
 			if (value is null)
 			{
@@ -390,7 +416,6 @@ public class ChatRequest
 				return;
 			}
 			
-			writer.WritePropertyName("modalities");
 			writer.WriteStartArray();
 
 			foreach (ChatModelModalities x in value)
@@ -405,11 +430,11 @@ public class ChatRequest
 						break;
 				}
 			}
-			
+
 			writer.WriteEndArray();
 		}
 
-		public override HashSet<ChatModelModalities>? ReadJson(JsonReader reader, Type objectType, HashSet<ChatModelModalities>? existingValue, bool hasExistingValue, JsonSerializer serializer)
+		public override List<ChatModelModalities>? ReadJson(JsonReader reader, Type objectType, List<ChatModelModalities>? existingValue, bool hasExistingValue, JsonSerializer serializer)
 		{
 			return existingValue;
 		}

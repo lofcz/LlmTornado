@@ -116,6 +116,12 @@ public class ChatMessage
     public string? Refusal { get; set; }
     
     /// <summary>
+    ///     Audio block content.
+    /// </summary>
+    [JsonProperty("audio")]
+    public ChatMessageAudio? Audio { get; set; }
+    
+    /// <summary>
     ///     The parts of the message. When serializing, <see cref="Parts"/> have priority over <see cref="Content"/>
     /// </summary>
     [JsonIgnore]

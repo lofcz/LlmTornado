@@ -88,6 +88,7 @@ public enum Demos
     ChatHaiku35,
     ChatAudioWav,
     ChatAudioMp3,
+    ChatAudioInAudioOut,
     Last
 }
 
@@ -219,6 +220,7 @@ public class Program
             Demos.ChatHaiku35 => ChatDemo.Haiku35,
             Demos.ChatAudioWav => ChatDemo.AudioInWav,
             Demos.ChatAudioMp3 => ChatDemo.AudioInMp3,
+            Demos.ChatAudioInAudioOut => ChatDemo.AudioInAudioOutWav,
             _ => null
         };
 
