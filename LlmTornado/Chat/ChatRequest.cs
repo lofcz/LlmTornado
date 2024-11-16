@@ -504,6 +504,17 @@ public class ChatRequest
 				                writer.WriteEndArray();
 			                }
 
+			                if (msg.Audio is not null)
+			                {
+				                writer.WritePropertyName("audio");
+				                writer.WriteStartObject();
+				                
+				                writer.WritePropertyName("id");
+				                writer.WriteValue(msg.Audio.Id);
+								
+				                writer.WriteEndObject();
+			                }
+
 			                break;
 		                }
 	                }

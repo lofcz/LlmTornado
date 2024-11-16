@@ -508,6 +508,65 @@ public static class ChatDemo
         }
     }
     
+    public static async Task AudioInAudioOutMultiturn()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.OpenAi.Gpt4.AudioPreview241001,
+            Modalities = [ ChatModelModalities.Text, ChatModelModalities.Audio ],
+            Audio = new ChatRequestAudio(ChatAudioRequestKnownVoices.Ballad, ChatRequestAudioFormats.Wav),
+            MaxTokens = 2000
+        });
+
+        byte[] audioData = await File.ReadAllBytesAsync("Static/Audio/sample.wav");
+        
+        chat.AppendUserInput([
+            new ChatMessagePart(audioData, ChatAudioFormats.Wav)
+        ]);
+        
+        ChatRichResponse data = await chat.GetResponseRich();
+
+        if (data.Blocks is not null)
+        {
+            ChatRichResponseBlock? audioBlock = data.Blocks.FirstOrDefault(x => x.Type is ChatRichResponseBlockTypes.Audio);
+
+            if (audioBlock is not null)
+            {
+                if (audioBlock.ChatAudio is not null)
+                {
+                    Console.WriteLine($"transcript: {audioBlock.ChatAudio.Transcript}");
+                    
+                    byte[] outAudioData = audioBlock.ChatAudio.ByteData;
+                    await File.WriteAllBytesAsync("Multiturn1.wav", outAudioData);
+                }
+            }
+        }
+        
+        byte[] audioResponseData = await File.ReadAllBytesAsync("Static/Audio/sample2.wav");
+        
+        chat.AppendUserInput([
+            new ChatMessagePart(audioResponseData, ChatAudioFormats.Wav)
+        ]);
+        
+        data = await chat.GetResponseRich();
+
+        if (data.Blocks is not null)
+        {
+            ChatRichResponseBlock? audioBlock = data.Blocks.FirstOrDefault(x => x.Type is ChatRichResponseBlockTypes.Audio);
+
+            if (audioBlock is not null)
+            {
+                if (audioBlock.ChatAudio is not null)
+                {
+                    Console.WriteLine($"transcript2: {audioBlock.ChatAudio.Transcript}");
+                    
+                    byte[] outAudioData = audioBlock.ChatAudio.ByteData;
+                    await File.WriteAllBytesAsync("Multiturn2.wav", outAudioData);
+                }
+            }
+        }
+    }
+    
     public static async Task AudioInMp3()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest

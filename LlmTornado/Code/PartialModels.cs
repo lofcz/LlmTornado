@@ -274,10 +274,18 @@ public enum ChatRequestAudioFormats
 /// </summary>
 public enum ChatAudioRequestKnownVoices
 {
+    /// <summary>
+    ///     Male voice, deep.
+    /// </summary>
     [JsonProperty("ash")]
+    
     Ash,
+    /// <summary>
+    ///     Male voice, younger.
+    /// </summary>
     [JsonProperty("ballad")]
     Ballad,
+    
     [JsonProperty("coral")]
     Coral,
     [JsonProperty("sage")]
