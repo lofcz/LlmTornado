@@ -95,6 +95,7 @@ public enum Demos
     TranscriptionWhisperV2Srt,
     TranscriptionWhisperV2JsonVerbose,
     TranscriptionWhisperV3TurboJsonVerbose,
+    ChatAudioWavStreaming,
     Last
 }
 
@@ -233,6 +234,7 @@ public class Program
             Demos.TranscriptionWhisperV2Srt => TranscriptionDemo.TranscribeFormatSrt,
             Demos.TranscriptionWhisperV2JsonVerbose => TranscriptionDemo.TranscribeFormatJsonVerbose,
             Demos.TranscriptionWhisperV3TurboJsonVerbose => TranscriptionDemo.TranscribeFormatJsonVerboseGroq,
+            Demos.ChatAudioWavStreaming => ChatDemo.AudioInWavStreaming,
             _ => null
         };
 

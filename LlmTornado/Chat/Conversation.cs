@@ -1076,7 +1076,7 @@ public class Conversation
     /// <param name="token"></param>
     public async Task StreamResponseRich(ChatStreamEventHandler? eventsHandler, CancellationToken token = default)
     {
-        ChatRequest req = new(RequestParameters)
+        ChatRequest req = new ChatRequest(RequestParameters)
         {
             Messages = messages.ToList(),
             CancellationToken = token
