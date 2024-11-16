@@ -236,10 +236,10 @@ Check the links for simple to-understand examples!
 - 25,000+ installs on NuGet under previous names [Lofcz.Forks.OpenAI](https://www.nuget.org/packages/Lofcz.Forks.OpenAI), [OpenAiNg](https://www.nuget.org/packages/OpenAiNg).
 - Used in commercial projects incurring charges of thousands of dollars monthly.
 - The license will never change. Looking at you HashiCorp and Tiny.
-- Supports streaming, functions/tools, and strongly typed LLM plugins/connectors.
+- Supports streaming, functions/tools, modalities (images, audio), and strongly typed LLM plugins/connectors.
 - Great performance, nullability annotations.
 - Extensive tests suite.
-- Maintained actively for over half a year.
+- Maintained actively for over a year.
 
 ## Documentation
 
