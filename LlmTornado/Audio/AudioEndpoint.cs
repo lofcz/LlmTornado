@@ -94,7 +94,7 @@ public class AudioEndpoint : EndpointBase
             content.Add(sc, "file", "test.wav");
         }
         
-        content.Add(new StringContent(request.Model), "model");
+        content.Add(new StringContent(request.Model.GetApiName), "model");
 
         if (!request.Prompt.IsNullOrWhiteSpace())
         {
@@ -119,7 +119,7 @@ public class AudioEndpoint : EndpointBase
         {
             if (request.ResponseFormat is AudioTranscriptionResponseFormats.Text or AudioTranscriptionResponseFormats.Srt or AudioTranscriptionResponseFormats.Vtt)
             {
-                object? obj = await HttpPost1(typeof(string), Api.GetProvider(LLmProviders.OpenAi), Endpoint, url, content);
+                object? obj = await HttpPost1(typeof(string), provider, Endpoint, url, content);
 
                 if (obj is string str)
                 {
@@ -133,7 +133,7 @@ public class AudioEndpoint : EndpointBase
                 }
             }
             
-            result = await HttpPost1<TranscriptionResult>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, url, content);
+            result = await HttpPost1<TranscriptionResult>(provider, Endpoint, url, content);
         }
         finally
         {

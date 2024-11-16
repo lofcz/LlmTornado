@@ -73,4 +73,21 @@ public static class TranscriptionDemo
             Console.WriteLine(transcription.Text);
         }
     }
+    
+    public static async Task TranscribeFormatJsonVerboseGroq()
+    {
+        byte[] audioData = await File.ReadAllBytesAsync("Static/Audio/sample.wav");
+
+        TranscriptionResult? transcription = await Program.Connect().Audio.CreateTranscription(new TranscriptionRequest
+        {
+            File = new AudioFile(audioData, AudioFileTypes.Wav),
+            Model = AudioModel.Groq.OpenAi.WhisperV3Turbo,
+            ResponseFormat = AudioTranscriptionResponseFormats.VerboseJson
+        });
+
+        if (transcription is not null)
+        {
+            Console.WriteLine(transcription.Text);
+        }
+    }
 }

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using LlmTornado.Audio.Models.OpenAi;
 using LlmTornado.Chat.Models;
 using LlmTornado.Code.Models;
 
@@ -9,6 +10,11 @@ namespace LlmTornado.Audio.Models.Groq;
 /// </summary>
 public class AudioModelGroq : BaseVendorModelProvider
 {
+    /// <summary>
+    /// Models by OpenAI.
+    /// </summary>
+    public readonly AudioModelGroqOpenAi OpenAi = new AudioModelGroqOpenAi();
+    
     /// <summary>
     /// All known chat models hosted by Groq.
     /// </summary>
@@ -33,7 +39,7 @@ public class AudioModelGroq : BaseVendorModelProvider
     /// <inheritdoc cref="AllModels"/>
     /// </summary>
     public static readonly List<IModel> ModelsAll = [
-        
+        ..AudioModelGroqOpenAi.ModelsAll
     ];
     
     static AudioModelGroq()
