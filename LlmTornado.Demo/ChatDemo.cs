@@ -526,6 +526,8 @@ public static class ChatDemo
         
         ChatRichResponse data = await chat.GetResponseRich();
 
+        int tokens = data.Result?.Usage?.TotalTokens ?? 0;
+        
         if (data.Blocks is not null)
         {
             ChatRichResponseBlock? audioBlock = data.Blocks.FirstOrDefault(x => x.Type is ChatRichResponseBlockTypes.Audio);
@@ -565,6 +567,10 @@ public static class ChatDemo
                 }
             }
         }
+        
+        tokens += data.Result?.Usage?.TotalTokens ?? 0;
+        
+        Console.WriteLine($"Tokens total: {tokens}");
     }
     
     public static async Task AudioInMp3()

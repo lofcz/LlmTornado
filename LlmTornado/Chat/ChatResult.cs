@@ -32,6 +32,12 @@ public class ChatResult : ApiResultBase
     public ChatUsage? Usage { get; set; }
 	
 	/// <summary>
+	///     Fingerprint of the system used to resolve the request. Currently supported only by OpenAI.
+	/// </summary>
+	[JsonProperty("system_fingerprint")]
+	public string? SystemFingerprint { get; set; }
+	
+	/// <summary>
 	///		Features supported only by a specific/few providers with no shared equivalent.
 	/// </summary>
 	[JsonIgnore]
@@ -104,7 +110,37 @@ public class ChatChoice
 }
 
 /// <summary>
-/// Token usage for a specialized prompting strategy used.
+///		Prompt token usage of different modalities and functionalities.
+/// </summary>
+public class ChatPromptTokenDetails
+{
+	/// <summary>
+	///		How many tokens were cached and billed at a discount.
+	/// </summary>
+	[JsonProperty("cached_tokens")]
+	public int? CachedTokens { get; set; }
+	
+	/// <summary>
+	///		How many tokens were in the audio part of the prompt.
+	/// </summary>
+	[JsonProperty("audio_tokens")]
+	public int? AudioTokens { get; set; }
+	
+	/// <summary>
+	///		How many tokens were in the text part of the prompt.
+	/// </summary>
+	[JsonProperty("text_tokens")]
+	public int? TextTokens { get; set; }
+	
+	/// <summary>
+	///		How many tokens were in the image part of the prompt.
+	/// </summary>
+	[JsonProperty("image_tokens")]
+	public int? ImageTokens { get; set; }
+}
+
+/// <summary>
+///		Token usage for a specialized prompting strategy used.
 /// </summary>
 public class ChatUsageTokenDetails
 {
@@ -113,6 +149,30 @@ public class ChatUsageTokenDetails
 	/// </summary>
 	[JsonProperty("reasoning_tokens")]
 	public int? ReasoningTokens { get; set; }
+	
+	/// <summary>
+	///		How many tokens were used for synthesizing audio.
+	/// </summary>
+	[JsonProperty("audio_tokens")]
+	public int? AudioTokens { get; set; }
+	
+	/// <summary>
+	///		How many text tokens were used.
+	/// </summary>
+	[JsonProperty("text_tokens")]
+	public int? TextTokens { get; set; }
+	
+	/// <summary>
+	///		How many text tokens were accepted from the predicted output.
+	/// </summary>
+	[JsonProperty("accepted_prediction_tokens")]
+	public int? AcceptedPredictionTokens { get; set; }
+	
+	/// <summary>
+	///		How many text tokens were rejected from the predicted output.
+	/// </summary>
+	[JsonProperty("rejected_prediction_tokens")]
+	public int? RejectedPredictionTokens { get; set; }
 }
 
 /// <summary>
@@ -137,6 +197,12 @@ public class ChatUsage : Usage
 	/// </summary>
 	[JsonProperty("total_tokens")]
     public int TotalTokens { get; set; }
+	
+	/// <summary>
+	///     Details about prompt tokens calculation. Currently supported only by OpenAI.
+	/// </summary>
+	[JsonProperty("prompt_tokens_details")]
+	public ChatPromptTokenDetails? PromptTokenDetails { get; set; }
 	
 	/// <summary>
 	///     Number of tokens in the generated completion.

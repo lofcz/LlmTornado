@@ -386,6 +386,14 @@ public class ChatRequest
 	/// <returns></returns>
 	public TornadoRequestContent Serialize(IEndpointProvider provider)
 	{
+		if (Messages is not null)
+		{
+			foreach (ChatMessage msg in Messages)
+			{
+				msg.Request = this;
+			}	
+		}
+		
 		return SerializeMap.TryGetValue(provider.Provider, out Func<ChatRequest, IEndpointProvider, string>? serializerFn) ? new TornadoRequestContent(serializerFn.Invoke(this, provider), UrlOverride) : new TornadoRequestContent(string.Empty, UrlOverride);
 	}
 	
@@ -450,6 +458,14 @@ public class ChatRequest
                 return;
             }
 
+            ChatRequest? request = null;
+            bool isExpired = false;
+
+            if (value.Count > 0)
+            {
+	            request = value[0].Request;
+            }
+
             writer.WriteStartArray();
 
             foreach (ChatMessage msg in value)
@@ -506,13 +522,24 @@ public class ChatRequest
 
 			                if (msg.Audio is not null)
 			                {
-				                writer.WritePropertyName("audio");
-				                writer.WriteStartObject();
+				                if (request?.Audio?.CompressionStrategy is ChatAudioCompressionStrategies.Native or ChatAudioCompressionStrategies.PreferNative)
+				                {
+					                if (request.Audio.CompressionStrategy is ChatAudioCompressionStrategies.PreferNative)
+					                {
+						                isExpired = DateTimeOffset.UtcNow.ToUnixTimeSeconds() >= msg.Audio.ExpiresAt;
+					                }
+
+					                if (!isExpired)
+					                {
+						                writer.WritePropertyName("audio");
+						                writer.WriteStartObject();
 				                
-				                writer.WritePropertyName("id");
-				                writer.WriteValue(msg.Audio.Id);
+						                writer.WritePropertyName("id");
+						                writer.WriteValue(msg.Audio.Id);
 								
-				                writer.WriteEndObject();
+						                writer.WriteEndObject();    
+					                }
+				                }
 			                }
 
 			                break;
@@ -620,7 +647,23 @@ public class ChatRequest
                 }
                 else
                 {
-                    writer.WriteValue(msg.Content);
+	                if (msg.Audio is not null)
+	                {
+		                if (request?.Audio?.CompressionStrategy is ChatAudioCompressionStrategies.OutputAsText or ChatAudioCompressionStrategies.PreferNative)
+		                {
+			                // only write transcription if the audio cache expired
+			                if (request.Audio.CompressionStrategy is ChatAudioCompressionStrategies.PreferNative && !isExpired)
+			                {
+				                goto writeNativeContent;
+			                }
+			                
+			                writer.WriteValue(msg.Audio.Transcript);
+			                goto closeMsgObj;
+		                }
+	                }
+	                
+	                writeNativeContent:
+	                writer.WriteValue(msg.Content);
                 }
 
                 closeMsgObj:
