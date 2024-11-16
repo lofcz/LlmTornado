@@ -34,7 +34,10 @@ public class CompletionEndpoint : EndpointBase
     ///     tokens.  For every request, if you do not have a parameter set on the request but do have it set here as a default,
     ///     the request will automatically pick up the default value.
     /// </summary>
-    public CompletionRequest DefaultCompletionRequestArgs { get; set; } = new() { Model = Model.DavinciText };
+    public CompletionRequest DefaultCompletionRequestArgs { get; set; } = new CompletionRequest
+    {
+        Model = Model.DavinciText
+    };
 
     #region Non-streaming
 
@@ -50,10 +53,9 @@ public class CompletionEndpoint : EndpointBase
     ///     Asynchronously returns the completion result.  Look in its <see cref="CompletionResult.Completions" />
     ///     property for the completions.
     /// </returns>
-    public async Task<CompletionResult?> CreateCompletionAsync(CompletionRequest request)
+    public async Task<CompletionResult?> CreateCompletion(CompletionRequest request)
     {
         return await HttpPost1<CompletionResult>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, postData: request);
-        
     }
 
     /// <summary>
@@ -69,10 +71,10 @@ public class CompletionEndpoint : EndpointBase
     ///     Asynchronously returns the completion result.  Look in its <see cref="CompletionResult.Completions" />
     ///     property for the completions, which should have a length equal to <paramref name="numOutputs" />.
     /// </returns>
-    public Task<CompletionResult> CreateCompletionsAsync(CompletionRequest request, int numOutputs = 5)
+    public Task<CompletionResult?> CreateCompletions(CompletionRequest request, int numOutputs = 5)
     {
         request.NumChoicesPerPrompt = numOutputs;
-        return CreateCompletionAsync(request);
+        return CreateCompletion(request);
     }
 
     /// <summary>
@@ -120,20 +122,9 @@ public class CompletionEndpoint : EndpointBase
     ///     Asynchronously returns the completion result.  Look in its <see cref="CompletionResult.Completions" />
     ///     property for the completions.
     /// </returns>
-    public Task<CompletionResult> CreateCompletionAsync(string prompt,
-        Model model = null,
-        int? max_tokens = null,
-        double? temperature = null,
-        double? top_p = null,
-        int? numOutputs = null,
-        double? presencePenalty = null,
-        double? frequencyPenalty = null,
-        int? logProbs = null,
-        bool? echo = null,
-        params string[] stopSequences
-    )
+    public Task<CompletionResult?> CreateCompletion(string prompt, Model model = null, int? max_tokens = null, double? temperature = null, double? top_p = null, int? numOutputs = null, double? presencePenalty = null, double? frequencyPenalty = null, int? logProbs = null, bool? echo = null, params string[] stopSequences)
     {
-        CompletionRequest request = new(DefaultCompletionRequestArgs)
+        CompletionRequest request = new CompletionRequest(DefaultCompletionRequestArgs)
         {
             Prompt = prompt,
             Model = model ?? DefaultCompletionRequestArgs.Model,
@@ -147,7 +138,8 @@ public class CompletionEndpoint : EndpointBase
             Echo = echo ?? DefaultCompletionRequestArgs.Echo,
             MultipleStopSequences = stopSequences ?? DefaultCompletionRequestArgs.MultipleStopSequences
         };
-        return CreateCompletionAsync(request);
+        
+        return CreateCompletion(request);
     }
 
     /// <summary>
@@ -157,13 +149,14 @@ public class CompletionEndpoint : EndpointBase
     /// </summary>
     /// <param name="prompts">One or more prompts to generate from</param>
     /// <returns></returns>
-    public Task<CompletionResult> CreateCompletionAsync(params string[] prompts)
+    public Task<CompletionResult?> CreateCompletion(params string[] prompts)
     {
-        CompletionRequest request = new(DefaultCompletionRequestArgs)
+        CompletionRequest request = new CompletionRequest(DefaultCompletionRequestArgs)
         {
             MultiplePrompts = prompts
         };
-        return CreateCompletionAsync(request);
+        
+        return CreateCompletion(request);
     }
 
     #endregion
@@ -174,7 +167,7 @@ public class CompletionEndpoint : EndpointBase
     ///     Ask the API to complete the prompt(s) using the specified request, and stream the results to the
     ///     <paramref name="resultHandler" /> as they come in.
     ///     If you are on the latest C# supporting async enumerables, you may prefer the cleaner syntax of
-    ///     <see cref="StreamCompletionEnumerableAsync(CompletionRequest)" /> instead.
+    ///     <see cref="StreamCompletionEnumerable(LlmTornado.Completions.CompletionRequest)" /> instead.
     /// </summary>
     /// <param name="request">
     ///     The request to send to the API.  This does not fall back to default values specified in
@@ -188,14 +181,14 @@ public class CompletionEndpoint : EndpointBase
     {
         int index = 0;
 
-        await foreach (CompletionResult res in StreamCompletionEnumerableAsync(request)) resultHandler(index++, res);
+        await foreach (CompletionResult res in StreamCompletionEnumerable(request)) resultHandler(index++, res);
     }
 
     /// <summary>
     ///     Ask the API to complete the prompt(s) using the specified request, and stream the results to the
     ///     <paramref name="resultHandler" /> as they come in.
     ///     If you are on the latest C# supporting async enumerables, you may prefer the cleaner syntax of
-    ///     <see cref="StreamCompletionEnumerableAsync(CompletionRequest)" /> instead.
+    ///     <see cref="StreamCompletionEnumerable(LlmTornado.Completions.CompletionRequest)" /> instead.
     /// </summary>
     /// <param name="request">
     ///     The request to send to the API.  This does not fall back to default values specified in
@@ -204,7 +197,7 @@ public class CompletionEndpoint : EndpointBase
     /// <param name="resultHandler">An action to be called as each new result arrives.</param>
     public async Task StreamCompletionAsync(CompletionRequest request, Action<CompletionResult> resultHandler)
     {
-        await foreach (CompletionResult res in StreamCompletionEnumerableAsync(request)) resultHandler(res);
+        await foreach (CompletionResult res in StreamCompletionEnumerable(request)) resultHandler(res);
     }
 
     /// <summary>
@@ -221,7 +214,7 @@ public class CompletionEndpoint : EndpointBase
     ///     <see href="https://docs.microsoft.com/en-us/dotnet/csharp/whats-new/csharp-8#asynchronous-streams" /> for more
     ///     details on how to consume an async enumerable.
     /// </returns>
-    public IAsyncEnumerable<CompletionResult> StreamCompletionEnumerableAsync(CompletionRequest request)
+    public IAsyncEnumerable<CompletionResult> StreamCompletionEnumerable(CompletionRequest request)
     {
         IEndpointProvider provider = Api.GetProvider(LLmProviders.OpenAi);
         request = new CompletionRequest(request) { Stream = true };
@@ -276,19 +269,9 @@ public class CompletionEndpoint : EndpointBase
     ///     <see href="https://docs.microsoft.com/en-us/dotnet/csharp/whats-new/csharp-8#asynchronous-streams">the C# docs</see>
     ///     for more details on how to consume an async enumerable.
     /// </returns>
-    public IAsyncEnumerable<CompletionResult> StreamCompletionEnumerableAsync(string prompt,
-        Model model = null,
-        int? max_tokens = null,
-        double? temperature = null,
-        double? top_p = null,
-        int? numOutputs = null,
-        double? presencePenalty = null,
-        double? frequencyPenalty = null,
-        int? logProbs = null,
-        bool? echo = null,
-        params string[] stopSequences)
+    public IAsyncEnumerable<CompletionResult> StreamCompletionEnumerable(string prompt, Model model = null, int? max_tokens = null, double? temperature = null, double? top_p = null, int? numOutputs = null, double? presencePenalty = null, double? frequencyPenalty = null, int? logProbs = null, bool? echo = null, params string[] stopSequences)
     {
-        CompletionRequest request = new(DefaultCompletionRequestArgs)
+        CompletionRequest request = new CompletionRequest(DefaultCompletionRequestArgs)
         {
             Prompt = prompt,
             Model = model ?? DefaultCompletionRequestArgs.Model,
@@ -303,7 +286,7 @@ public class CompletionEndpoint : EndpointBase
             MultipleStopSequences = stopSequences ?? DefaultCompletionRequestArgs.MultipleStopSequences,
             Stream = true
         };
-        return StreamCompletionEnumerableAsync(request);
+        return StreamCompletionEnumerable(request);
     }
 
     #endregion
@@ -321,7 +304,7 @@ public class CompletionEndpoint : EndpointBase
     public async Task<string> CreateAndFormatCompletion(CompletionRequest request)
     {
         string prompt = request.Prompt;
-        CompletionResult result = await CreateCompletionAsync(request);
+        CompletionResult? result = await CreateCompletion(request);
         return prompt + result;
     }
 
@@ -330,15 +313,16 @@ public class CompletionEndpoint : EndpointBase
     /// </summary>
     /// <param name="prompt">The prompt to complete</param>
     /// <returns>The best completion</returns>
-    public async Task<string> GetCompletion(string prompt)
+    public async Task<string?> GetCompletion(string prompt)
     {
-        CompletionRequest request = new(DefaultCompletionRequestArgs)
+        CompletionRequest request = new CompletionRequest(DefaultCompletionRequestArgs)
         {
             Prompt = prompt,
             NumChoicesPerPrompt = 1
         };
-        CompletionResult result = await CreateCompletionAsync(request);
-        return result.ToString();
+        
+        CompletionResult? result = await CreateCompletion(request);
+        return result?.ToString();
     }
 
     #endregion

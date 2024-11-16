@@ -265,6 +265,42 @@ public class ChatRequestAudio
 }
 
 /// <summary>
+///     Formats in which the transcription can be returned.
+/// </summary>
+public enum AudioTranscriptionResponseFormats
+{
+    /// <summary>
+    ///     JSON.
+    /// </summary>
+    [JsonProperty("json")]
+    Json,
+    
+    /// <summary>
+    ///     Plaintext.
+    /// </summary>
+    [JsonProperty("text")]
+    Text,
+    
+    /// <summary>
+    ///     SubRip Subtitle.
+    /// </summary>
+    [JsonProperty("srt")]
+    Srt,
+    
+    /// <summary>
+    ///     Json with details.
+    /// </summary>
+    [JsonProperty("verbose_json")]
+    VerboseJson,
+    
+    /// <summary>
+    ///     Video Text to Track.
+    /// </summary>
+    [JsonProperty("vtt")]
+    Vtt
+}
+
+/// <summary>
 ///     Output audio formats.
 /// </summary>
 public enum ChatRequestAudioFormats

@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using LlmTornado.Models;
+using Newtonsoft.Json;
 
 namespace LlmTornado.Audio;
 
@@ -14,10 +15,10 @@ public class SpeechRequest
     public string Input { get; set; }
 
     /// <summary>
-    ///     ID of the model to use. Either <see cref="Models.Model.TTS_1" /> or <see cref="Models.Model.TTS_1" />
+    ///     ID of the model to use. Either <see cref="LlmTornado.Models.Model.TTS_1" /> or <see cref="LlmTornado.Models.Model.TTS_1" />
     /// </summary>
     [JsonProperty("model")]
-    public string Model { get; set; } = Models.Model.TTS_1;
+    public string Model { get; set; } = LlmTornado.Models.Model.TTS_1;
 
     /// <summary>
     ///     The voice to use for tts

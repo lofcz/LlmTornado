@@ -436,6 +436,11 @@ internal class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider,
     {
         res.Provider = this;
     }
+    
+    public override void ParseInboundHeaders(object? res, HttpResponseMessage response)
+    {
+        
+    }
 
     private static readonly Dictionary<Type, Func<string, string?, object?>> inboundMessageHandlers = new Dictionary<Type, Func<string, string?, object?>>
     {
@@ -458,5 +463,10 @@ internal class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider,
         }
 
         return default;
+    }
+    
+    public override object? InboundMessage(Type type, string jsonData, string? postData)
+    {
+        return JsonConvert.DeserializeObject(jsonData, type);
     }
 }

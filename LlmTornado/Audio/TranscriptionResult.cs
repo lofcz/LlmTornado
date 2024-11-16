@@ -5,7 +5,7 @@ using Newtonsoft.Json;
 namespace LlmTornado.Audio;
 
 /// <summary>
-///     Default format for transcript result.
+///     Transcription format for vtt results.
 /// </summary>
 public class TranscriptionResult : ApiResultBase
 {
@@ -13,32 +13,18 @@ public class TranscriptionResult : ApiResultBase
     ///     Text of the transcript result.
     /// </summary>
     public string Text { get; set; }
-}
-
-/// <summary>
-///     Transcription format for vtt results.
-/// </summary>
-public class TranscriptionVerboseJsonResult : TranscriptionResult
-{
-    /// <summary>
-    ///     Creates a verbose json result object.
-    /// </summary>
-    public TranscriptionVerboseJsonResult()
-    {
-        Segments = new List<TranscriptionSegment>();
-    }
-
+    
     /// <summary>
     ///     Task type. Translate or transcript.
     /// </summary>
     [JsonProperty("task")]
-    public string Task { get; set; }
+    public string? Task { get; set; }
 
     /// <summary>
     ///     Language of the audio.
     /// </summary>
     [JsonProperty("language")]
-    public string Language { get; set; }
+    public string? Language { get; set; }
 
     /// <summary>
     ///     Audio duration.
@@ -50,7 +36,7 @@ public class TranscriptionVerboseJsonResult : TranscriptionResult
     ///     Audio segments.
     /// </summary>
     [JsonProperty("segments")]
-    public List<TranscriptionSegment> Segments { get; set; }
+    public List<TranscriptionSegment> Segments { get; set; } = [];
 }
 
 /// <summary>

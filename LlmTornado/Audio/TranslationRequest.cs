@@ -13,7 +13,7 @@ public class TranslationRequest
     /// <summary>
     ///     ID of the model to use. Only whisper-1 is currently available.
     /// </summary>
-    public string Model { get; set; } = Models.Model.Whisper_1;
+    public string Model { get; set; } = LlmTornado.Models.Model.Whisper_1;
 
     /// <summary>
     ///     An optional text to guide the model's style or continue a previous audio segment. The Prompt should match the audio

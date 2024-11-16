@@ -7,7 +7,7 @@ public static class SpeechDemo
 {
     public static async Task Tts()
     {
-        SpeechTtsResult? result = await Program.Connect().Audio.CreateSpeechAsync(new SpeechRequest
+        SpeechTtsResult? result = await Program.Connect().Audio.CreateSpeech(new SpeechRequest
         {
             Input = "Hi, how are you?",
             Model = Model.TTS_1_HD,

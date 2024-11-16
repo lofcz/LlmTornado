@@ -1,9 +1,12 @@
-﻿using System.Globalization;
+﻿using System;
+using System.Globalization;
+using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using LlmTornado.Code;
 using LlmTornado;
+using LlmTornado.Common;
 
 namespace LlmTornado.Audio;
 
@@ -28,22 +31,22 @@ public class AudioEndpoint : EndpointBase
     /// <summary>
     ///     Sends transcript request to openai and returns verbose_json result.
     /// </summary>
-    public Task<TranscriptionVerboseJsonResult?> CreateTranscriptionAsync(TranscriptionRequest request)
+    public Task<TranscriptionResult?> CreateTranscription(TranscriptionRequest request)
     {
-        return PostAudioAsync($"/transcriptions", request);
+        return PostAudio($"/transcriptions", request);
     }
 
     /// <summary>
     ///     Translates audio into English.
     /// </summary>
-    public Task<TranscriptionVerboseJsonResult?> CreateTranslationAsync(TranslationRequest request)
+    public Task<TranscriptionResult?> CreateTranslation(TranslationRequest request)
     {
-        return PostAudioAsync($"/translations", new TranscriptionRequest
+        return PostAudio($"/translations", new TranscriptionRequest
             {
                 File = request.File,
                 Model = request.Model,
                 Prompt = request.Prompt,
-                ResponseFormat = request.ResponseFormat,
+                // ResponseFormat = request.ResponseFormat,
                 Temperature = request.Temperature
             }
         );
@@ -52,34 +55,97 @@ public class AudioEndpoint : EndpointBase
     /// <summary>
     ///     Converts string text into speech (tts)
     /// </summary>
-    public Task<SpeechTtsResult?> CreateSpeechAsync(SpeechRequest request)
+    public Task<SpeechTtsResult?> CreateSpeech(SpeechRequest request)
     {
-        return PostSpeechAsync(request);
+        return PostSpeech(request);
     }
 
-    private async Task<SpeechTtsResult?> PostSpeechAsync(SpeechRequest request)
+    private async Task<SpeechTtsResult?> PostSpeech(SpeechRequest request)
     {
         StreamResponse? x = await HttpPostStream(Api.GetProvider(LLmProviders.OpenAi), Endpoint, $"/speech", request);
         return x is null ? null : new SpeechTtsResult(x);
     }
 
-    private Task<TranscriptionVerboseJsonResult?> PostAudioAsync(string url, TranscriptionRequest request)
+    private async Task<TranscriptionResult?> PostAudio(string url, TranscriptionRequest request)
     {
-        MultipartFormDataContent content = new();
-        StreamContent fileContent = new(request.File.File);
-        fileContent.Headers.ContentLength = request.File.ContentLength;
-        fileContent.Headers.ContentType = new MediaTypeHeaderValue(request.File.ContentType);
-        content.Add(fileContent, "file", request.File.Name);
+        IEndpointProvider provider = Api.GetProvider(request.Model);
+        url = provider.ApiUrl(CapabilityEndpoints.Audio, url);
+   
+        MultipartFormDataContent content = new MultipartFormDataContent();
+        MemoryStream? ms = null;
+        StreamContent? sc = null;
+
+        if (request.File.Data is not null)
+        {
+            ms = new MemoryStream(request.File.Data);
+            sc = new StreamContent(ms);
+            
+            sc.Headers.ContentLength = request.File.Data.Length;
+            sc.Headers.ContentType = new MediaTypeHeaderValue(request.File.GetContentType);
+        
+            content.Add(sc, "file", "test.wav");
+        }
+        else if (request.File.File is not null)
+        {
+            sc = new StreamContent(request.File.File);
+            sc.Headers.ContentLength = request.File.File.Length;
+            sc.Headers.ContentType = new MediaTypeHeaderValue(request.File.GetContentType);
+        
+            content.Add(sc, "file", "test.wav");
+        }
+        
         content.Add(new StringContent(request.Model), "model");
 
-        if (!request.Prompt.IsNullOrWhiteSpace()) content.Add(new StringContent(request.Prompt), "prompt");
+        if (!request.Prompt.IsNullOrWhiteSpace())
+        {
+            content.Add(new StringContent(request.Prompt), "prompt");
+        }
+        
+        content.Add(new StringContent(request.GetResponseFormat), "response_format");
 
-        if (!request.ResponseFormat.IsNullOrWhiteSpace()) content.Add(new StringContent(request.ResponseFormat), "response_format");
+        if (!request.Temperature.HasValue)
+        {
+            content.Add(new StringContent((request.Temperature ?? 0f).ToString(CultureInfo.InvariantCulture)), "temperature");
+        }
 
-        if (!request.Temperature.HasValue) content.Add(new StringContent((request.Temperature ?? 0f).ToString(CultureInfo.InvariantCulture)), "temperature");
+        if (!request.Language.IsNullOrWhiteSpace())
+        {
+            content.Add(new StringContent(request.Language), "language");
+        }
 
-        if (!request.Language.IsNullOrWhiteSpace()) content.Add(new StringContent(request.Language), "language");
+        TranscriptionResult? result;
 
-        return HttpPost1<TranscriptionVerboseJsonResult>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, url, content);
+        try
+        {
+            if (request.ResponseFormat is AudioTranscriptionResponseFormats.Text or AudioTranscriptionResponseFormats.Srt or AudioTranscriptionResponseFormats.Vtt)
+            {
+                object? obj = await HttpPost1(typeof(string), Api.GetProvider(LLmProviders.OpenAi), Endpoint, url, content);
+
+                if (obj is string str)
+                {
+                    result = new TranscriptionResult
+                    {
+                        Text = str.Trim(),
+                        Task = "transcription"
+                    };
+
+                    return result;
+                }
+            }
+            
+            result = await HttpPost1<TranscriptionResult>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, url, content);
+        }
+        finally
+        {
+            content.Dispose();
+            sc?.Dispose();
+
+            if (ms is not null)
+            {
+                await ms.DisposeAsync();   
+            }
+        }
+
+        return result;
     }
 }

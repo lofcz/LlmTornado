@@ -1,33 +1,14 @@
 using System.Collections.Generic;
+using LlmTornado.Chat.Models;
 using LlmTornado.Code.Models;
 
-namespace LlmTornado.Chat.Models;
+namespace LlmTornado.Audio.Models.Groq;
 
 /// <summary>
 /// Known chat models provided by Groq.
 /// </summary>
-public class ChatModelGroq : BaseVendorModelProvider
+public class AudioModelGroq : BaseVendorModelProvider
 {
-    /// <summary>
-    /// Models by Meta.
-    /// </summary>
-    public readonly ChatModelGroqMeta Meta = new ChatModelGroqMeta();
-    
-    /// <summary>
-    /// Models by Groq.
-    /// </summary>
-    public readonly ChatModelGroqGroq Groq = new ChatModelGroqGroq();
-    
-    /// <summary>
-    /// Models by Mistral.
-    /// </summary>
-    public readonly ChatModelGroqMistral Mistral = new ChatModelGroqMistral();
-    
-    /// <summary>
-    /// Models by Google.
-    /// </summary>
-    public readonly ChatModelGroqGoogle Google = new ChatModelGroqGoogle();
-    
     /// <summary>
     /// All known chat models hosted by Groq.
     /// </summary>
@@ -52,13 +33,10 @@ public class ChatModelGroq : BaseVendorModelProvider
     /// <inheritdoc cref="AllModels"/>
     /// </summary>
     public static readonly List<IModel> ModelsAll = [
-        ..ChatModelGroqMeta.ModelsAll,
-        ..ChatModelGroqGoogle.ModelsAll,
-        ..ChatModelGroqGroq.ModelsAll,
-        ..ChatModelGroqMistral.ModelsAll
+        
     ];
     
-    static ChatModelGroq()
+    static AudioModelGroq()
     {
         ModelsAll.ForEach(x =>
         {
@@ -66,7 +44,7 @@ public class ChatModelGroq : BaseVendorModelProvider
         });
     }
     
-    internal ChatModelGroq()
+    internal AudioModelGroq()
     {
         AllModels = ModelsAll;
     }

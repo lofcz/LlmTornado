@@ -370,6 +370,26 @@ public abstract class EndpointBase
         return res;
     }
 
+    private async Task<object?> HttpRequest(Type type, IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, HttpMethod? verb = null, object? postData = null, CancellationToken? ct = null)
+    {
+        using HttpResponseMessage response = await HttpRequestRaw(provider, endpoint, url, verb, postData, false, ct).ConfigureAwait(ConfigureAwaitOptions.None);
+        string resultAsString = await response.Content.ReadAsStringAsync().ConfigureAwait(ConfigureAwaitOptions.None);
+
+        if (type == typeof(string))
+        {
+            return resultAsString;
+        }
+            
+        object? res = provider.InboundMessage(type, resultAsString, postData?.ToString());
+        
+        if (res is not null)
+        {
+            provider.ParseInboundHeaders(res, response);
+        }
+
+        return res;
+    }
+    
     private async Task<HttpCallResult<T>> HttpRequestRaw<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, HttpMethod? verb = null, object? postData = null, CancellationToken? ct = null)
     {
         RestDataOrException<HttpResponseMessage> response = await HttpRequestRawWithAllCodes(provider, endpoint, url, verb, postData, false, ct).ConfigureAwait(ConfigureAwaitOptions.None);
@@ -447,6 +467,11 @@ public abstract class EndpointBase
     internal Task<T?> HttpPost1<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, object? postData = null, CancellationToken? ct = default) where T : ApiResultBase
     {
         return HttpRequest<T>(provider, endpoint, url, HttpMethod.Post, postData, ct);
+    }
+    
+    internal Task<object?> HttpPost1(Type type, IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, object? postData = null, CancellationToken? ct = default)
+    {
+        return HttpRequest(type, provider, endpoint, url, HttpMethod.Post, postData, ct);
     }
 
     /// <summary>

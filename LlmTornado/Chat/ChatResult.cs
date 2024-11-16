@@ -93,7 +93,7 @@ public class ChatChoice
 
 	/// <summary>
 	///     Partial message "delta" from a stream. For example, the result from
-	///     <see cref="ChatEndpoint.StreamChatEnumerableAsync(ChatRequest)">StreamChatEnumerableAsync.</see>
+	///     <see cref="ChatEndpoint.StreamChatEnumerable">StreamChatEnumerableAsync.</see>
 	///     If this result object is not from a stream, this will be null
 	/// </summary>
 	[JsonProperty("delta")]

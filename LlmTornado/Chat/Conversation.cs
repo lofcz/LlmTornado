@@ -488,13 +488,13 @@ public class Conversation
     /// <returns>The string of the response from the chatbot API</returns>
     public async Task<string?> GetResponse(CancellationToken token = default)
     {
-        ChatRequest req = new(RequestParameters)
+        ChatRequest req = new ChatRequest(RequestParameters)
         {
             Messages = messages.ToList(),
             CancellationToken = token
         };
 
-        ChatResult? res = await endpoint.CreateChatCompletionAsync(req);
+        ChatResult? res = await endpoint.CreateChatCompletion(req);
 
         if (res is null) return null;
 
@@ -531,7 +531,7 @@ public class Conversation
             CancellationToken = token
         };
 
-        ChatResult? res = await endpoint.CreateChatCompletionAsync(req);
+        ChatResult? res = await endpoint.CreateChatCompletion(req);
 
         if (res is null)
         {
@@ -620,7 +620,7 @@ public class Conversation
             CancellationToken = token
         };
 
-        HttpCallResult<ChatResult> res = await endpoint.CreateChatCompletionAsyncSafe(req);
+        HttpCallResult<ChatResult> res = await endpoint.CreateChatCompletionSafe(req);
 
         if (!res.Ok)
         {
@@ -691,7 +691,7 @@ public class Conversation
             CancellationToken = token
         };
 
-        HttpCallResult<ChatResult> res = await endpoint.CreateChatCompletionAsyncSafe(req);
+        HttpCallResult<ChatResult> res = await endpoint.CreateChatCompletionSafe(req);
 
         if (!res.Ok)
         {
@@ -764,7 +764,7 @@ public class Conversation
             CancellationToken = token
         };
 
-        ChatResult? res = await endpoint.CreateChatCompletionAsync(req);
+        ChatResult? res = await endpoint.CreateChatCompletion(req);
 
         if (res is null)
         {
@@ -878,7 +878,7 @@ public class Conversation
             CancellationToken = token
         };
 
-        HttpCallResult<ChatResult> res = await endpoint.CreateChatCompletionAsyncSafe(req);
+        HttpCallResult<ChatResult> res = await endpoint.CreateChatCompletionSafe(req);
 
         if (!res.Ok)
         {
@@ -973,7 +973,7 @@ public class Conversation
         StringBuilder responseStringBuilder = new();
         ChatMessageRoles? responseRole = null;
 
-        await foreach (ChatResult res in endpoint.StreamChatEnumerableAsync(req).WithCancellation(token))
+        await foreach (ChatResult res in endpoint.StreamChatEnumerable(req).WithCancellation(token))
         {
             if (res.Choices is null)
             {
@@ -1088,7 +1088,7 @@ public class Conversation
         ChatMessage? lastUserMessage = messages.LastOrDefault(x => x.Role is ChatMessageRoles.User);
         bool isFirstMessageToken = true;
         
-        await foreach (ChatResult res in endpoint.StreamChatEnumerableAsync(req, eventsHandler).WithCancellation(token))
+        await foreach (ChatResult res in endpoint.StreamChatEnumerable(req, eventsHandler).WithCancellation(token))
         {
             bool solved = false;
             

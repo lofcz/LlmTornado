@@ -11,7 +11,7 @@ public static class VisionDemo
 {
     public static async Task Vision()
     {
-        ChatResult? result = await Program.Connect().Chat.CreateChatCompletionAsync(new ChatMessage[]
+        ChatResult? result = await Program.Connect().Chat.CreateChatCompletion(new ChatMessage[]
         {
             new(ChatMessageRoles.User, [
                 new ChatMessagePart(new Uri("https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcSGfpQ3m-QWiXgCBJJbrcUFdNdWAhj7rcUqjeNUC6eKcXZDAtWm"))
@@ -27,7 +27,7 @@ public static class VisionDemo
         byte[] bytes = await File.ReadAllBytesAsync("Static/Images/catBoi.jpg");
         string base64 = $"data:image/jpeg;base64,{Convert.ToBase64String(bytes)}";
 
-        ChatResult? result = await Program.Connect().Chat.CreateChatCompletionAsync(new ChatMessage[]
+        ChatResult? result = await Program.Connect().Chat.CreateChatCompletion(new ChatMessage[]
         {
             new(ChatMessageRoles.User, [
                 new ChatMessagePart(base64, ImageDetail.Auto)

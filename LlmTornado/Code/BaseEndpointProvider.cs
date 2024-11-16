@@ -39,7 +39,9 @@ public abstract class BaseEndpointProvider : IEndpointProviderExtended
 
     public abstract string ApiUrl(CapabilityEndpoints endpoint, string? url);
     public abstract T? InboundMessage<T>(string jsonData, string? postData);
+    public abstract object? InboundMessage(Type type, string jsonData, string? postData);
     public abstract void ParseInboundHeaders<T>(T res, HttpResponseMessage response) where T : ApiResultBase;
+    public abstract void ParseInboundHeaders(object? res, HttpResponseMessage response);
     public abstract IAsyncEnumerable<T?> InboundStream<T>(StreamReader streamReader) where T : class;
     public abstract IAsyncEnumerable<ChatResult?> InboundStream(StreamReader streamReader, ChatRequest request);
     public abstract HttpRequestMessage OutboundMessage(string url, HttpMethod verb, object? data, bool streaming);

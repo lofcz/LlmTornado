@@ -68,6 +68,7 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider,
     /// 
     /// </summary>
     /// <param name="endpoint"></param>
+    /// <param name="url"></param>
     /// <returns></returns>
     public override string ApiUrl(CapabilityEndpoints endpoint, string? url)
     {
@@ -100,6 +101,11 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider,
         }
         
         return req;
+    }
+
+    public override void ParseInboundHeaders(object? res, HttpResponseMessage response)
+    {
+
     }
 
     public override void ParseInboundHeaders<T>(T res, HttpResponseMessage response)
@@ -135,6 +141,11 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider,
     public override T? InboundMessage<T>(string jsonData, string? postData) where T : default
     {
         return JsonConvert.DeserializeObject<T>(jsonData);
+    }
+    
+    public override object? InboundMessage(Type type, string jsonData, string? postData)
+    {
+        return JsonConvert.DeserializeObject(jsonData, type);
     }
 
     public override async IAsyncEnumerable<ChatResult?> InboundStream(StreamReader reader, ChatRequest request)

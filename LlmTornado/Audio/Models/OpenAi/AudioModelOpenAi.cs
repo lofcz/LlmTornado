@@ -1,38 +1,24 @@
 using System.Collections.Generic;
+using LlmTornado.Chat.Models;
 using LlmTornado.Code.Models;
 
-namespace LlmTornado.Chat.Models;
+namespace LlmTornado.Audio.Models.OpenAi;
 
 /// <summary>
-/// Known chat models provided by Groq.
+/// Known chat models from OpenAI.
 /// </summary>
-public class ChatModelGroq : BaseVendorModelProvider
+public class AudioModelOpenAi : BaseVendorModelProvider
 {
     /// <summary>
-    /// Models by Meta.
+    /// Whisper models.
     /// </summary>
-    public readonly ChatModelGroqMeta Meta = new ChatModelGroqMeta();
-    
+    public readonly AudioModelOpenAiWhisper Whisper = new AudioModelOpenAiWhisper();
+
     /// <summary>
-    /// Models by Groq.
-    /// </summary>
-    public readonly ChatModelGroqGroq Groq = new ChatModelGroqGroq();
-    
-    /// <summary>
-    /// Models by Mistral.
-    /// </summary>
-    public readonly ChatModelGroqMistral Mistral = new ChatModelGroqMistral();
-    
-    /// <summary>
-    /// Models by Google.
-    /// </summary>
-    public readonly ChatModelGroqGoogle Google = new ChatModelGroqGoogle();
-    
-    /// <summary>
-    /// All known chat models hosted by Groq.
+    /// All known chat models from OpenAI.
     /// </summary>
     public override List<IModel> AllModels { get; }
-
+    
     /// <summary>
     /// Checks whether the model is owned by the provider.
     /// </summary>
@@ -52,13 +38,10 @@ public class ChatModelGroq : BaseVendorModelProvider
     /// <inheritdoc cref="AllModels"/>
     /// </summary>
     public static readonly List<IModel> ModelsAll = [
-        ..ChatModelGroqMeta.ModelsAll,
-        ..ChatModelGroqGoogle.ModelsAll,
-        ..ChatModelGroqGroq.ModelsAll,
-        ..ChatModelGroqMistral.ModelsAll
+        ..AudioModelOpenAiWhisper.ModelsAll
     ];
     
-    static ChatModelGroq()
+    static AudioModelOpenAi()
     {
         ModelsAll.ForEach(x =>
         {
@@ -66,7 +49,7 @@ public class ChatModelGroq : BaseVendorModelProvider
         });
     }
     
-    internal ChatModelGroq()
+    internal AudioModelOpenAi()
     {
         AllModels = ModelsAll;
     }

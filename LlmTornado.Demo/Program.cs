@@ -90,6 +90,10 @@ public enum Demos
     ChatAudioMp3,
     ChatAudioInAudioOut,
     ChatAudioMultiturn,
+    TranscriptionWhisperV2Text,
+    TranscriptionWhisperV2Json,
+    TranscriptionWhisperV2Srt,
+    TranscriptionWhisperV2JsonVerbose,
     Last
 }
 
@@ -223,6 +227,10 @@ public class Program
             Demos.ChatAudioMp3 => ChatDemo.AudioInMp3,
             Demos.ChatAudioInAudioOut => ChatDemo.AudioInAudioOutWav,
             Demos.ChatAudioMultiturn => ChatDemo.AudioInAudioOutMultiturn,
+            Demos.TranscriptionWhisperV2Text => TranscriptionDemo.TranscribeFormatText,
+            Demos.TranscriptionWhisperV2Json => TranscriptionDemo.TranscribeFormatJson,
+            Demos.TranscriptionWhisperV2Srt => TranscriptionDemo.TranscribeFormatSrt,
+            Demos.TranscriptionWhisperV2JsonVerbose => TranscriptionDemo.TranscribeFormatJsonVerbose,
             _ => null
         };
 

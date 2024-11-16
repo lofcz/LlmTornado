@@ -15,7 +15,7 @@ public static class ChatDemo
 {
     public static async Task<ChatResult?> Completion()
     {
-        ChatResult? result = await Program.Connect().Chat.CreateChatCompletionAsync(new ChatRequest
+        ChatResult? result = await Program.Connect().Chat.CreateChatCompletion(new ChatRequest
         {
             Model = ChatModel.OpenAi.Gpt4.Turbo,
             ResponseFormat = ChatRequestResponseFormats.Json,
@@ -32,7 +32,7 @@ public static class ChatDemo
     
     public static async Task<ChatResult?> Completion4Mini()
     {
-        ChatResult? result = await Program.Connect().Chat.CreateChatCompletionAsync(new ChatRequest
+        ChatResult? result = await Program.Connect().Chat.CreateChatCompletion(new ChatRequest
         {
             Model = ChatModel.OpenAi.Gpt4.OMini,
             ResponseFormat = ChatRequestResponseFormats.Json,
@@ -49,7 +49,7 @@ public static class ChatDemo
     
     public static async Task<ChatResult?> CompletionGroq()
     {
-        ChatResult? result = await Program.Connect().Chat.CreateChatCompletionAsync(new ChatRequest
+        ChatResult? result = await Program.Connect().Chat.CreateChatCompletion(new ChatRequest
         {
             Model =  ChatModel.Groq.Meta.Llama370B,
             ResponseFormat = ChatRequestResponseFormats.Json,

@@ -6,8 +6,6 @@ using System.Threading.Tasks;
 using LlmTornado.Chat.Models;
 using LlmTornado.Code;
 using LlmTornado.Models;
-using LlmTornado.Code.Models;
-using LlmTornado;
 using LlmTornado.Common;
 
 namespace LlmTornado.Chat;
@@ -36,7 +34,7 @@ public class ChatEndpoint : EndpointBase
     ///     tokens.  For every request, if you do not have a parameter set on the request but do have it set here as a default,
     ///     the request will automatically pick up the default value.
     /// </summary>
-    public ChatRequest DefaultChatRequestArgs { get; set; } = new()
+    public ChatRequest DefaultChatRequestArgs { get; set; } = new ChatRequest
     {
         Model = ChatModel.OpenAi.Gpt35.Turbo
     };
@@ -82,7 +80,7 @@ public class ChatEndpoint : EndpointBase
     ///     Asynchronously returns the completion result. Look in its <see cref="ChatResult.Choices" /> property for the
     ///     results.
     /// </returns>
-    public async Task<ChatResult?> CreateChatCompletionAsync(ChatRequest request)
+    public async Task<ChatResult?> CreateChatCompletion(ChatRequest request)
     {
         IEndpointProvider provider = Api.GetProvider(request.Model ?? ChatModel.OpenAi.Gpt35.Turbo);
         TornadoRequestContent requestBody = request.Serialize(provider);
@@ -106,7 +104,7 @@ public class ChatEndpoint : EndpointBase
     ///     Asynchronously returns the completion result. Look in its <see cref="ChatResult.Choices" /> property for the
     ///     results.
     /// </returns>
-    public async Task<HttpCallResult<ChatResult>> CreateChatCompletionAsyncSafe(ChatRequest request)
+    public async Task<HttpCallResult<ChatResult>> CreateChatCompletionSafe(ChatRequest request)
     {
         IEndpointProvider provider = Api.GetProvider(request.Model ?? ChatModel.OpenAi.Gpt35.Turbo);
         TornadoRequestContent requestBody = request.Serialize(provider);
@@ -164,7 +162,7 @@ public class ChatEndpoint : EndpointBase
     ///     Asynchronously returns the completion result. Look in its <see cref="ChatResult.Choices" /> property for the
     ///     results.
     /// </returns>
-    public Task<ChatResult?> CreateChatCompletionAsync(IList<ChatMessage> messages,
+    public Task<ChatResult?> CreateChatCompletion(IList<ChatMessage> messages,
         ChatModel? model = null,
         double? temperature = null,
         double? topP = null,
@@ -189,7 +187,7 @@ public class ChatEndpoint : EndpointBase
             LogitBias = logitBias ?? DefaultChatRequestArgs.LogitBias
         };
         
-        return CreateChatCompletionAsync(request);
+        return CreateChatCompletion(request);
     }
 
     /// <summary>
@@ -198,13 +196,13 @@ public class ChatEndpoint : EndpointBase
     /// </summary>
     /// <param name="messages">The messages to use in the generation.</param>
     /// <returns>The <see cref="ChatResult" /> with the API response.</returns>
-    public Task<ChatResult?> CreateChatCompletionAsync(params ChatMessage[] messages)
+    public Task<ChatResult?> CreateChatCompletion(params ChatMessage[] messages)
     {
-        ChatRequest request = new(DefaultChatRequestArgs)
+        ChatRequest request = new ChatRequest(DefaultChatRequestArgs)
         {
             Messages = messages
         };
-        return CreateChatCompletionAsync(request);
+        return CreateChatCompletion(request);
     }
 
     /// <summary>
@@ -216,9 +214,9 @@ public class ChatEndpoint : EndpointBase
     ///     Role <see cref="ChatMessageRole.User" />
     /// </param>
     /// <returns>The <see cref="ChatResult" /> with the API response.</returns>
-    public Task<ChatResult?> CreateChatCompletionAsync(params string[] userMessages)
+    public Task<ChatResult?> CreateChatCompletion(params string[] userMessages)
     {
-        return CreateChatCompletionAsync(userMessages.Select(m => new ChatMessage(ChatMessageRoles.User, m)).ToArray());
+        return CreateChatCompletion(userMessages.Select(m => new ChatMessage(ChatMessageRoles.User, m)).ToArray());
     }
 
     #endregion
@@ -229,7 +227,7 @@ public class ChatEndpoint : EndpointBase
     ///     Ask the API to complete the message(s) using the specified request, and stream the results to the
     ///     <paramref name="resultHandler" /> as they come in.
     ///     If you are on the latest C# supporting async enumerables, you may prefer the cleaner syntax of
-    ///     <see cref="StreamChatEnumerableAsync(ChatRequest)" /> instead.
+    ///     <see cref="StreamChatEnumerable" /> instead.
     /// </summary>
     /// <param name="request">
     ///     The request to send to the API. This does not fall back to default values specified in
@@ -239,18 +237,18 @@ public class ChatEndpoint : EndpointBase
     ///     An action to be called as each new result arrives, which includes the index of the result
     ///     in the overall result set.
     /// </param>
-    public async Task StreamCompletionAsync(ChatRequest request, Action<int, ChatResult> resultHandler)
+    public async Task StreamCompletion(ChatRequest request, Action<int, ChatResult> resultHandler)
     {
         int index = 0;
 
-        await foreach (ChatResult res in StreamChatEnumerableAsync(request)) resultHandler(index++, res);
+        await foreach (ChatResult res in StreamChatEnumerable(request)) resultHandler(index++, res);
     }
 
     /// <summary>
     ///     Ask the API to complete the message(s) using the specified request, and stream the results to the
     ///     <paramref name="resultHandler" /> as they come in.
     ///     If you are on the latest C# supporting async enumerables, you may prefer the cleaner syntax of
-    ///     <see cref="StreamChatEnumerableAsync(ChatRequest)" /> instead.
+    ///     <see cref="StreamChatEnumerable" /> instead.
     /// </summary>
     /// <param name="request">
     ///     The request to send to the API.  This does not fall back to default values specified in
@@ -259,7 +257,7 @@ public class ChatEndpoint : EndpointBase
     /// <param name="resultHandler">An action to be called as each new result arrives.</param>
     public async Task StreamChatAsync(ChatRequest request, Action<ChatResult> resultHandler)
     {
-        await foreach (ChatResult res in StreamChatEnumerableAsync(request)) resultHandler(res);
+        await foreach (ChatResult res in StreamChatEnumerable(request)) resultHandler(res);
     }
 
     /// <summary>
@@ -276,12 +274,12 @@ public class ChatEndpoint : EndpointBase
     ///     <see href="https://docs.microsoft.com/en-us/dotnet/csharp/whats-new/csharp-8#asynchronous-streams" /> for more
     ///     details on how to consume an async enumerable.
     /// </returns>
-    public IAsyncEnumerable<ChatResult> StreamChatEnumerableAsync(ChatRequest request)
+    public IAsyncEnumerable<ChatResult> StreamChatEnumerable(ChatRequest request)
     {
-        return StreamChatEnumerableAsync(request, null);
+        return StreamChatEnumerable(request, null);
     }
     
-    internal IAsyncEnumerable<ChatResult> StreamChatEnumerableAsync(ChatRequest request, ChatStreamEventHandler? handler)
+    internal IAsyncEnumerable<ChatResult> StreamChatEnumerable(ChatRequest request, ChatStreamEventHandler? handler)
     {
         request = new ChatRequest(request)
         {
@@ -393,7 +391,7 @@ public class ChatEndpoint : EndpointBase
     ///     <see href="https://docs.microsoft.com/en-us/dotnet/csharp/whats-new/csharp-8#asynchronous-streams">the C# docs</see>
     ///     for more details on how to consume an async enumerable.
     /// </returns>
-    public IAsyncEnumerable<ChatResult> StreamChatEnumerableAsync(IList<ChatMessage> messages,
+    public IAsyncEnumerable<ChatResult> StreamChatEnumerable(IList<ChatMessage> messages,
         ChatModel? model = null,
         double? temperature = null,
         double? top_p = null,
@@ -404,7 +402,7 @@ public class ChatEndpoint : EndpointBase
         IReadOnlyDictionary<string, float>? logitBias = null,
         params string[]? stopSequences)
     {
-        ChatRequest request = new(DefaultChatRequestArgs)
+        ChatRequest request = new ChatRequest(DefaultChatRequestArgs)
         {
             Messages = messages,
             Model = model ?? DefaultChatRequestArgs.Model,
@@ -417,7 +415,7 @@ public class ChatEndpoint : EndpointBase
             PresencePenalty = presencePenalty ?? DefaultChatRequestArgs.PresencePenalty,
             LogitBias = logitBias ?? DefaultChatRequestArgs.LogitBias
         };
-        return StreamChatEnumerableAsync(request);
+        return StreamChatEnumerable(request);
     }
 
     #endregion

@@ -390,6 +390,11 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
         res.Provider = this;
     }
     
+    public override void ParseInboundHeaders(object? res, HttpResponseMessage response)
+    {
+        
+    }
+    
     public override T? InboundMessage<T>(string jsonData, string? postData) where T : default
     {
         if (typeof(T) == typeof(ChatResult))
@@ -398,5 +403,10 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
         }
         
         return JsonConvert.DeserializeObject<T>(jsonData);
+    }
+    
+    public override object? InboundMessage(Type type, string jsonData, string? postData)
+    {
+        return JsonConvert.DeserializeObject(jsonData, type);
     }
 }
