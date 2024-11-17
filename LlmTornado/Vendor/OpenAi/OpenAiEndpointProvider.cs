@@ -157,12 +157,16 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider,
         StringBuilder? plaintextBuilder = null;
         ChatUsage? usage = null;
         
+        #if DEBUG
         List<string> data = [];
+        #endif
         
         while (await reader.ReadLineAsync() is { } line)
         {
+            #if DEBUG
             data.Add(line);
-         
+            #endif
+            
             if (request.CancellationToken.IsCancellationRequested)
             {
                 yield break;

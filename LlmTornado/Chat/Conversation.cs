@@ -1193,6 +1193,14 @@ public class Conversation
                                 await eventsHandler.MessageTokenHandler.Invoke(msg);   
                             }
                         }
+
+                        if (delta.Audio is not null)
+                        {
+                            if (eventsHandler.AudioTokenHandler is not null)
+                            {
+                                await eventsHandler.AudioTokenHandler.Invoke(delta.Audio);
+                            }
+                        }
                     }   
                     else if (delta.Role is ChatMessageRoles.Tool)
                     {

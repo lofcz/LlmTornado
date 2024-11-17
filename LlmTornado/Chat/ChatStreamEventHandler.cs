@@ -18,6 +18,11 @@ public class ChatStreamEventHandler
     public Func<string?, Task>? MessageTokenHandler { get; set; }
     
     /// <summary>
+    ///     Called when audio token/chunk arrives. This can be forwarded to the end-user immediately.
+    /// </summary>
+    public Func<ChatMessageAudio, Task>? AudioTokenHandler { get; set; }
+    
+    /// <summary>
     ///     Called when one or more tools are to be executed. Execute the tools and return the responses in <see cref="FunctionCall.Result"/>.
     ///     If this field is empty once control is returned to the API, the tool call is considered to be failed with no data returned.
     /// </summary>

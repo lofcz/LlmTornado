@@ -535,6 +535,36 @@ public static class ChatDemo
         }
     }
     
+    public static async Task AudioInAudioOutWavStreaming()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.OpenAi.Gpt4.AudioPreview241001,
+            Modalities = [ ChatModelModalities.Text, ChatModelModalities.Audio ],
+            Audio = new ChatRequestAudio(ChatAudioRequestKnownVoices.Ash, ChatRequestAudioFormats.Pcm16),
+            MaxTokens = 2000
+        });
+
+        byte[] audioData = await File.ReadAllBytesAsync("Static/Audio/sample.wav");
+        
+        chat.AppendUserInput([
+            new ChatMessagePart(audioData, ChatAudioFormats.Wav)
+        ]);
+        
+        await chat.StreamResponseRich(new ChatStreamEventHandler
+        {
+            AudioTokenHandler = async (chunk) =>
+            {
+                if (chunk.Data is not null)
+                {
+                    
+                }
+                
+                Console.Write(chunk.Transcript);
+            }
+        });
+    }
+    
     public static async Task AudioInAudioOutMultiturn()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
