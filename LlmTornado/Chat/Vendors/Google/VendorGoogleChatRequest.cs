@@ -332,7 +332,7 @@ internal class VendorGoogleChatRequest
 
     internal class VendorGoogleChatTool
     {
-        [JsonProperty("functionDeclarations")] 
+        [JsonProperty("function_declarations")] 
         public List<VendorGoogleChatToolFunctionDeclaration> FunctionDeclarations { get; set; } = [];
 
         public VendorGoogleChatTool()
@@ -349,6 +349,9 @@ internal class VendorGoogleChatRequest
         }
     }
 
+    /// <summary>
+    /// At least one member needs to be set, otherwise the request crashes if we include this field.
+    /// </summary>
     internal class VendorGoogleChatToolConfigFunctionConfig
     {
         /// <summary>
@@ -357,7 +360,7 @@ internal class VendorGoogleChatRequest
         /// NONE - Model will not predict any function call. Model behavior is same as when not passing any function declarations.
         /// </summary>
         [JsonProperty("mode")]
-        public string? Mode { get; set; }
+        public string? Mode { get; set; } = "AUTO";
         
         /// <summary>
         /// This should only be set when the Mode is ANY. Function names should match [FunctionDeclaration.name]. With mode set to ANY, model will predict a function call from the set of function names provided.
@@ -477,7 +480,10 @@ internal class VendorGoogleChatRequest
 
             ToolConfig = new VendorGoogleChatToolConfig
             {
-                FunctionConfig = new VendorGoogleChatToolConfigFunctionConfig()
+                FunctionConfig = new VendorGoogleChatToolConfigFunctionConfig
+                {
+                    Mode = "AUTO"
+                }
             };
 
             if (request.ToolChoice is not null)
