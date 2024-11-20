@@ -98,6 +98,7 @@ public enum Demos
     ChatAudioWavStreaming,
     ChatAudioInAudioOutWavStreaming,
     ChatToolsGemini,
+    ChatToolsGeminiStrict,
     Last
 }
 
@@ -239,6 +240,7 @@ public class Program
             Demos.ChatAudioWavStreaming => ChatDemo.AudioInWavStreaming,
             Demos.ChatAudioInAudioOutWavStreaming => ChatDemo.AudioInAudioOutWavStreaming,
             Demos.ChatToolsGemini => ChatDemo.ChatFunctionGemini,
+            Demos.ChatToolsGeminiStrict => ChatDemo.ChatFunctionGeminiStrict,
             _ => null
         };
 

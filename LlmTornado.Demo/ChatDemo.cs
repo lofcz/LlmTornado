@@ -117,8 +117,46 @@ public static class ChatDemo
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
             Model = ChatModel.Google.Gemini.Gemini15FlashLatest,
-            Tools = new List<Tool>
-            {
+            Tools =
+            [
+                new Tool(new ToolFunction("get_order_details", "Gets details of a given order", new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        id = new
+                        {
+                            type = "string",
+                            description = "ID of the order"
+                        }
+                    },
+                    required = new List<string> { "id" }
+                }))
+            ]
+        });
+        chat.AppendUserInput("Contents of order with id A7GDX?");
+
+        ChatRichResponse response = await chat.GetResponseRich();
+
+        ChatRichResponseBlock? block = response.Blocks.FirstOrDefault(x => x.Type is ChatRichResponseBlockTypes.Function);
+        
+        if (block is not null)
+        {
+            Console.WriteLine(block.FunctionCall?.Name);
+            Console.WriteLine(block.FunctionCall?.Arguments);
+            return true;
+        }
+
+        return false;
+    }
+    
+    public static async Task<bool> ChatFunctionGeminiStrict()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Google.Gemini.Gemini15FlashLatest,
+            Tools =
+            [
                 new Tool(new ToolFunction("get_order_details", "Gets details of a given order", new
                 {
                     type = "object",
@@ -132,7 +170,7 @@ public static class ChatDemo
                     },
                     required = new List<string> { "id" }
                 }), true)
-            }
+            ]
         });
         chat.AppendUserInput("Contents of order with id A7GDX?");
 

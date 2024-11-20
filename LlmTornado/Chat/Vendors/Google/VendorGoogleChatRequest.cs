@@ -78,6 +78,8 @@ internal class VendorGoogleChatRequest
         [JsonProperty("fileData", NullValueHandling = NullValueHandling.Ignore)]
         public VendorGoogleChatRequestMessagePartFileData? FileData { get; set; }
         
+        // todo: map executableCode, codeExecutionResult; https://ai.google.dev/api/caching#Part
+        
         public VendorGoogleChatRequestMessagePart()
         {
             
@@ -227,7 +229,7 @@ internal class VendorGoogleChatRequest
             }
         }
 
-        public ChatMessage ToChatMessage()
+        public ChatMessage ToChatMessage(VendorGoogleChatRequest? request)
         {
             ChatMessage msg = new ChatMessage
             {
@@ -245,7 +247,25 @@ internal class VendorGoogleChatRequest
                 }
                 else
                 {
-                    msg.Parts.Add(x.ToMessagePart(sb));   
+                    if (request?.GenerationConfig?.ResponseMimeType is "application/json")
+                    {
+                        string? fnName = request.ToolConfig?.FunctionConfig?.AllowedFunctionNames?.FirstOrDefault();
+                        
+                        msg.ToolCalls ??= [];
+                        msg.ToolCalls.Add(new ToolCall
+                        {
+                            Id = fnName ?? string.Empty,
+                            FunctionCall = new FunctionCall
+                            {
+                                Name = fnName ?? string.Empty,
+                                Arguments = x.Text ?? string.Empty
+                            }
+                        });
+                    }
+                    else
+                    {
+                        msg.Parts.Add(x.ToMessagePart(sb));      
+                    }
                 }
             }
 
@@ -385,6 +405,9 @@ internal class VendorGoogleChatRequest
 
     internal class VendorGoogleChatRequestGenerationConfig
     {
+        /// <summary>
+        /// Optional. The set of character sequences (up to 5) that will stop output generation. If specified, the API will stop at the first appearance of a stop_sequence. The stop sequence will not be included as part of the response.
+        /// </summary>
         [JsonProperty("stopSequences")]
         public List<string>? StopSequences { get; set; }
         
@@ -401,9 +424,15 @@ internal class VendorGoogleChatRequest
         [JsonProperty("responseSchema")]
         public object? ResponseSchema { get; set; }
         
+        /// <summary>
+        /// Optional. Number of generated responses to return. Currently, this value can only be set to 1. If unset, this will default to 1.
+        /// </summary>
         [JsonProperty("candidateCount")]
         public int? CandidateCount { get; set; }
         
+        /// <summary>
+        /// Note: The default value varies by model, see the Model.output_token_limit attribute of the Model returned from the getModel function.
+        /// </summary>
         [JsonProperty("maxOutputTokens")]
         public int? MaxOutputTokens { get; set; }
         
@@ -413,11 +442,41 @@ internal class VendorGoogleChatRequest
         [JsonProperty("temperature")]
         public double? Temperature { get; set; }
         
+        /// <summary>
+        /// Optional. The maximum cumulative probability of tokens to consider when sampling. The model uses combined Top-k and Top-p (nucleus) sampling.
+        /// </summary>
         [JsonProperty("topP")]
         public double? TopP { get; set; }
         
+        /// <summary>
+        /// Optional. The maximum number of tokens to consider when sampling.
+        /// </summary>
         [JsonProperty("topK")]
         public int? TopK { get; set; }
+        
+        /// <summary>
+        /// Optional. Presence penalty applied to the next token's logprobs if the token has already been seen in the response. This penalty is binary on/off and not dependant on the number of times the token is used (after the first). Use frequencyPenalty for a penalty that increases with each use. A positive penalty will discourage the use of tokens that have already been used in the response, increasing the vocabulary.
+        /// </summary>
+        [JsonProperty("presencePenalty")]
+        public double? PresencePenalty { get; set; }
+        
+        /// <summary>
+        /// Optional. Frequency penalty applied to the next token's logprobs, multiplied by the number of times each token has been seen in the respponse so far. A positive penalty will discourage the use of tokens that have already been used, proportional to the number of times the token has been used: The more a token is used, the more dificult it is for the model to use that token again increasing the vocabulary of responses. Caution: A negative penalty will encourage the model to reuse tokens proportional to the number of times the token has been used. Small negative values will reduce the vocabulary of a response. Larger negative values will cause the model to start repeating a common token until it hits the maxOutputTokens limit: "...the the the the the...".
+        /// </summary>
+        [JsonProperty("frequencyPenalty")]
+        public double? FrequencyPenalty { get; set; }
+        
+        /// <summary>
+        /// Optional. If true, export the logprobs results in response.
+        /// </summary>
+        [JsonProperty("responseLogprobs")]
+        public bool? ResponseLogprobs { get; set; }
+        
+        /// <summary>
+        /// Optional. Only valid if responseLogprobs=True. This sets the number of top logprobs to return at each decoding step in the Candidate.logprobs_result.
+        /// </summary>
+        [JsonProperty("logprobs")]
+        public int? Logprobs { get; set; }
     }
     
     [JsonProperty("contents")] 
@@ -469,14 +528,17 @@ internal class VendorGoogleChatRequest
             }
         }
 
+        GenerationConfig = new VendorGoogleChatRequestGenerationConfig
+        {
+            Temperature = request.Temperature is null ? null : Math.Clamp((double)request.Temperature, 0, 2),
+            TopP = request.TopP,
+            MaxOutputTokens = request.MaxTokens,
+            StopSequences = request.MultipleStopSequences is not null ? request.MultipleStopSequences.Take(5).ToList() : request.StopSequence is not null ? [ request.StopSequence ] : null
+        };
+        
         if (request.Tools?.Count > 0)
         {
             Tools ??= [];
-
-            foreach (Tool tool in request.Tools)
-            {
-                Tools.Add(new VendorGoogleChatTool(tool));
-            }
 
             ToolConfig = new VendorGoogleChatToolConfig
             {
@@ -485,6 +547,13 @@ internal class VendorGoogleChatRequest
                     Mode = "AUTO"
                 }
             };
+
+            bool anyStrictTool = false;
+            
+            foreach (Tool tool in request.Tools)
+            {
+                Tools.Add(new VendorGoogleChatTool(tool));
+            }
 
             if (request.ToolChoice is not null)
             {
@@ -509,6 +578,19 @@ internal class VendorGoogleChatRequest
                     {
                         ToolConfig.FunctionConfig.Mode = "ANY";
                         ToolConfig.FunctionConfig.AllowedFunctionNames = [ request.ToolChoice.Function?.Name ?? string.Empty ];
+
+                        Tool? match = request.Tools.FirstOrDefault(x => x.Function?.Name == request.ToolChoice.Function?.Name);
+
+                        if ((match?.Strict ?? false) && match.Function?.Parameters is not null)
+                        {
+                            GenerationConfig.ResponseMimeType = "application/json";
+                            GenerationConfig.ResponseSchema = match.Function.Parameters;
+
+                            // if we force strict json mode, these two fields must be cleared, otherwise the api throws due to these having precedence over responseMimeType
+                            Tools = null;
+                            // ToolConfig = null; // we keep this in the request as they accept it and we can match the function name later with it
+                        }
+                        
                         break;
                     }
                 }

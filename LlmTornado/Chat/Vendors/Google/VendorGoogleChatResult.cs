@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.ChatFunctions;
+using LlmTornado.Code;
 using LlmTornado.Vendor.Anthropic;
+using LlmTornado.Vendor.Google;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Chat.Vendors.Cohere;
@@ -31,6 +33,9 @@ internal class VendorGoogleChatResult : VendorChatResult
     [JsonProperty("usageMetadata")]
     public VendorGoogleUsage Meta { get; set; }
     
+    [JsonProperty("promptFeedback")]
+    public VendorGooglePromptFeedback? PromptFeedback { get; set; }
+    
     public override ChatResult ToChatResult(string? postData)
     {
         ChatResult result = new ChatResult
@@ -40,9 +45,16 @@ internal class VendorGoogleChatResult : VendorChatResult
             ProcessingTime = TimeSpan.Zero
         };
 
+        VendorGoogleChatRequest? request = null;
+        
+        if (postData is not null)
+        {
+            request = postData.JsonDecode<VendorGoogleChatRequest>();
+        }
+
         foreach (VendorGoogleChatResultMessage candidate in Candidates)
         {
-            ChatMessage msg = candidate.Content.ToChatMessage();
+            ChatMessage msg = candidate.Content.ToChatMessage(request);
             
             result.Choices.Add(new ChatChoice
             {
