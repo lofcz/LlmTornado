@@ -416,7 +416,7 @@ internal class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider,
 
     public override HttpRequestMessage OutboundMessage(string url, HttpMethod verb, object? data, bool streaming)
     {
-        HttpRequestMessage req = new(verb, url) 
+        HttpRequestMessage req = new HttpRequestMessage(verb, url) 
         {
             Version = OutboundVersion
         };

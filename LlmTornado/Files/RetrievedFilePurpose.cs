@@ -18,22 +18,22 @@ public class RetrievedFilePurpose
     /// <summary>
     ///     Finetuning
     /// </summary>
-    public static RetrievedFilePurpose Finetune => new("fine-tune");
+    public static RetrievedFilePurpose Finetune => new RetrievedFilePurpose("fine-tune");
 
     /// <summary>
     ///     Finetuning results
     /// </summary>
-    public static RetrievedFilePurpose FinetuneResults => new("fine-tune-results");
+    public static RetrievedFilePurpose FinetuneResults => new RetrievedFilePurpose("fine-tune-results");
 
     /// <summary>
     ///     Assistants input file
     /// </summary>
-    public static RetrievedFilePurpose Assistants => new("assistants");
+    public static RetrievedFilePurpose Assistants => new RetrievedFilePurpose("assistants");
 
     /// <summary>
     ///     Assistants output file
     /// </summary>
-    public static RetrievedFilePurpose AssistantsOutput => new("assistants_output");
+    public static RetrievedFilePurpose AssistantsOutput => new RetrievedFilePurpose("assistants_output");
 
     /// <summary>
     ///     Converts <see cref="FilePurpose" /> into <see cref="RetrievedFilePurpose" />

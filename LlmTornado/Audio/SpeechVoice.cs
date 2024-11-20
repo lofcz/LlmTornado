@@ -18,32 +18,32 @@ public class SpeechVoice
     /// <summary>
     ///     Requests a voice named Alloy
     /// </summary>
-    public static SpeechVoice Alloy => new("alloy");
+    public static SpeechVoice Alloy => new SpeechVoice("alloy");
 
     /// <summary>
     ///     Requests a voice named Echo
     /// </summary>
-    public static SpeechVoice Echo => new("echo");
+    public static SpeechVoice Echo => new SpeechVoice("echo");
 
     /// <summary>
     ///     Requests a voice named Fabled
     /// </summary>
-    public static SpeechVoice Fable => new("fable");
+    public static SpeechVoice Fable => new SpeechVoice("fable");
 
     /// <summary>
     ///     Requests a voice named Onyx
     /// </summary>
-    public static SpeechVoice Onyx => new("onyx");
+    public static SpeechVoice Onyx => new SpeechVoice("onyx");
 
     /// <summary>
     ///     Requests a voice named Nova
     /// </summary>
-    public static SpeechVoice Nova => new("nova");
+    public static SpeechVoice Nova => new SpeechVoice("nova");
 
     /// <summary>
     ///     Requests a voice named Shimmer
     /// </summary>
-    public static SpeechVoice Shimmer => new("shimmer");
+    public static SpeechVoice Shimmer => new SpeechVoice("shimmer");
 
     /// <summary>
     ///     Gets the string value for this size to pass to the API

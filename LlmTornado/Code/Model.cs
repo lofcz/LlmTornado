@@ -56,65 +56,65 @@ public class Model : ModelBase
     /// <summary>
     ///     Capable of very simple tasks, usually the fastest model in the GPT-3 series, and lowest cost
     /// </summary>
-    public static Model AdaText => new("text-ada-001");
+    public static Model AdaText => new Model("text-ada-001");
 
     /// <summary>
     ///     Capable of straightforward tasks, very fast, and lower cost.
     /// </summary>
-    public static Model BabbageText => new("text-babbage-001");
+    public static Model BabbageText => new Model("text-babbage-001");
 
     /// <summary>
     ///     Very capable, but faster and lower cost than Davinci.
     /// </summary>
-    public static Model CurieText => new("text-curie-001");
+    public static Model CurieText => new Model("text-curie-001");
 
     /// <summary>
     ///     Most capable GPT-3 model. Can do any task the other models can do, often with higher quality, longer output and
     ///     better instruction-following. Also supports inserting completions within text.
     /// </summary>
-    public static Model DavinciText => new("text-davinci-003");
+    public static Model DavinciText => new Model("text-davinci-003");
 
     /// <summary>
     ///     Similar capabilities to text-davinci-003 but trained with supervised fine-tuning instead of reinforcement learning
     /// </summary>
-    public static Model DavinciText002 => new("text-davinci-002");
+    public static Model DavinciText002 => new Model("text-davinci-002");
 
     /// <summary>
     ///     Almost as capable as Davinci Codex, but slightly faster. This speed advantage may make it preferable for real-time
     ///     applications.
     /// </summary>
-    public static Model CushmanCode => new("code-cushman-001");
+    public static Model CushmanCode => new Model("code-cushman-001");
 
     /// <summary>
     ///     Most capable Codex model. Particularly good at translating natural language to code. In addition to completing
     ///     code, also supports inserting completions within code.
     /// </summary>
-    public static Model DavinciCode => new("code-davinci-002");
+    public static Model DavinciCode => new Model("code-davinci-002");
 
     /// <summary>
     ///     Similar capabilities as text-davinci-003 but compatible with legacy Completions endpoint and not Chat Completions.
     /// </summary>
-    public static Model GptTurboInstruct => new("gpt-3.5-turbo-instruct");
+    public static Model GptTurboInstruct => new Model("gpt-3.5-turbo-instruct");
 
     /// <summary>
     ///     Snapshot of gpt-3.5-turbo-instruct from September 14th 2023. Unlike gpt-3.5-turbo-instruct, this model will not
     ///     receive updates, and will be deprecated 3 months after a new version is released.
     ///     Similar capabilities as text-davinci-003 but compatible with legacy Completions endpoint and not Chat Completions.
     /// </summary>
-    public static Model GptTurboInstruct0914 => new("gpt-3.5-turbo-instruct-0914");
+    public static Model GptTurboInstruct0914 => new Model("gpt-3.5-turbo-instruct-0914");
 
     /// <summary>
     ///     OpenAI offers one second-generation embedding model for use with the embeddings API endpoint.
     ///     Dimensions: 1536
     /// </summary>
-    public static Model AdaTextEmbedding => new("text-embedding-ada-002");
+    public static Model AdaTextEmbedding => new Model("text-embedding-ada-002");
 
     /// <summary>
     ///     Model released in 01/24 update, superseeds <see cref="AdaTextEmbedding" /> at a cheaper price.
     ///     Dimensions: 1536 (end of the sequence numbers can be removed and dimensions reduced up to 256 at a reasonable
     ///     perplexity increase)
     /// </summary>
-    public static Model TextEmbedding3Small => new("text-embedding-3-small");
+    public static Model TextEmbedding3Small => new Model("text-embedding-3-small");
 
     /// <summary>
     ///     Model released in 01/24 update, superseeds <see cref="AdaTextEmbedding" />, comes at a 33% price increase but is
@@ -122,149 +122,149 @@ public class Model : ModelBase
     ///     Dimensions: 3072 (end of the sequence numbers can be removed and dimensions reduced up to 256 at a reasonable
     ///     perplexity increase)
     /// </summary>
-    public static Model TextEmbedding3Large => new("text-embedding-3-large");
+    public static Model TextEmbedding3Large => new Model("text-embedding-3-large");
 
     /// <summary>
     ///     Most capable GPT-3.5 model and optimized for chat at 1/10th the cost of text-davinci-003. Will be updated with the
     ///     latest model iteration. Currently <see cref="GPT35_Turbo_1106" />
     /// </summary>
-    public static Model GPT35_Turbo => new("gpt-3.5-turbo");
+    public static Model GPT35_Turbo => new Model("gpt-3.5-turbo");
 
     /// <summary>
     ///     Snapshot of gpt-3.5-turbo from March 1st 2023. Unlike gpt-3.5-turbo, this model will not receive updates, and will
     ///     only be supported for a three-month period ending on June 1st 2023.
     /// </summary>
-    public static Model ChatGPTTurbo0301 => new("gpt-3.5-turbo-0301");
+    public static Model ChatGPTTurbo0301 => new Model("gpt-3.5-turbo-0301");
 
     /// <summary>
     ///     More capable than any GPT-3.5 model, able to do more complex tasks, and optimized for chat. Will be updated with
     ///     the latest model iteration.
     /// </summary>
-    public static Model GPT4 => new("gpt-4");
+    public static Model GPT4 => new Model("gpt-4");
 
     /// <summary>
     ///     More capable than any GPT-3.5 model, able to do more complex tasks, and optimized for chat. Will be updated with
     ///     the latest model iteration.
     /// </summary>
-    public static Model GPT4_VisionPreview => new("gpt-4-vision-preview");
+    public static Model GPT4_VisionPreview => new Model("gpt-4-vision-preview");
 
     /// <summary>
     ///     More capable than any GPT-3.5 model, able to do more complex tasks, and optimized for chat.
     /// </summary>
-    public static Model GPT4_1106_Preview => new("gpt-4-1106-preview");
+    public static Model GPT4_1106_Preview => new Model("gpt-4-1106-preview");
 
     /// <summary>
     ///     More capable than any GPT-3.5 model, able to do more complex tasks, and optimized for chat. Will be updated with
     ///     the latest model iteration. Currently in limited beta so your OpenAI account needs to be whitelisted to use this.
     ///     Supports images.
     /// </summary>
-    public static Model GPT4_Vision_Preview => new("gpt-4-vision-preview");
+    public static Model GPT4_Vision_Preview => new Model("gpt-4-vision-preview");
 
     /// <summary>
     ///     More capable than any GPT-3.5 model, able to do more complex tasks, and optimized for chat.
     ///     This model completes tasks like code generation more thoroughly than the previous preview model and is intended to
     ///     reduce cases of “laziness” where the model doesn’t complete a task.
     /// </summary>
-    public static Model GPT4_4_0125_Preview => new("gpt-4-0125-preview");
+    public static Model GPT4_4_0125_Preview => new Model("gpt-4-0125-preview");
     
     /// <summary>
     ///     GPT-4 Turbo with Vision model. Vision requests can now use JSON mode and function calling.
     ///     <see cref="GPT4_Turbo"/> currently points to this version.
     /// </summary>
-    public static Model GPT4_4_0409_Preview => new("gpt-4-turbo-2024-04-09");
+    public static Model GPT4_4_0409_Preview => new Model("gpt-4-turbo-2024-04-09");
 
     /// <summary>
     ///     The latest GPT-4 Turbo model with vision capabilities. Vision requests can now use JSON mode and function calling.
     ///     Currently points to <see cref="GPT4_4_0409_Preview"/>.
     /// </summary>
-    public static Model GPT4_Turbo => new("gpt-4-turbo");
+    public static Model GPT4_Turbo => new Model("gpt-4-turbo");
     
     /// <summary>
     ///     Currently <see cref="GPT4_4_0125_Preview" /> will be auto updated to the latest GPT4 preview.
     /// </summary>
-    public static Model GPT4_Turbo_Preview => new("gpt-4-turbo-preview");
+    public static Model GPT4_Turbo_Preview => new Model("gpt-4-turbo-preview");
 
     /// <summary>
     ///     Same capabilities as the base gpt-4 mode but with 4x the context length. Will be updated with the latest model
     ///     iteration.  Currently in limited beta so your OpenAI account needs to be whitelisted to use this.
     /// </summary>
-    public static Model GPT4_32k_Context => new("gpt-4-32k");
+    public static Model GPT4_32k_Context => new Model("gpt-4-32k");
 
     /// <summary>
     ///     Snapshot of gpt-3.5-turbo from June 13th 2023. This model allows the use of function calling as well as more
     ///     reliable steering via the system message.
     /// </summary>
     [Obsolete("Use Gpt_3_5_Turbo_1106 or Gpt_3_5_Turbo")]
-    public static Model ChatGPTTurbo0613 => new("gpt-3.5-turbo-0613");
+    public static Model ChatGPTTurbo0613 => new Model("gpt-3.5-turbo-0613");
 
     /// <summary>
     ///     Snapshot of gpt-3.5-turbo from 11/6/23. This model allows the use of parallel function calling as well as more
     ///     reliable steering via the system message, and returns up to 4096 tokens.
     /// </summary>
     [Obsolete("Use Gpt_3_5_Turbo_1106 or Gpt_3_5_Turbo")]
-    public static Model ChatGPTTurbo1106 => new("gpt-3.5-turbo-1106");
+    public static Model ChatGPTTurbo1106 => new Model("gpt-3.5-turbo-1106");
 
     /// <summary>
     ///     Snapshot of gpt-3.5-turbo from 25/01/24. Fixes a bug in <see cref="ChatGPTTurbo1106" /> with function calling.
     /// </summary>
-    public static Model GPT35_Turbo_1106 => new("gpt-3.5-turbo-1106");
+    public static Model GPT35_Turbo_1106 => new Model("gpt-3.5-turbo-1106");
 
     /// <summary>
     ///     Snapshot of gpt-4 from June 13th 2023. This model allows the use of function calling as well as more reliable
     ///     steering via the system message.
     /// </summary>
-    public static Model GPT4_0613 => new("gpt-4-0613");
+    public static Model GPT4_0613 => new Model("gpt-4-0613");
 
     /// <summary>
     ///     Stable text moderation model that may provide lower accuracy compared to TextModerationLatest.
     ///     OpenAI states they will provide advanced notice before updating this model.
     /// </summary>
-    public static Model TextModerationStable => new("text-moderation-stable");
+    public static Model TextModerationStable => new Model("text-moderation-stable");
 
     /// <summary>
     ///     The latest text moderation model. This model will be automatically upgraded over time.
     /// </summary>
-    public static Model TextModerationLatest => new("text-moderation-latest");
+    public static Model TextModerationLatest => new Model("text-moderation-latest");
 
     /// <summary>
     ///     The 01/24 text moderation model.
     /// </summary>
-    public static Model TextModeration007 => new("text-moderation-007");
+    public static Model TextModeration007 => new Model("text-moderation-007");
 
     /// <summary>
     ///     Whisper model. This model generates transcript from audio.
     /// </summary>
-    public static Model Whisper_1 => new("whisper-1");
+    public static Model Whisper_1 => new Model("whisper-1");
 
     /// <summary>
     ///     TTS-1 model. This model generates speech from text.
     /// </summary>
-    public static Model TTS_1 => new("tts-1");
+    public static Model TTS_1 => new Model("tts-1");
 
     /// <summary>
     ///     TTS-1-HD model. This model generates speech from text, higer quality than <see cref="TTS_1" />
     /// </summary>
-    public static Model TTS_1_HD => new("tts-1-hd");
+    public static Model TTS_1_HD => new Model("tts-1-hd");
 
     /// <summary>
     ///     Dalle2 model. This model generates images.
     /// </summary>
-    public static Model Dalle2 => new("dall-e-2");
+    public static Model Dalle2 => new Model("dall-e-2");
 
     /// <summary>
     ///     Dalle2 model. This model generates images.
     /// </summary>
-    public static Model Dalle3 => new("dall-e-3");
+    public static Model Dalle3 => new Model("dall-e-3");
     
     /// <summary>
     ///     Dalle2 model. This model generates images.
     /// </summary>
-    public static Model Claude3Sonnet => new("claude-3-sonnet-20240229", LLmProviders.Anthropic);
+    public static Model Claude3Sonnet => new Model("claude-3-sonnet-20240229", LLmProviders.Anthropic);
     
     /// <summary>
     ///     Dalle2 model. This model generates images.
     /// </summary>
-    public static Model Claude3Opus => new("claude-3-opus-20240229", LLmProviders.Anthropic);
+    public static Model Claude3Opus => new Model("claude-3-opus-20240229", LLmProviders.Anthropic);
     
 
     /// <summary>

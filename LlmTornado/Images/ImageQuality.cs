@@ -18,12 +18,12 @@ public class ImageQuality
     /// <summary>
     ///     Standard image
     /// </summary>
-    public static ImageQuality Standard => new("standard");
+    public static ImageQuality Standard => new ImageQuality("standard");
 
     /// <summary>
     ///     Standard image
     /// </summary>
-    public static ImageQuality Hd => new("hd");
+    public static ImageQuality Hd => new ImageQuality("hd");
 
     /// <summary>
     ///     Gets the string value for this quality to pass to the API

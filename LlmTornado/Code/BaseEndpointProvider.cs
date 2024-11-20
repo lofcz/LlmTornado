@@ -22,7 +22,7 @@ public abstract class BaseEndpointProvider : IEndpointProviderExtended
     public TornadoApi Api { get; set; }
     public LLmProviders Provider { get; set; } = LLmProviders.Unknown;
     
-    internal static readonly JsonSerializerSettings NullSettings = new() { NullValueHandling = NullValueHandling.Ignore };
+    internal static readonly JsonSerializerSettings NullSettings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore };
     
     public BaseEndpointProvider(TornadoApi api)
     {

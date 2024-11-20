@@ -18,27 +18,27 @@ public class ImageSize
     /// <summary>
     ///     Requests an image that is 256x256
     /// </summary>
-    public static ImageSize _256 => new("256x256");
+    public static ImageSize _256 => new ImageSize("256x256");
 
     /// <summary>
     ///     Requests an image that is 512x512
     /// </summary>
-    public static ImageSize _512 => new("512x512");
+    public static ImageSize _512 => new ImageSize("512x512");
 
     /// <summary>
     ///     Requests and image that is 1024x1024
     /// </summary>
-    public static ImageSize _1024 => new("1024x1024");
+    public static ImageSize _1024 => new ImageSize("1024x1024");
 
     /// <summary>
     ///     Requests and image that is 1792x1024, only for dalle3
     /// </summary>
-    public static ImageSize _1792x1024 => new("1792x1024");
+    public static ImageSize _1792x1024 => new ImageSize("1792x1024");
 
     /// <summary>
     ///     Requests and image that is 1024x1792
     /// </summary>
-    public static ImageSize _1024x1792 => new("1024x1792");
+    public static ImageSize _1024x1792 => new ImageSize("1024x1792");
 
     /// <summary>
     ///     Gets the string value for this size to pass to the API

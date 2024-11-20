@@ -18,12 +18,12 @@ public class ImageResponseFormat
     /// <summary>
     ///     Requests an image that is 256x256
     /// </summary>
-    public static ImageResponseFormat Url => new("url");
+    public static ImageResponseFormat Url => new ImageResponseFormat("url");
 
     /// <summary>
     ///     Requests an image that is 512x512
     /// </summary>
-    public static ImageResponseFormat B64_json => new("b64_json");
+    public static ImageResponseFormat B64_json => new ImageResponseFormat("b64_json");
 
 
     /// <summary>

@@ -83,17 +83,17 @@ public class ChatRequestResponseFormatTypes
     /// <summary>
     ///     Response should be in plaintext format, default.
     /// </summary>
-    public static ChatRequestResponseFormatTypes Text => new("text");
+    public static ChatRequestResponseFormatTypes Text => new ChatRequestResponseFormatTypes("text");
 
     /// <summary>
     ///     Response should be in JSON. System prompt must include "JSON" substring.
     /// </summary>
-    public static ChatRequestResponseFormatTypes Json => new("json_object");
+    public static ChatRequestResponseFormatTypes Json => new ChatRequestResponseFormatTypes("json_object");
     
     /// <summary>
     ///     Response should be in structured JSON. The model will always follow the provided schema.
     /// </summary>
-    public static ChatRequestResponseFormatTypes StructuredJson => new("json_schema");
+    public static ChatRequestResponseFormatTypes StructuredJson => new ChatRequestResponseFormatTypes("json_schema");
 
     /// <summary>
     ///     Gets the string value for this response format to pass to the API

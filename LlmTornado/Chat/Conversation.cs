@@ -545,63 +545,7 @@ public class Conversation
             return new ChatRichResponse(res, null);
         }
 
-        ChatRichResponse response = new ChatRichResponse(res, []);
-        
-        if (res.Choices.Count > 0)
-        {
-            foreach (ChatChoice choice in res.Choices)
-            {
-                ChatMessage? newMsg = choice.Message;
-
-                if (newMsg is null)
-                {
-                    continue;
-                }
-                
-                AppendMessage(newMsg);
-
-                if (newMsg.ToolCalls is { Count: > 0 } && !OutboundToolChoice.OutboundToolChoiceConverter.KnownFunctionNames.Contains(newMsg.ToolCalls[0].FunctionCall.Name))
-                {
-                    foreach (ToolCall x in newMsg.ToolCalls)
-                    {
-                        response.Blocks!.Add(new ChatRichResponseBlock
-                        {
-                            Type = ChatRichResponseBlockTypes.Function, 
-                            FunctionCall = x.FunctionCall
-                        });   
-                    }
-                }
-
-                if (!newMsg.Content.IsNullOrWhiteSpace())
-                {
-                    response.Blocks!.Add(new ChatRichResponseBlock
-                    {
-                        Type = ChatRichResponseBlockTypes.Message,
-                        Message = newMsg.Content
-                    });
-                }
-                else if (newMsg.Parts?.Count > 0)
-                {
-                    foreach (ChatMessagePart part in newMsg.Parts)
-                    {
-                        response.Blocks!.Add(new ChatRichResponseBlock
-                        {
-                            Type = ChatRichResponseBlockTypes.Message,
-                            Message = part.Text
-                        });
-                    }
-                }
-                else if (newMsg.Audio is not null)
-                {
-                    response.Blocks!.Add(new ChatRichResponseBlock
-                    {
-                        Type = ChatRichResponseBlockTypes.Audio,
-                        ChatAudio = newMsg.Audio
-                    });
-                }
-            }
-        }
-
+        ChatRichResponse response = await HandleResponseRich(res, null);
         return response;
     }
     
@@ -614,7 +558,7 @@ public class Conversation
     /// <returns>The string of the response from the chatbot API</returns>
     public async Task<RestDataOrException<ChatRichResponse>> GetResponseRichSafe(CancellationToken token = default)
     {
-        ChatRequest req = new(RequestParameters)
+        ChatRequest req = new ChatRequest(RequestParameters)
         {
             Messages = messages.ToList(),
             CancellationToken = token
@@ -634,44 +578,7 @@ public class Conversation
             return new RestDataOrException<ChatRichResponse>(new Exception("The service returned no choices"), res);
         }
 
-        ChatRichResponse response = new ChatRichResponse(res.Data, []);
-        
-        if (res.Data.Choices.Count > 0)
-        {
-            foreach (ChatChoice choice in res.Data.Choices)
-            {
-                ChatMessage? newMsg = choice.Message;
-
-                if (newMsg is null)
-                {
-                    continue;
-                }
-
-                AppendMessage(newMsg);
-
-                if (newMsg.ToolCalls is { Count: > 0 } && !OutboundToolChoice.OutboundToolChoiceConverter.KnownFunctionNames.Contains(newMsg.ToolCalls[0].FunctionCall.Name))
-                {
-                    foreach (ToolCall x in newMsg.ToolCalls)
-                    {
-                        response.Blocks!.Add(new ChatRichResponseBlock
-                        {
-                            Type = ChatRichResponseBlockTypes.Function, 
-                            FunctionCall = x.FunctionCall
-                        });   
-                    }
-                }
-
-                if (!newMsg.Content.IsNullOrWhiteSpace())
-                {
-                    response.Blocks!.Add(new ChatRichResponseBlock
-                    {
-                        Type = ChatRichResponseBlockTypes.Message,
-                        Message = newMsg.Content
-                    });
-                }
-            }
-        }
-
+        ChatRichResponse response = await HandleResponseRich(res.Data, null);
         return new RestDataOrException<ChatRichResponse>(response, res);
     }
 
@@ -683,9 +590,9 @@ public class Conversation
     ///     This method doesn't throw on network level.
     /// </summary>
     /// <returns>The string of the response from the chatbot API</returns>
-    public async Task<RestDataOrException<ChatRichResponse>> GetResponseRichSafe(Func<List<FunctionCall>, Task<List<FunctionResult>>> functionCallHandler, CancellationToken token = default)
+    public async Task<RestDataOrException<ChatRichResponse>> GetResponseRichSafe(Func<List<FunctionCall>, Task> functionCallHandler, CancellationToken token = default)
     {
-        ChatRequest req = new(RequestParameters)
+        ChatRequest req = new ChatRequest(RequestParameters)
         {
             Messages = messages.ToList(),
             CancellationToken = token
@@ -705,48 +612,104 @@ public class Conversation
             return new RestDataOrException<ChatRichResponse>(new Exception("The service returned no choices"), res);
         }
 
-        ChatRichResponse response = new ChatRichResponse(res.Data, []);
+        ChatRichResponse response = await HandleResponseRich(res.Data, functionCallHandler);
+        return new RestDataOrException<ChatRichResponse>(response, res);
+    }
+
+    private async Task<ChatRichResponse> HandleResponseRich(ChatResult? res, Func<List<FunctionCall>, Task>? functionCallHandler)
+    {
+        List<ChatRichResponseBlock> blocks = [];
+        ChatRichResponse response = new ChatRichResponse(res, blocks);
         
-        if (res.Data.Choices.Count > 0)
+        if (res is null)
         {
-            foreach (ChatChoice choice in res.Data.Choices)
+            return response;
+        }
+
+        if (!(res.Choices?.Count > 0))
+        {
+            return response;
+        }
+        
+        foreach (ChatChoice choice in res.Choices)
+        {
+            ChatMessage? newMsg = choice.Message;
+
+            if (newMsg is null)
             {
-                ChatMessage? newMsg = choice.Message;
+                continue;
+            }
 
-                if (newMsg is null)
+            AppendMessage(newMsg);
+
+            if (newMsg.ToolCalls is { Count: > 0 } && !OutboundToolChoice.OutboundToolChoiceConverter.KnownFunctionNames.Contains(newMsg.ToolCalls[0].FunctionCall.Name))
+            {
+                ResolvedToolsCall result = new ResolvedToolsCall();
+                List<FunctionCall>? calls = newMsg.ToolCalls?.Select(x => new FunctionCall
                 {
-                    continue;
-                }
+                    Name = x.FunctionCall.Name,
+                    Arguments = x.FunctionCall.Arguments,
+                    ToolCall = x
+                }).ToList();
 
-                AppendMessage(newMsg);
-
-                if (newMsg.ToolCalls is { Count: > 0 } && !OutboundToolChoice.OutboundToolChoiceConverter.KnownFunctionNames.Contains(newMsg.ToolCalls[0].FunctionCall.Name))
+                if (calls is not null)
                 {
-                    List<FunctionCall> functionsToResolve = newMsg.ToolCalls.Select(x => x.FunctionCall).ToList();
-                    List<FunctionResult> result = await functionCallHandler.Invoke(functionsToResolve);
+                    Guid currentMsgId = Guid.NewGuid();
 
-                    for (int i = 0; i < result.Count; i++)
+                    if (functionCallHandler is not null)
                     {
-                        response.Blocks!.Add(new ChatRichResponseBlock
-                        {
-                            Type = ChatRichResponseBlockTypes.Function, 
-                            FunctionCall = functionsToResolve.Count > i ? functionsToResolve[i] : null
-                        });   
+                        await functionCallHandler.Invoke(calls);   
                     }
-                }
-
-                if (!newMsg.Content.IsNullOrWhiteSpace())
-                {
-                    response.Blocks!.Add(new ChatRichResponseBlock
+                        
+                    foreach (FunctionCall call in calls)
                     {
-                        Type = ChatRichResponseBlockTypes.Message,
-                        Message = newMsg.Content
-                    });   
+                        blocks.Add(new ChatRichResponseBlock
+                        {
+                            Type = ChatRichResponseBlockTypes.Function,
+                            FunctionCall = call
+                        });
+                            
+                        ChatMessage fnResultMsg = new ChatMessage(ChatMessageRoles.Tool, call.Result?.Content ?? "The service returned no data.".ToJson(), Guid.NewGuid())
+                        {
+                            Id = currentMsgId,
+                            ToolCallId = call.ToolCall?.Id ?? call.Name,
+                            ToolInvocationSucceeded = call.Result?.InvocationSucceeded ?? false,
+                            ContentJsonType = call.Result?.ContentJsonType ?? typeof(string)
+                        };
+
+                        currentMsgId = Guid.NewGuid();
+                        AppendMessage(fnResultMsg);
+                                    
+                        result.ToolResults.Add(new ResolvedToolCall
+                        {
+                            Call = call,
+                            Result = call.Result ?? new FunctionResult(call, null, null, false),
+                            ToolMessage = fnResultMsg
+                        });
+                    }
+                        
+                    if (OnAfterToolsCall is not null)
+                    {
+                        await OnAfterToolsCall(result);
+                    } 
                 }
+            }
+
+            if (newMsg.Parts?.Count > 0)
+            {
+                blocks.AddRange(newMsg.Parts.Select(x => new ChatRichResponseBlock(x, newMsg)));
+            }
+            else if (newMsg.Content is not null)
+            {
+                blocks.Add(new ChatRichResponseBlock
+                {
+                    Type = ChatRichResponseBlockTypes.Message,
+                    Message = newMsg.Content
+                });
             }
         }
 
-        return new RestDataOrException<ChatRichResponse>(response, res);
+        return response;
     }
     
     /// <summary>
@@ -758,7 +721,7 @@ public class Conversation
     /// <returns>The string of the response from the chatbot API</returns>
     public async Task<ChatRichResponse> GetResponseRich(Func<List<FunctionCall>, Task>? functionCallHandler, CancellationToken token = default)
     {
-        ChatRequest req = new(RequestParameters)
+        ChatRequest req = new ChatRequest(RequestParameters)
         {
             Messages = messages.ToList(),
             CancellationToken = token
@@ -778,91 +741,7 @@ public class Conversation
             return new ChatRichResponse(res, null);
         }
 
-        List<ChatRichResponseBlock> blocks = [];
-        ChatRichResponse response = new ChatRichResponse(res, blocks);
-        
-        if (res.Choices.Count > 0)
-        {
-            foreach (ChatChoice choice in res.Choices)
-            {
-                ChatMessage? newMsg = choice.Message;
-
-                if (newMsg is null)
-                {
-                    continue;
-                }
-
-                AppendMessage(newMsg);
-
-                if (newMsg.ToolCalls is { Count: > 0 } && !OutboundToolChoice.OutboundToolChoiceConverter.KnownFunctionNames.Contains(newMsg.ToolCalls[0].FunctionCall.Name))
-                {
-                    ResolvedToolsCall result = new ResolvedToolsCall();
-                    List<FunctionCall>? calls = newMsg.ToolCalls?.Select(x => new FunctionCall
-                    {
-                        Name = x.FunctionCall.Name,
-                        Arguments = x.FunctionCall.Arguments,
-                        ToolCall = x
-                    }).ToList();
-
-                    if (calls is not null)
-                    {
-                        Guid currentMsgId = Guid.NewGuid();
-
-                        if (functionCallHandler is not null)
-                        {
-                            await functionCallHandler.Invoke(calls);   
-                        }
-                        
-                        foreach (FunctionCall call in calls)
-                        {
-                            blocks.Add(new ChatRichResponseBlock
-                            {
-                                Type = ChatRichResponseBlockTypes.Function,
-                                FunctionCall = call
-                            });
-                            
-                            ChatMessage fnResultMsg = new ChatMessage(ChatMessageRoles.Tool, call.Result?.Content ?? "The service returned no data.".ToJson(), Guid.NewGuid())
-                            {
-                                Id = currentMsgId,
-                                ToolCallId = call.ToolCall?.Id ?? call.Name,
-                                ToolInvocationSucceeded = call.Result?.InvocationSucceeded ?? false,
-                                ContentJsonType = call.Result?.ContentJsonType ?? typeof(string)
-                            };
-
-                            currentMsgId = Guid.NewGuid();
-                            AppendMessage(fnResultMsg);
-                                    
-                            result.ToolResults.Add(new ResolvedToolCall
-                            {
-                                Call = call,
-                                Result = call.Result ?? new FunctionResult(call, null, null, false),
-                                ToolMessage = fnResultMsg
-                            });
-                        }
-                        
-                        if (OnAfterToolsCall is not null)
-                        {
-                            await OnAfterToolsCall(result);
-                        } 
-                    }
-                }
-
-                if (newMsg.Parts?.Count > 0)
-                {
-                    blocks.AddRange(newMsg.Parts.Select(x => new ChatRichResponseBlock(x, newMsg)));
-                }
-                else if (newMsg.Content is not null)
-                {
-                    blocks.Add(new ChatRichResponseBlock
-                    {
-                        Type = ChatRichResponseBlockTypes.Message,
-                        Message = newMsg.Content
-                    });
-                }
-            }
-        }
-
-        return response;
+        return await HandleResponseRich(res, functionCallHandler);
     }
 
     /// <summary>
@@ -872,7 +751,7 @@ public class Conversation
     /// <returns>The string of the response from the chatbot API</returns>
     public async Task<RestDataOrException<ChatChoice>> GetResponseSafe(CancellationToken token = default)
     {
-        ChatRequest req = new(RequestParameters)
+        ChatRequest req = new ChatRequest(RequestParameters)
         {
             Messages = messages.ToList(),
             CancellationToken = token
@@ -964,13 +843,13 @@ public class Conversation
     /// </returns>
     public async IAsyncEnumerable<string> StreamResponseEnumerable(Guid? messageId = null, CancellationToken token = default)
     {
-        ChatRequest req = new(RequestParameters)
+        ChatRequest req = new ChatRequest(RequestParameters)
         {
             Messages = messages.ToList(),
             CancellationToken = token
         };
 
-        StringBuilder responseStringBuilder = new();
+        StringBuilder responseStringBuilder = new StringBuilder();
         ChatMessageRoles? responseRole = null;
 
         await foreach (ChatResult res in endpoint.StreamChatEnumerable(req).WithCancellation(token))
@@ -1051,7 +930,7 @@ public class Conversation
             FunctionCallHandler = functionCallHandler,
             MessageTypeResolvedHandler = messageTypeResolvedHandler,
             VendorFeaturesHandler = vendorFeaturesHandler,
-            MessageId = msgId,
+            MessageId = msgId
         }, token);
     }
 
@@ -1242,7 +1121,7 @@ public class Conversation
 
                                 foreach (FunctionCall call in calls)
                                 {
-                                    ChatMessage fnResultMsg = new(ChatMessageRoles.Tool, call.Result?.Content ?? "The service returned no data.".ToJson(), Guid.NewGuid())
+                                    ChatMessage fnResultMsg = new ChatMessage(ChatMessageRoles.Tool, call.Result?.Content ?? "The service returned no data.".ToJson(), Guid.NewGuid())
                                     {
                                         Id = currentMsgId,
                                         ToolCallId = call.ToolCall?.Id ?? call.Name,

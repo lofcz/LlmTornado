@@ -25,7 +25,7 @@ namespace LlmTornado;
 public abstract class EndpointBase
 {
     private static string userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36";
-    internal static readonly JsonSerializerSettings NullSettings = new() { NullValueHandling = NullValueHandling.Ignore };
+    internal static readonly JsonSerializerSettings NullSettings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore };
     private static TimeSpan endpointTimeout = TimeSpan.FromSeconds(600);
     private static readonly Lazy<Dictionary<LLmProviders, Lazy<HttpClient>>> EndpointClients = new Lazy<Dictionary<LLmProviders, Lazy<HttpClient>>>(() =>
     {
@@ -158,14 +158,14 @@ public abstract class EndpointBase
                 }
                 case string str:
                 {
-                    StringContent stringContent = new(str, Encoding.UTF8, "application/json");
+                    StringContent stringContent = new StringContent(str, Encoding.UTF8, "application/json");
                     msg.Content = stringContent;
                     break;
                 }
                 default:
                 {
                     string jsonContent = JsonConvert.SerializeObject(payload, NullSettings);
-                    StringContent stringContent = new(jsonContent, Encoding.UTF8, "application/json");
+                    StringContent stringContent = new StringContent(jsonContent, Encoding.UTF8, "application/json");
                     msg.Content = stringContent;
                     break;
                 }
@@ -411,7 +411,7 @@ public abstract class EndpointBase
         }
         
         string resultAsString = await response.Data.Content.ReadAsStringAsync().ConfigureAwait(ConfigureAwaitOptions.None);
-        HttpCallResult<T> result = new(response.Data.StatusCode, resultAsString, default, response.Data.IsSuccessStatusCode, response);
+        HttpCallResult<T> result = new HttpCallResult<T>(response.Data.StatusCode, resultAsString, default, response.Data.IsSuccessStatusCode, response);
 
         if (response.Data.IsSuccessStatusCode)
         {
@@ -427,7 +427,7 @@ public abstract class EndpointBase
         HttpResponseMessage response = await HttpRequestRaw(provider, endpoint, url, verb, postData, ct: ct).ConfigureAwait(ConfigureAwaitOptions.None);
         Stream resultAsStream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(ConfigureAwaitOptions.None);
 
-        StreamResponse res = new()
+        StreamResponse res = new StreamResponse
         {
             Headers = new ApiResultBase(),
             Stream = resultAsStream,
@@ -574,7 +574,7 @@ public abstract class EndpointBase
     {
         using HttpResponseMessage response = await HttpRequestRaw(provider, endpoint, url, verb, postData, true).ConfigureAwait(ConfigureAwaitOptions.None);
         await using Stream stream = await response.Content.ReadAsStreamAsync(token);
-        using StreamReader reader = new(stream);
+        using StreamReader reader = new StreamReader(stream);
 
         await foreach (T? x in provider.InboundStream<T>(reader).WithCancellation(token))
         {
@@ -603,7 +603,7 @@ public abstract class EndpointBase
         }
         
         Stream stream = await response.Data.Content.ReadAsStreamAsync(token);
-        StreamReader reader = new(stream);
+        StreamReader reader = new StreamReader(stream);
 
         return new TornadoStreamRequest
         {

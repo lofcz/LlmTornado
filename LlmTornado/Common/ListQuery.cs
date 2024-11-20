@@ -45,7 +45,7 @@ public sealed class ListQuery
     {
         if (query is null) return null;
 
-        Dictionary<string, string> parameters = new();
+        Dictionary<string, string> parameters = new Dictionary<string, string>();
 
         if (query.Limit is not null) parameters.Add("limit", query.Limit.ToString());
 

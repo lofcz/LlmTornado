@@ -18,22 +18,22 @@ public class SpeechResponseFormat
     /// <summary>
     ///     Requests response in mp3 format
     /// </summary>
-    public static SpeechResponseFormat Mp3 => new("mp3");
+    public static SpeechResponseFormat Mp3 => new SpeechResponseFormat("mp3");
 
     /// <summary>
     ///     Requests response in opus format
     /// </summary>
-    public static SpeechResponseFormat Opus => new("opus");
+    public static SpeechResponseFormat Opus => new SpeechResponseFormat("opus");
 
     /// <summary>
     ///     Requests a response in aac format
     /// </summary>
-    public static SpeechResponseFormat Aac => new("aac");
+    public static SpeechResponseFormat Aac => new SpeechResponseFormat("aac");
 
     /// <summary>
     ///     Requests a response in flac format
     /// </summary>
-    public static SpeechResponseFormat Flac => new("flac");
+    public static SpeechResponseFormat Flac => new SpeechResponseFormat("flac");
 
     /// <summary>
     ///     Gets the string value for this size to pass to the API

@@ -29,7 +29,7 @@ public class ImageGenerationEndpoint : EndpointBase
 	/// <returns>Asynchronously returns the image result. Look in its <see cref="Data.Url" /> </returns>
 	public Task<ImageResult?> CreateImageAsync(string input)
     {
-        ImageGenerationRequest req = new(input);
+        ImageGenerationRequest req = new ImageGenerationRequest(input);
         return CreateImageAsync(req);
     }
 

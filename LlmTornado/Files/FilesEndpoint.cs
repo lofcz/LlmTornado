@@ -80,7 +80,7 @@ public class FilesEndpoint : EndpointBase
 	/// </param>
 	public async Task<HttpCallResult<File>> UploadFileAsync(string filePath, FilePurpose purpose = FilePurpose.Finetune)
     {
-        MultipartFormDataContent content = new()
+        MultipartFormDataContent content = new MultipartFormDataContent
         {
             { new StringContent(purpose is FilePurpose.Finetune ? "fine-tune" : "assistants"), "purpose" },
             { new ByteArrayContent(await System.IO.File.ReadAllBytesAsync(filePath).ConfigureAwait(ConfigureAwaitOptions.None)), "file", Path.GetFileName(filePath) }

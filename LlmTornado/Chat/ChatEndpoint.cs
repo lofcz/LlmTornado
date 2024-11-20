@@ -173,7 +173,7 @@ public class ChatEndpoint : EndpointBase
         IReadOnlyDictionary<string, float>? logitBias = null,
         params string[]? stopSequences)
     {
-        ChatRequest request = new(DefaultChatRequestArgs)
+        ChatRequest request = new ChatRequest(DefaultChatRequestArgs)
         {
             Messages = messages,
             Model = model ?? DefaultChatRequestArgs.Model,

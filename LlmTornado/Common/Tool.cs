@@ -182,12 +182,12 @@ public class Tool
     /// <summary>
     ///     The code interpreter tool used by assistants
     /// </summary>
-    public static Tool Retrieval { get; } = new("retrieval");
+    public static Tool Retrieval { get; } = new Tool("retrieval");
 
     /// <summary>
     ///     The code interpreter tool used by assistants
     /// </summary>
-    public static Tool CodeInterpreter { get; } = new("code_interpreter");
+    public static Tool CodeInterpreter { get; } = new Tool("code_interpreter");
 
     /// <summary>
     ///     Type of the tool, should be always "function" for chat, assistants accepts values "code_interpreter" and
@@ -240,7 +240,7 @@ public class Tool
 /// </remarks>
 public class ToolFunction
 {
-    private static readonly JsonSerializerSettings serializerSettings = new() { NullValueHandling = NullValueHandling.Ignore };
+    private static readonly JsonSerializerSettings serializerSettings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore };
 
     /// <summary>
     ///     The name of the function to be called. Must be a-z, A-Z, 0-9, or contain underscores and dashes, with a maximum

@@ -132,7 +132,7 @@ internal class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider,
         
         uriBuilder.Query = query.ToString();
 
-        HttpRequestMessage req = new(verb, uriBuilder.Uri) 
+        HttpRequestMessage req = new HttpRequestMessage(verb, uriBuilder.Uri) 
         {
             Version = OutboundVersion
         };

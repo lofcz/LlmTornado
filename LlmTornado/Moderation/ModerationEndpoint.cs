@@ -27,7 +27,7 @@ public class ModerationEndpoint : EndpointBase
 	///     This allows you to send request to the recommended model without needing to specify. OpenAI recommends using the
 	///     <see cref="Model.TextModerationLatest" /> model
 	/// </summary>
-	public ModerationRequest DefaultModerationRequestArgs { get; set; } = new() { Model = Model.TextModerationLatest };
+	public ModerationRequest DefaultModerationRequestArgs { get; set; } = new ModerationRequest { Model = Model.TextModerationLatest };
 
 	/// <summary>
 	///     Ask the API to classify the text using the default model.
@@ -36,7 +36,7 @@ public class ModerationEndpoint : EndpointBase
 	/// <returns>Asynchronously returns the classification result</returns>
 	public async Task<ModerationResult?> CallModerationAsync(string input)
     {
-        ModerationRequest req = new(input, DefaultModerationRequestArgs.Model);
+        ModerationRequest req = new ModerationRequest(input, DefaultModerationRequestArgs.Model);
         return await CallModerationAsync(req);
     }
 
