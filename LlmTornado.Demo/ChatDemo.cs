@@ -93,7 +93,7 @@ public static class ChatDemo
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.OpenAi.Gpt4.O240806,
+            Model = ChatModel.OpenAi.Gpt4.O241120,
             Tools = new List<Tool>
             {
                 new Tool(new ToolFunction("get_weather", "gets the current weather"), true)
@@ -104,8 +104,11 @@ public static class ChatDemo
 
         ChatRichResponse response = await chat.GetResponseRich();
 
-        if (response.Blocks.Any(x => x.Type is ChatRichResponseBlockTypes.Function))
+        ChatRichResponseBlock? block = response.Blocks?.FirstOrDefault(x => x.Type is ChatRichResponseBlockTypes.Function);
+
+        if (block is not null)
         {
+            Console.WriteLine($"fn block found: {block.FunctionCall?.Name}");
             return true;
         }
         

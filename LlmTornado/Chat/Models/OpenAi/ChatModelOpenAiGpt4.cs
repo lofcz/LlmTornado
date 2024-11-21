@@ -100,6 +100,16 @@ public class ChatModelOpenAiGpt4 : IVendorModelClassProvider
     public readonly ChatModel O240806 = ModelO240806;
     
     /// <summary>
+    /// Latest gpt-4o snapshot from November 20th, 2024.
+    /// </summary>
+    public static readonly ChatModel ModelO241120 = new ChatModel("gpt-4o-2024-11-20", LLmProviders.OpenAi, 128_000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelO241120"/>
+    /// </summary>
+    public readonly ChatModel O241120 = ModelO241120;
+    
+    /// <summary>
     /// Preview release for audio inputs in chat completions.
     /// </summary>
     public static readonly ChatModel ModelAudioPreview = new ChatModel("gpt-4o-audio-preview", LLmProviders.OpenAi, 128_000);
@@ -238,6 +248,7 @@ public class ChatModelOpenAiGpt4 : IVendorModelClassProvider
         ModelO,
         ModelO240513,
         ModelO240806,
+        ModelO241120,
         ModelChatGptLatest,
         ModelTurbo,
         ModelTurbo240409,
