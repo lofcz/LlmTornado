@@ -23,6 +23,12 @@ Install LLM Tornado via NuGet:
 Install-Package LlmTornado
 ```
 
+Optional: extra features and quality of life extension methods are distributed in `Contrib` addon:
+
+```
+Install-Package LlmTornado.Contrib
+```
+
 ## 🔮 Quick Inference
 
 ### Switching vendors
