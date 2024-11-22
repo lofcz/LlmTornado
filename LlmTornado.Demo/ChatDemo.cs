@@ -8,6 +8,7 @@ using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
 using LlmTornado.Common;
+using LlmTornado.Contrib;
 
 namespace LlmTornado.Demo;
 

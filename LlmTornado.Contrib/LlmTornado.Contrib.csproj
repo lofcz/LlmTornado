@@ -4,10 +4,33 @@
         <TargetFramework>net8.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <Title>Contribution addon for LlmTornado</Title>
+        <Authors>Matěj "lofcz" Štágl, LlmTornado Contributors</Authors>
+        <Copyright>MIT</Copyright>
+        <PackageProjectUrl>https://github.com/lofcz/LlmTornado</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/lofcz/LlmTornado</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageTags>llmtornado</PackageTags>
+        <PackageIcon>nuget_logo.jpg</PackageIcon>
+        <LangVersion>preview</LangVersion>
+        <Version>1.0.1</Version>
+        <Description>Provides extra functionality to LlmTornado.</Description>
     </PropertyGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\LlmTornado\LlmTornado.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Enums.NET" Version="[5.0.0, )" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Update="nuget_logo.jpg">
+        <Pack>true</Pack>
+        <PackagePath>\</PackagePath>
+      </None>
     </ItemGroup>
 
 </Project>

@@ -12,16 +12,25 @@ namespace LlmTornado.ChatFunctions;
 /// </summary>
 public class FunctionCall
 {
+    /// <summary>
+    ///     Arguments.
+    /// </summary>
     [JsonIgnore] 
-    private readonly Lazy<ChatFunctionParamsGetter> argGetter;
+    internal readonly Lazy<ChatFunctionParamsGetter> ArgGetter;
 
+    /// <summary>
+    ///     Decoded arguments.
+    /// </summary>
     [JsonIgnore] 
-    private readonly Lazy<Dictionary<string, object?>?> decodedArguments;
+    internal readonly Lazy<Dictionary<string, object?>?> DecodedArguments;
 
+    /// <summary>
+    ///     Creates an empty function call.
+    /// </summary>
     public FunctionCall()
     {
-        argGetter = new Lazy<ChatFunctionParamsGetter>(() => new ChatFunctionParamsGetter(decodedArguments?.Value));
-        decodedArguments = new Lazy<Dictionary<string, object?>?>(() => Arguments.IsNullOrWhiteSpace() ? [] : JsonConvert.DeserializeObject<Dictionary<string, object?>>(Arguments));
+        ArgGetter = new Lazy<ChatFunctionParamsGetter>(() => new ChatFunctionParamsGetter(DecodedArguments?.Value));
+        DecodedArguments = new Lazy<Dictionary<string, object?>?>(() => Arguments.IsNullOrWhiteSpace() ? [] : JsonConvert.DeserializeObject<Dictionary<string, object?>>(Arguments));
     }
     
     [JsonIgnore] 
@@ -57,32 +66,7 @@ public class FunctionCall
     /// <returns></returns>
     public Dictionary<string, object?> GetArguments()
     {
-        return argGetter.Value.Source ?? [];
-    }
-    
-    /// <summary>
-    ///     Attempts to get value of a given argument. If the argument is of incompatible type, <see cref="exception"/> is returned.
-    /// </summary>
-    /// <param name="param"></param>
-    /// <param name="data"></param>
-    /// <param name="exception"></param>
-    /// <typeparam name="T"></typeparam>
-    /// <returns></returns>
-    public bool TryGetArgument<T>(string param, [NotNullWhen(returnValue: true)] out T? data, out Exception? exception)
-    {
-        return argGetter.Value.Get(param, out data, out exception);
-    }
-    
-    /// <summary>
-    ///     Attempts to get value of a given argument. If the argument is not found or is of incompatible type, null is returned.
-    /// </summary>
-    /// <param name="param"></param>
-    /// <param name="data"></param>
-    /// <typeparam name="T"></typeparam>
-    /// <returns></returns>
-    public bool TryGetArgument<T>(string param, [NotNullWhen(returnValue: true)] out T? data)
-    {
-        return argGetter.Value.Get(param, out data, out _);
+        return ArgGetter.Value.Source ?? [];
     }
     
     /// <summary>

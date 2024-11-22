@@ -123,46 +123,6 @@ public class ChatFunctionParamsGetter
     {
         Source = pars;
     }
-
-    public bool Get<T>(string param, [NotNullWhen(returnValue: true)] out T? data, out Exception? exception)
-    {
-        exception = null;
-        
-        if (Source is null)
-        {
-            data = default;
-            return false; 
-        }
-        
-        if (!Source.TryGetValue(param, out object? rawData))
-        {
-            data = default;
-            return false;
-        }
-
-        if (rawData is T obj)
-        {
-            data = obj;
-        }
-
-        if (rawData is JArray jArr)
-        {
-            data = jArr.ToObject<T?>();
-            return true;
-        }
-
-        try
-        {
-            data = (T?)rawData.ChangeType(typeof(T));
-            return true;
-        }
-        catch (Exception e)
-        {
-            data = default;
-            exception = e;
-            return false;
-        }
-    }
 }
 
 internal class ToolCallInboundAccumulator

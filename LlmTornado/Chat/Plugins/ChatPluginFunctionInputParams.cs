@@ -5,52 +5,22 @@ using Newtonsoft.Json.Linq;
 
 namespace LlmTornado.Chat.Plugins;
 
+/// <summary>
+///     Input params of a function call.
+/// </summary>
 public class ChatPluginFunctionInputParams
 {
-    private readonly Dictionary<string, object?>? source;
-
+    /// <summary>
+    ///     Source dictionary.
+    /// </summary>
+    public Dictionary<string, object?>? Source { get; set; }
+    
+    /// <summary>
+    ///     Creates an input params from a dictionary.
+    /// </summary>
+    /// <param name="pars"></param>
     public ChatPluginFunctionInputParams(Dictionary<string, object?>? pars)
     {
-        source = pars;
-    }
-
-    public bool Get<T>(string param, out T? data, out Exception? exception)
-    {
-        exception = null;
-        
-        if (source == null)
-        {
-            data = default;
-            return false; 
-        }
-        
-        if (!source.TryGetValue(param, out object? rawData))
-        {
-            data = default;
-            return false;
-        }
-
-        if (rawData is T obj)
-        {
-            data = obj;
-        }
-
-        if (rawData is JArray jArr)
-        {
-            data = jArr.ToObject<T?>();
-            return true;
-        }
-
-        try
-        {
-            data = (T?)rawData.ChangeType(typeof(T));
-            return true;
-        }
-        catch (Exception e)
-        {
-            data = default;
-            exception = e;
-            return false;
-        }
+        Source = pars;
     }
 }

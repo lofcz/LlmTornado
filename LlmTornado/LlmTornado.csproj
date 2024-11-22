@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <LangVersion>latestmajor</LangVersion>
+        <LangVersion>preview</LangVersion>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <Authors>Matěj Štágl, LlmTornado contributors</Authors>
         <Product>LlmTornado</Product>
@@ -13,7 +13,7 @@
         <Title>OpenAI NextGeneration</Title>
         <PackageReleaseNotes>safe apis: include content of the request</PackageReleaseNotes>
         <PackageId>LlmTornado</PackageId>
-        <Version>3.1.25</Version>
+        <Version>3.1.26</Version>
         <AssemblyVersion>3.0.5</AssemblyVersion>
         <FileVersion>3.0.5</FileVersion>
         <GenerateDocumentationFile>True</GenerateDocumentationFile>
@@ -41,12 +41,15 @@
         </None>
     </ItemGroup>
     <ItemGroup>
-        <PackageReference Include="Enums.NET" Version="5.0.0" />
-        <PackageReference Include="Newtonsoft.Json" Version="13.0.3"/>
-        <PackageReference Include="PhotoSauce.MagicScaler" Version="0.14.2" />
+        <PackageReference Include="Newtonsoft.Json" Version="[13.0.3, )"/>
     </ItemGroup>
     <ItemGroup>
       <Folder Include="Embedding\Vendors\Anthropic\" />
       <Folder Include="Embedding\Vendors\Google\" />
+    </ItemGroup>
+    <ItemGroup>
+        <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+            <_Parameter1>LlmTornado.Contrib</_Parameter1>
+        </AssemblyAttribute>
     </ItemGroup>
 </Project>
