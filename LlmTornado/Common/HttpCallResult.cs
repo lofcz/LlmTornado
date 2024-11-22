@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using Newtonsoft.Json;
 
 namespace LlmTornado.Common;
 
@@ -33,9 +34,26 @@ public interface IHttpCallResult
 /// </summary>
 public class HttpCallRequest
 {
+    /// <summary>
+    ///     URL of the request.
+    /// </summary>
     public string Url { get; set; }
+    
+    /// <summary>
+    ///     Method used to perform the request.
+    /// </summary>
     public HttpMethod Method { get; set; }
+    
+    /// <summary>
+    ///     Outbound headers.
+    /// </summary>
     public Dictionary<string, IEnumerable<string>> Headers { get; set; } = [];
+    
+    /// <summary>
+    ///     Content of the request.
+    /// </summary>
+    [JsonIgnore]
+    public HttpContent? Content { get; set; }
 }
 
 /// <summary>

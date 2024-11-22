@@ -43,7 +43,8 @@ public class RestDataOrException<T>
         {
             Method = httpRequest.Method,
             Url = httpRequest.RequestUri?.AbsoluteUri ?? string.Empty,
-            Headers = httpRequest.Headers.ToDictionary()
+            Headers = httpRequest.Headers.ToDictionary(),
+            Content = httpRequest.Content
         };
     }
 

@@ -243,7 +243,8 @@ public abstract class EndpointBase
             {
                 Method = req.Method,
                 Url = req.RequestUri?.AbsolutePath ?? string.Empty,
-                Headers = req.Headers.ToDictionary()
+                Headers = req.Headers.ToDictionary(),
+                Content = req.Content
             };
 
             throw response.StatusCode switch
@@ -588,6 +589,16 @@ public abstract class EndpointBase
         }
     }
     
+    /// <summary>
+    /// Gets data as a series of server sent events (SSE).
+    /// </summary>
+    /// <param name="provider"></param>
+    /// <param name="endpoint"></param>
+    /// <param name="url"></param>
+    /// <param name="verb"></param>
+    /// <param name="postData"></param>
+    /// <param name="token"></param>
+    /// <returns></returns>
     protected async Task<TornadoStreamRequest> HttpStreamingRequestData(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, HttpMethod? verb = null, object? postData = null, CancellationToken token = default)
     {
         RestDataOrException<HttpResponseMessage> response = await HttpRequestRawWithAllCodes(provider, endpoint, url, verb, postData, true, token).ConfigureAwait(ConfigureAwaitOptions.None);

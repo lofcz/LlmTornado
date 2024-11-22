@@ -307,7 +307,7 @@ public class ChatEndpoint : EndpointBase
                 Exception = tornadoStreamRequest.Exception,
                 Result = tornadoStreamRequest.CallResponse,
                 Request = tornadoStreamRequest.CallRequest,
-                RawMessage = tornadoStreamRequest.Response
+                RawMessage = tornadoStreamRequest.Response ?? new HttpResponseMessage()
             });
             
             await tornadoStreamRequest.DisposeAsync();
