@@ -1,4 +1,6 @@
-[![LlmTornado](https://badgen.net/nuget/v/LlmTornado?v=301)](https://www.nuget.org/packages/LlmTornado)
+[![LlmTornado](https://badgen.net/nuget/v/LlmTornado?v=302&icon=nuget&label=LlmTornado)](https://www.nuget.org/packages/LlmTornado)
+[![LlmTornado.Contrib](https://badgen.net/nuget/v/LlmTornado.Contrib?v=302&icon=nuget&label=LlmTornado.Contrib)](https://www.nuget.org/packages/LlmTornado.Contrib)
+
 
 # 🌪️ LLM Tornado - one .NET library to consume OpenAI, Anthropic, Cohere, Google, Azure, Groq, and self-hosted APIs.
 
