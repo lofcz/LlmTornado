@@ -763,7 +763,7 @@ public static class ChatDemo
     {
         Conversation chat = Program.Connect(LLmProviders.Cohere).Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.Cohere.Command.Default
+            Model = ChatModel.Cohere.Command.R7B
         });
         chat.AppendSystemMessage("Pretend you are a dog. Sound authentic.");
         chat.AppendUserInput("Who are you?");

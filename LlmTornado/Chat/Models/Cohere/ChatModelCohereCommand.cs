@@ -60,6 +60,16 @@ public class ChatModelCohereCommand : IVendorModelClassProvider
     public readonly ChatModel Default2408 = ModelDefault2408;
     
     /// <summary>
+    /// Smallest, fastest, and final model in R family. Note this model ignores system prompt when server from official API.
+    /// </summary>
+    public static readonly ChatModel ModelR7B = new ChatModel("command-r7b-12-2024", LLmProviders.Cohere, 128_000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelDefault2408"/>
+    /// </summary>
+    public readonly ChatModel R7B = ModelR7B;
+    
+    /// <summary>
     /// A smaller, faster version of command. Almost as capable, but a lot faster.
     /// </summary>
     public static readonly ChatModel ModelLight = new ChatModel("command-light", LLmProviders.Cohere, 4_000);
@@ -90,7 +100,8 @@ public class ChatModelCohereCommand : IVendorModelClassProvider
         ModelDefault,
         ModelDefault2408,
         ModelLight,
-        ModelLightNightly
+        ModelLightNightly,
+        ModelR7B
     ];
 
     /// <summary>
