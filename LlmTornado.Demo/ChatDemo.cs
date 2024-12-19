@@ -31,6 +31,24 @@ public static class ChatDemo
         return result;
     }
     
+    public static async Task<ChatResult?> CompletionO1Developer()
+    {
+        ChatResult? result = await Program.Connect().Chat.CreateChatCompletion(new ChatRequest
+        {
+            Model = ChatModel.OpenAi.Gpt4.O1241217,
+            ReasoningEffort = ChatReasoningEfforts.Low,
+            ResponseFormat = ChatRequestResponseFormats.Json,
+            Messages = [
+                new ChatMessage(ChatMessageRoles.System, "Solve the math problem given by user, respond in JSON format."),
+                new ChatMessage(ChatMessageRoles.User, "2+2=?")
+            ]
+        });
+
+        Console.WriteLine(result?.Choices?.Count > 0 ? result.Choices?[0].Message?.Content : "no response");
+        
+        return result;
+    }
+    
     public static async Task<ChatResult?> Completion4Mini()
     {
         ChatResult? result = await Program.Connect().Chat.CreateChatCompletion(new ChatRequest

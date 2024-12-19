@@ -51,6 +51,11 @@ public class HttpFailedRequest
     ///     Raw message of the failed request. Do not dispose this, it will be disposed automatically by Tornado.
     /// </summary>
     public HttpResponseMessage RawMessage { get; set; }
+    
+    /// <summary>
+    ///     Body of the request.
+    /// </summary>
+    public TornadoRequestContent Body { get; set; }
 }
 
 /// <summary>
@@ -91,7 +96,7 @@ public enum ChatMessageRoles
     /// </summary>
     Unknown,
     /// <summary>
-    ///     System prompt / preamble.
+    ///     System prompt / preamble / developer message.
     /// </summary>
     System,
     /// <summary>
@@ -106,6 +111,28 @@ public enum ChatMessageRoles
     ///     Messages representing tool/function/connector usage.
     /// </summary>
     Tool
+}
+
+/// <summary>
+///     Level of reasoning suggested.
+/// </summary>
+public enum ChatReasoningEfforts
+{
+    /// <summary>
+    ///     Low reasoning - fast responses
+    /// </summary>
+    [JsonProperty("low")]
+    Low,
+    /// <summary>
+    ///     Balanced reasoning
+    /// </summary>
+    [JsonProperty("medium")]
+    Medium,
+    /// <summary>
+    ///     High reasoning - slow responses
+    /// </summary>
+    [JsonProperty("high")]
+    High
 }
 
 internal enum ChatResultStreamInternalKinds

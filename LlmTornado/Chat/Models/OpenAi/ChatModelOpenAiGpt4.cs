@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
@@ -10,17 +11,27 @@ namespace LlmTornado.Chat.Models;
 public class ChatModelOpenAiGpt4 : IVendorModelClassProvider
 {
     /// <summary>
-    /// Points to the most recent snapshot of the o1 model: o1-preview-2024-09-12
+    /// Latest o1 model snapshot.
+    /// </summary>
+    public static readonly ChatModel ModelO1241217 = new ChatModel("o1-2024-12-17", LLmProviders.OpenAi, 200_000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelO1241217"/>
+    /// </summary>
+    public readonly ChatModel O1241217 = ModelO1241217;
+    
+    /// <summary>
+    /// Points to the most recent snapshot of the o1 model: o1-preview-2024-09-12.
     /// </summary>
     public static readonly ChatModel ModelO1 = new ChatModel("o1-preview", LLmProviders.OpenAi, 128_000);
-
+    
     /// <summary>
     /// <inheritdoc cref="ModelO1"/>
     /// </summary>
     public readonly ChatModel O1 = ModelO1;
     
     /// <summary>
-    /// Latest o1 model snapshot
+    /// O1 Snaphot from 24/09/12.
     /// </summary>
     public static readonly ChatModel ModelO1240912 = new ChatModel("o1-preview-2024-09-12", LLmProviders.OpenAi, 128_000);
 
@@ -130,6 +141,16 @@ public class ChatModelOpenAiGpt4 : IVendorModelClassProvider
     public readonly ChatModel AudioPreview241001 = ModelAudioPreview241001;
     
     /// <summary>
+    /// Newest snapshot for the Audio API model.
+    /// </summary>
+    public static readonly ChatModel ModelAudioPreview241217 = new ChatModel("gpt-4o-audio-preview-2024-12-17", LLmProviders.OpenAi, 128_000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelAudioPreview241217"/>
+    /// </summary>
+    public readonly ChatModel AudioPreview241217 = ModelAudioPreview241217;
+    
+    /// <summary>
     /// Dynamic model continuously updated to the current version of GPT-4o in ChatGPT.
     /// </summary>
     public static readonly ChatModel ModelChatGptLatest = new ChatModel("chatgpt-4o-latest", LLmProviders.OpenAi, 128_000);
@@ -182,6 +203,7 @@ public class ChatModelOpenAiGpt4 : IVendorModelClassProvider
     /// <summary>
     /// GPT-4 model with the ability to understand images, in addition to all other GPT-4 Turbo capabilities. This is a preview model, we recommend developers to now use gpt-4-turbo which includes vision capabilities. Currently points to gpt-4-1106-vision-preview.
     /// </summary>
+    [Obsolete("Disabled by OpenAI")]
     public static readonly ChatModel ModelVisionPreview = new ChatModel("gpt-4-vision-preview", LLmProviders.OpenAi, 128_000);
 
     /// <summary>
@@ -265,7 +287,9 @@ public class ChatModelOpenAiGpt4 : IVendorModelClassProvider
         ModelO1Mini,
         ModelO1Mini240912,
         ModelAudioPreview,
-        ModelAudioPreview241001
+        ModelAudioPreview241001,
+        ModelO1241217,
+        ModelAudioPreview241217
     ];
 
     /// <summary>
@@ -276,7 +300,8 @@ public class ChatModelOpenAiGpt4 : IVendorModelClassProvider
         ModelO1,
         ModelO1240912,
         ModelO1Mini,
-        ModelO1Mini240912
+        ModelO1Mini240912,
+        ModelO1241217
     ];
     
     /// <summary>
@@ -285,7 +310,8 @@ public class ChatModelOpenAiGpt4 : IVendorModelClassProvider
     public static readonly HashSet<IModel> AudioModels =
     [
         ModelAudioPreview,
-        ModelAudioPreview241001
+        ModelAudioPreview241001,
+        ModelAudioPreview241217
     ];
 
     /// <summary>

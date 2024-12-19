@@ -84,18 +84,12 @@ public class ChatMessage
         Id = id ?? Guid.NewGuid();
     }
 
-    [JsonProperty("role")] 
-    internal string? rawRole { get; set; }
-
     /// <summary>
     ///     The role of the message, which can be "system", "assistant", "user" or "function".
+    ///		Reasoning models from OpenAI also use "developer" role, which is aliased into "system" in Tornado.
     /// </summary>
     [JsonIgnore]
-    public ChatMessageRoles? Role
-    {
-        get => ChatMessageRole.MemberFromString(rawRole);
-        set => rawRole = ChatMessageRole.MemberToString(value);
-    }
+    public ChatMessageRoles? Role { get; set; }
     
     /// <summary>
     ///		The amount of tokens used for this message.

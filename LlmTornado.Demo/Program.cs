@@ -7,7 +7,9 @@ namespace LlmTornado.Demo;
 public enum Demos
 {
     Unknown,
+    [Flaky("Deprecated by OpenAI")]
     ChatVision,
+    [Flaky("Deprecated by OpenAI")]
     ChatVisionBase64,
     [Flaky("only assistants v1 are supported")]
     AssistantList,
@@ -99,6 +101,7 @@ public enum Demos
     ChatAudioInAudioOutWavStreaming,
     ChatToolsGemini,
     ChatToolsGeminiStrict,
+    ChatCompletionO1Developer,
     Last
 }
 
@@ -241,6 +244,7 @@ public class Program
             Demos.ChatAudioInAudioOutWavStreaming => ChatDemo.AudioInAudioOutWavStreaming,
             Demos.ChatToolsGemini => ChatDemo.ChatFunctionGemini,
             Demos.ChatToolsGeminiStrict => ChatDemo.ChatFunctionGeminiStrict,
+            Demos.ChatCompletionO1Developer => ChatDemo.CompletionO1Developer,
             _ => null
         };
 

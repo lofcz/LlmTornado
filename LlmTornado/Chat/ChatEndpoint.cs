@@ -307,7 +307,8 @@ public class ChatEndpoint : EndpointBase
                 Exception = tornadoStreamRequest.Exception,
                 Result = tornadoStreamRequest.CallResponse,
                 Request = tornadoStreamRequest.CallRequest,
-                RawMessage = tornadoStreamRequest.Response ?? new HttpResponseMessage()
+                RawMessage = tornadoStreamRequest.Response ?? new HttpResponseMessage(),
+                Body = requestBody
             });
             
             await tornadoStreamRequest.DisposeAsync();
@@ -318,17 +319,20 @@ public class ChatEndpoint : EndpointBase
         {
             await handler.OutboundHttpRequestHandler(tornadoStreamRequest.CallRequest);
         }
-        
-        await foreach (ChatResult? x in provider.InboundStream(tornadoStreamRequest.StreamReader, request))
+
+        if (tornadoStreamRequest.StreamReader is not null)
         {
-            if (x is null)
+            await foreach (ChatResult? x in provider.InboundStream(tornadoStreamRequest.StreamReader, request))
             {
-                continue;
+                if (x is null)
+                {
+                    continue;
+                }
+
+                yield return x;
             }
-            
-            yield return x;
         }
-        
+
         await tornadoStreamRequest.DisposeAsync();
     }
     

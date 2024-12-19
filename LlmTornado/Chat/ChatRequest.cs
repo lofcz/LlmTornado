@@ -14,6 +14,7 @@ using LlmTornado;
 using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Chat.Vendors.Cohere;
 using LlmTornado.Vendor.Anthropic;
+using Newtonsoft.Json.Converters;
 
 namespace LlmTornado.Chat;
 
@@ -68,6 +69,7 @@ public class ChatRequest
         Modalities = basedOn.Modalities;
         Metadata = basedOn.Metadata;
         Store = basedOn.Store;
+        ReasoningEffort = basedOn.ReasoningEffort;
     }
 
 	/// <summary>
@@ -134,6 +136,13 @@ public class ChatRequest
 	/// </summary>
 	[JsonProperty("n")]
     public int? NumChoicesPerMessage { get; set; }
+	
+	/// <summary>
+	///     Balance option between response time & cost/latency. Currently supported only by O1 & O1 Mini series.
+	/// </summary>
+	[JsonProperty("reasoning_effort")]
+	[JsonConverter(typeof(StringEnumConverter), true)]
+	public ChatReasoningEfforts? ReasoningEffort { get; set; }
 
 	/// <summary>
 	///     The seed to use for deterministic requests.
@@ -471,9 +480,27 @@ public class ChatRequest
             foreach (ChatMessage msg in value)
             {
                 writer.WriteStartObject();
-
-                writer.WritePropertyName("role");
-                writer.WriteValue(msg.rawRole);
+                
+                if (msg.Role is not null)
+                {
+	                writer.WritePropertyName("role");
+	                
+	                if (msg.Role is ChatMessageRoles.System)
+	                {
+		                if (request?.Model is not null && ChatModelOpenAiGpt4.ReasoningModels.Contains(request.Model))
+		                {
+			                writer.WriteValue("developer");
+		                }
+		                else
+		                {
+			                writer.WriteValue("system");
+		                }
+	                }
+	                else
+	                {
+		                writer.WriteValue(ChatMessageRole.MemberRolesDictInverse[msg.Role.Value]);   
+	                }   
+                }
 
                 if (msg.Role is not null)
                 {
