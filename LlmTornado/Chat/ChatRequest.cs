@@ -681,6 +681,7 @@ public class ChatRequest
 			                // only write transcription if the audio cache expired
 			                if (request.Audio.CompressionStrategy is ChatAudioCompressionStrategies.PreferNative && !isExpired)
 			                {
+				                msg.Content = msg.Audio.Id;
 				                goto writeNativeContent;
 			                }
 			                

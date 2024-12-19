@@ -8,6 +8,7 @@ using System.Text;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.ChatFunctions;
+using LlmTornado.Code.Sse;
 using LlmTornado.Vendor.Anthropic;
 using Newtonsoft.Json;
 
@@ -18,16 +19,14 @@ namespace LlmTornado.Code.Vendor;
 /// </summary>
 internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider, IEndpointProviderExtended
 {
-    private const string Event = "event:";
-    private const string Data = "data:";
-    private const string StreamMsgStart = $"{Event} message_start";
-    private const string StreamMsgStop = $"{Event} message_stop";
-    private const string StreamMsgDelta = $"{Event} message_delta";
-    private const string StreamError = $"{Event} error";
-    private const string StreamPing = $"{Event} ping";
-    private const string StreamContentBlockDelta = $"{Event} content_block_delta";
-    private const string StreamContentBlockStart = $"{Event} content_block_start";
-    private const string StreamContentBlockStop = $"{Event} content_block_stop";
+    private const string StreamMsgStart = $"message_start";
+    private const string StreamMsgStop = $"message_stop";
+    private const string StreamMsgDelta = $"message_delta";
+    private const string StreamError = $"error";
+    private const string StreamPing = $"ping";
+    private const string StreamContentBlockDelta = $"content_block_delta";
+    private const string StreamContentBlockStart = $"content_block_start";
+    private const string StreamContentBlockStop = $"content_block_stop";
     private static readonly HashSet<string> toolFinishReasons = [ "tool_use" ];
 
     private static readonly Dictionary<string, StreamRawActions> StreamEventsMap = new Dictionary<string, StreamRawActions>
@@ -58,17 +57,6 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
         ContentBlockDelta,
         ContentBlockStart,
         ContentBlockEnd
-    }
-    
-    private enum StreamNextActions
-    {
-        Read,
-        BlockStart,
-        BlockDelta,
-        BlockStop,
-        Skip,
-        MsgStart,
-        MsgStop
     }
     
     public AnthropicEndpointProvider(TornadoApi api) : base(api)
@@ -135,6 +123,30 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
         [JsonProperty("message")]
         public VendorAnthropicChatResult Message { get; set; }
     }
+    
+    private class AnthropicStreamMsgDelta
+    {
+        [JsonProperty("delta")]
+        public AnthropicStreamMsgDeltaData Delta { get; set; }
+        
+        [JsonProperty("usage")]
+        public AnthropicStreamMsgDeltaUsage Usage { get; set; }
+    }
+    
+    private class AnthropicStreamMsgDeltaUsage
+    {
+        [JsonProperty("output_tokens")]
+        public int OutputTokens { get; set; }
+    }
+
+    private class AnthropicStreamMsgDeltaData
+    {
+        [JsonProperty("stop_reason")]
+        public string StopReason { get; set; }
+        
+        [JsonProperty("stop_sequence")]
+        public string? StopSequence { get; set; }
+    }
 
     /// <summary>
     /// 
@@ -155,71 +167,30 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
     
     public override async IAsyncEnumerable<ChatResult?> InboundStream(StreamReader reader, ChatRequest request)
     {
-        StreamNextActions nextAction = StreamNextActions.Read;
         ChatMessage? accuToolsMessage = null;
         ChatMessage? accuPlaintext = null;
         ChatUsage? plaintextUsage = null;
         
-        while (await reader.ReadLineAsync() is { } line)
+        await foreach (SseItem<string> item in SseParser.Create(reader.BaseStream).EnumerateAsync(request.CancellationToken))
         {
             if (request.CancellationToken.IsCancellationRequested)
             {
                 yield break;
             }
-            
-            if (line.IsNullOrWhiteSpace())
-            {
-                continue;
-            }
 
-            StreamRawActions rawAction = nextAction is StreamNextActions.Read ? StreamEventsMap.GetValueOrDefault(line.Trim(), StreamRawActions.Unknown) : StreamRawActions.Unknown;
+            string line = item.Data;
+
+            StreamRawActions rawAction = StreamEventsMap.GetValueOrDefault(item.EventType, StreamRawActions.Unknown);
             
             if (rawAction is StreamRawActions.Error)
             {
-                nextAction = StreamNextActions.Skip;
                 continue;
             }
             
-            switch (nextAction)
+            switch (rawAction)
             {
-                case StreamNextActions.Read when rawAction is StreamRawActions.ContentBlockStart:
+                case StreamRawActions.ContentBlockStart:
                 {
-                    nextAction = StreamNextActions.BlockStart;
-                    continue;
-                }
-                case StreamNextActions.Read when rawAction is StreamRawActions.MsgStart:
-                {
-                    nextAction = StreamNextActions.MsgStart;
-                    continue;
-                }
-                case StreamNextActions.Read when rawAction is StreamRawActions.Ping:
-                {
-                    nextAction = StreamNextActions.Skip;
-                    continue;
-                }
-                case StreamNextActions.Read when rawAction is StreamRawActions.MsgStop:
-                {
-                    nextAction = StreamNextActions.MsgStop;
-                    continue;
-                }
-                case StreamNextActions.Read when rawAction is StreamRawActions.ContentBlockEnd:
-                {
-                    nextAction = StreamNextActions.BlockStop;
-                    continue;
-                }
-                case StreamNextActions.Read when rawAction is StreamRawActions.ContentBlockDelta:
-                {
-                    nextAction = StreamNextActions.BlockDelta;
-                    break;
-                }
-                case StreamNextActions.Skip:
-                {
-                    nextAction = StreamNextActions.Read;
-                    break;
-                }
-                case StreamNextActions.BlockStart:
-                {
-                    line = line[Data.Length..];
                     AnthropicStreamBlockStart? res = JsonConvert.DeserializeObject<AnthropicStreamBlockStart>(line);
 
                     if (res?.ContentBlock.Type is "tool_use")
@@ -232,7 +203,7 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
 
                         FunctionCall fc = new FunctionCall
                         {
-                            Name = res.ContentBlock.Name,
+                            Name = res.ContentBlock.Name ?? string.Empty,
                             ToolCall = tc
                         };
 
@@ -249,12 +220,10 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
                         accuToolsMessage.ContentBuilder.Clear();
                     }                    
                     
-                    nextAction = StreamNextActions.Read;
                     break;
                 }
-                case StreamNextActions.BlockDelta:
+                case StreamRawActions.ContentBlockDelta:
                 {
-                    line = line[Data.Length..];
                     AnthropicStreamBlockDelta? res = JsonConvert.DeserializeObject<AnthropicStreamBlockDelta>(line);
 
                     if (accuToolsMessage is not null)
@@ -279,12 +248,10 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
                         };
                     }
                     
-                    nextAction = StreamNextActions.Read;
                     break;
                 }
-                case StreamNextActions.BlockStop:
+                case StreamRawActions.ContentBlockEnd:
                 {
-                    line = line[Data.Length..];
                     AnthropicStreamBlockStop? res = JsonConvert.DeserializeObject<AnthropicStreamBlockStop>(line);
 
                     if (accuToolsMessage is not null)
@@ -299,12 +266,24 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
                         accuToolsMessage.ContentBuilder?.Clear();
                     }
                     
-                    nextAction = StreamNextActions.Read;
                     break;
                 }
-                case StreamNextActions.MsgStart:
+                case StreamRawActions.MsgDelta:
                 {
-                    line = line[Data.Length..];
+                    AnthropicStreamMsgDelta? res = JsonConvert.DeserializeObject<AnthropicStreamMsgDelta>(line);
+
+                    if (res is not null)
+                    {
+                        plaintextUsage ??= new ChatUsage();
+                        plaintextUsage.CompletionTokens = res.Usage.OutputTokens;
+                        
+                        // todo: propagate data from res.Delta
+                    }
+                    
+                    break;
+                }
+                case StreamRawActions.MsgStart:
+                {
                     AnthropicStreamMsgStart? res = JsonConvert.DeserializeObject<AnthropicStreamMsgStart>(line);
   
                     if (res is not null && res.Message.Usage.InputTokens + res.Message.Usage.OutputTokens > 0)
@@ -317,10 +296,9 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
                         };
                     }
                     
-                    nextAction = StreamNextActions.Read;
                     break;
                 }
-                case StreamNextActions.MsgStop:
+                case StreamRawActions.MsgStop:
                 {
                     if (accuToolsMessage is not null)
                     {
@@ -349,7 +327,7 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
                                 }
                             ],
                             StreamInternalKind = ChatResultStreamInternalKinds.AppendAssistantMessage,
-                            Usage = plaintextUsage
+                            Usage = plaintextUsage,
                         };
                     }
                     

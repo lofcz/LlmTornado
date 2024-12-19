@@ -276,7 +276,7 @@ public class ChatModelOpenAiGpt4 : IVendorModelClassProvider
         ModelTurbo240409,
         ModelPreview240125,
         ModelPreview231106,
-        ModelVisionPreview,
+        // ModelVisionPreview, // deprecated
         ModelVisionPreview231106,
         ModelDefault,
         ModelPreview230613,

@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Text;
 using LlmTornado.Chat;
 using LlmTornado.ChatFunctions;
+using LlmTornado.Code.Sse;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Code.Vendor;
@@ -161,40 +162,18 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider,
         List<string> data = [];
         #endif
         
-        while (await reader.ReadLineAsync() is { } line)
+        await foreach (SseItem<string> item in SseParser.Create(reader.BaseStream).EnumerateAsync(request.CancellationToken))
         {
             #if DEBUG
-            data.Add(line);
+            data.Add(item.Data);
             #endif
-            
-            if (request.CancellationToken.IsCancellationRequested)
-            {
-                yield break;
-            }
-            
-            if (line.IsNullOrWhiteSpace())
-            {
-                continue;
-            }
-            
-            if (line.StartsWith(':'))
-            {
-                continue;
-            }
-            
-            if (line.Length > 4 && line[4] == ':') // line.StartsWith(DataString)
-            {
-                line = line[DataString.Length..];
-            }
 
-            line = line.TrimStart();
-            
-            if (string.Equals(line, DoneString, StringComparison.InvariantCulture))
+            if (string.Equals(item.Data, DoneString, StringComparison.InvariantCulture))
             {
                 goto afterStreamEnds;
             }
-
-            ChatResult? res = JsonConvert.DeserializeObject<ChatResult>(line);
+            
+            ChatResult? res = JsonConvert.DeserializeObject<ChatResult>(item.Data);
 
             if (res is null)
             {
@@ -291,16 +270,18 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider,
                 foreach (ChatChoice x in res.Choices)
                 {
                     plaintextBuilder ??= new StringBuilder();
-                    plaintextBuilder.Append(x.Delta!.Content);
-                    x.Delta!.Role = ChatMessageRoles.Assistant;
+
+                    if (x.Delta is not null)
+                    {
+                        plaintextBuilder.Append(x.Delta.Content);
+                        x.Delta.Role = ChatMessageRoles.Assistant;   
+                    }
                 }
             }
-
-            yield return res;
         }
-
-        afterStreamEnds:
         
+        afterStreamEnds:
+
         if (parseTools && toolsAccumulator is not null && toolsMessage?.ToolCalls is not null && toolsMessage.ToolCallsDict is not null)
         {
             foreach (KeyValuePair<string, ToolCallInboundAccumulator> tool in toolsMessage.ToolCallsDict)

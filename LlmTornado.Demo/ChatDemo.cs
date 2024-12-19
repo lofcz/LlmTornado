@@ -667,7 +667,7 @@ public static class ChatDemo
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.OpenAi.Gpt4.AudioPreview241001,
+            Model = ChatModel.OpenAi.Gpt4.AudioPreview241217,
             Modalities = [ ChatModelModalities.Text, ChatModelModalities.Audio ],
             Audio = new ChatRequestAudio(ChatAudioRequestKnownVoices.Ballad, ChatRequestAudioFormats.Wav),
             MaxTokens = 2000

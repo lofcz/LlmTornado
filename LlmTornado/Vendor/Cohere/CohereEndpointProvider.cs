@@ -193,7 +193,7 @@ internal class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider,
             
         while (true)
         {
-            string? line = await reader.ReadLineAsync();
+            string? line = await reader.ReadLineAsync(); // note this is not sse like openai/anthropic
 
             if (line is null)
             {

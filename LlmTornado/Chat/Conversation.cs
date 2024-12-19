@@ -707,6 +707,14 @@ public class Conversation
                     Message = newMsg.Content
                 });
             }
+            else if (newMsg.Audio is not null)
+            {
+                blocks.Add(new ChatRichResponseBlock
+                {
+                    Type = ChatRichResponseBlockTypes.Audio,
+                    ChatAudio = newMsg.Audio
+                });
+            }
         }
 
         return response;
@@ -801,7 +809,7 @@ public class Conversation
     /// <param name="token"></param>
     public async Task StreamResponse(Action<string> resultHandler, CancellationToken token = default)
     {
-        await foreach (string res in StreamResponseEnumerable().WithCancellation(token)) 
+        await foreach (string res in StreamResponseEnumerable(token: token)) 
         {
             resultHandler(res);
         }

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -20,6 +21,8 @@ internal static class Extensions
     {
         dictionary.AddOrUpdate(key, value, (k, v) => value);
     }
+    
+    public static bool ContainsLineBreaks(this ReadOnlySpan<char> text) => text.IndexOfAny('\r', '\n') >= 0;
     
     public static string? GetDescription<T>(this T source)
     {
