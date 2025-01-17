@@ -831,7 +831,7 @@ public class Conversation
     {
         int index = 0;
         
-        await foreach (string res in StreamResponseEnumerable().WithCancellation(token))
+        await foreach (string res in StreamResponseEnumerable(token: token))
         {
             resultHandler(index++, res);        
         }

@@ -189,93 +189,74 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider,
                 }
             }
             
-            if (parseTools)
+            switch (state)
             {
-                switch (state)
+                case ChatStreamParsingStates.Text when res is { Choices.Count: > 0 } && res.Choices[0].Delta?.ToolCalls?.Count > 0:
                 {
-                    case ChatStreamParsingStates.Text when res is ChatResult { Choices.Count: > 0 } && res.Choices[0].Delta?.ToolCalls?.Count > 0:
+                    toolsAccumulator = res;
+                    toolsMessage = res.Choices[0].Delta;
+                    state = ChatStreamParsingStates.Tools;
+
+                    if (toolsMessage is not null)
                     {
-                        toolsAccumulator = res;
-                        toolsMessage = res.Choices[0].Delta;
-                        state = ChatStreamParsingStates.Tools;
+                        toolsMessage.ToolCallsDict = [];
 
-                        if (toolsMessage is not null)
+                        if (toolsMessage.ToolCalls is not null)
                         {
-                            toolsMessage.ToolCallsDict = [];
-
-                            if (toolsMessage.ToolCalls is not null)
+                            foreach (ToolCall toolCall in toolsMessage.ToolCalls)
                             {
-                                foreach (ToolCall toolCall in toolsMessage.ToolCalls)
+                                toolsMessage.ToolCallsDict.TryAdd(toolCall.Index?.ToString() ?? toolCall.Id ?? string.Empty, new ToolCallInboundAccumulator
                                 {
-                                    toolsMessage.ToolCallsDict.TryAdd(toolCall.Index?.ToString() ?? toolCall.Id ?? string.Empty, new ToolCallInboundAccumulator
+                                    ToolCall = toolCall
+                                });
+                            }   
+                        }
+                    }
+                    
+                    continue;
+                }
+                case ChatStreamParsingStates.Text:
+                {
+                    if (res.Choices is null || res.Choices.Count is 0 || res.Choices[0].Delta?.Content is null || res.Choices[0].Delta?.Content?.Length is 0)
+                    {
+                        continue;
+                    }
+
+                    plaintextBuilder ??= new StringBuilder();
+                    plaintextBuilder.Append(res.Choices[0].Delta!.Content);
+                    res.Choices[0].Delta!.Role = ChatMessageRoles.Assistant;
+                    yield return res;
+                    continue;
+                }
+                case ChatStreamParsingStates.Tools:
+                {
+                    if (toolsMessage?.ToolCalls is not null && toolsMessage.ToolCallsDict is not null && res.Choices?.Count > 0)
+                    {
+                        ChatChoice choice = res.Choices[0];
+
+                        if (choice.Delta?.ToolCalls?.Count > 0)
+                        {
+                            foreach (ToolCall toolCall in choice.Delta.ToolCalls)
+                            {
+                                string key = toolCall.Index?.ToString() ?? toolCall.Id ?? string.Empty;
+                                
+                                // we can either encounter a new function or we get a new arguments token
+                                if (toolsMessage.ToolCallsDict.TryGetValue(key, out ToolCallInboundAccumulator? accu))
+                                {
+                                    accu.ArgumentsBuilder.Append(toolCall.FunctionCall.Arguments);
+                                }
+                                else
+                                {
+                                    toolsMessage.ToolCalls.Add(toolCall);
+                                    toolsMessage.ToolCallsDict.Add(key, new ToolCallInboundAccumulator
                                     {
                                         ToolCall = toolCall
                                     });
-                                }   
-                            }
-                        }
-                        
-                        continue;
-                    }
-                    case ChatStreamParsingStates.Text:
-                    {
-                        if (res.Choices is null || res.Choices.Count is 0 || res.Choices[0].Delta?.Content is null || res.Choices[0].Delta?.Content?.Length is 0)
-                        {
-                            continue;
-                        }
-
-                        plaintextBuilder ??= new StringBuilder();
-                        plaintextBuilder.Append(res.Choices[0].Delta!.Content);
-                        res.Choices[0].Delta!.Role = ChatMessageRoles.Assistant;
-                        yield return res;
-                        continue;
-                    }
-                    case ChatStreamParsingStates.Tools:
-                    {
-                        if (toolsMessage?.ToolCalls is not null && toolsMessage.ToolCallsDict is not null && res.Choices?.Count > 0)
-                        {
-                            ChatChoice choice = res.Choices[0];
-
-                            if (choice.Delta?.ToolCalls?.Count > 0)
-                            {
-                                foreach (ToolCall toolCall in choice.Delta.ToolCalls)
-                                {
-                                    string key = toolCall.Index?.ToString() ?? toolCall.Id ?? string.Empty;
-                                    
-                                    // we can either encounter a new function or we get a new arguments token
-                                    if (toolsMessage.ToolCallsDict.TryGetValue(key, out ToolCallInboundAccumulator? accu))
-                                    {
-                                        accu.ArgumentsBuilder.Append(toolCall.FunctionCall.Arguments);
-                                    }
-                                    else
-                                    {
-                                        toolsMessage.ToolCalls.Add(toolCall);
-                                        toolsMessage.ToolCallsDict.Add(key, new ToolCallInboundAccumulator
-                                        {
-                                            ToolCall = toolCall
-                                        });
-                                    }
                                 }
                             }
                         }
-                        break;
                     }
-                }
-                
-                continue;
-            }
-            
-            if (res.Choices is not null)
-            {
-                foreach (ChatChoice x in res.Choices)
-                {
-                    plaintextBuilder ??= new StringBuilder();
-
-                    if (x.Delta is not null)
-                    {
-                        plaintextBuilder.Append(x.Delta.Content);
-                        x.Delta.Role = ChatMessageRoles.Assistant;   
-                    }
+                    break;
                 }
             }
         }
