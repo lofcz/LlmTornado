@@ -153,13 +153,14 @@ public class Program
             return false;
         }
 
-        if (!File.Exists($"{projectDirectory}\\apiKey.json"))
+        string apiKeyFileLocation = Path.Join([projectDirectory, "apiKey.json"]);
+        if (!File.Exists(apiKeyFileLocation))
         {
             Console.WriteLine("Please copy and paste apiKeyPrototype.json file in the same folder, rename the copy as apiKey.json and replace the string inside with your API key");
             return false;
         }
 
-        string apiKey = await File.ReadAllTextAsync($"{projectDirectory}\\apiKey.json");
+        string apiKey = await File.ReadAllTextAsync(apiKeyFileLocation);
 
         if (string.IsNullOrWhiteSpace(apiKey))
         {
