@@ -70,7 +70,7 @@ public static class ChatDemo
     {
         ChatResult? result = await Program.Connect().Chat.CreateChatCompletion(new ChatRequest
         {
-            Model =  ChatModel.Groq.Meta.Llama370B,
+            Model =  ChatModel.Groq.Meta.Llama3370BVersatile,
             ResponseFormat = ChatRequestResponseFormats.Json,
             Messages = [
                 new ChatMessage(ChatMessageRoles.System, "Solve the math problem given by user, respond in JSON format."),
