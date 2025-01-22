@@ -10,8 +10,7 @@ namespace LlmTornado.VectorStores;
 public class VectorStore : ApiResultBase
 {
     /// <summary>
-    /// The identifier, which can be referenced in API endpoints.
-    /// </summary>
+    /// The identifier, which can be referenced in API endpoints. /// </summary>
     [JsonProperty("id")]
     public string Id { get; set; } = null!;
 
@@ -19,7 +18,11 @@ public class VectorStore : ApiResultBase
     /// The Unix timestamp (in seconds) for when the vector store was created.
     /// </summary>
     [JsonProperty("created_at")]
-    public long CreatedAt { get; set; }
+    public long CreatedAt
+    {
+        get => CreatedUnixTime ?? 0;
+        set => CreatedUnixTime = value;
+    }
 
     /// <summary>
     /// The name of the vector store.

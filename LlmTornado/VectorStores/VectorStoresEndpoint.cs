@@ -146,4 +146,59 @@ public class VectorStoresEndpoint : EndpointBase
         HttpCallResult<DeletionStatus> status = await HttpAtomic<DeletionStatus>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, HttpMethod.Delete, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{vectorStoreId}/files/{fileId}"), ct: cancellationToken).ConfigureAwait(ConfigureAwaitOptions.None);
         return new HttpCallResult<bool>(status.Code, status.Response, status.Data?.Deleted ?? false, status.Ok, null);
     }
+
+    /// <summary>
+    ///     Retrieves a list of vector stores file batches. Available only for OpenAI
+    /// </summary>
+    /// <param name="vectorStoreId"></param>
+    /// <param name="batchId"></param>
+    /// <param name="query"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public Task<HttpCallResult<ListResponse<VectorStoreFile>>> ListVectorStoreFilesBatchesAsync(string vectorStoreId, string batchId, ListQuery? query = null,
+        CancellationToken? cancellationToken = null)
+    {
+        return HttpGetRaw<ListResponse<VectorStoreFile>>(Api.GetProvider(LLmProviders.OpenAi), Endpoint,
+            GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{vectorStoreId}/file_batches/{batchId}/files"), cancellationToken);
+    }
+
+    ///  <summary>
+    /// 		Retrieves a vector store file. Available only for OpenAI
+    ///  </summary>
+    ///  <param name="vectorStoreId"></param>
+    ///  <param name="batchId"></param>
+    ///  <param name="cancellationToken"></param>
+    ///  <returns></returns>
+    public Task<HttpCallResult<VectorStoreFileBatch>> RetrieveVectorStoreFileBatchAsync(string vectorStoreId, string batchId,
+        CancellationToken? cancellationToken = null)
+    {
+        return HttpGetRaw<VectorStoreFileBatch>(Api.GetProvider(LLmProviders.OpenAi), Endpoint,
+            GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{vectorStoreId}/file_batches/{batchId}"), cancellationToken);
+    }
+    
+    /// <summary>
+    ///     Modifies vector store file.
+    ///     <see cref="request" />.
+    /// </summary>
+    /// <param name="vectorStoreId">The ID of the assistant to modify.</param>
+    /// <param name="request"><see cref="VectorStore" />.</param>
+    /// <param name="cancellationToken">Optional, <see cref="CancellationToken" />.</param>
+    /// <returns><see cref="VectorStore" />.</returns>
+    public Task<HttpCallResult<VectorStoreFileBatch>> CreateVectorStoreFileBatchAsync(string vectorStoreId, CreateVectorStoreFileBatchRequest request, CancellationToken? cancellationToken = null)
+    {
+        return HttpPostRaw<VectorStoreFileBatch>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{vectorStoreId}/file_batches"), request, cancellationToken);
+    }
+
+    /// <summary>
+    ///     Delete a vector store. Available only for OpenAI
+    /// </summary>
+    /// <param name="vectorStoreId"></param>
+    /// <param name="batchId"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public Task<HttpCallResult<VectorStoreFileBatch>> CancelVectorStoreFileBatchAsync(string vectorStoreId, string batchId,
+        CancellationToken? cancellationToken = null)
+    {
+        return HttpPostRaw<VectorStoreFileBatch>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{vectorStoreId}/file_batches/{batchId}/cancel"), null, cancellationToken);
+    }
 }

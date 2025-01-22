@@ -24,7 +24,11 @@ public class VectorStoreFile : ApiResultBase
     /// The Unix timestamp (in seconds) for when the vector store file was created.
     /// </summary>
     [JsonProperty("created_at")]
-    public long CreatedAt { get; set; }
+    public long CreatedAt
+    {
+        get => CreatedUnixTime ?? 0;
+        set => CreatedUnixTime = value;
+    }
 
     /// <summary>
     /// The ID of the vector store that the File is attached to.
