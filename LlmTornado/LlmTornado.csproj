@@ -13,7 +13,7 @@
         <Title>OpenAI NextGeneration</Title>
         <PackageReleaseNotes>fix openai sse when tool parsing is disabled</PackageReleaseNotes>
         <PackageId>LlmTornado</PackageId>
-        <Version>3.1.30</Version>
+        <Version>3.1.31</Version>
         <AssemblyVersion>3.0.5</AssemblyVersion>
         <FileVersion>3.0.5</FileVersion>
         <GenerateDocumentationFile>True</GenerateDocumentationFile>
