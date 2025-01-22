@@ -6,6 +6,9 @@ namespace LlmTornado.VectorStores;
 /// </summary>
 public class AutoChunkingStrategy : ChunkingStrategy
 {
+    /// <summary>
+    ///     Initializes a new instance of the <see cref="AutoChunkingStrategy"/> class
+    /// </summary>
     public AutoChunkingStrategy()
     {
         Type = "auto";
