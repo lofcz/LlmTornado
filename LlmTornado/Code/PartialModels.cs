@@ -530,7 +530,8 @@ public enum CapabilityEndpoints
     Assistants,
     ImageEdit,
     Threads,
-    FineTuning
+    FineTuning,
+    VectorStores
 }
 
 /// <summary>
