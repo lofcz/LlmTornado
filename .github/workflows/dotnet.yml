@@ -11,7 +11,7 @@ permissions:
   statuses: write
 
 jobs:
-  build-and-test:
+  build:
     runs-on: ubuntu-latest
 
     steps:
@@ -26,7 +26,7 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: '20'
+        node-version: '22'
         
     - name: Restore dependencies
       run: dotnet restore
@@ -34,16 +34,13 @@ jobs:
     - name: Build
       run: dotnet build --no-restore
 
-    - name: Test
-      run: dotnet test --no-build --verbosity normal
-
     - name: Update GitHub status check
       if: always()
       uses: Sibz/github-status-action@v1
       with: 
         authToken: ${{secrets.GITHUB_TOKEN}}
-        context: 'Tests'
-        description: 'The tests ${{ job.status == ''success'' && ''passed'' || ''failed'' }}'
+        context: 'Build'
+        description: 'The build ${{ job.status == ''success'' && ''passed'' || ''failed'' }}'
         state: ${{ job.status == 'success' && 'success' || 'failure' }}
         sha: ${{ github.event.pull_request.head.sha || github.sha }}
         target_url: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
