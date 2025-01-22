@@ -340,3 +340,4 @@ ASALocalRun/
 healthchecksdb
 LlmTornado.Demo/apiKey.json
 LlmTornado.Tests/apiKey.json
+nupkgs
