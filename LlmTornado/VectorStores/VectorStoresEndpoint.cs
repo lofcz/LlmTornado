@@ -1,8 +1,8 @@
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using LlmTornado.Code;
 using LlmTornado.Common;
-using LlmTornado.Moderation;
 
 namespace LlmTornado.VectorStores;
 
@@ -31,7 +31,7 @@ public class VectorStoresEndpoint : EndpointBase
     /// <param name="request"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public Task<HttpCallResult<VectorStore>> CreateVectorStoreAsync(VectorStoreRequest request,
+    public Task<HttpCallResult<VectorStore>> CreateVectorStoreAsync(CreateVectorStoreRequest request,
         CancellationToken? cancellationToken = null)
     {
         return HttpPostRaw<VectorStore>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, postData: request,
@@ -60,7 +60,35 @@ public class VectorStoresEndpoint : EndpointBase
     public Task<HttpCallResult<ListResponse<VectorStore>>> ListVectorStoresAsync(ListQuery? query = null,
         CancellationToken? cancellationToken = null)
     {
-        return HttpPostRaw<ListResponse<VectorStore>>(Api.GetProvider(LLmProviders.OpenAi), Endpoint,
+        return HttpGetRaw<ListResponse<VectorStore>>(Api.GetProvider(LLmProviders.OpenAi), Endpoint,
             GetUrl(Api.GetProvider(LLmProviders.OpenAi)), cancellationToken);
+    }
+    
+    
+    /// <summary>
+    ///     Delete a vector store. Available only for OpenAI
+    /// </summary>
+    /// <param name="vectorStoreId"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public async Task<HttpCallResult<bool>> DeleteVectorStoreAsync(string vectorStoreId,
+        CancellationToken? cancellationToken = null)
+    {
+        HttpCallResult<DeletionStatus> status = await HttpAtomic<DeletionStatus>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, HttpMethod.Delete, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{vectorStoreId}"), ct: cancellationToken).ConfigureAwait(ConfigureAwaitOptions.None);
+        return new HttpCallResult<bool>(status.Code, status.Response, status.Data?.Deleted ?? false, status.Ok, null);
+    }
+    
+    /// <summary>
+    ///     Modifies vector store. All fields in the existing vector store are replaced with the fields from
+    ///     <see cref="request" />.
+    /// </summary>
+    /// <param name="vectorStoreId">The ID of the assistant to modify.</param>
+    /// <param name="request"><see cref="VectorStore" />.</param>
+    /// <param name="cancellationToken">Optional, <see cref="CancellationToken" />.</param>
+    /// <returns><see cref="VectorStore" />.</returns>
+    public Task<HttpCallResult<VectorStore>> ModifyVectorStoreAsync(string vectorStoreId, ModifyVectorStoreRequest request, CancellationToken? cancellationToken = null)
+    {
+        return HttpPostRaw<VectorStore>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{vectorStoreId}"), request, cancellationToken);
+        
     }
 }

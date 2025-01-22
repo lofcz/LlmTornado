@@ -1,4 +1,4 @@
-using System.Text.Json.Serialization;
+using Newtonsoft.Json;
 
 namespace LlmTornado.VectorStores;
 
@@ -18,6 +18,6 @@ public class StaticChunkingStrategy : ChunkingStrategy
     /// <summary>
     /// Configuration for static chunking
     /// </summary>
-    [JsonPropertyName("static")]
+    [JsonProperty("static")]
     public StaticChunkingConfig Static { get; set; } = null!;
 }

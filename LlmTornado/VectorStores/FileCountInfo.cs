@@ -1,4 +1,4 @@
-using System.Text.Json.Serialization;
+using Newtonsoft.Json;
 
 namespace LlmTornado.VectorStores;
 
@@ -10,30 +10,30 @@ public class FileCountInfo
     /// <summary>
     /// The number of files that are currently being processed.
     /// </summary>
-    [JsonPropertyName("in_progress")]
+    [JsonProperty("in_progress")]
     public int InProgress { get; set; }
 
     /// <summary>
     /// The number of files that have been successfully processed.
     /// </summary>
-    [JsonPropertyName("completed")]
+    [JsonProperty("completed")]
     public int Completed { get; set; }
 
     /// <summary>
     /// The number of files that have failed to process.
     /// </summary>
-    [JsonPropertyName("failed")]
+    [JsonProperty("failed")]
     public int Failed { get; set; }
 
     /// <summary>
     /// The number of files that were cancelled.
     /// </summary>
-    [JsonPropertyName("cancelled")]
+    [JsonProperty("cancelled")]
     public int Cancelled { get; set; }
 
     /// <summary>
     /// The total number of files.
     /// </summary>
-    [JsonPropertyName("total")]
+    [JsonProperty("total")]
     public int Total { get; set; }
 }

@@ -1,33 +1,36 @@
 using System.Collections.Generic;
-using System.Text.Json.Serialization;
+using Newtonsoft.Json;
 
 namespace LlmTornado.VectorStores;
 
-public class VectorStoreRequest
+/// <summary>
+///     A request to create a vector store
+/// </summary>
+public class CreateVectorStoreRequest
 {
     /// <summary>
     /// A list of File IDs that the vector store should use. Useful for tools like `file_search` that can access files.
     /// </summary>
-    [JsonPropertyName("file_ids")]
-    public List<string>? FileIds { get; set; }
+    [JsonProperty("file_ids")]
+    public IReadOnlyList<string>? FileIds { get; set; }
 
     /// <summary>
     /// The name of the vector store.
     /// </summary>
-    [JsonPropertyName("name")]
+    [JsonProperty("name")]
     public string? Name { get; set; }
 
     /// <summary>
     /// The expiration policy for a vector store.
     /// </summary>
-    [JsonPropertyName("expires_after")]
+    [JsonProperty("expires_after")]
     public ExpirationPolicy? ExpiresAfter { get; set; }
 
     /// <summary>
     /// The chunking strategy used to chunk the file(s). If not set, will use the `auto` strategy.
     /// Only applicable if `file_ids` is non-empty.
     /// </summary>
-    [JsonPropertyName("chunking_strategy")]
+    [JsonProperty("chunking_strategy")]
     public ChunkingStrategy? ChunkingStrategy { get; set; }
 
     /// <summary>
@@ -35,6 +38,6 @@ public class VectorStoreRequest
     /// Keys can be a maximum of 64 characters long and values can be a maximum of 512 characters long.
     /// Maximum of 16 key-value pairs.
     /// </summary>
-    [JsonPropertyName("metadata")]
-    public Dictionary<string, string>? Metadata { get; set; }
+    [JsonProperty("metadata")]
+    public IReadOnlyDictionary<string, string>? Metadata { get; set; }
 }

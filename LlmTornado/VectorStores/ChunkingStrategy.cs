@@ -1,4 +1,4 @@
-using System.Text.Json.Serialization;
+using Newtonsoft.Json;
 
 namespace LlmTornado.VectorStores;
 
@@ -10,6 +10,6 @@ public abstract class ChunkingStrategy
     /// <summary>
     /// The type of chunking strategy
     /// </summary>
-    [JsonPropertyName("type")]
+    [JsonProperty("type")]
     public string Type { get; set; } = null!;
 }

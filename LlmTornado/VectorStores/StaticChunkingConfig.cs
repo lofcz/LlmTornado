@@ -1,4 +1,4 @@
-using System.Text.Json.Serialization;
+using Newtonsoft.Json;
 
 namespace LlmTornado.VectorStores;
 
@@ -13,7 +13,7 @@ public class StaticChunkingConfig
     /// Minimum: 100
     /// Maximum: 4096
     /// </summary>
-    [JsonPropertyName("max_chunk_size_tokens")]
+    [JsonProperty("max_chunk_size_tokens")]
     public int MaxChunkSizeTokens { get; set; }
 
     /// <summary>
@@ -21,6 +21,6 @@ public class StaticChunkingConfig
     /// Default: 400
     /// Must not exceed half of max_chunk_size_tokens.
     /// </summary>
-    [JsonPropertyName("chunk_overlap_tokens")]
+    [JsonProperty("chunk_overlap_tokens")]
     public int ChunkOverlapTokens { get; set; }
 }

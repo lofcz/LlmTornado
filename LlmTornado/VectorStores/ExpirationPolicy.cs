@@ -1,4 +1,4 @@
-using System.Text.Json.Serialization;
+using Newtonsoft.Json;
 
 namespace LlmTornado.VectorStores;
 
@@ -11,12 +11,12 @@ public class ExpirationPolicy
     /// Anchor timestamp after which the expiration policy applies.
     /// Supported anchors: `last_active_at`.
     /// </summary>
-    [JsonPropertyName("anchor")]
+    [JsonProperty("anchor")]
     public string Anchor { get; set; } = null!;
 
     /// <summary>
     /// The number of days after the anchor time that the vector store will expire.
     /// </summary>
-    [JsonPropertyName("days")]
+    [JsonProperty("days")]
     public int Days { get; set; }
 }
