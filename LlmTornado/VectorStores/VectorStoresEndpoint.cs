@@ -91,4 +91,17 @@ public class VectorStoresEndpoint : EndpointBase
         return HttpPostRaw<VectorStore>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{vectorStoreId}"), request, cancellationToken);
         
     }
+    
+    /// <summary>
+    ///     Retrieves a list of vector stores. Available only for OpenAI
+    /// </summary>
+    /// <param name="query"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public Task<HttpCallResult<ListResponse<VectorStoreFile>>> ListVectorStoreFilesAsync(string vectorStoreId, ListQuery? query = null,
+        CancellationToken? cancellationToken = null)
+    {
+        return HttpGetRaw<ListResponse<VectorStoreFile>>(Api.GetProvider(LLmProviders.OpenAi), Endpoint,
+            GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{vectorStoreId}/files"), cancellationToken);
+    }
 }

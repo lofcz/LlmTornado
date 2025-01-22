@@ -1,6 +1,7 @@
 using System;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using JsonSerializer = Newtonsoft.Json.JsonSerializer;
 
 namespace LlmTornado.VectorStores;
 
@@ -46,9 +47,8 @@ public class ChunkingStrategyConverter : JsonConverter<ChunkingStrategy>
         bool hasExistingValue,
         JsonSerializer serializer)
     {
-        JObject jsonObject = JObject.Parse((string) reader.Value!);
+        JObject jsonObject = JObject.Load(reader);
         string? strategyType = jsonObject["type"]?.ToString();
-
         return strategyType switch
         {
             "static" => jsonObject.ToObject<StaticChunkingStrategy>(),
