@@ -47,8 +47,12 @@ public sealed class CreateAssistantRequest
     ///     This can be useful for storing additional information about the object in a structured format.
     ///     Keys can be a maximum of 64 characters long and values can be a maximum of 512 characters long.
     /// </param>
-    public CreateAssistantRequest(AssistantResponse assistant, Model? model = null, string? name = null, string? description = null, string? instructions = null, IEnumerable<Tool>? tools = null, IEnumerable<string>? files = null, IReadOnlyDictionary<string, string>? metadata = null)
-        : this(model ?? assistant.Model, name ?? assistant.Name, description ?? assistant.Description, instructions ?? assistant.Instructions, tools ?? assistant.Tools, files ?? assistant.FileIds, metadata ?? assistant.Metadata)
+    public CreateAssistantRequest(AssistantResponse assistant, Model? model = null, string? name = null,
+        string? description = null, string? instructions = null, IEnumerable<Tool>? tools = null,
+        IEnumerable<string>? files = null, IReadOnlyDictionary<string, string>? metadata = null)
+        : this(model ?? assistant.Model, name ?? assistant.Name, description ?? assistant.Description,
+            instructions ?? assistant.Instructions, tools ?? assistant.Tools, files ?? assistant.FileIds,
+            metadata ?? assistant.Metadata)
     {
     }
 
@@ -77,7 +81,12 @@ public sealed class CreateAssistantRequest
     ///     There can be a maximum of 128 tools per assistant.
     ///     Tools can be of types 'code_interpreter', 'retrieval', or 'function'.
     /// </param>
-    /// <param name="files">
+    /// <param name="fileSearchFiles">
+    ///     A list of file IDs attached to this assistant.
+    ///     There can be a maximum of 20 files attached to the assistant.
+    ///     Files are ordered by their creation date in ascending order.
+    /// </param>
+    /// <param name="codeInterpreterFiles">
     ///     A list of file IDs attached to this assistant.
     ///     There can be a maximum of 20 files attached to the assistant.
     ///     Files are ordered by their creation date in ascending order.
@@ -87,14 +96,20 @@ public sealed class CreateAssistantRequest
     ///     This can be useful for storing additional information about the object in a structured format.
     ///     Keys can be a maximum of 64 characters long and values can be a maximum of 512 characters long.
     /// </param>
-    public CreateAssistantRequest(Model? model = null, string? name = null, string? description = null, string? instructions = null, IEnumerable<Tool>? tools = null, IEnumerable<string>? files = null, IReadOnlyDictionary<string, string>? metadata = null)
+    public CreateAssistantRequest(Model? model = null, string? name = null, string? description = null,
+        string? instructions = null, IEnumerable<Tool>? tools = null, IEnumerable<string>? fileSearchFiles = null, IEnumerable<string>? codeInterpreterFiles = null,
+        IReadOnlyDictionary<string, string>? metadata = null)
     {
         Model = string.IsNullOrWhiteSpace(model?.Name) ? Models.Model.GPT35_Turbo : model;
         Name = name;
         Description = description;
         Instructions = instructions;
         Tools = tools?.ToList();
-        FileIds = files?.ToList();
+        ToolResources = new ToolResources
+        {
+            FileSearch = new FileSearchConfig() { FileSearchFileIds = fileSearchFiles?.ToList() },
+            CodeInterpreter = new CodeInterpreterConfig() { CodeInterpreterFileIds = codeInterpreterFiles?.ToList() }
+        };
         Metadata = metadata;
     }
 
@@ -130,18 +145,10 @@ public sealed class CreateAssistantRequest
     /// <summary>
     ///     A list of tool enabled on the assistant.
     ///     There can be a maximum of 128 tools per assistant.
-    ///     Tools can be of types 'code_interpreter', 'retrieval', or 'function'.
+    ///     Tools can be of types 'code_interpreter', 'file_search', or 'function'.
     /// </summary>
     [JsonProperty("tools")]
     public IReadOnlyList<Tool>? Tools { get; }
-
-    /// <summary>
-    ///     A list of file IDs attached to this assistant.
-    ///     There can be a maximum of 20 files attached to the assistant.
-    ///     Files are ordered by their creation date in ascending order.
-    /// </summary>
-    [JsonProperty("file_ids")]
-    public IReadOnlyList<string>? FileIds { get; }
 
     /// <summary>
     ///     Set of 16 key-value pairs that can be attached to an object.
@@ -150,4 +157,37 @@ public sealed class CreateAssistantRequest
     /// </summary>
     [JsonProperty("metadata")]
     public IReadOnlyDictionary<string, string>? Metadata { get; }
+
+    /// <summary>
+    ///     What sampling temperature to use, between 0 and 2.
+    ///     Higher values like 0.8 will make the output more random,
+    ///     while lower values like 0.2 will make it more focused and deterministic.
+    /// </summary>
+    [JsonProperty("temperature")]
+    public double? Temperature { get; }
+
+    /// <summary>
+    ///     An alternative to sampling with temperature, called nucleus sampling,
+    ///     where the model considers the results of the tokens with top_p probability mass.
+    ///     So 0.1 means only the tokens comprising the top 10% probability mass are considered.
+    ///     We generally recommend altering this or temperature but not both.
+    /// </summary>
+    [JsonProperty("top_p")]
+    public double? TopP { get; }
+
+    /// <summary>
+    ///     A set of resources that are used by the assistant's tools.
+    ///     The resources are specific to the type of tool.
+    ///     For example, the `code_interpreter` tool requires a list of file IDs,
+    ///     while the `file_search` tool requires a list of vector store IDs.
+    /// </summary>
+    [JsonProperty("tool_resources")]
+    public ToolResources? ToolResources { get; }
+
+    /// <summary>
+    ///     Specifies the format that the model must output.
+    ///     Compatible with GPT-4, GPT-4 Turbo, and all GPT-3.5 Turbo models since `gpt-3.5-turbo-1106`.
+    /// </summary>
+    [JsonProperty("response_format")]
+    public ResponseFormat? ResponseFormat { get; }
 }

@@ -18,7 +18,7 @@ public static class AssistantsDemo
     {
         HttpCallResult<AssistantResponse> result = await Program.Connect().Assistants.CreateAssistantAsync(new CreateAssistantRequest(Model.GPT35_Turbo_1106, "model1", "test model", "system prompt", new List<Tool>
         {
-            Tool.Retrieval
+            Tool.FileSearch
         }));
 
         return result.Data;
@@ -48,7 +48,7 @@ public static class AssistantsDemo
     {
         HttpCallResult<AssistantResponse>? result = await Program.Connect().Assistants.CreateAssistantAsync(new CreateAssistantRequest(Model.GPT35_Turbo_1106, "retrieve model", "test model", "system prompt", new List<Tool>
         {
-            Tool.Retrieval,
+            Tool.FileSearch,
             Tool.CodeInterpreter
         }));
 
@@ -59,7 +59,7 @@ public static class AssistantsDemo
     {
         HttpCallResult<AssistantResponse>? result = await Program.Connect().Assistants.CreateAssistantAsync(new CreateAssistantRequest(Model.GPT35_Turbo_1106, "retrieve model", "test model", "system prompt", new List<Tool>
         {
-            Tool.Retrieval,
+            Tool.FileSearch,
             Tool.CodeInterpreter
         }));
 
@@ -71,7 +71,7 @@ public static class AssistantsDemo
     {
         HttpCallResult<AssistantResponse> result = await Program.Connect().Assistants.CreateAssistantAsync(new CreateAssistantRequest(Model.GPT35_Turbo_1106, "retrieve model", "test model", "system prompt", new List<Tool>
         {
-            Tool.Retrieval,
+            Tool.FileSearch,
             Tool.CodeInterpreter
         }));
 
@@ -86,7 +86,7 @@ public static class AssistantsDemo
 
         HttpCallResult<AssistantResponse> result = await Program.Connect().Assistants.CreateAssistantAsync(new CreateAssistantRequest(Model.GPT35_Turbo_1106, "model1", "test model", "system prompt", new List<Tool>
         {
-            Tool.Retrieval
+            Tool.FileSearch
         }, [file?.Id]));
 
         return result.Data;
