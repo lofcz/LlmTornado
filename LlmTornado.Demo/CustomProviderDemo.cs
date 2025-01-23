@@ -1,0 +1,19 @@
+using LlmTornado.Chat;
+using LlmTornado.Chat.Models;
+using LlmTornado.Code;
+
+namespace LlmTornado.Demo;
+
+public class CustomProviderDemo
+{
+    public static async Task Ollama()
+    {
+        TornadoApi api = new TornadoApi(new Uri("http://localhost:11434"));
+        
+        string? response = await api.Chat.CreateConversation(new ChatModel("falcon3:1b"))
+            .AppendUserInput("Why is the sky blue?")
+            .GetResponse();
+        
+        Console.WriteLine(response);
+    }
+}

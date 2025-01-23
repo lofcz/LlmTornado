@@ -57,11 +57,28 @@ public class TornadoApi
         moderation = new Lazy<ModerationEndpoint>(() => new ModerationEndpoint(this));
         threadsEndpoint = new Lazy<ThreadsEndpoint>(() => new ThreadsEndpoint(this));
     }
+
+    /// <summary>
+    ///     Creates a new Tornado API for self-hosted / custom providers, such as Ollama and KoboldCpp.
+    ///     For Ollama use "http://localhost:11434".
+    /// </summary>
+    /// <param name="serverUri">Uri of the server. Tokens {0} and {1} are available for endpoint and action respectively. If provided values doesn't use neither, format /{0}/{1} is used automatically.</param>
+    public TornadoApi(Uri serverUri) : this()
+    {
+        string serverUriStr = serverUri.ToString();
+
+        if (!serverUriStr.Contains("{0}"))
+        {
+            serverUriStr = $"{serverUriStr}{(serverUriStr.EndsWith('/') ? string.Empty : "/")}{{0}}/{{1}}";
+        }
+
+        ApiUrlFormat = serverUriStr;
+    }
     
     /// <summary>
     ///     Creates a new Tornado API with a specific provider authentication. Use when the API will be used only with a single provider.
     /// </summary>
-    public TornadoApi(LLmProviders provider, string apiKey, string? organization = null) : this()
+    public TornadoApi(LLmProviders provider, string apiKey, string organization) : this()
     {
         Authentications.TryAdd(provider, new ProviderAuthentication(provider, apiKey, organization));
     }

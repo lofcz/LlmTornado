@@ -102,6 +102,8 @@ public enum Demos
     ChatToolsGemini,
     ChatToolsGeminiStrict,
     ChatCompletionO1Developer,
+    [Flaky("requires ollama")]
+    CustomProviderOllama,
     Last
 }
 
@@ -245,6 +247,7 @@ public class Program
             Demos.ChatToolsGemini => ChatDemo.ChatFunctionGemini,
             Demos.ChatToolsGeminiStrict => ChatDemo.ChatFunctionGeminiStrict,
             Demos.ChatCompletionO1Developer => ChatDemo.CompletionO1Developer,
+            Demos.CustomProviderOllama => CustomProviderDemo.Ollama,
             _ => null
         };
 
@@ -260,7 +263,7 @@ public class Program
             return;
         }
 
-        Demos? forceDemo = Demos.ChatFunctionRequired;
+        Demos? forceDemo = null;
         
         selectedDemo = forceDemo ?? Demos.Last - 1;
         Func<Task>? task = GetDemo(selectedDemo);
