@@ -1,3 +1,4 @@
+using LlmTornado.Code;
 using Newtonsoft.Json;
 
 namespace LlmTornado.VectorStores;
@@ -40,5 +41,5 @@ public class VectorStoreFileBatch : ApiResultBase
     /// Counts of files in different processing states.
     /// </summary>
     [JsonProperty("file_counts")]
-    public FileCountInfo FileCounts { get; set; } = null!;
+    public VectorStoreFileCountInfo FileCounts { get; set; } = null!;
 }

@@ -52,7 +52,7 @@ public class ChunkingStrategyConverter : JsonConverter<ChunkingStrategy>
         return strategyType switch
         {
             "static" => jsonObject.ToObject<StaticChunkingStrategy>(),
-            _ => throw new JsonSerializationException($"Unknown chunking strategy type: {strategyType}")
+            _ => null
         };
     }
 }

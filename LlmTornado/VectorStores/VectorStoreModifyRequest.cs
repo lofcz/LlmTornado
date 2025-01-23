@@ -6,7 +6,7 @@ namespace LlmTornado.VectorStores;
 /// <summary>
 ///     A request model to modify a vector store
 /// </summary>
-public class ModifyVectorStoreRequest
+public class VectorStoreModifyRequest
 {
     /// <summary>
     /// The name of the vector store.

@@ -14,7 +14,7 @@ public class StaticChunkingConfig
     /// Maximum: 4096
     /// </summary>
     [JsonProperty("max_chunk_size_tokens")]
-    public int MaxChunkSizeTokens { get; set; }
+    public int MaxChunkSizeTokens { get; set; } = 800;
 
     /// <summary>
     /// The number of tokens that overlap between chunks.
@@ -22,5 +22,5 @@ public class StaticChunkingConfig
     /// Must not exceed half of max_chunk_size_tokens.
     /// </summary>
     [JsonProperty("chunk_overlap_tokens")]
-    public int ChunkOverlapTokens { get; set; }
+    public int ChunkOverlapTokens { get; set; } = 400;
 }
