@@ -33,9 +33,7 @@ dotnet add package LlmTornado LlmTornado.Contrib
 
 ## 🪄 Quick Inference
 
-### Switching vendors
-
-Switching the vendor is as easy as changing `ChatModel` argument. Tornado instance can be constructed with multiple API keys, the correct key is then used based on the model.
+Inferencing across multiple providers is as easy as changing the `ChatModel` argument. Tornado instance can be constructed with multiple API keys, the correct key is then used based on the model automatically:
 
 ```csharp
 TornadoApi api = new TornadoApi(new List<ProviderAuthentication>
@@ -47,13 +45,10 @@ TornadoApi api = new TornadoApi(new List<ProviderAuthentication>
     new ProviderAuthentication(LLmProviders.Groq, "GROQ_KEY")
 });
 
-List<ChatModel> models =
-[
-    ChatModel.OpenAi.Gpt4.Turbo,
-    ChatModel.Anthropic.Claude3.Sonnet,
-    ChatModel.Cohere.Claude3.CommandRPlus,
-    ChatModel.Google.Gemini.Gemini15Flash,
-    ChatModel.Groq.Meta.Llama370B
+List<ChatModel> models = [
+    ChatModel.OpenAi.Gpt4.Turbo, ChatModel.Anthropic.Claude3.Sonnet, 
+    ChatModel.Cohere.Command.RPlus, ChatModel.Google.Gemini.Gemini15Flash, 
+    ChatModel.Groq.Meta.Llama370B 
 ];
 
 foreach (ChatModel model in models)
@@ -62,14 +57,14 @@ foreach (ChatModel model in models)
         .AppendSystemMessage("You are a fortune teller.")
         .AppendUserInput("What will my future bring?")
         .GetResponse();
-    
+
     Console.WriteLine(response);
 }
 ```
 
 ## 🔮 Custom Providers
 
-Instead of consuming commercial APIs, one can roll their own inference servers easily with a myriad of tools available. Here is a simple demo for streaming response with Ollama but the same approach can be used for any custom provider:
+Instead of consuming commercial APIs, one can roll their own inference servers easily with [a myriad](https://github.com/janhq/awesome-local-ai) of tools available. Here is a simple demo for streaming response with Ollama, but the same approach can be used for any custom provider:
 
 ```cs
 public static async Task OllamaStreaming()
