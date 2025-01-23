@@ -16,4 +16,14 @@ public class CustomProviderDemo
         
         Console.WriteLine(response);
     }
+    
+    public static async Task OllamaStreaming()
+    {
+        Console.ReadKey();
+        TornadoApi api = new TornadoApi(new Uri("http://localhost:11434"));
+        
+        await api.Chat.CreateConversation(new ChatModel("falcon3:1b"))
+            .AppendUserInput("Why is the sky blue?")
+            .StreamResponse(Console.Write);
+    }
 }

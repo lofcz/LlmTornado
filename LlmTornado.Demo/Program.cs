@@ -104,6 +104,8 @@ public enum Demos
     ChatCompletionO1Developer,
     [Flaky("requires ollama")]
     CustomProviderOllama,
+    [Flaky("requires ollama")]
+    CustomProviderOllamaStreaming,
     Last
 }
 
@@ -248,6 +250,7 @@ public class Program
             Demos.ChatToolsGeminiStrict => ChatDemo.ChatFunctionGeminiStrict,
             Demos.ChatCompletionO1Developer => ChatDemo.CompletionO1Developer,
             Demos.CustomProviderOllama => CustomProviderDemo.Ollama,
+            Demos.CustomProviderOllamaStreaming => CustomProviderDemo.OllamaStreaming,
             _ => null
         };
 
