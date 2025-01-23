@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using LlmTornado.Code;
 using Newtonsoft.Json;
 
 namespace LlmTornado.VectorStores;
@@ -10,7 +11,8 @@ namespace LlmTornado.VectorStores;
 public class VectorStore : ApiResultBase
 {
     /// <summary>
-    /// The identifier, which can be referenced in API endpoints. /// </summary>
+    /// The identifier, which can be referenced in API endpoints.
+    /// </summary>
     [JsonProperty("id")]
     public string Id { get; set; } = null!;
 
@@ -40,7 +42,7 @@ public class VectorStore : ApiResultBase
     /// Counts of files in different processing states.
     /// </summary>
     [JsonProperty("file_counts")]
-    public FileCountInfo FileCounts { get; set; } = null!;
+    public VectorStoreFileCountInfo FileCounts { get; set; } = null!;
 
     /// <summary>
     /// The status of the vector store, which can be either `expired`, `in_progress`, or `completed`.

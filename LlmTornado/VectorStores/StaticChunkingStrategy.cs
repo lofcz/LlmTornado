@@ -3,9 +3,11 @@ using Newtonsoft.Json;
 namespace LlmTornado.VectorStores;
 
 /// <summary>
-/// Represents the static chunking strategy with configurable settings
+/// Implements a fixed-size text chunking strategy with configurable overlap between chunks.
+/// This strategy splits text into chunks of predetermined size while maintaining overlap
+/// between adjacent chunks to preserve context across chunk boundaries.
 /// </summary>
-public class StaticChunkingStrategy : ChunkingStrategy
+sealed class StaticChunkingStrategy : ChunkingStrategy
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="StaticChunkingStrategy"/> class

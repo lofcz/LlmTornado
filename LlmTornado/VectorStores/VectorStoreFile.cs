@@ -56,5 +56,5 @@ public class VectorStoreFile : ApiResultBase
     /// </summary>
     [JsonProperty("chunking_strategy")]
     [JsonConverter(typeof(ChunkingStrategyConverter))]
-    public ChunkingStrategy? ChunkingStrategy { get; set; } = null!;
+    public ChunkingStrategy? ChunkingStrategy { get; set; }
 }

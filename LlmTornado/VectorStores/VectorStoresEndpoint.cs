@@ -86,7 +86,7 @@ public class VectorStoresEndpoint : EndpointBase
     /// <param name="request"><see cref="VectorStore" />.</param>
     /// <param name="cancellationToken">Optional, <see cref="CancellationToken" />.</param>
     /// <returns><see cref="VectorStore" />.</returns>
-    public Task<HttpCallResult<VectorStore>> ModifyVectorStoreAsync(string vectorStoreId, ModifyVectorStoreRequest request, CancellationToken? cancellationToken = null)
+    public Task<HttpCallResult<VectorStore>> ModifyVectorStoreAsync(string vectorStoreId, VectorStoreModifyRequest request, CancellationToken? cancellationToken = null)
     {
         return HttpPostRaw<VectorStore>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{vectorStoreId}"), request, cancellationToken);
         
