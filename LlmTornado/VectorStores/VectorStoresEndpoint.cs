@@ -148,14 +148,14 @@ public class VectorStoresEndpoint : EndpointBase
     }
 
     /// <summary>
-    ///     Retrieves a list of vector stores file batches. Available only for OpenAI
+    ///     Retrieves a list of files in vector store batch. Available only for OpenAI
     /// </summary>
     /// <param name="vectorStoreId"></param>
     /// <param name="batchId"></param>
     /// <param name="query"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public Task<HttpCallResult<ListResponse<VectorStoreFile>>> ListVectorStoreFilesBatchesAsync(string vectorStoreId, string batchId, ListQuery? query = null,
+    public Task<HttpCallResult<ListResponse<VectorStoreFile>>> ListVectorStoreBatchFilesAsync(string vectorStoreId, string batchId, ListQuery? query = null,
         CancellationToken? cancellationToken = null)
     {
         return HttpGetRaw<ListResponse<VectorStoreFile>>(Api.GetProvider(LLmProviders.OpenAi), Endpoint,
