@@ -35,8 +35,8 @@ jobs:
       run: dotnet build --no-restore
 
     - name: Update GitHub status check
-      if: always()
-      uses: actions/github-script@v7
+      if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push'
+      uses: actions/github-script@v6
       with:
         script: |
           const sha = context.payload.pull_request?.head.sha || context.sha;
@@ -49,3 +49,4 @@ jobs:
             description: `The build ${context.job.status === 'success' ? 'passed' : 'failed'}`,
             target_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
           });
+
