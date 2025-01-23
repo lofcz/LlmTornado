@@ -7,7 +7,7 @@ namespace LlmTornado.VectorStores;
 /// This strategy splits text into chunks of predetermined size while maintaining overlap
 /// between adjacent chunks to preserve context across chunk boundaries.
 /// </summary>
-sealed class StaticChunkingStrategy : ChunkingStrategy
+public sealed class StaticChunkingStrategy : ChunkingStrategy
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="StaticChunkingStrategy"/> class

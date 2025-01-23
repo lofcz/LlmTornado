@@ -10,6 +10,7 @@ public static class VectorStoreDemo
 
     private static string? vectorStoreFileId;
     private static string? fileIdVectorStoreFile;
+    private static string? fileIdVectorStoreFileCustomChunkingStrategy;
 
     private static string? vectorStoreFileBatchId;
     private static string? fileIdVectorStoreFileBatch;
@@ -91,6 +92,38 @@ public static class VectorStoreDemo
 
         vectorStoreFileId = createResult.Data?.Id;
         Console.WriteLine(createResult.Response);
+        return createResult.Data;
+    }
+    
+    public static async Task<VectorStoreFile> CreateVectorStoreFileCustomChunkingStrategy()
+    {
+        if (vectorStoreId is null)
+        {
+            throw new Exception("No vector store created");
+        }
+
+        File? file = await FilesDemo.Upload();
+        if (file is null)
+        {
+            throw new Exception("could not upload file");
+        }
+
+        HttpCallResult<VectorStoreFile> createResult = await Program.Connect().VectorStores.CreateVectorStoreFileAsync(
+            vectorStoreId, new CreateVectorStoreFileRequest
+            {
+                FileId = file.Id,
+                ChunkingStrategy = new StaticChunkingStrategy()
+                {
+                    Static = new StaticChunkingConfig()
+                    {
+                        MaxChunkSizeTokens = 500,
+                        ChunkOverlapTokens = 100
+                    }
+                }
+            });
+
+        Console.WriteLine(createResult.Response);
+        fileIdVectorStoreFileCustomChunkingStrategy = createResult.Data?.Id;
         return createResult.Data;
     }
 
@@ -247,6 +280,10 @@ public static class VectorStoreDemo
         if (fileIdVectorStoreFileBatch is not null)
         {
             await FilesDemo.DeleteFile(fileIdVectorStoreFileBatch);
+        }
+        
+        if (fileIdVectorStoreFileCustomChunkingStrategy is not null){
+            await FilesDemo.DeleteFile(fileIdVectorStoreFileCustomChunkingStrategy);
         }
 
         HttpCallResult<bool> deleteResult = await Program.Connect().VectorStores.DeleteVectorStoreAsync(vectorStoreId);
