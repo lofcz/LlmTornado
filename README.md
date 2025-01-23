@@ -4,7 +4,7 @@
 
 # 🌪️ LLM Tornado - one .NET library to consume OpenAI, Anthropic, Cohere, Google, Azure, Groq, and self-hosted APIs.
 
-Each month at least one new large language model is released. Would it be awesome if using the new model was as easy as switching one argument?
+At least one new large language model is released each month. Wouldn't it be awesome if using the new, shiny model was as easy as switching one argument?
 LLM Tornado acts as an aggregator allowing you to do just that. Think [SearX](https://github.com/searxng/searxng) but for LLMs!
 
 OpenAI, Anthropic, Cohere, Google, Azure, and Groq (LLama 3, Mixtral, Gemma 2..) are currently supported along with [KoboldCpp](https://github.com/LostRuins/koboldcpp) and [Ollama](https://github.com/ollama/ollama).
@@ -15,23 +15,23 @@ The following video captures **one conversation**, running across OpenAI, Cohere
 https://github.com/lofcz/LlmTornado/assets/10260230/05c27b37-397d-4b4c-96a4-4138ade48dbe
 
 
-Try it, the code of the demo is [here](https://github.com/lofcz/LlmTornado/blob/9c53e2e6918eef1b02ce9457cc14c932d79639a2/LlmTornado.Demo/ChatDemo.cs#L198-L310)! Try asking for previously fetched information and verify the context is correctly constructed even when switching Providers mid-conversation.
+⭐ Try it, the code of the demo is [here](https://github.com/lofcz/LlmTornado/blob/9c53e2e6918eef1b02ce9457cc14c932d79639a2/LlmTornado.Demo/ChatDemo.cs#L198-L310)! Try asking for previously fetched information and verify the context is correctly constructed even when switching Providers mid-conversation.
 
 ## ⚡Getting Started
 
 Install LLM Tornado via NuGet:
 
-```
-Install-Package LlmTornado
+```bash
+dotnet add package LlmTornado
 ```
 
 Optional: extra features and quality of life extension methods are distributed in `Contrib` addon:
 
-```
-Install-Package LlmTornado.Contrib
+```bash
+dotnet add package LlmTornado LlmTornado.Contrib
 ```
 
-## 🔮 Quick Inference
+## 🪄 Quick Inference
 
 ### Switching vendors
 
@@ -66,6 +66,25 @@ foreach (ChatModel model in models)
     Console.WriteLine(response);
 }
 ```
+
+## 🔮 Custom Providers
+
+Instead of consuming commercial APIs, one can roll their own inference servers easily with a myriad of tools available. Here is a simple demo for streaming response with Ollama but the same approach can be used for any custom provider:
+
+```cs
+public static async Task OllamaStreaming()
+{
+    TornadoApi api = new TornadoApi(new Uri("http://localhost:11434")); // default Ollama port
+    
+    await api.Chat.CreateConversation(new ChatModel("falcon3:1b")) // <-- replace with your model
+        .AppendUserInput("Why is the sky blue?")
+        .StreamResponse(Console.Write);
+}
+```
+
+https://github.com/user-attachments/assets/de62f0fe-93e0-448c-81d0-8ab7447ad780
+
+## 🔎 Advanced Inference
 
 ### Streaming
 
@@ -254,8 +273,8 @@ Check the links for simple to-understand examples!
 Every public class, method, and property has extensive XML documentation, using LLM Tornado should be intuitive if you've used any other LLM library previously. Feel free to open an
 issue here if you have any questions.
 
-PRs are welcome! ❤️
+PRs are welcome!
 
 ## License
 
-This library is licensed under [MIT license](https://github.com/lofcz/LlmTornado/blob/master/LICENSE).
+💜 This library is licensed under the [MIT license](https://github.com/lofcz/LlmTornado/blob/master/LICENSE).
