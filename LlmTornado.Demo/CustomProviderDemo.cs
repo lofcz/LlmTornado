@@ -19,7 +19,6 @@ public class CustomProviderDemo
     
     public static async Task OllamaStreaming()
     {
-        Console.ReadKey();
         TornadoApi api = new TornadoApi(new Uri("http://localhost:11434"));
         
         await api.Chat.CreateConversation(new ChatModel("falcon3:1b"))
