@@ -55,7 +55,7 @@ public class VectorStore : ApiResultBase
     /// The expiration policy for the vector store.
     /// </summary>
     [JsonProperty("expires_after")]
-    public ExpirationPolicy? ExpiresAfter { get; set; }
+    public VectoreStoreExpirationPolicy? ExpiresAfter { get; set; }
 
     /// <summary>
     /// The Unix timestamp (in seconds) for when the vector store will expire.

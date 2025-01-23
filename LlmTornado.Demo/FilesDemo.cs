@@ -16,6 +16,6 @@ public static class FilesDemo
     public static async Task<bool> DeleteFile(string fileId)
     {
         File? deleteResult = await Program.Connect().Files.DeleteFileAsync(fileId);
-        return deleteResult != null;
+        return deleteResult is not null;
     }
 }

@@ -18,5 +18,5 @@ public class CreateVectorStoreFileBatchRequest
     /// The strategy used to chunk the file.
     /// </summary>
     [JsonProperty("chunking_strategy")]
-    public ChunkingStrategy? ChunkingStrategy { get; set; } = null!;
+    public ChunkingStrategy? ChunkingStrategy { get; set; }
 }

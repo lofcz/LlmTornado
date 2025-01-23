@@ -24,7 +24,7 @@ public class CreateVectorStoreRequest
     /// The expiration policy for a vector store.
     /// </summary>
     [JsonProperty("expires_after")]
-    public ExpirationPolicy? ExpiresAfter { get; set; }
+    public VectoreStoreExpirationPolicy? ExpiresAfter { get; set; }
 
     /// <summary>
     /// The chunking strategy used to chunk the file(s). If not set, will use the `auto` strategy.

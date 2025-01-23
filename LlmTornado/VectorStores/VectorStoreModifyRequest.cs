@@ -18,7 +18,7 @@ public class VectorStoreModifyRequest
     /// The expiration policy for a vector store.
     /// </summary>
     [JsonProperty("expires_after")]
-    public ExpirationPolicy? ExpiresAfter { get; set; }
+    public VectoreStoreExpirationPolicy? ExpiresAfter { get; set; }
 
     /// <summary>
     /// Set of key-value pairs that can be attached to an object. 

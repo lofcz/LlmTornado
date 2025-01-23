@@ -5,7 +5,7 @@ namespace LlmTornado.VectorStores;
 /// <summary>
 /// Represents the expiration policy for a vector store
 /// </summary>
-public class ExpirationPolicy
+public class VectoreStoreExpirationPolicy
 {
     /// <summary>
     /// Anchor timestamp after which the expiration policy applies.
