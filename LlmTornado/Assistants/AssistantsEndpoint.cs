@@ -31,7 +31,7 @@ public sealed class AssistantsEndpoint : EndpointBase
     /// </returns>
     public Task<HttpCallResult<ListResponse<AssistantResponse>>> ListAssistantsAsync(ListQuery? query = null, CancellationToken? cancellationToken = null)
     {
-        return HttpGetRaw<ListResponse<AssistantResponse>>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Assistants, string.Empty /* [todo] fix GetUrl(query) */, cancellationToken);
+        return HttpGetRaw<ListResponse<AssistantResponse>>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Assistants, string.Empty, query, cancellationToken);
     }
 
     /// <summary>
@@ -42,7 +42,7 @@ public sealed class AssistantsEndpoint : EndpointBase
     /// <returns><see cref="AssistantResponse" />.</returns>
     public Task<HttpCallResult<AssistantResponse>> CreateAssistantAsync(CreateAssistantRequest request, CancellationToken? cancellationToken = null)
     {
-        return HttpPostRaw<AssistantResponse>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Assistants, string.Empty /* [todo] fix GetUrl(query) */, request, cancellationToken);
+        return HttpPostRaw<AssistantResponse>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Assistants, string.Empty, request, cancellationToken);
     }
 
     /// <summary>
@@ -53,7 +53,7 @@ public sealed class AssistantsEndpoint : EndpointBase
     /// <returns><see cref="AssistantResponse" />.</returns>
     public Task<HttpCallResult<AssistantResponse>> RetrieveAssistantAsync(string assistantId, CancellationToken? cancellationToken = null)
     {
-        return HttpGetRaw<AssistantResponse>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Assistants, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{assistantId}"), cancellationToken, true);
+        return HttpGetRaw<AssistantResponse>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Assistants, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{assistantId}"), null, cancellationToken, true);
     }
 
     /// <summary>
@@ -90,7 +90,7 @@ public sealed class AssistantsEndpoint : EndpointBase
     /// <returns><see cref="ListResponse{AssistantFile}" />.</returns>
     public Task<HttpCallResult<ListResponse<AssistantFileResponse>>> ListFilesAsync(string assistantId, ListQuery? query = null, CancellationToken? cancellationToken = null)
     {
-        return HttpGetRaw<ListResponse<AssistantFileResponse>>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Assistants, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{assistantId}/files") /* [todo] fix "query" 3rd arg */, cancellationToken, true);
+        return HttpGetRaw<ListResponse<AssistantFileResponse>>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Assistants, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{assistantId}/files"), query, cancellationToken, true);
     }
 
     /// <summary>
@@ -131,7 +131,7 @@ public sealed class AssistantsEndpoint : EndpointBase
     /// <returns><see cref="AssistantFileResponse" />.</returns>
     public Task<HttpCallResult<AssistantFileResponse>> RetrieveFileAsync(string assistantId, string fileId, CancellationToken? cancellationToken = null)
     {
-        return HttpGetRaw<AssistantFileResponse>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Assistants, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{assistantId}/files/{fileId}"), cancellationToken, true);
+        return HttpGetRaw<AssistantFileResponse>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Assistants, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{assistantId}/files/{fileId}"), queryParams: null,cancellationToken, true);
     }
 
     /// <summary>

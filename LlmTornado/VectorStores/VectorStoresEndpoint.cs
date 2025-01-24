@@ -44,7 +44,7 @@ public class VectorStoresEndpoint : EndpointBase
     /// <returns></returns>
     public Task<HttpCallResult<VectorStore>> RetrieveVectorStoreAsync(string vectorStoreId, CancellationToken? cancellationToken = null)
     {
-        return HttpGetRaw<VectorStore>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{vectorStoreId}"), cancellationToken);
+        return HttpGetRaw<VectorStore>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{vectorStoreId}"), ct:cancellationToken);
     }
 
     /// <summary>
@@ -55,7 +55,7 @@ public class VectorStoresEndpoint : EndpointBase
     /// <returns></returns>
     public Task<HttpCallResult<ListResponse<VectorStore>>> ListVectorStoresAsync(ListQuery? query = null, CancellationToken? cancellationToken = null)
     {
-        return HttpGetRaw<ListResponse<VectorStore>>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, GetUrl(Api.GetProvider(LLmProviders.OpenAi)), cancellationToken);
+        return HttpGetRaw<ListResponse<VectorStore>>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, GetUrl(Api.GetProvider(LLmProviders.OpenAi)), query, cancellationToken);
     }
     
     /// <summary>
@@ -92,7 +92,7 @@ public class VectorStoresEndpoint : EndpointBase
     /// <returns></returns>
     public Task<HttpCallResult<ListResponse<VectorStoreFile>>> ListVectorStoreFilesAsync(string vectorStoreId, ListQuery? query = null, CancellationToken? cancellationToken = null)
     {
-        return HttpGetRaw<ListResponse<VectorStoreFile>>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{vectorStoreId}/files"), cancellationToken);
+        return HttpGetRaw<ListResponse<VectorStoreFile>>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{vectorStoreId}/files"), query, cancellationToken);
     }
 
     ///  <summary>
@@ -104,7 +104,7 @@ public class VectorStoresEndpoint : EndpointBase
     ///  <returns></returns>
     public Task<HttpCallResult<VectorStoreFile>> RetrieveVectorStoreFileAsync(string vectorStoreId, string fileId, CancellationToken? cancellationToken = null)
     {
-        return HttpGetRaw<VectorStoreFile>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{vectorStoreId}/files/{fileId}"), cancellationToken);
+        return HttpGetRaw<VectorStoreFile>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{vectorStoreId}/files/{fileId}"), ct:cancellationToken);
     }
     
     /// <summary>
@@ -143,7 +143,7 @@ public class VectorStoresEndpoint : EndpointBase
     /// <returns></returns>
     public Task<HttpCallResult<ListResponse<VectorStoreFile>>> ListVectorStoreBatchFilesAsync(string vectorStoreId, string batchId, ListQuery? query = null, CancellationToken? cancellationToken = null)
     {
-        return HttpGetRaw<ListResponse<VectorStoreFile>>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{vectorStoreId}/file_batches/{batchId}/files"), cancellationToken);
+        return HttpGetRaw<ListResponse<VectorStoreFile>>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{vectorStoreId}/file_batches/{batchId}/files"), query, cancellationToken);
     }
 
     ///  <summary>
@@ -155,7 +155,7 @@ public class VectorStoresEndpoint : EndpointBase
     ///  <returns></returns>
     public Task<HttpCallResult<VectorStoreFileBatch>> RetrieveVectorStoreFileBatchAsync(string vectorStoreId, string batchId, CancellationToken? cancellationToken = null)
     {
-        return HttpGetRaw<VectorStoreFileBatch>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{vectorStoreId}/file_batches/{batchId}"), cancellationToken);
+        return HttpGetRaw<VectorStoreFileBatch>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{vectorStoreId}/file_batches/{batchId}"), ct:cancellationToken);
     }
     
     /// <summary>
