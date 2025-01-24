@@ -1,3 +1,4 @@
+using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Common;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -7,17 +8,20 @@ namespace LlmTornado.Vendor.Anthropic;
 /// <summary>
 /// 
 /// </summary>
-internal class VendorAnthropicToolFunction
+public class VendorAnthropicToolFunction : IAnthropicChatRequestItem
 {
     /// <summary>
     ///     Converts a generic tool function into Anthropic schema.
     /// </summary>
-    /// <param name="toolFunction">tool to be used as a source</param>
-    public VendorAnthropicToolFunction(ToolFunction toolFunction)
+    /// <param name="tool">tool to be used as a source</param>
+    public VendorAnthropicToolFunction(Tool tool)
     {
-        Parameters = toolFunction.Parameters;
-        Name = toolFunction.Name;
-        Description = toolFunction.Description;
+        ToolFunction? func = tool.Function;
+        
+        Parameters = func?.Parameters;
+        Name = func?.Name ?? string.Empty;
+        Description = func?.Description;
+        Cache = tool.VendorExtensions?.Anthropic?.Cache;
     }
     
     /// <summary>
@@ -31,11 +35,17 @@ internal class VendorAnthropicToolFunction
     ///     The description of what the function does.
     /// </summary>
     [JsonProperty("description")]
-    public string Description { get; set; }
+    public string? Description { get; set; }
 
     /// <summary>
     ///     The input parameters of the tool, if any.
     /// </summary>
     [JsonProperty("input_schema")]
     public JObject? Parameters { get; set; }
+
+    /// <summary>
+    ///     Cache indicator for the tool.
+    /// </summary>
+    [JsonProperty("cache_control")]
+    public AnthropicCacheSettings? Cache { get; set; }
 }

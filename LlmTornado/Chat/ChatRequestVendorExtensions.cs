@@ -1,3 +1,4 @@
+using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Chat.Vendors.Cohere;
 
 namespace LlmTornado.Chat;
@@ -11,6 +12,11 @@ public class ChatRequestVendorExtensions
     ///     Cohere extensions.
     /// </summary>
     public ChatRequestVendorCohereExtensions? Cohere { get; set; }
+    
+    /// <summary>
+    ///     Anthropic extensions.
+    /// </summary>
+    public ChatRequestVendorAnthropicExtensions? Anthropic { get; set; }
 
     /// <summary>
     ///     Empty extensions.
@@ -27,5 +33,14 @@ public class ChatRequestVendorExtensions
     public ChatRequestVendorExtensions(ChatRequestVendorCohereExtensions cohereExtensions)
     {
         Cohere = cohereExtensions;
+    }
+    
+    /// <summary>
+    ///     Cohere extensions.
+    /// </summary>
+    /// <param name="anthropicExtensions"></param>
+    public ChatRequestVendorExtensions(ChatRequestVendorAnthropicExtensions anthropicExtensions)
+    {
+        Anthropic = anthropicExtensions;
     }
 }

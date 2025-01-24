@@ -1,4 +1,5 @@
 using System;
+using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.ChatFunctions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -207,6 +208,12 @@ public class Tool
     /// </summary>
     [JsonProperty("strict")]
     public bool? Strict { get; set; }
+    
+    /// <summary>
+    ///     Functionality supported only by certain providers.
+    /// </summary>
+    [JsonIgnore]
+    public ToolVendorExtensions? VendorExtensions { get; set; }
     
     /// <summary>
     ///     Creates a tool from <see cref="ToolFunction" />

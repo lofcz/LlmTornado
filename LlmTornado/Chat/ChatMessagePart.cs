@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Code;
 using LlmTornado.Images;
 using Newtonsoft.Json;
@@ -40,6 +41,13 @@ public class ChatMessagePart
     {
         Text = text;
         Type = ChatMessageTypes.Text;
+    }
+    
+    public ChatMessagePart(string text, IChatMessagePartVendorExtensions vendorExtensions)
+    {
+        Text = text;
+        Type = ChatMessageTypes.Text;
+        VendorExtensions = vendorExtensions;
     }
     
     /// <summary>
@@ -134,6 +142,12 @@ public class ChatMessagePart
     /// </summary>
     [JsonProperty("input_audio")]
     public ChatAudio? Audio { get; set; }
+    
+    /// <summary>
+    ///     Specific features supported only by certain providers
+    /// </summary>
+    [JsonIgnore]
+    public IChatMessagePartVendorExtensions? VendorExtensions { get; set; }
 
     /// <summary>
     ///     Creates an audio part from a given stream.
@@ -182,4 +196,6 @@ public class ChatMessagePart
     {
         return new ChatMessagePart(base64EncodedAudio, format);
     }
+    
+    
 }
