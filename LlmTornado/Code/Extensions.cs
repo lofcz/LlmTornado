@@ -3,7 +3,9 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Reflection;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Code;
@@ -23,6 +25,18 @@ internal static class Extensions
     }
     
     public static bool ContainsLineBreaks(this ReadOnlySpan<char> text) => text.IndexOfAny('\r', '\n') >= 0;
+    
+    public static async Task<byte[]> ToArrayAsync(this Stream stream)
+    {
+        if (stream is MemoryStream memorySource)
+        {
+            return memorySource.ToArray();
+        }
+        
+        using MemoryStream memoryStream = new MemoryStream();
+        await stream.CopyToAsync(memoryStream);
+        return memoryStream.ToArray();
+    }
     
     public static string? GetDescription<T>(this T source)
     {

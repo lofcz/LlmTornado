@@ -1,12 +1,25 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 
 namespace LlmTornado.Common;
 
 public class RestDataOrException<T>
 {
+    private bool exceptionIsNull => Exception is null;
+    private bool dataIsNull => Data is null;
+
+    [MemberNotNullWhen(true, nameof(exceptionIsNull))]
+    public T? Data { get; set; }
+
+    [MemberNotNullWhen(true, nameof(dataIsNull))]
+    public Exception? Exception { get; set; }
+    
+    public IHttpCallResult? HttpResult { get; set; }
+    public HttpCallRequest? HttpRequest { get; set; }
+    
     public RestDataOrException(T data, IHttpCallResult? httpRequest)
     {
         Data = data;
@@ -19,16 +32,22 @@ public class RestDataOrException<T>
         ParseRawRequest(httpRequest);
     }
     
-    public RestDataOrException(Exception e, HttpRequestMessage httpRequest)
+    public RestDataOrException(Exception e, HttpRequestMessage httpRequest, ErrorHttpCallResult? errorResponse)
     {
         Exception = e;
         ParseRawRequest(httpRequest);
+        HttpResult = errorResponse;
     }
 
     public RestDataOrException(Exception e, IHttpCallResult? httpRequest)
     {
         Exception = e;
         HttpResult = httpRequest;
+    }
+    
+    public RestDataOrException(Exception e)
+    {
+        Exception = e;
     }
     
     public RestDataOrException(IHttpCallResult httpRequest)
@@ -47,16 +66,4 @@ public class RestDataOrException<T>
             Content = httpRequest.Content
         };
     }
-
-    private bool exceptionIsNull => Exception is null;
-    private bool dataIsNull => Data is null;
-
-    [MemberNotNullWhen(true, nameof(exceptionIsNull))]
-    public T? Data { get; set; }
-
-    [MemberNotNullWhen(true, nameof(dataIsNull))]
-    public Exception? Exception { get; set; }
-    
-    public IHttpCallResult? HttpResult { get; set; }
-    public HttpCallRequest? HttpRequest { get; set; }
 }

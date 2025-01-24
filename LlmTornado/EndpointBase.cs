@@ -274,11 +274,12 @@ public abstract class EndpointBase
         using HttpRequestMessage req = provider.OutboundMessage(url, verb, content, streaming);
         
         SetRequestContent(req, content);
-        
+        HttpResponseMessage? result = null;
+
         try
         {
-            HttpResponseMessage result = await client.SendAsync(req, streaming ? HttpCompletionOption.ResponseHeadersRead : HttpCompletionOption.ResponseContentRead, ct ?? CancellationToken.None).ConfigureAwait(ConfigureAwaitOptions.None);
-            
+            result = await client.SendAsync(req, streaming ? HttpCompletionOption.ResponseHeadersRead : HttpCompletionOption.ResponseContentRead, ct ?? CancellationToken.None).ConfigureAwait(ConfigureAwaitOptions.None);
+
             if (result.IsSuccessStatusCode)
             {
                 return new RestDataOrException<HttpResponseMessage>(result, req);
@@ -290,9 +291,9 @@ public abstract class EndpointBase
             {
                 resultAsString = await result.Content.ReadAsStringAsync();
             }
-            catch (Exception e)
+            catch (Exception le)
             {
-                resultAsString = $"Additionally, the following error was thrown when attempting to read the response content: {e}";
+                resultAsString = $"Additionally, the following error was thrown when attempting to read the response content: {le}";
             }
 
             ProviderAuthentication? auth = Api.GetProvider(provider.Provider).Auth;
@@ -309,12 +310,16 @@ public abstract class EndpointBase
                     resultAsString = resultAsString.Replace(auth.Organization, "[ORGANIZATION REDACTED FOR SECURITY]");
                 }
             }
-            
-            return new RestDataOrException<HttpResponseMessage>(new Exception($"Http call failed. Code: {(int)result.StatusCode}, Message: {resultAsString}."), req);
+
+            ErrorHttpCallResult error = new ErrorHttpCallResult(result.StatusCode, resultAsString, null);
+            Exception e = new Exception($"Http call failed. Code: {(int)result.StatusCode}, Message: {resultAsString}.");
+            result.Dispose();
+            return new RestDataOrException<HttpResponseMessage>(e, req, error);
         }
         catch (Exception e)
         {
-            return new RestDataOrException<HttpResponseMessage>(e, req);
+            result?.Dispose();
+            return new RestDataOrException<HttpResponseMessage>(e, req, null);
         }
     }
 
@@ -395,32 +400,42 @@ public abstract class EndpointBase
     {
         RestDataOrException<HttpResponseMessage> response = await HttpRequestRawWithAllCodes(provider, endpoint, url, verb, postData, false, ct).ConfigureAwait(ConfigureAwaitOptions.None);
 
-        if (response.Exception is not null)
+        try
         {
-            return new HttpCallResult<T>(HttpStatusCode.ServiceUnavailable, null, default, false, response)
+            if (response.Exception is not null)
             {
-                Exception = response.Exception
-            };
-        }
+                return new HttpCallResult<T>(response.HttpResult?.Code ?? HttpStatusCode.ServiceUnavailable, response.HttpResult?.Response, default, false, response)
+                {
+                    Exception = response.Exception
+                };
+            }
 
-        if (response.Data is null)
-        {
-            return new HttpCallResult<T>(response.Data?.StatusCode ?? HttpStatusCode.Found, null, default, false, response)
+            if (response.Data is null)
             {
-                Exception = new Exception("Data is null")
-            };
-        }
-        
-        string resultAsString = await response.Data.Content.ReadAsStringAsync().ConfigureAwait(ConfigureAwaitOptions.None);
-        HttpCallResult<T> result = new HttpCallResult<T>(response.Data.StatusCode, resultAsString, default, response.Data.IsSuccessStatusCode, response);
+                return new HttpCallResult<T>(response.Data?.StatusCode ?? HttpStatusCode.Found, null, default, false, response)
+                {
+                    Exception = new Exception("Data is null")
+                };
+            }
 
-        if (response.Data.IsSuccessStatusCode)
+            string resultAsString = await response.Data.Content.ReadAsStringAsync().ConfigureAwait(ConfigureAwaitOptions.None);
+            HttpCallResult<T> result = new HttpCallResult<T>(response.Data.StatusCode, resultAsString, default, response.Data.IsSuccessStatusCode, response);
+
+            if (response.Data.IsSuccessStatusCode)
+            {
+                result.Data = provider.InboundMessage<T>(resultAsString, postData?.ToString());
+            }
+            
+            return result;
+        }
+        catch (Exception e)
         {
-            result.Data = provider.InboundMessage<T>(resultAsString, postData?.ToString());
+            return new HttpCallResult<T>(response.Data?.StatusCode ?? HttpStatusCode.ServiceUnavailable, null, default, false, new RestDataOrException<HttpResponseMessage>(e));
         }
-
-        response.Data?.Dispose();
-        return result;
+        finally
+        {
+            response.Data?.Dispose();            
+        }
     }
 
     private async Task<StreamResponse?> HttpRequestStream(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, HttpMethod? verb = null, object? postData = null, CancellationToken ct = default)
@@ -465,12 +480,12 @@ public abstract class EndpointBase
         return HttpRequestRaw<T>(provider, endpoint, url, HttpMethod.Get, ct: ct);
     }
 
-    internal Task<T?> HttpPost1<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, object? postData = null, CancellationToken? ct = default) where T : ApiResultBase
+    internal Task<T?> HttpPost1<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, object? postData = null, CancellationToken? ct = null) where T : ApiResultBase
     {
         return HttpRequest<T>(provider, endpoint, url, HttpMethod.Post, postData, ct);
     }
     
-    internal Task<object?> HttpPost1(Type type, IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, object? postData = null, CancellationToken? ct = default)
+    internal Task<object?> HttpPost1(Type type, IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, object? postData = null, CancellationToken? ct = null)
     {
         return HttpRequest(type, provider, endpoint, url, HttpMethod.Post, postData, ct);
     }
@@ -492,12 +507,12 @@ public abstract class EndpointBase
     ///     Throws an exception if a non-success HTTP response was returned or if the result
     ///     couldn't be parsed.
     /// </exception>
-    internal Task<HttpCallResult<T>> HttpPost<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, object? postData = null, CancellationToken? ct = default) where T : ApiResultBase
+    internal Task<HttpCallResult<T>> HttpPost<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, object? postData = null, CancellationToken? ct = null) where T : ApiResultBase
     {
         return HttpRequestRaw<T>(provider, endpoint, url, HttpMethod.Post, postData, ct);
     }
 
-    internal Task<HttpCallResult<T>> HttpPostRaw<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, object? postData = null, CancellationToken? ct = default, bool allowNon200Codes = false)
+    internal Task<HttpCallResult<T>> HttpPostRaw<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, object? postData = null, CancellationToken? ct = null, bool allowNon200Codes = false)
     {
         return HttpRequestRaw<T>(provider, endpoint, url, HttpMethod.Post, postData, ct);
     }
@@ -523,12 +538,12 @@ public abstract class EndpointBase
     ///     Throws an exception if a non-success HTTP response was returned or if the result
     ///     couldn't be parsed.
     /// </exception>
-    internal Task<T?> HttpDelete<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, object? postData = null, CancellationToken? ct = default) where T : ApiResultBase
+    internal Task<T?> HttpDelete<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, object? postData = null, CancellationToken? ct = null) where T : ApiResultBase
     {
         return HttpRequest<T>(provider, endpoint, url, HttpMethod.Delete, postData, ct);
     }
 
-    internal Task<HttpCallResult<T>> HttpAtomic<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, HttpMethod method, string? url = null, object? postData = null, CancellationToken? ct = default, bool allowNon200Codes = false)
+    internal Task<HttpCallResult<T>> HttpAtomic<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, HttpMethod method, string? url = null, object? postData = null, CancellationToken? ct = null, bool allowNon200Codes = false)
     {
         return HttpRequestRaw<T>(provider, endpoint, url, method, postData, ct);
     }

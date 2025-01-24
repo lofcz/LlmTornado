@@ -32,7 +32,7 @@ public class ToolCall
     ///     The underlying function call.
     /// </summary>
     [JsonProperty("function")]
-    public FunctionCall FunctionCall { get; set; } = default!;
+    public FunctionCall FunctionCall { get; set; } = null!;
 
     /// <summary>
     ///     Gets the json encoded function call, this is cached to avoid serializing the function over and over.

@@ -209,6 +209,18 @@ public static class ChatDemo
 
         return false;
     }
+
+    public static async Task AnthropicCaching()
+    {
+        await File.ReadAllTextAsync("");
+        
+        Conversation chat = Program.Connect(LLmProviders.Cohere).Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Anthropic.Claude35.SonnetLatest,
+        });
+
+        chat.AppendMessage(new ChatMessage(ChatMessageRoles.User, [ new ChatMessagePart() ]));
+    }
     
     public static async Task CohereWebSearch()
     {

@@ -121,6 +121,7 @@ public enum Demos
     CustomProviderOllama,
     [Flaky("requires ollama")]
     CustomProviderOllamaStreaming,
+    ChatAnthropicCaching,
     Last
 }
 
@@ -281,6 +282,7 @@ public class Program
             Demos.ChatCompletionO1Developer => ChatDemo.CompletionO1Developer,
             Demos.CustomProviderOllama => CustomProviderDemo.Ollama,
             Demos.CustomProviderOllamaStreaming => CustomProviderDemo.OllamaStreaming,
+            Demos.ChatAnthropicCaching => ChatDemo.AnthropicCaching,
             _ => null
         };
 

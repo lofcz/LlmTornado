@@ -57,6 +57,40 @@ public class HttpCallRequest
 }
 
 /// <summary>
+/// Failed HTTP call.
+/// </summary>
+public class ErrorHttpCallResult : IHttpCallResult
+{
+    /// <summary>
+    ///     Status code received.
+    /// </summary>
+    public HttpStatusCode Code { get; set; }
+
+    /// <summary>
+    ///     Raw response from the endpoint.
+    /// </summary>
+    public string? Response { get; set; }
+    
+    /// <summary>
+    ///     Exception.
+    /// </summary>
+    public Exception? Exception { get; set; }
+    
+    /// <summary>
+    /// Creates new error result.
+    /// </summary>
+    /// <param name="code"></param>
+    /// <param name="response"></param>
+    /// <param name="exception"></param>
+    public ErrorHttpCallResult(HttpStatusCode code, string? response, Exception? exception)
+    {
+        Code = code;
+        Response = response;
+        Exception = exception;
+    }
+}
+
+/// <summary>
 /// REST call result.
 /// </summary>
 /// <typeparam name="T"></typeparam>

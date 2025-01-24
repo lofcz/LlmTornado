@@ -29,13 +29,7 @@ public static class VectorStoreDemo
 
     public static async Task<ListResponse<VectorStore>> ListVectorStores()
     {
-        if (vectorStoreId is null)
-        {
-            throw new Exception("No vector store created");
-        }
-
-        HttpCallResult<ListResponse<VectorStore>> listResult =
-            await Program.Connect().VectorStores.ListVectorStoresAsync();
+        HttpCallResult<ListResponse<VectorStore>> listResult = await Program.Connect().VectorStores.ListVectorStoresAsync();
         Console.WriteLine(listResult.Response);
         return listResult.Data;
     }
@@ -112,9 +106,9 @@ public static class VectorStoreDemo
             vectorStoreId, new CreateVectorStoreFileRequest
             {
                 FileId = file.Id,
-                ChunkingStrategy = new StaticChunkingStrategy()
+                ChunkingStrategy = new StaticChunkingStrategy
                 {
-                    Static = new StaticChunkingConfig()
+                    Static = new StaticChunkingConfig
                     {
                         MaxChunkSizeTokens = 500,
                         ChunkOverlapTokens = 100
@@ -266,10 +260,7 @@ public static class VectorStoreDemo
 
     public static async Task DeleteVectorStore()
     {
-        if (vectorStoreId is null)
-        {
-            throw new Exception("No vector store created");
-        }
+        vectorStoreId ??= "vs_r3Xs9FQRKrz5mgsxBPKOSkqm";
         
         // final cleanup of uploaded files
         if (fileIdVectorStoreFile is not null)
@@ -282,11 +273,20 @@ public static class VectorStoreDemo
             await FilesDemo.DeleteFile(fileIdVectorStoreFileBatch);
         }
         
-        if (fileIdVectorStoreFileCustomChunkingStrategy is not null){
+        if (fileIdVectorStoreFileCustomChunkingStrategy is not null)
+        {
             await FilesDemo.DeleteFile(fileIdVectorStoreFileCustomChunkingStrategy);
         }
 
         HttpCallResult<bool> deleteResult = await Program.Connect().VectorStores.DeleteVectorStoreAsync(vectorStoreId);
+
+        if (!deleteResult.Ok)
+        {
+            Console.WriteLine(deleteResult.Code);
+            Console.WriteLine(deleteResult.Response);
+            return;
+        }
+        
         Console.WriteLine(deleteResult.Response);
     }
 }
