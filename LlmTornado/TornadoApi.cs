@@ -17,6 +17,7 @@ using LlmTornado.Images;
 using LlmTornado.Models;
 using LlmTornado.Moderation;
 using LlmTornado.Threads;
+using LlmTornado.VectorStores;
 
 namespace LlmTornado;
 
@@ -39,6 +40,7 @@ public class TornadoApi
     private readonly Lazy<ModelsEndpoint> models;
     private readonly Lazy<ModerationEndpoint> moderation;
     private readonly Lazy<ThreadsEndpoint> threadsEndpoint;
+    private readonly Lazy<VectorStoresEndpoint> vectorStoresEndpoint;
     
     /// <summary>
     ///     Creates a new Tornado API without any authentication. Use this with self-hosted models.
@@ -56,6 +58,7 @@ public class TornadoApi
         models = new Lazy<ModelsEndpoint>(() => new ModelsEndpoint(this));
         moderation = new Lazy<ModerationEndpoint>(() => new ModerationEndpoint(this));
         threadsEndpoint = new Lazy<ThreadsEndpoint>(() => new ThreadsEndpoint(this));
+        vectorStoresEndpoint = new Lazy<VectorStoresEndpoint>(() => new VectorStoresEndpoint(this));
     }
 
     /// <summary>
@@ -233,4 +236,9 @@ public class TornadoApi
     ///     image.
     /// </summary>
     public ImageGenerationEndpoint ImageGenerations => imageGeneration.Value;
+    
+    /// <summary>
+    ///     The API lets you do operations with vector stores on OpenAI API
+    /// </summary>
+    public VectorStoresEndpoint VectorStores => vectorStoresEndpoint.Value;
 }

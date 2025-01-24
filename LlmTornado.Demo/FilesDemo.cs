@@ -12,4 +12,10 @@ public static class FilesDemo
         File? retrievedFile = await Program.Connect().Files.GetFileAsync(uploadedFile.Data?.Id);
         return uploadedFile.Data;
     }
+    
+    public static async Task<bool> DeleteFile(string fileId)
+    {
+        File? deleteResult = await Program.Connect().Files.DeleteFileAsync(fileId);
+        return deleteResult is not null;
+    }
 }

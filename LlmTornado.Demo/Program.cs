@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using LlmTornado.Code;
+using LlmTornado.VectorStores;
 
 namespace LlmTornado.Demo;
 
@@ -45,6 +46,20 @@ public enum Demos
     ThreadsModify,
     [Flaky]
     ThreadsDelete,
+    VectorStoreCreate,
+    VectorStoreRetrieve,
+    VectorStoreList,
+    VectorStoreModify,
+    VectorStoreFilesCreate,
+    VectorStoreFilesCreateCustomChunkingStraegy,
+    VectorStoreFilesList,
+    VectorStoreFilesRetrieve,
+    VectorStoreFilesDelete,
+    VectorStoreFileBatchCreate,
+    VectorStoreFileBatchRetrieve,
+    VectorStoreBatchFileList,
+    VectorStoreFileBatchCancel,
+    VectorStoreDelete,
     [Flaky("only assistants v1 are supported")]
     ThreadsCreateMessage,
     ChatCompletion,
@@ -157,13 +172,14 @@ public class Program
             return false;
         }
 
-        if (!File.Exists($"{projectDirectory}\\apiKey.json"))
+        string apiKeyFileLocation = Path.Join([projectDirectory, "apiKey.json"]);
+        if (!File.Exists(apiKeyFileLocation))
         {
             Console.WriteLine("Please copy and paste apiKeyPrototype.json file in the same folder, rename the copy as apiKey.json and replace the string inside with your API key");
             return false;
         }
 
-        string apiKey = await File.ReadAllTextAsync($"{projectDirectory}\\apiKey.json");
+        string apiKey = await File.ReadAllTextAsync(apiKeyFileLocation);
 
         if (string.IsNullOrWhiteSpace(apiKey))
         {
@@ -187,6 +203,20 @@ public class Program
             Demos.AssistantRetrieve => AssistantsDemo.Retrieve,
             Demos.AssistantModify => AssistantsDemo.Modify,
             Demos.AssistantDelete => AssistantsDemo.Delete,
+            Demos.VectorStoreCreate => VectorStoreDemo.CreateVectorStore,
+            Demos.VectorStoreRetrieve => VectorStoreDemo.RetrieveVectorStore,
+            Demos.VectorStoreList => VectorStoreDemo.ListVectorStores,
+            Demos.VectorStoreModify => VectorStoreDemo.ModifyVectorStore,
+            Demos.VectorStoreFilesCreate => VectorStoreDemo.CreateVectorStoreFile,
+            Demos.VectorStoreFilesCreateCustomChunkingStraegy => VectorStoreDemo.CreateVectorStoreFileCustomChunkingStrategy,
+            Demos.VectorStoreFilesList => VectorStoreDemo.ListVectorStoreFiles,
+            Demos.VectorStoreFilesRetrieve => VectorStoreDemo.RetrieveVectorStoreFile,
+            Demos.VectorStoreFilesDelete => VectorStoreDemo.DeleteVectorStoreFile,
+            Demos.VectorStoreFileBatchCreate => VectorStoreDemo.CreateVectorStoreFileBatch,
+            Demos.VectorStoreBatchFileList => VectorStoreDemo.ListVectorStoreBatchFiles,
+            Demos.VectorStoreFileBatchRetrieve => VectorStoreDemo.RetrieveVectorStoreFileBatch,
+            Demos.VectorStoreFileBatchCancel => VectorStoreDemo.CancelVectorStoreFileBatch,
+            Demos.VectorStoreDelete => VectorStoreDemo.DeleteVectorStore,
             Demos.FilesUpload => FilesDemo.Upload,
             Demos.ImagesGenerate => ImagesDemo.Generate,
             Demos.AssistantCreateWithFile => AssistantsDemo.CreateWithFile,

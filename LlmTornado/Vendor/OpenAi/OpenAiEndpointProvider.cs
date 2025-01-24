@@ -61,6 +61,7 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider,
             CapabilityEndpoints.Moderation => "moderations",
             CapabilityEndpoints.Assistants => "assistants",
             CapabilityEndpoints.Threads => "threads",
+            CapabilityEndpoints.VectorStores => "vector_stores",
             _ => throw new Exception($"OpenAI doesn't support endpoint {endpoint}")
         };
     }
