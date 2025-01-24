@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Chat.Plugins;
+using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Chat.Vendors.Cohere;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
@@ -113,10 +114,7 @@ public static class ChatDemo
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
             Model = ChatModel.OpenAi.Gpt4.O241120,
-            Tools = new List<Tool>
-            {
-                new Tool(new ToolFunction("get_weather", "gets the current weather"), true)
-            },
+            Tools = [new Tool(new ToolFunction("get_weather", "gets the current weather"), true)],
             ToolChoice = new OutboundToolChoice(OutboundToolChoiceModes.Required)
         });
         chat.AppendUserInput("Who are you?"); // user asks something unrelated, but we force the model to use the tool
@@ -210,16 +208,175 @@ public static class ChatDemo
         return false;
     }
 
-    public static async Task AnthropicCaching()
+    public static async Task AnthropicCachingChat()
     {
-        await File.ReadAllTextAsync("");
-        
         Conversation chat = Program.Connect(LLmProviders.Cohere).Chat.CreateConversation(new ChatRequest
         {
             Model = ChatModel.Anthropic.Claude35.SonnetLatest,
+            Tools =
+            [
+                new Tool(new ToolFunction("get_weather", "gets the current weather", new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        location = new
+                        {
+                            type = "string",
+                            description = "The location for which the weather information is required."
+                        }
+                    },
+                    required = new List<string> { "location" }
+                }))
+                {
+                    VendorExtensions = new ToolVendorExtensions(new AnthropicToolVendorExtensions
+                    {
+                        Cache = AnthropicCacheSettings.Ephemeral
+                    })
+                }
+            ],
+            VendorExtensions = new ChatRequestVendorExtensions(new ChatRequestVendorAnthropicExtensions
+            {
+                OutboundRequest = (sys, msgs, tools) =>
+                {
+                    // we need to mark the last user message and the second-last user message as cached (for hitting cache & setting it for the next turn)
+                    int marked = 0;
+
+                    for (int i = msgs.Count - 1; i >= 0; i--)
+                    {
+                        VendorAnthropicChatRequestMessageContent msg = msgs[i];
+
+                        if (msg.Role is ChatMessageRoles.User)
+                        {
+                            if (msg.Parts.Count > 0)
+                            {
+                                msg.Parts[0].VendorExtensions = new ChatMessagePartAnthropicExtensions
+                                {
+                                    Cache = AnthropicCacheSettings.Ephemeral
+                                };
+
+                                marked++;
+
+                                if (marked is 2)
+                                {
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            })
         });
 
-        chat.AppendMessage(new ChatMessage(ChatMessageRoles.User, [ new ChatMessagePart() ]));
+        chat.OnAfterToolsCall = async (result) =>
+        {
+            Console.WriteLine();
+            await chat.StreamResponse(Console.Write);
+        };
+
+        chat.AppendUserInput("fetch me the weather in Paris");
+
+        await chat.StreamResponseRich(new ChatStreamEventHandler
+        {
+            MessageTokenHandler = (token) =>
+            {
+                Console.Write(token);
+                return Task.CompletedTask;
+            },
+            FunctionCallHandler = (functions) =>
+            {
+                foreach (FunctionCall fn in functions)
+                {
+                    fn.Result = new FunctionResult(fn.Name, new
+                    {
+                        result = "ok",
+                        weather = "A mild rain is expected around noon in Paris."
+                    });
+                }
+
+                return Task.CompletedTask;
+            },
+            OnUsageReceived = (usage) =>
+            {
+                return Task.CompletedTask;
+            }
+        });
+    }
+
+    public static async Task AnthropicCaching()
+    {
+        string longPrompt = await File.ReadAllTextAsync("Static/Files/pride_and_prejudice.txt");
+        
+        Conversation chat = Program.Connect(LLmProviders.Cohere).Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Anthropic.Claude35.SonnetLatest
+        });
+        
+        chat.AppendSystemMessage([ 
+            new ChatMessagePart("You are an assistant answering queries about the following text"),
+            new ChatMessagePart(longPrompt, new ChatMessagePartAnthropicExtensions
+            {
+                Cache = AnthropicCacheSettings.Ephemeral
+            }) 
+        ]);
+        
+        Console.WriteLine();
+        Console.ForegroundColor = ConsoleColor.Cyan;
+        Console.WriteLine("------- System:");
+        Console.ResetColor();
+        Console.WriteLine(longPrompt);
+        
+        string shortPrompt = "In the text above, who cries  “I am sick of Mr. Bingley”?";
+        
+        Console.WriteLine();
+        Console.ForegroundColor = ConsoleColor.Cyan;
+        Console.WriteLine("------- User:");
+        Console.ResetColor();
+        Console.WriteLine(shortPrompt);
+        chat.AppendUserInput(shortPrompt);
+        
+        Console.ReadKey();
+        
+        Console.WriteLine();
+        Console.ForegroundColor = ConsoleColor.Cyan;
+        Console.WriteLine("------- Assistant:");
+        Console.ResetColor();
+        await StreamResponse();
+
+        string shortPrompt2 = "When Elizabeth replied “He is also handsome”, who does she mean?";
+        Console.WriteLine();
+        Console.WriteLine();
+        Console.ForegroundColor = ConsoleColor.Cyan;
+        Console.WriteLine("------- User:");
+        Console.ResetColor();
+        Console.WriteLine(shortPrompt2);
+        chat.AppendUserInput(shortPrompt2);
+        
+        Console.WriteLine();
+        Console.ForegroundColor = ConsoleColor.Cyan;
+        Console.WriteLine("------- Assistant:");
+        Console.ResetColor();
+        await StreamResponse();
+
+        async Task StreamResponse()
+        {
+            await chat.StreamResponseRich(new ChatStreamEventHandler
+            {
+                MessageTokenHandler = (token) =>
+                {
+                    Console.Write(token);
+                    return Task.CompletedTask;
+                },
+                OnUsageReceived = (usage) =>
+                {
+                    Console.WriteLine();
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    Console.WriteLine($"Usage: {usage}");
+                    Console.ResetColor();
+                    return Task.CompletedTask;
+                }
+            });
+        }
     }
     
     public static async Task CohereWebSearch()
@@ -1312,7 +1469,7 @@ public static class ChatDemo
             }
 
             return Task.FromResult(results);
-        }, null, null);
+        }, null);
 
 
         string response = sb.ToString();

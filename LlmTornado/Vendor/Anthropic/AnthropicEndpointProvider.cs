@@ -292,7 +292,9 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
                         {
                             TotalTokens = res.Message.Usage.InputTokens + res.Message.Usage.OutputTokens,
                             CompletionTokens = res.Message.Usage.OutputTokens,
-                            PromptTokens = res.Message.Usage.InputTokens
+                            PromptTokens = res.Message.Usage.InputTokens,
+                            CacheCreationTokens = res.Message.Usage.CacheCreationInputTokens,
+                            CacheReadTokens = res.Message.Usage.CacheReadInputTokens
                         };
                     }
                     
@@ -309,7 +311,8 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
                                 {
                                     Delta = accuToolsMessage
                                 }
-                            ]
+                            ],
+                            Usage = plaintextUsage
                         };
                     }
 
@@ -351,7 +354,7 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
         
         req.Headers.Add("User-Agent", EndpointBase.GetUserAgent());
         req.Headers.Add("anthropic-version", "2023-06-01");
-        req.Headers.Add("anthropic-beta", "max-tokens-3-5-sonnet-2024-07-15"); // 8k output tokens for Sonnet 3.5
+        req.Headers.Add("anthropic-beta", "prompt-caching-2024-07-31"); // 8k output tokens for Sonnet 3.5
 
         ProviderAuthentication? auth = Api.GetProvider(LLmProviders.Anthropic).Auth;
 

@@ -380,12 +380,23 @@ public class Conversation
 
     /// <summary>
     ///     Creates and appends a <see cref="ChatMessage" /> to the chat history with the Role of
-    ///     <see cref="ChatMessageRole.System" />.  The system message helps set the behavior of the assistant.
+    ///     <see cref="ChatMessageRole.System" />. The system message helps set the behavior of the assistant.
     /// </summary>
     /// <param name="content">text content that helps set the behavior of the assistant</param>
     public Conversation AppendSystemMessage(string content)
     {
         return AppendMessage(new ChatMessage(ChatMessageRoles.System, content));
+    }
+    
+    /// <summary>
+    ///      Creates and appends a <see cref="ChatMessage" /> to the chat history with the Role of
+    ///      <see cref="ChatMessageRole.System" />. The system message helps set the behavior of the assistant.
+    /// </summary>
+    /// <param name="parts"></param>
+    /// <returns></returns>
+    public Conversation AppendSystemMessage(IEnumerable<ChatMessagePart> parts)
+    {
+        return AppendMessage(new ChatMessage(ChatMessageRoles.System, parts));
     }
 
     /// <summary>

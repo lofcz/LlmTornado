@@ -211,6 +211,18 @@ public class ChatUsage : Usage
 	[JsonProperty("completion_tokens_details")]
 	public ChatUsageTokenDetails? CompletionTokensDetails { get; set; }
 	
+	/// <summary>
+	///		Number of cached tokens.
+	/// </summary>
+	[JsonIgnore]
+	public int? CacheCreationTokens { get; set; }
+	
+	/// <summary>
+	///		Number of tokens read from cache.
+	/// </summary>
+	[JsonIgnore]
+	public int? CacheReadTokens { get; set; }
+	
 	public ChatUsage()
 	{
 		
@@ -235,5 +247,14 @@ public class ChatUsage : Usage
 		CompletionTokens = usage.CandidatesTokenCount;
 		PromptTokens = usage.PromptTokenCount;
 		TotalTokens = CompletionTokens + PromptTokens;
+	}
+
+	/// <summary>
+	///		View of the usage.
+	/// </summary>
+	/// <returns></returns>
+	public override string ToString()
+	{
+		return $"Total: {TotalTokens}, Prompt: {PromptTokens}, Completion: {CompletionTokens}, Cache created: {CacheCreationTokens}, Cache read: {CacheReadTokens}";
 	}
 }
