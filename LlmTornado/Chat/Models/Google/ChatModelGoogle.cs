@@ -5,14 +5,19 @@ using LlmTornado.Code.Models;
 namespace LlmTornado.Chat.Models;
 
 /// <summary>
-/// Known chat models from Cohere.
+/// Known chat models from Google.
 /// </summary>
 public class ChatModelGoogle : BaseVendorModelProvider
 {
     /// <summary>
-    /// Coral models.
+    /// Gemini models.
     /// </summary>
     public readonly ChatModelGoogleGemini Gemini = new ChatModelGoogleGemini();
+    
+    /// <summary>
+    /// Experimental Gemini models.
+    /// </summary>
+    public readonly ChatModelGoogleGeminiExperimental GeminiExperimental = new ChatModelGoogleGeminiExperimental();
 
     /// <summary>
     /// All known chat models from Google.
@@ -38,7 +43,8 @@ public class ChatModelGoogle : BaseVendorModelProvider
     /// <inheritdoc cref="AllModels"/>
     /// </summary>
     public static readonly List<IModel> ModelsAll = [
-        ..ChatModelGoogleGemini.ModelsAll
+        ..ChatModelGoogleGemini.ModelsAll,
+        ..ChatModelGoogleGeminiExperimental.ModelsAll
     ];
     
     static ChatModelGoogle()

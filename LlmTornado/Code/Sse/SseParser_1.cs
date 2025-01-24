@@ -407,7 +407,10 @@ namespace LlmTornado.Code.Sse
             {
                 // Spec: "If the field value consists of only ASCII digits, then interpret the field value as an integer in base ten,
                 // and set the event stream's reconnection time to that integer. Otherwise, ignore the field."
-                if (long.TryParse(fieldValue, NumberStyles.None, CultureInfo.InvariantCulture, out long milliseconds) && 0 <= milliseconds && milliseconds <= TimeSpan_MaxValueMilliseconds)
+                if (long.TryParse(
+                    fieldValue,
+                    NumberStyles.None, CultureInfo.InvariantCulture, out long milliseconds) &&
+                    0 <= milliseconds && milliseconds <= TimeSpan_MaxValueMilliseconds)
                 {
                     // Workaround for TimeSpan.FromMilliseconds not being able to roundtrip TimeSpan.MaxValue
                     TimeSpan timeSpan = milliseconds == TimeSpan_MaxValueMilliseconds ? TimeSpan.MaxValue : TimeSpan.FromMilliseconds(milliseconds);

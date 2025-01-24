@@ -42,5 +42,8 @@ namespace LlmTornado.Code.Sse
             int bytesWritten = Encoding.UTF8.GetBytes(value, buffer);
             writer.Advance(bytesWritten);
         }
+        
+        public static bool ContainsLineBreaks(this ReadOnlySpan<char> text) => 
+            text.IndexOfAny('\r', '\n') >= 0;
     }
 }
