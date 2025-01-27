@@ -38,7 +38,7 @@ public sealed class ThreadsEndpoint : EndpointBase
     /// <returns><see cref="ThreadResponse"/>.</returns>
     public Task<HttpCallResult<ThreadResponse>> RetrieveThreadAsync(string threadId, CancellationToken? cancellationToken = null)
     {
-        return HttpGetRaw<ThreadResponse>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}"), cancellationToken);
+        return HttpGetRaw<ThreadResponse>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}"), ct: cancellationToken);
     }
 
     /// <summary>

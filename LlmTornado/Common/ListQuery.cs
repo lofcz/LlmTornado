@@ -1,7 +1,12 @@
+using System;
 using System.Collections.Generic;
+using LlmTornado.Code;
 
 namespace LlmTornado.Common;
 
+/// <summary>
+/// Shared type for OpenAI Assistants, used in various sub-APIs.
+/// </summary>
 public sealed class ListQuery
 {
     /// <summary>
@@ -33,35 +38,74 @@ public sealed class ListQuery
         Before = before;
     }
 
+    /// <summary>
+    ///     A limit on the number of objects to be returned. Limit can range between 1 and 100, and the default is 20.
+    /// </summary>
     public int? Limit { get; set; }
 
+    /// <summary>
+    ///     Sort order by the 'created_at' timestamp of the objects.
+    /// </summary>
     public SortOrder Order { get; set; }
 
+    /// <summary>
+    ///     A cursor for use in pagination.
+    ///     after is an object ID that defines your place in the list.
+    ///     For instance, if you make a list request and receive 100 objects, ending with obj_foo,
+    ///     your subsequent call can include after=obj_foo in order to fetch the next page of the list.
+    /// </summary>
     public string? After { get; set; }
 
+    /// <summary>
+    ///     A cursor for use in pagination. before is an object ID that defines your place in the list.
+    ///     For instance, if you make a list request and receive 100 objects, ending with obj_foo,
+    ///     your subsequent call can include before=obj_foo in order to fetch the previous page of the list.
+    /// </summary>
     public string? Before { get; set; }
 
-    public static implicit operator Dictionary<string, string>?(ListQuery? query)
+    
+    /// <summary>
+    /// Transforms the <see cref="ListQuery"/> into a series of <see cref="Uri" /> query parameters.
+    /// </summary>
+    /// <param name="query"></param>
+    /// <returns></returns>
+    public static implicit operator Dictionary<string, object>?(ListQuery? query)
     {
-        if (query is null) return null;
+        if (query is null)
+        {
+            return null;
+        }
 
-        Dictionary<string, string> parameters = new Dictionary<string, string>();
+        Dictionary<string, object> parameters = [];
 
-        if (query.Limit is not null) parameters.Add("limit", query.Limit.ToString());
+        if (query.Limit is not null)
+        {
+            parameters.Add("limit", query.Limit);
+        }
 
         switch (query.Order)
         {
             case SortOrder.Descending:
+            {
                 parameters.Add("order", "desc");
                 break;
+            }
             case SortOrder.Ascending:
+            {
                 parameters.Add("order", "asc");
                 break;
+            }
         }
 
-        if (!string.IsNullOrEmpty(query.After)) parameters.Add("after", query.After);
+        if (!string.IsNullOrEmpty(query.After))
+        {
+            parameters.Add("after", query.After);
+        }
 
-        if (!string.IsNullOrEmpty(query.Before)) parameters.Add("before", query.Before);
+        if (!string.IsNullOrEmpty(query.Before))
+        {
+            parameters.Add("before", query.Before);
+        }
 
         return parameters;
     }
