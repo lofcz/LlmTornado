@@ -336,6 +336,7 @@ public abstract class EndpointBase
             ErrorHttpCallResult error = new ErrorHttpCallResult(result.StatusCode, resultAsString, null);
             Exception e = new Exception($"Http call failed. Code: {(int)result.StatusCode}, Message: {resultAsString}.");
             result.Dispose();
+            
             if (Api.httpStrict)
             {
                 throw e;
@@ -346,6 +347,7 @@ public abstract class EndpointBase
         catch (Exception e)
         {
             result?.Dispose();
+            
             if (Api.httpStrict)
             {
                 throw;

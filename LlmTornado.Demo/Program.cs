@@ -151,15 +151,17 @@ public class Program
 
     public static TornadoApi ConnectMulti(bool httpStrict = true)
     {
-        var tornadoApi = new TornadoApi([
+        TornadoApi tornadoApi = new TornadoApi([
             new ProviderAuthentication(LLmProviders.OpenAi, ApiKeys.OpenAi),
             new ProviderAuthentication(LLmProviders.Anthropic, ApiKeys.Anthropic),
             new ProviderAuthentication(LLmProviders.Cohere, ApiKeys.Cohere),
             new ProviderAuthentication(LLmProviders.Google, ApiKeys.Google),
             new ProviderAuthentication(LLmProviders.Groq, ApiKeys.Groq)
-        ]);
+        ])
+        {
+            httpStrict = httpStrict
+        };
 
-        tornadoApi.httpStrict = httpStrict;
         return tornadoApi;
     }
     
