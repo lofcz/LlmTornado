@@ -241,7 +241,7 @@ internal static class Nanoid
 
             for (int i = 0; i < step; i++)
             {
-                var alphabetIndex = bytes[i] & mask;
+                int alphabetIndex = bytes[i] & mask;
 
                 if (alphabetIndex >= alphabet.Length) continue;
                 idBuilder[cnt] = alphabet[alphabetIndex];

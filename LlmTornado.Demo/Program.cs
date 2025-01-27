@@ -149,15 +149,20 @@ public class Program
         public AzureKey Azure { get; set; }
     }
 
-    public static TornadoApi ConnectMulti()
+    public static TornadoApi ConnectMulti(bool httpStrict = true)
     {
-        return new TornadoApi([
+        TornadoApi tornadoApi = new TornadoApi([
             new ProviderAuthentication(LLmProviders.OpenAi, ApiKeys.OpenAi),
             new ProviderAuthentication(LLmProviders.Anthropic, ApiKeys.Anthropic),
             new ProviderAuthentication(LLmProviders.Cohere, ApiKeys.Cohere),
             new ProviderAuthentication(LLmProviders.Google, ApiKeys.Google),
             new ProviderAuthentication(LLmProviders.Groq, ApiKeys.Groq)
-        ]);
+        ])
+        {
+            httpStrict = httpStrict
+        };
+
+        return tornadoApi;
     }
     
     public static TornadoApi Connect(LLmProviders provider = LLmProviders.OpenAi)
