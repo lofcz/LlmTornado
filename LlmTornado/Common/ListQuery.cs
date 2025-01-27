@@ -1,8 +1,12 @@
+using System;
 using System.Collections.Generic;
 using LlmTornado.Code;
 
 namespace LlmTornado.Common;
 
+/// <summary>
+/// Shared type for OpenAI Assistants, used in various sub-APIs.
+/// </summary>
 public sealed class ListQuery
 {
     /// <summary>
@@ -59,27 +63,49 @@ public sealed class ListQuery
     /// </summary>
     public string? Before { get; set; }
 
-    public static implicit operator Dictionary<string, string>?(ListQuery? query)
+    
+    /// <summary>
+    /// Transforms the <see cref="ListQuery"/> into a series of <see cref="Uri" /> query parameters.
+    /// </summary>
+    /// <param name="query"></param>
+    /// <returns></returns>
+    public static implicit operator Dictionary<string, object>?(ListQuery? query)
     {
-        if (query is null) return null;
+        if (query is null)
+        {
+            return null;
+        }
 
-        Dictionary<string, string> parameters = new Dictionary<string, string>();
+        Dictionary<string, object> parameters = [];
 
-        if (query.Limit is not null) parameters.Add("limit", query.Limit.ToString());
+        if (query.Limit is not null)
+        {
+            parameters.Add("limit", query.Limit);
+        }
 
         switch (query.Order)
         {
             case SortOrder.Descending:
+            {
                 parameters.Add("order", "desc");
                 break;
+            }
             case SortOrder.Ascending:
+            {
                 parameters.Add("order", "asc");
                 break;
+            }
         }
 
-        if (!string.IsNullOrEmpty(query.After)) parameters.Add("after", query.After);
+        if (!string.IsNullOrEmpty(query.After))
+        {
+            parameters.Add("after", query.After);
+        }
 
-        if (!string.IsNullOrEmpty(query.Before)) parameters.Add("before", query.Before);
+        if (!string.IsNullOrEmpty(query.Before))
+        {
+            parameters.Add("before", query.Before);
+        }
 
         return parameters;
     }
