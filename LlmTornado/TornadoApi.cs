@@ -41,6 +41,11 @@ public class TornadoApi
     private readonly Lazy<ModerationEndpoint> moderation;
     private readonly Lazy<ThreadsEndpoint> threadsEndpoint;
     private readonly Lazy<VectorStoresEndpoint> vectorStoresEndpoint;
+
+    /// <summary>
+    ///     If true, the API will throw exceptions for non-200 responses.
+    /// </summary>
+    internal bool httpStrict;
     
     /// <summary>
     ///     Creates a new Tornado API without any authentication. Use this with self-hosted models.
