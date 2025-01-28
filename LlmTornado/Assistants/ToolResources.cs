@@ -8,18 +8,43 @@ namespace LlmTornado.Assistants;
 ///     The resources are specific to the type of tool. For example,
 ///     the code_interpreter tool requires a list of file IDs, while the file_search tool requires a list of vector store IDs.
 /// </summary>
-internal class ToolResources
+public class ToolResources
 {
+    /// <summary>
+    /// 
+    /// </summary>
     [JsonProperty("code_interpreter")]
     public CodeInterpreterConfig? CodeInterpreter { get; set; }
     
+    /// <summary>
+    /// 
+    /// </summary>
     [JsonProperty("file_search")]
     public FileSearchConfig? FileSearch { get; set; }
     
 }
 
-internal class FileSearchConfig
+/// <summary>
+/// 
+/// </summary>
+public class FileSearchConfig
 {
+    /// <summary>
+    ///     Constructs empty file search config
+    /// </summary>
+    public FileSearchConfig()
+    {
+    }
+    
+    /// <summary>
+    ///     Constructs file search config with file IDs
+    /// </summary>
+    /// <param name="fileIds"></param>
+    public FileSearchConfig(List<string>? fileIds)
+    {
+        FileSearchFileIds = fileIds;
+    }
+    
     /// <summary>
     ///     List of vector store IDs for file search tool
     /// </summary>
@@ -27,7 +52,10 @@ internal class FileSearchConfig
     public IReadOnlyList<string>? FileSearchFileIds { get; set; }
 }
 
-internal class CodeInterpreterConfig
+/// <summary>
+/// 
+/// </summary>
+public class CodeInterpreterConfig
 {
     /// <summary>
     ///     List of file IDs for code interpreter tool

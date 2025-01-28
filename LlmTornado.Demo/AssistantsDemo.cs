@@ -9,16 +9,16 @@ public static class AssistantsDemo
 {
     public static async Task List()
     {
-        HttpCallResult<ListResponse<AssistantResponse>> response = await Program.Connect().Assistants.ListAssistantsAsync(new ListQuery(1));
-        HttpCallResult<ListResponse<AssistantResponse>> response2 = await Program.Connect().Assistants.ListAssistantsAsync(new ListQuery(1, after: response.Data?.LastId));
-        AssistantResponse? first = response.Data?.Items.FirstOrDefault();
+        HttpCallResult<ListResponse<Assistant>> response = await Program.Connect().Assistants.ListAssistantsAsync(new ListQuery(1));
+        HttpCallResult<ListResponse<Assistant>> response2 = await Program.Connect().Assistants.ListAssistantsAsync(new ListQuery(1, after: response.Data?.LastId));
+        Assistant? first = response.Data?.Items.FirstOrDefault();
     }
 
-    public static async Task<AssistantResponse?> Create()
+    public static async Task<Assistant?> Create()
     {
-        HttpCallResult<AssistantResponse> result = await Program.Connect().Assistants.CreateAssistantAsync(new CreateAssistantRequest(Model.GPT35_Turbo_1106, "model1", "test model", "system prompt", new List<Tool>
+        HttpCallResult<Assistant> result = await Program.Connect().Assistants.CreateAssistantAsync(new CreateAssistantRequest(Model.GPT35_Turbo_1106, "model1", "test model", "system prompt", new List<AssistantTool>
         {
-            Tool.FileSearch
+            AssistantToolCodeInterpreter.Default
         }));
 
         return result.Data;
@@ -26,81 +26,82 @@ public static class AssistantsDemo
 
     public static async Task CreateWithCustomFunction()
     {
-        HttpCallResult<AssistantResponse> result = await Program.Connect().Assistants.CreateAssistantAsync(new CreateAssistantRequest(Model.GPT35_Turbo_1106, "model1", "test model", "system prompt", new List<Tool>
-        {
-            new(new ToolFunction("my_function", "test function", new
-            {
-                type = "object",
-                properties = new
-                {
-                    arg1 = new
-                    {
-                        type = "string",
-                        description = "argument 1 description"
-                    }
-                },
-                required = new List<string> { "arg1" }
-            }))
-        }));
+        //TODO
+        // HttpCallResult<Assistant> result = await Program.Connect().Assistants.CreateAssistantAsync(new CreateAssistantRequest(Model.GPT35_Turbo_1106, "model1", "test model", "system prompt", new List<Tool>
+        // {
+        //     new(new ToolFunction("my_function", "test function", new
+        //     {
+        //         type = "object",
+        //         properties = new
+        //         {
+        //             arg1 = new
+        //             {
+        //                 type = "string",
+        //                 description = "argument 1 description"
+        //             }
+        //         },
+        //         required = new List<string> { "arg1" }
+        //     }))
+        // }));
     }
 
     public static async Task Retrieve()
     {
-        HttpCallResult<AssistantResponse>? result = await Program.Connect().Assistants.CreateAssistantAsync(new CreateAssistantRequest(Model.GPT35_Turbo_1106, "retrieve model", "test model", "system prompt", new List<Tool>
+        HttpCallResult<Assistant>? result = await Program.Connect().Assistants.CreateAssistantAsync(new CreateAssistantRequest(Model.GPT35_Turbo_1106, "retrieve model", "test model", "system prompt", new List<AssistantTool>
         {
-            Tool.FileSearch,
-            Tool.CodeInterpreter
+            AssistantToolFileSearch.Default
         }));
 
-        HttpCallResult<AssistantResponse> retrievalResult = await Program.Connect().Assistants.RetrieveAssistantAsync(result.Data.Id);
+        HttpCallResult<Assistant> retrievalResult = await Program.Connect().Assistants.RetrieveAssistantAsync(result.Data.Id);
     }
 
     public static async Task Modify()
     {
-        HttpCallResult<AssistantResponse>? result = await Program.Connect().Assistants.CreateAssistantAsync(new CreateAssistantRequest(Model.GPT35_Turbo_1106, "retrieve model", "test model", "system prompt", new List<Tool>
+        HttpCallResult<Assistant>? result = await Program.Connect().Assistants.CreateAssistantAsync(new CreateAssistantRequest(Model.GPT35_Turbo_1106, "retrieve model", "test model", "system prompt", new List<AssistantTool>
         {
-            Tool.FileSearch,
-            Tool.CodeInterpreter
+            AssistantToolFileSearch.Default
         }));
 
-        HttpCallResult<AssistantResponse>? modifyResult = await Program.Connect().Assistants.ModifyAssistantAsync(result.Data?.Id, new CreateAssistantRequest(result.Data, name: "my model renamed"));
-        HttpCallResult<AssistantResponse> retrievalResult = await Program.Connect().Assistants.RetrieveAssistantAsync(modifyResult.Data?.Id);
+        HttpCallResult<Assistant>? modifyResult = await Program.Connect().Assistants.ModifyAssistantAsync(result.Data?.Id, new CreateAssistantRequest(result.Data, name: "my model renamed"));
+        HttpCallResult<Assistant> retrievalResult = await Program.Connect().Assistants.RetrieveAssistantAsync(modifyResult.Data?.Id);
     }
 
     public static async Task Delete()
     {
-        HttpCallResult<AssistantResponse> result = await Program.Connect().Assistants.CreateAssistantAsync(new CreateAssistantRequest(Model.GPT35_Turbo_1106, "retrieve model", "test model", "system prompt", new List<Tool>
+        HttpCallResult<Assistant> result = await Program.Connect().Assistants.CreateAssistantAsync(new CreateAssistantRequest(Model.GPT35_Turbo_1106, "retrieve model", "test model", "system prompt", new List<AssistantTool>
         {
-            Tool.FileSearch,
-            Tool.CodeInterpreter
+            AssistantToolFileSearch.Default
         }));
 
         HttpCallResult<bool> deleted = await Program.Connect().Assistants.DeleteAssistantAsync(result.Data?.Id);
 
-        HttpCallResult<AssistantResponse> retrievalResult = await Program.Connect().Assistants.RetrieveAssistantAsync(result.Data?.Id);
+        HttpCallResult<Assistant> retrievalResult = await Program.Connect().Assistants.RetrieveAssistantAsync(result.Data?.Id);
     }
 
-    public static async Task<AssistantResponse?> CreateWithFile()
+    public static async Task<Assistant?> CreateWithFile()
     {
         File? file = await FilesDemo.Upload();
 
-        HttpCallResult<AssistantResponse> result = await Program.Connect().Assistants.CreateAssistantAsync(new CreateAssistantRequest(Model.GPT35_Turbo_1106, "model1", "test model", "system prompt", new List<Tool>
+        HttpCallResult<Assistant> result = await Program.Connect().Assistants.CreateAssistantAsync(new CreateAssistantRequest(Model.GPT35_Turbo_1106, "model1", "test model", "system prompt", new List<AssistantTool>
         {
-            Tool.FileSearch
-        }, [file?.Id]));
+            AssistantToolFileSearch.Default
+        }, new ToolResources()
+        {
+            FileSearch = null // TODO
+        }));
 
         return result.Data;
     }
 
     public static async Task ListFiles()
     {
-        AssistantResponse? assistant = await CreateWithFile();
+        Assistant? assistant = await CreateWithFile();
         HttpCallResult<ListResponse<AssistantFileResponse>> result = await Program.Connect().Assistants.ListFilesAsync(assistant);
     }
 
     public static async Task AttachFile()
     {
-        AssistantResponse? assistant = await Create();
+        Assistant? assistant = await Create();
         HttpCallResult<ListResponse<AssistantFileResponse>> result = await Program.Connect().Assistants.ListFilesAsync(assistant);
 
         File? file = await FilesDemo.Upload();
@@ -111,7 +112,7 @@ public static class AssistantsDemo
 
     public static async Task RetrieveFile()
     {
-        AssistantResponse? assistant = await Create();
+        Assistant? assistant = await Create();
         HttpCallResult<ListResponse<AssistantFileResponse>> result = await Program.Connect().Assistants.ListFilesAsync(assistant);
 
         File? file = await FilesDemo.Upload();
@@ -122,7 +123,7 @@ public static class AssistantsDemo
 
     public static async Task RemoveFile()
     {
-        AssistantResponse? assistant = await Create();
+        Assistant? assistant = await Create();
         HttpCallResult<ListResponse<AssistantFileResponse>> result = await Program.Connect().Assistants.ListFilesAsync(assistant);
 
         File? file = await FilesDemo.Upload();

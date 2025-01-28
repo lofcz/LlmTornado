@@ -181,18 +181,7 @@ public class Tool
     }
 
     /// <summary>
-    ///     Built-in RAG tool to process and search through files
-    /// </summary>
-    public static Tool FileSearch { get; } = new Tool("file_search");
-
-    /// <summary>
-    ///     The code interpreter tool used by assistants
-    /// </summary>
-    public static Tool CodeInterpreter { get; } = new Tool("code_interpreter");
-
-    /// <summary>
-    ///     Type of the tool, should be always "function" for chat, assistants accepts values "code_interpreter" and
-    ///     "file_search"
+    ///     Type of the tool, should be always "function" for chat
     /// </summary>
     [JsonProperty("type", Required = Required.Default)]
     public string Type { get; set; } = "function";

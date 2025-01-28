@@ -37,21 +37,20 @@ public sealed class CreateAssistantRequest
     ///     There can be a maximum of 128 tools per assistant.
     ///     Tools can be of types 'code_interpreter', 'retrieval', or 'function'.
     /// </param>
-    /// <param name="files">
-    ///     A list of file IDs attached to this assistant.
-    ///     There can be a maximum of 20 files attached to the assistant.
-    ///     Files are ordered by their creation date in ascending order.
-    /// </param>
+    /// <param name="toolResources">A set of resources that are used by the assistant's tools.
+    ///     The resources are specific to the type of tool.
+    ///     For example, the code_interpreter tool requires a list of file IDs,
+    ///     while the file_search tool requires a list of vector store IDs.</param>
     /// <param name="metadata">
     ///     Set of 16 key-value pairs that can be attached to an object.
     ///     This can be useful for storing additional information about the object in a structured format.
     ///     Keys can be a maximum of 64 characters long and values can be a maximum of 512 characters long.
     /// </param>
-    public CreateAssistantRequest(AssistantResponse assistant, Model? model = null, string? name = null,
-        string? description = null, string? instructions = null, IEnumerable<Tool>? tools = null,
-        IEnumerable<string>? files = null, IReadOnlyDictionary<string, string>? metadata = null)
+    public CreateAssistantRequest(Assistant assistant, Model? model = null, string? name = null,
+        string? description = null, string? instructions = null, IEnumerable<AssistantTool>? tools = null,
+        ToolResources? toolResources = null, IReadOnlyDictionary<string, string>? metadata = null)
         : this(model ?? assistant.Model, name ?? assistant.Name, description ?? assistant.Description,
-            instructions ?? assistant.Instructions, tools ?? assistant.Tools, files ?? assistant.FileIds,
+            instructions ?? assistant.Instructions, tools ?? assistant.Tools, toolResources ?? assistant.ToolResources,
             metadata ?? assistant.Metadata)
     {
     }
@@ -81,23 +80,18 @@ public sealed class CreateAssistantRequest
     ///     There can be a maximum of 128 tools per assistant.
     ///     Tools can be of types 'code_interpreter', 'retrieval', or 'function'.
     /// </param>
-    /// <param name="fileSearchFiles">
-    ///     A list of file IDs attached to this assistant.
-    ///     There can be a maximum of 20 files attached to the assistant.
-    ///     Files are ordered by their creation date in ascending order.
-    /// </param>
-    /// <param name="codeInterpreterFiles">
-    ///     A list of file IDs attached to this assistant.
-    ///     There can be a maximum of 20 files attached to the assistant.
-    ///     Files are ordered by their creation date in ascending order.
-    /// </param>
+    /// <param name="toolResources">
+    ///     A set of resources that are used by the assistant's tools.
+    ///     The resources are specific to the type of tool.
+    ///     For example, the code_interpreter tool requires a list of file IDs,
+    ///     while the file_search tool requires a list of vector store IDs.</param>
     /// <param name="metadata">
     ///     Set of 16 key-value pairs that can be attached to an object.
     ///     This can be useful for storing additional information about the object in a structured format.
     ///     Keys can be a maximum of 64 characters long and values can be a maximum of 512 characters long.
     /// </param>
     public CreateAssistantRequest(Model? model = null, string? name = null, string? description = null,
-        string? instructions = null, IEnumerable<Tool>? tools = null, IEnumerable<string>? fileSearchFiles = null, IEnumerable<string>? codeInterpreterFiles = null,
+        string? instructions = null, IEnumerable<AssistantTool>? tools = null, ToolResources? toolResources = null,
         IReadOnlyDictionary<string, string>? metadata = null)
     {
         Model = string.IsNullOrWhiteSpace(model?.Name) ? Models.Model.GPT35_Turbo : model;
@@ -105,11 +99,7 @@ public sealed class CreateAssistantRequest
         Description = description;
         Instructions = instructions;
         Tools = tools?.ToList();
-        ToolResources = new ToolResources
-        {
-            FileSearch = new FileSearchConfig() { FileSearchFileIds = fileSearchFiles?.ToList() },
-            CodeInterpreter = new CodeInterpreterConfig() { CodeInterpreterFileIds = codeInterpreterFiles?.ToList() }
-        };
+        ToolResources = toolResources;
         Metadata = metadata;
     }
 
@@ -148,7 +138,7 @@ public sealed class CreateAssistantRequest
     ///     Tools can be of types 'code_interpreter', 'file_search', or 'function'.
     /// </summary>
     [JsonProperty("tools")]
-    public IReadOnlyList<Tool>? Tools { get; }
+    public IReadOnlyList<AssistantTool>? Tools { get; }
 
     /// <summary>
     ///     Set of 16 key-value pairs that can be attached to an object.

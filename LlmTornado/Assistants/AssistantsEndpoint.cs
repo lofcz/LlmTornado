@@ -29,9 +29,9 @@ public sealed class AssistantsEndpoint : EndpointBase
     /// <returns>
     ///     <see cref="ListResponse{Assistant}" />
     /// </returns>
-    public Task<HttpCallResult<ListResponse<AssistantResponse>>> ListAssistantsAsync(ListQuery? query = null, CancellationToken? cancellationToken = null)
+    public Task<HttpCallResult<ListResponse<Assistant>>> ListAssistantsAsync(ListQuery? query = null, CancellationToken? cancellationToken = null)
     {
-        return HttpGetRaw<ListResponse<AssistantResponse>>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Assistants, GetUrl(Api.GetProvider(LLmProviders.OpenAi)), cancellationToken);
+        return HttpGetRaw<ListResponse<Assistant>>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Assistants, GetUrl(Api.GetProvider(LLmProviders.OpenAi)), cancellationToken);
     }
 
     /// <summary>
@@ -39,10 +39,10 @@ public sealed class AssistantsEndpoint : EndpointBase
     /// </summary>
     /// <param name="request"><see cref="CreateAssistantRequest" />.</param>
     /// <param name="cancellationToken">Optional, <see cref="CancellationToken" />.</param>
-    /// <returns><see cref="AssistantResponse" />.</returns>
-    public Task<HttpCallResult<AssistantResponse>> CreateAssistantAsync(CreateAssistantRequest request, CancellationToken? cancellationToken = null)
+    /// <returns><see cref="Assistant" />.</returns>
+    public Task<HttpCallResult<Assistant>> CreateAssistantAsync(CreateAssistantRequest request, CancellationToken? cancellationToken = null)
     {
-        return HttpPostRaw<AssistantResponse>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Assistants, GetUrl(Api.GetProvider(LLmProviders.OpenAi)), request, cancellationToken);
+        return HttpPostRaw<Assistant>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Assistants, GetUrl(Api.GetProvider(LLmProviders.OpenAi)), request, cancellationToken);
     }
 
     /// <summary>
@@ -50,10 +50,10 @@ public sealed class AssistantsEndpoint : EndpointBase
     /// </summary>
     /// <param name="assistantId">The ID of the assistant to retrieve.</param>
     /// <param name="cancellationToken">Optional, <see cref="CancellationToken" />.</param>
-    /// <returns><see cref="AssistantResponse" />.</returns>
-    public Task<HttpCallResult<AssistantResponse>> RetrieveAssistantAsync(string assistantId, CancellationToken? cancellationToken = null)
+    /// <returns><see cref="Assistant" />.</returns>
+    public Task<HttpCallResult<Assistant>> RetrieveAssistantAsync(string assistantId, CancellationToken? cancellationToken = null)
     {
-        return HttpGetRaw<AssistantResponse>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Assistants, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{assistantId}"), cancellationToken, true);
+        return HttpGetRaw<Assistant>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Assistants, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{assistantId}"), cancellationToken, true);
     }
 
     /// <summary>
@@ -63,10 +63,10 @@ public sealed class AssistantsEndpoint : EndpointBase
     /// <param name="assistantId">The ID of the assistant to modify.</param>
     /// <param name="request"><see cref="CreateAssistantRequest" />.</param>
     /// <param name="cancellationToken">Optional, <see cref="CancellationToken" />.</param>
-    /// <returns><see cref="AssistantResponse" />.</returns>
-    public Task<HttpCallResult<AssistantResponse>> ModifyAssistantAsync(string assistantId, CreateAssistantRequest request, CancellationToken? cancellationToken = null)
+    /// <returns><see cref="Assistant" />.</returns>
+    public Task<HttpCallResult<Assistant>> ModifyAssistantAsync(string assistantId, CreateAssistantRequest request, CancellationToken? cancellationToken = null)
     {
-        return HttpPostRaw<AssistantResponse>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Assistants, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{assistantId}"), request, cancellationToken);
+        return HttpPostRaw<Assistant>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Assistants, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{assistantId}"), request, cancellationToken);
     }
 
     /// <summary>
