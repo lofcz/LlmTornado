@@ -51,7 +51,7 @@ public sealed class Assistant : ApiResultBase
     ///     There can be a maximum of 128 tools per assistant.
     ///     Tools can be of types 'code_interpreter', 'file_search', or 'function'.
     /// </summary>
-    [JsonProperty("tools")]
+    [JsonProperty("tools"), JsonConverter(typeof(AssistantToolConverter))]
     public IReadOnlyList<AssistantTool>? Tools { get; private set; }
 
     /// <summary>
@@ -76,7 +76,7 @@ public sealed class Assistant : ApiResultBase
     ///     while lower values like 0.2 will make it more focused and deterministic.
     /// </summary>
     [JsonProperty("temperature")]
-    public float? Temperature { get; }
+    public double? Temperature { get; private set; }
 
     /// <summary>
     ///     An alternative to sampling with temperature, called nucleus sampling,
@@ -85,14 +85,14 @@ public sealed class Assistant : ApiResultBase
     ///     We generally recommend altering this or temperature but not both.
     /// </summary>
     [JsonProperty("top_p")]
-    public float? TopP { get; }
+    public double? TopP { get; private set; }
     
     /// <summary>
     ///     Specifies the format that the model must output.
     ///     Compatible with GPT-4, GPT-4 Turbo, and all GPT-3.5 Turbo models since `gpt-3.5-turbo-1106`.
     /// </summary>
-    [JsonProperty("response_format")]
-    public ResponseFormat? ResponseFormat { get; }
+    [JsonProperty("response_format"), JsonConverter(typeof(ResponseFormatConverter))]
+    public ResponseFormat? ResponseFormat { get; private set; }
 
     /// <summary>
     ///     Implicit conversion of Assistant object to its id
