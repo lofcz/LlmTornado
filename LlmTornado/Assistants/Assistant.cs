@@ -14,6 +14,7 @@ public sealed class Assistant : ApiResultBase
     /// </summary>
     [JsonProperty("id")]
     public string Id { get; set; } = null!;
+    
     /// <summary>
     ///     The Unix timestamp (in seconds) for when the assistant was created.
     /// </summary>
@@ -40,7 +41,7 @@ public sealed class Assistant : ApiResultBase
 
     /// <summary>
     ///     The system instructions that the assistant uses.
-    ///     The maximum length is 32768 characters.
+    ///     The maximum length is 256000 characters.
     /// </summary>
     [JsonProperty("instructions")]
     public string Instructions { get; private set; } = null!;
@@ -48,7 +49,7 @@ public sealed class Assistant : ApiResultBase
     /// <summary>
     ///     A list of tool enabled on the assistant.
     ///     There can be a maximum of 128 tools per assistant.
-    ///     Tools can be of types 'code_interpreter', 'retrieval', or 'function'.
+    ///     Tools can be of types 'code_interpreter', 'file_search', or 'function'.
     /// </summary>
     [JsonProperty("tools")]
     public IReadOnlyList<AssistantTool>? Tools { get; private set; }
@@ -68,6 +69,30 @@ public sealed class Assistant : ApiResultBase
     /// </summary>
     [JsonProperty("metadata")]
     public IReadOnlyDictionary<string, string> Metadata { get; private set; } = null!;
+    
+    /// <summary>
+    ///     What sampling temperature to use, between 0 and 2.
+    ///     Higher values like 0.8 will make the output more random,
+    ///     while lower values like 0.2 will make it more focused and deterministic.
+    /// </summary>
+    [JsonProperty("temperature")]
+    public float? Temperature { get; }
+
+    /// <summary>
+    ///     An alternative to sampling with temperature, called nucleus sampling,
+    ///     where the model considers the results of the tokens with top_p probability mass.
+    ///     So 0.1 means only the tokens comprising the top 10% probability mass are considered.
+    ///     We generally recommend altering this or temperature but not both.
+    /// </summary>
+    [JsonProperty("top_p")]
+    public float? TopP { get; }
+    
+    /// <summary>
+    ///     Specifies the format that the model must output.
+    ///     Compatible with GPT-4, GPT-4 Turbo, and all GPT-3.5 Turbo models since `gpt-3.5-turbo-1106`.
+    /// </summary>
+    [JsonProperty("response_format")]
+    public ResponseFormat? ResponseFormat { get; }
 
     /// <summary>
     ///     Implicit conversion of Assistant object to its id

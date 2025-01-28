@@ -30,12 +30,12 @@ public sealed class CreateAssistantRequest
     /// </param>
     /// <param name="instructions">
     ///     The system instructions that the assistant uses.
-    ///     The maximum length is 32768 characters.
+    ///     The maximum length is 256000 characters.
     /// </param>
     /// <param name="tools">
     ///     A list of tool enabled on the assistant.
     ///     There can be a maximum of 128 tools per assistant.
-    ///     Tools can be of types 'code_interpreter', 'retrieval', or 'function'.
+    ///     Tools can be of types 'code_interpreter', 'file_search', or 'function'.
     /// </param>
     /// <param name="toolResources">A set of resources that are used by the assistant's tools.
     ///     The resources are specific to the type of tool.
@@ -73,12 +73,12 @@ public sealed class CreateAssistantRequest
     /// </param>
     /// <param name="instructions">
     ///     The system instructions that the assistant uses.
-    ///     The maximum length is 32768 characters.
+    ///     The maximum length is 256000 characters.
     /// </param>
     /// <param name="tools">
     ///     A list of tool enabled on the assistant.
     ///     There can be a maximum of 128 tools per assistant.
-    ///     Tools can be of types 'code_interpreter', 'retrieval', or 'function'.
+    ///     Tools can be of types 'code_interpreter', 'file_search', or 'function'.
     /// </param>
     /// <param name="toolResources">
     ///     A set of resources that are used by the assistant's tools.
@@ -154,7 +154,7 @@ public sealed class CreateAssistantRequest
     ///     while lower values like 0.2 will make it more focused and deterministic.
     /// </summary>
     [JsonProperty("temperature")]
-    public double? Temperature { get; }
+    public float? Temperature { get; }
 
     /// <summary>
     ///     An alternative to sampling with temperature, called nucleus sampling,
@@ -163,7 +163,7 @@ public sealed class CreateAssistantRequest
     ///     We generally recommend altering this or temperature but not both.
     /// </summary>
     [JsonProperty("top_p")]
-    public double? TopP { get; }
+    public float? TopP { get; }
 
     /// <summary>
     ///     A set of resources that are used by the assistant's tools.
