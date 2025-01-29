@@ -6,113 +6,121 @@ using JsonSerializer = Newtonsoft.Json.JsonSerializer;
 namespace LlmTornado.Assistants;
 
 /// <summary>
-///     Specifies the format that the model must output.
-///     Compatible with GPT-4o, GPT-4 Turbo, and all GPT-3.5 Turbo models since gpt-3.5-turbo-1106.
+/// Specifies the format that the model must output.
+/// Compatible with GPT-4o, GPT-4 Turbo, and all GPT-3.5 Turbo models since gpt-3.5-turbo-1106.
 /// </summary>
 public abstract class ResponseFormat
 {
 }
 
 /// <summary>
-/// 
+/// Represents the default "auto" response format.
+/// The "auto" format specifies no special formatting and is the default value.
 /// </summary>
 public class ResponseFormatAuto : ResponseFormat
 {
     /// <summary>
-    /// 
+    /// An instance of the "auto" format.
     /// </summary>
     public static ResponseFormatAuto Instance { get; } = new ResponseFormatAuto();
 }
 
 /// <summary>
-/// 
+/// Represents the JSON object response format.
+/// Ensures the output is a valid JSON object.
 /// </summary>
 public class ResponseFormatJsonObject : ResponseFormat
 {
     /// <summary>
-    /// 
+    /// The type of the response format. Set to "json_object".
     /// </summary>
     [JsonProperty("type")]
     public string Type { get; set; } = "json_object";
 }
 
 /// <summary>
-/// 
+/// Represents the plain text response format.
+/// Outputs the response in plain text.
 /// </summary>
 public class ResponseFormatText : ResponseFormat
 {
     /// <summary>
-    /// 
+    /// The type of the response format. Set to "text".
     /// </summary>
     [JsonProperty("type")]
     public string Type { get; set; } = "text";
 }
 
 /// <summary>
-/// 
+/// Represents the JSON schema response format.
+/// Ensures the response is generated according to a specified JSON schema.
 /// </summary>
 public class ResponseFormatJsonSchema : ResponseFormat
 {
     /// <summary>
-    /// 
+    /// The type of the response format. Set to "json_schema".
     /// </summary>
     [JsonProperty("type")]
     public string Type { get; set; } = "json_schema";
-    
+
     /// <summary>
-    /// 
+    /// The JSON schema configuration for the response.
     /// </summary>
     [JsonProperty("json_schema")]
     public required ResponseFormatJsonSchemaConfig JsonSchema { get; set; } // Adjust type based on schema structure
 }
 
 /// <summary>
-/// 
+/// Defines the configuration for the JSON schema used in the "json_schema" response format.
 /// </summary>
 public class ResponseFormatJsonSchemaConfig
 {
     /// <summary>
-    /// 
+    /// The name of the JSON schema.
+    /// A required field that must be alphanumeric and can include underscores or dashes.
+    /// Maximum length is 64 characters.
     /// </summary>
     [JsonProperty("name")]
     public required string Name { get; set; }
+
     /// <summary>
-    /// 
+    /// A description of the purpose of the schema.
+    /// Provides additional context for the response format.
     /// </summary>
     [JsonProperty("description")]
     public string? Description { get; set; }
+
     /// <summary>
-    /// 
+    /// The schema structure itself, defined as a JSON Schema object.
+    /// Includes details such as properties, required fields, and data types.
     /// </summary>
     [JsonProperty("schema")]
     public object? Schema { get; set; }
+
     /// <summary>
-    /// 
+    /// Indicates whether the schema requires strict adherence.
+    /// If true, the model will strictly follow the schema definition. Only a subset of JSON Schema is supported.
     /// </summary>
     [JsonProperty("strict")]
     public bool? Strict { get; set; }
 }
 
 /// <summary>
-/// 
+/// A custom JSON converter for handling different response formats.
 /// </summary>
 public class ResponseFormatConverter : JsonConverter
 {
     public override bool CanConvert(Type objectType)
     {
+        // Determines if the object type can be converted to a ResponseFormat.
         return typeof(ResponseFormat).IsAssignableFrom(objectType);
     }
 
     /// <summary>
-    /// 
+    /// Reads and converts JSON input into the appropriate ResponseFormat object.
     /// </summary>
-    /// <param name="reader"></param>
-    /// <param name="objectType"></param>
-    /// <param name="existingValue"></param>
-    /// <param name="serializer"></param>
-    /// <returns></returns>
-    /// <exception cref="JsonSerializationException"></exception>
-    public override object? ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
+    public override object? ReadJson(JsonReader reader, Type objectType, object? existingValue,
+        JsonSerializer serializer)
     {
         switch (reader.TokenType)
         {
@@ -143,13 +151,8 @@ public class ResponseFormatConverter : JsonConverter
     }
 
     /// <summary>
-    /// 
+    /// Writes the ResponseFormat object as JSON output.
     /// </summary>
-    /// <param name="writer"></param>
-    /// <param name="value"></param>
-    /// <param name="serializer"></param>
-    /// <exception cref="JsonSerializationException"></exception>
-    /// 
     public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
     {
         switch (value)
