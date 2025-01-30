@@ -1,7 +1,5 @@
-﻿using LlmTornado.Assistants;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using LlmTornado.Code;
-using LlmTornado.VectorStores;
 
 namespace LlmTornado.Demo;
 
