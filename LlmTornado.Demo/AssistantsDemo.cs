@@ -1,6 +1,7 @@
 using LlmTornado.Assistants;
 using LlmTornado.Common;
 using LlmTornado.Models;
+using LlmTornado.VectorStores;
 
 namespace LlmTornado.Demo;
 
@@ -26,19 +27,96 @@ public static class AssistantsDemo
         return response.Data;
     }
 
-    public static async Task CreateFunctionAssistant()
+    public static async Task<Assistant> CreateFunctionAssistant()
     {
-        //TODO
+        HttpCallResult<Assistant> response = await Program.Connect().Assistants.CreateAssistantAsync(
+            new CreateAssistantRequest(
+                null,
+                GenerateName(),
+                "FileSearch Demo Assistant",
+                "You are a helpful assistant with the ability to call functions.")
+            {
+                Tools = new List<AssistantTool>()
+                {
+                    new AssistantToolFunction(new ToolFunctionConfig(
+                        "get_weather",
+                        "Get current temperature for a given city",
+                        new
+                        {
+                            type = "object",
+                            properties = new
+                            {
+                                location = new
+                                {
+                                    type = "string",
+                                    description = "City and Country"
+                                }
+                            },
+                            required = new List<string> {"location"},
+                            additionalProperties = false
+                        }
+                    ))
+                }
+            });
+
+        Console.WriteLine(response.Response);
+        return response.Data!;
     }
 
-    public static async Task CreateFileSearchAssistant()
+    public static async Task<Assistant> CreateFileSearchAssistant()
     {
-        //TODO
+        VectorStoreFile vectorStoreFile = await VectorStoreDemo.CreateVectorStoreFile();
+
+        HttpCallResult<Assistant> response = await Program.Connect().Assistants.CreateAssistantAsync(
+            new CreateAssistantRequest(
+                null,
+                GenerateName(),
+                "FileSearch Demo Assistant",
+                "You are a helpful assistant with the ability to search files.")
+            {
+                Tools = new List<AssistantTool>()
+                {
+                    new AssistantToolFileSearch()
+                },
+                ToolResources = new ToolResources()
+                {
+                    FileSearch = new FileSearchConfig()
+                    {
+                        FileSearchFileIds = new List<string>() {vectorStoreFile.VectorStoreId}
+                    }
+                }
+            });
+
+        Console.WriteLine(response.Response);
+        return response.Data!;
     }
 
-    public static async Task CreateWithCodeInterpreter()
+    public static async Task<Assistant> CreateWithCodeInterpreter()
     {
-        //TODO
+        VectorStoreFile vectorStoreFile = await VectorStoreDemo.CreateVectorStoreFile();
+
+        HttpCallResult<Assistant> response = await Program.Connect().Assistants.CreateAssistantAsync(
+            new CreateAssistantRequest(
+                null,
+                GenerateName(),
+                "Code Interpreter Demo Assistant",
+                "You are a helpful assistant with code interpretation capabilities.")
+            {
+                Tools = new List<AssistantTool>()
+                {
+                    AssistantToolCodeInterpreter.Inst
+                },
+                ToolResources = new ToolResources()
+                {
+                    CodeInterpreter = new CodeInterpreterConfig()
+                    {
+                        CodeInterpreterFileIds = new List<string>() {vectorStoreFile.Id}
+                    }
+                }
+            });
+
+        Console.WriteLine(response.Response);
+        return response.Data!;
     }
 
     public static async Task<Assistant?> Retrieve()
@@ -65,7 +143,7 @@ public static class AssistantsDemo
         {
             Description = "modified description"
         };
-        
+
         HttpCallResult<Assistant> response =
             await Program.Connect().Assistants.ModifyAssistantAsync(generatedAssistant!.Id, modifyRequest);
         Console.WriteLine(response.Response);

@@ -9,6 +9,13 @@ namespace LlmTornado.Assistants;
 public class AssistantToolFunction : AssistantTool
 {
     /// <summary>
+    /// Creates a new function type tool
+    /// </summary>
+    public AssistantToolFunction()
+    {
+        
+    }
+    /// <summary>
     ///     Creates a new function type tool.
     /// </summary>
     /// <param name="functionConfig"></param>

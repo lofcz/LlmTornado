@@ -6,94 +6,87 @@ namespace LlmTornado.Demo;
 
 public static class VectorStoreDemo
 {
-    private static string? vectorStoreId;
+    private static VectorStore? vectorStore;
 
-    private static string? vectorStoreFileId;
-    private static string? fileIdVectorStoreFile;
-    private static string? fileIdVectorStoreFileCustomChunkingStrategy;
+    private static VectorStoreFile? vectorStoreFile;
+    private static File? file;
+    private static VectorStoreFileBatch? vectorStoreFileBatch;
 
-    private static string? vectorStoreFileBatchId;
-    private static string? fileIdVectorStoreFileBatch;
-
+    private static string GenerateVectorStoreName() => $"demo_vector_store_{DateTime.Now.Ticks}";
+    
     public static async Task<VectorStore> CreateVectorStore()
     {
         HttpCallResult<VectorStore> createResult = await Program.Connect().VectorStores.CreateVectorStoreAsync(
             new CreateVectorStoreRequest
             {
-                Name = "test_case_vector_can_be_deleted"
+                Name = GenerateVectorStoreName()
             });
-        vectorStoreId = createResult.Data?.Id;
+        vectorStore = createResult.Data;
         Console.WriteLine(createResult.Response);
-        return createResult.Data;
+        return createResult.Data!;
     }
 
     public static async Task<ListResponse<VectorStore>> ListVectorStores()
     {
         HttpCallResult<ListResponse<VectorStore>> listResult = await Program.Connect().VectorStores.ListVectorStoresAsync();
         Console.WriteLine(listResult.Response);
-        return listResult.Data;
+        return listResult.Data!;
     }
 
     public static async Task<VectorStore> RetrieveVectorStore()
     {
-        if (vectorStoreId is null)
+        if (vectorStore is null)
         {
-            throw new Exception("No vector store created");
+            await CreateVectorStore();
         }
 
         HttpCallResult<VectorStore> retrieveResult =
-            await Program.Connect().VectorStores.RetrieveVectorStoreAsync(vectorStoreId);
+            await Program.Connect().VectorStores.RetrieveVectorStoreAsync(vectorStore!.Id);
         Console.WriteLine(retrieveResult.Response);
-        return retrieveResult.Data;
+        return retrieveResult.Data!;
     }
 
     public static async Task<VectorStore> ModifyVectorStore()
     {
-        if (vectorStoreId is null)
+        if (vectorStore is null)
         {
-            throw new Exception("No vector store created");
+            await CreateVectorStore();
         }
 
         HttpCallResult<VectorStore> modifyResult = await Program.Connect().VectorStores.ModifyVectorStoreAsync(
-            vectorStoreId, new VectorStoreModifyRequest
+            vectorStore!.Id, new VectorStoreModifyRequest
             {
-                Name = "test_case_vector_can_be_deleted_modified"
+                Name = vectorStore.Name + "_modified"
             });
         Console.WriteLine(modifyResult.Response);
-        return modifyResult.Data;
+        return modifyResult.Data!;
     }
 
     public static async Task<VectorStoreFile> CreateVectorStoreFile()
     {
-        if (vectorStoreId is null)
+        if (vectorStore is null)
         {
-            throw new Exception("No vector store created");
+            await CreateVectorStore();
         }
 
-        File? file = await FilesDemo.Upload();
-        if (file is null)
-        {
-            throw new Exception("could not upload file");
-        }
-
-        fileIdVectorStoreFile = file.Id;
+        file ??= await FilesDemo.Upload();
 
         HttpCallResult<VectorStoreFile> createResult = await Program.Connect().VectorStores.CreateVectorStoreFileAsync(
-            vectorStoreId, new CreateVectorStoreFileRequest
+            vectorStore!.Id, new CreateVectorStoreFileRequest
             {
-                FileId = fileIdVectorStoreFile
+                FileId = file!.Id
             });
 
-        vectorStoreFileId = createResult.Data?.Id;
+        vectorStoreFile = createResult.Data!;
         Console.WriteLine(createResult.Response);
-        return createResult.Data;
+        return createResult.Data!;
     }
     
     public static async Task<VectorStoreFile> CreateVectorStoreFileCustomChunkingStrategy()
     {
-        if (vectorStoreId is null)
+        if (vectorStore is null)
         {
-            throw new Exception("No vector store created");
+            await CreateVectorStore();
         }
 
         File? file = await FilesDemo.Upload();
@@ -103,7 +96,7 @@ public static class VectorStoreDemo
         }
 
         HttpCallResult<VectorStoreFile> createResult = await Program.Connect().VectorStores.CreateVectorStoreFileAsync(
-            vectorStoreId, new CreateVectorStoreFileRequest
+            vectorStore!.Id, new CreateVectorStoreFileRequest
             {
                 FileId = file.Id,
                 ChunkingStrategy = new StaticChunkingStrategy
@@ -117,176 +110,153 @@ public static class VectorStoreDemo
             });
 
         Console.WriteLine(createResult.Response);
-        fileIdVectorStoreFileCustomChunkingStrategy = createResult.Data?.Id;
-        return createResult.Data;
+        return createResult.Data!;
     }
 
     public static async Task<ListResponse<VectorStoreFile>> ListVectorStoreFiles()
     {
-        if (vectorStoreId is null)
+        if (vectorStore is null)
         {
-            throw new Exception("No vector store created");
+            await CreateVectorStore();
         }
 
         HttpCallResult<ListResponse<VectorStoreFile>> listResult =
-            await Program.Connect().VectorStores.ListVectorStoreFilesAsync(vectorStoreId);
+            await Program.Connect().VectorStores.ListVectorStoreFilesAsync(vectorStore!.Id);
         Console.WriteLine(listResult.Response);
-        return listResult.Data;
+        return listResult.Data!;
     }
 
     public static async Task<VectorStoreFile> RetrieveVectorStoreFile()
     {
-        if (vectorStoreId is null)
+        if (vectorStore is null)
         {
-            throw new Exception("No vector store created");
+            await CreateVectorStore();
         }
 
-        if (vectorStoreFileId is null)
+        if (vectorStoreFile is null)
         {
-            throw new Exception("No vector store file created");
+            await CreateVectorStoreFile();
         }
 
         HttpCallResult<VectorStoreFile> retrieveResult = await Program.Connect().VectorStores
-            .RetrieveVectorStoreFileAsync(vectorStoreId, vectorStoreFileId);
+            .RetrieveVectorStoreFileAsync(vectorStore!.Id, vectorStoreFile!.Id);
         Console.WriteLine(retrieveResult.Response);
-        return retrieveResult.Data;
+        return retrieveResult.Data!;
     }
 
     public static async Task DeleteVectorStoreFile()
     {
-        if (vectorStoreId is null)
+        if (vectorStore is null)
         {
-            throw new Exception("No vector store created");
+            await CreateVectorStore();
         }
 
-        if (vectorStoreFileId is null)
+        if (vectorStoreFile is null)
         {
-            throw new Exception("No vector store file created");
-        }
-
-        if (fileIdVectorStoreFile is null)
-        {
-            throw new Exception("No file uploaded");
+            await CreateVectorStoreFile();
         }
 
         HttpCallResult<bool> deleteResult = await Program.Connect().VectorStores
-            .DeleteVectorStoreFileAsync(vectorStoreId, vectorStoreFileId);
+            .DeleteVectorStoreFileAsync(vectorStore!.Id, vectorStoreFile!.Id);
 
         Console.WriteLine(deleteResult.Response);
     }
 
     public static async Task<VectorStoreFileBatch> CreateVectorStoreFileBatch()
     {
-        if (vectorStoreId is null)
+        if (vectorStore is null)
         {
-            throw new Exception("No vector store created");
+            await CreateVectorStore();
         }
 
-        File? file = await FilesDemo.Upload();
-        if (file is null)
-        {
-            throw new Exception("could not upload file");
-        }
-
-        fileIdVectorStoreFileBatch = file.Id;
+        file ??= await FilesDemo.Upload();
 
         HttpCallResult<VectorStoreFileBatch> createResult = await Program.Connect().VectorStores
             .CreateVectorStoreFileBatchAsync(
-                vectorStoreId, new CreateVectorStoreFileBatchRequest
+                vectorStore!.Id, new CreateVectorStoreFileBatchRequest
                 {
                     FileIds = new List<string>
                     {
-                        fileIdVectorStoreFileBatch
+                        file!.Id
                     }
                 });
 
-        vectorStoreFileBatchId = createResult.Data.Id;
+        vectorStoreFileBatch = createResult.Data;
         Console.WriteLine(createResult.Response);
-        return createResult.Data;
+        return createResult.Data!;
     }
 
     public static async Task<ListResponse<VectorStoreFile>> ListVectorStoreBatchFiles()
     {
-        if (vectorStoreId is null)
+        if (vectorStore is null)
         {
-            throw new Exception("No vector store created");
+            await CreateVectorStore();
         }
 
-        if (vectorStoreFileBatchId is null)
+        if (vectorStoreFileBatch is null)
         {
-            throw new Exception("No vector store file batch created");
+            await CreateVectorStoreFileBatch();
         }
 
         HttpCallResult<ListResponse<VectorStoreFile>> listResult = await Program.Connect().VectorStores
-            .ListVectorStoreBatchFilesAsync(vectorStoreId, vectorStoreFileBatchId);
+            .ListVectorStoreBatchFilesAsync(vectorStore!.Id, vectorStoreFileBatch!.Id);
         Console.WriteLine(listResult.Response);
-        return listResult.Data;
+        return listResult.Data!;
     }
 
     public static async Task<VectorStoreFileBatch> RetrieveVectorStoreFileBatch()
     {
-        if (vectorStoreId is null)
+        if (vectorStore is null)
         {
-            throw new Exception("No vector store created");
+            await CreateVectorStore();
         }
 
-        if (vectorStoreFileBatchId is null)
+        if (vectorStoreFileBatch is null)
         {
-            throw new Exception("No vector store file batch created");
+            await CreateVectorStoreFileBatch();
         }
 
         HttpCallResult<VectorStoreFileBatch> retrieveResult = await Program.Connect().VectorStores
-            .RetrieveVectorStoreFileBatchAsync(vectorStoreId, vectorStoreFileBatchId);
+            .RetrieveVectorStoreFileBatchAsync(vectorStore!.Id, vectorStoreFileBatch!.Id);
         Console.WriteLine(retrieveResult.Response);
-        return retrieveResult.Data;
+        return retrieveResult.Data!;
     }
 
     public static async Task CancelVectorStoreFileBatch()
     {
-        if (vectorStoreId is null)
+        if (vectorStore is null)
         {
-            throw new Exception("No vector store created");
+            await CreateVectorStore();
         }
 
-        if (vectorStoreFileBatchId is null)
+        if (vectorStoreFileBatch is null)
         {
-            throw new Exception("No vector store file batch created");
+            await CreateVectorStoreFileBatch();
         }
 
         HttpCallResult<VectorStoreFileBatch> cancelResult = await Program.Connect().VectorStores
-            .CancelVectorStoreFileBatchAsync(vectorStoreId, vectorStoreFileBatchId);
+            .CancelVectorStoreFileBatchAsync(vectorStore!.Id, vectorStoreFileBatch!.Id);
         Console.WriteLine(cancelResult.Response);
     }
 
     public static async Task DeleteVectorStore()
     {
-        vectorStoreId ??= "vs_r3Xs9FQRKrz5mgsxBPKOSkqm";
-        
-        // final cleanup of uploaded files
-        if (fileIdVectorStoreFile is not null)
+        if (vectorStore is null)
         {
-            await FilesDemo.DeleteFile(fileIdVectorStoreFile);
+            await CreateVectorStore();
         }
 
-        if (fileIdVectorStoreFileBatch is not null)
-        {
-            await FilesDemo.DeleteFile(fileIdVectorStoreFileBatch);
-        }
-        
-        if (fileIdVectorStoreFileCustomChunkingStrategy is not null)
-        {
-            await FilesDemo.DeleteFile(fileIdVectorStoreFileCustomChunkingStrategy);
-        }
-
-        HttpCallResult<bool> deleteResult = await Program.Connect().VectorStores.DeleteVectorStoreAsync(vectorStoreId);
-
-        if (!deleteResult.Ok)
-        {
-            Console.WriteLine(deleteResult.Code);
-            Console.WriteLine(deleteResult.Response);
-            return;
-        }
-        
+        HttpCallResult<bool> deleteResult = await Program.Connect().VectorStores.DeleteVectorStoreAsync(vectorStore!.Id);
         Console.WriteLine(deleteResult.Response);
+    }
+    
+    public static async Task DeleteAllDemoVectorStores()
+    {
+        ListResponse<VectorStore> vectorStores = await ListVectorStores();
+        List<Task<HttpCallResult<bool>>> tasks = (from vectorStore in vectorStores.Items
+            where vectorStore.Name.StartsWith("demo_vector_store")
+            select Program.Connect().VectorStores.DeleteVectorStoreAsync(vectorStore.Id)).ToList();
+        Console.WriteLine($"Deleting {tasks.Count} vector stores...");
+        await Task.WhenAll(tasks);
     }
 }
