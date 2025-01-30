@@ -22,7 +22,7 @@ public class ResponseFormatAuto : ResponseFormat
     /// <summary>
     /// An instance of the "auto" format.
     /// </summary>
-    public static ResponseFormatAuto Instance { get; } = new ResponseFormatAuto();
+    public static ResponseFormatAuto Default { get; } = new ResponseFormatAuto();
 }
 
 /// <summary>
@@ -108,18 +108,12 @@ public class ResponseFormatJsonSchemaConfig
 /// <summary>
 /// A custom JSON converter for handling different response formats.
 /// </summary>
-public class ResponseFormatConverter : JsonConverter
+public class ResponseFormatConverter : JsonConverter<ResponseFormat>
 {
-    public override bool CanConvert(Type objectType)
-    {
-        // Determines if the object type can be converted to a ResponseFormat.
-        return typeof(ResponseFormat).IsAssignableFrom(objectType);
-    }
-
     /// <summary>
     /// Reads and converts JSON input into the appropriate ResponseFormat object.
     /// </summary>
-    public override object? ReadJson(JsonReader reader, Type objectType, object? existingValue,
+    public override ResponseFormat? ReadJson(JsonReader reader, Type objectType, ResponseFormat? existingValue, bool hasExistingValue,
         JsonSerializer serializer)
     {
         switch (reader.TokenType)
@@ -129,14 +123,14 @@ public class ResponseFormatConverter : JsonConverter
                 var value = reader.Value?.ToString();
                 return value switch
                 {
-                    "auto" => ResponseFormatAuto.Instance,
+                    "auto" => ResponseFormatAuto.Default,
                     _ => null
                 };
             }
             case JsonToken.StartObject:
             {
                 JObject obj = JObject.Load(reader);
-                var type = obj["type"]?.ToString();
+                string? type = obj["type"]?.ToString();
                 return type switch
                 {
                     "json_object" => obj.ToObject<ResponseFormatJsonObject>(serializer),
@@ -146,14 +140,14 @@ public class ResponseFormatConverter : JsonConverter
                 };
             }
             default:
-                throw new JsonSerializationException("Unexpected token type.");
+                return null;
         }
     }
 
     /// <summary>
     /// Writes the ResponseFormat object as JSON output.
     /// </summary>
-    public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
+    public override void WriteJson(JsonWriter writer, ResponseFormat? value, JsonSerializer serializer)
     {
         switch (value)
         {

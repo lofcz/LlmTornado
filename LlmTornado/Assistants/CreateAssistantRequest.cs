@@ -108,44 +108,44 @@ public sealed class CreateAssistantRequest
     ///     You can use the List models API to see all of your available models,
     ///     or see our Model overview for descriptions of them.
     /// </summary>
-    [JsonProperty("model")]
-    public string Model { get; }
+    [JsonProperty("model", DefaultValueHandling = DefaultValueHandling.Ignore)]
+    public string Model { get; set; }
 
     /// <summary>
     ///     The name of the assistant.
     ///     The maximum length is 256 characters.
     /// </summary>
-    [JsonProperty("name")]
-    public string? Name { get; }
+    [JsonProperty("name", DefaultValueHandling = DefaultValueHandling.Ignore)]
+    public string? Name { get; set; }
 
     /// <summary>
     ///     The description of the assistant.
     ///     The maximum length is 512 characters.
     /// </summary>
-    [JsonProperty("description")]
-    public string? Description { get; }
+    [JsonProperty("description", DefaultValueHandling = DefaultValueHandling.Ignore)]
+    public string? Description { get; set; }
 
     /// <summary>
     ///     The system instructions that the assistant uses.
     ///     The maximum length is 32768 characters.
     /// </summary>
-    [JsonProperty("instructions")]
-    public string? Instructions { get; }
+    [JsonProperty("instructions", DefaultValueHandling = DefaultValueHandling.Ignore)]
+    public string? Instructions { get; set; }
 
     /// <summary>
     ///     A list of tool enabled on the assistant.
     ///     There can be a maximum of 128 tools per assistant.
     ///     Tools can be of types 'code_interpreter', 'file_search', or 'function'.
     /// </summary>
-    [JsonProperty("tools")]
-    public IReadOnlyList<AssistantTool>? Tools { get; }
+    [JsonProperty("tools", DefaultValueHandling = DefaultValueHandling.Ignore)]
+    public IReadOnlyList<AssistantTool>? Tools { get; set; }
 
     /// <summary>
     ///     Set of 16 key-value pairs that can be attached to an object.
     ///     This can be useful for storing additional information about the object in a structured format.
     ///     Keys can be a maximum of 64 characters long and values can be a maximum of 512 characters long.
     /// </summary>
-    [JsonProperty("metadata")]
+    [JsonProperty("metadata", DefaultValueHandling = DefaultValueHandling.Ignore)]
     public IReadOnlyDictionary<string, string>? Metadata { get; }
 
     /// <summary>
@@ -153,8 +153,8 @@ public sealed class CreateAssistantRequest
     ///     Higher values like 0.8 will make the output more random,
     ///     while lower values like 0.2 will make it more focused and deterministic.
     /// </summary>
-    [JsonProperty("temperature")]
-    public float? Temperature { get; }
+    [JsonProperty("temperature", DefaultValueHandling = DefaultValueHandling.Ignore)]
+    public float? Temperature { get; set; }
 
     /// <summary>
     ///     An alternative to sampling with temperature, called nucleus sampling,
@@ -162,8 +162,8 @@ public sealed class CreateAssistantRequest
     ///     So 0.1 means only the tokens comprising the top 10% probability mass are considered.
     ///     We generally recommend altering this or temperature but not both.
     /// </summary>
-    [JsonProperty("top_p")]
-    public float? TopP { get; }
+    [JsonProperty("top_p", DefaultValueHandling = DefaultValueHandling.Ignore)]
+    public float? TopP { get; set; }
 
     /// <summary>
     ///     A set of resources that are used by the assistant's tools.
@@ -171,13 +171,13 @@ public sealed class CreateAssistantRequest
     ///     For example, the `code_interpreter` tool requires a list of file IDs,
     ///     while the `file_search` tool requires a list of vector store IDs.
     /// </summary>
-    [JsonProperty("tool_resources")]
-    public ToolResources? ToolResources { get; }
+    [JsonProperty("tool_resources", DefaultValueHandling = DefaultValueHandling.Ignore)]
+    public ToolResources? ToolResources { get; set; }
 
     /// <summary>
     ///     Specifies the format that the model must output.
     ///     Compatible with GPT-4, GPT-4 Turbo, and all GPT-3.5 Turbo models since `gpt-3.5-turbo-1106`.
     /// </summary>
-    [JsonProperty("response_format")]
-    public ResponseFormat? ResponseFormat { get; }
+    [JsonProperty("response_format", DefaultValueHandling = DefaultValueHandling.Ignore), JsonConverter(typeof(ResponseFormatConverter))]
+    public ResponseFormat? ResponseFormat { get; set; }
 }
