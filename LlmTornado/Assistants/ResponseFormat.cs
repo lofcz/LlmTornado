@@ -22,7 +22,7 @@ public class ResponseFormatAuto : ResponseFormat
     /// <summary>
     /// An instance of the "auto" format.
     /// </summary>
-    public static ResponseFormatAuto Default { get; } = new ResponseFormatAuto();
+    public static ResponseFormatAuto Inst { get; } = new();
 }
 
 /// <summary>
@@ -44,6 +44,12 @@ public class ResponseFormatJsonObject : ResponseFormat
 /// </summary>
 public class ResponseFormatText : ResponseFormat
 {
+
+    /// <summary>
+    /// An instance of the "text" format.
+    /// </summary>
+    public static ResponseFormatText Inst { get; } = new();
+    
     /// <summary>
     /// The type of the response format. Set to "text".
     /// </summary>
@@ -123,7 +129,7 @@ public class ResponseFormatConverter : JsonConverter<ResponseFormat>
                 string? value = reader.Value?.ToString();
                 return value switch
                 {
-                    "auto" => ResponseFormatAuto.Default,
+                    "auto" => ResponseFormatAuto.Inst,
                     _ => null
                 };
             }

@@ -1,6 +1,9 @@
 using System.Collections.Generic;
 using System.Linq;
+using LlmTornado.Chat;
+using LlmTornado.Chat.Models;
 using LlmTornado.Common;
+using LlmTornado.Embedding;
 using LlmTornado.Models;
 using Newtonsoft.Json;
 
@@ -46,7 +49,7 @@ public sealed class CreateAssistantRequest
     ///     This can be useful for storing additional information about the object in a structured format.
     ///     Keys can be a maximum of 64 characters long and values can be a maximum of 512 characters long.
     /// </param>
-    public CreateAssistantRequest(Assistant assistant, Model? model = null, string? name = null,
+    public CreateAssistantRequest(Assistant assistant, ChatModel? model = null, string? name = null,
         string? description = null, string? instructions = null, IEnumerable<AssistantTool>? tools = null,
         ToolResources? toolResources = null, IReadOnlyDictionary<string, string>? metadata = null)
         : this(model ?? assistant.Model, name ?? assistant.Name, description ?? assistant.Description,
@@ -90,11 +93,11 @@ public sealed class CreateAssistantRequest
     ///     This can be useful for storing additional information about the object in a structured format.
     ///     Keys can be a maximum of 64 characters long and values can be a maximum of 512 characters long.
     /// </param>
-    public CreateAssistantRequest(Model? model = null, string? name = null, string? description = null,
+    public CreateAssistantRequest(ChatModel? model = null, string? name = null, string? description = null,
         string? instructions = null, IEnumerable<AssistantTool>? tools = null, ToolResources? toolResources = null,
         IReadOnlyDictionary<string, string>? metadata = null)
     {
-        Model = string.IsNullOrWhiteSpace(model?.Name) ? Models.Model.GPT35_Turbo : model;
+        Model = string.IsNullOrWhiteSpace(model?.Name) ? ChatModel.OpenAi.Gpt35.Turbo : model;
         Name = name;
         Description = description;
         Instructions = instructions;
@@ -109,7 +112,8 @@ public sealed class CreateAssistantRequest
     ///     or see our Model overview for descriptions of them.
     /// </summary>
     [JsonProperty("model", DefaultValueHandling = DefaultValueHandling.Ignore)]
-    public string Model { get; set; }
+    [JsonConverter(typeof(ChatModelJsonConverter))]
+    public ChatModel Model { get; set; }
 
     /// <summary>
     ///     The name of the assistant.

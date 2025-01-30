@@ -19,7 +19,7 @@ public static class AssistantsDemo
     public static async Task<Assistant?> Create()
     {
         HttpCallResult<Assistant> response = await Program.Connect().Assistants
-            .CreateAssistantAsync(new CreateAssistantRequest(Model.GPT35_Turbo_1106, GenerateName(), "test model",
+            .CreateAssistantAsync(new CreateAssistantRequest(null, GenerateName(), "test model",
                 "system prompt"));
         generatedAssistant = response.Data!;
         Console.WriteLine(response.Response);
