@@ -29,21 +29,21 @@ public sealed class Assistant : ApiResultBase
     ///     The maximum length is 256 characters.
     /// </summary>
     [JsonProperty("name")]
-    public string Name { get; private set; } = null!;
+    public string Name { get; set; } = null!;
 
     /// <summary>
     ///     The description of the assistant.
     ///     The maximum length is 512 characters.
     /// </summary>
     [JsonProperty("description")]
-    public string Description { get; private set; } = null!;
+    public string Description { get; set; } = null!;
 
     /// <summary>
     ///     The system instructions that the assistant uses.
     ///     The maximum length is 256000 characters.
     /// </summary>
     [JsonProperty("instructions")]
-    public string Instructions { get; private set; } = null!;
+    public string Instructions { get; set; } = null!;
 
     /// <summary>
     ///     A list of tool enabled on the assistant.
@@ -51,7 +51,7 @@ public sealed class Assistant : ApiResultBase
     ///     Tools can be of types 'code_interpreter', 'file_search', or 'function'.
     /// </summary>
     [JsonProperty("tools"), JsonConverter(typeof(AssistantToolConverter))]
-    public IReadOnlyList<AssistantTool>? Tools { get; private set; }
+    public IReadOnlyList<AssistantTool>? Tools { get; set; }
 
     /// <summary>
     ///     A set of resources that are used by the assistant's tools.
@@ -59,7 +59,7 @@ public sealed class Assistant : ApiResultBase
     ///     the code_interpreter tool requires a list of file IDs, while the file_search tool requires a list of vector store IDs.
     /// </summary>
     [JsonProperty("file_ids")]
-    public ToolResources? ToolResources { get; private set; }
+    public ToolResources? ToolResources { get; set; }
 
     /// <summary>
     ///     Set of 16 key-value pairs that can be attached to an object.
@@ -67,7 +67,7 @@ public sealed class Assistant : ApiResultBase
     ///     Keys can be a maximum of 64 characters long and values can be a maximum of 512 characters long.
     /// </summary>
     [JsonProperty("metadata")]
-    public IReadOnlyDictionary<string, string> Metadata { get; private set; } = null!;
+    public IReadOnlyDictionary<string, string> Metadata { get; set; } = null!;
     
     /// <summary>
     ///     What sampling temperature to use, between 0 and 2.
@@ -75,7 +75,7 @@ public sealed class Assistant : ApiResultBase
     ///     while lower values like 0.2 will make it more focused and deterministic.
     /// </summary>
     [JsonProperty("temperature")]
-    public double? Temperature { get; private set; }
+    public double? Temperature { get; set; }
 
     /// <summary>
     ///     An alternative to sampling with temperature, called nucleus sampling,
@@ -84,14 +84,14 @@ public sealed class Assistant : ApiResultBase
     ///     We generally recommend altering this or temperature but not both.
     /// </summary>
     [JsonProperty("top_p")]
-    public double? TopP { get; private set; }
+    public double? TopP { get; set; }
     
     /// <summary>
     ///     Specifies the format that the model must output.
     ///     Compatible with GPT-4, GPT-4 Turbo, and all GPT-3.5 Turbo models since `gpt-3.5-turbo-1106`.
     /// </summary>
     [JsonProperty("response_format"), JsonConverter(typeof(ResponseFormatConverter))]
-    public ResponseFormat? ResponseFormat { get; private set; }
+    public ResponseFormat? ResponseFormat { get; set; }
 
     /// <summary>
     ///     Implicit conversion of Assistant object to its id
