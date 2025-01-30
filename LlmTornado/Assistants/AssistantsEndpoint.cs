@@ -31,7 +31,7 @@ public sealed class AssistantsEndpoint : EndpointBase
     /// </returns>
     public Task<HttpCallResult<ListResponse<Assistant>>> ListAssistantsAsync(ListQuery? query = null, CancellationToken? cancellationToken = null)
     {
-        return HttpGetRaw<ListResponse<Assistant>>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Assistants, GetUrl(Api.GetProvider(LLmProviders.OpenAi)), cancellationToken);
+        return HttpGetRaw<ListResponse<Assistant>>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Assistants, GetUrl(Api.GetProvider(LLmProviders.OpenAi)), query, cancellationToken);
     }
 
     /// <summary>
@@ -53,7 +53,7 @@ public sealed class AssistantsEndpoint : EndpointBase
     /// <returns><see cref="Assistant" />.</returns>
     public Task<HttpCallResult<Assistant>> RetrieveAssistantAsync(string assistantId, CancellationToken? cancellationToken = null)
     {
-        return HttpGetRaw<Assistant>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Assistants, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{assistantId}"), cancellationToken, true);
+        return HttpGetRaw<Assistant>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Assistants, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{assistantId}"), null, cancellationToken);
     }
 
     /// <summary>

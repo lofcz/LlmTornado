@@ -1,7 +1,6 @@
 using LlmTornado.Assistants;
 using LlmTornado.Common;
 using LlmTornado.Models;
-using File = LlmTornado.Files.File;
 
 namespace LlmTornado.Demo;
 
