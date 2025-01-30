@@ -19,6 +19,8 @@ public enum Demos
     AssistantModify,
     AssistantDelete,
     [Flaky]
+    AssistantDeleteAllDemoAssistants,
+    [Flaky]
     FilesUpload,
     [Flaky]
     ImagesGenerate,
@@ -194,6 +196,7 @@ public class Program
             Demos.AssistantRetrieve => AssistantsDemo.Retrieve,
             Demos.AssistantModify => AssistantsDemo.Modify,
             Demos.AssistantDelete => AssistantsDemo.Delete,
+            Demos.AssistantDeleteAllDemoAssistants => AssistantsDemo.DeleteAllDemoAssistants,
             Demos.VectorStoreCreate => VectorStoreDemo.CreateVectorStore,
             Demos.VectorStoreRetrieve => VectorStoreDemo.RetrieveVectorStore,
             Demos.VectorStoreList => VectorStoreDemo.ListVectorStores,

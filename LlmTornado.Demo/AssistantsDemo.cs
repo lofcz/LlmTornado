@@ -26,7 +26,7 @@ public static class AssistantsDemo
         return response.Data;
     }
 
-    public static async Task CreateWithCustomFunction()
+    public static async Task CreateFunctionAssistant()
     {
         //TODO
     }
@@ -61,9 +61,13 @@ public static class AssistantsDemo
             await Create();
         }
 
-        generatedAssistant!.Description = "modified description";
+        var modifyRequest = new CreateAssistantRequest(generatedAssistant!)
+        {
+            Description = "modified description"
+        };
+        
         HttpCallResult<Assistant> response =
-            await Program.Connect().Assistants.ModifyAssistantAsync(generatedAssistant, generatedAssistant);
+            await Program.Connect().Assistants.ModifyAssistantAsync(generatedAssistant!.Id, modifyRequest);
         Console.WriteLine(response.Response);
         return response.Data;
     }

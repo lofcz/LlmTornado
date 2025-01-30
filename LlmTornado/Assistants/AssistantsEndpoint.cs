@@ -64,7 +64,7 @@ public sealed class AssistantsEndpoint : EndpointBase
     /// <param name="request"><see cref="CreateAssistantRequest" />.</param>
     /// <param name="cancellationToken">Optional, <see cref="CancellationToken" />.</param>
     /// <returns><see cref="Assistant" />.</returns>
-    public Task<HttpCallResult<Assistant>> ModifyAssistantAsync(string assistantId, Assistant request, CancellationToken? cancellationToken = null)
+    public Task<HttpCallResult<Assistant>> ModifyAssistantAsync(string assistantId, CreateAssistantRequest request, CancellationToken? cancellationToken = null)
     {
         return HttpPostRaw<Assistant>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Assistants, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{assistantId}"), request, cancellationToken);
     }
