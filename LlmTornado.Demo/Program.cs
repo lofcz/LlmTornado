@@ -56,7 +56,7 @@ public enum Demos
     ChatAnthropicFailFunctions,
     ChatCohere,
     ChatCohereStreaming,
-    [Flaky("covered by other tests, takes a long time to finish ")]
+    [Flaky("covered by other tests, takes a long time to finish")]
     ChatAllVendors,
     Embedding,
     ChatFunctionRequired,

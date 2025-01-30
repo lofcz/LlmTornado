@@ -120,7 +120,7 @@ public class ResponseFormatConverter : JsonConverter<ResponseFormat>
         {
             case JsonToken.String:
             {
-                var value = reader.Value?.ToString();
+                string? value = reader.Value?.ToString();
                 return value switch
                 {
                     "auto" => ResponseFormatAuto.Default,

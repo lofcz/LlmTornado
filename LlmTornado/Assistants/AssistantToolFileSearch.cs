@@ -10,7 +10,7 @@ public class AssistantToolFileSearch : AssistantTool
     /// <summary>
     ///     The file_search tool with default settings
     /// </summary>
-    public static AssistantToolFileSearch Default => new();
+    public static AssistantToolFileSearch Default => new AssistantToolFileSearch();
     /// <summary>
     ///     Creates a new file_search type tool
     /// </summary>

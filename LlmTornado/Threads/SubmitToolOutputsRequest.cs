@@ -11,7 +11,7 @@ public sealed class SubmitToolOutputsRequest
     /// </summary>
     /// <param name="toolOutput"><see cref="ToolOutput" />.</param>
     public SubmitToolOutputsRequest(ToolOutput toolOutput)
-        : this(new[] { toolOutput })
+        : this([toolOutput])
     {
     }
 

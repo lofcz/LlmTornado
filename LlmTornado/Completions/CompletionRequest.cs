@@ -152,7 +152,7 @@ public class CompletionRequest
     public string Prompt
     {
         get => MultiplePrompts.FirstOrDefault();
-        set { MultiplePrompts = new[] { value }; }
+        set { MultiplePrompts = [value]; }
     }
 
 	/// <summary>
@@ -261,7 +261,7 @@ public class CompletionRequest
         set
         {
             if (value != null)
-                MultipleStopSequences = new[] { value };
+                MultipleStopSequences = [value];
         }
     }
 

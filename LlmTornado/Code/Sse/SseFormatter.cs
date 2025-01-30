@@ -71,8 +71,8 @@ namespace LlmTornado.Code.Sse
 
         private static async Task WriteAsyncCore<T>(IAsyncEnumerable<SseItem<T>> source, Stream destination, Action<SseItem<T>, IBufferWriter<byte>> itemFormatter, CancellationToken cancellationToken)
         {
-            using PooledByteBufferWriter bufferWriter = new();
-            using PooledByteBufferWriter userDataBufferWriter = new();
+            using PooledByteBufferWriter bufferWriter = new PooledByteBufferWriter();
+            using PooledByteBufferWriter userDataBufferWriter = new PooledByteBufferWriter();
 
             await foreach (SseItem<T> item in source.WithCancellation(cancellationToken).ConfigureAwait(false))
             {

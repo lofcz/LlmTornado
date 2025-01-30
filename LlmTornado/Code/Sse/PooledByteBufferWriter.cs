@@ -9,7 +9,7 @@ namespace LlmTornado.Code.Sse
     internal sealed class PooledByteBufferWriter : IBufferWriter<byte>, IDisposable
     {
         private const int MinimumBufferSize = 256;
-        private ArrayBuffer _buffer = new(initialSize: 256, usePool: true);
+        private ArrayBuffer _buffer = new ArrayBuffer(initialSize: 256, usePool: true);
 
         public void Advance(int count) => _buffer.Commit(count);
 

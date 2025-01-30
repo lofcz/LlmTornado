@@ -61,7 +61,7 @@ public static class AssistantsDemo
             await Create();
         }
 
-        var modifyRequest = new CreateAssistantRequest(generatedAssistant!)
+        CreateAssistantRequest modifyRequest = new CreateAssistantRequest(generatedAssistant!)
         {
             Description = "modified description"
         };

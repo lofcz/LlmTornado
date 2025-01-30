@@ -32,25 +32,28 @@ public class AssistantToolConverter : JsonConverter<IReadOnlyList<AssistantTool>
     /// <param name="hasExistingValue"></param>
     /// <param name="serializer"></param>
     /// <returns></returns>
-    public override IReadOnlyList<AssistantTool>? ReadJson(JsonReader reader, Type objectType, IReadOnlyList<AssistantTool>? existingValue, bool hasExistingValue, JsonSerializer serializer)
+    public override IReadOnlyList<AssistantTool> ReadJson(JsonReader reader, Type objectType, IReadOnlyList<AssistantTool>? existingValue, bool hasExistingValue, JsonSerializer serializer)
     {
-        var tools = new List<AssistantTool>();
+        List<AssistantTool> tools = [];
         JArray jsonArray = JArray.Load(reader);
 
-        foreach (JObject jsonObject in jsonArray)
+        foreach (JToken jToken in jsonArray)
         {
-            string? toolType = jsonObject["type"]?.ToString();
-            AssistantTool? tool = toolType switch
+            if (jToken is JObject jObject)
             {
-                "function" => jsonObject.ToObject<AssistantToolFunction>(serializer),
-                "code_interpreter" => jsonObject.ToObject<AssistantToolCodeInterpreter>(serializer),
-                "file_search" => jsonObject.ToObject<AssistantToolFileSearch>(serializer),
-                _ => null
-            };
+                string? toolType = jObject["type"]?.ToString();
+                AssistantTool? tool = toolType switch
+                {
+                    "function" => jObject.ToObject<AssistantToolFunction>(serializer),
+                    "code_interpreter" => jObject.ToObject<AssistantToolCodeInterpreter>(serializer),
+                    "file_search" => jObject.ToObject<AssistantToolFileSearch>(serializer),
+                    _ => null
+                };
 
-            if (tool != null)
-            {
-                tools.Add(tool);
+                if (tool is not null)
+                {
+                    tools.Add(tool);
+                }
             }
         }
 

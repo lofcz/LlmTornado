@@ -59,7 +59,9 @@ public class AssistantToolFunction : AssistantTool
 public class ToolFunctionConfig
 {
     private static readonly JsonSerializerSettings SerializerSettings = new JsonSerializerSettings
-        {NullValueHandling = NullValueHandling.Ignore};
+    {
+        NullValueHandling = NullValueHandling.Ignore
+    };
 
     /// <summary>
     ///     The name of the function to be called. Must be a-z, A-Z, 0-9, or contain underscores and dashes, with a maximum
@@ -87,7 +89,8 @@ public class ToolFunctionConfig
     [JsonProperty("strict")]
     public bool? Strict { get; set; }
 
-    [JsonIgnore] internal object? RawParameters { get; set; }
+    [JsonIgnore] 
+    internal object? RawParameters { get; set; }
 
     /// <summary>
     ///     Create a parameterless function.
