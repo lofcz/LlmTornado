@@ -76,7 +76,7 @@ public class ChatRequest
 	///     The model to use for this request
 	/// </summary>
 	[JsonProperty("model")]
-	[JsonConverter(typeof(ModelJsonConverter))]
+	[JsonConverter(typeof(ChatModelJsonConverter))]
 	public ChatModel? Model { get; set; } = ChatModel.OpenAi.Gpt35.Turbo;
 	
 	/// <summary>
@@ -404,19 +404,6 @@ public class ChatRequest
 		}
 		
 		return SerializeMap.TryGetValue(provider.Provider, out Func<ChatRequest, IEndpointProvider, string>? serializerFn) ? new TornadoRequestContent(serializerFn.Invoke(this, provider), UrlOverride) : new TornadoRequestContent(string.Empty, UrlOverride);
-	}
-	
-	internal class ModelJsonConverter : JsonConverter<ChatModel>
-	{
-		public override void WriteJson(JsonWriter writer, ChatModel? value, JsonSerializer serializer)
-		{
-			writer.WriteValue(value?.GetApiName);
-		}
-
-		public override ChatModel? ReadJson(JsonReader reader, Type objectType, ChatModel? existingValue, bool hasExistingValue, JsonSerializer serializer)
-		{
-			return existingValue;
-		}
 	}
 	
 	internal class ModalitiesJsonConverter : JsonConverter<List<ChatModelModalities>>

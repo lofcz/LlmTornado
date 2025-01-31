@@ -1,7 +1,9 @@
+using System;
 using System.Collections.Generic;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
 using LlmTornado.Models;
+using Newtonsoft.Json;
 
 namespace LlmTornado.Chat.Models;
 
@@ -146,5 +148,18 @@ public class ChatModel : ModelBase
     public static implicit operator ChatModel(string? name)
     {
         return new ChatModel(name ?? string.Empty, name is null ? LLmProviders.OpenAi : GetProvider(name) ?? LLmProviders.OpenAi);
+    }
+}
+
+internal class ChatModelJsonConverter : JsonConverter<ChatModel>
+{
+    public override void WriteJson(JsonWriter writer, ChatModel? value, JsonSerializer serializer)
+    {
+        writer.WriteValue(value?.GetApiName);
+    }
+
+    public override ChatModel? ReadJson(JsonReader reader, Type objectType, ChatModel? existingValue, bool hasExistingValue, JsonSerializer serializer)
+    {
+        return existingValue;
     }
 }

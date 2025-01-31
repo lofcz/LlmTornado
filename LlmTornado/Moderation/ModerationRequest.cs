@@ -78,7 +78,7 @@ public class ModerationRequest
                 return null;
             return Inputs.FirstOrDefault();
         }
-        set { Inputs = new[] { value }; }
+        set { Inputs = [value]; }
     }
 
 	/// <summary>

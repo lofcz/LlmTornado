@@ -39,6 +39,6 @@ public sealed class CreateThreadRequest
 
     public static implicit operator CreateThreadRequest(string message)
     {
-        return new CreateThreadRequest(new[] { new Message(message) });
+        return new CreateThreadRequest([new Message(message)]);
     }
 }

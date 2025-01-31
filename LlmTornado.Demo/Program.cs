@@ -1,6 +1,5 @@
 ﻿using Newtonsoft.Json;
 using LlmTornado.Code;
-using LlmTornado.VectorStores;
 
 namespace LlmTornado.Demo;
 
@@ -12,32 +11,19 @@ public enum Demos
     ChatVision,
     [Flaky("Deprecated by OpenAI")]
     ChatVisionBase64,
-    [Flaky("only assistants v1 are supported")]
-    AssistantList,
-    [Flaky]
     AssistantCreate,
-    [Flaky]
-    AssistantCreateWithCustomFunction,
-    [Flaky]
+    AssistantCreateWithFunction,
+    AssistantCreateWithFileSearch,
+    AssistantCreateWithCodeInterpreter,
+    AssistantList,
     AssistantRetrieve,
-    [Flaky]
     AssistantModify,
-    [Flaky]
     AssistantDelete,
+    AssistantDeleteAllDemoAssistants,
     [Flaky]
     FilesUpload,
     [Flaky]
     ImagesGenerate,
-    [Flaky]
-    AssistantCreateWithFile,
-    [Flaky]
-    AssistantListFiles,
-    [Flaky]
-    AssistantAttachFile,
-    [Flaky]
-    AssistantRetrieveFile,
-    [Flaky]
-    AssistantRemoveFile,
     [Flaky]
     ThreadsCreate,
     [Flaky]
@@ -51,7 +37,7 @@ public enum Demos
     VectorStoreList,
     VectorStoreModify,
     VectorStoreFilesCreate,
-    VectorStoreFilesCreateCustomChunkingStraegy,
+    VectorStoreFilesCreateCustomChunkingStrategy,
     VectorStoreFilesList,
     VectorStoreFilesRetrieve,
     VectorStoreFilesDelete,
@@ -60,6 +46,7 @@ public enum Demos
     VectorStoreBatchFileList,
     VectorStoreFileBatchCancel,
     VectorStoreDelete,
+    VectorStoreDeleteAllDemoVectorStores,
     [Flaky("only assistants v1 are supported")]
     ThreadsCreateMessage,
     ChatCompletion,
@@ -72,7 +59,7 @@ public enum Demos
     ChatAnthropicFailFunctions,
     ChatCohere,
     ChatCohereStreaming,
-    [Flaky("covered by other tests, takes a long time to finish ")]
+    [Flaky("covered by other tests, takes a long time to finish")]
     ChatAllVendors,
     Embedding,
     ChatFunctionRequired,
@@ -207,16 +194,19 @@ public class Program
             Demos.ChatVision => VisionDemo.VisionBase64,
             Demos.AssistantList => AssistantsDemo.List,
             Demos.AssistantCreate => AssistantsDemo.Create,
-            Demos.AssistantCreateWithCustomFunction => AssistantsDemo.CreateWithCustomFunction,
+            Demos.AssistantCreateWithFunction => AssistantsDemo.CreateFunctionAssistant,
+            Demos.AssistantCreateWithCodeInterpreter => AssistantsDemo.CreateWithCodeInterpreter,
+            Demos.AssistantCreateWithFileSearch => AssistantsDemo.CreateFileSearchAssistant,
             Demos.AssistantRetrieve => AssistantsDemo.Retrieve,
             Demos.AssistantModify => AssistantsDemo.Modify,
             Demos.AssistantDelete => AssistantsDemo.Delete,
+            Demos.AssistantDeleteAllDemoAssistants => AssistantsDemo.DeleteAllDemoAssistants,
             Demos.VectorStoreCreate => VectorStoreDemo.CreateVectorStore,
             Demos.VectorStoreRetrieve => VectorStoreDemo.RetrieveVectorStore,
             Demos.VectorStoreList => VectorStoreDemo.ListVectorStores,
             Demos.VectorStoreModify => VectorStoreDemo.ModifyVectorStore,
             Demos.VectorStoreFilesCreate => VectorStoreDemo.CreateVectorStoreFile,
-            Demos.VectorStoreFilesCreateCustomChunkingStraegy => VectorStoreDemo.CreateVectorStoreFileCustomChunkingStrategy,
+            Demos.VectorStoreFilesCreateCustomChunkingStrategy => VectorStoreDemo.CreateVectorStoreFileCustomChunkingStrategy,
             Demos.VectorStoreFilesList => VectorStoreDemo.ListVectorStoreFiles,
             Demos.VectorStoreFilesRetrieve => VectorStoreDemo.RetrieveVectorStoreFile,
             Demos.VectorStoreFilesDelete => VectorStoreDemo.DeleteVectorStoreFile,
@@ -225,13 +215,9 @@ public class Program
             Demos.VectorStoreFileBatchRetrieve => VectorStoreDemo.RetrieveVectorStoreFileBatch,
             Demos.VectorStoreFileBatchCancel => VectorStoreDemo.CancelVectorStoreFileBatch,
             Demos.VectorStoreDelete => VectorStoreDemo.DeleteVectorStore,
+            Demos.VectorStoreDeleteAllDemoVectorStores => VectorStoreDemo.DeleteAllDemoVectorStores,
             Demos.FilesUpload => FilesDemo.Upload,
             Demos.ImagesGenerate => ImagesDemo.Generate,
-            Demos.AssistantCreateWithFile => AssistantsDemo.CreateWithFile,
-            Demos.AssistantListFiles => AssistantsDemo.ListFiles,
-            Demos.AssistantAttachFile => AssistantsDemo.AttachFile,
-            Demos.AssistantRetrieveFile => AssistantsDemo.RetrieveFile,
-            Demos.AssistantRemoveFile => AssistantsDemo.RemoveFile,
             Demos.ThreadsCreate => ThreadsDemo.Create,
             Demos.ThreadsRetrieve => ThreadsDemo.Retrieve,
             Demos.ThreadsModify => ThreadsDemo.Modify,
@@ -300,7 +286,7 @@ public class Program
     public static async Task Main(string[] args)
     {
         Console.Title = "LlmTornado Demo";
-        
+
         if (!await SetupApi())
         {
             return;

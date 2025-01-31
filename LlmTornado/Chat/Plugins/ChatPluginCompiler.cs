@@ -100,7 +100,7 @@ public class ChatPluginCompiler
                     name = fnNameStr;
                 }
                 
-                return new List<Tool> { new Tool(new ToolFunction(name, fnDescStr, fnParsDict)) };
+                return [new Tool(new ToolFunction(name, fnDescStr, fnParsDict))];
             }
         }
 
