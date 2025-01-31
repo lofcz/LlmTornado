@@ -931,18 +931,18 @@ public static class ChatDemo
         Console.WriteLine(str);
     }
     
-    public static async Task OpenAiO1()
+    public static async Task OpenAiO3()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.OpenAi.Gpt4.O1Mini,
+            Model = ChatModel.OpenAi.O3.Mini,
             MaxTokens = 2000
         });
-        chat.AppendUserInput("Who are you?");
+        chat.AppendUserInput("You are a dog, sound authentic. Who are you?");
 
         string? str = await chat.GetResponse();
 
-        Console.WriteLine("OpenAI O1:");
+        Console.WriteLine("OpenAI O3:");
         Console.WriteLine(str);
     }
 

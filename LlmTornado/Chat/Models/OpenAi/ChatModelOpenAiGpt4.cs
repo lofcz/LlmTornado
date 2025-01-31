@@ -301,7 +301,8 @@ public class ChatModelOpenAiGpt4 : IVendorModelClassProvider
         ModelO1240912,
         ModelO1Mini,
         ModelO1Mini240912,
-        ModelO1241217
+        ModelO1241217,
+        ..ChatModelOpenAiO3.ModelsAll
     ];
     
     /// <summary>
