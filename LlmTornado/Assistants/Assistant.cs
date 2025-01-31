@@ -58,7 +58,7 @@ public sealed class Assistant : ApiResultBase
     ///     The resources are specific to the type of tool. For example,
     ///     the code_interpreter tool requires a list of file IDs, while the file_search tool requires a list of vector store IDs.
     /// </summary>
-    [JsonProperty("file_ids")]
+    [JsonProperty("tool_resources")]
     public ToolResources? ToolResources { get; set; }
 
     /// <summary>

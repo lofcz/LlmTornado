@@ -17,6 +17,9 @@ public sealed class ThreadsEndpoint : EndpointBase
     {
     }
 
+    /// <summary>
+    ///     Endpoint specification
+    /// </summary>
     protected override CapabilityEndpoints Endpoint => CapabilityEndpoints.Threads;
 
     /// <summary>
@@ -24,46 +27,43 @@ public sealed class ThreadsEndpoint : EndpointBase
     /// </summary>
     /// <param name="request"><see cref="CreateThreadRequest" />.</param>
     /// <param name="cancellationToken">Optional, <see cref="CancellationToken" />.</param>
-    /// <returns><see cref="ThreadResponse" />.</returns>
-    public Task<HttpCallResult<ThreadResponse>> CreateThreadAsync(CreateThreadRequest? request = null, CancellationToken? cancellationToken = null)
+    /// <returns><see cref="Thread" />.</returns>
+    public Task<HttpCallResult<Thread>> CreateThreadAsync(CreateThreadRequest? request = null, CancellationToken? cancellationToken = null)
     {
-        return HttpPostRaw<ThreadResponse>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads, null, request, ct: cancellationToken);
+        return HttpPostRaw<Thread>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, null, request, cancellationToken);
     }
 
     /// <summary>
     /// Retrieves a thread.
     /// </summary>
-    /// <param name="threadId">The id of the <see cref="ThreadResponse"/> to retrieve.</param>
+    /// <param name="threadId">The id of the <see cref="Thread"/> to retrieve.</param>
     /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
-    /// <returns><see cref="ThreadResponse"/>.</returns>
-    public Task<HttpCallResult<ThreadResponse>> RetrieveThreadAsync(string threadId, CancellationToken? cancellationToken = null)
+    /// <returns><see cref="Thread"/>.</returns>
+    public Task<HttpCallResult<Thread>> RetrieveThreadAsync(string threadId, CancellationToken? cancellationToken = null)
     {
-        return HttpGetRaw<ThreadResponse>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}"), ct: cancellationToken);
+        return HttpGetRaw<Thread>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}"), ct: cancellationToken);
     }
 
     /// <summary>
     /// Modifies a thread.
     /// </summary>
     /// <remarks>
-    /// Only the <see cref="ThreadResponse.Metadata"/> can be modified.
+    /// Only the <see cref="Thread.Metadata"/> can be modified.
     /// </remarks>
-    /// <param name="threadId">The id of the <see cref="ThreadResponse"/> to modify.</param>
-    /// <param name="metadata">Set of up to 16 key-value pairs that can be attached to an object.
-    /// This can be useful for storing additional information about the object in a structured format.
-    /// Keys can be a maximum of 64 characters long and values can be a maximum of 512 characters long.
-    /// </param>
+    /// <param name="threadId">The id of the <see cref="Thread"/> to modify.</param>
+    /// <param name="request"></param>
     /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
-    /// <returns><see cref="ThreadResponse"/>.</returns>
-    public Task<HttpCallResult<ThreadResponse>> ModifyThreadAsync(string threadId, IDictionary<string, string> metadata, CancellationToken? cancellationToken = null)
+    /// <returns><see cref="Thread"/>.</returns>
+    public Task<HttpCallResult<Thread>> ModifyThreadAsync(string threadId, ModifyThreadRequest request, CancellationToken? cancellationToken = null)
     {
         IEndpointProvider provider = Api.GetProvider(LLmProviders.OpenAi);
-        return HttpPostRaw<ThreadResponse>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads, provider.ApiUrl(Endpoint, $"/{threadId}"), new { metadata }, ct: cancellationToken);
+        return HttpPostRaw<Thread>(provider, CapabilityEndpoints.Threads, provider.ApiUrl(Endpoint, $"/{threadId}"), request, cancellationToken);
     }
 
     /// <summary>
     /// Delete a thread.
     /// </summary>
-    /// <param name="threadId">The id of the <see cref="ThreadResponse"/> to delete.</param>
+    /// <param name="threadId">The id of the <see cref="Thread"/> to delete.</param>
     /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
     /// <returns>True, if was successfully deleted.</returns>
     public async Task<HttpCallResult<bool>> DeleteThreadAsync(string threadId, CancellationToken? cancellationToken = null)
@@ -72,6 +72,7 @@ public sealed class ThreadsEndpoint : EndpointBase
         return new HttpCallResult<bool>(status.Code, status.Response, status.Data?.Deleted ?? false, status.Ok, null);
     }
 
+    /*
     /// <summary>
     /// Create a message.
     /// </summary>
@@ -81,10 +82,9 @@ public sealed class ThreadsEndpoint : EndpointBase
     /// <returns><see cref="MessageResponse"/>.</returns>
     public Task<HttpCallResult<MessageResponse>> CreateMessageAsync(string threadId, CreateMessageRequest request, CancellationToken? cancellationToken = null)
     {
-        return HttpPostRaw<MessageResponse>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/messages"), request, ct: cancellationToken);
+        return HttpPostRaw<MessageResponse>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/messages"), request, cancellationToken);
     }
 
-    /*
     /// <summary>
     /// Returns a list of messages for a given thread.
     /// </summary>

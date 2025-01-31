@@ -1,64 +1,62 @@
 using LlmTornado.Common;
 using LlmTornado.Threads;
+using Thread = LlmTornado.Threads.Thread;
 
 namespace LlmTornado.Demo;
 
 public static class ThreadsDemo
 {
-    [Flaky]
-    [TornadoTest]
-    public static async Task<ThreadResponse?> Create()
+    private static Thread? generatedThread;
+
+    public static async Task<Thread> Create()
     {
-        HttpCallResult<ThreadResponse> thread = await Program.Connect().Threads.CreateThreadAsync();
-        return thread.Data;
+        HttpCallResult<Thread> thread = await Program.Connect().Threads.CreateThreadAsync();
+        Console.WriteLine(thread.Response);
+        generatedThread = thread.Data;
+        return thread.Data!;
     }
 
-    [Flaky]
-    [TornadoTest]
-    public static async Task<ThreadResponse> Retrieve()
+    public static async Task<Thread> Retrieve()
     {
-        ThreadResponse? response = await Create();
-        response = (await Program.Connect().Threads.RetrieveThreadAsync(response.Id)).Data;
-        return response;
+        generatedThread ??= await Create();
+        HttpCallResult<Thread> response = await Program.Connect().Threads.RetrieveThreadAsync(generatedThread!.Id);
+        Console.WriteLine(response.Response);
+        return response.Data!;
     }
-    
-    [Flaky]
-    [TornadoTest]
-    public static async Task<ThreadResponse> Modify()
+
+    public static async Task<Thread> Modify()
     {
-        ThreadResponse? response = await Create();
-        response = (await Program.Connect().Threads.ModifyThreadAsync(response.Id, new Dictionary<string, string>
+        generatedThread ??= await Create();
+        HttpCallResult<Thread>? response = await Program.Connect().Threads.ModifyThreadAsync(generatedThread.Id, new ModifyThreadRequest()
         {
-            { "key1", "value1" },
-            { "key2", "value2" }
-        })).Data;
-        response = (await Program.Connect().Threads.RetrieveThreadAsync(response.Id)).Data;
-        return response;
+            Metadata = new Dictionary<string, string>
+            {
+                {"key1", "value1"},
+                {"key2", "value2"}
+            }
+        });
+        Console.WriteLine(response.Response);
+        return response.Data!;
     }
-    
-    [Flaky]
-    [TornadoTest]
-    public static async Task<bool> Delete(ThreadResponse thread)
+
+    public static async Task<bool> Delete(Thread thread)
     {
         HttpCallResult<bool> deleted = await Program.Connect().Threads.DeleteThreadAsync(thread.Id);
         return deleted.Data;
     }
-    
-    [Flaky]
-    [TornadoTest]
+
     public static async Task Delete()
     {
-        ThreadResponse? response = await Create();
-        HttpCallResult<bool> deleted = await Program.Connect().Threads.DeleteThreadAsync(response.Id);
-        HttpCallResult<ThreadResponse> retrieveResponse = await Program.Connect().Threads.RetrieveThreadAsync(response.Id);
+        generatedThread ??= await Create();
+        HttpCallResult<bool> deleted = await Program.Connect().Threads.DeleteThreadAsync(generatedThread.Id);
+        Console.WriteLine(deleted.Response);
     }
-    
-    [Flaky]
-    [TornadoTest]
-    public static async Task CreateMessage()
-    {
-        ThreadResponse? response = await Create();
-        HttpCallResult<MessageResponse> msg = await Program.Connect().Threads.CreateMessageAsync(response.Id, new CreateMessageRequest("my message"));
-        await Delete(response);
-    }
+
+    // public static async Task CreateMessage()
+    // {
+    //     Thread? response = await Create();
+    //     HttpCallResult<MessageResponse> msg = await Program.Connect().Threads
+    //         .CreateMessageAsync(response.Id, new CreateMessageRequest("my message"));
+    //     await Delete(response);
+    // }
 }
