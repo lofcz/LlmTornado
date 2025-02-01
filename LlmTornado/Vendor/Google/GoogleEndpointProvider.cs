@@ -11,6 +11,7 @@ using LlmTornado.Chat;
 using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Chat.Vendors.Cohere;
 using LlmTornado.ChatFunctions;
+using LlmTornado.Files;
 using LlmTornado.Vendor.Anthropic;
 using Newtonsoft.Json;
 
@@ -40,14 +41,34 @@ internal class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider,
     /// <returns></returns>
     public override string ApiUrl(CapabilityEndpoints endpoint, string? url)
     {
-        string eStr = endpoint switch
+        const string baseUrl = "https://generativelanguage.googleapis.com/";
+        const string baseUrlVersion = $"{baseUrl}v1beta/";
+        
+        switch (endpoint)
         {
-            CapabilityEndpoints.Chat => "models",
-            _ => throw new Exception($"Google doesn't support endpoint {endpoint}")
-        };
+            case CapabilityEndpoints.None:
+            {
+                return url ?? string.Empty;
+            }
+            case CapabilityEndpoints.BaseUrlStripped:
+            {
+                return $"{baseUrl}{url}";
+            }
+            case CapabilityEndpoints.BaseUrl:
+            {
+                return $"{baseUrlVersion}{url}";
+            }
+            default:
+            {
+                string eStr = endpoint switch
+                {
+                    CapabilityEndpoints.Chat => "models",
+                    _ => throw new Exception($"Google doesn't support endpoint {endpoint}")
+                };
         
-        
-        return UrlResolver is not null ? UrlResolver.Invoke(endpoint, url) : $"https://generativelanguage.googleapis.com/v1beta/{eStr}{url}";
+                return UrlResolver is not null ? UrlResolver.Invoke(endpoint, url) : $"{baseUrlVersion}{eStr}{url}";
+            }
+        }
     }
 
     public override async IAsyncEnumerable<ChatResult?> InboundStream(StreamReader reader, ChatRequest request)
@@ -155,8 +176,15 @@ internal class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider,
     {
         if (typeof(T) == typeof(ChatResult))
         {
-            return (T?)(dynamic)ChatResult.Deserialize(LLmProviders.Google, jsonData, postData);
+            return (T?)(object?)ChatResult.Deserialize(LLmProviders.Google, jsonData, postData);
         }
+
+        if (typeof(T) == typeof(TornadoFile))
+        {
+            return (T?)(object?)FileUploadRequest.Deserialize(LLmProviders.Google, jsonData, postData);
+        }
+        
+        
         
         return JsonConvert.DeserializeObject<T>(jsonData);
     }

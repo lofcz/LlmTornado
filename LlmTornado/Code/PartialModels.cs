@@ -519,6 +519,18 @@ public enum LLmProviders
 /// </summary>
 public enum CapabilityEndpoints
 {
+    /// <summary>
+    /// Returns input url
+    /// </summary>
+    None,
+    /// <summary>
+    /// Special value returning the base url
+    /// </summary>
+    BaseUrl,
+    /// <summary>
+    /// Special value returning even shorter shared url prefix
+    /// </summary>
+    BaseUrlStripped,
     Chat,
     Moderation,
     Completions,
@@ -580,14 +592,14 @@ public class TornadoRequestContent
     /// <summary>
     /// Content of the request.
     /// </summary>
-    public string Body { get; set; }
+    public object Body { get; set; }
     
     /// <summary>
     /// Forces the URl to differ from the one inferred further down the pipeline.
     /// </summary>
     public string? Url { get; set; }
 
-    internal TornadoRequestContent(string body, string? url = null)
+    internal TornadoRequestContent(object body, string? url = null)
     {
         Body = body;
         Url = url;

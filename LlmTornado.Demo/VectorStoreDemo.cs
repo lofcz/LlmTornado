@@ -1,6 +1,6 @@
 using LlmTornado.Common;
+using LlmTornado.Files;
 using LlmTornado.VectorStores;
-using File = LlmTornado.Files.File;
 
 namespace LlmTornado.Demo;
 
@@ -9,7 +9,7 @@ public static class VectorStoreDemo
     private static VectorStore? vectorStore;
 
     private static VectorStoreFile? vectorStoreFile;
-    private static File? file;
+    private static TornadoFile? file;
     private static VectorStoreFileBatch? vectorStoreFileBatch;
 
     private static string GenerateVectorStoreName() => $"demo_vector_store_{DateTime.Now.Ticks}";
@@ -89,7 +89,7 @@ public static class VectorStoreDemo
             await CreateVectorStore();
         }
 
-        File? file = await FilesDemo.Upload();
+        TornadoFile? file = await FilesDemo.Upload();
         if (file is null)
         {
             throw new Exception("could not upload file");

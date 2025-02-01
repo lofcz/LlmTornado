@@ -335,8 +335,6 @@ public static class ChatDemo
         Console.WriteLine(shortPrompt);
         chat.AppendUserInput(shortPrompt);
         
-        Console.ReadKey();
-        
         Console.WriteLine();
         Console.ForegroundColor = ConsoleColor.Cyan;
         Console.WriteLine("------- Assistant:");

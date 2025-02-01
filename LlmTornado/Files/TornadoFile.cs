@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using System;
+using Newtonsoft.Json;
 
 namespace LlmTornado.Files;
 
@@ -6,7 +7,7 @@ namespace LlmTornado.Files;
 ///     Represents a single file used with the OpenAI Files endpoint.  Files are used to upload and manage documents that
 ///     can be used with features like Fine-tuning.
 /// </summary>
-public class File : ApiResultBase
+public class TornadoFile : ApiResultBase
 {
 	/// <summary>
 	///     This is always "file"
@@ -62,4 +63,16 @@ public class File : ApiResultBase
 	/// </summary>
 	[JsonProperty("status_details")]
     public string? StatusDetails { get; set; }
+	
+	/// <summary>
+	///     MIME type, output only. Used only by Google.
+	/// </summary>
+	[JsonIgnore]
+	public string? MimeType { get; set; }
+	
+	/// <summary>
+	///     Date the file will be automatically deleted, output only. Used only by Google.
+	/// </summary>
+	[JsonIgnore]
+	public DateTime? ExpirationDate { get; set; }
 }

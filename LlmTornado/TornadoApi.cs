@@ -163,6 +163,15 @@ public class TornadoApi
         
         return newProvider;
     }
+
+    /// <summary>
+    /// Returns first authenticated provider. This is order-unstable as the underlying storage is a dictionary - if more than one provider is authenticated, you should explicitly set provider in your requests.
+    /// </summary>
+    /// <returns>Returns first authenticated provider, or OpenAi as fallback</returns>
+    public LLmProviders GetFirstAuthenticatedProvider()
+    {
+        return Authentications.IsEmpty ? LLmProviders.OpenAi : Authentications.FirstOrDefault().Key;
+    }
     
     /// <summary>
     /// Returns a concrete implementation of endpoint provider for a given known model.

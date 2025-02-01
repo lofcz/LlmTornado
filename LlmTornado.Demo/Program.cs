@@ -111,6 +111,7 @@ public enum Demos
     ChatAnthropicCaching,
     [Flaky("interactive")]
     ChatAnthropicCachingInteractive,
+    FilesGoogleUpload,
     Last
 }
 
@@ -277,6 +278,7 @@ public class Program
             Demos.CustomProviderOllamaStreaming => CustomProviderDemo.OllamaStreaming,
             Demos.ChatAnthropicCaching => ChatDemo.AnthropicCaching,
             Demos.ChatAnthropicCachingInteractive => ChatDemo.AnthropicCachingChat,
+            Demos.FilesGoogleUpload => FilesDemo.UploadGoogle,
             _ => null
         };
 
@@ -292,7 +294,7 @@ public class Program
             return;
         }
 
-        Demos? forceDemo = null;
+        Demos? forceDemo = Demos.FilesUpload;
         
         selectedDemo = forceDemo ?? Demos.Last - 1;
         Func<Task>? task = GetDemo(selectedDemo);
