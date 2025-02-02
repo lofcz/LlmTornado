@@ -15,7 +15,7 @@ Empty fields mean the feature is unsupported by the provider.
 |**Embeddings** | ✅ |    | ❌  | ❌ |    |    | ❌  |    |
 |**Fine-Tuning**| ✅ |    | ❌  |    |    |    |      |    |
 |**Batch**      | ❌ | ❌ | ❌ | ❌ |    | ❌ |     |    |
-|**Files**      | ✅ |    |     |    |    |     |     |    |
+|**Files**      | ✅ |    |     | ✅ |    |     |     |    |
 |**Uploads**    | ❌ |    |     |    |    |     |     |    |
 |**Images**     | ✅ |    |     |    |    |     |     |    |
 |**Models**     | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
