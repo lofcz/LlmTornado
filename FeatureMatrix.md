@@ -1,9 +1,9 @@
-# Supported features
+# Feature Matrix
 
-✅ - Supported
-⚠️ - Partially supported/under construction
-❌ - Not supported
-Empty fields mean the feature is unsupported by the provider.
+✅ - Supported  
+⚠️ - Partially supported/under construction  
+❌ - Not supported  
+_Empty fields mean the feature is unsupported by the provider._
 
 ## Inference
 
