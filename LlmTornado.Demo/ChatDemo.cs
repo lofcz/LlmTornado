@@ -10,6 +10,7 @@ using LlmTornado.Code;
 using LlmTornado.Code.Models;
 using LlmTornado.Common;
 using LlmTornado.Contrib;
+using LlmTornado.Files;
 
 namespace LlmTornado.Demo;
 
@@ -689,6 +690,29 @@ public static class ChatDemo
             
             return Task.CompletedTask;
         });
+    }
+    
+    public static async Task GoogleStreamFileInput()
+    {
+        TornadoApi api = Program.Connect(LLmProviders.Google);
+        HttpCallResult<TornadoFile> uploadedFile = await api.Files.Upload("Static/Files/sample.pdf", mimeType: "application/pdf", provider: LLmProviders.Google);
+
+        if (uploadedFile.Data is null)
+        {
+            return;
+        }
+        
+        Conversation chat = Program.Connect(LLmProviders.Google).Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Google.Gemini.Gemini15Flash
+        });
+        chat.AppendUserInput([
+            new ChatMessagePart("What is this file about?"),
+            new ChatMessagePart(new ChatMessagePartFileLinkData(uploadedFile.Data.Uri))
+        ]);
+
+        Console.WriteLine("Google:");
+        await chat.StreamResponse(Console.Write);
     }
     
     public static async Task GoogleStream()

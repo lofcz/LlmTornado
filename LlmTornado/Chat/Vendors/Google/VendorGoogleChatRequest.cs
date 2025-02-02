@@ -55,7 +55,7 @@ internal class VendorGoogleChatRequest
     internal class VendorGoogleChatRequestMessagePartFileData
     {
         [JsonProperty("mimeType")]
-        public string MimeType { get; set; }
+        public string? MimeType { get; set; }
         
         [JsonProperty("fileUri")]
         public string FileUri { get; set; }
@@ -107,6 +107,19 @@ internal class VendorGoogleChatRequest
                         {
                             MimeType = part.Image.MimeType,
                             Data = part.Image.Url
+                        };
+                    }
+                    
+                    break;
+                }
+                case ChatMessageTypes.FileLink:
+                {
+                    if (part.FileLinkData is not null)
+                    {
+                        FileData = new VendorGoogleChatRequestMessagePartFileData
+                        {
+                            FileUri = part.FileLinkData.FileUri,
+                            MimeType = part.FileLinkData.MimeType
                         };
                     }
                     

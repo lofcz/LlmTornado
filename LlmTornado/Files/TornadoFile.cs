@@ -75,4 +75,10 @@ public class TornadoFile : ApiResultBase
 	/// </summary>
 	[JsonIgnore]
 	public DateTime? ExpirationDate { get; set; }
+	
+	/// <summary>
+	/// URI which can be used for further referencing of the file. Output only, supported by Google.
+	/// </summary>
+	[JsonIgnore]
+	public string? Uri { get; set; }
 }

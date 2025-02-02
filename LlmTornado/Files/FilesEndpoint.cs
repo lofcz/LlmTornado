@@ -38,7 +38,7 @@ public class FilesEndpoint : EndpointBase
 	/// </summary>
 	/// <returns></returns>
 	/// <exception cref="HttpRequestException"></exception>
-	public async Task<TornadoPagingList<TornadoFile>?> GetFilesAsync(ListQuery? query = null, LLmProviders? provider = null, CancellationToken token = default)
+	public async Task<TornadoPagingList<TornadoFile>?> Get(ListQuery? query = null, LLmProviders? provider = null, CancellationToken token = default)
 	{
 		IEndpointProvider resolvedProvider = Api.ResolveProvider(provider);
 
@@ -69,7 +69,7 @@ public class FilesEndpoint : EndpointBase
 	/// <param name="fileId">The ID of the file to use for this request</param>
 	/// <param name="provider">Which provider should be used</param>
 	/// <returns></returns>
-	public async Task<TornadoFile?> GetFileAsync(string fileId, LLmProviders? provider = null)
+	public async Task<TornadoFile?> Get(string fileId, LLmProviders? provider = null)
 	{
 		IEndpointProvider resolvedProvider = Api.ResolveProvider(provider);
 
@@ -92,7 +92,7 @@ public class FilesEndpoint : EndpointBase
 	/// </summary>
 	/// <param name="fileId">The ID of the file to use for this request</param>
 	/// <returns></returns>
-	public Task<string> GetFileContentAsStringAsync(string fileId)
+	public Task<string> GetContent(string fileId)
     {
         return HttpGetContent(Api.GetProvider(LLmProviders.OpenAi), Endpoint, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{fileId}/content"));
     }
@@ -103,7 +103,7 @@ public class FilesEndpoint : EndpointBase
 	/// <param name="fileId">The ID of the file to use for this request</param>
 	/// <param name="provider">Which provider will be used</param>
 	/// <returns></returns>
-	public async Task<DeletedTornadoFile?> DeleteFileAsync(string fileId, LLmProviders? provider = null)
+	public async Task<DeletedTornadoFile?> Delete(string fileId, LLmProviders? provider = null)
     {
 	    IEndpointProvider resolvedProvider = Api.ResolveProvider(provider);
 
@@ -136,8 +136,9 @@ public class FilesEndpoint : EndpointBase
 	///     to validate the format of the uploaded file.
 	/// </param>
 	/// <param name="fileName">Determined from path if not set</param>
+	/// <param name="mimeType">MIME type of the file</param>
 	/// <param name="provider">Which provider will be used</param>
-	public async Task<HttpCallResult<TornadoFile>> UploadFileAsync(string filePath, FilePurpose purpose = FilePurpose.Finetune, string? fileName = null, LLmProviders provider = LLmProviders.OpenAi)
+	public async Task<HttpCallResult<TornadoFile>> Upload(string filePath, FilePurpose purpose = FilePurpose.Finetune, string? fileName = null, string? mimeType = null, LLmProviders provider = LLmProviders.OpenAi)
     {
 	    if (!File.Exists(filePath))
 	    {
@@ -147,7 +148,7 @@ public class FilesEndpoint : EndpointBase
 	    byte[] bytes = await File.ReadAllBytesAsync(filePath).ConfigureAwait(ConfigureAwaitOptions.None);
 	    string finalFileName = fileName ?? (provider is LLmProviders.Google ? Guid.NewGuid().ToString() : Path.GetFileName(filePath)); // google requires alphanum + dashes, up to 40 chars
 
-        return await UploadFileAsync(bytes, finalFileName, purpose, provider).ConfigureAwait(ConfigureAwaitOptions.None);
+        return await Upload(bytes, finalFileName, purpose, mimeType, provider).ConfigureAwait(ConfigureAwaitOptions.None);
     }
 	
 	/// <summary>
@@ -161,11 +162,12 @@ public class FilesEndpoint : EndpointBase
 	///     to validate the format of the uploaded file.
 	/// </param>
 	/// <param name="fileName">Determined from path if not set</param>
+	/// <param name="mimeType">MIME type of the file</param>
 	/// <param name="provider">Which provider will be used</param>
-	public async Task<HttpCallResult<TornadoFile>> UploadFileAsync(Stream stream, string fileName, FilePurpose purpose = FilePurpose.Finetune, LLmProviders? provider = null)
+	public async Task<HttpCallResult<TornadoFile>> Upload(Stream stream, string fileName, FilePurpose purpose = FilePurpose.Finetune, string? mimeType = null, LLmProviders? provider = null)
 	{
 		byte[] bytes = await stream.ToArrayAsync().ConfigureAwait(ConfigureAwaitOptions.None);
-		return await UploadFileAsync(bytes, fileName, purpose, provider).ConfigureAwait(ConfigureAwaitOptions.None);
+		return await Upload(bytes, fileName, purpose, mimeType, provider).ConfigureAwait(ConfigureAwaitOptions.None);
 	}
 	
 	/// <summary>
@@ -179,14 +181,16 @@ public class FilesEndpoint : EndpointBase
 	///     to validate the format of the uploaded file.
 	/// </param>
 	/// <param name="fileName">Determined from path if not set</param>
+	/// <param name="mimeType">MIME type of the file</param>
 	/// <param name="provider">Which provider will be used</param>
-	public async Task<HttpCallResult<TornadoFile>> UploadFileAsync(byte[] fileBytes, string fileName, FilePurpose purpose = FilePurpose.Finetune, LLmProviders? provider = null)
+	public async Task<HttpCallResult<TornadoFile>> Upload(byte[] fileBytes, string fileName, FilePurpose purpose = FilePurpose.Finetune, string? mimeType = null, LLmProviders? provider = null)
 	{
-		return await UploadFileAsync(new FileUploadRequest
+		return await Upload(new FileUploadRequest
 		{
 			Bytes = fileBytes,
 			Name = fileName,
-			Purpose = purpose
+			Purpose = purpose,
+			MimeType = mimeType
 		}, provider).ConfigureAwait(ConfigureAwaitOptions.None);
 	}
 
@@ -198,7 +202,7 @@ public class FilesEndpoint : EndpointBase
 	/// <param name="request">The request</param>
 	/// <param name="provider">Which provider will be used</param>
 	/// <returns></returns>
-	public async Task<HttpCallResult<TornadoFile>> UploadFileAsync(FileUploadRequest request, LLmProviders? provider = null)
+	public async Task<HttpCallResult<TornadoFile>> Upload(FileUploadRequest request, LLmProviders? provider = null)
 	{
 		IEndpointProvider resolvedProvider = Api.ResolveProvider(provider);
 		TornadoRequestContent content = request.Serialize(resolvedProvider);

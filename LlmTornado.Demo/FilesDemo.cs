@@ -8,8 +8,8 @@ public static class FilesDemo
 {
     public static async Task<TornadoFile?> Upload()
     {
-        HttpCallResult<TornadoFile> uploadedFile = await Program.Connect().Files.UploadFileAsync("Static/Files/sample.pdf", FilePurpose.Assistants);
-        TornadoFile? retrievedFile = await Program.Connect().Files.GetFileAsync(uploadedFile.Data?.Id);
+        HttpCallResult<TornadoFile> uploadedFile = await Program.Connect().Files.Upload("Static/Files/sample.pdf", FilePurpose.Assistants);
+        TornadoFile? retrievedFile = await Program.Connect().Files.Get(uploadedFile.Data?.Id);
         Console.WriteLine($"uploaded id: {uploadedFile.Data.Id}");
         Console.WriteLine($"retrieved file id: {retrievedFile?.Id}");
         return uploadedFile.Data;
@@ -17,8 +17,8 @@ public static class FilesDemo
     
     public static async Task<TornadoFile?> UploadGoogle()
     {
-        HttpCallResult<TornadoFile> uploadedFile = await Program.Connect().Files.UploadFileAsync("Static/Files/sample.pdf", provider: LLmProviders.Google);
-        TornadoFile? retrievedFile = await Program.Connect().Files.GetFileAsync(uploadedFile.Data?.Id, provider: LLmProviders.Google);
+        HttpCallResult<TornadoFile> uploadedFile = await Program.Connect().Files.Upload("Static/Files/sample.pdf", provider: LLmProviders.Google);
+        TornadoFile? retrievedFile = await Program.Connect().Files.Get(uploadedFile.Data?.Id, provider: LLmProviders.Google);
         Console.WriteLine($"uploaded id: {uploadedFile.Data.Id}");
         Console.WriteLine($"retrieved file id: {retrievedFile?.Id}");
         return uploadedFile.Data;
@@ -26,7 +26,7 @@ public static class FilesDemo
 
     public static async Task<TornadoPagingList<TornadoFile>?> GetAllFilesGoogle()
     {
-        TornadoPagingList<TornadoFile>? items = await Program.Connect().Files.GetFilesAsync(new ListQuery(100), provider: LLmProviders.Google);
+        TornadoPagingList<TornadoFile>? items = await Program.Connect().Files.Get(new ListQuery(100), provider: LLmProviders.Google);
 
         if (items is not null)
         {
@@ -43,7 +43,7 @@ public static class FilesDemo
     
     public static async Task<TornadoPagingList<TornadoFile>?> GetAllFilesOpenAi()
     {
-        TornadoPagingList<TornadoFile>? items = await Program.Connect().Files.GetFilesAsync(provider: LLmProviders.OpenAi);
+        TornadoPagingList<TornadoFile>? items = await Program.Connect().Files.Get(provider: LLmProviders.OpenAi);
 
         if (items is not null)
         {
@@ -60,17 +60,17 @@ public static class FilesDemo
     
     public static async Task<bool> DeleteFileOpenAi()
     {
-        HttpCallResult<TornadoFile> uploadedFile = await Program.Connect().Files.UploadFileAsync("Static/Files/sample.pdf", FilePurpose.Assistants, provider: LLmProviders.OpenAi);
-        DeletedTornadoFile? deleteResult = await Program.Connect().Files.DeleteFileAsync(uploadedFile.Data.Id);
+        HttpCallResult<TornadoFile> uploadedFile = await Program.Connect().Files.Upload("Static/Files/sample.pdf", FilePurpose.Assistants, provider: LLmProviders.OpenAi);
+        DeletedTornadoFile? deleteResult = await Program.Connect().Files.Delete(uploadedFile.Data.Id);
         Console.WriteLine($"{(deleteResult?.Deleted ?? false ? "File delted" : "File not deleted")}");
         return deleteResult is not null;
     }
     
     public static async Task<bool> DeleteFileGoogle()
     {
-        HttpCallResult<TornadoFile> uploadedFile = await Program.Connect().Files.UploadFileAsync("Static/Files/sample.pdf", provider: LLmProviders.Google);
+        HttpCallResult<TornadoFile> uploadedFile = await Program.Connect().Files.Upload("Static/Files/sample.pdf", provider: LLmProviders.Google);
         
-        DeletedTornadoFile? deleteResult = await Program.Connect().Files.DeleteFileAsync(uploadedFile.Data.Id, provider: LLmProviders.Google);
+        DeletedTornadoFile? deleteResult = await Program.Connect().Files.Delete(uploadedFile.Data.Id, provider: LLmProviders.Google);
         Console.WriteLine($"{(deleteResult?.Deleted ?? false ? "File delted" : "File not deleted")}");
         return deleteResult is not null;
     }

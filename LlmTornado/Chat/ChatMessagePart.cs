@@ -34,6 +34,16 @@ public class ChatMessagePart
     }
     
     /// <summary>
+    /// Sets the part to <see cref="ChatMessageTypes.FileLink"/>. Supported only by Google.
+    /// </summary>
+    /// <param name="fileLinkData"></param>
+    public ChatMessagePart(ChatMessagePartFileLinkData fileLinkData)
+    {
+        Type = ChatMessageTypes.FileLink;
+        FileLinkData = fileLinkData;
+    }
+    
+    /// <summary>
     ///     The part is a text fragment.
     /// </summary>
     /// <param name="text">A text fragment</param>
@@ -148,6 +158,12 @@ public class ChatMessagePart
     /// </summary>
     [JsonIgnore]
     public IChatMessagePartVendorExtensions? VendorExtensions { get; set; }
+    
+    /// <summary>
+    /// File link data.
+    /// </summary>
+    [JsonIgnore]
+    public ChatMessagePartFileLinkData? FileLinkData { get; set; }
 
     /// <summary>
     ///     Creates an audio part from a given stream.

@@ -41,7 +41,8 @@ internal class VendorGoogleTornadoFileContent
         {
             Id = Name,
             MimeType = MimeType,
-            ExpirationDate = ExpirationTime
+            ExpirationDate = ExpirationTime,
+            Uri = Uri
         };
     }
 }

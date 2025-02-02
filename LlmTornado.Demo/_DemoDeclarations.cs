@@ -108,7 +108,9 @@ public enum ChatDemos
     AnthropicCaching,
     [Flaky("interactive")]
     [Method(nameof(ChatDemo.AnthropicCachingChat))]
-    AnthropicCachingInteractive
+    AnthropicCachingInteractive,
+    [Method(nameof(ChatDemo.GoogleStreamFileInput))]
+    GoogleFile
 }
 
 [DemoEnum(demoType: typeof(SpeechDemo))]
