@@ -7,7 +7,7 @@
 At least one new large language model is released each month. Wouldn't it be awesome if using the new, shiny model was as easy as switching one argument?
 LLM Tornado acts as an aggregator allowing you to do just that. Think [SearX](https://github.com/searxng/searxng) but for LLMs!
 
-OpenAI, Anthropic, Cohere, Google, Azure, and Groq (LLama 3, Mixtral, Gemma 2..) are currently supported along with [KoboldCpp](https://github.com/LostRuins/koboldcpp) and [Ollama](https://github.com/ollama/ollama).
+OpenAI, Anthropic, Cohere, Google, Azure, and Groq are currently supported, along with any OpenAI-compatible inference servers, such as [Ollama](https://github.com/ollama/ollama). Check the full Feature Matrix [here](https://github.com/lofcz/LlmTornado/blob/master/FeatureMatrix.md).
 
 The following video captures **one conversation**, running across OpenAI, Cohere, and Anthropic, with parallel tools calling & streaming: 
 
