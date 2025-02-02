@@ -7,7 +7,7 @@ Empty fields mean the feature is unsupported by the provider.
 
 ## Inference
 
-|       | OpenAI | Anthropic | Google | Cohere | DeepSeek | Groq | xAI | Custom* |
+|               | OpenAI | Anthropic | Google | Cohere | DeepSeek | Groq | xAI | Custom* |
 |-------|-----------|-----------|-----------| -----------| -----------| -----------| -----------| -----------|
 |**Audio**      | ✅ |    |     |     |   |     |     |     |
 |**Chat**       | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ❌ |  ✅ |
@@ -15,7 +15,7 @@ Empty fields mean the feature is unsupported by the provider.
 |**Embeddings** | ✅ |    | ❌  | ❌ |    |    | ❌  |    |
 |**Fine-Tuning**| ✅ |    | ❌  |    |    |    |      |    |
 |**Batch**      | ❌ | ❌ | ❌ | ❌ |    | ❌ |     |    |
-|**Files**      | ✅ |    |     | ✅ |    |     |     |    |
+|**Files**      | ✅ |    | ✅ |     |    |     |     |    |
 |**Uploads**    | ❌ |    |     |    |    |     |     |    |
 |**Images**     | ✅ |    |     |    |    |     |     |    |
 |**Models**     | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
