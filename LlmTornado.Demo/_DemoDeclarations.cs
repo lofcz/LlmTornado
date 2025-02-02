@@ -11,7 +11,11 @@ public enum FileDemos
     [Method(nameof(FilesDemo.GetAllFilesGoogle))]
     GoogleList,
     [Method(nameof(FilesDemo.GetAllFilesOpenAi))]
-    FilesOpenAiList
+    FilesOpenAiList,
+    [Method(nameof(FilesDemo.DeleteFileGoogle))]
+    GoogleDelete,
+    [Method(nameof(FilesDemo.DeleteFileOpenAi))]
+    OpenAiDelete
 }
 
 [DemoEnum(demoType: typeof(ChatDemo))]

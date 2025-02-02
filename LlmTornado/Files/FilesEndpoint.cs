@@ -88,7 +88,7 @@ public class FilesEndpoint : EndpointBase
     }
 
 	/// <summary>
-	///     Returns the contents of the specific file as string
+	///     Returns the contents of the specific file as string. Supported only by OpenAi.
 	/// </summary>
 	/// <param name="fileId">The ID of the file to use for this request</param>
 	/// <returns></returns>
@@ -98,14 +98,31 @@ public class FilesEndpoint : EndpointBase
     }
 
 	/// <summary>
-	///     Delete a file
+	///     Deletes given file.
 	/// </summary>
 	/// <param name="fileId">The ID of the file to use for this request</param>
 	/// <param name="provider">Which provider will be used</param>
 	/// <returns></returns>
-	public Task<TornadoFile?> DeleteFileAsync(string fileId, LLmProviders provider = LLmProviders.OpenAi)
+	public async Task<DeletedTornadoFile?> DeleteFileAsync(string fileId, LLmProviders? provider = null)
     {
-        return HttpDelete<TornadoFile>(Api.GetProvider(provider), Endpoint, GetUrl(Api.GetProvider(provider), $"/{fileId}"));
+	    IEndpointProvider resolvedProvider = Api.ResolveProvider(provider);
+
+	    string url = resolvedProvider.Provider switch
+	    {
+		    LLmProviders.Google => GetUrl(resolvedProvider, CapabilityEndpoints.BaseUrl, fileId),
+		    _ => GetUrl(resolvedProvider, $"/{fileId}")
+	    };
+	    
+	    DeletedTornadoFile? file = await HttpDelete<DeletedTornadoFile>(resolvedProvider, Endpoint, url).ConfigureAwait(ConfigureAwaitOptions.None);
+
+	    if (file is not null)
+	    {
+		    // this is set automatically only by OpenAi
+		    file.Deleted = true;
+		    file.Id = fileId;
+	    }
+
+	    return file;
     }
 
 	/// <summary>

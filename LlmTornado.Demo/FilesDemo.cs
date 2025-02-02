@@ -58,9 +58,20 @@ public static class FilesDemo
         return items;
     }
     
-    public static async Task<bool> DeleteFile(string fileId)
+    public static async Task<bool> DeleteFileOpenAi()
     {
-        TornadoFile? deleteResult = await Program.Connect().Files.DeleteFileAsync(fileId);
+        HttpCallResult<TornadoFile> uploadedFile = await Program.Connect().Files.UploadFileAsync("Static/Files/sample.pdf", FilePurpose.Assistants, provider: LLmProviders.OpenAi);
+        DeletedTornadoFile? deleteResult = await Program.Connect().Files.DeleteFileAsync(uploadedFile.Data.Id);
+        Console.WriteLine($"{(deleteResult?.Deleted ?? false ? "File delted" : "File not deleted")}");
+        return deleteResult is not null;
+    }
+    
+    public static async Task<bool> DeleteFileGoogle()
+    {
+        HttpCallResult<TornadoFile> uploadedFile = await Program.Connect().Files.UploadFileAsync("Static/Files/sample.pdf", provider: LLmProviders.Google);
+        
+        DeletedTornadoFile? deleteResult = await Program.Connect().Files.DeleteFileAsync(uploadedFile.Data.Id, provider: LLmProviders.Google);
+        Console.WriteLine($"{(deleteResult?.Deleted ?? false ? "File delted" : "File not deleted")}");
         return deleteResult is not null;
     }
 }

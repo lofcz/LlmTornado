@@ -590,7 +590,7 @@ public abstract class EndpointBase
     ///     Throws an exception if a non-success HTTP response was returned or if the result
     ///     couldn't be parsed.
     /// </exception>
-    internal Task<T?> HttpDelete<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, Dictionary<string, object>? queryParams = null, object? postData = null, CancellationToken? ct = null) where T : ApiResultBase
+    internal Task<T?> HttpDelete<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, Dictionary<string, object>? queryParams = null, object? postData = null, CancellationToken? ct = null)
     {
         return HttpRequest<T>(provider, endpoint, url, queryParams, HttpMethod.Delete, postData, ct);
     }
