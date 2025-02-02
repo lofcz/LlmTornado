@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using LlmTornado.Code;
 using LlmTornado.Code.Vendor;
@@ -33,14 +34,34 @@ public class FilesEndpoint : EndpointBase
 	protected override CapabilityEndpoints Endpoint => CapabilityEndpoints.Files;
 	
 	/// <summary>
-	///     Get the list of all files
+	///     Get the list of all files.
 	/// </summary>
 	/// <returns></returns>
 	/// <exception cref="HttpRequestException"></exception>
-	public async Task<List<TornadoFile>?> GetFilesAsync()
-    {
-        return (await HttpGet<FilesData>(Api.GetProvider(LLmProviders.OpenAi), Endpoint).ConfigureAwait(ConfigureAwaitOptions.None))?.Data;
-    }
+	public async Task<TornadoPagingList<TornadoFile>?> GetFilesAsync(ListQuery? query = null, LLmProviders? provider = null, CancellationToken token = default)
+	{
+		IEndpointProvider resolvedProvider = Api.ResolveProvider(provider);
+
+		if (provider is LLmProviders.Google)
+		{
+			VendorGoogleTornadoFilesList? ilResult = await HttpGet<VendorGoogleTornadoFilesList>(resolvedProvider, Endpoint, queryParams: query?.ToQueryParams(resolvedProvider), ct: token).ConfigureAwait(ConfigureAwaitOptions.None);
+			
+			return new TornadoPagingList<TornadoFile>
+			{
+				Items = ilResult?.Files.Select(x => x.ToFile(null)).ToList() ?? [],
+				PageToken = ilResult?.PageToken
+			};
+		}
+		
+		return resolvedProvider.Provider switch
+		{
+			LLmProviders.OpenAi => new TornadoPagingList<TornadoFile>
+			{
+				Items = (await HttpGet<TornadoFiles>(resolvedProvider, Endpoint, queryParams: query?.ToQueryParams(resolvedProvider), ct: token).ConfigureAwait(ConfigureAwaitOptions.None))?.Data ?? []
+			},
+			_ => null
+		};
+	}
 
 	/// <summary>
 	///     Returns information about a specific file
@@ -50,12 +71,12 @@ public class FilesEndpoint : EndpointBase
 	/// <returns></returns>
 	public async Task<TornadoFile?> GetFileAsync(string fileId, LLmProviders? provider = null)
 	{
-		IEndpointProvider resolvedProvider = Api.GetProvider(provider ?? Api.GetFirstAuthenticatedProvider());
+		IEndpointProvider resolvedProvider = Api.ResolveProvider(provider);
 
 		// sadly, when creating the file there is an extra wrapper which is not in place when retrieving it, so we have to do this
 		if (resolvedProvider.Provider is LLmProviders.Google)
 		{
-			VendorGoogleTornadoFile.VendorGoogleTornadoFileContent? result = await HttpGet<VendorGoogleTornadoFile.VendorGoogleTornadoFileContent>(resolvedProvider, CapabilityEndpoints.BaseUrl, GetUrl(resolvedProvider, CapabilityEndpoints.BaseUrl, fileId)).ConfigureAwait(ConfigureAwaitOptions.None);;
+			VendorGoogleTornadoFileContent? result = await HttpGet<VendorGoogleTornadoFileContent>(resolvedProvider, CapabilityEndpoints.BaseUrl, GetUrl(resolvedProvider, CapabilityEndpoints.BaseUrl, fileId)).ConfigureAwait(ConfigureAwaitOptions.None);;
 
 			if (result is not null)
 			{
@@ -162,7 +183,7 @@ public class FilesEndpoint : EndpointBase
 	/// <returns></returns>
 	public async Task<HttpCallResult<TornadoFile>> UploadFileAsync(FileUploadRequest request, LLmProviders? provider = null)
 	{
-		IEndpointProvider resolvedProvider = Api.GetProvider(provider ?? Api.GetFirstAuthenticatedProvider());
+		IEndpointProvider resolvedProvider = Api.ResolveProvider(provider);
 		TornadoRequestContent content = request.Serialize(resolvedProvider);
 		
 		string url = resolvedProvider.Provider switch
@@ -249,7 +270,7 @@ public class FilesEndpoint : EndpointBase
 	/// <summary>
 	///     A helper class to deserialize the JSON API responses. This should not be used directly.
 	/// </summary>
-	private class FilesData : ApiResultBase
+	private class TornadoFiles : ApiResultBase
     {
         [JsonProperty("data")] 
         public List<TornadoFile> Data { get; set; }

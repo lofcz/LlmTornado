@@ -145,6 +145,11 @@ public class TornadoApi
     ///     Version of the Rest Api
     /// </summary>
     public string ApiVersion { get; set; } = "v1";
+
+    internal IEndpointProvider ResolveProvider(LLmProviders? userSignalledProvider = null)
+    {
+        return GetProvider(userSignalledProvider ?? GetFirstAuthenticatedProvider());
+    }
     
     /// <summary>
     /// Returns a concrete implementation of endpoint provider for a given known provider.

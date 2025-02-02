@@ -1,123 +1,11 @@
-﻿using Newtonsoft.Json;
+﻿using System.Reflection;
+using Newtonsoft.Json;
 using LlmTornado.Code;
 
 namespace LlmTornado.Demo;
 
-    
-public enum Demos
-{
-    Unknown,
-    [Flaky("Deprecated by OpenAI")]
-    ChatVision,
-    [Flaky("Deprecated by OpenAI")]
-    ChatVisionBase64,
-    AssistantCreate,
-    AssistantCreateWithFunction,
-    AssistantCreateWithFileSearch,
-    AssistantCreateWithCodeInterpreter,
-    AssistantList,
-    AssistantRetrieve,
-    AssistantModify,
-    AssistantDelete,
-    AssistantDeleteAllDemoAssistants,
-    [Flaky]
-    FilesUpload,
-    [Flaky]
-    ImagesGenerate,
-    [Flaky]
-    ThreadsCreate,
-    [Flaky]
-    ThreadsRetrieve,
-    [Flaky]
-    ThreadsModify,
-    [Flaky]
-    ThreadsDelete,
-    VectorStoreCreate,
-    VectorStoreRetrieve,
-    VectorStoreList,
-    VectorStoreModify,
-    VectorStoreFilesCreate,
-    VectorStoreFilesCreateCustomChunkingStrategy,
-    VectorStoreFilesList,
-    VectorStoreFilesRetrieve,
-    VectorStoreFilesDelete,
-    VectorStoreFileBatchCreate,
-    VectorStoreFileBatchRetrieve,
-    VectorStoreBatchFileList,
-    VectorStoreFileBatchCancel,
-    VectorStoreDelete,
-    VectorStoreDeleteAllDemoVectorStores,
-    [Flaky("only assistants v1 are supported")]
-    ThreadsCreateMessage,
-    ChatCompletion,
-    ChatStreamWithFunctions,
-    ChatAnthropic,
-    ChatStreamingAnthropic,
-    ChatAzure,
-    ChatOpenAiFunctions,
-    ChatAnthropicFunctions,
-    ChatAnthropicFailFunctions,
-    ChatCohere,
-    ChatCohereStreaming,
-    [Flaky("covered by other tests, takes a long time to finish")]
-    ChatAllVendors,
-    Embedding,
-    ChatFunctionRequired,
-    ChatCohereWebSearch,
-    ChatCohereWebSearchStreaming,
-    [Flaky("interactive demo")]
-    OpenAiFunctionsStreamingInteractive,
-    ChatAnthropicParallelFunctions,
-    [Flaky("interactive demo")]
-    AnthropicFunctionsStreamingInteractive,
-    [Flaky("interactive demo")]
-    CohereFunctionsStreamingInteractive,
-    [Flaky("interactive demo")]
-    CrossVendorFunctionsStreamingInteractive,
-    DisableParallelTools,
-    ChatGoogle,
-    ChatGoogleFunctions,
-    ChatGoogleStream,
-    EmbeddingOpenAiScalar,
-    EmbeddingOpenAiVector,
-    EmbeddingCohereScalar,
-    EmbeddingCohereVector,
-    EmbeddingCohereScalarExtensions,
-    Chat4OMini,
-    ChatGroq,
-    ChatGroqStreaming,
-    Chat4OStructuredJson,
-    ChatCohere2408,
-    ChatOpenAiO3,
-    ChatHaiku35,
-    ChatAudioWav,
-    ChatAudioMp3,
-    ChatAudioInAudioOut,
-    ChatAudioMultiturn,
-    TranscriptionWhisperV2Text,
-    TranscriptionWhisperV2Json,
-    TranscriptionWhisperV2Srt,
-    TranscriptionWhisperV2JsonVerbose,
-    TranscriptionWhisperV3TurboJsonVerbose,
-    ChatAudioWavStreaming,
-    ChatAudioInAudioOutWavStreaming,
-    ChatToolsGemini,
-    ChatToolsGeminiStrict,
-    ChatCompletionO1Developer,
-    [Flaky("requires ollama")]
-    CustomProviderOllama,
-    [Flaky("requires ollama")]
-    CustomProviderOllamaStreaming,
-    ChatAnthropicCaching,
-    [Flaky("interactive")]
-    ChatAnthropicCachingInteractive,
-    FilesGoogleUpload,
-    Last
-}
-
 public class Program
 {
-    private static Demos selectedDemo = Demos.Unknown;
     public static Keys ApiKeys { get; set; }
 
     public class AzureKey
@@ -187,102 +75,82 @@ public class Program
         return true;
     }
 
-    public static Func<Task>? GetDemo(Demos demo)
+    public static readonly Dictionary<string, MethodInfo> DemoDict = [];
+    public static readonly List<Tuple<Type, Type>> DemoEnumTypes = [];
+    
+    static Program()
     {
-        Func<Task>? task = demo switch
-        {
-            Demos.ChatVisionBase64 => VisionDemo.VisionBase64,
-            Demos.ChatVision => VisionDemo.VisionBase64,
-            Demos.AssistantList => AssistantsDemo.List,
-            Demos.AssistantCreate => AssistantsDemo.Create,
-            Demos.AssistantCreateWithFunction => AssistantsDemo.CreateFunctionAssistant,
-            Demos.AssistantCreateWithCodeInterpreter => AssistantsDemo.CreateWithCodeInterpreter,
-            Demos.AssistantCreateWithFileSearch => AssistantsDemo.CreateFileSearchAssistant,
-            Demos.AssistantRetrieve => AssistantsDemo.Retrieve,
-            Demos.AssistantModify => AssistantsDemo.Modify,
-            Demos.AssistantDelete => AssistantsDemo.Delete,
-            Demos.AssistantDeleteAllDemoAssistants => AssistantsDemo.DeleteAllDemoAssistants,
-            Demos.VectorStoreCreate => VectorStoreDemo.CreateVectorStore,
-            Demos.VectorStoreRetrieve => VectorStoreDemo.RetrieveVectorStore,
-            Demos.VectorStoreList => VectorStoreDemo.ListVectorStores,
-            Demos.VectorStoreModify => VectorStoreDemo.ModifyVectorStore,
-            Demos.VectorStoreFilesCreate => VectorStoreDemo.CreateVectorStoreFile,
-            Demos.VectorStoreFilesCreateCustomChunkingStrategy => VectorStoreDemo.CreateVectorStoreFileCustomChunkingStrategy,
-            Demos.VectorStoreFilesList => VectorStoreDemo.ListVectorStoreFiles,
-            Demos.VectorStoreFilesRetrieve => VectorStoreDemo.RetrieveVectorStoreFile,
-            Demos.VectorStoreFilesDelete => VectorStoreDemo.DeleteVectorStoreFile,
-            Demos.VectorStoreFileBatchCreate => VectorStoreDemo.CreateVectorStoreFileBatch,
-            Demos.VectorStoreBatchFileList => VectorStoreDemo.ListVectorStoreBatchFiles,
-            Demos.VectorStoreFileBatchRetrieve => VectorStoreDemo.RetrieveVectorStoreFileBatch,
-            Demos.VectorStoreFileBatchCancel => VectorStoreDemo.CancelVectorStoreFileBatch,
-            Demos.VectorStoreDelete => VectorStoreDemo.DeleteVectorStore,
-            Demos.VectorStoreDeleteAllDemoVectorStores => VectorStoreDemo.DeleteAllDemoVectorStores,
-            Demos.FilesUpload => FilesDemo.Upload,
-            Demos.ImagesGenerate => ImagesDemo.Generate,
-            Demos.ThreadsCreate => ThreadsDemo.Create,
-            Demos.ThreadsRetrieve => ThreadsDemo.Retrieve,
-            Demos.ThreadsModify => ThreadsDemo.Modify,
-            Demos.ThreadsDelete => ThreadsDemo.Delete,
-            Demos.ThreadsCreateMessage => ThreadsDemo.CreateMessage,
-            Demos.ChatCompletion => ChatDemo.Completion,
-            Demos.ChatStreamWithFunctions => ChatDemo.StreamWithFunctions,
-            Demos.ChatAnthropic => ChatDemo.Anthropic,
-            Demos.ChatStreamingAnthropic => ChatDemo.AnthropicStreaming,
-            Demos.ChatAzure => ChatDemo.Azure,
-            Demos.ChatOpenAiFunctions => ChatDemo.OpenAiFunctions,
-            Demos.ChatAnthropicFunctions => ChatDemo.AnthropicStreamingFunctions,
-            Demos.ChatAnthropicFailFunctions => ChatDemo.AnthropicFailFunctions,
-            Demos.ChatCohere => ChatDemo.Cohere,
-            Demos.ChatCohereStreaming => ChatDemo.CohereStreaming,
-            Demos.ChatAllVendors => ChatDemo.AllChatVendors,
-            Demos.Embedding => EmbeddingDemo.Embed,
-            Demos.ChatFunctionRequired => ChatDemo.ChatFunctionRequired,
-            Demos.ChatCohereWebSearch => ChatDemo.CohereWebSearch,
-            Demos.ChatCohereWebSearchStreaming => ChatDemo.CohereWebSearchStreaming,
-            Demos.OpenAiFunctionsStreamingInteractive => ChatDemo.OpenAiFunctionsStreamingInteractive,
-            Demos.ChatAnthropicParallelFunctions => ChatDemo.AnthropicFunctionsParallel,
-            Demos.AnthropicFunctionsStreamingInteractive => ChatDemo.AnthropicFunctionsStreamingInteractive,
-            Demos.CohereFunctionsStreamingInteractive => ChatDemo.CohereFunctionsStreamingInteractive,
-            Demos.CrossVendorFunctionsStreamingInteractive => ChatDemo.CrossVendorFunctionsStreamingInteractive,
-            Demos.DisableParallelTools => ChatDemo.OpenAiDisableParallelFunctions,
-            Demos.ChatGoogle => ChatDemo.Google,
-            Demos.ChatGoogleFunctions => ChatDemo.GoogleFunctions,
-            Demos.ChatGoogleStream => ChatDemo.GoogleStream,
-            Demos.EmbeddingOpenAiScalar => EmbeddingDemo.Embed,
-            Demos.EmbeddingOpenAiVector => EmbeddingDemo.EmbedVector,
-            Demos.EmbeddingCohereScalar => EmbeddingDemo.EmbedCohere,
-            Demos.EmbeddingCohereVector => EmbeddingDemo.EmbedCohereVector,
-            Demos.EmbeddingCohereScalarExtensions => EmbeddingDemo.EmbedCohereExtensions,
-            Demos.Chat4OMini => ChatDemo.Completion4Mini,
-            Demos.ChatGroq => ChatDemo.CompletionGroq,
-            Demos.ChatGroqStreaming => ChatDemo.GroqStreaming,
-            Demos.Chat4OStructuredJson => ChatDemo.Completion4OStructuredJson,
-            Demos.ChatCohere2408 => ChatDemo.Cohere2408,
-            Demos.ChatOpenAiO3 => ChatDemo.OpenAiO3,
-            Demos.ChatHaiku35 => ChatDemo.Haiku35,
-            Demos.ChatAudioWav => ChatDemo.AudioInWav,
-            Demos.ChatAudioMp3 => ChatDemo.AudioInMp3,
-            Demos.ChatAudioInAudioOut => ChatDemo.AudioInAudioOutWav,
-            Demos.ChatAudioMultiturn => ChatDemo.AudioInAudioOutMultiturn,
-            Demos.TranscriptionWhisperV2Text => TranscriptionDemo.TranscribeFormatText,
-            Demos.TranscriptionWhisperV2Json => TranscriptionDemo.TranscribeFormatJson,
-            Demos.TranscriptionWhisperV2Srt => TranscriptionDemo.TranscribeFormatSrt,
-            Demos.TranscriptionWhisperV2JsonVerbose => TranscriptionDemo.TranscribeFormatJsonVerbose,
-            Demos.TranscriptionWhisperV3TurboJsonVerbose => TranscriptionDemo.TranscribeFormatJsonVerboseGroq,
-            Demos.ChatAudioWavStreaming => ChatDemo.AudioInWavStreaming,
-            Demos.ChatAudioInAudioOutWavStreaming => ChatDemo.AudioInAudioOutWavStreaming,
-            Demos.ChatToolsGemini => ChatDemo.ChatFunctionGemini,
-            Demos.ChatToolsGeminiStrict => ChatDemo.ChatFunctionGeminiStrict,
-            Demos.ChatCompletionO1Developer => ChatDemo.CompletionO1Developer,
-            Demos.CustomProviderOllama => CustomProviderDemo.Ollama,
-            Demos.CustomProviderOllamaStreaming => CustomProviderDemo.OllamaStreaming,
-            Demos.ChatAnthropicCaching => ChatDemo.AnthropicCaching,
-            Demos.ChatAnthropicCachingInteractive => ChatDemo.AnthropicCachingChat,
-            Demos.FilesGoogleUpload => FilesDemo.UploadGoogle,
-            _ => null
-        };
+        Assembly assembly = Assembly.GetExecutingAssembly();
+        Type[] types = assembly.GetTypes();
 
-        return task;
+        foreach (Type type in types)
+        {
+            if (type.FullName is null)
+            {
+                continue;
+            }
+            
+            object[] attrs = type.GetCustomAttributes(typeof(DemoEnumAttribute), false);
+
+            if (attrs.Length > 0 && attrs[0] is DemoEnumAttribute dea)
+            {
+                DemoEnumTypes.Add(new Tuple<Type, Type>(type, dea.DemoType));
+                continue;
+            }
+
+            if (type.FullName.EndsWith("Demo"))
+            {
+                foreach (MethodInfo method in type.GetMethods(BindingFlags.Public | BindingFlags.Static))
+                {
+                    DemoDict[$"{type.FullName}.{method.Name}"] = method;
+                }   
+            }
+        }
+    }
+
+    static void ListDemos()
+    {
+        Console.Clear();
+        Console.WriteLine($"Found {DemoDict.Count} demos.");
+
+        int i = 1;
+        
+        foreach (KeyValuePair<string, MethodInfo> demo in DemoDict.OrderBy(x => x.Key, StringComparer.InvariantCultureIgnoreCase))
+        {
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.Write($"({i})");
+            Console.ResetColor();
+            
+            Console.Write($" {demo.Key}");
+            Console.WriteLine();
+            i++;
+        }        
+        
+        Console.WriteLine();
+        Console.WriteLine($"Number to play:");
+    }
+
+    static async Task Read()
+    {
+        ListDemos();
+        
+        string? toPlay = Console.ReadLine();
+
+        if (int.TryParse(toPlay, out int demoN) && demoN > 0 && demoN <= DemoDict.Count)
+        {
+            KeyValuePair<string, MethodInfo> selected = DemoDict.OrderBy(x => x.Key, StringComparer.InvariantCultureIgnoreCase).Skip(demoN - 1).FirstOrDefault();
+            await (Task)selected.Value.Invoke(null, null);
+
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine("Demo finished");
+            Console.ResetColor();
+            Console.ReadKey();
+            return;
+        }
+
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine($"Invalid number, expected 1-{DemoDict.Count}");
+        Console.ReadKey();
     }
     
     public static async Task Main(string[] args)
@@ -294,16 +162,11 @@ public class Program
             return;
         }
 
-        Demos? forceDemo = Demos.FilesUpload;
-        
-        selectedDemo = forceDemo ?? Demos.Last - 1;
-        Func<Task>? task = GetDemo(selectedDemo);
+        ListDemos();
 
-        if (task is not null)
+        while (true)
         {
-            await task.Invoke();
+            await Read();   
         }
-
-        Console.ReadKey();
     }
 }

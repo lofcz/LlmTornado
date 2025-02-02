@@ -10,3 +10,23 @@ public class FlakyAttribute : Attribute
         Reason = reason;
     }
 }
+
+public class MethodAttribute : Attribute
+{
+    public string MethodName { get; set; }
+    
+    public MethodAttribute(string methodName)
+    {
+        MethodName = methodName;
+    }
+}
+
+public class DemoEnumAttribute : Attribute
+{
+    public Type DemoType { get; set; }
+    
+    public DemoEnumAttribute(Type demoType)
+    {
+        DemoType = demoType;
+    }
+}

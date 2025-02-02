@@ -63,6 +63,7 @@ internal class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider,
                 string eStr = endpoint switch
                 {
                     CapabilityEndpoints.Chat => "models",
+                    CapabilityEndpoints.Files => "files",
                     _ => throw new Exception($"Google doesn't support endpoint {endpoint}")
                 };
         

@@ -63,13 +63,38 @@ public sealed class ListQuery
     /// </summary>
     public string? Before { get; set; }
 
+    /// <summary>
+    /// Used by Google for cursor paging.
+    /// </summary>
+    public string? PageToken { get; set; }
+
+    /// <summary>
+    /// Transforms the <see cref="ListQuery"/> into a series of <see cref="Uri" /> query parameters.
+    /// </summary>
+    /// <param name="provider"></param>
+    /// <returns></returns>
+    public Dictionary<string, object>? ToQueryParams(IEndpointProvider provider)
+    {
+        return ToQueryParams(provider.Provider, this);
+    }
+    
+    /// <summary>
+    /// Transforms the <see cref="ListQuery"/> into a series of <see cref="Uri" /> query parameters.
+    /// </summary>
+    /// <param name="provider"></param>
+    /// <returns></returns>
+    public Dictionary<string, object>? ToQueryParams(LLmProviders provider)
+    {
+        return ToQueryParams(provider, this);
+    }
     
     /// <summary>
     /// Transforms the <see cref="ListQuery"/> into a series of <see cref="Uri" /> query parameters.
     /// </summary>
     /// <param name="query"></param>
+    /// <param name="provider"></param>
     /// <returns></returns>
-    public static implicit operator Dictionary<string, object>?(ListQuery? query)
+    public static Dictionary<string, object>? ToQueryParams(LLmProviders provider, ListQuery? query)
     {
         if (query is null)
         {
@@ -78,6 +103,21 @@ public sealed class ListQuery
 
         Dictionary<string, object> parameters = [];
 
+        if (provider is LLmProviders.Google)
+        {
+            if (query.Limit is not null)
+            {
+                parameters["pageSize"] = query.Limit;
+            }
+
+            if (query.PageToken is not null)
+            {
+                parameters["pageToken"] = query.PageToken;
+            }
+
+            return parameters;
+        }
+        
         if (query.Limit is not null)
         {
             parameters.Add("limit", query.Limit);

@@ -23,6 +23,40 @@ public static class FilesDemo
         Console.WriteLine($"retrieved file id: {retrievedFile?.Id}");
         return uploadedFile.Data;
     }
+
+    public static async Task<TornadoPagingList<TornadoFile>?> GetAllFilesGoogle()
+    {
+        TornadoPagingList<TornadoFile>? items = await Program.Connect().Files.GetFilesAsync(new ListQuery(100), provider: LLmProviders.Google);
+
+        if (items is not null)
+        {
+            Console.WriteLine($"Found {items.Items.Count} files.");
+            
+            foreach (TornadoFile item in items.Items)
+            {
+                Console.WriteLine(item.Id);
+            }
+        }
+
+        return items;
+    }
+    
+    public static async Task<TornadoPagingList<TornadoFile>?> GetAllFilesOpenAi()
+    {
+        TornadoPagingList<TornadoFile>? items = await Program.Connect().Files.GetFilesAsync(provider: LLmProviders.OpenAi);
+
+        if (items is not null)
+        {
+            Console.WriteLine($"Found {items.Items.Count} files.");
+            
+            foreach (TornadoFile item in items.Items)
+            {
+                Console.WriteLine(item.Id);
+            }
+        }
+
+        return items;
+    }
     
     public static async Task<bool> DeleteFile(string fileId)
     {

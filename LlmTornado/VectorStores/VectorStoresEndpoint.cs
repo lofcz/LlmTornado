@@ -55,7 +55,7 @@ public class VectorStoresEndpoint : EndpointBase
     /// <returns></returns>
     public Task<HttpCallResult<ListResponse<VectorStore>>> ListVectorStoresAsync(ListQuery? query = null, CancellationToken? cancellationToken = null)
     {
-        return HttpGetRaw<ListResponse<VectorStore>>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, GetUrl(Api.GetProvider(LLmProviders.OpenAi)), query, cancellationToken);
+        return HttpGetRaw<ListResponse<VectorStore>>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, GetUrl(Api.GetProvider(LLmProviders.OpenAi)), query?.ToQueryParams(LLmProviders.OpenAi), cancellationToken);
     }
     
     /// <summary>
@@ -92,7 +92,7 @@ public class VectorStoresEndpoint : EndpointBase
     /// <returns></returns>
     public Task<HttpCallResult<ListResponse<VectorStoreFile>>> ListVectorStoreFilesAsync(string vectorStoreId, ListQuery? query = null, CancellationToken? cancellationToken = null)
     {
-        return HttpGetRaw<ListResponse<VectorStoreFile>>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{vectorStoreId}/files"), query, cancellationToken);
+        return HttpGetRaw<ListResponse<VectorStoreFile>>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{vectorStoreId}/files"), query?.ToQueryParams(LLmProviders.OpenAi), cancellationToken);
     }
 
     ///  <summary>
@@ -143,7 +143,7 @@ public class VectorStoresEndpoint : EndpointBase
     /// <returns></returns>
     public Task<HttpCallResult<ListResponse<VectorStoreFile>>> ListVectorStoreBatchFilesAsync(string vectorStoreId, string batchId, ListQuery? query = null, CancellationToken? cancellationToken = null)
     {
-        return HttpGetRaw<ListResponse<VectorStoreFile>>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{vectorStoreId}/file_batches/{batchId}/files"), query, cancellationToken);
+        return HttpGetRaw<ListResponse<VectorStoreFile>>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{vectorStoreId}/file_batches/{batchId}/files"), query?.ToQueryParams(LLmProviders.OpenAi), cancellationToken);
     }
 
     ///  <summary>

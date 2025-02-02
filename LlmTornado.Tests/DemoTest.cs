@@ -1,3 +1,4 @@
+using System.Reflection;
 using LlmTornado.Chat.Models;
 using LlmTornado.Code.Models;
 using LlmTornado.Demo;
@@ -19,27 +20,35 @@ public class Tests
         public string? FlakyReason { get; set; }
     }
 
-    public static IEnumerable<TestCaseData> DemoCases()
+    private static IEnumerable<TestCaseData> DemoCases()
     {
-        foreach (Demos demo in Enum.GetValues<Demos>())
+        foreach (Tuple<Type, Type> type in Program.DemoEnumTypes.OrderBy(x => x.Item1.Name, StringComparer.InvariantCulture))
         {
-            Func<Task>? task = Program.GetDemo(demo);
-            
-            if (task is not null)
+            foreach (object? eVal in Enum.GetValues(type.Item1))
             {
-                FlakyAttribute[]? flakyAttrs = (FlakyAttribute[]?)demo.GetType().GetField(demo.ToString())?.GetCustomAttributes(typeof(FlakyAttribute), false);
+                List<string> keys = Program.DemoDict.Select(x => x.Key).OrderBy(x => x, StringComparer.InvariantCulture).ToList();
                 
-                TestCaseData testCase = new TestCaseData(string.Empty, new GeneratedTestCase
+                object[] attrs = eVal.GetType().GetField(eVal.ToString()).GetCustomAttributes(typeof(MethodAttribute), false);
+
+                if (attrs.Length > 0 && attrs[0] is MethodAttribute ma)
                 {
-                    Fn = task,
-                    Flaky = flakyAttrs?.Length > 0,
-                    FlakyReason = flakyAttrs?.Length > 0 ? flakyAttrs[0].Reason : null
-                }) 
-                {
-                    TestName = $"{demo} - {task.Method.Name}"
-                };
+                    if (Program.DemoDict.TryGetValue($"{type.Item2.FullName}.{ma.MethodName}", out MethodInfo? mi))
+                    {
+                        FlakyAttribute[]? flakyAttrs = (FlakyAttribute[]?)eVal.GetType().GetField(eVal.ToString())?.GetCustomAttributes(typeof(FlakyAttribute), false);
+                    
+                        TestCaseData testCase = new TestCaseData(string.Empty, new GeneratedTestCase
+                        {
+                            Fn = () => (Task)mi.Invoke(null, null),
+                            Flaky = flakyAttrs?.Length > 0,
+                            FlakyReason = flakyAttrs?.Length > 0 ? flakyAttrs[0].Reason : null
+                        }) 
+                        {
+                            TestName = $"{type.Item1.Name} - {mi.Name}"
+                        };
                 
-                yield return testCase;
+                        yield return testCase;
+                    }   
+                }
             }
         }
     }
