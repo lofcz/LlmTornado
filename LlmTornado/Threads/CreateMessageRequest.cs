@@ -4,7 +4,10 @@ using LlmTornado.Chat;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Threads;
-
+/// <summary>
+/// Represents a request to create a message in the context of a chat thread.
+/// Based on <a href="https://platform.openai.com/docs/api-reference/messages/createMessage">OpenAI API Reference - Create Message</a>
+/// </summary>
 public sealed class CreateMessageRequest
 {
     /// <summary>
@@ -21,15 +24,27 @@ public sealed class CreateMessageRequest
         Metadata = metadata;
     }
 
+
+    /// <summary>
+    /// The unique identifier of the thread within which the message is created.
+    /// </summary>
+    /// <remarks>
+    /// This property is used to associate the message with a specific chat thread.
+    /// </remarks>
+    [JsonProperty("thread_id")]
+    public string ThreadId { get; set; }
+    
     /// <summary>
     ///     The role of the entity that is creating the message.
     /// </summary>
     /// <remarks>
-    ///     Currently only user is supported.
+    ///     Currently only user and assistant is supported.
     /// </remarks>
     [JsonProperty("role")]
     [JsonConverter(typeof(ChatMessageRole.ChatMessageRoleJsonConverter))]
-    public ChatMessageRole Role { get; }
+    public ChatMessageRole Role { get; set; }
+    
+    public MessageContent? ContentContent { get; set; }
 
     /// <summary>
     ///     The content of the message.
@@ -51,9 +66,4 @@ public sealed class CreateMessageRequest
     /// </summary>
     [JsonProperty("metadata")]
     public IReadOnlyDictionary<string, string>? Metadata { get; }
-
-    public static implicit operator CreateMessageRequest(string content)
-    {
-        return new CreateMessageRequest(content);
-    }
 }

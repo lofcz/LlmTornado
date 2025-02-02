@@ -48,18 +48,4 @@ public sealed class CreateThreadRequest
     /// </summary>
     [JsonProperty("metadata")]
     public IReadOnlyDictionary<string, string>? Metadata { get; set; }
-
-    /// <summary>
-    /// Converts a string message into a CreateThreadRequest instance.
-    /// </summary>
-    /// <param name="message">
-    /// A string that represents the content of the initial message in the thread.
-    /// </param>
-    /// <returns>
-    /// A CreateThreadRequest object initialized with the provided message.
-    /// </returns>
-    public static implicit operator CreateThreadRequest(string message)
-    {
-        return new CreateThreadRequest([new Message(message)]);
-    }
 }
