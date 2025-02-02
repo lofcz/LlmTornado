@@ -941,7 +941,7 @@ public class Conversation
     /// <summary>
     ///     Stream LLM response as a series of events. The raw events from Provider are abstracted away and only high-level events are reported such as inbound plaintext tokens, complete tool requests, etc.
     /// </summary>
-    public async Task StreamResponseRich(Guid msgId, Func<string?, Task>? messageTokenHandler, Func<List<FunctionCall>, Task>? functionCallHandler, Func<ChatMessageRoles, Task>? messageTypeResolvedHandler, Ref<string>? outboundRequest = null, Func<ChatResponseVendorExtensions, Task>? vendorFeaturesHandler = null, CancellationToken token = default)
+    public async Task StreamResponseRich(Guid msgId, Func<string?, ValueTask>? messageTokenHandler, Func<List<FunctionCall>, ValueTask>? functionCallHandler, Func<ChatMessageRoles, ValueTask>? messageTypeResolvedHandler, Ref<string>? outboundRequest = null, Func<ChatResponseVendorExtensions, ValueTask>? vendorFeaturesHandler = null, CancellationToken token = default)
     {
         await StreamResponseRich(new ChatStreamEventHandler
         {
@@ -956,7 +956,7 @@ public class Conversation
     /// <summary>
     ///     Stream LLM response as a series of events. The raw events from Provider are abstracted away and only high-level events are reported such as inbound plaintext tokens, complete tool requests, etc.
     /// </summary>
-    public async Task StreamResponseRich(Func<string?, Task>? messageTokenHandler, Func<List<FunctionCall>, Task>? functionCallHandler, Func<ChatMessageRoles, Task>? messageTypeResolvedHandler, Ref<string>? outboundRequest = null, Func<ChatResponseVendorExtensions, Task>? vendorFeaturesHandler = null, CancellationToken token = default)
+    public async Task StreamResponseRich(Func<string?, ValueTask>? messageTokenHandler, Func<List<FunctionCall>, ValueTask>? functionCallHandler, Func<ChatMessageRoles, ValueTask>? messageTypeResolvedHandler, Ref<string>? outboundRequest = null, Func<ChatResponseVendorExtensions, ValueTask>? vendorFeaturesHandler = null, CancellationToken token = default)
     {
         await StreamResponseRich(new ChatStreamEventHandler
         {

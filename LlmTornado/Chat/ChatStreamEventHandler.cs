@@ -15,53 +15,53 @@ public class ChatStreamEventHandler
     /// <summary>
     ///     Called when plaintext token/chunk arrives. This can be forwarded to the end-user immediately.
     /// </summary>
-    public Func<string?, Task>? MessageTokenHandler { get; set; }
+    public Func<string?, ValueTask>? MessageTokenHandler { get; set; }
     
     /// <summary>
     ///     Called when audio token/chunk arrives. This can be forwarded to the end-user immediately.
     /// </summary>
-    public Func<ChatMessageAudio, Task>? AudioTokenHandler { get; set; }
+    public Func<ChatMessageAudio, ValueTask>? AudioTokenHandler { get; set; }
     
     /// <summary>
     ///     Called when one or more tools are to be executed. Execute the tools and return the responses in <see cref="FunctionCall.Result"/>.
     ///     If this field is empty once control is returned to the API, the tool call is considered to be failed with no data returned.
     /// </summary>
-    public Func<List<FunctionCall>, Task>? FunctionCallHandler { get; set; }
+    public Func<List<FunctionCall>, ValueTask>? FunctionCallHandler { get; set; }
     
     /// <summary>
     ///     Called after <see cref="FunctionCallHandler"/> and internal upkeep. Use this handler to implement tool request -> tool execution -> model response pattern.
     /// </summary>
-    public Func<ResolvedToolsCall, ChatStreamEventHandler?, Task>? AfterFunctionCallsResolvedHandler { get; set; } 
+    public Func<ResolvedToolsCall, ChatStreamEventHandler?, ValueTask>? AfterFunctionCallsResolvedHandler { get; set; } 
     
     /// <summary>
     ///     Called when the first event arrives from the Provider. This can be used to inform the end-user early in the process about the kind of response the model selected.
     /// </summary>
-    public Func<ChatMessageRoles, Task>? MessageTypeResolvedHandler { get; set; }
+    public Func<ChatMessageRoles, ValueTask>? MessageTypeResolvedHandler { get; set; }
     
     /// <summary>
     ///     Called once, before the streaming request is established. Use this to mutate the request if necessary. 
     /// </summary>
-    public Func<ChatRequest, Task<ChatRequest>>? MutateChatRequestHandler { get; set; }
+    public Func<ChatRequest, ValueTask<ChatRequest>>? MutateChatRequestHandler { get; set; }
     
     /// <summary>
     ///     Called for events supported only by specific vendors with no shared equivalent.
     /// </summary>
-    public Func<ChatResponseVendorExtensions, Task>? VendorFeaturesHandler { get; set; }
+    public Func<ChatResponseVendorExtensions, ValueTask>? VendorFeaturesHandler { get; set; }
     
     /// <summary>
     ///     Called whenever the bill arrives.
     /// </summary>
-    public Func<ChatUsage, Task>? OnUsageReceived { get; set; }
+    public Func<ChatUsage, ValueTask>? OnUsageReceived { get; set; }
     
     /// <summary>
     ///     Called whenever a successful HTTP request is made. In case of streaming requests this is called before the stream is read.
     /// </summary>
-    public Func<HttpCallRequest, Task>? OutboundHttpRequestHandler { get; set; }
+    public Func<HttpCallRequest, ValueTask>? OutboundHttpRequestHandler { get; set; }
     
     /// <summary>
     ///     If this is set, HTTP level exceptions are caught and returned via this handler.
     /// </summary>
-    public Func<HttpFailedRequest, Task>? HttpExceptionHandler { get; set; }
+    public Func<HttpFailedRequest, ValueTask>? HttpExceptionHandler { get; set; }
     
     /// <summary>
     ///     The ID of the message that will be appended to the conversation, if null a random GUID is used.

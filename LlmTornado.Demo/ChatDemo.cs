@@ -282,7 +282,7 @@ public static class ChatDemo
             MessageTokenHandler = (token) =>
             {
                 Console.Write(token);
-                return Task.CompletedTask;
+                return ValueTask.CompletedTask;
             },
             FunctionCallHandler = (functions) =>
             {
@@ -295,11 +295,11 @@ public static class ChatDemo
                     });
                 }
 
-                return Task.CompletedTask;
+                return ValueTask.CompletedTask;
             },
             OnUsageReceived = (usage) =>
             {
-                return Task.CompletedTask;
+                return ValueTask.CompletedTask;
             }
         });
     }
@@ -364,7 +364,7 @@ public static class ChatDemo
                 MessageTokenHandler = (token) =>
                 {
                     Console.Write(token);
-                    return Task.CompletedTask;
+                    return ValueTask.CompletedTask;
                 },
                 OnUsageReceived = (usage) =>
                 {
@@ -372,7 +372,7 @@ public static class ChatDemo
                     Console.ForegroundColor = ConsoleColor.Yellow;
                     Console.WriteLine($"Usage: {usage}");
                     Console.ResetColor();
-                    return Task.CompletedTask;
+                    return ValueTask.CompletedTask;
                 }
             });
         }
@@ -480,9 +480,10 @@ public static class ChatDemo
         {
             await chat.StreamResponseRich(new ChatStreamEventHandler
             {
-                MessageTokenHandler = async (token) =>
+                MessageTokenHandler = (token) =>
                 {
                     Console.Write(token);
+                    return ValueTask.CompletedTask;
                 },
                 FunctionCallHandler = async (fnCalls) =>
                 {
@@ -594,9 +595,10 @@ public static class ChatDemo
         {
             await chat.StreamResponseRich(new ChatStreamEventHandler
             {
-                MessageTokenHandler = async (token) =>
+                MessageTokenHandler = (token) =>
                 {
                     Console.Write(token);
+                    return ValueTask.CompletedTask;
                 },
                 FunctionCallHandler = async (fnCalls) =>
                 {
@@ -632,7 +634,7 @@ public static class ChatDemo
                     Console.ForegroundColor = ConsoleColor.DarkGray;
                     Console.WriteLine($"{call.Method} {call.Url}");
                     Console.ResetColor();
-                    return Task.CompletedTask;
+                    return ValueTask.CompletedTask;
                 }
             });
         }
@@ -657,7 +659,7 @@ public static class ChatDemo
         {
             sb.Append(str);
             Console.Write(str);
-            return Task.CompletedTask;
+            return ValueTask.CompletedTask;
         }, null, null, null, (ext) =>
         {
             if (ext.Cohere?.Citations is not null)
@@ -688,7 +690,7 @@ public static class ChatDemo
                 Console.WriteLine(str);
             }
             
-            return Task.CompletedTask;
+            return ValueTask.CompletedTask;
         });
     }
     
@@ -712,7 +714,21 @@ public static class ChatDemo
         ]);
 
         Console.WriteLine("Google:");
-        await chat.StreamResponse(Console.Write);
+
+        await chat.StreamResponseRich(new ChatStreamEventHandler
+        {
+            MessageTokenHandler = (token) =>
+            {
+                Console.Write(token);
+                return ValueTask.CompletedTask;
+            },
+            OnUsageReceived = (usage) =>
+            {
+                Console.WriteLine();
+                Console.WriteLine(usage);
+                return ValueTask.CompletedTask;
+            }
+        });
     }
     
     public static async Task GoogleStream()
@@ -779,10 +795,10 @@ public static class ChatDemo
         
         await chat.StreamResponseRich(new ChatStreamEventHandler
         {
-            MessageTokenHandler = async (str) =>
+            MessageTokenHandler = (str) =>
             {
                 Console.Write(str);
-                return;
+                return ValueTask.CompletedTask;
             }
         });
 
@@ -1108,12 +1124,12 @@ public static class ChatDemo
             MessageTokenHandler = (x) =>
             {
                 Console.Write(x);
-                return Task.CompletedTask;
+                return ValueTask.CompletedTask;
             },
             FunctionCallHandler = (calls) =>
             {
                 calls.ForEach(x => x.Result = new FunctionResult(x, "A mild rain is expected around noon.", null));
-                return Task.CompletedTask;
+                return ValueTask.CompletedTask;
             },
             AfterFunctionCallsResolvedHandler = async (results, handler) => { await chat.StreamResponseRich(handler); }
         };
@@ -1152,12 +1168,12 @@ public static class ChatDemo
             MessageTokenHandler = (x) =>
             {
                 Console.Write(x);
-                return Task.CompletedTask;
+                return ValueTask.CompletedTask;
             },
             FunctionCallHandler = (calls) =>
             {
                 calls.ForEach(x => x.Result = new FunctionResult(x, "A mild rain is expected around noon.", null));
-                return Task.CompletedTask;
+                return ValueTask.CompletedTask;
             },
             AfterFunctionCallsResolvedHandler = async (results, handler) => { await chat.StreamResponseRich(handler); }
         };
@@ -1195,7 +1211,7 @@ public static class ChatDemo
             MessageTokenHandler = (x) =>
             {
                 Console.Write(x);
-                return Task.CompletedTask;
+                return ValueTask.CompletedTask;
             },
             FunctionCallHandler = (functions) =>
             {
@@ -1211,7 +1227,7 @@ public static class ChatDemo
                     }
                 }
 
-                return Task.CompletedTask;
+                return ValueTask.CompletedTask;
             }
         };
 
@@ -1322,7 +1338,7 @@ public static class ChatDemo
         await chat.StreamResponseRich(msgId, (x) =>
         {
             sb.Append(x);
-            return Task.CompletedTask;
+            return ValueTask.CompletedTask;
         }, functions =>
         {
             foreach (FunctionCall fn in functions)
@@ -1330,7 +1346,7 @@ public static class ChatDemo
                 fn.Result = new FunctionResult(fn.Name, "A mild rain is expected around noon.");
             }
 
-            return Task.CompletedTask;
+            return ValueTask.CompletedTask;
         }, null, null);
 
 
@@ -1379,10 +1395,10 @@ public static class ChatDemo
         await chat.StreamResponseRich(msgId, (x) =>
         {
             sb.Append(x);
-            return Task.CompletedTask;
+            return ValueTask.CompletedTask;
         }, functions =>
         {
-            return Task.CompletedTask;
+            return ValueTask.CompletedTask;
         }, null, null);
 
 
@@ -1476,21 +1492,21 @@ public static class ChatDemo
         await chat.StreamResponseRich(msgId, (x) =>
         {
             sb.Append(x);
-            return Task.CompletedTask;
+            return ValueTask.CompletedTask;
         }, functions =>
         {
             List<FunctionResult> results = [];
             
             foreach (FunctionCall fn in functions)
             {
-                results.Add(new FunctionResult(fn.Name, new
+                fn.Result = new FunctionResult(fn.Name, new
                 {
                     result = "ok",
                     weather = "A mild rain is expected around noon."
-                }));
+                });
             }
-
-            return Task.FromResult(results);
+            
+            return ValueTask.CompletedTask;
         }, null);
 
 
