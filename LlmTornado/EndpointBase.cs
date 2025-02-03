@@ -472,7 +472,16 @@ public abstract class EndpointBase
 
             if (response.Data.IsSuccessStatusCode)
             {
-                result.Data = provider.InboundMessage<T>(resultAsString, postData?.ToString());
+                result.Ok = true;
+
+                try
+                {
+                    result.Data = provider.InboundMessage<T>(resultAsString, postData?.ToString());
+                }
+                catch (Exception e)
+                {
+                    
+                }
             }
             
             return result;

@@ -57,4 +57,26 @@ public class CachingDemo
         Console.WriteLine($"Patched:");
         Console.WriteLine($"{patched.Data.Name} - {patched.Data.ExpireTime}");
     }
+    
+    [TornadoTest]
+    public static async Task Delete()
+    {
+        HttpCallResult<CachedContentInformation> created = await Create();
+        
+        HttpCallResult<bool> deleted = await Program.Connect().Caching.Delete(created.Data.Name);
+
+        if (deleted.Ok)
+        {
+            Console.WriteLine($"Cached resource deleted");
+        }
+
+        try
+        {
+            await Program.Connect().Caching.Delete(created.Data.Name);
+        }
+        catch (Exception e) // we forced exception on http level
+        {
+            Console.WriteLine($"Cached resource already deleted");
+        }
+    }
 }
