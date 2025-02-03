@@ -24,7 +24,7 @@ public class CachingDemo
         return cachingResult;
     }
 
-    [TornadoTest("dev")]
+    [TornadoTest]
     public static async Task List()
     {
         HttpCallResult<CachedContentInformation> created = await Create();
@@ -36,5 +36,15 @@ public class CachingDemo
         {
             Console.WriteLine($"{item.Name} - {item.ExpireTime}");
         }
+    }
+    
+    [TornadoTest(FriendlyName = "dev")]
+    public static async Task Get()
+    {
+        HttpCallResult<CachedContentInformation> created = await Create();
+        HttpCallResult<CachedContentInformation> retrieved = await Program.Connect().Caching.Get(created.Data.Name);
+        
+        Console.WriteLine($"Get:");
+        Console.WriteLine($"{retrieved.Data.Name} - {retrieved.Data.ExpireTime}");
     }
 }

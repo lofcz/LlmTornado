@@ -45,4 +45,16 @@ public class CachingEndpoint : EndpointBase
     {
         return HttpGetRaw<CachedContentList>(Api.GetProvider(LLmProviders.Google), Endpoint, queryParams: query?.ToQueryParams(LLmProviders.Google), ct: cancellationToken);
     }
+    
+    /// <summary>
+    /// Reads CachedContent resource.
+    /// </summary>
+    /// <param name="name">Name of the resource, should be cachedContents/{id}</param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public Task<HttpCallResult<CachedContentInformation>> Get(string name, CancellationToken? cancellationToken = null)
+    {
+        IEndpointProvider resolvedProvider = Api.ResolveProvider(LLmProviders.Google);
+        return HttpGetRaw<CachedContentInformation>(resolvedProvider, Endpoint, GetUrl(resolvedProvider, CapabilityEndpoints.BaseUrl, name), ct: cancellationToken);
+    }
 }
