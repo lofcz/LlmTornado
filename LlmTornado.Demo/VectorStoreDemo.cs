@@ -38,10 +38,7 @@ public static class VectorStoreDemo
     [TornadoTest]
     public static async Task<VectorStore> RetrieveVectorStore()
     {
-        if (vectorStore is null)
-        {
-            await CreateVectorStore();
-        }
+        vectorStore ??= await CreateVectorStore();
 
         HttpCallResult<VectorStore> retrieveResult =
             await Program.Connect().VectorStores.Retrieve(vectorStore!.Id);
@@ -52,10 +49,7 @@ public static class VectorStoreDemo
     [TornadoTest]
     public static async Task<VectorStore> ModifyVectorStore()
     {
-        if (vectorStore is null)
-        {
-            await CreateVectorStore();
-        }
+        vectorStore ??= await CreateVectorStore();
 
         HttpCallResult<VectorStore> modifyResult = await Program.Connect().VectorStores.Modify(
             vectorStore!.Id, new VectorStoreModifyRequest
@@ -69,10 +63,7 @@ public static class VectorStoreDemo
     [TornadoTest]
     public static async Task<VectorStoreFile> CreateVectorStoreFile()
     {
-        if (vectorStore is null)
-        {
-            await CreateVectorStore();
-        }
+        vectorStore ??= await CreateVectorStore();
 
         file ??= await FilesDemo.Upload();
 
@@ -90,10 +81,7 @@ public static class VectorStoreDemo
     [TornadoTest]
     public static async Task<VectorStoreFile> CreateVectorStoreFileCustomChunkingStrategy()
     {
-        if (vectorStore is null)
-        {
-            await CreateVectorStore();
-        }
+        vectorStore ??= await CreateVectorStore();
 
         TornadoFile? file = await FilesDemo.Upload();
         if (file is null)
@@ -122,10 +110,7 @@ public static class VectorStoreDemo
     [TornadoTest]
     public static async Task<ListResponse<VectorStoreFile>> ListVectorStoreFiles()
     {
-        if (vectorStore is null)
-        {
-            await CreateVectorStore();
-        }
+        vectorStore ??= await CreateVectorStore();
 
         HttpCallResult<ListResponse<VectorStoreFile>> listResult = await Program.Connect().VectorStores.ListFiles(vectorStore!.Id);
         Console.WriteLine(listResult.Response);
@@ -135,15 +120,8 @@ public static class VectorStoreDemo
     [TornadoTest]
     public static async Task<VectorStoreFile> RetrieveVectorStoreFile()
     {
-        if (vectorStore is null)
-        {
-            await CreateVectorStore();
-        }
-
-        if (vectorStoreFile is null)
-        {
-            await CreateVectorStoreFile();
-        }
+        vectorStore ??= await CreateVectorStore();
+        vectorStoreFile ??= await CreateVectorStoreFile();
 
         HttpCallResult<VectorStoreFile> retrieveResult = await Program.Connect().VectorStores.RetrieveFiles(vectorStore!.Id, vectorStoreFile!.Id);
         Console.WriteLine(retrieveResult.Response);
@@ -153,28 +131,18 @@ public static class VectorStoreDemo
     [TornadoTest]
     public static async Task DeleteVectorStoreFile()
     {
-        if (vectorStore is null)
-        {
-            await CreateVectorStore();
-        }
-
-        if (vectorStoreFile is null)
-        {
-            await CreateVectorStoreFile();
-        }
+        vectorStore ??= await CreateVectorStore();
+        vectorStoreFile ??= await CreateVectorStoreFile();
 
         HttpCallResult<bool> deleteResult = await Program.Connect().VectorStores.DeleteFile(vectorStore!.Id, vectorStoreFile!.Id);
-
+        vectorStoreFile = null;
         Console.WriteLine(deleteResult.Response);
     }
 
     [TornadoTest]
     public static async Task<VectorStoreFileBatch> CreateVectorStoreFileBatch()
     {
-        if (vectorStore is null)
-        {
-            await CreateVectorStore();
-        }
+        vectorStore ??= await CreateVectorStore();
 
         file ??= await FilesDemo.Upload();
 
@@ -196,15 +164,8 @@ public static class VectorStoreDemo
     [TornadoTest]
     public static async Task<ListResponse<VectorStoreFile>> ListVectorStoreBatchFiles()
     {
-        if (vectorStore is null)
-        {
-            await CreateVectorStore();
-        }
-
-        if (vectorStoreFileBatch is null)
-        {
-            await CreateVectorStoreFileBatch();
-        }
+        vectorStore ??= await CreateVectorStore();
+        vectorStoreFileBatch ??= await CreateVectorStoreFileBatch();
 
         HttpCallResult<ListResponse<VectorStoreFile>> listResult = await Program.Connect().VectorStores
             .ListBatchFiles(vectorStore!.Id, vectorStoreFileBatch!.Id);
@@ -215,15 +176,8 @@ public static class VectorStoreDemo
     [TornadoTest]
     public static async Task<VectorStoreFileBatch> RetrieveVectorStoreFileBatch()
     {
-        if (vectorStore is null)
-        {
-            await CreateVectorStore();
-        }
-
-        if (vectorStoreFileBatch is null)
-        {
-            await CreateVectorStoreFileBatch();
-        }
+        vectorStore ??= await CreateVectorStore();
+        vectorStoreFileBatch ??= await CreateVectorStoreFileBatch();
 
         HttpCallResult<VectorStoreFileBatch> retrieveResult = await Program.Connect().VectorStores
             .RetrieveBatchFile(vectorStore!.Id, vectorStoreFileBatch!.Id);
@@ -234,15 +188,8 @@ public static class VectorStoreDemo
     [TornadoTest]
     public static async Task CancelVectorStoreFileBatch()
     {
-        if (vectorStore is null)
-        {
-            await CreateVectorStore();
-        }
-
-        if (vectorStoreFileBatch is null)
-        {
-            await CreateVectorStoreFileBatch();
-        }
+        vectorStore ??= await CreateVectorStore();
+        vectorStoreFileBatch ??= await CreateVectorStoreFileBatch();
 
         HttpCallResult<VectorStoreFileBatch> cancelResult = await Program.Connect().VectorStores
             .CancelFileBatch(vectorStore!.Id, vectorStoreFileBatch!.Id);
@@ -252,12 +199,12 @@ public static class VectorStoreDemo
     [TornadoTest]
     public static async Task DeleteVectorStore()
     {
-        if (vectorStore is null)
-        {
-            await CreateVectorStore();
-        }
+        vectorStore ??= await CreateVectorStore();
 
         HttpCallResult<bool> deleteResult = await Program.Connect().VectorStores.Delete(vectorStore!.Id);
+        vectorStore = null;
+        vectorStoreFile = null;
+        vectorStoreFileBatch = null;
         Console.WriteLine(deleteResult.Response);
     }
     
@@ -269,6 +216,9 @@ public static class VectorStoreDemo
             where vectorStore.Name.StartsWith("demo_vector_store")
             select Program.Connect().VectorStores.Delete(vectorStore.Id)).ToList();
         Console.WriteLine($"Deleting {tasks.Count} vector stores...");
+        vectorStore = null;
+        vectorStoreFile = null;
+        vectorStoreFileBatch = null;
         await Task.WhenAll(tasks);
     }
 }

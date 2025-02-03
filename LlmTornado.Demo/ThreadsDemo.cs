@@ -10,6 +10,7 @@ public static class ThreadsDemo
     private static Thread? generatedThread;
     private static Message? generatedMessage;
 
+    [TornadoTest]
     public static async Task<Thread> CreateThread()
     {
         HttpCallResult<Thread> thread = await Program.Connect().Threads.CreateThreadAsync();
@@ -18,6 +19,7 @@ public static class ThreadsDemo
         return thread.Data!;
     }
 
+    [TornadoTest]
     public static async Task<Thread> Retrieve()
     {
         generatedThread ??= await CreateThread();
@@ -26,6 +28,7 @@ public static class ThreadsDemo
         return response.Data!;
     }
 
+    [TornadoTest]
     public static async Task<Thread> Modify()
     {
         generatedThread ??= await CreateThread();
@@ -42,6 +45,7 @@ public static class ThreadsDemo
         return response.Data!;
     }
 
+    [TornadoTest]
     public static async Task<bool> Delete(Thread thread)
     {
         HttpCallResult<bool> deleted = await Program.Connect().Threads.DeleteThreadAsync(thread.Id);
@@ -60,6 +64,7 @@ public static class ThreadsDemo
         Console.WriteLine(deleted.Response);
     }
 
+    [TornadoTest]
     public static async Task<Message> CreateMessage()
     {
         generatedThread ??= await CreateThread();
@@ -73,6 +78,7 @@ public static class ThreadsDemo
         return response.Data!;
     }
 
+    [TornadoTest]
     public static async Task<Message> RetrieveMessage()
     {
         generatedThread ??= await CreateThread();
@@ -84,6 +90,7 @@ public static class ThreadsDemo
         return response.Data!;
     }
 
+    [TornadoTest]
     public static async Task<IReadOnlyList<Message>> ListMessages()
     {
         generatedThread ??= await CreateThread();
@@ -95,6 +102,7 @@ public static class ThreadsDemo
         return response.Data!.Items;
     }
 
+    [TornadoTest]
     public static async Task<Message> ModifyMessage()
     {
         generatedThread ??= await CreateThread();
@@ -114,6 +122,7 @@ public static class ThreadsDemo
         return response.Data!;
     }
 
+    [TornadoTest]
     public static async Task<bool> DeleteMessage()
     {
         generatedThread ??= await CreateThread();
