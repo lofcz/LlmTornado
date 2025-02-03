@@ -6,6 +6,7 @@ namespace LlmTornado.Demo;
 
 public static class TranscriptionDemo
 {
+    [TornadoTest]
     public static async Task TranscribeFormatText()
     {
         byte[] audioData = await File.ReadAllBytesAsync("Static/Audio/sample.wav");
@@ -23,6 +24,7 @@ public static class TranscriptionDemo
         }
     }
     
+    [TornadoTest]
     public static async Task TranscribeFormatJson()
     {
         byte[] audioData = await File.ReadAllBytesAsync("Static/Audio/sample.wav");
@@ -40,6 +42,7 @@ public static class TranscriptionDemo
         }
     }
     
+    [TornadoTest]
     public static async Task TranscribeFormatSrt()
     {
         byte[] audioData = await File.ReadAllBytesAsync("Static/Audio/sample.wav");
@@ -57,6 +60,7 @@ public static class TranscriptionDemo
         }
     }
     
+    [TornadoTest]
     public static async Task TranscribeFormatJsonVerbose()
     {
         byte[] audioData = await File.ReadAllBytesAsync("Static/Audio/sample.wav");
@@ -74,6 +78,7 @@ public static class TranscriptionDemo
         }
     }
     
+    [TornadoTest]
     public static async Task TranscribeFormatJsonVerboseGroq()
     {
         byte[] audioData = await File.ReadAllBytesAsync("Static/Audio/sample.wav");

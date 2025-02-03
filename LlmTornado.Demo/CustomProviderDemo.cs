@@ -6,6 +6,8 @@ namespace LlmTornado.Demo;
 
 public class CustomProviderDemo
 {
+    [Flaky("requires ollama")]
+    [TornadoTest]
     public static async Task Ollama()
     {
         TornadoApi api = new TornadoApi(new Uri("http://localhost:11434"));
@@ -17,6 +19,8 @@ public class CustomProviderDemo
         Console.WriteLine(response);
     }
     
+    [Flaky("requires ollama")]
+    [TornadoTest]
     public static async Task OllamaStreaming()
     {
         TornadoApi api = new TornadoApi(new Uri("http://localhost:11434"));

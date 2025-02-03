@@ -14,6 +14,7 @@ public static class VectorStoreDemo
 
     private static string GenerateVectorStoreName() => $"demo_vector_store_{DateTime.Now.Ticks}";
     
+    [TornadoTest]
     public static async Task<VectorStore> CreateVectorStore()
     {
         HttpCallResult<VectorStore> createResult = await Program.Connect().VectorStores.Create(
@@ -26,6 +27,7 @@ public static class VectorStoreDemo
         return createResult.Data!;
     }
 
+    [TornadoTest]
     public static async Task<ListResponse<VectorStore>> ListVectorStores()
     {
         HttpCallResult<ListResponse<VectorStore>> listResult = await Program.Connect().VectorStores.List();
@@ -33,6 +35,7 @@ public static class VectorStoreDemo
         return listResult.Data!;
     }
 
+    [TornadoTest]
     public static async Task<VectorStore> RetrieveVectorStore()
     {
         if (vectorStore is null)
@@ -46,6 +49,7 @@ public static class VectorStoreDemo
         return retrieveResult.Data!;
     }
 
+    [TornadoTest]
     public static async Task<VectorStore> ModifyVectorStore()
     {
         if (vectorStore is null)
@@ -62,6 +66,7 @@ public static class VectorStoreDemo
         return modifyResult.Data!;
     }
 
+    [TornadoTest]
     public static async Task<VectorStoreFile> CreateVectorStoreFile()
     {
         if (vectorStore is null)
@@ -82,6 +87,7 @@ public static class VectorStoreDemo
         return createResult.Data!;
     }
     
+    [TornadoTest]
     public static async Task<VectorStoreFile> CreateVectorStoreFileCustomChunkingStrategy()
     {
         if (vectorStore is null)
@@ -113,6 +119,7 @@ public static class VectorStoreDemo
         return createResult.Data!;
     }
 
+    [TornadoTest]
     public static async Task<ListResponse<VectorStoreFile>> ListVectorStoreFiles()
     {
         if (vectorStore is null)
@@ -125,6 +132,7 @@ public static class VectorStoreDemo
         return listResult.Data!;
     }
 
+    [TornadoTest]
     public static async Task<VectorStoreFile> RetrieveVectorStoreFile()
     {
         if (vectorStore is null)
@@ -142,6 +150,7 @@ public static class VectorStoreDemo
         return retrieveResult.Data!;
     }
 
+    [TornadoTest]
     public static async Task DeleteVectorStoreFile()
     {
         if (vectorStore is null)
@@ -159,6 +168,7 @@ public static class VectorStoreDemo
         Console.WriteLine(deleteResult.Response);
     }
 
+    [TornadoTest]
     public static async Task<VectorStoreFileBatch> CreateVectorStoreFileBatch()
     {
         if (vectorStore is null)
@@ -183,6 +193,7 @@ public static class VectorStoreDemo
         return createResult.Data!;
     }
 
+    [TornadoTest]
     public static async Task<ListResponse<VectorStoreFile>> ListVectorStoreBatchFiles()
     {
         if (vectorStore is null)
@@ -201,6 +212,7 @@ public static class VectorStoreDemo
         return listResult.Data!;
     }
 
+    [TornadoTest]
     public static async Task<VectorStoreFileBatch> RetrieveVectorStoreFileBatch()
     {
         if (vectorStore is null)
@@ -219,6 +231,7 @@ public static class VectorStoreDemo
         return retrieveResult.Data!;
     }
 
+    [TornadoTest]
     public static async Task CancelVectorStoreFileBatch()
     {
         if (vectorStore is null)
@@ -236,6 +249,7 @@ public static class VectorStoreDemo
         Console.WriteLine(cancelResult.Response);
     }
 
+    [TornadoTest]
     public static async Task DeleteVectorStore()
     {
         if (vectorStore is null)
@@ -247,6 +261,7 @@ public static class VectorStoreDemo
         Console.WriteLine(deleteResult.Response);
     }
     
+    [TornadoTest]
     public static async Task DeleteAllDemoVectorStores()
     {
         ListResponse<VectorStore> vectorStores = await ListVectorStores();

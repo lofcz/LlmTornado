@@ -6,6 +6,7 @@ namespace LlmTornado.Demo;
 
 public static class EmbeddingDemo
 {
+    [TornadoTest]
     public static async Task Embed()
     {
         EmbeddingResult? result = await Program.ConnectMulti().Embeddings.CreateEmbedding(EmbeddingModel.OpenAi.Gen2.Ada, "lorem ipsum");
@@ -20,12 +21,14 @@ public static class EmbeddingDemo
         }
     }
     
+    [TornadoTest]
     public static async Task EmbedVector()
     {
         EmbeddingResult? result = await Program.ConnectMulti().Embeddings.CreateEmbedding(EmbeddingModel.OpenAi.Gen2.Ada, [ "how are you", "how are you doing" ]);
         Console.WriteLine(result?.Data.Count ?? 0);
     }
 
+    [TornadoTest]
     public static async Task EmbedCohere()
     {
         EmbeddingResult? result = await Program.ConnectMulti().Embeddings.CreateEmbedding(EmbeddingModel.Cohere.Gen3.Multilingual, "lorem ipsum");
@@ -42,6 +45,7 @@ public static class EmbeddingDemo
         }
     }
     
+    [TornadoTest]
     public static async Task EmbedCohereExtensions()
     {
         foreach (EmbeddingVendorCohereExtensionInputTypes mode in Enum.GetValues<EmbeddingVendorCohereExtensionInputTypes>())
@@ -70,6 +74,7 @@ public static class EmbeddingDemo
         }
     }
     
+    [TornadoTest]
     public static async Task EmbedCohereVector()
     {
         EmbeddingResult? result = await Program.ConnectMulti().Embeddings.CreateEmbedding(EmbeddingModel.Cohere.Gen3.Multilingual, [ "lorem ipsum", "dolor sit amet" ]);

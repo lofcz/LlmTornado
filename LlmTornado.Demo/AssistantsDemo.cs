@@ -11,6 +11,7 @@ public static class AssistantsDemo
     private static string GenerateName() => $"demo_assistant_{DateTime.Now.Ticks}";
     private static Assistant? generatedAssistant;
 
+    [TornadoTest]
     public static async Task<IReadOnlyList<Assistant>> List()
     {
         HttpCallResult<ListResponse<Assistant>> response = await Program.Connect().Assistants.ListAssistantsAsync();
@@ -18,6 +19,7 @@ public static class AssistantsDemo
         return response.Data!.Items;
     }
 
+    [TornadoTest]
     public static async Task<Assistant?> Create()
     {
         HttpCallResult<Assistant> response = await Program.Connect().Assistants
@@ -28,6 +30,7 @@ public static class AssistantsDemo
         return response.Data;
     }
 
+    [TornadoTest]
     public static async Task<Assistant> CreateFunctionAssistant()
     {
         HttpCallResult<Assistant> response = await Program.Connect().Assistants.CreateAssistantAsync(
@@ -64,6 +67,7 @@ public static class AssistantsDemo
         return response.Data!;
     }
 
+    [TornadoTest]
     public static async Task<Assistant> CreateFileSearchAssistant()
     {
         VectorStoreFile vectorStoreFile = await VectorStoreDemo.CreateVectorStoreFile();
@@ -92,6 +96,7 @@ public static class AssistantsDemo
         return response.Data!;
     }
 
+    [TornadoTest]
     public static async Task<Assistant> CreateWithCodeInterpreter()
     {
         VectorStoreFile vectorStoreFile = await VectorStoreDemo.CreateVectorStoreFile();
@@ -120,6 +125,7 @@ public static class AssistantsDemo
         return response.Data!;
     }
 
+    [TornadoTest]
     public static async Task<Assistant?> Retrieve()
     {
         if (generatedAssistant is null)
@@ -133,6 +139,7 @@ public static class AssistantsDemo
         return response.Data;
     }
 
+    [TornadoTest]
     public static async Task<Assistant?> Modify()
     {
         if (generatedAssistant is null)
@@ -151,6 +158,7 @@ public static class AssistantsDemo
         return response.Data;
     }
 
+    [TornadoTest]
     public static async Task<bool> Delete()
     {
         if (generatedAssistant is null)
@@ -163,6 +171,7 @@ public static class AssistantsDemo
         return response.Data;
     }
 
+    [TornadoTest]
     public static async Task DeleteAllDemoAssistants()
     {
         IReadOnlyList<Assistant> assistants = await List();

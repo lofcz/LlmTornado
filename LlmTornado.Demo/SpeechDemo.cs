@@ -5,6 +5,8 @@ namespace LlmTornado.Demo;
 
 public static class SpeechDemo
 {
+    [TornadoTest]
+    [Flaky("expensive")]
     public static async Task Tts()
     {
         SpeechTtsResult? result = await Program.Connect().Audio.CreateSpeech(new SpeechRequest

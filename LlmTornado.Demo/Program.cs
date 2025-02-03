@@ -75,7 +75,7 @@ public class Program
         return true;
     }
 
-    public static readonly Dictionary<string, MethodInfo> DemoDict = [];
+    public static readonly Dictionary<string, Tuple<MethodInfo, string?, Type, FlakyAttribute?>> DemoDict = [];
     public static readonly List<Tuple<Type, Type>> DemoEnumTypes = [];
     
     static Program()
@@ -102,7 +102,13 @@ public class Program
             {
                 foreach (MethodInfo method in type.GetMethods(BindingFlags.Public | BindingFlags.Static))
                 {
-                    DemoDict[$"{type.FullName}.{method.Name}"] = method;
+                    object[] testAttrs = method.GetCustomAttributes(typeof(TornadoTestAttribute), false);
+
+                    if (testAttrs.Length > 0 && testAttrs[0] is TornadoTestAttribute tta)
+                    {
+                        object[] flaky = method.GetCustomAttributes(typeof(FlakyAttribute), false);
+                        DemoDict[$"{type.FullName}.{method.Name}"] = new Tuple<MethodInfo, string?, Type, FlakyAttribute?>(method, tta.FriendlyName, type, flaky.Length is 0 ? null : flaky[0] as FlakyAttribute);   
+                    }
                 }   
             }
         }
@@ -115,10 +121,17 @@ public class Program
 
         int i = 1;
         
-        foreach (KeyValuePair<string, MethodInfo> demo in DemoDict.OrderBy(x => x.Key, StringComparer.InvariantCultureIgnoreCase))
+        foreach (KeyValuePair<string, Tuple<MethodInfo, string?, Type, FlakyAttribute?>> demo in DemoDict.OrderBy(x => x.Key, StringComparer.InvariantCultureIgnoreCase))
         {
             Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.Write($"({i})");
+            Console.Write($"({i}");
+
+            if (demo.Value.Item2?.Length > 0)
+            {
+                Console.Write($", {demo.Value.Item2}");
+            }
+            
+            Console.Write(")");
             Console.ResetColor();
             
             Console.Write($" {demo.Key}");
@@ -127,7 +140,7 @@ public class Program
         }        
         
         Console.WriteLine();
-        Console.WriteLine($"Number to play:");
+        Console.WriteLine($"Enter either number or friendly name of the demo to run:");
     }
 
     static async Task Read()
@@ -136,10 +149,11 @@ public class Program
         
         string? toPlay = Console.ReadLine();
 
+        // 1. try to interpret as numeric input
         if (int.TryParse(toPlay, out int demoN) && demoN > 0 && demoN <= DemoDict.Count)
         {
-            KeyValuePair<string, MethodInfo> selected = DemoDict.OrderBy(x => x.Key, StringComparer.InvariantCultureIgnoreCase).Skip(demoN - 1).FirstOrDefault();
-            await (Task)selected.Value.Invoke(null, null);
+            KeyValuePair<string, Tuple<MethodInfo, string?, Type, FlakyAttribute?>> selected = DemoDict.OrderBy(x => x.Key, StringComparer.InvariantCultureIgnoreCase).Skip(demoN - 1).FirstOrDefault();
+            await (Task)selected.Value.Item1.Invoke(null, null);
 
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("Demo finished");
@@ -148,6 +162,27 @@ public class Program
             return;
         }
 
+        // 2. try looking up by friendly name (grossly ineffective..)
+        foreach (KeyValuePair<string, Tuple<MethodInfo, string?, Type, FlakyAttribute?>> x in DemoDict)
+        {
+            if (x.Value.Item2 is null)
+            {
+                continue;
+            }
+
+            if (string.Equals(x.Value.Item2.Trim(), toPlay?.Trim()))
+            {
+                await (Task)x.Value.Item1.Invoke(null, null);
+
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine("Demo finished");
+                Console.ResetColor();
+                Console.ReadKey();
+                return;
+            }
+        }
+
+        // 3. yell at user
         Console.ForegroundColor = ConsoleColor.Red;
         Console.WriteLine($"Invalid number, expected 1-{DemoDict.Count}");
         Console.ReadKey();
@@ -156,7 +191,7 @@ public class Program
     public static async Task Main(string[] args)
     {
         Console.Title = "LlmTornado Demo";
-
+        
         if (!await SetupApi())
         {
             return;

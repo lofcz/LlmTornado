@@ -7,6 +7,7 @@ namespace LlmTornado.Demo;
 
 public class CachingDemo
 {
+    [TornadoTest]
     public static async Task<HttpCallResult<CachedContentInformation>> Create()
     {
         string text = await File.ReadAllTextAsync("Static/Files/a11.txt");
@@ -16,7 +17,10 @@ public class CachingDemo
                 new ChatMessagePart(text)
             ], CachedContentRoles.User)
         ]));
-
+        
+        Console.WriteLine(cachingResult.Data.Name);
+        Console.WriteLine(cachingResult.Data.ExpireTime);
+        
         return cachingResult;
     }
 }

@@ -5,12 +5,16 @@ namespace LlmTornado.Demo;
 
 public static class ThreadsDemo
 {
+    [Flaky]
+    [TornadoTest]
     public static async Task<ThreadResponse?> Create()
     {
         HttpCallResult<ThreadResponse> thread = await Program.Connect().Threads.CreateThreadAsync();
         return thread.Data;
     }
 
+    [Flaky]
+    [TornadoTest]
     public static async Task<ThreadResponse> Retrieve()
     {
         ThreadResponse? response = await Create();
@@ -18,6 +22,8 @@ public static class ThreadsDemo
         return response;
     }
     
+    [Flaky]
+    [TornadoTest]
     public static async Task<ThreadResponse> Modify()
     {
         ThreadResponse? response = await Create();
@@ -30,12 +36,16 @@ public static class ThreadsDemo
         return response;
     }
     
+    [Flaky]
+    [TornadoTest]
     public static async Task<bool> Delete(ThreadResponse thread)
     {
         HttpCallResult<bool> deleted = await Program.Connect().Threads.DeleteThreadAsync(thread.Id);
         return deleted.Data;
     }
     
+    [Flaky]
+    [TornadoTest]
     public static async Task Delete()
     {
         ThreadResponse? response = await Create();
@@ -43,6 +53,8 @@ public static class ThreadsDemo
         HttpCallResult<ThreadResponse> retrieveResponse = await Program.Connect().Threads.RetrieveThreadAsync(response.Id);
     }
     
+    [Flaky]
+    [TornadoTest]
     public static async Task CreateMessage()
     {
         ThreadResponse? response = await Create();

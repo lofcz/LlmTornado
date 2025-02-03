@@ -1,6 +1,6 @@
 namespace LlmTornado.Demo;
 
-[AttributeUsage(AttributeTargets.Field)]
+[AttributeUsage(AttributeTargets.Method)]
 public class FlakyAttribute : Attribute
 {
     public string? Reason { get; set; }
@@ -18,6 +18,21 @@ public class MethodAttribute : Attribute
     public MethodAttribute(string methodName)
     {
         MethodName = methodName;
+    }
+}
+
+public class TornadoTestAttribute : Attribute
+{
+    public string? FriendlyName { get; set; }
+    
+    public TornadoTestAttribute()
+    {
+
+    }
+    
+    public TornadoTestAttribute(string friendlyName)
+    {
+        FriendlyName = friendlyName;
     }
 }
 

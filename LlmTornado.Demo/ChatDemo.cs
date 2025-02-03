@@ -16,6 +16,7 @@ namespace LlmTornado.Demo;
 
 public static class ChatDemo
 {
+    [TornadoTest]
     public static async Task<ChatResult?> Completion()
     {
         ChatResult? result = await Program.Connect().Chat.CreateChatCompletion(new ChatRequest
@@ -33,6 +34,7 @@ public static class ChatDemo
         return result;
     }
     
+    [TornadoTest]
     public static async Task<ChatResult?> CompletionO1Developer()
     {
         ChatResult? result = await Program.Connect().Chat.CreateChatCompletion(new ChatRequest
@@ -51,6 +53,7 @@ public static class ChatDemo
         return result;
     }
     
+    [TornadoTest]
     public static async Task<ChatResult?> Completion4Mini()
     {
         ChatResult? result = await Program.Connect().Chat.CreateChatCompletion(new ChatRequest
@@ -68,6 +71,7 @@ public static class ChatDemo
         return result;
     }
     
+    [TornadoTest]
     public static async Task<ChatResult?> CompletionGroq()
     {
         ChatResult? result = await Program.Connect().Chat.CreateChatCompletion(new ChatRequest
@@ -85,6 +89,7 @@ public static class ChatDemo
         return result;
     }
 
+    [TornadoTest]
     public static async Task Completion4OStructuredJson()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
@@ -110,6 +115,7 @@ public static class ChatDemo
         int z = 1;
     }
     
+    [TornadoTest]
     public static async Task<bool> ChatFunctionRequired()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
@@ -133,6 +139,7 @@ public static class ChatDemo
         return false;
     }
     
+    [TornadoTest]
     public static async Task<bool> ChatFunctionGemini()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
@@ -171,6 +178,7 @@ public static class ChatDemo
         return false;
     }
     
+    [TornadoTest]
     public static async Task<bool> ChatFunctionGeminiStrict()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
@@ -209,6 +217,8 @@ public static class ChatDemo
         return false;
     }
 
+    [Flaky("interactive")]
+    [TornadoTest]
     public static async Task AnthropicCachingChat()
     {
         Conversation chat = Program.Connect(LLmProviders.Cohere).Chat.CreateConversation(new ChatRequest
@@ -304,6 +314,7 @@ public static class ChatDemo
         });
     }
 
+    [TornadoTest]
     public static async Task AnthropicCaching()
     {
         string longPrompt = await File.ReadAllTextAsync("Static/Files/pride_and_prejudice.txt");
@@ -378,6 +389,7 @@ public static class ChatDemo
         }
     }
     
+    [TornadoTest]
     public static async Task CohereWebSearch()
     {
         Conversation chat = Program.Connect(LLmProviders.Cohere).Chat.CreateConversation(new ChatRequest
@@ -414,21 +426,28 @@ public static class ChatDemo
         }
     }
 
+    [Flaky("interactive demo")]
+    [TornadoTest]
     public static async Task OpenAiFunctionsStreamingInteractive()
     {
         await InternalFunctionsStreamingInteractive(LLmProviders.OpenAi, ChatModel.OpenAi.Gpt4.O);
     }
     
+    [Flaky("interactive demo")]
+    [TornadoTest]
     public static async Task AnthropicFunctionsStreamingInteractive()
     {
         await InternalFunctionsStreamingInteractive(LLmProviders.Anthropic, ChatModel.Anthropic.Claude3.Sonnet);
     }
     
+    [Flaky("interactive demo")]
+    [TornadoTest]
     public static async Task CohereFunctionsStreamingInteractive()
     {
         await InternalFunctionsStreamingInteractive(LLmProviders.Cohere, ChatModel.Cohere.Command.Default);
     }
 
+    [TornadoTest]
     private static async Task InternalFunctionsStreamingInteractive(LLmProviders provider, ChatModel model)
     {
         // 1. set up a sample tool using strongly typed model
@@ -518,6 +537,8 @@ public static class ChatDemo
         }
     }
     
+    [Flaky("interactive demo")]
+    [TornadoTest]
     public static async Task CrossVendorFunctionsStreamingInteractive()
     {
         ChatModel startModel = ChatModel.OpenAi.Gpt4.O;
@@ -640,6 +661,7 @@ public static class ChatDemo
         }
     }
     
+    [TornadoTest]
     public static async Task CohereWebSearchStreaming()
     {
         Conversation chat = Program.Connect(LLmProviders.Cohere).Chat.CreateConversation(new ChatRequest
@@ -694,6 +716,7 @@ public static class ChatDemo
         });
     }
     
+    [TornadoTest]
     public static async Task GoogleStreamFileInput()
     {
         TornadoApi api = Program.Connect(LLmProviders.Google);
@@ -731,6 +754,7 @@ public static class ChatDemo
         });
     }
     
+    [TornadoTest]
     public static async Task GoogleStream()
     {
         Conversation chat = Program.Connect(LLmProviders.Google).Chat.CreateConversation(new ChatRequest
@@ -744,6 +768,7 @@ public static class ChatDemo
         await chat.StreamResponse(Console.Write);
     }
     
+    [TornadoTest]
     public static async Task Google()
     {
         Conversation chat = Program.Connect(LLmProviders.Google).Chat.CreateConversation(new ChatRequest
@@ -759,6 +784,7 @@ public static class ChatDemo
         Console.WriteLine(str);
     }
 
+    [TornadoTest]
     public static async Task AudioInWav()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
@@ -778,6 +804,7 @@ public static class ChatDemo
         Console.WriteLine(str);
     }
     
+    [TornadoTest]
     public static async Task AudioInWavStreaming()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
@@ -805,6 +832,7 @@ public static class ChatDemo
         int z = 0;
     }
     
+    [TornadoTest]
     public static async Task AudioInAudioOutWav()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
@@ -840,6 +868,7 @@ public static class ChatDemo
         }
     }
     
+    [TornadoTest]
     public static async Task AudioInAudioOutWavStreaming()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
@@ -870,6 +899,7 @@ public static class ChatDemo
         });
     }
     
+    [TornadoTest]
     public static async Task AudioInAudioOutMultiturn()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
@@ -935,6 +965,7 @@ public static class ChatDemo
         Console.WriteLine($"Tokens total: {tokens}");
     }
     
+    [TornadoTest]
     public static async Task AudioInMp3()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
@@ -954,6 +985,7 @@ public static class ChatDemo
         Console.WriteLine(str);
     }
     
+    [TornadoTest]
     public static async Task Haiku35()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
@@ -969,6 +1001,7 @@ public static class ChatDemo
         Console.WriteLine(str);
     }
     
+    [TornadoTest]
     public static async Task OpenAiO3()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
@@ -984,6 +1017,7 @@ public static class ChatDemo
         Console.WriteLine(str);
     }
 
+    [TornadoTest]
     public static async Task Cohere()
     {
         Conversation chat = Program.Connect(LLmProviders.Cohere).Chat.CreateConversation(new ChatRequest
@@ -999,6 +1033,7 @@ public static class ChatDemo
         Console.WriteLine(str);
     }
     
+    [TornadoTest]
     public static async Task Cohere2408()
     {
         Conversation chat = Program.Connect(LLmProviders.Cohere).Chat.CreateConversation(new ChatRequest
@@ -1021,6 +1056,8 @@ public static class ChatDemo
         Console.WriteLine(str);
     }
 
+    [Flaky("covered by other tests, takes a long time to finish")]
+    [TornadoTest]
     public static async Task AllChatVendors()
     {
         TornadoApi api = new TornadoApi(new List<ProviderAuthentication>
@@ -1052,6 +1089,7 @@ public static class ChatDemo
         }
     }
     
+    [TornadoTest]
     public static async Task CohereStreaming()
     {
         Conversation chat = Program.Connect(LLmProviders.Cohere).Chat.CreateConversation(new ChatRequest
@@ -1067,6 +1105,7 @@ public static class ChatDemo
         Console.WriteLine();
     }
 
+    [TornadoTest]
     public static async Task Anthropic()
     {
        Conversation chat = Program.Connect(LLmProviders.Anthropic).Chat.CreateConversation(new ChatRequest
@@ -1093,6 +1132,7 @@ public static class ChatDemo
        Console.WriteLine(str2);
     }
     
+    [TornadoTest]
     public static async Task OpenAiFunctions()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
@@ -1137,6 +1177,7 @@ public static class ChatDemo
         await chat.StreamResponseRich(handler);
     }
     
+    [TornadoTest]
     public static async Task OpenAiDisableParallelFunctions()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
@@ -1181,6 +1222,7 @@ public static class ChatDemo
         await chat.StreamResponseRich(handler);
     }
     
+    [TornadoTest]
     public static async Task AnthropicFunctionsParallel()
     {
         StringBuilder sb = new StringBuilder();
@@ -1243,6 +1285,7 @@ public static class ChatDemo
         await chat.StreamResponseRich(eventsHandler);
     }
     
+    [TornadoTest]
     public static async Task GoogleFunctions()
     {
         Conversation chat = Program.Connect(LLmProviders.Google).Chat.CreateConversation(new ChatRequest
@@ -1295,6 +1338,7 @@ public static class ChatDemo
         Console.WriteLine(r);
     }
     
+    [TornadoTest]
     public static async Task AnthropicStreamingFunctions()
     {
         StringBuilder sb = new StringBuilder();
@@ -1354,6 +1398,7 @@ public static class ChatDemo
         Console.WriteLine(response);
     }
 
+    [TornadoTest]
     public static async Task AnthropicFailFunctions()
     {
         StringBuilder sb = new StringBuilder();
@@ -1406,7 +1451,7 @@ public static class ChatDemo
         Console.WriteLine(response);
     }
 
-    
+    [TornadoTest]
     public static async Task Azure()
     {
         Conversation chat = Program.Connect(LLmProviders.AzureOpenAi).Chat.CreateConversation(new ChatRequest
@@ -1423,6 +1468,7 @@ public static class ChatDemo
         Console.WriteLine(str);
     }
 
+    [TornadoTest]
     public static async Task AnthropicStreaming()
     {
         Conversation chat = Program.Connect(LLmProviders.Anthropic).Chat.CreateConversation(new ChatRequest
@@ -1437,6 +1483,7 @@ public static class ChatDemo
         Console.WriteLine();
     }
 
+    [TornadoTest]
     public static async Task GroqStreaming()
     {
         foreach (IModel x in ChatModel.Groq.AllModels)
@@ -1455,6 +1502,7 @@ public static class ChatDemo
         }
     }
 
+    [TornadoTest]
     public static async Task<string> StreamWithFunctions()
     {
         StringBuilder sb = new StringBuilder();

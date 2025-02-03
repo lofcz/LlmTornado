@@ -22,34 +22,19 @@ public class Tests
 
     private static IEnumerable<TestCaseData> DemoCases()
     {
-        foreach (Tuple<Type, Type> type in Program.DemoEnumTypes.OrderBy(x => x.Item1.Name, StringComparer.InvariantCulture))
+        foreach (KeyValuePair<string, Tuple<MethodInfo, string?, Type, FlakyAttribute?>> mi in Program.DemoDict.OrderBy(x => x.Key, StringComparer.InvariantCulture))
         {
-            foreach (object? eVal in Enum.GetValues(type.Item1))
+            TestCaseData testCase = new TestCaseData(string.Empty, new GeneratedTestCase
             {
-                List<string> keys = Program.DemoDict.Select(x => x.Key).OrderBy(x => x, StringComparer.InvariantCulture).ToList();
+                Fn = () => (Task)mi.Value.Item1.Invoke(null, null),
+                Flaky = mi.Value.Item4 is not null,
+                FlakyReason = mi.Value.Item4?.Reason
+            }) 
+            {
+                TestName = $"{mi.Value.Item3.Name} - {mi.Value.Item1.Name}"
+            };
                 
-                object[] attrs = eVal.GetType().GetField(eVal.ToString()).GetCustomAttributes(typeof(MethodAttribute), false);
-
-                if (attrs.Length > 0 && attrs[0] is MethodAttribute ma)
-                {
-                    if (Program.DemoDict.TryGetValue($"{type.Item2.FullName}.{ma.MethodName}", out MethodInfo? mi))
-                    {
-                        FlakyAttribute[]? flakyAttrs = (FlakyAttribute[]?)eVal.GetType().GetField(eVal.ToString())?.GetCustomAttributes(typeof(FlakyAttribute), false);
-                    
-                        TestCaseData testCase = new TestCaseData(string.Empty, new GeneratedTestCase
-                        {
-                            Fn = () => (Task)mi.Invoke(null, null),
-                            Flaky = flakyAttrs?.Length > 0,
-                            FlakyReason = flakyAttrs?.Length > 0 ? flakyAttrs[0].Reason : null
-                        }) 
-                        {
-                            TestName = $"{type.Item1.Name} - {mi.Name}"
-                        };
-                
-                        yield return testCase;
-                    }   
-                }
-            }
+            yield return testCase;
         }
     }
     

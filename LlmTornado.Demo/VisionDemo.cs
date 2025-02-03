@@ -9,6 +9,8 @@ namespace LlmTornado.Demo;
 
 public static class VisionDemo
 {
+    [Flaky("Deprecated by OpenAI")]
+    [TornadoTest]
     public static async Task Vision()
     {
         ChatResult? result = await Program.Connect().Chat.CreateChatCompletion([
@@ -18,6 +20,8 @@ public static class VisionDemo
         Console.WriteLine(result?.Choices?[0].Message?.Content);
     }
 
+    [Flaky("Deprecated by OpenAI")]
+    [TornadoTest]
     public static async Task VisionBase64()
     {
         byte[] bytes = await File.ReadAllBytesAsync("Static/Images/catBoi.jpg");

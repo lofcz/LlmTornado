@@ -6,6 +6,7 @@ namespace LlmTornado.Demo;
 
 public static class FilesDemo
 {
+    [TornadoTest]
     public static async Task<TornadoFile?> Upload()
     {
         HttpCallResult<TornadoFile> uploadedFile = await Program.Connect().Files.Upload("Static/Files/sample.pdf", FilePurpose.Assistants);
@@ -15,6 +16,7 @@ public static class FilesDemo
         return uploadedFile.Data;
     }
     
+    [TornadoTest]
     public static async Task<TornadoFile?> UploadGoogle()
     {
         HttpCallResult<TornadoFile> uploadedFile = await Program.Connect().Files.Upload("Static/Files/sample.pdf", provider: LLmProviders.Google);
@@ -24,6 +26,7 @@ public static class FilesDemo
         return uploadedFile.Data;
     }
 
+    [TornadoTest]
     public static async Task<TornadoPagingList<TornadoFile>?> GetAllFilesGoogle()
     {
         TornadoPagingList<TornadoFile>? items = await Program.Connect().Files.Get(new ListQuery(100), provider: LLmProviders.Google);
@@ -41,6 +44,7 @@ public static class FilesDemo
         return items;
     }
     
+    [TornadoTest]
     public static async Task<TornadoPagingList<TornadoFile>?> GetAllFilesOpenAi()
     {
         TornadoPagingList<TornadoFile>? items = await Program.Connect().Files.Get(provider: LLmProviders.OpenAi);
@@ -58,6 +62,7 @@ public static class FilesDemo
         return items;
     }
     
+    [TornadoTest]
     public static async Task<bool> DeleteFileOpenAi()
     {
         HttpCallResult<TornadoFile> uploadedFile = await Program.Connect().Files.Upload("Static/Files/sample.pdf", FilePurpose.Assistants, provider: LLmProviders.OpenAi);
@@ -66,6 +71,7 @@ public static class FilesDemo
         return deleteResult is not null;
     }
     
+    [TornadoTest]
     public static async Task<bool> DeleteFileGoogle()
     {
         HttpCallResult<TornadoFile> uploadedFile = await Program.Connect().Files.Upload("Static/Files/sample.pdf", provider: LLmProviders.Google);
