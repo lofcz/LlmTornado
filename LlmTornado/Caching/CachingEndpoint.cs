@@ -1,3 +1,6 @@
+using System;
+using System.Globalization;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using LlmTornado.Code;
@@ -56,5 +59,33 @@ public class CachingEndpoint : EndpointBase
     {
         IEndpointProvider resolvedProvider = Api.ResolveProvider(LLmProviders.Google);
         return HttpGetRaw<CachedContentInformation>(resolvedProvider, Endpoint, GetUrl(resolvedProvider, CapabilityEndpoints.BaseUrl, name), ct: cancellationToken);
+    }
+    
+    /// <summary>
+    /// Updates CachedContent resource (only expiration is updatable).
+    /// </summary>
+    /// <param name="name">Name of the resource, should be cachedContents/{id}</param>
+    /// <param name="newTimeToLive">How long should the cache live</param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public Task<HttpCallResult<CachedContentInformation>> Patch(string name, TimeSpan newTimeToLive, CancellationToken? cancellationToken = null)
+    {
+        IEndpointProvider resolvedProvider = Api.ResolveProvider(LLmProviders.Google);
+        return HttpRequestRaw<CachedContentInformation>(resolvedProvider, Endpoint, GetUrl(resolvedProvider, CapabilityEndpoints.BaseUrl, name), postData: new
+        {
+            ttl = $"{newTimeToLive.TotalSeconds.ToString(CultureInfo.InvariantCulture)}s"
+        }, verb: HttpMethod.Patch, ct: cancellationToken);
+    }
+    
+    /// <summary>
+    /// Updates CachedContent resource (only expiration is updatable).
+    /// </summary>
+    /// <param name="name">Name of the resource, should be cachedContents/{id}</param>
+    /// <param name="newSecondsToLive">How long should the cache live</param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public Task<HttpCallResult<CachedContentInformation>> Patch(string name, int newSecondsToLive, CancellationToken? cancellationToken = null)
+    {
+        return Patch(name, TimeSpan.FromSeconds(newSecondsToLive), cancellationToken);
     }
 }

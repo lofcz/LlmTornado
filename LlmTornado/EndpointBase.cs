@@ -444,7 +444,7 @@ public abstract class EndpointBase
         return res;
     }
     
-    private async Task<HttpCallResult<T>> HttpRequestRaw<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, Dictionary<string, object>? queryParams = null, HttpMethod? verb = null, object? postData = null, CancellationToken? ct = null, Dictionary<string, object?>? headers = null)
+    internal async Task<HttpCallResult<T>> HttpRequestRaw<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, Dictionary<string, object>? queryParams = null, HttpMethod? verb = null, object? postData = null, CancellationToken? ct = null, Dictionary<string, object?>? headers = null)
     {
         RestDataOrException<HttpResponseMessage> response = await HttpRequestRawWithAllCodes(provider, endpoint, url, queryParams, verb, postData, false, ct, headers).ConfigureAwait(ConfigureAwaitOptions.None);
 

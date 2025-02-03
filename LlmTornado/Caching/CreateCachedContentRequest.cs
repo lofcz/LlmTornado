@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using LlmTornado.Caching.Vendors.Google;
 using LlmTornado.Chat;
@@ -14,9 +15,9 @@ namespace LlmTornado.Caching;
 public class CreateCachedContentRequest
 {
     /// <summary>
-    /// How many seconds should be the resource cached.
+    /// How long should be the resource cached.
     /// </summary>
-    public int Seconds { get; set; }
+    public TimeSpan TimeToLive { get; set; }
 
     /// <summary>
     /// The resource name referring to the cached content. Format: cachedContents/{id}
@@ -49,13 +50,28 @@ public class CreateCachedContentRequest
     /// <summary>
     /// Creates a caching request. Either content or system must be set.
     /// </summary>
-    /// <param name="seconds"></param>
+    /// <param name="timeToLive"></param>
     /// <param name="model"></param>
     /// <param name="contents"></param>
     /// <param name="system"></param>
-    public CreateCachedContentRequest(int seconds, ChatModel model, List<CachedContent>? contents = null, CachedContent? system = null)
+    public CreateCachedContentRequest(TimeSpan timeToLive, ChatModel model, List<CachedContent>? contents = null, CachedContent? system = null)
     {
-        Seconds = seconds;
+        TimeToLive = timeToLive;
+        Model = model;
+        Contents = contents;
+        System = system;
+    }
+    
+    /// <summary>
+    /// Creates a caching request. Either content or system must be set.
+    /// </summary>
+    /// <param name="secondsToLive"></param>
+    /// <param name="model"></param>
+    /// <param name="contents"></param>
+    /// <param name="system"></param>
+    public CreateCachedContentRequest(int secondsToLive, ChatModel model, List<CachedContent>? contents = null, CachedContent? system = null)
+    {
+        TimeToLive = TimeSpan.FromSeconds(secondsToLive);
         Model = model;
         Contents = contents;
         System = system;

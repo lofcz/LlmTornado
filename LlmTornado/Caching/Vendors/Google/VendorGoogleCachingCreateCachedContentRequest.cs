@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using LlmTornado.Chat.Vendors.Cohere;
 using Newtonsoft.Json;
@@ -51,7 +52,7 @@ internal class VendorGoogleCachingCreateCachedContentRequest
 
     public VendorGoogleCachingCreateCachedContentRequest(CreateCachedContentRequest request)
     {
-        Ttl = $"{request.Seconds}s";
+        Ttl = $"{request.TimeToLive.TotalSeconds.ToString(CultureInfo.InvariantCulture)}s";
         Name = request.Name;
         DisplayName = request.DisplayName;
         Model = $"models/{request.Model.Name}"; // see: https://ai.google.dev/api/caching#cache_create-SHELL
