@@ -114,7 +114,7 @@ public class ResponseFormatJsonSchemaConfig
 /// <summary>
 /// A custom JSON converter for handling different response formats.
 /// </summary>
-public class ResponseFormatConverter : JsonConverter<ResponseFormat>
+internal class ResponseFormatConverter : JsonConverter<ResponseFormat>
 {
     /// <summary>
     /// Reads and converts JSON input into the appropriate ResponseFormat object.

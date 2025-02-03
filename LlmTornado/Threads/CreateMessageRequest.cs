@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using LlmTornado.Chat;
 using Newtonsoft.Json;
 
@@ -13,27 +12,11 @@ public sealed class CreateMessageRequest
     /// <summary>
     ///     Constructor.
     /// </summary>
-    /// <param name="content"></param>
-    /// <param name="fileIds"></param>
-    /// <param name="metadata"></param>
-    public CreateMessageRequest(string content, IEnumerable<string>? fileIds = null, IReadOnlyDictionary<string, string>? metadata = null)
+    public CreateMessageRequest()
     {
         Role = ChatMessageRole.User;
-        Content = content;
-        FileIds = fileIds?.ToList();
-        Metadata = metadata;
     }
 
-
-    /// <summary>
-    /// The unique identifier of the thread within which the message is created.
-    /// </summary>
-    /// <remarks>
-    /// This property is used to associate the message with a specific chat thread.
-    /// </remarks>
-    [JsonProperty("thread_id")]
-    public string ThreadId { get; set; }
-    
     /// <summary>
     ///     The role of the entity that is creating the message.
     /// </summary>
@@ -44,20 +27,19 @@ public sealed class CreateMessageRequest
     [JsonConverter(typeof(ChatMessageRole.ChatMessageRoleJsonConverter))]
     public ChatMessageRole Role { get; set; }
     
-    public MessageContent? ContentContent { get; set; }
-
     /// <summary>
     ///     The content of the message.
     /// </summary>
     [JsonProperty("content")]
-    public string Content { get; }
+    // public IReadOnlyList<MessageContent> Content { get; }
+    public required string Content { get; set; } //TODO: open ai supports also array of MessageContent object, but the text object differs from create request and from response object
 
     /// <summary>
     ///     A list of File IDs that the message should use. There can be a maximum of 10 files attached to a message.
     ///     Useful for tools like retrieval and code_interpreter that can access and use files.
     /// </summary>
-    [JsonProperty("file_ids")]
-    public IReadOnlyList<string>? FileIds { get; }
+    [JsonProperty("attachments")]
+    public IReadOnlyList<MessageAttachment>? Attachments { get; }
 
     /// <summary>
     ///     Set of 16 key-value pairs that can be attached to an object.

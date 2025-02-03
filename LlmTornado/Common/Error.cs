@@ -10,12 +10,12 @@ public sealed class Error
     /// </summary>
     [JsonInclude]
     [JsonProperty("code")]
-    public string Code { get; private set; }
+    public string Code { get; set; } = null!;
 
     /// <summary>
     ///     A human-readable description of the error.
     /// </summary>
     [JsonInclude]
     [JsonProperty("message")]
-    public string Message { get; private set; }
+    public string Message { get; set; } = null!;
 }

@@ -68,6 +68,7 @@ public sealed class Message : ApiResultBase
     ///     The content of the message in array of text and/or images.
     /// </summary>
     [JsonProperty("content")]
+    [JsonConverter(typeof(MessageContentJsonConverter))]
     public IReadOnlyList<MessageContent> Content { get; private set; } = null!;
 
     /// <summary>

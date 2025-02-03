@@ -19,5 +19,5 @@ public sealed class TextContent
     [JsonInclude]
     [JsonProperty("annotations")]
     [System.Text.Json.Serialization.JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-    public IReadOnlyList<Annotation> Annotations { get; private set; }
+    public IReadOnlyList<MessageAnnotation> Annotations { get; private set; }
 }

@@ -11,7 +11,7 @@ public sealed class ToolOutput
     ///     Constructor.
     /// </summary>
     /// <param name="toolCallId">
-    ///     The ID of the tool call in the <see cref="RequiredAction" /> within the <see cref="RunResponse" /> the output is
+    ///     The ID of the tool call in the <see cref="RequiredAction" /> within the <see cref="TornadoRun" /> the output is
     ///     being submitted for.
     /// </param>
     /// <param name="output">
@@ -25,7 +25,7 @@ public sealed class ToolOutput
     }
 
     /// <summary>
-    ///     The ID of the tool call in the <see cref="RequiredAction" /> within the <see cref="RunResponse" /> the output is
+    ///     The ID of the tool call in the <see cref="RequiredAction" /> within the <see cref="TornadoRun" /> the output is
     ///     being submitted for.
     /// </summary>
     [JsonProperty("tool_call_id")]

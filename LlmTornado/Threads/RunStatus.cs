@@ -13,5 +13,6 @@ public enum RunStatus
     [EnumMember(Value = "cancelled")] Cancelled,
     [EnumMember(Value = "failed")] Failed,
     [EnumMember(Value = "completed")] Completed,
+    [EnumMember(Value = "incomplete")] incomplete,
     [EnumMember(Value = "expired")] Expired
 }

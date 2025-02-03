@@ -1,5 +1,8 @@
+using System;
+using System.Collections.Generic;
 using LlmTornado.Common;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace LlmTornado.Threads;
 
@@ -31,6 +34,7 @@ public sealed class MessageContentText : MessageContent
     /// <summary>
     /// 
     /// </summary>
+    [JsonProperty("text")]
     public MessageContentTextData? MessageContentTextData { get; set; }
 }
 
@@ -86,4 +90,41 @@ public sealed class MessageContentRefusal : MessageContent
     /// </summary>
     [JsonProperty("refusal")]
     public string? Refusal { get; set; }
+}
+
+internal class MessageContentJsonConverter : JsonConverter<IReadOnlyList<MessageContent>>
+{
+    public override void WriteJson(JsonWriter writer, IReadOnlyList<MessageContent>? value, JsonSerializer serializer)
+    {
+        serializer.Serialize(writer, value);
+    }
+
+    public override IReadOnlyList<MessageContent>? ReadJson(JsonReader reader, Type objectType, IReadOnlyList<MessageContent>? existingValue, bool hasExistingValue,
+        JsonSerializer serializer)
+    {
+        List<MessageContent> messageContents = [];
+        JArray array = JArray.Load(reader);
+        
+        foreach (JToken jToken in array)
+        {
+            if (jToken is JObject jObject)
+            {
+                string? messageContentType = jObject["type"]?.ToString();
+                MessageContent? messageContent = messageContentType switch
+                {
+                    "text" => jObject.ToObject<MessageContentText>(serializer),
+                    "image_file" => jObject.ToObject<MessageContentImageFile>(serializer),
+                    "refusal" => jObject.ToObject<MessageContentRefusal>(serializer),
+                    _ => null
+                };
+
+                if (messageContent is not null)
+                {
+                    messageContents.Add(messageContent);
+                }
+            }
+        }
+        
+        return messageContents;
+    }
 }

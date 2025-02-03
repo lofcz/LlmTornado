@@ -21,7 +21,7 @@ public abstract class AssistantTool
 /// <summary>
 ///     Defines the custom converter for polymorphic assistant tool deserialization
 /// </summary>
-public class AssistantToolConverter : JsonConverter<IReadOnlyList<AssistantTool>?>
+internal class AssistantToolConverter : JsonConverter<IReadOnlyList<AssistantTool>?>
 {
     /// <summary>
     /// 

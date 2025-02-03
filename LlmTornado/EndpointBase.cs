@@ -488,6 +488,11 @@ public abstract class EndpointBase
         }
         catch (Exception e)
         {
+            if (Api.httpStrict)
+            {
+                throw;
+            }
+            
             return new HttpCallResult<T>(response.Data?.StatusCode ?? HttpStatusCode.ServiceUnavailable, null, default, false, new RestDataOrException<HttpResponseMessage>(e));
         }
         finally

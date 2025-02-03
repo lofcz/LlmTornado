@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -72,17 +73,16 @@ public sealed class ThreadsEndpoint : EndpointBase
         return new HttpCallResult<bool>(status.Code, status.Response, status.Data?.Deleted ?? false, status.Ok, null);
     }
 
-    /*
     /// <summary>
     /// Create a message.
     /// </summary>
     /// <param name="threadId">The id of the thread to create a message for.</param>
     /// <param name="request"></param>
     /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
-    /// <returns><see cref="MessageResponse"/>.</returns>
-    public Task<HttpCallResult<MessageResponse>> CreateMessageAsync(string threadId, CreateMessageRequest request, CancellationToken? cancellationToken = null)
+    /// <returns><see cref="Message"/>.</returns>
+    public Task<HttpCallResult<Message>> CreateMessageAsync(string threadId, CreateMessageRequest request, CancellationToken? cancellationToken = null)
     {
-        return HttpPostRaw<MessageResponse>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/messages"), request, cancellationToken);
+        return HttpPostRaw<Message>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/messages"), request, cancellationToken);
     }
 
     /// <summary>
@@ -91,12 +91,10 @@ public sealed class ThreadsEndpoint : EndpointBase
     /// <param name="threadId">The id of the thread the messages belong to.</param>
     /// <param name="query"><see cref="ListQuery"/>.</param>
     /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
-    /// <returns><see cref="ListResponse{ThreadMessage}"/>.</returns>
-    public async Task<ListResponse<MessageResponse>> ListMessagesAsync(string threadId, ListQuery query = null, CancellationToken cancellationToken = default)
+    /// <returns><see cref="ListResponse{Message}"/>.</returns>
+    public Task<HttpCallResult<ListResponse<Message>>> ListMessagesAsync(string threadId, ListQuery? query = null, CancellationToken cancellationToken = default)
     {
-        var response = await client.Client.GetAsync(GetUrl($"/{threadId}/messages", query), cancellationToken).ConfigureAwait(false);
-        var responseAsString = await response.ReadAsStringAsync(EnableDebug, cancellationToken).ConfigureAwait(false);
-        return response.Deserialize<ListResponse<MessageResponse>>(responseAsString, client);
+         return HttpGetRaw<ListResponse<Message>>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/messages"),query, cancellationToken);
     }
 
     /// <summary>
@@ -105,87 +103,45 @@ public sealed class ThreadsEndpoint : EndpointBase
     /// <param name="threadId">The id of the thread to which this message belongs.</param>
     /// <param name="messageId">The id of the message to retrieve.</param>
     /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
-    /// <returns><see cref="MessageResponse"/>.</returns>
-    public async Task<MessageResponse> RetrieveMessageAsync(string threadId, string messageId, CancellationToken cancellationToken = default)
+    /// <returns><see cref="Message"/>.</returns>
+    public Task<HttpCallResult<Message>> RetrieveMessageAsync(string threadId, string messageId, CancellationToken cancellationToken = default)
     {
-        var response = await client.Client.GetAsync(GetUrl($"/{threadId}/messages/{messageId}"), cancellationToken).ConfigureAwait(false);
-        var responseAsString = await response.ReadAsStringAsync(EnableDebug, cancellationToken).ConfigureAwait(false);
-        return response.Deserialize<MessageResponse>(responseAsString, client);
+         return HttpGetRaw<Message>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/messages/{messageId}"), ct: cancellationToken);
     }
 
     /// <summary>
     /// Modifies a message.
     /// </summary>
     /// <remarks>
-    /// Only the <see cref="MessageResponse.Metadata"/> can be modified.
+    /// Only the <see cref="Message.Metadata"/> can be modified.
     /// </remarks>
-    /// <param name="message"><see cref="MessageResponse"/> to modify.</param>
-    /// <param name="metadata">Set of 16 key-value pairs that can be attached to an object.
-    /// This can be useful for storing additional information about the object in a structured format.
-    /// Keys can be a maximum of 64 characters long and values can be a maximum of 512 characters long.
-    /// </param>
+    /// <param name="threadId"></param>
+    /// <param name="messageId"></param>
+    /// <param name="request"></param>
     /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
-    /// <returns><see cref="MessageResponse"/>.</returns>
-    public async Task<MessageResponse> ModifyMessageAsync(MessageResponse message, IReadOnlyDictionary<string, string> metadata, CancellationToken cancellationToken = default)
-        => await ModifyMessageAsync(message.ThreadId, message.Id, metadata, cancellationToken).ConfigureAwait(false);
-
-    /// <summary>
-    /// Modifies a message.
-    /// </summary>
-    /// <remarks>
-    /// Only the <see cref="MessageResponse.Metadata"/> can be modified.
-    /// </remarks>
-    /// <param name="threadId">The id of the thread to which this message belongs.</param>
-    /// <param name="messageId">The id of the message to modify.</param>
-    /// <param name="metadata">Set of 16 key-value pairs that can be attached to an object.
-    /// This can be useful for storing additional information about the object in a structured format.
-    /// Keys can be a maximum of 64 characters long and values can be a maximum of 512 characters long.
-    /// </param>
-    /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
-    /// <returns><see cref="MessageResponse"/>.</returns>
-    public async Task<MessageResponse> ModifyMessageAsync(string threadId, string messageId, IReadOnlyDictionary<string, string> metadata, CancellationToken cancellationToken = default)
+    /// <returns><see cref="Message"/>.</returns>
+    public Task<HttpCallResult<Message>> ModifyMessageAsync(string threadId, string messageId, ModifyMessageRequest request, CancellationToken cancellationToken = default)
     {
-        var jsonContent = JsonSerializer.Serialize(new { metadata }, OpenAIClient.JsonSerializationOptions).ToJsonStringContent(EnableDebug);
-        var response = await client.Client.PostAsync(GetUrl($"/{threadId}/messages/{messageId}"), jsonContent, cancellationToken).ConfigureAwait(false);
-        var responseAsString = await response.ReadAsStringAsync(EnableDebug, cancellationToken).ConfigureAwait(false);
-        return response.Deserialize<MessageResponse>(responseAsString, client);
+        return HttpPostRaw<Message>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/messages/{messageId}"), request, cancellationToken);
     }
 
+
+    /// <summary>
+    /// Deletes a message within a thread.
+    /// </summary>
+    /// <param name="threadId">The identifier of the thread containing the message.</param>
+    /// <param name="messageId">The identifier of the message to delete.</param>
+    /// <param name="cancellationToken">Optional, <see cref="CancellationToken" />.</param>
+    /// <returns><see cref="HttpCallResult{Boolean}" /> indicating the success of the deletion.</returns>
+    public async Task<HttpCallResult<bool>> DeleteMessageAsync(string threadId, string messageId, CancellationToken? cancellationToken = null)
+    {
+        HttpCallResult<DeletionStatus> status = await HttpAtomic<DeletionStatus>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, HttpMethod.Delete, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/messages/{messageId}"), ct: cancellationToken).ConfigureAwait(ConfigureAwaitOptions.None);
+        return new HttpCallResult<bool>(status.Code, status.Response, status.Data?.Deleted ?? false, status.Ok, null);
+    }
+        
+
+    /*
     #endregion Messages
-
-    #region Files
-
-    /// <summary>
-    /// Returns a list of message files.
-    /// </summary>
-    /// <param name="threadId">The id of the thread that the message and files belong to.</param>
-    /// <param name="messageId">The id of the message that the files belongs to.</param>
-    /// <param name="query"><see cref="ListQuery"/>.</param>
-    /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
-    /// <returns><see cref="ListResponse{ThreadMessageFile}"/>.</returns>
-    public async Task<ListResponse<MessageFileResponse>> ListFilesAsync(string threadId, string messageId, ListQuery query = null, CancellationToken cancellationToken = default)
-    {
-        var response = await client.Client.GetAsync(GetUrl($"/{threadId}/messages/{messageId}/files", query), cancellationToken).ConfigureAwait(false);
-        var responseAsString = await response.ReadAsStringAsync(EnableDebug, cancellationToken).ConfigureAwait(false);
-        return response.Deserialize<ListResponse<MessageFileResponse>>(responseAsString, client);
-    }
-
-    /// <summary>
-    /// Retrieve message file.
-    /// </summary>
-    /// <param name="threadId">The id of the thread to which the message and file belong.</param>
-    /// <param name="messageId">The id of the message the file belongs to.</param>
-    /// <param name="fileId">The id of the file being retrieved.</param>
-    /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
-    /// <returns><see cref="MessageFileResponse"/>.</returns>
-    public async Task<MessageFileResponse> RetrieveFileAsync(string threadId, string messageId, string fileId, CancellationToken cancellationToken = default)
-    {
-        var response = await client.Client.GetAsync(GetUrl($"/{threadId}/messages/{messageId}/files/{fileId}"), cancellationToken).ConfigureAwait(false);
-        var responseAsString = await response.ReadAsStringAsync(EnableDebug, cancellationToken).ConfigureAwait(false);
-        return response.Deserialize<MessageFileResponse>(responseAsString, client);
-    }
-
-    #endregion Files
 
     #region Runs
 
