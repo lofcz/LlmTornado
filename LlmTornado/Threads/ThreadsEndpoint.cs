@@ -31,7 +31,7 @@ public sealed class ThreadsEndpoint : EndpointBase
     /// <returns><see cref="Thread" />.</returns>
     public Task<HttpCallResult<Thread>> CreateThreadAsync(CreateThreadRequest? request = null, CancellationToken? cancellationToken = null)
     {
-        return HttpPostRaw<Thread>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, null, request, cancellationToken);
+        return HttpPostRaw<Thread>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, null, request, ct: cancellationToken);
     }
 
     /// <summary>
@@ -58,7 +58,7 @@ public sealed class ThreadsEndpoint : EndpointBase
     public Task<HttpCallResult<Thread>> ModifyThreadAsync(string threadId, ModifyThreadRequest request, CancellationToken? cancellationToken = null)
     {
         IEndpointProvider provider = Api.GetProvider(LLmProviders.OpenAi);
-        return HttpPostRaw<Thread>(provider, CapabilityEndpoints.Threads, provider.ApiUrl(Endpoint, $"/{threadId}"), request, cancellationToken);
+        return HttpPostRaw<Thread>(provider, CapabilityEndpoints.Threads, provider.ApiUrl(Endpoint, $"/{threadId}"), request, ct: cancellationToken);
     }
 
     /// <summary>
@@ -82,7 +82,7 @@ public sealed class ThreadsEndpoint : EndpointBase
     /// <returns><see cref="Message"/>.</returns>
     public Task<HttpCallResult<Message>> CreateMessageAsync(string threadId, CreateMessageRequest request, CancellationToken? cancellationToken = null)
     {
-        return HttpPostRaw<Message>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/messages"), request, cancellationToken);
+        return HttpPostRaw<Message>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/messages"), request, ct: cancellationToken);
     }
 
     /// <summary>
@@ -94,7 +94,7 @@ public sealed class ThreadsEndpoint : EndpointBase
     /// <returns><see cref="ListResponse{Message}"/>.</returns>
     public Task<HttpCallResult<ListResponse<Message>>> ListMessagesAsync(string threadId, ListQuery? query = null, CancellationToken cancellationToken = default)
     {
-         return HttpGetRaw<ListResponse<Message>>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/messages"),query, cancellationToken);
+         return HttpGetRaw<ListResponse<Message>>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/messages"), query.ToQueryParams(LLmProviders.OpenAi), cancellationToken);
     }
 
     /// <summary>
@@ -122,7 +122,7 @@ public sealed class ThreadsEndpoint : EndpointBase
     /// <returns><see cref="Message"/>.</returns>
     public Task<HttpCallResult<Message>> ModifyMessageAsync(string threadId, string messageId, ModifyMessageRequest request, CancellationToken cancellationToken = default)
     {
-        return HttpPostRaw<Message>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/messages/{messageId}"), request, cancellationToken);
+        return HttpPostRaw<Message>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/messages/{messageId}"), request, ct: cancellationToken);
     }
 
 
