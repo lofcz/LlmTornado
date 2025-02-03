@@ -42,7 +42,7 @@ public sealed class AssistantsEndpoint : EndpointBase
     /// <returns><see cref="Assistant" />.</returns>
     public Task<HttpCallResult<Assistant>> CreateAssistantAsync(CreateAssistantRequest request, CancellationToken? cancellationToken = null)
     {
-        return HttpPostRaw<Assistant>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Assistants, GetUrl(Api.GetProvider(LLmProviders.OpenAi)), request, cancellationToken);
+        return HttpPostRaw<Assistant>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Assistants, GetUrl(Api.GetProvider(LLmProviders.OpenAi)), request, ct: cancellationToken);
     }
 
     /// <summary>
@@ -66,7 +66,7 @@ public sealed class AssistantsEndpoint : EndpointBase
     /// <returns><see cref="Assistant" />.</returns>
     public Task<HttpCallResult<Assistant>> ModifyAssistantAsync(string assistantId, CreateAssistantRequest request, CancellationToken? cancellationToken = null)
     {
-        return HttpPostRaw<Assistant>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Assistants, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{assistantId}"), request, cancellationToken);
+        return HttpPostRaw<Assistant>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Assistants, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{assistantId}"), request, ct: cancellationToken);
     }
 
     /// <summary>

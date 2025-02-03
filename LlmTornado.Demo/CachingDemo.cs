@@ -23,4 +23,18 @@ public class CachingDemo
         
         return cachingResult;
     }
+
+    [TornadoTest("dev")]
+    public static async Task List()
+    {
+        HttpCallResult<CachedContentInformation> created = await Create();
+        HttpCallResult<CachedContentList> listed = await Program.Connect().Caching.List();
+        
+        Console.WriteLine($"Listed:");
+
+        foreach (var item in listed.Data.CachedContents)
+        {
+            Console.WriteLine($"{item.Name} - {item.ExpireTime}");
+        }
+    }
 }

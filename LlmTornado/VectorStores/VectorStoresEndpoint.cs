@@ -80,7 +80,7 @@ public class VectorStoresEndpoint : EndpointBase
     /// <returns><see cref="VectorStore" />.</returns>
     public Task<HttpCallResult<VectorStore>> Modify(string vectorStoreId, VectorStoreModifyRequest request, CancellationToken? cancellationToken = null)
     {
-        return HttpPostRaw<VectorStore>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{vectorStoreId}"), request, cancellationToken);
+        return HttpPostRaw<VectorStore>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{vectorStoreId}"), request, ct: cancellationToken);
     }
 
     /// <summary>
@@ -104,7 +104,7 @@ public class VectorStoresEndpoint : EndpointBase
     ///  <returns></returns>
     public Task<HttpCallResult<VectorStoreFile>> RetrieveFiles(string vectorStoreId, string fileId, CancellationToken? cancellationToken = null)
     {
-        return HttpGetRaw<VectorStoreFile>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{vectorStoreId}/files/{fileId}"), ct:cancellationToken);
+        return HttpGetRaw<VectorStoreFile>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{vectorStoreId}/files/{fileId}"), ct: cancellationToken);
     }
     
     /// <summary>
@@ -117,7 +117,7 @@ public class VectorStoresEndpoint : EndpointBase
     /// <returns><see cref="VectorStore" />.</returns>
     public Task<HttpCallResult<VectorStoreFile>> CreateFile(string vectorStoreId, CreateVectorStoreFileRequest request, CancellationToken? cancellationToken = null)
     {
-        return HttpPostRaw<VectorStoreFile>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{vectorStoreId}/files"), request, cancellationToken);
+        return HttpPostRaw<VectorStoreFile>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{vectorStoreId}/files"), request, ct: cancellationToken);
     }
 
     /// <summary>
@@ -168,7 +168,7 @@ public class VectorStoresEndpoint : EndpointBase
     /// <returns><see cref="VectorStore" />.</returns>
     public Task<HttpCallResult<VectorStoreFileBatch>> CreateBatchFile(string vectorStoreId, CreateVectorStoreFileBatchRequest request, CancellationToken? cancellationToken = null)
     {
-        return HttpPostRaw<VectorStoreFileBatch>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{vectorStoreId}/file_batches"), request, cancellationToken);
+        return HttpPostRaw<VectorStoreFileBatch>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{vectorStoreId}/file_batches"), request, ct: cancellationToken);
     }
 
     /// <summary>
@@ -180,6 +180,6 @@ public class VectorStoresEndpoint : EndpointBase
     /// <returns></returns>
     public Task<HttpCallResult<VectorStoreFileBatch>> CancelFileBatch(string vectorStoreId, string batchId, CancellationToken? cancellationToken = null)
     {
-        return HttpPostRaw<VectorStoreFileBatch>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{vectorStoreId}/file_batches/{batchId}/cancel"), null, cancellationToken);
+        return HttpPostRaw<VectorStoreFileBatch>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{vectorStoreId}/file_batches/{batchId}/cancel"), ct: cancellationToken);
     }
 }

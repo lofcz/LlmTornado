@@ -27,7 +27,7 @@ public sealed class ThreadsEndpoint : EndpointBase
     /// <returns><see cref="ThreadResponse" />.</returns>
     public Task<HttpCallResult<ThreadResponse>> CreateThreadAsync(CreateThreadRequest? request = null, CancellationToken? cancellationToken = null)
     {
-        return HttpPostRaw<ThreadResponse>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads, null, request, cancellationToken);
+        return HttpPostRaw<ThreadResponse>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads, null, request, ct: cancellationToken);
     }
 
     /// <summary>
@@ -57,7 +57,7 @@ public sealed class ThreadsEndpoint : EndpointBase
     public Task<HttpCallResult<ThreadResponse>> ModifyThreadAsync(string threadId, IDictionary<string, string> metadata, CancellationToken? cancellationToken = null)
     {
         IEndpointProvider provider = Api.GetProvider(LLmProviders.OpenAi);
-        return HttpPostRaw<ThreadResponse>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads, provider.ApiUrl(Endpoint, $"/{threadId}"), new { metadata }, cancellationToken);
+        return HttpPostRaw<ThreadResponse>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads, provider.ApiUrl(Endpoint, $"/{threadId}"), new { metadata }, ct: cancellationToken);
     }
 
     /// <summary>
@@ -81,7 +81,7 @@ public sealed class ThreadsEndpoint : EndpointBase
     /// <returns><see cref="MessageResponse"/>.</returns>
     public Task<HttpCallResult<MessageResponse>> CreateMessageAsync(string threadId, CreateMessageRequest request, CancellationToken? cancellationToken = null)
     {
-        return HttpPostRaw<MessageResponse>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/messages"), request, cancellationToken);
+        return HttpPostRaw<MessageResponse>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/messages"), request, ct: cancellationToken);
     }
 
     /*

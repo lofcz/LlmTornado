@@ -12,7 +12,7 @@ namespace LlmTornado.Caching;
 public class CachingEndpoint : EndpointBase
 {
     /// <summary>
-    ///     Creates caching endpoint object.
+    /// Creates caching endpoint object.
     /// </summary>
     /// <param name="api"></param>
     public CachingEndpoint(TornadoApi api) : base(api)
@@ -20,12 +20,12 @@ public class CachingEndpoint : EndpointBase
     }
 
     /// <summary>
-    ///     Caching endpoint.
+    /// Caching endpoint.
     /// </summary>
     protected override CapabilityEndpoints Endpoint => CapabilityEndpoints.Caching;
     
     /// <summary>
-    ///		Create a vector store. Available only for OpenAI
+    ///	Creates CachedContent resource.
     /// </summary>
     /// <param name="request"></param>
     /// <param name="cancellationToken"></param>
@@ -33,5 +33,16 @@ public class CachingEndpoint : EndpointBase
     public Task<HttpCallResult<CachedContentInformation>> Create(CreateCachedContentRequest request, CancellationToken? cancellationToken = null)
     {
         return HttpPostRaw<CachedContentInformation>(Api.GetProvider(LLmProviders.Google), Endpoint, postData: request.Serialize(LLmProviders.Google), ct: cancellationToken);
+    }
+    
+    /// <summary>
+    /// Lists CachedContents.
+    /// </summary>
+    /// <param name="query"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public Task<HttpCallResult<CachedContentList>> List(ListQuery? query = null, CancellationToken? cancellationToken = null)
+    {
+        return HttpGetRaw<CachedContentList>(Api.GetProvider(LLmProviders.Google), Endpoint, queryParams: query?.ToQueryParams(LLmProviders.Google), ct: cancellationToken);
     }
 }

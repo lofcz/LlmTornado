@@ -563,9 +563,9 @@ public abstract class EndpointBase
         return HttpRequestRaw<T>(provider, endpoint, url, null, HttpMethod.Post, postData, ct, headers);
     }
 
-    internal Task<HttpCallResult<T>> HttpPostRaw<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, object? postData = null, CancellationToken? ct = null, bool allowNon200Codes = false)
+    internal Task<HttpCallResult<T>> HttpPostRaw<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, object? postData = null, Dictionary<string, object?>? headers = null, CancellationToken? ct = null)
     {
-        return HttpRequestRaw<T>(provider, endpoint, url, null, HttpMethod.Post, postData, ct);
+        return HttpRequestRaw<T>(provider, endpoint, url, null, HttpMethod.Post, postData, ct, headers);
     }
 
     internal Task<StreamResponse?> HttpPostStream(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, object? postData = null, CancellationToken ct = default)
