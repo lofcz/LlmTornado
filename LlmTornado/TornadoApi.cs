@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using LlmTornado.Assistants;
 using LlmTornado.Audio;
+using LlmTornado.Caching;
 using LlmTornado.Chat;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
@@ -39,8 +40,9 @@ public class TornadoApi
     private readonly Lazy<ImageGenerationEndpoint> imageGeneration;
     private readonly Lazy<ModelsEndpoint> models;
     private readonly Lazy<ModerationEndpoint> moderation;
-    private readonly Lazy<ThreadsEndpoint> threadsEndpoint;
-    private readonly Lazy<VectorStoresEndpoint> vectorStoresEndpoint;
+    private readonly Lazy<ThreadsEndpoint> threads;
+    private readonly Lazy<VectorStoresEndpoint> vectorStores;
+    private readonly Lazy<CachingEndpoint> caching;
 
     /// <summary>
     ///     If true, the API will throw exceptions for non-200 responses.
@@ -62,8 +64,9 @@ public class TornadoApi
         imageGeneration = new Lazy<ImageGenerationEndpoint>(() => new ImageGenerationEndpoint(this));
         models = new Lazy<ModelsEndpoint>(() => new ModelsEndpoint(this));
         moderation = new Lazy<ModerationEndpoint>(() => new ModerationEndpoint(this));
-        threadsEndpoint = new Lazy<ThreadsEndpoint>(() => new ThreadsEndpoint(this));
-        vectorStoresEndpoint = new Lazy<VectorStoresEndpoint>(() => new VectorStoresEndpoint(this));
+        threads = new Lazy<ThreadsEndpoint>(() => new ThreadsEndpoint(this));
+        vectorStores = new Lazy<VectorStoresEndpoint>(() => new VectorStoresEndpoint(this));
+        caching = new Lazy<CachingEndpoint>(() => new CachingEndpoint(this));
     }
 
     /// <summary>
@@ -213,7 +216,7 @@ public class TornadoApi
     ///     Assistants are higher-level API than <see cref="ChatEndpoint" /> featuring automatic context management, code
     ///     interpreter and file based retrieval.
     /// </summary>
-    public ThreadsEndpoint Threads => threadsEndpoint.Value;
+    public ThreadsEndpoint Threads => threads.Value;
 
     /// <summary>
     ///     Text generation is the core function of the API. You give the API a prompt, and it generates a completion. The way
@@ -240,7 +243,7 @@ public class TornadoApi
     public ModerationEndpoint Moderation => moderation.Value;
 
     /// <summary>
-    ///     The API endpoint for querying available Engines/models
+    ///     The API endpoint for querying available Engines/models.
     /// </summary>
     public ModelsEndpoint Models => models.Value;
 
@@ -257,7 +260,12 @@ public class TornadoApi
     public ImageGenerationEndpoint ImageGenerations => imageGeneration.Value;
     
     /// <summary>
-    ///     The API lets you do operations with vector stores on OpenAI API
+    ///     The API lets you do operations with vector stores on OpenAI API.
     /// </summary>
-    public VectorStoresEndpoint VectorStores => vectorStoresEndpoint.Value;
+    public VectorStoresEndpoint VectorStores => vectorStores.Value;
+    
+    /// <summary>
+    ///     The API lets you cache messages. Use only with <see cref="LLmProviders.Google"/>
+    /// </summary>
+    public CachingEndpoint Caching => caching.Value;
 }

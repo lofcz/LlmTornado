@@ -16,7 +16,7 @@ public static class VectorStoreDemo
     
     public static async Task<VectorStore> CreateVectorStore()
     {
-        HttpCallResult<VectorStore> createResult = await Program.Connect().VectorStores.CreateVectorStoreAsync(
+        HttpCallResult<VectorStore> createResult = await Program.Connect().VectorStores.Create(
             new CreateVectorStoreRequest
             {
                 Name = GenerateVectorStoreName()
@@ -28,7 +28,7 @@ public static class VectorStoreDemo
 
     public static async Task<ListResponse<VectorStore>> ListVectorStores()
     {
-        HttpCallResult<ListResponse<VectorStore>> listResult = await Program.Connect().VectorStores.ListVectorStoresAsync();
+        HttpCallResult<ListResponse<VectorStore>> listResult = await Program.Connect().VectorStores.List();
         Console.WriteLine(listResult.Response);
         return listResult.Data!;
     }
@@ -41,7 +41,7 @@ public static class VectorStoreDemo
         }
 
         HttpCallResult<VectorStore> retrieveResult =
-            await Program.Connect().VectorStores.RetrieveVectorStoreAsync(vectorStore!.Id);
+            await Program.Connect().VectorStores.Retrieve(vectorStore!.Id);
         Console.WriteLine(retrieveResult.Response);
         return retrieveResult.Data!;
     }
@@ -53,7 +53,7 @@ public static class VectorStoreDemo
             await CreateVectorStore();
         }
 
-        HttpCallResult<VectorStore> modifyResult = await Program.Connect().VectorStores.ModifyVectorStoreAsync(
+        HttpCallResult<VectorStore> modifyResult = await Program.Connect().VectorStores.Modify(
             vectorStore!.Id, new VectorStoreModifyRequest
             {
                 Name = vectorStore.Name + "_modified"
@@ -71,7 +71,7 @@ public static class VectorStoreDemo
 
         file ??= await FilesDemo.Upload();
 
-        HttpCallResult<VectorStoreFile> createResult = await Program.Connect().VectorStores.CreateVectorStoreFileAsync(
+        HttpCallResult<VectorStoreFile> createResult = await Program.Connect().VectorStores.CreateFile(
             vectorStore!.Id, new CreateVectorStoreFileRequest
             {
                 FileId = file!.Id
@@ -95,7 +95,7 @@ public static class VectorStoreDemo
             throw new Exception("could not upload file");
         }
 
-        HttpCallResult<VectorStoreFile> createResult = await Program.Connect().VectorStores.CreateVectorStoreFileAsync(
+        HttpCallResult<VectorStoreFile> createResult = await Program.Connect().VectorStores.CreateFile(
             vectorStore!.Id, new CreateVectorStoreFileRequest
             {
                 FileId = file.Id,
@@ -120,8 +120,7 @@ public static class VectorStoreDemo
             await CreateVectorStore();
         }
 
-        HttpCallResult<ListResponse<VectorStoreFile>> listResult =
-            await Program.Connect().VectorStores.ListVectorStoreFilesAsync(vectorStore!.Id);
+        HttpCallResult<ListResponse<VectorStoreFile>> listResult = await Program.Connect().VectorStores.ListFiles(vectorStore!.Id);
         Console.WriteLine(listResult.Response);
         return listResult.Data!;
     }
@@ -138,8 +137,7 @@ public static class VectorStoreDemo
             await CreateVectorStoreFile();
         }
 
-        HttpCallResult<VectorStoreFile> retrieveResult = await Program.Connect().VectorStores
-            .RetrieveVectorStoreFileAsync(vectorStore!.Id, vectorStoreFile!.Id);
+        HttpCallResult<VectorStoreFile> retrieveResult = await Program.Connect().VectorStores.RetrieveFiles(vectorStore!.Id, vectorStoreFile!.Id);
         Console.WriteLine(retrieveResult.Response);
         return retrieveResult.Data!;
     }
@@ -156,8 +154,7 @@ public static class VectorStoreDemo
             await CreateVectorStoreFile();
         }
 
-        HttpCallResult<bool> deleteResult = await Program.Connect().VectorStores
-            .DeleteVectorStoreFileAsync(vectorStore!.Id, vectorStoreFile!.Id);
+        HttpCallResult<bool> deleteResult = await Program.Connect().VectorStores.DeleteFile(vectorStore!.Id, vectorStoreFile!.Id);
 
         Console.WriteLine(deleteResult.Response);
     }
@@ -172,7 +169,7 @@ public static class VectorStoreDemo
         file ??= await FilesDemo.Upload();
 
         HttpCallResult<VectorStoreFileBatch> createResult = await Program.Connect().VectorStores
-            .CreateVectorStoreFileBatchAsync(
+            .CreateBatchFile(
                 vectorStore!.Id, new CreateVectorStoreFileBatchRequest
                 {
                     FileIds = new List<string>
@@ -199,7 +196,7 @@ public static class VectorStoreDemo
         }
 
         HttpCallResult<ListResponse<VectorStoreFile>> listResult = await Program.Connect().VectorStores
-            .ListVectorStoreBatchFilesAsync(vectorStore!.Id, vectorStoreFileBatch!.Id);
+            .ListBatchFiles(vectorStore!.Id, vectorStoreFileBatch!.Id);
         Console.WriteLine(listResult.Response);
         return listResult.Data!;
     }
@@ -217,7 +214,7 @@ public static class VectorStoreDemo
         }
 
         HttpCallResult<VectorStoreFileBatch> retrieveResult = await Program.Connect().VectorStores
-            .RetrieveVectorStoreFileBatchAsync(vectorStore!.Id, vectorStoreFileBatch!.Id);
+            .RetrieveBatchFile(vectorStore!.Id, vectorStoreFileBatch!.Id);
         Console.WriteLine(retrieveResult.Response);
         return retrieveResult.Data!;
     }
@@ -235,7 +232,7 @@ public static class VectorStoreDemo
         }
 
         HttpCallResult<VectorStoreFileBatch> cancelResult = await Program.Connect().VectorStores
-            .CancelVectorStoreFileBatchAsync(vectorStore!.Id, vectorStoreFileBatch!.Id);
+            .CancelFileBatch(vectorStore!.Id, vectorStoreFileBatch!.Id);
         Console.WriteLine(cancelResult.Response);
     }
 
@@ -246,7 +243,7 @@ public static class VectorStoreDemo
             await CreateVectorStore();
         }
 
-        HttpCallResult<bool> deleteResult = await Program.Connect().VectorStores.DeleteVectorStoreAsync(vectorStore!.Id);
+        HttpCallResult<bool> deleteResult = await Program.Connect().VectorStores.Delete(vectorStore!.Id);
         Console.WriteLine(deleteResult.Response);
     }
     
@@ -255,7 +252,7 @@ public static class VectorStoreDemo
         ListResponse<VectorStore> vectorStores = await ListVectorStores();
         List<Task<HttpCallResult<bool>>> tasks = (from vectorStore in vectorStores.Items
             where vectorStore.Name.StartsWith("demo_vector_store")
-            select Program.Connect().VectorStores.DeleteVectorStoreAsync(vectorStore.Id)).ToList();
+            select Program.Connect().VectorStores.Delete(vectorStore.Id)).ToList();
         Console.WriteLine($"Deleting {tasks.Count} vector stores...");
         await Task.WhenAll(tasks);
     }

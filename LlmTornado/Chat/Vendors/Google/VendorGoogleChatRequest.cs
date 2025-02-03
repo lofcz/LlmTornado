@@ -17,6 +17,115 @@ using Newtonsoft.Json.Linq;
 
 namespace LlmTornado.Chat.Vendors.Cohere;
 
+internal class VendorGoogleChatRequestMessagePart
+{
+    [JsonProperty("text", NullValueHandling = NullValueHandling.Ignore)]
+    public string? Text { get; set; }
+    
+    [JsonProperty("inlineData", NullValueHandling = NullValueHandling.Ignore)]
+    public VendorGoogleChatRequest.VendorGoogleChatRequestMessagePartInlineData? InlineData { get; set; }
+    
+    [JsonProperty("functionCall", NullValueHandling = NullValueHandling.Ignore)]
+    public VendorGoogleChatRequest.VendorGoogleChatRequestMessagePartFunctionCall? FunctionCall { get; set; }
+    
+    [JsonProperty("functionResponse", NullValueHandling = NullValueHandling.Ignore)]
+    public VendorGoogleChatRequest.VendorGoogleChatRequestMessagePartFunctionResponse? FunctionResponse { get; set; }
+
+    [JsonProperty("fileData", NullValueHandling = NullValueHandling.Ignore)]
+    public VendorGoogleChatRequest.VendorGoogleChatRequestMessagePartFileData? FileData { get; set; }
+    
+    // todo: map executableCode, codeExecutionResult; https://ai.google.dev/api/caching#Part
+    
+    public VendorGoogleChatRequestMessagePart()
+    {
+        
+    }
+
+    public VendorGoogleChatRequestMessagePart(ChatMessagePart part)
+    {
+        switch (part.Type)
+        {
+            case ChatMessageTypes.Text:
+            {
+                Text = part.Text;
+                break;
+            }
+            case ChatMessageTypes.Image:
+            {
+                if (part.Image is not null)
+                {
+                    if (part.Image.MimeType is null)
+                    {
+                        throw new Exception("Google requires MIME type of all images to be set, supported values are: image/png, image/jpeg");
+                    }
+                    
+                    InlineData = new VendorGoogleChatRequest.VendorGoogleChatRequestMessagePartInlineData
+                    {
+                        MimeType = part.Image.MimeType,
+                        Data = part.Image.Url
+                    };
+                }
+                
+                break;
+            }
+            case ChatMessageTypes.FileLink:
+            {
+                if (part.FileLinkData is not null)
+                {
+                    FileData = new VendorGoogleChatRequest.VendorGoogleChatRequestMessagePartFileData
+                    {
+                        FileUri = part.FileLinkData.FileUri,
+                        MimeType = part.FileLinkData.MimeType
+                    };
+                }
+                
+                break;
+            }
+        }
+    }
+
+    public ChatMessagePart ToMessagePart(StringBuilder sb)
+    {
+        ChatMessagePart part = new ChatMessagePart();
+        
+        if (Text is not null)
+        {
+            part.Type = ChatMessageTypes.Text;
+            part.Text = Text;
+            sb.Append(Text);
+        }
+        else if (InlineData is not null)
+        {
+            part.Type = ChatMessageTypes.Image;
+            part.Image = new ChatImage(InlineData.Data);
+        }
+
+        return part;
+    }
+
+    public ToolCall ToToolCall()
+    {
+        if (FunctionCall is null)
+        {
+            return new ToolCall();
+        }
+
+        FunctionCall fc = new FunctionCall
+        {
+            Name = FunctionCall.Name,
+            Arguments = FunctionCall.Args.ToJson() // todo: this is a bit slow as we encode already decoded value just to decode it once more once args are first accessed
+        };
+
+        ToolCall tc = new ToolCall
+        {
+            Id = FunctionCall.Name,
+            FunctionCall = fc
+        };
+
+        return tc;
+    }
+}
+
 internal class VendorGoogleChatRequest
 {
     internal class VendorGoogleChatRequestMessagePartInlineData
@@ -59,115 +168,6 @@ internal class VendorGoogleChatRequest
         
         [JsonProperty("fileUri")]
         public string FileUri { get; set; }
-    }
-    
-    internal class VendorGoogleChatRequestMessagePart
-    {
-        [JsonProperty("text", NullValueHandling = NullValueHandling.Ignore)]
-        public string? Text { get; set; }
-        
-        [JsonProperty("inlineData", NullValueHandling = NullValueHandling.Ignore)]
-        public VendorGoogleChatRequestMessagePartInlineData? InlineData { get; set; }
-        
-        [JsonProperty("functionCall", NullValueHandling = NullValueHandling.Ignore)]
-        public VendorGoogleChatRequestMessagePartFunctionCall? FunctionCall { get; set; }
-        
-        [JsonProperty("functionResponse", NullValueHandling = NullValueHandling.Ignore)]
-        public VendorGoogleChatRequestMessagePartFunctionResponse? FunctionResponse { get; set; }
-
-        [JsonProperty("fileData", NullValueHandling = NullValueHandling.Ignore)]
-        public VendorGoogleChatRequestMessagePartFileData? FileData { get; set; }
-        
-        // todo: map executableCode, codeExecutionResult; https://ai.google.dev/api/caching#Part
-        
-        public VendorGoogleChatRequestMessagePart()
-        {
-            
-        }
-
-        public VendorGoogleChatRequestMessagePart(ChatMessagePart part)
-        {
-            switch (part.Type)
-            {
-                case ChatMessageTypes.Text:
-                {
-                    Text = part.Text;
-                    break;
-                }
-                case ChatMessageTypes.Image:
-                {
-                    if (part.Image is not null)
-                    {
-                        if (part.Image.MimeType is null)
-                        {
-                            throw new Exception("Google requires MIME type of all images to be set, supported values are: image/png, image/jpeg");
-                        }
-                        
-                        InlineData = new VendorGoogleChatRequestMessagePartInlineData
-                        {
-                            MimeType = part.Image.MimeType,
-                            Data = part.Image.Url
-                        };
-                    }
-                    
-                    break;
-                }
-                case ChatMessageTypes.FileLink:
-                {
-                    if (part.FileLinkData is not null)
-                    {
-                        FileData = new VendorGoogleChatRequestMessagePartFileData
-                        {
-                            FileUri = part.FileLinkData.FileUri,
-                            MimeType = part.FileLinkData.MimeType
-                        };
-                    }
-                    
-                    break;
-                }
-            }
-        }
-
-        public ChatMessagePart ToMessagePart(StringBuilder sb)
-        {
-            ChatMessagePart part = new ChatMessagePart();
-            
-            if (Text is not null)
-            {
-                part.Type = ChatMessageTypes.Text;
-                part.Text = Text;
-                sb.Append(Text);
-            }
-            else if (InlineData is not null)
-            {
-                part.Type = ChatMessageTypes.Image;
-                part.Image = new ChatImage(InlineData.Data);
-            }
-
-            return part;
-        }
-
-        public ToolCall ToToolCall()
-        {
-            if (FunctionCall is null)
-            {
-                return new ToolCall();
-            }
-
-            FunctionCall fc = new FunctionCall
-            {
-                Name = FunctionCall.Name,
-                Arguments = FunctionCall.Args.ToJson() // todo: this is a bit slow as we encode already decoded value just to decode it once more once args are first accessed
-            };
-
-            ToolCall tc = new ToolCall
-            {
-                Id = FunctionCall.Name,
-                FunctionCall = fc
-            };
-
-            return tc;
-        }
     }
     
     internal class VendorGoogleChatRequestMessage

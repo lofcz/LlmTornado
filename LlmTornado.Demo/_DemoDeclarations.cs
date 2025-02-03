@@ -1,6 +1,13 @@
 namespace LlmTornado.Demo;
 // ReSharper disable UnusedType.Global // used by reflection
 
+[DemoEnum(demoType: typeof(CachingDemo))]
+public enum CachingDemos
+{
+    [Method(nameof(CachingDemo.Create))]
+    Create
+}
+
 [DemoEnum(demoType: typeof(FilesDemo))]
 public enum FileDemos
 {

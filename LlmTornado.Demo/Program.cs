@@ -162,8 +162,6 @@ public class Program
             return;
         }
 
-        ListDemos();
-
         while (true)
         {
             await Read();   

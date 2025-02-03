@@ -7,6 +7,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Web;
+using LlmTornado.Caching;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Chat.Vendors.Cohere;
@@ -64,6 +65,7 @@ internal class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider,
                 {
                     CapabilityEndpoints.Chat => "models",
                     CapabilityEndpoints.Files => "files",
+                    CapabilityEndpoints.Caching => "cachedContents",
                     _ => throw new Exception($"Google doesn't support endpoint {endpoint}")
                 };
         
@@ -92,7 +94,7 @@ internal class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider,
                     {
                         foreach (VendorGoogleChatResult.VendorGoogleChatResultMessage candidate in obj.Candidates)
                         {
-                            foreach (VendorGoogleChatRequest.VendorGoogleChatRequestMessagePart part in candidate.Content.Parts)
+                            foreach (VendorGoogleChatRequestMessagePart part in candidate.Content.Parts)
                             {
                                 if (part.Text is not null)
                                 {
@@ -172,20 +174,20 @@ internal class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider,
     {
         
     }
+
+    private static readonly Dictionary<Type, Func<string, string?, object?>> InboundMap = new Dictionary<Type, Func<string, string?, object?>>
+    {
+        { typeof(ChatRequest), (s, s1) => ChatResult.Deserialize(LLmProviders.Google, s, s1) },
+        { typeof(TornadoFile), (s, s1) => FileUploadRequest.Deserialize(LLmProviders.Google, s, s1) },
+        { typeof(CachedContentInformation), (s, s1) => CachedContentInformation.Deserialize(LLmProviders.Google, s, s1) }
+    };
     
     public override T? InboundMessage<T>(string jsonData, string? postData) where T : default
     {
-        if (typeof(T) == typeof(ChatResult))
+        if (InboundMap.TryGetValue(typeof(T), out Func<string, string?, object?>? fn))
         {
-            return (T?)(object?)ChatResult.Deserialize(LLmProviders.Google, jsonData, postData);
+            return (T?)fn.Invoke(jsonData, postData);
         }
-
-        if (typeof(T) == typeof(TornadoFile))
-        {
-            return (T?)(object?)FileUploadRequest.Deserialize(LLmProviders.Google, jsonData, postData);
-        }
-        
-        
         
         return JsonConvert.DeserializeObject<T>(jsonData);
     }

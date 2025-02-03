@@ -543,7 +543,8 @@ public enum CapabilityEndpoints
     ImageEdit,
     Threads,
     FineTuning,
-    VectorStores
+    VectorStores,
+    Caching
 }
 
 /// <summary>
