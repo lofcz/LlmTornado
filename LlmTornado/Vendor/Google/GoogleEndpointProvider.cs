@@ -82,6 +82,11 @@ internal class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider,
         
         await using JsonTextReader jsonReader = new JsonTextReader(reader);
         JsonSerializer serializer = new JsonSerializer();
+
+        // use for debugging to inspect the raw data:
+        // string data = await reader.ReadToEndAsync();
+        
+        bool isBufferingTool = request.VendorExtensions?.Google?.ResponseSchema is not null;
         
         if (await jsonReader.ReadAsync(request.CancellationToken) && jsonReader.TokenType is JsonToken.StartArray)
         {
@@ -108,6 +113,11 @@ internal class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider,
                         
                         ChatResult chatResult = obj.ToChatResult(null);
                         usage = chatResult.Usage;
+
+                        if (isBufferingTool)
+                        {
+                            continue;
+                        }
                         
                         yield return chatResult;
                     }
@@ -129,6 +139,7 @@ internal class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider,
                     {
                         Delta = new ChatMessage
                         {
+                            
                             Content = plaintextAccu.ContentBuilder?.ToString()
                         }
                     }
@@ -178,7 +189,7 @@ internal class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider,
 
     private static readonly Dictionary<Type, Func<string, string?, object?>> InboundMap = new Dictionary<Type, Func<string, string?, object?>>
     {
-        { typeof(ChatRequest), (s, s1) => ChatResult.Deserialize(LLmProviders.Google, s, s1) },
+        { typeof(ChatResult), (s, s1) => ChatResult.Deserialize(LLmProviders.Google, s, s1) },
         { typeof(TornadoFile), (s, s1) => FileUploadRequest.Deserialize(LLmProviders.Google, s, s1) },
         { typeof(CachedContentInformation), (s, s1) => CachedContentInformation.Deserialize(LLmProviders.Google, s, s1) },
         { typeof(CachedContentList), (s, s1) => CachedContentList.Deserialize(LLmProviders.Google, s, s1) },

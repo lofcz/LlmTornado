@@ -1564,18 +1564,94 @@ public static class ChatDemo
         return response;
     }
 
+    [TornadoTest]
+    public static async Task GoogleStreamingFunctions()
+    {
+        StringBuilder sb = new StringBuilder();
+
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Google.Gemini.Gemini15Pro002,
+            Tools = [
+                new Tool(new ToolFunction("get_weather", "gets the current weather", new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        location = new
+                        {
+                            type = "string",
+                            description = "The location for which the weather information is required."
+                        }
+                    },
+                    required = new List<string> { "location" }
+                }))
+            ],
+            ToolChoice = new OutboundToolChoice("get_weather")
+        });
+
+        chat.OnAfterToolsCall = async (result) =>
+        {
+            chat.RequestParameters.ToolChoice = null; // stop forcing the model to use the get_weather tool
+            await chat.StreamResponse(Console.Write);
+        };
+        
+        chat.AppendMessage(ChatMessageRoles.System, "You are a helpful assistant");
+        Guid msgId = Guid.NewGuid();
+        chat.AppendMessage(ChatMessageRoles.User, "What is the weather like today in Prague?", msgId);
+
+        await chat.StreamResponseRich(msgId, (x) =>
+        {
+            sb.Append(x);
+            return ValueTask.CompletedTask;
+        }, functions =>
+        {
+            foreach (FunctionCall fn in functions)
+            {
+                fn.Result = new FunctionResult(fn.Name, "A mild rain is expected around noon.");
+            }
+
+            return ValueTask.CompletedTask;
+        }, null);
+
+
+        string response = sb.ToString();
+        Console.WriteLine(response);
+    }
+
     [TornadoTest("dev")]
     public static async Task GoogleCached()
     {
         string text = await File.ReadAllTextAsync("Static/Files/a11.txt");
 
+        Tool tool = new Tool(new ToolFunction("return_transcript", "returns transcript of a given entry", new
+        {
+            type = "object",
+            properties = new
+            {
+                content = new
+                {
+                    type = "string",
+                    description = "Content of the entry"
+                },
+                title = new
+                {
+                    type = "string",
+                    description = "Title/headline of the entry"
+                },
+            },
+            required = new List<string> { "content", "title" }
+        }), true);
+        
         HttpCallResult<CachedContentInformation> cachingResult = await Program.Connect().Caching.Create(new CreateCachedContentRequest(90, ChatModel.Google.Gemini.Gemini15Pro002, [
             new CachedContent([
                 new ChatMessagePart(text)
             ], CachedContentRoles.User)
         ], new CachedContent([
             new ChatMessagePart($"You are a machine answering questions regarding Apollo 11 mission, use the transcript of the mission for precise answers")
-        ])));
+        ]), [
+            tool
+        ], new OutboundToolChoice("return_transcript")));
         
         Console.WriteLine(cachingResult.Data.Name);
         Console.WriteLine(cachingResult.Data.ExpireTime);
@@ -1583,10 +1659,13 @@ public static class ChatDemo
         Conversation conversation = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
             Model = ChatModel.Google.Gemini.Gemini15Pro002,
-            VendorExtensions = new ChatRequestVendorExtensions(new ChatRequestVendorGoogleExtensions(cachingResult.Data.Name))
+            VendorExtensions = new ChatRequestVendorExtensions(new ChatRequestVendorGoogleExtensions(cachingResult.Data)
+            {
+                ResponseSchema = tool.Function.Parameters
+            })
         });
         
-        conversation.AppendUserInput("Cite the exact wording of the entry labeled \"04 06 58 40 CMP (COLUMBIA)\", starting with \"Roger, ...\"");
+        conversation.AppendUserInput("Cite the exact wording of the entry labeled \"04 06 58 40 CMP (COLUMBIA)\", starting with \"Roger, ...\". Use the function return_transcript.");
         await GetNextResponse();
         conversation.AppendUserInput($"Now do the same for entry \"05 07 57 34 CDR (EAGLE)\"");
         await GetNextResponse();
@@ -1606,6 +1685,15 @@ public static class ChatDemo
                 {
                     Console.WriteLine();
                     Console.WriteLine(usage);
+                    return ValueTask.CompletedTask;
+                },
+                FunctionCallHandler = (calls) =>
+                {
+                    calls.ForEach(x =>
+                    {
+                       
+                    });
+                    
                     return ValueTask.CompletedTask;
                 }
             });    

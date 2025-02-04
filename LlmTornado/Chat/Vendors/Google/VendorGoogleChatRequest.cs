@@ -17,6 +17,85 @@ using Newtonsoft.Json.Linq;
 
 namespace LlmTornado.Chat.Vendors.Cohere;
 
+/// <summary>
+/// Generation config for Google.
+/// </summary>
+internal class VendorGoogleChatRequestGenerationConfig
+{
+    /// <summary>
+    /// Optional. The set of character sequences (up to 5) that will stop output generation. If specified, the API will stop at the first appearance of a stop_sequence. The stop sequence will not be included as part of the response.
+    /// </summary>
+    [JsonProperty("stopSequences")]
+    public List<string>? StopSequences { get; set; }
+    
+    /// <summary>
+    /// Output response mimetype of the generated candidate text. Supported mimetype: text/plain: (default) Text output. application/json: JSON response in the candidates.
+    /// </summary>
+    [JsonProperty("responseMimeType")]
+    public string? ResponseMimeType { get; set; }
+    
+    /// <summary>
+    /// Output response schema of the generated candidate text when response mime type can have schema. Schema can be objects, primitives or arrays and is a subset of OpenAPI schema.
+    /// <see cref="ResponseMimeType"/> has to be "application/json".
+    /// </summary>
+    [JsonProperty("responseSchema")]
+    public object? ResponseSchema { get; set; }
+    
+    /// <summary>
+    /// Optional. Number of generated responses to return. Currently, this value can only be set to 1. If unset, this will default to 1.
+    /// </summary>
+    [JsonProperty("candidateCount")]
+    public int? CandidateCount { get; set; }
+    
+    /// <summary>
+    /// Note: The default value varies by model, see the Model.output_token_limit attribute of the Model returned from the getModel function.
+    /// </summary>
+    [JsonProperty("maxOutputTokens")]
+    public int? MaxOutputTokens { get; set; }
+    
+    /// <summary>
+    /// Values can range from [0.0, 2.0].
+    /// </summary>
+    [JsonProperty("temperature")]
+    public double? Temperature { get; set; }
+    
+    /// <summary>
+    /// Optional. The maximum cumulative probability of tokens to consider when sampling. The model uses combined Top-k and Top-p (nucleus) sampling.
+    /// </summary>
+    [JsonProperty("topP")]
+    public double? TopP { get; set; }
+    
+    /// <summary>
+    /// Optional. The maximum number of tokens to consider when sampling.
+    /// </summary>
+    [JsonProperty("topK")]
+    public int? TopK { get; set; }
+    
+    /// <summary>
+    /// Optional. Presence penalty applied to the next token's logprobs if the token has already been seen in the response. This penalty is binary on/off and not dependant on the number of times the token is used (after the first). Use frequencyPenalty for a penalty that increases with each use. A positive penalty will discourage the use of tokens that have already been used in the response, increasing the vocabulary.
+    /// </summary>
+    [JsonProperty("presencePenalty")]
+    public double? PresencePenalty { get; set; }
+    
+    /// <summary>
+    /// Optional. Frequency penalty applied to the next token's logprobs, multiplied by the number of times each token has been seen in the respponse so far. A positive penalty will discourage the use of tokens that have already been used, proportional to the number of times the token has been used: The more a token is used, the more dificult it is for the model to use that token again increasing the vocabulary of responses. Caution: A negative penalty will encourage the model to reuse tokens proportional to the number of times the token has been used. Small negative values will reduce the vocabulary of a response. Larger negative values will cause the model to start repeating a common token until it hits the maxOutputTokens limit: "...the the the the the...".
+    /// </summary>
+    [JsonProperty("frequencyPenalty")]
+    public double? FrequencyPenalty { get; set; }
+    
+    /// <summary>
+    /// Optional. If true, export the logprobs results in response.
+    /// </summary>
+    [JsonProperty("responseLogprobs")]
+    public bool? ResponseLogprobs { get; set; }
+    
+    /// <summary>
+    /// Optional. Only valid if responseLogprobs=True. This sets the number of top logprobs to return at each decoding step in the Candidate.logprobs_result.
+    /// </summary>
+    [JsonProperty("logprobs")]
+    public int? Logprobs { get; set; }
+}
+
 internal class VendorGoogleChatRequestMessagePart
 {
     [JsonProperty("text", NullValueHandling = NullValueHandling.Ignore)]
@@ -250,11 +329,14 @@ internal class VendorGoogleChatRequest
             };
 
             StringBuilder sb = new StringBuilder();
+            bool roleSolved = false;
             
             foreach (VendorGoogleChatRequestMessagePart x in Parts)
             {
                 if (x.FunctionCall is not null)
                 {
+                    roleSolved = true;
+                    msg.Role = ChatMessageRoles.Tool;
                     msg.ToolCalls ??= [];
                     msg.ToolCalls.Add(x.ToToolCall());
                 }
@@ -262,6 +344,8 @@ internal class VendorGoogleChatRequest
                 {
                     if (request?.GenerationConfig?.ResponseMimeType is "application/json")
                     {
+                        roleSolved = true;
+                        msg.Role = ChatMessageRoles.Tool;
                         string? fnName = request.ToolConfig?.FunctionConfig?.AllowedFunctionNames?.FirstOrDefault();
                         
                         msg.ToolCalls ??= [];
@@ -283,7 +367,12 @@ internal class VendorGoogleChatRequest
             }
 
             msg.Content = sb.ToString();
-            msg.Role = Role is "user" ? ChatMessageRoles.User : ChatMessageRoles.Assistant;
+
+            if (!roleSolved)
+            {
+                msg.Role = Role is "user" ? ChatMessageRoles.User : ChatMessageRoles.Assistant;    
+            }
+            
             return msg;
         }
     }
@@ -415,82 +504,6 @@ internal class VendorGoogleChatRequest
             }
         };
     }
-
-    internal class VendorGoogleChatRequestGenerationConfig
-    {
-        /// <summary>
-        /// Optional. The set of character sequences (up to 5) that will stop output generation. If specified, the API will stop at the first appearance of a stop_sequence. The stop sequence will not be included as part of the response.
-        /// </summary>
-        [JsonProperty("stopSequences")]
-        public List<string>? StopSequences { get; set; }
-        
-        /// <summary>
-        /// Output response mimetype of the generated candidate text. Supported mimetype: text/plain: (default) Text output. application/json: JSON response in the candidates.
-        /// </summary>
-        [JsonProperty("responseMimeType")]
-        public string? ResponseMimeType { get; set; }
-        
-        /// <summary>
-        /// Output response schema of the generated candidate text when response mime type can have schema. Schema can be objects, primitives or arrays and is a subset of OpenAPI schema.
-        /// <see cref="ResponseMimeType"/> has to be "application/json".
-        /// </summary>
-        [JsonProperty("responseSchema")]
-        public object? ResponseSchema { get; set; }
-        
-        /// <summary>
-        /// Optional. Number of generated responses to return. Currently, this value can only be set to 1. If unset, this will default to 1.
-        /// </summary>
-        [JsonProperty("candidateCount")]
-        public int? CandidateCount { get; set; }
-        
-        /// <summary>
-        /// Note: The default value varies by model, see the Model.output_token_limit attribute of the Model returned from the getModel function.
-        /// </summary>
-        [JsonProperty("maxOutputTokens")]
-        public int? MaxOutputTokens { get; set; }
-        
-        /// <summary>
-        /// Values can range from [0.0, 2.0].
-        /// </summary>
-        [JsonProperty("temperature")]
-        public double? Temperature { get; set; }
-        
-        /// <summary>
-        /// Optional. The maximum cumulative probability of tokens to consider when sampling. The model uses combined Top-k and Top-p (nucleus) sampling.
-        /// </summary>
-        [JsonProperty("topP")]
-        public double? TopP { get; set; }
-        
-        /// <summary>
-        /// Optional. The maximum number of tokens to consider when sampling.
-        /// </summary>
-        [JsonProperty("topK")]
-        public int? TopK { get; set; }
-        
-        /// <summary>
-        /// Optional. Presence penalty applied to the next token's logprobs if the token has already been seen in the response. This penalty is binary on/off and not dependant on the number of times the token is used (after the first). Use frequencyPenalty for a penalty that increases with each use. A positive penalty will discourage the use of tokens that have already been used in the response, increasing the vocabulary.
-        /// </summary>
-        [JsonProperty("presencePenalty")]
-        public double? PresencePenalty { get; set; }
-        
-        /// <summary>
-        /// Optional. Frequency penalty applied to the next token's logprobs, multiplied by the number of times each token has been seen in the respponse so far. A positive penalty will discourage the use of tokens that have already been used, proportional to the number of times the token has been used: The more a token is used, the more dificult it is for the model to use that token again increasing the vocabulary of responses. Caution: A negative penalty will encourage the model to reuse tokens proportional to the number of times the token has been used. Small negative values will reduce the vocabulary of a response. Larger negative values will cause the model to start repeating a common token until it hits the maxOutputTokens limit: "...the the the the the...".
-        /// </summary>
-        [JsonProperty("frequencyPenalty")]
-        public double? FrequencyPenalty { get; set; }
-        
-        /// <summary>
-        /// Optional. If true, export the logprobs results in response.
-        /// </summary>
-        [JsonProperty("responseLogprobs")]
-        public bool? ResponseLogprobs { get; set; }
-        
-        /// <summary>
-        /// Optional. Only valid if responseLogprobs=True. This sets the number of top logprobs to return at each decoding step in the Candidate.logprobs_result.
-        /// </summary>
-        [JsonProperty("logprobs")]
-        public int? Logprobs { get; set; }
-    }
     
     [JsonProperty("contents")] 
     public List<VendorGoogleChatRequestMessage> Contents { get; set; } = [];
@@ -516,6 +529,77 @@ internal class VendorGoogleChatRequest
     public VendorGoogleChatRequest()
     {
         
+    }
+
+    public static Tuple<List<VendorGoogleChatTool>?, VendorGoogleChatToolConfig?, VendorGoogleChatRequestGenerationConfig?> GetToolsAndToolChoice(List<Tool>? tools, OutboundToolChoice? outboundToolChoice)
+    {
+        if (tools is null || tools.Count is 0)
+        {
+            return new Tuple<List<VendorGoogleChatTool>?, VendorGoogleChatToolConfig?, VendorGoogleChatRequestGenerationConfig?>(null, null, null);
+        }
+        
+        List<VendorGoogleChatTool>? localTools = [];
+        VendorGoogleChatToolConfig localToolConfig = new VendorGoogleChatToolConfig
+        {
+            FunctionConfig = new VendorGoogleChatToolConfigFunctionConfig
+            {
+                Mode = "AUTO"
+            }
+        };
+        VendorGoogleChatRequestGenerationConfig? localConfig = null;
+
+        bool anyStrictTool = false;
+        
+        foreach (Tool tool in tools)
+        {
+            localTools.Add(new VendorGoogleChatTool(tool));
+        }
+
+        if (outboundToolChoice is not null)
+        {
+            switch (outboundToolChoice.Mode)
+            {
+                case OutboundToolChoiceModes.Auto or OutboundToolChoiceModes.Legacy:
+                {
+                    localToolConfig.FunctionConfig.Mode = "AUTO";
+                    break;
+                }
+                case OutboundToolChoiceModes.Required:
+                {
+                    localToolConfig.FunctionConfig.Mode = "ANY";
+                    break;
+                }
+                case OutboundToolChoiceModes.None:
+                {
+                    localToolConfig.FunctionConfig.Mode = "NONE";
+                    break;
+                }
+                case OutboundToolChoiceModes.ToolFunction:
+                {
+                    localToolConfig.FunctionConfig.Mode = "ANY";
+                    localToolConfig.FunctionConfig.AllowedFunctionNames = [ outboundToolChoice.Function?.Name ?? string.Empty ];
+
+                    Tool? match = tools.FirstOrDefault(x => x.Function?.Name == outboundToolChoice.Function?.Name);
+
+                    if ((match?.Strict ?? false) && match.Function?.Parameters is not null)
+                    {
+                        localConfig = new VendorGoogleChatRequestGenerationConfig
+                        {
+                            ResponseMimeType = "application/json",
+                            ResponseSchema = match.Function.Parameters
+                        };
+
+                        // if we force strict json mode, these two fields must be cleared, otherwise the api throws due to these having precedence over responseMimeType
+                        localTools = null;
+                        // ToolConfig = null; // we keep this in the request as they accept it and we can match the function name later with it
+                    }
+                    
+                    break;
+                }
+            }
+        }
+
+        return new Tuple<List<VendorGoogleChatTool>?, VendorGoogleChatToolConfig?, VendorGoogleChatRequestGenerationConfig?>(localTools, localToolConfig, localConfig);
     }
     
     public VendorGoogleChatRequest(ChatRequest request, IEndpointProvider provider)
@@ -554,70 +638,32 @@ internal class VendorGoogleChatRequest
         
         if (request.Tools?.Count > 0)
         {
-            Tools ??= [];
+            Tuple<List<VendorGoogleChatTool>?, VendorGoogleChatToolConfig?, VendorGoogleChatRequestGenerationConfig?> configUpdate = GetToolsAndToolChoice(request.Tools, request.ToolChoice);
 
-            ToolConfig = new VendorGoogleChatToolConfig
-            {
-                FunctionConfig = new VendorGoogleChatToolConfigFunctionConfig
-                {
-                    Mode = "AUTO"
-                }
-            };
+            Tools = configUpdate.Item1;
+            ToolConfig = configUpdate.Item2;
 
-            bool anyStrictTool = false;
-            
-            foreach (Tool tool in request.Tools)
+            if (configUpdate.Item3 is not null)
             {
-                Tools.Add(new VendorGoogleChatTool(tool));
+                GenerationConfig.ResponseMimeType = configUpdate.Item3.ResponseMimeType;
+                GenerationConfig.ResponseSchema = configUpdate.Item3.ResponseSchema;
+            }
+        }
+
+        if (request.VendorExtensions?.Google is not null)
+        {
+            if (request.VendorExtensions.Google.CachedContent is not null)
+            {
+                CachedContent = request.VendorExtensions.Google.CachedContent;
             }
 
-            if (request.ToolChoice is not null)
+            if (request.VendorExtensions.Google.ResponseSchema is not null)
             {
-                switch (request.ToolChoice.Mode)
-                {
-                    case OutboundToolChoiceModes.Auto or OutboundToolChoiceModes.Legacy:
-                    {
-                        ToolConfig.FunctionConfig.Mode = "AUTO";
-                        break;
-                    }
-                    case OutboundToolChoiceModes.Required:
-                    {
-                        ToolConfig.FunctionConfig.Mode = "ANY";
-                        break;
-                    }
-                    case OutboundToolChoiceModes.None:
-                    {
-                        ToolConfig.FunctionConfig.Mode = "NONE";
-                        break;
-                    }
-                    case OutboundToolChoiceModes.ToolFunction:
-                    {
-                        ToolConfig.FunctionConfig.Mode = "ANY";
-                        ToolConfig.FunctionConfig.AllowedFunctionNames = [ request.ToolChoice.Function?.Name ?? string.Empty ];
-
-                        Tool? match = request.Tools.FirstOrDefault(x => x.Function?.Name == request.ToolChoice.Function?.Name);
-
-                        if ((match?.Strict ?? false) && match.Function?.Parameters is not null)
-                        {
-                            GenerationConfig.ResponseMimeType = "application/json";
-                            GenerationConfig.ResponseSchema = match.Function.Parameters;
-
-                            // if we force strict json mode, these two fields must be cleared, otherwise the api throws due to these having precedence over responseMimeType
-                            Tools = null;
-                            // ToolConfig = null; // we keep this in the request as they accept it and we can match the function name later with it
-                        }
-                        
-                        break;
-                    }
-                }
+                GenerationConfig.ResponseMimeType = "application/json";
+                GenerationConfig.ResponseSchema = request.VendorExtensions.Google.ResponseSchema;
             }
         }
         
         SafetySettings = VendorGoogleChatRequestSafetySetting.DisableAll;
-
-        if (request.VendorExtensions?.Google?.CachedContent is not null)
-        {
-            CachedContent = request.VendorExtensions.Google.CachedContent;
-        }
     }
  }

@@ -33,9 +33,16 @@ public class CachingEndpoint : EndpointBase
     /// <param name="request"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public Task<HttpCallResult<CachedContentInformation>> Create(CreateCachedContentRequest request, CancellationToken? cancellationToken = null)
+    public async Task<HttpCallResult<CachedContentInformation>> Create(CreateCachedContentRequest request, CancellationToken? cancellationToken = null)
     {
-        return HttpPostRaw<CachedContentInformation>(Api.GetProvider(LLmProviders.Google), Endpoint, postData: request.Serialize(LLmProviders.Google), ct: cancellationToken);
+        HttpCallResult<CachedContentInformation> result = await HttpPostRaw<CachedContentInformation>(Api.GetProvider(LLmProviders.Google), Endpoint, postData: request.Serialize(LLmProviders.Google), ct: cancellationToken).ConfigureAwait(ConfigureAwaitOptions.None);
+
+        if (result.Data is not null)
+        {
+            result.Data.CreateRequest = request;
+        }
+        
+        return result;
     }
     
     /// <summary>
