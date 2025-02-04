@@ -11,7 +11,6 @@ _Empty fields mean the feature is unsupported by the provider._
 |-------|-----------|-----------|-----------| -----------| -----------| -----------| -----------| -----------|
 |**Audio**      | ✅ |    |     |     |   |     |     |     |
 |**Chat**       | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ❌ |  ✅ |
-|**Caching**    |    |    |  ❌ |     |    |    |     |     |
 |**Embeddings** | ✅ |    | ❌  | ❌ |    |    | ❌  |    |
 |**Fine-Tuning**| ✅ |    | ❌  |    |    |    |      |    |
 |**Batch**      | ❌ | ❌ | ❌ | ❌ |    | ❌ |     |    |
@@ -20,6 +19,7 @@ _Empty fields mean the feature is unsupported by the provider._
 |**Images**     | ✅ |    |     |    |    |     |     |    |
 |**Models**     | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
 |**Moderation** | ✅ |    |     |    |    |     |     |    |
+|**Tokenize**   |    | ❌ |     | ❌ |    |     |     |    |
 
 _*Custom means any OpenAI compatible provider, such as Azure OpenAI, Ollama, KoboldCpp, etc._
 
@@ -28,3 +28,20 @@ _*Custom means any OpenAI compatible provider, such as Azure OpenAI, Ollama, Kob
  Assistants | Threads | Messages | Runs | Run steps | Vector stores | Vector store files | Vector store file batches | Realtime |
 |-----------|------------|---------|----------|------| ---------------|-------------------|-------------------------|-----------|
 | ✅ | ⚠️ | ⚠️ | ⚠️ | ⚠️ | ✅ | ✅ | ✅  | ❌ |
+
+## Google Specific
+
+ Caching* | Semantic Retrieval 
+|-----------|------------ |
+| ✅ | ❌ |  
+
+_*Other providers expose caching as part of `Chat`, or don't offer the feature._
+
+
+## Cohere Specific
+
+ Rerank | Embed Jobs* | Classify* | Datasets* | Connectors* |
+|-----------|------------ | ------------ | ------------ | ------------ |
+| ❌ | ❌ |  ❌ | ❌ | ❌ | ❌
+
+_*`/v1` APIs, future support unsure, probably won't be implemented._
