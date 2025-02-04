@@ -335,8 +335,6 @@ internal class VendorGoogleChatRequest
             {
                 if (x.FunctionCall is not null)
                 {
-                    roleSolved = true;
-                    msg.Role = ChatMessageRoles.Tool;
                     msg.ToolCalls ??= [];
                     msg.ToolCalls.Add(x.ToToolCall());
                 }
@@ -344,8 +342,6 @@ internal class VendorGoogleChatRequest
                 {
                     if (request?.GenerationConfig?.ResponseMimeType is "application/json")
                     {
-                        roleSolved = true;
-                        msg.Role = ChatMessageRoles.Tool;
                         string? fnName = request.ToolConfig?.FunctionConfig?.AllowedFunctionNames?.FirstOrDefault();
                         
                         msg.ToolCalls ??= [];
@@ -367,12 +363,7 @@ internal class VendorGoogleChatRequest
             }
 
             msg.Content = sb.ToString();
-
-            if (!roleSolved)
-            {
-                msg.Role = Role is "user" ? ChatMessageRoles.User : ChatMessageRoles.Assistant;    
-            }
-            
+            msg.Role = Role is "user" ? ChatMessageRoles.User : ChatMessageRoles.Assistant;    
             return msg;
         }
     }

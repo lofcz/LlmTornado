@@ -1074,33 +1074,8 @@ public class Conversation
 
                 if (delta is not null && eventsHandler is not null)
                 {
-                    if (delta.Role is ChatMessageRoles.Assistant)
-                    {
-                        if (eventsHandler.MessageTokenHandler is not null)
-                        {
-                            string? msg = delta.Content ?? message?.Content;
-
-                            if (msg is not null)
-                            {
-                                if (RequestParameters.TrimResponseStart && isFirstMessageToken)
-                                {
-                                    msg = msg.TrimStart();
-                                    isFirstMessageToken = false;
-                                }
-                                
-                                await eventsHandler.MessageTokenHandler.Invoke(msg);   
-                            }
-                        }
-
-                        if (delta.Audio is not null)
-                        {
-                            if (eventsHandler.AudioTokenHandler is not null)
-                            {
-                                await eventsHandler.AudioTokenHandler.Invoke(delta.Audio);
-                            }
-                        }
-                    }   
-                    else if (delta.Role is ChatMessageRoles.Tool)
+                    // role can be either Tool or Assistant, we need to handle both cases
+                    if (delta.Role is ChatMessageRoles.Tool || delta.ToolCalls?.Count > 0)
                     {
                         delta.Role = ChatMessageRoles.Assistant;
                         
@@ -1171,6 +1146,32 @@ public class Conversation
                             }
 
                             return;
+                        }
+                    }
+                    else if (delta.Role is ChatMessageRoles.Assistant)
+                    {
+                        if (eventsHandler.MessageTokenHandler is not null)
+                        {
+                            string? msg = delta.Content ?? message?.Content;
+
+                            if (msg is not null)
+                            {
+                                if (RequestParameters.TrimResponseStart && isFirstMessageToken)
+                                {
+                                    msg = msg.TrimStart();
+                                    isFirstMessageToken = false;
+                                }
+                                
+                                await eventsHandler.MessageTokenHandler.Invoke(msg);   
+                            }
+                        }
+
+                        if (delta.Audio is not null)
+                        {
+                            if (eventsHandler.AudioTokenHandler is not null)
+                            {
+                                await eventsHandler.AudioTokenHandler.Invoke(delta.Audio);
+                            }
                         }
                     }
                 }   

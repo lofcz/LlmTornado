@@ -1545,8 +1545,6 @@ public static class ChatDemo
             return ValueTask.CompletedTask;
         }, functions =>
         {
-            List<FunctionResult> results = [];
-            
             foreach (FunctionCall fn in functions)
             {
                 fn.Result = new FunctionResult(fn.Name, new
@@ -1561,6 +1559,7 @@ public static class ChatDemo
 
 
         string response = sb.ToString();
+        Console.WriteLine(response);
         return response;
     }
 
@@ -1598,7 +1597,7 @@ public static class ChatDemo
         
         chat.AppendMessage(ChatMessageRoles.System, "You are a helpful assistant");
         Guid msgId = Guid.NewGuid();
-        chat.AppendMessage(ChatMessageRoles.User, "What is the weather like today in Prague?", msgId);
+        chat.AppendMessage(ChatMessageRoles.User, "1. Solve the following equation: 2+2=?\n2. What is the weather like today in Prague?", msgId);
 
         await chat.StreamResponseRich(msgId, (x) =>
         {
