@@ -3,7 +3,7 @@
 ✅ - Supported  
 ⚠️ - Partially supported/under construction  
 ❌ - Not supported  
-_Empty fields mean the feature is unsupported by the provider._
+_Empty field means the feature is unsupported by the provider._
 
 ## Inference
 
