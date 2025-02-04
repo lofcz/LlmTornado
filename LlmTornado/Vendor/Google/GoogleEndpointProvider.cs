@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -86,7 +87,8 @@ internal class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider,
         // use for debugging to inspect the raw data:
         // string data = await reader.ReadToEndAsync();
         
-        bool isBufferingTool = request.VendorExtensions?.Google?.ResponseSchema is not null;
+        // whenever using json schema, the response is received as a series of plaintext events
+        bool isBufferingTool = request.VendorExtensions?.Google?.ResponseSchema is not null || (request.Tools?.Any(x => x.Strict ?? false) ?? false);
         
         if (await jsonReader.ReadAsync(request.CancellationToken) && jsonReader.TokenType is JsonToken.StartArray)
         {
@@ -131,6 +133,37 @@ internal class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider,
 
         if (plaintextAccu is not null)
         {
+            if (isBufferingTool)
+            {
+                yield return new ChatResult
+                {
+                    Choices =
+                    [
+                        new ChatChoice
+                        {
+                            Delta = new ChatMessage
+                            {
+                                Role = ChatMessageRoles.Tool,
+                                ToolCalls = [
+                                    new ToolCall
+                                    {
+                                        Type = "function",
+                                        FunctionCall = new FunctionCall
+                                        {
+                                            Name = request.Tools?.FirstOrDefault(x => x.Strict ?? false)?.Function?.Name ?? request.VendorExtensions?.Google?.ResponseSchema?.Function?.Name ?? string.Empty,
+                                            Arguments = plaintextAccu.ContentBuilder?.ToString() ?? string.Empty
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ],
+                    Usage = usage
+                };
+                
+                yield break;
+            }
+            
             yield return new ChatResult
             {
                 Choices =
@@ -139,7 +172,6 @@ internal class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider,
                     {
                         Delta = new ChatMessage
                         {
-                            
                             Content = plaintextAccu.ContentBuilder?.ToString()
                         }
                     }

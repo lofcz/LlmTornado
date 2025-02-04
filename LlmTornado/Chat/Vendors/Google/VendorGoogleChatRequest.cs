@@ -648,10 +648,10 @@ internal class VendorGoogleChatRequest
                 CachedContent = request.VendorExtensions.Google.CachedContent;
             }
 
-            if (request.VendorExtensions.Google.ResponseSchema is not null)
+            if (request.VendorExtensions.Google.ResponseSchema?.Function is not null)
             {
                 GenerationConfig.ResponseMimeType = "application/json";
-                GenerationConfig.ResponseSchema = request.VendorExtensions.Google.ResponseSchema;
+                GenerationConfig.ResponseSchema = request.VendorExtensions.Google.ResponseSchema.Function.Parameters;
             }
         }
         

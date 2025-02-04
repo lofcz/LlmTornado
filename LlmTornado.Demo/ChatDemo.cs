@@ -1618,7 +1618,7 @@ public static class ChatDemo
         Console.WriteLine(response);
     }
 
-    [TornadoTest("dev")]
+    [TornadoTest]
     public static async Task GoogleCached()
     {
         string text = await File.ReadAllTextAsync("Static/Files/a11.txt");
@@ -1660,7 +1660,7 @@ public static class ChatDemo
             Model = ChatModel.Google.Gemini.Gemini15Pro002,
             VendorExtensions = new ChatRequestVendorExtensions(new ChatRequestVendorGoogleExtensions(cachingResult.Data)
             {
-                ResponseSchema = tool.Function.Parameters
+                ResponseSchema = tool
             })
         });
         
@@ -1690,7 +1690,17 @@ public static class ChatDemo
                 {
                     calls.ForEach(x =>
                     {
-                       
+                        x.Result = new FunctionResult(x, null);
+
+                        if (x.TryGetArgument("title", out string? title))
+                        {
+                            Console.WriteLine($"TITLE: {title}");
+                        }
+                        
+                        if (x.TryGetArgument("content", out string? content))
+                        {
+                            Console.WriteLine($"CONTENT: {content}");
+                        }
                     });
                     
                     return ValueTask.CompletedTask;

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using LlmTornado.Caching;
+using LlmTornado.Common;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Chat.Vendors.Google;
@@ -22,7 +23,7 @@ public class ChatRequestVendorGoogleExtensions
     /// Forces given response schema. Normally, use strict functions to automatically set this. Manually setting this is required for cached functions.
     /// </summary>
     [JsonIgnore]
-    public object? ResponseSchema { get; set; }
+    public Tool? ResponseSchema { get; set; }
     
     /// <summary>
     /// Empty Google extensions.
