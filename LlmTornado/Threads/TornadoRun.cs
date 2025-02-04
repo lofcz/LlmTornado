@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Text.Json.Serialization;
 using LlmTornado.Assistants;
 using LlmTornado.Common;
 using Newtonsoft.Json;
@@ -46,7 +45,6 @@ public sealed class TornadoRun : ApiResultBase
     ///     The status of the run.
     /// </summary>
     [JsonProperty("status")]
-    [System.Text.Json.Serialization.JsonConverter(typeof(JsonStringEnumConverter<RunStatus>))]
     public RunStatus Status { get; set; }
 
     /// <summary>
@@ -72,7 +70,7 @@ public sealed class TornadoRun : ApiResultBase
     /// <summary>
     /// The expiration date and time for the current response, converted from Unix time, if available.
     /// </summary>
-    [System.Text.Json.Serialization.JsonIgnore]
+    [JsonIgnore]
     public DateTime? ExpiresAt
         => ExpiresAtUnixTimeSeconds.HasValue
             ? DateTimeOffset.FromUnixTimeSeconds(ExpiresAtUnixTimeSeconds.Value).DateTime
@@ -87,7 +85,7 @@ public sealed class TornadoRun : ApiResultBase
     /// <summary>
     /// The timestamp indicating when the process or operation started.
     /// </summary>
-    [System.Text.Json.Serialization.JsonIgnore]
+    [JsonIgnore]
     public DateTime? StartedAt
         => StartedAtUnixTimeSeconds.HasValue
             ? DateTimeOffset.FromUnixTimeSeconds(StartedAtUnixTimeSeconds.Value).DateTime
@@ -102,7 +100,7 @@ public sealed class TornadoRun : ApiResultBase
     /// <summary>
     /// The timestamp indicating when the operation was cancelled, if applicable.
     /// </summary>
-    [System.Text.Json.Serialization.JsonIgnore]
+    [JsonIgnore]
     public DateTime? CancelledAt
         => CancelledAtUnixTimeSeconds.HasValue
             ? DateTimeOffset.FromUnixTimeSeconds(CancelledAtUnixTimeSeconds.Value).DateTime
@@ -117,7 +115,7 @@ public sealed class TornadoRun : ApiResultBase
     /// <summary>
     /// The timestamp indicating when the operation failed, represented as a <see cref="DateTime"/> object.
     /// </summary>
-    [System.Text.Json.Serialization.JsonIgnore]
+    [JsonIgnore]
     public DateTime? FailedAt
         => FailedAtUnixTimeSeconds.HasValue
             ? DateTimeOffset.FromUnixTimeSeconds(FailedAtUnixTimeSeconds.Value).DateTime
@@ -132,7 +130,7 @@ public sealed class TornadoRun : ApiResultBase
     /// <summary>
     /// The timestamp indicating when the operation was completed.
     /// </summary>
-    [System.Text.Json.Serialization.JsonIgnore]
+    [JsonIgnore]
     public DateTime? CompletedAt
         => CompletedAtUnixTimeSeconds.HasValue
             ? DateTimeOffset.FromUnixTimeSeconds(CompletedAtUnixTimeSeconds.Value).DateTime
@@ -148,7 +146,7 @@ public sealed class TornadoRun : ApiResultBase
     ///     The list of tools that the assistant used for this run.
     /// </summary>
     [JsonProperty("tools")]
-    [Newtonsoft.Json.JsonConverter(typeof(AssistantToolConverter))]
+    [JsonConverter(typeof(AssistantToolConverter))]
     public IReadOnlyList<AssistantTool> Tools { get; set; } = null!;
 
     /// <summary>
@@ -210,7 +208,6 @@ public sealed class TornadoRun : ApiResultBase
     ///     forces the model to call that tool.
     /// </summary>
     [JsonProperty("tool_choice")]
-    [Newtonsoft.Json.JsonConverter(typeof(ToolChoiceConverter))]
     public ToolChoice ToolChoice { get; set; } = null!;
 
     /// <summary>
@@ -223,6 +220,6 @@ public sealed class TornadoRun : ApiResultBase
     ///     Specifies the format that the model must output. 
     /// </summary>
     [JsonProperty("response_format")]
-    [Newtonsoft.Json.JsonConverter(typeof(ResponseFormatConverter))]
+    [JsonConverter(typeof(ResponseFormatConverter))]
     public ResponseFormat ResponseFormat { get; set; } = null!;
 }

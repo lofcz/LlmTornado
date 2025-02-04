@@ -8,6 +8,8 @@ namespace LlmTornado.Threads;
 /// Serves as the base class for defining various tool selection behaviors
 /// in the execution context of a thread.
 /// </summary>
+
+[JsonConverter(typeof(ToolChoiceConverter))]
 public class ToolChoice
 {
     /// <summary>
@@ -27,6 +29,11 @@ public class ToolChoice
     public ToolChoiceType Type { get; set; }
 }
 
+/// <summary>
+/// Represents a derived class of `ToolChoice` that specifically handles the
+/// tool selection process for function-based operations. This class includes
+/// function-specific configurations and data essential for tool execution.
+/// </summary>
 public sealed class ToolChoiceFunction : ToolChoice
 {
     /// <summary>
@@ -34,7 +41,7 @@ public sealed class ToolChoiceFunction : ToolChoice
     /// where the selection is a function-based tool. Includes specific
     /// data and behavior related to the function type.
     /// </summary>
-    public ToolChoiceFunction() : base(ToolChoiceType.function)
+    public ToolChoiceFunction() : base(ToolChoiceType.Function)
     {
     }
 
@@ -61,17 +68,62 @@ public class ToolChoiceFunctionData
 }
 
 /// <summary>
-/// Enum representing various tool choice types as string values for JSON serialization.
+/// Defines the different types of tool choices available for selection in thread execution contexts.
+/// This enum is used to specify the behavioral context or functionality associated with a tool.
 /// </summary>
 [JsonConverter(typeof(StringEnumConverter))]
 public enum ToolChoiceType
 {
-    none,
-    required,
-    auto,
-    function,
-    file_search,
-    code_interpreter,
+    /// <summary>
+    /// Represents the absence of a selected tool choice.
+    /// Used to indicate that no tool is currently chosen or applicable.
+    /// </summary>
+    [JsonProperty("none")] None,
+
+    /// <summary>
+    /// Represents a required tool choice type in the `ToolChoiceType` enumeration.
+    /// Indicates that the tool must be explicitly selected or mandatory for the execution context.
+    /// This type enforces a user or system to provide the necessary input or tool before proceeding.
+    /// </summary>
+    [JsonProperty("required")] Required,
+
+    /// <summary>
+    /// Represents an automatic tool selection type within the thread execution context.
+    /// This enum member indicates that the tool should be chosen automatically
+    /// based on predefined logic or context-aware heuristics.
+    /// </summary>
+    [JsonProperty("auto")]
+    Auto,
+
+    /// <summary>
+    /// Specifies a tool choice type where the tool is function-based.
+    /// This enumeration member is used to indicate that the selected tool implements
+    /// functionality that is centered on reusable or specific functional logic execution.
+    /// </summary>
+    [JsonProperty("function")]
+    Function,
+
+    /// <summary>
+    /// Represents a tool choice type for searching files within a particular context.
+    /// The FileSearch option defines behavior and functionality geared toward locating
+    /// and retrieving file-based resources.
+    /// </summary>
+    [JsonProperty("file_search")]
+    FileSearch,
+
+    /// <summary>
+    /// Represents the tool choice type for utilizing a code interpreter.
+    /// The `CodeInterpreter` option is used to enable functionality related to analysis,
+    /// execution, or interpretation of code within a thread execution context.
+    /// </summary>
+    [JsonProperty("code_interpreter")]
+    CodeInterpreter,
+    //none
+    // required,
+    // auto,
+    // function,
+    // file_search,
+    // code_interpreter,
 }
 
 internal class ToolChoiceConverter : JsonConverter
@@ -97,7 +149,7 @@ internal class ToolChoiceConverter : JsonConverter
 
                 return toolType switch
                 {
-                    ToolChoiceType.function => jsonObject
+                    ToolChoiceType.Function => jsonObject
                         .ToObject<ToolChoiceFunction>(serializer)!,
                     _ => jsonObject.ToObject<ToolChoice>(),
                 };
@@ -118,9 +170,9 @@ internal class ToolChoiceConverter : JsonConverter
             throw new JsonSerializationException("Expected ToolChoice object value.");
         }
 
-        var toolType = toolChoice.Type;
+        ToolChoiceType toolType = toolChoice.Type;
 
-        if (toolType is ToolChoiceType.auto or ToolChoiceType.none or ToolChoiceType.required)
+        if (toolType is ToolChoiceType.Auto or ToolChoiceType.None or ToolChoiceType.Required)
         {
             writer.WriteValue(toolType.ToString().ToLowerInvariant());
         }
