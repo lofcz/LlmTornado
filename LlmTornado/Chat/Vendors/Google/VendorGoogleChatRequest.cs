@@ -510,6 +510,9 @@ internal class VendorGoogleChatRequest
     [JsonProperty("systemInstruction")]
     public VendorGoogleChatRequestMessage? SystemInstruction { get; set; }
     
+    [JsonProperty("cachedContent")]
+    public string? CachedContent { get; set; }
+    
     public VendorGoogleChatRequest()
     {
         
@@ -611,5 +614,10 @@ internal class VendorGoogleChatRequest
         }
         
         SafetySettings = VendorGoogleChatRequestSafetySetting.DisableAll;
+
+        if (request.VendorExtensions?.Google?.CachedContent is not null)
+        {
+            CachedContent = request.VendorExtensions.Google.CachedContent;
+        }
     }
  }

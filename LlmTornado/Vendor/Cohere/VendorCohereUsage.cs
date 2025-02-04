@@ -1,8 +1,9 @@
+using LlmTornado.Code;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Vendor.Anthropic;
 
-internal class VendorCohereUsage
+internal class VendorCohereUsage : IChatUsage
 {
     internal class VendorCohereUsageApi
     {

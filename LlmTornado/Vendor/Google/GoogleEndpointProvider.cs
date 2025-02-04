@@ -12,6 +12,7 @@ using LlmTornado.Chat;
 using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Chat.Vendors.Cohere;
 using LlmTornado.ChatFunctions;
+using LlmTornado.Code.Sse;
 using LlmTornado.Files;
 using LlmTornado.Vendor.Anthropic;
 using Newtonsoft.Json;
@@ -78,13 +79,13 @@ internal class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider,
     {
         ChatMessage? plaintextAccu = null;
         ChatUsage? usage = null;
-
+        
         await using JsonTextReader jsonReader = new JsonTextReader(reader);
         JsonSerializer serializer = new JsonSerializer();
-            
-        if (await jsonReader.ReadAsync() && jsonReader.TokenType is JsonToken.StartArray)
+        
+        if (await jsonReader.ReadAsync(request.CancellationToken) && jsonReader.TokenType is JsonToken.StartArray)
         {
-            while (await jsonReader.ReadAsync())
+            while (await jsonReader.ReadAsync(request.CancellationToken))
             {
                 if (jsonReader.TokenType is JsonToken.StartObject)
                 {

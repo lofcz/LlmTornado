@@ -548,6 +548,14 @@ public enum CapabilityEndpoints
 }
 
 /// <summary>
+/// Shared interface by all chat usages.
+/// </summary>
+public interface IChatUsage
+{
+    
+}
+
+/// <summary>
 /// Represents authentication to a single provider.
 /// </summary>
 public class ProviderAuthentication

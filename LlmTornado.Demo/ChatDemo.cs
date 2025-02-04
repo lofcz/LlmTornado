@@ -1,10 +1,12 @@
 using System.Text;
+using LlmTornado.Caching;
 using Newtonsoft.Json;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Chat.Plugins;
 using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Chat.Vendors.Cohere;
+using LlmTornado.Chat.Vendors.Google;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
@@ -1560,5 +1562,53 @@ public static class ChatDemo
 
         string response = sb.ToString();
         return response;
+    }
+
+    [TornadoTest("dev")]
+    public static async Task GoogleCached()
+    {
+        string text = await File.ReadAllTextAsync("Static/Files/a11.txt");
+
+        HttpCallResult<CachedContentInformation> cachingResult = await Program.Connect().Caching.Create(new CreateCachedContentRequest(90, ChatModel.Google.Gemini.Gemini15Pro002, [
+            new CachedContent([
+                new ChatMessagePart(text)
+            ], CachedContentRoles.User)
+        ], new CachedContent([
+            new ChatMessagePart($"You are a machine answering questions regarding Apollo 11 mission, use the transcript of the mission for precise answers")
+        ])));
+        
+        Console.WriteLine(cachingResult.Data.Name);
+        Console.WriteLine(cachingResult.Data.ExpireTime);
+
+        Conversation conversation = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Google.Gemini.Gemini15Pro002,
+            VendorExtensions = new ChatRequestVendorExtensions(new ChatRequestVendorGoogleExtensions(cachingResult.Data.Name))
+        });
+        
+        conversation.AppendUserInput("Cite the exact wording of the entry labeled \"04 06 58 40 CMP (COLUMBIA)\", starting with \"Roger, ...\"");
+        await GetNextResponse();
+        conversation.AppendUserInput($"Now do the same for entry \"05 07 57 34 CDR (EAGLE)\"");
+        await GetNextResponse();
+       
+        return;
+        
+        async Task GetNextResponse()
+        {
+            await conversation.StreamResponseRich(new ChatStreamEventHandler
+            {
+                MessageTokenHandler = (token) =>
+                {
+                    Console.Write(token);
+                    return ValueTask.CompletedTask;
+                },
+                OnUsageReceived = (usage) =>
+                {
+                    Console.WriteLine();
+                    Console.WriteLine(usage);
+                    return ValueTask.CompletedTask;
+                }
+            });    
+        }
     }
 }
