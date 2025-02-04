@@ -54,7 +54,7 @@ public class Tests
         }
         catch (SuccessException se)
         {
-            
+
         }
         catch (IgnoreException ie)
         {
@@ -62,7 +62,7 @@ public class Tests
         }
         catch (Exception e)
         {
-            Assert.Fail(e.Message);
+            Assert.Fail($"Test failed with exception: {e.Message}\nStackTrace: \n{e.StackTrace}");
         }
     }
 }

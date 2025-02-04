@@ -128,10 +128,7 @@ public static class AssistantsDemo
     [TornadoTest]
     public static async Task<Assistant?> Retrieve()
     {
-        if (generatedAssistant is null)
-        {
-            await Create();
-        }
+        generatedAssistant ??= await Create();
 
         HttpCallResult<Assistant> response =
             await Program.Connect().Assistants.RetrieveAssistantAsync(generatedAssistant!.Id);
@@ -142,10 +139,7 @@ public static class AssistantsDemo
     [TornadoTest]
     public static async Task<Assistant?> Modify()
     {
-        if (generatedAssistant is null)
-        {
-            await Create();
-        }
+        generatedAssistant ??= await Create();
 
         CreateAssistantRequest modifyRequest = new CreateAssistantRequest(generatedAssistant!)
         {
@@ -161,13 +155,11 @@ public static class AssistantsDemo
     [TornadoTest]
     public static async Task<bool> Delete()
     {
-        if (generatedAssistant is null)
-        {
-            await Create();
-        }
+        generatedAssistant ??= await Create();
 
         HttpCallResult<bool> response = await Program.Connect().Assistants.DeleteAssistantAsync(generatedAssistant!);
         Console.WriteLine(response.Response);
+        generatedAssistant = null;
         return response.Data;
     }
 
@@ -179,6 +171,7 @@ public static class AssistantsDemo
             where assistant.Name.StartsWith("demo_assistant")
             select Program.Connect().Assistants.DeleteAssistantAsync(assistant.Id)).ToList();
         Console.WriteLine($"Deleting {tasks.Count} assistants...");
+        generatedAssistant = null;
         await Task.WhenAll(tasks);
     }
 }
