@@ -162,7 +162,7 @@ public sealed class TornadoRun : ApiResultBase
     ///     `in_progress`, `queued`, etc.).
     /// </summary>
     [JsonProperty("usage")]
-    public Usage? Usage { get; set; }
+    public RunUsage? Usage { get; set; }
     
     /// <summary>
     ///     What sampling temperature to use, between 0 and 2.
@@ -220,6 +220,5 @@ public sealed class TornadoRun : ApiResultBase
     ///     Specifies the format that the model must output. 
     /// </summary>
     [JsonProperty("response_format")]
-    [JsonConverter(typeof(ResponseFormatConverter))]
     public ResponseFormat ResponseFormat { get; set; } = null!;
 }

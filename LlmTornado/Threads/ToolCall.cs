@@ -1,43 +1,75 @@
-using System.Text.Json.Serialization;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace LlmTornado.Threads;
 
-public sealed class ToolCall
+/// <summary>
+/// Represents a tool call, describing the tool, its type, and specific details
+/// relevant to its execution within a workflow or process.
+/// </summary>
+public abstract class ToolCall
 {
     /// <summary>
     ///     The ID of the tool call.
     ///     This ID must be referenced when you submit the tool outputs in using the Submit tool outputs to run endpoint.
     /// </summary>
-    [JsonInclude]
     [JsonProperty("id")]
-    public string Id { get; private set; }
+    public string Id { get; set; } = null!;
 
     /// <summary>
     ///     The type of tool call the output is required for.
     /// </summary>
-    [JsonInclude]
     [JsonProperty("type")]
-    public string Type { get; private set; }
+    public ToolCallType Type { get; set; }
+}
 
+/// <summary>
+/// Represents a function-based tool call, containing details about the specific function
+/// being invoked, its parameters, and execution context.
+/// </summary>
+public sealed class FunctionToolCall : ToolCall
+{
     /// <summary>
     ///     The definition of the function that was called.
     /// </summary>
-    [JsonInclude]
     [JsonProperty("function")]
-    public FunctionCall FunctionCall { get; private set; }
+    public FunctionCall FunctionCall { get; set; } = null!;
+}
+
+/// <summary>
+/// Represents a tool call designed for executing code interpretation tasks,
+/// encapsulating the details of the code interpreter being used and its execution context.
+/// </summary>
+public sealed class CodeInterpreterToolCall : ToolCall
+{
+    /// <summary>
+    /// Represents the Code Interpreter component of a tool call, which is responsible
+    /// for processing input code, executing it, and producing specific outputs such
+    /// as logs or image files.
+    /// </summary>
+    public CodeInterpreter CodeInterpreter { get; set; } = null!;
+}
+
+/// <summary>
+/// Enumerates the different types of tool calls available within the system,
+/// categorizing them based on their functionality or purpose.
+/// </summary>
+[JsonConverter(typeof(StringEnumConverter))]
+public enum ToolCallType
+{
+    /// <summary>
+    /// Represents a tool call of type FunctionToolCall
+    /// </summary>
+    [JsonProperty("function")] FunctionToolCall,
 
     /// <summary>
-    ///     The Code Interpreter tool call definition.
+    /// Represents a tool call of type CodeInterpreterToolCall
     /// </summary>
-    [JsonInclude]
     [JsonProperty("code_interpreter")]
-    public CodeInterpreter CodeInterpreter { get; private set; }
+    CodeInterpreterToolCall,
 
     /// <summary>
-    ///     For now, this is always going to be an empty object.
+    /// Represents a tool call of type FileSearchToolCall
     /// </summary>
-    [JsonInclude]
-    [JsonProperty("retrieval")]
-    public object Retrieval { get; private set; }
+    [JsonProperty("file_search")] FileSearchToolCall
 }

@@ -1,6 +1,8 @@
 using System;
+using LlmTornado.Common;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Linq;
 
 namespace LlmTornado.Threads;
 
@@ -8,7 +10,6 @@ namespace LlmTornado.Threads;
 /// Serves as the base class for defining various tool selection behaviors
 /// in the execution context of a thread.
 /// </summary>
-
 [JsonConverter(typeof(ToolChoiceConverter))]
 public class ToolChoice
 {
@@ -92,32 +93,28 @@ public enum ToolChoiceType
     /// This enum member indicates that the tool should be chosen automatically
     /// based on predefined logic or context-aware heuristics.
     /// </summary>
-    [JsonProperty("auto")]
-    Auto,
+    [JsonProperty("auto")] Auto,
 
     /// <summary>
     /// Specifies a tool choice type where the tool is function-based.
     /// This enumeration member is used to indicate that the selected tool implements
     /// functionality that is centered on reusable or specific functional logic execution.
     /// </summary>
-    [JsonProperty("function")]
-    Function,
+    [JsonProperty("function")] Function,
 
     /// <summary>
     /// Represents a tool choice type for searching files within a particular context.
     /// The FileSearch option defines behavior and functionality geared toward locating
     /// and retrieving file-based resources.
     /// </summary>
-    [JsonProperty("file_search")]
-    FileSearch,
+    [JsonProperty("file_search")] FileSearch,
 
     /// <summary>
     /// Represents the tool choice type for utilizing a code interpreter.
     /// The `CodeInterpreter` option is used to enable functionality related to analysis,
     /// execution, or interpretation of code within a thread execution context.
     /// </summary>
-    [JsonProperty("code_interpreter")]
-    CodeInterpreter,
+    [JsonProperty("code_interpreter")] CodeInterpreter,
     //none
     // required,
     // auto,
@@ -126,22 +123,18 @@ public enum ToolChoiceType
     // code_interpreter,
 }
 
-internal class ToolChoiceConverter : JsonConverter
+internal class ToolChoiceConverter : JsonConverter<ToolChoice>
 {
-    public override bool CanConvert(Type objectType)
-    {
-        return typeof(ToolChoice).IsAssignableFrom(objectType);
-    }
-
-    public override object? ReadJson(JsonReader reader, Type objectType, object? existingValue,
+    public override ToolChoice? ReadJson(JsonReader reader, Type objectType, ToolChoice? existingValue,
+        bool hasExistingValue,
         JsonSerializer serializer)
     {
         switch (reader.TokenType)
         {
             case JsonToken.StartObject:
             {
-                var jsonObject = Newtonsoft.Json.Linq.JObject.Load(reader);
-                var typeToken = jsonObject["type"]?.ToString();
+                JObject jsonObject = JObject.Load(reader);
+                string? typeToken = jsonObject["type"]?.ToString();
                 if (!Enum.TryParse(typeToken, true, out ToolChoiceType toolType))
                 {
                     return null;
@@ -156,18 +149,20 @@ internal class ToolChoiceConverter : JsonConverter
             }
             case JsonToken.String:
             {
-                return !Enum.TryParse(typeof(ToolChoiceType), reader.Value?.ToString(), true, out var toolType) ? null : new ToolChoice((ToolChoiceType)toolType);
+                return !Enum.TryParse(typeof(ToolChoiceType), reader.Value?.ToString(), true, out var toolType)
+                    ? null
+                    : new ToolChoice((ToolChoiceType) toolType);
             }
             default:
                 return null;
         }
     }
 
-    public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
+    public override void WriteJson(JsonWriter writer, ToolChoice? toolChoice, JsonSerializer serializer)
     {
-        if (value is not ToolChoice toolChoice)
+        if (toolChoice == null)
         {
-            throw new JsonSerializationException("Expected ToolChoice object value.");
+            return;
         }
 
         ToolChoiceType toolType = toolChoice.Type;
@@ -178,7 +173,7 @@ internal class ToolChoiceConverter : JsonConverter
         }
         else
         {
-            var jsonObject = Newtonsoft.Json.Linq.JObject.FromObject(value, serializer);
+            JObject jsonObject = JObject.FromObject(toolChoice, serializer);
             jsonObject.WriteTo(writer);
         }
     }

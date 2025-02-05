@@ -66,6 +66,10 @@ public sealed class TornadoRunStep : ApiResultBase
     [JsonProperty("created_at")]
     public int? CreatedAtUnixTimeSeconds { get; private set; }
 
+    /// <summary>
+    /// The timestamp indicating when the run step was created, represented as a UTC DateTime.
+    /// Derived from the Unix time stored in seconds.
+    /// </summary>
     [JsonIgnore]
     public DateTime? CreatedAt
         => CreatedAtUnixTimeSeconds.HasValue
@@ -76,11 +80,15 @@ public sealed class TornadoRunStep : ApiResultBase
     ///     The Unix timestamp (in seconds) for when the run step expired. A step is considered expired if the parent run is
     ///     expired.
     /// </summary>
-    [JsonProperty("expires_at")]
+    [JsonProperty("expired_at")]
     public int? ExpiresAtUnixTimeSeconds { get; private set; }
 
+    /// <summary>
+    /// The expiration time of the run step in UTC, represented as a nullable DateTime.
+    /// Indicates when this step will no longer be available or valid for processing.
+    /// </summary>
     [JsonIgnore]
-    public DateTime? ExpiresAt
+    public DateTime? ExpiredAt
         => ExpiresAtUnixTimeSeconds.HasValue
             ? DateTimeOffset.FromUnixTimeSeconds(ExpiresAtUnixTimeSeconds.Value).DateTime
             : null;
@@ -91,6 +99,9 @@ public sealed class TornadoRunStep : ApiResultBase
     [JsonProperty("cancelled_at")]
     public int? CancelledAtUnixTimeSeconds { get; private set; }
 
+    /// <summary>
+    /// The timestamp of when the run step was canceled, represented as a Unix time in seconds.
+    /// </summary>
     [JsonIgnore]
     public DateTime? CancelledAt
         => CancelledAtUnixTimeSeconds.HasValue
@@ -103,6 +114,9 @@ public sealed class TornadoRunStep : ApiResultBase
     [JsonProperty("failed_at")]
     public int? FailedAtUnixTimeSeconds { get; private set; }
 
+    /// <summary>
+    /// The date and time when the step failed, represented as a nullable <see cref="DateTime"/>.
+    /// </summary>
     [JsonIgnore]
     public DateTime? FailedAt
         => FailedAtUnixTimeSeconds.HasValue
@@ -115,6 +129,10 @@ public sealed class TornadoRunStep : ApiResultBase
     [JsonProperty("completed_at")]
     public int? CompletedAtUnixTimeSeconds { get; private set; }
 
+    /// <summary>
+    /// The timestamp indicating when the run step was successfully completed,
+    /// represented as a nullable <see cref="DateTime"/>.
+    /// </summary>
     [JsonIgnore]
     public DateTime? CompletedAt
         => CompletedAtUnixTimeSeconds.HasValue
@@ -127,11 +145,11 @@ public sealed class TornadoRunStep : ApiResultBase
     ///     Keys can be a maximum of 64 characters long and values can be a maximum of 512 characters long.
     /// </summary>
     [JsonProperty("metadata")]
-    public IReadOnlyDictionary<string, string> Metadata { get; private set; }
+    public IReadOnlyDictionary<string, string> Metadata { get; set; } = null!;
 
     /// <summary>
     ///     Usage statistics related to the run step. This value will be `null` while the run step's status is `in_progress`.
     /// </summary>
     [JsonProperty("usage")]
-    public Usage Usage { get; private set; }
+    public RunUsage? Usage { get; set; }
 }
