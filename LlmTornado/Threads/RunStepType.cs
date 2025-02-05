@@ -1,3 +1,4 @@
+using System.Runtime.Serialization;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
@@ -14,11 +15,11 @@ public enum RunStepType
     /// <summary>
     /// Represents the "message_creation" step of a run process where a new message is generated or composed.
     /// </summary>
-    [JsonProperty("message_creation")] MessageCreation,
+    [EnumMember(Value = "message_creation")] MessageCreation,
 
     /// <summary>
     /// Represents a step during a run where tools or external functionalities
     /// are invoked or executed as part of the process.
     /// </summary>
-    [JsonProperty("tool_calls")] ToolCalls
+    [EnumMember(Value = "tool_calls")] ToolCalls
 }

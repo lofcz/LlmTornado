@@ -1,5 +1,8 @@
+using System;
+using System.Runtime.Serialization;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Linq;
 
 namespace LlmTornado.Threads;
 
@@ -7,6 +10,7 @@ namespace LlmTornado.Threads;
 /// Represents a tool call, describing the tool, its type, and specific details
 /// relevant to its execution within a workflow or process.
 /// </summary>
+[JsonConverter(typeof(ToolCallConverter))]
 public abstract class ToolCall
 {
     /// <summary>
@@ -51,6 +55,19 @@ public sealed class CodeInterpreterToolCall : ToolCall
 }
 
 /// <summary>
+/// Represents a tool call specifically tailored for file search operations,
+/// encapsulating details related to file search tasks and their execution context.
+/// </summary>
+public sealed class FileSearchToolCall : ToolCall
+{
+    /// <summary>
+    ///     For now, this is always going to be an empty object. TODO: When OpenAI finished implementation, map it here
+    /// </summary>
+    /// 
+    public object? FileSearch { get; set; }
+}
+
+/// <summary>
 /// Enumerates the different types of tool calls available within the system,
 /// categorizing them based on their functionality or purpose.
 /// </summary>
@@ -60,16 +77,47 @@ public enum ToolCallType
     /// <summary>
     /// Represents a tool call of type FunctionToolCall
     /// </summary>
-    [JsonProperty("function")] FunctionToolCall,
+    [EnumMember(Value = "function")] FunctionToolCall,
 
     /// <summary>
     /// Represents a tool call of type CodeInterpreterToolCall
     /// </summary>
-    [JsonProperty("code_interpreter")]
+    [EnumMember(Value = "code_interpreter")]
     CodeInterpreterToolCall,
 
     /// <summary>
     /// Represents a tool call of type FileSearchToolCall
     /// </summary>
-    [JsonProperty("file_search")] FileSearchToolCall
+    [EnumMember(Value = "file_search")] FileSearchToolCall
+}
+
+internal class ToolCallConverter : JsonConverter<ToolCall>
+{
+    public override void WriteJson(JsonWriter writer, ToolCall? value, JsonSerializer serializer)
+    {
+        JObject jsonObject = JObject.FromObject(value!, serializer);
+        jsonObject.WriteTo(writer);
+    }
+
+    public override ToolCall? ReadJson(JsonReader reader, Type objectType, ToolCall? existingValue,
+        bool hasExistingValue, JsonSerializer serializer)
+    {
+        JObject jsonObject = JObject.Load(reader);
+        string? typeToken = jsonObject["type"]?.ToString();
+        if (!Enum.TryParse(typeToken, true, out ToolCallType toolCallType))
+        {
+            return null;
+        }
+
+        return toolCallType switch
+        {
+            ToolCallType.FunctionToolCall => jsonObject
+                .ToObject<FunctionToolCall>(serializer)!,
+            ToolCallType.CodeInterpreterToolCall => jsonObject
+                .ToObject<CodeInterpreterToolCall>(serializer)!,
+            ToolCallType.FileSearchToolCall => jsonObject
+                .ToObject<FileSearchToolCall>(serializer)!,
+            _ => null
+        };
+    }
 }

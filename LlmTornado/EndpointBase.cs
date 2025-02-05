@@ -470,20 +470,14 @@ public abstract class EndpointBase
             
             HttpCallResult<T> result = new HttpCallResult<T>(response.Data.StatusCode, resultAsString, default, response.Data.IsSuccessStatusCode, response);
 
-            if (response.Data.IsSuccessStatusCode)
+            if (!response.Data.IsSuccessStatusCode)
             {
-                result.Ok = true;
-
-                try
-                {
-                    result.Data = provider.InboundMessage<T>(resultAsString, postData?.ToString());
-                }
-                catch (Exception e)
-                {
-                    
-                }
+                return result;
             }
-            
+
+            result.Ok = true;
+            result.Data = provider.InboundMessage<T>(resultAsString, postData?.ToString());
+
             return result;
         }
         catch (Exception e)

@@ -21,13 +21,13 @@ public sealed class MessageAttachment
     ///     The tools to add this file to.
     /// </summary>
     [JsonProperty("tools")]
-    [JsonConverter(typeof(MessageToolConverter))]
     public IReadOnlyList<MessageTool> Tools { get; set; } = null!;
 }
 
 /// <summary>
 ///     Message tool
 /// </summary>
+[JsonConverter(typeof(MessageToolConverter))]
 public abstract class MessageTool
 {
     /// <summary>

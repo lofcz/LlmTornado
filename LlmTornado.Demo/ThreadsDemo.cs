@@ -218,4 +218,22 @@ public static class ThreadsDemo
         generatedTornadoRun = null;
         return response.Data;
     }
+    
+    [TornadoTest]
+    public static async Task<IReadOnlyList<TornadoRunStep>> ListRunSteps()
+    {
+        generatedTornadoRun ??= await RetrieveRunAndPollForCompletion();
+        HttpCallResult<ListResponse<TornadoRunStep>> response = await Program.Connect().Threads.ListRunStepsAsync(generatedThread!.Id, generatedTornadoRun!.Id);
+        Console.WriteLine(response.Response);
+        return response.Data!.Items;
+    }
+
+    [TornadoTest]
+    public static async Task<TornadoRunStep> RetrieveRunStep()
+    {
+        IReadOnlyList<TornadoRunStep> runSteps = await ListRunSteps();
+        HttpCallResult<TornadoRunStep> response = await Program.Connect().Threads.RetrieveRunStepAsync(generatedThread!.Id, generatedTornadoRun!.Id, runSteps.FirstOrDefault()!.Id);
+        Console.WriteLine(response.Response);
+        return response.Data!;
+    }
 }

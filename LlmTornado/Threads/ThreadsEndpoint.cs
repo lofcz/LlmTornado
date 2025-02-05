@@ -29,9 +29,11 @@ public sealed class ThreadsEndpoint : EndpointBase
     /// <param name="request"><see cref="CreateThreadRequest" />.</param>
     /// <param name="cancellationToken">Optional, <see cref="CancellationToken" />.</param>
     /// <returns><see cref="Thread" />.</returns>
-    public Task<HttpCallResult<Thread>> CreateThreadAsync(CreateThreadRequest? request = null, CancellationToken? cancellationToken = null)
+    public Task<HttpCallResult<Thread>> CreateThreadAsync(CreateThreadRequest? request = null,
+        CancellationToken? cancellationToken = null)
     {
-        return HttpPostRaw<Thread>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, null, request, ct: cancellationToken);
+        return HttpPostRaw<Thread>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, null, request,
+            ct: cancellationToken);
     }
 
     /// <summary>
@@ -40,9 +42,11 @@ public sealed class ThreadsEndpoint : EndpointBase
     /// <param name="threadId">The id of the <see cref="Thread"/> to retrieve.</param>
     /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
     /// <returns><see cref="Thread"/>.</returns>
-    public Task<HttpCallResult<Thread>> RetrieveThreadAsync(string threadId, CancellationToken? cancellationToken = null)
+    public Task<HttpCallResult<Thread>> RetrieveThreadAsync(string threadId,
+        CancellationToken? cancellationToken = null)
     {
-        return HttpGetRaw<Thread>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}"), ct: cancellationToken);
+        return HttpGetRaw<Thread>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads,
+            GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}"), ct: cancellationToken);
     }
 
     /// <summary>
@@ -55,10 +59,12 @@ public sealed class ThreadsEndpoint : EndpointBase
     /// <param name="request"></param>
     /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
     /// <returns><see cref="Thread"/>.</returns>
-    public Task<HttpCallResult<Thread>> ModifyThreadAsync(string threadId, ModifyThreadRequest request, CancellationToken? cancellationToken = null)
+    public Task<HttpCallResult<Thread>> ModifyThreadAsync(string threadId, ModifyThreadRequest request,
+        CancellationToken? cancellationToken = null)
     {
         IEndpointProvider provider = Api.GetProvider(LLmProviders.OpenAi);
-        return HttpPostRaw<Thread>(provider, CapabilityEndpoints.Threads, provider.ApiUrl(Endpoint, $"/{threadId}"), request, ct: cancellationToken);
+        return HttpPostRaw<Thread>(provider, CapabilityEndpoints.Threads, provider.ApiUrl(Endpoint, $"/{threadId}"),
+            request, ct: cancellationToken);
     }
 
     /// <summary>
@@ -67,9 +73,13 @@ public sealed class ThreadsEndpoint : EndpointBase
     /// <param name="threadId">The id of the <see cref="Thread"/> to delete.</param>
     /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
     /// <returns>True, if was successfully deleted.</returns>
-    public async Task<HttpCallResult<bool>> DeleteThreadAsync(string threadId, CancellationToken? cancellationToken = null)
-    {        
-        HttpCallResult<DeletionStatus> status = await HttpAtomic<DeletionStatus>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads, HttpMethod.Delete, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}"), ct: cancellationToken).ConfigureAwait(ConfigureAwaitOptions.None);
+    public async Task<HttpCallResult<bool>> DeleteThreadAsync(string threadId,
+        CancellationToken? cancellationToken = null)
+    {
+        HttpCallResult<DeletionStatus> status = await HttpAtomic<DeletionStatus>(Api.GetProvider(LLmProviders.OpenAi),
+                CapabilityEndpoints.Threads, HttpMethod.Delete,
+                GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}"), ct: cancellationToken)
+            .ConfigureAwait(ConfigureAwaitOptions.None);
         return new HttpCallResult<bool>(status.Code, status.Response, status.Data?.Deleted ?? false, status.Ok, null);
     }
 
@@ -80,9 +90,11 @@ public sealed class ThreadsEndpoint : EndpointBase
     /// <param name="request"></param>
     /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
     /// <returns><see cref="Message"/>.</returns>
-    public Task<HttpCallResult<Message>> CreateMessageAsync(string threadId, CreateMessageRequest request, CancellationToken? cancellationToken = null)
+    public Task<HttpCallResult<Message>> CreateMessageAsync(string threadId, CreateMessageRequest request,
+        CancellationToken? cancellationToken = null)
     {
-        return HttpPostRaw<Message>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/messages"), request, ct: cancellationToken);
+        return HttpPostRaw<Message>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads,
+            GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/messages"), request, ct: cancellationToken);
     }
 
     /// <summary>
@@ -92,9 +104,12 @@ public sealed class ThreadsEndpoint : EndpointBase
     /// <param name="query"><see cref="ListQuery"/>.</param>
     /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
     /// <returns><see cref="ListResponse{Message}"/>.</returns>
-    public Task<HttpCallResult<ListResponse<Message>>> ListMessagesAsync(string threadId, ListQuery? query = null, CancellationToken cancellationToken = default)
+    public Task<HttpCallResult<ListResponse<Message>>> ListMessagesAsync(string threadId, ListQuery? query = null,
+        CancellationToken cancellationToken = default)
     {
-         return HttpGetRaw<ListResponse<Message>>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/messages"), query?.ToQueryParams(LLmProviders.OpenAi), cancellationToken);
+        return HttpGetRaw<ListResponse<Message>>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads,
+            GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/messages"),
+            query?.ToQueryParams(LLmProviders.OpenAi), cancellationToken);
     }
 
     /// <summary>
@@ -104,9 +119,11 @@ public sealed class ThreadsEndpoint : EndpointBase
     /// <param name="messageId">The id of the message to retrieve.</param>
     /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
     /// <returns><see cref="Message"/>.</returns>
-    public Task<HttpCallResult<Message>> RetrieveMessageAsync(string threadId, string messageId, CancellationToken cancellationToken = default)
+    public Task<HttpCallResult<Message>> RetrieveMessageAsync(string threadId, string messageId,
+        CancellationToken cancellationToken = default)
     {
-         return HttpGetRaw<Message>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/messages/{messageId}"), ct: cancellationToken);
+        return HttpGetRaw<Message>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads,
+            GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/messages/{messageId}"), ct: cancellationToken);
     }
 
     /// <summary>
@@ -120,9 +137,12 @@ public sealed class ThreadsEndpoint : EndpointBase
     /// <param name="request"></param>
     /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
     /// <returns><see cref="Message"/>.</returns>
-    public Task<HttpCallResult<Message>> ModifyMessageAsync(string threadId, string messageId, ModifyMessageRequest request, CancellationToken cancellationToken = default)
+    public Task<HttpCallResult<Message>> ModifyMessageAsync(string threadId, string messageId,
+        ModifyMessageRequest request, CancellationToken cancellationToken = default)
     {
-        return HttpPostRaw<Message>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/messages/{messageId}"), request, ct: cancellationToken);
+        return HttpPostRaw<Message>(Api.GetProvider(LLmProviders.OpenAi), Endpoint,
+            GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/messages/{messageId}"), request,
+            ct: cancellationToken);
     }
 
 
@@ -133,9 +153,14 @@ public sealed class ThreadsEndpoint : EndpointBase
     /// <param name="messageId">The identifier of the message to delete.</param>
     /// <param name="cancellationToken">Optional, <see cref="CancellationToken" />.</param>
     /// <returns><see cref="HttpCallResult{Boolean}" /> indicating the success of the deletion.</returns>
-    public async Task<HttpCallResult<bool>> DeleteMessageAsync(string threadId, string messageId, CancellationToken? cancellationToken = null)
+    public async Task<HttpCallResult<bool>> DeleteMessageAsync(string threadId, string messageId,
+        CancellationToken? cancellationToken = null)
     {
-        HttpCallResult<DeletionStatus> status = await HttpAtomic<DeletionStatus>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, HttpMethod.Delete, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/messages/{messageId}"), ct: cancellationToken).ConfigureAwait(ConfigureAwaitOptions.None);
+        HttpCallResult<DeletionStatus> status = await HttpAtomic<DeletionStatus>(Api.GetProvider(LLmProviders.OpenAi),
+                Endpoint, HttpMethod.Delete,
+                GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/messages/{messageId}"),
+                ct: cancellationToken)
+            .ConfigureAwait(ConfigureAwaitOptions.None);
         return new HttpCallResult<bool>(status.Code, status.Response, status.Data?.Deleted ?? false, status.Ok, null);
     }
 
@@ -207,7 +232,42 @@ public sealed class ThreadsEndpoint : EndpointBase
     public async Task<HttpCallResult<bool>> DeleteRunAsync(string threadId, string runId,
         CancellationToken? cancellationToken = null)
     {
-        HttpCallResult<DeletionStatus> result = await HttpAtomic<DeletionStatus>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads, HttpMethod.Delete, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/runs/{runId}"), ct: cancellationToken);
+        HttpCallResult<DeletionStatus> result = await HttpAtomic<DeletionStatus>(Api.GetProvider(LLmProviders.OpenAi),
+            CapabilityEndpoints.Threads, HttpMethod.Delete,
+            GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/runs/{runId}"), ct: cancellationToken);
         return new HttpCallResult<bool>(result.Code, result.Response, result.Data?.Deleted ?? false, result.Ok, null);
+    }
+
+    /// <summary>
+    /// Lists the run steps associated with a specific thread and run.
+    /// </summary>
+    /// <param name="threadId">The unique identifier of the thread.</param>
+    /// <param name="runId">The unique identifier of the run.</param>
+    /// <param name="query">Optional. An instance of <see cref="ListQuery" /> for additional query parameters.</param>
+    /// <param name="cancellationToken">Optional. A <see cref="CancellationToken" /> used to cancel the operation.</param>
+    /// <returns>A <see cref="Task{TResult}" /> that represents the asynchronous operation, with a result of <see cref="HttpCallResult{TornadoRunStep}" /> containing a list of run steps.</returns>
+    public Task<HttpCallResult<ListResponse<TornadoRunStep>>> ListRunStepsAsync(string threadId, string runId,
+        ListQuery? query = null,
+        CancellationToken cancellationToken = default)
+    {
+        return HttpGetRaw<ListResponse<TornadoRunStep>>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads,
+            GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/runs/{runId}/steps"),
+            query?.ToQueryParams(LLmProviders.OpenAi), cancellationToken);
+    }
+
+    /// <summary>
+    /// Retrieve a specific run step associated with a thread and run.
+    /// </summary>
+    /// <param name="threadId">The identifier of the thread.</param>
+    /// <param name="runId">The identifier of the run.</param>
+    /// <param name="runStepId">The identifier of the run step.</param>
+    /// <param name="cancellationToken">Optional, <see cref="CancellationToken" /> used to cancel the operation.</param>
+    /// <returns><see cref="HttpCallResult{TornadoRunStep}" />.</returns>
+    public Task<HttpCallResult<TornadoRunStep>> RetrieveRunStepAsync(string threadId, string runId, string runStepId,
+        CancellationToken cancellationToken = default)
+    {
+        return HttpGetRaw<TornadoRunStep>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads,
+            GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/runs/{runId}/steps/{runStepId}"),
+            ct: cancellationToken);
     }
 }

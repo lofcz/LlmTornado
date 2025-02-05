@@ -15,10 +15,10 @@ public enum CodeInterpreterOutputType
     /// This member indicates that the output type is textual logs that provide
     /// information about the operations or actions performed by the code interpreter.
     /// </summary>
-    [JsonProperty("logs")] Logs,
+    [EnumMember(Value = "logs")] Logs,
 
     /// <summary>
     /// Represents an output type where the generated output is an image.
     /// </summary>
-    [JsonProperty("image")] Image
+    [EnumMember(Value = "image")] Image
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.Serialization;
 using LlmTornado.Common;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -79,48 +80,42 @@ public enum ToolChoiceType
     /// Represents the absence of a selected tool choice.
     /// Used to indicate that no tool is currently chosen or applicable.
     /// </summary>
-    [JsonProperty("none")] None,
+    [EnumMember(Value = "none")] None,
 
     /// <summary>
     /// Represents a required tool choice type in the `ToolChoiceType` enumeration.
     /// Indicates that the tool must be explicitly selected or mandatory for the execution context.
     /// This type enforces a user or system to provide the necessary input or tool before proceeding.
     /// </summary>
-    [JsonProperty("required")] Required,
+    [EnumMember(Value = "required")] Required,
 
     /// <summary>
     /// Represents an automatic tool selection type within the thread execution context.
     /// This enum member indicates that the tool should be chosen automatically
     /// based on predefined logic or context-aware heuristics.
     /// </summary>
-    [JsonProperty("auto")] Auto,
+    [EnumMember(Value = "auto")] Auto,
 
     /// <summary>
     /// Specifies a tool choice type where the tool is function-based.
     /// This enumeration member is used to indicate that the selected tool implements
     /// functionality that is centered on reusable or specific functional logic execution.
     /// </summary>
-    [JsonProperty("function")] Function,
+    [EnumMember(Value = "function")] Function,
 
     /// <summary>
     /// Represents a tool choice type for searching files within a particular context.
     /// The FileSearch option defines behavior and functionality geared toward locating
     /// and retrieving file-based resources.
     /// </summary>
-    [JsonProperty("file_search")] FileSearch,
+    [EnumMember(Value = "file_search")] FileSearch,
 
     /// <summary>
     /// Represents the tool choice type for utilizing a code interpreter.
     /// The `CodeInterpreter` option is used to enable functionality related to analysis,
     /// execution, or interpretation of code within a thread execution context.
     /// </summary>
-    [JsonProperty("code_interpreter")] CodeInterpreter,
-    //none
-    // required,
-    // auto,
-    // function,
-    // file_search,
-    // code_interpreter,
+    [EnumMember(Value = "code_interpreter")] CodeInterpreter,
 }
 
 internal class ToolChoiceConverter : JsonConverter<ToolChoice>

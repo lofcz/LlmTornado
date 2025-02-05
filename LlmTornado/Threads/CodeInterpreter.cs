@@ -25,5 +25,5 @@ public sealed class CodeInterpreter
     ///     Each of these are represented by a different object type.
     /// </summary>
     [JsonProperty("outputs")]
-    public IReadOnlyList<CodeInterpreterOutput> Outputs { get; set; } = null!:
+    public IReadOnlyList<CodeInterpreterOutput> Outputs { get; set; } = null!;
 }
