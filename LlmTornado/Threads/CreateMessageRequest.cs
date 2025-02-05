@@ -3,6 +3,7 @@ using LlmTornado.Chat;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Threads;
+
 /// <summary>
 /// Represents a request to create a message in the context of a chat thread.
 /// Based on <a href="https://platform.openai.com/docs/api-reference/messages/createMessage">OpenAI API Reference - Create Message</a>
@@ -18,6 +19,14 @@ public sealed class CreateMessageRequest
     }
 
     /// <summary>
+    /// Represents a request to create a message in the context of a chat thread.
+    /// </summary>
+    public CreateMessageRequest(string messageContent) : this()
+    {
+        Content = [new MessageContentTextRequest() {Text = messageContent}];
+    }
+
+    /// <summary>
     ///     The role of the entity that is creating the message.
     /// </summary>
     /// <remarks>
@@ -26,20 +35,19 @@ public sealed class CreateMessageRequest
     [JsonProperty("role")]
     [JsonConverter(typeof(ChatMessageRole.ChatMessageRoleJsonConverter))]
     public ChatMessageRole Role { get; set; }
-    
+
     /// <summary>
     ///     The content of the message.
     /// </summary>
     [JsonProperty("content")]
-    // public IReadOnlyList<MessageContent> Content { get; }
-    public required string Content { get; set; } //TODO: open ai supports also array of MessageContent object, but the text object differs from create request and from response object
+    public IReadOnlyList<MessageContent> Content { get; set; } = null!;
 
     /// <summary>
     ///     A list of File IDs that the message should use. There can be a maximum of 10 files attached to a message.
     ///     Useful for tools like retrieval and code_interpreter that can access and use files.
     /// </summary>
     [JsonProperty("attachments")]
-    public IReadOnlyList<MessageAttachment>? Attachments { get; }
+    public IReadOnlyList<MessageAttachment>? Attachments { get; set; }
 
     /// <summary>
     ///     Set of 16 key-value pairs that can be attached to an object.

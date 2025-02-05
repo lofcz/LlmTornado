@@ -12,12 +12,12 @@ namespace LlmTornado.Threads;
 /// </remarks>
 public sealed class RequiredAction
 {
-    [JsonInclude] [JsonProperty("type")] public string Type { get; private set; }
+    [JsonProperty("type")]
+    public string Type { get; set; }
 
     /// <summary>
     ///     Details on the tool outputs needed for this run to continue.
     /// </summary>
-    [JsonInclude]
     [JsonProperty("submit_tool_outputs")]
-    public SubmitToolOutputs SubmitToolOutputs { get; private set; }
+    public SubmitToolOutputs SubmitToolOutputs { get; set; } = null!;
 }

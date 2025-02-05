@@ -50,7 +50,8 @@ namespace LlmTornado.Threads
         /// This type is used to annotate messages with information about a specific file path
         /// generated or referenced, such as output files from tools (e.g., code interpreter).
         /// </summary>
-        [EnumMember(Value = "file_path")] FilePath,
+        [EnumMember(Value = "file_path")]
+        FilePath,
 
         /// <summary>
         /// Represents an annotation type for a file citation within a message.
@@ -58,7 +59,8 @@ namespace LlmTornado.Threads
         /// from a file, typically as a result of a "file_search" operation for retrieving
         /// contextual information or quotes.
         /// </summary>
-        [EnumMember(Value = "file_citation")] FileCitation,
+        [EnumMember(Value = "file_citation")]
+        FileCitation,
     }
 
     /// <summary>

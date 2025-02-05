@@ -37,12 +37,14 @@ public enum TruncationStrategyType
     /// dynamically determines the appropriate truncation behavior
     /// based on context or predefined logic.
     /// </summary>
-    [EnumMember(Value = "auto")] Auto,
+    [EnumMember(Value = "auto")]
+    Auto,
 
     /// <summary>
     /// Specifies a truncation strategy where only the most recent messages are retained.
     /// This strategy retains a configurable number of the latest messages, discarding older data.
     /// Useful for scenarios where maintaining the context of recent messages is critical.
     /// </summary>
-    [EnumMember(Value = "last_messages")] LastMessages
+    [EnumMember(Value = "last_messages")]
+    LastMessages
 }

@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 using LlmTornado.Common;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
 
 namespace LlmTornado.Threads;
@@ -17,18 +19,54 @@ public abstract class MessageContent
     /// Type of the message content.
     /// </summary>
     [JsonProperty(PropertyName = "type")]
-    public required string Type { get; set; }
+    public MessageContentType Type { get; set; }
 }
 
 /// <summary>
+/// Enum defining the various types of message content that can exist within a chat thread.
+/// Each value represents a specific kind of content, such as text, images (by file or URL), or system-generated refusals.
+/// Used to identify and manage the content type in a consistent manner.
+/// </summary>
+[JsonConverter(typeof(StringEnumConverter))]
+public enum MessageContentType
+{
+    /// <summary>
+    /// Represents a text-based content type for a message in the messaging system.
+    /// Used to identify messages containing plain text content.
+    /// </summary>
+    [EnumMember(Value = "text")]
+    Text,
+
+    /// <summary>
+    /// Represents a message content type that contains an image file.
+    /// </summary>
+    [EnumMember(Value = "image_file")]
+    ImageFile,
+
+    /// <summary>
+    /// Represents the message content type for image URLs.
+    /// This enum member is used to indicate that the content of the message
+    /// is an image that is referred to by a URL.
+    /// </summary>
+    [EnumMember(Value = "image_url")]
+    ImageUrl,
+
+    /// <summary>
+    /// Represents a refusal message content type in a messaging system.
+    /// Used to denote messages that indicate a refusal or denial within the context of the chat thread.
+    /// </summary>
+    [EnumMember(Value = "refusal")]
+    Refusal,
+}
+/// <summary>
 /// Represents a text-based message content type within the messaging system.
 /// </summary>
-public sealed class MessageContentText : MessageContent
+public sealed class MessageContentTextResponse : MessageContent
 {
     /// <inheritdoc />
-    public MessageContentText()
+    internal MessageContentTextResponse()
     {
-        Type = "text";
+        Type = MessageContentType.Text;
     }
 
     /// <summary>
@@ -39,6 +77,25 @@ public sealed class MessageContentText : MessageContent
 }
 
 /// <summary>
+/// Represents a request for text-based message content in the messaging system.
+/// This class is used to specify and serialize the necessary data for creating or modifying a text message content.
+/// </summary>
+public sealed class MessageContentTextRequest : MessageContent
+{
+    /// <inheritdoc />
+    public MessageContentTextRequest()
+    {
+        Type = MessageContentType.Text;
+    }
+
+    /// <summary>
+    ///     Text content to be sent to the model
+    /// </summary>
+    [JsonProperty("text")]
+    public string Text { get; set; } = null!;
+}
+
+/// <summary>
 /// Represents a message content that contains an image file.
 /// </summary>
 public sealed class MessageContentImageFile : MessageContent
@@ -46,7 +103,7 @@ public sealed class MessageContentImageFile : MessageContent
     /// <inheritdoc />
     public MessageContentImageFile()
     {
-        Type = "image_file";
+        Type = MessageContentType.ImageFile;
     }
     
     
@@ -65,7 +122,7 @@ public sealed class MessageContentImageUrl : MessageContent
     /// <inheritdoc />
     public MessageContentImageUrl()
     {
-        Type = "image_url"; //OpenAI api: The type of the content part. -- not sure what to put in here
+        Type = MessageContentType.ImageUrl;
     }
 
     /// <summary>
@@ -82,7 +139,7 @@ public sealed class MessageContentRefusal : MessageContent
     /// <inheritdoc />
     public MessageContentRefusal()
     {
-        Type = "refusal";
+        Type = MessageContentType.Refusal;
     }
     
     /// <summary>
@@ -112,7 +169,7 @@ internal class MessageContentJsonConverter : JsonConverter<IReadOnlyList<Message
                 string? messageContentType = jObject["type"]?.ToString();
                 MessageContent? messageContent = messageContentType switch
                 {
-                    "text" => jObject.ToObject<MessageContentText>(serializer),
+                    "text" => jObject.ToObject<MessageContentTextResponse>(serializer),
                     "image_file" => jObject.ToObject<MessageContentImageFile>(serializer),
                     "refusal" => jObject.ToObject<MessageContentRefusal>(serializer),
                     _ => null

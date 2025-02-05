@@ -73,11 +73,7 @@ public static class ThreadsDemo
     public static async Task<Message> CreateMessage(string threadId, string content)
     {
         HttpCallResult<Message> response = await Program.Connect().Threads.CreateMessageAsync(threadId,
-            new CreateMessageRequest()
-            {
-                Role = ChatMessageRole.User,
-                Content = content
-            });
+            new CreateMessageRequest(content));
         return response.Data!;
     }
 
@@ -185,7 +181,7 @@ public static class ThreadsDemo
                 {
                     foreach (MessageContent content in message.Content)
                     {
-                        if (content is MessageContentText text)
+                        if (content is MessageContentTextResponse text)
                         {
                             Console.WriteLine($"{message.Role}: {text.MessageContentTextData?.Value}");
                         }

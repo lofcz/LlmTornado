@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using LlmTornado.Images;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Common;
@@ -20,5 +21,5 @@ public sealed class ImageUrl
     ///     Default value is auto
     /// </summary>
     [JsonProperty("detail")]
-    public string? Detail { get; private set; }
+    public ImageDetail? Detail { get; private set; }
 }
