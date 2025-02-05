@@ -1,4 +1,8 @@
+using System;
+using System.Runtime.Serialization;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Linq;
 
 namespace LlmTornado.Threads
 {
@@ -6,13 +10,14 @@ namespace LlmTornado.Threads
     /// Base class representing an annotation in a message with information about
     /// the text to be replaced and the position where it occurs.
     /// </summary>
+    [JsonConverter(typeof(MessageAnnotationConverter))]
     public abstract class MessageAnnotation
     {
         /// <summary>
         /// The type of annotation. For example: "file_citation", "file_path", etc.
         /// </summary>
         [JsonProperty("type")]
-        public required string Type { get; set; }
+        public MessageAnnotationType Type { get; set; }
 
         /// <summary>
         /// The text in the message content that needs to be replaced.
@@ -34,6 +39,29 @@ namespace LlmTornado.Threads
     }
 
     /// <summary>
+    /// Enumerates the possible types of message annotations, which provide additional
+    /// context or metadata about parts of a message, such as references to files or citations.
+    /// </summary>
+    [JsonConverter(typeof(StringEnumConverter))]
+    public enum MessageAnnotationType
+    {
+        /// <summary>
+        /// Represents a message annotation type indicating a file path.
+        /// This type is used to annotate messages with information about a specific file path
+        /// generated or referenced, such as output files from tools (e.g., code interpreter).
+        /// </summary>
+        [EnumMember(Value = "file_path")] FilePath,
+
+        /// <summary>
+        /// Represents an annotation type for a file citation within a message.
+        /// This annotation is generated when the assistant references specific content
+        /// from a file, typically as a result of a "file_search" operation for retrieving
+        /// contextual information or quotes.
+        /// </summary>
+        [EnumMember(Value = "file_citation")] FileCitation,
+    }
+
+    /// <summary>
     /// A citation within the message that points to a specific quote
     /// from a specific File associated with the assistant or the message.
     /// Generated when the assistant uses the "file_search" tool to search files. 
@@ -46,7 +74,7 @@ namespace LlmTornado.Threads
         /// </summary>
         public MessageAnnotationFileCitation()
         {
-            Type = "file_citation";
+            Type = MessageAnnotationType.FileCitation;
         }
 
         /// <summary>
@@ -67,7 +95,7 @@ namespace LlmTornado.Threads
         /// </summary>
         public MessageAnnotationFilePath()
         {
-            Type = "file_path";
+            Type = MessageAnnotationType.FilePath;
         }
 
         /// <summary>
@@ -89,7 +117,7 @@ namespace LlmTornado.Threads
         [JsonProperty("file_id")]
         public string FileId { get; set; } = null!;
     }
-    
+
     /// <summary>
     ///     Data related to FileCitation annotation
     /// </summary>
@@ -100,5 +128,35 @@ namespace LlmTornado.Threads
         /// </summary>
         [JsonProperty("file_id")]
         public string FileId { get; set; } = null!;
+    }
+
+    internal class MessageAnnotationConverter : JsonConverter<MessageAnnotation>
+    {
+        public override void WriteJson(JsonWriter writer, MessageAnnotation? value, JsonSerializer serializer)
+        {
+            JObject jsonObject = JObject.FromObject(value!, serializer);
+            jsonObject.WriteTo(writer);
+        }
+
+        public override MessageAnnotation? ReadJson(JsonReader reader, Type objectType,
+            MessageAnnotation? existingValue, bool hasExistingValue,
+            JsonSerializer serializer)
+        {
+            JObject jsonObject = JObject.Load(reader);
+            string? typeToken = jsonObject["type"]?.ToString();
+            if (!Enum.TryParse(typeToken, true, out MessageAnnotationType messageAnnotationType))
+            {
+                return null;
+            }
+
+            return messageAnnotationType switch
+            {
+                MessageAnnotationType.FileCitation => jsonObject
+                    .ToObject<MessageAnnotationFileCitation>(serializer)!,
+                MessageAnnotationType.FilePath => jsonObject
+                    .ToObject<MessageAnnotationFilePath>(serializer)!,
+                _ => null
+            };
+        }
     }
 }

@@ -63,13 +63,21 @@ public static class ThreadsDemo
     public static async Task<Message> CreateMessage()
     {
         generatedThread ??= await CreateThread();
-        var response = await Program.Connect().Threads.CreateMessageAsync(generatedThread.Id, new CreateMessageRequest()
-        {
-            Role = ChatMessageRole.User,
-            Content = "I need to think of a magic spell that turns cows into sheep."
-        });
-        Console.WriteLine(response.Response);
-        generatedMessage = response.Data!;
+        Message response = await CreateMessage(generatedThread.Id,
+            "I need to think of a magic spell that turns cows into sheep.");
+        Console.WriteLine(response);
+        generatedMessage = response;
+        return response;
+    }
+
+    public static async Task<Message> CreateMessage(string threadId, string content)
+    {
+        HttpCallResult<Message> response = await Program.Connect().Threads.CreateMessageAsync(threadId,
+            new CreateMessageRequest()
+            {
+                Role = ChatMessageRole.User,
+                Content = content
+            });
         return response.Data!;
     }
 
@@ -130,16 +138,17 @@ public static class ThreadsDemo
         return response.Data;
     }
 
-    public static async Task<TornadoRun> CreateRun()
+    [TornadoTest]
+    public static async Task<TornadoRun> CreateRun(Assistant? assistant = null, string? assistantInstruction = null)
     {
         generatedMessage ??= await CreateMessage();
-        Assistant? assistant = await AssistantsDemo.Create();
+        assistant ??= await AssistantsDemo.Create();
 
         HttpCallResult<TornadoRun> response = await Program.Connect().Threads.CreateRunAsync(generatedThread!.Id,
             new CreateRunRequest(assistant!.Id)
             {
                 Model = ChatModel.OpenAi.Gpt4.O241120,
-                Instructions = "You are a helpful assistant with the ability to create names of magic spells."
+                Instructions = assistantInstruction ?? "You are a helpful assistant with the ability to create names of magic spells."
             });
         Console.WriteLine(response.Response);
         generatedTornadoRun = response.Data!;
@@ -193,8 +202,9 @@ public static class ThreadsDemo
     public static async Task<TornadoRun> ModifyRun()
     {
         generatedTornadoRun ??= await CreateRun();
-        
-        HttpCallResult<TornadoRun> response = await Program.Connect().Threads.ModifyRunAsync(generatedThread!.Id, generatedTornadoRun!.Id,
+
+        HttpCallResult<TornadoRun> response = await Program.Connect().Threads.ModifyRunAsync(generatedThread!.Id,
+            generatedTornadoRun!.Id,
             new ModifyRunRequest()
             {
                 Metadata = new Dictionary<string, string>()
@@ -207,23 +217,25 @@ public static class ThreadsDemo
         generatedTornadoRun = response.Data!;
         return response.Data!;
     }
-    
+
     [TornadoTest]
     public static async Task<bool> DeleteRun()
     {
         generatedTornadoRun ??= await CreateRun();
-        
-        HttpCallResult<bool> response = await Program.Connect().Threads.DeleteRunAsync(generatedThread!.Id, generatedTornadoRun!.Id);
+
+        HttpCallResult<bool> response =
+            await Program.Connect().Threads.DeleteRunAsync(generatedThread!.Id, generatedTornadoRun!.Id);
         Console.WriteLine(response.Response);
         generatedTornadoRun = null;
         return response.Data;
     }
-    
+
     [TornadoTest]
     public static async Task<IReadOnlyList<TornadoRunStep>> ListRunSteps()
     {
         generatedTornadoRun ??= await RetrieveRunAndPollForCompletion();
-        HttpCallResult<ListResponse<TornadoRunStep>> response = await Program.Connect().Threads.ListRunStepsAsync(generatedThread!.Id, generatedTornadoRun!.Id);
+        HttpCallResult<ListResponse<TornadoRunStep>> response =
+            await Program.Connect().Threads.ListRunStepsAsync(generatedThread!.Id, generatedTornadoRun!.Id);
         Console.WriteLine(response.Response);
         return response.Data!.Items;
     }
@@ -232,8 +244,21 @@ public static class ThreadsDemo
     public static async Task<TornadoRunStep> RetrieveRunStep()
     {
         IReadOnlyList<TornadoRunStep> runSteps = await ListRunSteps();
-        HttpCallResult<TornadoRunStep> response = await Program.Connect().Threads.RetrieveRunStepAsync(generatedThread!.Id, generatedTornadoRun!.Id, runSteps.FirstOrDefault()!.Id);
+        HttpCallResult<TornadoRunStep> response = await Program.Connect().Threads
+            .RetrieveRunStepAsync(generatedThread!.Id, generatedTornadoRun!.Id, runSteps.FirstOrDefault()!.Id);
         Console.WriteLine(response.Response);
         return response.Data!;
+    }
+
+    [TornadoTest]
+    public static async Task<TornadoRun> ExtractInfoFromFile()
+    {
+        Assistant assistant = await AssistantsDemo.CreateFileSearchAssistant();
+        generatedThread = await CreateThread();
+        generatedMessage =
+            await CreateMessage(generatedThread.Id, "Please summarize the file in 3 sentences from the file.");
+        generatedTornadoRun = await CreateRun(assistant, "You are assistant that analyzes files in a brief way");
+        TornadoRun completedRun = await RetrieveRunAndPollForCompletion();
+        return completedRun;
     }
 }
