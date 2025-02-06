@@ -60,7 +60,7 @@ namespace LlmTornado.Threads
         /// contextual information or quotes.
         /// </summary>
         [EnumMember(Value = "file_citation")]
-        FileCitation,
+        FileCitation
     }
 
     /// <summary>

@@ -19,7 +19,7 @@ public abstract class CodeInterpreterOutput
     ///     Output type. Can be either 'logs' or 'image'.
     /// </summary>
     [JsonProperty("type")]
-    public CodeInterpreterOutputType Type { get; private set; }
+    public CodeInterpreterOutputTypes Type { get; private set; }
 }
 
 /// <summary>
@@ -60,16 +60,16 @@ internal class CodeInterpreterOutputTypeConverter : JsonConverter<CodeInterprete
     {
         JObject jsonObject = JObject.Load(reader);
         string? typeToken = jsonObject["type"]?.ToString();
-        if (!Enum.TryParse(typeToken, true, out CodeInterpreterOutputType codeInterpreterOutputType))
+        if (!Enum.TryParse(typeToken, true, out CodeInterpreterOutputTypes codeInterpreterOutputType))
         {
             return null;
         }
 
         return codeInterpreterOutputType switch
         {
-            CodeInterpreterOutputType.Image => jsonObject
+            CodeInterpreterOutputTypes.Image => jsonObject
                 .ToObject<CodeInterpreterOutputImage>(serializer)!,
-            CodeInterpreterOutputType.Logs => jsonObject
+            CodeInterpreterOutputTypes.Logs => jsonObject
                 .ToObject<CodeInterpreterOutputLogs>(serializer)!,
             _ => null
         };

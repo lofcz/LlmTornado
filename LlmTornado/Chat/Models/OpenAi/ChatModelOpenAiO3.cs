@@ -31,7 +31,7 @@ public class ChatModelOpenAiO3 : IVendorModelClassProvider
     
     public static readonly List<IModel> ModelsAll = [
         ModelMini250131,
-        ModelMini,
+        ModelMini
     ];
     
     /// <summary>

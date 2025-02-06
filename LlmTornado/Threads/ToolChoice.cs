@@ -121,7 +121,7 @@ public enum ToolChoiceType
     /// execution, or interpretation of code within a thread execution context.
     /// </summary>
     [EnumMember(Value = "code_interpreter")]
-    CodeInterpreter,
+    CodeInterpreter
 }
 
 internal class ToolChoiceConverter : JsonConverter<ToolChoice>
@@ -145,12 +145,12 @@ internal class ToolChoiceConverter : JsonConverter<ToolChoice>
                 {
                     ToolChoiceType.Function => jsonObject
                         .ToObject<ToolChoiceFunction>(serializer)!,
-                    _ => jsonObject.ToObject<ToolChoice>(),
+                    _ => jsonObject.ToObject<ToolChoice>()
                 };
             }
             case JsonToken.String:
             {
-                return !Enum.TryParse(typeof(ToolChoiceType), reader.Value?.ToString(), true, out var toolType)
+                return !Enum.TryParse(typeof(ToolChoiceType), reader.Value?.ToString(), true, out object? toolType)
                     ? null
                     : new ToolChoice((ToolChoiceType) toolType);
             }
@@ -161,7 +161,7 @@ internal class ToolChoiceConverter : JsonConverter<ToolChoice>
 
     public override void WriteJson(JsonWriter writer, ToolChoice? toolChoice, JsonSerializer serializer)
     {
-        if (toolChoice == null)
+        if (toolChoice is null)
         {
             return;
         }

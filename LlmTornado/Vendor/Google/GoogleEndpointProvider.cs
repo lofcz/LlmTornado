@@ -180,7 +180,7 @@ internal class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider,
         { typeof(ChatRequest), (s, s1) => ChatResult.Deserialize(LLmProviders.Google, s, s1) },
         { typeof(TornadoFile), (s, s1) => FileUploadRequest.Deserialize(LLmProviders.Google, s, s1) },
         { typeof(CachedContentInformation), (s, s1) => CachedContentInformation.Deserialize(LLmProviders.Google, s, s1) },
-        { typeof(CachedContentList), (s, s1) => CachedContentList.Deserialize(LLmProviders.Google, s, s1) },
+        { typeof(CachedContentList), (s, s1) => CachedContentList.Deserialize(LLmProviders.Google, s, s1) }
 
     };
     

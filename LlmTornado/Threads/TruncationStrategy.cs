@@ -15,7 +15,7 @@ public class TruncationStrategy
     ///     When set to auto, messages in the middle of the thread will be dropped to fit the context length of the model, max_prompt_tokens.
     /// </summary>
     [JsonProperty("type")]
-    public required TruncationStrategyType TruncationStrategyType { get; set; }
+    public required TruncationStrategyTypes TruncationStrategyType { get; set; }
 
     /// <summary>
     ///     The number of most recent messages from the thread when constructing the context for the run.
@@ -30,7 +30,7 @@ public class TruncationStrategy
 /// an appropriate strategy or retaining a specified number of messages.
 /// </summary>
 [JsonConverter(typeof(StringEnumConverter))]
-public enum TruncationStrategyType
+public enum TruncationStrategyTypes
 {
     /// <summary>
     /// Specifies an automatic truncation strategy where the system

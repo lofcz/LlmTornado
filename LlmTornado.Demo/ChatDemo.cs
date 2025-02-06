@@ -570,7 +570,7 @@ public static class ChatDemo
         {
             { "prague", "A mild rain" },
             { "tokyo", "Foggy, cloudy" },
-            { "paris", "A sunny day" },
+            { "paris", "A sunny day" }
         };
         
         // 3. repl

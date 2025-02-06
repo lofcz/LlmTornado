@@ -20,6 +20,7 @@ public sealed class CreateRunRequest
     {
         AssistantId = assistantId;
     }
+    
     /// <summary>
     ///     The ID of the assistant used for execution of this run.
     /// </summary>
@@ -65,7 +66,7 @@ public sealed class CreateRunRequest
     ///     Keys can be a maximum of 64 characters long and values can be a maximum of 512 characters long.
     /// </summary>
     [JsonProperty("metadata")]
-    public IReadOnlyDictionary<string, string>? Metadata { get; set; } = null!;
+    public IReadOnlyDictionary<string, string>? Metadata { get; set; }
     
     /// <summary>
     ///     What sampling temperature to use, between 0 and 2.

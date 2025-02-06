@@ -80,7 +80,7 @@ public sealed class ThreadsEndpoint : EndpointBase
                 CapabilityEndpoints.Threads, HttpMethod.Delete,
                 GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}"), ct: cancellationToken)
             .ConfigureAwait(ConfigureAwaitOptions.None);
-        return new HttpCallResult<bool>(status.Code, status.Response, status.Data?.Deleted ?? false, status.Ok, null);
+        return new HttpCallResult<bool>(status.Code, status.Response, status.Data?.Deleted ?? false, status.Ok, status.Request);
     }
 
     /// <summary>
@@ -161,7 +161,7 @@ public sealed class ThreadsEndpoint : EndpointBase
                 GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/messages/{messageId}"),
                 ct: cancellationToken)
             .ConfigureAwait(ConfigureAwaitOptions.None);
-        return new HttpCallResult<bool>(status.Code, status.Response, status.Data?.Deleted ?? false, status.Ok, null);
+        return new HttpCallResult<bool>(status.Code, status.Response, status.Data?.Deleted ?? false, status.Ok, status.Request);
     }
 
     /// <summary>
@@ -235,7 +235,7 @@ public sealed class ThreadsEndpoint : EndpointBase
         HttpCallResult<DeletionStatus> result = await HttpAtomic<DeletionStatus>(Api.GetProvider(LLmProviders.OpenAi),
             CapabilityEndpoints.Threads, HttpMethod.Delete,
             GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/runs/{runId}"), ct: cancellationToken);
-        return new HttpCallResult<bool>(result.Code, result.Response, result.Data?.Deleted ?? false, result.Ok, null);
+        return new HttpCallResult<bool>(result.Code, result.Response, result.Data?.Deleted ?? false, result.Ok, result.Request);
     }
 
     /// <summary>

@@ -77,7 +77,8 @@ public enum ToolCallType
     /// <summary>
     /// Represents a tool call of type FunctionToolCall
     /// </summary>
-    [EnumMember(Value = "function")] FunctionToolCall,
+    [EnumMember(Value = "function")]
+    FunctionToolCall,
 
     /// <summary>
     /// Represents a tool call of type CodeInterpreterToolCall
@@ -88,7 +89,8 @@ public enum ToolCallType
     /// <summary>
     /// Represents a tool call of type FileSearchToolCall
     /// </summary>
-    [EnumMember(Value = "file_search")] FileSearchToolCall
+    [EnumMember(Value = "file_search")]
+    FileSearchToolCall
 }
 
 internal class ToolCallConverter : JsonConverter<ToolCall>

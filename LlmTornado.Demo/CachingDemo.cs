@@ -32,7 +32,7 @@ public class CachingDemo
         
         Console.WriteLine($"Listed:");
 
-        foreach (var item in listed.Data.CachedContents)
+        foreach (CachedContentInformation? item in listed.Data.CachedContents)
         {
             Console.WriteLine($"{item.Name} - {item.ExpireTime}");
         }
