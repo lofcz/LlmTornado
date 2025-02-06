@@ -476,8 +476,17 @@ public abstract class EndpointBase
             }
 
             result.Ok = true;
-            result.Data = provider.InboundMessage<T>(resultAsString, postData?.ToString());
-
+            try
+            {
+                result.Data = provider.InboundMessage<T>(resultAsString, postData?.ToString());
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Error deserializing. String to parse: ");
+                Console.WriteLine(resultAsString);
+                throw;
+            }
+            
             return result;
         }
         catch (Exception e)

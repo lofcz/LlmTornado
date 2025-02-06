@@ -1,5 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.Serialization;
+using LlmTornado.Assistants;
+using LlmTornado.Common;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
@@ -64,7 +67,69 @@ public sealed class FileSearchToolCall : ToolCall
     ///     For now, this is always going to be an empty object. TODO: When OpenAI finished implementation, map it here
     /// </summary>
     /// 
-    public object? FileSearch { get; set; }
+    public FileSearchToolCallData? FileSearch { get; set; }
+}
+
+public class FileSearchToolCallData
+{
+    [JsonProperty("ranking_options")]
+    public RankingOptions RankingOptions { get; set; } = null!;
+    public IReadOnlyList<FileSearchToolCallResult> Results { get; set; } = null!;
+}
+
+/// <summary>
+/// Represents the result of a file search tool call, including metadata
+/// such as file ID, name, and associated score.
+/// </summary>
+public class FileSearchToolCallResult
+{
+    /// <summary>
+    /// The unique identifier of the file associated with a file search result.
+    /// Used to reference the specific file in related operations or responses.
+    /// </summary>
+    [JsonProperty("file_id")]
+    public string FileId { get; set; } = null!;
+
+    /// <summary>
+    /// The name of the file associated with the tool call result.
+    /// Used to identify the file in the context of file search operations.
+    /// </summary>
+    [JsonProperty("file_name")]
+    public string FileName { get; set; } = null!;
+
+    /// <summary>
+    /// The score representing the relevance or quality of the file in the search result.
+    /// Used to evaluate and rank the file among other search results.
+    /// </summary>
+    [JsonProperty("file_type")]
+    public double Score { get; set; }
+
+    /// <summary>
+    /// The content of the result that was found. The content is only included if requested via the include query parameter.
+    ///</summary>
+    [JsonProperty( "content" )]
+    public IReadOnlyCollection<FileSearchToolCallContent> Contents { get; set; } = null!;
+    
+}
+
+/// <summary>
+/// Encapsulates the content details of a file search tool call, including its type and text representation.
+/// </summary>
+public class FileSearchToolCallContent
+{
+    /// <summary>
+    /// Specifies the type of the tool call, indicating the functional category
+    /// or purpose of the tool within a workflow or process.
+    /// </summary>
+    [JsonProperty("type")]
+    public string Type { get; set; } = null!;
+
+    /// <summary>
+    /// Represents the text content associated with the file search tool call result.
+    /// This property typically holds detailed information or content derived during the file search process.
+    /// </summary>
+    [JsonProperty("text")]
+    public string Text { get; set; } = null!;
 }
 
 /// <summary>

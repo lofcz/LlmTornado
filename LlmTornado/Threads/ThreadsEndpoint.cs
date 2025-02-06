@@ -28,24 +28,24 @@ public sealed class ThreadsEndpoint : EndpointBase
     /// </summary>
     /// <param name="request"><see cref="CreateThreadRequest" />.</param>
     /// <param name="cancellationToken">Optional, <see cref="CancellationToken" />.</param>
-    /// <returns><see cref="Thread" />.</returns>
-    public Task<HttpCallResult<Thread>> CreateThreadAsync(CreateThreadRequest? request = null,
+    /// <returns><see cref="TornadoThread" />.</returns>
+    public Task<HttpCallResult<TornadoThread>> CreateThreadAsync(CreateThreadRequest? request = null,
         CancellationToken? cancellationToken = null)
     {
-        return HttpPostRaw<Thread>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, null, request,
+        return HttpPostRaw<TornadoThread>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, null, request,
             ct: cancellationToken);
     }
 
     /// <summary>
     /// Retrieves a thread.
     /// </summary>
-    /// <param name="threadId">The id of the <see cref="Thread"/> to retrieve.</param>
+    /// <param name="threadId">The id of the <see cref="TornadoThread"/> to retrieve.</param>
     /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
-    /// <returns><see cref="Thread"/>.</returns>
-    public Task<HttpCallResult<Thread>> RetrieveThreadAsync(string threadId,
+    /// <returns><see cref="TornadoThread"/>.</returns>
+    public Task<HttpCallResult<TornadoThread>> RetrieveThreadAsync(string threadId,
         CancellationToken? cancellationToken = null)
     {
-        return HttpGetRaw<Thread>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads,
+        return HttpGetRaw<TornadoThread>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads,
             GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}"), ct: cancellationToken);
     }
 
@@ -53,24 +53,24 @@ public sealed class ThreadsEndpoint : EndpointBase
     /// Modifies a thread.
     /// </summary>
     /// <remarks>
-    /// Only the <see cref="Thread.Metadata"/> can be modified.
+    /// Only the <see cref="TornadoThread.Metadata"/> can be modified.
     /// </remarks>
-    /// <param name="threadId">The id of the <see cref="Thread"/> to modify.</param>
+    /// <param name="threadId">The id of the <see cref="TornadoThread"/> to modify.</param>
     /// <param name="request"></param>
     /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
-    /// <returns><see cref="Thread"/>.</returns>
-    public Task<HttpCallResult<Thread>> ModifyThreadAsync(string threadId, ModifyThreadRequest request,
+    /// <returns><see cref="TornadoThread"/>.</returns>
+    public Task<HttpCallResult<TornadoThread>> ModifyThreadAsync(string threadId, ModifyThreadRequest request,
         CancellationToken? cancellationToken = null)
     {
         IEndpointProvider provider = Api.GetProvider(LLmProviders.OpenAi);
-        return HttpPostRaw<Thread>(provider, CapabilityEndpoints.Threads, provider.ApiUrl(Endpoint, $"/{threadId}"),
+        return HttpPostRaw<TornadoThread>(provider, CapabilityEndpoints.Threads, provider.ApiUrl(Endpoint, $"/{threadId}"),
             request, ct: cancellationToken);
     }
 
     /// <summary>
     /// Delete a thread.
     /// </summary>
-    /// <param name="threadId">The id of the <see cref="Thread"/> to delete.</param>
+    /// <param name="threadId">The id of the <see cref="TornadoThread"/> to delete.</param>
     /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
     /// <returns>True, if was successfully deleted.</returns>
     public async Task<HttpCallResult<bool>> DeleteThreadAsync(string threadId,
@@ -220,22 +220,6 @@ public sealed class ThreadsEndpoint : EndpointBase
     {
         return HttpPostRaw<TornadoRun>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads,
             GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/runs/{runId}"), request, ct: cancellationToken);
-    }
-
-    /// <summary>
-    /// Deletes a run within a thread.
-    /// </summary>
-    /// <param name="threadId">The unique identifier of the thread containing the run.</param>
-    /// <param name="runId">The unique identifier of the run to be deleted.</param>
-    /// <param name="cancellationToken">Optional, <see cref="CancellationToken" /> to observe while waiting for the task to complete.</param>
-    /// <returns><see cref="HttpCallResult{Boolean}" /> indicating the success of the deletion.</returns>
-    public async Task<HttpCallResult<bool>> DeleteRunAsync(string threadId, string runId,
-        CancellationToken? cancellationToken = null)
-    {
-        HttpCallResult<DeletionStatus> result = await HttpAtomic<DeletionStatus>(Api.GetProvider(LLmProviders.OpenAi),
-            CapabilityEndpoints.Threads, HttpMethod.Delete,
-            GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/runs/{runId}"), ct: cancellationToken);
-        return new HttpCallResult<bool>(result.Code, result.Response, result.Data?.Deleted ?? false, result.Ok, result.Request);
     }
 
     /// <summary>

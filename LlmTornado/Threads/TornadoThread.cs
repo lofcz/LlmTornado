@@ -8,7 +8,7 @@ namespace LlmTornado.Threads;
 ///     A conversation session between an Assistant and a user.
 ///     Threads store Messages and automatically handle truncation to fit content into a model's context.
 /// </summary>
-public sealed class Thread : ApiResultBase
+public sealed class TornadoThread : ApiResultBase
 {
     /// <summary>
     ///     The identifier, which can be referenced in API endpoints.
@@ -44,9 +44,9 @@ public sealed class Thread : ApiResultBase
     /// <summary>
     ///     Implicit conversion of Thread object to its id
     /// </summary>
-    public static implicit operator string(Thread thread)
+    public static implicit operator string(TornadoThread tornadoThread)
     {
-        return thread.ToString();
+        return tornadoThread.ToString();
     }
 
     /// <summary>

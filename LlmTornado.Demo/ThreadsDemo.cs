@@ -3,39 +3,38 @@ using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Common;
 using LlmTornado.Threads;
-using Thread = LlmTornado.Threads.Thread;
 
 namespace LlmTornado.Demo;
 
 public static class ThreadsDemo
 {
-    private static Thread? generatedThread;
+    private static TornadoThread? generatedThread;
     private static Message? generatedMessage;
     private static TornadoRun? generatedTornadoRun;
 
     [TornadoTest]
-    public static async Task<Thread> CreateThread()
+    public static async Task<TornadoThread> CreateThread()
     {
-        HttpCallResult<Thread> thread = await Program.Connect().Threads.CreateThreadAsync();
+        HttpCallResult<TornadoThread> thread = await Program.Connect().Threads.CreateThreadAsync();
         Console.WriteLine(thread.Response);
         generatedThread = thread.Data;
         return thread.Data!;
     }
 
     [TornadoTest]
-    public static async Task<Thread> RetrieveThread()
+    public static async Task<TornadoThread> RetrieveThread()
     {
         generatedThread ??= await CreateThread();
-        HttpCallResult<Thread> response = await Program.Connect().Threads.RetrieveThreadAsync(generatedThread!.Id);
+        HttpCallResult<TornadoThread> response = await Program.Connect().Threads.RetrieveThreadAsync(generatedThread!.Id);
         Console.WriteLine(response.Response);
         return response.Data!;
     }
 
     [TornadoTest]
-    public static async Task<Thread> ModifyThread()
+    public static async Task<TornadoThread> ModifyThread()
     {
         generatedThread ??= await CreateThread();
-        HttpCallResult<Thread>? response = await Program.Connect().Threads.ModifyThreadAsync(generatedThread.Id,
+        HttpCallResult<TornadoThread>? response = await Program.Connect().Threads.ModifyThreadAsync(generatedThread.Id,
             new ModifyThreadRequest
             {
                 Metadata = new Dictionary<string, string>
@@ -65,7 +64,6 @@ public static class ThreadsDemo
         generatedThread ??= await CreateThread();
         Message response = await CreateMessage(generatedThread.Id,
             "I need to think of a magic spell that turns cows into sheep.");
-        Console.WriteLine(response);
         generatedMessage = response;
         return response;
     }
@@ -74,6 +72,7 @@ public static class ThreadsDemo
     {
         HttpCallResult<Message> response = await Program.Connect().Threads.CreateMessageAsync(threadId,
             new CreateMessageRequest(content));
+        Console.WriteLine(response.Response);
         return response.Data!;
     }
 
@@ -124,8 +123,8 @@ public static class ThreadsDemo
     [TornadoTest]
     public static async Task<bool> DeleteMessage()
     {
-        generatedThread ??= await CreateThread();
-        generatedMessage ??= await CreateMessage();
+        generatedThread = await CreateThread();
+        generatedMessage = await CreateMessage();
 
         HttpCallResult<bool> response =
             await Program.Connect().Threads.DeleteMessageAsync(generatedThread.Id, generatedMessage.Id);
@@ -211,18 +210,6 @@ public static class ThreadsDemo
         Console.WriteLine(response.Response);
         generatedTornadoRun = response.Data!;
         return response.Data!;
-    }
-
-    [TornadoTest]
-    public static async Task<bool> DeleteRun()
-    {
-        generatedTornadoRun ??= await CreateRun();
-
-        HttpCallResult<bool> response =
-            await Program.Connect().Threads.DeleteRunAsync(generatedThread!.Id, generatedTornadoRun!.Id);
-        Console.WriteLine(response.Response);
-        generatedTornadoRun = null;
-        return response.Data;
     }
 
     [TornadoTest]

@@ -168,11 +168,17 @@ internal class MessageContentJsonConverter : JsonConverter<IReadOnlyList<Message
             if (jToken is JObject jObject)
             {
                 string? messageContentType = jObject["type"]?.ToString();
-                MessageContent? messageContent = messageContentType switch
+                if(Enum.TryParse(messageContentType, true, out MessageContentTypes messageContentTypeEnum))
                 {
-                    "text" => jObject.ToObject<MessageContentTextResponse>(serializer),
-                    "image_file" => jObject.ToObject<MessageContentImageFile>(serializer),
-                    "refusal" => jObject.ToObject<MessageContentRefusal>(serializer),
+                    return null;
+                }
+                    
+                MessageContent? messageContent = messageContentTypeEnum switch
+                {
+                    MessageContentTypes.Text => jObject.ToObject<MessageContentTextResponse>(serializer),
+                    MessageContentTypes.ImageFile => jObject.ToObject<MessageContentImageFile>(serializer),
+                    MessageContentTypes.ImageUrl => jObject.ToObject<MessageContentImageUrl>(serializer),
+                    MessageContentTypes.Refusal => jObject.ToObject<MessageContentRefusal>(serializer),
                     _ => null
                 };
 
