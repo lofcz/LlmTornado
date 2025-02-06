@@ -217,7 +217,10 @@ public class CompletionEndpoint : EndpointBase
     public IAsyncEnumerable<CompletionResult> StreamCompletionEnumerable(CompletionRequest request)
     {
         IEndpointProvider provider = Api.GetProvider(LLmProviders.OpenAi);
-        request = new CompletionRequest(request) { Stream = true };
+        request = new CompletionRequest(request)
+        {
+            Stream = true
+        };
         return HttpStreamingRequest<CompletionResult>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, GetUrl(provider), queryParams: null, HttpMethod.Post, request);
     }
 

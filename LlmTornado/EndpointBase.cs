@@ -25,7 +25,7 @@ namespace LlmTornado;
 /// </summary>
 public abstract class EndpointBase
 {
-    private static string userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36";
+    private static string userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36";
     internal static readonly JsonSerializerSettings NullSettings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore };
     private static TimeSpan endpointTimeout = TimeSpan.FromSeconds(600);
     private static readonly Lazy<Dictionary<LLmProviders, Lazy<HttpClient>>> EndpointClients = new Lazy<Dictionary<LLmProviders, Lazy<HttpClient>>>(() =>
@@ -68,7 +68,7 @@ public abstract class EndpointBase
         return provider.ApiUrl(Endpoint, url);
     }
     
-    internal string GetUrl(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null)
+    internal static string GetUrl(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null)
     {
         return provider.ApiUrl(endpoint, url);
     }
@@ -230,10 +230,12 @@ public abstract class EndpointBase
         using HttpRequestMessage req = provider.OutboundMessage(url, verb, postData, streaming);
 
         SetRequestContent(req, postData);
+
+        HttpResponseMessage? response = null;
         
         try
         {
-            HttpResponseMessage response = await client.SendAsync(req, streaming ? HttpCompletionOption.ResponseHeadersRead : HttpCompletionOption.ResponseContentRead, ct ?? CancellationToken.None).ConfigureAwait(ConfigureAwaitOptions.None);
+            response = await client.SendAsync(req, streaming ? HttpCompletionOption.ResponseHeadersRead : HttpCompletionOption.ResponseContentRead, ct ?? CancellationToken.None).ConfigureAwait(ConfigureAwaitOptions.None);
 
             if (response.IsSuccessStatusCode)
             {
@@ -283,6 +285,8 @@ public abstract class EndpointBase
         }
         catch (Exception e)
         {
+            response?.Dispose();
+            
             throw e switch
             {
                 HttpRequestException => new HttpRequestException($"An error occured when trying to contact {verb.Method} {url}. Message: {e.Message}. {(e.InnerException is not null ? $" Inner exception: {e.InnerException.Message}" : string.Empty)}"),
@@ -446,13 +450,14 @@ public abstract class EndpointBase
     
     internal async Task<HttpCallResult<T>> HttpRequestRaw<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, Dictionary<string, object>? queryParams = null, HttpMethod? verb = null, object? postData = null, CancellationToken? ct = null, Dictionary<string, object?>? headers = null)
     {
-        RestDataOrException<HttpResponseMessage> response = await HttpRequestRawWithAllCodes(provider, endpoint, url, queryParams, verb, postData, false, ct, headers).ConfigureAwait(ConfigureAwaitOptions.None);
-
+        using RestDataOrException<HttpResponseMessage> response = await HttpRequestRawWithAllCodes(provider, endpoint, url, queryParams, verb, postData, false, ct, headers).ConfigureAwait(ConfigureAwaitOptions.None);
+        
         try
         {
+
             if (response.Exception is not null)
             {
-                return new HttpCallResult<T>(response.HttpResult?.Code ?? HttpStatusCode.ServiceUnavailable, response.HttpResult?.Response, default, false, response)
+                return new HttpCallResult<T>(HttpStatusCode.ServiceUnavailable, response.HttpResult?.Response, default, false, new RestDataOrException<HttpResponseData>(response.Exception))
                 {
                     Exception = response.Exception
                 };
@@ -460,7 +465,7 @@ public abstract class EndpointBase
 
             if (response.Data is null)
             {
-                return new HttpCallResult<T>(response.Data?.StatusCode ?? HttpStatusCode.Found, null, default, false, response)
+                return new HttpCallResult<T>(HttpStatusCode.Found, null, default, false, new RestDataOrException<HttpResponseData>(new Exception("Data is null")))
                 {
                     Exception = new Exception("Data is null")
                 };
@@ -468,7 +473,8 @@ public abstract class EndpointBase
 
             string resultAsString = await response.Data.Content.ReadAsStringAsync().ConfigureAwait(ConfigureAwaitOptions.None);
             
-            HttpCallResult<T> result = new HttpCallResult<T>(response.Data.StatusCode, resultAsString, default, response.Data.IsSuccessStatusCode, response);
+            RestDataOrException<HttpResponseData> responseSnapshot = new RestDataOrException<HttpResponseData>(HttpResponseData.Instantiate(response.Data));
+            HttpCallResult<T> result = new HttpCallResult<T>(response.Data.StatusCode, resultAsString, default, response.Data.IsSuccessStatusCode, responseSnapshot);
 
             if (response.Data.IsSuccessStatusCode)
             {
@@ -488,11 +494,7 @@ public abstract class EndpointBase
         }
         catch (Exception e)
         {
-            return new HttpCallResult<T>(response.Data?.StatusCode ?? HttpStatusCode.ServiceUnavailable, null, default, false, new RestDataOrException<HttpResponseMessage>(e));
-        }
-        finally
-        {
-            response.Data?.Dispose();            
+            return new HttpCallResult<T>(response.Data?.StatusCode ?? HttpStatusCode.ServiceUnavailable, null, default, false, new RestDataOrException<HttpResponseData>(e));
         }
     }
 
@@ -680,7 +682,7 @@ public abstract class EndpointBase
     /// <returns></returns>
     protected async Task<TornadoStreamRequest> HttpStreamingRequestData(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, Dictionary<string, object>? queryParams = null, HttpMethod? verb = null, object? postData = null, CancellationToken token = default)
     {
-        RestDataOrException<HttpResponseMessage> response = await HttpRequestRawWithAllCodes(provider, endpoint, url, queryParams, verb, postData, true, token).ConfigureAwait(ConfigureAwaitOptions.None);
+        using RestDataOrException<HttpResponseMessage> response = await HttpRequestRawWithAllCodes(provider, endpoint, url, queryParams, verb, postData, true, token).ConfigureAwait(ConfigureAwaitOptions.None);
 
         if (response.Exception is not null || response.Data is null)
         {

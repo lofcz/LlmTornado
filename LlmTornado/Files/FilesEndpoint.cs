@@ -142,7 +142,7 @@ public class FilesEndpoint : EndpointBase
     {
 	    if (!File.Exists(filePath))
 	    {
-		    return new HttpCallResult<TornadoFile>(HttpStatusCode.UnprocessableEntity, null, null, false, new RestDataOrException<HttpResponseMessage>(new Exception($"File {filePath} not found")));
+		    return new HttpCallResult<TornadoFile>(HttpStatusCode.UnprocessableEntity, null, null, false, new RestDataOrException<HttpResponseData>(new Exception($"File {filePath} not found")));
 	    }
 
 	    byte[] bytes = await File.ReadAllBytesAsync(filePath).ConfigureAwait(ConfigureAwaitOptions.None);
@@ -227,7 +227,7 @@ public class FilesEndpoint : EndpointBase
 
 		if (resolvedProvider.Provider is not LLmProviders.Google)
 		{
-			return new HttpCallResult<TornadoFile>(HttpStatusCode.ServiceUnavailable, "Endpoint not available", null, false, new RestDataOrException<HttpResponseMessage>(new Exception("Endpoint not available")));
+			return new HttpCallResult<TornadoFile>(HttpStatusCode.ServiceUnavailable, "Endpoint not available", null, false, new RestDataOrException<HttpResponseData>(new Exception("Endpoint not available")));
 		}
 		
 		// for Google, two requests must be made: first one signals the intent to upload a file and receives payload url, the second uploads the file
@@ -254,15 +254,7 @@ public class FilesEndpoint : EndpointBase
 			return result;
 		}
 
-		if (!result.Request.Data.Headers.TryGetValues("x-goog-upload-url", out IEnumerable<string>? uploadUrls))
-		{
-			return result;
-		}
-
-		// this should have length = 1, make compiler happy
-		string? uploadUrl = uploadUrls.FirstOrDefault();
-
-		if (uploadUrl is null)
+		if (result.Request.Data?.Headers is null || !result.Request.Data.Headers.TryGetValue("x-goog-upload-url", out string? uploadUrl))
 		{
 			return result;
 		}

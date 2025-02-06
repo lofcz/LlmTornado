@@ -61,7 +61,10 @@ public class VendorAnthropicChatRequestMessageContent
     public VendorAnthropicChatRequestMessageContent(ChatMessage msg)
     {
         Msg = msg;
-        Parts = msg.Parts?.Count > 0 ? msg.Parts.ToList() : msg.Content is not null ? new List<ChatMessagePart> {new ChatMessagePart(msg.Content ?? string.Empty) } : [];
+        Parts = msg.Parts?.Count > 0 ? msg.Parts.ToList() : msg.Content is not null ? new List<ChatMessagePart>
+        {
+            new ChatMessagePart(msg.Content)
+        } : [];
         Role = msg.Role ?? ChatMessageRoles.Unknown;
     }
 
@@ -329,7 +332,7 @@ internal class VendorAnthropicChatRequest
                             Messages.Add(new VendorAnthropicChatRequestMessage(ChatMessageRoles.User, toolsMessage));
                         }
                         
-                        Messages.Add(new VendorAnthropicChatRequestMessage(msg.Role ?? ChatMessageRoles.Unknown, msg));
+                        Messages.Add(new VendorAnthropicChatRequestMessage(msg.Role.Value, msg));
                         toolsMessage = null;
                         break;
                     }

@@ -80,6 +80,7 @@ public class TornadoStreamRequest : IAsyncDisposable
             await Stream.DisposeAsync().ConfigureAwait(false);   
         }
 
+        CallRequest?.Dispose();
         Response?.Dispose();
         StreamReader?.Dispose();
         GC.SuppressFinalize(this);

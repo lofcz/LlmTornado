@@ -12,7 +12,7 @@ namespace LlmTornado.Code;
 /// <summary>
 /// Implementation of <see cref="System.Random"></see> using <see cref="System.Security.Cryptography.RandomNumberGenerator"></see>.
 /// </summary>
-internal class CryptoRandom : Random
+internal class CryptoRandom : Random, IDisposable
 {
     private readonly RandomNumberGenerator r;
 
@@ -80,5 +80,10 @@ internal class CryptoRandom : Random
     {
         ArgumentOutOfRangeException.ThrowIfNegative(maxValue);
         return Next(0, maxValue);
+    }
+
+    public void Dispose()
+    {
+        r.Dispose();
     }
 }

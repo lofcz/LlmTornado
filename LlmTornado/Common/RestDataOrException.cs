@@ -6,7 +6,7 @@ using System.Net.Http;
 
 namespace LlmTornado.Common;
 
-public class RestDataOrException<T>
+public class RestDataOrException<T> : IDisposable
 {
     private bool exceptionIsNull => Exception is null;
     private bool dataIsNull => Data is null;
@@ -19,6 +19,11 @@ public class RestDataOrException<T>
     
     public IHttpCallResult? HttpResult { get; set; }
     public HttpCallRequest? HttpRequest { get; set; }
+    
+    public RestDataOrException(T data)
+    {
+        Data = data;
+    }
     
     public RestDataOrException(T data, IHttpCallResult? httpRequest)
     {
@@ -65,5 +70,14 @@ public class RestDataOrException<T>
             Headers = httpRequest.Headers.ToDictionary(),
             Content = httpRequest.Content
         };
+    }
+
+    /// <summary>
+    /// Disposes the data
+    /// </summary>
+    public void Dispose()
+    {
+        HttpRequest?.Dispose();
+        GC.SuppressFinalize(this);
     }
 }
