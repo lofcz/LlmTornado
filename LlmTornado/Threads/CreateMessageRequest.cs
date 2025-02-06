@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using LlmTornado.Chat;
+using LlmTornado.Code;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Threads;
@@ -90,7 +91,7 @@ public sealed class CreateMessageRequest
     ///     Currently only user and assistant is supported.
     /// </remarks>
     [JsonProperty("role")]
-    [JsonConverter(typeof(ChatMessageRoles.ChatMessageRoleJsonConverter))]
+    [JsonConverter(typeof(ChatMessageRolesCls.ChatMessageRoleJsonConverter))]
     public ChatMessageRoles Role { get; set; }
 
     /// <summary>

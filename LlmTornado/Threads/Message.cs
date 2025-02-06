@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using LlmTornado.Chat;
+using LlmTornado.Code;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Threads;
@@ -61,8 +62,8 @@ public sealed class Message : ApiResultBase
     ///     The entity that produced the message. One of user or assistant.
     /// </summary>
     [JsonProperty("role")]
-    [JsonConverter(typeof(ChatMessageRoles.ChatMessageRoleJsonConverter))]
-    public ChatMessageRoles Role { get; private set; } = null!;
+    [JsonConverter(typeof(ChatMessageRolesCls.ChatMessageRoleJsonConverter))]
+    public ChatMessageRoles Role { get; private set; }
 
     /// <summary>
     ///     The content of the message in array of text and/or images.

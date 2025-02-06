@@ -216,7 +216,7 @@ public class ChatEndpoint : EndpointBase
     /// <returns>The <see cref="ChatResult" /> with the API response.</returns>
     public Task<ChatResult?> CreateChatCompletion(params string[] userMessages)
     {
-        return CreateChatCompletion(userMessages.Select(m => new ChatMessage(Code.ChatMessageRoles.User, m)).ToArray());
+        return CreateChatCompletion(userMessages.Select(m => new ChatMessage(ChatMessageRoles.User, m)).ToArray());
     }
 
     #endregion

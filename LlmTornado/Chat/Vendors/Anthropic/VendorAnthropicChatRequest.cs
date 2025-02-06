@@ -56,13 +56,13 @@ public class VendorAnthropicChatRequestMessageContent
     internal ChatMessage Msg { get; set; }
     
     public List<ChatMessagePart> Parts { get; internal set; }
-    public Code.ChatMessageRoles Role { get; internal set; }
+    public ChatMessageRoles Role { get; internal set; }
     
     public VendorAnthropicChatRequestMessageContent(ChatMessage msg)
     {
         Msg = msg;
         Parts = msg.Parts?.Count > 0 ? msg.Parts.ToList() : msg.Content is not null ? new List<ChatMessagePart> {new ChatMessagePart(msg.Content ?? string.Empty) } : [];
-        Role = msg.Role ?? Code.ChatMessageRoles.Unknown;
+        Role = msg.Role ?? ChatMessageRoles.Unknown;
     }
 
     public VendorAnthropicChatRequestMessageContent()
@@ -244,9 +244,9 @@ public class VendorAnthropicChatRequestMessage
     [JsonConverter(typeof(VendorAnthropicChatRequestMessageContent.VendorAnthropicChatRequestMessageContentJsonConverter))]
     public VendorAnthropicChatRequestMessageContent Content { get; set; }
         
-    public VendorAnthropicChatRequestMessage(Code.ChatMessageRoles role, ChatMessage msg)
+    public VendorAnthropicChatRequestMessage(ChatMessageRoles role, ChatMessage msg)
     {
-        Role = ChatMessageRoles.MemberToString(role) ?? "user";
+        Role = ChatMessageRolesCls.MemberToString(role) ?? "user";
         Content = new VendorAnthropicChatRequestMessageContent(msg);
     }
 }
@@ -322,18 +322,18 @@ internal class VendorAnthropicChatRequest
             {
                 switch (msg.Role)
                 {
-                    case Code.ChatMessageRoles.Assistant or Code.ChatMessageRoles.User:
+                    case ChatMessageRoles.Assistant or ChatMessageRoles.User:
                     {
                         if (toolsMessage is not null)
                         {
-                            Messages.Add(new VendorAnthropicChatRequestMessage(Code.ChatMessageRoles.User, toolsMessage));
+                            Messages.Add(new VendorAnthropicChatRequestMessage(ChatMessageRoles.User, toolsMessage));
                         }
                         
-                        Messages.Add(new VendorAnthropicChatRequestMessage(msg.Role ?? Code.ChatMessageRoles.Unknown, msg));
+                        Messages.Add(new VendorAnthropicChatRequestMessage(msg.Role ?? ChatMessageRoles.Unknown, msg));
                         toolsMessage = null;
                         break;
                     }
-                    case Code.ChatMessageRoles.Tool: // multiple tool messages must be compressed into one
+                    case ChatMessageRoles.Tool: // multiple tool messages must be compressed into one
                     {
                         if (toolsMessage is null)
                         {
@@ -356,7 +356,7 @@ internal class VendorAnthropicChatRequest
                         
                         break;
                     }
-                    case Code.ChatMessageRoles.System:
+                    case ChatMessageRoles.System:
                     {
                         System = new VendorAnthropicChatRequestMessageContent(msg);
                         break;
@@ -366,7 +366,7 @@ internal class VendorAnthropicChatRequest
             
             if (toolsMessage is not null)
             {
-                Messages.Add(new VendorAnthropicChatRequestMessage(Code.ChatMessageRoles.User, toolsMessage));
+                Messages.Add(new VendorAnthropicChatRequestMessage(ChatMessageRoles.User, toolsMessage));
                 toolsMessage = null;
             }
         }

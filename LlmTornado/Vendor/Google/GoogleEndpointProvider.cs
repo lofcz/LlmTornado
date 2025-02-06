@@ -234,8 +234,15 @@ internal class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider,
         {
             return (T?)fn.Invoke(jsonData, postData);
         }
-        
-        return JsonConvert.DeserializeObject<T>(jsonData);
+
+        try
+        {
+            return JsonConvert.DeserializeObject<T>(jsonData);
+        }
+        catch (Exception e)
+        {
+            return default;
+        }
     }
 
     public override object? InboundMessage(Type type, string jsonData, string? postData)

@@ -219,7 +219,7 @@ public class Conversation
     /// </summary>
     /// <param name="message">Message to update</param>
     /// <param name="role">New role</param>
-    public Conversation EditMessageRole(ChatMessage message, Code.ChatMessageRoles role)
+    public Conversation EditMessageRole(ChatMessage message, ChatMessageRoles role)
     {
         message.Role = role;
         return this;
@@ -231,7 +231,7 @@ public class Conversation
     /// <param name="id">Message to update</param>
     /// <param name="role">New role</param>
     /// <returns>Whether message was updated</returns>
-    public bool EditMessageRole(Guid id, Code.ChatMessageRoles role)
+    public bool EditMessageRole(Guid id, ChatMessageRoles role)
     {
         ChatMessage? msg = messages.FirstOrDefault(x => x.Id == id);
 
@@ -254,7 +254,7 @@ public class Conversation
     ///     usage.
     /// </param>
     /// <param name="content">The content of the message)</param>
-    public Conversation AppendMessage(Code.ChatMessageRoles role, string content)
+    public Conversation AppendMessage(ChatMessageRoles role, string content)
     {
         return AppendMessage(new ChatMessage(role, content));
     }
@@ -270,7 +270,7 @@ public class Conversation
     /// </param>
     /// <param name="content">The content of the message</param>
     /// <param name="id">Id of the message</param>
-    public Conversation AppendMessage(Code.ChatMessageRoles role, string content, Guid? id)
+    public Conversation AppendMessage(ChatMessageRoles role, string content, Guid? id)
     {
         return AppendMessage(new ChatMessage(role, content, id));
     }
@@ -286,7 +286,7 @@ public class Conversation
     /// </param>
     public Conversation AppendUserInput(string content)
     {
-        return AppendMessage(new ChatMessage(Code.ChatMessageRoles.User, content));
+        return AppendMessage(new ChatMessage(ChatMessageRoles.User, content));
     }
 
     /// <summary>
@@ -301,7 +301,7 @@ public class Conversation
     /// <param name="id">id of the message</param>
     public Conversation AppendUserInput(string content, Guid id)
     {
-        return AppendMessage(new ChatMessage(Code.ChatMessageRoles.User, content, id));
+        return AppendMessage(new ChatMessage(ChatMessageRoles.User, content, id));
     }
 
     /// <summary>
@@ -315,7 +315,7 @@ public class Conversation
     /// <param name="id">id of the message</param>
     public Conversation AppendUserInput(IEnumerable<ChatMessagePart> parts, Guid id)
     {
-        return AppendMessage(new ChatMessage(Code.ChatMessageRoles.User, parts, id));
+        return AppendMessage(new ChatMessage(ChatMessageRoles.User, parts, id));
     }
     
     /// <summary>
@@ -328,7 +328,7 @@ public class Conversation
     /// </param>
     public Conversation AppendUserInput(IEnumerable<ChatMessagePart> parts)
     {
-        return AppendMessage(new ChatMessage(Code.ChatMessageRoles.User, parts));
+        return AppendMessage(new ChatMessage(ChatMessageRoles.User, parts));
     }
 
     /// <summary>
@@ -343,7 +343,7 @@ public class Conversation
     /// </param>
     public Conversation AppendUserInputWithName(string userName, string content)
     {
-        return AppendMessage(new ChatMessage(Code.ChatMessageRoles.User, content) { Name = userName });
+        return AppendMessage(new ChatMessage(ChatMessageRoles.User, content) { Name = userName });
     }
 
     /// <summary>
@@ -359,7 +359,7 @@ public class Conversation
     /// <param name="id">id of the message</param>
     public Conversation AppendUserInputWithName(string userName, string content, Guid id)
     {
-        return AppendMessage(new ChatMessage(Code.ChatMessageRoles.User, content, id) { Name = userName });
+        return AppendMessage(new ChatMessage(ChatMessageRoles.User, content, id) { Name = userName });
     }
 
     /// <summary>
@@ -375,7 +375,7 @@ public class Conversation
     /// <param name="id">id of the message</param>
     public Conversation AppendUserInputWithName(string userName, IEnumerable<ChatMessagePart> parts, Guid id)
     {
-        return AppendMessage(new ChatMessage(Code.ChatMessageRoles.User, parts, id) { Name = userName });
+        return AppendMessage(new ChatMessage(ChatMessageRoles.User, parts, id) { Name = userName });
     }
 
     /// <summary>
@@ -385,7 +385,7 @@ public class Conversation
     /// <param name="content">text content that helps set the behavior of the assistant</param>
     public Conversation AppendSystemMessage(string content)
     {
-        return AppendMessage(new ChatMessage(Code.ChatMessageRoles.System, content));
+        return AppendMessage(new ChatMessage(ChatMessageRoles.System, content));
     }
     
     /// <summary>
@@ -396,7 +396,7 @@ public class Conversation
     /// <returns></returns>
     public Conversation AppendSystemMessage(IEnumerable<ChatMessagePart> parts)
     {
-        return AppendMessage(new ChatMessage(Code.ChatMessageRoles.System, parts));
+        return AppendMessage(new ChatMessage(ChatMessageRoles.System, parts));
     }
 
     /// <summary>
@@ -407,7 +407,7 @@ public class Conversation
     /// <param name="id">id of the message</param>
     public Conversation AppendSystemMessage(string content, Guid id)
     {
-        return AppendMessage(new ChatMessage(Code.ChatMessageRoles.System, content, id));
+        return AppendMessage(new ChatMessage(ChatMessageRoles.System, content, id));
     }
 
     /// <summary>
@@ -418,7 +418,7 @@ public class Conversation
     /// <param name="id">id of the message</param>
     public Conversation AppendSystemMessage(IEnumerable<ChatMessagePart> parts, Guid id)
     {
-        return AppendMessage(new ChatMessage(Code.ChatMessageRoles.System, parts, id));
+        return AppendMessage(new ChatMessage(ChatMessageRoles.System, parts, id));
     }
 
     /// <summary>
@@ -429,7 +429,7 @@ public class Conversation
     /// <param name="id">id of the message</param>
     public Conversation PrependSystemMessage(string content, Guid id)
     {
-        return AppendMessage(new ChatMessage(Code.ChatMessageRoles.System, content, id), 0);
+        return AppendMessage(new ChatMessage(ChatMessageRoles.System, content, id), 0);
     }
 
     /// <summary>
@@ -440,7 +440,7 @@ public class Conversation
     /// <param name="id">id of the message</param>
     public Conversation PrependSystemMessage(IEnumerable<ChatMessagePart> parts, Guid id)
     {
-        return AppendMessage(new ChatMessage(Code.ChatMessageRoles.System, parts, id), 0);
+        return AppendMessage(new ChatMessage(ChatMessageRoles.System, parts, id), 0);
     }
 
     /// <summary>
@@ -451,7 +451,7 @@ public class Conversation
     /// <param name="content">Text content written by a developer to help give examples of desired behavior</param>
     public Conversation AppendExampleChatbotOutput(string content)
     {
-        return AppendMessage(new ChatMessage(Code.ChatMessageRoles.Assistant, content));
+        return AppendMessage(new ChatMessage(ChatMessageRoles.Assistant, content));
     }
 
     /// <summary>
@@ -463,7 +463,7 @@ public class Conversation
     /// <param name="content">The text content (usually JSON)</param>
     public Conversation AppendFunctionMessage(string functionName, string content)
     {
-        return AppendMessage(new ChatMessage(Code.ChatMessageRoles.Tool, content) { Name = functionName });
+        return AppendMessage(new ChatMessage(ChatMessageRoles.Tool, content) { Name = functionName });
     }
 
     /// <summary>
@@ -475,7 +475,7 @@ public class Conversation
     /// <param name="id">id of the message</param>
     public Conversation AppendExampleChatbotOutput(string content, Guid id)
     {
-        return AppendMessage(new ChatMessage(Code.ChatMessageRoles.Assistant, content, id));
+        return AppendMessage(new ChatMessage(ChatMessageRoles.Assistant, content, id));
     }
 
     /// <summary>
@@ -487,7 +487,7 @@ public class Conversation
     /// <param name="id">id of the message</param>
     public Conversation AppendExampleChatbotOutput(IEnumerable<ChatMessagePart> parts, Guid id)
     {
-        return AppendMessage(new ChatMessage(Code.ChatMessageRoles.Assistant, parts, id));
+        return AppendMessage(new ChatMessage(ChatMessageRoles.Assistant, parts, id));
     }
 
     #region Non-streaming
@@ -680,7 +680,7 @@ public class Conversation
                             FunctionCall = call
                         });
                             
-                        ChatMessage fnResultMsg = new ChatMessage(Code.ChatMessageRoles.Tool, call.Result?.Content ?? "The service returned no data.".ToJson(), Guid.NewGuid())
+                        ChatMessage fnResultMsg = new ChatMessage(ChatMessageRoles.Tool, call.Result?.Content ?? "The service returned no data.".ToJson(), Guid.NewGuid())
                         {
                             Id = currentMsgId,
                             ToolCallId = call.ToolCall?.Id ?? call.Name,
@@ -869,7 +869,7 @@ public class Conversation
         };
 
         StringBuilder responseStringBuilder = new StringBuilder();
-        Code.ChatMessageRoles? responseRole = null;
+        ChatMessageRoles? responseRole = null;
 
         await foreach (ChatResult res in endpoint.StreamChatEnumerable(req).WithCancellation(token))
         {
@@ -893,7 +893,7 @@ public class Conversation
                 {
                     if (internalDelta is not null)
                     {
-                        internalDelta.Role = Code.ChatMessageRoles.Assistant;
+                        internalDelta.Role = ChatMessageRoles.Assistant;
                         internalDelta.Tokens = res.Usage?.CompletionTokens;
                         AppendMessage(internalDelta);
                     }
@@ -934,14 +934,14 @@ public class Conversation
 
         if (responseRole is not null) 
         {
-            AppendMessage((Code.ChatMessageRoles)responseRole, responseStringBuilder.ToString(), messageId);
+            AppendMessage((ChatMessageRoles)responseRole, responseStringBuilder.ToString(), messageId);
         }
     }
     
     /// <summary>
     ///     Stream LLM response as a series of events. The raw events from Provider are abstracted away and only high-level events are reported such as inbound plaintext tokens, complete tool requests, etc.
     /// </summary>
-    public async Task StreamResponseRich(Guid msgId, Func<string?, ValueTask>? messageTokenHandler, Func<List<FunctionCall>, ValueTask>? functionCallHandler, Func<Code.ChatMessageRoles, ValueTask>? messageTypeResolvedHandler, Ref<string>? outboundRequest = null, Func<ChatResponseVendorExtensions, ValueTask>? vendorFeaturesHandler = null, CancellationToken token = default)
+    public async Task StreamResponseRich(Guid msgId, Func<string?, ValueTask>? messageTokenHandler, Func<List<FunctionCall>, ValueTask>? functionCallHandler, Func<ChatMessageRoles, ValueTask>? messageTypeResolvedHandler, Ref<string>? outboundRequest = null, Func<ChatResponseVendorExtensions, ValueTask>? vendorFeaturesHandler = null, CancellationToken token = default)
     {
         await StreamResponseRich(new ChatStreamEventHandler
         {
@@ -956,7 +956,7 @@ public class Conversation
     /// <summary>
     ///     Stream LLM response as a series of events. The raw events from Provider are abstracted away and only high-level events are reported such as inbound plaintext tokens, complete tool requests, etc.
     /// </summary>
-    public async Task StreamResponseRich(Func<string?, ValueTask>? messageTokenHandler, Func<List<FunctionCall>, ValueTask>? functionCallHandler, Func<Code.ChatMessageRoles, ValueTask>? messageTypeResolvedHandler, Ref<string>? outboundRequest = null, Func<ChatResponseVendorExtensions, ValueTask>? vendorFeaturesHandler = null, CancellationToken token = default)
+    public async Task StreamResponseRich(Func<string?, ValueTask>? messageTokenHandler, Func<List<FunctionCall>, ValueTask>? functionCallHandler, Func<ChatMessageRoles, ValueTask>? messageTypeResolvedHandler, Ref<string>? outboundRequest = null, Func<ChatResponseVendorExtensions, ValueTask>? vendorFeaturesHandler = null, CancellationToken token = default)
     {
         await StreamResponseRich(new ChatStreamEventHandler
         {
@@ -983,7 +983,7 @@ public class Conversation
         req = eventsHandler?.MutateChatRequestHandler is not null ? await eventsHandler.MutateChatRequestHandler.Invoke(req) : req;
         bool isFirst = true;
         Guid currentMsgId = eventsHandler?.MessageId ?? Guid.NewGuid();
-        ChatMessage? lastUserMessage = messages.LastOrDefault(x => x.Role is Code.ChatMessageRoles.User);
+        ChatMessage? lastUserMessage = messages.LastOrDefault(x => x.Role is ChatMessageRoles.User);
         bool isFirstMessageToken = true;
         
         await foreach (ChatResult res in endpoint.StreamChatEnumerable(req, eventsHandler).WithCancellation(token))
@@ -1001,7 +1001,7 @@ public class Conversation
                 
                         if (res.StreamInternalKind is ChatResultStreamInternalKinds.AppendAssistantMessage && internalDelta is not null)
                         {
-                            internalDelta.Role = Code.ChatMessageRoles.Assistant;
+                            internalDelta.Role = ChatMessageRoles.Assistant;
                             internalDelta.Id = currentMsgId;
                             internalDelta.Tokens = res.Usage?.CompletionTokens;
 
@@ -1066,7 +1066,7 @@ public class Conversation
                 {
                     if (eventsHandler?.MessageTypeResolvedHandler is not null)
                     {
-                        await eventsHandler.MessageTypeResolvedHandler(delta.Role ?? Code.ChatMessageRoles.Unknown);
+                        await eventsHandler.MessageTypeResolvedHandler(delta.Role ?? ChatMessageRoles.Unknown);
                     }
 
                     isFirst = false;
@@ -1075,9 +1075,9 @@ public class Conversation
                 if (delta is not null && eventsHandler is not null)
                 {
                     // role can be either Tool or Assistant, we need to handle both cases
-                    if (delta.Role is Code.ChatMessageRoles.Tool || delta.ToolCalls?.Count > 0)
+                    if (delta.Role is ChatMessageRoles.Tool || delta.ToolCalls?.Count > 0)
                     {
-                        delta.Role = Code.ChatMessageRoles.Assistant;
+                        delta.Role = ChatMessageRoles.Assistant;
                         
                         if (eventsHandler.FunctionCallHandler is not null)
                         {
@@ -1115,7 +1115,7 @@ public class Conversation
 
                                 foreach (FunctionCall call in calls)
                                 {
-                                    ChatMessage fnResultMsg = new ChatMessage(Code.ChatMessageRoles.Tool, call.Result?.Content ?? "The service returned no data.".ToJson(), Guid.NewGuid())
+                                    ChatMessage fnResultMsg = new ChatMessage(ChatMessageRoles.Tool, call.Result?.Content ?? "The service returned no data.".ToJson(), Guid.NewGuid())
                                     {
                                         Id = currentMsgId,
                                         ToolCallId = call.ToolCall?.Id ?? call.Name,
@@ -1148,7 +1148,7 @@ public class Conversation
                             return;
                         }
                     }
-                    else if (delta.Role is Code.ChatMessageRoles.Assistant)
+                    else if (delta.Role is ChatMessageRoles.Assistant)
                     {
                         if (eventsHandler.MessageTokenHandler is not null)
                         {

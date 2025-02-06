@@ -13,7 +13,6 @@ using LlmTornado.Code.Models;
 using LlmTornado.Common;
 using LlmTornado.Contrib;
 using LlmTornado.Files;
-using ChatMessageRoles = LlmTornado.Code.ChatMessageRoles;
 
 namespace LlmTornado.Demo;
 
