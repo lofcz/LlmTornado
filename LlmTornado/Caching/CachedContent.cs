@@ -43,4 +43,13 @@ public class CachedContent
         Parts = parts;
         Role = role;
     }
+    
+    /// <summary>
+    /// Creates cached content. Use this only for system messages. For user input / assistants output, specifying <see cref="Role"/> is required.
+    /// </summary>
+    /// <param name="parts"></param>
+    public CachedContent(List<ChatMessagePart> parts)
+    {
+        Parts = parts;
+    }
 }

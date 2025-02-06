@@ -1,10 +1,12 @@
 using System.Text;
+using LlmTornado.Caching;
 using Newtonsoft.Json;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Chat.Plugins;
 using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Chat.Vendors.Cohere;
+using LlmTornado.Chat.Vendors.Google;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
@@ -1340,6 +1342,60 @@ public static class ChatDemo
     }
     
     [TornadoTest]
+    public static async Task GoogleFunctionsStrict()
+    {
+        Conversation chat = Program.Connect(LLmProviders.Google).Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Google.Gemini.Gemini15Flash,
+            Tools = [
+                new Tool(new ToolFunction("get_weather", "gets the current weather", new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        location = new
+                        {
+                            type = "string",
+                            description = "The location for which the weather information is required."
+                        }
+                    },
+                    required = new List<string> { "location" }
+                }), true)
+            ],
+            ToolChoice = new OutboundToolChoice("get_weather")
+        });
+
+        chat.OnAfterToolsCall = async (result) =>
+        {
+            chat.RequestParameters.Tools = null;
+            chat.RequestParameters.ToolChoice = null; // stop forcing the model to use the get_weather tool
+            string? str = await chat.GetResponse();
+
+            if (str is not null)
+            {
+                Console.WriteLine(str);
+            }
+        };
+        
+        chat.AppendMessage(ChatMessageRoles.System, "You are a helpful assistant");
+        Guid msgId = Guid.NewGuid();
+        chat.AppendMessage(ChatMessageRoles.User, "Fetch the weather information for Prague.", msgId);
+
+        ChatRichResponse response = await chat.GetResponseRich(functions =>
+        {
+            foreach (FunctionCall fn in functions)
+            {
+                fn.Result = new FunctionResult(fn.Name, "A mild rain is expected around noon.");
+            }
+
+            return Task.CompletedTask;
+        });
+
+        string r = response.GetText();
+        Console.WriteLine(r);
+    }
+    
+    [TornadoTest]
     public static async Task AnthropicStreamingFunctions()
     {
         StringBuilder sb = new StringBuilder();
@@ -1544,8 +1600,6 @@ public static class ChatDemo
             return ValueTask.CompletedTask;
         }, functions =>
         {
-            List<FunctionResult> results = [];
-            
             foreach (FunctionCall fn in functions)
             {
                 fn.Result = new FunctionResult(fn.Name, new
@@ -1560,6 +1614,153 @@ public static class ChatDemo
 
 
         string response = sb.ToString();
+        Console.WriteLine(response);
         return response;
+    }
+
+    [TornadoTest]
+    public static async Task GoogleStreamingFunctions()
+    {
+        StringBuilder sb = new StringBuilder();
+
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Google.Gemini.Gemini15Pro002,
+            Tools = [
+                new Tool(new ToolFunction("get_weather", "gets the current weather", new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        location = new
+                        {
+                            type = "string",
+                            description = "The location for which the weather information is required."
+                        }
+                    },
+                    required = new List<string> { "location" }
+                }))
+            ],
+            ToolChoice = new OutboundToolChoice("get_weather")
+        });
+
+        chat.OnAfterToolsCall = async (result) =>
+        {
+            chat.RequestParameters.ToolChoice = null; // stop forcing the model to use the get_weather tool
+            await chat.StreamResponse(Console.Write);
+        };
+        
+        chat.AppendMessage(ChatMessageRoles.System, "You are a helpful assistant");
+        Guid msgId = Guid.NewGuid();
+        chat.AppendMessage(ChatMessageRoles.User, "1. Solve the following equation: 2+2=?\n2. What is the weather like today in Prague?", msgId);
+
+        await chat.StreamResponseRich(msgId, (x) =>
+        {
+            sb.Append(x);
+            return ValueTask.CompletedTask;
+        }, functions =>
+        {
+            foreach (FunctionCall fn in functions)
+            {
+                fn.Result = new FunctionResult(fn.Name, "A mild rain is expected around noon.");
+            }
+
+            return ValueTask.CompletedTask;
+        }, null);
+
+
+        string response = sb.ToString();
+        Console.WriteLine(response);
+    }
+
+    [TornadoTest]
+    public static async Task GoogleCached()
+    {
+        string text = await File.ReadAllTextAsync("Static/Files/a11.txt");
+
+        Tool tool = new Tool(new ToolFunction("return_transcript", "returns transcript of a given entry", new
+        {
+            type = "object",
+            properties = new
+            {
+                content = new
+                {
+                    type = "string",
+                    description = "Content of the entry"
+                },
+                title = new
+                {
+                    type = "string",
+                    description = "Title/headline of the entry"
+                },
+            },
+            required = new List<string> { "content", "title" }
+        }), true);
+        
+        HttpCallResult<CachedContentInformation> cachingResult = await Program.Connect().Caching.Create(new CreateCachedContentRequest(90, ChatModel.Google.Gemini.Gemini15Pro002, [
+            new CachedContent([
+                new ChatMessagePart(text)
+            ], CachedContentRoles.User)
+        ], new CachedContent([
+            new ChatMessagePart($"You are a machine answering questions regarding Apollo 11 mission, use the transcript of the mission for precise answers")
+        ]), [
+            tool
+        ], new OutboundToolChoice("return_transcript")));
+        
+        Console.WriteLine(cachingResult.Data.Name);
+        Console.WriteLine(cachingResult.Data.ExpireTime);
+
+        Conversation conversation = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Google.Gemini.Gemini15Pro002,
+            VendorExtensions = new ChatRequestVendorExtensions(new ChatRequestVendorGoogleExtensions(cachingResult.Data)
+            {
+                ResponseSchema = tool
+            })
+        });
+        
+        conversation.AppendUserInput("Cite the exact wording of the entry labeled \"04 06 58 40 CMP (COLUMBIA)\", starting with \"Roger, ...\". Use the function return_transcript.");
+        await GetNextResponse();
+        conversation.AppendUserInput($"Now do the same for entry \"05 07 57 34 CDR (EAGLE)\"");
+        await GetNextResponse();
+       
+        return;
+        
+        async Task GetNextResponse()
+        {
+            await conversation.StreamResponseRich(new ChatStreamEventHandler
+            {
+                MessageTokenHandler = (token) =>
+                {
+                    Console.Write(token);
+                    return ValueTask.CompletedTask;
+                },
+                OnUsageReceived = (usage) =>
+                {
+                    Console.WriteLine();
+                    Console.WriteLine(usage);
+                    return ValueTask.CompletedTask;
+                },
+                FunctionCallHandler = (calls) =>
+                {
+                    calls.ForEach(x =>
+                    {
+                        x.Result = new FunctionResult(x, null);
+
+                        if (x.TryGetArgument("title", out string? title))
+                        {
+                            Console.WriteLine($"TITLE: {title}");
+                        }
+                        
+                        if (x.TryGetArgument("content", out string? content))
+                        {
+                            Console.WriteLine($"CONTENT: {content}");
+                        }
+                    });
+                    
+                    return ValueTask.CompletedTask;
+                }
+            });    
+        }
     }
 }

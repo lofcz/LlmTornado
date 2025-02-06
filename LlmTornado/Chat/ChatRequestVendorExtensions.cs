@@ -1,5 +1,6 @@
 using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Chat.Vendors.Cohere;
+using LlmTornado.Chat.Vendors.Google;
 
 namespace LlmTornado.Chat;
 
@@ -17,6 +18,11 @@ public class ChatRequestVendorExtensions
     ///     Anthropic extensions.
     /// </summary>
     public ChatRequestVendorAnthropicExtensions? Anthropic { get; set; }
+    
+    /// <summary>
+    ///     Google extensions.
+    /// </summary>
+    public ChatRequestVendorGoogleExtensions? Google { get; set; }
 
     /// <summary>
     ///     Empty extensions.
@@ -42,5 +48,14 @@ public class ChatRequestVendorExtensions
     public ChatRequestVendorExtensions(ChatRequestVendorAnthropicExtensions anthropicExtensions)
     {
         Anthropic = anthropicExtensions;
+    }
+
+    /// <summary>
+    ///     Google extensions.
+    /// </summary>
+    /// <param name="googleExtensions"></param>
+    public ChatRequestVendorExtensions(ChatRequestVendorGoogleExtensions googleExtensions)
+    {
+        Google = googleExtensions;
     }
 }

@@ -4,7 +4,9 @@ using LlmTornado.Caching.Vendors.Google;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Chat.Vendors.Cohere;
+using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
+using LlmTornado.Common;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Caching;
@@ -45,7 +47,16 @@ public class CreateCachedContentRequest
     /// </summary>
     public List<CachedContent>? Contents { get; set; }
     
-    // todo: map tools, toolConfig: https://ai.google.dev/api/caching#Content
+    /// <summary>
+    /// Optional. Input only. Immutable. A list of Tools the model may use to generate the next response
+    /// </summary>
+    /// <returns></returns>
+    public List<Tool>? Tools { get; set; }
+
+    /// <summary>
+    /// Optional. Input only. Immutable. Tool config. This config is shared for all tools.
+    /// </summary>
+    public OutboundToolChoice? ToolChoice { get; set; }
 
     /// <summary>
     /// Creates a caching request. Either content or system must be set.
@@ -54,12 +65,16 @@ public class CreateCachedContentRequest
     /// <param name="model"></param>
     /// <param name="contents"></param>
     /// <param name="system"></param>
-    public CreateCachedContentRequest(TimeSpan timeToLive, ChatModel model, List<CachedContent>? contents = null, CachedContent? system = null)
+    /// <param name="tools"></param>
+    /// <param name="toolChoice"></param>
+    public CreateCachedContentRequest(TimeSpan timeToLive, ChatModel model, List<CachedContent>? contents = null, CachedContent? system = null, List<Tool>? tools = null, OutboundToolChoice? toolChoice = null)
     {
         TimeToLive = timeToLive;
         Model = model;
         Contents = contents;
         System = system;
+        Tools = tools;
+        ToolChoice = toolChoice;
     }
     
     /// <summary>
@@ -69,12 +84,38 @@ public class CreateCachedContentRequest
     /// <param name="model"></param>
     /// <param name="contents"></param>
     /// <param name="system"></param>
-    public CreateCachedContentRequest(int secondsToLive, ChatModel model, List<CachedContent>? contents = null, CachedContent? system = null)
+    /// <param name="tools"></param>
+    /// <param name="toolChoice"></param>
+    public CreateCachedContentRequest(int secondsToLive, ChatModel model, List<CachedContent>? contents = null, CachedContent? system = null, List<Tool>? tools = null, OutboundToolChoice? toolChoice = null)
     {
         TimeToLive = TimeSpan.FromSeconds(secondsToLive);
         Model = model;
         Contents = contents;
         System = system;
+        Tools = tools;
+        ToolChoice = toolChoice;
+    }
+
+    /// <summary>
+    /// Creates an empty caching request. You must additionally set at least one of: <see cref="System"/>, <see cref="Tools"/>, <see cref="Contents"/>
+    /// </summary>
+    /// <param name="secondsToLive"></param>
+    /// <param name="model"></param>
+    public CreateCachedContentRequest(int secondsToLive, ChatModel model)
+    {
+        TimeToLive = TimeSpan.FromSeconds(secondsToLive);
+        Model = model;
+    }
+    
+    /// <summary>
+    /// Creates an empty caching request. You must additionally set at least one of: <see cref="System"/>, <see cref="Tools"/>, <see cref="Contents"/>
+    /// </summary>
+    /// <param name="timeToLive"></param>
+    /// <param name="model"></param>
+    public CreateCachedContentRequest(TimeSpan timeToLive, ChatModel model)
+    {
+        TimeToLive = timeToLive;
+        Model = model;
     }
 
     internal object Serialize(LLmProviders provider)

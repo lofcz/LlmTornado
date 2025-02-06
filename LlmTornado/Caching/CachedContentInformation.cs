@@ -33,14 +33,17 @@ public class CachedContentInformation
     /// <summary>
     /// The resource name referring to the cached content. Format: cachedContents/{id}
     /// </summary>
-    [JsonProperty("name")]
     public string? Name { get; set; }
     
     /// <summary>
     /// The user-generated meaningful display name of the cached content. Maximum 128 Unicode characters.
     /// </summary>
-    [JsonProperty("displayName")]
     public string? DisplayName { get; set; }
+    
+    /// <summary>
+    /// Used to modify follow-up chat requests.
+    /// </summary>
+    internal CreateCachedContentRequest? CreateRequest { get; set; }
     
     internal static CachedContentInformation? Deserialize(LLmProviders provider, string jsonData, string? postData)
     {

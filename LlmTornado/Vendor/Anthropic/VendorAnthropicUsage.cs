@@ -1,8 +1,9 @@
+using LlmTornado.Code;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Vendor.Anthropic;
 
-internal class VendorAnthropicUsage
+internal class VendorAnthropicUsage : IChatUsage
 {
     [JsonProperty("input_tokens")]
     public int InputTokens { get; set; }

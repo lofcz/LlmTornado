@@ -223,9 +223,26 @@ public class ChatUsage : Usage
 	[JsonIgnore]
 	public int? CacheReadTokens { get; set; }
 	
-	public ChatUsage()
+	/// <summary>
+	/// Native usage object returned by the vendor. Provided for Anthropic, Cohere, and Google.
+	/// Use this to read details about the billed units for vendor-specific features.
+	/// </summary>
+	[JsonIgnore]
+	public IChatUsage? VendorUsageObject { get; set; }
+	
+	/// <summary>
+	/// Which provider returned the usage.
+	/// </summary>
+	[JsonIgnore]
+	public LLmProviders Provider { get; set; }
+	
+	/// <summary>
+	/// Creates a new empty chat usage associated with a provider.
+	/// </summary>
+	/// <param name="provider"></param>
+	public ChatUsage(LLmProviders provider)
 	{
-		
+		Provider = provider;
 	}
 	
 	internal ChatUsage(VendorAnthropicUsage usage)
@@ -233,6 +250,8 @@ public class ChatUsage : Usage
 		CompletionTokens = usage.OutputTokens;
 		PromptTokens = usage.InputTokens;
 		TotalTokens = CompletionTokens + PromptTokens;
+		VendorUsageObject = usage;
+		Provider = LLmProviders.Anthropic;
 	}
 	
 	internal ChatUsage(VendorCohereUsage usage)
@@ -240,21 +259,31 @@ public class ChatUsage : Usage
 		CompletionTokens = usage.BilledUnits.OutputTokens;
 		PromptTokens = usage.BilledUnits.OutputTokens;
 		TotalTokens = CompletionTokens + PromptTokens;
+		VendorUsageObject = usage;
+		Provider = LLmProviders.Cohere;
 	}
 
 	internal ChatUsage(VendorGoogleUsage usage)
 	{
-		CompletionTokens = usage.CandidatesTokenCount;
+		CompletionTokens = usage.CandidatesTokenCount > 0 ? usage.CandidatesTokenCount : usage.PromptTokenCount - usage.CachedContentTokenCount;
 		PromptTokens = usage.PromptTokenCount;
-		TotalTokens = CompletionTokens + PromptTokens;
+		TotalTokens = usage.TotalTokenCount;
+		CacheReadTokens = usage.CachedContentTokenCount;
+		VendorUsageObject = usage;
+		Provider = LLmProviders.Google;
 	}
 
 	/// <summary>
-	///		View of the usage.
+	///	View of the usage. The returned string differs based on the provider.
 	/// </summary>
 	/// <returns></returns>
 	public override string ToString()
 	{
-		return $"Total: {TotalTokens}, Prompt: {PromptTokens}, Completion: {CompletionTokens}, Cache created: {CacheCreationTokens}, Cache read: {CacheReadTokens}";
+		return Provider switch
+		{
+			LLmProviders.Google => $"Total: {TotalTokens}, Prompt: {PromptTokens}, Completion: {CompletionTokens}, Cache read: {CacheReadTokens}",
+			LLmProviders.Cohere => $"Total: {TotalTokens}, Prompt: {PromptTokens}, Completion: {CompletionTokens}",
+			_ => $"Total: {TotalTokens}, Prompt: {PromptTokens}, Completion: {CompletionTokens}, Cache created: {CacheCreationTokens}, Cache read: {CacheReadTokens}"
+		};
 	}
 }

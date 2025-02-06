@@ -274,7 +274,7 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
 
                     if (res is not null)
                     {
-                        plaintextUsage ??= new ChatUsage();
+                        plaintextUsage ??= new ChatUsage(LLmProviders.Anthropic);
                         plaintextUsage.CompletionTokens = res.Usage.OutputTokens;
                         
                         // todo: propagate data from res.Delta
@@ -288,7 +288,7 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
   
                     if (res is not null && res.Message.Usage.InputTokens + res.Message.Usage.OutputTokens > 0)
                     {
-                        plaintextUsage = new ChatUsage
+                        plaintextUsage = new ChatUsage(LLmProviders.Anthropic)
                         {
                             TotalTokens = res.Message.Usage.InputTokens + res.Message.Usage.OutputTokens,
                             CompletionTokens = res.Message.Usage.OutputTokens,

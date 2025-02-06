@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -45,6 +46,15 @@ internal class VendorGoogleCachingCreateCachedContentRequest
     [JsonProperty("contents")]
     public List<VendorGoogleCachingCachedContent>? Contents { get; set; }
 
+    [JsonProperty("tools")]
+    public List<VendorGoogleChatRequest.VendorGoogleChatTool>? Tools { get; set; }
+    
+    [JsonProperty("toolConfig")]
+    public VendorGoogleChatRequest.VendorGoogleChatToolConfig? ToolConfig { get; set; }
+    
+    [JsonIgnore]
+    internal Tuple<List<VendorGoogleChatRequest.VendorGoogleChatTool>?, VendorGoogleChatRequest.VendorGoogleChatToolConfig?, VendorGoogleChatRequestGenerationConfig?> Config { get; set; }
+    
     public VendorGoogleCachingCreateCachedContentRequest()
     {
         
@@ -58,5 +68,9 @@ internal class VendorGoogleCachingCreateCachedContentRequest
         Model = $"models/{request.Model.Name}"; // see: https://ai.google.dev/api/caching#cache_create-SHELL
         SystemInstruction = request.System is null ? null : new VendorGoogleCachingCachedContent(request.System);
         Contents = request.Contents?.Select(x => new VendorGoogleCachingCachedContent(x)).ToList();
+
+        Config = VendorGoogleChatRequest.GetToolsAndToolChoice(request.Tools, request.ToolChoice);
+        Tools = Config.Item1;
+        ToolConfig = Config.Item2;
     }
 }

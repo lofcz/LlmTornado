@@ -1,15 +1,22 @@
 using System.Collections.Generic;
+using LlmTornado.Code;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Vendor.Google;
 
-internal class VendorGoogleUsage
+internal class VendorGoogleUsage : IChatUsage
 {
     /// <summary>
     /// Number of tokens in the prompt. When cachedContent is set, this is still the total effective prompt size meaning this includes the number of tokens in the cached content.
     /// </summary>
     [JsonProperty("promptTokenCount")]
     public int PromptTokenCount { get; set; }
+    
+    /// <summary>
+    /// Number of tokens in the cached part of the prompt (the cached content)
+    /// </summary>
+    [JsonProperty("cachedContentTokenCount")]
+    public int CachedContentTokenCount { get; set; }
     
     /// <summary>
     /// Total number of tokens across all the generated response candidates.
@@ -24,10 +31,40 @@ internal class VendorGoogleUsage
     public int TotalTokenCount { get; set; }
     
     /// <summary>
-    /// Number of tokens in the cached part of the prompt (the cached content)
+    /// Output only. List of modalities that were processed in the request input.
     /// </summary>
-    [JsonProperty("cachedContentTokenCount")]
-    public int CachedContentTokenCount { get; set; }
+    [JsonProperty("promptTokensDetails")]
+    public List<VendorGoogleUsageModalityDetail>? PromptTokensDetails { get; set; }
+    
+    /// <summary>
+    /// Output only. List of modalities of the cached content in the request input.
+    /// </summary>
+    [JsonProperty("cacheTokensDetails")]
+    public List<VendorGoogleUsageModalityDetail>? CacheTokensDetails { get; set; }
+    
+    /// <summary>
+    /// Output only. List of modalities that were returned in the response.
+    /// </summary>
+    [JsonProperty("candidatesTokensDetails")]
+    public List<VendorGoogleUsageModalityDetail>? CandidatesTokensDetails { get; set; }
+}
+
+internal class VendorGoogleUsageModalityDetail
+{
+    /// <summary>
+    /// The modality associated with this token count.
+    /// MODALITY_UNSPECIFIED	Unspecified modality.
+    /// TEXT	Plain text.
+    /// IMAGE	Image.
+    /// VIDEO	Video.
+    /// AUDIO	Audio.
+    /// DOCUMENT	Document, e.g. PDF.
+    /// </summary>
+    [JsonProperty("modality")]
+    public string Modality { get; set; }
+    
+    [JsonProperty("tokenCount")]
+    public int TokenCount { get; set; }
 }
 
 internal class VendorGooglePromptFeedback

@@ -370,7 +370,7 @@ internal class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider,
 
                     if (result?.Response is not null)
                     {
-                        usage = new ChatUsage
+                        usage = new ChatUsage(LLmProviders.Cohere)
                         {
                             TotalTokens = result.Response.Meta.BilledUnits.InputTokens + result.Response.Meta.BilledUnits.OutputTokens,
                             PromptTokens = result.Response.Meta.BilledUnits.InputTokens,
