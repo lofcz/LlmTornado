@@ -254,4 +254,19 @@ public sealed class ThreadsEndpoint : EndpointBase
             GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/runs/{runId}/steps/{runStepId}"),
             ct: cancellationToken);
     }
+
+    /// <summary>
+    /// Submit tool outputs for a specific thread and run.
+    /// </summary>
+    /// <param name="threadId">The unique identifier of the thread.</param>
+    /// <param name="runId">The unique identifier of the run.</param>
+    /// <param name="request"><see cref="SubmitToolOutputsRequest" /> containing the tool output details.</param>
+    /// <param name="cancellationToken">Optional, <see cref="CancellationToken" /> for request cancellation.</param>
+    /// <returns><see cref="HttpCallResult{TornadoRun}" />.</returns>
+    public Task<HttpCallResult<TornadoRun>> SubmitToolOutput(string threadId, string runId, SubmitToolOutputsRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return HttpPostRaw<TornadoRun>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads,
+            GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/runs/{runId}/submit_tool_outputs"), request, ct: cancellationToken);
+    }
 }
