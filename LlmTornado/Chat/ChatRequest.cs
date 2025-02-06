@@ -472,7 +472,7 @@ public class ChatRequest
                 {
 	                writer.WritePropertyName("role");
 	                
-	                if (msg.Role is ChatMessageRoles.System)
+	                if (msg.Role is Code.ChatMessageRoles.System)
 	                {
 		                if (request?.Model is not null && ChatModelOpenAiGpt4.ReasoningModels.Contains(request.Model))
 		                {
@@ -485,7 +485,7 @@ public class ChatRequest
 	                }
 	                else
 	                {
-		                writer.WriteValue(ChatMessageRole.MemberRolesDictInverse[msg.Role.Value]);   
+		                writer.WriteValue(ChatMessageRoles.MemberRolesDictInverse[msg.Role.Value]);   
 	                }   
                 }
 
@@ -493,13 +493,13 @@ public class ChatRequest
                 {
 	                switch (msg.Role)
 	                {
-		                case ChatMessageRoles.Tool:
+		                case Code.ChatMessageRoles.Tool:
 		                {
 			                writer.WritePropertyName("tool_call_id");
 			                writer.WriteValue(msg.ToolCallId);
 			                break;
 		                }
-		                case ChatMessageRoles.Assistant:
+		                case Code.ChatMessageRoles.Assistant:
 		                {
 			                if (msg.ToolCalls is not null)
 			                {
@@ -567,12 +567,12 @@ public class ChatRequest
                     writer.WriteValue(msg.Name);
                 }
 
-                if (msg is { Role: ChatMessageRoles.Tool, Content: null })
+                if (msg is { Role: Code.ChatMessageRoles.Tool, Content: null })
                 {
 	                goto closeMsgObj;
                 }
 
-                if (msg is { Role: ChatMessageRoles.Assistant, Content: null, ToolCalls: not null })
+                if (msg is { Role: Code.ChatMessageRoles.Assistant, Content: null, ToolCalls: not null })
                 {
 	                goto closeMsgObj;
                 }

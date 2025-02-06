@@ -188,7 +188,7 @@ internal class VendorGoogleChatRequest
 
         public VendorGoogleChatRequestMessage(ChatMessage msg)
         {
-            if (msg is { Role: ChatMessageRoles.Assistant, ToolCalls.Count: > 0 })
+            if (msg is { Role: Code.ChatMessageRoles.Assistant, ToolCalls.Count: > 0 })
             {
                 foreach (ToolCall call in msg.ToolCalls)
                 {
@@ -204,7 +204,7 @@ internal class VendorGoogleChatRequest
 
                 Role = "model";
             }
-            else if (msg.Role is ChatMessageRoles.Tool)
+            else if (msg.Role is Code.ChatMessageRoles.Tool)
             {
                 Parts.Add(new VendorGoogleChatRequestMessagePart
                 {
@@ -238,7 +238,7 @@ internal class VendorGoogleChatRequest
                     });
                 }
 
-                Role = msg.Role is ChatMessageRoles.User ? "user" : "model";
+                Role = msg.Role is Code.ChatMessageRoles.User ? "user" : "model";
             }
         }
 
@@ -283,7 +283,7 @@ internal class VendorGoogleChatRequest
             }
 
             msg.Content = sb.ToString();
-            msg.Role = Role is "user" ? ChatMessageRoles.User : ChatMessageRoles.Assistant;
+            msg.Role = Role is "user" ? Code.ChatMessageRoles.User : Code.ChatMessageRoles.Assistant;
             return msg;
         }
     }
@@ -523,7 +523,7 @@ internal class VendorGoogleChatRequest
 
         if (msgs is not null)
         {
-            ChatMessage? sysMsg = msgs.FirstOrDefault(x => x.Role is ChatMessageRoles.System);
+            ChatMessage? sysMsg = msgs.FirstOrDefault(x => x.Role is Code.ChatMessageRoles.System);
 
             if (sysMsg is not null)
             {
@@ -532,7 +532,7 @@ internal class VendorGoogleChatRequest
             
             foreach (ChatMessage msg in msgs)
             {
-                if (msg.Role is ChatMessageRoles.System)
+                if (msg.Role is Code.ChatMessageRoles.System)
                 {
                     continue;
                 }

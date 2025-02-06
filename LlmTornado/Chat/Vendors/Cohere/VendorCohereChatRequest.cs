@@ -75,13 +75,13 @@ internal class VendorCohereChatRequest
             }
         }
         
-        public VendorCohereChatRequestMessage(ChatMessageRoles role, ChatMessage msg)
+        public VendorCohereChatRequestMessage(Code.ChatMessageRoles role, ChatMessage msg)
         {
             Role = role switch
             {
-                ChatMessageRoles.Assistant => "CHATBOT",
-                ChatMessageRoles.System => "SYSTEM",
-                ChatMessageRoles.User => "USER",
+                Code.ChatMessageRoles.Assistant => "CHATBOT",
+                Code.ChatMessageRoles.System => "SYSTEM",
+                Code.ChatMessageRoles.User => "USER",
                 _ => "USER"
             };
 
@@ -157,7 +157,7 @@ internal class VendorCohereChatRequest
                 msg.ExcludeFromRequest = false;
             }
             
-            ChatMessage? systemMsg = msgs.FirstOrDefault(x => x.Role is ChatMessageRoles.System);
+            ChatMessage? systemMsg = msgs.FirstOrDefault(x => x.Role is Code.ChatMessageRoles.System);
 
             if (systemMsg is not null)
             {
@@ -165,7 +165,7 @@ internal class VendorCohereChatRequest
                 preamble = systemMsg.Content;
             }
 
-            ChatMessage? lastMsg = msgs.LastOrDefault(x => x.Role is ChatMessageRoles.User);
+            ChatMessage? lastMsg = msgs.LastOrDefault(x => x.Role is Code.ChatMessageRoles.User);
 
             if (lastMsg is not null)
             {
@@ -179,14 +179,14 @@ internal class VendorCohereChatRequest
 
                     msg.ExcludeFromRequest = msg.Role switch
                     {
-                        ChatMessageRoles.Tool => true,
-                        ChatMessageRoles.Assistant when msg.ToolCalls?.Count > 0 => true,
+                        Code.ChatMessageRoles.Tool => true,
+                        Code.ChatMessageRoles.Assistant when msg.ToolCalls?.Count > 0 => true,
                         _ => msg.ExcludeFromRequest
                     };
                 }
             }
 
-            lastToolCallsMsg = msgs.LastOrDefault(x => x is { Role: ChatMessageRoles.Assistant, ToolCalls.Count: > 0 });
+            lastToolCallsMsg = msgs.LastOrDefault(x => x is { Role: Code.ChatMessageRoles.Assistant, ToolCalls.Count: > 0 });
         }
 
         Message = respondMsg;
@@ -219,27 +219,27 @@ internal class VendorCohereChatRequest
             {
                 switch (msg.Role)
                 {
-                    case ChatMessageRoles.Assistant:
+                    case Code.ChatMessageRoles.Assistant:
                     {
                         if (msg.Content is not null && msg != lastToolCallsMsg)
                         {
-                            ChatHistory.Add(new VendorCohereChatRequestMessage(ChatMessageRoles.Assistant, msg));
+                            ChatHistory.Add(new VendorCohereChatRequestMessage(Code.ChatMessageRoles.Assistant, msg));
                         }
 
                         lastAssistantMsg = msg;
                         break;
                     }
-                    case ChatMessageRoles.User:
+                    case Code.ChatMessageRoles.User:
                     {
-                        ChatHistory.Add(new VendorCohereChatRequestMessage(ChatMessageRoles.User, msg));
+                        ChatHistory.Add(new VendorCohereChatRequestMessage(Code.ChatMessageRoles.User, msg));
                         break;
                     }
-                    case ChatMessageRoles.System:
+                    case Code.ChatMessageRoles.System:
                     {
-                        ChatHistory.Add(new VendorCohereChatRequestMessage(ChatMessageRoles.System, msg));
+                        ChatHistory.Add(new VendorCohereChatRequestMessage(Code.ChatMessageRoles.System, msg));
                         break;
                     }
-                    case ChatMessageRoles.Tool:
+                    case Code.ChatMessageRoles.Tool:
                     {
                         if (lastAssistantMsg != lastToolCallsMsg)
                         {

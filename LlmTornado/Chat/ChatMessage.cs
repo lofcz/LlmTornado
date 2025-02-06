@@ -16,11 +16,11 @@ public class ChatMessage
 {
 	/// <summary>
 	///     Creates an empty <see cref="ChatMessage" />, with <see cref="Role" /> defaulting to
-	///     <see cref="ChatMessageRole.User" />
+	///     <see cref="ChatMessageRoles.User" />
 	/// </summary>
 	public ChatMessage()
     {
-        Role = ChatMessageRoles.User;
+        Role = Code.ChatMessageRoles.User;
         Id = Guid.NewGuid();
     }
 	
@@ -28,7 +28,7 @@ public class ChatMessage
 	///     Constructor for a new Chat Message.
 	/// </summary>
 	/// <param name="role">The role of the message, which can be "system", "assistant, "user", or "function".</param>
-	public ChatMessage(ChatMessageRoles role)
+	public ChatMessage(Code.ChatMessageRoles role)
 	{
 		Role = role;
 		Id = Guid.NewGuid();
@@ -39,7 +39,7 @@ public class ChatMessage
 	/// </summary>
 	/// <param name="role">The role of the message, which can be "system", "assistant, "user", or "function".</param>
 	/// <param name="content">The text to send in the message</param>
-	public ChatMessage(ChatMessageRoles role, string content)
+	public ChatMessage(Code.ChatMessageRoles role, string content)
     {
         Role = role;
         Content = content;
@@ -51,7 +51,7 @@ public class ChatMessage
 	/// </summary>
 	/// <param name="role">The role of the message, which can be "system", "assistant, "user", or "function".</param>
 	/// <param name="parts">Parts the message consists of</param>
-	public ChatMessage(ChatMessageRoles role, IEnumerable<ChatMessagePart> parts)
+	public ChatMessage(Code.ChatMessageRoles role, IEnumerable<ChatMessagePart> parts)
     {
         Role = role;
         Parts = parts.ToList();
@@ -64,7 +64,7 @@ public class ChatMessage
 	/// <param name="role">The role of the message, which can be "system", "assistant, "user", or "function".</param>
 	/// <param name="parts">Parts the message consists of</param>
 	/// <param name="id">Unique guid acting as an identifier. If null, assigned automatically.</param>
-	public ChatMessage(ChatMessageRoles role, IEnumerable<ChatMessagePart> parts, Guid? id)
+	public ChatMessage(Code.ChatMessageRoles role, IEnumerable<ChatMessagePart> parts, Guid? id)
     {
         Role = role;
         Parts = parts.ToList();
@@ -77,7 +77,7 @@ public class ChatMessage
 	/// <param name="role">The role of the message, which can be "system", "assistant, "user", or "function".</param>
 	/// <param name="content">The text to send in the message</param>
 	/// <param name="id">Unique guid acting as an identifier. If null, assigned automatically.</param>
-	public ChatMessage(ChatMessageRoles role, string content, Guid? id)
+	public ChatMessage(Code.ChatMessageRoles role, string content, Guid? id)
     {
         Role = role;
         Content = content;
@@ -89,7 +89,7 @@ public class ChatMessage
     ///		Reasoning models from OpenAI also use "developer" role, which is aliased into "system" in Tornado.
     /// </summary>
     [JsonIgnore]
-    public ChatMessageRoles? Role { get; set; }
+    public Code.ChatMessageRoles? Role { get; set; }
     
     /// <summary>
     ///		The amount of tokens used for this message.

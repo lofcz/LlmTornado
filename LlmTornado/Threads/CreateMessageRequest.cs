@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using LlmTornado.Chat;
 using Newtonsoft.Json;
 
@@ -15,7 +16,7 @@ public sealed class CreateMessageRequest
     /// </summary>
     public CreateMessageRequest()
     {
-        Role = ChatMessageRole.User;
+        Role = ChatMessageRoles.User;
     }
 
     /// <summary>
@@ -23,7 +24,63 @@ public sealed class CreateMessageRequest
     /// </summary>
     public CreateMessageRequest(string messageContent) : this()
     {
-        Content = [new MessageContentTextRequest() {Text = messageContent}];
+        Content = 
+        [
+            new MessageContentTextRequest
+            {
+                Text = messageContent
+            }
+        ];
+    }
+    
+    /// <summary>
+    /// Represents a request to create a message in the context of a chat thread.
+    /// </summary>
+    public CreateMessageRequest(IEnumerable<MessageContentTextRequest> messageContent) : this()
+    {
+        Content = messageContent.ToList();
+    }
+    
+    /// <summary>
+    /// Represents a request to create a message in the context of a chat thread.
+    /// </summary>
+    public CreateMessageRequest(List<MessageContentTextRequest> messageContent) : this()
+    {
+        Content = messageContent.ToList();
+    }
+    
+    /// <summary>
+    /// Represents a request to create a message in the context of a chat thread.
+    /// </summary>
+    public CreateMessageRequest(string messageContent, ChatMessageRoles role)
+    {
+        Content = 
+        [
+            new MessageContentTextRequest
+            {
+                Text = messageContent
+            }
+        ];
+
+        Role = role;
+    }
+    
+    /// <summary>
+    /// Represents a request to create a message in the context of a chat thread.
+    /// </summary>
+    public CreateMessageRequest(IEnumerable<MessageContentTextRequest> messageContent, ChatMessageRoles role)
+    {
+        Content = messageContent.ToList();
+        Role = role;
+    }
+    
+    /// <summary>
+    /// Represents a request to create a message in the context of a chat thread.
+    /// </summary>
+    public CreateMessageRequest(List<MessageContentTextRequest> messageContent, ChatMessageRoles role)
+    {
+        Content = messageContent.ToList();
+        Role = role;
     }
 
     /// <summary>
@@ -33,8 +90,8 @@ public sealed class CreateMessageRequest
     ///     Currently only user and assistant is supported.
     /// </remarks>
     [JsonProperty("role")]
-    [JsonConverter(typeof(ChatMessageRole.ChatMessageRoleJsonConverter))]
-    public ChatMessageRole Role { get; set; }
+    [JsonConverter(typeof(ChatMessageRoles.ChatMessageRoleJsonConverter))]
+    public ChatMessageRoles Role { get; set; }
 
     /// <summary>
     ///     The content of the message.

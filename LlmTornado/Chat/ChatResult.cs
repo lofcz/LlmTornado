@@ -50,7 +50,7 @@ public class ChatResult : ApiResultBase
 	/// <summary>
 	///     A convenience method to return the content of the message in the first choice of this response
 	/// </summary>
-	/// <returns>The content of the message, not including <see cref="ChatMessageRole" />.</returns>
+	/// <returns>The content of the message, not including <see cref="ChatMessageRoles" />.</returns>
 	public override string? ToString()
     {
         return Choices is { Count: > 0 } ? Choices[0].ToString() : null;
@@ -103,7 +103,7 @@ public class ChatChoice
 	/// <summary>
 	///     A convenience method to return the content of the message in this response
 	/// </summary>
-	/// <returns>The content of the message in this response, not including <see cref="ChatMessageRole" />.</returns>
+	/// <returns>The content of the message in this response, not including <see cref="ChatMessageRoles" />.</returns>
 	public override string? ToString()
     {
         return Message?.Content;

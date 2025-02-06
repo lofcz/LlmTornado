@@ -36,7 +36,7 @@ public class ChatStreamEventHandler
     /// <summary>
     ///     Called when the first event arrives from the Provider. This can be used to inform the end-user early in the process about the kind of response the model selected.
     /// </summary>
-    public Func<ChatMessageRoles, ValueTask>? MessageTypeResolvedHandler { get; set; }
+    public Func<Code.ChatMessageRoles, ValueTask>? MessageTypeResolvedHandler { get; set; }
     
     /// <summary>
     ///     Called once, before the streaming request is established. Use this to mutate the request if necessary. 

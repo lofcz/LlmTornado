@@ -36,7 +36,7 @@ public static class ThreadsDemo
     {
         generatedThread ??= await CreateThread();
         HttpCallResult<Thread>? response = await Program.Connect().Threads.ModifyThreadAsync(generatedThread.Id,
-            new ModifyThreadRequest()
+            new ModifyThreadRequest
             {
                 Metadata = new Dictionary<string, string>
                 {
@@ -108,9 +108,9 @@ public static class ThreadsDemo
         generatedMessage ??= await CreateMessage();
 
         HttpCallResult<Message> response = await Program.Connect().Threads.ModifyMessageAsync(generatedThread.Id,
-            generatedMessage.Id, new ModifyMessageRequest()
+            generatedMessage.Id, new ModifyMessageRequest
             {
-                Metadata = new Dictionary<string, string>()
+                Metadata = new Dictionary<string, string>
                 {
                     {"key1", "value1"},
                     {"key2", "value2"}
@@ -133,8 +133,7 @@ public static class ThreadsDemo
         Console.WriteLine(response.Response);
         return response.Data;
     }
-
-    [TornadoTest]
+    
     public static async Task<TornadoRun> CreateRun(Assistant? assistant = null, string? assistantInstruction = null)
     {
         generatedMessage ??= await CreateMessage();
@@ -201,9 +200,9 @@ public static class ThreadsDemo
 
         HttpCallResult<TornadoRun> response = await Program.Connect().Threads.ModifyRunAsync(generatedThread!.Id,
             generatedTornadoRun!.Id,
-            new ModifyRunRequest()
+            new ModifyRunRequest
             {
-                Metadata = new Dictionary<string, string>()
+                Metadata = new Dictionary<string, string>
                 {
                     {"key1", "value1"},
                     {"key2", "value2"}

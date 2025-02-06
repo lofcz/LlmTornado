@@ -4,6 +4,7 @@ using LlmTornado.Code;
 using LlmTornado.Code.Models;
 using LlmTornado.Images;
 using LlmTornado.Models;
+using ChatMessageRoles = LlmTornado.Code.ChatMessageRoles;
 
 namespace LlmTornado.Demo;
 

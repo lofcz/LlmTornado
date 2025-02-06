@@ -19,7 +19,7 @@ public abstract class MessageContent
     /// Type of the message content.
     /// </summary>
     [JsonProperty(PropertyName = "type")]
-    public MessageContentType Type { get; set; }
+    public MessageContentTypes Type { get; set; }
 }
 
 /// <summary>
@@ -28,7 +28,7 @@ public abstract class MessageContent
 /// Used to identify and manage the content type in a consistent manner.
 /// </summary>
 [JsonConverter(typeof(StringEnumConverter))]
-public enum MessageContentType
+public enum MessageContentTypes
 {
     /// <summary>
     /// Represents a text-based content type for a message in the messaging system.
@@ -56,8 +56,9 @@ public enum MessageContentType
     /// Used to denote messages that indicate a refusal or denial within the context of the chat thread.
     /// </summary>
     [EnumMember(Value = "refusal")]
-    Refusal,
+    Refusal
 }
+
 /// <summary>
 /// Represents a text-based message content type within the messaging system.
 /// </summary>
@@ -66,7 +67,7 @@ public sealed class MessageContentTextResponse : MessageContent
     /// <inheritdoc />
     internal MessageContentTextResponse()
     {
-        Type = MessageContentType.Text;
+        Type = MessageContentTypes.Text;
     }
 
     /// <summary>
@@ -85,7 +86,7 @@ public sealed class MessageContentTextRequest : MessageContent
     /// <inheritdoc />
     public MessageContentTextRequest()
     {
-        Type = MessageContentType.Text;
+        Type = MessageContentTypes.Text;
     }
 
     /// <summary>
@@ -103,7 +104,7 @@ public sealed class MessageContentImageFile : MessageContent
     /// <inheritdoc />
     public MessageContentImageFile()
     {
-        Type = MessageContentType.ImageFile;
+        Type = MessageContentTypes.ImageFile;
     }
     
     
@@ -122,7 +123,7 @@ public sealed class MessageContentImageUrl : MessageContent
     /// <inheritdoc />
     public MessageContentImageUrl()
     {
-        Type = MessageContentType.ImageUrl;
+        Type = MessageContentTypes.ImageUrl;
     }
 
     /// <summary>
@@ -139,7 +140,7 @@ public sealed class MessageContentRefusal : MessageContent
     /// <inheritdoc />
     public MessageContentRefusal()
     {
-        Type = MessageContentType.Refusal;
+        Type = MessageContentTypes.Refusal;
     }
     
     /// <summary>

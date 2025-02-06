@@ -61,8 +61,8 @@ public sealed class Message : ApiResultBase
     ///     The entity that produced the message. One of user or assistant.
     /// </summary>
     [JsonProperty("role")]
-    [JsonConverter(typeof(ChatMessageRole.ChatMessageRoleJsonConverter))]
-    public ChatMessageRole Role { get; private set; } = null!;
+    [JsonConverter(typeof(ChatMessageRoles.ChatMessageRoleJsonConverter))]
+    public ChatMessageRoles Role { get; private set; } = null!;
 
     /// <summary>
     ///     The content of the message in array of text and/or images.

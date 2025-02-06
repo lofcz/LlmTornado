@@ -40,7 +40,7 @@ public static class AssistantsDemo
                 "FileSearch Demo Assistant",
                 "You are a helpful assistant with the ability to call functions.")
             {
-                Tools = new List<AssistantTool>()
+                Tools = new List<AssistantTool>
                 {
                     new AssistantToolFunction(new ToolFunctionConfig(
                         "get_weather",
@@ -79,15 +79,15 @@ public static class AssistantsDemo
                 "FileSearch Demo Assistant",
                 "You are a helpful assistant with the ability to search files.")
             {
-                Tools = new List<AssistantTool>()
+                Tools = new List<AssistantTool>
                 {
                     new AssistantToolFileSearch()
                 },
-                ToolResources = new ToolResources()
+                ToolResources = new ToolResources
                 {
-                    FileSearch = new FileSearchConfig()
+                    FileSearch = new FileSearchConfig
                     {
-                        FileSearchFileIds = new List<string>() {vectorStoreFile.VectorStoreId}
+                        FileSearchFileIds = new List<string> {vectorStoreFile.VectorStoreId}
                     }
                 }
             });
@@ -108,15 +108,15 @@ public static class AssistantsDemo
                 "Code Interpreter Demo Assistant",
                 "You are a helpful assistant with code interpretation capabilities.")
             {
-                Tools = new List<AssistantTool>()
+                Tools = new List<AssistantTool>
                 {
                     AssistantToolCodeInterpreter.Inst
                 },
-                ToolResources = new ToolResources()
+                ToolResources = new ToolResources
                 {
-                    CodeInterpreter = new CodeInterpreterConfig()
+                    CodeInterpreter = new CodeInterpreterConfig
                     {
-                        CodeInterpreterFileIds = new List<string>() {vectorStoreFile.Id}
+                        CodeInterpreterFileIds = new List<string> {vectorStoreFile.Id}
                     }
                 }
             });

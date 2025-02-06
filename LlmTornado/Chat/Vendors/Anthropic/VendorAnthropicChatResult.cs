@@ -95,7 +95,7 @@ internal class VendorAnthropicChatResult : VendorChatResult
         {
             if (contentBlock.Type == VendorAnthropicChatMessageTypes.ToolUse)
             {
-                toolsMsg ??= new ChatMessage(ChatMessageRoles.Tool)
+                toolsMsg ??= new ChatMessage(Code.ChatMessageRoles.Tool)
                 {
                     ToolCalls = []
                 };
@@ -104,7 +104,7 @@ internal class VendorAnthropicChatResult : VendorChatResult
             }
             else
             {
-                ChatMessage textBlockMsg = new ChatMessage(ChatMessageRoles.Assistant, contentBlock.Text ?? string.Empty);
+                ChatMessage textBlockMsg = new ChatMessage(Code.ChatMessageRoles.Assistant, contentBlock.Text ?? string.Empty);
                 
                 result.Choices.Add(new ChatChoice
                 {
