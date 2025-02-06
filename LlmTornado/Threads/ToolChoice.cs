@@ -1,6 +1,5 @@
 using System;
 using System.Runtime.Serialization;
-using LlmTornado.Common;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
@@ -11,7 +10,6 @@ namespace LlmTornado.Threads;
 /// Serves as the base class for defining various tool selection behaviors
 /// in the execution context of a thread.
 /// </summary>
-[JsonConverter(typeof(ToolChoiceConverter))]
 public class ToolChoice
 {
     /// <summary>
@@ -135,11 +133,7 @@ internal class ToolChoiceConverter : JsonConverter<ToolChoice>
             case JsonToken.StartObject:
             {
                 JObject jsonObject = JObject.Load(reader);
-                string? typeToken = jsonObject["type"]?.ToString();
-                if (!Enum.TryParse(typeToken, true, out ToolChoiceType toolType))
-                {
-                    return null;
-                }
+                ToolChoiceType? toolType = jsonObject["type"]?.ToObject<ToolChoiceType>();
 
                 return toolType switch
                 {
@@ -150,9 +144,8 @@ internal class ToolChoiceConverter : JsonConverter<ToolChoice>
             }
             case JsonToken.String:
             {
-                return !Enum.TryParse(typeof(ToolChoiceType), reader.Value?.ToString(), true, out object? toolType)
-                    ? null
-                    : new ToolChoice((ToolChoiceType) toolType);
+                ToolChoiceType? toolType = JsonConvert.DeserializeObject<ToolChoiceType>($"\"{reader.Value}\"");
+                return toolType is null ? null : new ToolChoice(toolType.Value);
             }
             default:
                 return null;

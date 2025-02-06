@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Text.Json.Serialization;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Threads;
@@ -16,5 +15,6 @@ public sealed class SubmitToolOutputs
     ///     A list of the relevant tool calls. (for now, only a function type is supported)
     /// </summary>
     [JsonProperty("tool_calls")]
+    [JsonConverter(typeof(ToolCallListConverter))]
     public required IReadOnlyList<ToolCall> ToolCalls { get; set; }
 }

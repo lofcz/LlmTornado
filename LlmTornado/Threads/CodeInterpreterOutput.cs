@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using LlmTornado.Common;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -12,7 +13,6 @@ namespace LlmTornado.Threads;
 /// This class serves as a foundation for derived types, encapsulating shared properties
 /// and behaviors for various code interpreter output formats.
 /// </remarks>
-[JsonConverter(typeof(CodeInterpreterOutputTypeConverter))]
 public abstract class CodeInterpreterOutput
 {
     /// <summary>
@@ -46,32 +46,37 @@ public sealed class CodeInterpreterOutputImage : CodeInterpreterOutput
     public ImageFile Image { get; set; } = null!;
 }
 
-internal class CodeInterpreterOutputTypeConverter : JsonConverter<CodeInterpreterOutput>
+internal class CodeInterpreterOutputListConverter : JsonConverter<IReadOnlyList<CodeInterpreterOutput>>
 {
-    public override void WriteJson(JsonWriter writer, CodeInterpreterOutput? value, JsonSerializer serializer)
+    public override void WriteJson(JsonWriter writer, IReadOnlyList<CodeInterpreterOutput>? value, JsonSerializer serializer)
     {
-        JObject jsonObject = JObject.FromObject(value!, serializer);
-        jsonObject.WriteTo(writer);
+        serializer.Serialize(writer, value);
     }
 
-    public override CodeInterpreterOutput? ReadJson(JsonReader reader, Type objectType,
-        CodeInterpreterOutput? existingValue,
-        bool hasExistingValue, JsonSerializer serializer)
+    public override IReadOnlyList<CodeInterpreterOutput>? ReadJson(JsonReader reader, Type objectType,
+        IReadOnlyList<CodeInterpreterOutput>? existingValue, bool hasExistingValue, JsonSerializer serializer)
     {
-        JObject jsonObject = JObject.Load(reader);
-        string? typeToken = jsonObject["type"]?.ToString();
-        if (!Enum.TryParse(typeToken, true, out CodeInterpreterOutputTypes codeInterpreterOutputType))
+        JArray jsonArray = JArray.Load(reader);
+        
+        var outputList = new List<CodeInterpreterOutput>();
+        foreach (var jsonToken in jsonArray)
         {
-            return null;
+            var jsonObject = (JObject)jsonToken;
+            var outputType = jsonObject["type"]?.ToObject<CodeInterpreterOutputTypes>();
+
+            CodeInterpreterOutput? output = outputType switch
+            {
+                CodeInterpreterOutputTypes.Image => jsonObject.ToObject<CodeInterpreterOutputImage>(serializer),
+                CodeInterpreterOutputTypes.Logs => jsonObject.ToObject<CodeInterpreterOutputLogs>(serializer),
+                _ => null
+            };
+
+            if (output is not null)
+            {
+                outputList.Add(output);
+            }
         }
 
-        return codeInterpreterOutputType switch
-        {
-            CodeInterpreterOutputTypes.Image => jsonObject
-                .ToObject<CodeInterpreterOutputImage>(serializer)!,
-            CodeInterpreterOutputTypes.Logs => jsonObject
-                .ToObject<CodeInterpreterOutputLogs>(serializer)!,
-            _ => null
-        };
+        return outputList;
     }
 }

@@ -37,8 +37,8 @@ public static class AssistantsDemo
             new CreateAssistantRequest(
                 null,
                 GenerateName(),
-                "FileSearch Demo Assistant",
-                "You are a helpful assistant with the ability to call functions.")
+                "Function Demo Assistant",
+                "You are a helpful assistant with the ability to call functions related to weather")
             {
                 Tools = new List<AssistantTool>
                 {

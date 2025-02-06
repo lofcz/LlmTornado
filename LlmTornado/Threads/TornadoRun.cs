@@ -209,6 +209,7 @@ public sealed class TornadoRun : ApiResultBase
     ///     forces the model to call that tool.
     /// </summary>
     [JsonProperty("tool_choice")]
+    [JsonConverter(typeof(ToolChoiceConverter))]
     public ToolChoice ToolChoice { get; set; } = null!;
 
     /// <summary>

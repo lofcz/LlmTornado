@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.Serialization;
 using LlmTornado.Assistants;
 using LlmTornado.Common;
@@ -13,7 +14,6 @@ namespace LlmTornado.Threads;
 /// Represents a tool call, describing the tool, its type, and specific details
 /// relevant to its execution within a workflow or process.
 /// </summary>
-[JsonConverter(typeof(ToolCallConverter))]
 public abstract class ToolCall
 {
     /// <summary>
@@ -70,10 +70,24 @@ public sealed class FileSearchToolCall : ToolCall
     public FileSearchToolCallData? FileSearch { get; set; }
 }
 
+/// <summary>
+/// Represents the data structure for file search tool call inputs and outputs,
+/// including ranking options and a collection of search results.
+/// </summary>
 public class FileSearchToolCallData
 {
+    /// <summary>
+    /// Specifies ranking options for file search operations, including the ranker type and minimum score threshold.
+    /// Controls how search results are ranked based on predefined criteria.
+    /// </summary>
     [JsonProperty("ranking_options")]
     public RankingOptions RankingOptions { get; set; } = null!;
+
+    /// <summary>
+    /// The collection of results returned by a file search tool call.
+    /// Each result includes metadata and content details of the matched files.
+    /// </summary>
+    [JsonProperty("results")]
     public IReadOnlyList<FileSearchToolCallResult> Results { get; set; } = null!;
 }
 
@@ -107,9 +121,8 @@ public class FileSearchToolCallResult
     /// <summary>
     /// The content of the result that was found. The content is only included if requested via the include query parameter.
     ///</summary>
-    [JsonProperty( "content" )]
+    [JsonProperty("content")]
     public IReadOnlyCollection<FileSearchToolCallContent> Contents { get; set; } = null!;
-    
 }
 
 /// <summary>
@@ -158,33 +171,42 @@ public enum ToolCallType
     FileSearchToolCall
 }
 
-internal class ToolCallConverter : JsonConverter<ToolCall>
+internal class ToolCallListConverter : JsonConverter<IReadOnlyList<ToolCall>>
 {
-    public override void WriteJson(JsonWriter writer, ToolCall? value, JsonSerializer serializer)
+    public override void WriteJson(JsonWriter writer, IReadOnlyList<ToolCall>? value, JsonSerializer serializer)
     {
-        JObject jsonObject = JObject.FromObject(value!, serializer);
-        jsonObject.WriteTo(writer);
+        serializer.Serialize(writer, value);
     }
 
-    public override ToolCall? ReadJson(JsonReader reader, Type objectType, ToolCall? existingValue,
-        bool hasExistingValue, JsonSerializer serializer)
+    public override IReadOnlyList<ToolCall>? ReadJson(
+        JsonReader reader,
+        Type objectType,
+        IReadOnlyList<ToolCall>? existingValue,
+        bool hasExistingValue,
+        JsonSerializer serializer)
     {
-        JObject jsonObject = JObject.Load(reader);
-        string? typeToken = jsonObject["type"]?.ToString();
-        if (!Enum.TryParse(typeToken, true, out ToolCallType toolCallType))
+        var array = JArray.Load(reader);
+        var items = new List<ToolCall>();
+
+        foreach (var token in array)
         {
-            return null;
+            var jsonObject = (JObject)token;
+            var toolCallType = jsonObject["type"]?.ToObject<ToolCallType>();
+
+            ToolCall? toolCall = toolCallType switch
+            {
+                ToolCallType.FunctionToolCall => jsonObject.ToObject<FunctionToolCall>(serializer),
+                ToolCallType.CodeInterpreterToolCall => jsonObject.ToObject<CodeInterpreterToolCall>(serializer),
+                ToolCallType.FileSearchToolCall => jsonObject.ToObject<FileSearchToolCall>(serializer),
+                _ => null
+            };
+
+            if (toolCall != null)
+            {
+                items.Add(toolCall);
+            }
         }
 
-        return toolCallType switch
-        {
-            ToolCallType.FunctionToolCall => jsonObject
-                .ToObject<FunctionToolCall>(serializer)!,
-            ToolCallType.CodeInterpreterToolCall => jsonObject
-                .ToObject<CodeInterpreterToolCall>(serializer)!,
-            ToolCallType.FileSearchToolCall => jsonObject
-                .ToObject<FileSearchToolCall>(serializer)!,
-            _ => null
-        };
+        return items.AsReadOnly();
     }
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.Serialization;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -10,7 +11,6 @@ namespace LlmTornado.Threads
     /// Base class representing an annotation in a message with information about
     /// the text to be replaced and the position where it occurs.
     /// </summary>
-    [JsonConverter(typeof(MessageAnnotationConverter))]
     public abstract class MessageAnnotation
     {
         /// <summary>
@@ -132,33 +132,46 @@ namespace LlmTornado.Threads
         public string FileId { get; set; } = null!;
     }
 
-    internal class MessageAnnotationConverter : JsonConverter<MessageAnnotation>
+    internal class MessageAnnotationListConverter : JsonConverter<IReadOnlyList<MessageAnnotation>>
     {
-        public override void WriteJson(JsonWriter writer, MessageAnnotation? value, JsonSerializer serializer)
-        {
-            JObject jsonObject = JObject.FromObject(value!, serializer);
-            jsonObject.WriteTo(writer);
-        }
-
-        public override MessageAnnotation? ReadJson(JsonReader reader, Type objectType,
-            MessageAnnotation? existingValue, bool hasExistingValue,
+        public override void WriteJson(JsonWriter writer, IReadOnlyList<MessageAnnotation>? value,
             JsonSerializer serializer)
         {
-            JObject jsonObject = JObject.Load(reader);
-            string? typeToken = jsonObject["type"]?.ToString();
-            if (!Enum.TryParse(typeToken, true, out MessageAnnotationType messageAnnotationType))
+            serializer.Serialize(writer, value);
+        }
+
+        public override IReadOnlyList<MessageAnnotation>? ReadJson(JsonReader reader, Type objectType,
+            IReadOnlyList<MessageAnnotation>? existingValue, bool hasExistingValue,
+            JsonSerializer serializer)
+        {
+            if (reader.TokenType == JsonToken.Null)
             {
                 return null;
             }
 
-            return messageAnnotationType switch
+            JArray array = JArray.Load(reader);
+            var messageAnnotations = new List<MessageAnnotation>();
+
+            foreach (var token in array)
             {
-                MessageAnnotationType.FileCitation => jsonObject
-                    .ToObject<MessageAnnotationFileCitation>(serializer)!,
-                MessageAnnotationType.FilePath => jsonObject
-                    .ToObject<MessageAnnotationFilePath>(serializer)!,
-                _ => null
-            };
+                JObject jsonObject = (JObject)token;
+                MessageAnnotationType? messageAnnotationType = jsonObject["type"]?.ToObject<MessageAnnotationType>();
+
+                MessageAnnotation? messageAnnotation = messageAnnotationType switch
+                {
+                    MessageAnnotationType.FileCitation =>
+                        jsonObject.ToObject<MessageAnnotationFileCitation>(serializer)!,
+                    MessageAnnotationType.FilePath => jsonObject.ToObject<MessageAnnotationFilePath>(serializer)!,
+                    _ => null
+                };
+
+                if (messageAnnotation != null)
+                {
+                    messageAnnotations.Add(messageAnnotation);
+                }
+            }
+
+            return messageAnnotations;
         }
     }
 }

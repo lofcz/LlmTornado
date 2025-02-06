@@ -25,5 +25,6 @@ public sealed class CodeInterpreter
     ///     Each of these are represented by a different object type.
     /// </summary>
     [JsonProperty("outputs")]
+    [JsonConverter(typeof(CodeInterpreterOutputListConverter))]
     public IReadOnlyList<CodeInterpreterOutput> Outputs { get; set; } = null!;
 }

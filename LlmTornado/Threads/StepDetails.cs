@@ -9,7 +9,6 @@ namespace LlmTornado.Threads;
 /// <summary>
 ///     The details of the run step.
 /// </summary>
-[JsonConverter(typeof(StepDetailsConverter))]
 public abstract class StepDetails
 {
     /// <summary>
@@ -38,33 +37,12 @@ public class ToolCallsStepDetails : StepDetails
 {
     /// <summary>
     ///     An array of tool calls the run step was involved in.
-    ///     These can be associated with one of three types of tools: 'code_interpreter', 'retrieval', or 'function'.
-    /// </summary>
-    [JsonProperty("tool_calls")]
-    public ToolCalls ToolCalls { get; set; } = null!;
-}
-
-/// <summary>
-/// Represents a collection of tool call details used in a process or workflow,
-/// including the type of the tool calls and their associated data.
-/// </summary>
-public class ToolCalls
-{
-    /// <summary>
-    ///     Always tool_calls.
-    /// </summary>
-    [JsonProperty("type")]
-    public string Type { get; set; } = null!;
-    
-    
-    /// <summary>
-    ///     An array of tool calls the run step was involved in.
     ///     These can be associated with one of three types of tools: code_interpreter, file_search, or function.
     /// </summary>
     [JsonProperty("tool_calls")]
+    [JsonConverter(typeof(ToolCallListConverter))]
     public IReadOnlyList<ToolCall> ToolCallItems { get; set; } = null!;
 }
-
 
 /// <summary>
 /// Specifies types of step details within a process or workflow.
@@ -100,11 +78,7 @@ internal class StepDetailsConverter : JsonConverter<StepDetails>
         bool hasExistingValue, JsonSerializer serializer)
     {
         JObject jsonObject = JObject.Load(reader);
-        string? typeToken = jsonObject["type"]?.ToString();
-        if (!Enum.TryParse(typeToken, true, out StepDetailsType stepDetailsType))
-        {
-            return null;
-        }
+        StepDetailsType? stepDetailsType = jsonObject["type"]?.ToObject<StepDetailsType>();
 
         return stepDetailsType switch
         {

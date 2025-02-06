@@ -52,6 +52,7 @@ public sealed class TornadoRunStep : ApiResultBase
     ///     The details of the run step.
     /// </summary>
     [JsonProperty("step_details")]
+    [JsonConverter(typeof(StepDetailsConverter))]
     public StepDetails StepDetails { get; set; } = null!;
 
     /// <summary>

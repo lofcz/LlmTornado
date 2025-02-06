@@ -19,5 +19,6 @@ public class MessageContentTextData
     /// or context about specific segments of the text.
     /// </summary>
     [JsonProperty("annotations")]
+    [JsonConverter(typeof(MessageAnnotationListConverter))]
     public IReadOnlyList<MessageAnnotation>? Annotations { get; set; }
 }

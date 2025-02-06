@@ -25,7 +25,8 @@ public static class ThreadsDemo
     public static async Task<TornadoThread> RetrieveThread()
     {
         generatedThread ??= await CreateThread();
-        HttpCallResult<TornadoThread> response = await Program.Connect().Threads.RetrieveThreadAsync(generatedThread!.Id);
+        HttpCallResult<TornadoThread> response =
+            await Program.Connect().Threads.RetrieveThreadAsync(generatedThread!.Id);
         Console.WriteLine(response.Response);
         return response.Data!;
     }
@@ -39,8 +40,8 @@ public static class ThreadsDemo
             {
                 Metadata = new Dictionary<string, string>
                 {
-                    {"key1", "value1"},
-                    {"key2", "value2"}
+                    { "key1", "value1" },
+                    { "key2", "value2" }
                 }
             });
         Console.WriteLine(response.Response);
@@ -111,8 +112,8 @@ public static class ThreadsDemo
             {
                 Metadata = new Dictionary<string, string>
                 {
-                    {"key1", "value1"},
-                    {"key2", "value2"}
+                    { "key1", "value1" },
+                    { "key2", "value2" }
                 }
             });
 
@@ -132,7 +133,7 @@ public static class ThreadsDemo
         Console.WriteLine(response.Response);
         return response.Data;
     }
-    
+
     public static async Task<TornadoRun> CreateRun(Assistant? assistant = null, string? assistantInstruction = null)
     {
         generatedMessage ??= await CreateMessage();
@@ -142,7 +143,8 @@ public static class ThreadsDemo
             new CreateRunRequest(assistant!.Id)
             {
                 Model = ChatModel.OpenAi.Gpt4.O241120,
-                Instructions = assistantInstruction ?? "You are a helpful assistant with the ability to create names of magic spells."
+                Instructions = assistantInstruction ??
+                               "You are a helpful assistant with the ability to create names of magic spells."
             });
         Console.WriteLine(response.Response);
         generatedTornadoRun = response.Data!;
@@ -203,8 +205,8 @@ public static class ThreadsDemo
             {
                 Metadata = new Dictionary<string, string>
                 {
-                    {"key1", "value1"},
-                    {"key2", "value2"}
+                    { "key1", "value1" },
+                    { "key2", "value2" }
                 }
             });
         Console.WriteLine(response.Response);
@@ -242,5 +244,41 @@ public static class ThreadsDemo
         generatedTornadoRun = await CreateRun(assistant, "You are assistant that analyzes files in a brief way");
         TornadoRun completedRun = await RetrieveRunAndPollForCompletion();
         return completedRun;
+    }
+
+    [TornadoTest]
+    public static async Task<TornadoRun> RunFunctionAssistant()
+    {
+        Assistant assistant = await AssistantsDemo.CreateFunctionAssistant();
+        generatedThread = await CreateThread();
+        generatedMessage =
+            await CreateMessage(generatedThread.Id, "What's the weather in Prague?");
+        generatedTornadoRun = await CreateRun(assistant);
+
+        TornadoRun requiredActionRun = null;
+        while (true)
+        {
+            HttpCallResult<TornadoRun> response = await Program.Connect().Threads
+                .RetrieveRunAsync(generatedThread!.Id, generatedTornadoRun!.Id);
+            if (response.Data!.Status == RunStatus.RequiresAction)
+            {
+                Console.WriteLine(response.Response);
+                requiredActionRun = response.Data;
+                break;
+            }
+
+            await Task.Delay(TimeSpan.FromSeconds(1));
+        }
+
+        await Program.Connect().Threads.SubmitToolOutput(generatedThread!.Id, generatedTornadoRun!.Id,
+            new SubmitToolOutputsRequest(
+                new ToolOutput
+                {
+                    ToolCallId = requiredActionRun.RequiredAction!.SubmitToolOutputs.ToolCalls[0].Id,
+                    Output = new Random().Next(-20, 40).ToString() // random temperature
+                }));
+
+        await RetrieveRunAndPollForCompletion();
+        return generatedTornadoRun;
     }
 }
