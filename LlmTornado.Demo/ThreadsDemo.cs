@@ -323,6 +323,7 @@ public static class ThreadsDemo
         });
     }
 
+    [TornadoTest]
     public static async Task StreamFunctionAssistant()
     {
         Assistant assistant = await AssistantsDemo.CreateFunctionAssistant();
