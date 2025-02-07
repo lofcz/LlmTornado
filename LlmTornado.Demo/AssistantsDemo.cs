@@ -59,6 +59,24 @@ public static class AssistantsDemo
                             required = new List<string> {"location"},
                             additionalProperties = false
                         }
+                    )),
+                    new AssistantToolFunction(new ToolFunctionConfig(
+                        "get_humidity",
+                        "Get current humidity for a given city",
+                        new
+                        {
+                            type = "object",
+                            properties = new
+                            {
+                                location = new
+                                {
+                                    type = "string",
+                                    description = "City and Country"
+                                }
+                            },
+                            required = new List<string> {"location"},
+                            additionalProperties = false
+                        }
                     ))
                 }
             });

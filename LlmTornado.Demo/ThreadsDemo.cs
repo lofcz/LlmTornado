@@ -40,8 +40,8 @@ public static class ThreadsDemo
             {
                 Metadata = new Dictionary<string, string>
                 {
-                    { "key1", "value1" },
-                    { "key2", "value2" }
+                    {"key1", "value1"},
+                    {"key2", "value2"}
                 }
             });
         Console.WriteLine(response.Response);
@@ -112,8 +112,8 @@ public static class ThreadsDemo
             {
                 Metadata = new Dictionary<string, string>
                 {
-                    { "key1", "value1" },
-                    { "key2", "value2" }
+                    {"key1", "value1"},
+                    {"key2", "value2"}
                 }
             });
 
@@ -205,8 +205,8 @@ public static class ThreadsDemo
             {
                 Metadata = new Dictionary<string, string>
                 {
-                    { "key1", "value1" },
-                    { "key2", "value2" }
+                    {"key1", "value1"},
+                    {"key2", "value2"}
                 }
             });
         Console.WriteLine(response.Response);
@@ -252,7 +252,7 @@ public static class ThreadsDemo
         Assistant assistant = await AssistantsDemo.CreateFunctionAssistant();
         generatedThread = await CreateThread();
         generatedMessage =
-            await CreateMessage(generatedThread.Id, "What's the weather in Prague?");
+            await CreateMessage(generatedThread.Id, "What's the weather and humidity in Prague?");
         generatedTornadoRun = await CreateRun(assistant);
 
         TornadoRun requiredActionRun = null;
@@ -270,15 +270,34 @@ public static class ThreadsDemo
             await Task.Delay(TimeSpan.FromSeconds(1));
         }
 
-        await Program.Connect().Threads.SubmitToolOutput(generatedThread!.Id, generatedTornadoRun!.Id,
-            new SubmitToolOutputsRequest(
-                new ToolOutput
-                {
-                    ToolCallId = requiredActionRun.RequiredAction!.SubmitToolOutputs.ToolCalls[0].Id,
-                    Output = new Random().Next(-20, 40).ToString() // random temperature
-                }));
+        // parse the ToolCall to FunctionToolCall
+        List<FunctionToolCall> functionCallsWithParameters = requiredActionRun!.RequiredAction!.SubmitToolOutputs.ToolCalls.Where(x => x.Type == ToolCallType.FunctionToolCall).Cast<FunctionToolCall>().ToList();
+        List<ToolOutput> toolOutputs = new List<ToolOutput>();
+        foreach (FunctionToolCall functionCall in functionCallsWithParameters)
+        {
+            switch (functionCall.FunctionCall.Name)
+            {
+                case "get_weather":
+                    toolOutputs.Add(new ToolOutput
+                    {
+                        ToolCallId = functionCall.Id,
+                        Output = new Random().Next(-10, 30).ToString()
+                    });
+                    break;
+                case "get_humidity":
+                    toolOutputs.Add(new ToolOutput
+                    {
+                        ToolCallId = functionCall.Id,
+                        Output = new Random().Next(0, 100).ToString()
+                    });
+                    break;
+            }
+        }
+
+        await Program.Connect().Threads.SubmitToolOutput(generatedThread!.Id, generatedTornadoRun!.Id, new SubmitToolOutputsRequest(toolOutputs));
 
         await RetrieveRunAndPollForCompletion();
         return generatedTornadoRun;
     }
 }
+
