@@ -138,17 +138,19 @@ public class FilesEndpoint : EndpointBase
 	/// <param name="fileName">Determined from path if not set</param>
 	/// <param name="mimeType">MIME type of the file</param>
 	/// <param name="provider">Which provider will be used</param>
-	public async Task<HttpCallResult<TornadoFile>> Upload(string filePath, FilePurpose purpose = FilePurpose.Finetune, string? fileName = null, string? mimeType = null, LLmProviders provider = LLmProviders.OpenAi)
+	public async Task<HttpCallResult<TornadoFile>> Upload(string filePath, FilePurpose purpose = FilePurpose.Finetune, string? fileName = null, string? mimeType = null, LLmProviders? provider = null)
     {
+	    IEndpointProvider resolvedProvider = Api.ResolveProvider(provider);
+	    
 	    if (!File.Exists(filePath))
 	    {
 		    return new HttpCallResult<TornadoFile>(HttpStatusCode.UnprocessableEntity, null, null, false, new RestDataOrException<HttpResponseData>(new Exception($"File {filePath} not found")));
 	    }
 
 	    byte[] bytes = await File.ReadAllBytesAsync(filePath).ConfigureAwait(ConfigureAwaitOptions.None);
-	    string finalFileName = fileName ?? (provider is LLmProviders.Google ? Guid.NewGuid().ToString() : Path.GetFileName(filePath)); // google requires alphanum + dashes, up to 40 chars
+	    string finalFileName = fileName ?? (resolvedProvider.Provider is LLmProviders.Google ? Guid.NewGuid().ToString() : Path.GetFileName(filePath)); // google requires alphanum + dashes, up to 40 chars
 
-        return await Upload(bytes, finalFileName, purpose, mimeType, provider).ConfigureAwait(ConfigureAwaitOptions.None);
+        return await Upload(bytes, finalFileName, purpose, mimeType, resolvedProvider.Provider).ConfigureAwait(ConfigureAwaitOptions.None);
     }
 	
 	/// <summary>
