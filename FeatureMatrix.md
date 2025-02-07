@@ -7,19 +7,19 @@ _Empty field means the feature is unsupported by the provider._
 
 ## Inference
 
-|               | OpenAI | Anthropic | Google | Cohere | DeepSeek | Groq | xAI | Custom* |
-|-------|-----------|-----------|-----------| -----------| -----------| -----------| -----------| -----------|
-|**Audio**      | ✅ |    |     |     |   |     |     |     |
-|**Chat**       | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ❌ |  ✅ |
-|**Embeddings** | ✅ |    | ❌  | ❌ |    |    | ❌  |    |
-|**Fine-Tuning**| ✅ |    | ❌  |    |    |    |      |    |
-|**Batch**      | ❌ | ❌ | ❌ | ❌ |    | ❌ |     |    |
-|**Files**      | ✅ |    | ✅ |     |    |     |     |    |
-|**Uploads**    | ❌ |    |     |    |    |     |     |    |
-|**Images**     | ✅ |    | ❌ |    |    |     |     |    |
-|**Models**     | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
-|**Moderation** | ✅ |    |     |    |    |     |     |    |
-|**Tokenize**   |    | ❌ |     | ❌ |    |     |     |    |
+|               | OpenAI | Anthropic | Google | Cohere | DeepSeek | Groq | Mistral | xAI | Custom* |
+|-------|-----------|-----------|-----------| -----------| -----------| -----------| -----------| -----------| -----------|
+|**Audio**      | ✅ |    |     |     |   |     |     |     |     |
+|**Chat**       | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ❌ |  ❌ | ✅ |
+|**Embeddings** | ✅ |    | ❌  | ❌ |    |    | ❌ | ❌ |     |
+|**Fine-Tuning**| ✅ |    | ❌  |    |    |    | ❌  |    |     |
+|**Batch**      | ❌ | ❌ | ❌ | ❌ |    | ❌ | ❌ |    |     |
+|**Files**      | ✅ |    | ✅ |     |    |     | ❌ |    |     |
+|**Uploads**    | ❌ |    |     |    |    |     |     |    |     |
+|**Images**     | ✅ |    | ❌ |    |    |     |     |     |     |
+|**Models**     | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |  ❌ |  ✅ |
+|**Moderation** | ✅ |    |     |    |    |     |     |    |     |
+|**Tokenize**   |    | ❌ |     | ❌ |    |     |     |    |     |
 
 _*Custom means any OpenAI compatible provider, such as Azure OpenAI, Ollama, KoboldCpp, etc._
 
@@ -45,6 +45,12 @@ _*Other providers expose caching as part of `/chat`, or don't offer the feature.
 | ❌ | ❌ |  ❌ | ❌ | ❌ | ❌
 
 _*`/v1` APIs, future support is unsure and probably won't be implemented._
+
+## Mistral Specific
+
+ FIM | Agents | Classifiers |
+|-----------|------------ | ------------ |
+| ❌ | ❌ |  ❌ |
 
 ## Misc
 
