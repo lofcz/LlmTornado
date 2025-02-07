@@ -314,7 +314,9 @@ public static class ThreadsDemo
                 {
                     if (content is MessageContentTextResponse text)
                     {
+                        Console.ForegroundColor = ConsoleColor.Cyan;
                         Console.Write(text.MessageContentTextData?.Value);
+                        Console.ResetColor();
                     }
                 }
 
@@ -343,7 +345,9 @@ public static class ThreadsDemo
                 {
                     if (content is MessageContentTextResponse text)
                     {
+                        Console.ForegroundColor = ConsoleColor.Cyan;
                         Console.Write(text.MessageContentTextData?.Value);
+                        Console.ResetColor();
                     }
                 }
 
@@ -356,7 +360,10 @@ public static class ThreadsDemo
                     List<FunctionToolCall> functionCallsWithParameters = run!.RequiredAction!.SubmitToolOutputs.ToolCalls.Where(x => x.Type == ToolCallType.FunctionToolCall).Cast<FunctionToolCall>().ToList();
                     foreach (FunctionToolCall functionCall in functionCallsWithParameters)
                     {
+
+                        Console.ForegroundColor = ConsoleColor.Green;
                         Console.WriteLine($"Calling function {functionCall.FunctionCall.Name} with arguments: {functionCall.FunctionCall.Arguments}");
+                        Console.ResetColor();
                         switch (functionCall.FunctionCall.Name)
                         {
                             case "get_weather":
@@ -390,7 +397,9 @@ public static class ThreadsDemo
                     {
                         if (content is MessageContentTextResponse text)
                         {
+                            Console.ForegroundColor = ConsoleColor.Cyan;
                             Console.Write(text.MessageContentTextData?.Value);
+                            Console.ResetColor();
                         }
                     }
                 }
@@ -407,7 +416,35 @@ public static class ThreadsDemo
                 {
                     if (content is MessageContentTextResponse text)
                     {
+                        Console.ForegroundColor = ConsoleColor.Cyan;
                         Console.Write(text.MessageContentTextData?.Value);
+                        Console.ResetColor();
+                    }
+                }
+
+                return ValueTask.CompletedTask;
+            })
+        });
+    }
+
+    [TornadoTest]
+    public static async Task StreamExtractingInfoFromFile()
+    {
+        Assistant assistant = await AssistantsDemo.CreateFileSearchAssistant();
+        generatedThread = await CreateThread();
+        generatedMessage =
+            await CreateMessage(generatedThread.Id, "Please summarize the file in 3 sentences from the file.");
+        await Program.Connect().Threads.StreamRun(generatedThread!.Id, new CreateRunRequest(assistant!.Id), new RunStreamEventHandler
+        {
+            OnMessageDelta = (delta =>
+            {
+                foreach (MessageContent content in delta.Delta.Content)
+                {
+                    if (content is MessageContentTextResponse text)
+                    {
+                        Console.ForegroundColor = ConsoleColor.Cyan;
+                        Console.Write(text.MessageContentTextData?.Value);
+                        Console.ResetColor();
                     }
                 }
 
