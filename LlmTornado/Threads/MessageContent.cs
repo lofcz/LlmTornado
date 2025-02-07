@@ -75,6 +75,12 @@ public sealed class MessageContentTextResponse : MessageContent
     /// </summary>
     [JsonProperty("text")]
     public MessageContentTextData? MessageContentTextData { get; set; }
+    
+    /// <summary>
+    /// Only when part of delta object
+    /// </summary>
+    [JsonProperty("index")]
+    public int? Index { get; set; }
 }
 
 /// <summary>
@@ -113,6 +119,12 @@ public sealed class MessageContentImageFile : MessageContent
     /// </summary>
     [JsonProperty("image_file")]
     public ImageFile? ImageFile { get; set; }
+    
+    /// <summary>
+    ///     Text content to be sent to the model
+    /// </summary>
+    [JsonProperty("text")]
+    public string Text { get; set; } = null!;
 }
 
 /// <summary>
@@ -130,6 +142,12 @@ public sealed class MessageContentImageUrl : MessageContent
     ///     Object that represents ImageUrl
     /// </summary>
     public ImageUrl? ImageUrl { get; set; }
+    
+    /// <summary>
+    ///     Text content to be sent to the model
+    /// </summary>
+    [JsonProperty("text")]
+    public string Text { get; set; } = null!;
 }
 
 /// <summary>
@@ -148,6 +166,12 @@ public sealed class MessageContentRefusal : MessageContent
     /// </summary>
     [JsonProperty("refusal")]
     public string? Refusal { get; set; }
+    
+    /// <summary>
+    ///     Text content to be sent to the model
+    /// </summary>
+    [JsonProperty("text")]
+    public string Text { get; set; } = null!;
 }
 
 internal class MessageContentJsonConverter : JsonConverter<IReadOnlyList<MessageContent>>

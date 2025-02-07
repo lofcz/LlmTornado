@@ -299,5 +299,119 @@ public static class ThreadsDemo
         await RetrieveRunAndPollForCompletion();
         return generatedTornadoRun;
     }
-}
 
+    [TornadoTest]
+    public static async Task StreamRun()
+    {
+        generatedMessage = await CreateMessage();
+        Assistant? assistant = await AssistantsDemo.Create();
+
+        await Program.Connect().Threads.StreamRun(generatedThread!.Id, new CreateRunRequest(assistant!.Id), new RunStreamEventHandler
+        {
+            OnMessageDelta = (delta =>
+            {
+                foreach (MessageContent content in delta.Delta.Content)
+                {
+                    if (content is MessageContentTextResponse text)
+                    {
+                        Console.Write(text.MessageContentTextData?.Value);
+                    }
+                }
+
+                return ValueTask.CompletedTask;
+            })
+        });
+    }
+
+    public static async Task StreamFunctionAssistant()
+    {
+        Assistant assistant = await AssistantsDemo.CreateFunctionAssistant();
+        generatedThread = await CreateThread();
+        generatedMessage =
+            await CreateMessage(generatedThread.Id, "What's the weather and humidity in Prague? On top of that write also what should we do in this kind of weather and what places are best to visit in this weather. Write at least 2 paragraphs");
+
+
+        List<ToolOutput> toolOutputs = new List<ToolOutput>();
+        string runId = "";
+
+        await Program.Connect().Threads.StreamRun(generatedThread!.Id, new CreateRunRequest(assistant!.Id), new RunStreamEventHandler
+        {
+            OnMessageDelta = (delta =>
+            {
+                foreach (MessageContent content in delta.Delta.Content)
+                {
+                    if (content is MessageContentTextResponse text)
+                    {
+                        Console.Write(text.MessageContentTextData?.Value);
+                    }
+                }
+
+                return ValueTask.CompletedTask;
+            }),
+            OnRunStatusChanged = ((run, status) =>
+            {
+                if (status == RunStreamEventTypeStatus.RequiresAction)
+                {
+                    List<FunctionToolCall> functionCallsWithParameters = run!.RequiredAction!.SubmitToolOutputs.ToolCalls.Where(x => x.Type == ToolCallType.FunctionToolCall).Cast<FunctionToolCall>().ToList();
+                    foreach (FunctionToolCall functionCall in functionCallsWithParameters)
+                    {
+                        Console.WriteLine($"Calling function {functionCall.FunctionCall.Name} with arguments: {functionCall.FunctionCall.Arguments}");
+                        switch (functionCall.FunctionCall.Name)
+                        {
+                            case "get_weather":
+                                toolOutputs.Add(new ToolOutput
+                                {
+                                    ToolCallId = functionCall.Id,
+                                    Output = new Random().Next(-10, 30).ToString()
+                                });
+                                break;
+                            case "get_humidity":
+                                toolOutputs.Add(new ToolOutput
+                                {
+                                    ToolCallId = functionCall.Id,
+                                    Output = new Random().Next(0, 100).ToString()
+                                });
+                                break;
+                        }
+                    }
+
+                    runId = run.Id;
+                }
+
+                return ValueTask.CompletedTask;
+            }),
+            OnMessageStatusChanged = ((message, status) =>
+            {
+                if (status == RunStreamEventTypeStatus.Completed)
+                {
+                    Console.WriteLine("Message completed");
+                    foreach (MessageContent content in message.Content)
+                    {
+                        if (content is MessageContentTextResponse text)
+                        {
+                            Console.Write(text.MessageContentTextData?.Value);
+                        }
+                    }
+                }
+
+                return ValueTask.CompletedTask;
+            })
+        });
+
+        await Program.Connect().Threads.StreamSubmitToolOutput(generatedThread!.Id, runId, new SubmitToolOutputsRequest(toolOutputs), new RunStreamEventHandler
+        {
+            OnMessageDelta = (delta =>
+            {
+                foreach (MessageContent content in delta.Delta.Content)
+                {
+                    if (content is MessageContentTextResponse text)
+                    {
+                        Console.Write(text.MessageContentTextData?.Value);
+                    }
+                }
+
+                return ValueTask.CompletedTask;
+            })
+        });
+    }
+}

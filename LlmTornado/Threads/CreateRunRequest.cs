@@ -90,7 +90,7 @@ public sealed class CreateRunRequest
     ///     terminating when the Run enters a terminal state with a data: [DONE] message.
     /// </summary>
     [JsonProperty("stream")]
-    public bool Stream { get; set; }
+    internal bool Stream { get; set; }
 
     /// <summary>
     ///     The maximum number of prompt tokens specified to have been used over the course of the run.

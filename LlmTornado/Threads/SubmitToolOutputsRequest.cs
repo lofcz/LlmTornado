@@ -37,5 +37,5 @@ public sealed class SubmitToolOutputsRequest
     ///     Indicates whether the tool output should be streamed.
     /// </summary>
     [JsonProperty("stream")]
-    public bool Stream { get; set; }
+    internal bool Stream { get; set; }
 }

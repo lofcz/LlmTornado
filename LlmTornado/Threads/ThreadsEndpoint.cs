@@ -1,10 +1,12 @@
+using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using LlmTornado.Code;
+using LlmTornado.Code.Vendor;
 using LlmTornado.Common;
+using Newtonsoft.Json;
 
 namespace LlmTornado.Threads;
 
@@ -174,6 +176,7 @@ public sealed class ThreadsEndpoint : EndpointBase
     public Task<HttpCallResult<TornadoRun>> CreateRunAsync(string threadId, CreateRunRequest request,
         CancellationToken? cancellationToken = null)
     {
+        request.Stream = false;
         return HttpPostRaw<TornadoRun>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads,
             GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/runs"), request, ct: cancellationToken);
     }
@@ -266,7 +269,216 @@ public sealed class ThreadsEndpoint : EndpointBase
     public Task<HttpCallResult<TornadoRun>> SubmitToolOutput(string threadId, string runId, SubmitToolOutputsRequest request,
         CancellationToken cancellationToken = default)
     {
+        request.Stream = false;
         return HttpPostRaw<TornadoRun>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads,
             GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/runs/{runId}/submit_tool_outputs"), request, ct: cancellationToken);
+    }
+
+    public async Task StreamRun(string threadId, CreateRunRequest request, RunStreamEventHandler eventHandler, CancellationToken cancellationToken = default)
+    {
+        request.Stream = true;
+        TornadoStreamRequest tornadoStreamRequest = await HttpStreamingRequestData(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads,
+            GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/runs"), postData: request, verb: HttpMethod.Post, token: cancellationToken);
+
+        if (tornadoStreamRequest.Exception is not null)
+        {
+            if (eventHandler?.HttpExceptionHandler is null)
+            {
+                throw tornadoStreamRequest.Exception;
+            }
+
+            await eventHandler.HttpExceptionHandler(new HttpFailedRequest
+            {
+                Exception = tornadoStreamRequest.Exception,
+                Result = tornadoStreamRequest.CallResponse,
+                Request = tornadoStreamRequest.CallRequest,
+                RawMessage = tornadoStreamRequest.Response ?? new HttpResponseMessage(),
+                Body = null //TODO: unifify this
+            });
+
+            await tornadoStreamRequest.DisposeAsync();
+        }
+
+        if (eventHandler?.OutboundHttpRequestHandler is not null && tornadoStreamRequest.CallRequest is not null)
+        {
+            await eventHandler.OutboundHttpRequestHandler(tornadoStreamRequest.CallRequest);
+        }
+
+
+        OpenAiEndpointProvider provider = (Api.GetProvider(LLmProviders.OpenAi) as OpenAiEndpointProvider)!;
+
+        await foreach (RunStreamEvent runStreamEvent in provider.InboundStream(tornadoStreamRequest.StreamReader!).WithCancellation(cancellationToken))
+        {
+            // Split OpenAi event type. e.g. thread.run.completed => [thread, run, completed]
+            string[] split = runStreamEvent.EventType.Split('.');
+            RunStreamEventTypeObject objectType;
+            RunStreamEventTypeStatus status = RunStreamEventTypeStatus.Unknown;
+
+            // if split.Length == 1, it is either Done, or Error event, Otherwise convert to valid object type and status
+            if (split.Length == 1)
+            {
+                objectType = JsonConvert.DeserializeObject<RunStreamEventTypeObject>($"\"{split[0]}\"");
+            }
+            else
+            {
+                objectType = JsonConvert.DeserializeObject<RunStreamEventTypeObject>($"\"{string.Join('.', split[..^1])}\"");
+                status = JsonConvert.DeserializeObject<RunStreamEventTypeStatus>($"\"{split[^1]}\"");
+            }
+
+            switch (objectType)
+            {
+                case RunStreamEventTypeObject.Thread:
+                    TornadoThread thread = JsonConvert.DeserializeObject<TornadoThread>(runStreamEvent.Data)!;
+                    eventHandler?.OnThreadStatusChanged?.Invoke(thread, status);
+                    break;
+                case RunStreamEventTypeObject.Run:
+                    TornadoRun run = JsonConvert.DeserializeObject<TornadoRun>(runStreamEvent.Data)!;
+                    eventHandler?.OnRunStatusChanged?.Invoke(run, status);
+                    break;
+                case RunStreamEventTypeObject.RunStep:
+                    if (status == RunStreamEventTypeStatus.Delta)
+                    {
+                        RunStepDelta delta = JsonConvert.DeserializeObject<RunStepDelta>(runStreamEvent.Data)!;
+                        eventHandler?.OnRunStepDelta?.Invoke(delta);
+                    }
+                    else
+                    {
+                        TornadoRunStep runStep = JsonConvert.DeserializeObject<TornadoRunStep>(runStreamEvent.Data)!;
+                        eventHandler?.OnRunStepStatusChanged?.Invoke(runStep, status);
+                    }
+
+                    break;
+                case RunStreamEventTypeObject.Message:
+                    if (status == RunStreamEventTypeStatus.Delta)
+                    {
+                        MessageDelta delta = JsonConvert.DeserializeObject<MessageDelta>(runStreamEvent.Data)!;
+                        eventHandler?.OnMessageDelta?.Invoke(delta);
+                    }
+                    else
+                    {
+                        Message message = JsonConvert.DeserializeObject<Message>(runStreamEvent.Data)!;
+                        eventHandler?.OnMessageStatusChanged?.Invoke(message, status);
+                    }
+
+                    break;
+                case RunStreamEventTypeObject.Error:
+                    eventHandler?.OnErrorReceived?.Invoke(runStreamEvent.Data);
+                    break;
+                case RunStreamEventTypeObject.Done:
+                    eventHandler?.OnDone?.Invoke();
+                    break;
+                case RunStreamEventTypeObject.Unknown:
+                default:
+                    eventHandler?.OnUnknownEventReceived?.Invoke(runStreamEvent.EventType, runStreamEvent.Data);
+                    break;
+            }
+        }
+
+        await tornadoStreamRequest.DisposeAsync();
+    }
+    
+    
+    public async Task StreamSubmitToolOutput(string threadId, string runId, SubmitToolOutputsRequest request, RunStreamEventHandler eventHandler,
+        CancellationToken cancellationToken = default)
+    {
+        request.Stream = true;
+        TornadoStreamRequest tornadoStreamRequest = await HttpStreamingRequestData(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads,
+            GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/runs/{runId}/submit_tool_outputs"), postData: request, verb: HttpMethod.Post, token: cancellationToken);
+
+        if (tornadoStreamRequest.Exception is not null)
+        {
+            if (eventHandler?.HttpExceptionHandler is null)
+            {
+                throw tornadoStreamRequest.Exception;
+            }
+
+            await eventHandler.HttpExceptionHandler(new HttpFailedRequest
+            {
+                Exception = tornadoStreamRequest.Exception,
+                Result = tornadoStreamRequest.CallResponse,
+                Request = tornadoStreamRequest.CallRequest,
+                RawMessage = tornadoStreamRequest.Response ?? new HttpResponseMessage(),
+                Body = null //TODO: unifify this
+            });
+
+            await tornadoStreamRequest.DisposeAsync();
+        }
+
+        if (eventHandler?.OutboundHttpRequestHandler is not null && tornadoStreamRequest.CallRequest is not null)
+        {
+            await eventHandler.OutboundHttpRequestHandler(tornadoStreamRequest.CallRequest);
+        }
+
+
+        OpenAiEndpointProvider provider = (Api.GetProvider(LLmProviders.OpenAi) as OpenAiEndpointProvider)!;
+
+        await foreach (RunStreamEvent runStreamEvent in provider.InboundStream(tornadoStreamRequest.StreamReader!).WithCancellation(cancellationToken))
+        {
+            // Split OpenAi event type. e.g. thread.run.completed => [thread, run, completed]
+            string[] split = runStreamEvent.EventType.Split('.');
+            RunStreamEventTypeObject objectType;
+            RunStreamEventTypeStatus status = RunStreamEventTypeStatus.Unknown;
+
+            // if split.Length == 1, it is either Done, or Error event, Otherwise convert to valid object type and status
+            if (split.Length == 1)
+            {
+                objectType = JsonConvert.DeserializeObject<RunStreamEventTypeObject>($"\"{split[0]}\"");
+            }
+            else
+            {
+                objectType = JsonConvert.DeserializeObject<RunStreamEventTypeObject>($"\"{string.Join('.', split[..^1])}\"");
+                status = JsonConvert.DeserializeObject<RunStreamEventTypeStatus>($"\"{split[^1]}\"");
+            }
+            
+            switch (objectType)
+            {
+                case RunStreamEventTypeObject.Thread:
+                    TornadoThread thread = JsonConvert.DeserializeObject<TornadoThread>(runStreamEvent.Data)!;
+                    eventHandler?.OnThreadStatusChanged?.Invoke(thread, status);
+                    break;
+                case RunStreamEventTypeObject.Run:
+                    TornadoRun run = JsonConvert.DeserializeObject<TornadoRun>(runStreamEvent.Data)!;
+                    eventHandler?.OnRunStatusChanged?.Invoke(run, status);
+                    break;
+                case RunStreamEventTypeObject.RunStep:
+                    if (status == RunStreamEventTypeStatus.Delta)
+                    {
+                        RunStepDelta delta = JsonConvert.DeserializeObject<RunStepDelta>(runStreamEvent.Data)!;
+                        eventHandler?.OnRunStepDelta?.Invoke(delta);
+                    }
+                    else
+                    {
+                        TornadoRunStep runStep = JsonConvert.DeserializeObject<TornadoRunStep>(runStreamEvent.Data)!;
+                        eventHandler?.OnRunStepStatusChanged?.Invoke(runStep, status);
+                    }
+
+                    break;
+                case RunStreamEventTypeObject.Message:
+                    if (status == RunStreamEventTypeStatus.Delta)
+                    {
+                        MessageDelta delta = JsonConvert.DeserializeObject<MessageDelta>(runStreamEvent.Data)!;
+                        eventHandler?.OnMessageDelta?.Invoke(delta);
+                    }
+                    else
+                    {
+                        Message message = JsonConvert.DeserializeObject<Message>(runStreamEvent.Data)!;
+                        eventHandler?.OnMessageStatusChanged?.Invoke(message, status);
+                    }
+
+                    break;
+                case RunStreamEventTypeObject.Error:
+                    eventHandler?.OnErrorReceived?.Invoke(runStreamEvent.Data);
+                    break;
+                case RunStreamEventTypeObject.Done:
+                    eventHandler?.OnDone?.Invoke();
+                    break;
+                case RunStreamEventTypeObject.Unknown:
+                default:
+                    eventHandler?.OnUnknownEventReceived?.Invoke(runStreamEvent.EventType, runStreamEvent.Data);
+                    break;
+            }
+        }
+
+        await tornadoStreamRequest.DisposeAsync();
     }
 }
