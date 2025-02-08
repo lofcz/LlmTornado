@@ -9,7 +9,7 @@ namespace LlmTornado.Demo;
 public static class ThreadsDemo
 {
     private static TornadoThread? generatedThread;
-    private static Message? generatedMessage;
+    private static AssistantMessage? generatedMessage;
     private static TornadoRun? generatedTornadoRun;
 
     [TornadoTest]
@@ -60,54 +60,54 @@ public static class ThreadsDemo
     }
 
     [TornadoTest]
-    public static async Task<Message> CreateMessage()
+    public static async Task<AssistantMessage> CreateMessage()
     {
         generatedThread ??= await CreateThread();
-        Message response = await CreateMessage(generatedThread.Id,
+        AssistantMessage response = await CreateMessage(generatedThread.Id,
             "I need to think of a magic spell that turns cows into sheep.");
         generatedMessage = response;
         return response;
     }
 
-    public static async Task<Message> CreateMessage(string threadId, string content)
+    public static async Task<AssistantMessage> CreateMessage(string threadId, string content)
     {
-        HttpCallResult<Message> response = await Program.Connect().Threads.CreateMessageAsync(threadId,
+        HttpCallResult<AssistantMessage> response = await Program.Connect().Threads.CreateMessageAsync(threadId,
             new CreateMessageRequest(content));
         Console.WriteLine(response.Response);
         return response.Data!;
     }
 
     [TornadoTest]
-    public static async Task<Message> RetrieveMessage()
+    public static async Task<AssistantMessage> RetrieveMessage()
     {
         generatedThread ??= await CreateThread();
         generatedMessage ??= await CreateMessage();
 
-        HttpCallResult<Message> response =
+        HttpCallResult<AssistantMessage> response =
             await Program.Connect().Threads.RetrieveMessageAsync(generatedThread.Id, generatedMessage.Id);
         Console.WriteLine(response.Response);
         return response.Data!;
     }
 
     [TornadoTest]
-    public static async Task<IReadOnlyList<Message>> ListMessages()
+    public static async Task<IReadOnlyList<AssistantMessage>> ListMessages()
     {
         generatedThread ??= await CreateThread();
         generatedMessage ??= await CreateMessage();
 
-        HttpCallResult<ListResponse<Message>> response =
+        HttpCallResult<ListResponse<AssistantMessage>> response =
             await Program.Connect().Threads.ListMessagesAsync(generatedThread.Id);
         Console.WriteLine(response.Response);
         return response.Data!.Items;
     }
 
     [TornadoTest]
-    public static async Task<Message> ModifyMessage()
+    public static async Task<AssistantMessage> ModifyMessage()
     {
         generatedThread ??= await CreateThread();
         generatedMessage ??= await CreateMessage();
 
-        HttpCallResult<Message> response = await Program.Connect().Threads.ModifyMessageAsync(generatedThread.Id,
+        HttpCallResult<AssistantMessage> response = await Program.Connect().Threads.ModifyMessageAsync(generatedThread.Id,
             generatedMessage.Id, new ModifyMessageRequest
             {
                 Metadata = new Dictionary<string, string>
@@ -174,10 +174,10 @@ public static class ThreadsDemo
                 .RetrieveRunAsync(generatedThread!.Id, generatedTornadoRun.Id);
             if (response.Data!.Status == RunStatus.Completed)
             {
-                IReadOnlyList<Message> messages = await ListMessages();
+                IReadOnlyList<AssistantMessage> messages = await ListMessages();
                 Console.WriteLine(response.Response);
 
-                foreach (Message message in messages.Reverse())
+                foreach (AssistantMessage message in messages.Reverse())
                 {
                     foreach (MessageContent content in message.Content)
                     {
@@ -229,7 +229,7 @@ public static class ThreadsDemo
     {
         IReadOnlyList<TornadoRunStep> runSteps = await ListRunSteps();
         HttpCallResult<TornadoRunStep> response = await Program.Connect().Threads
-            .RetrieveRunStepAsync(generatedThread!.Id, generatedTornadoRun!.Id, runSteps.FirstOrDefault()!.Id);
+            .RetrieveRunStepAsync(generatedThread!.Id, generatedTornadoRun!.Id, runSteps[0].Id);
         Console.WriteLine(response.Response);
         return response.Data!;
     }
@@ -255,12 +255,14 @@ public static class ThreadsDemo
             await CreateMessage(generatedThread.Id, "What's the weather and humidity in Prague?");
         generatedTornadoRun = await CreateRun(assistant);
 
-        TornadoRun requiredActionRun = null;
+        TornadoRun requiredActionRun;
+        
         while (true)
         {
             HttpCallResult<TornadoRun> response = await Program.Connect().Threads
                 .RetrieveRunAsync(generatedThread.Id, generatedTornadoRun.Id);
-            if (response.Data!.Status == RunStatus.RequiresAction)
+            
+            if (response.Data!.Status is RunStatus.RequiresAction)
             {
                 Console.WriteLine(response.Response);
                 requiredActionRun = response.Data;
@@ -335,7 +337,7 @@ public static class ThreadsDemo
 
 
         List<ToolOutput> toolOutputs = [];
-        string runId = "";
+        string runId = string.Empty;
 
         await Program.Connect().Threads.StreamRun(generatedThread.Id, new CreateRunRequest(assistant.Id), new RunStreamEventHandler
         {

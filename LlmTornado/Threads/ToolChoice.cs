@@ -148,7 +148,9 @@ internal class ToolChoiceConverter : JsonConverter<ToolChoice>
                 return toolType is null ? null : new ToolChoice(toolType.Value);
             }
             default:
+            {
                 return null;
+            }
         }
     }
 

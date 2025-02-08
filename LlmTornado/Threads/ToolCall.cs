@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.Serialization;
-using LlmTornado.Assistants;
 using LlmTornado.Common;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -64,7 +62,7 @@ public sealed class CodeInterpreterToolCall : ToolCall
 public sealed class FileSearchToolCall : ToolCall
 {
     /// <summary>
-    ///     For now, this is always going to be an empty object. TODO: When OpenAI finished implementation, map it here
+    ///     For now, this is always going to be an empty object.
     /// </summary>
     /// 
     public FileSearchToolCallData? FileSearch { get; set; }
@@ -185,13 +183,13 @@ internal class ToolCallListConverter : JsonConverter<IReadOnlyList<ToolCall>>
         bool hasExistingValue,
         JsonSerializer serializer)
     {
-        var array = JArray.Load(reader);
-        var items = new List<ToolCall>();
+        JArray array = JArray.Load(reader);
+        List<ToolCall> items = [];
 
-        foreach (var token in array)
+        foreach (JToken? token in array)
         {
-            var jsonObject = (JObject)token;
-            var toolCallType = jsonObject["type"]?.ToObject<ToolCallType>();
+            JObject jsonObject = (JObject)token;
+            ToolCallType? toolCallType = jsonObject["type"]?.ToObject<ToolCallType>();
 
             ToolCall? toolCall = toolCallType switch
             {
@@ -201,7 +199,7 @@ internal class ToolCallListConverter : JsonConverter<IReadOnlyList<ToolCall>>
                 _ => null
             };
 
-            if (toolCall != null)
+            if (toolCall is not null)
             {
                 items.Add(toolCall);
             }

@@ -4,8 +4,6 @@ using System.Threading.Tasks;
 using LlmTornado.Chat;
 using LlmTornado.Code;
 using LlmTornado.Common;
-using LlmTornado.Files;
-using LlmTornado;
 
 namespace LlmTornado.Assistants;
 
@@ -19,6 +17,9 @@ public sealed class AssistantsEndpoint : EndpointBase
     {
     }
 
+    /// <summary>
+    /// Assistants endpoint.
+    /// </summary>
     protected override CapabilityEndpoints Endpoint =>  CapabilityEndpoints.Assistants;
     
     /// <summary>
@@ -78,6 +79,6 @@ public sealed class AssistantsEndpoint : EndpointBase
     public async Task<HttpCallResult<bool>> DeleteAssistantAsync(string assistantId, CancellationToken? cancellationToken = null)
     {
         HttpCallResult<DeletionStatus> status = await HttpAtomic<DeletionStatus>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Assistants, HttpMethod.Delete, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{assistantId}"), ct: cancellationToken).ConfigureAwait(ConfigureAwaitOptions.None);
-        return new HttpCallResult<bool>(status.Code, status.Response, status.Data?.Deleted ?? false, status.Ok, null);
+        return new HttpCallResult<bool>(status.Code, status.Response, status.Data?.Deleted ?? false, status.Ok, status.Request);
     }
 }

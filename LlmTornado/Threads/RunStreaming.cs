@@ -32,7 +32,7 @@ public class RunStreamEventHandler
     public Func<TornadoThread, RunStreamEventTypeStatus, ValueTask>? OnThreadStatusChanged { get; set; }
     public Func<TornadoRun, RunStreamEventTypeStatus, ValueTask>? OnRunStatusChanged { get; set; }
     public Func<TornadoRunStep, RunStreamEventTypeStatus, ValueTask>? OnRunStepStatusChanged { get; set; }
-    public Func<Message, RunStreamEventTypeStatus, ValueTask>? OnMessageStatusChanged { get; set; }
+    public Func<AssistantMessage, RunStreamEventTypeStatus, ValueTask>? OnMessageStatusChanged { get; set; }
     public Func<MessageDelta, ValueTask>? OnMessageDelta { get; set; }
     public Func<RunStepDelta, ValueTask>? OnRunStepDelta { get; set; }
     public Func<string, object, ValueTask>? OnUnknownEventReceived { get; set; }

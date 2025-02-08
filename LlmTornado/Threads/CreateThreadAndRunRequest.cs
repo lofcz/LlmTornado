@@ -39,7 +39,7 @@ public sealed class CreateThreadAndRunRequest
     /// <param name="createThreadRequest">
     ///     Optional, <see cref="CreateThreadRequest" />.
     /// </param>
-    public CreateThreadAndRunRequest(string assistantId, ChatModel model = null, string instructions = null, IReadOnlyList<Tool> tools = null, IReadOnlyDictionary<string, string> metadata = null, CreateThreadRequest createThreadRequest = null)
+    public CreateThreadAndRunRequest(string assistantId, ChatModel? model = null, string? instructions = null, IReadOnlyList<Tool>? tools = null, IReadOnlyDictionary<string, string>? metadata = null, CreateThreadRequest? createThreadRequest = null)
     {
         AssistantId = assistantId;
         Model = model;
@@ -85,5 +85,6 @@ public sealed class CreateThreadAndRunRequest
     [JsonProperty("metadata")]
     public IReadOnlyDictionary<string, string> Metadata { get; }
 
-    [JsonProperty("thread")] public CreateThreadRequest ThreadRequest { get; }
+    [JsonProperty("thread")]
+    public CreateThreadRequest ThreadRequest { get; }
 }

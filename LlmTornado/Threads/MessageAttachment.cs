@@ -33,7 +33,8 @@ public abstract class MessageTool
     /// <summary>
     ///     Type of message tool
     /// </summary>
-    [JsonProperty("type")] public string Type { get; set; } = null!;
+    [JsonProperty("type")]
+    public string Type { get; set; } = null!;
 }
 
 /// <summary>
@@ -88,7 +89,11 @@ internal sealed class MessageToolConverter : JsonConverter<MessageTool>
             _ => null
         };
 
-        serializer.Populate(jsonObject.CreateReader(), tool);
+        if (tool is not null)
+        {
+            serializer.Populate(jsonObject.CreateReader(), tool);    
+        }
+        
         return tool;
     }
 }

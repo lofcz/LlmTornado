@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using LlmTornado.Assistants;
 using LlmTornado.Common;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 
 namespace LlmTornado.Threads;
 

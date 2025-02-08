@@ -1691,7 +1691,7 @@ public static class ChatDemo
                 {
                     type = "string",
                     description = "Title/headline of the entry"
-                },
+                }
             },
             required = new List<string> { "content", "title" }
         }), true);

@@ -91,11 +91,11 @@ public sealed class ThreadsEndpoint : EndpointBase
     /// <param name="threadId">The id of the thread to create a message for.</param>
     /// <param name="request"></param>
     /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
-    /// <returns><see cref="Message"/>.</returns>
-    public Task<HttpCallResult<Message>> CreateMessageAsync(string threadId, CreateMessageRequest request,
+    /// <returns><see cref="AssistantMessage"/>.</returns>
+    public Task<HttpCallResult<AssistantMessage>> CreateMessageAsync(string threadId, CreateMessageRequest request,
         CancellationToken? cancellationToken = null)
     {
-        return HttpPostRaw<Message>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads,
+        return HttpPostRaw<AssistantMessage>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads,
             GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/messages"), request, ct: cancellationToken);
     }
 
@@ -106,10 +106,10 @@ public sealed class ThreadsEndpoint : EndpointBase
     /// <param name="query"><see cref="ListQuery"/>.</param>
     /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
     /// <returns><see cref="ListResponse{Message}"/>.</returns>
-    public Task<HttpCallResult<ListResponse<Message>>> ListMessagesAsync(string threadId, ListQuery? query = null,
+    public Task<HttpCallResult<ListResponse<AssistantMessage>>> ListMessagesAsync(string threadId, ListQuery? query = null,
         CancellationToken cancellationToken = default)
     {
-        return HttpGetRaw<ListResponse<Message>>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads,
+        return HttpGetRaw<ListResponse<AssistantMessage>>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads,
             GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/messages"),
             query?.ToQueryParams(LLmProviders.OpenAi), cancellationToken);
     }
@@ -120,11 +120,11 @@ public sealed class ThreadsEndpoint : EndpointBase
     /// <param name="threadId">The id of the thread to which this message belongs.</param>
     /// <param name="messageId">The id of the message to retrieve.</param>
     /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
-    /// <returns><see cref="Message"/>.</returns>
-    public Task<HttpCallResult<Message>> RetrieveMessageAsync(string threadId, string messageId,
+    /// <returns><see cref="AssistantMessage"/>.</returns>
+    public Task<HttpCallResult<AssistantMessage>> RetrieveMessageAsync(string threadId, string messageId,
         CancellationToken cancellationToken = default)
     {
-        return HttpGetRaw<Message>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads,
+        return HttpGetRaw<AssistantMessage>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads,
             GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/messages/{messageId}"), ct: cancellationToken);
     }
 
@@ -132,17 +132,17 @@ public sealed class ThreadsEndpoint : EndpointBase
     /// Modifies a message.
     /// </summary>
     /// <remarks>
-    /// Only the <see cref="Message.Metadata"/> can be modified.
+    /// Only the <see cref="AssistantMessage.Metadata"/> can be modified.
     /// </remarks>
     /// <param name="threadId"></param>
     /// <param name="messageId"></param>
     /// <param name="request"></param>
     /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/>.</param>
-    /// <returns><see cref="Message"/>.</returns>
-    public Task<HttpCallResult<Message>> ModifyMessageAsync(string threadId, string messageId,
+    /// <returns><see cref="AssistantMessage"/>.</returns>
+    public Task<HttpCallResult<AssistantMessage>> ModifyMessageAsync(string threadId, string messageId,
         ModifyMessageRequest request, CancellationToken cancellationToken = default)
     {
-        return HttpPostRaw<Message>(Api.GetProvider(LLmProviders.OpenAi), Endpoint,
+        return HttpPostRaw<AssistantMessage>(Api.GetProvider(LLmProviders.OpenAi), Endpoint,
             GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/messages/{messageId}"), request,
             ct: cancellationToken);
     }
@@ -433,7 +433,7 @@ public sealed class ThreadsEndpoint : EndpointBase
                     }
                     else
                     {
-                        Message? message = JsonConvert.DeserializeObject<Message>(runStreamEvent.Data);
+                        AssistantMessage? message = JsonConvert.DeserializeObject<AssistantMessage>(runStreamEvent.Data);
 
                         if (message is not null && eventHandler.OnMessageStatusChanged is not null)
                         {

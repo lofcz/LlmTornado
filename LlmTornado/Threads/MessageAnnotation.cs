@@ -144,15 +144,15 @@ namespace LlmTornado.Threads
             IReadOnlyList<MessageAnnotation>? existingValue, bool hasExistingValue,
             JsonSerializer serializer)
         {
-            if (reader.TokenType == JsonToken.Null)
+            if (reader.TokenType is JsonToken.Null)
             {
                 return null;
             }
 
             JArray array = JArray.Load(reader);
-            var messageAnnotations = new List<MessageAnnotation>();
+            List<MessageAnnotation>? messageAnnotations = [];
 
-            foreach (var token in array)
+            foreach (JToken? token in array)
             {
                 JObject jsonObject = (JObject)token;
                 MessageAnnotationType? messageAnnotationType = jsonObject["type"]?.ToObject<MessageAnnotationType>();
@@ -165,7 +165,7 @@ namespace LlmTornado.Threads
                     _ => null
                 };
 
-                if (messageAnnotation != null)
+                if (messageAnnotation is not null)
                 {
                     messageAnnotations.Add(messageAnnotation);
                 }

@@ -63,7 +63,7 @@ public enum StepDetailsType
     /// Corresponds to the "tool_calls" step type.
     /// </summary>
     [EnumMember(Value = "tool_calls" )]
-    ToolCalls,
+    ToolCalls
 }
 internal class StepDetailsConverter : JsonConverter<StepDetails>
 {
@@ -82,10 +82,8 @@ internal class StepDetailsConverter : JsonConverter<StepDetails>
 
         return stepDetailsType switch
         {
-            StepDetailsType.MessageCreation => jsonObject
-                .ToObject<MessageCreationStepDetails>(serializer)!,
-            StepDetailsType.ToolCalls => jsonObject
-                .ToObject<ToolCallsStepDetails>(serializer)!,
+            StepDetailsType.MessageCreation => jsonObject.ToObject<MessageCreationStepDetails>(serializer)!,
+            StepDetailsType.ToolCalls => jsonObject.ToObject<ToolCallsStepDetails>(serializer)!,
             _ => null
         };
     }

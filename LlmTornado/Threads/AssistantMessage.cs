@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using LlmTornado.Chat;
 using LlmTornado.Code;
 using Newtonsoft.Json;
 
@@ -10,7 +9,7 @@ namespace LlmTornado.Threads;
 ///     Messages can include text, images, and other files.
 ///     Messages stored as a list on the Thread.
 /// </summary>
-public sealed class Message : ApiResultBase
+public sealed class AssistantMessage : ApiResultBase
 {
     /// <summary>
     ///     The identifier, which can be referenced in API endpoints.

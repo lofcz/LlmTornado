@@ -53,16 +53,16 @@ internal class CodeInterpreterOutputListConverter : JsonConverter<IReadOnlyList<
         serializer.Serialize(writer, value);
     }
 
-    public override IReadOnlyList<CodeInterpreterOutput>? ReadJson(JsonReader reader, Type objectType,
-        IReadOnlyList<CodeInterpreterOutput>? existingValue, bool hasExistingValue, JsonSerializer serializer)
+    public override IReadOnlyList<CodeInterpreterOutput> ReadJson(JsonReader reader, Type objectType, IReadOnlyList<CodeInterpreterOutput>? existingValue, bool hasExistingValue, JsonSerializer serializer)
     {
         JArray jsonArray = JArray.Load(reader);
         
-        var outputList = new List<CodeInterpreterOutput>();
-        foreach (var jsonToken in jsonArray)
+        List<CodeInterpreterOutput> outputList = [];
+        
+        foreach (JToken jsonToken in jsonArray)
         {
-            var jsonObject = (JObject)jsonToken;
-            var outputType = jsonObject["type"]?.ToObject<CodeInterpreterOutputTypes>();
+            JObject jsonObject = (JObject)jsonToken;
+            CodeInterpreterOutputTypes? outputType = jsonObject["type"]?.ToObject<CodeInterpreterOutputTypes>();
 
             CodeInterpreterOutput? output = outputType switch
             {
