@@ -317,7 +317,7 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider,
     {
         await foreach (SseItem<string> item in SseParser.Create(reader.BaseStream).EnumerateAsync())
         {
-            yield return new RunStreamEvent()
+            yield return new RunStreamEvent
             {
                 Data = item.Data,
                 EventType = item.EventType

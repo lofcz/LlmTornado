@@ -26,7 +26,7 @@ public static class ThreadsDemo
     {
         generatedThread ??= await CreateThread();
         HttpCallResult<TornadoThread> response =
-            await Program.Connect().Threads.RetrieveThreadAsync(generatedThread!.Id);
+            await Program.Connect().Threads.RetrieveThreadAsync(generatedThread.Id);
         Console.WriteLine(response.Response);
         return response.Data!;
     }
@@ -158,7 +158,7 @@ public static class ThreadsDemo
         generatedTornadoRun ??= await CreateRun();
 
         HttpCallResult<TornadoRun> response =
-            await Program.Connect().Threads.RetrieveRunAsync(generatedThread!.Id, generatedTornadoRun!.Id);
+            await Program.Connect().Threads.RetrieveRunAsync(generatedThread!.Id, generatedTornadoRun.Id);
         Console.WriteLine(response.Response);
         return response.Data!;
     }
@@ -171,7 +171,7 @@ public static class ThreadsDemo
         while (true)
         {
             HttpCallResult<TornadoRun> response = await Program.Connect().Threads
-                .RetrieveRunAsync(generatedThread!.Id, generatedTornadoRun!.Id);
+                .RetrieveRunAsync(generatedThread!.Id, generatedTornadoRun.Id);
             if (response.Data!.Status == RunStatus.Completed)
             {
                 IReadOnlyList<Message> messages = await ListMessages();
@@ -200,7 +200,7 @@ public static class ThreadsDemo
         generatedTornadoRun ??= await CreateRun();
 
         HttpCallResult<TornadoRun> response = await Program.Connect().Threads.ModifyRunAsync(generatedThread!.Id,
-            generatedTornadoRun!.Id,
+            generatedTornadoRun.Id,
             new ModifyRunRequest
             {
                 Metadata = new Dictionary<string, string>
@@ -219,7 +219,7 @@ public static class ThreadsDemo
     {
         generatedTornadoRun ??= await RetrieveRunAndPollForCompletion();
         HttpCallResult<ListResponse<TornadoRunStep>> response =
-            await Program.Connect().Threads.ListRunStepsAsync(generatedThread!.Id, generatedTornadoRun!.Id);
+            await Program.Connect().Threads.ListRunStepsAsync(generatedThread!.Id, generatedTornadoRun.Id);
         Console.WriteLine(response.Response);
         return response.Data!.Items;
     }
@@ -259,7 +259,7 @@ public static class ThreadsDemo
         while (true)
         {
             HttpCallResult<TornadoRun> response = await Program.Connect().Threads
-                .RetrieveRunAsync(generatedThread!.Id, generatedTornadoRun!.Id);
+                .RetrieveRunAsync(generatedThread.Id, generatedTornadoRun.Id);
             if (response.Data!.Status == RunStatus.RequiresAction)
             {
                 Console.WriteLine(response.Response);
@@ -272,7 +272,7 @@ public static class ThreadsDemo
 
         // parse the ToolCall to FunctionToolCall
         List<FunctionToolCall> functionCallsWithParameters = requiredActionRun!.RequiredAction!.SubmitToolOutputs.ToolCalls.Where(x => x.Type == ToolCallType.FunctionToolCall).Cast<FunctionToolCall>().ToList();
-        List<ToolOutput> toolOutputs = new List<ToolOutput>();
+        List<ToolOutput> toolOutputs = [];
         foreach (FunctionToolCall functionCall in functionCallsWithParameters)
         {
             switch (functionCall.FunctionCall.Name)
@@ -294,7 +294,7 @@ public static class ThreadsDemo
             }
         }
 
-        await Program.Connect().Threads.SubmitToolOutput(generatedThread!.Id, generatedTornadoRun!.Id, new SubmitToolOutputsRequest(toolOutputs));
+        await Program.Connect().Threads.SubmitToolOutput(generatedThread.Id, generatedTornadoRun.Id, new SubmitToolOutputsRequest(toolOutputs));
 
         await RetrieveRunAndPollForCompletion();
         return generatedTornadoRun;
@@ -308,7 +308,7 @@ public static class ThreadsDemo
 
         await Program.Connect().Threads.StreamRun(generatedThread!.Id, new CreateRunRequest(assistant!.Id), new RunStreamEventHandler
         {
-            OnMessageDelta = (delta =>
+            OnMessageDelta = delta =>
             {
                 foreach (MessageContent content in delta.Delta.Content)
                 {
@@ -321,7 +321,7 @@ public static class ThreadsDemo
                 }
 
                 return ValueTask.CompletedTask;
-            })
+            }
         });
     }
 
@@ -334,12 +334,12 @@ public static class ThreadsDemo
             await CreateMessage(generatedThread.Id, "What's the weather and humidity in Prague? On top of that write also what should we do in this kind of weather and what places are best to visit in this weather. Write at least 2 paragraphs");
 
 
-        List<ToolOutput> toolOutputs = new List<ToolOutput>();
+        List<ToolOutput> toolOutputs = [];
         string runId = "";
 
-        await Program.Connect().Threads.StreamRun(generatedThread!.Id, new CreateRunRequest(assistant!.Id), new RunStreamEventHandler
+        await Program.Connect().Threads.StreamRun(generatedThread.Id, new CreateRunRequest(assistant.Id), new RunStreamEventHandler
         {
-            OnMessageDelta = (delta =>
+            OnMessageDelta = delta =>
             {
                 foreach (MessageContent content in delta.Delta.Content)
                 {
@@ -352,12 +352,12 @@ public static class ThreadsDemo
                 }
 
                 return ValueTask.CompletedTask;
-            }),
-            OnRunStatusChanged = ((run, status) =>
+            },
+            OnRunStatusChanged = (run, status) =>
             {
-                if (status == RunStreamEventTypeStatus.RequiresAction)
+                if (status is RunStreamEventTypeStatus.RequiresAction)
                 {
-                    List<FunctionToolCall> functionCallsWithParameters = run!.RequiredAction!.SubmitToolOutputs.ToolCalls.Where(x => x.Type == ToolCallType.FunctionToolCall).Cast<FunctionToolCall>().ToList();
+                    List<FunctionToolCall> functionCallsWithParameters = run.RequiredAction!.SubmitToolOutputs.ToolCalls.Where(x => x.Type == ToolCallType.FunctionToolCall).Cast<FunctionToolCall>().ToList();
                     foreach (FunctionToolCall functionCall in functionCallsWithParameters)
                     {
 
@@ -387,10 +387,10 @@ public static class ThreadsDemo
                 }
 
                 return ValueTask.CompletedTask;
-            }),
-            OnMessageStatusChanged = ((message, status) =>
+            },
+            OnMessageStatusChanged = (message, status) =>
             {
-                if (status == RunStreamEventTypeStatus.Completed)
+                if (status is RunStreamEventTypeStatus.Completed)
                 {
                     Console.WriteLine("Message completed");
                     foreach (MessageContent content in message.Content)
@@ -405,12 +405,12 @@ public static class ThreadsDemo
                 }
 
                 return ValueTask.CompletedTask;
-            })
+            }
         });
 
-        await Program.Connect().Threads.StreamSubmitToolOutput(generatedThread!.Id, runId, new SubmitToolOutputsRequest(toolOutputs), new RunStreamEventHandler
+        await Program.Connect().Threads.StreamSubmitToolOutput(generatedThread.Id, runId, new SubmitToolOutputsRequest(toolOutputs), new RunStreamEventHandler
         {
-            OnMessageDelta = (delta =>
+            OnMessageDelta = delta =>
             {
                 foreach (MessageContent content in delta.Delta.Content)
                 {
@@ -423,7 +423,7 @@ public static class ThreadsDemo
                 }
 
                 return ValueTask.CompletedTask;
-            })
+            }
         });
     }
 
@@ -434,9 +434,9 @@ public static class ThreadsDemo
         generatedThread = await CreateThread();
         generatedMessage =
             await CreateMessage(generatedThread.Id, "Please summarize the file in 3 sentences from the file.");
-        await Program.Connect().Threads.StreamRun(generatedThread!.Id, new CreateRunRequest(assistant!.Id), new RunStreamEventHandler
+        await Program.Connect().Threads.StreamRun(generatedThread.Id, new CreateRunRequest(assistant.Id), new RunStreamEventHandler
         {
-            OnMessageDelta = (delta =>
+            OnMessageDelta = delta =>
             {
                 foreach (MessageContent content in delta.Delta.Content)
                 {
@@ -449,7 +449,12 @@ public static class ThreadsDemo
                 }
 
                 return ValueTask.CompletedTask;
-            })
+            },
+            OnFinished = () =>
+            {
+                Console.WriteLine();
+                return ValueTask.CompletedTask;
+            }
         });
     }
 }

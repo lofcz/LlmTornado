@@ -113,7 +113,6 @@ public sealed class MessageContentImageFile : MessageContent
         Type = MessageContentTypes.ImageFile;
     }
     
-    
     /// <summary>
     ///     Object that represents ImageFile
     /// </summary>

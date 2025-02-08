@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Frozen;
+using System.Collections.Generic;
 using System.Runtime.Serialization;
 using System.Threading.Tasks;
 using LlmTornado.Code;
@@ -6,10 +8,9 @@ using LlmTornado.Common;
 
 namespace LlmTornado.Threads;
 
-public class RunStreaming
-{
-}
-
+/// <summary>
+/// See: https://platform.openai.com/docs/api-reference/assistants-streaming/events
+/// </summary>
 internal class RunStreamEvent
 {
     public string EventType { get; set; } = null!;
@@ -36,7 +37,48 @@ public class RunStreamEventHandler
     public Func<RunStepDelta, ValueTask>? OnRunStepDelta { get; set; }
     public Func<string, object, ValueTask>? OnUnknownEventReceived { get; set; }
     public Func<string, ValueTask>? OnErrorReceived { get; set; }
-    public Func<ValueTask>? OnDone { get; set; }
+    public Func<ValueTask>? OnFinished { get; set; }
+}
+
+internal record OpenAiAssistantStreamEvent(RunStreamEventTypeObject ObjectType, RunStreamEventTypeStatus Status)
+{
+    public RunStreamEventTypeObject ObjectType { get; } = ObjectType;
+    public RunStreamEventTypeStatus Status { get; } = Status;
+}
+
+internal static class RunStreamEventTypeObjectCls
+{
+    /// <summary>
+    /// See: https://platform.openai.com/docs/api-reference/assistants-streaming/events#assistants-streaming/events-thread-created
+    /// </summary>
+    public static readonly FrozenDictionary<string, OpenAiAssistantStreamEvent> EventsMap = new Dictionary<string, OpenAiAssistantStreamEvent>
+    {
+        { "thread.created", new OpenAiAssistantStreamEvent(RunStreamEventTypeObject.Thread, RunStreamEventTypeStatus.Created) },
+        { "thread.run.created", new OpenAiAssistantStreamEvent(RunStreamEventTypeObject.Run, RunStreamEventTypeStatus.Created) },
+        { "thread.run.queued", new OpenAiAssistantStreamEvent(RunStreamEventTypeObject.Run, RunStreamEventTypeStatus.Queued) },
+        { "thread.run.in_progress", new OpenAiAssistantStreamEvent(RunStreamEventTypeObject.Run, RunStreamEventTypeStatus.InProgress) },
+        { "thread.run.requires_action", new OpenAiAssistantStreamEvent(RunStreamEventTypeObject.Run, RunStreamEventTypeStatus.RequiresAction) },
+        { "thread.run.completed", new OpenAiAssistantStreamEvent(RunStreamEventTypeObject.Run, RunStreamEventTypeStatus.Completed) },
+        { "thread.run.incomplete", new OpenAiAssistantStreamEvent(RunStreamEventTypeObject.Run, RunStreamEventTypeStatus.Incomplete) },
+        { "thread.run.failed", new OpenAiAssistantStreamEvent(RunStreamEventTypeObject.Run, RunStreamEventTypeStatus.Failed) },
+        { "thread.run.cancelling", new OpenAiAssistantStreamEvent(RunStreamEventTypeObject.Run, RunStreamEventTypeStatus.Cancelling) },
+        { "thread.run.cancelled", new OpenAiAssistantStreamEvent(RunStreamEventTypeObject.Run, RunStreamEventTypeStatus.Cancelled) },
+        { "thread.run.expired", new OpenAiAssistantStreamEvent(RunStreamEventTypeObject.Run, RunStreamEventTypeStatus.Expired) },
+        { "thread.run.step.created", new OpenAiAssistantStreamEvent(RunStreamEventTypeObject.RunStep, RunStreamEventTypeStatus.Created) },
+        { "thread.run.step.in_progress", new OpenAiAssistantStreamEvent(RunStreamEventTypeObject.RunStep, RunStreamEventTypeStatus.InProgress) },
+        { "thread.run.step.delta", new OpenAiAssistantStreamEvent(RunStreamEventTypeObject.RunStep, RunStreamEventTypeStatus.Delta) },
+        { "thread.run.step.completed", new OpenAiAssistantStreamEvent(RunStreamEventTypeObject.Thread, RunStreamEventTypeStatus.Completed) },
+        { "thread.run.step.failed", new OpenAiAssistantStreamEvent(RunStreamEventTypeObject.RunStep, RunStreamEventTypeStatus.Failed) },
+        { "thread.run.step.cancelled", new OpenAiAssistantStreamEvent(RunStreamEventTypeObject.RunStep, RunStreamEventTypeStatus.Cancelling) },
+        { "thread.run.step.expired", new OpenAiAssistantStreamEvent(RunStreamEventTypeObject.RunStep, RunStreamEventTypeStatus.Expired) },
+        { "thread.message.created", new OpenAiAssistantStreamEvent(RunStreamEventTypeObject.Message, RunStreamEventTypeStatus.Created) },
+        { "thread.message.in_progress", new OpenAiAssistantStreamEvent(RunStreamEventTypeObject.Message, RunStreamEventTypeStatus.InProgress) },
+        { "thread.message.delta", new OpenAiAssistantStreamEvent(RunStreamEventTypeObject.Message, RunStreamEventTypeStatus.Delta) },
+        { "thread.message.completed", new OpenAiAssistantStreamEvent(RunStreamEventTypeObject.Message, RunStreamEventTypeStatus.Completed) },
+        { "thread.message.incomplete", new OpenAiAssistantStreamEvent(RunStreamEventTypeObject.Message, RunStreamEventTypeStatus.Incomplete) },
+        { "error", new OpenAiAssistantStreamEvent(RunStreamEventTypeObject.Error, RunStreamEventTypeStatus.Unknown) },
+        { "done", new OpenAiAssistantStreamEvent(RunStreamEventTypeObject.Done, RunStreamEventTypeStatus.Unknown) }
+    }.ToFrozenDictionary();
 }
 
 public enum RunStreamEventTypeObject
