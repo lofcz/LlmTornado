@@ -502,7 +502,7 @@ public abstract class EndpointBase
                 throw;
             }
             
-            return new HttpCallResult<T>(response.Data?.StatusCode ?? HttpStatusCode.ServiceUnavailable, null, default, false, new RestDataOrException<HttpResponseMessage>(e));
+            return new HttpCallResult<T>(response.Data?.StatusCode ?? HttpStatusCode.ServiceUnavailable, null, default, false, new RestDataOrException<HttpResponseData>(e));
         }
         finally
         {
