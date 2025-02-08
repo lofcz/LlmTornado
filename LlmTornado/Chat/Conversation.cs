@@ -1051,11 +1051,6 @@ public class Conversation
                 MostRecentApiResult = res;
                 continue;
             }
-
-            if (res.Choices is null)
-            {
-                continue;
-            }
             
             foreach (ChatChoice choice in res.Choices)
             {
@@ -1177,8 +1172,6 @@ public class Conversation
                 }   
             }
         }
-        
-        // AppendMessage(delta);
     }
 
     #endregion

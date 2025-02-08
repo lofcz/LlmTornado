@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -32,7 +33,7 @@ public interface IHttpCallResult
 /// <summary>
 /// REST call request.
 /// </summary>
-public class HttpCallRequest
+public class HttpCallRequest : IDisposable
 {
     /// <summary>
     ///     URL of the request.
@@ -54,6 +55,15 @@ public class HttpCallRequest
     /// </summary>
     [JsonIgnore]
     public HttpContent? Content { get; set; }
+
+    /// <summary>
+    /// Disposes the request
+    /// </summary>
+    public void Dispose()
+    {
+        Content?.Dispose();
+        GC.SuppressFinalize(this);
+    }
 }
 
 /// <summary>
@@ -90,6 +100,26 @@ public class ErrorHttpCallResult : IHttpCallResult
     }
 }
 
+public class HttpResponseData
+{
+    public Dictionary<string, string>? Headers { get; set; }
+
+    internal static HttpResponseData Instantiate(HttpResponseMessage message)
+    {
+        HttpResponseData data = new HttpResponseData
+        {
+            Headers = []
+        };
+
+        foreach (KeyValuePair<string, IEnumerable<string>> x in message.Headers)
+        {
+            data.Headers[x.Key] = x.Value.FirstOrDefault() ?? string.Empty;
+        }
+        
+        return data;
+    }
+}
+
 /// <summary>
 /// REST call result.
 /// </summary>
@@ -104,7 +134,7 @@ public class HttpCallResult<T> : IHttpCallResult
     /// <param name="data"></param>
     /// <param name="ok"></param>
     /// <param name="request"></param>
-    public HttpCallResult(HttpStatusCode code, string? response, T? data, bool ok, RestDataOrException<HttpResponseMessage> request)
+    public HttpCallResult(HttpStatusCode code, string? response, T? data, bool ok, RestDataOrException<HttpResponseData> request)
     {
         Code = code;
         Response = response;
@@ -114,9 +144,9 @@ public class HttpCallResult<T> : IHttpCallResult
     }
     
     /// <summary>
-    ///     The raw request.
+    /// Raw request data.
     /// </summary>
-    public RestDataOrException<HttpResponseMessage> Request { get; set; }
+    public RestDataOrException<HttpResponseData> Request { get; set; }
 
     /// <summary>
     ///     Status code received.

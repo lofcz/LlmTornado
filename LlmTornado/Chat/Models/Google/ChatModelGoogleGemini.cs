@@ -12,6 +12,16 @@ public class ChatModelGoogleGemini : IVendorModelClassProvider
     /// <summary>
     /// Fast and versatile performance across a diverse variety of tasks.
     /// </summary>
+    public static readonly ChatModel ModelGemini2Flash001 = new ChatModel("gemini-2.0-flash-001", LLmProviders.Google, 1_000_000);
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelGemini2Flash001"/>
+    /// </summary>
+    public readonly ChatModel Gemini2Flash001 = ModelGemini2Flash001;
+    
+    /// <summary>
+    /// Fast and versatile performance across a diverse variety of tasks.
+    /// </summary>
     public static readonly ChatModel ModelGemini15FlashLatest = new ChatModel("gemini-1.5-flash-latest", LLmProviders.Google, 1_000_000);
     
     /// <summary>
@@ -125,7 +135,9 @@ public class ChatModelGoogleGemini : IVendorModelClassProvider
         ModelGemini15Pro002,
         
         ModelGemini15Flash8B,
-        ModelGemini15Flash8BLatest
+        ModelGemini15Flash8BLatest,
+        
+        ModelGemini2Flash001
     ];
 
     /// <summary>

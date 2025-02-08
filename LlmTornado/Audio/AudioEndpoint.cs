@@ -105,7 +105,7 @@ public class AudioEndpoint : EndpointBase
 
         if (!request.Temperature.HasValue)
         {
-            content.Add(new StringContent((request.Temperature ?? 0f).ToString(CultureInfo.InvariantCulture)), "temperature");
+            content.Add(new StringContent(0f.ToString(CultureInfo.InvariantCulture)), "temperature");
         }
 
         if (!request.Language.IsNullOrWhiteSpace())

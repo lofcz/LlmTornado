@@ -166,6 +166,12 @@ public class ChatMessagePart
     public ChatMessagePartFileLinkData? FileLinkData { get; set; }
 
     /// <summary>
+    /// This can be set to anything and is ignored by the library. Can be used for storing data for rich rendering.
+    /// </summary>
+    [JsonIgnore]
+    public object? CustomData { get; set; }
+    
+    /// <summary>
     ///     Creates an audio part from a given stream.
     /// </summary>
     /// <param name="stream"></param>
