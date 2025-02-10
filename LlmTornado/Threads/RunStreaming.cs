@@ -17,6 +17,13 @@ internal class RunStreamEvent
     public string Data { get; set; } = null!;
 }
 
+/// <summary>
+/// Represents an event handler responsible for handling events during a streaming run process in LlmTornado framework.
+/// </summary>
+/// <remarks>
+/// This class provides a set of delegates that can be assigned to handle specific streaming-related events
+/// such as changes in thread status, run status, run step status, message status, or receiving deltas, unknown events, and errors.
+/// </remarks>
 public class RunStreamEventHandler
 {
     /// <summary>
@@ -29,14 +36,56 @@ public class RunStreamEventHandler
     /// </summary>
     public Func<HttpFailedRequest, ValueTask>? HttpExceptionHandler { get; set; }
 
+    /// <summary>
+    /// Invoked when the status of a TornadoThread is updated.
+    /// Provides the thread and its updated status to the handler for further processing.
+    /// </summary>
     public Func<TornadoThread, RunStreamEventTypeStatus, ValueTask>? OnThreadStatusChanged { get; set; }
+
+    /// <summary>
+    /// Triggered when the status of a TornadoRun changes during the processing of a streaming event.
+    /// This provides the updated status alongside the associated TornadoRun instance, allowing for
+    /// real-time handling of changes such as creation, progress updates, completion, failure, or cancellation.
+    /// </summary>
     public Func<TornadoRun, RunStreamEventTypeStatus, ValueTask>? OnRunStatusChanged { get; set; }
+
+    /// <summary>
+    /// Triggered when the status of a specific run step changes during the processing of a tornado stream.
+    /// </summary>
     public Func<TornadoRunStep, RunStreamEventTypeStatus, ValueTask>? OnRunStepStatusChanged { get; set; }
+
+    /// <summary>
+    /// Invoked when the status of a message changes during a streaming event, providing
+    /// the updated message and its associated status.
+    /// </summary>
     public Func<AssistantMessage, RunStreamEventTypeStatus, ValueTask>? OnMessageStatusChanged { get; set; }
+
+    /// <summary>
+    /// Invoked when a new incremental update, represented by a <see cref="MessageDelta"/>, is received
+    /// during the processing of a streaming event. This provides real-time updates to the ongoing message data.
+    /// </summary>
     public Func<MessageDelta, ValueTask>? OnMessageDelta { get; set; }
+
+    /// <summary>
+    /// Triggered when a delta update is received for a run step.
+    /// This includes changes or new data associated with a specific run step object.
+    /// </summary>
     public Func<RunStepDelta, ValueTask>? OnRunStepDelta { get; set; }
+
+    /// <summary>
+    /// Called when an unknown event type is received during the handling of a RunStreamEvent.
+    /// This allows for custom handling of events that do not match predefined types.
+    /// </summary>
     public Func<string, object, ValueTask>? OnUnknownEventReceived { get; set; }
+
+    /// <summary>
+    /// Invoked when an error event is received during the streaming process.
+    /// </summary>
     public Func<string, ValueTask>? OnErrorReceived { get; set; }
+
+    /// <summary>
+    /// Invoked when the streaming operation is completed and the "Done" event is received.
+    /// </summary>
     public Func<ValueTask>? OnFinished { get; set; }
 }
 
@@ -81,6 +130,9 @@ internal static class RunStreamEventTypeObjectCls
     }.ToFrozenDictionary();
 }
 
+/// <summary>
+/// Represents the type of an event occurring during a run stream process.
+/// </summary>
 public enum RunStreamEventTypeObject
 {
     /// <summary>
@@ -123,41 +175,80 @@ public enum RunStreamEventTypeObject
     Unknown
 }
 
+/// <summary>
+/// Represents the status of a streaming event in the system.
+/// </summary>
 public enum RunStreamEventTypeStatus
 {
+    /// <summary>
+    /// Indicates that the event has been created.
+    /// </summary>
     [EnumMember(Value = "created")]
     Created,
-
+    
+    /// <summary>
+    /// Indicates that the event is in a queued state, waiting for processing.
+    /// </summary>
     [EnumMember(Value = "queued")]
     Queued,
-
+    
+    /// <summary>
+    /// Indicates that the event is currently in progress.
+    /// </summary>
     [EnumMember(Value = "in_progress")]
     InProgress,
-
+    
+    /// <summary>
+    /// Indicates a request for user or system action.
+    /// </summary>
     [EnumMember(Value = "requires_action")]
     RequiresAction,
-
+    
+    /// <summary>
+    /// Indicates that processing of the event has completed.
+    /// </summary>
     [EnumMember(Value = "completed")]
     Completed,
-
+    
+    /// <summary>
+    /// Indicates that the event has ended but is incomplete.
+    /// </summary>
     [EnumMember(Value = "incomplete")]
     Incomplete,
-
+    
+    /// <summary>
+    /// Indicates that the event processing has failed.
+    /// </summary>
     [EnumMember(Value = "failed")]
     Failed,
-
+    
+    /// <summary>
+    /// Indicates that the event is in the process of being canceled.
+    /// </summary>
     [EnumMember(Value = "cancelling")]
     Cancelling,
-
+    
+    /// <summary>
+    /// Indicates that the event has been canceled.
+    /// </summary>
     [EnumMember(Value = "cancelled")]
     Cancelled,
-
+    
+    /// <summary>
+    /// Indicates that the event has expired due to time constraints.
+    /// </summary>
     [EnumMember(Value = "expired")]
     Expired,
-
+    
+    /// <summary>
+    /// Indicates a partial or incremental update linked to the event.
+    /// </summary>
     [EnumMember(Value = "delta")]
     Delta,
     
+    /// <summary>
+    /// Indicates an unknown or unspecified status.
+    /// </summary>
     [EnumMember(Value = "unknown")]
     Unknown
 }

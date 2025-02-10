@@ -117,25 +117,16 @@ public static class AssistantsDemo
     [TornadoTest]
     public static async Task<Assistant> CreateWithCodeInterpreter()
     {
-        VectorStoreFile vectorStoreFile = await VectorStoreDemo.CreateVectorStoreFile();
-
         HttpCallResult<Assistant> response = await Program.Connect().Assistants.CreateAssistantAsync(
             new CreateAssistantRequest(
                 null,
                 GenerateName(),
                 "Code Interpreter Demo Assistant",
-                "You are a helpful assistant with code interpretation capabilities.")
+                "You are a personal math tutor. When asked a math question, write and run code to answer the question.")
             {
                 Tools = new List<AssistantTool>
                 {
                     AssistantToolCodeInterpreter.Inst
-                },
-                ToolResources = new ToolResources
-                {
-                    CodeInterpreter = new CodeInterpreterConfig
-                    {
-                        CodeInterpreterFileIds = new List<string> {vectorStoreFile.Id}
-                    }
                 }
             });
 

@@ -274,6 +274,14 @@ public sealed class ThreadsEndpoint : EndpointBase
             GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/runs/{runId}/submit_tool_outputs"), request, ct: cancellationToken);
     }
 
+    /// <summary>
+    /// Streams the run operation for a specific thread with provided request data and event handler.
+    /// </summary>
+    /// <param name="threadId">The identifier of the thread.</param>
+    /// <param name="request">The request data for creating a run, <see cref="CreateRunRequest" />.</param>
+    /// <param name="eventHandler">Handler for streaming run events, <see cref="RunStreamEventHandler" />.</param>
+    /// <param name="cancellationToken">Optional, <see cref="CancellationToken" /> to cancel the operation.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
     public async Task StreamRun(string threadId, CreateRunRequest request, RunStreamEventHandler eventHandler, CancellationToken cancellationToken = default)
     {
         request.Stream = true;
@@ -320,7 +328,16 @@ public sealed class ThreadsEndpoint : EndpointBase
             await tornadoStreamRequest.DisposeAsync();
         }
     }
-    
+
+    /// <summary>
+    /// Streams the submission of tool outputs for a specific thread and run.
+    /// </summary>
+    /// <param name="threadId">The identifier of the thread.</param>
+    /// <param name="runId">The identifier of the run.</param>
+    /// <param name="request"><see cref="SubmitToolOutputsRequest" /> containing tool output data to be submitted.</param>
+    /// <param name="eventHandler"><see cref="RunStreamEventHandler" /> for handling streaming events during the submission.</param>
+    /// <param name="cancellationToken">Optional, <see cref="CancellationToken" /> to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     public async Task StreamSubmitToolOutput(string threadId, string runId, SubmitToolOutputsRequest request, RunStreamEventHandler eventHandler, CancellationToken cancellationToken = default)
     {
         request.Stream = true;
@@ -366,7 +383,7 @@ public sealed class ThreadsEndpoint : EndpointBase
         }
     }
     
-        private static async ValueTask HandleOpenAiStreamEvent(RunStreamEventHandler eventHandler, RunStreamEvent runStreamEvent)
+    private static async ValueTask HandleOpenAiStreamEvent(RunStreamEventHandler eventHandler, RunStreamEvent runStreamEvent)
     {
         if (RunStreamEventTypeObjectCls.EventsMap.TryGetValue(runStreamEvent.EventType, out OpenAiAssistantStreamEvent? sse))
         {

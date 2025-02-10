@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Frozen;
+using System.Collections.Generic;
 using System.Runtime.Serialization;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -124,6 +126,17 @@ public enum ToolChoiceType
 
 internal class ToolChoiceConverter : JsonConverter<ToolChoice>
 {
+
+    private static readonly FrozenDictionary<string, ToolChoiceType> ToolChoiceTypesMap = new Dictionary<string, ToolChoiceType>
+    {
+        {"none", ToolChoiceType.None},
+        {"required", ToolChoiceType.Required},
+        {"auto", ToolChoiceType.Auto},
+        {"function", ToolChoiceType.Function},
+        {"file_search", ToolChoiceType.FileSearch},
+        {"code_interpreter", ToolChoiceType.CodeInterpreter}
+    }.ToFrozenDictionary();
+    
     public override ToolChoice? ReadJson(JsonReader reader, Type objectType, ToolChoice? existingValue,
         bool hasExistingValue,
         JsonSerializer serializer)
@@ -144,8 +157,12 @@ internal class ToolChoiceConverter : JsonConverter<ToolChoice>
             }
             case JsonToken.String:
             {
-                ToolChoiceType? toolType = JsonConvert.DeserializeObject<ToolChoiceType>($"\"{reader.Value}\"");
-                return toolType is null ? null : new ToolChoice(toolType.Value);
+                if(reader.Value == null || !ToolChoiceTypesMap.TryGetValue(reader.Value.ToString()!, out ToolChoiceType toolType))
+                {
+                    return null;
+                }
+                
+                return new ToolChoice(toolType);
             }
             default:
             {

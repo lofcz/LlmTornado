@@ -52,6 +52,7 @@ public sealed class CodeInterpreterToolCall : ToolCall
     /// for processing input code, executing it, and producing specific outputs such
     /// as logs or image files.
     /// </summary>
+    [JsonProperty("code_interpreter")]
     public CodeInterpreter CodeInterpreter { get; set; } = null!;
 }
 

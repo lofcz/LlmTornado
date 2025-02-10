@@ -256,12 +256,12 @@ public static class ThreadsDemo
         generatedTornadoRun = await CreateRun(assistant);
 
         TornadoRun requiredActionRun;
-        
+
         while (true)
         {
             HttpCallResult<TornadoRun> response = await Program.Connect().Threads
                 .RetrieveRunAsync(generatedThread.Id, generatedTornadoRun.Id);
-            
+
             if (response.Data!.Status is RunStatus.RequiresAction)
             {
                 Console.WriteLine(response.Response);
@@ -362,7 +362,6 @@ public static class ThreadsDemo
                     List<FunctionToolCall> functionCallsWithParameters = run.RequiredAction!.SubmitToolOutputs.ToolCalls.Where(x => x.Type == ToolCallType.FunctionToolCall).Cast<FunctionToolCall>().ToList();
                     foreach (FunctionToolCall functionCall in functionCallsWithParameters)
                     {
-
                         Console.ForegroundColor = ConsoleColor.Green;
                         Console.WriteLine($"Calling function {functionCall.FunctionCall.Name} with arguments: {functionCall.FunctionCall.Arguments}");
                         Console.ResetColor();
@@ -450,6 +449,62 @@ public static class ThreadsDemo
                     }
                 }
 
+                return ValueTask.CompletedTask;
+            },
+            OnFinished = () =>
+            {
+                Console.WriteLine();
+                return ValueTask.CompletedTask;
+            }
+        });
+    }
+
+    [TornadoTest]
+    public static async Task StreamCodeInterpreter()
+    {
+        Assistant assistant = await AssistantsDemo.CreateWithCodeInterpreter();
+        generatedThread = await CreateThread();
+        generatedMessage =
+            await CreateMessage(generatedThread.Id, "I need to solve the equation `3x + 11 = 14`. Can you help me?");
+        await Program.Connect().Threads.StreamRun(generatedThread.Id, new CreateRunRequest(assistant.Id), new RunStreamEventHandler
+        {
+            OnMessageDelta = delta =>
+            {
+                foreach (MessageContent content in delta.Delta.Content)
+                {
+                    if (content is MessageContentTextResponse text)
+                    {
+                        Console.ForegroundColor = ConsoleColor.Cyan;
+                        Console.Write(text.MessageContentTextData?.Value);
+                        Console.ResetColor();
+                    }
+                }
+
+                return ValueTask.CompletedTask;
+            },
+            OnRunStepDelta = delta =>
+            {
+                if (delta.Delta.StepDetails is ToolCallsStepDetails toolCallsStepDetails)
+                {
+                    foreach (ToolCall toolCall in toolCallsStepDetails.ToolCallItems)
+                    {
+                        if (toolCall is CodeInterpreterToolCall codeInterpreterToolCall)
+                        {
+                            Console.ForegroundColor = ConsoleColor.Green;
+                            Console.Write(codeInterpreterToolCall.CodeInterpreter.Input);
+                            Console.ResetColor();
+                        }
+                    }
+                }
+
+                return ValueTask.CompletedTask;
+            },
+            OnMessageStatusChanged = (message, status) =>
+            {
+                if (status == RunStreamEventTypeStatus.Completed)
+                {
+                    Console.WriteLine();
+                }
                 return ValueTask.CompletedTask;
             },
             OnFinished = () =>
