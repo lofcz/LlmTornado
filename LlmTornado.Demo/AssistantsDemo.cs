@@ -86,16 +86,25 @@ public static class AssistantsDemo
     }
 
     [TornadoTest]
-    public static async Task<Assistant> CreateFileSearchAssistant()
+    public static async Task<Assistant> CreateFileSearchAssistant(string? filePath = null)
     {
-        VectorStoreFile vectorStoreFile = await VectorStoreDemo.CreateVectorStoreFile();
+        VectorStoreFile vectorStoreFile = null!;
+
+        if (string.IsNullOrWhiteSpace(filePath))
+        {
+            vectorStoreFile = await VectorStoreDemo.CreateVectorStoreFile();
+        }
+        else
+        {
+            vectorStoreFile = await VectorStoreDemo.CreateVectorStoreFile(filePath);
+        }
 
         HttpCallResult<Assistant> response = await Program.Connect().Assistants.CreateAssistantAsync(
             new CreateAssistantRequest(
                 null,
                 GenerateName(),
                 "FileSearch Demo Assistant",
-                "You are a helpful assistant with the ability to search files.")
+                "You are a helpful assistant with the ability to search info in files")
             {
                 Tools = new List<AssistantTool>
                 {

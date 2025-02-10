@@ -9,10 +9,16 @@ public static class FilesDemo
     [TornadoTest]
     public static async Task<TornadoFile?> Upload()
     {
-        HttpCallResult<TornadoFile> uploadedFile = await Program.Connect().Files.Upload("Static/Files/sample.pdf", FilePurpose.Assistants);
-        TornadoFile? retrievedFile = await Program.Connect().Files.Get(uploadedFile.Data?.Id);
-        Console.WriteLine($"uploaded id: {uploadedFile.Data.Id}");
+        TornadoFile? uploadedFile = await Upload("Static/Files/sample.pdf", FilePurpose.Assistants);
+        TornadoFile? retrievedFile = await Program.Connect().Files.Get(uploadedFile?.Id);
+        Console.WriteLine($"uploaded id: {uploadedFile.Id}");
         Console.WriteLine($"retrieved file id: {retrievedFile?.Id}");
+        return uploadedFile;
+    }
+    
+    public static async Task<TornadoFile?> Upload(string path, FilePurpose purpose)
+    {
+        HttpCallResult<TornadoFile> uploadedFile = await Program.Connect().Files.Upload(path, purpose);
         return uploadedFile.Data;
     }
     

@@ -61,11 +61,18 @@ public static class VectorStoreDemo
     }
 
     [TornadoTest]
-    public static async Task<VectorStoreFile> CreateVectorStoreFile()
+    public static async Task<VectorStoreFile> CreateVectorStoreFile(string? filePath = null)
     {
         vectorStore ??= await CreateVectorStore();
 
-        file ??= await FilesDemo.Upload();
+        if (string.IsNullOrEmpty(filePath))
+        {
+            file ??= await FilesDemo.Upload();
+        }
+        else
+        {
+            file ??= await FilesDemo.Upload(filePath, FilePurpose.Assistants);
+        }
 
         HttpCallResult<VectorStoreFile> createResult = await Program.Connect().VectorStores.CreateFile(
             vectorStore!.Id, new CreateVectorStoreFileRequest

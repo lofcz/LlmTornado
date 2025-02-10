@@ -431,10 +431,10 @@ public static class ThreadsDemo
     [TornadoTest]
     public static async Task StreamExtractingInfoFromFile()
     {
-        Assistant assistant = await AssistantsDemo.CreateFileSearchAssistant();
+        Assistant assistant = await AssistantsDemo.CreateFileSearchAssistant("Static/Files/pride_and_prejudice.txt");
         generatedThread = await CreateThread();
         generatedMessage =
-            await CreateMessage(generatedThread.Id, "Please summarize the file in 3 sentences from the file.");
+            await CreateMessage(generatedThread.Id, "Create a summary of the story and provide 2 sentences that you like the most and provide source.");
         await Program.Connect().Threads.StreamRun(generatedThread.Id, new CreateRunRequest(assistant.Id), new RunStreamEventHandler
         {
             OnMessageDelta = delta =>
