@@ -249,7 +249,7 @@ public class VendorAnthropicChatRequestMessage
         
     public VendorAnthropicChatRequestMessage(ChatMessageRoles role, ChatMessage msg)
     {
-        Role = ChatMessageRole.MemberToString(role) ?? "user";
+        Role = ChatMessageRolesCls.MemberToString(role) ?? "user";
         Content = new VendorAnthropicChatRequestMessageContent(msg);
     }
 }

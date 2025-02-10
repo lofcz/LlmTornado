@@ -1,4 +1,7 @@
+using System.Runtime.Serialization;
+using LlmTornado.Common;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace LlmTornado.Assistants;
 
@@ -11,6 +14,7 @@ public class AssistantToolFileSearch : AssistantTool
     ///     The file_search tool with default settings
     /// </summary>
     public static AssistantToolFileSearch Default => new AssistantToolFileSearch();
+
     /// <summary>
     ///     Creates a new file_search type tool
     /// </summary>
@@ -45,8 +49,8 @@ public class ToolFileSearchConfig
     ///     The default is 20 for gpt-4* models and 5 for gpt-3.5-turbo.
     ///     This number should be between 1 and 50 inclusive.
     /// </summary>
-    [JsonProperty("max_num_result")]
-    public int? MaxNumResult { get; set; } = 20;
+    [JsonProperty("max_num_results")]
+    public int? MaxNumResults { get; set; } = 20;
 
     /// <summary>
     ///     The ranking options for the file search.
@@ -57,21 +61,20 @@ public class ToolFileSearchConfig
 }
 
 /// <summary>
-///     The ranking options for the file search.
-///     If not specified, the file search tool will use the auto ranker and a score_threshold of 0.
+///     Which ranker to use in determining which chunks to use. 
 /// </summary>
-public class RankingOptions
+[JsonConverter(typeof(StringEnumConverter))]
+public enum RankerType
 {
     /// <summary>
-    ///     The ranker to use for the file search. If not specified will use the auto ranker.
+    ///     which uses the latest available ranker 
     /// </summary>
-    [JsonProperty("ranker")]
-    public string Ranker { get; set; } = "auto";
-
+    [EnumMember(Value = "auto")]
+    Auto,
 
     /// <summary>
-    ///     The score threshold for the file search. All values must be a floating point number between 0 and 1.
+    ///     Uses ranker default_2024_08_21
     /// </summary>
-    [JsonProperty("score_threshold")]
-    public float ScoreThreshold { get; set; }
+    [EnumMember(Value = "default_2024_08_21")]
+    Default20240821
 }

@@ -211,7 +211,7 @@ public class ChatEndpoint : EndpointBase
     /// </summary>
     /// <param name="userMessages">
     ///     The user message or messages to use in the generation.  All strings are assumed to be of
-    ///     Role <see cref="ChatMessageRole.User" />
+    ///     Role <see cref="ChatMessageRoles.User" />
     /// </param>
     /// <returns>The <see cref="ChatResult" /> with the API response.</returns>
     public Task<ChatResult?> CreateChatCompletion(params string[] userMessages)

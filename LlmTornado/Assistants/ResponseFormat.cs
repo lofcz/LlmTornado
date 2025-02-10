@@ -9,6 +9,7 @@ namespace LlmTornado.Assistants;
 /// Specifies the format that the model must output.
 /// Compatible with GPT-4o, GPT-4 Turbo, and all GPT-3.5 Turbo models since gpt-3.5-turbo-1106.
 /// </summary>
+[JsonConverter(typeof(ResponseFormatConverter))]
 public abstract class ResponseFormat
 {
 }
@@ -114,7 +115,7 @@ public class ResponseFormatJsonSchemaConfig
 /// <summary>
 /// A custom JSON converter for handling different response formats.
 /// </summary>
-public class ResponseFormatConverter : JsonConverter<ResponseFormat>
+internal class ResponseFormatConverter : JsonConverter<ResponseFormat>
 {
     /// <summary>
     /// Reads and converts JSON input into the appropriate ResponseFormat object.

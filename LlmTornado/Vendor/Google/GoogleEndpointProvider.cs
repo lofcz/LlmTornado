@@ -224,7 +224,7 @@ internal class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider,
         { typeof(ChatResult), (s, s1) => ChatResult.Deserialize(LLmProviders.Google, s, s1) },
         { typeof(TornadoFile), (s, s1) => FileUploadRequest.Deserialize(LLmProviders.Google, s, s1) },
         { typeof(CachedContentInformation), (s, s1) => CachedContentInformation.Deserialize(LLmProviders.Google, s, s1) },
-        { typeof(CachedContentList), (s, s1) => CachedContentList.Deserialize(LLmProviders.Google, s, s1) },
+        { typeof(CachedContentList), (s, s1) => CachedContentList.Deserialize(LLmProviders.Google, s, s1) }
 
     };
     
@@ -234,8 +234,15 @@ internal class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider,
         {
             return (T?)fn.Invoke(jsonData, postData);
         }
-        
-        return JsonConvert.DeserializeObject<T>(jsonData);
+
+        try
+        {
+            return JsonConvert.DeserializeObject<T>(jsonData);
+        }
+        catch (Exception e)
+        {
+            return default;
+        }
     }
 
     public override object? InboundMessage(Type type, string jsonData, string? postData)

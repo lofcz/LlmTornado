@@ -476,25 +476,37 @@ public abstract class EndpointBase
             RestDataOrException<HttpResponseData> responseSnapshot = new RestDataOrException<HttpResponseData>(HttpResponseData.Instantiate(response.Data));
             HttpCallResult<T> result = new HttpCallResult<T>(response.Data.StatusCode, resultAsString, default, response.Data.IsSuccessStatusCode, responseSnapshot);
 
-            if (response.Data.IsSuccessStatusCode)
+            if (!response.Data.IsSuccessStatusCode)
             {
-                result.Ok = true;
+                return result;
+            }
 
-                try
-                {
-                    result.Data = provider.InboundMessage<T>(resultAsString, postData?.ToString());
-                }
-                catch (Exception e)
-                {
-                    
-                }
+            result.Ok = true;
+            try
+            {
+                result.Data = provider.InboundMessage<T>(resultAsString, postData?.ToString());
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Error deserializing. String to parse: ");
+                Console.WriteLine(resultAsString);
+                throw;
             }
             
             return result;
         }
         catch (Exception e)
         {
+            if (Api.httpStrict)
+            {
+                throw;
+            }
+            
             return new HttpCallResult<T>(response.Data?.StatusCode ?? HttpStatusCode.ServiceUnavailable, null, default, false, new RestDataOrException<HttpResponseData>(e));
+        }
+        finally
+        {
+            response.Data?.Dispose();            
         }
     }
 

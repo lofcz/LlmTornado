@@ -8,9 +8,10 @@ using System.Net.Http.Headers;
 using System.Reflection;
 using System.Text;
 using LlmTornado.Chat;
-using LlmTornado.ChatFunctions;
 using LlmTornado.Code.Sse;
+using LlmTornado.Threads;
 using Newtonsoft.Json;
+using ToolCall = LlmTornado.ChatFunctions.ToolCall;
 
 namespace LlmTornado.Code.Vendor;
 
@@ -306,33 +307,21 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider,
 
     public override async IAsyncEnumerable<T?> InboundStream<T>(StreamReader reader) where T : class
     {
-        while (await reader.ReadLineAsync() is { } line)
+        await foreach (SseItem<string> item in SseParser.Create(reader.BaseStream).EnumerateAsync())
         {
-            if (line.StartsWith(DataString))
+            yield return JsonConvert.DeserializeObject<T>(item.Data);
+        }
+    }
+    
+    public async IAsyncEnumerable<RunStreamEvent> InboundStream(StreamReader reader)
+    {
+        await foreach (SseItem<string> item in SseParser.Create(reader.BaseStream).EnumerateAsync())
+        {
+            yield return new RunStreamEvent
             {
-                line = line[DataString.Length..];
-            }
-
-            line = line.TrimStart();
-
-            if (line is DoneString)
-            {
-                yield break;
-            }
-
-            if (line.StartsWith(':') || string.IsNullOrWhiteSpace(line))
-            {
-                continue;
-            }
-
-            T? res = JsonConvert.DeserializeObject<T>(line);
-
-            if (res is null)
-            {
-                continue;
-            }
-
-            yield return res;
+                Data = item.Data,
+                EventType = item.EventType
+            };
         }
     }
 }

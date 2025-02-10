@@ -571,7 +571,7 @@ public static class ChatDemo
         {
             { "prague", "A mild rain" },
             { "tokyo", "Foggy, cloudy" },
-            { "paris", "A sunny day" },
+            { "paris", "A sunny day" }
         };
         
         // 3. repl
@@ -1691,7 +1691,7 @@ public static class ChatDemo
                 {
                     type = "string",
                     description = "Title/headline of the entry"
-                },
+                }
             },
             required = new List<string> { "content", "title" }
         }), true);

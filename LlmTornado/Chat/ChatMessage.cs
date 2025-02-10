@@ -16,7 +16,7 @@ public class ChatMessage
 {
 	/// <summary>
 	///     Creates an empty <see cref="ChatMessage" />, with <see cref="Role" /> defaulting to
-	///     <see cref="ChatMessageRole.User" />
+	///     <see cref="ChatMessageRoles.User" />
 	/// </summary>
 	public ChatMessage()
     {

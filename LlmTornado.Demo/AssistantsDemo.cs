@@ -37,14 +37,32 @@ public static class AssistantsDemo
             new CreateAssistantRequest(
                 null,
                 GenerateName(),
-                "FileSearch Demo Assistant",
-                "You are a helpful assistant with the ability to call functions.")
+                "Function Demo Assistant",
+                "You are a helpful assistant with the ability to call functions related to weather")
             {
-                Tools = new List<AssistantTool>()
+                Tools = new List<AssistantTool>
                 {
                     new AssistantToolFunction(new ToolFunctionConfig(
                         "get_weather",
                         "Get current temperature for a given city",
+                        new
+                        {
+                            type = "object",
+                            properties = new
+                            {
+                                location = new
+                                {
+                                    type = "string",
+                                    description = "City and Country"
+                                }
+                            },
+                            required = new List<string> {"location"},
+                            additionalProperties = false
+                        }
+                    )),
+                    new AssistantToolFunction(new ToolFunctionConfig(
+                        "get_humidity",
+                        "Get current humidity for a given city",
                         new
                         {
                             type = "object",
@@ -68,26 +86,35 @@ public static class AssistantsDemo
     }
 
     [TornadoTest]
-    public static async Task<Assistant> CreateFileSearchAssistant()
+    public static async Task<Assistant> CreateFileSearchAssistant(string? filePath = null)
     {
-        VectorStoreFile vectorStoreFile = await VectorStoreDemo.CreateVectorStoreFile();
+        VectorStoreFile vectorStoreFile = null!;
+
+        if (string.IsNullOrWhiteSpace(filePath))
+        {
+            vectorStoreFile = await VectorStoreDemo.CreateVectorStoreFile();
+        }
+        else
+        {
+            vectorStoreFile = await VectorStoreDemo.CreateVectorStoreFile(filePath);
+        }
 
         HttpCallResult<Assistant> response = await Program.Connect().Assistants.CreateAssistantAsync(
             new CreateAssistantRequest(
                 null,
                 GenerateName(),
                 "FileSearch Demo Assistant",
-                "You are a helpful assistant with the ability to search files.")
+                "You are a helpful assistant with the ability to search info in files")
             {
-                Tools = new List<AssistantTool>()
+                Tools = new List<AssistantTool>
                 {
                     new AssistantToolFileSearch()
                 },
-                ToolResources = new ToolResources()
+                ToolResources = new ToolResources
                 {
-                    FileSearch = new FileSearchConfig()
+                    FileSearch = new FileSearchConfig
                     {
-                        FileSearchFileIds = new List<string>() {vectorStoreFile.VectorStoreId}
+                        FileSearchFileIds = new List<string> {vectorStoreFile.VectorStoreId}
                     }
                 }
             });
@@ -99,25 +126,16 @@ public static class AssistantsDemo
     [TornadoTest]
     public static async Task<Assistant> CreateWithCodeInterpreter()
     {
-        VectorStoreFile vectorStoreFile = await VectorStoreDemo.CreateVectorStoreFile();
-
         HttpCallResult<Assistant> response = await Program.Connect().Assistants.CreateAssistantAsync(
             new CreateAssistantRequest(
                 null,
                 GenerateName(),
                 "Code Interpreter Demo Assistant",
-                "You are a helpful assistant with code interpretation capabilities.")
+                "You are a personal math tutor. When asked a math question, write and run code to answer the question.")
             {
-                Tools = new List<AssistantTool>()
+                Tools = new List<AssistantTool>
                 {
                     AssistantToolCodeInterpreter.Inst
-                },
-                ToolResources = new ToolResources()
-                {
-                    CodeInterpreter = new CodeInterpreterConfig()
-                    {
-                        CodeInterpreterFileIds = new List<string>() {vectorStoreFile.Id}
-                    }
                 }
             });
 
@@ -128,10 +146,7 @@ public static class AssistantsDemo
     [TornadoTest]
     public static async Task<Assistant?> Retrieve()
     {
-        if (generatedAssistant is null)
-        {
-            await Create();
-        }
+        generatedAssistant ??= await Create();
 
         HttpCallResult<Assistant> response =
             await Program.Connect().Assistants.RetrieveAssistantAsync(generatedAssistant!.Id);
@@ -142,10 +157,7 @@ public static class AssistantsDemo
     [TornadoTest]
     public static async Task<Assistant?> Modify()
     {
-        if (generatedAssistant is null)
-        {
-            await Create();
-        }
+        generatedAssistant ??= await Create();
 
         CreateAssistantRequest modifyRequest = new CreateAssistantRequest(generatedAssistant!)
         {
@@ -161,13 +173,11 @@ public static class AssistantsDemo
     [TornadoTest]
     public static async Task<bool> Delete()
     {
-        if (generatedAssistant is null)
-        {
-            await Create();
-        }
+        generatedAssistant ??= await Create();
 
         HttpCallResult<bool> response = await Program.Connect().Assistants.DeleteAssistantAsync(generatedAssistant!);
         Console.WriteLine(response.Response);
+        generatedAssistant = null;
         return response.Data;
     }
 
@@ -179,6 +189,7 @@ public static class AssistantsDemo
             where assistant.Name.StartsWith("demo_assistant")
             select Program.Connect().Assistants.DeleteAssistantAsync(assistant.Id)).ToList();
         Console.WriteLine($"Deleting {tasks.Count} assistants...");
+        generatedAssistant = null;
         await Task.WhenAll(tasks);
     }
 }

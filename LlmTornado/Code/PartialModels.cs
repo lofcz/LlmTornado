@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Http;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
 using LlmTornado.Images;
@@ -90,27 +91,33 @@ public class TornadoStreamRequest : IAsyncDisposable
 /// <summary>
 ///     Roles of chat participants.
 /// </summary>
+[JsonConverter(typeof(StringEnumConverter))]
 public enum ChatMessageRoles
 {
     /// <summary>
     ///     Unknown role.
     /// </summary>
+    [EnumMember(Value = "unknown")]
     Unknown,
     /// <summary>
     ///     System prompt / preamble / developer message.
     /// </summary>
+    [EnumMember(Value = "system")]
     System,
     /// <summary>
     ///     Messages written by user.
     /// </summary>
+    [EnumMember(Value = "user")]
     User,
     /// <summary>
     ///     Assistant messages.
     /// </summary>
+    [EnumMember(Value = "assistant")]
     Assistant,
     /// <summary>
     ///     Messages representing tool/function/connector usage.
     /// </summary>
+    [EnumMember(Value = "tool")]
     Tool
 }
 

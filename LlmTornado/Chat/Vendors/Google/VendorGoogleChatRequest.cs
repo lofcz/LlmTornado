@@ -363,7 +363,7 @@ internal class VendorGoogleChatRequest
             }
 
             msg.Content = sb.ToString();
-            msg.Role = Role is "user" ? ChatMessageRoles.User : ChatMessageRoles.Assistant;    
+            msg.Role = Role is "user" ? ChatMessageRoles.User : ChatMessageRoles.Assistant;
             return msg;
         }
     }

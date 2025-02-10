@@ -198,7 +198,7 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
                         ToolCall tc = new ToolCall
                         {
                             Id = res.ContentBlock.Id,
-                            Index = res.Index,
+                            Index = res.Index
                         };
 
                         FunctionCall fc = new FunctionCall
@@ -330,7 +330,7 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
                                 }
                             ],
                             StreamInternalKind = ChatResultStreamInternalKinds.AppendAssistantMessage,
-                            Usage = plaintextUsage,
+                            Usage = plaintextUsage
                         };
                     }
                     

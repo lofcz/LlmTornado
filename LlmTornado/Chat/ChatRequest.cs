@@ -485,7 +485,7 @@ public class ChatRequest
 	                }
 	                else
 	                {
-		                writer.WriteValue(ChatMessageRole.MemberRolesDictInverse[msg.Role.Value]);   
+		                writer.WriteValue(ChatMessageRolesCls.MemberRolesDictInverse[msg.Role.Value]);   
 	                }   
                 }
 

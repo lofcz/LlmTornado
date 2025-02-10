@@ -4,6 +4,9 @@ using Newtonsoft.Json;
 
 namespace LlmTornado.Threads;
 
+/// <summary>
+/// Represents a request to submit outputs from one or more tools for processing.
+/// </summary>
 public sealed class SubmitToolOutputsRequest
 {
     /// <summary>
@@ -21,17 +24,18 @@ public sealed class SubmitToolOutputsRequest
     /// <param name="toolOutputs">Collection of tools for which the outputs are being submitted.</param>
     public SubmitToolOutputsRequest(IEnumerable<ToolOutput> toolOutputs)
     {
-        ToolOutputs = toolOutputs?.ToList();
+        ToolOutputs = toolOutputs.ToList();
     }
 
     /// <summary>
     ///     A list of tools for which the outputs are being submitted.
     /// </summary>
     [JsonProperty("tool_outputs")]
-    public IReadOnlyList<ToolOutput> ToolOutputs { get; }
+    public IReadOnlyList<ToolOutput> ToolOutputs { get; set; }
 
-    public static implicit operator SubmitToolOutputsRequest(ToolOutput toolOutput)
-    {
-        return new SubmitToolOutputsRequest(toolOutput);
-    }
+    /// <summary>
+    ///     Indicates whether the tool output should be streamed.
+    /// </summary>
+    [JsonProperty("stream")]
+    internal bool Stream { get; set; }
 }

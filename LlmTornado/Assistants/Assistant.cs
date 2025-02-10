@@ -58,7 +58,7 @@ public sealed class Assistant : ApiResultBase
     ///     The resources are specific to the type of tool. For example,
     ///     the code_interpreter tool requires a list of file IDs, while the file_search tool requires a list of vector store IDs.
     /// </summary>
-    [JsonProperty("file_ids")]
+    [JsonProperty("tool_resources")]
     public ToolResources? ToolResources { get; set; }
 
     /// <summary>
@@ -90,7 +90,7 @@ public sealed class Assistant : ApiResultBase
     ///     Specifies the format that the model must output.
     ///     Compatible with GPT-4, GPT-4 Turbo, and all GPT-3.5 Turbo models since `gpt-3.5-turbo-1106`.
     /// </summary>
-    [JsonProperty("response_format"), JsonConverter(typeof(ResponseFormatConverter))]
+    [JsonProperty("response_format")]
     public ResponseFormat? ResponseFormat { get; set; }
 
     /// <summary>
