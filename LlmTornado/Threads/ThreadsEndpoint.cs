@@ -284,9 +284,9 @@ public sealed class ThreadsEndpoint : EndpointBase
     public async Task StreamRun(string threadId, CreateRunRequest request, RunStreamEventHandler eventHandler, CancellationToken cancellationToken = default)
     {
         request.Stream = true;
-        
+        string url = GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/runs");
         TornadoStreamRequest tornadoStreamRequest = await HttpStreamingRequestData(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads,
-            GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/runs"), postData: request, verb: HttpMethod.Post, token: cancellationToken);
+            url, postData: request, verb: HttpMethod.Post, token: cancellationToken);
 
         try
         {
@@ -300,7 +300,7 @@ public sealed class ThreadsEndpoint : EndpointBase
                         Result = tornadoStreamRequest.CallResponse,
                         Request = tornadoStreamRequest.CallRequest,
                         RawMessage = tornadoStreamRequest.Response ?? new HttpResponseMessage(),
-                        Body = null //TODO: unify this
+                        Body = new TornadoRequestContent(request, url)
                     });
                 }
 
@@ -340,9 +340,9 @@ public sealed class ThreadsEndpoint : EndpointBase
     public async Task StreamSubmitToolOutput(string threadId, string runId, SubmitToolOutputsRequest request, RunStreamEventHandler eventHandler, CancellationToken cancellationToken = default)
     {
         request.Stream = true;
-        
+        string url = GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/runs/{runId}/submit_tool_outputs");
         TornadoStreamRequest tornadoStreamRequest = await HttpStreamingRequestData(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads,
-            GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/runs/{runId}/submit_tool_outputs"), postData: request, verb: HttpMethod.Post, token: cancellationToken);
+            url, postData: request, verb: HttpMethod.Post, token: cancellationToken);
 
         try
         {
@@ -356,7 +356,7 @@ public sealed class ThreadsEndpoint : EndpointBase
                         Result = tornadoStreamRequest.CallResponse,
                         Request = tornadoStreamRequest.CallRequest,
                         RawMessage = tornadoStreamRequest.Response ?? new HttpResponseMessage(),
-                        Body = null //TODO: unifify this
+                        Body = new TornadoRequestContent(request, url)
                     });   
                 }
             }
