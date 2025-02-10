@@ -27,7 +27,7 @@ _*Custom means any OpenAI compatible provider, such as Azure OpenAI, Ollama, Kob
 
  Assistants | Threads | Messages | Runs | Run steps | Vector stores | Vector store files | Vector store file batches | Realtime |
 |-----------|------------|---------|----------|------| ---------------|-------------------|-------------------------|-----------|
-| ✅ | ✅️ | ✅️ | ✅️ | ✅️ | ✅ | ✅ | ✅  | ✅ |
+| ✅ | ✅️ | ✅️ | ✅️ | ✅️ | ✅ | ✅ | ✅  | ❌ |
 
 ## Google Specific
 
