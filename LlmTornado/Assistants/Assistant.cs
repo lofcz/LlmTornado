@@ -91,6 +91,7 @@ public sealed class Assistant : ApiResultBase
     ///     Compatible with GPT-4, GPT-4 Turbo, and all GPT-3.5 Turbo models since `gpt-3.5-turbo-1106`.
     /// </summary>
     [JsonProperty("response_format")]
+    [JsonConverter(typeof(ResponseFormatConverter))]
     public ResponseFormat? ResponseFormat { get; set; }
 
     /// <summary>
