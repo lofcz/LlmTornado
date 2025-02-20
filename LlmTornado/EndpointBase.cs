@@ -151,8 +151,10 @@ public abstract class EndpointBase
         return $"Error at {name} ({description}) with HTTP status code: {response.StatusCode}. Content: {resultAsString ?? "<no content>"}. Request: {JsonConvert.SerializeObject(input.Headers)}";
     }
 
-    private static void SetRequestContent(HttpRequestMessage msg, object? payload)
+    private static void SetRequestContent(HttpRequestMessage msg, object? payload, out string rawContent)
     {
+        rawContent = string.Empty;
+        
         if (payload is not null)
         {
             switch (payload)
@@ -166,6 +168,7 @@ public abstract class EndpointBase
                 {
                     StringContent stringContent = new StringContent(str, Encoding.UTF8, "application/json");
                     msg.Content = stringContent;
+                    rawContent = str;
                     break;
                 }
                 default:
@@ -173,6 +176,7 @@ public abstract class EndpointBase
                     string jsonContent = JsonConvert.SerializeObject(payload, NullSettings);
                     StringContent stringContent = new StringContent(jsonContent, Encoding.UTF8, "application/json");
                     msg.Content = stringContent;
+                    rawContent = jsonContent;
                     break;
                 }
             }
@@ -229,7 +233,7 @@ public abstract class EndpointBase
         HttpClient client = GetClient(provider.Provider);
         using HttpRequestMessage req = provider.OutboundMessage(url, verb, postData, streaming);
 
-        SetRequestContent(req, postData);
+        SetRequestContent(req, postData, out string requestContent);
 
         HttpResponseMessage? response = null;
         
@@ -273,7 +277,7 @@ public abstract class EndpointBase
                 Method = req.Method,
                 Url = req.RequestUri?.AbsolutePath ?? string.Empty,
                 Headers = req.Headers.ToDictionary(),
-                Content = req.Content
+                Body = requestContent
             };
 
             throw response.StatusCode switch
@@ -312,7 +316,7 @@ public abstract class EndpointBase
             }
         }
         
-        SetRequestContent(req, content);
+        SetRequestContent(req, content, out string requestContent);
         HttpResponseMessage? result = null;
 
         try
@@ -321,7 +325,7 @@ public abstract class EndpointBase
 
             if (result.IsSuccessStatusCode)
             {
-                return new RestDataOrException<HttpResponseMessage>(result, req);
+                return new RestDataOrException<HttpResponseMessage>(result, req, requestContent);
             }
 
             string resultAsString;
@@ -359,7 +363,7 @@ public abstract class EndpointBase
                 throw e;
             }
             
-            return new RestDataOrException<HttpResponseMessage>(e, req, error);
+            return new RestDataOrException<HttpResponseMessage>(e, req, error, requestContent);
         }
         catch (Exception e)
         {
@@ -370,7 +374,7 @@ public abstract class EndpointBase
                 throw;
             }
             
-            return new RestDataOrException<HttpResponseMessage>(e, req, null);
+            return new RestDataOrException<HttpResponseMessage>(e, req, null, requestContent);
         }
     }
 
@@ -450,7 +454,7 @@ public abstract class EndpointBase
     
     internal async Task<HttpCallResult<T>> HttpRequestRaw<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, Dictionary<string, object>? queryParams = null, HttpMethod? verb = null, object? postData = null, CancellationToken? ct = null, Dictionary<string, object?>? headers = null)
     {
-        using RestDataOrException<HttpResponseMessage> response = await HttpRequestRawWithAllCodes(provider, endpoint, url, queryParams, verb, postData, false, ct, headers).ConfigureAwait(ConfigureAwaitOptions.None);
+        RestDataOrException<HttpResponseMessage> response = await HttpRequestRawWithAllCodes(provider, endpoint, url, queryParams, verb, postData, false, ct, headers).ConfigureAwait(ConfigureAwaitOptions.None);
         
         try
         {
@@ -473,7 +477,7 @@ public abstract class EndpointBase
 
             string resultAsString = await response.Data.Content.ReadAsStringAsync().ConfigureAwait(ConfigureAwaitOptions.None);
             
-            RestDataOrException<HttpResponseData> responseSnapshot = new RestDataOrException<HttpResponseData>(HttpResponseData.Instantiate(response.Data));
+            RestDataOrException<HttpResponseData> responseSnapshot = new RestDataOrException<HttpResponseData>(HttpResponseData.Instantiate(response.Data), response.HttpRequest);
             HttpCallResult<T> result = new HttpCallResult<T>(response.Data.StatusCode, resultAsString, default, response.Data.IsSuccessStatusCode, responseSnapshot);
 
             if (!response.Data.IsSuccessStatusCode)
@@ -694,7 +698,7 @@ public abstract class EndpointBase
     /// <returns></returns>
     protected async Task<TornadoStreamRequest> HttpStreamingRequestData(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, Dictionary<string, object>? queryParams = null, HttpMethod? verb = null, object? postData = null, CancellationToken token = default)
     {
-        using RestDataOrException<HttpResponseMessage> response = await HttpRequestRawWithAllCodes(provider, endpoint, url, queryParams, verb, postData, true, token).ConfigureAwait(ConfigureAwaitOptions.None);
+        RestDataOrException<HttpResponseMessage> response = await HttpRequestRawWithAllCodes(provider, endpoint, url, queryParams, verb, postData, true, token).ConfigureAwait(ConfigureAwaitOptions.None);
 
         if (response.Exception is not null || response.Data is null)
         {

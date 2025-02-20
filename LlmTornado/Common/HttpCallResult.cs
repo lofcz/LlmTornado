@@ -33,7 +33,7 @@ public interface IHttpCallResult
 /// <summary>
 /// REST call request.
 /// </summary>
-public class HttpCallRequest : IDisposable
+public class HttpCallRequest
 {
     /// <summary>
     ///     URL of the request.
@@ -51,19 +51,9 @@ public class HttpCallRequest : IDisposable
     public Dictionary<string, IEnumerable<string>> Headers { get; set; } = [];
     
     /// <summary>
-    ///     Content of the request.
+    ///     Body of the request.
     /// </summary>
-    [JsonIgnore]
-    public HttpContent? Content { get; set; }
-
-    /// <summary>
-    /// Disposes the request
-    /// </summary>
-    public void Dispose()
-    {
-        Content?.Dispose();
-        GC.SuppressFinalize(this);
-    }
+    public string? Body { get; set; }
 }
 
 /// <summary>
