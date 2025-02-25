@@ -993,7 +993,18 @@ public class Conversation
                     foreach (ChatChoice choice in res.Choices)
                     {
                         ChatMessage? internalDelta = choice.Delta;
-                
+
+                        if (res.StreamInternalKind is ChatResultStreamInternalKinds.AssistantMessageTransientBlock)
+                        {
+                            if (eventsHandler?.BlockFinishedHandler is not null)
+                            {
+                                await eventsHandler.BlockFinishedHandler.Invoke(internalDelta);
+                            }
+                            
+                            solved = true;
+                            break;
+                        }
+                        
                         if (res.StreamInternalKind is ChatResultStreamInternalKinds.AppendAssistantMessage)
                         {
                             if (internalDelta is not null)
@@ -1006,14 +1017,9 @@ public class Conversation
                                 {
                                     lastUserMessage.Tokens = res.Usage?.PromptTokens;
                                 }
-
-                                if (res.Usage is not null && eventsHandler?.OnUsageReceived is not null)
-                                {
-                                    await eventsHandler.OnUsageReceived.Invoke(res.Usage);
-                                }
-                    
+                                
                                 currentMsgId = Guid.NewGuid();
-                                AppendMessage(internalDelta);
+                                AppendMessage(internalDelta);   
                             }
                             else
                             {

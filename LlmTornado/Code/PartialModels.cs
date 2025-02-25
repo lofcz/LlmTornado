@@ -146,7 +146,16 @@ internal enum ChatResultStreamInternalKinds
 {
     Unknown,
     None,
-    AppendAssistantMessage
+    
+    /// <summary>
+    /// Appends the message to the conversation.
+    /// </summary>
+    AppendAssistantMessage,
+    
+    /// <summary>
+    /// Similar to <see cref="AppendAssistantMessage"/> but doesn't append the message. Used for reasoning blocks.
+    /// </summary>
+    AssistantMessageTransientBlock
 }
 
 public class ChatFunctionParamsGetter

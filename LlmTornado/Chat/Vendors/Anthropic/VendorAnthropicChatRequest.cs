@@ -118,9 +118,19 @@ public class VendorAnthropicChatRequestMessageContent
                 {
                     writer.WriteStartObject();
                     
-                    writer.WritePropertyName("type");
-                    writer.WriteValue(part.Type is ChatMessageTypes.Text ? "text" : "image");
+                    string? type = part.Type switch
+                    {
+                        ChatMessageTypes.Text => "text",
+                        ChatMessageTypes.Image => "image",
+                        _ => null
+                    };
 
+                    if (type is not null)
+                    {
+                        writer.WritePropertyName("type");
+                        writer.WriteValue(type);
+                    }
+                    
                     switch (part.Type)
                     {
                         case ChatMessageTypes.Text:
@@ -154,6 +164,33 @@ public class VendorAnthropicChatRequestMessageContent
                             writer.WriteValue(part.Image.Url);
                         
                             writer.WriteEndObject();
+                            break;
+                        }
+                        case ChatMessageTypes.Reasoning:
+                        {
+                            if (part.Reasoning is not null)
+                            {
+                                if (part.Reasoning.Content is not null)
+                                {
+                                    writer.WritePropertyName("type");
+                                    writer.WriteValue("thinking");
+                            
+                                    writer.WritePropertyName("thinking");
+                                    writer.WriteValue(part.Reasoning.Content);
+                            
+                                    writer.WritePropertyName("signature");
+                                }
+                                else
+                                {
+                                    writer.WritePropertyName("type");
+                                    writer.WriteValue("redacted_thinking");
+                                    
+                                    writer.WritePropertyName("data");
+                                }
+
+                                writer.WriteValue(part.Reasoning.Signature);
+                            }
+
                             break;
                         }
                     }

@@ -450,13 +450,23 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
                                     Delta = accuThinking
                                 }
                             ],
-                            StreamInternalKind = ChatResultStreamInternalKinds.AppendAssistantMessage
+                            StreamInternalKind = ChatResultStreamInternalKinds.AssistantMessageTransientBlock
                         };
                     }
 
                     if (accuPlaintext is not null)
                     {
-                        accuPlaintext.Content = accuPlaintext.ContentBuilder?.ToString() ?? string.Empty;
+                        accuPlaintext.Parts ??= [];
+                        
+                        if (accuThinking?.Parts?.Count > 0)
+                        {
+                            foreach (ChatMessagePart reasoningPart in accuThinking.Parts)
+                            {
+                                accuPlaintext.Parts.Add(reasoningPart);
+                            }
+                        }
+                        
+                        accuPlaintext.Parts.Add(new ChatMessagePart( accuPlaintext.ContentBuilder?.ToString() ?? string.Empty));
                         
                         yield return new ChatResult
                         {
@@ -471,9 +481,7 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
                             Usage = plaintextUsage
                         };
                     }
-
-                    accuPlaintext = null;
-                    accuThinking = null;
+                    
                     break;
                 }
                 case StreamRawActions.MsgDelta:
