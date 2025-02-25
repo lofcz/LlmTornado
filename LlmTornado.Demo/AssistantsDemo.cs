@@ -84,8 +84,7 @@ public static class AssistantsDemo
         Console.WriteLine(response.Response);
         return response.Data!;
     }
-
-    [TornadoTest]
+    
     public static async Task<Assistant> CreateFileSearchAssistant(string? filePath = null)
     {
         VectorStoreFile vectorStoreFile = null!;
