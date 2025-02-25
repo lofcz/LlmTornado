@@ -173,4 +173,29 @@ public class ChatMessage
     
     [JsonIgnore]
     internal ChatRequest? Request { get; set; }
+    
+    /// <summary>
+    ///  Vendor extensions to the message.
+    /// </summary>
+    [JsonIgnore]
+    public IChatMessageVendorExtensions? VendorExtensions { get; set; }
+}
+
+/// <summary>
+/// Vendor extensions to chat message.
+/// </summary>
+public interface IChatMessageVendorExtensions
+{
+	
+}
+
+/// <summary>
+/// Anthropic extensions to chat messages.
+/// </summary>
+public class ChatMessageVendorExtensionsAnthropic : IChatMessageVendorExtensions
+{
+	/// <summary>
+	/// Signature used for COT integrity verification.
+	/// </summary>
+	public string? Signature { get; set; }
 }

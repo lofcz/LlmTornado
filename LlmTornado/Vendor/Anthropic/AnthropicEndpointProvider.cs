@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -38,7 +39,7 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
         { StreamPing, StreamRawActions.Ping },
         { StreamContentBlockDelta, StreamRawActions.ContentBlockDelta },
         { StreamContentBlockStart, StreamRawActions.ContentBlockStart },
-        { StreamContentBlockStop, StreamRawActions.ContentBlockEnd }
+        { StreamContentBlockStop, StreamRawActions.ContentBlockStop }
     };
     
     public static Version OutboundVersion { get; set; } = HttpVersion.Version20;
@@ -56,7 +57,7 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
         Ping,
         ContentBlockDelta,
         ContentBlockStart,
-        ContentBlockEnd
+        ContentBlockStop
     }
     
     public AnthropicEndpointProvider(TornadoApi api) : base(api)
@@ -65,8 +66,23 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
         StoreApiAuth();
     }
 
+    private enum AnthropicStreamBlockStartTypes
+    {
+        Unknown,
+        Text,
+        ToolUse,
+        RedactedThinking
+    }
+
     private class AnthropicStreamBlockStart
     {
+        public static readonly FrozenDictionary<string, AnthropicStreamBlockStartTypes> Map = new Dictionary<string, AnthropicStreamBlockStartTypes>
+        {
+            { "text", AnthropicStreamBlockStartTypes.Text },
+            { "tool_use", AnthropicStreamBlockStartTypes.ToolUse },
+            { "redacted_thinking", AnthropicStreamBlockStartTypes.RedactedThinking }
+        }.ToFrozenDictionary();
+        
         public class AnthropicStreamBlockStartData
         {
             [JsonProperty("type")]
@@ -86,30 +102,65 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
             /// </summary>
             [JsonProperty("id")]
             public string? Id { get; set; }
+            
+            /// <summary>
+            /// For redacted thinking blocks
+            /// </summary>
+            public string? Data { get; set; }
         }
         
         [JsonProperty("index")]
         public int Index { get; set; }
+        
         [JsonProperty("content_block")]
         public AnthropicStreamBlockStartData ContentBlock { get; set; }
     }
 
+    private enum AnthropicStreamBlockDeltaTypes
+    {
+        Unknown,
+        TextDelta,
+        ThinkingDelta,
+        SignatureDelta,
+        InputJsonDelta
+    }
+
     private class AnthropicStreamBlockDelta
     {
+        public static readonly FrozenDictionary<string, AnthropicStreamBlockDeltaTypes> Map = new Dictionary<string, AnthropicStreamBlockDeltaTypes>
+        {
+            { "text_delta", AnthropicStreamBlockDeltaTypes.TextDelta },
+            { "thinking_delta", AnthropicStreamBlockDeltaTypes.ThinkingDelta },
+            { "signature_delta", AnthropicStreamBlockDeltaTypes.SignatureDelta },
+            { "input_json_delta", AnthropicStreamBlockDeltaTypes.InputJsonDelta }
+        }.ToFrozenDictionary();
+        
         public class AnthropicStreamBlockDeltaData
         {
             [JsonProperty("type")]
             public string Type { get; set; }
+            
             [JsonProperty("text")]
             public string Text { get; set; }
+            
             [JsonProperty("partial_json")]
             public string? PartialJson { get; set; }
+            
+            [JsonProperty("thinking")]
+            public string? Thinking { get; set; }
+            
+            [JsonProperty("signature")]
+            public string? Signature { get; set; }
         }
+        
+        [JsonProperty("type")]
+        public string Type { get; set; }
         
         [JsonProperty("index")]
         public int Index { get; set; }
+        
         [JsonProperty("delta")]
-        public AnthropicStreamBlockDeltaData Delta { get; set; }
+        public AnthropicStreamBlockDeltaData? Delta { get; set; }
     }
 
     private class AnthropicStreamBlockStop
@@ -170,6 +221,8 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
         ChatMessage? accuToolsMessage = null;
         ChatMessage? accuPlaintext = null;
         ChatUsage? plaintextUsage = null;
+        ChatMessage? accuThinking = null;
+        List<ChatMessagePart>? thinkingParts = null;
         
         await foreach (SseItem<string> item in SseParser.Create(reader.BaseStream).EnumerateAsync(request.CancellationToken))
         {
@@ -193,32 +246,78 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
                 {
                     AnthropicStreamBlockStart? res = JsonConvert.DeserializeObject<AnthropicStreamBlockStart>(line);
 
-                    if (res?.ContentBlock.Type is "tool_use")
+                    if (res is null)
                     {
-                        ToolCall tc = new ToolCall
-                        {
-                            Id = res.ContentBlock.Id,
-                            Index = res.Index
-                        };
+                        continue;
+                    }
 
-                        FunctionCall fc = new FunctionCall
+                    AnthropicStreamBlockStartTypes type = AnthropicStreamBlockStart.Map.GetValueOrDefault(res.ContentBlock.Type, AnthropicStreamBlockStartTypes.Unknown);
+                    
+                    switch (type)
+                    {
+                        case AnthropicStreamBlockStartTypes.ToolUse:
                         {
-                            Name = res.ContentBlock.Name ?? string.Empty,
-                            ToolCall = tc
-                        };
+                            ToolCall tc = new ToolCall
+                            {
+                                Id = res.ContentBlock.Id,
+                                Index = res.Index
+                            };
 
-                        tc.FunctionCall = fc;
+                            FunctionCall fc = new FunctionCall
+                            {
+                                Name = res.ContentBlock.Name ?? string.Empty,
+                                ToolCall = tc
+                            };
+
+                            tc.FunctionCall = fc;
                         
-                        accuToolsMessage ??= new ChatMessage(ChatMessageRoles.Tool)
-                        {
-                            ToolCalls = []
-                        };
+                            accuToolsMessage ??= new ChatMessage(ChatMessageRoles.Tool)
+                            {
+                                ToolCalls = []
+                            };
 
-                        accuToolsMessage.ToolCalls?.Add(tc);
+                            accuToolsMessage.ToolCalls?.Add(tc);
                         
-                        accuToolsMessage.ContentBuilder ??= new StringBuilder();
-                        accuToolsMessage.ContentBuilder.Clear();
-                    }                    
+                            accuToolsMessage.ContentBuilder ??= new StringBuilder();
+                            accuToolsMessage.ContentBuilder.Clear();
+                            break;
+                        }
+                        case AnthropicStreamBlockStartTypes.RedactedThinking:
+                        {
+                            string token = res.ContentBlock.Data ?? string.Empty;
+                        
+                            thinkingParts ??= [];
+                            thinkingParts.Add(new ChatMessagePart(ChatMessageTypes.Reasoning)
+                            {
+                                Reasoning = new ChatMessageReasoningData
+                                {
+                                    Signature = token,
+                                    Provider = LLmProviders.Anthropic
+                                }
+                            });
+                        
+                            yield return new ChatResult
+                            {
+                                Choices =
+                                [
+                                    new ChatChoice
+                                    {
+                                        Delta = new ChatMessage(ChatMessageRoles.Assistant, [
+                                            new ChatMessagePart(ChatMessageTypes.Reasoning)
+                                            {
+                                                Reasoning = new ChatMessageReasoningData
+                                                {
+                                                    Signature = token,
+                                                    Provider = LLmProviders.Anthropic
+                                                }
+                                            }
+                                        ])
+                                    }
+                                ]
+                            };
+                            break;
+                        }
+                    }
                     
                     break;
                 }
@@ -229,28 +328,77 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
                     if (accuToolsMessage is not null)
                     {
                         accuToolsMessage.ContentBuilder ??= new StringBuilder();
-                        accuToolsMessage.ContentBuilder.Append(res?.Delta.PartialJson);
+                        accuToolsMessage.ContentBuilder.Append(res?.Delta?.PartialJson);
                     }
-                    else if (res?.Delta.Text is not null)
+                    else if (res?.Delta is not null)
                     {
-                        accuPlaintext ??= new ChatMessage(ChatMessageRoles.Assistant);
-                        accuPlaintext.ContentBuilder ??= new StringBuilder();
-                        accuPlaintext.ContentBuilder.Append(res.Delta.Text);
-                        
-                        yield return new ChatResult
+                        AnthropicStreamBlockDeltaTypes type = AnthropicStreamBlockDelta.Map.GetValueOrDefault(res.Delta.Type, AnthropicStreamBlockDeltaTypes.Unknown);
+
+                        switch (type)
                         {
-                            Choices = [
-                                new ChatChoice
+                            case AnthropicStreamBlockDeltaTypes.TextDelta:
+                            {
+                                accuPlaintext ??= new ChatMessage(ChatMessageRoles.Assistant);
+                                accuPlaintext.ContentBuilder ??= new StringBuilder();
+                                accuPlaintext.ContentBuilder.Append(res.Delta.Text);
+
+                                yield return new ChatResult
                                 {
-                                    Delta = new ChatMessage(ChatMessageRoles.Assistant, res.Delta.Text)
-                                }
-                            ]
-                        };
+                                    Choices =
+                                    [
+                                        new ChatChoice
+                                        {
+                                            Delta = new ChatMessage(ChatMessageRoles.Assistant, res.Delta.Text)
+                                        }
+                                    ]
+                                };
+                                break;
+                            }
+                            case AnthropicStreamBlockDeltaTypes.SignatureDelta:
+                            {
+                                accuThinking ??= new ChatMessage(ChatMessageRoles.Assistant);
+                                accuThinking.VendorExtensions = new ChatMessageVendorExtensionsAnthropic
+                                {
+                                    Signature = res.Delta.Signature
+                                };
+
+                                break;
+                            }
+                            case AnthropicStreamBlockDeltaTypes.ThinkingDelta:
+                            {
+                                accuThinking ??= new ChatMessage(ChatMessageRoles.Assistant);
+                                accuThinking.ContentBuilder ??= new StringBuilder();
+                                accuThinking.ContentBuilder.Append(res.Delta.Thinking);
+
+                                yield return new ChatResult
+                                {
+                                    Choices =
+                                    [
+                                        new ChatChoice
+                                        {
+                                            Delta = new ChatMessage(ChatMessageRoles.Assistant, [
+                                                new ChatMessagePart(ChatMessageTypes.Reasoning)
+                                                {
+                                                    Reasoning = new ChatMessageReasoningData
+                                                    {
+                                                        Content = res.Delta.Thinking ?? string.Empty,
+                                                        Signature = accuThinking.VendorExtensions is ChatMessageVendorExtensionsAnthropic sigData ? sigData.Signature : null,
+                                                        Provider = LLmProviders.Anthropic
+                                                    }
+                                                }
+                                            ])
+                                        }
+                                    ]
+                                };
+
+                                break;
+                            }
+                        }
                     }
-                    
+
                     break;
                 }
-                case StreamRawActions.ContentBlockEnd:
+                case StreamRawActions.ContentBlockStop:
                 {
                     AnthropicStreamBlockStop? res = JsonConvert.DeserializeObject<AnthropicStreamBlockStop>(line);
 
@@ -264,8 +412,68 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
                         }
 
                         accuToolsMessage.ContentBuilder?.Clear();
+                        
+                        yield return new ChatResult
+                        {
+                            Choices = [
+                                new ChatChoice
+                                {
+                                    Delta = accuToolsMessage
+                                }
+                            ],
+                            Usage = plaintextUsage
+                        };
                     }
                     
+                    if (accuThinking is not null)
+                    {
+                        accuThinking.Parts =
+                        [
+                            ..thinkingParts ?? [],
+                            new ChatMessagePart(ChatMessageTypes.Reasoning)
+                            {
+                                Reasoning = new ChatMessageReasoningData
+                                {
+                                    Content = accuThinking.ContentBuilder?.ToString() ?? string.Empty,
+                                    Signature = accuThinking.VendorExtensions is ChatMessageVendorExtensionsAnthropic sigData ? sigData.Signature : null,
+                                    Provider = LLmProviders.Anthropic
+                                }
+                            }
+                        ];
+                        
+                        yield return new ChatResult
+                        {
+                            Choices =
+                            [
+                                new ChatChoice
+                                {
+                                    Delta = accuThinking
+                                }
+                            ],
+                            StreamInternalKind = ChatResultStreamInternalKinds.AppendAssistantMessage
+                        };
+                    }
+
+                    if (accuPlaintext is not null)
+                    {
+                        accuPlaintext.Content = accuPlaintext.ContentBuilder?.ToString() ?? string.Empty;
+                        
+                        yield return new ChatResult
+                        {
+                            Choices =
+                            [
+                                new ChatChoice
+                                {
+                                    Delta = accuPlaintext
+                                }
+                            ],
+                            StreamInternalKind = ChatResultStreamInternalKinds.AppendAssistantMessage,
+                            Usage = plaintextUsage
+                        };
+                    }
+
+                    accuPlaintext = null;
+                    accuThinking = null;
                     break;
                 }
                 case StreamRawActions.MsgDelta:
@@ -302,38 +510,6 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
                 }
                 case StreamRawActions.MsgStop:
                 {
-                    if (accuToolsMessage is not null)
-                    {
-                        yield return new ChatResult
-                        {
-                            Choices = [
-                                new ChatChoice
-                                {
-                                    Delta = accuToolsMessage
-                                }
-                            ],
-                            Usage = plaintextUsage
-                        };
-                    }
-
-                    if (accuPlaintext is not null)
-                    {
-                        accuPlaintext.Content = accuPlaintext.ContentBuilder?.ToString() ?? string.Empty;
-                        
-                        yield return new ChatResult
-                        {
-                            Choices =
-                            [
-                                new ChatChoice
-                                {
-                                    Delta = accuPlaintext
-                                }
-                            ],
-                            StreamInternalKind = ChatResultStreamInternalKinds.AppendAssistantMessage,
-                            Usage = plaintextUsage
-                        };
-                    }
-                    
                     break;
                 }
             }

@@ -1159,6 +1159,56 @@ public static class ChatDemo
             }
         }
     }
+    
+    [TornadoTest]
+    public static async Task AnthropicSonnet37ThinkingStreaming()
+    {
+        Conversation chat = Program.Connect(LLmProviders.Anthropic).Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Anthropic.Claude37.Sonnet,
+            Stream = true,
+            VendorExtensions = new ChatRequestVendorExtensions(new ChatRequestVendorAnthropicExtensions
+            {
+                Thinking = new AnthropicThinkingSettings
+                {
+                    BudgetTokens = 2_000,
+                    Enabled = true
+                }
+            })
+        });
+        
+        chat.AppendUserInput("Explain how to solve differential equations.");
+
+        await chat.StreamResponseRich(new ChatStreamEventHandler
+        {
+            ReasoningTokenHandler = (token) =>
+            {
+                Console.ForegroundColor = ConsoleColor.DarkGray;
+
+                if (token.IsRedacted ?? false)
+                {
+                    Console.Write($"[redacted COT block: {token.Signature}]");
+                }
+                else
+                {
+                    Console.Write(token.Content);    
+                }
+                
+                Console.ResetColor();
+                return ValueTask.CompletedTask;
+            },
+            MessageTokenHandler = (token) =>
+            {
+                Console.Write(token);
+                return ValueTask.CompletedTask;
+            },
+            BlockFinishedHandler = (block) =>
+            {
+                Console.WriteLine();
+                return ValueTask.CompletedTask;
+            }
+        });
+    }
 
     [TornadoTest]
     public static async Task Anthropic()

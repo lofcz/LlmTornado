@@ -994,34 +994,38 @@ public class Conversation
                     {
                         ChatMessage? internalDelta = choice.Delta;
                 
-                        if (res.StreamInternalKind is ChatResultStreamInternalKinds.AppendAssistantMessage && internalDelta is not null)
-                        {
-                            internalDelta.Role = ChatMessageRoles.Assistant;
-                            internalDelta.Id = currentMsgId;
-                            internalDelta.Tokens = res.Usage?.CompletionTokens;
-
-                            if (lastUserMessage is not null)
-                            {
-                                lastUserMessage.Tokens = res.Usage?.PromptTokens;
-                            }
-
-                            if (res.Usage is not null && eventsHandler?.OnUsageReceived is not null)
-                            {
-                                await eventsHandler.OnUsageReceived.Invoke(res.Usage);
-                            }
-                    
-                            currentMsgId = Guid.NewGuid();
-                            AppendMessage(internalDelta);
-
-                            solved = true;
-                            break;
-                        }
-                        
                         if (res.StreamInternalKind is ChatResultStreamInternalKinds.AppendAssistantMessage)
                         {
-                            if (res.Usage is not null && eventsHandler?.OnUsageReceived is not null)
+                            if (internalDelta is not null)
                             {
-                                await eventsHandler.OnUsageReceived.Invoke(res.Usage);
+                                internalDelta.Role = ChatMessageRoles.Assistant;
+                                internalDelta.Id = currentMsgId;
+                                internalDelta.Tokens = res.Usage?.CompletionTokens;
+
+                                if (lastUserMessage is not null)
+                                {
+                                    lastUserMessage.Tokens = res.Usage?.PromptTokens;
+                                }
+
+                                if (res.Usage is not null && eventsHandler?.OnUsageReceived is not null)
+                                {
+                                    await eventsHandler.OnUsageReceived.Invoke(res.Usage);
+                                }
+                    
+                                currentMsgId = Guid.NewGuid();
+                                AppendMessage(internalDelta);
+                            }
+                            else
+                            {
+                                if (res.Usage is not null && eventsHandler?.OnUsageReceived is not null)
+                                {
+                                    await eventsHandler.OnUsageReceived.Invoke(res.Usage);
+                                }
+                            }
+
+                            if (eventsHandler?.BlockFinishedHandler is not null)
+                            {
+                                await eventsHandler.BlockFinishedHandler.Invoke(internalDelta);
                             }
                             
                             solved = true;
@@ -1140,19 +1144,38 @@ public class Conversation
                     }
                     else if (delta.Role is ChatMessageRoles.Assistant)
                     {
-                        if (eventsHandler.MessageTokenHandler is not null)
+                        if (delta.Parts?.Count > 0)
                         {
-                            string? msg = delta.Content ?? message?.Content;
-
-                            if (msg is not null)
+                            foreach (ChatMessagePart part in delta.Parts)
                             {
-                                if (RequestParameters.TrimResponseStart && isFirstMessageToken)
+                                switch (part.Type)
                                 {
-                                    msg = msg.TrimStart();
-                                    isFirstMessageToken = false;
-                                }
+                                    case ChatMessageTypes.Text when eventsHandler.MessageTokenHandler is not null:
+                                    {
+                                        await InvokeMessageHandler(part.Text ?? message?.Content);
+                                        break;
+                                    }
+                                    case ChatMessageTypes.Reasoning when eventsHandler.ReasoningTokenHandler is not null:
+                                    {
+                                        ChatMessageReasoningData? msg = part.Reasoning;
+                                    
+                                        if (RequestParameters.TrimResponseStart && isFirstMessageToken && msg is not null)
+                                        {
+                                            msg.Content = msg.Content?.TrimStart();
+                                            isFirstMessageToken = false;
+                                        }
                                 
-                                await eventsHandler.MessageTokenHandler.Invoke(msg);   
+                                        await eventsHandler.ReasoningTokenHandler.Invoke(msg);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        else if (delta.Content is not null)
+                        {
+                            if (eventsHandler.MessageTokenHandler is not null)
+                            {
+                                await InvokeMessageHandler(delta.Content ?? message?.Content);
                             }
                         }
 
@@ -1165,6 +1188,27 @@ public class Conversation
                         }
                     }
                 }   
+            }
+
+            continue;
+
+            async ValueTask InvokeMessageHandler(string? msg)
+            {
+                if (eventsHandler.MessageTokenHandler is null)
+                {
+                    return;
+                }
+                
+                if (msg is not null)
+                {
+                    if (RequestParameters.TrimResponseStart && isFirstMessageToken)
+                    {
+                        msg = msg.TrimStart();
+                        isFirstMessageToken = false;
+                    }
+                                
+                    await eventsHandler.MessageTokenHandler.Invoke(msg);   
+                }
             }
         }
     }

@@ -18,6 +18,18 @@ public class ChatStreamEventHandler
     public Func<string?, ValueTask>? MessageTokenHandler { get; set; }
     
     /// <summary>
+    ///     Called when reasoning token/chunk arrives. This can be forwarded to the end-user immediately.
+    ///     Both content and signature might be empty. If content is empty and signature isn't, the block is redacted.
+    ///     If content is not empty and signature is empty, the signature is yet to arrive.
+    /// </summary>
+    public Func<ChatMessageReasoningData, ValueTask>? ReasoningTokenHandler { get; set; }
+    
+    /// <summary>
+    ///     Called when a message block is fully streamed.
+    /// </summary>
+    public Func<ChatMessage?, ValueTask>? BlockFinishedHandler { get; set; }
+    
+    /// <summary>
     ///     Called when audio token/chunk arrives. This can be forwarded to the end-user immediately.
     /// </summary>
     public Func<ChatMessageAudio, ValueTask>? AudioTokenHandler { get; set; }
