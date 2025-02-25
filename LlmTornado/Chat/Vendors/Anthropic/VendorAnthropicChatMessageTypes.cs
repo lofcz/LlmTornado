@@ -1,16 +1,25 @@
+using System.Collections.Frozen;
+using System.Collections.Generic;
 using LlmTornado.Chat;
 
 namespace LlmTornado.Chat.Vendors.Anthropic;
 
-internal class VendorAnthropicChatMessageTypes
+internal enum VendorAnthropicChatMessageTypes
 {
-    /// <summary>
-    ///     A special identifier representing an intent to invoke a tool by the model.
-    /// </summary>
-    public const string ToolUse = "tool_use";
-    
-    /// <summary>
-    ///     A special identifier used to return the resolved tool results back to the model along with tool_use_id and content.
-    /// </summary>
-    public const string ToolResult = "tool_result";
+    Unknown,
+    Text,
+    ToolUse,
+    ToolResult,
+    Thinking
+}
+
+internal static class VendorAnthropicChatMessageTypesCls
+{
+    public static readonly FrozenDictionary<string, VendorAnthropicChatMessageTypes> Map = new Dictionary<string, VendorAnthropicChatMessageTypes>
+    {
+        { "text", VendorAnthropicChatMessageTypes.Text },
+        { "tool_use", VendorAnthropicChatMessageTypes.ToolUse },
+        { "tool_result", VendorAnthropicChatMessageTypes.ToolResult },
+        { "thinking", VendorAnthropicChatMessageTypes.Thinking }
+    }.ToFrozenDictionary();
 }

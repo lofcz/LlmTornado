@@ -224,6 +224,7 @@ public class ChatRequest
 
 	/// <summary>
 	///     How many tokens to complete to. Can return fewer if a stop sequence is hit.
+	///		Note Anthropic: Streaming is required when max_tokens is greater than 21,333 for Claude 3.7+ models.
 	/// </summary>
 	[JsonProperty("max_tokens")]
     public int? MaxTokens { get; set; }

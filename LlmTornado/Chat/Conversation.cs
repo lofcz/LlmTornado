@@ -632,16 +632,11 @@ public class Conversation
         List<ChatRichResponseBlock> blocks = [];
         ChatRichResponse response = new ChatRichResponse(res, blocks);
         
-        if (res is null)
+        if (res is null || !(res.Choices?.Count > 0))
         {
             return response;
         }
 
-        if (!(res.Choices?.Count > 0))
-        {
-            return response;
-        }
-        
         foreach (ChatChoice choice in res.Choices)
         {
             ChatMessage? newMsg = choice.Message;
@@ -1089,7 +1084,7 @@ public class Conversation
                             {
                                 await eventsHandler.FunctionCallHandler.Invoke(calls);
                                 
-                                if (MostRecentApiResult?.Choices?.Count > 0 && MostRecentApiResult.Choices[0].FinishReason == VendorAnthropicChatMessageTypes.ToolUse)
+                                if (MostRecentApiResult?.Choices?.Count > 0 && MostRecentApiResult.Choices[0].FinishReason is "tool_use")
                                 {
                                     delta.Content = MostRecentApiResult.Object;
                                 }

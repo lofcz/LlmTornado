@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Vendors;
 using LlmTornado.ChatFunctions;
@@ -21,6 +22,12 @@ internal class VendorAnthropicChatResult : VendorChatResult
         /// </summary>
         [JsonProperty("text")]
         public string? Text { get; set; }
+        
+        /// <summary>
+        /// Reasoning block.
+        /// </summary>
+        [JsonProperty("thinking")]
+        public string? Thinking { get; set; }
         
         /// <summary>
         /// Tool out.
@@ -57,6 +64,12 @@ internal class VendorAnthropicChatResult : VendorChatResult
         /// </summary>
         [JsonProperty("is_error")]
         public bool? IsError { get; set; }
+        
+        /// <summary>
+        /// Used by thinking blocks, this token must be passed in subsequent calls to verify COT hasn't been tampered with.
+        /// </summary>
+        [JsonProperty("signature")]
+        public string? Signature { get; set; }
     }
     
     [JsonProperty("id")]
@@ -90,10 +103,14 @@ internal class VendorAnthropicChatResult : VendorChatResult
         };
 
         ChatMessage? toolsMsg = null;
-
+        List<ChatChoiceAnthropicThinkingBlock>? thinkingBlocks = null;
+        ChatChoice? textChoice = null;
+        
         foreach (VendorAnthropicChatResultContentBlock contentBlock in Content) // we need to merge all tool blocks into one
         {
-            if (contentBlock.Type == VendorAnthropicChatMessageTypes.ToolUse)
+            VendorAnthropicChatMessageTypes type = VendorAnthropicChatMessageTypesCls.Map.GetValueOrDefault(contentBlock.Type, VendorAnthropicChatMessageTypes.Unknown);
+                
+            if (type is VendorAnthropicChatMessageTypes.ToolUse)
             {
                 toolsMsg ??= new ChatMessage(ChatMessageRoles.Tool)
                 {
@@ -102,17 +119,59 @@ internal class VendorAnthropicChatResult : VendorChatResult
 
                 toolsMsg.ToolCalls?.Add(ParseToolCall(contentBlock));
             }
-            else
+            else if (type is VendorAnthropicChatMessageTypes.Text)
             {
-                ChatMessage textBlockMsg = new ChatMessage(ChatMessageRoles.Assistant, contentBlock.Text ?? string.Empty);
-                
-                result.Choices.Add(new ChatChoice
+                ChatMessage textBlockMsg = new ChatMessage(ChatMessageRoles.Assistant, [ new ChatMessagePart(contentBlock.Text ?? string.Empty) ] );
+
+                textChoice = new ChatChoice
                 {
                     FinishReason = StopReason,
                     Index = result.Choices.Count + 1,
                     Message = textBlockMsg,
                     Delta = textBlockMsg
+                };
+                
+                result.Choices.Add(textChoice);
+            }
+            else if (type is VendorAnthropicChatMessageTypes.Thinking)
+            {
+                thinkingBlocks ??= [];
+                thinkingBlocks.Add(new ChatChoiceAnthropicThinkingBlock
+                {
+                    Content = contentBlock.Thinking ?? string.Empty,
+                    Signature = contentBlock.Signature ?? string.Empty
                 });
+            }
+        }
+
+        if (thinkingBlocks?.Count > 0)
+        {
+            if (textChoice?.Message is not null)
+            {
+                // we will prepend thinking blocks
+                if (thinkingBlocks.Count > 1)
+                {
+                    thinkingBlocks.Reverse();
+                }
+                
+                foreach (ChatChoiceAnthropicThinkingBlock x in thinkingBlocks)
+                {
+                    textChoice.Message.Parts ??= [];
+                    
+                    textChoice.Message.Parts.Insert(0, new ChatMessagePart
+                    {
+                        Type = ChatMessageTypes.Reasoning,
+                        Reasoning = new ChatMessageReasoningData
+                        {
+                            Content = x.Content,
+                            Signature = x.Signature
+                        }
+                    });
+                }
+            }
+            else
+            {
+               // todo?
             }
         }
 

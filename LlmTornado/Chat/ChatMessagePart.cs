@@ -164,6 +164,12 @@ public class ChatMessagePart
     /// </summary>
     [JsonIgnore]
     public ChatMessagePartFileLinkData? FileLinkData { get; set; }
+    
+    /// <summary>
+    /// Reasoning data. Currently supported only by Anthropic.
+    /// </summary>
+    [JsonIgnore]
+    public ChatMessageReasoningData? Reasoning { get; set; }
 
     /// <summary>
     /// This can be set to anything and is ignored by the library. Can be used for storing data for rich rendering.

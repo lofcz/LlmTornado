@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Common;
@@ -15,22 +16,31 @@ public enum ChatRichResponseBlockTypes
     /// Unknown or unsupported block.
     /// </summary>
     Unknown,
+    
     /// <summary>
     /// Text block.
     /// </summary>
     Message,
+    
     /// <summary>
     /// Function call, optionally paired with the response if the function already resolved.
     /// </summary>
     Function,
+    
     /// <summary>
     /// Image block.
     /// </summary>
     Image,
+    
     /// <summary>
     /// Audio block.
     /// </summary>
-    Audio
+    Audio,
+    
+    /// <summary>
+    /// Reasoning block.
+    /// </summary>
+    Reasoning
 }
 
 /// <summary>
@@ -81,6 +91,36 @@ public class ChatRichResponse
         text = Blocks is null ? string.Empty : string.Join(blockSeparator, Blocks.Where(x => x.Type is ChatRichResponseBlockTypes.Message && !x.Message.IsNullOrWhiteSpace()).Select(x => x.Message));
         return text;
     }
+
+    /// <summary>
+    /// Iterates over blocks, aggregating the response for debugging view.
+    /// </summary>
+    /// <returns></returns>
+    public override string ToString()
+    {
+        if (Blocks is null || Blocks.Count is 0)
+        {
+            return "[tornado:empty]";
+        }
+
+        StringBuilder sb = new StringBuilder();
+
+        foreach (ChatRichResponseBlock x in Blocks)
+        {
+            sb.AppendLine(x.Type.ToString());
+
+            if (x.Type is ChatRichResponseBlockTypes.Reasoning)
+            {
+                sb.AppendLine(x.Reasoning?.Content);   
+            }
+            else
+            {
+                sb.AppendLine(x.Message);
+            }
+        }
+
+        return sb.ToString();
+    }
 }
 
 /// <summary>
@@ -112,6 +152,11 @@ public class ChatRichResponseBlock
     /// If the <see cref="Type"/> is <see cref="ChatRichResponseBlockTypes.Audio"/>, this is the audio.
     /// </summary>
     public ChatMessageAudio? ChatAudio { get; set; }
+    
+    /// <summary>
+    /// If the <see cref="Type"/> is <see cref="ChatRichResponseBlockTypes.Reasoning"/>, this is the reasoning data.
+    /// </summary>
+    public ChatMessageReasoningData? Reasoning { get; set; }
 
     /// <summary>
     ///     Creates an empty block.
@@ -133,12 +178,30 @@ public class ChatRichResponseBlock
             ChatMessageTypes.Text => ChatRichResponseBlockTypes.Message,
             ChatMessageTypes.Image => ChatRichResponseBlockTypes.Image,
             ChatMessageTypes.Audio => ChatRichResponseBlockTypes.Audio,
+            ChatMessageTypes.Reasoning => ChatRichResponseBlockTypes.Reasoning,
             _ => ChatRichResponseBlockTypes.Unknown
         };
+
+        switch (part.Type)
+        {
+            case ChatMessageTypes.Text:
+            {
+                Message = part.Text;
+                break;
+            }
+            case ChatMessageTypes.Image:
+            {
+                ChatImage = part.Image;
+                break;
+            }
+            case ChatMessageTypes.Reasoning:
+            {
+                Reasoning = part.Reasoning;
+                break;
+            }
+        }
         
-        Message = part.Type is ChatMessageTypes.Text ? part.Text : null;
-        ChatImage = part.Type is ChatMessageTypes.Image ? part.Image : null;
-        
+
         if (msg.Audio is not null)
         {
             Type = ChatRichResponseBlockTypes.Audio;

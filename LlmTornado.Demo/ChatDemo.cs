@@ -1106,6 +1106,59 @@ public static class ChatDemo
         await chat.StreamResponse(Console.Write);
         Console.WriteLine();
     }
+    
+    [TornadoTest]
+    public static async Task AnthropicSonnet37()
+    {
+        Conversation chat = Program.Connect(LLmProviders.Anthropic).Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Anthropic.Claude37.Sonnet
+        });
+        
+        chat.AppendSystemMessage("Pretend you are a dog. Sound authentic.");
+        chat.AppendUserInput("Who are you?");
+
+        string? str = await chat.GetResponse();
+
+        Console.WriteLine("Anthropic:");
+        Console.WriteLine(str);
+    }
+    
+    [TornadoTest]
+    public static async Task AnthropicSonnet37Thinking()
+    {
+        Conversation chat = Program.Connect(LLmProviders.Anthropic).Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Anthropic.Claude37.Sonnet,
+            VendorExtensions = new ChatRequestVendorExtensions(new ChatRequestVendorAnthropicExtensions
+            {
+                Thinking = new AnthropicThinkingSettings
+                {
+                    BudgetTokens = 2_000,
+                    Enabled = true
+                }
+            })
+        });
+        
+        chat.AppendUserInput("Explain how to solve differential equations.");
+
+        ChatRichResponse blocks = await chat.GetResponseRich();
+
+        if (blocks.Blocks is not null)
+        {
+            foreach (ChatRichResponseBlock reasoning in blocks.Blocks.Where(x => x.Type is ChatRichResponseBlockTypes.Reasoning))
+            {
+                Console.ForegroundColor = ConsoleColor.DarkGray;
+                Console.WriteLine(reasoning.Reasoning?.Content);
+                Console.ResetColor();
+            }
+
+            foreach (ChatRichResponseBlock reasoning in blocks.Blocks.Where(x => x.Type is ChatRichResponseBlockTypes.Message))
+            {
+                Console.WriteLine(reasoning.Message);
+            }
+        }
+    }
 
     [TornadoTest]
     public static async Task Anthropic()

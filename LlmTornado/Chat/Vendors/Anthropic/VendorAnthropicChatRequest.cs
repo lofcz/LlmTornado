@@ -278,6 +278,14 @@ internal class VendorAnthropicChatRequest
         [JsonProperty("name")]
         public string? Name { get; set; }
     }
+
+    internal class VendorAnthropicThinkingSettings
+    {
+        [JsonProperty("type")]
+        public string Type { get; set; }
+        [JsonProperty("budget_tokens")]
+        public int? BudgetTokens { get; set; }
+    }
     
     [JsonProperty("messages")]
     public List<VendorAnthropicChatRequestMessage> Messages { get; set; }
@@ -300,6 +308,8 @@ internal class VendorAnthropicChatRequest
     public double? TopP { get; set; }
     [JsonProperty("top_k")]
     public int? TopK { get; set; }
+    [JsonProperty("thinking")]
+    public VendorAnthropicThinkingSettings? Thinking { get; set; }
     [JsonProperty("tool_choice")]
     public VendorAnthropicChatRequestToolChoice? ToolChoice { get; set; }
     [JsonProperty("tools")]
@@ -389,6 +399,27 @@ internal class VendorAnthropicChatRequest
             Tools = request.Tools.Where(x => x.Function is not null).Select(t => new VendorAnthropicToolFunction(t)).ToList();
         }
 
-        request.VendorExtensions?.Anthropic?.OutboundRequest?.Invoke(System, Messages.Select(x => x.Content).ToList(), Tools);
+        if (request.VendorExtensions?.Anthropic is not null)
+        {
+            if (request.VendorExtensions.Anthropic.Thinking is not null)
+            {
+                if (request.VendorExtensions.Anthropic.Thinking.Enabled)
+                {
+                    Thinking = new VendorAnthropicThinkingSettings
+                    {
+                        BudgetTokens = request.VendorExtensions.Anthropic.Thinking.BudgetTokens,
+                        Type = "enabled"
+                    };
+
+                    // if budget tokens are set, max tokens must also be set
+                    if (MaxTokens < Thinking.BudgetTokens)
+                    {
+                        MaxTokens = Thinking.BudgetTokens.Value + 4_096;
+                    }
+                }
+            }
+            
+            request.VendorExtensions.Anthropic.OutboundRequest?.Invoke(System, Messages.Select(x => x.Content).ToList(), Tools);
+        }
     }
  }

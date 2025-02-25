@@ -354,7 +354,7 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
         
         req.Headers.Add("User-Agent", EndpointBase.GetUserAgent());
         req.Headers.Add("anthropic-version", "2023-06-01");
-        req.Headers.Add("anthropic-beta", "prompt-caching-2024-07-31"); // 8k output tokens for Sonnet 3.5
+        req.Headers.Add("anthropic-beta", "output-128k-2025-02-19"); // enables long output for claude 3.7
 
         ProviderAuthentication? auth = Api.GetProvider(LLmProviders.Anthropic).Auth;
 
