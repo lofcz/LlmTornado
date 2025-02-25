@@ -9,13 +9,17 @@ LLM Tornado acts as an aggregator allowing you to do just that. Think [SearX](ht
 
 OpenAI, Anthropic, Cohere, Google, Azure, and Groq are currently supported, along with any OpenAI-compatible inference servers, such as [Ollama](https://github.com/ollama/ollama). Check the full Feature Matrix [here](https://github.com/lofcz/LlmTornado/blob/master/FeatureMatrix.md).
 
-The following video captures **one conversation**, running across OpenAI, Cohere, and Anthropic, with parallel tools calling & streaming: 
-
+⭐ Awesome things you can do with Tornado:
+- [Chat with your documents](https://github.com/lofcz/LlmTornado/blob/61d2a4732c88c45d4a8c053204ecdef807c34652/LlmTornado.Demo/ChatDemo.cs#L722-L757)
+- [Call with AI using your microphone](https://github.com/lofcz/LlmTornado/blob/61d2a4732c88c45d4a8c053204ecdef807c34652/LlmTornado.Demo/ChatDemo.cs#L905-L968)
+- [Orchestrate Assistans](https://github.com/lofcz/LlmTornado/blob/61d2a4732c88c45d4a8c053204ecdef807c34652/LlmTornado.Demo/ThreadsDemo.cs#L331-L429)
+- [Turn various modalities into embeddings](https://github.com/lofcz/LlmTornado/blob/61d2a4732c88c45d4a8c053204ecdef807c34652/LlmTornado.Demo/EmbeddingDemo.cs#L50-L75)
+- [Generate images](https://github.com/lofcz/LlmTornado/blob/61d2a4732c88c45d4a8c053204ecdef807c34652/LlmTornado.Demo/ImagesDemo.cs#L10-L13)
+- Switch providers mid-conversation (OpenAI, Cohere, and Anthropic, with parallel tools calling & streaming): 
 
 https://github.com/lofcz/LlmTornado/assets/10260230/05c27b37-397d-4b4c-96a4-4138ade48dbe
 
-
-⭐ Try it, the code of the demo is [here](https://github.com/lofcz/LlmTornado/blob/9c53e2e6918eef1b02ce9457cc14c932d79639a2/LlmTornado.Demo/ChatDemo.cs#L198-L310)! Try asking for previously fetched information and verify the context is correctly constructed even when switching Providers mid-conversation.
+... and a lot more! Now, instead of relying on one LLM provider, you can combine the unique strengths of many. Unlike OpenRouter and similar libraries, Tornado exposes these capabilities via seamlessly integrated `vendor extensions` which can be usually invoked in a few lines of code.
 
 ## ⚡Getting Started
 
@@ -261,12 +265,11 @@ Check the links for simple to-understand examples!
 - Supports streaming, functions/tools, modalities (images, audio), and strongly typed LLM plugins/connectors.
 - Great performance, nullability annotations.
 - Extensive tests suite.
-- Maintained actively for over a year.
+- Maintained actively for two years, often with day 1 support for new features.
 
 ## Documentation
 
-Every public class, method, and property has extensive XML documentation, using LLM Tornado should be intuitive if you've used any other LLM library previously. Feel free to open an
-issue here if you have any questions.
+Most public classes, methods, and properties (90%+) are extensively XML documented. Feel free to open an issue here if you have any questions.
 
 PRs are welcome!
 
