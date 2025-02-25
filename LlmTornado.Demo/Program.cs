@@ -140,7 +140,7 @@ public class Program
         }        
         
         Console.WriteLine();
-        Console.WriteLine($"Enter either number or friendly name of the demo to run:");
+        Console.WriteLine($"Enter number of the demo (yellow) / friendly name of the demo / method name of demo to run:");
     }
 
     static async Task Read()
@@ -181,8 +181,23 @@ public class Program
                 return;
             }
         }
+        
+        // 3. interpret the input as method name
+        foreach (KeyValuePair<string, Tuple<MethodInfo, string?, Type, FlakyAttribute?>> x in DemoDict)
+        {
+            if (x.Value.Item1.Name == toPlay?.Trim())
+            {
+                await (Task)x.Value.Item1.Invoke(null, null);
 
-        // 3. yell at user
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine("Demo finished");
+                Console.ResetColor();
+                Console.ReadKey();
+                return;
+            }
+        }
+
+        // 4. yell at user
         Console.ForegroundColor = ConsoleColor.Red;
         Console.WriteLine($"Invalid number, expected 1-{DemoDict.Count}");
         Console.ReadKey();

@@ -1365,12 +1365,17 @@ public static class ChatDemo
             })
             .AppendSystemMessage("You are a helpful assistant")
             .AppendUserInput("What is the weather like today in Prague and Paris?");
-
-        ChatStreamEventHandler handler = new ChatStreamEventHandler
+        
+        await chat.StreamResponseRich(new ChatStreamEventHandler
         {
             MessageTokenHandler = (x) =>
             {
                 Console.Write(x);
+                return ValueTask.CompletedTask;
+            },
+            BlockFinishedHandler = (block) =>
+            {
+                Console.WriteLine();
                 return ValueTask.CompletedTask;
             },
             FunctionCallHandler = (calls) =>
@@ -1378,10 +1383,11 @@ public static class ChatDemo
                 calls.ForEach(x => x.Result = new FunctionResult(x, "A mild rain is expected around noon.", null));
                 return ValueTask.CompletedTask;
             },
-            AfterFunctionCallsResolvedHandler = async (results, handler) => { await chat.StreamResponseRich(handler); }
-        };
-
-        await chat.StreamResponseRich(handler);
+            AfterFunctionCallsResolvedHandler = async (results, handler) =>
+            {
+                await chat.StreamResponseRich(handler);
+            }
+        });
     }
     
     [TornadoTest]
