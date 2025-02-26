@@ -10,7 +10,7 @@ namespace LlmTornado.Chat.Models;
 public class ChatModelGoogleGemini : IVendorModelClassProvider
 {
     /// <summary>
-    /// Fast and versatile performance across a diverse variety of tasks.
+    /// Fast and versatile performance across a diverse variety of tasks (stable).
     /// </summary>
     public static readonly ChatModel ModelGemini2Flash001 = new ChatModel("gemini-2.0-flash-001", LLmProviders.Google, 1_000_000);
     
@@ -18,6 +18,36 @@ public class ChatModelGoogleGemini : IVendorModelClassProvider
     /// <inheritdoc cref="ModelGemini2Flash001"/>
     /// </summary>
     public readonly ChatModel Gemini2Flash001 = ModelGemini2Flash001;
+    
+    /// <summary>
+    /// Fast and versatile performance across a diverse variety of tasks (latest).
+    /// </summary>
+    public static readonly ChatModel ModelGemini2FlashLatest = new ChatModel("gemini-2.0-flash", LLmProviders.Google, 1_000_000);
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelGemini2FlashLatest"/>
+    /// </summary>
+    public readonly ChatModel Gemini2FlashLatest = ModelGemini2FlashLatest;
+    
+    /// <summary>
+    /// A Gemini 2.0 Flash model optimized for cost efficiency and low latency (stable).
+    /// </summary>
+    public static readonly ChatModel ModelGemini2FlashLite001 = new ChatModel("gemini-2.0-flash-lite-001", LLmProviders.Google, 1_000_000);
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelGemini2FlashLite001"/>
+    /// </summary>
+    public readonly ChatModel Gemini2FlashLite001 = ModelGemini2FlashLite001;
+    
+    /// <summary>
+    /// A Gemini 2.0 Flash model optimized for cost efficiency and low latency (latest).
+    /// </summary>
+    public static readonly ChatModel ModelGemini2FlashLiteLatest = new ChatModel("gemini-2.0-flash-lite", LLmProviders.Google, 1_000_000);
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelGemini2FlashLiteLatest"/>
+    /// </summary>
+    public readonly ChatModel Gemini2FlashLiteLatest = ModelGemini2FlashLiteLatest;
     
     /// <summary>
     /// Fast and versatile performance across a diverse variety of tasks.
@@ -137,7 +167,11 @@ public class ChatModelGoogleGemini : IVendorModelClassProvider
         ModelGemini15Flash8B,
         ModelGemini15Flash8BLatest,
         
-        ModelGemini2Flash001
+        ModelGemini2Flash001,
+        ModelGemini2FlashLatest,
+        
+        ModelGemini2FlashLite001,
+        ModelGemini2FlashLiteLatest
     ];
 
     /// <summary>
