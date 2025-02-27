@@ -293,9 +293,9 @@ public abstract class EndpointBase
             
             throw e switch
             {
-                HttpRequestException => new HttpRequestException($"An error occured when trying to contact {verb.Method} {url}. Message: {e.Message}. {(e.InnerException is not null ? $" Inner exception: {e.InnerException.Message}" : string.Empty)}"),
-                TaskCanceledException => new TaskCanceledException($"An error occured when trying to contact {verb.Method} {url}. The operation timed out. Consider increasing the timeout in TornadoApi config. {(e.InnerException is not null ? $" Inner exception: {e.InnerException.Message}" : string.Empty)}"),
-                _ => new Exception($"An error occured when trying to contact {verb.Method} {url}. Exception type: {e.GetType()}. Message: {e.Message}. {(e.InnerException is not null ? $" Inner exception: {e.InnerException.Message}" : string.Empty)}")
+                HttpRequestException => new HttpRequestException($"An error occurred when trying to contact {verb.Method} {url}. Message: {e.Message}. {(e.InnerException is not null ? $" Inner exception: {e.InnerException.Message}" : string.Empty)}"),
+                TaskCanceledException => new TaskCanceledException($"An error occurred when trying to contact {verb.Method} {url}. The operation timed out. Consider increasing the timeout in TornadoApi config. {(e.InnerException is not null ? $" Inner exception: {e.InnerException.Message}" : string.Empty)}"),
+                _ => new Exception($"An error occurred when trying to contact {verb.Method} {url}. Exception type: {e.GetType()}. Message: {e.Message}. {(e.InnerException is not null ? $" Inner exception: {e.InnerException.Message}" : string.Empty)}")
             };
         }
     }
