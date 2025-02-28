@@ -1338,6 +1338,47 @@ public static class ChatDemo
     }
     
     [TornadoTest]
+    public static async Task AnthropicPdfBase64()
+    {
+        Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Anthropic.Claude37.Sonnet
+        });
+
+        byte[] bytes = await File.ReadAllBytesAsync("Static/Files/sample.pdf");
+        string base64 = Convert.ToBase64String(bytes);
+        
+        chat2.AppendUserInput([
+            new ChatMessagePart(base64, DocumentLinkTypes.Base64),
+            new ChatMessagePart("Summarize this file")
+        ]);
+       
+        ChatRichResponse response = await chat2.GetResponseRich();
+
+        Console.WriteLine("Anthropic:");
+        Console.WriteLine(response);
+    }
+    
+    [TornadoTest]
+    public static async Task AnthropicPdfUrl()
+    {
+        Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Anthropic.Claude37.Sonnet
+        });
+        
+        chat2.AppendUserInput([
+            new ChatMessagePart("https://ontheline.trincoll.edu/images/bookdown/sample-local-pdf.pdf", DocumentLinkTypes.Url),
+            new ChatMessagePart("Summarize this file")
+        ]);
+       
+        ChatRichResponse response = await chat2.GetResponseRich();
+
+        Console.WriteLine("Anthropic:");
+        Console.WriteLine(response);
+    }
+    
+    [TornadoTest]
     public static async Task R7BArabic()
     {
         Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest

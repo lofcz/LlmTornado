@@ -24,14 +24,20 @@ public enum ChatMessageTypes
     Audio,
     
     /// <summary>
-    /// Message part is URI-based file. Supported only by Google.
+    /// Message part is URI-based file.
+    /// <b>Supported only by Google.</b>
     /// </summary>
     FileLink,
     
     /// <summary>
-    /// Message part is a reasoning block. Supported only by Anthropic.
+    /// Message part is a reasoning block.
+    /// <b>Supported only by Anthropic.</b>
     /// </summary>
     Reasoning,
     
-    
+    /// <summary>
+    /// Message part is either base64 encoded PDF or a publicly available URL pointing to a PDF (unencrypted, no passwords).
+    /// <b>Supported only by Anthropic.</b>
+    /// </summary>
+    Document
 }

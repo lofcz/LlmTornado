@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using LlmTornado.Images;
 using LlmTornado;
+using LlmTornado.Chat;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Common;
 using Newtonsoft.Json;
@@ -439,6 +440,56 @@ public enum ChatAudioFormats
     /// MP3
     /// </summary>
     Mp3
+}
+
+/// <summary>
+/// Ways to link a document to a <see cref="ChatMessagePart"/>
+/// </summary>
+public enum DocumentLinkTypes
+{
+    /// <summary>
+    /// Publicly reachable, absolute URL.
+    /// </summary>
+    Url,
+    
+    /// <summary>
+    /// Base64 encoded document.
+    /// </summary>
+    Base64
+}
+
+/// <summary>
+///     Represents a chat document (PDF).
+/// </summary>
+public class ChatDocument
+{
+    /// <summary>
+    /// Base64 encoded data.
+    /// </summary>
+    public string? Base64 { get; set; }
+    
+    /// <summary>
+    /// Publicly reachable URL serving the document.
+    /// </summary>
+    public Uri? Uri { get; set; }
+    
+    /// <summary>
+    ///     Creates a new chat document
+    /// </summary>
+    /// <param name="base64">Base64 encoded data.</param>
+    public ChatDocument(string base64)
+    {
+        Base64 = base64;
+    }
+    
+    /// <summary>
+    ///     Creates a new chat document
+    /// </summary>
+    /// <param name="uri">Publicly reachable URL serving the document.</param>
+    public ChatDocument(Uri uri)
+    {
+        Uri = uri;
+    }
 }
 
 /// <summary>

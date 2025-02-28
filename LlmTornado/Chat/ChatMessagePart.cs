@@ -53,6 +53,11 @@ public class ChatMessagePart
         Type = ChatMessageTypes.Text;
     }
     
+    /// <summary>
+    ///     The part is a text fragment with vendor extensions.
+    /// </summary>
+    /// <param name="text">Text of the message.</param>
+    /// <param name="vendorExtensions">Vendor extensions to use.</param>
     public ChatMessagePart(string text, IChatMessagePartVendorExtensions vendorExtensions)
     {
         Text = text;
@@ -128,6 +133,33 @@ public class ChatMessagePart
         };
         Type = ChatMessageTypes.Image;
     }
+    
+    /// <summary>
+    ///     The part is an image with either publicly available URL or encoded as base64.
+    /// </summary>
+    /// <param name="documentPathOrBase64">Publicly available URL to the image or base64 encoded content</param>
+    /// <param name="linkType">Image settings</param>
+    public ChatMessagePart(string documentPathOrBase64, DocumentLinkTypes linkType)
+    {
+        Document = linkType switch
+        {
+            DocumentLinkTypes.Base64 => new ChatDocument(documentPathOrBase64),
+            DocumentLinkTypes.Url => new ChatDocument(new Uri(documentPathOrBase64)),
+            _ => Document
+        };
+
+        Type = ChatMessageTypes.Document;
+    }
+    
+    /// <summary>
+    ///     The part is a document.
+    /// </summary>
+    /// <param name="document">Document</param>
+    public ChatMessagePart(ChatDocument document)
+    {
+        Document = document;
+        Type = ChatMessageTypes.Document;
+    }
 
     /// <summary>
     ///     The type of message part.
@@ -164,6 +196,12 @@ public class ChatMessagePart
     /// </summary>
     [JsonIgnore]
     public ChatMessagePartFileLinkData? FileLinkData { get; set; }
+    
+    /// <summary>
+    ///     Document of the message part if type is <see cref="ChatMessageTypes.Document" />.
+    /// </summary>
+    [JsonIgnore]
+    public ChatDocument? Document { get; set; }
     
     /// <summary>
     /// Reasoning data. Currently supported only by Anthropic.
@@ -225,5 +263,24 @@ public class ChatMessagePart
         return new ChatMessagePart(base64EncodedAudio, format);
     }
     
+    /// <summary>
+    ///     Creates an audio part from a given document.
+    /// </summary>
+    /// <param name="document"></param>
+    /// <returns></returns>
+    public static ChatMessagePart Create(ChatDocument document)
+    {
+        return new ChatMessagePart(document);
+    }
     
+    /// <summary>
+    ///     Creates an audio part from a given document.
+    /// </summary>
+    /// <param name="documentPathOrBase64">Publicly available URL to the image or base64 encoded content</param>
+    /// <param name="linkType">Image settings</param>
+    /// <returns></returns>
+    public static ChatMessagePart Create(string documentPathOrBase64, DocumentLinkTypes linkType)
+    {
+        return new ChatMessagePart(documentPathOrBase64, linkType);
+    }
 }

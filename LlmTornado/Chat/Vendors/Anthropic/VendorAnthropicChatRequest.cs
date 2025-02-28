@@ -216,6 +216,48 @@ public partial class VendorAnthropicChatRequestMessageContent
 
                             break;
                         }
+                        case ChatMessageTypes.Document:
+                        {
+                            if (part.Document is not null)
+                            {
+                                bool ok = part.Document.Base64 is not null || part.Document.Uri is not null;
+
+                                if (!ok)
+                                {
+                                    break;
+                                }
+                                
+                                writer.WritePropertyName("type");
+                                writer.WriteValue("document");
+                                
+                                writer.WritePropertyName("source");
+                                writer.WriteStartObject();
+                                
+                                if (part.Document.Base64 is not null)
+                                {
+                                    writer.WritePropertyName("media_type");
+                                    writer.WriteValue("application/pdf");
+                                    
+                                    writer.WritePropertyName("type");
+                                    writer.WriteValue("base64");
+                                    
+                                    writer.WritePropertyName("data");
+                                    writer.WriteValue(part.Document.Base64);
+                                }
+                                else if (part.Document.Uri is not null)
+                                {
+                                    writer.WritePropertyName("type");
+                                    writer.WriteValue("url");
+                                    
+                                    writer.WritePropertyName("url");
+                                    writer.WriteValue(part.Document.Uri);
+                                }
+                                
+                                writer.WriteEndObject();
+                            }
+
+                            break;
+                        }
                     }
                     
                     SerializeCache(part);
