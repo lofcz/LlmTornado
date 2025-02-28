@@ -20,6 +20,16 @@ public class ChatModelCohereCommand : IVendorModelClassProvider
     public readonly ChatModel RPlus = ModelRPlus;
     
     /// <summary>
+    /// 7B open-weights model optimized for Arabic language (MSA dialect), in addition to English.
+    /// </summary>
+    public static readonly ChatModel ModelR7BArabic2412 = new ChatModel("command-r7b-arabic-02-2025", LLmProviders.Cohere, 128_000);
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelR7BArabic2412"/>
+    /// </summary>
+    public readonly ChatModel R7BArabic2412 = ModelR7BArabic2412;
+    
+    /// <summary>
     /// Newest model from 24/08. Command R+ is an instruction-following conversational model that performs language tasks at a higher quality, more reliably, and with a longer context than previous models. It is best suited for complex RAG workflows and multi-step tool use.
     /// </summary>
     public static readonly ChatModel ModelRPlus2408 = new ChatModel("command-r-plus-08-2024", LLmProviders.Cohere, 128_000);
@@ -101,7 +111,8 @@ public class ChatModelCohereCommand : IVendorModelClassProvider
         ModelDefault2408,
         ModelLight,
         ModelLightNightly,
-        ModelR7B
+        ModelR7B,
+        ModelR7BArabic2412
     ];
 
     /// <summary>
