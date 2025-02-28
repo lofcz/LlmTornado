@@ -19,6 +19,11 @@ public class ChatModelOpenAi : BaseVendorModelProvider
     public readonly ChatModelOpenAiGpt4 Gpt4 = new ChatModelOpenAiGpt4();
     
     /// <summary>
+    /// GPT 4.5 models.
+    /// </summary>
+    public readonly ChatModelOpenAiGpt45 Gpt45 = new ChatModelOpenAiGpt45();
+    
+    /// <summary>
     /// O3 models.
     /// </summary>
     public readonly ChatModelOpenAiO3 O3 = new ChatModelOpenAiO3();
@@ -49,7 +54,8 @@ public class ChatModelOpenAi : BaseVendorModelProvider
     public static readonly List<IModel> ModelsAll = [
         ..ChatModelOpenAiGpt35.ModelsAll,
         ..ChatModelOpenAiGpt4.ModelsAll,
-        ..ChatModelOpenAiO3.ModelsAll
+        ..ChatModelOpenAiO3.ModelsAll,
+        ..ChatModelOpenAiGpt45.ModelsAll
     ];
     
     static ChatModelOpenAi()

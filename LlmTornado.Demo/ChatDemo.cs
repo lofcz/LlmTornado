@@ -1295,6 +1295,22 @@ public static class ChatDemo
     }
     
     [TornadoTest]
+    public static async Task Gpt45Preview()
+    {
+        Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.OpenAi.Gpt45.Preview
+        });
+        chat2.AppendSystemMessage("Pretend you are a dog. Sound authentic.");
+        chat2.AppendUserInput("Who are you?");
+       
+        string? str2 = await chat2.GetResponse();
+
+        Console.WriteLine("OpenAI:");
+        Console.WriteLine(str2);
+    }
+    
+    [TornadoTest]
     public static async Task OpenAiFunctions()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
