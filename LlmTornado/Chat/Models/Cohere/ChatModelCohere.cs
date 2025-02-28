@@ -14,6 +14,11 @@ public class ChatModelCohere: BaseVendorModelProvider
     public readonly ChatModelCohereCommand Command = new ChatModelCohereCommand();
     
     /// <summary>
+    /// Aya models.
+    /// </summary>
+    public readonly ChatModelCohereAya Aya = new ChatModelCohereAya();
+    
+    /// <summary>
     /// All known chat models from Cohere.
     /// </summary>
     public override List<IModel> AllModels { get; }
@@ -37,7 +42,8 @@ public class ChatModelCohere: BaseVendorModelProvider
     /// <inheritdoc cref="AllModels"/>
     /// </summary>
     public static readonly List<IModel> ModelsAll = [
-        ..ChatModelCohereCommand.ModelsAll
+        ..ChatModelCohereCommand.ModelsAll,
+        ..ChatModelCohereAya.ModelsAll
     ];
     
     static ChatModelCohere()

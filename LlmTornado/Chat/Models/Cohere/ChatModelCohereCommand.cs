@@ -5,7 +5,7 @@ using LlmTornado.Code.Models;
 namespace LlmTornado.Chat.Models;
 
 /// <summary>
-/// Claude 3 class models from Anthropic.
+/// Command class models from Anthropic.
 /// </summary>
 public class ChatModelCohereCommand : IVendorModelClassProvider
 {
