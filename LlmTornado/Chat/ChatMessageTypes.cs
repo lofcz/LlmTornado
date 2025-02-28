@@ -31,5 +31,7 @@ public enum ChatMessageTypes
     /// <summary>
     /// Message part is a reasoning block. Supported only by Anthropic.
     /// </summary>
-    Reasoning
+    Reasoning,
+    
+    
 }

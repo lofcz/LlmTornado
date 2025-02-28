@@ -1324,7 +1324,7 @@ public static class ChatDemo
         });
 
         byte[] bytes = await File.ReadAllBytesAsync("Static/Images/catBoi.jpg");
-        string base64 = $"{Convert.ToBase64String(bytes)}";
+        string base64 = $"data:image/jpeg;base64,{Convert.ToBase64String(bytes)}";
         
         chat2.AppendUserInput([
             new ChatMessagePart(base64, ImageDetail.Auto, "image/jpeg"),

@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Text.RegularExpressions;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.ChatFunctions;
@@ -51,7 +52,7 @@ public class ChatMessagePartAnthropicExtensions : IChatMessagePartVendorExtensio
     public AnthropicCacheSettings? Cache { get; set; }
 }
 
-public class VendorAnthropicChatRequestMessageContent
+public partial class VendorAnthropicChatRequestMessageContent
 {
     [JsonIgnore]
     internal ChatMessage Msg { get; set; }
@@ -74,7 +75,7 @@ public class VendorAnthropicChatRequestMessageContent
         
     }
 
-    internal class VendorAnthropicChatRequestMessageContentJsonConverter : JsonConverter<VendorAnthropicChatRequestMessageContent>
+    internal partial class VendorAnthropicChatRequestMessageContentJsonConverter : JsonConverter<VendorAnthropicChatRequestMessageContent>
     {
         public override void WriteJson(JsonWriter writer, VendorAnthropicChatRequestMessageContent value, JsonSerializer serializer)
         {
@@ -149,12 +150,22 @@ public class VendorAnthropicChatRequestMessageContent
 
                             writer.WritePropertyName("source");
                             writer.WriteStartObject();
+
+                            bool dataPrefix = part.Image.Url.StartsWith("data:");
                             
-                            if (part.Image.Url.StartsWith("data:") || !Uri.TryCreate(part.Image.Url, UriKind.Absolute, out _))
+                            if (dataPrefix || !Uri.TryCreate(part.Image.Url, UriKind.Absolute, out _))
                             {
                                 if (part.Image.MimeType is null)
                                 {
                                     throw new Exception("MIME type of the image must be set, supported values for Anthropic are: image/jpeg, image/png, image/gif, image/webp");
+                                }
+
+                                // anthropic expects bare64, remove the prefix
+                                string img = part.Image.Url;
+                                
+                                if (dataPrefix)
+                                {
+                                    img = Base64HeaderRegex().Replace(img, string.Empty, 1);
                                 }
                         
                                 writer.WritePropertyName("type");
@@ -164,7 +175,7 @@ public class VendorAnthropicChatRequestMessageContent
                                 writer.WriteValue(part.Image.MimeType);
                             
                                 writer.WritePropertyName("data");
-                                writer.WriteValue(part.Image.Url);
+                                writer.WriteValue(img);
                             }
                             else
                             {
@@ -284,6 +295,9 @@ public class VendorAnthropicChatRequestMessageContent
         {
             return new VendorAnthropicChatRequestMessageContent();
         }
+
+        [GeneratedRegex(@"^data:image\/[a-zA-Z]+;base64,", RegexOptions.Compiled)]
+        private static partial Regex Base64HeaderRegex();
     }
 }
 
