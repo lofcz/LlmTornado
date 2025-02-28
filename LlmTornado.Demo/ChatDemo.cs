@@ -1,4 +1,5 @@
 using System.Text;
+using Flurl.Http;
 using LlmTornado.Caching;
 using Newtonsoft.Json;
 using LlmTornado.Chat;
@@ -13,6 +14,7 @@ using LlmTornado.Code.Models;
 using LlmTornado.Common;
 using LlmTornado.Contrib;
 using LlmTornado.Files;
+using LlmTornado.Images;
 
 namespace LlmTornado.Demo;
 
@@ -1292,6 +1294,47 @@ public static class ChatDemo
        Console.WriteLine(str);
        Console.WriteLine("OpenAI:");
        Console.WriteLine(str2);
+    }
+    
+    [TornadoTest]
+    public static async Task AnthropicImageUrl()
+    {
+        Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Anthropic.Claude37.Sonnet
+        });
+      
+        chat2.AppendUserInput([
+            new ChatMessagePart(new Uri("https://upload.wikimedia.org/wikipedia/commons/a/a7/Camponotus_flavomarginatus_ant.jpg")),
+            new ChatMessagePart("Describe this image")
+        ]);
+       
+        ChatRichResponse response = await chat2.GetResponseRich();
+
+        Console.WriteLine("Anthropic:");
+        Console.WriteLine(response);
+    }
+    
+    [TornadoTest]
+    public static async Task AnthropicImageBase64()
+    {
+        Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Anthropic.Claude37.Sonnet
+        });
+
+        byte[] bytes = await File.ReadAllBytesAsync("Static/Images/catBoi.jpg");
+        string base64 = $"{Convert.ToBase64String(bytes)}";
+        
+        chat2.AppendUserInput([
+            new ChatMessagePart(base64, ImageDetail.Auto, "image/jpeg"),
+            new ChatMessagePart("Describe this image")
+        ]);
+       
+        ChatRichResponse response = await chat2.GetResponseRich();
+
+        Console.WriteLine("Anthropic:");
+        Console.WriteLine(response);
     }
     
     [TornadoTest]

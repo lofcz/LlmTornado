@@ -147,22 +147,33 @@ public class VendorAnthropicChatRequestMessageContent
                                 throw new Exception("Image property of ChatMessagePart is null and cannot be encoded.");
                             }
 
-                            if (part.Image.MimeType is null)
-                            {
-                                throw new Exception("MIME type of the image must be set, supported values for Anthropic are: image/jpeg, image/png, image/gif, image/webp");
-                            }
-                            
                             writer.WritePropertyName("source");
                             writer.WriteStartObject();
-                        
-                            writer.WritePropertyName("type");
-                            writer.WriteValue("base64");
-                        
-                            writer.WritePropertyName("media_type");
-                            writer.WriteValue(part.Image.MimeType);
                             
-                            writer.WritePropertyName("data");
-                            writer.WriteValue(part.Image.Url);
+                            if (part.Image.Url.StartsWith("data:") || !Uri.TryCreate(part.Image.Url, UriKind.Absolute, out _))
+                            {
+                                if (part.Image.MimeType is null)
+                                {
+                                    throw new Exception("MIME type of the image must be set, supported values for Anthropic are: image/jpeg, image/png, image/gif, image/webp");
+                                }
+                        
+                                writer.WritePropertyName("type");
+                                writer.WriteValue("base64");
+                        
+                                writer.WritePropertyName("media_type");
+                                writer.WriteValue(part.Image.MimeType);
+                            
+                                writer.WritePropertyName("data");
+                                writer.WriteValue(part.Image.Url);
+                            }
+                            else
+                            {
+                                writer.WritePropertyName("type");
+                                writer.WriteValue("url");
+     
+                                writer.WritePropertyName("url");
+                                writer.WriteValue(part.Image.Url);   
+                            }
                         
                             writer.WriteEndObject();
                             break;

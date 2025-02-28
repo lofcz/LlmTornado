@@ -107,16 +107,8 @@ public class ChatRichResponse
 
         foreach (ChatRichResponseBlock x in Blocks)
         {
-            sb.AppendLine(x.Type.ToString());
-
-            if (x.Type is ChatRichResponseBlockTypes.Reasoning)
-            {
-                sb.AppendLine(x.Reasoning?.Content);   
-            }
-            else
-            {
-                sb.AppendLine(x.Message);
-            }
+            sb.AppendLine($"[block: {x.Type.ToString()}]");
+            sb.AppendLine(x.Type is ChatRichResponseBlockTypes.Reasoning ? x.Reasoning?.Content : x.Message);
         }
 
         return sb.ToString();
