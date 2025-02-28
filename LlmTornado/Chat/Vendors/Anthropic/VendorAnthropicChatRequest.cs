@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -293,14 +294,14 @@ public class VendorAnthropicChatRequestMessage
 
 internal class VendorAnthropicChatRequest
 {
-    internal static Dictionary<OutboundToolChoiceModes, string> toolChoiceMap = new Dictionary<OutboundToolChoiceModes, string>
+    internal static readonly FrozenDictionary<OutboundToolChoiceModes, string> ToolChoiceMap = new Dictionary<OutboundToolChoiceModes, string>
     {
         { OutboundToolChoiceModes.Auto, "auto" },
         { OutboundToolChoiceModes.Legacy, "auto" },
-        { OutboundToolChoiceModes.None, "auto" },
+        { OutboundToolChoiceModes.None, "none" },
         { OutboundToolChoiceModes.Required, "any" },
         { OutboundToolChoiceModes.ToolFunction, "tool" }
-    };
+    }.ToFrozenDictionary();
 
     internal class VendorAnthropicChatRequestMetadata
     {
@@ -425,7 +426,7 @@ internal class VendorAnthropicChatRequest
         {
             ToolChoice = new VendorAnthropicChatRequestToolChoice
             {
-                Type = toolChoiceMap.GetValueOrDefault(request.ToolChoice.Mode) ?? "auto",
+                Type = ToolChoiceMap.GetValueOrDefault(request.ToolChoice.Mode) ?? "auto",
                 Name = request.ToolChoice.Mode is OutboundToolChoiceModes.ToolFunction ? request.ToolChoice.Function?.Name : null
             };
         }

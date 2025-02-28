@@ -50,6 +50,21 @@ public enum OutboundToolChoiceModes
 public class OutboundToolChoice
 {
     /// <summary>
+    /// No tool will be used.
+    /// </summary>
+    public static readonly OutboundToolChoice None = new OutboundToolChoice(OutboundToolChoiceModes.None);
+    
+    /// <summary>
+    /// Tools might be used if any are available.
+    /// </summary>
+    public static readonly OutboundToolChoice Auto = new OutboundToolChoice(OutboundToolChoiceModes.Auto);
+    
+    /// <summary>
+    /// At least one tool will be used.
+    /// </summary>
+    public static readonly OutboundToolChoice Required = new OutboundToolChoice(OutboundToolChoiceModes.Required);
+    
+    /// <summary>
     /// Manually construct the tool choice.
     /// </summary>
     public OutboundToolChoice()

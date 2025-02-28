@@ -1407,10 +1407,74 @@ public static class ChatDemo
     }
     
     [TornadoTest]
+    public static async Task AnthropicToolsForceNone()
+    {
+        Conversation chat = Program.Connect(LLmProviders.Anthropic).Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Anthropic.Claude3.Sonnet,
+            Tools = [
+                new Tool(new ToolFunction("get_weather", "gets the current weather", new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        location = new
+                        {
+                            type = "string",
+                            description = "The location for which the weather information is required."
+                        }
+                    },
+                    required = new List<string> { "location" }
+                }))
+            ],
+            ToolChoice = OutboundToolChoice.None
+        });
+
+        ChatStreamEventHandler eventsHandler = new ChatStreamEventHandler
+        {
+            MessageTokenHandler = (x) =>
+            {
+                Console.Write(x);
+                return ValueTask.CompletedTask;
+            },
+            BlockFinishedHandler = (block) =>
+            {
+                Console.WriteLine();
+                return ValueTask.CompletedTask;
+            },
+            FunctionCallHandler = (functions) =>
+            {
+                foreach (FunctionCall fn in functions)
+                {
+                    if (fn.TryGetArgument("location", out string? str) && str.ToLowerInvariant() is "prague")
+                    {
+                        fn.Result = new FunctionResult(fn.Name, "A mild rain is expected around noon.");  
+                    }
+                    else
+                    {
+                        fn.Result = new FunctionResult(fn.Name, "A sunny, hot day is expected, 28 \u00b0C");
+                    }
+                }
+
+                return ValueTask.CompletedTask;
+            }
+        };
+
+        chat.OnAfterToolsCall = async (result) =>
+        {
+            chat.RequestParameters.ToolChoice = null; // stop forcing the model to use the get_weather tool
+            await chat.StreamResponseRich(eventsHandler);
+        };
+        
+        chat.AppendMessage(ChatMessageRoles.System, "You are a helpful assistant");
+        chat.AppendMessage(ChatMessageRoles.User, "What is the weather like today in Prague and Paris?");
+
+        await chat.StreamResponseRich(eventsHandler);
+    }
+    
+    [TornadoTest]
     public static async Task AnthropicFunctionsParallel()
     {
-        StringBuilder sb = new StringBuilder();
-
         Conversation chat = Program.Connect(LLmProviders.Anthropic).Chat.CreateConversation(new ChatRequest
         {
             Model = ChatModel.Anthropic.Claude3.Sonnet,
