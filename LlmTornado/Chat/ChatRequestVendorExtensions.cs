@@ -42,7 +42,7 @@ public class ChatRequestVendorExtensions
     }
     
     /// <summary>
-    ///     Cohere extensions.
+    ///     Anthropic extensions.
     /// </summary>
     /// <param name="anthropicExtensions"></param>
     public ChatRequestVendorExtensions(ChatRequestVendorAnthropicExtensions anthropicExtensions)

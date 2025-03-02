@@ -1,7 +1,68 @@
 ﻿using System;
+using System.Runtime.Serialization;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+
+// ReSharper disable InconsistentNaming
 
 namespace LlmTornado.Images;
+
+/// <summary>
+/// Possible image sizes.
+/// </summary>
+[JsonConverter(typeof(StringEnumConverter))]
+public enum TornadoImageSizes
+{
+    /// <summary>
+    /// Supported by Dalle2, 1:1
+    /// </summary>
+    [EnumMember(Value = "256x256")]
+    Size256x256,
+    
+    /// <summary>
+    /// Supported by Dalle2, 1:1
+    /// </summary>
+    [EnumMember(Value = "512x512")]
+    Size512x512,
+    
+    /// <summary>
+    /// Supported by Dalle2, Dalle3, Imagen, 1:1
+    /// </summary>
+    [EnumMember(Value = "1024x1024")]
+    Size1024x1024,
+    
+    /// <summary>
+    /// Supported by Dalle3
+    /// </summary>
+    [EnumMember(Value = "1792x1024")]
+    Size1792x1024,
+    
+    /// <summary>
+    /// Supported by Dalle3
+    /// </summary>
+    [EnumMember(Value = "1024x1792")]
+    Size1024x1792,
+    
+    /// <summary>
+    /// Supported by Imagen, 9:16
+    /// </summary>
+    Size768x1408,
+    
+    /// <summary>
+    /// Supported by Imagen, 16:9
+    /// </summary>
+    Size1408x768,
+    
+    /// <summary>
+    /// Supported by Imagen, 3:4
+    /// </summary>
+    Size896x1280,
+    
+    /// <summary>
+    /// Supported by Imagen, 4:3
+    /// </summary>
+    Size1280x896
+}
 
 /// <summary>
 ///     Represents available sizes for image generation endpoints

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
@@ -348,7 +349,7 @@ public class ChatRequest
 		MaxTokensRenamer.RenameProperty(typeof(ChatRequest), "max_tokens", "max_completion_tokens");	
 	}
 
-	private static readonly Dictionary<LLmProviders, Func<ChatRequest, IEndpointProvider, string>> SerializeMap = new Dictionary<LLmProviders, Func<ChatRequest, IEndpointProvider, string>>
+	private static readonly FrozenDictionary<LLmProviders, Func<ChatRequest, IEndpointProvider, string>> SerializeMap = new Dictionary<LLmProviders, Func<ChatRequest, IEndpointProvider, string>>
 	{
 		{ LLmProviders.OpenAi, (x, y) =>
 			{
@@ -387,7 +388,7 @@ public class ChatRequest
 				return JsonConvert.SerializeObject(x, EndpointBase.NullSettings);
 			} 
 		}
-	};
+	}.ToFrozenDictionary();
 
 	/// <summary>
 	///		Serializes the chat request into the request body, based on the conventions used by the LLM provider.

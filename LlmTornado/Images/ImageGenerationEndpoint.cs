@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using LlmTornado.Code;
+using LlmTornado.Images.Models;
 
 namespace LlmTornado.Images;
 
@@ -9,7 +10,7 @@ namespace LlmTornado.Images;
 public class ImageGenerationEndpoint : EndpointBase
 {
 	/// <summary>
-	///     Constructor of the api endpoint.  Rather than instantiating this yourself, access it through an instance of
+	///     Constructor of the api endpoint. Rather than instantiating this yourself, access it through an instance of
 	///     <see cref="TornadoApi" /> as <see cref="TornadoApi.ImageGenerations" />.
 	/// </summary>
 	/// <param name="api"></param>
@@ -23,23 +24,26 @@ public class ImageGenerationEndpoint : EndpointBase
 	protected override CapabilityEndpoints Endpoint => CapabilityEndpoints.ImageGeneration;
 	
 	/// <summary>
-	///     Ask the API to Creates an image given a prompt.
+	///     Ask the API to create an image given a prompt.
 	/// </summary>
 	/// <param name="input">A text description of the desired image(s)</param>
-	/// <returns>Asynchronously returns the image result. Look in its <see cref="Data.Url" /> </returns>
-	public Task<ImageResult?> CreateImageAsync(string input)
+	/// <returns>Asynchronously returns the image result. Look in its <see cref="TornadoImageTornadoGeneratedImageeturns>
+	public Task<ImageGenerationResult?> CreateImage(string input)
     {
         ImageGenerationRequest req = new ImageGenerationRequest(input);
-        return CreateImageAsync(req);
+        return CreateImage(req);
     }
 
 	/// <summary>
-	///     Ask the API to Creates an image given a prompt.
+	///     Ask the API to create an image given a prompt.
 	/// </summary>
-	/// <param name="request">Request to be send</param>
-	/// <returns>Asynchronously returns the image result. Look in its <see cref="Data.Url" /> </returns>
-	public Task<ImageResult?> CreateImageAsync(ImageGenerationRequest request)
+	/// <param name="request">Request to be sent</param>
+	/// <returns>Asynchronously returns the image result. Look in its <see cref="TornadoImageTornadoGeneratedImageeturns>
+	public Task<ImageGenerationResult?> CreateImage(ImageGenerationRequest request)
     {
-        return HttpPost1<ImageResult>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, postData: request);
+	    IEndpointProvider provider = Api.GetProvider(request.Model ?? ImageModel.OpenAi.Dalle.V3);
+	    TornadoRequestContent requestBody = request.Serialize(provider);
+	    
+        return HttpPost1<ImageGenerationResult>(provider, Endpoint, requestBody.Url, postData: requestBody.Body);
     }
 }

@@ -15,6 +15,7 @@ using LlmTornado.Chat.Vendors.Cohere;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code.Sse;
 using LlmTornado.Files;
+using LlmTornado.Images;
 using LlmTornado.Vendor.Anthropic;
 using Newtonsoft.Json;
 
@@ -66,6 +67,7 @@ internal class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider,
                 string eStr = endpoint switch
                 {
                     CapabilityEndpoints.Chat => "models",
+                    CapabilityEndpoints.ImageGeneration => "models",
                     CapabilityEndpoints.Files => "files",
                     CapabilityEndpoints.Caching => "cachedContents",
                     _ => throw new Exception($"Google doesn't support endpoint {endpoint}")
@@ -224,8 +226,8 @@ internal class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider,
         { typeof(ChatResult), (s, s1) => ChatResult.Deserialize(LLmProviders.Google, s, s1) },
         { typeof(TornadoFile), (s, s1) => FileUploadRequest.Deserialize(LLmProviders.Google, s, s1) },
         { typeof(CachedContentInformation), (s, s1) => CachedContentInformation.Deserialize(LLmProviders.Google, s, s1) },
-        { typeof(CachedContentList), (s, s1) => CachedContentList.Deserialize(LLmProviders.Google, s, s1) }
-
+        { typeof(CachedContentList), (s, s1) => CachedContentList.Deserialize(LLmProviders.Google, s, s1) },
+        { typeof(ImageGenerationResult), (s, s1) => ImageGenerationResult.Deserialize(LLmProviders.Google, s, s1) },
     };
     
     public override T? InboundMessage<T>(string jsonData, string? postData) where T : default

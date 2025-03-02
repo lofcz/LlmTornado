@@ -26,9 +26,9 @@ public class ImageEditEndpoint : EndpointBase
     ///     Ask the API to Creates an image given a prompt.
     /// </summary>
     /// <param name="request">Request to be send</param>
-    /// <returns>Asynchronously returns the image result. Look in its <see cref="Data.Url" /> </returns>
-    public async Task<ImageResult?> EditImageAsync(ImageEditRequest request)
+    /// <returns>Asynchronously returns the image result. Look in its <see cref="TornadoGeneratedImage.Url" /> </returns>
+    public async Task<ImageGenerationResult?> EditImageAsync(ImageEditRequest request)
     {
-        return await HttpPost1<ImageResult>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, postData: request);
+        return await HttpPost1<ImageGenerationResult>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, postData: request);
     }
 }

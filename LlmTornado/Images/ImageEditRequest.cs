@@ -25,14 +25,14 @@ public class ImageEditRequest
 	/// <param name="size">The size of the generated images. Must be one of 256x256, 512x512, or 1024x1024.</param>
 	/// <param name="user">A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse.</param>
 	/// <param name="responseFormat">The format in which the generated images are returned. Must be one of url or b64_json.</param>
-	public ImageEditRequest(string image, string prompt, int numOfImages = 1, ImageSize? size = null, string? user = null, ImageResponseFormat? responseFormat = null)
+	public ImageEditRequest(string image, string prompt, int numOfImages = 1, ImageSize? size = null, string? user = null, TornadoImageResponseFormats? responseFormat = null)
     {
         Image = image;
         Prompt = prompt;
         NumOfImages = numOfImages;
         User = user;
         Size = size ?? ImageSize._1024;
-        ResponseFormat = responseFormat ?? ImageResponseFormat.Url;
+        ResponseFormat = responseFormat ?? TornadoImageResponseFormats.Url;
     }
 
 	/// <summary>
@@ -73,8 +73,7 @@ public class ImageEditRequest
 	///     The format in which the generated images are returned. Must be one of url or b64_json. Defaults to Url.
 	/// </summary>
 	[JsonProperty("response_format")]
-    [JsonConverter(typeof(ImageResponseFormat.ImageResponseJsonConverter))]
-    public ImageResponseFormat ResponseFormat { get; set; }
+    public TornadoImageResponseFormats ResponseFormat { get; set; }
 
 	/// <summary>
 	///     A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse. Optional.
