@@ -16,7 +16,7 @@ _Empty field means the feature is unsupported by the provider._
 |**Batch**      | ❌ | ❌ | ❌ | ❌ |    | ❌ | ❌ |    |     |
 |**Files**      | ✅ |    | ✅ |     |    |     | ❌ |    |     |
 |**Uploads**    | ❌ |    |     |    |    |     |     |    |     |
-|**Images**     | ✅ |    | ❌ |    |    |     |     |     |     |
+|**Images**     | ✅ |    | ✅ |    |    |     |     |     |     |
 |**Models**     | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |  ❌ |  ✅ |
 |**Moderation** | ✅ |    |     |    |    |     |     |    |     |
 |**Tokenize**   |    | ❌ |     | ❌ |    |     |     |    |     |
