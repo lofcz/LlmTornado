@@ -1411,6 +1411,22 @@ public static class ChatDemo
     }
     
     [TornadoTest]
+    public static async Task Aya32BVision()
+    {
+        Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Cohere.Aya.Vision32B
+        });
+        chat2.AppendSystemMessage("Pretend you are a dog. Sound authentic.");
+        chat2.AppendUserInput("Who are you?");
+       
+        string? str2 = await chat2.GetResponse();
+
+        Console.WriteLine("Cohere:");
+        Console.WriteLine(str2);
+    }
+    
+    [TornadoTest]
     public static async Task Gpt45Preview()
     {
         Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
@@ -2031,6 +2047,33 @@ public static class ChatDemo
 
 
         string response = sb.ToString();
+        Console.WriteLine(response);
+    }
+
+    [TornadoTest]
+    public static async Task GoogleCachedFileOnly()
+    {
+        HttpCallResult<TornadoFile> file = await Program.Connect().Files.Upload("Static/Files/sample.pdf", provider: LLmProviders.Google, mimeType: "application/pdf");
+        
+        HttpCallResult<CachedContentInformation> cachingResult = await Program.Connect().Caching.Create(new CreateCachedContentRequest(90, ChatModel.Google.Gemini.Gemini15Pro002, [
+            new CachedContent([
+                new ChatMessagePart(new ChatMessagePartFileLinkData(file.Data.Uri, "application/pdf"))
+            ], CachedContentRoles.User)
+        ], null, null, null));
+        
+        Conversation conversation = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Google.Gemini.Gemini15Pro002,
+            VendorExtensions = new ChatRequestVendorExtensions(new ChatRequestVendorGoogleExtensions(cachingResult.Data)
+            {
+                
+            })
+        });
+
+        conversation.AppendSystemMessage($"Jsi nápomocný stroj");
+        conversation.AppendUserInput("O čem je ten soubor?");
+
+        ChatRichResponse response = await conversation.GetResponseRich();
         Console.WriteLine(response);
     }
 
