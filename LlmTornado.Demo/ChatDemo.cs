@@ -719,7 +719,26 @@ public static class ChatDemo
             return ValueTask.CompletedTask;
         });
     }
-    
+
+    [TornadoTest]
+    public static async Task GoogleFileInput()
+    {
+        TornadoApi api = Program.Connect(LLmProviders.Google);
+        HttpCallResult<TornadoFile> uploadedFile = await api.Files.Upload("Static/Files/prezSample.pdf", mimeType: "application/pdf", provider: LLmProviders.Google);
+
+        Conversation chat = Program.Connect(LLmProviders.Google).Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Google.Gemini.Gemini2Flash001
+        });
+        chat.AppendUserInput([
+            new ChatMessagePart("What is this file about?"),
+            new ChatMessagePart(new ChatMessagePartFileLinkData(uploadedFile.Data.Uri))
+        ]);
+
+        ChatRichResponse response = await chat.GetResponseRich();
+        Console.WriteLine(response.Result?.Usage?.TotalTokens);
+    }
+
     [TornadoTest]
     public static async Task GoogleStreamFileInput()
     {
