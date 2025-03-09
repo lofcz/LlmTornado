@@ -14,10 +14,10 @@ public sealed class CreateMessageRequest
     /// <summary>
     ///     Constructor.
     /// </summary>
-    private CreateMessageRequest()
+    public CreateMessageRequest()
     {
         Role = ChatMessageRoles.User;
-        Content ??= new List<MessageContent>();
+        Content ??= [];
     }
 
     /// <summary>
