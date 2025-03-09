@@ -51,7 +51,7 @@ public sealed class CreateRunRequest
     ///     Adds additional messages to the thread before creating the run.
     /// </summary>
     [JsonProperty("additional_messages")]
-    public string? AdditionalMessages { get; set; }
+    public IReadOnlyList<CreateMessageRequest>? Messages { get; set; }
 
     /// <summary>
     ///     The list of tools that the assistant used for this run.

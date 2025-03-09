@@ -15,7 +15,7 @@ public static class ThreadsDemo
     [TornadoTest]
     public static async Task<TornadoThread> CreateThread()
     {
-        HttpCallResult<TornadoThread> thread = await Program.Connect().Threads.CreateThreadAsync();
+        HttpCallResult<TornadoThread> thread = await Program.Connect().Threads.CreateThread();
         Console.WriteLine(thread.Response);
         generatedThread = thread.Data;
         return thread.Data!;
@@ -26,7 +26,7 @@ public static class ThreadsDemo
     {
         generatedThread ??= await CreateThread();
         HttpCallResult<TornadoThread> response =
-            await Program.Connect().Threads.RetrieveThreadAsync(generatedThread.Id);
+            await Program.Connect().Threads.RetrieveThread(generatedThread.Id);
         Console.WriteLine(response.Response);
         return response.Data!;
     }
@@ -35,7 +35,7 @@ public static class ThreadsDemo
     public static async Task<TornadoThread> ModifyThread()
     {
         generatedThread ??= await CreateThread();
-        HttpCallResult<TornadoThread>? response = await Program.Connect().Threads.ModifyThreadAsync(generatedThread.Id,
+        HttpCallResult<TornadoThread>? response = await Program.Connect().Threads.ModifyThread(generatedThread.Id,
             new ModifyThreadRequest
             {
                 Metadata = new Dictionary<string, string>
@@ -52,7 +52,7 @@ public static class ThreadsDemo
     public static async Task DeleteThread()
     {
         generatedThread ??= await CreateThread();
-        HttpCallResult<bool> deleted = await Program.Connect().Threads.DeleteThreadAsync(generatedThread.Id);
+        HttpCallResult<bool> deleted = await Program.Connect().Threads.DeleteThread(generatedThread.Id);
         generatedThread = null;
         generatedMessage = null;
         generatedTornadoRun = null;
@@ -71,7 +71,7 @@ public static class ThreadsDemo
 
     public static async Task<AssistantMessage> CreateMessage(string threadId, string content)
     {
-        HttpCallResult<AssistantMessage> response = await Program.Connect().Threads.CreateMessageAsync(threadId,
+        HttpCallResult<AssistantMessage> response = await Program.Connect().Threads.CreateMessage(threadId,
             new CreateMessageRequest(content));
         Console.WriteLine(response.Response);
         return response.Data!;
@@ -84,7 +84,7 @@ public static class ThreadsDemo
         generatedMessage ??= await CreateMessage();
 
         HttpCallResult<AssistantMessage> response =
-            await Program.Connect().Threads.RetrieveMessageAsync(generatedThread.Id, generatedMessage.Id);
+            await Program.Connect().Threads.RetrieveMessage(generatedThread.Id, generatedMessage.Id);
         Console.WriteLine(response.Response);
         return response.Data!;
     }
@@ -96,7 +96,7 @@ public static class ThreadsDemo
         generatedMessage ??= await CreateMessage();
 
         HttpCallResult<ListResponse<AssistantMessage>> response =
-            await Program.Connect().Threads.ListMessagesAsync(generatedThread.Id);
+            await Program.Connect().Threads.ListMessages(generatedThread.Id);
         Console.WriteLine(response.Response);
         return response.Data!.Items;
     }
@@ -107,7 +107,7 @@ public static class ThreadsDemo
         generatedThread ??= await CreateThread();
         generatedMessage ??= await CreateMessage();
 
-        HttpCallResult<AssistantMessage> response = await Program.Connect().Threads.ModifyMessageAsync(generatedThread.Id,
+        HttpCallResult<AssistantMessage> response = await Program.Connect().Threads.ModifyMessage(generatedThread.Id,
             generatedMessage.Id, new ModifyMessageRequest
             {
                 Metadata = new Dictionary<string, string>
@@ -128,7 +128,7 @@ public static class ThreadsDemo
         generatedMessage = await CreateMessage();
 
         HttpCallResult<bool> response =
-            await Program.Connect().Threads.DeleteMessageAsync(generatedThread.Id, generatedMessage.Id);
+            await Program.Connect().Threads.DeleteMessage(generatedThread.Id, generatedMessage.Id);
         generatedMessage = null;
         Console.WriteLine(response.Response);
         return response.Data;
@@ -139,12 +139,39 @@ public static class ThreadsDemo
         generatedMessage ??= await CreateMessage();
         assistant ??= await AssistantsDemo.Create();
 
-        HttpCallResult<TornadoRun> response = await Program.Connect().Threads.CreateRunAsync(generatedThread!.Id,
+        HttpCallResult<TornadoRun> response = await Program.Connect().Threads.CreateRun(generatedThread!.Id,
             new CreateRunRequest(assistant!.Id)
             {
                 Model = ChatModel.OpenAi.Gpt4.O241120,
                 Instructions = assistantInstruction ??
                                "You are a helpful assistant with the ability to create names of magic spells."
+            });
+        Console.WriteLine(response.Response);
+        generatedTornadoRun = response.Data!;
+
+        return response.Data!;
+    }
+    
+    [TornadoTest]
+    public static async Task<TornadoRun> CreateThreadAndRun()
+    {
+        Assistant? assistant = await AssistantsDemo.Create();
+        
+        CreateThreadRequest threadRequest = new CreateThreadRequest
+        {
+            Messages = [ new CreateMessageRequest("I need to think of a magic spell that turns cows into sheep.") ],
+            Metadata = new Dictionary<string, string>()
+            {
+                {"key1", "value1"},
+                {"key2", "value2"}
+            },
+        };
+
+        HttpCallResult<TornadoRun> response = await Program.Connect().Threads.CreateThreadAndRun(
+            new CreateThreadAndRunRequest(assistant!.Id, threadRequest)
+            {
+                Model = ChatModel.OpenAi.Gpt4.O241120,
+                Instructions = "You are a helpful assistant with the ability to create names of magic spells."
             });
         Console.WriteLine(response.Response);
         generatedTornadoRun = response.Data!;
@@ -158,7 +185,7 @@ public static class ThreadsDemo
         generatedTornadoRun ??= await CreateRun();
 
         HttpCallResult<TornadoRun> response =
-            await Program.Connect().Threads.RetrieveRunAsync(generatedThread!.Id, generatedTornadoRun.Id);
+            await Program.Connect().Threads.RetrieveRun(generatedThread!.Id, generatedTornadoRun.Id);
         Console.WriteLine(response.Response);
         return response.Data!;
     }
@@ -171,7 +198,7 @@ public static class ThreadsDemo
         while (true)
         {
             HttpCallResult<TornadoRun> response = await Program.Connect().Threads
-                .RetrieveRunAsync(generatedThread!.Id, generatedTornadoRun.Id);
+                .RetrieveRun(generatedThread!.Id, generatedTornadoRun.Id);
             if (response.Data!.Status == RunStatus.Completed)
             {
                 IReadOnlyList<AssistantMessage> messages = await ListMessages();
@@ -199,7 +226,7 @@ public static class ThreadsDemo
     {
         generatedTornadoRun ??= await CreateRun();
 
-        HttpCallResult<TornadoRun> response = await Program.Connect().Threads.ModifyRunAsync(generatedThread!.Id,
+        HttpCallResult<TornadoRun> response = await Program.Connect().Threads.ModifyRun(generatedThread!.Id,
             generatedTornadoRun.Id,
             new ModifyRunRequest
             {
@@ -219,7 +246,7 @@ public static class ThreadsDemo
     {
         generatedTornadoRun ??= await RetrieveRunAndPollForCompletion();
         HttpCallResult<ListResponse<TornadoRunStep>> response =
-            await Program.Connect().Threads.ListRunStepsAsync(generatedThread!.Id, generatedTornadoRun.Id);
+            await Program.Connect().Threads.ListRunSteps(generatedThread!.Id, generatedTornadoRun.Id);
         Console.WriteLine(response.Response);
         return response.Data!.Items;
     }
@@ -229,7 +256,7 @@ public static class ThreadsDemo
     {
         IReadOnlyList<TornadoRunStep> runSteps = await ListRunSteps();
         HttpCallResult<TornadoRunStep> response = await Program.Connect().Threads
-            .RetrieveRunStepAsync(generatedThread!.Id, generatedTornadoRun!.Id, runSteps[0].Id);
+            .RetrieveRunStep(generatedThread!.Id, generatedTornadoRun!.Id, runSteps[0].Id);
         Console.WriteLine(response.Response);
         return response.Data!;
     }
@@ -260,7 +287,7 @@ public static class ThreadsDemo
         while (true)
         {
             HttpCallResult<TornadoRun> response = await Program.Connect().Threads
-                .RetrieveRunAsync(generatedThread.Id, generatedTornadoRun.Id);
+                .RetrieveRun(generatedThread.Id, generatedTornadoRun.Id);
 
             if (response.Data!.Status is RunStatus.RequiresAction)
             {
@@ -309,6 +336,37 @@ public static class ThreadsDemo
         Assistant? assistant = await AssistantsDemo.Create();
 
         await Program.Connect().Threads.StreamRun(generatedThread!.Id, new CreateRunRequest(assistant!.Id), new RunStreamEventHandler
+        {
+            OnMessageDelta = delta =>
+            {
+                foreach (MessageContent content in delta.Delta.Content)
+                {
+                    if (content is MessageContentTextResponse text)
+                    {
+                        Console.ForegroundColor = ConsoleColor.Cyan;
+                        Console.Write(text.MessageContentTextData?.Value);
+                        Console.ResetColor();
+                    }
+                }
+
+                return ValueTask.CompletedTask;
+            }
+        });
+    }
+    
+    [TornadoTest]
+    public static async Task CreateThreadAndStreamRun()
+    {
+        Assistant? assistant = await AssistantsDemo.Create();
+
+        await Program.Connect().Threads.CreateThreadAndStreamRun(new CreateThreadAndRunRequest(assistant!.Id)
+        {
+            Instructions = "You are a helpful assistant with the ability to create names of magic spells.",
+            Thread = new CreateThreadRequest
+            {
+                Messages = [ new CreateMessageRequest("I need to think of a magic spell that turns cows into sheep.") ],
+            }
+        }, new RunStreamEventHandler
         {
             OnMessageDelta = delta =>
             {
