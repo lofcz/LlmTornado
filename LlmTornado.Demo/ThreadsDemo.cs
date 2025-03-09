@@ -151,6 +151,33 @@ public static class ThreadsDemo
 
         return response.Data!;
     }
+    
+    [TornadoTest]
+    public static async Task<TornadoRun> CreateThreadAndRun()
+    {
+        Assistant? assistant = await AssistantsDemo.Create();
+        
+        CreateThreadRequest threadRequest = new CreateThreadRequest
+        {
+            Messages = [ new CreateMessageRequest("I need to think of a magic spell that turns cows into sheep.") ],
+            Metadata = new Dictionary<string, string>()
+            {
+                {"key1", "value1"},
+                {"key2", "value2"}
+            },
+        };
+
+        HttpCallResult<TornadoRun> response = await Program.Connect().Threads.CreateThreadAndRunAsync(
+            new CreateThreadAndRunRequest(assistant!.Id, threadRequest)
+            {
+                Model = ChatModel.OpenAi.Gpt4.O241120,
+                Instructions = "You are a helpful assistant with the ability to create names of magic spells."
+            });
+        Console.WriteLine(response.Response);
+        generatedTornadoRun = response.Data!;
+
+        return response.Data!;
+    }
 
     [TornadoTest]
     public static async Task<TornadoRun> RetrieveRun()
@@ -309,6 +336,37 @@ public static class ThreadsDemo
         Assistant? assistant = await AssistantsDemo.Create();
 
         await Program.Connect().Threads.StreamRun(generatedThread!.Id, new CreateRunRequest(assistant!.Id), new RunStreamEventHandler
+        {
+            OnMessageDelta = delta =>
+            {
+                foreach (MessageContent content in delta.Delta.Content)
+                {
+                    if (content is MessageContentTextResponse text)
+                    {
+                        Console.ForegroundColor = ConsoleColor.Cyan;
+                        Console.Write(text.MessageContentTextData?.Value);
+                        Console.ResetColor();
+                    }
+                }
+
+                return ValueTask.CompletedTask;
+            }
+        });
+    }
+    
+    [TornadoTest]
+    public static async Task CreateThreadAndStreamRun()
+    {
+        Assistant? assistant = await AssistantsDemo.Create();
+
+        await Program.Connect().Threads.CreateThreadAndStreamRun(new CreateThreadAndRunRequest(assistant!.Id)
+        {
+            Instructions = "You are a helpful assistant with the ability to create names of magic spells.",
+            Thread = new CreateThreadRequest
+            {
+                Messages = [ new CreateMessageRequest("I need to think of a magic spell that turns cows into sheep.") ],
+            }
+        }, new RunStreamEventHandler
         {
             OnMessageDelta = delta =>
             {

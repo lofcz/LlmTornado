@@ -21,7 +21,7 @@ public sealed class CreateThreadRequest
     ///     This can be useful for storing additional information about the object in a structured format.
     ///     Keys can be a maximum of 64 characters long and values can be a maximum of 512 characters long.
     /// </param>
-    public CreateThreadRequest(IEnumerable<AssistantMessage>? messages = null, IReadOnlyDictionary<string, string>? metadata = null)
+    public CreateThreadRequest(IEnumerable<CreateMessageRequest>? messages = null, IReadOnlyDictionary<string, string>? metadata = null)
     {
         Messages = messages?.ToList();
         Metadata = metadata;
@@ -31,7 +31,7 @@ public sealed class CreateThreadRequest
     ///     A list of messages to start the thread with.
     /// </summary>
     [JsonProperty("messages")]
-    public IReadOnlyList<AssistantMessage>? Messages { get; set; }
+    public IReadOnlyList<CreateMessageRequest>? Messages { get; set; }
     
     /// <summary>
     ///     A set of resources that are used by the assistant's tools.

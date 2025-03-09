@@ -181,6 +181,20 @@ public sealed class ThreadsEndpoint : EndpointBase
     }
 
     /// <summary>
+    /// Creates a thread and runs it.
+    /// </summary>
+    /// <param name="request"><see cref="CreateThreadAndRunRequest"/> containing the parameters for the operation.</param>
+    /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/> to observe cancellation requests.</param>
+    /// <returns><see cref="HttpCallResult{TornadoRun}"/> representing the result of the operation.</returns>
+    public Task<HttpCallResult<TornadoRun>> CreateThreadAndRunAsync(CreateThreadAndRunRequest request,
+        CancellationToken? cancellationToken = null)
+    {
+        request.Stream = false;
+        return HttpPostRaw<TornadoRun>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads,
+            GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/runs"), request, ct: cancellationToken);
+    }
+
+    /// <summary>
     /// Retrieve a specific run within a thread.
     /// </summary>
     /// <param name="threadId">The unique identifier of the thread containing the run.</param>
@@ -496,5 +510,59 @@ public sealed class ThreadsEndpoint : EndpointBase
             int unk = 0;
         }
         #endif
+    }
+
+    /// <summary>
+    /// Creates a thread and streams the run events.
+    /// </summary>
+    /// <param name="request"><see cref="CreateThreadAndRunRequest"/> containing the details for creating the thread and initiating the run.</param>
+    /// <param name="eventHandler">A <see cref="RunStreamEventHandler"/> to handle the run's stream events.</param>
+    /// <param name="cancellationToken">Optional, <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
+    /// <returns>A <see cref="Task"/> that represents the asynchronous operation.</returns>
+    public async Task CreateThreadAndStreamRun(CreateThreadAndRunRequest request, RunStreamEventHandler eventHandler, CancellationToken cancellationToken = default)
+    {
+        request.Stream = true;
+        string url = GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/runs");
+        TornadoStreamRequest tornadoStreamRequest = await HttpStreamingRequestData(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads,
+            url, postData: request, verb: HttpMethod.Post, token: cancellationToken);
+
+        try
+        {
+            if (tornadoStreamRequest.Exception is not null)
+            {
+                if (eventHandler.HttpExceptionHandler is not null)
+                {
+                    await eventHandler.HttpExceptionHandler.Invoke(new HttpFailedRequest
+                    {
+                        Exception = tornadoStreamRequest.Exception,
+                        Result = tornadoStreamRequest.CallResponse,
+                        Request = tornadoStreamRequest.CallRequest,
+                        RawMessage = tornadoStreamRequest.Response ?? new HttpResponseMessage(),
+                        Body = new TornadoRequestContent(request, url)
+                    });
+                }
+
+                return;
+            }
+
+            if (eventHandler.OutboundHttpRequestHandler is not null && tornadoStreamRequest.CallRequest is not null)
+            {
+                await eventHandler.OutboundHttpRequestHandler.Invoke(tornadoStreamRequest.CallRequest);
+            }
+
+            IEndpointProvider provider = Api.ResolveProvider(LLmProviders.OpenAi);
+
+            if (provider is OpenAiEndpointProvider oaiProvider)
+            {
+                await foreach (RunStreamEvent runStreamEvent in oaiProvider.InboundStream(tornadoStreamRequest.StreamReader!).WithCancellation(cancellationToken))
+                {
+                    await HandleOpenAiStreamEvent(eventHandler, runStreamEvent);
+                }
+            }
+        }
+        finally
+        {
+            await tornadoStreamRequest.DisposeAsync();
+        }
     }
 }

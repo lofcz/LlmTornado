@@ -14,9 +14,10 @@ public sealed class CreateMessageRequest
     /// <summary>
     ///     Constructor.
     /// </summary>
-    public CreateMessageRequest()
+    private CreateMessageRequest()
     {
         Role = ChatMessageRoles.User;
+        Content ??= new List<MessageContent>();
     }
 
     /// <summary>
@@ -44,7 +45,7 @@ public sealed class CreateMessageRequest
     /// <summary>
     /// Represents a request to create a message in the context of a chat thread.
     /// </summary>
-    public CreateMessageRequest(List<MessageContentTextRequest> messageContent) : this()
+    public CreateMessageRequest(IEnumerable<MessageContent> messageContent) : this()
     {
         Content = messageContent.ToList();
     }
@@ -96,7 +97,8 @@ public sealed class CreateMessageRequest
     ///     The content of the message.
     /// </summary>
     [JsonProperty("content")]
-    public IReadOnlyList<MessageContent> Content { get; set; } = null!;
+    [JsonConverter(typeof(MessageContentJsonConverter))]
+    public IReadOnlyList<MessageContent> Content { get; set; }
 
     /// <summary>
     ///     A list of File IDs that the message should use. There can be a maximum of 10 files attached to a message.
@@ -111,5 +113,5 @@ public sealed class CreateMessageRequest
     ///     Keys can be a maximum of 64 characters long and values can be a maximum of 512 characters long.
     /// </summary>
     [JsonProperty("metadata")]
-    public IReadOnlyDictionary<string, string>? Metadata { get; }
+    public IReadOnlyDictionary<string, string>? Metadata { get; set; }
 }

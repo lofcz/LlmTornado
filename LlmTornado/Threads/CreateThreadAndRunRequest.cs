@@ -1,81 +1,77 @@
 using System.Collections.Generic;
+using LlmTornado.Assistants;
 using LlmTornado.Chat.Models;
-using LlmTornado.Common;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Threads;
 
+/// <summary>
+/// Represents a request to create a new run in the system. This class encapsulates all
+/// necessary and optional parameters for configuring a run, including assistant, model,
+/// instructions, tools, and other execution-related parameters.
+/// </summary>
 public sealed class CreateThreadAndRunRequest
 {
-    public CreateThreadAndRunRequest(string assistantId, CreateThreadAndRunRequest request)
-        : this(assistantId, request?.Model, request?.Instructions, request?.Tools, request?.Metadata)
-    {
-    }
-
     /// <summary>
-    ///     Constructor.
+    /// Represents a request to create a thread and a run in the system.
+    /// Encapsulates the data required for initiating a thread and its associated run,
+    /// including assistant configuration, model details, instructions, tools, and various other parameters.
     /// </summary>
-    /// <param name="assistantId">
-    ///     The ID of the assistant to use to execute this run.
-    /// </param>
-    /// <param name="model">
-    ///     The ID of the Model to be used to execute this run.
-    ///     If a value is provided here, it will override the model associated with the assistant.
-    ///     If not, the model associated with the assistant will be used.
-    /// </param>
-    /// <param name="instructions">
-    ///     Override the default system message of the assistant.
-    ///     This is useful for modifying the behavior on a per-run basis.
-    /// </param>
-    /// <param name="tools">
-    ///     Override the tools the assistant can use for this run.
-    ///     This is useful for modifying the behavior on a per-run basis.
-    /// </param>
-    /// <param name="metadata">
-    ///     Set of 16 key-value pairs that can be attached to an object.
-    ///     This can be useful for storing additional information about the object in a structured format.
-    ///     Keys can be a maximum of 64 characters long and values can be a maximum of 512 characters long.
-    /// </param>
-    /// <param name="createThreadRequest">
-    ///     Optional, <see cref="CreateThreadRequest" />.
-    /// </param>
-    public CreateThreadAndRunRequest(string assistantId, ChatModel? model = null, string? instructions = null, IReadOnlyList<Tool>? tools = null, IReadOnlyDictionary<string, string>? metadata = null, CreateThreadRequest? createThreadRequest = null)
+    public CreateThreadAndRunRequest(string assistantId)
     {
         AssistantId = assistantId;
-        Model = model;
-        Instructions = instructions;
-        Tools = tools;
-        Metadata = metadata;
-        ThreadRequest = createThreadRequest;
     }
 
     /// <summary>
-    ///     The ID of the assistant to use to execute this run.
+    /// Represents a request to create a thread and run within the system.
+    /// This class incorporates parameters for the assistant, thread configuration,
+    /// model setup, instructions, tool integration, and execution controls.
+    /// </summary>
+    public CreateThreadAndRunRequest(string assistantId, CreateThreadRequest threadRequest)
+    {
+        AssistantId = assistantId;
+        Thread = threadRequest;
+    }
+    
+    /// <summary>
+    ///     The ID of the assistant used for execution of this run.
     /// </summary>
     [JsonProperty("assistant_id")]
-    public string AssistantId { get; }
+    public string AssistantId { get; set; }
+    
+    /// <summary>
+    ///     Options to create a new thread. If no thread is provided when running a request, an empty thread will be created.
+    /// </summary>
+    [JsonProperty("thread")]
+    public CreateThreadRequest? Thread { get; set; }
 
     /// <summary>
-    ///     The ID of the Model to be used to execute this run.
-    ///     If a value is provided here, it will override the model associated with the assistant.
-    ///     If not, the model associated with the assistant will be used.
+    ///     Which model was used to generate this result.
     /// </summary>
     [JsonProperty("model")]
-    public string Model { get; }
+    [JsonConverter(typeof(ChatModelJsonConverter))]
+    public ChatModel? Model { get; set; }
 
     /// <summary>
-    ///     Override the default system message of the assistant.
-    ///     This is useful for modifying the behavior on a per-run basis.
+    ///     Overrides the instructions of the assistant. This is useful for modifying the behavior on a per-run basis.
     /// </summary>
     [JsonProperty("instructions")]
-    public string Instructions { get; }
-
+    public string? Instructions { get; set; }
+    
     /// <summary>
-    ///     Override the tools the assistant can use for this run.
-    ///     This is useful for modifying the behavior on a per-run basis.
+    ///     The list of tools that the assistant used for this run.
     /// </summary>
     [JsonProperty("tools")]
-    public IReadOnlyList<Tool> Tools { get; }
+    [JsonConverter(typeof(AssistantToolConverter))]
+    public IReadOnlyList<AssistantTool>? Tools { get; set; }
+    
+    /// <summary>
+    ///     A set of resources that are used by the assistant's tools.
+    ///     The resources are specific to the type of tool. For example,
+    ///     the code_interpreter tool requires a list of file IDs, while the file_search tool requires a list of vector store IDs.
+    /// </summary>
+    [JsonProperty("tool_resources")]
+    public ToolResources? ToolResources { get; set; }
 
     /// <summary>
     ///     Set of 16 key-value pairs that can be attached to an object.
@@ -83,8 +79,72 @@ public sealed class CreateThreadAndRunRequest
     ///     Keys can be a maximum of 64 characters long and values can be a maximum of 512 characters long.
     /// </summary>
     [JsonProperty("metadata")]
-    public IReadOnlyDictionary<string, string> Metadata { get; }
+    public IReadOnlyDictionary<string, string>? Metadata { get; set; }
+    
+    /// <summary>
+    ///     What sampling temperature to use, between 0 and 2.
+    ///     Higher values like 0.8 will make the output more random,
+    ///     while lower values like 0.2 will make it more focused and deterministic.
+    /// </summary>
+    [JsonProperty("temperature")]
+    public double? Temperature { get; set; }
 
-    [JsonProperty("thread")]
-    public CreateThreadRequest ThreadRequest { get; }
+    /// <summary>
+    ///     An alternative to sampling with temperature, called nucleus sampling,
+    ///     where the model considers the results of the tokens with top_p probability mass.
+    ///     So 0.1 means only the tokens comprising the top 10% probability mass are considered.
+    ///     We generally recommend altering this or temperature but not both.
+    /// </summary>
+    [JsonProperty("top_p")]
+    public double? TopP { get; set; }
+    
+    /// <summary>
+    ///     If true, returns a stream of events that happen during the Run as server-sent events,
+    ///     terminating when the Run enters a terminal state with a data: [DONE] message.
+    /// </summary>
+    [JsonProperty("stream")]
+    internal bool Stream { get; set; }
+
+    /// <summary>
+    ///     The maximum number of prompt tokens specified to have been used over the course of the run.
+    /// </summary>
+    [JsonProperty("max_tokens")]
+    public int? MaxPromptTokens { get; set; }
+    
+    /// <summary>
+    ///     The maximum number of completion tokens specified to have been used over the course of the run.
+    /// </summary>
+    [JsonProperty("max_completion_tokens")]
+    public int? MaxCompletionTokens { get; set; }
+    
+    /// <summary>
+    ///     Controls for how a thread will be truncated prior to the run. Use this to control the initial context window of the run.
+    /// </summary>
+    [JsonProperty("truncation_strategy")]
+    public TruncationStrategy? TruncationStrategy { get; set; }
+    
+    /// <summary>
+    ///     Controls which (if any) tool is called by the model.
+    ///     none means the model will not call any tools and instead generates a message.
+    ///     auto is the default value and means the model can pick between generating a message or calling one or more tools.
+    ///     required means the model must call one or more tools before responding to the user.
+    ///     Specifying a particular tool like {"type": "file_search"} or {"type": "function", "function": {"name": "my_function"}}
+    ///     forces the model to call that tool.
+    /// </summary>
+    [JsonProperty("tool_choice")]
+    [JsonConverter(typeof(ToolChoiceConverter))]
+    public ToolChoice ToolChoice { get; set; } = null!;
+
+    /// <summary>
+    ///     Whether to enable parallel function calling during tool use.
+    /// </summary>
+    [JsonProperty("parallel_tool_calls")] 
+    public bool? ParallelToolCalls { get; set; }
+
+    /// <summary>
+    ///     Specifies the format that the model must output. 
+    /// </summary>
+    [JsonProperty("response_format")]
+    [JsonConverter(typeof(ResponseFormatConverter))]
+    public ResponseFormat ResponseFormat { get; set; } = null!;
 }

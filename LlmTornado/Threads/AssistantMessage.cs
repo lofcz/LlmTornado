@@ -96,4 +96,24 @@ public sealed class AssistantMessage : ApiResultBase
     /// </summary>
     [JsonProperty("metadata")]
     public IReadOnlyDictionary<string, string> Metadata { get; set; } = null!;
+
+    /// <summary>
+    /// Implicit conversion operator from AssistantMessageResult to AssistantMessage.
+    /// </summary>
+    /// <param name="result">The AssistantMessageResult to convert.</param>
+    /// <returns>An AssistantMessage instance with properties copied from the result.</returns>
+    public static implicit operator CreateMessageRequest?(AssistantMessage? result)
+    {
+        if (result is null)
+        {
+            return null;
+        }
+
+        return new CreateMessageRequest(result.Content)
+        {
+            Role = result.Role,
+            Attachments = result.Attachments,
+            Metadata = result.Metadata
+        };
+    } 
 }
