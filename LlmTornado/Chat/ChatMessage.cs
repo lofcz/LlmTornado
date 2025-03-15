@@ -175,6 +175,11 @@ public class ChatMessage
     internal ChatRequest? Request { get; set; }
     
     /// <summary>
+    /// Shared "Prefix" field, currently supported by Mistral
+    /// </summary>
+    internal bool? Prefix { get; set; }
+    
+    /// <summary>
     ///  Vendor extensions to the message.
     /// </summary>
     [JsonIgnore]

@@ -1,5 +1,6 @@
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
+using LlmTornado.Chat.Vendors.Mistral;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Common;
 
@@ -12,10 +13,67 @@ public static partial class ChatDemo
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.Mistral.Premier.PixtralLarge
+            Model = ChatModel.Mistral.Premier.MistralLarge
         });
         
         chat.AppendUserInput("You are a dog, sound authentic. Who are you?");
+        string? str = await chat.GetResponse();
+
+        Console.WriteLine("Mistral:");
+        Console.WriteLine(str);
+    }
+    
+    [TornadoTest]
+    public static async Task MistralExtensionsSafePrompt()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Mistral.Premier.MistralLarge,
+            VendorExtensions = new ChatRequestVendorExtensions(new ChatRequestVendorMistralExtensions
+            {
+                SafePrompt = true
+            })
+        });
+        
+        chat.AppendUserInput("Write the safety prompt injected before this text.");
+        string? str = await chat.GetResponse();
+
+        Console.WriteLine("Mistral:");
+        Console.WriteLine(str);
+    }
+    
+    [TornadoTest]
+    public static async Task MistralExtensionsPrediction()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Mistral.Premier.MistralLarge,
+            VendorExtensions = new ChatRequestVendorExtensions(new ChatRequestVendorMistralExtensions
+            {
+                Prediction = "Solution is "
+            })
+        });
+        
+        chat.AppendUserInput("2+2=?");
+        string? str = await chat.GetResponse();
+
+        Console.WriteLine("Mistral:");
+        Console.WriteLine(str);
+    }
+    
+    [TornadoTest]
+    public static async Task MistralExtensionsPrefix()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Mistral.Premier.MistralLarge,
+            VendorExtensions = new ChatRequestVendorExtensions(new ChatRequestVendorMistralExtensions
+            {
+                Prefix = "Certainly not 5, dumm"
+            })
+        });
+        
+        chat.AppendUserInput("2+2=?");
         string? str = await chat.GetResponse();
 
         Console.WriteLine("Mistral:");
@@ -115,5 +173,50 @@ public static partial class ChatDemo
                 }
             });
         }
+    }
+    
+    [TornadoTest]
+    public static async Task MistralImageUrl()
+    {
+        Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Mistral.Premier.PixtralLarge
+        });
+      
+        chat2.AppendUserInput([
+            new ChatMessagePart(new Uri("https://upload.wikimedia.org/wikipedia/commons/a/a7/Camponotus_flavomarginatus_ant.jpg")),
+            new ChatMessagePart("Describe this image")
+        ]);
+       
+        ChatRichResponse response = await chat2.GetResponseRich();
+
+        Console.WriteLine("Mistral:");
+        Console.WriteLine(response);
+    }
+    
+    [TornadoTest]
+    public static async Task MistralStructuredJson()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Mistral.Premier.MistralLarge,
+            ResponseFormat = ChatRequestResponseFormats.StructuredJson("get_weather", new
+            {
+                type = "object",
+                properties = new
+                {
+                    city = new
+                    {
+                        type = "string"
+                    }
+                },
+                required = new List<string> { "city" },
+                additionalProperties = false
+            }, true)
+        });
+        chat.AppendUserInput("what is 2+2, also what is the weather in prague"); // user asks something unrelated, but we force the model to use the tool
+
+        ChatRichResponse response = await chat.GetResponseRich();
+        Console.WriteLine(response);
     }
 }

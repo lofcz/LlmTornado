@@ -14,6 +14,7 @@ using LlmTornado.Code.Models;
 using LlmTornado;
 using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Chat.Vendors.Cohere;
+using LlmTornado.Chat.Vendors.Mistral;
 using LlmTornado.Vendor.Anthropic;
 using Newtonsoft.Json.Converters;
 
@@ -331,7 +332,7 @@ public class ChatRequest
 	
 	[JsonIgnore]
 	internal string? UrlOverride { get; set; }
-
+	
 	internal void OverrideUrl(string url)
 	{
 		UrlOverride = url;
@@ -392,7 +393,13 @@ public class ChatRequest
 		{ LLmProviders.Anthropic, (x, y) => JsonConvert.SerializeObject(new VendorAnthropicChatRequest(x, y), EndpointBase.NullSettings) },
 		{ LLmProviders.Cohere, (x, y) => JsonConvert.SerializeObject(new VendorCohereChatRequest(x, y), EndpointBase.NullSettings) },
 		{ LLmProviders.Google, (x, y) => JsonConvert.SerializeObject(new VendorGoogleChatRequest(x, y), EndpointBase.NullSettings) },
-		{ LLmProviders.Mistral, (x, y) => JsonConvert.SerializeObject(x, EndpointBase.NullSettings) },
+		{ 
+			LLmProviders.Mistral, (x, y) =>
+			{
+				VendorMistralChatRequest request = new VendorMistralChatRequest(x, y);
+				return request.Serialize();
+			}
+		},
 		{ LLmProviders.Groq, (x, y) =>
 			{
 				// fields unsupported by groq
@@ -515,6 +522,12 @@ public class ChatRequest
 		                }
 		                case ChatMessageRoles.Assistant:
 		                {
+			                if (msg.Prefix is not null)
+			                {
+				                writer.WritePropertyName("prefix");
+				                writer.WriteValue(msg.Prefix.Value);
+			                }
+			                
 			                if (msg.ToolCalls is not null)
 			                {
 				                writer.WritePropertyName("tool_calls");

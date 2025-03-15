@@ -6,7 +6,7 @@ using Newtonsoft.Json;
 namespace LlmTornado.Chat.Vendors.Google;
 
 /// <summary>
-/// Chat features supported only by Googly.
+/// Chat features supported only by Google.
 /// </summary>
 public class ChatRequestVendorGoogleExtensions
 {
