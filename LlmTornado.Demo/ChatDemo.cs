@@ -18,7 +18,7 @@ using LlmTornado.Images;
 
 namespace LlmTornado.Demo;
 
-public static class ChatDemo
+public static partial class ChatDemo
 {
     [TornadoTest]
     public static async Task<ChatResult?> Completion()

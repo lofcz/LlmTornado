@@ -14,7 +14,11 @@ internal static class EndpointProviderConverter
             LLmProviders.Google => new GoogleEndpointProvider(api),
             LLmProviders.DeepSeek => new OpenAiEndpointProvider(api, LLmProviders.DeepSeek)
             {
-                UrlResolver  = (endpoint, url) => $"{string.Format(api.ApiUrlFormat ?? "https://api.deepseek.com/{0}/{1}", api.ApiVersion, OpenAiEndpointProvider.GetEndpointUrlFragment(endpoint, LLmProviders.DeepSeek))}{url}"
+                UrlResolver = (endpoint, url) => $"{string.Format(api.ApiUrlFormat ?? "https://api.deepseek.com/{0}/{1}", api.ApiVersion, OpenAiEndpointProvider.GetEndpointUrlFragment(endpoint, LLmProviders.DeepSeek))}{url}"
+            },
+            LLmProviders.Mistral => new OpenAiEndpointProvider(api, LLmProviders.Mistral)
+            {
+                UrlResolver = (endpoint, url) => $"{string.Format(api.ApiUrlFormat ?? "https://api.mistral.ai/{0}/{1}", api.ApiVersion, OpenAiEndpointProvider.GetEndpointUrlFragment(endpoint, LLmProviders.DeepSeek))}{url}"
             },
             LLmProviders.Groq => new OpenAiEndpointProvider(api, LLmProviders.Groq)
             {

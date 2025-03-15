@@ -392,6 +392,7 @@ public class ChatRequest
 		{ LLmProviders.Anthropic, (x, y) => JsonConvert.SerializeObject(new VendorAnthropicChatRequest(x, y), EndpointBase.NullSettings) },
 		{ LLmProviders.Cohere, (x, y) => JsonConvert.SerializeObject(new VendorCohereChatRequest(x, y), EndpointBase.NullSettings) },
 		{ LLmProviders.Google, (x, y) => JsonConvert.SerializeObject(new VendorGoogleChatRequest(x, y), EndpointBase.NullSettings) },
+		{ LLmProviders.Mistral, (x, y) => JsonConvert.SerializeObject(x, EndpointBase.NullSettings) },
 		{ LLmProviders.Groq, (x, y) =>
 			{
 				// fields unsupported by groq
