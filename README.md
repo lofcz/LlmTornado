@@ -2,12 +2,12 @@
 [![LlmTornado.Contrib](https://badgen.net/nuget/v/LlmTornado.Contrib?v=302&icon=nuget&label=LlmTornado.Contrib)](https://www.nuget.org/packages/LlmTornado.Contrib)
 
 
-# 🌪️ LLM Tornado - one .NET library to consume OpenAI, Anthropic, Google, DeepSeek, Cohere, Azure, Groq, and self-hosted APIs.
+# 🌪️ LLM Tornado - one .NET library to consume OpenAI, Anthropic, Google, DeepSeek, Cohere, Mistral, Azure, Groq, and self-hosted APIs.
 
 At least one new large language model is released each month. Wouldn't it be awesome if using the new, shiny model was as easy as switching one argument?
 LLM Tornado acts as an aggregator allowing you to do just that. Think [SearX](https://github.com/searxng/searxng) but for LLMs!
 
-OpenAI, Anthropic, Google, DeepSeek, Cohere, Azure, and Groq are currently supported, along with any OpenAI-compatible inference servers, such as [Ollama](https://github.com/ollama/ollama). Check the full Feature Matrix [here](https://github.com/lofcz/LlmTornado/blob/master/FeatureMatrix.md). 👈
+OpenAI, Anthropic, Google, DeepSeek, Cohere, Mistral, Azure, and Groq are currently supported, along with any OpenAI-compatible inference servers, such as [Ollama](https://github.com/ollama/ollama). Check the full Feature Matrix [here](https://github.com/lofcz/LlmTornado/blob/master/FeatureMatrix.md). 👈
 
 ⭐ Awesome things you can do with Tornado:
 - [Chat with your documents](https://github.com/lofcz/LlmTornado/blob/61d2a4732c88c45d4a8c053204ecdef807c34652/LlmTornado.Demo/ChatDemo.cs#L722-L757)
@@ -47,13 +47,15 @@ TornadoApi api = new TornadoApi(new List<ProviderAuthentication>
     new ProviderAuthentication(LLmProviders.Cohere, "COHERE_KEY"),
     new ProviderAuthentication(LLmProviders.Google, "GOOGLE_KEY"),
     new ProviderAuthentication(LLmProviders.Groq, "GROQ_KEY"),
-    new ProviderAuthentication(LLmProviders.DeepSeek, "DEEP_SEEK_KEY")
+    new ProviderAuthentication(LLmProviders.DeepSeek, "DEEP_SEEK_KEY"),
+    new ProviderAuthentication(LLmProviders.Mistral, "MISTRAL_KEY")
 });
 
 List<ChatModel> models = [
     ChatModel.OpenAi.O3.Mini, ChatModel.Anthropic.Claude37.Sonnet,
     ChatModel.Cohere.Command.RPlus, ChatModel.Google.Gemini.Gemini2Flash,
-    ChatModel.Groq.Meta.Llama370B, ChatModel.DeepSeep.Models.Chat
+    ChatModel.Groq.Meta.Llama370B, ChatModel.DeepSeep.Models.Chat,
+    ChatModel.Mistral.Premier.MistralLarge
 ];
 
 foreach (ChatModel model in models)
@@ -66,6 +68,8 @@ foreach (ChatModel model in models)
     Console.WriteLine(response);
 }
 ```
+
+💡 Instead of passing in a strongly typed model, you can pass in a string instead: `await api.Chat.CreateConversation("gpt-4o")`, Tornado will automatically resolve the provider.
 
 ## 🔮 Custom Providers
 
