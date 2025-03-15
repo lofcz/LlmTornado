@@ -9,7 +9,7 @@
         <PackageLicenseExpression>CC0-1.0</PackageLicenseExpression>
         <PackageProjectUrl>https://github.com/lofcz/LlmTornado</PackageProjectUrl>
         <RepositoryUrl>https://github.com/lofcz/LlmTornado</RepositoryUrl>
-        <PackageTags>OpenAI, Anthropic, Google, Cohere, Azure, LLM, O3, GPT-4O, GPT-4, GPT-Turbo, DALL-E</PackageTags>
+        <PackageTags>OpenAI;Anthropic;Google;DeepSeek;Mistral;Cohere;Azure;Gateway;API;SDK</PackageTags>
         <Title>OpenAI NextGeneration</Title>
         <PackageReleaseNotes>fix openai sse when tool parsing is disabled</PackageReleaseNotes>
         <PackageId>LlmTornado</PackageId>
