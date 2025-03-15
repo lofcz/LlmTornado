@@ -12,9 +12,13 @@ internal static class EndpointProviderConverter
             LLmProviders.Anthropic => new AnthropicEndpointProvider(api),
             LLmProviders.Cohere => new CohereEndpointProvider(api),
             LLmProviders.Google => new GoogleEndpointProvider(api),
+            LLmProviders.DeepSeek => new OpenAiEndpointProvider(api, LLmProviders.DeepSeek)
+            {
+                UrlResolver  = (endpoint, url) => $"{string.Format(api.ApiUrlFormat ?? "https://api.deepseek.com/{0}/{1}", api.ApiVersion, OpenAiEndpointProvider.GetEndpointUrlFragment(endpoint, LLmProviders.DeepSeek))}{url}"
+            },
             LLmProviders.Groq => new OpenAiEndpointProvider(api, LLmProviders.Groq)
             {
-                UrlResolver = (endpoint, url) => $"{string.Format(api.ApiUrlFormat ?? "https://api.groq.com/openai/{0}/{1}", api.ApiVersion, OpenAiEndpointProvider.GetEndpointUrlFragment(endpoint))}{url}"
+                UrlResolver = (endpoint, url) => $"{string.Format(api.ApiUrlFormat ?? "https://api.groq.com/openai/{0}/{1}", api.ApiVersion, OpenAiEndpointProvider.GetEndpointUrlFragment(endpoint, LLmProviders.Groq))}{url}"
             },
             _ => new OpenAiEndpointProvider(api)
         };

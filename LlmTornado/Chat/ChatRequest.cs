@@ -351,15 +351,25 @@ public class ChatRequest
 
 	private static readonly FrozenDictionary<LLmProviders, Func<ChatRequest, IEndpointProvider, string>> SerializeMap = new Dictionary<LLmProviders, Func<ChatRequest, IEndpointProvider, string>>
 	{
-		{ LLmProviders.OpenAi, (x, y) =>
+		{ 
+			LLmProviders.OpenAi, (x, y) =>
 			{
+				if (x.Model is not null)
+				{
+					if (ChatModelOpenAi.ReasoningModelsAll.Contains(x.Model))
+					{
+						// reasoning models do not support temperature
+						x.Temperature = null;
+					}
+				}
+
 				switch (x.MaxTokensSerializer)
 				{
 					case ChatRequestMaxTokensSerializers.Auto:
 					{
 						if (x.Model is not null)
 						{
-							if (ChatModelOpenAiGpt4.ReasoningModels.Contains(x.Model))
+							if (ChatModelOpenAi.ReasoningModelsAll.Contains(x.Model))
 							{
 								return JsonConvert.SerializeObject(x, MaxTokensRenamerSettings);
 							}	
@@ -378,6 +388,7 @@ public class ChatRequest
 				}
 			}
 		},
+		{ LLmProviders.DeepSeek, (x, y) => JsonConvert.SerializeObject(x, EndpointBase.NullSettings) },
 		{ LLmProviders.Anthropic, (x, y) => JsonConvert.SerializeObject(new VendorAnthropicChatRequest(x, y), EndpointBase.NullSettings) },
 		{ LLmProviders.Cohere, (x, y) => JsonConvert.SerializeObject(new VendorCohereChatRequest(x, y), EndpointBase.NullSettings) },
 		{ LLmProviders.Google, (x, y) => JsonConvert.SerializeObject(new VendorGoogleChatRequest(x, y), EndpointBase.NullSettings) },

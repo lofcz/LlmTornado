@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using LlmTornado.Chat.Models.DeepSeek;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
 using LlmTornado.Models;
@@ -38,6 +39,11 @@ public class ChatModel : ModelBase
     public static readonly ChatModelGroq Groq = new ChatModelGroq();
     
     /// <summary>
+    /// Models provided by DeepSeek.
+    /// </summary>
+    public static readonly ChatModelDeepSeek DeepSeek = new ChatModelDeepSeek();
+    
+    /// <summary>
     /// All known models keyed by name.
     /// </summary>
     public static readonly Dictionary<string, IModel> AllModelsMap = [];
@@ -54,7 +60,8 @@ public class ChatModel : ModelBase
             ..Anthropic.AllModels,
             ..Cohere.AllModels,
             ..Google.AllModels,
-            ..Groq.AllModels
+            ..Groq.AllModels,
+            ..DeepSeek.AllModels
         ];
         
         AllModels.ForEach(x =>

@@ -46,7 +46,7 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider,
         Tools
     }
 
-    public static string GetEndpointUrlFragment(CapabilityEndpoints endpoint)
+    public static string GetEndpointUrlFragment(CapabilityEndpoints endpoint, LLmProviders provider = LLmProviders.OpenAi)
     {
         return endpoint switch
         {

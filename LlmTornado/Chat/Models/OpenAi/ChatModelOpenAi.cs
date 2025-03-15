@@ -57,6 +57,15 @@ public class ChatModelOpenAi : BaseVendorModelProvider
         ..ChatModelOpenAiO3.ModelsAll,
         ..ChatModelOpenAiGpt45.ModelsAll
     ];
+
+    /// <summary>
+    /// All reasoning models. Requests for these models are serialized differently.
+    /// </summary>
+    public static readonly List<IModel> ReasoningModelsAll =
+    [
+        ..ChatModelOpenAiGpt4.ReasoningModels,
+        ..ChatModelOpenAiO3.ModelsAll
+    ];
     
     static ChatModelOpenAi()
     {

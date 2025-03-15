@@ -50,7 +50,7 @@ public class ChatModelCohereAya : IVendorModelClassProvider
     public readonly ChatModel Expanse32B = ModelExpanse32B;
     
     /// <summary>
-    /// All known Coral models from Cohere.
+    /// All known Aya models from Cohere.
     /// </summary>
     public static readonly List<IModel> ModelsAll =
     [

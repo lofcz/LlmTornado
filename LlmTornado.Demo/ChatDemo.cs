@@ -719,6 +719,169 @@ public static class ChatDemo
             return ValueTask.CompletedTask;
         });
     }
+    
+    [TornadoTest]
+    public static async Task DeepSeekReasoner()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.DeepSeek.Models.Reasoner
+        });
+        
+        chat.AppendUserInput([
+            new ChatMessagePart("Solve this equation: 2+2=?"),
+        ]);
+
+        ChatRichResponse response = await chat.GetResponseRich();
+        
+        Console.WriteLine("DeepSeek:");
+        Console.WriteLine(response);
+    }
+    
+    [TornadoTest]
+    public static async Task DeepSeekChat()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.DeepSeek.Models.Chat
+        });
+        
+        chat.AppendUserInput([
+            new ChatMessagePart("Solve this equation: 2+2=?"),
+        ]);
+
+        ChatRichResponse response = await chat.GetResponseRich();
+        
+        Console.WriteLine("DeepSeek:");
+        Console.WriteLine(response.Text);
+    }
+    
+    [TornadoTest]
+    public static async Task DeepSeekChatStreaming()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.DeepSeek.Models.Chat
+        });
+        
+        chat.AppendUserInput([
+            new ChatMessagePart("Explain how beer is made, curtly")
+        ]);
+
+        Console.WriteLine("DeepSeek:");
+        
+        await chat.StreamResponseRich(new ChatStreamEventHandler
+        {
+            MessageTokenHandler = (token) =>
+            {
+                Console.Write(token);
+                return ValueTask.CompletedTask;
+            },
+            BlockFinishedHandler = (block) =>
+            {
+                Console.WriteLine();
+                return ValueTask.CompletedTask;
+            }
+        });
+    }
+
+    [TornadoTest]
+    public static async Task OpenAiReasoningTemperatureAutofix()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.OpenAi.O3.Mini,
+            Temperature = 0.5d
+        });
+        
+        chat.AppendUserInput([
+            new ChatMessagePart("Explain how beer is made, curtly")
+        ]);
+        
+        Console.WriteLine("OpenAi:");
+        
+        await chat.StreamResponseRich(new ChatStreamEventHandler
+        {
+            MessageTokenHandler = (token) =>
+            {
+                Console.Write(token);
+                return ValueTask.CompletedTask;
+            },
+            BlockFinishedHandler = (block) =>
+            {
+                Console.WriteLine();
+                return ValueTask.CompletedTask;
+            }
+        });
+    }
+
+    [TornadoTest]
+    public static async Task DeepSeekChatStreamingTools()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.DeepSeek.Models.Chat,
+            Tools =
+            [
+                new Tool(new ToolFunction("get_weather", "gets the current weather in a given city", new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        location = new
+                        {
+                            type = "string",
+                            description = "The city for which the weather information is required."
+                        }
+                    },
+                    required = new List<string> { "city" }
+                }))
+            ]
+        });
+        
+        chat.OnAfterToolsCall = async (result) =>
+        {
+            Console.WriteLine();
+            await GetNextResponse();
+        };
+        
+        chat.AppendUserInput([
+            new ChatMessagePart("Check the weather today in Paris")
+        ]);
+
+        Console.WriteLine("DeepSeek:");
+        await GetNextResponse();
+
+        async Task GetNextResponse()
+        {
+            await chat.StreamResponseRich(new ChatStreamEventHandler
+            {
+                FunctionCallHandler = (fns) =>
+                {
+                    foreach (FunctionCall fn in fns)
+                    {
+                        fn.Result = new FunctionResult(fn.Name, new
+                        {
+                            result = "ok",
+                            weather = "A mild rain is expected around noon."
+                        });
+                    }
+                
+                    return ValueTask.CompletedTask;
+                },
+                MessageTokenHandler = (token) =>
+                {
+                    Console.Write(token);
+                    return ValueTask.CompletedTask;
+                },
+                BlockFinishedHandler = (block) =>
+                {
+                    Console.WriteLine();
+                    return ValueTask.CompletedTask;
+                }
+            });
+        }
+    }
 
     [TornadoTest]
     public static async Task GoogleFileInput()

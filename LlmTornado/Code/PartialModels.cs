@@ -564,7 +564,7 @@ public enum LLmProviders
     /// </summary>
     Cohere,
     /// <summary>
-    /// KoboldCpp, Ollama and other self-hosted providers.
+    /// Ollama, KoboldCpp and other self-hosted providers.
     /// </summary>
     Custom,
     /// <summary>
@@ -575,6 +575,10 @@ public enum LLmProviders
     /// Groq.
     /// </summary>
     Groq,
+    /// <summary>
+    /// DeepSeek.
+    /// </summary>
+    DeepSeek,
     /// <summary>
     /// Internal value.
     /// </summary>
