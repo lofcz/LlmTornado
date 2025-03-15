@@ -1,4 +1,5 @@
 using LlmTornado.Embedding.Vendors.Cohere;
+using LlmTornado.Embedding.Vendors.Google;
 
 namespace LlmTornado.Embedding;
 
@@ -11,6 +12,11 @@ public class EmbeddingRequestVendorExtensions
     ///     Cohere extensions.
     /// </summary>
     public EmbeddingRequestVendorCohereExtensions? Cohere { get; set; }
+    
+    /// <summary>
+    ///     Cohere extensions.
+    /// </summary>
+    public EmbeddingRequestVendorGoogleExtensions? Google { get; set; }
 
     /// <summary>
     ///     Empty extensions.
@@ -18,5 +24,21 @@ public class EmbeddingRequestVendorExtensions
     public EmbeddingRequestVendorExtensions()
     {
         
+    }
+    
+    /// <summary>
+    ///     Cohere extensions.
+    /// </summary>
+    public EmbeddingRequestVendorExtensions(EmbeddingRequestVendorCohereExtensions extensions)
+    {
+        Cohere = extensions;
+    }
+    
+    /// <summary>
+    ///     Empty extensions.
+    /// </summary>
+    public EmbeddingRequestVendorExtensions(EmbeddingRequestVendorGoogleExtensions extensions)
+    {
+        Google = extensions;
     }
 }

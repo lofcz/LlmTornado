@@ -1,6 +1,7 @@
 using LlmTornado.Embedding;
 using LlmTornado.Embedding.Models;
 using LlmTornado.Embedding.Vendors.Cohere;
+using LlmTornado.Embedding.Vendors.Google;
 
 namespace LlmTornado.Demo;
 
@@ -18,6 +19,74 @@ public static class EmbeddingDemo
             {
                 Console.WriteLine(data[i]);
             }
+            
+            Console.WriteLine($"... (length: {data.Length})");
+        }
+    }
+    
+    [TornadoTest]
+    public static async Task EmbedGoogle()
+    {
+        EmbeddingResult? result = await Program.ConnectMulti().Embeddings.CreateEmbedding(EmbeddingModel.Google.Gemini.Embedding4, "lorem ipsum");
+        float[]? data = result?.Data.FirstOrDefault()?.Embedding;
+
+        if (data is not null)
+        {
+            for (int i = 0; i < Math.Min(data.Length, 10); i++)
+            {
+                Console.WriteLine(data[i]);
+            }
+            
+            Console.WriteLine($"... (length: {data.Length})");
+        }
+    }
+    
+    [TornadoTest]
+    public static async Task EmbedGoogleExtensions()
+    {
+        EmbeddingResult? result = await Program.ConnectMulti().Embeddings.CreateEmbedding(new EmbeddingRequest(EmbeddingModel.Google.Gemini.Embedding4, "This is content of a document")
+        {
+            VendorExtensions = new EmbeddingRequestVendorExtensions(new EmbeddingRequestVendorGoogleExtensions
+            {
+                TaskType = EmbeddingRequestVendorGoogleExtensionsTaskTypes.RetrievalDocument,
+                Title = "My document 1"
+            })
+        });
+        float[]? data = result?.Data.FirstOrDefault()?.Embedding;
+
+        if (data is not null)
+        {
+            for (int i = 0; i < Math.Min(data.Length, 10); i++)
+            {
+                Console.WriteLine(data[i]);
+            }
+            
+            Console.WriteLine($"... (length: {data.Length})");
+        }
+    }
+    
+    [TornadoTest]
+    public static async Task EmbedGoogleMultiple()
+    {
+        EmbeddingResult? result = await Program.ConnectMulti().Embeddings.CreateEmbedding(EmbeddingModel.Google.Gemini.Embedding4, [
+            "lorem ipsum",
+            "dolor sit amet"
+        ]);
+
+        if (result is not null)
+        {
+            foreach (EmbeddingEntry x in result.Data)
+            {
+                float[] data = x.Embedding;
+                
+                for (int i = 0; i < Math.Min(data.Length, 10); i++)
+                {
+                    Console.WriteLine(data[i]);
+                }
+        
+                Console.WriteLine($"... (length: {data.Length})");
+                Console.WriteLine("--------------");
+            }   
         }
     }
     
@@ -41,7 +110,7 @@ public static class EmbeddingDemo
                 Console.WriteLine(result.Data[0].Embedding[i]);
             }
             
-            Console.WriteLine("...");
+            Console.WriteLine($"... (length: {result.Data[0].Embedding.Length})");
         }
     }
     

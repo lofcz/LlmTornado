@@ -5,6 +5,7 @@ using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Chat.Vendors.Cohere;
 using LlmTornado.Code;
 using LlmTornado.Embedding.Vendors.Cohere;
+using LlmTornado.Embedding.Vendors.Google;
 using LlmTornado.Vendor.Anthropic;
 using Newtonsoft.Json;
 
@@ -34,7 +35,7 @@ public class EmbeddingResult : ApiResultBase
 			LLmProviders.OpenAi => JsonConvert.DeserializeObject<EmbeddingResult>(jsonData),
 			//LLmProviders.Anthropic => JsonConvert.DeserializeObject<VendorAnthropicChatResult>(jsonData)?.ToChatResult(postData),
 			LLmProviders.Cohere => JsonConvert.DeserializeObject<VendorCohereEmbeddingResult>(jsonData)?.ToResult(postData),
-			//LLmProviders.Google => JsonConvert.DeserializeObject<VendorGoogleChatResult>(jsonData)?.ToChatResult(postData),
+			LLmProviders.Google => JsonConvert.DeserializeObject<VendorGoogleEmbeddingResult>(jsonData)?.ToResult(postData),
 			_ => JsonConvert.DeserializeObject<EmbeddingResult>(jsonData)
 		};
 	}

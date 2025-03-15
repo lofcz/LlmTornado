@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Chat.Vendors.Cohere;
 using LlmTornado.Code;
 using LlmTornado.Embedding.Models;
+using LlmTornado.Embedding.Vendors.Google;
 using LlmTornado.Embedding.Vendors.OpenAi;
 using LlmTornado.Models;
 using Newtonsoft.Json;
@@ -99,6 +101,18 @@ public class EmbeddingRequest
 	public EmbeddingRequest(EmbeddingModel model, IEnumerable<string> input)
 	{
 		Model = model;
+		InputVector = input.ToList();
+	}
+	
+	/// <summary>
+	///     Creates a new <see cref="EmbeddingRequest" /> with the specified input and the
+	///     <see cref="Model.AdaTextEmbedding" /> model.
+	/// </summary>
+	/// <param name="model">The model to use</param>
+	/// <param name="input">The prompt to transform</param>
+	public EmbeddingRequest(EmbeddingModel model, IList<string> input)
+	{
+		Model = model;
 		InputVector = input;
 	}
 	
@@ -110,6 +124,20 @@ public class EmbeddingRequest
 	/// <param name="input">The prompt to transform</param>
 	/// <param name="extensions">Vendor extensions</param>
 	public EmbeddingRequest(EmbeddingModel model, IEnumerable<string> input, EmbeddingRequestVendorExtensions extensions)
+	{
+		Model = model;
+		InputVector = input.ToList();
+		VendorExtensions = extensions;
+	}
+	
+	/// <summary>
+	///     Creates a new <see cref="EmbeddingRequest" /> with the specified input and the
+	///     <see cref="Model.AdaTextEmbedding" /> model.
+	/// </summary>
+	/// <param name="model">The model to use</param>
+	/// <param name="input">The prompt to transform</param>
+	/// <param name="extensions">Vendor extensions</param>
+	public EmbeddingRequest(EmbeddingModel model, IList<string> input, EmbeddingRequestVendorExtensions extensions)
 	{
 		Model = model;
 		InputVector = input;
@@ -126,6 +154,20 @@ public class EmbeddingRequest
 	public EmbeddingRequest(EmbeddingModel model, IEnumerable<string> input, int dimensions)
 	{
 		Model = model;
+		InputVector = input.ToList();
+		Dimensions = dimensions;
+	}
+	
+	/// <summary>
+	///     Creates a new <see cref="EmbeddingRequest" /> with the specified input and the
+	///     <see cref="Model.AdaTextEmbedding" /> model.
+	/// </summary>
+	/// <param name="model">The model to use</param>
+	/// <param name="input">The prompt to transform</param>
+	/// <param name="dimensions">Output dimensions</param>
+	public EmbeddingRequest(EmbeddingModel model, IList<string> input, int dimensions)
+	{
+		Model = model;
 		InputVector = input;
 		Dimensions = dimensions;
 	}
@@ -139,6 +181,22 @@ public class EmbeddingRequest
 	/// <param name="dimensions">Output dimensions</param>
 	/// <param name="extensions">Vendor extensions</param>
 	public EmbeddingRequest(EmbeddingModel model, IEnumerable<string> input, int dimensions, EmbeddingRequestVendorExtensions extensions)
+	{
+		Model = model;
+		InputVector = input.ToList();
+		Dimensions = dimensions;
+		VendorExtensions = extensions;
+	}
+	
+	/// <summary>
+	///     Creates a new <see cref="EmbeddingRequest" /> with the specified input and the
+	///     <see cref="Model.AdaTextEmbedding" /> model.
+	/// </summary>
+	/// <param name="model">The model to use</param>
+	/// <param name="input">The prompt to transform</param>
+	/// <param name="dimensions">Output dimensions</param>
+	/// <param name="extensions">Vendor extensions</param>
+	public EmbeddingRequest(EmbeddingModel model, IList<string> input, int dimensions, EmbeddingRequestVendorExtensions extensions)
 	{
 		Model = model;
 		InputVector = input;
@@ -169,7 +227,7 @@ public class EmbeddingRequest
 	///     Main text to be embedded
 	/// </summary>
 	[JsonIgnore]
-	public IEnumerable<string>? InputVector { get; set; }
+	public IList<string>? InputVector { get; set; }
 
 	[JsonProperty("input")]
 	internal object InputSerialized { get; set; }
@@ -195,11 +253,16 @@ public class EmbeddingRequest
 			LLmProviders.OpenAi => JsonConvert.SerializeObject(new VendorOpenAiEmbeddingRequest(this, provider), EndpointBase.NullSettings),
 			//LLmProviders.Anthropic => JsonConvert.SerializeObject(new VendorAnthropicEmbeddingRequest(this, provider), EndpointBase.NullSettings),
 			LLmProviders.Cohere => JsonConvert.SerializeObject(new VendorCohereEmbeddingRequest(this, provider), EndpointBase.NullSettings),
-			//LLmProviders.Google => JsonConvert.SerializeObject(new VendorGoogleEmbeddingRequest(this, provider), EndpointBase.NullSettings),
+			LLmProviders.Google => JsonConvert.SerializeObject(new VendorGoogleEmbeddingRequest(this, provider), EndpointBase.NullSettings),
 			_ => string.Empty
 		};
 		
 		return new TornadoRequestContent(content, UrlOverride);
+	}
+	
+	internal void OverrideUrl(string url)
+	{
+		UrlOverride = url;
 	}
 	
 	internal class ModelJsonConverter : JsonConverter<EmbeddingModel>

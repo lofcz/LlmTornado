@@ -148,4 +148,12 @@ public class EmbeddingModel : ModelEmbeddingBase
     {
         return new EmbeddingModel(name ?? string.Empty, name is null ? LLmProviders.OpenAi : GetProvider(name) ?? LLmProviders.OpenAi);
     }
+
+    /// <summary>
+    /// Returns name of the model.
+    /// </summary>
+    public override string ToString()
+    {
+        return Name;
+    }
 }

@@ -44,7 +44,6 @@
     </ItemGroup>
     <ItemGroup>
       <Folder Include="Embedding\Vendors\Anthropic\" />
-      <Folder Include="Embedding\Vendors\Google\" />
     </ItemGroup>
     <ItemGroup>
         <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">

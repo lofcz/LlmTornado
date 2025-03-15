@@ -14,6 +14,7 @@ using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Chat.Vendors.Cohere;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code.Sse;
+using LlmTornado.Embedding;
 using LlmTornado.Files;
 using LlmTornado.Images;
 using LlmTornado.Vendor.Anthropic;
@@ -66,6 +67,7 @@ internal class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider,
             {
                 string eStr = endpoint switch
                 {
+                    CapabilityEndpoints.Embeddings => "models",
                     CapabilityEndpoints.Chat => "models",
                     CapabilityEndpoints.ImageGeneration => "models",
                     CapabilityEndpoints.Files => "files",
@@ -228,6 +230,7 @@ internal class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider,
         { typeof(CachedContentInformation), (s, s1) => CachedContentInformation.Deserialize(LLmProviders.Google, s, s1) },
         { typeof(CachedContentList), (s, s1) => CachedContentList.Deserialize(LLmProviders.Google, s, s1) },
         { typeof(ImageGenerationResult), (s, s1) => ImageGenerationResult.Deserialize(LLmProviders.Google, s, s1) },
+        { typeof(EmbeddingResult), (s, s1) => EmbeddingResult.Deserialize(LLmProviders.Google, s, s1) }
     };
     
     public override T? InboundMessage<T>(string jsonData, string? postData) where T : default
