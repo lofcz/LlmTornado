@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using LlmTornado.Chat.Models.DeepSeek;
+using LlmTornado.Chat.Models.Mistral;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
 using LlmTornado.Models;
@@ -44,6 +45,11 @@ public class ChatModel : ModelBase
     public static readonly ChatModelDeepSeek DeepSeek = new ChatModelDeepSeek();
     
     /// <summary>
+    /// Models provided by Mistral.
+    /// </summary>
+    public static readonly ChatModelMistral Mistral = new ChatModelMistral();
+    
+    /// <summary>
     /// All known models keyed by name.
     /// </summary>
     public static readonly Dictionary<string, IModel> AllModelsMap = [];
@@ -61,7 +67,8 @@ public class ChatModel : ModelBase
             ..Cohere.AllModels,
             ..Google.AllModels,
             ..Groq.AllModels,
-            ..DeepSeek.AllModels
+            ..DeepSeek.AllModels,
+            ..Mistral.AllModels
         ];
         
         AllModels.ForEach(x =>

@@ -24,6 +24,7 @@ public class Program
         public string Groq { get; set; }
         public AzureKey Azure { get; set; }
         public string DeepSeek { get; set; }
+        public string Mistral { get; set; }
     }
 
     public static TornadoApi ConnectMulti(bool httpStrict = true)
@@ -34,7 +35,8 @@ public class Program
             new ProviderAuthentication(LLmProviders.Cohere, ApiKeys.Cohere),
             new ProviderAuthentication(LLmProviders.Google, ApiKeys.Google),
             new ProviderAuthentication(LLmProviders.Groq, ApiKeys.Groq),
-            new ProviderAuthentication(LLmProviders.DeepSeek, ApiKeys.DeepSeek)
+            new ProviderAuthentication(LLmProviders.DeepSeek, ApiKeys.DeepSeek),
+            new ProviderAuthentication(LLmProviders.Mistral, ApiKeys.Mistral)
         ])
         {
             httpStrict = httpStrict

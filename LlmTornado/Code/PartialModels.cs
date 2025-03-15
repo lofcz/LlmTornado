@@ -580,6 +580,10 @@ public enum LLmProviders
     /// </summary>
     DeepSeek,
     /// <summary>
+    /// Mistral.
+    /// </summary>
+    Mistral,
+    /// <summary>
     /// Internal value.
     /// </summary>
     Length
