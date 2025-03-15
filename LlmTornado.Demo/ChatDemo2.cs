@@ -81,6 +81,22 @@ public static partial class ChatDemo
     }
     
     [TornadoTest]
+    public static async Task CohereA0325()
+    {
+        Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Cohere.Command.A0325
+        });
+        chat2.AppendSystemMessage("Pretend you are a dog. Sound authentic.");
+        chat2.AppendUserInput("Who are you?");
+       
+        string? str2 = await chat2.GetResponse();
+
+        Console.WriteLine("Cohere:");
+        Console.WriteLine(str2);
+    }
+    
+    [TornadoTest]
     public static async Task MistralLargeStreaming()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest

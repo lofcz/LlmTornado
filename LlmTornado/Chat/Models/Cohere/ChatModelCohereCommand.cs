@@ -10,6 +10,16 @@ namespace LlmTornado.Chat.Models;
 public class ChatModelCohereCommand : IVendorModelClassProvider
 {
     /// <summary>
+    /// Command A is Cohere’s most performant model to date, excelling at real world enterprise tasks including tool use, retrieval augmented generation (RAG), agents, and multilingual use cases. With 111B parameters and a context length of 256K, Command A boasts a considerable increase in inference-time efficiency — 150% higher throughput compared to its predecessor Command R+ 08-2024 — and only requires two GPUs (A100s / H100s) to run.
+    /// </summary>
+    public static readonly ChatModel ModelA0325 = new ChatModel("command-a-03-2025", LLmProviders.Cohere, 256_000);
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelA0325"/>
+    /// </summary>
+    public readonly ChatModel A0325 = ModelA0325;
+        
+    /// <summary>
     /// Command R+ is an instruction-following conversational model that performs language tasks at a higher quality, more reliably, and with a longer context than previous models. It is best suited for complex RAG workflows and multi-step tool use.
     /// </summary>
     public static readonly ChatModel ModelRPlus = new ChatModel("command-r-plus", LLmProviders.Cohere, 128_000);
@@ -112,7 +122,8 @@ public class ChatModelCohereCommand : IVendorModelClassProvider
         ModelLight,
         ModelLightNightly,
         ModelR7B,
-        ModelR7BArabic2412
+        ModelR7BArabic2412,
+        ModelA0325
     ];
 
     /// <summary>
