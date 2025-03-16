@@ -1266,6 +1266,11 @@ public class Conversation
                         {
                             foreach (ChatMessagePart part in delta.Parts)
                             {
+                                if (eventsHandler.MessagePartHandler is not null)
+                                {
+                                    await InvokeMessagePartHandler(part);
+                                }
+                                
                                 switch (part.Type)
                                 {
                                     case ChatMessageTypes.Text when eventsHandler.MessageTokenHandler is not null:
@@ -1282,8 +1287,21 @@ public class Conversation
                                             msg.Content = msg.Content?.TrimStart();
                                             isFirstMessageToken = false;
                                         }
-                                
-                                        await eventsHandler.ReasoningTokenHandler.Invoke(msg);
+
+                                        if (msg is not null)
+                                        {
+                                            await eventsHandler.ReasoningTokenHandler.Invoke(msg);
+                                        }
+                                        
+                                        break;
+                                    }
+                                    case ChatMessageTypes.Image when eventsHandler.ImageTokenHandler is not null:
+                                    {
+                                        if (part.Image is not null)
+                                        {
+                                            await eventsHandler.ImageTokenHandler.Invoke(part.Image);
+                                        }
+                                        
                                         break;
                                     }
                                 }
@@ -1309,6 +1327,25 @@ public class Conversation
             }
 
             continue;
+
+            async ValueTask InvokeMessagePartHandler(ChatMessagePart part)
+            {
+                if (eventsHandler.MessagePartHandler is null)
+                {
+                    return;
+                }
+                
+                if (part.Text is not null)
+                {
+                    if (RequestParameters.TrimResponseStart && isFirstMessageToken)
+                    {
+                        part.Text = part.Text.TrimStart();
+                        isFirstMessageToken = false;
+                    }
+                }
+                
+                await eventsHandler.MessagePartHandler.Invoke(part);   
+            }
 
             async ValueTask InvokeMessageHandler(string? msg)
             {

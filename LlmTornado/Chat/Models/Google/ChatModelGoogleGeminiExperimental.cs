@@ -11,6 +11,16 @@ namespace LlmTornado.Chat.Models;
 public class ChatModelGoogleGeminiExperimental : IVendorModelClassProvider
 {
     /// <summary>
+    /// An experimental public preview version of Gemini 2.0 Flash capable of image generation.
+    /// </summary>
+    public static readonly ChatModel ModelGemini2FlashImageGeneration = new ChatModel("gemini-2.0-flash-exp-image-generation", LLmProviders.Google, 1_000_000);
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelGemini2FlashImageGeneration"/>
+    /// </summary>
+    public readonly ChatModel Gemini2FlashImageGeneration = ModelGemini2FlashImageGeneration;
+    
+    /// <summary>
     /// An experimental public preview version of Gemini 2.0 Pro.
     /// </summary>
     public static readonly ChatModel ModelGemini2ProExp250205 = new ChatModel("gemini-2.0-pro-exp-02-05", LLmProviders.Google, 1_000_000);
@@ -44,7 +54,8 @@ public class ChatModelGoogleGeminiExperimental : IVendorModelClassProvider
     [
         ModelGemini2FlashThinkingExp250121,
         ModelLearnLlm15ProExperimental,
-        ModelGemini2ProExp250205
+        ModelGemini2ProExp250205,
+        ModelGemini2FlashImageGeneration
     ];
 
     /// <summary>

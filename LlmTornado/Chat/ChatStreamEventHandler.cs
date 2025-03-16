@@ -35,6 +35,17 @@ public class ChatStreamEventHandler
     public Func<ChatMessageAudio, ValueTask>? AudioTokenHandler { get; set; }
     
     /// <summary>
+    ///     Called when audio token/image arrives. This can be forwarded to the end-user immediately.
+    /// </summary>
+    public Func<ChatImage, ValueTask>? ImageTokenHandler { get; set; }
+    
+    /// <summary>
+    ///     Called when audio message part arrives. This message part can contain text, images, audio, or other modalities. This can be forwarded to the end-user immediately.
+    ///     This is a fired before modality specific handlers, such as token, audio, reasoning, etc.
+    /// </summary>
+    public Func<ChatMessagePart, ValueTask>? MessagePartHandler { get; set; }
+    
+    /// <summary>
     ///     Called when one or more tools are to be executed. Execute the tools and return the responses in <see cref="FunctionCall.Result"/>.
     ///     If this field is empty once control is returned to the API, the tool call is considered to be failed with no data returned.
     /// </summary>

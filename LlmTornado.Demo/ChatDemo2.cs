@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Chat.Vendors.Mistral;
@@ -133,6 +134,73 @@ public static partial class ChatDemo
         Console.WriteLine(str2);
     }
 
+    public static async Task DisplayImage(string base64)
+    {
+        
+        byte[] imageBytes = Convert.FromBase64String(base64);
+        string tempFile = $"{Path.GetTempFileName()}.jpg";
+        await File.WriteAllBytesAsync(tempFile, imageBytes);
+
+        if (await Helpers.ProgramExists("chafa"))
+        {
+            try
+            {
+                Process process = new Process();
+                process.StartInfo.FileName = "chafa";
+                process.StartInfo.Arguments = $"{tempFile}";
+                process.StartInfo.UseShellExecute = false;
+                process.Start();
+                await process.WaitForExitAsync();
+            }
+            catch (Exception e)
+            {
+                
+            }
+        }
+    }
+
+    [TornadoTest]
+    public static async Task GoogleStreamImages()
+    {
+        Conversation chat = Program.Connect(LLmProviders.Google).Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Google.GeminiExperimental.Gemini2FlashImageGeneration,
+            Modalities = [ ChatModelModalities.Text, ChatModelModalities.Image ]
+        });
+        
+        chat.AppendUserInput([
+            new ChatMessagePart("Generate two images: a lion and a squirrel")
+        ]);
+        
+        await chat.StreamResponseRich(new ChatStreamEventHandler
+        {
+            MessagePartHandler = async (part) =>
+            {
+                if (part.Text is not null)
+                {
+                    Console.Write(part.Text);
+                    return;
+                }
+
+                if (part.Image is not null)
+                {
+                    await DisplayImage(part.Image.Url);
+                }
+            },
+            BlockFinishedHandler = (block) =>
+            {
+                Console.WriteLine();
+                return ValueTask.CompletedTask;
+            },
+            OnUsageReceived = (usage) =>
+            {
+                Console.WriteLine();
+                Console.WriteLine(usage);
+                return ValueTask.CompletedTask;
+            }
+        });
+    }
+
     [TornadoTest]
     public static async Task GoogleStreamVideo()
     {
@@ -146,8 +214,7 @@ public static partial class ChatDemo
         
         Conversation chat = Program.Connect(LLmProviders.Google).Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.Google.Gemini.Gemini2Flash001,
-            StreamOptions = ChatStreamOptions.KnownOptionsIncludeUsage
+            Model = ChatModel.Google.Gemini.Gemini2Flash001
         });
         chat.AppendUserInput([
             new ChatMessagePart("Describe all the shots in this video"),

@@ -54,6 +54,13 @@ public class ChatModelGoogle : BaseVendorModelProvider
     ];
 
     /// <summary>
+    /// Models capable of generating images.
+    /// </summary>
+    public static readonly List<IModel> ImageModalitySupportingModels = [
+        ChatModelGoogleGeminiExperimental.ModelGemini2FlashImageGeneration
+    ];
+
+    /// <summary>
     /// Models listed don't support system prompt.
     /// </summary>
     public static readonly List<IModel> ModelsWithDisabledDeveloperMessage =

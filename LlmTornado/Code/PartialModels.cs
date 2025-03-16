@@ -389,7 +389,11 @@ public enum ChatModelModalities
     /// <summary>
     ///     Model is capable of generating audio.
     /// </summary>
-    Audio
+    Audio,
+    /// <summary>
+    ///     Model is capable of generating images (currently only Gemini 2.0+)
+    /// </summary>
+    Image
 }
 
 /// <summary>

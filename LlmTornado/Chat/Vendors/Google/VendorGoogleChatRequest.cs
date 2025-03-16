@@ -11,6 +11,7 @@ using LlmTornado.Chat.Plugins;
 using LlmTornado.Chat.Vendors.Cohere;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
+using LlmTornado.Code.Vendor;
 using LlmTornado.Common;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -40,6 +41,19 @@ internal class VendorGoogleChatRequestGenerationConfig
     /// </summary>
     [JsonProperty("responseSchema")]
     public object? ResponseSchema { get; set; }
+    
+    /// <summary>
+    /// The requested modalities of the response. Represents the set of modalities that the model can return, and should be expected in the response. This is an exact match to the modalities of the response.
+    /// A model may have multiple combinations of supported modalities. If the requested modalities do not match any of the supported combinations, an error will be returned.
+    /// An empty list is equivalent to requesting only text.
+    /// <br/>
+    /// MODALITY_UNSPECIFIED<br/>
+    /// TEXT<br/>
+    /// IMAGE<br/>
+    /// AUDIO
+    /// </summary>
+    [JsonProperty("responseModalities")]
+    public List<string>? ResponseModalities { get; set; }
     
     /// <summary>
     /// Optional. Number of generated responses to return. Currently, this value can only be set to 1. If unset, this will default to 1.
@@ -94,6 +108,8 @@ internal class VendorGoogleChatRequestGenerationConfig
     /// </summary>
     [JsonProperty("logprobs")]
     public int? Logprobs { get; set; }
+    
+    
 }
 
 internal class VendorGoogleChatRequestMessagePart
@@ -537,15 +553,15 @@ internal class VendorGoogleChatRequest
                 Mode = "AUTO"
             }
         };
+        
         VendorGoogleChatRequestGenerationConfig? localConfig = null;
-
         bool anyStrictTool = false;
         
         foreach (Tool tool in tools)
         {
             localTools.Add(new VendorGoogleChatTool(tool));
         }
-
+        
         if (outboundToolChoice is not null)
         {
             switch (outboundToolChoice.Mode)
@@ -633,6 +649,20 @@ internal class VendorGoogleChatRequest
             MaxOutputTokens = request.MaxTokens,
             StopSequences = request.MultipleStopSequences is not null ? request.MultipleStopSequences.Take(5).ToList() : request.StopSequence is not null ? [ request.StopSequence ] : null
         };
+
+        if (request.Modalities?.Count > 0 && request.Model is not null)
+        {
+            if (request.Modalities.Contains(ChatModelModalities.Image) && ChatModelGoogle.ImageModalitySupportingModels.Contains(request.Model))
+            {
+                GenerationConfig.ResponseModalities = ["IMAGE"];
+            }
+
+            if (request.Modalities.Contains(ChatModelModalities.Text))
+            {
+                GenerationConfig.ResponseModalities ??= [];
+                GenerationConfig.ResponseModalities.Add("TEXT");
+            }
+        }
         
         if (request.Tools?.Count > 0)
         {
