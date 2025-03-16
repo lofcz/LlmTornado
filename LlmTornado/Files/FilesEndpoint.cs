@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using LlmTornado.Chat;
 using LlmTornado.Code;
 using LlmTornado.Code.Vendor;
 using LlmTornado.Common;
@@ -64,9 +65,56 @@ public class FilesEndpoint : EndpointBase
 	}
 
 	/// <summary>
+	/// Certain providers (Google) might take some time before processing uploaded files. This method accepts a file and polls the state until the file is ready or the wait timeouts.
+	/// </summary>
+	/// <param name="file"></param>
+	/// <param name="checkFrequencyMs"></param>
+	/// <param name="provider"></param>
+	/// <param name="token"></param>
+	/// <returns></returns>
+	public async Task<RestDataOrException<bool>> WaitForReady(TornadoFile file, int checkFrequencyMs = 1000, LLmProviders? provider = null, CancellationToken token = default)
+	{
+		IEndpointProvider resolvedProvider = Api.ResolveProvider(provider);
+
+		if (resolvedProvider.Provider is not LLmProviders.Google)
+		{
+			return new RestDataOrException<bool>(false, (HttpCallRequest?)null);
+		}
+
+		int maxIters = checkFrequencyMs < 100 ? 100 : 20;
+		
+		try
+        {
+            while (maxIters > 0 && file.State is FileLinkStates.Processing)
+            {
+                if (token.IsCancellationRequested)
+                {
+                    break;
+                }
+
+                maxIters--;
+                
+                TornadoFile? fetchedFile = await Get(file.Uri ?? $"{GoogleEndpointProvider.BaseUrl}{file.Id}", resolvedProvider.Provider);
+                file.State = fetchedFile is not null ? fetchedFile.State : FileLinkStates.Unknown;
+
+                if (file.State is FileLinkStates.Processing)
+                {
+	                await Task.Delay(checkFrequencyMs, token);   
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            return new RestDataOrException<bool>(e);
+        }
+		
+		return new RestDataOrException<bool>(true, (HttpCallRequest?)null);
+	}
+
+	/// <summary>
 	///     Returns information about a specific file
 	/// </summary>
-	/// <param name="fileId">The ID of the file to use for this request</param>
+	/// <param name="fileId">Either ID of the file, or full url pointing to the file.</param>
 	/// <param name="provider">Which provider should be used</param>
 	/// <returns></returns>
 	public async Task<TornadoFile?> Get(string fileId, LLmProviders? provider = null)
@@ -76,7 +124,8 @@ public class FilesEndpoint : EndpointBase
 		// sadly, when creating the file there is an extra wrapper which is not in place when retrieving it, so we have to do this
 		if (resolvedProvider.Provider is LLmProviders.Google)
 		{
-			VendorGoogleTornadoFileContent? result = await HttpGet<VendorGoogleTornadoFileContent>(resolvedProvider, CapabilityEndpoints.BaseUrl, GetUrl(resolvedProvider, CapabilityEndpoints.BaseUrl, fileId)).ConfigureAwait(ConfigureAwaitOptions.None);;
+			string resolvedUrl = fileId.StartsWith(GoogleEndpointProvider.BaseUrl) ? fileId : GetUrl(resolvedProvider, CapabilityEndpoints.BaseUrl, fileId);
+			VendorGoogleTornadoFileContent? result = await HttpGet<VendorGoogleTornadoFileContent>(resolvedProvider, CapabilityEndpoints.BaseUrl, resolvedUrl).ConfigureAwait(ConfigureAwaitOptions.None);
 
 			if (result is not null)
 			{

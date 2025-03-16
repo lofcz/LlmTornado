@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -15,6 +16,7 @@ using LlmTornado.Models;
 using LlmTornado.Vendor.Anthropic;
 using LlmTornado.Code.Models;
 using LlmTornado.Code.Vendor;
+using LlmTornado.Files;
 
 namespace LlmTornado.Chat;
 
@@ -963,6 +965,118 @@ public class Conversation
     }
 
     /// <summary>
+    /// Certain providers (Google) might take some time to process uploaded files. This affects mostly videos. If the conversations contain any messages with File parts, this call verifies they are ready and if not, waits for the ready state.
+    /// </summary>
+    /// <param name="checkFrequencyMs">The frequency of polling, in ms</param>
+    /// <param name="token">Cancellation token</param>
+    public async Task<RestDataOrException<bool>> WaitForContentReady(int checkFrequencyMs = 1000, CancellationToken token = default)
+    {
+        IEndpointProvider provider = endpoint.Api.GetProvider(Model);
+
+        if (provider.Provider is not LLmProviders.Google)
+        {
+            return new RestDataOrException<bool>(true, (HttpCallRequest?)null);
+        }
+        
+        List<ChatMessage> toCheck = Messages.Where(x => x.Parts?.Any(y => y.FileLinkData?.State is not FileLinkStates.Active) ?? false).ToList();
+
+        if (toCheck.Count is 0)
+        {
+            return new RestDataOrException<bool>(true, (HttpCallRequest?)null);
+        }
+        
+        List<ChatMessagePart> parts = toCheck.SelectMany(x => x.Parts?.Where(y =>
+        {
+            if (y.FileLinkData is null)
+            {
+                return false;
+            }
+            
+            // not files or active files
+            if (y.Type is not ChatMessageTypes.FileLink || y.FileLinkData.State is FileLinkStates.Active)
+            {
+                return false;
+            }
+
+            // YouTube videos or other absolute sources
+            if (!y.FileLinkData.FileUri.StartsWith(GoogleEndpointProvider.BaseUrl) && Uri.TryCreate(y.FileLinkData.FileUri, UriKind.Absolute, out _))
+            {
+                return false;
+            }
+
+            return true;
+        }) ?? []).ToList();
+
+        if (parts.Count is 0)
+        {
+            return new RestDataOrException<bool>(true, (HttpCallRequest?)null);
+        }
+        
+        HashSet<ChatMessagePart> pendingParts = new HashSet<ChatMessagePart>(parts);
+        int maxIters = checkFrequencyMs < 100 ? 100 : 20;
+        
+        try
+        {
+            while (pendingParts.Count > 0 && maxIters > 0)
+            {
+                if (token.IsCancellationRequested)
+                {
+                    break;
+                }
+
+                maxIters--;
+                
+                // select all pending parts
+                Task<(ChatMessagePart part, bool isProcessing)>[] tasks = pendingParts.Select(async part => 
+                {
+                    if (part.FileLinkData is null)
+                    {
+                        return (part, isProcessing: false);
+                    }
+                    
+                    TornadoFile? file = await endpoint.Api.Files.Get(part.FileLinkData.FileUri, provider.Provider);
+                    
+                    bool isProcessing = file?.State is FileLinkStates.Processing;
+                    
+                    if (!isProcessing)
+                    {
+                        part.FileLinkData.State = file?.State ?? FileLinkStates.Unknown;
+
+                        if (part.FileLinkData.File is not null)
+                        {
+                            part.FileLinkData.File.State = file?.State ?? FileLinkStates.Unknown;
+                        }
+                    }
+                    
+                    return (part, isProcessing);
+                }).ToArray();
+                
+                (ChatMessagePart part, bool isProcessing)[] results = await Task.WhenAll(tasks);
+                
+                // remove done parts
+                foreach ((ChatMessagePart part, bool isProcessing) in results)
+                {
+                    if (!isProcessing)
+                    {
+                        pendingParts.Remove(part);
+                    }
+                }
+
+                if (pendingParts.Count > 0)
+                {
+                    await Task.Delay(checkFrequencyMs, token);
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            return new RestDataOrException<bool>(e);
+        }
+        
+        return new RestDataOrException<bool>(true, (HttpCallRequest?)null);
+    }
+    
+    /// <summary>
     ///     Stream LLM response as a series of events. The raw events from Provider are abstracted away and only high-level events are reported such as inbound plaintext tokens, complete tool requests, etc.
     /// </summary>
     /// <param name="eventsHandler"></param>
@@ -1021,12 +1135,10 @@ public class Conversation
                                 currentMsgId = Guid.NewGuid();
                                 AppendMessage(internalDelta);   
                             }
-                            else
+                            
+                            if (res.Usage is not null && eventsHandler?.OnUsageReceived is not null)
                             {
-                                if (res.Usage is not null && eventsHandler?.OnUsageReceived is not null)
-                                {
-                                    await eventsHandler.OnUsageReceived.Invoke(res.Usage);
-                                }
+                                await eventsHandler.OnUsageReceived.Invoke(res.Usage);
                             }
 
                             if (eventsHandler?.BlockFinishedHandler is not null)

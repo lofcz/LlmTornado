@@ -2,7 +2,9 @@ using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Chat.Vendors.Mistral;
 using LlmTornado.ChatFunctions;
+using LlmTornado.Code;
 using LlmTornado.Common;
+using LlmTornado.Files;
 
 namespace LlmTornado.Demo;
 
@@ -110,6 +112,74 @@ public static partial class ChatDemo
 
         Console.WriteLine("Google:");
         Console.WriteLine(str2);
+    }
+    
+    [TornadoTest]
+    public static async Task YoutubeVideo()
+    {
+        Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Google.Gemini.Gemini2Flash001
+        });
+        
+        chat2.AppendUserInput([
+            new ChatMessagePart("Summarize this video"),
+            new ChatMessagePart(new ChatMessagePartFileLinkData("https://www.youtube.com/watch?v=ocbLw49Or44"))
+        ]);
+       
+        string? str2 = await chat2.GetResponse();
+
+        Console.WriteLine("Google:");
+        Console.WriteLine(str2);
+    }
+
+    [TornadoTest]
+    public static async Task GoogleStreamVideo()
+    {
+        TornadoApi api = Program.Connect(LLmProviders.Google);
+        HttpCallResult<TornadoFile> uploadedFile = await api.Files.Upload("Static/Files/video.mp4", mimeType: "video/mp4", provider: LLmProviders.Google);
+
+        if (uploadedFile.Data is null)
+        {
+            return;
+        }
+        
+        Conversation chat = Program.Connect(LLmProviders.Google).Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Google.Gemini.Gemini2Flash001,
+            StreamOptions = ChatStreamOptions.KnownOptionsIncludeUsage
+        });
+        chat.AppendUserInput([
+            new ChatMessagePart("Describe all the shots in this video"),
+            new ChatMessagePart(new ChatMessagePartFileLinkData(uploadedFile.Data))
+        ]);
+
+        Console.WriteLine("Google:");
+
+        if (uploadedFile.Data?.State is FileLinkStates.Processing)
+        {
+            await api.Files.WaitForReady(uploadedFile.Data, provider: LLmProviders.Google);
+        }
+
+        await chat.StreamResponseRich(new ChatStreamEventHandler
+        {
+            MessageTokenHandler = (token) =>
+            {
+                Console.Write(token);
+                return ValueTask.CompletedTask;
+            },
+            BlockFinishedHandler = (block) =>
+            {
+                Console.WriteLine();
+                return ValueTask.CompletedTask;
+            },
+            OnUsageReceived = (usage) =>
+            {
+                Console.WriteLine();
+                Console.WriteLine(usage);
+                return ValueTask.CompletedTask;
+            }
+        });
     }
     
     [TornadoTest]

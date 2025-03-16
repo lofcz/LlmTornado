@@ -38,6 +38,8 @@ internal class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider,
         Provider = LLmProviders.Google;
         StoreApiAuth();
     }
+    
+    public const string BaseUrl = "https://generativelanguage.googleapis.com/";
 
     /// <summary>
     /// 
@@ -46,8 +48,7 @@ internal class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider,
     /// <returns></returns>
     public override string ApiUrl(CapabilityEndpoints endpoint, string? url)
     {
-        const string baseUrl = "https://generativelanguage.googleapis.com/";
-        const string baseUrlVersion = $"{baseUrl}v1beta/";
+        const string baseUrlVersion = $"{BaseUrl}v1beta/";
         
         switch (endpoint)
         {
@@ -57,7 +58,7 @@ internal class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider,
             }
             case CapabilityEndpoints.BaseUrlStripped:
             {
-                return $"{baseUrl}{url}";
+                return $"{BaseUrl}{url}";
             }
             case CapabilityEndpoints.BaseUrl:
             {

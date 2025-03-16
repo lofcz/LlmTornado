@@ -1,4 +1,5 @@
 ﻿using System;
+using LlmTornado.Chat;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Files;
@@ -81,4 +82,10 @@ public class TornadoFile : ApiResultBase
 	/// </summary>
 	[JsonIgnore]
 	public string? Uri { get; set; }
+	
+	/// <summary>
+	/// State of the file. Used only by Google.
+	/// </summary>
+	[JsonIgnore]
+	public FileLinkStates? State { get; set; }
 }

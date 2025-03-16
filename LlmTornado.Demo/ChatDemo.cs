@@ -811,6 +811,12 @@ public static partial class ChatDemo
             {
                 Console.WriteLine();
                 return ValueTask.CompletedTask;
+            },
+            OnUsageReceived = (usage) =>
+            {
+                Console.WriteLine();
+                Console.WriteLine(usage);
+                return ValueTask.CompletedTask;
             }
         });
     }

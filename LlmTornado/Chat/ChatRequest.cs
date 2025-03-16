@@ -32,6 +32,7 @@ public class ChatRequest
 	/// </summary>
 	public ChatRequest()
     {
+	   StreamOptions ??= ChatStreamOptions.KnownOptionsIncludeUsage;
     }
 
 	/// <summary>
@@ -166,7 +167,8 @@ public class ChatRequest
     public bool Stream { get; internal set; }
 
 	/// <summary>
-	///     The stream configuration.
+	///     The stream configuration.<br/>
+	///		Note: by default Tornado includes usage for all providers.
 	/// </summary>
 	[JsonIgnore]
 	public ChatStreamOptions? StreamOptions
