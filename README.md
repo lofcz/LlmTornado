@@ -15,6 +15,7 @@ OpenAI, Anthropic, Google, DeepSeek, Cohere, Mistral, Azure, and Groq are curren
 - [Orchestrate Assistants](https://github.com/lofcz/LlmTornado/blob/61d2a4732c88c45d4a8c053204ecdef807c34652/LlmTornado.Demo/ThreadsDemo.cs#L331-L429)
 - [Turn various modalities into embeddings](https://github.com/lofcz/LlmTornado/blob/61d2a4732c88c45d4a8c053204ecdef807c34652/LlmTornado.Demo/EmbeddingDemo.cs#L50-L75)
 - [Generate images](https://github.com/lofcz/LlmTornado/blob/61d2a4732c88c45d4a8c053204ecdef807c34652/LlmTornado.Demo/ImagesDemo.cs#L10-L13)
+- [Summarize a video (local file / YouTube)](https://github.com/lofcz/LlmTornado/blob/cfd47f915584728d9a2365fc9d38d158673da68a/LlmTornado.Demo/ChatDemo2.cs#L119)
 - Switch providers mid-conversation (OpenAI, Cohere, and Anthropic, with parallel tools calling & streaming): 
 
 https://github.com/lofcz/LlmTornado/assets/10260230/05c27b37-397d-4b4c-96a4-4138ade48dbe
