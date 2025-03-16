@@ -15,6 +15,11 @@ public class ChatModelGoogle : BaseVendorModelProvider
     public readonly ChatModelGoogleGemini Gemini = new ChatModelGoogleGemini();
     
     /// <summary>
+    /// Gemma models.
+    /// </summary>
+    public readonly ChatModelGoogleGemma Gemma = new ChatModelGoogleGemma();
+    
+    /// <summary>
     /// Experimental Gemini models.
     /// </summary>
     public readonly ChatModelGoogleGeminiExperimental GeminiExperimental = new ChatModelGoogleGeminiExperimental();
@@ -44,7 +49,16 @@ public class ChatModelGoogle : BaseVendorModelProvider
     /// </summary>
     public static readonly List<IModel> ModelsAll = [
         ..ChatModelGoogleGemini.ModelsAll,
-        ..ChatModelGoogleGeminiExperimental.ModelsAll
+        ..ChatModelGoogleGeminiExperimental.ModelsAll,
+        ..ChatModelGoogleGemma.ModelsAll
+    ];
+
+    /// <summary>
+    /// Models listed don't support system prompt.
+    /// </summary>
+    public static readonly List<IModel> ModelsWithDisabledDeveloperMessage =
+    [
+        ..ChatModelGoogleGemma.ModelsAll
     ];
     
     static ChatModelGoogle()

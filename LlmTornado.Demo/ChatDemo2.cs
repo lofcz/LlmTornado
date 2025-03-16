@@ -97,6 +97,22 @@ public static partial class ChatDemo
     }
     
     [TornadoTest]
+    public static async Task Gemma327B()
+    {
+        Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Google.Gemma.V327B
+        });
+        chat2.AppendSystemMessage("Pretend you are a dog. Sound authentic.");
+        chat2.AppendUserInput("Solve 2+2");
+       
+        string? str2 = await chat2.GetResponse();
+
+        Console.WriteLine("Google:");
+        Console.WriteLine(str2);
+    }
+    
+    [TornadoTest]
     public static async Task MistralLargeStreaming()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest

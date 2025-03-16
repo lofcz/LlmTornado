@@ -21,14 +21,14 @@ public class ChatModelGoogleGeminiExperimental : IVendorModelClassProvider
     public readonly ChatModel GeminiModelGemini2ProExp250205 = ModelGemini2ProExp250205;
     
     /// <summary>
-    /// An experimental public preview model optimized for cost efficiency.
+    /// LearnLM 1.5 Pro Experimental
     /// </summary>
-    public static readonly ChatModel ModelGemini2FlashLite250205 = new ChatModel("gemini-2.0-flash-lite-preview-02-05", LLmProviders.Google, 1_000_000);
+    public static readonly ChatModel ModelLearnLlm15ProExperimental = new ChatModel("learnlm-1.5-pro-experimental", LLmProviders.Google, 1_000_000);
     
     /// <summary>
-    /// <inheritdoc cref="ModelGemini2FlashLite250205"/>
+    /// <inheritdoc cref="ModelLearnLlm15ProExperimental"/>
     /// </summary>
-    public readonly ChatModel GeminiModelGemini2FlashLite250205 = ModelGemini2FlashLite250205;
+    public readonly ChatModel LearnLlm15ProExperimental = ModelLearnLlm15ProExperimental;
     
     /// <summary>
     /// Reasoning for complex problems, features new thinking capabilities
@@ -36,20 +36,6 @@ public class ChatModelGoogleGeminiExperimental : IVendorModelClassProvider
     /// </summary>
     public static readonly ChatModel ModelGemini2FlashThinkingExp250121 = new ChatModel("gemini-2.0-flash-thinking-exp-01-21", LLmProviders.Google, 1_000_000);
     
-    /// <summary>
-    /// <inheritdoc cref="ModelGemini2FlashThinkingExp250121"/>
-    /// </summary>
-    public readonly ChatModel Gemini2FlashThinkingExp250121 = ModelGemini2FlashThinkingExp250121;
-    
-    /// <summary>
-    /// Currently points to <see cref="ModelGemini2FlashThinkingExp250121"/>.
-    /// </summary>
-    public static readonly ChatModel ModelGemini2FlashThinkingExp = new ChatModel("gemini-2.0-flash-thinking-exp", LLmProviders.Google, 1_000_000);
-    
-    /// <summary>
-    /// <inheritdoc cref="ModelGemini2FlashThinkingExp"/>
-    /// </summary>
-    public readonly ChatModel Gemini2FlashThinkingExp = ModelGemini2FlashThinkingExp;
     
     /// <summary>
     /// All known Experimental Gemini models from Google.
@@ -57,10 +43,8 @@ public class ChatModelGoogleGeminiExperimental : IVendorModelClassProvider
     public static readonly List<IModel> ModelsAll =
     [
         ModelGemini2FlashThinkingExp250121,
-        ModelGemini2FlashThinkingExp,
-        
-        ModelGemini2ProExp250205,
-        ModelGemini2FlashLite250205
+        ModelLearnLlm15ProExperimental,
+        ModelGemini2ProExp250205
     ];
 
     /// <summary>

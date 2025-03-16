@@ -605,7 +605,14 @@ internal class VendorGoogleChatRequest
 
             if (sysMsg is not null)
             {
-                SystemInstruction = new VendorGoogleChatRequestMessage(sysMsg);
+                if (request.Model is not null && ChatModelGoogle.ModelsWithDisabledDeveloperMessage.Contains(request.Model))
+                {
+                    // system prompt is unsupported
+                }
+                else
+                {
+                    SystemInstruction = new VendorGoogleChatRequestMessage(sysMsg);   
+                }
             }
             
             foreach (ChatMessage msg in msgs)
