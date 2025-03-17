@@ -70,7 +70,7 @@ foreach (ChatModel model in models)
 }
 ```
 
-💡 Instead of passing in a strongly typed model, you can pass in a string instead: `await api.Chat.CreateConversation("gpt-4o")`, Tornado will automatically resolve the provider.
+💡 Instead of passing in a strongly typed model, you can pass a string instead: `await api.Chat.CreateConversation("gpt-4o")`, Tornado will automatically resolve the provider.
 
 ## 🔮 Custom Providers
 
