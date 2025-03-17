@@ -9,6 +9,8 @@ LLM Tornado acts as an aggregator allowing you to do just that. Think [SearX](ht
 
 OpenAI, Anthropic, Google, DeepSeek, Cohere, Mistral, Azure, and Groq are currently supported, along with any OpenAI-compatible inference servers, such as [Ollama](https://github.com/ollama/ollama). Check the full Feature Matrix [here](https://github.com/lofcz/LlmTornado/blob/master/FeatureMatrix.md). 👈
 
+Tornado also acts as an _API harmonizer_ for these Providers. For example, if a request accidentally passes `temperature` to a reasoning model, where such an argument is not supported, we take care of that, to maximize the probability of the call succeeding. This applies to various whims of the Providers, such as `developer_message` vs `system_prompt` (in Tornado there is just a `System` role for Messages), Google having completely different endpoints for embedding multiple texts at once, and many other annoyances.
+
 ⭐ Awesome things you can do with Tornado:
 - [Chat with your documents](https://github.com/lofcz/LlmTornado/blob/61d2a4732c88c45d4a8c053204ecdef807c34652/LlmTornado.Demo/ChatDemo.cs#L722-L757)
 - [Voice call with AI using your microphone](https://github.com/lofcz/LlmTornado/blob/61d2a4732c88c45d4a8c053204ecdef807c34652/LlmTornado.Demo/ChatDemo.cs#L905-L968)
@@ -72,6 +74,47 @@ foreach (ChatModel model in models)
 
 💡 Instead of passing in a strongly typed model, you can pass a string instead: `await api.Chat.CreateConversation("gpt-4o")`, Tornado will automatically resolve the provider.
 
+## ❄️ Vendor Extensions
+
+Tornado has a powerful concept of `VendorExtensions` which can be applied to various endpoints and are strongly typed. Many Providers offer unique/niche APIs, often enabling use cases otherwise unavailable. For example, let's set a reasoning budget for Anthropic's Claude 3.7:
+
+```cs
+public static async Task AnthropicSonnet37Thinking()
+{
+    Conversation chat = Program.Connect(LLmProviders.Anthropic).Chat.CreateConversation(new ChatRequest
+    {
+        Model = ChatModel.Anthropic.Claude37.Sonnet,
+        VendorExtensions = new ChatRequestVendorExtensions(new ChatRequestVendorAnthropicExtensions
+        {
+            Thinking = new AnthropicThinkingSettings
+            {
+                BudgetTokens = 2_000,
+                Enabled = true
+            }
+        })
+    });
+    
+    chat.AppendUserInput("Explain how to solve differential equations.");
+
+    ChatRichResponse blocks = await chat.GetResponseRich();
+
+    if (blocks.Blocks is not null)
+    {
+        foreach (ChatRichResponseBlock reasoning in blocks.Blocks.Where(x => x.Type is ChatRichResponseBlockTypes.Reasoning))
+        {
+            Console.ForegroundColor = ConsoleColor.DarkGray;
+            Console.WriteLine(reasoning.Reasoning?.Content);
+            Console.ResetColor();
+        }
+
+        foreach (ChatRichResponseBlock reasoning in blocks.Blocks.Where(x => x.Type is ChatRichResponseBlockTypes.Message))
+        {
+            Console.WriteLine(reasoning.Message);
+        }
+    }
+}
+```
+
 ## 🔮 Custom Providers
 
 Instead of consuming commercial APIs, one can roll their own inference servers easily with [a myriad](https://github.com/janhq/awesome-local-ai) of tools available. Here is a simple demo for streaming response with Ollama, but the same approach can be used for any custom provider:
@@ -93,7 +136,7 @@ https://github.com/user-attachments/assets/de62f0fe-93e0-448c-81d0-8ab7447ad780
 
 ### Streaming
 
-Tornado offers several levels of abstraction, trading more details for more complexity. The simple use cases where only plaintext is needed can be represented in a terse format.
+Tornado offers several levels of abstraction, trading more details for more complexity. The simple use cases where only plaintext is needed can be represented in a terse format:
 
 ```cs
 await api.Chat.CreateConversation(ChatModel.Anthropic.Claude3.Sonnet)
@@ -102,33 +145,58 @@ await api.Chat.CreateConversation(ChatModel.Anthropic.Claude3.Sonnet)
     .StreamResponse(Console.Write);
 ```
 
-### Tools with deferred resolve
+### Streaming with Rich content
 
-When plaintext is insufficient, switch to `GetResponseRich()` or `StreamResponseRich()` APIs. Tools requested by the model can be resolved later and never returned to the model. This is useful in scenarios where we use the tools without intending to continue the conversation.
+When plaintext is insufficient, switch to `StreamResponseRich` or `GetResponseRich()` APIs. Tools requested by the model can be resolved later and never returned to the model. This is useful in scenarios where we use the tools without intending to continue the conversation:
 
 ```cs
-Conversation chat = api.Chat.CreateConversation(new ChatRequest
+//Ask the model to generate two images, and stream the result:
+public static async Task GoogleStreamImages()
 {
-    Model = ChatModel.OpenAi.Gpt4.Turbo,
-    Tools = new List<Tool>
+    Conversation chat = api.Chat.CreateConversation(new ChatRequest
     {
-        new Tool
+        Model = ChatModel.Google.GeminiExperimental.Gemini2FlashImageGeneration,
+        Modalities = [ ChatModelModalities.Text, ChatModelModalities.Image ]
+    });
+    
+    chat.AppendUserInput([
+        new ChatMessagePart("Generate two images: a lion and a squirrel")
+    ]);
+    
+    await chat.StreamResponseRich(new ChatStreamEventHandler
+    {
+        MessagePartHandler = async (part) =>
         {
-            Function = new ToolFunction("get_weather", "gets the current weather")
+            if (part.Text is not null)
+            {
+                Console.Write(part.Text);
+                return;
+            }
+
+            if (part.Image is not null)
+            {
+                // In our tests this executes Chafa to turn the raw base64 data into Sixels
+                await DisplayImage(part.Image.Url);
+            }
+        },
+        BlockFinishedHandler = (block) =>
+        {
+            Console.WriteLine();
+            return ValueTask.CompletedTask;
+        },
+        OnUsageReceived = (usage) =>
+        {
+            Console.WriteLine();
+            Console.WriteLine(usage);
+            return ValueTask.CompletedTask;
         }
-    },
-    ToolChoice = new OutboundToolChoice(OutboundToolChoiceModes.Required)
-});
-
-chat.AppendUserInput("Who are you?"); // user asks something unrelated, but we force the model to use the tool
-ChatRichResponse response = await chat.GetResponseRich(); // the response contains one block of type Function
+    });
+}
 ```
-
-_`GetResponseRichSafe()` API is also available, which is guaranteed not to throw on the network level. The response is wrapped in a network-level wrapper, containing additional information. For production use cases, either use `try {} catch {}` on all the HTTP request producing Tornado APIs, or use the safe APIs._
 
 ### Tools with immediate resolve
 
-Tools requested by the model can also be resolved and the results returned immediately. This has the benefit of automatically continuing the conversation.
+Tools requested by the model can be resolved and the results returned immediately. This has the benefit of automatically continuing the conversation:
 
 ```cs
 Conversation chat = api.Chat.CreateConversation(new ChatRequest
@@ -172,10 +240,34 @@ ChatStreamEventHandler handler = new ChatStreamEventHandler
 await chat.StreamResponseRich(handler);
 ```
 
-### REPL
+### Tools with deferred resolve
 
-This interactive demo can be expanded into an end-user-facing interface in the style of ChatGPT. Shows how to use strongly typed tools together with streaming and resolve parallel tool calls.
-`ChatStreamEventHandler` is a convenient class allowing subscription to only the events your use case needs.
+Instead of resolving the tool call, we can postpone/quit the conversation. This is useful for extractive tasks, where we care only for the tool call:
+
+```cs
+Conversation chat = api.Chat.CreateConversation(new ChatRequest
+{
+    Model = ChatModel.OpenAi.Gpt4.Turbo,
+    Tools = new List<Tool>
+    {
+        new Tool
+        {
+            Function = new ToolFunction("get_weather", "gets the current weather")
+        }
+    },
+    ToolChoice = new OutboundToolChoice(OutboundToolChoiceModes.Required)
+});
+
+chat.AppendUserInput("Who are you?"); // user asks something unrelated, but we force the model to use the tool
+ChatRichResponse response = await chat.GetResponseRich(); // the response contains one block of type Function
+```
+
+_`GetResponseRichSafe()` API is also available, which is guaranteed not to throw on the network level. The response is wrapped in a network-level wrapper, containing additional information. For production use cases, either use `try {} catch {}` on all the HTTP request-producing Tornado APIs, or use the safe APIs._
+
+### Simple frontend example - REPL
+
+This interactive demo can be expanded into an end-user-facing interface in the style of ChatGPT. We show how to use strongly typed tools together with streaming and resolving parallel tool calls.
+`ChatStreamEventHandler` is a convenient class with a subscription interface for listening to the various streaming events:
 
 ```cs
 public static async Task OpenAiFunctionsStreamingInteractive()
@@ -261,11 +353,11 @@ public static async Task OpenAiFunctionsStreamingInteractive()
 ```
 
 Other endpoints such as [Images](https://github.com/lofcz/LlmTornado/blob/master/LlmTornado.Demo/ImagesDemo.cs), [Embedding](https://github.com/lofcz/LlmTornado/blob/master/LlmTornado.Demo/EmbeddingDemo.cs), [Speech](https://github.com/lofcz/LlmTornado/blob/master/LlmTornado.Demo/SpeechDemo.cs), [Assistants](https://github.com/lofcz/LlmTornado/blob/master/LlmTornado.Demo/AssistantsDemo.cs), [Threads](https://github.com/lofcz/LlmTornado/blob/master/LlmTornado.Demo/ThreadsDemo.cs) and [Vision](https://github.com/lofcz/LlmTornado/blob/master/LlmTornado.Demo/VisionDemo.cs) are also supported!  
-Check the links for simple to-understand examples!
+Check the links for simple-to-understand examples!
 
-## Why Tornado?
+## 👉 Why Tornado?
 
-- 25,000+ installs on NuGet under previous names [Lofcz.Forks.OpenAI](https://www.nuget.org/packages/Lofcz.Forks.OpenAI), [OpenAiNg](https://www.nuget.org/packages/OpenAiNg).
+- 50,000+ installs on NuGet under previous names [Lofcz.Forks.OpenAI](https://www.nuget.org/packages/Lofcz.Forks.OpenAI), [OpenAiNg](https://www.nuget.org/packages/OpenAiNg).
 - Used in commercial projects incurring charges of thousands of dollars monthly.
 - The license will never change. Looking at you HashiCorp and Tiny.
 - Supports streaming, functions/tools, modalities (images, audio), and strongly typed LLM plugins/connectors.
@@ -273,12 +365,12 @@ Check the links for simple to-understand examples!
 - Extensive tests suite.
 - Maintained actively for two years, often with day 1 support for new features.
 
-## Documentation
+## 📚 Documentation
 
 Most public classes, methods, and properties (90%+) are extensively XML documented. Feel free to open an issue here if you have any questions.
 
 PRs are welcome!
 
-## License
+## 💜 License
 
-💜 This library is licensed under the [MIT license](https://github.com/lofcz/LlmTornado/blob/master/LICENSE).
+This library is licensed under the [MIT license](https://github.com/lofcz/LlmTornado/blob/master/LICENSE).
