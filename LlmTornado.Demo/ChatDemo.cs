@@ -2238,7 +2238,7 @@ public static partial class ChatDemo
         Console.WriteLine(response);
     }
 
-    [TornadoTest]
+    // note: CachedContent can not be used with GenerateContent request setting system_instruction, tools or tool_config.\n\nProposed fix: move those values to CachedContent from GenerateContent request.
     public static async Task GoogleCachedFileOnly()
     {
         HttpCallResult<TornadoFile> file = await Program.Connect().Files.Upload("Static/Files/sample.pdf", provider: LLmProviders.Google, mimeType: "application/pdf");

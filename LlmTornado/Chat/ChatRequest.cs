@@ -32,7 +32,7 @@ public class ChatRequest
 	/// </summary>
 	public ChatRequest()
     {
-	   StreamOptions ??= ChatStreamOptions.KnownOptionsIncludeUsage;
+	   
     }
 
 	/// <summary>
@@ -425,8 +425,31 @@ public class ChatRequest
 				msg.Request = this;
 			}	
 		}
+
+		ChatStreamOptions? storedOptions = null;
+		bool restoreStreamOptions = false;
 		
-		return SerializeMap.TryGetValue(provider.Provider, out Func<ChatRequest, IEndpointProvider, string>? serializerFn) ? new TornadoRequestContent(serializerFn.Invoke(this, provider), UrlOverride) : new TornadoRequestContent(string.Empty, UrlOverride);
+		if (!Stream && StreamOptions is not null)
+		{
+			storedOptions = ChatStreamOptions.Duplicate(StreamOptions);
+			StreamOptions = null;
+			restoreStreamOptions = true;
+		}
+		else if (Stream && StreamOptions is null)
+		{
+			storedOptions = null;
+			StreamOptions = ChatStreamOptions.KnownOptionsIncludeUsage;
+			restoreStreamOptions = true;
+		}
+		
+		TornadoRequestContent serialized = SerializeMap.TryGetValue(provider.Provider, out Func<ChatRequest, IEndpointProvider, string>? serializerFn) ? new TornadoRequestContent(serializerFn.Invoke(this, provider), UrlOverride) : new TornadoRequestContent(string.Empty, UrlOverride);
+
+		if (restoreStreamOptions)
+		{
+			StreamOptions = storedOptions;
+		}
+		
+		return serialized;
 	}
 	
 	internal class ModalitiesJsonConverter : JsonConverter<List<ChatModelModalities>>

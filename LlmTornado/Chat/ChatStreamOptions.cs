@@ -23,4 +23,17 @@ public class ChatStreamOptions
     {
         IncludeUsage = true
     };
+
+    /// <summary>
+    /// Creates a copy of the options
+    /// </summary>
+    /// <param name="options"></param>
+    /// <returns></returns>
+    public static ChatStreamOptions Duplicate(ChatStreamOptions options)
+    {
+        return new ChatStreamOptions
+        {
+            IncludeUsage = options.IncludeUsage
+        };
+    }
 }
