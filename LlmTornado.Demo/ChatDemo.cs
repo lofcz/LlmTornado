@@ -405,7 +405,7 @@ public static partial class ChatDemo
         });
         
         chat.AppendSystemMessage("You are a helpful assistant connected to the internet tasked with fetching the latest information as requested by the user.");
-        chat.AppendUserInput("Search for the latest version of .net core, including preview version. Respond with the latest version number and date of release.");
+        chat.AppendUserInput("Search for the latest version of .NET Core, including preview version. Respond with the latest version number and date of release.");
 
         ChatRichResponse response = await chat.GetResponseRich();
         List<VendorCohereCitationBlock>? blocks = response.VendorExtensions?.Cohere?.ParseCitations();

@@ -58,6 +58,9 @@ internal class VendorMistralChatRequest
     
     public VendorMistralChatRequest(ChatRequest request, IEndpointProvider provider)
     {
+        // not supported
+        request.StreamOptions = null;
+        
         SourceRequest = request;
         ChatRequestVendorMistralExtensions? extensions = request.VendorExtensions?.Mistral;
 
