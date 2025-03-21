@@ -27,6 +27,33 @@ public static partial class ChatDemo
     }
     
     [TornadoTest]
+    public static async Task Grok2Streaming()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.XAi.Grok.Grok2241212
+        });
+        
+        chat.AppendUserInput("Who are you?");
+        
+        Console.WriteLine("xAi:");
+        
+        await chat.StreamResponseRich(new ChatStreamEventHandler
+        {
+            MessageTokenHandler = (token) =>
+            {
+                Console.Write(token);
+                return ValueTask.CompletedTask;
+            },
+            BlockFinishedHandler = (block) =>
+            {
+                Console.WriteLine();
+                return ValueTask.CompletedTask;
+            }
+        });
+    }
+    
+    [TornadoTest]
     public static async Task MistralLarge()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
