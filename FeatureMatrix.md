@@ -15,8 +15,8 @@ _Empty field means the feature is unsupported by the provider._
 |**Fine-Tuning**| ✅ |    | ❌  |    |    |    | ❌  |    |     |        |
 |**Batch**      | ❌ | ❌ | ❌ | ❌ |    | ❌ | ❌ |    |     |        |
 |**Files**      | ✅ |    | ✅ |     |    |     | ❌ |    |     |        |
-|**Uploads**    | ❌ |    |     |    |    |     |     |    |     |        |
-|**Images**     | ✅ |    | ✅ |    |    |     |     |     |     |        |
+|**Uploads**    | ❌ |    |     |    |    |     |     |     |     |        |
+|**Images**     | ✅ |    | ✅ |    |    |     |     |  ✅  |     |        |
 |**Models**     | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |  ❌ |   |  ✅  |
 |**Moderation** | ✅ |    |     |    |    |     |     |    |     |        |
 |**Responses**   | ❌   |  |     |  |    |     |     |     |     |        |
