@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using LlmTornado.Chat.Models.DeepSeek;
 using LlmTornado.Chat.Models.Mistral;
+using LlmTornado.Chat.Models.Perplexity;
 using LlmTornado.Chat.Models.XAi;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
@@ -56,6 +57,11 @@ public class ChatModel : ModelBase
     public static readonly ChatModelXAi XAi = new ChatModelXAi();
     
     /// <summary>
+    /// Models provided by xAI.
+    /// </summary>
+    public static readonly ChatModelPerplexity Perplexity = new ChatModelPerplexity();
+    
+    /// <summary>
     /// All known models keyed by name.
     /// </summary>
     public static readonly Dictionary<string, IModel> AllModelsMap = [];
@@ -75,7 +81,8 @@ public class ChatModel : ModelBase
             ..Groq.AllModels,
             ..DeepSeek.AllModels,
             ..Mistral.AllModels,
-            ..XAi.AllModels
+            ..XAi.AllModels,
+            ..Perplexity.AllModels
         ];
         
         AllModels.ForEach(x =>

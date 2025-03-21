@@ -26,6 +26,7 @@ public class Program
         public string DeepSeek { get; set; }
         public string Mistral { get; set; }
         public string XAi { get; set; }
+        public string Perplexity { get; set; }
     }
 
     public static TornadoApi ConnectMulti(bool httpStrict = true)
@@ -38,7 +39,8 @@ public class Program
             new ProviderAuthentication(LLmProviders.Groq, ApiKeys.Groq),
             new ProviderAuthentication(LLmProviders.DeepSeek, ApiKeys.DeepSeek),
             new ProviderAuthentication(LLmProviders.Mistral, ApiKeys.Mistral),
-            new ProviderAuthentication(LLmProviders.XAi, ApiKeys.XAi)
+            new ProviderAuthentication(LLmProviders.XAi, ApiKeys.XAi),
+            new ProviderAuthentication(LLmProviders.Perplexity, ApiKeys.Perplexity)
         ])
         {
             httpStrict = httpStrict

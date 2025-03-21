@@ -594,6 +594,10 @@ public enum LLmProviders
     /// </summary>
     XAi,
     /// <summary>
+    /// Perplexity.
+    /// </summary>
+    Perplexity,
+    /// <summary>
     /// Internal value.
     /// </summary>
     Length

@@ -27,6 +27,48 @@ public static partial class ChatDemo
     }
     
     [TornadoTest]
+    public static async Task PerplexitySonar()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Perplexity.Sonar.Default
+        });
+        
+        chat.AppendUserInput("What kind of a LLM are you?");
+        string? str = await chat.GetResponse();
+
+        Console.WriteLine("Perplexity:");
+        Console.WriteLine(str);
+    }
+    
+    [TornadoTest]
+    public static async Task PerplexitySonarStreaming()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Perplexity.Sonar.Default
+        });
+        
+        chat.AppendUserInput("What kind of a LLM are you?");
+        
+        Console.WriteLine("Perplexity:");
+        
+        await chat.StreamResponseRich(new ChatStreamEventHandler
+        {
+            MessageTokenHandler = (token) =>
+            {
+                Console.Write(token);
+                return ValueTask.CompletedTask;
+            },
+            BlockFinishedHandler = (block) =>
+            {
+                Console.WriteLine();
+                return ValueTask.CompletedTask;
+            }
+        });
+    }
+    
+    [TornadoTest]
     public static async Task Grok2Streaming()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest

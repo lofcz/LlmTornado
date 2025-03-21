@@ -402,14 +402,22 @@ public class ChatRequest
 				return request.Serialize();
 			}
 		},
-		{ LLmProviders.Groq, (x, y) =>
+		{ 
+			LLmProviders.Groq, (x, y) =>
 			{
 				// fields unsupported by groq
 				x.LogitBias = null; 
 				return JsonConvert.SerializeObject(x, EndpointBase.NullSettings);
 			} 
 		},
-		{ LLmProviders.XAi, (x, y) =>
+		{ 
+			LLmProviders.XAi, (x, y) =>
+			{
+				return JsonConvert.SerializeObject(x, EndpointBase.NullSettings);
+			} 
+		},
+		{ 
+			LLmProviders.Perplexity, (x, y) =>
 			{
 				return JsonConvert.SerializeObject(x, EndpointBase.NullSettings);
 			} 
