@@ -7,7 +7,7 @@
 At least one new large language model is released each month. Wouldn't it be awesome if using the latest, shiny model was as easy as switching one argument?
 LLM Tornado acts as a gateway, allowing you to do just that. Think [SearX](https://github.com/searxng/searxng) but for LLMs!
 
-100+ providers are currently supported, including **OpenAI, Anthropic, Google, DeepSeek, Cohere, Mistral, xAI, Azure, Groq**, and any (self-hosted) OpenAI-compatible inference servers, such as [Ollama](https://github.com/lofcz/LlmTornado/blob/4c70e7d8586cb79fd9d9fe9614c85c5dda654deb/LlmTornado.Demo/CustomProviderDemo.cs#L11). Check the full Feature Matrix [here](https://github.com/lofcz/LlmTornado/blob/master/FeatureMatrix.md). 👈
+100+ providers are currently supported, including **OpenAI, Anthropic, Google, DeepSeek, Cohere, Mistral, Azure, xAI, Groq**, and any (self-hosted) OpenAI-compatible inference servers, such as [Ollama](https://github.com/lofcz/LlmTornado/blob/4c70e7d8586cb79fd9d9fe9614c85c5dda654deb/LlmTornado.Demo/CustomProviderDemo.cs#L11). Check the full Feature Matrix [here](https://github.com/lofcz/LlmTornado/blob/master/FeatureMatrix.md). 👈
 
 Tornado also acts as an _API harmonizer_ for many providers. For example, suppose a request accidentally passes `temperature` to a reasoning model, where such an argument is not supported. We take care of that, to maximize the probability of the call succeeding. This applies to various whims of the Providers, such as `developer_message` vs `system_prompt` (in Tornado there is just a `System` role for Messages), Google having completely different endpoints for embedding multiple texts at once, and many other annoyances.
 
