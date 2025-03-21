@@ -2,14 +2,14 @@
 [![LlmTornado.Contrib](https://badgen.net/nuget/v/LlmTornado.Contrib?v=302&icon=nuget&label=LlmTornado.Contrib)](https://www.nuget.org/packages/LlmTornado.Contrib)
 
 
-# 🌪️ LLM Tornado - one .NET library to consume OpenAI, Anthropic, Google, DeepSeek, Cohere, Mistral, Azure, Groq, and self-hosted APIs.
+# 🌪️ LLM Tornado - one .NET library to consume 100+ APIs, including OpenAI, Anthropic, Google, DeepSeek, Cohere, Mistral, Azure, xAI, Groq, and self-hosted APIs.
 
 At least one new large language model is released each month. Wouldn't it be awesome if using the latest, shiny model was as easy as switching one argument?
 LLM Tornado acts as a gateway, allowing you to do just that. Think [SearX](https://github.com/searxng/searxng) but for LLMs!
 
-OpenAI, Anthropic, Google, DeepSeek, Cohere, Mistral, Azure, and Groq are currently supported, along with any OpenAI-compatible inference servers, such as [Ollama](https://github.com/ollama/ollama). Check the full Feature Matrix [here](https://github.com/lofcz/LlmTornado/blob/master/FeatureMatrix.md). 👈
+100+ providers are currently supported, including **OpenAI, Anthropic, Google, DeepSeek, Cohere, Mistral, xAI, Azure, Groq**, and any (self-hosted) OpenAI-compatible inference servers, such as [Ollama](https://github.com/lofcz/LlmTornado/blob/4c70e7d8586cb79fd9d9fe9614c85c5dda654deb/LlmTornado.Demo/CustomProviderDemo.cs#L11). Check the full Feature Matrix [here](https://github.com/lofcz/LlmTornado/blob/master/FeatureMatrix.md). 👈
 
-Tornado also acts as an _API harmonizer_ for these Providers. For example, suppose a request accidentally passes `temperature` to a reasoning model, where such an argument is not supported. We take care of that, to maximize the probability of the call succeeding. This applies to various whims of the Providers, such as `developer_message` vs `system_prompt` (in Tornado there is just a `System` role for Messages), Google having completely different endpoints for embedding multiple texts at once, and many other annoyances.
+Tornado also acts as an _API harmonizer_ for many providers. For example, suppose a request accidentally passes `temperature` to a reasoning model, where such an argument is not supported. We take care of that, to maximize the probability of the call succeeding. This applies to various whims of the Providers, such as `developer_message` vs `system_prompt` (in Tornado there is just a `System` role for Messages), Google having completely different endpoints for embedding multiple texts at once, and many other annoyances.
 
 ⭐ Awesome things you can do with Tornado:
 - [Chat with your documents](https://github.com/lofcz/LlmTornado/blob/61d2a4732c88c45d4a8c053204ecdef807c34652/LlmTornado.Demo/ChatDemo.cs#L722-L757)
@@ -51,14 +51,15 @@ TornadoApi api = new TornadoApi(new List<ProviderAuthentication>
     new ProviderAuthentication(LLmProviders.Google, "GOOGLE_KEY"),
     new ProviderAuthentication(LLmProviders.Groq, "GROQ_KEY"),
     new ProviderAuthentication(LLmProviders.DeepSeek, "DEEP_SEEK_KEY"),
-    new ProviderAuthentication(LLmProviders.Mistral, "MISTRAL_KEY")
+    new ProviderAuthentication(LLmProviders.Mistral, "MISTRAL_KEY"),
+    new ProviderAuthentication(LLmProviders.XAi, "XAI_KEY")
 });
 
 List<ChatModel> models = [
     ChatModel.OpenAi.O3.Mini, ChatModel.Anthropic.Claude37.Sonnet,
     ChatModel.Cohere.Command.RPlus, ChatModel.Google.Gemini.Gemini2Flash,
     ChatModel.Groq.Meta.Llama370B, ChatModel.DeepSeep.Models.Chat,
-    ChatModel.Mistral.Premier.MistralLarge
+    ChatModel.Mistral.Premier.MistralLarge, ChatModel.XAi.Grok.Grok2241212
 ];
 
 foreach (ChatModel model in models)
