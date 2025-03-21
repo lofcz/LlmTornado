@@ -1,17 +1,14 @@
 using System;
-using System.Collections.Generic;
-using System.Net;
 using System.Threading.Tasks;
 using LlmTornado.Chat.Models;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
-using LlmTornado.Code.Vendor;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Models;
 
 /// <summary>
-///     Represents a language model
+///     Represents a language model.
 /// </summary>
 public class Model : ModelBase
 {

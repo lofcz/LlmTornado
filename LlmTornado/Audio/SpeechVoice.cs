@@ -10,7 +10,7 @@ public class SpeechVoice
 {
     private SpeechVoice(string? value)
     {
-        Value = value ?? "";
+        Value = value ?? string.Empty;
     }
 
     private string Value { get; }

@@ -6,6 +6,9 @@ using LlmTornado;
 
 namespace LlmTornado.Audio;
 
+/// <summary>
+/// Result of text to speech request.
+/// </summary>
 public class SpeechTtsResult : ApiResultBase
 {
     internal SpeechTtsResult(StreamResponse response)
@@ -44,7 +47,10 @@ public class SpeechTtsResult : ApiResultBase
         {
             string? str = Path.GetDirectoryName(path);
 
-            if (!string.IsNullOrWhiteSpace(str)) Directory.CreateDirectory(str);
+            if (!string.IsNullOrWhiteSpace(str))
+            {
+                Directory.CreateDirectory(str);
+            }
         }
 
         await using FileStream fileStream = File.Create(path);

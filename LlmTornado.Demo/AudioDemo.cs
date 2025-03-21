@@ -4,7 +4,7 @@ using LlmTornado.Code;
 
 namespace LlmTornado.Demo;
 
-public static class TranscriptionDemo
+public static class AudioDemo
 {
     [TornadoTest]
     public static async Task TranscribeFormatText()
@@ -104,7 +104,7 @@ public static class TranscriptionDemo
     [TornadoTest]
     public static async Task TranscribeFormatJsonTimestamps()
     {
-        byte[] audioData = await File.ReadAllBytesAsync("Static/Audio/sample.wav");
+        byte[] audioData = await File.ReadAllBytesAsync("Static/Audio/ttsin.mp3");
 
         TranscriptionResult? transcription = await Program.Connect().Audio.CreateTranscription(new TranscriptionRequest
         {

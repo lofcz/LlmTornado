@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Net.Http;
@@ -7,10 +6,7 @@ using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
 using LlmTornado.Code;
-using LlmTornado;
 using LlmTornado.Audio.Models.OpenAi;
-using LlmTornado.Chat;
-using LlmTornado.Common;
 
 namespace LlmTornado.Audio;
 
@@ -184,7 +180,6 @@ public class AudioEndpoint : EndpointBase
         url = provider.ApiUrl(CapabilityEndpoints.Audio, url);
 
         TranscriptionSerializedRequest serialized = SerializeRequest(request); 
-        TranscriptionResult? result;
 
         TornadoRequestContent requestBody = new TornadoRequestContent(serialized.Content, url);
         await using TornadoStreamRequest tornadoStreamRequest = await HttpStreamingRequestData(provider, Endpoint, requestBody.Url, queryParams: null, HttpMethod.Post, requestBody.Body, request.CancellationToken);
