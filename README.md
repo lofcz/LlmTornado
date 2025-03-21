@@ -13,6 +13,7 @@ Features:
 - Powerful, strongly-typed `Vendor Extensions` for each provider offering something unique. Enables rich, resilient applications, while minimizing vendor lock-in.
 - Easy-to-grasp primitives for building Agentic systems, Chatbots, and RAG-based applications. Less complex than Semantic Kernel, and more powerful than the raw APIs. Easy to extend.
 - Focused on minimizing breaking changes. We take these _seriously_ and think ahead. Updating Tornado typically requires no action on your side, even when a new major version is released.
+- Actively maintained for over two years, often with day 1 support for new features.
 
 ⭐ Awesome things you can do with Tornado:
 - [Chat with your documents](https://github.com/lofcz/LlmTornado/blob/61d2a4732c88c45d4a8c053204ecdef807c34652/LlmTornado.Demo/ChatDemo.cs#L722-L757)
