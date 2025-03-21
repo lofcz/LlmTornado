@@ -10,7 +10,7 @@ _Empty field means the feature is unsupported by the provider._
 |               | OpenAI | Anthropic | Google | Cohere | DeepSeek | Groq | Mistral | xAI | Custom* |
 |-------|-----------|-----------|-----------| -----------| -----------| -----------| -----------| -----------| -----------|
 |**Audio**      | ✅ |    |     |     |   |     |     |     |     |
-|**Chat**       | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |  ❌ | ✅ |
+|**Chat**       | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |  ✅ | ✅ |
 |**Embeddings** | ✅ |    | ✅  | ✅ |    |    | ❌ | ❌ |     |
 |**Fine-Tuning**| ✅ |    | ❌  |    |    |    | ❌  |    |     |
 |**Batch**      | ❌ | ❌ | ❌ | ❌ |    | ❌ | ❌ |    |     |
