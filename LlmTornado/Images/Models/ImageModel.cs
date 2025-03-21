@@ -4,6 +4,7 @@ using LlmTornado.Code;
 using LlmTornado.Code.Models;
 using LlmTornado.Images.Models.Google;
 using LlmTornado.Images.Models.OpenAi;
+using LlmTornado.Images.Models.XAi;
 using LlmTornado.Models;
 
 namespace LlmTornado.Images.Models;
@@ -22,6 +23,11 @@ public class ImageModel : ModelBase
     /// Models from Google.
     /// </summary>
     public static readonly ImageModelGoogle Google = new ImageModelGoogle();
+    
+    /// <summary>
+    /// Models from xAI.
+    /// </summary>
+    public static readonly ImageModelXAi XAi = new ImageModelXAi();
      
     /// <summary>
     /// All known models keyed by name.
@@ -37,7 +43,8 @@ public class ImageModel : ModelBase
     {
         AllModels = [
             ..OpenAi.AllModels,
-            ..Google.AllModels
+            ..Google.AllModels,
+            ..XAi.AllModels
         ];
         
         AllModels.ForEach(x =>
@@ -68,6 +75,19 @@ public class ImageModel : ModelBase
     {
         Name = name;
         Provider = provider;
+    }
+    
+    /// <summary>
+    /// Creates a new model identified by name, provider with a list of aliases.
+    /// </summary>
+    /// <param name="name"></param>
+    /// <param name="provider"></param>
+    /// <param name="aliases"></param>
+    public ImageModel(string name, LLmProviders provider, List<string> aliases)
+    {
+        Name = name;
+        Provider = provider;
+        Aliases = aliases;
     }
     
     /// <summary>

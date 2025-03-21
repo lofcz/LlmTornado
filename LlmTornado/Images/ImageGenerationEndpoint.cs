@@ -27,7 +27,7 @@ public class ImageGenerationEndpoint : EndpointBase
 	///     Ask the API to create an image given a prompt.
 	/// </summary>
 	/// <param name="input">A text description of the desired image(s)</param>
-	/// <returns>Asynchronously returns the image result. Look in its <see cref="TornadoImageTornadoGeneratedImageeturns>
+	/// <returns>Asynchronously returns the image result. Look in its <see cref="ImageGenerationResult"/></returns>
 	public Task<ImageGenerationResult?> CreateImage(string input)
     {
         ImageGenerationRequest req = new ImageGenerationRequest(input);
@@ -38,7 +38,7 @@ public class ImageGenerationEndpoint : EndpointBase
 	///     Ask the API to create an image given a prompt.
 	/// </summary>
 	/// <param name="request">Request to be sent</param>
-	/// <returns>Asynchronously returns the image result. Look in its <see cref="TornadoImageTornadoGeneratedImageeturns>
+	/// <returns>Asynchronously returns the image result. Look in its <see cref="ImageGenerationResult"/></returns>
 	public Task<ImageGenerationResult?> CreateImage(ImageGenerationRequest request)
     {
 	    IEndpointProvider provider = Api.GetProvider(request.Model ?? ImageModel.OpenAi.Dalle.V3);

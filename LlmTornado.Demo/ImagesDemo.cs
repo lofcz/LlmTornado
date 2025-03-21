@@ -8,20 +8,8 @@ namespace LlmTornado.Demo;
 
 public class ImagesDemo
 {
-    [TornadoTest]
-    [Flaky("expensive")]
-    public static async Task GenerateDalle3()
+    static async Task DisplayImage(ImageGenerationResult generatedImg)
     {
-        ImageGenerationResult? generatedImg = await Program.Connect().ImageGenerations.CreateImage(new ImageGenerationRequest("a cute cat", quality: TornadoImageQualities.Hd, responseFormat: TornadoImageResponseFormats.Url, model: ImageModel.OpenAi.Dalle.V3));
-        Console.WriteLine(generatedImg?.Data?[0].Url);
-    }
-    
-    [TornadoTest]
-    [Flaky("expensive")]
-    public static async Task GenerateDalle3Base64()
-    {
-        ImageGenerationResult? generatedImg = await Program.Connect().ImageGenerations.CreateImage(new ImageGenerationRequest("a cute cat", quality: TornadoImageQualities.Hd, responseFormat: TornadoImageResponseFormats.Base64, model: ImageModel.OpenAi.Dalle.V3));
-       
         byte[] imageBytes = Convert.FromBase64String(generatedImg.Data[0].Base64);
         string tempFile = $"{Path.GetTempFileName()}.jpg";
         await File.WriteAllBytesAsync(tempFile, imageBytes);
@@ -44,6 +32,36 @@ public class ImagesDemo
         }
         
         File.Delete(tempFile);
+    }
+    
+    [TornadoTest]
+    [Flaky("expensive")]
+    public static async Task GenerateGrok2Image()
+    {
+        ImageGenerationResult? generatedImg = await Program.Connect().ImageGenerations.CreateImage(new ImageGenerationRequest
+        {
+            Prompt = "a cute cat",
+            ResponseFormat = TornadoImageResponseFormats.Base64,
+            Model = ImageModel.XAi.Grok.V2241212
+        });
+
+        await DisplayImage(generatedImg);
+    }
+    
+    [TornadoTest]
+    [Flaky("expensive")]
+    public static async Task GenerateDalle3()
+    {
+        ImageGenerationResult? generatedImg = await Program.Connect().ImageGenerations.CreateImage(new ImageGenerationRequest("a cute cat", quality: TornadoImageQualities.Hd, responseFormat: TornadoImageResponseFormats.Url, model: ImageModel.OpenAi.Dalle.V3));
+        Console.WriteLine(generatedImg?.Data?[0].Url);
+    }
+    
+    [TornadoTest]
+    [Flaky("expensive")]
+    public static async Task GenerateDalle3Base64()
+    {
+        ImageGenerationResult? generatedImg = await Program.Connect().ImageGenerations.CreateImage(new ImageGenerationRequest("a cute cat", quality: TornadoImageQualities.Hd, responseFormat: TornadoImageResponseFormats.Base64, model: ImageModel.OpenAi.Dalle.V3));
+        await DisplayImage(generatedImg);
     }
     
     [TornadoTest]
@@ -59,27 +77,6 @@ public class ImagesDemo
             })
         });
         
-        byte[] imageBytes = Convert.FromBase64String(generatedImg.Data[0].Base64);
-        string tempFile = $"{Path.GetTempFileName()}.jpg";
-        await File.WriteAllBytesAsync(tempFile, imageBytes);
-
-        if (await Helpers.ProgramExists("chafa"))
-        {
-            try
-            {
-                Process process = new Process();
-                process.StartInfo.FileName = "chafa";
-                process.StartInfo.Arguments = $"{tempFile}";
-                process.StartInfo.UseShellExecute = false;
-                process.Start();
-                await process.WaitForExitAsync();
-            }
-            catch (Exception e)
-            {
-                
-            }
-        }
-        
-        File.Delete(tempFile);
+        await DisplayImage(generatedImg);
     }
 }

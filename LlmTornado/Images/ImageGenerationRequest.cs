@@ -67,7 +67,7 @@ public class ImageGenerationRequest
 	///     The size of the generated images. Must be one of 256x256, 512x512, or 1024x1024. Defaults to 1024x1024
 	/// </summary>
 	[JsonProperty("size")]
-    public TornadoImageSizes Size { get; set; }
+    public TornadoImageSizes? Size { get; set; }
 
 	/// <summary>
 	///     The format in which the generated images are returned. Must be one of url or b64_json. Defaults to Url.
@@ -121,6 +121,13 @@ public class ImageGenerationRequest
 	private static readonly FrozenDictionary<LLmProviders, Func<ImageGenerationRequest, IEndpointProvider, string>> SerializeMap = new Dictionary<LLmProviders, Func<ImageGenerationRequest, IEndpointProvider, string>>
 	{
 		{ LLmProviders.OpenAi, (x, y) => JsonConvert.SerializeObject(x, EndpointBase.NullSettings)},
+		{ LLmProviders.XAi, (x, y) =>
+		{
+			// fields unsupported by xai
+			x.Size = null;
+			
+			return JsonConvert.SerializeObject(x, EndpointBase.NullSettings);
+		}},
 		{ LLmProviders.Google, (x, y) => JsonConvert.SerializeObject(new VendorGoogleImageRequest(x, y), EndpointBase.NullSettings) }
 	}.ToFrozenDictionary();
 }
