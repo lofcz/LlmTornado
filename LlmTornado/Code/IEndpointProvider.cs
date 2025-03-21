@@ -26,6 +26,7 @@ public interface IEndpointProvider
     public object? InboundMessage(Type type, string jsonData, string? postData);
     public void ParseInboundHeaders<T>(T res, HttpResponseMessage response) where T : ApiResultBase;
     public void ParseInboundHeaders(object? res, HttpResponseMessage response);
+    public IAsyncEnumerable<object?> InboundStream(Type type, StreamReader streamReader);
     public IAsyncEnumerable<T?> InboundStream<T>(StreamReader streamReader) where T : class;
     IAsyncEnumerable<ChatResult?> InboundStream(StreamReader reader, ChatRequest request);
     public TornadoApi Api { get; set; }

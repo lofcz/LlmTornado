@@ -13,6 +13,16 @@ public class AudioModelOpenAi : BaseVendorModelProvider
     /// Whisper models.
     /// </summary>
     public readonly AudioModelOpenAiWhisper Whisper = new AudioModelOpenAiWhisper();
+    
+    /// <summary>
+    /// Tts models.
+    /// </summary>
+    public readonly AudioModelOpenAiTts Tts = new AudioModelOpenAiTts();
+    
+    /// <summary>
+    /// Gpt4o models.
+    /// </summary>
+    public readonly AudioModelOpenAiGpt4 Gpt4 = new AudioModelOpenAiGpt4();
 
     /// <summary>
     /// All known chat models from OpenAI.
@@ -38,7 +48,31 @@ public class AudioModelOpenAi : BaseVendorModelProvider
     /// <inheritdoc cref="AllModels"/>
     /// </summary>
     public static readonly List<IModel> ModelsAll = [
+        ..AudioModelOpenAiWhisper.ModelsAll,
+        ..AudioModelOpenAiTts.ModelsAll,
+        ..AudioModelOpenAiGpt4.ModelsAll
+    ];
+
+    /// <summary>
+    /// Models supporting "verbose_json" output & "timestamp_granularities"
+    /// </summary>
+    public static readonly List<IModel> VerboseJsonCompatibleModels = [
         ..AudioModelOpenAiWhisper.ModelsAll
+    ];
+    
+    /// <summary>
+    /// Models supporting streaming.
+    /// </summary>
+    public static readonly List<IModel> StreamingCompatibleModels = [
+        ..AudioModelOpenAiTts.ModelsAll,
+        ..AudioModelOpenAiGpt4.ModelsAll
+    ];
+    
+    /// <summary>
+    /// Models supporting "include".
+    /// </summary>
+    public static readonly List<IModel> IncludeCompatibleModels = [
+        ..AudioModelOpenAiGpt4.ModelsAll
     ];
     
     static AudioModelOpenAi()

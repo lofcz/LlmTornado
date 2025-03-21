@@ -25,6 +25,31 @@ public static class TranscriptionDemo
     }
     
     [TornadoTest]
+    public static async Task TranscribeFormatTextStreaming()
+    {
+        byte[] audioData = await File.ReadAllBytesAsync("Static/Audio/sample.wav");
+
+        await Program.Connect().Audio.StreamTranscriptionRich(new TranscriptionRequest
+        {
+            File = new AudioFile(audioData, AudioFileTypes.Wav),
+            Model = AudioModel.OpenAi.Gpt4.Gpt4OTranscribe,
+            ResponseFormat = AudioTranscriptionResponseFormats.Text
+        }, new TranscriptionStreamEventHandler
+        {
+            ChunkHandler = (chunk) =>
+            {
+                Console.Write(chunk);
+                return ValueTask.CompletedTask;
+            },
+            BlockHandler = (block) =>
+            {
+                Console.WriteLine();
+                return ValueTask.CompletedTask;
+            }
+        });
+    }
+    
+    [TornadoTest]
     public static async Task TranscribeFormatJson()
     {
         byte[] audioData = await File.ReadAllBytesAsync("Static/Audio/sample.wav");
@@ -39,6 +64,80 @@ public static class TranscriptionDemo
         if (transcription is not null)
         {
             Console.WriteLine(transcription.Text);
+        }
+    }
+    
+    [TornadoTest]
+    public static async Task TranscribeFormatJsonLogprobs()
+    {
+        byte[] audioData = await File.ReadAllBytesAsync("Static/Audio/sample.wav");
+
+        TranscriptionResult? transcription = await Program.Connect().Audio.CreateTranscription(new TranscriptionRequest
+        {
+            File = new AudioFile(audioData, AudioFileTypes.Wav),
+            Model = AudioModel.OpenAi.Gpt4.Gpt4OTranscribe,
+            ResponseFormat = AudioTranscriptionResponseFormats.Json,
+            Include = [ TranscriptionRequestIncludeItems.Logprobs ]
+        });
+
+        if (transcription is not null)
+        {
+            Console.WriteLine("Transcript");
+            Console.WriteLine("--------------------------");
+            
+            Console.WriteLine(transcription.Text);
+            Console.WriteLine();
+            
+            Console.WriteLine("Logprobs");
+            Console.WriteLine("--------------------------");
+
+            if (transcription.Logprobs is not null)
+            {
+                foreach (TranscriptionLogprob logprob in transcription.Logprobs)
+                {
+                    Console.WriteLine(logprob);
+                }   
+            }
+        }
+    }
+    
+    [TornadoTest]
+    public static async Task TranscribeFormatJsonTimestamps()
+    {
+        byte[] audioData = await File.ReadAllBytesAsync("Static/Audio/sample.wav");
+
+        TranscriptionResult? transcription = await Program.Connect().Audio.CreateTranscription(new TranscriptionRequest
+        {
+            File = new AudioFile(audioData, AudioFileTypes.Wav),
+            Model = AudioModel.OpenAi.Whisper.V2,
+            ResponseFormat = AudioTranscriptionResponseFormats.VerboseJson,
+            TimestampGranularities = [ TimestampGranularities.Segment, TimestampGranularities.Word ]
+        });
+
+        if (transcription is not null)
+        {
+            Console.WriteLine("Transcript");
+            Console.WriteLine("--------------------------");
+            
+            Console.WriteLine(transcription.Text);
+            Console.WriteLine();
+            
+            Console.WriteLine("Segments");
+            Console.WriteLine("--------------------------");
+
+            foreach (TranscriptionSegment segment in transcription.Segments)
+            {
+                Console.WriteLine(segment);
+            }
+            
+            Console.WriteLine();
+            Console.WriteLine("Words");
+            Console.WriteLine("--------------------------");
+            
+            foreach (TranscriptionWord word in transcription.Words)
+            {
+                Console.WriteLine(word);
+            }
         }
     }
     

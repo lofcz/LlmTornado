@@ -11,7 +11,7 @@ namespace LlmTornado.Audio.Models.OpenAi;
 public class AudioModelOpenAiWhisper : IVendorModelClassProvider
 {
     /// <summary>
-    /// Whisper V2
+    /// Whisper V2 (whisper-1)
     /// </summary>
     public static readonly AudioModel ModelV2 = new AudioModel("whisper-1", LLmProviders.OpenAi, 16_385);
 

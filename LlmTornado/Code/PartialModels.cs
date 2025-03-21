@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -8,6 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using LlmTornado.Images;
 using LlmTornado;
+using LlmTornado.Audio;
 using LlmTornado.Chat;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Common;
@@ -733,4 +735,46 @@ public class VectorStoreFileCountInfo
     /// </summary>
     [JsonProperty("total")]
     public int Total { get; set; }
+}
+
+internal class TranscriptionSerializedRequest : IDisposable
+{
+    public MultipartFormDataContent Content = new MultipartFormDataContent();
+    public MemoryStream? Ms = null;
+    public StreamContent? Sc = null;
+
+    public void Dispose()
+    {
+        Content.Dispose();
+        Ms?.Dispose();
+        Sc?.Dispose();
+    }
+}
+
+internal class AudioStreamEvent
+{
+    [JsonProperty("type")]
+    public string Type { get; set; }
+    
+    [JsonProperty("delta")]
+    public string? Delta { get; set; } 
+    
+    [JsonProperty("logprobs")]
+    public List<TranscriptionLogprob>? Logprobs { get; set; }
+    
+    [JsonProperty("text")]
+    public string? Text { get; set; }
+
+    public static readonly FrozenDictionary<string, AudioStreamEventTypes> Map = new Dictionary<string, AudioStreamEventTypes>
+    {
+        { "transcript.text.delta", AudioStreamEventTypes.TranscriptDelta },
+        { "transcript.text.done", AudioStreamEventTypes.TranscriptDone }
+    }.ToFrozenDictionary();
+}
+
+internal enum AudioStreamEventTypes
+{
+    Unknown,
+    TranscriptDelta,
+    TranscriptDone
 }

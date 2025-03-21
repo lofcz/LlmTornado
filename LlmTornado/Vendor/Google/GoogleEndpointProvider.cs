@@ -186,6 +186,11 @@ internal class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider,
             };
         }
     }
+    
+    public override async IAsyncEnumerable<object?> InboundStream(Type type, StreamReader reader)
+    {
+        yield break;
+    }
 
     public override async IAsyncEnumerable<T?> InboundStream<T>(StreamReader reader) where T : class
     {

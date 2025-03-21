@@ -86,13 +86,13 @@ interface IVendorModelClassProvider
 /// <summary>
 /// Represents a base shared between all LLMs.
 /// </summary>
-public abstract class ModelBase : IModel
+public abstract class ModelBase : IModel, IEquatable<IModel>
 {
     /// <summary>
     ///     The id/name of the model.
     /// </summary>
     [JsonIgnore]
-    public string Name { get; set; }
+    public string Name { get; init; }
     
     /// <summary>
     /// Gets the vendor specific name.
@@ -104,20 +104,20 @@ public abstract class ModelBase : IModel
     ///     In case a model is hosted by multiple vendor, this is the vendor-specific name.
     /// </summary>
     [JsonIgnore]
-    public string? ApiName { get; set; }
+    public string? ApiName { get; init; }
 
     /// <summary>
     ///     The owner of this model.  Generally "openai" is a generic OpenAI model, or the organization if a custom or
     ///     fine-tuned model.
     /// </summary>
     [JsonProperty("owned_by")]
-    public string? OwnedBy { get; set; }
+    public string? OwnedBy { get; init; }
 
     /// <summary>
     ///     The type of object. Should always be 'model'.
     /// </summary>
     [JsonProperty("object")]
-    public string Object { get; set; }
+    public string Object { get; init; }
 
     /// <summary>
     ///     The time when the model was created.
@@ -129,19 +129,19 @@ public abstract class ModelBase : IModel
     ///     The type of object. Should always be 'model'.
     /// </summary>
     [JsonIgnore]
-    public LLmProviders Provider { get; set; }
+    public LLmProviders Provider { get; init; }
     
     /// <summary>
     ///     The time when the model was created in unix epoch format.
     /// </summary>
     [JsonProperty("created")]
-    public long? CreatedUnixTime { get; set; }
+    public long? CreatedUnixTime { get; init; }
 
     /// <summary>
     ///     Permissions for use of the model.
     /// </summary>
     [JsonProperty("permission")]
-    public List<Permissions>? Permission { get; set; }
+    public List<Permissions>? Permission { get; init; }
     
     /// <summary>
     ///     Maximum context length the model supports. For self-hosted models with ROPE support,
@@ -149,7 +149,7 @@ public abstract class ModelBase : IModel
     ///     the supported context size.
     /// </summary>
     [JsonIgnore]
-    public int? ContextTokens { get; set; }
+    public int? ContextTokens { get; init; }
 
     /// <summary>
     ///     Allows a model to be implicitly cast to the string of its <see cref="Name" />
@@ -158,6 +158,65 @@ public abstract class ModelBase : IModel
     public static implicit operator string(ModelBase model)
     {
         return model.Name;
+    }
+
+    /// <summary>
+    /// Whether two base models are equal.
+    /// </summary>
+    /// <param name="other"></param>
+    /// <returns></returns>
+    protected bool Equals(ModelBase other)
+    {
+        return other.Name == Name && other.ApiName == ApiName;
+    }
+
+    /// <summary>
+    /// Whether two IModels are equal
+    /// </summary>
+    /// <param name="other"></param>
+    /// <returns></returns>
+    public bool Equals(IModel? other)
+    {
+        if (other is null)
+        {
+            return false;
+        }
+
+        return other.Name == Name && other.ApiName == ApiName;
+    }
+
+    /// <summary>
+    /// Whether model and another object are equal.
+    /// </summary>
+    /// <param name="obj"></param>
+    /// <returns></returns>
+    public override bool Equals(object? obj)
+    {
+        if (obj is null)
+        {
+            return false;
+        }
+
+        if (ReferenceEquals(this, obj))
+        {
+            return true;
+        }
+
+        if (obj.GetType() != GetType())
+        {
+            return false;
+        }
+        
+        return Equals((ModelBase)obj);
+    }
+
+    /// <summary>
+    /// Hash code for models.
+    /// </summary>
+    /// <returns></returns>
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(Name, ApiName, OwnedBy, (int)Provider, ContextTokens);
     }
 }
 

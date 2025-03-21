@@ -304,11 +304,24 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider,
             };
         }
     }
+    
+    public override async IAsyncEnumerable<object?> InboundStream(Type type, StreamReader reader)
+    {
+        await foreach (SseItem<string> item in SseParser.Create(reader.BaseStream).EnumerateAsync())
+        {
+            yield return JsonConvert.DeserializeObject(item.Data, type);
+        }
+    }
 
     public override async IAsyncEnumerable<T?> InboundStream<T>(StreamReader reader) where T : class
     {
         await foreach (SseItem<string> item in SseParser.Create(reader.BaseStream).EnumerateAsync())
         {
+            if (item.Data is "[DONE]")
+            {
+                continue;
+            }
+            
             yield return JsonConvert.DeserializeObject<T>(item.Data);
         }
     }

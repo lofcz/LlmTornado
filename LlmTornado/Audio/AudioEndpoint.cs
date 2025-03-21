@@ -1,11 +1,15 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Threading;
 using System.Threading.Tasks;
 using LlmTornado.Code;
 using LlmTornado;
+using LlmTornado.Audio.Models.OpenAi;
+using LlmTornado.Chat;
 using LlmTornado.Common;
 
 namespace LlmTornado.Audio;
@@ -66,60 +70,186 @@ public class AudioEndpoint : EndpointBase
         return x is null ? null : new SpeechTtsResult(x);
     }
 
-    private async Task<TranscriptionResult?> PostAudio(string url, TranscriptionRequest request)
+    private TranscriptionSerializedRequest SerializeRequest(TranscriptionRequest request)
     {
-        IEndpointProvider provider = Api.GetProvider(request.Model);
-        url = provider.ApiUrl(CapabilityEndpoints.Audio, url);
-   
-        MultipartFormDataContent content = new MultipartFormDataContent();
-        MemoryStream? ms = null;
-        StreamContent? sc = null;
+        TranscriptionSerializedRequest serializedRequest = new TranscriptionSerializedRequest();
 
+        if (request.Stream ?? false)
+        {
+            serializedRequest.Content.Add(new StringContent("True"), "stream");
+        }
+        
+        if (request.TimestampGranularities?.Count > 0 && AudioModelOpenAi.VerboseJsonCompatibleModels.Contains(request.Model) && request.ResponseFormat is AudioTranscriptionResponseFormats.VerboseJson)
+        {
+            foreach (TimestampGranularities granularity in request.TimestampGranularities)
+            {
+                serializedRequest.Content.Add(new StringContent(TimestampGranularitiesCls.Encode(granularity)), "timestamp_granularities[]");
+            }
+        }
+        
+        if (request.Include?.Count > 0 && AudioModelOpenAi.IncludeCompatibleModels.Contains(request.Model) && request.ResponseFormat is AudioTranscriptionResponseFormats.Json)
+        {
+            foreach (TranscriptionRequestIncludeItems item in request.Include)
+            {
+                serializedRequest.Content.Add(new StringContent(TranscriptionRequestIncludeItemsCls.Encode(item)), "include[]");
+            }
+        }
+        
         if (request.File.Data is not null)
         {
-            ms = new MemoryStream(request.File.Data);
-            sc = new StreamContent(ms);
+            serializedRequest.Ms = new MemoryStream(request.File.Data);
+            serializedRequest.Sc = new StreamContent(serializedRequest.Ms);
             
-            sc.Headers.ContentLength = request.File.Data.Length;
-            sc.Headers.ContentType = new MediaTypeHeaderValue(request.File.GetContentType);
+            serializedRequest.Sc.Headers.ContentLength = request.File.Data.Length;
+            serializedRequest.Sc.Headers.ContentType = new MediaTypeHeaderValue(request.File.GetContentType);
         
-            content.Add(sc, "file", "test.wav");
+            serializedRequest.Content.Add(serializedRequest.Sc, "file", "test.wav");
         }
         else if (request.File.File is not null)
         {
-            sc = new StreamContent(request.File.File);
-            sc.Headers.ContentLength = request.File.File.Length;
-            sc.Headers.ContentType = new MediaTypeHeaderValue(request.File.GetContentType);
+            serializedRequest.Sc = new StreamContent(request.File.File);
+            serializedRequest.Sc.Headers.ContentLength = request.File.File.Length;
+            serializedRequest.Sc.Headers.ContentType = new MediaTypeHeaderValue(request.File.GetContentType);
         
-            content.Add(sc, "file", "test.wav");
+            serializedRequest.Content.Add(serializedRequest.Sc, "file", "test.wav");
         }
         
-        content.Add(new StringContent(request.Model.GetApiName), "model");
+        serializedRequest.Content.Add(new StringContent(request.Model.GetApiName), "model");
 
         if (!request.Prompt.IsNullOrWhiteSpace())
         {
-            content.Add(new StringContent(request.Prompt), "prompt");
+            serializedRequest.Content.Add(new StringContent(request.Prompt), "prompt");
         }
         
-        content.Add(new StringContent(request.GetResponseFormat), "response_format");
+        serializedRequest.Content.Add(new StringContent(request.GetResponseFormat), "response_format");
 
         if (!request.Temperature.HasValue)
         {
-            content.Add(new StringContent(0f.ToString(CultureInfo.InvariantCulture)), "temperature");
+            serializedRequest.Content.Add(new StringContent(0f.ToString(CultureInfo.InvariantCulture)), "temperature");
         }
 
         if (!request.Language.IsNullOrWhiteSpace())
         {
-            content.Add(new StringContent(request.Language), "language");
+            serializedRequest.Content.Add(new StringContent(request.Language), "language");
         }
 
+        return serializedRequest;
+    }
+
+    public async Task StreamTranscriptionRich(TranscriptionRequest request, TranscriptionStreamEventHandler? eventsHandler, CancellationToken token = default)
+    {
+        await foreach (object res in StreamAudio($"/transcriptions", request, eventsHandler).WithCancellation(token))
+        {
+            if (res is TranscriptionResult tr)
+            {
+                if (tr.EventType is AudioStreamEventTypes.TranscriptDelta)
+                {
+                    if (eventsHandler?.ChunkHandler is not null)
+                    {
+                        await eventsHandler.ChunkHandler.Invoke(tr);   
+                    }   
+                }
+                else if (tr.EventType is AudioStreamEventTypes.TranscriptDone)
+                {
+                    if (eventsHandler?.BlockHandler is not null)
+                    {
+                        await eventsHandler.BlockHandler.Invoke(tr);   
+                    }
+                }
+            }
+        }
+    }
+
+    private async IAsyncEnumerable<object> StreamAudio(string url, TranscriptionRequest request, TranscriptionStreamEventHandler? handler)
+    {
+        request.Stream = true;
+        
+        IEndpointProvider provider = Api.GetProvider(request.Model);
+        url = provider.ApiUrl(CapabilityEndpoints.Audio, url);
+
+        TranscriptionSerializedRequest serialized = SerializeRequest(request); 
+        TranscriptionResult? result;
+
+        TornadoRequestContent requestBody = new TornadoRequestContent(serialized.Content, url);
+        await using TornadoStreamRequest tornadoStreamRequest = await HttpStreamingRequestData(provider, Endpoint, requestBody.Url, queryParams: null, HttpMethod.Post, requestBody.Body, request.CancellationToken);
+
+        if (tornadoStreamRequest.Exception is not null)
+        {
+            if (handler?.HttpExceptionHandler is null)
+            {
+                throw tornadoStreamRequest.Exception;
+            }
+
+            await handler.HttpExceptionHandler(new HttpFailedRequest
+            {
+                Exception = tornadoStreamRequest.Exception,
+                Result = tornadoStreamRequest.CallResponse,
+                Request = tornadoStreamRequest.CallRequest,
+                RawMessage = tornadoStreamRequest.Response ?? new HttpResponseMessage(),
+                Body = requestBody
+            });
+            
+            yield break;
+        }
+
+        if (handler?.OutboundHttpRequestHandler is not null && tornadoStreamRequest.CallRequest is not null)
+        {
+            await handler.OutboundHttpRequestHandler(tornadoStreamRequest.CallRequest);
+        }
+
+        if (tornadoStreamRequest.StreamReader is not null)
+        {
+            await foreach (AudioStreamEvent? x in provider.InboundStream<AudioStreamEvent>(tornadoStreamRequest.StreamReader))
+            {
+                if (x is null)
+                {
+                    continue;
+                }
+
+                AudioStreamEventTypes eventType = AudioStreamEvent.Map.GetValueOrDefault(x.Type, AudioStreamEventTypes.Unknown);
+
+                switch (eventType)
+                {
+                    case AudioStreamEventTypes.TranscriptDelta:
+                    {
+                        yield return new TranscriptionResult
+                        {
+                            Logprobs = x.Logprobs,
+                            Text = x.Delta ?? string.Empty,
+                            EventType = AudioStreamEventTypes.TranscriptDelta
+                        };
+                        break;
+                    }
+                    case AudioStreamEventTypes.TranscriptDone:
+                    {
+                        yield return new TranscriptionResult
+                        {
+                            Logprobs = x.Logprobs,
+                            Text = x.Text ?? string.Empty,
+                            EventType = AudioStreamEventTypes.TranscriptDone
+                        };
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    private async Task<TranscriptionResult?> PostAudio(string url, TranscriptionRequest request)
+    {
+        request.Stream = null;
+        
+        IEndpointProvider provider = Api.GetProvider(request.Model);
+        url = provider.ApiUrl(CapabilityEndpoints.Audio, url);
+
+        TranscriptionSerializedRequest serialized = SerializeRequest(request); 
         TranscriptionResult? result;
 
         try
         {
             if (request.ResponseFormat is AudioTranscriptionResponseFormats.Text or AudioTranscriptionResponseFormats.Srt or AudioTranscriptionResponseFormats.Vtt)
             {
-                object? obj = await HttpPost1(typeof(string), provider, Endpoint, url, content);
+                object? obj = await HttpPost1(typeof(string), provider, Endpoint, url, serialized.Content, ct: request.CancellationToken);
 
                 if (obj is string str)
                 {
@@ -133,17 +263,11 @@ public class AudioEndpoint : EndpointBase
                 }
             }
             
-            result = await HttpPost1<TranscriptionResult>(provider, Endpoint, url, content);
+            result = await HttpPost1<TranscriptionResult>(provider, Endpoint, url, serialized.Content, ct: request.CancellationToken);
         }
         finally
         {
-            content.Dispose();
-            sc?.Dispose();
-
-            if (ms is not null)
-            {
-                await ms.DisposeAsync();   
-            }
+            serialized.Dispose();
         }
 
         return result;

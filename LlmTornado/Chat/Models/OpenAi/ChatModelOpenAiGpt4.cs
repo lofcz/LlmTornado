@@ -13,6 +13,16 @@ public class ChatModelOpenAiGpt4 : IVendorModelClassProvider
     /// <summary>
     /// Latest o1 model snapshot.
     /// </summary>
+    public static readonly ChatModel ModelO1Pro = new ChatModel("o1-pro", LLmProviders.OpenAi, 200_000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelO1Pro"/>
+    /// </summary>
+    public readonly ChatModel O1Pro = ModelO1Pro;
+    
+    /// <summary>
+    /// Latest o1 model snapshot.
+    /// </summary>
     public static readonly ChatModel ModelO1241217 = new ChatModel("o1-2024-12-17", LLmProviders.OpenAi, 200_000);
 
     /// <summary>
@@ -276,12 +286,12 @@ public class ChatModelOpenAiGpt4 : IVendorModelClassProvider
         ModelTurbo240409,
         ModelPreview240125,
         ModelPreview231106,
-        // ModelVisionPreview, // deprecated
         ModelVisionPreview231106,
         ModelDefault,
         ModelPreview230613,
         ModelContext32K,
         ModelContext32K230613,
+        ModelO1Pro,
         ModelO1,
         ModelO1240912,
         ModelO1Mini,
@@ -297,6 +307,7 @@ public class ChatModelOpenAiGpt4 : IVendorModelClassProvider
     /// </summary>
     public static readonly HashSet<IModel> ReasoningModels =
     [
+        ModelO1Pro,
         ModelO1,
         ModelO1240912,
         ModelO1Mini,
