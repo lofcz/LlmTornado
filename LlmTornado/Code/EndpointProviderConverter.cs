@@ -24,6 +24,10 @@ internal static class EndpointProviderConverter
             {
                 UrlResolver = (endpoint, url) => $"{string.Format(api.ApiUrlFormat ?? "https://api.groq.com/openai/{0}/{1}", api.ApiVersion, OpenAiEndpointProvider.GetEndpointUrlFragment(endpoint, LLmProviders.Groq))}{url}"
             },
+            LLmProviders.XAi => new OpenAiEndpointProvider(api, LLmProviders.XAi)
+            {
+                UrlResolver = (endpoint, url) => $"{string.Format(api.ApiUrlFormat ?? "https://api.x.ai/{0}/{1}", api.ApiVersion, OpenAiEndpointProvider.GetEndpointUrlFragment(endpoint, LLmProviders.Groq))}{url}"
+            },
             _ => new OpenAiEndpointProvider(api)
         };
     }

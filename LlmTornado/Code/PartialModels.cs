@@ -590,6 +590,10 @@ public enum LLmProviders
     /// </summary>
     Mistral,
     /// <summary>
+    /// xAI.
+    /// </summary>
+    XAi,
+    /// <summary>
     /// Internal value.
     /// </summary>
     Length

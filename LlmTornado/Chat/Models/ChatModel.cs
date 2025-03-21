@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using LlmTornado.Chat.Models.DeepSeek;
 using LlmTornado.Chat.Models.Mistral;
+using LlmTornado.Chat.Models.XAi;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
 using LlmTornado.Models;
@@ -50,6 +51,11 @@ public class ChatModel : ModelBase
     public static readonly ChatModelMistral Mistral = new ChatModelMistral();
     
     /// <summary>
+    /// Models provided by xAI.
+    /// </summary>
+    public static readonly ChatModelXAi XAi = new ChatModelXAi();
+    
+    /// <summary>
     /// All known models keyed by name.
     /// </summary>
     public static readonly Dictionary<string, IModel> AllModelsMap = [];
@@ -68,7 +74,8 @@ public class ChatModel : ModelBase
             ..Google.AllModels,
             ..Groq.AllModels,
             ..DeepSeek.AllModels,
-            ..Mistral.AllModels
+            ..Mistral.AllModels,
+            ..XAi.AllModels
         ];
         
         AllModels.ForEach(x =>
@@ -108,6 +115,20 @@ public class ChatModel : ModelBase
     /// <param name="provider"></param>
     /// <param name="contextTokens"></param>
     public ChatModel(string name, LLmProviders provider, int contextTokens)
+    {
+        Name = name;
+        Provider = provider;
+        ContextTokens = contextTokens;
+    }
+    
+    /// <summary>
+    /// Creates a new model identified by name and provider.
+    /// </summary>
+    /// <param name="name"></param>
+    /// <param name="provider"></param>
+    /// <param name="contextTokens"></param>
+    /// <param name="aliases"></param>
+    public ChatModel(string name, LLmProviders provider, int contextTokens, List<string> aliases)
     {
         Name = name;
         Provider = provider;

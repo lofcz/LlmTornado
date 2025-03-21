@@ -408,6 +408,11 @@ public class ChatRequest
 				x.LogitBias = null; 
 				return JsonConvert.SerializeObject(x, EndpointBase.NullSettings);
 			} 
+		},
+		{ LLmProviders.XAi, (x, y) =>
+			{
+				return JsonConvert.SerializeObject(x, EndpointBase.NullSettings);
+			} 
 		}
 	}.ToFrozenDictionary();
 

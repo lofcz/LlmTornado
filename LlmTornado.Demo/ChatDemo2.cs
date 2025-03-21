@@ -12,6 +12,21 @@ namespace LlmTornado.Demo;
 public static partial class ChatDemo
 {
     [TornadoTest]
+    public static async Task Grok2()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.XAi.Grok.Grok2241212
+        });
+        
+        chat.AppendUserInput("Who are you?");
+        string? str = await chat.GetResponse();
+
+        Console.WriteLine("xAi:");
+        Console.WriteLine(str);
+    }
+    
+    [TornadoTest]
     public static async Task MistralLarge()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest

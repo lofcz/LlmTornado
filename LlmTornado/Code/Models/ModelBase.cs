@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using LlmTornado.Models;
 using Newtonsoft.Json;
 
@@ -29,18 +30,26 @@ public interface IModel
     /// Name of the model. This must be globally unique.
     /// </summary>
     public string Name { get; }
+    
     /// <summary>
     /// In case a model is hosted by multiple vendor, this is the vendor-specific name.
     /// </summary>
     public string? ApiName { get; }
+    
     /// <summary>
     /// Gets the vendor specific name.
     /// </summary>
     public string GetApiName { get; }
+    
     /// <summary>
     /// Provider hosting the model.
     /// </summary>
     public LLmProviders Provider { get; }
+    
+    /// <summary>
+    /// Aliases of the model.
+    /// </summary>
+    public List<string>? Aliases { get; }
 }
 
 /// <summary>
@@ -106,6 +115,12 @@ public abstract class ModelBase : IModel, IEquatable<IModel>
     [JsonIgnore]
     public string? ApiName { get; init; }
 
+    /// <summary>
+    ///     Aliases of the model.
+    /// </summary>
+    [JsonIgnore]
+    public List<string>? Aliases { get; init; }
+    
     /// <summary>
     ///     The owner of this model.  Generally "openai" is a generic OpenAI model, or the organization if a custom or
     ///     fine-tuned model.
@@ -182,7 +197,7 @@ public abstract class ModelBase : IModel, IEquatable<IModel>
             return false;
         }
 
-        return other.Name == Name && other.ApiName == ApiName;
+        return (other.Name == Name && other.ApiName == ApiName) || ((other.Aliases is not null && other.Aliases.Contains(Name)) || (other.Aliases is not null && Aliases is not null && other.Aliases.Any(x => Aliases.Contains(x))));
     }
 
     /// <summary>
@@ -216,7 +231,7 @@ public abstract class ModelBase : IModel, IEquatable<IModel>
     /// <returns></returns>
     public override int GetHashCode()
     {
-        return HashCode.Combine(Name, ApiName, OwnedBy, (int)Provider, ContextTokens);
+        return HashCode.Combine(Name, ApiName, OwnedBy, (int)Provider, ContextTokens, Aliases);
     }
 }
 
