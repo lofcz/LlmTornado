@@ -5,11 +5,14 @@
 # 🌪️ LLM Tornado - The .NET library to consume 100+ APIs, including OpenAI, Anthropic, Google, DeepSeek, Cohere, Mistral, Azure, xAI, Groq, and self-hosted APIs.
 
 At least one new large language model is released each month. Wouldn't it be awesome if using the latest, shiny model was as easy as switching one argument?
-LLM Tornado acts as a gateway, allowing you to do just that. Think [SearX](https://github.com/searxng/searxng) but for LLMs!
+LLM Tornado is a framework for building AI, RAG/Agentic-enabled applications, allowing you to do just that.
 
-100+ providers are currently supported, including **OpenAI, Anthropic, Google, DeepSeek, Cohere, Mistral, Azure, xAI, Groq**, and any (self-hosted) OpenAI-compatible inference servers, such as [Ollama](https://github.com/lofcz/LlmTornado/blob/4c70e7d8586cb79fd9d9fe9614c85c5dda654deb/LlmTornado.Demo/CustomProviderDemo.cs#L11). Check the full Feature Matrix [here](https://github.com/lofcz/LlmTornado/blob/master/FeatureMatrix.md). 👈
-
-Tornado also acts as an _API harmonizer_ for many providers. For example, suppose a request accidentally passes `temperature` to a reasoning model, where such an argument is not supported. We take care of that, to maximize the probability of the call succeeding. This applies to various whims of the Providers, such as `developer_message` vs `system_prompt` (in Tornado there is just a `System` role for Messages), Google having completely different endpoints for embedding multiple texts at once, and many other annoyances.
+Features:
+-  100+ supported providers: **OpenAI, Anthropic, Google, DeepSeek, Cohere, Mistral, Azure, xAI, Perplexity, Groq**, and any (self-hosted) OpenAI-compatible inference servers, such as [Ollama](https://github.com/lofcz/LlmTornado/blob/4c70e7d8586cb79fd9d9fe9614c85c5dda654deb/LlmTornado.Demo/CustomProviderDemo.cs#L11). Check the full Feature Matrix [here](https://github.com/lofcz/LlmTornado/blob/master/FeatureMatrix.md). 👈
+- _API harmonization_ of many providers. For example, suppose a request accidentally passes `temperature` to a reasoning model, where such an argument is not supported. We take care of that, to maximize the probability of the call succeeding. This applies to various whims of the Providers, such as `developer_message` vs `system_prompt` (in Tornado there is just a `System` role for Messages), Google having completely different endpoints for embedding multiple texts at once, and many other annoyances.
+- Powerful, strongly-typed `Vendor Extensions` for each provider offering something unique. Enables rich, resilient applications, while minimizing vendor lock-in.
+- Easy-to-grasp primitives for building Agentic systems, Chatbots, and RAG-based applications. Less complex than Semantic Kernel, and more powerful than the raw APIs. Easy to extend.
+- Focused on minimizing breaking changes. We take these _seriously_ and think ahead. Updating Tornado typically requires no action on your side, even when a new major version is released.
 
 ⭐ Awesome things you can do with Tornado:
 - [Chat with your documents](https://github.com/lofcz/LlmTornado/blob/61d2a4732c88c45d4a8c053204ecdef807c34652/LlmTornado.Demo/ChatDemo.cs#L722-L757)
@@ -18,11 +21,12 @@ Tornado also acts as an _API harmonizer_ for many providers. For example, suppos
 - [Generate images](https://github.com/lofcz/LlmTornado/blob/61d2a4732c88c45d4a8c053204ecdef807c34652/LlmTornado.Demo/ImagesDemo.cs#L10-L13)
 - [Summarize a video (local file / YouTube)](https://github.com/lofcz/LlmTornado/blob/cfd47f915584728d9a2365fc9d38d158673da68a/LlmTornado.Demo/ChatDemo2.cs#L119)
 - [Turn text & images into high quality embeddings](https://github.com/lofcz/LlmTornado/blob/61d2a4732c88c45d4a8c053204ecdef807c34652/LlmTornado.Demo/EmbeddingDemo.cs#L50-L75)
-- Switch providers mid-conversation (OpenAI, Cohere, and Anthropic, with parallel tools calling & streaming): 
+- [Transcribe audio in real time](https://github.com/lofcz/LlmTornado/blob/e592a2fc0a37dbd0e754dac7b1655703367369df/LlmTornado.Demo/AudioDemo.cs#L29)
+- Create Chatbots utilizing multiple Agents: 
 
 https://github.com/lofcz/LlmTornado/assets/10260230/05c27b37-397d-4b4c-96a4-4138ade48dbe
 
-... and a lot more! Now, instead of relying on one LLM provider, you can combine the unique strengths of many. Unlike OpenRouter and similar libraries, Tornado exposes these capabilities via seamlessly integrated `vendor extensions` which can be usually invoked in a few lines of code.
+... and a lot more! Now, instead of relying on one LLM provider, you can combine the unique strengths of many.
 
 ## ⚡Getting Started
 
@@ -43,23 +47,24 @@ dotnet add package LlmTornado LlmTornado.Contrib
 Inferencing across multiple providers is as easy as changing the `ChatModel` argument. Tornado instance can be constructed with multiple API keys, the correct key is then used based on the model automatically:
 
 ```csharp
-TornadoApi api = new TornadoApi(new List<ProviderAuthentication>
-{
-    new ProviderAuthentication(LLmProviders.OpenAi, "OPEN_AI_KEY"),
-    new ProviderAuthentication(LLmProviders.Anthropic, "ANTHROPIC_KEY"),
-    new ProviderAuthentication(LLmProviders.Cohere, "COHERE_KEY"),
-    new ProviderAuthentication(LLmProviders.Google, "GOOGLE_KEY"),
-    new ProviderAuthentication(LLmProviders.Groq, "GROQ_KEY"),
-    new ProviderAuthentication(LLmProviders.DeepSeek, "DEEP_SEEK_KEY"),
-    new ProviderAuthentication(LLmProviders.Mistral, "MISTRAL_KEY"),
-    new ProviderAuthentication(LLmProviders.XAi, "XAI_KEY")
-});
+TornadoApi api = new TornadoApi([
+    new (LLmProviders.OpenAi, "OPEN_AI_KEY"),
+    new (LLmProviders.Anthropic, "ANTHROPIC_KEY"),
+    new (LLmProviders.Cohere, "COHERE_KEY"),
+    new (LLmProviders.Google, "GOOGLE_KEY"),
+    new (LLmProviders.Groq, "GROQ_KEY"),
+    new (LLmProviders.DeepSeek, "DEEP_SEEK_KEY"),
+    new (LLmProviders.Mistral, "MISTRAL_KEY"),
+    new (LLmProviders.XAi, "XAI_KEY"),
+    new (LLmProviders.Perplexity, "PERPLEXITY_KEY")
+]);
 
 List<ChatModel> models = [
     ChatModel.OpenAi.O3.Mini, ChatModel.Anthropic.Claude37.Sonnet,
-    ChatModel.Cohere.Command.RPlus, ChatModel.Google.Gemini.Gemini2Flash,
-    ChatModel.Groq.Meta.Llama370B, ChatModel.DeepSeep.Models.Chat,
-    ChatModel.Mistral.Premier.MistralLarge, ChatModel.XAi.Grok.Grok2241212
+    ChatModel.Cohere.Command.RPlus, ChatModel.Google.Gemini.Gemini2Flash001,
+    ChatModel.Groq.Meta.Llama370B, ChatModel.DeepSeek.Models.Chat,
+    ChatModel.Mistral.Premier.MistralLarge, ChatModel.XAi.Grok.Grok2241212,
+    ChatModel.Perplexity.Sonar.Default
 ];
 
 foreach (ChatModel model in models)
