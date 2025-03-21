@@ -66,11 +66,14 @@ public class AudioEndpoint : EndpointBase
 
     private async Task<SpeechTtsResult?> PostSpeech(SpeechRequest request)
     {
-        StreamResponse? x = await HttpPostStream(Api.GetProvider(LLmProviders.OpenAi), Endpoint, $"/speech", request);
+        IEndpointProvider provider = Api.GetProvider(request.Model);
+        string url = provider.ApiUrl(CapabilityEndpoints.Audio, $"/speech");
+        
+        StreamResponse? x = await HttpPostStream(provider, Endpoint, url, request);
         return x is null ? null : new SpeechTtsResult(x);
     }
 
-    private TranscriptionSerializedRequest SerializeRequest(TranscriptionRequest request)
+    private static TranscriptionSerializedRequest SerializeRequest(TranscriptionRequest request)
     {
         TranscriptionSerializedRequest serializedRequest = new TranscriptionSerializedRequest();
 
@@ -136,24 +139,37 @@ public class AudioEndpoint : EndpointBase
         return serializedRequest;
     }
 
+    /// <summary>
+    /// Streams transcription.
+    /// </summary>
+    /// <param name="request">The request.</param>
+    /// <param name="eventsHandler">Handler of the streamed events.</param>
+    /// <param name="token">Optional cancellation token.</param>
     public async Task StreamTranscriptionRich(TranscriptionRequest request, TranscriptionStreamEventHandler? eventsHandler, CancellationToken token = default)
     {
         await foreach (object res in StreamAudio($"/transcriptions", request, eventsHandler).WithCancellation(token))
         {
             if (res is TranscriptionResult tr)
             {
-                if (tr.EventType is AudioStreamEventTypes.TranscriptDelta)
+                switch (tr.EventType)
                 {
-                    if (eventsHandler?.ChunkHandler is not null)
+                    case AudioStreamEventTypes.TranscriptDelta:
                     {
-                        await eventsHandler.ChunkHandler.Invoke(tr);   
-                    }   
-                }
-                else if (tr.EventType is AudioStreamEventTypes.TranscriptDone)
-                {
-                    if (eventsHandler?.BlockHandler is not null)
+                        if (eventsHandler?.ChunkHandler is not null)
+                        {
+                            await eventsHandler.ChunkHandler.Invoke(tr);   
+                        }
+
+                        break;
+                    }
+                    case AudioStreamEventTypes.TranscriptDone:
                     {
-                        await eventsHandler.BlockHandler.Invoke(tr);   
+                        if (eventsHandler?.BlockHandler is not null)
+                        {
+                            await eventsHandler.BlockHandler.Invoke(tr);   
+                        }
+
+                        break;
                     }
                 }
             }

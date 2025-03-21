@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using LlmTornado.Audio.Models.Groq;
 using LlmTornado.Audio.Models.OpenAi;
@@ -5,6 +6,7 @@ using LlmTornado.Chat.Models;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
 using LlmTornado.Models;
+using Newtonsoft.Json;
 
 namespace LlmTornado.Audio.Models;
 
@@ -131,5 +133,18 @@ public class AudioModel : ModelBase
         {
             AllModelsMap.TryAdd(x.Name, x);
         });
+    }
+}
+
+internal class AudioModelJsonConverter : JsonConverter<AudioModel>
+{
+    public override void WriteJson(JsonWriter writer, AudioModel? value, JsonSerializer serializer)
+    {
+        writer.WriteValue(value?.GetApiName);
+    }
+
+    public override AudioModel? ReadJson(JsonReader reader, Type objectType, AudioModel? existingValue, bool hasExistingValue, JsonSerializer serializer)
+    {
+        return existingValue;
     }
 }

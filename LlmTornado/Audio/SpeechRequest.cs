@@ -1,4 +1,6 @@
-﻿using LlmTornado.Models;
+﻿using LlmTornado.Audio.Models;
+using LlmTornado.Audio.Models.OpenAi;
+using LlmTornado.Models;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Audio;
@@ -15,11 +17,18 @@ public class SpeechRequest
     public string Input { get; set; }
 
     /// <summary>
-    ///     ID of the model to use. Either <see cref="LlmTornado.Models.Model.TTS_1" /> or <see cref="LlmTornado.Models.Model.TTS_1" />
+    ///     ID of the model to use. Tts1 / tts1hd / gpt4o-mini-tts
     /// </summary>
     [JsonProperty("model")]
-    public string Model { get; set; } = LlmTornado.Models.Model.TTS_1;
+    [JsonConverter(typeof(AudioModelJsonConverter))]
+    public AudioModel Model { get; set; } = AudioModel.OpenAi.Tts.Tts1;
 
+    /// <summary>
+    ///     Control the voice of your generated audio with additional instructions. Does not work with tts-1 or tts-1-hd.
+    /// </summary>
+    [JsonProperty("instructions")]
+    public string? Instructions { get; set; }
+    
     /// <summary>
     ///     The voice to use for tts
     /// </summary>
