@@ -12,6 +12,7 @@ using LlmTornado;
 using LlmTornado.Audio;
 using LlmTornado.Chat;
 using LlmTornado.ChatFunctions;
+using LlmTornado.Code.Vendor;
 using LlmTornado.Common;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -696,11 +697,39 @@ public class TornadoRequestContent
     /// Forces the URl to differ from the one inferred further down the pipeline.
     /// </summary>
     public string? Url { get; set; }
+    
+    /// <summary>
+    /// The provider this request is outbound to.
+    /// </summary>
+    [JsonIgnore]
+    public IEndpointProvider? Provider { get; set; }
 
-    internal TornadoRequestContent(object body, string? url = null)
+    /// <summary>
+    /// The endpoint this request corresponds to.
+    /// </summary>
+    [JsonIgnore]
+    public CapabilityEndpoints? CapabilityEndpoint { get; set; }
+    
+    internal TornadoRequestContent(object body, string? url, IEndpointProvider provider, CapabilityEndpoints endpoint)
     {
         Body = body;
         Url = url;
+        Provider = provider;
+        CapabilityEndpoint = endpoint;
+    }
+
+    /// <summary>
+    /// This method can be used to see the final outbound url before executing the request.
+    /// </summary>
+    /// <returns></returns>
+    public string? BuildFinalUrl()
+    {
+        if (Provider is null || CapabilityEndpoint is null)
+        {
+            return Url;
+        }
+
+        return EndpointBase.BuildRequestUrl(Url, Provider, CapabilityEndpoint.Value);
     }
 
     internal TornadoRequestContent()

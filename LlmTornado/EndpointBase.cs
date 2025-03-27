@@ -191,7 +191,7 @@ public abstract class EndpointBase
     /// <param name="endpoint"></param>
     /// <param name="queryParams"></param>
     /// <returns></returns>
-    private static string BuildRequestUrl(string? url, IEndpointProvider provider, CapabilityEndpoints endpoint, Dictionary<string, object>? queryParams = null)
+    internal static string BuildRequestUrl(string? url, IEndpointProvider provider, CapabilityEndpoints endpoint, Dictionary<string, object>? queryParams = null)
     {
         url ??= provider.ApiUrl(endpoint, url);
 

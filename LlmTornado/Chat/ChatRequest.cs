@@ -455,7 +455,7 @@ public class ChatRequest
 			restoreStreamOptions = true;
 		}
 		
-		TornadoRequestContent serialized = SerializeMap.TryGetValue(provider.Provider, out Func<ChatRequest, IEndpointProvider, string>? serializerFn) ? new TornadoRequestContent(serializerFn.Invoke(this, provider), UrlOverride) : new TornadoRequestContent(string.Empty, UrlOverride);
+		TornadoRequestContent serialized = SerializeMap.TryGetValue(provider.Provider, out Func<ChatRequest, IEndpointProvider, string>? serializerFn) ? new TornadoRequestContent(serializerFn.Invoke(this, provider), UrlOverride, provider, CapabilityEndpoints.Chat) : new TornadoRequestContent(string.Empty, UrlOverride, provider, CapabilityEndpoints.Chat);
 
 		if (restoreStreamOptions)
 		{

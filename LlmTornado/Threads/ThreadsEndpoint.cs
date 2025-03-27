@@ -297,9 +297,11 @@ public sealed class ThreadsEndpoint : EndpointBase
     /// <returns>A task representing the asynchronous operation.</returns>
     public async Task StreamRun(string threadId, CreateRunRequest request, RunStreamEventHandler eventHandler, CancellationToken cancellationToken = default)
     {
+        IEndpointProvider provider = Api.GetProvider(LLmProviders.OpenAi);
+        
         request.Stream = true;
-        string url = GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/runs");
-        TornadoStreamRequest tornadoStreamRequest = await HttpStreamingRequestData(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads,
+        string url = GetUrl(provider, $"/{threadId}/runs");
+        TornadoStreamRequest tornadoStreamRequest = await HttpStreamingRequestData(provider, CapabilityEndpoints.Threads,
             url, postData: request, verb: HttpMethod.Post, token: cancellationToken);
 
         try
@@ -314,7 +316,7 @@ public sealed class ThreadsEndpoint : EndpointBase
                         Result = tornadoStreamRequest.CallResponse,
                         Request = tornadoStreamRequest.CallRequest,
                         RawMessage = tornadoStreamRequest.Response ?? new HttpResponseMessage(),
-                        Body = new TornadoRequestContent(request, url)
+                        Body = new TornadoRequestContent(request, url, provider, CapabilityEndpoints.Threads)
                     });
                 }
 
@@ -325,9 +327,7 @@ public sealed class ThreadsEndpoint : EndpointBase
             {
                 await eventHandler.OutboundHttpRequestHandler.Invoke(tornadoStreamRequest.CallRequest);
             }
-
-            IEndpointProvider provider = Api.ResolveProvider(LLmProviders.OpenAi);
-
+            
             if (provider is OpenAiEndpointProvider oaiProvider && tornadoStreamRequest.StreamReader is not null)
             {
                 await foreach (RunStreamEvent runStreamEvent in oaiProvider.InboundStream(tornadoStreamRequest.StreamReader).WithCancellation(cancellationToken))
@@ -353,9 +353,11 @@ public sealed class ThreadsEndpoint : EndpointBase
     /// <returns>A task that represents the asynchronous operation.</returns>
     public async Task StreamSubmitToolOutput(string threadId, string runId, SubmitToolOutputsRequest request, RunStreamEventHandler eventHandler, CancellationToken cancellationToken = default)
     {
+        IEndpointProvider provider = Api.ResolveProvider(LLmProviders.OpenAi);
+        
         request.Stream = true;
-        string url = GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/runs/{runId}/submit_tool_outputs");
-        TornadoStreamRequest tornadoStreamRequest = await HttpStreamingRequestData(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads,
+        string url = GetUrl(provider, $"/{threadId}/runs/{runId}/submit_tool_outputs");
+        TornadoStreamRequest tornadoStreamRequest = await HttpStreamingRequestData(provider, CapabilityEndpoints.Threads,
             url, postData: request, verb: HttpMethod.Post, token: cancellationToken);
 
         try
@@ -370,7 +372,7 @@ public sealed class ThreadsEndpoint : EndpointBase
                         Result = tornadoStreamRequest.CallResponse,
                         Request = tornadoStreamRequest.CallRequest,
                         RawMessage = tornadoStreamRequest.Response ?? new HttpResponseMessage(),
-                        Body = new TornadoRequestContent(request, url)
+                        Body = new TornadoRequestContent(request, url, provider, CapabilityEndpoints.Threads)
                     });   
                 }
             }
@@ -379,9 +381,7 @@ public sealed class ThreadsEndpoint : EndpointBase
             {
                 await eventHandler.OutboundHttpRequestHandler.Invoke(tornadoStreamRequest.CallRequest);
             }
-
-            IEndpointProvider provider = Api.ResolveProvider(LLmProviders.OpenAi);
-
+            
             if (provider is OpenAiEndpointProvider oaiProvider && tornadoStreamRequest.StreamReader is not null)
             {
                 await foreach (RunStreamEvent runStreamEvent in oaiProvider.InboundStream(tornadoStreamRequest.StreamReader).WithCancellation(cancellationToken))
@@ -521,9 +521,11 @@ public sealed class ThreadsEndpoint : EndpointBase
     /// <returns>A <see cref="Task"/> that represents the asynchronous operation.</returns>
     public async Task CreateThreadAndStreamRun(CreateThreadAndRunRequest request, RunStreamEventHandler eventHandler, CancellationToken cancellationToken = default)
     {
+        IEndpointProvider provider = Api.ResolveProvider(LLmProviders.OpenAi);
+        
         request.Stream = true;
-        string url = GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/runs");
-        TornadoStreamRequest tornadoStreamRequest = await HttpStreamingRequestData(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Threads,
+        string url = GetUrl(provider, $"/runs");
+        TornadoStreamRequest tornadoStreamRequest = await HttpStreamingRequestData(provider, CapabilityEndpoints.Threads,
             url, postData: request, verb: HttpMethod.Post, token: cancellationToken);
 
         try
@@ -538,7 +540,7 @@ public sealed class ThreadsEndpoint : EndpointBase
                         Result = tornadoStreamRequest.CallResponse,
                         Request = tornadoStreamRequest.CallRequest,
                         RawMessage = tornadoStreamRequest.Response ?? new HttpResponseMessage(),
-                        Body = new TornadoRequestContent(request, url)
+                        Body = new TornadoRequestContent(request, url, provider, CapabilityEndpoints.Threads)
                     });
                 }
 
@@ -549,9 +551,7 @@ public sealed class ThreadsEndpoint : EndpointBase
             {
                 await eventHandler.OutboundHttpRequestHandler.Invoke(tornadoStreamRequest.CallRequest);
             }
-
-            IEndpointProvider provider = Api.ResolveProvider(LLmProviders.OpenAi);
-
+            
             if (provider is OpenAiEndpointProvider oaiProvider && tornadoStreamRequest.StreamReader is not null)
             {
                 await foreach (RunStreamEvent runStreamEvent in oaiProvider.InboundStream(tornadoStreamRequest.StreamReader).WithCancellation(cancellationToken))

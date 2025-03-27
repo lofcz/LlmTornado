@@ -115,7 +115,7 @@ public class ImageGenerationRequest
 	/// <returns></returns>
 	public TornadoRequestContent Serialize(IEndpointProvider provider)
 	{
-		return SerializeMap.TryGetValue(provider.Provider, out Func<ImageGenerationRequest, IEndpointProvider, string>? serializerFn) ? new TornadoRequestContent(serializerFn.Invoke(this, provider), UrlOverride) : new TornadoRequestContent(string.Empty, UrlOverride);
+		return SerializeMap.TryGetValue(provider.Provider, out Func<ImageGenerationRequest, IEndpointProvider, string>? serializerFn) ? new TornadoRequestContent(serializerFn.Invoke(this, provider), UrlOverride, provider, CapabilityEndpoints.ImageGeneration) : new TornadoRequestContent(string.Empty, UrlOverride, provider, CapabilityEndpoints.ImageGeneration);
 	}
 	
 	private static readonly FrozenDictionary<LLmProviders, Func<ImageGenerationRequest, IEndpointProvider, string>> SerializeMap = new Dictionary<LLmProviders, Func<ImageGenerationRequest, IEndpointProvider, string>>

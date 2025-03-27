@@ -104,7 +104,7 @@ public class TranscriptionRequest
     /// <returns></returns>
     public TornadoRequestContent Serialize(IEndpointProvider provider)
     {
-        return SerializeMap.TryGetValue(provider.Provider, out Func<TranscriptionRequest, IEndpointProvider, string>? serializerFn) ? new TornadoRequestContent(serializerFn.Invoke(this, provider), UrlOverride) : new TornadoRequestContent(string.Empty, UrlOverride);
+        return SerializeMap.TryGetValue(provider.Provider, out Func<TranscriptionRequest, IEndpointProvider, string>? serializerFn) ? new TornadoRequestContent(serializerFn.Invoke(this, provider), UrlOverride, provider, CapabilityEndpoints.Audio) : new TornadoRequestContent(string.Empty, UrlOverride, provider, CapabilityEndpoints.Audio);
     }
 }
 
