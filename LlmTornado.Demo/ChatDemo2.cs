@@ -27,6 +27,21 @@ public static partial class ChatDemo
     }
     
     [TornadoTest]
+    public static async Task Grok2Beta()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.XAi.Grok.GrokBeta
+        });
+        
+        chat.AppendUserInput("Who are you?");
+        string? str = await chat.GetResponse();
+
+        Console.WriteLine("xAi:");
+        Console.WriteLine(str);
+    }
+    
+    [TornadoTest]
     public static async Task PerplexitySonar()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
