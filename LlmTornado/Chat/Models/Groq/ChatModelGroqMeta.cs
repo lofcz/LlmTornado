@@ -10,6 +10,26 @@ namespace LlmTornado.Chat.Models;
 public class ChatModelGroqMeta : IVendorModelClassProvider
 {
     /// <summary>
+    /// meta-llama/llama-4-scout-17b-16e-instruct
+    /// </summary>
+    public static readonly ChatModel ModelLlama4Scout = new ChatModel("meta-llama/llama-4-scout-17b-16e-instruct", LLmProviders.Groq, 131_000);
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelLlama4Scout"/>
+    /// </summary>
+    public readonly ChatModel Llama4Scout = ModelLlama4Scout;
+    
+    /// <summary>
+    /// meta-llama/llama-4-maverick-17b-128e-instruct
+    /// </summary>
+    public static readonly ChatModel ModelLlama4Maverick = new ChatModel("meta-llama/llama-4-maverick-17b-128e-instruct", LLmProviders.Groq, 131_000);
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelLlama4Maverick"/>
+    /// </summary>
+    public readonly ChatModel Llama4Maverick = ModelLlama4Maverick;
+    
+    /// <summary>
     /// llama-3.3-70b-versatile
     /// </summary>
     public static readonly ChatModel ModelLlama3370BVersatile = new ChatModel("groq-llama-3.3-70b-versatile", LLmProviders.Groq, 128_000)
@@ -83,7 +103,9 @@ public class ChatModelGroqMeta : IVendorModelClassProvider
         ModelLlama318BInstant,
         ModelLlamaGuard3BB,
         ModelLlama370B,
-        ModelLlama38B
+        ModelLlama38B,
+        ModelLlama4Scout,
+        ModelLlama4Maverick
     ];
 
     /// <summary>

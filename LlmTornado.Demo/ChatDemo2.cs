@@ -183,18 +183,46 @@ public static partial class ChatDemo
     }
     
     [TornadoTest]
-    public static async Task CohereA0325()
+    public static async Task Llama4ScoutMultilingual()
     {
         Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.Cohere.Command.A0325
+            Model = ChatModel.Groq.Meta.Llama4Scout
         });
-        chat2.AppendSystemMessage("Pretend you are a dog. Sound authentic.");
-        chat2.AppendUserInput("Who are you?");
+        chat2.AppendUserInput("Jak se vaří pivo?");
        
         string? str2 = await chat2.GetResponse();
-
-        Console.WriteLine("Cohere:");
+        Console.WriteLine(str2);
+    }
+    
+    [TornadoTest]
+    public static async Task Llama4Scout()
+    {
+        await BasicChat(ChatModel.Groq.Meta.Llama4Scout);
+    }
+    
+    [TornadoTest]
+    public static async Task CohereA0325()
+    {
+        await BasicChat(ChatModel.Cohere.Command.A0325);
+    }
+    
+    [TornadoTest]
+    public static async Task Gemini25Pro()
+    {
+        await BasicChat(ChatModel.Google.GeminiPreview.Gemini2ProPreview0325);
+    }
+    
+    private static async Task BasicChat(ChatModel model)
+    {
+        Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = model
+        });
+        chat2.AppendSystemMessage("Pretend you are a dog. Sound authentic.");
+        chat2.AppendUserInput("Solve 2+2");
+       
+        string? str2 = await chat2.GetResponse();
         Console.WriteLine(str2);
     }
     

@@ -23,6 +23,11 @@ public class ChatModelGoogle : BaseVendorModelProvider
     /// Experimental Gemini models.
     /// </summary>
     public readonly ChatModelGoogleGeminiExperimental GeminiExperimental = new ChatModelGoogleGeminiExperimental();
+    
+    /// <summary>
+    /// Preview Gemini models.
+    /// </summary>
+    public readonly ChatModelGoogleGeminiPreview GeminiPreview = new ChatModelGoogleGeminiPreview();
 
     /// <summary>
     /// All known chat models from Google.
@@ -50,7 +55,8 @@ public class ChatModelGoogle : BaseVendorModelProvider
     public static readonly List<IModel> ModelsAll = [
         ..ChatModelGoogleGemini.ModelsAll,
         ..ChatModelGoogleGeminiExperimental.ModelsAll,
-        ..ChatModelGoogleGemma.ModelsAll
+        ..ChatModelGoogleGemma.ModelsAll,
+        ..ChatModelGoogleGeminiPreview.ModelsAll
     ];
 
     /// <summary>
