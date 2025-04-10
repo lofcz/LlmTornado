@@ -32,9 +32,9 @@ _*Custom means any OpenAI compatible provider, such as Azure OpenAI, Ollama, Kob
 
 ## Google Specific
 
- Caching* | Semantic Retrieval 
-|-----------|------------ |
-| ✅ | ❌ |  
+ Caching* | Semantic Retrieval | Live | Video
+|-----------|------------ | ------------ | ------------ |
+| ✅ | ❌ | ❌ | ❌ |  
 
 _*Other providers expose caching as part of `/chat`, or don't offer the feature._
 
