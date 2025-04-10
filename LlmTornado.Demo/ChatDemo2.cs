@@ -239,11 +239,11 @@ public static partial class ChatDemo
     }
     
     [TornadoTest]
-    public static async Task Llama4ScoutMultilingual()
+    public static async Task Llama4MaverickMultilingual()
     {
         Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.Groq.Meta.Llama4Scout
+            Model = ChatModel.Groq.Meta.Llama4Maverick
         });
         chat2.AppendUserInput("Jak se vaří pivo?");
        
