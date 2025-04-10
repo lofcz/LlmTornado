@@ -9,7 +9,12 @@ namespace LlmTornado.Chat.Models.XAi;
 public class ChatModelXAi : BaseVendorModelProvider
 {
     /// <summary>
-    /// Grok models.
+    /// Grok 3 models.
+    /// </summary>
+    public readonly ChatModelXAiGrok3 Grok3 = new ChatModelXAiGrok3();
+    
+    /// <summary>
+    /// Grok 1 & 2 models.
     /// </summary>
     public readonly ChatModelXAiGrok Grok = new ChatModelXAiGrok();
     
@@ -37,7 +42,8 @@ public class ChatModelXAi : BaseVendorModelProvider
     /// <inheritdoc cref="AllModels"/>
     /// </summary>
     public static readonly List<IModel> ModelsAll = [
-        ..ChatModelXAiGrok.ModelsAll
+        ..ChatModelXAiGrok.ModelsAll,
+        ..ChatModelXAiGrok3.ModelsAll
     ];
     
     static ChatModelXAi()

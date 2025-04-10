@@ -712,7 +712,12 @@ public class Conversation
                 blocks.Add(new ChatRichResponseBlock
                 {
                     Type = ChatRichResponseBlockTypes.Message,
-                    Message = newMsg.Content
+                    Message = newMsg.Content,
+                    Reasoning = newMsg.ReasoningContent is null ? null : new ChatMessageReasoningData
+                    {
+                        Content = newMsg.ReasoningContent,
+                        Provider = res.Provider?.Provider ?? LLmProviders.OpenAi
+                    }
                 });
             }
             else if (newMsg.Audio is not null)
@@ -1088,12 +1093,15 @@ public class Conversation
             Messages = messages.ToList(),
             CancellationToken = token
         };
+        
+        IEndpointProvider provider = endpoint.Api.GetProvider(req.Model ?? ChatModel.OpenAi.Gpt35.Turbo);
 
         req = eventsHandler?.MutateChatRequestHandler is not null ? await eventsHandler.MutateChatRequestHandler.Invoke(req) : req;
         bool isFirst = true;
         Guid currentMsgId = eventsHandler?.MessageId ?? Guid.NewGuid();
         ChatMessage? lastUserMessage = messages.LastOrDefault(x => x.Role is ChatMessageRoles.User);
         bool isFirstMessageToken = true;
+        int tokenIndex = 0;
         
         await foreach (ChatResult res in endpoint.StreamChatEnumerable(req, eventsHandler).WithCancellation(token))
         {
@@ -1307,9 +1315,21 @@ public class Conversation
                                 }
                             }
                         }
-                        else if (delta.Content is not null)
+                        else
                         {
-                            if (eventsHandler.MessageTokenHandler is not null)
+                            if (delta.ReasoningContent is not null)
+                            {
+                                if (eventsHandler.ReasoningTokenHandler is not null)
+                                {
+                                    await eventsHandler.ReasoningTokenHandler.Invoke(new ChatMessageReasoningData
+                                    {
+                                        Content = delta.ReasoningContent,
+                                        Provider = provider.Provider
+                                    }); 
+                                }   
+                            }
+                            
+                            if (delta.Content is not null)
                             {
                                 await InvokeMessageHandler(delta.Content ?? message?.Content);
                             }
@@ -1349,6 +1369,26 @@ public class Conversation
 
             async ValueTask InvokeMessageHandler(string? msg)
             {
+                if (eventsHandler.MessageTokenExHandler is not null)
+                {
+                    if (msg is not null)
+                    {
+                        if (RequestParameters.TrimResponseStart && isFirstMessageToken)
+                        {
+                            msg = msg.TrimStart();
+                            isFirstMessageToken = false;
+                        }
+                                
+                        await eventsHandler.MessageTokenExHandler.Invoke(new StreamedMessageToken
+                        {
+                            Content = msg,
+                            Index = tokenIndex
+                        });
+
+                        tokenIndex++;
+                    }
+                }
+                
                 if (eventsHandler.MessageTokenHandler is null)
                 {
                     return;

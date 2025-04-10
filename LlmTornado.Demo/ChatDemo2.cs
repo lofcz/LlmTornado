@@ -183,6 +183,62 @@ public static partial class ChatDemo
     }
     
     [TornadoTest]
+    public static async Task Grok3ReasoningStreaming()
+    {
+        Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.XAi.Grok3.V3Mini,
+            ReasoningEffort = ChatReasoningEfforts.Low
+        });
+        chat2.AppendUserInput("Solve 10+5=?");
+
+        await chat2.StreamResponseRich(new ChatStreamEventHandler
+        {
+            ReasoningTokenHandler = (reasoning) =>
+            {
+                Console.ForegroundColor = ConsoleColor.DarkGray;
+                Console.Write(reasoning.Content);
+                Console.ResetColor();
+                return ValueTask.CompletedTask;
+            },
+            MessageTokenExHandler = (token) =>
+            {
+                if (token.Index is 0)
+                {
+                    Console.WriteLine();
+                }
+                
+                Console.Write(token);
+                return ValueTask.CompletedTask;
+            },
+            BlockFinishedHandler = (block) =>
+            {
+                Console.WriteLine();
+                return ValueTask.CompletedTask;
+            }
+        });
+    }
+    
+    [TornadoTest]
+    public static async Task Grok3Reasoning()
+    {
+        Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.XAi.Grok3.V3Mini,
+            ReasoningEffort = ChatReasoningEfforts.Low
+        });
+        chat2.AppendUserInput("Solve 10+5=?");
+       
+        ChatRichResponse str2 = await chat2.GetResponseRich();
+        ChatRichResponseBlock? block = str2.Blocks.FirstOrDefault();
+
+        Console.ForegroundColor = ConsoleColor.DarkGray;
+        Console.WriteLine(block.Reasoning?.Content);
+        Console.ResetColor();
+        Console.WriteLine(block.Message);
+    }
+    
+    [TornadoTest]
     public static async Task Llama4ScoutMultilingual()
     {
         Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest

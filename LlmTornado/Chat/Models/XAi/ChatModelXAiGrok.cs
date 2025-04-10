@@ -5,7 +5,7 @@ using LlmTornado.Code.Models;
 namespace LlmTornado.Chat.Models.XAi;
 
 /// <summary>
-/// Grok class models from xAI.
+/// Grok & Grok 2 class models from xAI.
 /// </summary>
 public class ChatModelXAiGrok : IVendorModelClassProvider
 {

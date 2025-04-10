@@ -158,6 +158,7 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider,
         ChatResult? toolsAccumulator = null;
         ChatMessage? toolsMessage = null;
         StringBuilder? plaintextBuilder = null;
+        StringBuilder? reasoningBuilder = null;
         ChatUsage? usage = null;
         
         #if DEBUG
@@ -219,14 +220,38 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider,
                 }
                 case ChatStreamParsingStates.Text:
                 {
-                    if (res.Choices is null || res.Choices.Count is 0 || res.Choices[0].Delta?.Content is null || res.Choices[0].Delta?.Content?.Length is 0)
+                    if (res.Choices is null || res.Choices.Count is 0)
                     {
                         continue;
                     }
 
-                    plaintextBuilder ??= new StringBuilder();
-                    plaintextBuilder.Append(res.Choices[0].Delta!.Content);
-                    res.Choices[0].Delta!.Role = ChatMessageRoles.Assistant;
+                    ChatChoice choice = res.Choices[0];
+
+                    if (choice.Delta is null)
+                    {
+                        continue;
+                    }
+
+                    if (choice.Delta.ReasoningContent is null && choice.Delta.Content is null)
+                    {
+                        // shouldn't happen but in case of, bail early
+                        continue;
+                    }
+                    
+                    choice.Delta.Role = ChatMessageRoles.Assistant;
+
+                    if (choice.Delta.ReasoningContent is not null)
+                    {
+                        reasoningBuilder ??= new StringBuilder();
+                        reasoningBuilder.Append(choice.Delta.ReasoningContent);
+                    }
+
+                    if (choice.Delta.Content is not null)
+                    {
+                        plaintextBuilder ??= new StringBuilder();
+                        plaintextBuilder.Append(choice.Delta!.Content);
+                    }
+                    
                     yield return res;
                     continue;
                 }
@@ -284,7 +309,8 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider,
         }
 
         string? accuPlaintext = plaintextBuilder?.ToString();
-
+        string? reasoningPlaintext = reasoningBuilder?.ToString();
+        
         if (accuPlaintext is not null)
         {
             yield return new ChatResult
@@ -296,7 +322,8 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider,
                     {
                         Delta = new ChatMessage
                         {
-                            Content = accuPlaintext
+                            Content = accuPlaintext,
+                            ReasoningContent = reasoningPlaintext
                         }
                     }
                 ],

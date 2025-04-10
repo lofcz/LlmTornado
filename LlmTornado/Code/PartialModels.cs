@@ -125,22 +125,47 @@ public enum ChatMessageRoles
 }
 
 /// <summary>
+/// Represents one token/chunk of a streamed response
+/// </summary>
+public class StreamedMessageToken
+{
+    /// <summary>
+    /// Text content of the chunk.
+    /// </summary>
+    public string? Content { get; set; }
+    
+    /// <summary>
+    /// Index of the token.
+    /// </summary>
+    public int Index { get; set; }
+
+    /// <summary>
+    /// Text representation
+    /// </summary>
+    /// <returns></returns>
+    public override string ToString()
+    {
+        return Content ?? string.Empty;
+    }
+}
+
+/// <summary>
 ///     Level of reasoning suggested.
 /// </summary>
 public enum ChatReasoningEfforts
 {
     /// <summary>
-    ///     Low reasoning - fast responses
+    ///     Low reasoning - fast responses (O1, O1 Mini, Grok 3)
     /// </summary>
     [JsonProperty("low")]
     Low,
     /// <summary>
-    ///     Balanced reasoning
+    ///     Balanced reasoning (O1, O1 Mini)
     /// </summary>
     [JsonProperty("medium")]
     Medium,
     /// <summary>
-    ///     High reasoning - slow responses
+    ///     High reasoning - slow responses (O1, O1 Mini, Grok 3)
     /// </summary>
     [JsonProperty("high")]
     High

@@ -20,7 +20,12 @@ public class ChatMessageReasoningData
     /// <summary>
     /// Returns whether the reasoning block is redacted or not. Null means this can't be resolved. 
     /// </summary>
-    public bool? IsRedacted => Provider is not LLmProviders.Anthropic ? null : Signature is not null && Content is null;
+    public bool? IsRedacted => Provider switch
+    {
+        LLmProviders.XAi => false,
+        not LLmProviders.Anthropic => null,
+        _ => Signature is not null && Content is null
+    };
     
     internal LLmProviders Provider { get; set; }
 }

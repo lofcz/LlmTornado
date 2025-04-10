@@ -18,6 +18,11 @@ public class ChatStreamEventHandler
     public Func<string?, ValueTask>? MessageTokenHandler { get; set; }
     
     /// <summary>
+    ///     Called when plaintext token/chunk arrives. Contains extended information about the incoming token.
+    /// </summary>
+    public Func<StreamedMessageToken, ValueTask>? MessageTokenExHandler { get; set; }
+    
+    /// <summary>
     ///     Called when reasoning token/chunk arrives. This can be forwarded to the end-user immediately.
     ///     Both content and signature might be empty. If content is empty and signature isn't, the block is redacted.
     ///     If content is not empty and signature is empty, the signature is yet to arrive.
