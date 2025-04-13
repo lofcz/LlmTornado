@@ -57,7 +57,7 @@ public class Conversation
     /// </param>
     public Conversation(ChatEndpoint endpoint, ChatModel? model = null, ChatRequest? defaultChatRequestArgs = null)
     {
-        RequestParameters = new ChatRequest(defaultChatRequestArgs);
+        RequestParameters = new ChatRequest(this, defaultChatRequestArgs);
         
         if (model is not null)
         {
@@ -501,7 +501,7 @@ public class Conversation
     /// <returns>The string of the response from the chatbot API</returns>
     public async Task<string?> GetResponse(CancellationToken token = default)
     {
-        ChatRequest req = new ChatRequest(RequestParameters)
+        ChatRequest req = new ChatRequest(this, RequestParameters)
         {
             Messages = messages.ToList(),
             CancellationToken = token
@@ -538,7 +538,7 @@ public class Conversation
     /// <returns>The response from the chatbot API</returns>
     public async Task<ChatRichResponse> GetResponseRich(CancellationToken token = default)
     {
-        ChatRequest req = new ChatRequest(RequestParameters)
+        ChatRequest req = new ChatRequest(this, RequestParameters)
         {
             Messages = messages.ToList(),
             CancellationToken = token
@@ -571,7 +571,7 @@ public class Conversation
     /// <returns>The string of the response from the chatbot API</returns>
     public async Task<RestDataOrException<ChatRichResponse>> GetResponseRichSafe(CancellationToken token = default)
     {
-        ChatRequest req = new ChatRequest(RequestParameters)
+        ChatRequest req = new ChatRequest(this, RequestParameters)
         {
             Messages = messages.ToList(),
             CancellationToken = token
@@ -605,7 +605,7 @@ public class Conversation
     /// <returns>The string of the response from the chatbot API</returns>
     public async Task<RestDataOrException<ChatRichResponse>> GetResponseRichSafe(Func<List<FunctionCall>, Task> functionCallHandler, CancellationToken token = default)
     {
-        ChatRequest req = new ChatRequest(RequestParameters)
+        ChatRequest req = new ChatRequest(this, RequestParameters)
         {
             Messages = messages.ToList(),
             CancellationToken = token
@@ -742,7 +742,7 @@ public class Conversation
     /// <returns>The string of the response from the chatbot API</returns>
     public async Task<ChatRichResponse> GetResponseRich(Func<List<FunctionCall>, Task>? functionCallHandler, CancellationToken token = default)
     {
-        ChatRequest req = new ChatRequest(RequestParameters)
+        ChatRequest req = new ChatRequest(this, RequestParameters)
         {
             Messages = messages.ToList(),
             CancellationToken = token
@@ -772,7 +772,7 @@ public class Conversation
     /// <returns>The string of the response from the chatbot API</returns>
     public async Task<RestDataOrException<ChatChoice>> GetResponseSafe(CancellationToken token = default)
     {
-        ChatRequest req = new ChatRequest(RequestParameters)
+        ChatRequest req = new ChatRequest(this, RequestParameters)
         {
             Messages = messages.ToList(),
             CancellationToken = token
@@ -864,7 +864,7 @@ public class Conversation
     /// </returns>
     public async IAsyncEnumerable<string> StreamResponseEnumerable(Guid? messageId = null, CancellationToken token = default)
     {
-        ChatRequest req = new ChatRequest(RequestParameters)
+        ChatRequest req = new ChatRequest(this, RequestParameters)
         {
             Messages = messages.ToList(),
             CancellationToken = token
@@ -1088,7 +1088,7 @@ public class Conversation
     /// <param name="token"></param>
     public async Task StreamResponseRich(ChatStreamEventHandler? eventsHandler, CancellationToken token = default)
     {
-        ChatRequest req = new ChatRequest(RequestParameters)
+        ChatRequest req = new ChatRequest(this, RequestParameters)
         {
             Messages = messages.ToList(),
             CancellationToken = token
