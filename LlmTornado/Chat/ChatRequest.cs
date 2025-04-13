@@ -36,6 +36,21 @@ public class ChatRequest
     }
 
 	/// <summary>
+	///     Create a new chat request enlisted in a conversation, using the data from the input chat request.
+	/// </summary>
+	/// <param name="conversation"></param>
+	/// <param name="basedOn"></param>
+	internal ChatRequest(Conversation conversation, ChatRequest? basedOn)
+	{
+		OwnerConversation = conversation;
+
+		if (basedOn is not null)
+		{
+			CopyData(basedOn);
+		}
+	}
+
+	/// <summary>
 	///     Create a new chat request using the data from the input chat request.
 	/// </summary>
 	/// <param name="basedOn"></param>
@@ -46,34 +61,39 @@ public class ChatRequest
 		    return;
 	    }
 
-        Model = basedOn.Model;
-        Messages = basedOn.Messages;
-        Temperature = basedOn.Temperature;
-        TopP = basedOn.TopP;
-        NumChoicesPerMessage = basedOn.NumChoicesPerMessage;
-        StopSequence = basedOn.StopSequence;
-        MultipleStopSequences = basedOn.MultipleStopSequences;
-        MaxTokens = basedOn.MaxTokens;
-        FrequencyPenalty = basedOn.FrequencyPenalty;
-        PresencePenalty = basedOn.PresencePenalty;
-        LogitBias = basedOn.LogitBias;
-        Tools = basedOn.Tools;
-        ToolChoice = basedOn.ToolChoice;
-        OutboundFunctionsContent = basedOn.OutboundFunctionsContent;
-        Adapter = basedOn.Adapter;
-        VendorExtensions = basedOn.VendorExtensions;
-        StreamOptions = basedOn.StreamOptions;
-        TrimResponseStart = basedOn.TrimResponseStart;
-        ParallelToolCalls = basedOn.ParallelToolCalls;
-        Seed = basedOn.Seed;
-        User = basedOn.User;
-        ResponseFormat = basedOn.ResponseFormat;
-        Audio = basedOn.Audio;
-        Modalities = basedOn.Modalities;
-        Metadata = basedOn.Metadata;
-        Store = basedOn.Store;
-        ReasoningEffort = basedOn.ReasoningEffort;
+	    CopyData(basedOn);
     }
+
+	private void CopyData(ChatRequest basedOn)
+	{
+		Model = basedOn.Model;
+		Messages = basedOn.Messages;
+		Temperature = basedOn.Temperature;
+		TopP = basedOn.TopP;
+		NumChoicesPerMessage = basedOn.NumChoicesPerMessage;
+		StopSequence = basedOn.StopSequence;
+		MultipleStopSequences = basedOn.MultipleStopSequences;
+		MaxTokens = basedOn.MaxTokens;
+		FrequencyPenalty = basedOn.FrequencyPenalty;
+		PresencePenalty = basedOn.PresencePenalty;
+		LogitBias = basedOn.LogitBias;
+		Tools = basedOn.Tools;
+		ToolChoice = basedOn.ToolChoice;
+		OutboundFunctionsContent = basedOn.OutboundFunctionsContent;
+		Adapter = basedOn.Adapter;
+		VendorExtensions = basedOn.VendorExtensions;
+		StreamOptions = basedOn.StreamOptions;
+		TrimResponseStart = basedOn.TrimResponseStart;
+		ParallelToolCalls = basedOn.ParallelToolCalls;
+		Seed = basedOn.Seed;
+		User = basedOn.User;
+		ResponseFormat = basedOn.ResponseFormat;
+		Audio = basedOn.Audio;
+		Modalities = basedOn.Modalities;
+		Metadata = basedOn.Metadata;
+		Store = basedOn.Store;
+		ReasoningEffort = basedOn.ReasoningEffort;
+	}
 
 	/// <summary>
 	///     The model to use for this request
@@ -335,6 +355,9 @@ public class ChatRequest
 	[JsonIgnore]
 	internal string? UrlOverride { get; set; }
 	
+	[JsonIgnore]
+	internal Conversation? OwnerConversation { get; set; }
+	
 	internal void OverrideUrl(string url)
 	{
 		UrlOverride = url;
@@ -431,6 +454,11 @@ public class ChatRequest
 	/// <returns></returns>
 	public TornadoRequestContent Serialize(IEndpointProvider provider)
 	{
+		if (OwnerConversation is not null)
+		{
+			Messages = OwnerConversation.Messages.ToList();
+		}
+		
 		if (Messages is not null)
 		{
 			foreach (ChatMessage msg in Messages)
