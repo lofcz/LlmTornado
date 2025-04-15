@@ -252,6 +252,12 @@ public static partial class ChatDemo
     }
     
     [TornadoTest]
+    public static async Task Gpt41()
+    {
+        await BasicChat(ChatModel.OpenAi.Gpt41.V41);
+    }
+    
+    [TornadoTest]
     public static async Task Llama4Scout()
     {
         await BasicChat(ChatModel.Groq.Meta.Llama4Scout);

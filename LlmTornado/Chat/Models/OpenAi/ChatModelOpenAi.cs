@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using LlmTornado.Code.Models;
 
@@ -19,15 +20,21 @@ public class ChatModelOpenAi : BaseVendorModelProvider
     public readonly ChatModelOpenAiGpt4 Gpt4 = new ChatModelOpenAiGpt4();
     
     /// <summary>
-    /// GPT 4.5 models.
+    /// GPT-41 models.
     /// </summary>
-    public readonly ChatModelOpenAiGpt45 Gpt45 = new ChatModelOpenAiGpt45();
+    public readonly ChatModelOpenAiGpt41 Gpt41 = new ChatModelOpenAiGpt41();
     
     /// <summary>
     /// O3 models.
     /// </summary>
     public readonly ChatModelOpenAiO3 O3 = new ChatModelOpenAiO3();
 
+    /// <summary>
+    /// GPT 4.5 models.
+    /// </summary>
+    [Obsolete("Will be removed in 3 months by OpenAI")]
+    public readonly ChatModelOpenAiGpt45 Gpt45 = new ChatModelOpenAiGpt45();
+    
     /// <summary>
     /// All known chat models from OpenAI.
     /// </summary>
@@ -55,7 +62,8 @@ public class ChatModelOpenAi : BaseVendorModelProvider
         ..ChatModelOpenAiGpt35.ModelsAll,
         ..ChatModelOpenAiGpt4.ModelsAll,
         ..ChatModelOpenAiO3.ModelsAll,
-        ..ChatModelOpenAiGpt45.ModelsAll
+        ..ChatModelOpenAiGpt41.ModelsAll,
+        ..ChatModelOpenAiGpt45.ModelsAll,
     ];
 
     /// <summary>

@@ -4,14 +4,13 @@
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <Authors>Matěj Štágl, LlmTornado contributors</Authors>
         <Product>LlmTornado</Product>
-        <Description>One .NET library to consume OpenAI, Anthropic, Google, Cohere, Azure, and self-hosed APIs.</Description>
+        <Description>The .NET library to consume 100+ APIs: OpenAI, Anthropic, Google, DeepSeek, Cohere, Mistral, Azure, xAI, Perplexity, Groq, Ollama, LocalAi, and many more!</Description>
         <Copyright>Matěj Štágl</Copyright>
         <PackageLicenseExpression>CC0-1.0</PackageLicenseExpression>
         <PackageProjectUrl>https://github.com/lofcz/LlmTornado</PackageProjectUrl>
         <RepositoryUrl>https://github.com/lofcz/LlmTornado</RepositoryUrl>
-        <PackageTags>OpenAI;Anthropic;Google;DeepSeek;Mistral;Cohere;Azure;Gateway;API;SDK</PackageTags>
-        <Title>OpenAI NextGeneration</Title>
-        <PackageReleaseNotes>fix openai sse when tool parsing is disabled</PackageReleaseNotes>
+        <PackageTags>OpenAI;Anthropic;Google;DeepSeek;Mistral;Cohere;Azure;Perplexity;xAi;Gateway;API;SDK</PackageTags>
+        <Title>LlmTornado</Title>
         <PackageId>LlmTornado</PackageId>
         <Version>3.4.11</Version>
         <AssemblyVersion>3.0.5</AssemblyVersion>

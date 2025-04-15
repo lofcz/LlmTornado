@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
@@ -7,6 +8,7 @@ namespace LlmTornado.Chat.Models;
 /// <summary>
 /// GPT-4.5 class models from OpenAI.
 /// </summary>
+[Obsolete("Will be removed by OpenAI in 3 months")]
 public class ChatModelOpenAiGpt45 : IVendorModelClassProvider
 {
     /// <summary>
