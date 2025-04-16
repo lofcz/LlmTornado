@@ -1144,14 +1144,14 @@ public class Conversation
                                 AppendMessage(internalDelta);   
                             }
                             
-                            if (res.Usage is not null && eventsHandler?.OnUsageReceived is not null)
-                            {
-                                await eventsHandler.OnUsageReceived.Invoke(res.Usage);
-                            }
-
                             if (eventsHandler?.BlockFinishedHandler is not null)
                             {
                                 await eventsHandler.BlockFinishedHandler.Invoke(internalDelta);
+                            }
+                            
+                            if (res.Usage is not null && eventsHandler?.OnUsageReceived is not null)
+                            {
+                                await eventsHandler.OnUsageReceived.Invoke(res.Usage);
                             }
                             
                             solved = true;

@@ -245,29 +245,30 @@ public static partial class ChatDemo
         {
             Model = ChatModel.Anthropic.Claude37.Sonnet
         });
+        
         chat2.AppendUserInput("Explain quadratic equations");
        
-        await chat2.StreamResponseRich(new ChatStreamEventHandler {
+        await chat2.StreamResponseRich(new ChatStreamEventHandler 
+        {
             MessagePartHandler = async (part) =>
             {
-                int z = 0;
-            },
-            MessageTokenHandler = (token) =>
-            {
-                return ValueTask.CompletedTask;
+                Console.ForegroundColor = ConsoleColor.DarkGray;
+                Console.Write(part.Text);
+                Console.ResetColor();
             },
             BlockFinishedHandler = (chatMessage) =>
             {
                 string str = chatMessage?.Content ?? string.Empty;
-                
+                Console.WriteLine(str);
                 return ValueTask.CompletedTask;
             },
-    
             OnUsageReceived = (usage) =>
             {
+                Console.ForegroundColor = ConsoleColor.Yellow;
                 Console.WriteLine($"AsyncCompletionV2: LlmTornado OnUsageReceived. Usage: {usage.PromptTokens} in, {usage.CompletionTokens} out.");
+                Console.ResetColor();
                 return ValueTask.CompletedTask;
-            },                            
+            }                          
         });
     }
     
