@@ -520,6 +520,11 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
 
         plaintextUsage ??= new ChatUsage(LLmProviders.Anthropic);
         plaintextUsage.TotalTokens = plaintextUsage.CompletionTokens + plaintextUsage.PromptTokens;
+
+        if (accuPlaintext is not null)
+        {
+            accuPlaintext.Content = accuPlaintext.ContentBuilder?.ToString();   
+        }
         
         yield return new ChatResult
         {
