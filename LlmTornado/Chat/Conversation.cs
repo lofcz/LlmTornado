@@ -1329,6 +1329,15 @@ public class Conversation
                                 }   
                             }
                             
+                            if (eventsHandler.MessagePartHandler is not null)
+                            {
+                                await InvokeMessagePartHandler(new ChatMessagePart
+                                {
+                                    Type = ChatMessageTypes.Text,
+                                    Text = delta.Content ?? message?.Content
+                                });
+                            }
+                            
                             if (delta.Content is not null)
                             {
                                 await InvokeMessageHandler(delta.Content ?? message?.Content);

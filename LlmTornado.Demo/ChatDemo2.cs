@@ -239,6 +239,39 @@ public static partial class ChatDemo
     }
     
     [TornadoTest]
+    public static async Task AnthropicIssue38()
+    {
+        Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Anthropic.Claude37.Sonnet
+        });
+        chat2.AppendUserInput("Explain quadratic equations");
+       
+        await chat2.StreamResponseRich(new ChatStreamEventHandler {
+            MessagePartHandler = async (part) =>
+            {
+                int z = 0;
+            },
+            MessageTokenHandler = (token) =>
+            {
+                return ValueTask.CompletedTask;
+            },
+            BlockFinishedHandler = (chatMessage) =>
+            {
+                string str = chatMessage?.Content ?? string.Empty;
+                
+                return ValueTask.CompletedTask;
+            },
+    
+            OnUsageReceived = (usage) =>
+            {
+                Console.WriteLine($"AsyncCompletionV2: LlmTornado OnUsageReceived. Usage: {usage.PromptTokens} in, {usage.CompletionTokens} out.");
+                return ValueTask.CompletedTask;
+            },                            
+        });
+    }
+    
+    [TornadoTest]
     public static async Task Llama4MaverickMultilingual()
     {
         Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest

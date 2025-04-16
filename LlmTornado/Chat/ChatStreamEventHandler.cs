@@ -45,7 +45,7 @@ public class ChatStreamEventHandler
     public Func<ChatImage, ValueTask>? ImageTokenHandler { get; set; }
     
     /// <summary>
-    ///     Called when audio message part arrives. This message part can contain text, images, audio, or other modalities. This can be forwarded to the end-user immediately.
+    ///     Called when a message part arrives. This message part can contain text, images, audio, or other modalities. This can be forwarded to the end-user immediately.
     ///     This is a fired before modality specific handlers, such as token, audio, reasoning, etc.
     /// </summary>
     public Func<ChatMessagePart, ValueTask>? MessagePartHandler { get; set; }

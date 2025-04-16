@@ -224,8 +224,16 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
         ChatMessage? accuThinking = null;
         List<ChatMessagePart>? thinkingParts = null;
         
+        #if DEBUG
+        List<string> items = [];
+        #endif
+        
         await foreach (SseItem<string> item in SseParser.Create(reader.BaseStream).EnumerateAsync(request.CancellationToken))
         {
+            #if DEBUG
+            items.Add(item.Data);
+            #endif
+            
             if (request.CancellationToken.IsCancellationRequested)
             {
                 yield break;
@@ -467,19 +475,6 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
                         }
                         
                         accuPlaintext.Parts.Add(new ChatMessagePart( accuPlaintext.ContentBuilder?.ToString() ?? string.Empty));
-                        
-                        yield return new ChatResult
-                        {
-                            Choices =
-                            [
-                                new ChatChoice
-                                {
-                                    Delta = accuPlaintext
-                                }
-                            ],
-                            StreamInternalKind = ChatResultStreamInternalKinds.AppendAssistantMessage,
-                            Usage = plaintextUsage
-                        };
                     }
                     
                     break;
@@ -522,6 +517,22 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
                 }
             }
         }
+
+        plaintextUsage ??= new ChatUsage(LLmProviders.Anthropic);
+        plaintextUsage.TotalTokens = plaintextUsage.CompletionTokens + plaintextUsage.PromptTokens;
+        
+        yield return new ChatResult
+        {
+            Choices =
+            [
+                new ChatChoice
+                {
+                    Delta = accuPlaintext
+                }
+            ],
+            StreamInternalKind = ChatResultStreamInternalKinds.AppendAssistantMessage,
+            Usage = plaintextUsage
+        };
     }
     
     public override async IAsyncEnumerable<object?> InboundStream(Type type, StreamReader reader)
