@@ -85,13 +85,28 @@ public class ChatEndpoint : EndpointBase
         IEndpointProvider provider = Api.GetProvider(request.Model ?? ChatModel.OpenAi.Gpt35.Turbo);
         TornadoRequestContent requestBody = request.Serialize(provider);
         ChatResult? result = await HttpPost1<ChatResult>(provider, Endpoint, requestBody.Url, requestBody.Body, request.CancellationToken);
-
+        NormalizeChatResult(result);
+        
         if (Api.ChatRequestInterceptor is not null)
         {
             await Api.ChatRequestInterceptor.Invoke(request, result);
         }
 
         return result;
+    }
+
+    private static void NormalizeChatResult(ChatResult? result)
+    {
+        if (result?.Choices is not null)
+        {
+            foreach (ChatChoice choice in result.Choices)
+            {
+                if (choice.Message is not null && choice.Message.Parts?.Count > 0 && choice.Message.Content is null)
+                {
+                    choice.Message.Content = choice.Message.Parts.FirstOrDefault(x => x.Type is ChatMessageTypes.Text)?.Text;
+                }
+            }
+        }
     }
     
     /// <summary>
@@ -109,7 +124,8 @@ public class ChatEndpoint : EndpointBase
         IEndpointProvider provider = Api.GetProvider(request.Model ?? ChatModel.OpenAi.Gpt35.Turbo);
         TornadoRequestContent requestBody = request.Serialize(provider);
         HttpCallResult<ChatResult> result = await HttpPost<ChatResult>(provider, Endpoint, requestBody.Url, requestBody.Body, request.CancellationToken);
-
+        NormalizeChatResult(result.Data);
+        
         if (Api.ChatRequestInterceptor is not null && result.Ok)
         {
             await Api.ChatRequestInterceptor.Invoke(request, result.Data);

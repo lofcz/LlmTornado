@@ -237,7 +237,22 @@ public static partial class ChatDemo
         Console.ResetColor();
         Console.WriteLine(block.Message);
     }
-    
+
+    [TornadoTest]
+    public static async Task AnthropicIssue38Completion()
+    {
+        Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Anthropic.Claude37.Sonnet
+        });
+        
+        chat2.AppendUserInput("Explain quadratic equations, briefly");
+
+        ChatRichResponse response = await chat2.GetResponseRich();
+        string str = response.Result?.Choices[0].Message?.Content;
+        Console.WriteLine(str);
+    }
+
     [TornadoTest]
     public static async Task AnthropicIssue38()
     {
