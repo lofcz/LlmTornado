@@ -372,6 +372,8 @@ Check the links for simple-to-understand examples!
 - Extensive tests suite.
 - Maintained actively for two years, often with day 1 support for new features.
 
+[![Star History Chart](https://api.star-history.com/svg?repos=lofcz/llmtornado&type=Date)](https://www.star-history.com/#lofcz/llmtornado&Date)
+
 ## 📚 Documentation
 
 Most public classes, methods, and properties (90%+) are extensively XML documented. Feel free to open an issue here if you have any questions.
