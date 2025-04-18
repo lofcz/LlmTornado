@@ -125,6 +125,101 @@ public enum ChatMessageRoles
 }
 
 /// <summary>
+/// The type of the predicted content you want to provide. 
+/// </summary>
+public enum ChatRequestPredictionTypes
+{
+    /// <summary>
+    /// Static predicted output content.
+    /// </summary>
+    Content
+}
+
+/// <summary>
+/// Configuration for a Predicted Output, which can greatly improve response times when large parts of the model response are known ahead of time. This is most common when you are regenerating a file with only minor changes to most of the content.
+/// </summary>
+public class ChatRequestPrediction
+{
+    /// <summary>
+    /// The type of the predicted content you want to provide. This type is currently always "content".
+    /// </summary>
+    [JsonProperty("type")]
+    public ChatRequestPredictionTypes Type { get; set; }
+
+    /// <summary>
+    /// Serialized content, either from <see cref="Parts"/> or <see cref="Text"/>
+    /// </summary>
+    [JsonProperty("content")]
+    public object? Content => Parts?.Count > 0 ? Parts : Text;
+
+    /// <summary>
+    /// The content used for a Predicted Output. This is often the text of a file you are regenerating with minor changes.
+    /// </summary>
+    [JsonIgnore]
+    public string? Text { get; set; }
+    
+    /// <summary>
+    /// An array of content parts with a defined type. Supported options differ based on the model being used to generate the response. Can contain text inputs.
+    /// </summary>
+    [JsonIgnore]
+    public List<ChatRequestPredictionPart>? Parts { get; set; }
+}
+
+/// <summary>
+/// A prediction part.
+/// </summary>
+public class ChatRequestPredictionPart 
+{
+    /// <summary>
+    /// The text content.
+    /// </summary>
+    [JsonProperty("text")]
+    public string Text { get; set; }
+    
+    /// <summary>
+    /// The type of the content part.
+    /// </summary>
+    [JsonProperty("type")]
+    public ChatRequestPredictionTypes Type { get; set; }
+
+    /// <summary>
+    /// Creates a new text prediction part.
+    /// </summary>
+    /// <param name="text"></param>
+    public ChatRequestPredictionPart(string text)
+    {
+        Text = text;
+        Type = ChatRequestPredictionTypes.Content;
+    }
+}
+
+/// <summary>
+/// Flex processing provides significantly lower costs for Chat Completions or Responses requests in exchange for slower response times and occasional resource unavailability. It is ideal for non-production or lower-priority tasks such as model evaluations, data enrichment, or asynchronous workloads.
+/// </summary>
+[JsonConverter(typeof(StringEnumConverter))]
+public enum ChatRequestServiceTiers
+{
+    /// <summary>
+    /// If set to 'auto', and the Project is Scale tier enabled, the system will utilize scale tier credits until they are exhausted.
+    /// If set to 'auto', and the Project is not Scale tier enabled, the request will be processed using the default service tier with a lower uptime SLA and no latency guarantee.
+    /// </summary>
+    [EnumMember(Value = "auto")]
+    Auto,
+    
+    /// <summary>
+    /// If set to 'default', the request will be processed using the default service tier with a lower uptime SLA and no latency guarantee.
+    /// </summary>
+    [EnumMember(Value = "default")]
+    Default,
+    
+    /// <summary>
+    /// If set to 'flex', the request will be processed with the Flex Processing service tier. Learn more.
+    /// </summary>
+    [EnumMember(Value = "flex")]
+    Flex
+}
+
+/// <summary>
 /// Represents one token/chunk of a streamed response
 /// </summary>
 public class StreamedMessageToken

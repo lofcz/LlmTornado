@@ -319,6 +319,12 @@ public static partial class ChatDemo
     }
     
     [TornadoTest]
+    public static async Task OpenAiO4()
+    {
+        await BasicChat(ChatModel.OpenAi.O4.V4Mini);
+    }
+    
+    [TornadoTest]
     public static async Task Gemini25Pro()
     {
         await BasicChat(ChatModel.Google.GeminiPreview.Gemini2ProPreview0325);
@@ -329,6 +335,22 @@ public static partial class ChatDemo
         Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
             Model = model
+        });
+        chat2.AppendSystemMessage("Pretend you are a dog. Sound authentic.");
+        chat2.AppendUserInput("Solve 2+2");
+       
+        string? str2 = await chat2.GetResponse();
+        Console.WriteLine(str2);
+    }
+    
+    [Flaky("flex service tier is slow to execute")]
+    [TornadoTest]
+    public static async Task ServiceTierFlex()
+    {
+        Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.OpenAi.O3.V3,
+            ServiceTier = ChatRequestServiceTiers.Flex
         });
         chat2.AppendSystemMessage("Pretend you are a dog. Sound authentic.");
         chat2.AppendUserInput("Solve 2+2");

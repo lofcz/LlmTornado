@@ -28,6 +28,11 @@ public class ChatModelOpenAi : BaseVendorModelProvider
     /// O3 models.
     /// </summary>
     public readonly ChatModelOpenAiO3 O3 = new ChatModelOpenAiO3();
+    
+    /// <summary>
+    /// O4 models.
+    /// </summary>
+    public readonly ChatModelOpenAiO4 O4 = new ChatModelOpenAiO4();
 
     /// <summary>
     /// GPT 4.5 models.
@@ -62,6 +67,7 @@ public class ChatModelOpenAi : BaseVendorModelProvider
         ..ChatModelOpenAiGpt35.ModelsAll,
         ..ChatModelOpenAiGpt4.ModelsAll,
         ..ChatModelOpenAiO3.ModelsAll,
+        ..ChatModelOpenAiO4.ModelsAll,
         ..ChatModelOpenAiGpt41.ModelsAll,
         ..ChatModelOpenAiGpt45.ModelsAll,
     ];
@@ -72,7 +78,8 @@ public class ChatModelOpenAi : BaseVendorModelProvider
     public static readonly List<IModel> ReasoningModelsAll =
     [
         ..ChatModelOpenAiGpt4.ReasoningModels,
-        ..ChatModelOpenAiO3.ModelsAll
+        ..ChatModelOpenAiO3.ModelsAll,
+        ..ChatModelOpenAiO4.ModelsAll
     ];
     
     static ChatModelOpenAi()

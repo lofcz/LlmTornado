@@ -93,6 +93,8 @@ public class ChatRequest
 		Metadata = basedOn.Metadata;
 		Store = basedOn.Store;
 		ReasoningEffort = basedOn.ReasoningEffort;
+		Prediction = basedOn.Prediction;
+		ServiceTier = basedOn.ServiceTier;
 	}
 
 	/// <summary>
@@ -166,12 +168,24 @@ public class ChatRequest
 	[JsonProperty("reasoning_effort")]
 	[JsonConverter(typeof(StringEnumConverter), true)]
 	public ChatReasoningEfforts? ReasoningEffort { get; set; }
-
+	
+	/// <summary>
+	/// Configuration for a Predicted Output, which can greatly improve response times when large parts of the model response are known ahead of time. This is most common when you are regenerating a file with only minor changes to most of the content.
+	/// </summary>
+	[JsonProperty("prediction")]
+	public ChatRequestPrediction? Prediction { get; set; }
+	
 	/// <summary>
 	///     The seed to use for deterministic requests.
 	/// </summary>
 	[JsonProperty("seed")]
     public int? Seed { get; set; }
+	
+	/// <summary>
+	///     Specifies the latency tier to use for processing the request. This parameter is relevant for customers subscribed to the OpenAI scale tier service.
+	/// </summary>
+	[JsonProperty("service_tier")]
+	public ChatRequestServiceTiers? ServiceTier { get; set; }
 
 	/// <summary>
 	///     The response format to use. If <see cref="ChatRequestResponseFormats.Json" />, either system or user message in the
