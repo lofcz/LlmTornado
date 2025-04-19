@@ -4,6 +4,7 @@ using LlmTornado.Chat.Models;
 using LlmTornado.Chat.Vendors.Mistral;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
+using LlmTornado.Code.Vendor;
 using LlmTornado.Common;
 using LlmTornado.Files;
 
@@ -298,6 +299,34 @@ public static partial class ChatDemo
        
         string? str2 = await chat2.GetResponse();
         Console.WriteLine(str2);
+    }
+    
+    [TornadoTest]
+    public static async Task Google25FlashAdaptiveThinking()
+    {
+        Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Google.GeminiPreview.Gemini25FlashPreview0417,
+            ReasoningBudget = 0
+        });
+        chat2.AppendUserInput("Explain how beer is created");
+        
+        ChatRichResponse response = await chat2.GetResponseRich();
+        
+        Console.WriteLine("------------------- Without thinking ----------------------");
+        Console.WriteLine(response.RawResponse);
+        
+        chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Google.GeminiPreview.Gemini25FlashPreview0417,
+            ReasoningBudget = 1024
+        });
+        chat2.AppendUserInput("Explain how beer is created");
+        
+        response = await chat2.GetResponseRich();
+        
+        Console.WriteLine("------------------- With thinking ----------------------");
+        Console.WriteLine(response.RawResponse);
     }
     
     [TornadoTest]

@@ -1,20 +1,13 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using LlmTornado.Chat.Models;
-using LlmTornado.Chat.Vendors;
-using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Common;
-using LlmTornado.Models;
-using LlmTornado.Vendor.Anthropic;
-using LlmTornado.Code.Models;
 using LlmTornado.Code.Vendor;
 using LlmTornado.Files;
 
@@ -69,16 +62,10 @@ public class Conversation
         messages = [];
         this.endpoint = endpoint;
         RequestParameters.NumChoicesPerMessage = 1;
-        RequestParameters.Stream = false;
     }
 
     /// <summary>
-    ///     Allows setting the parameters to use when calling the Chat API. Can be useful for setting temperature,
-    ///     presence_penalty, and more.
-    ///     <see href="https://platform.openai.com/docs/api-reference/chat/create">
-    ///         Se  OpenAI documentation for a list of
-    ///         possible parameters to tweak.
-    ///     </see>
+    ///     Allows setting the parameters to use when calling the Chat API.
     /// </summary>
     public ChatRequest RequestParameters { get; }
 
@@ -503,7 +490,7 @@ public class Conversation
     {
         ChatRequest req = new ChatRequest(this, RequestParameters)
         {
-            Messages = messages.ToList(),
+            Messages = messages,
             CancellationToken = token
         };
 
@@ -540,7 +527,7 @@ public class Conversation
     {
         ChatRequest req = new ChatRequest(this, RequestParameters)
         {
-            Messages = messages.ToList(),
+            Messages = messages,
             CancellationToken = token
         };
 
@@ -573,7 +560,7 @@ public class Conversation
     {
         ChatRequest req = new ChatRequest(this, RequestParameters)
         {
-            Messages = messages.ToList(),
+            Messages = messages,
             CancellationToken = token
         };
 
@@ -607,7 +594,7 @@ public class Conversation
     {
         ChatRequest req = new ChatRequest(this, RequestParameters)
         {
-            Messages = messages.ToList(),
+            Messages = messages,
             CancellationToken = token
         };
 
@@ -744,7 +731,7 @@ public class Conversation
     {
         ChatRequest req = new ChatRequest(this, RequestParameters)
         {
-            Messages = messages.ToList(),
+            Messages = messages,
             CancellationToken = token
         };
 
@@ -774,7 +761,7 @@ public class Conversation
     {
         ChatRequest req = new ChatRequest(this, RequestParameters)
         {
-            Messages = messages.ToList(),
+            Messages = messages,
             CancellationToken = token
         };
 
@@ -866,7 +853,7 @@ public class Conversation
     {
         ChatRequest req = new ChatRequest(this, RequestParameters)
         {
-            Messages = messages.ToList(),
+            Messages = messages,
             CancellationToken = token
         };
 
@@ -1090,7 +1077,7 @@ public class Conversation
     {
         ChatRequest req = new ChatRequest(this, RequestParameters)
         {
-            Messages = messages.ToList(),
+            Messages = messages,
             CancellationToken = token
         };
         

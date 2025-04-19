@@ -62,6 +62,7 @@ public class ChatRequestVendorAnthropicExtensions
     
     /// <summary>
     /// Thinking settings for Claude 3.7+ models.
+    /// Instead of using this vendor-specific setting, <see cref="ChatRequest.ReasoningBudget"/> can be used.
     /// </summary>
     public AnthropicThinkingSettings? Thinking { get; set; }
 }

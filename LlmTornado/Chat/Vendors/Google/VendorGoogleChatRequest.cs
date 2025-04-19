@@ -109,7 +109,89 @@ internal class VendorGoogleChatRequestGenerationConfig
     [JsonProperty("logprobs")]
     public int? Logprobs { get; set; }
     
+    /// <summary>
+    /// Optional. Enables enhanced civic answers. It may not be available for all models.
+    /// </summary>
+    [JsonProperty("enableEnhancedCivicAnswers")]
+    public bool? EnableEnhancedCivicAnswers { get; set; }
     
+    /// <summary>
+    /// Optional. The speech generation config.
+    /// </summary>
+    /// <returns></returns>
+    [JsonProperty("speechConfig")]
+    public VendorGoogleChatRequestSpeechConfig? SpeechConfig { get; set; }
+    
+    /// <summary>
+    /// Optional. Config for thinking features.
+    /// </summary>
+    [JsonProperty("thinkingConfig")]
+    public VendorGoogleChatRequestThinkingConfig? ThinkingConfig { get; set; }
+    
+    /// <summary>
+    /// MEDIA_RESOLUTION_UNSPECIFIED = Media resolution has not been set.<br/>
+    /// MEDIA_RESOLUTION_LOW = Media resolution set to low (64 tokens).<br/>
+    /// MEDIA_RESOLUTION_MEDIUM	= Media resolution set to medium (256 tokens).<br/>
+    /// MEDIA_RESOLUTION_HIGH = Media resolution set to high (zoomed reframing with 256 tokens).<br/>
+    /// </summary>
+    [JsonProperty("mediaResolution")]
+    public string? MediaResolution { get; set; }
+}
+
+internal class VendorGoogleChatRequestVoiceConfig
+{
+    /// <summary>
+    /// The configuration for the prebuilt speaker to use.
+    /// </summary>
+    [JsonIgnore]
+    public VendorGoogleChatRequestPrebuiltVoiceConfig? PrebuiltVoiceConfig { get; set; }
+
+    /// <summary>
+    /// The configuration for the speaker to use.
+    /// </summary>
+    [JsonProperty("voice_config")]
+    public object? VoiceConfig => PrebuiltVoiceConfig;
+}
+
+internal class VendorGoogleChatRequestPrebuiltVoiceConfig
+{
+    /// <summary>
+    /// The name of the preset voice to use.
+    /// </summary>
+    [JsonProperty("voiceName")]
+    public string? VoiceName { get; set; }
+}
+
+internal class VendorGoogleChatRequestSpeechConfig
+{
+    /// <summary>
+    /// The configuration in case of single-voice output.
+    /// </summary>
+    [JsonProperty("voiceConfig")]
+    public VendorGoogleChatRequestVoiceConfig? VoiceConfig { get; set; }
+    
+    /// <summary>
+    /// Optional. Language code (in BCP 47 format, e.g. "en-US") for speech synthesis.
+    /// Valid values are: de-DE, en-AU, en-GB, en-IN, es-US, fr-FR, hi-IN, pt-BR, ar-XA, es-ES, fr-CA, id-ID, it-IT, ja-JP, tr-TR, vi-VN, bn-IN, gu-IN, kn-IN, ml-IN, mr-IN, ta-IN, te-IN, nl-NL, ko-KR, cmn-CN, pl-PL, ru-RU, and th-TH.
+    /// </summary>
+    [JsonProperty("languageCode")]
+    public string? LanguageCode { get; set; }
+}
+
+internal class VendorGoogleChatRequestThinkingConfig
+{
+    /// <summary>
+    /// Indicates whether to include thoughts in the response. If true, thoughts are returned only when available.
+    /// </summary>
+    [JsonProperty("includeThoughts")]
+    public bool? IncludeThoughts { get; set; }
+    
+    /// <summary>
+    /// The thinkingBudget parameter gives the model guidance on the number of thinking tokens it can use when generating a response. A greater number of tokens is typically associated with more detailed thinking, which is needed for solving more complex tasks. thinkingBudget must be an integer in the range 0 to 24576. Setting the thinking budget to 0 disables thinking. Budgets from 1 to 1024 tokens will be set to 1024.
+    /// Depending on the prompt, the model might overflow or underflow the token budget.
+    /// </summary>
+    [JsonProperty("thinkingBudget")]
+    public int? ThinkingBudget { get; set; }
 }
 
 internal class VendorGoogleChatRequestMessagePart
@@ -611,7 +693,7 @@ internal class VendorGoogleChatRequest
     
     public VendorGoogleChatRequest(ChatRequest request, IEndpointProvider provider)
     {
-        request.OverrideUrl($"{provider.ApiUrl(CapabilityEndpoints.Chat, null)}/{request.Model?.Name}:{(request.Stream ? "streamGenerateContent" : "generateContent")}");
+        request.OverrideUrl($"{provider.ApiUrl(CapabilityEndpoints.Chat, null)}/{request.Model?.Name}:{(request.StreamResolved ? "streamGenerateContent" : "generateContent")}");
         
         IList<ChatMessage>? msgs = request.Messages;
 
@@ -647,8 +729,18 @@ internal class VendorGoogleChatRequest
             Temperature = request.Temperature is null ? null : Math.Clamp((double)request.Temperature, 0, 2),
             TopP = request.TopP,
             MaxOutputTokens = request.MaxTokens,
-            StopSequences = request.MultipleStopSequences is not null ? request.MultipleStopSequences.Take(5).ToList() : request.StopSequence is not null ? [ request.StopSequence ] : null
+            StopSequences = request.MultipleStopSequences is not null ? request.MultipleStopSequences.Take(5).ToList() : request.StopSequence is not null ? [ request.StopSequence ] : null,
+            ResponseLogprobs = request.Logprobs,
+            Logprobs = request.TopLogprobs
         };
+
+        if (request.ReasoningBudget is not null)
+        {
+            GenerationConfig.ThinkingConfig = new VendorGoogleChatRequestThinkingConfig
+            {
+                ThinkingBudget = request.ReasoningBudget
+            };
+        } 
 
         if (request.Modalities?.Count > 0 && request.Model is not null)
         {

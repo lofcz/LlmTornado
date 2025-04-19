@@ -25,6 +25,18 @@ internal class VendorGoogleUsage : IChatUsage
     public int CandidatesTokenCount { get; set; }
     
     /// <summary>
+    /// Output only. Number of tokens present in tool-use prompt(s).
+    /// </summary>
+    [JsonProperty("toolUsePromptTokenCount")]
+    public int ToolUsePromptTokenCount { get; set; }
+    
+    /// <summary>
+    /// Output only. Number of tokens of thoughts for thinking models.
+    /// </summary>
+    [JsonProperty("thoughtsTokenCount")]
+    public int ThoughtsTokenCount { get; set; }
+    
+    /// <summary>
     /// Total token count for the generation request (prompt + response candidates).
     /// </summary>
     [JsonProperty("totalTokenCount")]
@@ -47,6 +59,12 @@ internal class VendorGoogleUsage : IChatUsage
     /// </summary>
     [JsonProperty("candidatesTokensDetails")]
     public List<VendorGoogleUsageModalityDetail>? CandidatesTokensDetails { get; set; }
+    
+    /// <summary>
+    /// Output only. List of modalities that were processed for tool-use request inputs.
+    /// </summary>
+    [JsonProperty("toolUsePromptTokensDetails")]
+    public List<VendorGoogleUsageModalityDetail>? ToolUsePromptTokensDetails { get; set; }
 }
 
 internal class VendorGoogleUsageModalityDetail

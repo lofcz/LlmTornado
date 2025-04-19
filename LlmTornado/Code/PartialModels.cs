@@ -166,6 +166,98 @@ public class ChatRequestPrediction
 }
 
 /// <summary>
+/// High level guidance for the amount of context window space to use for the search. One of low, medium, or high. medium is the default.
+/// </summary>
+[JsonConverter(typeof(StringEnumConverter))]
+public enum ChatRequestWebSearchContextSize
+{
+    /// <summary>
+    /// Low context, lowest cost.
+    /// </summary>
+    [EnumMember(Value = "low")]
+    Low,
+    
+    /// <summary>
+    /// Balanced cost/performance.
+    /// </summary>
+    [EnumMember(Value = "medium")]
+    Medium,
+    
+    /// <summary>
+    /// Highest budget, best performance.
+    /// </summary>
+    [EnumMember(Value = "high")]
+    High
+}
+
+/// <summary>
+/// Types of the user location.
+/// </summary>
+[JsonConverter(typeof(StringEnumConverter))]
+public enum ChatRequestWebSearchUserLocationTypes
+{
+    /// <summary>
+    /// Approximate location.
+    /// </summary>
+    [EnumMember(Value = "approximate")]
+    Approximate
+}
+
+/// <summary>
+/// Configuration of the user location, aids search relevancy.
+/// </summary>
+public class ChatRequestWebSearchUserLocation
+{
+    /// <summary>
+    /// The type of location approximation. Always approximate.
+    /// </summary>
+    [JsonProperty("type")]
+    public ChatRequestWebSearchUserLocationTypes Type { get; set; } = ChatRequestWebSearchUserLocationTypes.Approximate;
+    
+    /// <summary>
+    /// Free text input for the city of the user, e.g. San Francisco.
+    /// </summary>
+    [JsonProperty("city")]
+    public string? City { get; set; }
+    
+    /// <summary>
+    /// The two-letter ISO country code of the user, e.g. US.
+    /// </summary>
+    [JsonProperty("city")]
+    public string? Country { get; set; }
+    
+    /// <summary>
+    /// Free text input for the region of the user, e.g. California.
+    /// </summary>
+    [JsonProperty("region")]
+    public string? Region { get; set; }
+    
+    /// <summary>
+    /// The IANA timezone of the user, e.g. America/Los_Angeles.
+    /// </summary>
+    [JsonProperty("timezone")]
+    public string? Timezone { get; set; }
+}
+
+/// <summary>
+/// Configuration of the web search options.
+/// </summary>
+public class ChatRequestWebSearchOptions
+{
+    /// <summary>
+    /// High level guidance for the amount of context window space to use for the search. One of low, medium, or high. medium is the default.
+    /// </summary>
+    [JsonProperty("search_context_size")]
+    public ChatRequestWebSearchContextSize? SearchContextSize { get; set; }
+    
+    /// <summary>
+    /// Approximate location parameters for the search.
+    /// </summary>
+    [JsonProperty("user_location")]
+    public ChatRequestWebSearchUserLocation? UserLocation { get; set; }
+}
+
+/// <summary>
 /// A prediction part.
 /// </summary>
 public class ChatRequestPredictionPart 

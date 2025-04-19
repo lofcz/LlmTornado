@@ -95,6 +95,11 @@ public class ChatRequest
 		ReasoningEffort = basedOn.ReasoningEffort;
 		Prediction = basedOn.Prediction;
 		ServiceTier = basedOn.ServiceTier;
+		Stream = basedOn.Stream;
+		ReasoningBudget = basedOn.ReasoningBudget;
+		Logprobs = basedOn.Logprobs;
+		TopLogprobs = basedOn.TopLogprobs;
+		WebSearchOptions = basedOn.WebSearchOptions;
 	}
 
 	/// <summary>
@@ -138,7 +143,7 @@ public class ChatRequest
 	/// </summary>
 	[JsonProperty("messages")]
     [JsonConverter(typeof(ChatMessageRequestMessagesJsonConverter))]
-    public IList<ChatMessage>? Messages { get; set; }
+    public List<ChatMessage>? Messages { get; set; }
 
 	/// <summary>
 	///     What sampling temperature to use. Higher values means the model will take more risks. Try 0.9 for more creative
@@ -170,6 +175,14 @@ public class ChatRequest
 	public ChatReasoningEfforts? ReasoningEffort { get; set; }
 	
 	/// <summary>
+	///		Sets a token limit on reasoning. 0 disables reasoning. Currently supported by Google (natively "thinkingBudget") and Anthropic (natively "budget_tokens").<br/>
+	///		Note: Some providers (Google) don't guarantee this limit is honored without under/over-flowing.<br/>
+	///		Google: clamps to 0,1024-24576.
+	/// </summary>
+	[JsonIgnore]
+	public int? ReasoningBudget { get; set; }
+	
+	/// <summary>
 	/// Configuration for a Predicted Output, which can greatly improve response times when large parts of the model response are known ahead of time. This is most common when you are regenerating a file with only minor changes to most of the content.
 	/// </summary>
 	[JsonProperty("prediction")]
@@ -195,11 +208,32 @@ public class ChatRequest
     public ChatRequestResponseFormats? ResponseFormat { get; set; }
 
 	/// <summary>
-	///     Specifies the response should be streamed. This is set automatically by the library.
+	///     Specifies the response should be streamed. When using abstractions, such as <see cref="Conversation"/>, this is set automatically by the library.
 	/// </summary>
 	[JsonProperty("stream")]
-    public bool Stream { get; internal set; }
+    public bool? Stream { get; set; }
 
+	[JsonIgnore]
+	internal bool StreamResolved => Stream ?? false;
+	
+	/// <summary>
+	/// Whether to return log probabilities of the output tokens or not. If true, returns the log probabilities of each output token returned in the content of message.
+	/// </summary>
+	[JsonProperty("logprobs")]
+	public bool? Logprobs { get; set; }
+	
+	/// <summary>
+	/// An integer between 0 and 20 specifying the number of most likely tokens to return at each token position, each with an associated log probability. logprobs must be set to true if this parameter is used.
+	/// </summary>
+	[JsonProperty("top_logprobs")]
+	public int? TopLogprobs { get; set; }
+	
+	/// <summary>
+	/// This tool searches the web for relevant results to use in a response. Learn more about the web search tool.
+	/// </summary>
+	[JsonProperty("web_search_options")]
+	public ChatRequestWebSearchOptions? WebSearchOptions { get; set; }
+	
 	/// <summary>
 	///     The stream configuration.<br/>
 	///		Note: by default Tornado includes usage for all providers.
@@ -484,13 +518,13 @@ public class ChatRequest
 		ChatStreamOptions? storedOptions = null;
 		bool restoreStreamOptions = false;
 		
-		if (!Stream && StreamOptions is not null)
+		if (!StreamResolved && StreamOptions is not null)
 		{
 			storedOptions = ChatStreamOptions.Duplicate(StreamOptions);
 			StreamOptions = null;
 			restoreStreamOptions = true;
 		}
-		else if (Stream && StreamOptions is null)
+		else if (StreamResolved && StreamOptions is null)
 		{
 			storedOptions = null;
 			StreamOptions = ChatStreamOptions.KnownOptionsIncludeUsage;

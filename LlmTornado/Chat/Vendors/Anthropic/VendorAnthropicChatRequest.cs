@@ -504,6 +504,15 @@ internal class VendorAnthropicChatRequest
             Tools = request.Tools.Where(x => x.Function is not null).Select(t => new VendorAnthropicToolFunction(t)).ToList();
         }
 
+        if (request.ReasoningBudget > 0)
+        {
+            Thinking = new VendorAnthropicThinkingSettings
+            {
+                BudgetTokens = request.ReasoningBudget,
+                Type = "enabled"
+            };
+        }
+
         if (request.VendorExtensions?.Anthropic is not null)
         {
             if (request.VendorExtensions.Anthropic.Thinking is not null)

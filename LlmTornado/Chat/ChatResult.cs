@@ -39,6 +39,12 @@ public class ChatResult : ApiResultBase
 	public string? SystemFingerprint { get; set; }
 	
 	/// <summary>
+	/// Raw response from the API.
+	/// </summary>
+	[JsonIgnore]
+	public string? RawResponse { get; set; }
+	
+	/// <summary>
 	///		Features supported only by a specific/few providers with no shared equivalent.
 	/// </summary>
 	[JsonIgnore]
@@ -209,6 +215,12 @@ public class ChatUsageTokenDetails
 	/// </summary>
 	[JsonProperty("rejected_prediction_tokens")]
 	public int? RejectedPredictionTokens { get; set; }
+	
+	/// <summary>
+	///		Number of tokens present in tool-use prompt(s). Reported only by Google.
+	/// </summary>
+	[JsonIgnore]
+	public int? ToolsUseTokens { get; set; }
 }
 
 /// <summary>
@@ -305,6 +317,11 @@ public class ChatUsage : Usage
 		TotalTokens = usage.TotalTokenCount;
 		CacheReadTokens = usage.CachedContentTokenCount;
 		VendorUsageObject = usage;
+		CompletionTokensDetails = new ChatUsageTokenDetails
+		{
+			ReasoningTokens = usage.ThoughtsTokenCount,
+			ToolsUseTokens = usage.ToolUsePromptTokenCount
+		};
 		Provider = LLmProviders.Google;
 	}
 

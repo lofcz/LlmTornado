@@ -60,6 +60,16 @@ public class ChatRichResponse
     ///     Extension information if the vendor used returns any.
     /// </summary>
     public ChatResponseVendorExtensions? VendorExtensions => Result?.VendorExtensions;
+
+    /// <summary>
+    /// The usage statistics for the interaction.
+    /// </summary>
+    public ChatUsage? Usage => Result?.Usage;
+    
+    /// <summary>
+    ///     Raw response from the API.
+    /// </summary>
+    public string? RawResponse => Result?.RawResponse;
     
     /// <summary>
     ///     The full result.
