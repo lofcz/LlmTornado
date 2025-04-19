@@ -1201,7 +1201,7 @@ public class Conversation
                             {
                                 await eventsHandler.FunctionCallHandler.Invoke(calls);
                                 
-                                if (MostRecentApiResult?.Choices?.Count > 0 && MostRecentApiResult.Choices[0].FinishReason is "tool_use")
+                                if (MostRecentApiResult?.Choices?.Count > 0 && MostRecentApiResult.Choices[0].FinishReason is ChatMessageFinishReasons.ToolCalls)
                                 {
                                     delta.Content = MostRecentApiResult.Object;
                                 }

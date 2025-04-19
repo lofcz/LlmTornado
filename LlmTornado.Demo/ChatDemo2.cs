@@ -300,7 +300,23 @@ public static partial class ChatDemo
         string? str2 = await chat2.GetResponse();
         Console.WriteLine(str2);
     }
-    
+
+    [TornadoTest]
+    public static async Task FinishReasonLength()
+    {
+        Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Google.GeminiPreview.Gemini25FlashPreview0417,
+            MaxTokens = 64
+        });
+        
+        chat2.AppendUserInput("Explain how beer is created");
+        ChatRichResponse response = await chat2.GetResponseRich();
+
+        Console.WriteLine(response.Text);
+        Console.WriteLine(response.FinishReason);
+    }
+
     [TornadoTest]
     public static async Task Google25FlashAdaptiveThinking()
     {

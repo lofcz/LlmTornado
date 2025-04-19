@@ -299,7 +299,7 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider,
 
             if (toolsAccumulator.Choices is not null)
             {
-                toolsAccumulator.Choices[0].FinishReason = "function_call";
+                toolsAccumulator.Choices[0].FinishReason = ChatMessageFinishReasons.ToolCalls;
             }
 
             toolsAccumulator.Usage = usage;

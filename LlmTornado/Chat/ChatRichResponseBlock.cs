@@ -51,13 +51,13 @@ public class ChatRichResponse
     private string? text;
     
     /// <summary>
-    ///     The blocks, which together constitute the received response. A block can be either textual, tool call or an image.
-    ///     Different providers support different block types.
+    /// The blocks, which together constitute the received response. A block can be either textual, tool call or an image.
+    /// Different providers support different block types.
     /// </summary>
     public List<ChatRichResponseBlock>? Blocks { get; set; }
 
     /// <summary>
-    ///     Extension information if the vendor used returns any.
+    /// Extension information if the vendor used returns any.
     /// </summary>
     public ChatResponseVendorExtensions? VendorExtensions => Result?.VendorExtensions;
 
@@ -67,20 +67,23 @@ public class ChatRichResponse
     public ChatUsage? Usage => Result?.Usage;
     
     /// <summary>
-    ///     Raw response from the API.
+    /// Raw response from the API.
     /// </summary>
     public string? RawResponse => Result?.RawResponse;
+
+    /// <summary>
+    /// Reason why the response ended.    
+    /// </summary>
+    public ChatMessageFinishReasons FinishReason => Result?.Choices?.FirstOrDefault()?.FinishReason ?? ChatMessageFinishReasons.Unknown;
     
     /// <summary>
-    ///     The full result.
+    /// The full result.
     /// </summary>
     public ChatResult? Result { get; set; }
 
     /// <summary>
-    ///     Constructs rich response.
+    /// Constructs rich response.
     /// </summary>
-    /// <param name="result"></param>
-    /// <param name="blocks"></param>
     public ChatRichResponse(ChatResult? result, List<ChatRichResponseBlock>? blocks)
     {
         Result = result;
@@ -95,7 +98,6 @@ public class ChatRichResponse
     /// <summary>
     /// Gets the text parts and joins them by a separator.
     /// </summary>
-    /// <returns></returns>
     public string GetText(string blockSeparator = " ")
     {
         text = Blocks is null ? string.Empty : string.Join(blockSeparator, Blocks.Where(x => x.Type is ChatRichResponseBlockTypes.Message && !x.Message.IsNullOrWhiteSpace()).Select(x => x.Message));
@@ -105,7 +107,6 @@ public class ChatRichResponse
     /// <summary>
     /// Iterates over blocks, aggregating the response for debugging view.
     /// </summary>
-    /// <returns></returns>
     public override string ToString()
     {
         if (Blocks is null || Blocks.Count is 0)

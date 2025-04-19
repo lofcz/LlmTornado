@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.ChatFunctions;
+using LlmTornado.Code;
 using LlmTornado.Vendor.Anthropic;
 using Newtonsoft.Json;
 
@@ -12,24 +13,34 @@ internal class VendorCohereChatResult : VendorChatResult
 {
     [JsonProperty("response_id")]
     public string ResponseId { get; set; }
+    
     [JsonProperty("text")]
     public string? Text { get; set; }
+    
     [JsonProperty("generation_id")]
     public string GenerationId { get; set; }
+    
     [JsonProperty("finish_reason")]
     public string FinishReason { get; set; }
+    
     [JsonProperty("meta")]
     public VendorCohereUsage Meta { get; set; }
+    
     [JsonProperty("citations")]
     public List<VendorCohereChatCitation>? Citations { get; set; }
+    
     [JsonProperty("documents")]
     public List<VendorCohereChatDocument>? Documents { get; set; }
+    
     [JsonProperty("search_results")]
     public List<VendorCohereChatSearchResult>? SearchResults { get; set; }
+    
     [JsonProperty("search_queries")]
     public List<VendorCohereChatSearchQuery>? SearchQueries { get; set; }
+    
     [JsonProperty("is_search_required")]
     public bool? IsSearchRequired { get; set; }
+    
     [JsonProperty("tool_calls")]
     public List<object>? ToolCalls { get; set; } // TODO: map me
 
@@ -68,7 +79,7 @@ internal class VendorCohereChatResult : VendorChatResult
         {
             result.Choices.Add(new ChatChoice
             {
-                FinishReason = FinishReason,
+                FinishReason = ChatMessageFinishReasonsConverter.Map.GetValueOrDefault(FinishReason, ChatMessageFinishReasons.Unknown),
                 Message = new ChatMessage
                 {
                     Content = Text

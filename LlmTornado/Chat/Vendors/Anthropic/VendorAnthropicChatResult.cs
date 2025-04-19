@@ -74,18 +74,31 @@ internal class VendorAnthropicChatResult : VendorChatResult
     
     [JsonProperty("id")]
     public string Id { get; set; }
+    
     [JsonProperty("type")]
     public string Type { get; set; }
+    
     [JsonProperty("role")]
     public string Role { get; set; }
+    
     [JsonProperty("content")] 
     public List<VendorAnthropicChatResultContentBlock> Content { get; set; } = [];
+    
     [JsonProperty("model")]
     public string Model { get; set; }
+    
+    /// <summary>
+    /// "end_turn": the model reached a natural stopping point<br/>
+    /// "max_tokens": we exceeded the requested max_tokens or the model's maximum<br/>
+    /// "stop_sequence": one of your provided custom stop_sequences was generated<br/>
+    /// "tool_use": the model invoked one or more tools
+    /// </summary>
     [JsonProperty("stop_reason")]
     public string StopReason { get; set; }
+    
     [JsonProperty("stop_sequence")]
     public string? StopSequence { get; set; }
+    
     [JsonProperty("usage")]
     public VendorAnthropicUsage Usage { get; set; }
     
@@ -125,7 +138,7 @@ internal class VendorAnthropicChatResult : VendorChatResult
 
                 textChoice = new ChatChoice
                 {
-                    FinishReason = StopReason,
+                    FinishReason = ChatMessageFinishReasonsConverter.Map.GetValueOrDefault(StopReason, ChatMessageFinishReasons.Unknown),
                     Index = result.Choices.Count + 1,
                     Message = textBlockMsg,
                     Delta = textBlockMsg
@@ -179,7 +192,7 @@ internal class VendorAnthropicChatResult : VendorChatResult
         {
             result.Choices.Add(new ChatChoice
             {
-                FinishReason = StopReason,
+                FinishReason = ChatMessageFinishReasonsConverter.Map.GetValueOrDefault(StopReason, ChatMessageFinishReasons.Unknown),
                 Index = result.Choices.Count + 1,
                 Message = toolsMsg,
                 Delta = toolsMsg
