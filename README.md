@@ -365,12 +365,12 @@ Check the links for simple-to-understand examples!
 ## 👉 Why Tornado?
 
 - 50,000+ installs on NuGet (previous names [Lofcz.Forks.OpenAI](https://www.nuget.org/packages/Lofcz.Forks.OpenAI), [OpenAiNg](https://www.nuget.org/packages/OpenAiNg)).
-- Used in commercial projects incurring charges of thousands of dollars monthly.
-- The license will never change. Looking at you HashiCorp and Tiny.
-- Supports streaming, functions/tools, modalities (images, audio), and strongly typed LLM plugins/connectors.
+- Used in [award-winning](https://www-aiawards-cz.translate.goog/?_x_tr_sl=cs&_x_tr_tl=en&_x_tr_hl=cs) commercial projects, processing > 100B tokens monthly.
+- Supports streaming, functions/tools, modalities (text, images, audio, video, files), and strongly typed LLM plugins/connectors.
+- Covered by 200+ tests.
 - Great performance, nullability annotations.
-- Extensive tests suite.
 - Maintained actively for two years, often with day 1 support for new features.
+- The license will never change.
 
 [![Star History Chart](https://api.star-history.com/svg?repos=lofcz/llmtornado&type=Date)](https://www.star-history.com/#lofcz/llmtornado&Date)
 
