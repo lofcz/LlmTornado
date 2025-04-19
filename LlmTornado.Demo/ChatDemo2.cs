@@ -464,6 +464,7 @@ public static partial class ChatDemo
         }
     }
 
+    [Flaky("access limited in Europe")]
     [TornadoTest]
     public static async Task GoogleStreamImages()
     {
