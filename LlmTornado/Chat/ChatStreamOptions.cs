@@ -23,6 +23,14 @@ public class ChatStreamOptions
     {
         IncludeUsage = true
     };
+    
+    /// <summary>
+    ///     Using the "exclude" option omits stream_options from the request.
+    /// </summary>
+    public static readonly ChatStreamOptions KnownOptionsExcludeUsage = new ChatStreamOptions
+    {
+        IncludeUsage = false
+    };
 
     /// <summary>
     /// Creates a copy of the options

@@ -319,6 +319,19 @@ public class ChatEndpoint : EndpointBase
     private async IAsyncEnumerable<ChatResult> StreamChatReal(IEndpointProvider provider, ChatRequest request, ChatStreamEventHandler? handler)
     {
         request.Stream = true;
+        ChatStreamOptions? requestStreamOpts = request.StreamOptions;
+
+        if (request.StreamOptions is null)
+        {
+            request.StreamOptions = ChatStreamOptions.KnownOptionsIncludeUsage;
+            requestStreamOpts = null;
+        }
+        
+        if (!request.StreamOptions.IncludeUsage)
+        {
+            request.StreamOptions = null;
+        }
+        
         TornadoRequestContent requestBody = request.Serialize(provider);
         await using TornadoStreamRequest tornadoStreamRequest = await HttpStreamingRequestData(Api.GetProvider(request.Model ?? ChatModel.OpenAi.Gpt35.Turbo), Endpoint, requestBody.Url, queryParams: null, HttpMethod.Post, requestBody.Body, request.CancellationToken);
 
@@ -358,6 +371,8 @@ public class ChatEndpoint : EndpointBase
                 yield return x;
             }
         }
+        
+        request.StreamOptions = requestStreamOpts;
     }
     
     /// <summary>

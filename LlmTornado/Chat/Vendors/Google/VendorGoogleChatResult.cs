@@ -32,7 +32,7 @@ internal class VendorGoogleChatResult : VendorChatResult
         /// IMAGE_SAFETY = Token generation stopped because generated images contain safety violations.<br/>
         /// </summary>
         [JsonProperty("finishReason")]
-        public string FinishReason { get; set; }
+        public string? FinishReason { get; set; }
         
         [JsonProperty("index")]
         public int Index { get; set; }
@@ -74,7 +74,7 @@ internal class VendorGoogleChatResult : VendorChatResult
             {
                 Message = msg,
                 Delta = msg,
-                FinishReason = ChatMessageFinishReasonsConverter.Map.GetValueOrDefault(candidate.FinishReason, ChatMessageFinishReasons.Unknown)
+                FinishReason = candidate.FinishReason is null ? null : ChatMessageFinishReasonsConverter.Map.GetValueOrDefault(candidate.FinishReason, ChatMessageFinishReasons.Unknown)
             });
         }
         

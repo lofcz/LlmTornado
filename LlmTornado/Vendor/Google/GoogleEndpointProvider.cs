@@ -85,6 +85,7 @@ internal class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider,
     {
         ChatMessage? plaintextAccu = null;
         ChatUsage? usage = null;
+        ChatMessageFinishReasons finishReason = ChatMessageFinishReasons.Unknown;
         
         await using JsonTextReader jsonReader = new JsonTextReader(reader);
         JsonSerializer serializer = new JsonSerializer();
@@ -121,6 +122,13 @@ internal class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider,
                         ChatResult chatResult = obj.ToChatResult(null);
                         usage = chatResult.Usage;
 
+                        string? strFinishReason = obj.Candidates.FirstOrDefault()?.FinishReason;
+
+                        if (strFinishReason is not null)
+                        {
+                            finishReason = ChatMessageFinishReasonsConverter.Map.GetValueOrDefault(strFinishReason, ChatMessageFinishReasons.Unknown);
+                        }
+                        
                         if (isBufferingTool)
                         {
                             continue;
@@ -185,6 +193,19 @@ internal class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider,
                 Usage = usage
             };
         }
+        
+        yield return new ChatResult
+        {
+            Choices =
+            [
+                new ChatChoice
+                {
+                    FinishReason = finishReason
+                }
+            ],
+            StreamInternalKind = ChatResultStreamInternalKinds.FinishData,
+            Usage = usage
+        };
     }
     
     public override async IAsyncEnumerable<object?> InboundStream(Type type, StreamReader reader)

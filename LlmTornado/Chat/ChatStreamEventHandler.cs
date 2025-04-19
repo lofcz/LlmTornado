@@ -82,6 +82,11 @@ public class ChatStreamEventHandler
     public Func<ChatUsage, ValueTask>? OnUsageReceived { get; set; }
     
     /// <summary>
+    ///     Called after the streaming completes, this can be used for debugging finish_reason and other metadata.
+    /// </summary>
+    public Func<ChatStreamFinishedData, ValueTask>? OnFinished { get; set; }
+    
+    /// <summary>
     ///     Called whenever a successful HTTP request is made. In case of streaming requests this is called before the stream is read.
     /// </summary>
     public Func<HttpCallRequest, ValueTask>? OutboundHttpRequestHandler { get; set; }

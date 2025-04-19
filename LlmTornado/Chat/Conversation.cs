@@ -1099,6 +1099,16 @@ public class Conversation
             {
                 if (res.Choices is not null)
                 {
+                    if (res.StreamInternalKind is ChatResultStreamInternalKinds.FinishData)
+                    {
+                        if (eventsHandler?.OnFinished is not null)
+                        {
+                            await eventsHandler.OnFinished.Invoke(new ChatStreamFinishedData(res.Usage ?? new ChatUsage(provider.Provider), res.Choices.FirstOrDefault()?.FinishReason ?? ChatMessageFinishReasons.Unknown));
+                        }
+
+                        break;
+                    }
+                    
                     foreach (ChatChoice choice in res.Choices)
                     {
                         ChatMessage? internalDelta = choice.Delta;

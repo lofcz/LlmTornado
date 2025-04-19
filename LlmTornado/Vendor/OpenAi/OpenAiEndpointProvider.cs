@@ -160,6 +160,7 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider,
         StringBuilder? plaintextBuilder = null;
         StringBuilder? reasoningBuilder = null;
         ChatUsage? usage = null;
+        ChatMessageFinishReasons finishReason = ChatMessageFinishReasons.Unknown;
         
         #if DEBUG
         List<string> data = [];
@@ -175,12 +176,22 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider,
             {
                 goto afterStreamEnds;
             }
-            
+
             ChatResult? res = JsonConvert.DeserializeObject<ChatResult>(item.Data);
 
             if (res is null)
             {
                 continue;
+            }
+
+            if (res.Choices?.Count > 0)
+            {
+                ChatChoice choice = res.Choices[0];
+
+                if (choice.FinishReason is not (null or ChatMessageFinishReasons.Unknown))
+                {
+                    finishReason = choice.FinishReason ?? ChatMessageFinishReasons.Unknown;
+                }
             }
             
             if (request.StreamOptions?.IncludeUsage ?? false)
@@ -330,6 +341,18 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider,
                 StreamInternalKind = ChatResultStreamInternalKinds.AppendAssistantMessage
             };
         }
+
+        yield return new ChatResult
+        {
+            Usage = usage,
+            Choices = [
+                new ChatChoice
+                {
+                    FinishReason = finishReason
+                }
+            ],
+            StreamInternalKind = ChatResultStreamInternalKinds.FinishData
+        };
     }
     
     public override async IAsyncEnumerable<object?> InboundStream(Type type, StreamReader reader)

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Text;
 using LlmTornado.Code;
 using LlmTornado.Vendor.Anthropic;
 using LlmTornado;
@@ -289,11 +290,52 @@ public class ChatUsage : Usage
 	/// <returns></returns>
 	public override string ToString()
 	{
-		return Provider switch
+		StringBuilder sb = new StringBuilder();
+		sb.Append($"Total: {TotalTokens}, Prompt: {PromptTokens}, Completion: {CompletionTokens}");
+
+		if (CacheCreationTokens > 0)
 		{
-			LLmProviders.Google => $"Total: {TotalTokens}, Prompt: {PromptTokens}, Completion: {CompletionTokens}, Cache read: {CacheReadTokens}",
-			LLmProviders.Cohere => $"Total: {TotalTokens}, Prompt: {PromptTokens}, Completion: {CompletionTokens}",
-			_ => $"Total: {TotalTokens}, Prompt: {PromptTokens}, Completion: {CompletionTokens}, Cache created: {CacheCreationTokens}, Cache read: {CacheReadTokens}"
-		};
+			sb.Append($", Cache created: {CacheCreationTokens}");
+		}
+
+		if (CacheReadTokens > 0)
+		{
+			sb.Append($", Cache read: {CacheReadTokens}");
+		}
+
+		if (CompletionTokensDetails is not null)
+		{
+			if (CompletionTokensDetails.TextTokens > 0)
+			{
+				sb.Append($", Text tokens: {CompletionTokensDetails.TextTokens}");
+			}
+			
+			if (CompletionTokensDetails.ReasoningTokens > 0)
+			{
+				sb.Append($", Reasoning tokens: {CompletionTokensDetails.ReasoningTokens}");
+			}
+			
+			if (CompletionTokensDetails.AudioTokens > 0)
+			{
+				sb.Append($", Audio tokens: {CompletionTokensDetails.AudioTokens}");
+			}
+			
+			if (CompletionTokensDetails.ToolsUseTokens > 0)
+			{
+				sb.Append($", Tools use tokens: {CompletionTokensDetails.ToolsUseTokens}");
+			}
+			
+			if (CompletionTokensDetails.AcceptedPredictionTokens > 0)
+			{
+				sb.Append($", Accepted prediction tokens: {CompletionTokensDetails.AcceptedPredictionTokens}");
+			}
+			
+			if (CompletionTokensDetails.RejectedPredictionTokens > 0)
+			{
+				sb.Append($", Rejected prediction tokens: {CompletionTokensDetails.RejectedPredictionTokens}");
+			}
+		}
+
+		return sb.ToString();
 	}
 }

@@ -193,7 +193,7 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
     private class AnthropicStreamMsgDeltaData
     {
         [JsonProperty("stop_reason")]
-        public string StopReason { get; set; }
+        public string? StopReason { get; set; }
         
         [JsonProperty("stop_sequence")]
         public string? StopSequence { get; set; }
@@ -223,6 +223,7 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
         ChatUsage? plaintextUsage = null;
         ChatMessage? accuThinking = null;
         List<ChatMessagePart>? thinkingParts = null;
+        ChatMessageFinishReasons finishReason = ChatMessageFinishReasons.Unknown;
         
         #if DEBUG
         List<string> items = [];
@@ -487,8 +488,13 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
                     {
                         plaintextUsage ??= new ChatUsage(LLmProviders.Anthropic);
                         plaintextUsage.CompletionTokens = res.Usage.OutputTokens;
+
+                        if (res.Delta.StopReason is not null)
+                        {
+                            finishReason = ChatMessageFinishReasonsConverter.Map.GetValueOrDefault(res.Delta.StopReason, ChatMessageFinishReasons.Unknown);
+                        }
                         
-                        // todo: propagate data from res.Delta
+                        // todo: propagate stop_sequence from res.Delta
                     }
                     
                     break;
@@ -537,6 +543,18 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
             ],
             StreamInternalKind = ChatResultStreamInternalKinds.AppendAssistantMessage,
             Usage = plaintextUsage
+        };
+        
+        yield return new ChatResult
+        {
+            Usage = plaintextUsage,
+            Choices = [
+                new ChatChoice
+                {
+                    FinishReason = finishReason
+                }
+            ],
+            StreamInternalKind = ChatResultStreamInternalKinds.FinishData
         };
     }
     

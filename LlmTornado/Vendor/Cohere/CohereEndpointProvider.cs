@@ -190,7 +190,8 @@ internal class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider,
         ChatResult baseResult = new ChatResult();
         ChatMessage? plaintextAccu = null;
         ChatUsage? usage = null;
-            
+        ChatMessageFinishReasons finishReason = ChatMessageFinishReasons.Unknown;    
+        
         while (true)
         {
             string? line = await reader.ReadLineAsync(); // note this is not sse like openai/anthropic
@@ -376,6 +377,8 @@ internal class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider,
                             PromptTokens = result.Response.Meta.BilledUnits.InputTokens,
                             CompletionTokens = result.Response.Meta.BilledUnits.OutputTokens
                         };
+
+                        finishReason = ChatMessageFinishReasonsConverter.Map.GetValueOrDefault(result.Response.FinishReason, ChatMessageFinishReasons.Unknown);
                     }
                     
                     goto finalizer;
@@ -407,6 +410,19 @@ internal class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider,
                 Usage = usage
             };
         }
+        
+        yield return new ChatResult
+        {
+            Choices =
+            [
+                new ChatChoice
+                {
+                    FinishReason = finishReason
+                }
+            ],
+            StreamInternalKind = ChatResultStreamInternalKinds.FinishData,
+            Usage = usage
+        };
     }
 
     public override async IAsyncEnumerable<object?> InboundStream(Type type, StreamReader reader)

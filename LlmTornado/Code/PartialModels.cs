@@ -312,7 +312,13 @@ internal class ChatMessageFinishReasonsConverter : JsonConverter<ChatMessageFini
     /// </summary>
     public override ChatMessageFinishReasons ReadJson(JsonReader reader, Type objectType, ChatMessageFinishReasons existingValue, bool hasExistingValue, JsonSerializer serializer)
     {
-        return Map.GetValueOrDefault(reader.ReadAsString() ?? string.Empty, ChatMessageFinishReasons.Unknown);
+        if (reader.TokenType is JsonToken.String)
+        {
+            string str = reader.Value as string ?? string.Empty;
+            return Map.GetValueOrDefault(str, ChatMessageFinishReasons.Unknown);   
+        }
+
+        return ChatMessageFinishReasons.Unknown;
     }
 
     /// <summary>
@@ -545,13 +551,47 @@ internal enum ChatResultStreamInternalKinds
     /// <summary>
     /// Similar to <see cref="AppendAssistantMessage"/> but doesn't append the message. Used for reasoning blocks.
     /// </summary>
-    AssistantMessageTransientBlock
+    AssistantMessageTransientBlock,
+    
+    /// <summary>
+    /// Usage, finish_reason, and other metadata
+    /// </summary>
+    FinishData
 }
 
+/// <summary>
+/// Data returned after streaming stops.
+/// </summary>
+public class ChatStreamFinishedData
+{
+    /// <summary>
+    /// The bill.
+    /// </summary>
+    public ChatUsage Usage { get; set; }
+    
+    /// <summary>
+    /// Reason why the streaming stopped.
+    /// </summary>
+    public ChatMessageFinishReasons FinishReason { get; set; }
+
+    internal ChatStreamFinishedData(ChatUsage usage, ChatMessageFinishReasons finishReason)
+    {
+        Usage = usage;
+        FinishReason = finishReason;
+    }
+}
+
+/// <summary>
+/// Wrapper for tool arguments.
+/// </summary>
 public class ChatFunctionParamsGetter
 {
     internal Dictionary<string, object?>? Source { get; set; }
 
+    /// <summary>
+    /// Creates an argument getter from a dictionary.
+    /// </summary>
+    /// <param name="pars"></param>
     public ChatFunctionParamsGetter(Dictionary<string, object?>? pars)
     {
         Source = pars;

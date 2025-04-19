@@ -812,10 +812,11 @@ public static partial class ChatDemo
                 Console.WriteLine();
                 return ValueTask.CompletedTask;
             },
-            OnUsageReceived = (usage) =>
+            OnFinished = (data) =>
             {
                 Console.WriteLine();
-                Console.WriteLine(usage);
+                Console.WriteLine(data.Usage);
+                Console.WriteLine(data.FinishReason);
                 return ValueTask.CompletedTask;
             }
         });
@@ -937,10 +938,11 @@ public static partial class ChatDemo
                 Console.Write(token);
                 return ValueTask.CompletedTask;
             },
-            OnUsageReceived = (usage) =>
+            OnFinished = (data) =>
             {
                 Console.WriteLine();
-                Console.WriteLine(usage);
+                Console.WriteLine(data.Usage);
+                Console.WriteLine(data.FinishReason);
                 return ValueTask.CompletedTask;
             }
         });
@@ -1298,6 +1300,35 @@ public static partial class ChatDemo
     }
     
     [TornadoTest]
+    public static async Task CohereStreamingRich()
+    {
+        Conversation chat = Program.Connect(LLmProviders.Cohere).Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Cohere.Command.Default
+        });
+        
+        chat.AppendSystemMessage("Pretend you are a dog. Sound authentic.");
+        chat.AppendUserInput("Bark 10 times. Each bark should look like: [BARK {{i}}]: {{random text here}}");
+
+        Console.WriteLine("Cohere:");
+        await chat.StreamResponseRich(new ChatStreamEventHandler
+        {
+            MessagePartHandler = (part) =>
+            {
+                Console.Write(part.Text);
+                return ValueTask.CompletedTask;
+            },
+            OnFinished = (data) =>
+            {
+                Console.WriteLine();
+                Console.WriteLine(data.Usage);
+                Console.WriteLine(data.FinishReason);
+                return ValueTask.CompletedTask;
+            }
+        });
+    }
+    
+    [TornadoTest]
     public static async Task AnthropicSonnet37()
     {
         Conversation chat = Program.Connect(LLmProviders.Anthropic).Chat.CreateConversation(new ChatRequest
@@ -1356,7 +1387,6 @@ public static partial class ChatDemo
         Conversation chat = Program.Connect(LLmProviders.Anthropic).Chat.CreateConversation(new ChatRequest
         {
             Model = ChatModel.Anthropic.Claude37.Sonnet,
-            Stream = true,
             VendorExtensions = new ChatRequestVendorExtensions(new ChatRequestVendorAnthropicExtensions
             {
                 Thinking = new AnthropicThinkingSettings
@@ -1392,9 +1422,11 @@ public static partial class ChatDemo
                 Console.Write(token);
                 return ValueTask.CompletedTask;
             },
-            BlockFinishedHandler = (block) =>
+            OnFinished = (data) =>
             {
                 Console.WriteLine();
+                Console.WriteLine(data.Usage);
+                Console.WriteLine(data.FinishReason);
                 return ValueTask.CompletedTask;
             }
         });
