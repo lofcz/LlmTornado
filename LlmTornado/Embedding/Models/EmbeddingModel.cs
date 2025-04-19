@@ -87,16 +87,24 @@ public class EmbeddingModel : ModelEmbeddingBase
     /// <summary>
     /// Creates a new model identified by name and provider.
     /// </summary>
-    /// <param name="name"></param>
-    /// <param name="provider"></param>
-    /// <param name="contextTokens"></param>
-    /// <param name="outputDimensions"></param>
     public EmbeddingModel(string name, LLmProviders provider, int contextTokens, int outputDimensions)
     {
         Name = name;
         Provider = provider;
         ContextTokens = contextTokens;
         OutputDimensions = outputDimensions;
+    }
+    
+    /// <summary>
+    /// Creates a new model identified by name and provider.
+    /// </summary>
+    public EmbeddingModel(string name, LLmProviders provider, int contextTokens, int outputDimensions, List<int> matryoshkaDimensions)
+    {
+        Name = name;
+        Provider = provider;
+        ContextTokens = contextTokens;
+        OutputDimensions = outputDimensions;
+        MatryoshkaDimensions = matryoshkaDimensions;
     }
     
     /// <summary>

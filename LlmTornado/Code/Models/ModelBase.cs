@@ -244,5 +244,11 @@ public abstract class ModelEmbeddingBase : ModelBase
     ///     The length of the output vector.
     /// </summary>
     [JsonIgnore]
-    public int? OutputDimensions { get; set; } 
+    public int? OutputDimensions { get; set; }
+    
+    /// <summary>
+    ///     The matryoshka lengths of the output vector.
+    /// </summary>
+    [JsonIgnore]
+    public List<int>? MatryoshkaDimensions { get; set; } 
 }

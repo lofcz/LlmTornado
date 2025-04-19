@@ -115,6 +115,23 @@ public static class EmbeddingDemo
     }
     
     [TornadoTest]
+    public static async Task EmbedCohereGen4()
+    {
+        EmbeddingResult? result = await Program.ConnectMulti().Embeddings.CreateEmbedding(EmbeddingModel.Cohere.Gen4.V4, "lorem ipsum");
+        Console.WriteLine($"Count: {result?.Data.Count ?? 0}, dims: {result?.Data.FirstOrDefault()?.Embedding.Length ?? 0}");
+        
+        if (result is not null)
+        {
+            for (int i = 0; i < 10; i++)
+            {
+                Console.WriteLine(result.Data[0].Embedding[i]);
+            }
+            
+            Console.WriteLine($"... (length: {result.Data[0].Embedding.Length})");
+        }
+    }
+    
+    [TornadoTest]
     public static async Task EmbedCohereExtensions()
     {
         foreach (EmbeddingVendorCohereExtensionInputTypes mode in Enum.GetValues<EmbeddingVendorCohereExtensionInputTypes>())
