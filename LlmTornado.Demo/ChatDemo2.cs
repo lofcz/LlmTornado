@@ -2,6 +2,7 @@ using System.Diagnostics;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Chat.Vendors.Mistral;
+using LlmTornado.Chat.Vendors.Perplexity;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Code.Vendor;
@@ -39,6 +40,25 @@ public static partial class ChatDemo
         string? str = await chat.GetResponse();
 
         Console.WriteLine("xAi:");
+        Console.WriteLine(str);
+    }
+    
+    [TornadoTest]
+    public static async Task PerplexitySonarRecency()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Perplexity.Sonar.Default,
+            VendorExtensions = new ChatRequestVendorExtensions(new ChatRequestVendorPerplexityExtensions
+            {
+                SearchAfterDateFilter = new DateTime(2025, 4, 15)
+            })
+        });
+        
+        chat.AppendUserInput(".net 10 preview 4");
+        string? str = await chat.GetResponse();
+
+        Console.WriteLine("Perplexity:");
         Console.WriteLine(str);
     }
     

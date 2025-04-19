@@ -15,6 +15,7 @@ using LlmTornado;
 using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Chat.Vendors.Cohere;
 using LlmTornado.Chat.Vendors.Mistral;
+using LlmTornado.Chat.Vendors.Perplexity;
 using LlmTornado.Vendor.Anthropic;
 using Newtonsoft.Json.Converters;
 
@@ -491,7 +492,8 @@ public class ChatRequest
 		{ 
 			LLmProviders.Perplexity, (x, y) =>
 			{
-				return JsonConvert.SerializeObject(x, EndpointBase.NullSettings);
+				VendorPerplexityChatRequest request = new VendorPerplexityChatRequest(x, y);
+				return request.Serialize();
 			} 
 		}
 	}.ToFrozenDictionary();

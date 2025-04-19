@@ -61,7 +61,6 @@ public class Conversation
 
         messages = [];
         this.endpoint = endpoint;
-        RequestParameters.NumChoicesPerMessage = 1;
     }
 
     /// <summary>

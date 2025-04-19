@@ -2,6 +2,7 @@ using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Chat.Vendors.Cohere;
 using LlmTornado.Chat.Vendors.Google;
 using LlmTornado.Chat.Vendors.Mistral;
+using LlmTornado.Chat.Vendors.Perplexity;
 
 namespace LlmTornado.Chat;
 
@@ -29,6 +30,11 @@ public class ChatRequestVendorExtensions
     ///     Mistral extensions.
     /// </summary>
     public ChatRequestVendorMistralExtensions? Mistral { get; set; }
+    
+    /// <summary>
+    ///     Perplexity extensions.
+    /// </summary>
+    public ChatRequestVendorPerplexityExtensions? Perplexity { get; set; }
 
     /// <summary>
     ///     Empty extensions.
@@ -72,5 +78,14 @@ public class ChatRequestVendorExtensions
     public ChatRequestVendorExtensions(ChatRequestVendorMistralExtensions mistralExtensions)
     {
         Mistral = mistralExtensions;
+    }
+    
+    /// <summary>
+    ///     Perplexity extensions.
+    /// </summary>
+    /// <param name="perplexityExtensions"></param>
+    public ChatRequestVendorExtensions(ChatRequestVendorPerplexityExtensions perplexityExtensions)
+    {
+        Perplexity = perplexityExtensions;
     }
 }
