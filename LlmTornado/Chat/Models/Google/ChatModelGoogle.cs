@@ -58,6 +58,15 @@ public class ChatModelGoogle : BaseVendorModelProvider
         ..ChatModelGoogleGemma.ModelsAll,
         ..ChatModelGoogleGeminiPreview.ModelsAll
     ];
+    
+    /// <summary>
+    /// Models capable of reasoning.
+    /// </summary>
+    public static readonly List<IModel> ReasoningModels =
+    [
+        ChatModelGoogleGeminiPreview.ModelGemini25FlashPreview0417,
+        ChatModelGoogleGeminiPreview.ModelGemini2ProPreview0325
+    ];
 
     /// <summary>
     /// Models capable of generating images.

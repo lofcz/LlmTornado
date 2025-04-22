@@ -1,20 +1,12 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Net;
-using System.Net.Http;
 using System.Text;
-using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
-using LlmTornado.Chat.Plugins;
-using LlmTornado.Chat.Vendors.Cohere;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
-using LlmTornado.Code.Vendor;
 using LlmTornado.Common;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace LlmTornado.Chat.Vendors.Cohere;
 
@@ -734,7 +726,8 @@ internal class VendorGoogleChatRequest
             Logprobs = request.TopLogprobs
         };
 
-        if (request.ReasoningBudget is not null)
+        // thinkingConfig is not supported for non-thinking models
+        if (request.Model is not null && request.ReasoningBudget is not null && ChatModelGoogle.ReasoningModels.Contains(request.Model))
         {
             GenerationConfig.ThinkingConfig = new VendorGoogleChatRequestThinkingConfig
             {
