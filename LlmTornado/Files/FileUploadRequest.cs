@@ -70,7 +70,8 @@ public class FileUploadRequest
     
     private static readonly Dictionary<LLmProviders, Func<FileUploadRequest, IEndpointProvider, object>> SerializeMap = new Dictionary<LLmProviders, Func<FileUploadRequest, IEndpointProvider, object>>
     {
-        { LLmProviders.OpenAi, (x, y) =>
+        { 
+            LLmProviders.OpenAi, (x, y) =>
             {
                 ByteArrayContent bc = new ByteArrayContent(x.Bytes);
                 StringContent sc = new StringContent(x.Purpose is null ? "assistants" : GetPurpose(x.Purpose.Value));
@@ -82,7 +83,8 @@ public class FileUploadRequest
                 return content;
             }
         },
-        { LLmProviders.Google, (x, y) =>
+        { 
+            LLmProviders.Google, (x, y) =>
             {
                 if (x.InternalState is FileUploadRequestStates.PayloadUrlObtained)
                 {

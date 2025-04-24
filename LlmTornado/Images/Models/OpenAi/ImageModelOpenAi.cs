@@ -13,6 +13,11 @@ public class ImageModelOpenAi : BaseVendorModelProvider
     /// Dalle models.
     /// </summary>
     public readonly ImageModelOpenAiDalle Dalle = new ImageModelOpenAiDalle();
+
+    /// <summary>
+    /// GPT models.
+    /// </summary>
+    public readonly ImageModelOpenAiGpt Gpt = new ImageModelOpenAiGpt();
     
     /// <summary>
     /// All known image models from OpenAI.
@@ -38,7 +43,8 @@ public class ImageModelOpenAi : BaseVendorModelProvider
     /// <inheritdoc cref="AllModels"/>
     /// </summary>
     public static readonly List<IModel> ModelsAll = [
-        ..ImageModelOpenAiDalle.ModelsAll
+        ..ImageModelOpenAiDalle.ModelsAll,
+        ..ImageModelOpenAiGpt.ModelsAll
     ];
     
     static ImageModelOpenAi()

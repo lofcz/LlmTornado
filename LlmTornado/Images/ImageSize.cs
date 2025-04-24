@@ -26,7 +26,7 @@ public enum TornadoImageSizes
     Size512x512,
     
     /// <summary>
-    /// Supported by Dalle2, Dalle3, Imagen, 1:1
+    /// Supported by Dalle2, Dalle3, Imagen, gpt-image-1; 1:1
     /// </summary>
     [EnumMember(Value = "1024x1024")]
     Size1024x1024,
@@ -61,7 +61,94 @@ public enum TornadoImageSizes
     /// <summary>
     /// Supported by Imagen, 4:3
     /// </summary>
-    Size1280x896
+    Size1280x896,
+    
+    /// <summary>
+    /// Supported by gpt-image-1
+    /// </summary>
+    [EnumMember(Value = "auto")]
+    Auto,
+    
+    /// <summary>
+    /// Landscape, supported by gpt-image-1
+    /// </summary>
+    [EnumMember(Value = "1536x1024")]
+    Size1536x1024,
+    
+    /// <summary>
+    /// Portrait, supported by gpt-image-1
+    /// </summary>
+    [EnumMember(Value = "1024x1536")]
+    Size1024x1536
+}
+
+/// <summary>
+/// Levels of image moderation.
+/// </summary>
+[JsonConverter(typeof(StringEnumConverter))]
+public enum ImageModerationTypes
+{
+    /// <summary>
+    /// Default.
+    /// </summary>
+    [EnumMember(Value = "auto")]
+    Auto,
+    
+    /// <summary>
+    /// Reduced filtering.
+    /// </summary>
+    [EnumMember(Value = "low")]
+    Low
+}
+
+/// <summary>
+/// Formats in which images can be generated.
+/// </summary>
+[JsonConverter(typeof(StringEnumConverter))]
+public enum ImageOutputFormats
+{
+    /// <summary>
+    /// PNG
+    /// </summary>
+    [EnumMember(Value = "png")]
+    Png,
+    
+    /// <summary>
+    /// JPEG
+    /// </summary>
+    [EnumMember(Value = "jpeg")]
+    Jpeg,
+    
+    /// <summary>
+    /// WEBP
+    /// </summary>
+    [EnumMember(Value = "webp")]
+    Webp
+}
+
+/// <summary>
+/// Types of image backgrounds.
+/// </summary>
+[JsonConverter(typeof(StringEnumConverter))]
+public enum ImageBackgroundTypes
+{
+    /// <summary>
+    ///  The model will automatically determine the best background for the image.
+    /// </summary>
+    [EnumMember(Value = "auto")]
+    Auto,
+    
+    /// <summary>
+    /// Background will be transparent, requires png/webp file type target.
+    /// </summary>
+    [EnumMember(Value = "transparent")]
+    Transparent,
+    
+    /// <summary>
+    /// Opaque background.
+    /// </summary>
+    [EnumMember(Value = "opaque")]
+    Opaque
 }
 
 /// <summary>

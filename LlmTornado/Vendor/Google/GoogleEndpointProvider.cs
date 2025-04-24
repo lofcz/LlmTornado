@@ -253,7 +253,7 @@ internal class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider,
     private static readonly Dictionary<Type, Func<string, string?, object?>> InboundMap = new Dictionary<Type, Func<string, string?, object?>>
     {
         { typeof(ChatResult), (s, s1) => ChatResult.Deserialize(LLmProviders.Google, s, s1) },
-        { typeof(TornadoFile), (s, s1) => FileUploadRequest.Deserialize(LLmProviders.Google, s, s1) },
+        { typeof(TornadoInputFile), (s, s1) => FileUploadRequest.Deserialize(LLmProviders.Google, s, s1) },
         { typeof(CachedContentInformation), (s, s1) => CachedContentInformation.Deserialize(LLmProviders.Google, s, s1) },
         { typeof(CachedContentList), (s, s1) => CachedContentList.Deserialize(LLmProviders.Google, s, s1) },
         { typeof(ImageGenerationResult), (s, s1) => ImageGenerationResult.Deserialize(LLmProviders.Google, s, s1) },

@@ -12,14 +12,38 @@ namespace LlmTornado.Images;
 public enum TornadoImageQualities
 {
     /// <summary>
-    /// Standard image
+    /// Standard image (supported by dall-e-3)
     /// </summary>
     [EnumMember(Value = "standard")]
     Standard,
     
     /// <summary>
-    /// HD image
+    /// HD image (supported by dall-e-3)
     /// </summary>
     [EnumMember(Value = "hd")]
-    Hd
+    Hd,
+    
+    /// <summary>
+    /// Low quality (supported by gpt-image-1).
+    /// </summary>
+    [EnumMember(Value = "low")]
+    Low,
+    
+    /// <summary>
+    /// Medium quality (supported by gpt-image-1).
+    /// </summary>
+    [EnumMember(Value = "medium")]
+    Medium,
+    
+    /// <summary>
+    /// High quality (supported by gpt-image-1).
+    /// </summary>
+    [EnumMember(Value = "high")]
+    High,
+    
+    /// <summary>
+    /// auto (default value) will automatically select the best quality for the given model.
+    /// </summary>
+    [EnumMember(Value = "auto")]
+    Auto
 }

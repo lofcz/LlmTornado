@@ -1200,9 +1200,42 @@ public class VectorStoreFileCountInfo
     public int Total { get; set; }
 }
 
+/// <summary>
+/// Tornado input file
+/// </summary>
+public class TornadoInputFile
+{
+    /// <summary>
+    /// Base64 data
+    /// </summary>
+    public string? Base64 { get; set; }
+    
+    /// <summary>
+    /// Mime type
+    /// </summary>
+    public string? MimeType { get; set; }
+
+    /// <summary>
+    /// Creates an empty file
+    /// </summary>
+    public TornadoInputFile()
+    {
+        
+    }
+
+    /// <summary>
+    /// Creates a file from base64 & mimetype
+    /// </summary>
+    public TornadoInputFile(string base64, string mimeType)
+    {
+        Base64 = base64;
+        MimeType = mimeType;
+    }
+}
+
 internal class TranscriptionSerializedRequest : IDisposable
 {
-    public MultipartFormDataContent Content = new MultipartFormDataContent();
+    public readonly MultipartFormDataContent Content = new MultipartFormDataContent();
     public MemoryStream? Ms = null;
     public StreamContent? Sc = null;
 

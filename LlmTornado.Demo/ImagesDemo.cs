@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using LlmTornado.Code;
 using LlmTornado.Images;
 using LlmTornado.Images.Models;
 using LlmTornado.Images.Vendors.Google;
@@ -46,6 +47,41 @@ public class ImagesDemo
         });
 
         await DisplayImage(generatedImg);
+    }
+    
+    [TornadoTest]
+    [Flaky("expensive")]
+    public static async Task GenerateGpt1()
+    {
+        ImageGenerationResult? generatedImg = await Program.Connect().ImageGenerations.CreateImage(new ImageGenerationRequest("a cute cat", quality: TornadoImageQualities.Medium, model: ImageModel.OpenAi.Gpt.V1)
+        {
+            Background = ImageBackgroundTypes.Transparent,
+            Moderation = ImageModerationTypes.Low
+        });
+        
+        await DisplayImage(generatedImg);
+    }
+    
+    [TornadoTest]
+    [Flaky("expensive")]
+    public static async Task EditGpt1()
+    {
+        ImageGenerationResult? generatedImg = await Program.Connect().ImageGenerations.CreateImage(new ImageGenerationRequest("a cute cat", quality: TornadoImageQualities.Medium, model: ImageModel.OpenAi.Gpt.V1)
+        {
+            Background = ImageBackgroundTypes.Transparent,
+            Moderation = ImageModerationTypes.Low
+        });
+        
+        await DisplayImage(generatedImg);
+
+        ImageGenerationResult? edited = await Program.Connect().ImageEdit.EditImage(new ImageEditRequest("make this cat look more dangerous")
+        {
+            Quality = TornadoImageQualities.Medium,
+            Model = ImageModel.OpenAi.Gpt.V1,
+            Image = new TornadoInputFile(generatedImg.Data[0].Base64, "image/png")
+        });
+        
+        await DisplayImage(edited);
     }
     
     [TornadoTest]
