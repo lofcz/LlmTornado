@@ -85,27 +85,46 @@ public partial class VendorAnthropicChatRequestMessageContent
                 
                 foreach (VendorAnthropicChatMessageToolResult block in vd.ToolResults)
                 {
+                    if (block.ToolCallId?.Length is 0)
+                    {
+                        continue;
+                    }
+                    
                     writer.WriteStartObject();
                     writer.WritePropertyName("type");
                     writer.WriteValue("tool_result");
                     writer.WritePropertyName("tool_use_id");
                     writer.WriteValue(block.ToolCallId);
-                    writer.WritePropertyName("content");
 
-                    if (block.Content.TrimStart().StartsWith('"')) // [todo] hack?
+                    if (block.Content is not null)
                     {
-                        writer.WriteRawValue(block.Content);
-                    }
-                    else
-                    {
-                        writer.WriteValue(block.Content);   
+                        writer.WritePropertyName("content");
+
+                        if (block.Content.TrimStart().StartsWith('"')) // [todo] hack?
+                        {
+                            writer.WriteRawValue(block.Content);
+                        }
+                        else
+                        {
+                            writer.WriteValue(block.Content);   
+                        }   
                     }
 
-                    if (block.ToolInvocationSucceeded is false)
+                    switch (block.ToolInvocationSucceeded)
                     {
-                        writer.WritePropertyName("is_error");
-                        writer.WriteValue(true);
-                    } 
+                        case false:
+                        {
+                            writer.WritePropertyName("is_error");
+                            writer.WriteValue(true);
+                            break;
+                        }
+                        case true:
+                        {
+                            writer.WritePropertyName("is_error");
+                            writer.WriteValue(false);
+                            break;
+                        }
+                    }
                 
                     writer.WriteEndObject();
                 }
