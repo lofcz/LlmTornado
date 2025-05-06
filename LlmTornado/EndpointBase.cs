@@ -486,6 +486,7 @@ public abstract class EndpointBase
             }
 
             result.Ok = true;
+       
             try
             {
                 result.Data = provider.InboundMessage<T>(resultAsString, postData?.ToString());

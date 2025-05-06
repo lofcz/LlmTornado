@@ -18,9 +18,9 @@ internal class VendorMistralChatRequest
     [JsonIgnore]
     public ChatRequest SourceRequest { get; set; }
     
-    public string Serialize()
+    public string Serialize(JsonSerializerSettings settings)
     {
-        string serialized = JsonConvert.SerializeObject(ExtendedRequest ?? NativeRequest, EndpointBase.NullSettings);
+        string serialized = JsonConvert.SerializeObject(ExtendedRequest ?? NativeRequest, settings);
 
         if (TempMessage is not null)
         {

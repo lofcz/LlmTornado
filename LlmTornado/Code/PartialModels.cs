@@ -3,6 +3,7 @@ using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Runtime.Serialization;
 using System.Text;
@@ -1136,6 +1137,11 @@ public class TornadoRequestContent
     [JsonIgnore]
     public CapabilityEndpoints? CapabilityEndpoint { get; set; }
     
+    /// <summary>
+    /// Headers are normally not set as they often contain secrets (API keys). For debugging, use <see cref="ChatRequestSerializeOptions.IncludeHeaders"/>
+    /// </summary>
+    public Dictionary<string, IEnumerable<string>>? Headers { get; set; }
+    
     internal TornadoRequestContent(object body, string? url, IEndpointProvider provider, CapabilityEndpoints endpoint)
     {
         Body = body;
@@ -1162,6 +1168,54 @@ public class TornadoRequestContent
     {
         
     }
+
+    /// <summary>
+    /// Textual representation of the request - URL & Body.
+    /// </summary>
+    /// <returns></returns>
+    public override string ToString()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.AppendLine($"Url: {Url}");
+
+        if (Headers is not null)
+        {
+            sb.AppendLine("Headers:");
+            sb.AppendLine("-------------------");
+
+            foreach (KeyValuePair<string, IEnumerable<string>> header in Headers.OrderBy(x => x.Key, StringComparer.InvariantCulture))
+            {
+                sb.AppendLine($"{header.Key}: {string.Join(";", header.Value)}");
+            }
+        }
+
+        sb.AppendLine("Body:");
+        sb.AppendLine("-------------------");
+        sb.AppendLine(Body.ToString());
+
+        return sb.ToString().TrimEnd();
+    }
+}
+
+/// <summary>
+/// Options for serializing chat requests.
+/// </summary>
+public class ChatRequestSerializeOptions
+{
+    /// <summary>
+    /// Whether the request is streamed.
+    /// </summary>
+    public bool Stream { get; set; }
+
+    /// <summary>
+    /// Forces headers to be included. Warning: headers contain secrets, such as API keys.
+    /// </summary>
+    public bool IncludeHeaders { get; set;}
+    
+    /// <summary>
+    /// Prettifies the request's body.
+    /// </summary>
+    public bool Pretty { get; set; }
 }
 
 /// <summary>

@@ -1,6 +1,7 @@
 ﻿using System;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
+using LlmTornado.Common;
 using LlmTornado.Models;
 using Newtonsoft.Json;
 
@@ -66,4 +67,7 @@ public class ApiResultBase
     /// </summary>
     [JsonIgnore]
     public IEndpointProvider? Provider { get; set; }
+    
+    [JsonIgnore]
+    internal HttpCallRequest? Request { get; set; }
 }

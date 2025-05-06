@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -517,6 +518,22 @@ public class Conversation
     }
 
     /// <summary>
+    /// Serializes the conversation, and returns the request that would be sent outbound
+    /// </summary>
+    /// <returns></returns>
+    public TornadoRequestContent Serialize(ChatRequestSerializeOptions? options = null)
+    {
+        ChatRequest req = new ChatRequest(this, RequestParameters)
+        {
+            Messages = messages,
+            Stream = options?.Stream
+        };
+        
+        IEndpointProvider provider = endpoint.Api.GetProvider(Model);
+        return req.Serialize(provider, options);
+    }
+
+    /// <summary>
     ///     Calls the API to get a response. The response is split into multiple blocks.
     ///     Unlike <see cref="GetResponse"/> the returned object also contains vendor specific extensions.
     ///     Use this function to get more details about the returned data.
@@ -619,6 +636,11 @@ public class Conversation
     {
         List<ChatRichResponseBlock> blocks = [];
         ChatRichResponse response = new ChatRichResponse(res, blocks);
+
+        if (res is not null)
+        {
+            response.Request = res.Request;
+        }
         
         if (res is null || !(res.Choices?.Count > 0))
         {

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Runtime.Serialization;
 using System.Threading;
 using LlmTornado.Chat.Models;
@@ -425,10 +426,22 @@ public class ChatRequest
 		MaxTokensRenamer.RenameProperty(typeof(ChatRequest), "max_tokens", "max_completion_tokens");	
 	}
 
-	private static readonly FrozenDictionary<LLmProviders, Func<ChatRequest, IEndpointProvider, string>> SerializeMap = new Dictionary<LLmProviders, Func<ChatRequest, IEndpointProvider, string>>
+	private static JsonSerializerSettings GetSerializer(JsonSerializerSettings def, JsonSerializerSettings? input)
+	{
+		if (input is null)
+		{
+			return def;
+		}
+
+		JsonSerializerSettings newSettings = def.DeepCopy();
+		newSettings.Formatting = input.Formatting;
+		return newSettings;
+	}
+
+	private static readonly FrozenDictionary<LLmProviders, Func<ChatRequest, IEndpointProvider, JsonSerializerSettings?, string>> SerializeMap = new Dictionary<LLmProviders, Func<ChatRequest, IEndpointProvider, JsonSerializerSettings?, string>>
 	{
 		{ 
-			LLmProviders.OpenAi, (x, y) =>
+			LLmProviders.OpenAi, (x, y, z) =>
 			{
 				if (x.Model is not null)
 				{
@@ -447,63 +460,81 @@ public class ChatRequest
 						{
 							if (ChatModelOpenAi.ReasoningModelsAll.Contains(x.Model))
 							{
-								return JsonConvert.SerializeObject(x, MaxTokensRenamerSettings);
+								return JsonConvert.SerializeObject(x, GetSerializer(MaxTokensRenamerSettings, z));
 							}	
 						}
 
-						return JsonConvert.SerializeObject(x, EndpointBase.NullSettings);
+						return JsonConvert.SerializeObject(x, GetSerializer(EndpointBase.NullSettings, z));
 					}
 					case ChatRequestMaxTokensSerializers.MaxCompletionTokens:
 					{
-						return JsonConvert.SerializeObject(x, MaxTokensRenamerSettings);
+						return JsonConvert.SerializeObject(x, GetSerializer(MaxTokensRenamerSettings, z));
 					}
 					default:
 					{
-						return JsonConvert.SerializeObject(x, EndpointBase.NullSettings);
+						return JsonConvert.SerializeObject(x, GetSerializer(EndpointBase.NullSettings, z));
 					}
 				}
 			}
 		},
-		{ LLmProviders.DeepSeek, (x, y) => JsonConvert.SerializeObject(x, EndpointBase.NullSettings) },
-		{ LLmProviders.Anthropic, (x, y) => JsonConvert.SerializeObject(new VendorAnthropicChatRequest(x, y), EndpointBase.NullSettings) },
-		{ LLmProviders.Cohere, (x, y) => JsonConvert.SerializeObject(new VendorCohereChatRequest(x, y), EndpointBase.NullSettings) },
-		{ LLmProviders.Google, (x, y) => JsonConvert.SerializeObject(new VendorGoogleChatRequest(x, y), EndpointBase.NullSettings) },
+		{ LLmProviders.DeepSeek, (x, y, z) => JsonConvert.SerializeObject(x, GetSerializer(EndpointBase.NullSettings, z)) },
+		{ LLmProviders.Anthropic, (x, y, z) => JsonConvert.SerializeObject(new VendorAnthropicChatRequest(x, y), GetSerializer(EndpointBase.NullSettings, z)) },
+		{ LLmProviders.Cohere, (x, y, z) => JsonConvert.SerializeObject(new VendorCohereChatRequest(x, y), GetSerializer(EndpointBase.NullSettings, z)) },
+		{ LLmProviders.Google, (x, y, z) => JsonConvert.SerializeObject(new VendorGoogleChatRequest(x, y), GetSerializer(EndpointBase.NullSettings, z)) },
 		{ 
-			LLmProviders.Mistral, (x, y) =>
+			LLmProviders.Mistral, (x, y, z) =>
 			{
 				VendorMistralChatRequest request = new VendorMistralChatRequest(x, y);
-				return request.Serialize();
+				return request.Serialize(GetSerializer(EndpointBase.NullSettings, z));
 			}
 		},
 		{ 
-			LLmProviders.Groq, (x, y) =>
+			LLmProviders.Groq, (x, y, z) =>
 			{
 				// fields unsupported by groq
 				x.LogitBias = null; 
-				return JsonConvert.SerializeObject(x, EndpointBase.NullSettings);
+				return JsonConvert.SerializeObject(x, GetSerializer(EndpointBase.NullSettings, z));
 			} 
 		},
 		{ 
-			LLmProviders.XAi, (x, y) =>
+			LLmProviders.XAi, (x, y, z) =>
 			{
-				return JsonConvert.SerializeObject(x, EndpointBase.NullSettings);
+				return JsonConvert.SerializeObject(x, GetSerializer(EndpointBase.NullSettings, z));
 			} 
 		},
 		{ 
-			LLmProviders.Perplexity, (x, y) =>
+			LLmProviders.Perplexity, (x, y, z) =>
 			{
 				VendorPerplexityChatRequest request = new VendorPerplexityChatRequest(x, y);
-				return request.Serialize();
+				return request.Serialize(GetSerializer(EndpointBase.NullSettings, z));
 			} 
 		}
 	}.ToFrozenDictionary();
 
 	/// <summary>
-	///		Serializes the chat request into the request body, based on the conventions used by the LLM provider.
+	/// Serializes the request with debugging options
 	/// </summary>
 	/// <param name="provider"></param>
+	/// <param name="options"></param>
 	/// <returns></returns>
-	public TornadoRequestContent Serialize(IEndpointProvider provider)
+	public TornadoRequestContent Serialize(IEndpointProvider provider, ChatRequestSerializeOptions? options)
+	{
+		TornadoRequestContent serialized = Serialize(provider, options?.Pretty ?? false);
+		
+		string finalUrl = EndpointBase.BuildRequestUrl(serialized.Url, provider, CapabilityEndpoints.Chat);
+		serialized.Url = finalUrl;
+
+		if (options?.IncludeHeaders ?? false)
+		{
+			using HttpRequestMessage msg = provider.OutboundMessage(finalUrl, HttpMethod.Post, serialized.Body, options.Stream);
+			Dictionary<string, IEnumerable<string>> dict = msg.Headers.ToDictionary();
+			serialized.Headers = dict;
+		}
+
+		return serialized;
+	}
+
+	private TornadoRequestContent Serialize(IEndpointProvider provider, bool pretty)
 	{
 		if (OwnerConversation is not null)
 		{
@@ -521,20 +552,28 @@ public class ChatRequest
 		ChatStreamOptions? storedOptions = null;
 		bool restoreStreamOptions = false;
 		
-		if (!StreamResolved && StreamOptions is not null)
+		switch (StreamResolved)
 		{
-			storedOptions = ChatStreamOptions.Duplicate(StreamOptions);
-			StreamOptions = null;
-			restoreStreamOptions = true;
-		}
-		else if (StreamResolved && StreamOptions is null)
-		{
-			storedOptions = null;
-			StreamOptions = ChatStreamOptions.KnownOptionsIncludeUsage;
-			restoreStreamOptions = true;
+			case false when StreamOptions is not null:
+			{
+				storedOptions = ChatStreamOptions.Duplicate(StreamOptions);
+				StreamOptions = null;
+				restoreStreamOptions = true;
+				break;
+			}
+			case true when StreamOptions is null:
+			{
+				storedOptions = null;
+				StreamOptions = ChatStreamOptions.KnownOptionsIncludeUsage;
+				restoreStreamOptions = true;
+				break;
+			}
 		}
 		
-		TornadoRequestContent serialized = SerializeMap.TryGetValue(provider.Provider, out Func<ChatRequest, IEndpointProvider, string>? serializerFn) ? new TornadoRequestContent(serializerFn.Invoke(this, provider), UrlOverride, provider, CapabilityEndpoints.Chat) : new TornadoRequestContent(string.Empty, UrlOverride, provider, CapabilityEndpoints.Chat);
+		TornadoRequestContent serialized = SerializeMap.TryGetValue(provider.Provider, out Func<ChatRequest, IEndpointProvider, JsonSerializerSettings?, string>? serializerFn) ? new TornadoRequestContent(serializerFn.Invoke(this, provider, pretty ? new JsonSerializerSettings
+		{
+			Formatting = Formatting.Indented
+		} : null), UrlOverride, provider, CapabilityEndpoints.Chat) : new TornadoRequestContent(string.Empty, UrlOverride, provider, CapabilityEndpoints.Chat);
 
 		if (restoreStreamOptions)
 		{
@@ -542,6 +581,16 @@ public class ChatRequest
 		}
 		
 		return serialized;
+	}
+	
+	/// <summary>
+	///		Serializes the chat request into the request body, based on the conventions used by the LLM provider.
+	/// </summary>
+	/// <param name="provider"></param>
+	/// <returns></returns>
+	public TornadoRequestContent Serialize(IEndpointProvider provider)
+	{
+		return Serialize(provider, false);
 	}
 	
 	internal class ModalitiesJsonConverter : JsonConverter<List<ChatModelModalities>>

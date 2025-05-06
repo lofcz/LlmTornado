@@ -86,7 +86,7 @@ public class ChatEndpoint : EndpointBase
         IEndpointProvider provider = Api.GetProvider(request.Model ?? ChatModel.OpenAi.Gpt35.Turbo);
         TornadoRequestContent requestBody = request.Serialize(provider);
         HttpCallResult<ChatResult> result = await HttpPost<ChatResult>(provider, Endpoint, requestBody.Url, requestBody.Body, request.CancellationToken);
-
+        
         if (result.Exception is not null)
         {
             throw result.Exception;
@@ -99,6 +99,11 @@ public class ChatEndpoint : EndpointBase
             await Api.ChatRequestInterceptor.Invoke(request, result.Data);
         }
 
+        if (result.Data is not null)
+        {
+            result.Data.Request = result.Request.HttpRequest;
+        }
+        
         return result.Data;
     }
 

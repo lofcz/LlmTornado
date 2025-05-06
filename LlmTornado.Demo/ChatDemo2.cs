@@ -338,6 +338,40 @@ public static partial class ChatDemo
     }
 
     [TornadoTest]
+    public static async Task Issue40()
+    {
+        Conversation conversation = Program.Connect().Chat
+            .CreateConversation(
+                new ChatRequest
+                {
+                    Model = ChatModel.Mistral.Free.MistralSmall,
+                    Temperature = 0,
+                    ResponseFormat = ChatRequestResponseFormats.StructuredJson("accept_grouped_items", new
+                    {
+                        type = "array",
+                        items = new
+                        {
+                            type = "string"
+                        }
+                    }, true)
+                }
+            )
+            .AppendSystemMessage("Your task is to group items provided by user by name and quantity")
+            .AppendUserInput("3 grapes, 2 oranges, 1 cherry, 1 grape and 1 orange");
+
+        TornadoRequestContent outboundRequest = conversation.Serialize(new ChatRequestSerializeOptions
+        {
+            IncludeHeaders = true,
+            Pretty = true
+        });
+        Console.WriteLine(outboundRequest);
+
+        ChatRichResponse response = await conversation.GetResponseRich();
+        Console.WriteLine(response);
+        Console.WriteLine($"Body from response: {response.Request?.Body}");
+    }
+
+    [TornadoTest]
     public static async Task Google25FlashAdaptiveThinking()
     {
         Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest

@@ -82,6 +82,11 @@ public class ChatRichResponse
     public ChatResult? Result { get; set; }
 
     /// <summary>
+    /// The full request.
+    /// </summary>
+    public HttpCallRequest? Request { get; set; }
+    
+    /// <summary>
     /// Constructs rich response.
     /// </summary>
     public ChatRichResponse(ChatResult? result, List<ChatRichResponseBlock>? blocks)
