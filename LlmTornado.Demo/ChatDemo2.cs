@@ -426,7 +426,7 @@ public static partial class ChatDemo
     [TornadoTest]
     public static async Task Gemini25Pro()
     {
-        await BasicChat(ChatModel.Google.GeminiPreview.Gemini2ProPreview0325);
+        await BasicChat(ChatModel.Google.GeminiPreview.Gemini25ProPreview0325);
     }
     
     private static async Task BasicChat(ChatModel model)

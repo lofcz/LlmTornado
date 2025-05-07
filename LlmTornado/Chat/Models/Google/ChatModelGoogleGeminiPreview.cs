@@ -23,19 +23,30 @@ public class ChatModelGoogleGeminiPreview : IVendorModelClassProvider
     /// <summary>
     /// A public experimental Gemini model with thinking mode always on by default.
     /// </summary>
-    public static readonly ChatModel ModelGemini2ProPreview0325 = new ChatModel("gemini-2.5-pro-preview-03-25", LLmProviders.Google, 2_000_000);
+    public static readonly ChatModel ModelGemini25ProPreview0506 = new ChatModel("gemini-2.5-pro-preview-05-06", LLmProviders.Google, 2_000_000);
     
     /// <summary>
-    /// <inheritdoc cref="ModelGemini2ProPreview0325"/>
+    /// <inheritdoc cref="ModelGemini25ProPreview0506"/>
     /// </summary>
-    public readonly ChatModel Gemini2ProPreview0325 = ModelGemini2ProPreview0325;
+    public readonly ChatModel Gemini25ProPreview0506 = ModelGemini25ProPreview0506;
+    
+    /// <summary>
+    /// A public experimental Gemini model with thinking mode always on by default.
+    /// </summary>
+    public static readonly ChatModel ModelGemini25ProPreview0325 = new ChatModel("gemini-2.5-pro-preview-03-25", LLmProviders.Google, 2_000_000);
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelGemini25ProPreview0325"/>
+    /// </summary>
+    public readonly ChatModel Gemini25ProPreview0325 = ModelGemini25ProPreview0325;
     
     /// <summary>
     /// All known Preview Gemini models from Google.
     /// </summary>
     public static readonly List<IModel> ModelsAll =
     [
-        ModelGemini2ProPreview0325,
+        ModelGemini25ProPreview0506,
+        ModelGemini25ProPreview0325,
         ModelGemini25FlashPreview0417
     ];
 
