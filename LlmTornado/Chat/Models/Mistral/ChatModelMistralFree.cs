@@ -32,7 +32,7 @@ public class ChatModelMistralFree : IVendorModelClassProvider
     /// <summary>
     /// A 12B model with image understanding capabilities in addition to text. 
     /// </summary>
-    public static readonly ChatModel ModelPixtral = new ChatModel("pixtral-12b-2409", LLmProviders.Mistral, 131_000);
+    public static readonly ChatModel ModelPixtral = new ChatModel("pixtral-12b-2409", LLmProviders.Mistral, 128_000);
     
     /// <summary>
     /// <inheritdoc cref="ModelPixtral"/>

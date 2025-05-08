@@ -424,6 +424,12 @@ public static partial class ChatDemo
     }
     
     [TornadoTest]
+    public static async Task MistralMedium3()
+    {
+        await CzechChat(ChatModel.Mistral.Premier.Medium3);
+    }
+    
+    [TornadoTest]
     public static async Task Gemini25Pro()
     {
         await BasicChat(ChatModel.Google.GeminiPreview.Gemini25ProPreview0325);
@@ -437,6 +443,19 @@ public static partial class ChatDemo
         });
         chat2.AppendSystemMessage("Pretend you are a dog. Sound authentic.");
         chat2.AppendUserInput("Solve 2+2");
+       
+        string? str2 = await chat2.GetResponse();
+        Console.WriteLine(str2);
+    }
+    
+    private static async Task CzechChat(ChatModel model)
+    {
+        Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = model
+        });
+        chat2.AppendSystemMessage("Jsi stroj, který připravuje plán hodiny na zadané téma");
+        chat2.AppendUserInput("Kvadratické rovnice, II. ročník");
        
         string? str2 = await chat2.GetResponse();
         Console.WriteLine(str2);

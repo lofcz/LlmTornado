@@ -12,7 +12,7 @@ public class ChatModelMistralPremier : IVendorModelClassProvider
     /// <summary>
     /// Our cutting-edge language model for coding with the second version released January 2025, Codestral specializes in low-latency, high-frequency tasks such as fill-in-the-middle (FIM), code correction and test generation.
     /// </summary>
-    public static readonly ChatModel ModelCodestral = new ChatModel("codestral-latest", LLmProviders.Mistral, 256_000);
+    public static readonly ChatModel ModelCodestral = new ChatModel("codestral-2501", LLmProviders.Mistral, 256_000, [ "codestral-latest" ]);
     
     /// <summary>
     /// <inheritdoc cref="ModelCodestral"/>
@@ -22,7 +22,7 @@ public class ChatModelMistralPremier : IVendorModelClassProvider
     /// <summary>
     /// Our top-tier reasoning model for high-complexity tasks with the lastest version released November 2024. 
     /// </summary>
-    public static readonly ChatModel ModelMistralLarge = new ChatModel("mistral-large-latest", LLmProviders.Mistral, 131_000);
+    public static readonly ChatModel ModelMistralLarge = new ChatModel("mistral-large-2411", LLmProviders.Mistral, 128_000, [ "mistral-large-latest" ]);
     
     /// <summary>
     /// <inheritdoc cref="ModelMistralLarge"/>
@@ -32,7 +32,7 @@ public class ChatModelMistralPremier : IVendorModelClassProvider
     /// <summary>
     /// Our frontier-class multimodal model released November 2024.
     /// </summary>
-    public static readonly ChatModel ModelPixtralLarge = new ChatModel("pixtral-large-latest", LLmProviders.Mistral, 131_000);
+    public static readonly ChatModel ModelPixtralLarge = new ChatModel("pixtral-large-2411", LLmProviders.Mistral, 128_000, [ "pixtral-large-latest" ]);
     
     /// <summary>
     /// <inheritdoc cref="ModelPixtralLarge"/>
@@ -42,7 +42,7 @@ public class ChatModelMistralPremier : IVendorModelClassProvider
     /// <summary>
     /// A powerful and efficient model for languages from the Middle East and South Asia.
     /// </summary>
-    public static readonly ChatModel ModelMistralSaba = new ChatModel("mistral-saba-latest", LLmProviders.Mistral, 32_000);
+    public static readonly ChatModel ModelMistralSaba = new ChatModel("mistral-saba-2502", LLmProviders.Mistral, 32_000, [ "mistral-saba-latest" ]);
     
     /// <summary>
     /// <inheritdoc cref="ModelMistralSaba"/>
@@ -52,7 +52,7 @@ public class ChatModelMistralPremier : IVendorModelClassProvider
     /// <summary>
     /// World’s best edge model.
     /// </summary>
-    public static readonly ChatModel ModelMinistral3B = new ChatModel("ministral-3b-latest", LLmProviders.Mistral, 131_000);
+    public static readonly ChatModel ModelMinistral3B = new ChatModel("ministral-3b-2410", LLmProviders.Mistral, 128_000, [ "ministral-3b-latest" ]);
     
     /// <summary>
     /// <inheritdoc cref="ModelMinistral3B"/>
@@ -62,12 +62,22 @@ public class ChatModelMistralPremier : IVendorModelClassProvider
     /// <summary>
     /// Powerful edge model with extremely high performance/price ratio.
     /// </summary>
-    public static readonly ChatModel ModelMinistral8B = new ChatModel("ministral-8b-latest", LLmProviders.Mistral, 131_000);
+    public static readonly ChatModel ModelMinistral8B = new ChatModel("ministral-8b-2410", LLmProviders.Mistral, 128_000, [ "ministral-8b-latest" ]);
     
     /// <summary>
     /// <inheritdoc cref="ModelMinistral8B"/>
     /// </summary>
     public readonly ChatModel Ministral8B = ModelMinistral8B;
+    
+    /// <summary>
+    /// Mistral Medium 3: frontier-class multimodal model released May 2025.
+    /// </summary>
+    public static readonly ChatModel ModelMedium3 = new ChatModel("mistral-medium-2505", LLmProviders.Mistral, 128_000, [ "mistral-medium-latest" ]);
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelMedium3"/>
+    /// </summary>
+    public readonly ChatModel Medium3 = ModelMedium3;
     
     /// <summary>
     /// All known Premier models from Mistral.
@@ -78,7 +88,8 @@ public class ChatModelMistralPremier : IVendorModelClassProvider
         ModelPixtralLarge,
         ModelMistralSaba,
         ModelMinistral3B,
-        ModelMinistral8B
+        ModelMinistral8B,
+        ModelMedium3
     ];
 
     /// <summary>
