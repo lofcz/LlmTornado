@@ -2,18 +2,19 @@
 [![LlmTornado.Contrib](https://badgen.net/nuget/v/LlmTornado.Contrib?v=302&icon=nuget&label=LlmTornado.Contrib)](https://www.nuget.org/packages/LlmTornado.Contrib)
 
 
-# 🌪️ LLM Tornado - The .NET library to consume 100+ APIs, including OpenAI, Anthropic, Google, DeepSeek, Cohere, Mistral, Azure, xAI, Perplexity, Groq, and self-hosted APIs.
+# 🌪️ LLM Tornado - The .NET library to consume 100+ APIs.
 
-At least one new large language model is released each month. Wouldn't it be awesome if using the latest, shiny model was as easy as switching one argument?
+At least one new large language model is released each month. Wouldn't it be awesome if using the latest, shiniest model was as easy as switching one argument?
 LLM Tornado is a framework for building AI, RAG/Agentic-enabled applications, allowing you to do just that.
 
 Features:
 -  100+ supported providers: **OpenAI, Anthropic, Google, DeepSeek, Cohere, Mistral, Azure, xAI, Perplexity, Groq**, and any (self-hosted) OpenAI-compatible inference servers, such as [Ollama](https://github.com/lofcz/LlmTornado/blob/4c70e7d8586cb79fd9d9fe9614c85c5dda654deb/LlmTornado.Demo/CustomProviderDemo.cs#L11). Check the full Feature Matrix [here](https://github.com/lofcz/LlmTornado/blob/master/FeatureMatrix.md).
-- _API harmonization_ of many providers. For example, suppose a request accidentally passes `temperature` to a reasoning model, where such an argument is not supported. We take care of that, to maximize the probability of the call succeeding. This applies to various whims of the Providers, such as `developer_message` vs `system_prompt` (in Tornado there is just a `System` role for Messages), Google having completely different endpoints for embedding multiple texts at once, and many other annoyances.
-- Powerful, strongly-typed `Vendor Extensions` for each provider offering something unique. Enables rich, resilient applications, while minimizing vendor lock-in.
-- Easy-to-grasp primitives for building Agentic systems, Chatbots, and RAG-based applications. Less complex than Semantic Kernel, and more powerful than the raw APIs. Easy to extend.
-- Focused on minimizing breaking changes. We take these _seriously_ and think ahead. Updating Tornado typically requires no action on your side, even when a new major version is released.
-- Actively maintained for over two years, often with day 1 support for new features.
+- _API harmonization_. The shape of APIs changes often. Certain parameters can't be used for reasoning models, certain parameters have different names based on the model (for example, `developer_message` vs `system_prompt`), certain providers implement standard endpoints in a non-standard way (for example, Google has two endpoints for embeddings). We take care of these annoyances as much as possible, reducing maintenance on your side.
+- Powerful, strongly-typed `Vendor Extensions` for each provider offering something unique. Minimize vendor lock-in, maximize the benefits.
+- Easy-to-grasp primitives for building Agentic systems, Chatbots, and RAG-based applications (`Memory/Conversation`, etc.). Less complex than Semantic Kernel, and more powerful than the raw APIs.
+- Observability as a first-class citizen. Observe requests before/after firing them, with automatic secrets anonymization. Unified `usage` information with optional, vendor-specific details.
+- As few breaking changes as possible. We take these _seriously_ and think ahead. Updating Tornado typically requires no action on your side, even when a new major version is released.
+- Actively maintained for over two years, often with day 1 support for new features. 50+ releases.
 
 ⭐ Awesome things you can do with Tornado:
 - [Chat with your documents](https://github.com/lofcz/LlmTornado/blob/61d2a4732c88c45d4a8c053204ecdef807c34652/LlmTornado.Demo/ChatDemo.cs#L722-L757)
