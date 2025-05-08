@@ -41,13 +41,24 @@ public class ChatModelGoogleGeminiPreview : IVendorModelClassProvider
     public readonly ChatModel Gemini25ProPreview0325 = ModelGemini25ProPreview0325;
     
     /// <summary>
+    /// Gemini 2.0 Flash Preview Image Generation delivers improved image generation features, including generating and editing images conversationally.
+    /// </summary>
+    public static readonly ChatModel ModelGemini2FlashPreviewImageGeneration = new ChatModel("gemini-2.0-flash-preview-image-generation", LLmProviders.Google, 32_000);
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelGemini2FlashPreviewImageGeneration"/>
+    /// </summary>
+    public readonly ChatModel Gemini2FlashPreviewImageGeneration = ModelGemini2FlashPreviewImageGeneration;
+    
+    /// <summary>
     /// All known Preview Gemini models from Google.
     /// </summary>
     public static readonly List<IModel> ModelsAll =
     [
         ModelGemini25ProPreview0506,
         ModelGemini25ProPreview0325,
-        ModelGemini25FlashPreview0417
+        ModelGemini25FlashPreview0417,
+        ModelGemini2FlashPreviewImageGeneration
     ];
 
     /// <summary>
