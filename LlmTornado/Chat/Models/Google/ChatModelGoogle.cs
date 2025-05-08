@@ -72,7 +72,8 @@ public class ChatModelGoogle : BaseVendorModelProvider
     /// Models capable of generating images.
     /// </summary>
     public static readonly List<IModel> ImageModalitySupportingModels = [
-        ChatModelGoogleGeminiExperimental.ModelGemini2FlashImageGeneration
+        ChatModelGoogleGeminiExperimental.ModelGemini2FlashImageGeneration,
+        ChatModelGoogleGeminiPreview.ModelGemini2FlashPreviewImageGeneration
     ];
 
     /// <summary>
