@@ -291,7 +291,10 @@ class DemoAggregatedItem
     public int Quantity { get; set; }
 }
 
-await ToolkitChat.GetSingleResponse(api, ChatModel.Google.Gemini.Gemini2Flash001, ChatModel.OpenAi.Gpt41.V41Mini, "aggregate items by type", new ChatFunction([
+string sysPrompt = "aggregate items by type";
+string userPrompt = "three apples, one cherry, two apples, one orange, one orange";
+
+await ToolkitChat.GetSingleResponse(api, ChatModel.Google.Gemini.Gemini2Flash001, ChatModel.OpenAi.Gpt41.V41Mini, sysPrompt, new ChatFunction([
     new ChatFunctionParam("items", new ChatFunctionTypeListTypedObject("aggregated items", true, [
         new ChatFunctionParam("name", "name of the item", true, ChatFunctionAtomicParamTypes.String),
         new ChatFunctionParam("quantity", "aggregated quantity", true, ChatFunctionAtomicParamTypes.Int),
@@ -312,7 +315,7 @@ await ToolkitChat.GetSingleResponse(api, ChatModel.Google.Gemini.Gemini2Flash001
     }
     
     return new ChatFunctionCallResult();
-}), "three apples, one cherry, two apples, one orange, one orange");
+}), userPrompt); // temp defaults to 0, output length to 8k
 
 /*
 Aggregated items:
