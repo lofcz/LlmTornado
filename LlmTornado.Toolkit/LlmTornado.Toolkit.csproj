@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <LangVersion>preview</LangVersion>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\LlmTornado\LlmTornado.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Enums.NET" Version="5.0.0" />
+      <PackageReference Include="McfCs" Version="1.0.0" />
+    </ItemGroup>
+
+</Project>

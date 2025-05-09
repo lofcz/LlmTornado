@@ -17,6 +17,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.Tests", "LlmTorn
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.Contrib", "LlmTornado.Contrib\LlmTornado.Contrib.csproj", "{DC2FD9A3-F225-4F8C-9E6C-B37E7575F0CE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.Toolkit", "LlmTornado.Toolkit\LlmTornado.Toolkit.csproj", "{53D4C9D4-7123-47E1-9603-564C5A230672}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{DC2FD9A3-F225-4F8C-9E6C-B37E7575F0CE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DC2FD9A3-F225-4F8C-9E6C-B37E7575F0CE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DC2FD9A3-F225-4F8C-9E6C-B37E7575F0CE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{53D4C9D4-7123-47E1-9603-564C5A230672}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{53D4C9D4-7123-47E1-9603-564C5A230672}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{53D4C9D4-7123-47E1-9603-564C5A230672}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{53D4C9D4-7123-47E1-9603-564C5A230672}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

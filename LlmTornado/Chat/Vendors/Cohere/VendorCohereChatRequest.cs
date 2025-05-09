@@ -6,7 +6,6 @@ using System.Net;
 using System.Net.Http;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
-using LlmTornado.Chat.Plugins;
 using LlmTornado.Chat.Vendors.Cohere;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
@@ -306,7 +305,7 @@ internal class VendorCohereChatRequest
                     Description = tool.Function.Description
                 };
 
-                if (tool.Function.RawParameters is ChatPluginFunctionTypeObject obj)
+                /*if (tool.Function.RawParameters is ChatPluginFunctionTypeObject obj)
                 {
                     foreach (ChatFunctionParam prop in obj.Properties)
                     {
@@ -324,7 +323,7 @@ internal class VendorCohereChatRequest
                             Required = prop.Required
                         });
                     }
-                }
+                }*/
 
                 Tools.Add(cohereTool);
             }
