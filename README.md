@@ -1,4 +1,5 @@
 [![LlmTornado](https://badgen.net/nuget/v/LlmTornado?v=302&icon=nuget&label=LlmTornado)](https://www.nuget.org/packages/LlmTornado)
+[![LlmTornado.Toolkit](https://badgen.net/nuget/v/LlmTornado.Toolkit?v=302&icon=nuget&label=LlmTornado.Toolkit)](https://www.nuget.org/packages/LlmTornado.Toolkit)
 [![LlmTornado.Contrib](https://badgen.net/nuget/v/LlmTornado.Contrib?v=302&icon=nuget&label=LlmTornado.Contrib)](https://www.nuget.org/packages/LlmTornado.Contrib)
 
 
@@ -35,13 +36,15 @@ https://github.com/lofcz/LlmTornado/assets/10260230/05c27b37-397d-4b4c-96a4-4138
 Install LLM Tornado via NuGet:
 
 ```bash
-dotnet add package LlmTornado
+dotnet add package LlmTornado LlmTornado.Toolkit # core + toolkit, recommended
+# or
+dotnet add package LlmTornado # slim, minimal dependencies
 ```
 
-Optional: extra features and quality of life extension methods are distributed in `Contrib` addon:
+Optional addons:
 
 ```bash
-dotnet add package LlmTornado LlmTornado.Contrib
+dotnet add package LlmTornado LlmTornado.Contrib # productivity, quality of life enhancements
 ```
 
 ## 🪄 Quick Inference
@@ -272,96 +275,45 @@ ChatRichResponse response = await chat.GetResponseRich(); // the response contai
 
 _`GetResponseRichSafe()` API is also available, which is guaranteed not to throw on the network level. The response is wrapped in a network-level wrapper, containing additional information. For production use cases, either use `try {} catch {}` on all the HTTP request-producing Tornado APIs, or use the safe APIs._
 
-### Simple frontend example - REPL
+## 🧰 Toolkit
 
-This interactive demo can be expanded into an end-user-facing interface in the style of ChatGPT. We show how to use strongly typed tools together with streaming and resolving parallel tool calls.
-`ChatStreamEventHandler` is a convenient class with a subscription interface for listening to the various streaming events:
+Tornado includes powerful abstractions in the `LlmTornado.Toolkit` package, allowing rapid development of applications, while avoiding many design pitfalls. Scalability and tuning-friendly code design are at the core of these abstractions.
+
+### ToolkitChat
+
+`ToolkitChat` is a primitive for graph-based workflows, where edges move data and nodes execute functions. ToolkitChat supports streaming, rich responses, and chaining tool calls. Tool calls are provided via `ChatFunction` or `ChatPlugin` (an envelope with multiple tools). Many overloads accept a primary and a secondary model acting as a backup, this zig-zag strategy overcomes temporary downtime in APIs better than simple retrying of the same model. All tool calls are strongly typed and `strict` by default. For providers, where a strict JSON schema is not supported (Anthropic, for example), prefill with `{` is used as a fallback. Call can be marked as non-strict by simply changing a parameter.
 
 ```cs
-public static async Task OpenAiFunctionsStreamingInteractive()
+class DemoAggregatedItem
 {
-    // 1. set up a sample tool using a strongly typed model
-    ChatPluginCompiler compiler = new ChatPluginCompiler();
-    compiler.SetFunctions([
-        new ChatPluginFunction("get_weather", "gets the current weather in a given city", [
-            new ChatFunctionParam("city_name", "name of the city", ChatPluginFunctionAtomicParamTypes.String)
-        ])
-    ]);
-    
-    // 2. in this scenario, the conversation starts with the user asking for the current weather in two of the supported cities.
-    // we can try asking for the weather in the third supported city (Paris) later.
-    Conversation chat = api.Chat.CreateConversation(new ChatRequest
-    {
-        Model = ChatModel.OpenAi.Gpt4.Turbo,
-        Tools = compiler.GetFunctions()
-    }).AppendUserInput("Please call functions get_weather for Prague and Bratislava (two function calls).");
-
-    // 3. repl
-    while (true)
-    {
-        // 3.1 stream the response from llm
-        await StreamResponse();
-
-        // 3.2 read input
-        while (true)
-        {
-            Console.WriteLine();
-            Console.Write("> ");
-            string? input = Console.ReadLine();
-
-            if (input?.ToLowerInvariant() is "q" or "quit")
-            {
-                return;
-            }
-            
-            if (!string.IsNullOrWhiteSpace(input))
-            {
-                chat.AppendUserInput(input);
-                break;
-            }
-        }
-    }
-
-    async Task StreamResponse()
-    {
-        await chat.StreamResponseRich(new ChatStreamEventHandler
-        {
-            MessageTokenHandler = async (token) =>
-            {
-                Console.Write(token);
-            },
-            FunctionCallHandler = async (fnCalls) =>
-            {
-                foreach (FunctionCall x in fnCalls)
-                {
-                    if (!x.TryGetArgument("city_name", out string? cityName))
-                    {
-                        x.Result = new FunctionResult(x, new
-                        {
-                            result = "error",
-                            message = "expected city_name argument"
-                        }, null, true);
-                        continue;
-                    }
-
-                    x.Result = new FunctionResult(x, new
-                    {
-                        result = "ok",
-                        weather = cityName.ToLowerInvariant() is "prague" ? "A mild rain" : cityName.ToLowerInvariant() is "paris" ? "Foggy, cloudy" : "A sunny day"
-                    }, null, true);
-                }
-            },
-            AfterFunctionCallsResolvedHandler = async (fnResults, handler) =>
-            {
-                await chat.StreamResponseRich(handler);
-            }
-        });
-    }
+    public string Name { get; set; }
+    public string KnownName { get; set; }
+    public int Quantity { get; set; }
 }
-```
 
-Other endpoints such as [Images](https://github.com/lofcz/LlmTornado/blob/master/LlmTornado.Demo/ImagesDemo.cs), [Embedding](https://github.com/lofcz/LlmTornado/blob/master/LlmTornado.Demo/EmbeddingDemo.cs), [Speech](https://github.com/lofcz/LlmTornado/blob/master/LlmTornado.Demo/SpeechDemo.cs), [Assistants](https://github.com/lofcz/LlmTornado/blob/master/LlmTornado.Demo/AssistantsDemo.cs), [Threads](https://github.com/lofcz/LlmTornado/blob/master/LlmTornado.Demo/ThreadsDemo.cs) and [Vision](https://github.com/lofcz/LlmTornado/blob/master/LlmTornado.Demo/VisionDemo.cs) are also supported!  
-Check the links for simple-to-understand examples!
+await ToolkitChat.GetSingleResponse(Program.Connect(), ChatModel.Google.Gemini.Gemini2Flash001, ChatModel.OpenAi.Gpt41.V41Mini, "aggregate items by type", new ChatFunction([
+    new ChatFunctionParam("items", new ChatFunctionTypeListTypedObject("aggregated items", true, [
+        new ChatFunctionParam("name", "name of the item", true, ChatFunctionAtomicParamTypes.String),
+        new ChatFunctionParam("quantity", "aggregated quantity", true, ChatFunctionAtomicParamTypes.Int),
+        new ChatFunctionParam("known_name", new ChatFunctionTypeEnum("known name of the item", true, [ "apple", "cherry", "orange", "other" ]))
+    ]))
+], async (args, ctx) =>
+{
+    if (!args.ParamTryGet("items", out List<DemoAggregatedItem>? items) || items is null)
+    {
+        return new ChatFunctionCallResult(ChatFunctionCallResultParameterErrors.MissingRequiredParameter, "items");
+    }
+    
+    Console.WriteLine("Aggregated items:");
+
+    foreach (DemoAggregatedItem item in items)
+    {
+        Console.WriteLine($"{item.Name}: {item.Quantity}");
+    }
+    
+    return new ChatFunctionCallResult();
+}), "three apples, one cherry, two apples, one orange, one orange");
+```
 
 ## 👉 Why Tornado?
 
