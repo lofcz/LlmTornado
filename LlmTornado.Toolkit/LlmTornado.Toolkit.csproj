@@ -5,6 +5,13 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <LangVersion>preview</LangVersion>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <Title>LLmTornado Toolkit</Title>
+        <PackageProjectUrl>https://github.com/lofcz/LlmTornado</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/lofcz/LlmTornado</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageTags>llmtornado</PackageTags>
+        <PackageIcon>nuget_logo.jpg</PackageIcon>
     </PropertyGroup>
 
     <ItemGroup>
@@ -14,6 +21,13 @@
     <ItemGroup>
       <PackageReference Include="Enums.NET" Version="5.0.0" />
       <PackageReference Include="McfCs" Version="1.0.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Update="nuget_logo.jpg">
+        <Pack>true</Pack>
+        <PackagePath>\</PackagePath>
+      </None>
     </ItemGroup>
 
 </Project>
