@@ -313,6 +313,13 @@ await ToolkitChat.GetSingleResponse(api, ChatModel.Google.Gemini.Gemini2Flash001
     
     return new ChatFunctionCallResult();
 }), "three apples, one cherry, two apples, one orange, one orange");
+
+/*
+Aggregated items:
+apple: 5
+cherry: 1
+orange: 2
+*/
 ```
 
 ## 👉 Why Tornado?
