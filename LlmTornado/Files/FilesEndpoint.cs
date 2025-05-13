@@ -300,12 +300,7 @@ public class FilesEndpoint : EndpointBase
 			disposable.Dispose();
 		}
 
-		if (!result.Ok || result.Request.Data is null)
-		{
-			return result;
-		}
-
-		if (result.Request.Data?.Headers is null || !result.Request.Data.Headers.TryGetValue("x-goog-upload-url", out string? uploadUrl))
+		if (!result.Ok || result.Request.Data?.Headers is null || !result.Request.Data.Headers.TryGetValue("x-goog-upload-url", out string? uploadUrl))
 		{
 			return result;
 		}
@@ -315,12 +310,14 @@ public class FilesEndpoint : EndpointBase
 		// serialize the request again, this time we get binary data
 		TornadoRequestContent binaryContent = request.Serialize(resolvedProvider);
 			
-		result = await HttpPost<TornadoFile>(resolvedProvider, CapabilityEndpoints.None, uploadUrl, binaryContent.Body, headers: new Dictionary<string, object?>
+		HttpCallResult<VendorGoogleTornadoFile> resultWrapper = await HttpPost<VendorGoogleTornadoFile>(resolvedProvider, CapabilityEndpoints.None, uploadUrl, binaryContent.Body, headers: new Dictionary<string, object?>
 		{
 			{ "X-Goog-Upload-Offset", "0" },
 			{ "X-Goog-Upload-Command", "upload, finalize" }
 		}).ConfigureAwait(ConfigureAwaitOptions.None);
 
+		result = new HttpCallResult<TornadoFile>(resultWrapper.Code, resultWrapper.Response, resultWrapper.Data?.ToFile(null), resultWrapper.Ok, resultWrapper.Request);
+		
 		// dispose the ByteArrayContent
 		if (binaryContent.Body is IDisposable disposableBody)
 		{
@@ -328,7 +325,6 @@ public class FilesEndpoint : EndpointBase
 		}
 
 		return result;
-
 	}
 
 	/// <summary>

@@ -8,7 +8,7 @@ namespace LlmTornado.Files;
 ///     Represents a single file used with the OpenAI Files endpoint.  Files are used to upload and manage documents that
 ///     can be used with features like Fine-tuning.
 /// </summary>
-public class TornadoFile : ApiResultBase
+public class TornadoFile
 {
 	/// <summary>
 	///     This is always "file"

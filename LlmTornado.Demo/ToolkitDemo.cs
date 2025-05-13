@@ -8,6 +8,7 @@ public class ToolkitDemo
     class DemoAggregatedItem
     {
         public string Name { get; set; }
+        public string KnownName { get; set; }
         public int Quantity { get; set; }
     }
     
@@ -18,7 +19,8 @@ public class ToolkitDemo
         await ToolkitChat.GetSingleResponse(Program.Connect(), ChatModel.Google.Gemini.Gemini2Flash001, ChatModel.OpenAi.Gpt41.V41Mini, "aggregate items by type", new ChatFunction([
             new ChatFunctionParam("items", new ChatFunctionTypeListTypedObject("aggregated items", true, [
                 new ChatFunctionParam("name", "name of the item", true, ChatFunctionAtomicParamTypes.String),
-                new ChatFunctionParam("quantity", "aggregated quantity", true, ChatFunctionAtomicParamTypes.Int)
+                new ChatFunctionParam("quantity", "aggregated quantity", true, ChatFunctionAtomicParamTypes.Int),
+                new ChatFunctionParam("known_name", new ChatFunctionTypeEnum("known name of the item", true, [ "apple", "cherry", "orange", "other" ]))
             ]))
         ], async (args, ctx) =>
         {

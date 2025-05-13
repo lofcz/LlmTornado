@@ -586,7 +586,7 @@ public abstract class EndpointBase
     ///     Throws an exception if a non-success HTTP response was returned or if the result
     ///     couldn't be parsed.
     /// </exception>
-    internal Task<HttpCallResult<T>> HttpPost<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, object? postData = null, CancellationToken? ct = null, Dictionary<string, object?>? headers = null) where T : ApiResultBase
+    internal Task<HttpCallResult<T>> HttpPost<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, object? postData = null, CancellationToken? ct = null, Dictionary<string, object?>? headers = null)
     {
         return HttpRequestRaw<T>(provider, endpoint, url, null, HttpMethod.Post, postData, ct, headers);
     }
