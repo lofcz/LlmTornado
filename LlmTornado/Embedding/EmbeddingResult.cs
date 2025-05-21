@@ -74,11 +74,12 @@ public class EmbeddingEntry
     public string? Object { get; set; }
 
 	/// <summary>
-	///     The input text represented as a vector (list) of floating point numbers.
+	///     The input text represented as a vector (list) of floating point numbers.<br/>
+	///		Note: If your request asked for embeddings in a different data type, such as <see cref="byte"/> or <see cref="sbyte"/>, float entries can be cast to this type.
 	/// </summary>
 	[JsonProperty("embedding")]
     public float[] Embedding { get; set; }
-
+	
 	/// <summary>
 	///     Index.
 	/// </summary>

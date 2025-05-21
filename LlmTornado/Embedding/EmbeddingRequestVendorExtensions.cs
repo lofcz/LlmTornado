@@ -1,5 +1,6 @@
 using LlmTornado.Embedding.Vendors.Cohere;
 using LlmTornado.Embedding.Vendors.Google;
+using LlmTornado.Embedding.Vendors.Voyage;
 
 namespace LlmTornado.Embedding;
 
@@ -14,9 +15,14 @@ public class EmbeddingRequestVendorExtensions
     public EmbeddingRequestVendorCohereExtensions? Cohere { get; set; }
     
     /// <summary>
-    ///     Cohere extensions.
+    ///     Google extensions.
     /// </summary>
     public EmbeddingRequestVendorGoogleExtensions? Google { get; set; }
+    
+    /// <summary>
+    ///     Voyage extensions.
+    /// </summary>
+    public EmbeddingRequestVendorVoyageExtensions? Voyage { get; set; }
 
     /// <summary>
     ///     Empty extensions.
@@ -35,10 +41,18 @@ public class EmbeddingRequestVendorExtensions
     }
     
     /// <summary>
-    ///     Empty extensions.
+    ///     Google extensions.
     /// </summary>
     public EmbeddingRequestVendorExtensions(EmbeddingRequestVendorGoogleExtensions extensions)
     {
         Google = extensions;
+    }
+    
+    /// <summary>
+    ///     Voyage extensions.
+    /// </summary>
+    public EmbeddingRequestVendorExtensions(EmbeddingRequestVendorVoyageExtensions extensions)
+    {
+        Voyage = extensions;
     }
 }

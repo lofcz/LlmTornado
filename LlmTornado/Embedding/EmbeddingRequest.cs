@@ -7,6 +7,7 @@ using LlmTornado.Code;
 using LlmTornado.Embedding.Models;
 using LlmTornado.Embedding.Vendors.Google;
 using LlmTornado.Embedding.Vendors.OpenAi;
+using LlmTornado.Embedding.Vendors.Voyage;
 using LlmTornado.Models;
 using Newtonsoft.Json;
 
@@ -91,7 +92,7 @@ public class EmbeddingRequest
 		InputScalar = input;
 		VendorExtensions = extensions;
 	}
-	
+
 	/// <summary>
 	///     Creates a new <see cref="EmbeddingRequest" /> with the specified input and the
 	///     <see cref="Model.AdaTextEmbedding" /> model.
@@ -254,6 +255,7 @@ public class EmbeddingRequest
 			//LLmProviders.Anthropic => JsonConvert.SerializeObject(new VendorAnthropicEmbeddingRequest(this, provider), EndpointBase.NullSettings),
 			LLmProviders.Cohere => JsonConvert.SerializeObject(new VendorCohereEmbeddingRequest(this, provider), EndpointBase.NullSettings),
 			LLmProviders.Google => JsonConvert.SerializeObject(new VendorGoogleEmbeddingRequest(this, provider), EndpointBase.NullSettings),
+			LLmProviders.Voyage => JsonConvert.SerializeObject(new VendorVoyageEmbeddingRequest(this, provider), EndpointBase.NullSettings),
 			_ => string.Empty
 		};
 		

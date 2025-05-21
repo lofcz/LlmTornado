@@ -2,6 +2,7 @@ using LlmTornado.Embedding;
 using LlmTornado.Embedding.Models;
 using LlmTornado.Embedding.Vendors.Cohere;
 using LlmTornado.Embedding.Vendors.Google;
+using LlmTornado.Embedding.Vendors.Voyage;
 
 namespace LlmTornado.Demo;
 
@@ -28,6 +29,31 @@ public static class EmbeddingDemo
     public static async Task EmbedGoogle()
     {
         EmbeddingResult? result = await Program.ConnectMulti().Embeddings.CreateEmbedding(EmbeddingModel.Google.Gemini.Embedding4, "lorem ipsum");
+        float[]? data = result?.Data.FirstOrDefault()?.Embedding;
+
+        if (data is not null)
+        {
+            for (int i = 0; i < Math.Min(data.Length, 10); i++)
+            {
+                Console.WriteLine(data[i]);
+            }
+            
+            Console.WriteLine($"... (length: {data.Length})");
+        }
+    }
+    
+    [TornadoTest]
+    public static async Task EmbedVoyage()
+    {
+        EmbeddingResult? result = await Program.ConnectMulti().Embeddings.CreateEmbedding(EmbeddingModel.Voyage.Gen35.Default, "lorem ipsum", 256, new EmbeddingRequestVendorExtensions
+        {
+            Voyage = new EmbeddingRequestVendorVoyageExtensions
+            {
+                OutputDtype = EmbeddingVendorVoyageOutputDtypes.Uint8,
+                InputType = EmbeddingVendorVoyageInputTypes.Document
+            }
+        });
+        
         float[]? data = result?.Data.FirstOrDefault()?.Embedding;
 
         if (data is not null)

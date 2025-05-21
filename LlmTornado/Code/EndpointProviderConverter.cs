@@ -26,11 +26,15 @@ internal static class EndpointProviderConverter
             },
             LLmProviders.XAi => new OpenAiEndpointProvider(api, LLmProviders.XAi)
             {
-                UrlResolver = (endpoint, url) => $"{string.Format(api.ApiUrlFormat ?? "https://api.x.ai/{0}/{1}", api.ApiVersion, OpenAiEndpointProvider.GetEndpointUrlFragment(endpoint, LLmProviders.Groq))}{url}"
+                UrlResolver = (endpoint, url) => $"{string.Format(api.ApiUrlFormat ?? "https://api.x.ai/{0}/{1}", api.ApiVersion, OpenAiEndpointProvider.GetEndpointUrlFragment(endpoint, LLmProviders.XAi))}{url}"
             },
             LLmProviders.Perplexity => new OpenAiEndpointProvider(api, LLmProviders.Perplexity)
             {
-                UrlResolver = (endpoint, url) => $"{string.Format(api.ApiUrlFormat ?? "https://api.perplexity.ai/{0}", OpenAiEndpointProvider.GetEndpointUrlFragment(endpoint, LLmProviders.Groq))}{url}"
+                UrlResolver = (endpoint, url) => $"{string.Format(api.ApiUrlFormat ?? "https://api.perplexity.ai/{0}", OpenAiEndpointProvider.GetEndpointUrlFragment(endpoint, LLmProviders.Perplexity))}{url}"
+            },
+            LLmProviders.Voyage => new OpenAiEndpointProvider(api, LLmProviders.Voyage)
+            {
+                UrlResolver = (endpoint, url) => $"{string.Format(api.ApiUrlFormat ?? "https://api.voyageai.com/v1/{0}", OpenAiEndpointProvider.GetEndpointUrlFragment(endpoint, LLmProviders.Voyage))}{url}"
             },
             _ => new OpenAiEndpointProvider(api)
         };

@@ -13,7 +13,7 @@ public class EmbeddingModelVoyageGen2 : BaseVendorModelProvider
     /// <summary>
     /// Voyage AI’s most powerful generalist embedding model.
     /// </summary>
-    public static readonly EmbeddingModel ModelLarge = new EmbeddingModel("voyage-large-2", LLmProviders.Anthropic, 4_096, 1_536);
+    public static readonly EmbeddingModel ModelLarge = new EmbeddingModel("voyage-large-2", LLmProviders.Voyage, 4_096, 1_536);
 
     /// <summary>
     /// <inheritdoc cref="ModelLarge"/>
@@ -23,7 +23,7 @@ public class EmbeddingModelVoyageGen2 : BaseVendorModelProvider
     /// <summary>
     /// Optimized for code retrieval (17% better than alternatives), and also SoTA on general-purpose corpora.
     /// </summary>
-    public static readonly EmbeddingModel ModelCode = new EmbeddingModel("voyage-code-2", LLmProviders.Anthropic, 4_096, 1_536);
+    public static readonly EmbeddingModel ModelCode = new EmbeddingModel("voyage-code-2", LLmProviders.Voyage, 4_096, 1_536);
 
     /// <summary>
     /// <inheritdoc cref="ModelCode"/>
@@ -33,7 +33,7 @@ public class EmbeddingModelVoyageGen2 : BaseVendorModelProvider
     /// <summary>
     /// Base generalist embedding model optimized for both latency and quality.
     /// </summary>
-    public static readonly EmbeddingModel ModelDefault = new EmbeddingModel("voyage-2", LLmProviders.Anthropic, 4_096, 1_024);
+    public static readonly EmbeddingModel ModelDefault = new EmbeddingModel("voyage-2", LLmProviders.Voyage, 4_096, 1_024);
 
     /// <summary>
     /// <inheritdoc cref="ModelCode"/>
@@ -43,7 +43,7 @@ public class EmbeddingModelVoyageGen2 : BaseVendorModelProvider
     /// <summary>
     /// 	Instruction-tuned for classification, clustering, and sentence textual similarity tasks, which are the only recommended use cases for this model.
     /// </summary>
-    public static readonly EmbeddingModel ModelLiteInstruct = new EmbeddingModel("voyage-lite-02-instruct", LLmProviders.Anthropic, 4_096, 1_024);
+    public static readonly EmbeddingModel ModelLiteInstruct = new EmbeddingModel("voyage-lite-02-instruct", LLmProviders.Voyage, 4_096, 1_024);
 
     /// <summary>
     /// <inheritdoc cref="ModelLiteInstruct"/>
@@ -51,7 +51,7 @@ public class EmbeddingModelVoyageGen2 : BaseVendorModelProvider
     public readonly EmbeddingModel LiteInstruct = ModelLiteInstruct;
     
     /// <summary>
-    /// All known embedding models from Anthropic Voyage 2.
+    /// All known embedding models from Voyage 2.
     /// </summary>
     public override List<IModel> AllModels { get; }
     

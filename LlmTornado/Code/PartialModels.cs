@@ -1026,6 +1026,10 @@ public enum LLmProviders
     /// </summary>
     Perplexity,
     /// <summary>
+    /// Voyage.
+    /// </summary>
+    Voyage,
+    /// <summary>
     /// Internal value.
     /// </summary>
     Length

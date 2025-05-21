@@ -1,31 +1,37 @@
 using System.Collections.Generic;
-using LlmTornado.Chat.Models;
+using LlmTornado.Code;
 using LlmTornado.Code.Models;
+using LlmTornado.Embedding.Models;
 
 namespace LlmTornado.Embedding.Models.Voyage;
 
 /// <summary>
-/// Known embedding models from Voyage.
+/// Voyage 3 embedding models from Voyage.
 /// </summary>
-public class EmbeddingModelVoyage : BaseVendorModelProvider
+public class EmbeddingModelVoyageGen3 : BaseVendorModelProvider
 {
     /// <summary>
-    /// Voyage 2 models.
+    /// The best general-purpose and multilingual retrieval quality.
     /// </summary>
-    public readonly EmbeddingModelVoyageGen2 Gen2 = new EmbeddingModelVoyageGen2();
+    public static readonly EmbeddingModel ModelLarge = new EmbeddingModel("voyage-3-large", LLmProviders.Voyage, 32_000, 1_024, [ 2048, 1042, 512, 256 ]);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelLarge"/>
+    /// </summary>
+    public readonly EmbeddingModel Large = ModelLarge;
     
     /// <summary>
-    /// Voyage 3 models.
+    /// Optimized for code retrieval.
     /// </summary>
-    public readonly EmbeddingModelVoyageGen3 Gen3 = new EmbeddingModelVoyageGen3();
+    public static readonly EmbeddingModel ModelCode = new EmbeddingModel("voyage-code-3", LLmProviders.Voyage, 32_000, 1_024, [ 2048, 1042, 512, 256 ]);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelCode"/>
+    /// </summary>
+    public readonly EmbeddingModel Code = ModelCode;
     
     /// <summary>
-    /// Voyage 3.5 models.
-    /// </summary>
-    public readonly EmbeddingModelVoyageGen35 Gen35 = new EmbeddingModelVoyageGen35();
-    
-    /// <summary>
-    /// All known embedding models from Voyage.
+    /// All known embedding models.
     /// </summary>
     public override List<IModel> AllModels { get; }
     
@@ -45,15 +51,14 @@ public class EmbeddingModelVoyage : BaseVendorModelProvider
     public static readonly HashSet<string> AllModelsMap = [];
     
     /// <summary>
-    /// <inheritdoc cref="AllModels"/>
+    /// All known Voyage 3 models.
     /// </summary>
     public static readonly List<IModel> ModelsAll = [
-        ..EmbeddingModelVoyageGen2.ModelsAll,
-        ..EmbeddingModelVoyageGen3.ModelsAll,
-        ..EmbeddingModelVoyageGen35.ModelsAll
+        ModelLarge,
+        ModelCode,
     ];
-    
-    static EmbeddingModelVoyage()
+
+    static EmbeddingModelVoyageGen3()
     {
         ModelsAll.ForEach(x =>
         {
@@ -61,7 +66,7 @@ public class EmbeddingModelVoyage : BaseVendorModelProvider
         });
     }
     
-    internal EmbeddingModelVoyage()
+    internal EmbeddingModelVoyageGen3()
     {
         AllModels = ModelsAll;
     }
