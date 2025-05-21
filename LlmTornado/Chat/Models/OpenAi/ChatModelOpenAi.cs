@@ -33,6 +33,11 @@ public class ChatModelOpenAi : BaseVendorModelProvider
     /// O4 models.
     /// </summary>
     public readonly ChatModelOpenAiO4 O4 = new ChatModelOpenAiO4();
+    
+    /// <summary>
+    /// Codex models.
+    /// </summary>
+    public readonly ChatModelOpenAiCodex Codex = new ChatModelOpenAiCodex();
 
     /// <summary>
     /// GPT 4.5 models.
@@ -70,6 +75,7 @@ public class ChatModelOpenAi : BaseVendorModelProvider
         ..ChatModelOpenAiO4.ModelsAll,
         ..ChatModelOpenAiGpt41.ModelsAll,
         ..ChatModelOpenAiGpt45.ModelsAll,
+        ..ChatModelOpenAiCodex.ModelsAll,
     ];
 
     /// <summary>
