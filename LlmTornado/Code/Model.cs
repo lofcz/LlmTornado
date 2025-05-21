@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using LlmTornado.Chat.Models;
 using LlmTornado.Code;
@@ -18,11 +19,38 @@ public class RetrievedModel
     [JsonProperty("id")]
     public string Id { get; set; }
     
+    [JsonProperty("display_name")]
+    internal string? InternalDisplayName { get; set; }
+    
+    [JsonProperty("name")]
+    internal string? InternalName { get; set; }
+
+    [JsonProperty("description")]
+    internal string? InternalDescription { get; set; }
+    
+    [JsonProperty("archived")]
+    internal bool? Archived { get; set; }
+    
+    [JsonProperty("type")]
+    internal string? Type { get; set; }
+    
+    [JsonProperty("max_context_length")]
+    internal int? MaxContextLength { get; set; }
+    
+    [JsonProperty("aliases")]
+    internal List<string>? Aliases { get; set; }
+    
     /// <summary>
     /// Name of the model.
     /// </summary>
-    [JsonProperty("display_name")]
-    public string? DisplayName { get; set; }
+    [JsonIgnore]
+    public string? Name => InternalName ?? InternalDisplayName;
+
+    /// <summary>
+    /// Description of the model.
+    /// </summary>
+    [JsonIgnore]
+    public string? Description => InternalDescription;
     
     /// <summary>
     /// Owner of the model.
@@ -53,12 +81,12 @@ public class RetrievedModel
     /// </summary>
     public override string ToString()
     {
-        if (DisplayName is not null && !Id.IsNullOrWhiteSpace())
+        if (Name is not null && !Id.IsNullOrWhiteSpace())
         {
-            return $"{DisplayName} ({Id})";
+            return $"{Name} ({Id})";
         }
         
-        return DisplayName ?? Id;
+        return Name ?? Id;
     }
 }
 

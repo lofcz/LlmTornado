@@ -31,7 +31,7 @@ internal class VendorGoogleRetrievedModelsResult
         {
             Data = Models.Select(x => new RetrievedModel
             {
-                DisplayName = x.DisplayName,
+                InternalDisplayName = x.DisplayName,
                 Id = x.Name.StartsWith("models/") ? x.Name.ReplaceFirst("models/", string.Empty) : x.Name
             }).ToList(),
             Obj = "model"

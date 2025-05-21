@@ -41,4 +41,28 @@ public class ModelsDemo
     {
         await GetProviderModels(LLmProviders.Cohere);
     }
+    
+    [TornadoTest]
+    public static async Task GetModelsDeepSeek()
+    {
+        await GetProviderModels(LLmProviders.DeepSeek);
+    }
+    
+    [TornadoTest]
+    public static async Task GetModelsGroq()
+    {
+        await GetProviderModels(LLmProviders.Groq);
+    }
+    
+    [TornadoTest]
+    public static async Task GetModelsMistral()
+    {
+        await GetProviderModels(LLmProviders.Mistral);
+    }
+    
+    [TornadoTest]
+    public static async Task GetModelsXAi()
+    {
+        await GetProviderModels(LLmProviders.XAi);
+    }
 }
