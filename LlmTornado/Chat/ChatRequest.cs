@@ -17,6 +17,7 @@ using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Chat.Vendors.Cohere;
 using LlmTornado.Chat.Vendors.Mistral;
 using LlmTornado.Chat.Vendors.Perplexity;
+using LlmTornado.Chat.Vendors.XAi;
 using LlmTornado.Vendor.Anthropic;
 using Newtonsoft.Json.Converters;
 
@@ -499,7 +500,8 @@ public class ChatRequest
 		{ 
 			LLmProviders.XAi, (x, y, z) =>
 			{
-				return JsonConvert.SerializeObject(x, GetSerializer(EndpointBase.NullSettings, z));
+				VendorXAiChatRequest request = new VendorXAiChatRequest(x, y);
+				return request.Serialize(GetSerializer(EndpointBase.NullSettings, z));
 			} 
 		},
 		{ 

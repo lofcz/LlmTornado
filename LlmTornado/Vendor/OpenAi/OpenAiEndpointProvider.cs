@@ -8,6 +8,7 @@ using System.Net.Http.Headers;
 using System.Reflection;
 using System.Text;
 using LlmTornado.Chat;
+using LlmTornado.Chat.Vendors.XAi;
 using LlmTornado.Code.Sse;
 using LlmTornado.Threads;
 using Newtonsoft.Json;
@@ -143,6 +144,21 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider,
     
     public override T? InboundMessage<T>(string jsonData, string? postData) where T : default
     {
+        return Provider switch
+        {
+            LLmProviders.OpenAi => JsonConvert.DeserializeObject<T>(jsonData),
+            LLmProviders.XAi => InboundMessageVariantProviderXAi<T>(jsonData, postData),
+            _ => JsonConvert.DeserializeObject<T>(jsonData)
+        };
+    }
+
+    static T? InboundMessageVariantProviderXAi<T>(string jsonData, string? postData)
+    {
+        if (typeof(T) == typeof(ChatResult))
+        {
+            return (T?)(object?)ChatResultVendorXAi.Deserialize(jsonData);
+        }
+        
         return JsonConvert.DeserializeObject<T>(jsonData);
     }
     

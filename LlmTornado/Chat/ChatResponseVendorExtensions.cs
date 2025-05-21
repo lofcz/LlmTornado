@@ -1,4 +1,5 @@
 using LlmTornado.Chat.Vendors.Cohere;
+using LlmTornado.Chat.Vendors.XAi;
 
 namespace LlmTornado.Chat;
 
@@ -13,10 +14,15 @@ public class ChatResponseVendorExtensions
     public ChatResponseVendorCohereExtensions? Cohere { get; set; }
 
     /// <summary>
+    ///     XAi extensions.
+    /// </summary>
+    public ChatResponseVendorXAiExtensions? XAi { get; set; }
+
+    /// <summary>
     ///     Empty extensions.
     /// </summary>
     public ChatResponseVendorExtensions()
     {
-        
+
     }
 }

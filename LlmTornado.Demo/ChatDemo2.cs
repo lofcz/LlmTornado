@@ -5,6 +5,7 @@ using LlmTornado.Chat.Models;
 using LlmTornado.Chat.Vendors.Google;
 using LlmTornado.Chat.Vendors.Mistral;
 using LlmTornado.Chat.Vendors.Perplexity;
+using LlmTornado.Chat.Vendors.XAi;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Code.Vendor;
@@ -29,6 +30,48 @@ public static partial class ChatDemo
 
         Console.WriteLine("xAi:");
         Console.WriteLine(str);
+    }
+    
+    [TornadoTest]
+    public static async Task GrokLiveSearch()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.XAi.Grok3.V3,
+            VendorExtensions = new ChatRequestVendorExtensions
+            {
+                XAi = new ChatRequestVendorXAiExtensions
+                {
+                    SearchParameters = new ChatRequestVendorXAiExtensionsSearchParameters
+                    {
+                        ReturnCitations = true,
+                        Mode = ChatRequestVendorXAiExtensionsSearchParametersModes.On,
+                        Sources = [
+                            new ChatRequestVendorXAiExtensionsSearchParametersSourceWeb
+                            {
+                                SafeSearch = false
+                            }
+                        ]
+                    }
+                }
+            }
+        });
+        
+        chat.AppendUserInput("What is the latest .NET Core version, including previews?");
+        ChatRichResponse response = await chat.GetResponseRich();
+
+        Console.WriteLine("xAi:");
+        Console.WriteLine(response);
+
+        if (response.VendorExtensions?.XAi?.Citations is not null)
+        {
+            Console.WriteLine("Citations:");
+
+            foreach (string citation in response.VendorExtensions.XAi.Citations)
+            {
+                Console.WriteLine(citation);
+            }
+        }
     }
     
     [TornadoTest]
