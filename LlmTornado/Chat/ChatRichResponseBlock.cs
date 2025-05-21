@@ -207,9 +207,22 @@ public class ChatRichResponseBlock
                 Reasoning = part.Reasoning;
                 break;
             }
+            case ChatMessageTypes.Audio:
+            {
+                if (part.Audio is not null)
+                {
+                    ChatAudio = new ChatMessageAudio
+                    {
+                        Data = part.Audio.Data,
+                        MimeType = part.Audio.MimeType,
+                        Format = part.Audio.Format
+                    };   
+                }
+                
+                break;
+            }
         }
         
-
         if (msg.Audio is not null)
         {
             Type = ChatRichResponseBlockTypes.Audio;

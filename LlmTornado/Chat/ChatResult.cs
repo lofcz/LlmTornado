@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using LlmTornado.Code;
 using LlmTornado.Vendor.Anthropic;
@@ -279,7 +280,8 @@ public class ChatUsage : Usage
 		CompletionTokensDetails = new ChatUsageTokenDetails
 		{
 			ReasoningTokens = usage.ThoughtsTokenCount,
-			ToolsUseTokens = usage.ToolUsePromptTokenCount
+			ToolsUseTokens = usage.ToolUsePromptTokenCount,
+			AudioTokens = usage.CandidatesTokensDetails?.Where(x => x.Modality is "AUDIO").Sum(x => x.TokenCount)
 		};
 		Provider = LLmProviders.Google;
 	}

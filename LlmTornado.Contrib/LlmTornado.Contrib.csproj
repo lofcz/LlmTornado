@@ -24,6 +24,8 @@
 
     <ItemGroup>
       <PackageReference Include="Enums.NET" Version="[5.0.0, )" />
+      <PackageReference Include="NAudio" Version="[2.2.1, )" />
+      <PackageReference Include="NAudio.Lame.CrossPlatform" Version="[2.2.1, )" />
     </ItemGroup>
 
     <ItemGroup>

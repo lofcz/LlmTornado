@@ -1,12 +1,15 @@
 using System.Diagnostics;
+using LibVLCSharp.Shared;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
+using LlmTornado.Chat.Vendors.Google;
 using LlmTornado.Chat.Vendors.Mistral;
 using LlmTornado.Chat.Vendors.Perplexity;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Code.Vendor;
 using LlmTornado.Common;
+using LlmTornado.Contrib;
 using LlmTornado.Files;
 
 namespace LlmTornado.Demo;
@@ -279,6 +282,56 @@ public static partial class ChatDemo
         Console.WriteLine(block.Reasoning?.Content);
         Console.ResetColor();
         Console.WriteLine(block.Message);
+    }
+    
+    [Flaky("playback")]
+    [TornadoTest]
+    public static async Task GeminiTts()
+    {
+        Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Google.GeminiPreview.Gemini25FlashPreviewTts,
+            Modalities = [ ChatModelModalities.Audio ],
+            Temperature = 1d,
+            VendorExtensions = new ChatRequestVendorExtensions
+            {
+                Google = new ChatRequestVendorGoogleExtensions
+                {
+                    SpeechConfig = new ChatRequestVendorGoogleSpeechConfig
+                    {
+                       MultiSpeaker = new ChatRequestVendorGoogleSpeechConfigMultiSpeaker
+                       {
+                           Speakers = [
+                                new ChatRequestVendorGoogleSpeechConfigMultiSpeakerSpeaker("Speaker 1", ChatRequestVendorGoogleSpeakerVoices.Puck),
+                                new ChatRequestVendorGoogleSpeechConfigMultiSpeakerSpeaker("Speaker 2", ChatRequestVendorGoogleSpeakerVoices.Charon)
+                           ]
+                       }
+                    }
+                }
+            }
+        });
+
+        chat2.AppendUserInput("""
+                              Read in a warm, energetic tone:
+                              Speaker 1: How are you today?
+                              Speaker 2: Thanks, I'm doing fine.
+                              Speaker 1: Glad to hear that!
+                              """);
+       
+        ChatRichResponse response = await chat2.GetResponseRich();
+        ChatRichResponseBlock? block = response.Blocks.FirstOrDefault();
+
+        if (block?.ChatAudio is not null)
+        {
+            string? audioPath = block.ChatAudio.Export(ChatAudioFormats.Wav);
+         
+            // example: play the dialogue using LibVLC
+            Core.Initialize();
+            using Media media = new Media(new LibVLC(), new Uri(audioPath));
+            MediaPlayer player = new MediaPlayer(new LibVLC());
+            player.Media = media;
+            player.Play(); // note that this doesn't block
+        }
     }
 
     [TornadoTest]

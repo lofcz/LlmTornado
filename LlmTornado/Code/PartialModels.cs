@@ -638,6 +638,18 @@ public class ChatMessageAudio
     /// </summary>
     [JsonProperty("transcript")]
     public string Transcript { get; set; }
+    
+    /// <summary>
+    /// MIME type of the audio.
+    /// </summary>
+    [JsonIgnore]
+    public string? MimeType { get; set; }
+    
+    /// <summary>
+    /// Format of the audio.
+    /// </summary>
+    [JsonIgnore]
+    public ChatAudioFormats? Format { get; set; }
 }
 
 /// <summary>
@@ -837,6 +849,11 @@ public class ChatAudio
     public string Data { get; set; }
     
     /// <summary>
+    ///     MimeType of the audio.
+    /// </summary>
+    public string? MimeType { get; set; }
+    
+    /// <summary>
     ///     Format of the encoded audio data.
     /// </summary>
     public ChatAudioFormats Format { get; set; }
@@ -859,6 +876,19 @@ public class ChatAudio
         Data = data;
         Format = format;
     }
+    
+    /// <summary>
+    ///     Creates an audio instance from data and format.
+    /// </summary>
+    /// <param name="data">Base64 encoded audio data</param>
+    /// <param name="format">Format of the audio</param>
+    /// <param name="mimeType">Mime type</param>
+    public ChatAudio(string data, ChatAudioFormats format, string mimeType)
+    {
+        Data = data;
+        Format = format;
+        MimeType = mimeType;
+    }
 }
 
 /// <summary>
@@ -867,13 +897,17 @@ public class ChatAudio
 public enum ChatAudioFormats
 {
     /// <summary>
-    /// Wavelet
+    /// Wavelet (input, conversion)
     /// </summary>
     Wav,
     /// <summary>
-    /// MP3
+    /// MP3 (input, conversion)
     /// </summary>
-    Mp3
+    Mp3,
+    /// <summary>
+    /// L16/PCM (output only)
+    /// </summary>
+    L16
 }
 
 /// <summary>

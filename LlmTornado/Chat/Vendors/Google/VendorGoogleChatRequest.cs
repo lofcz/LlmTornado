@@ -145,6 +145,30 @@ internal class VendorGoogleChatRequestVoiceConfig
     public object? VoiceConfig => PrebuiltVoiceConfig;
 }
 
+internal class VendorGoogleChatRequestMultiSpeakerVoiceConfig
+{
+    /// <summary>
+    /// todo: documentation, once released
+    /// </summary>
+    [JsonProperty("speaker_voice_configs")]
+    public List<VendorGoogleChatRequestMultiSpeakerVoiceConfigSpeaker>? SpeakerVoiceConfigs { get; set; }
+}
+
+internal class VendorGoogleChatRequestMultiSpeakerVoiceConfigSpeaker
+{
+    [JsonProperty("speaker")]
+    public string Speaker { get; set; }
+    
+    [JsonProperty("voice_config")]
+    public VendorGoogleChatRequestPrebuiltVoiceConfigWrapper? PrebuiltVoiceConfig { get; set; }
+}
+
+internal class VendorGoogleChatRequestPrebuiltVoiceConfigWrapper
+{
+    [JsonProperty("prebuilt_voice_config")]
+    public VendorGoogleChatRequestPrebuiltVoiceConfig? VoiceConfig { get; set; }
+}
+
 internal class VendorGoogleChatRequestPrebuiltVoiceConfig
 {
     /// <summary>
@@ -161,6 +185,12 @@ internal class VendorGoogleChatRequestSpeechConfig
     /// </summary>
     [JsonProperty("voiceConfig")]
     public VendorGoogleChatRequestVoiceConfig? VoiceConfig { get; set; }
+    
+    /// <summary>
+    /// The configuration in case of multi-speaker output.
+    /// </summary>
+    [JsonProperty("multi_speaker_voice_config")]
+    public VendorGoogleChatRequestMultiSpeakerVoiceConfig? MultiSpeakerVoiceConfig { get; set; }
     
     /// <summary>
     /// Optional. Language code (in BCP 47 format, e.g. "en-US") for speech synthesis.
@@ -265,8 +295,19 @@ internal class VendorGoogleChatRequestMessagePart
         }
         else if (InlineData is not null)
         {
-            part.Type = ChatMessageTypes.Image;
-            part.Image = new ChatImage(InlineData.Data);
+            if (InlineData.MimeType.StartsWith("audio"))
+            {
+                part.Type = ChatMessageTypes.Audio;
+                part.Audio = new ChatAudio(InlineData.Data, ChatAudioFormats.L16, InlineData.MimeType);
+            }
+            else
+            {
+                part.Type = ChatMessageTypes.Image;
+                part.Image = new ChatImage(InlineData.Data)
+                {
+                    MimeType = InlineData.MimeType
+                };   
+            }
         }
 
         return part;
@@ -301,6 +342,7 @@ internal class VendorGoogleChatRequest
     {
         /// <summary>
         /// image/png - image/jpeg... https://ai.google.dev/gemini-api/docs/prompting_with_media#supported_file_formats
+        /// audio/L16;codec=pcm;rate=24000
         /// </summary>
         [JsonProperty("mimeType")]
         public string MimeType { get; set; }
@@ -739,13 +781,20 @@ internal class VendorGoogleChatRequest
         {
             if (request.Modalities.Contains(ChatModelModalities.Image) && ChatModelGoogle.ImageModalitySupportingModels.Contains(request.Model))
             {
-                GenerationConfig.ResponseModalities = ["IMAGE"];
+                GenerationConfig.ResponseModalities ??= [];
+                GenerationConfig.ResponseModalities.Add("IMAGE");
             }
 
             if (request.Modalities.Contains(ChatModelModalities.Text))
             {
                 GenerationConfig.ResponseModalities ??= [];
                 GenerationConfig.ResponseModalities.Add("TEXT");
+            }
+            
+            if (request.Modalities.Contains(ChatModelModalities.Audio))
+            {
+                GenerationConfig.ResponseModalities ??= [];
+                GenerationConfig.ResponseModalities.Add("AUDIO");
             }
         }
         
@@ -774,6 +823,39 @@ internal class VendorGoogleChatRequest
             {
                 GenerationConfig.ResponseMimeType = "application/json";
                 GenerationConfig.ResponseSchema = request.VendorExtensions.Google.ResponseSchema.Function.Parameters;
+            }
+
+            if (request.VendorExtensions.Google.SpeechConfig is not null)
+            {
+                GenerationConfig.SpeechConfig = new VendorGoogleChatRequestSpeechConfig
+                {
+                    LanguageCode = request.VendorExtensions.Google.SpeechConfig.LanguageCode,
+                    VoiceConfig = request.VendorExtensions.Google.SpeechConfig.VoiceName is not null
+                        ? new VendorGoogleChatRequestVoiceConfig
+                        {
+                            PrebuiltVoiceConfig = new VendorGoogleChatRequestPrebuiltVoiceConfig
+                            {
+                                VoiceName = request.VendorExtensions.Google.SpeechConfig.VoiceName.VoiceName?.ToString().ToLowerInvariant()
+                            }
+                        }
+                        : null,
+                    MultiSpeakerVoiceConfig = request.VendorExtensions.Google.SpeechConfig.MultiSpeaker is not null
+                        ? new VendorGoogleChatRequestMultiSpeakerVoiceConfig
+                        {
+                            SpeakerVoiceConfigs = request.VendorExtensions.Google.SpeechConfig.MultiSpeaker.Speakers.Select(x => new VendorGoogleChatRequestMultiSpeakerVoiceConfigSpeaker
+                            {
+                                Speaker = x.Speaker,
+                                PrebuiltVoiceConfig = x.Voice is null ? null : new VendorGoogleChatRequestPrebuiltVoiceConfigWrapper
+                                {
+                                    VoiceConfig = new VendorGoogleChatRequestPrebuiltVoiceConfig
+                                    {
+                                        VoiceName = x.Voice.VoiceName?.ToString().ToLowerInvariant()   
+                                    }
+                                }
+                            }).ToList()
+                        }
+                        : null
+                };
             }
         }
         

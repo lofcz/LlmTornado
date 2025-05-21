@@ -11,6 +11,26 @@ namespace LlmTornado.Chat.Models;
 public class ChatModelGoogleGeminiPreview : IVendorModelClassProvider
 {
     /// <summary>
+    /// Gemini 2.5 Flash Preview TTS is our price-performant text-to-speech model, delivering high control and transparency for structured workflows like podcast generation, audiobooks, customer support, and more. Gemini 2.5 Flash rate limits are more restricted since it is an experimental / preview model.
+    /// </summary>
+    public static readonly ChatModel ModelGemini25FlashPreviewTts = new ChatModel("gemini-2.5-flash-preview-tts", LLmProviders.Google, 8_000);
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelGemini25FlashPreviewTts"/>
+    /// </summary>
+    public readonly ChatModel Gemini25FlashPreviewTts = ModelGemini25FlashPreviewTts;
+    
+    /// <summary>
+    /// Gemini 2.5 Pro Preview TTS is our most powerful text-to-speech model, delivering high control and transparency for structured workflows like podcast generation, audiobooks, customer support, and more. Gemini 2.5 Pro rate limits are more restricted since it is an experimental / preview model.
+    /// </summary>
+    public static readonly ChatModel ModelGemini25ProPreviewTts = new ChatModel("gemini-2.5-pro-preview-tts", LLmProviders.Google, 8_000);
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelGemini25ProPreviewTts"/>
+    /// </summary>
+    public readonly ChatModel Gemini25ProPreviewTts = ModelGemini25ProPreviewTts;
+    
+    /// <summary>
     /// Our best model in terms of price-performance, offering well-rounded capabilities. Gemini 2.5 Flash rate limits are more restricted since it is an experimental / preview model.
     /// </summary>
     public static readonly ChatModel ModelGemini25FlashPreview0520 = new ChatModel("gemini-2.5-flash-preview-05-20", LLmProviders.Google, 2_000_000);
@@ -69,7 +89,9 @@ public class ChatModelGoogleGeminiPreview : IVendorModelClassProvider
         ModelGemini25ProPreview0325,
         ModelGemini25FlashPreview0417,
         ModelGemini25FlashPreview0520,
-        ModelGemini2FlashPreviewImageGeneration
+        ModelGemini2FlashPreviewImageGeneration,
+        ModelGemini25FlashPreviewTts,
+        ModelGemini25ProPreviewTts
     ];
 
     /// <summary>
