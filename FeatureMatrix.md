@@ -17,7 +17,7 @@ _Empty field means the feature is unsupported by the provider._
 |**Files**      | ✅ |    | ✅ |     |    |     | ❌ |    |     |        |      |
 |**Uploads**    | ❌ |    |     |    |    |     |     |     |     |        |      |
 |**Images**     | ✅ |    | ✅ |    |    |     |     |  ✅  |     |        |      |
-|**Models**     | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |  ❌ |   |    |  ✅    |
+|**Models**     | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |  ✅ |   |    |  ✅    |
 |**Moderation** | ✅ |    |     |    |    |     |     |    |     |        |      |
 |**Responses**   | ❌   |  |     |  |    |     |     |     |     |        |      |
 |**Tokenize**   |    | ❌ |     | ❌ |    |     |     |    |     |       |      |
