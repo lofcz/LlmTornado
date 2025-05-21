@@ -36,7 +36,7 @@ https://github.com/lofcz/LlmTornado/assets/10260230/05c27b37-397d-4b4c-96a4-4138
 Install LLM Tornado via NuGet:
 
 ```bash
-dotnet add package LlmTornado LlmTornado.Toolkit # core + toolkit, recommended
+dotnet add package LlmTornado.Toolkit # core + toolkit, recommended
 # or
 dotnet add package LlmTornado # slim, minimal dependencies
 ```
@@ -44,7 +44,7 @@ dotnet add package LlmTornado # slim, minimal dependencies
 Optional addons:
 
 ```bash
-dotnet add package LlmTornado LlmTornado.Contrib # productivity, quality of life enhancements
+dotnet add package LlmTornado.Contrib # productivity, quality of life enhancements
 ```
 
 ## 🪄 Quick Inference
@@ -53,6 +53,7 @@ Inferencing across multiple providers is as easy as changing the `ChatModel` arg
 
 ```csharp
 TornadoApi api = new TornadoApi([
+    // note: delete lines with providers you won't be using
     new (LLmProviders.OpenAi, "OPEN_AI_KEY"),
     new (LLmProviders.Anthropic, "ANTHROPIC_KEY"),
     new (LLmProviders.Cohere, "COHERE_KEY"),
@@ -61,9 +62,11 @@ TornadoApi api = new TornadoApi([
     new (LLmProviders.DeepSeek, "DEEP_SEEK_KEY"),
     new (LLmProviders.Mistral, "MISTRAL_KEY"),
     new (LLmProviders.XAi, "XAI_KEY"),
-    new (LLmProviders.Perplexity, "PERPLEXITY_KEY")
+    new (LLmProviders.Perplexity, "PERPLEXITY_KEY"),
+    new (LLmProviders.Voyage, "VOYAGE_KEY")
 ]);
 
+// this sample iterates a bunch of models, gives each the same task, and prints results.
 List<ChatModel> models = [
     ChatModel.OpenAi.O3.Mini, ChatModel.Anthropic.Claude37.Sonnet,
     ChatModel.Cohere.Command.RPlus, ChatModel.Google.Gemini.Gemini2Flash001,
@@ -126,7 +129,7 @@ public static async Task AnthropicSonnet37Thinking()
 }
 ```
 
-## 🔮 Custom Providers
+## 🔮 Self-Hosted/Custom Providers
 
 Instead of consuming commercial APIs, one can roll their own inference servers easily with [a myriad](https://github.com/janhq/awesome-local-ai) of tools available. Here is a simple demo for streaming response with Ollama, but the same approach can be used for any custom provider:
 
@@ -147,16 +150,21 @@ https://github.com/user-attachments/assets/de62f0fe-93e0-448c-81d0-8ab7447ad780
 
 ### Streaming
 
-Tornado offers several levels of abstraction, trading more details for more complexity. The simple use cases where only plaintext is needed can be represented in a terse format:
+Tornado offers three levels of abstraction, trading more details for more complexity. The simple use cases where only plaintext is needed can be represented in a terse format:
 
 ```cs
 await api.Chat.CreateConversation(ChatModel.Anthropic.Claude3.Sonnet)
     .AppendSystemMessage("You are a fortune teller.")
     .AppendUserInput("What will my future bring?")
     .StreamResponse(Console.Write);
-```
+```  
+  
+The levels of abstraction are:
+- `Response` (`string` for chat, `float[]` for embeddings, etc.)
+- `ResponseRich` (tools, modalities, metadata such as usage)
+- `ResponseRichSafe` (same as level 2, guaranteed not to throw on network level, for example, if the provider returns an internal error or doesn't respond at all)
 
-### Streaming with Rich content
+### Streaming with Rich content (tools, images, audio..)
 
 When plaintext is insufficient, switch to `StreamResponseRich` or `GetResponseRich()` APIs. Tools requested by the model can be resolved later and never returned to the model. This is useful in scenarios where we use the tools without intending to continue the conversation:
 
