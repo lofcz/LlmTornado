@@ -21,7 +21,7 @@ public class ModerationRequest
 	/// </summary>
 	/// <param name="input">The prompt to classify</param>
 	/// <param name="model">
-	///     The model to use. You can use <see cref="ModelsEndpoint.GetModelsAsync()" /> to see all of your
+	///     The model to use. You can use <see cref="ModelsEndpoint.GetModels" /> to see all of your
 	///     available models, or use a standard model like <see cref="Model.TextModerationLatest" />.
 	/// </param>
 	public ModerationRequest(string input, Model model)
@@ -35,7 +35,7 @@ public class ModerationRequest
 	/// </summary>
 	/// <param name="inputs">An array of prompts to classify</param>
 	/// <param name="model">
-	///     The model to use. You can use <see cref="ModelsEndpoint.GetModelsAsync()" /> to see all of your
+	///     The model to use. You can use <see cref="ModelsEndpoint.GetModels" /> to see all of your
 	///     available models, or use a standard model like <see cref="Model.TextModerationLatest" />.
 	/// </param>
 	public ModerationRequest(string[] inputs, Model model)

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using LlmTornado.Code;
+using LlmTornado.Models.Vendors;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Models;
@@ -31,7 +32,7 @@ public class ModelsEndpoint : EndpointBase
 	/// </summary>
 	/// <param name="id">The id/name of the model to get more details about</param>
 	/// <returns>Asynchronously returns the <see cref="Model" /> with all available properties</returns>
-	public async Task<Model> RetrieveModelDetailsAsync(string? id)
+	public async Task<Model> GetModelDetails(string? id)
     {
         string resultAsString = await HttpGetContent(Api.GetProvider(LLmProviders.OpenAi), Endpoint, $"/{id}");
         Model? model = JsonConvert.DeserializeObject<Model>(resultAsString);
@@ -39,34 +40,18 @@ public class ModelsEndpoint : EndpointBase
     }
 
 	/// <summary>
-	///     List all models via the API
+	///     List all models of a given Provider.
 	/// </summary>
 	/// <returns>Asynchronously returns the list of all <see cref="Model" />s</returns>
-	public async Task<List<Model>?> GetModelsAsync()
-    {
-        return (await HttpGet<JsonHelperRoot>(Api.GetProvider(LLmProviders.OpenAi), Endpoint))?.data;
-    }
+	public async Task<List<RetrievedModel>?> GetModels(LLmProviders provider = LLmProviders.OpenAi)
+	{
+		Dictionary<string, object>? queryPars = provider switch
+		{
+			LLmProviders.Google => new Dictionary<string, object> { { "pageSize", 1000 } },
+			LLmProviders.Cohere => new Dictionary<string, object> { { "page_size", 1000 } },
+			_ => null
+		};
 
-	/// <summary>
-	///     Get details about a particular Model from the API, specifically properties such as <see cref="Model.OwnedBy" /> and
-	///     permissions.
-	/// </summary>
-	/// <param name="id">The id/name of the model to get more details about</param>
-	/// <param name="auth">Obsolete: IGNORED</param>
-	/// <returns>Asynchronously returns the <see cref="Model" /> with all available properties</returns>
-	[Obsolete("Use the overload without the APIAuthentication parameter instead, as custom auth is no longer used.", false)]
-    public async Task<Model> RetrieveModelDetailsAsync(string? id, ApiAuthentication auth = null)
-    {
-        return await RetrieveModelDetailsAsync(id);
-    }
-
-	/// <summary>
-	///     A helper class to deserialize the JSON API responses.  This should not be used directly.
-	/// </summary>
-	private class JsonHelperRoot : ApiResultBase
-    {
-        [JsonProperty("data")] public List<Model> data { get; set; }
-
-        [JsonProperty("object")] public string obj { get; set; }
-    }
+		return (await HttpGet<RetrievedModelsResult>(Api.GetProvider(provider), Endpoint, queryParams: queryPars))?.Data;
+	}
 }

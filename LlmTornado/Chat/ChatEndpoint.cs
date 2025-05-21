@@ -160,7 +160,7 @@ public class ChatEndpoint : EndpointBase
     /// <param name="messages">The array of messages to send to the API</param>
     /// <param name="model">
     ///     The model to use. See the ChatGPT models available from
-    ///     <see cref="ModelsEndpoint.GetModelsAsync()" />
+    ///     <see cref="ModelsEndpoint.GetModels" />
     /// </param>
     /// <param name="temperature">
     ///     What sampling temperature to use. Higher values means the model will take more risks. Try 0.9
@@ -402,7 +402,7 @@ public class ChatEndpoint : EndpointBase
     /// <param name="messages">The array of messages to send to the API</param>
     /// <param name="model">
     ///     The model to use. See the ChatGPT models available from
-    ///     <see cref="ModelsEndpoint.GetModelsAsync()" />
+    ///     <see cref="ModelsEndpoint.GetModels" />
     /// </param>
     /// <param name="temperature">
     ///     What sampling temperature to use. Higher values means the model will take more risks. Try 0.9

@@ -10,6 +10,7 @@ using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Chat.Vendors.Cohere;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Embedding;
+using LlmTornado.Models.Vendors;
 using LlmTornado.Vendor.Anthropic;
 using Newtonsoft.Json;
 
@@ -106,6 +107,7 @@ internal class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider,
         {
             CapabilityEndpoints.Chat => "chat",
             CapabilityEndpoints.Embeddings => "embed",
+            CapabilityEndpoints.Models => "models",
             _ => throw new Exception($"Cohere doesn't support endpoint {endpoint}")
         };
 
@@ -466,7 +468,8 @@ internal class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider,
     private static readonly Dictionary<Type, Func<string, string?, object?>> inboundMessageHandlers = new Dictionary<Type, Func<string, string?, object?>>
     {
         { typeof(ChatResult), (jsonData, postData) => ChatResult.Deserialize(LLmProviders.Cohere, jsonData, postData) },
-        { typeof(EmbeddingResult), (jsonData, postData) => EmbeddingResult.Deserialize(LLmProviders.Cohere, jsonData, postData) }
+        { typeof(EmbeddingResult), (jsonData, postData) => EmbeddingResult.Deserialize(LLmProviders.Cohere, jsonData, postData) },
+        { typeof(RetrievedModelsResult), (jsonData, postData) => RetrievedModelsResult.Deserialize(LLmProviders.Cohere, jsonData, postData) }
     };
     
     public override T? InboundMessage<T>(string jsonData, string? postData) where T : default

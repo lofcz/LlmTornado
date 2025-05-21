@@ -321,17 +321,22 @@ public static partial class ChatDemo
         ChatRichResponse response = await chat2.GetResponseRich();
         ChatRichResponseBlock? block = response.Blocks.FirstOrDefault();
 
-        if (block?.ChatAudio is not null)
-        {
-            string? audioPath = block.ChatAudio.Export(ChatAudioFormats.Wav);
+        string? audioPath = block?.ChatAudio?.Export(ChatAudioFormats.Wav);
          
-            // example: play the dialogue using LibVLC
-            Core.Initialize();
-            using Media media = new Media(new LibVLC(), new Uri(audioPath));
-            MediaPlayer player = new MediaPlayer(new LibVLC());
-            player.Media = media;
-            player.Play(); // note that this doesn't block
+        // example: play the dialogue using LibVLC
+        if (audioPath is not null)
+        {
+            PlaySound(audioPath);   
         }
+    }
+
+    static void PlaySound(string path)
+    {
+        Core.Initialize();
+        using Media media = new Media(new LibVLC(), new Uri(path));
+        MediaPlayer player = new MediaPlayer(new LibVLC());
+        player.Media = media;
+        player.Play(); // note that this doesn't block
     }
 
     [TornadoTest]

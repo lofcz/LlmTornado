@@ -14,6 +14,12 @@ internal static class Extensions
 {
     private static readonly ConcurrentDictionary<string, string?> DescriptionAttrCache = [];
     
+    public static string ReplaceFirst(this string text, string search, string replace)
+    {
+        int pos = text.IndexOf(search, StringComparison.InvariantCulture);
+        return pos < 0 ? text : string.Concat(text.AsSpan(0, pos), replace, text.AsSpan(pos + search.Length));
+    }
+    
     internal static bool IsNullOrWhiteSpace([NotNullWhen(returnValue: false)] this string? str)
     {
         return string.IsNullOrWhiteSpace(str);

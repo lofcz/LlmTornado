@@ -17,6 +17,7 @@ using LlmTornado.Code.Sse;
 using LlmTornado.Embedding;
 using LlmTornado.Files;
 using LlmTornado.Images;
+using LlmTornado.Models.Vendors;
 using LlmTornado.Vendor.Anthropic;
 using Newtonsoft.Json;
 
@@ -73,6 +74,7 @@ internal class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider,
                     CapabilityEndpoints.ImageGeneration => "models",
                     CapabilityEndpoints.Files => "files",
                     CapabilityEndpoints.Caching => "cachedContents",
+                    CapabilityEndpoints.Models => "models",
                     _ => throw new Exception($"Google doesn't support endpoint {endpoint}")
                 };
         
@@ -257,7 +259,8 @@ internal class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider,
         { typeof(CachedContentInformation), (s, s1) => CachedContentInformation.Deserialize(LLmProviders.Google, s, s1) },
         { typeof(CachedContentList), (s, s1) => CachedContentList.Deserialize(LLmProviders.Google, s, s1) },
         { typeof(ImageGenerationResult), (s, s1) => ImageGenerationResult.Deserialize(LLmProviders.Google, s, s1) },
-        { typeof(EmbeddingResult), (s, s1) => EmbeddingResult.Deserialize(LLmProviders.Google, s, s1) }
+        { typeof(EmbeddingResult), (s, s1) => EmbeddingResult.Deserialize(LLmProviders.Google, s, s1) },
+        { typeof(RetrievedModelsResult), (s, s1) => RetrievedModelsResult.Deserialize(LLmProviders.Google, s, s1) }
     };
     
     public override T? InboundMessage<T>(string jsonData, string? postData) where T : default

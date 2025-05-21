@@ -8,6 +8,61 @@ using Newtonsoft.Json;
 namespace LlmTornado.Models;
 
 /// <summary>
+/// Model information retrieved by API.
+/// </summary>
+public class RetrievedModel
+{
+    /// <summary>
+    /// ID of the model (name).
+    /// </summary>
+    [JsonProperty("id")]
+    public string Id { get; set; }
+    
+    /// <summary>
+    /// Name of the model.
+    /// </summary>
+    [JsonProperty("display_name")]
+    public string? DisplayName { get; set; }
+    
+    /// <summary>
+    /// Owner of the model.
+    /// </summary>
+    [JsonProperty("owned_by")]
+    public string? OwnedBy { get; init; }
+
+    /// <summary>
+    /// The type of object. Should always be 'model'.
+    /// </summary>
+    [JsonProperty("object")]
+    public string? Object { get; init; }
+    
+    /// <summary>
+    ///     The time when the model was created.
+    /// </summary>
+    [JsonIgnore]
+    public DateTime? Created => CreatedUnixTime.HasValue ? DateTimeOffset.FromUnixTimeSeconds(CreatedUnixTime.Value).DateTime : null;
+    
+    /// <summary>
+    ///     The time when the model was created in unix epoch format.
+    /// </summary>
+    [JsonProperty("created")]
+    public long? CreatedUnixTime { get; init; }
+
+    /// <summary>
+    /// Id/name of the model
+    /// </summary>
+    public override string ToString()
+    {
+        if (DisplayName is not null && !Id.IsNullOrWhiteSpace())
+        {
+            return $"{DisplayName} ({Id})";
+        }
+        
+        return DisplayName ?? Id;
+    }
+}
+
+/// <summary>
 ///     Represents a language model.
 /// </summary>
 public class Model : ModelBase
@@ -316,7 +371,7 @@ public class Model : ModelBase
     /// <returns>Asynchronously returns a Model with all relevant properties filled in</returns>
     public Task<Model> RetrieveModelDetailsAsync(TornadoApi api)
     {
-        return api.Models.RetrieveModelDetailsAsync(Name);
+        return api.Models.GetModelDetails(Name);
     }
 }
 

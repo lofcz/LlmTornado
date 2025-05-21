@@ -210,6 +210,7 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
         {
             CapabilityEndpoints.Chat => "messages",
             CapabilityEndpoints.Completions => "complete",
+            CapabilityEndpoints.Models => "models",
             _ => throw new Exception($"Anthropic doesn't support endpoint {endpoint}")
         };
 

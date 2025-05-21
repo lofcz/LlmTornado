@@ -55,7 +55,7 @@ public class CompletionRequest
 	/// </summary>
 	/// <param name="prompt">The prompt to generate from</param>
 	/// <param name="model">
-	///     The model to use. You can use <see cref="ModelsEndpoint.GetModelsAsync()" /> to see all of your
+	///     The model to use. You can use <see cref="ModelsEndpoint.GetModels" /> to see all of your
 	///     available models, or use a standard model like <see cref="Model.DavinciText" />.
 	/// </param>
 	/// <param name="max_tokens">How many tokens to complete to. Can return fewer if a stop sequence is hit.</param>
@@ -119,7 +119,7 @@ public class CompletionRequest
     }
 
 	/// <summary>
-	///     ID of the model to use. You can use <see cref="ModelsEndpoint.GetModelsAsync()" /> to see all of your available
+	///     ID of the model to use. You can use <see cref="ModelsEndpoint.GetModels" /> to see all of your available
 	///     models, or use a standard model like <see cref="Model.DavinciText" />.
 	/// </summary>
 	[JsonProperty("model")]
