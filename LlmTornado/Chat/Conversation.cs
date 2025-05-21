@@ -1299,7 +1299,7 @@ public class Conversation
                                 
                                 switch (part.Type)
                                 {
-                                    case ChatMessageTypes.Text when eventsHandler.MessageTokenHandler is not null:
+                                    case ChatMessageTypes.Text:
                                     {
                                         await InvokeMessageHandler(part.Text ?? message?.Content);
                                         break;
@@ -1358,7 +1358,7 @@ public class Conversation
                             
                             if (delta.Content is not null)
                             {
-                                await InvokeMessageHandler(delta.Content ?? message?.Content);
+                                await InvokeMessageHandler(delta.Content);
                             }
                         }
 

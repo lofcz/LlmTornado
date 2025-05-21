@@ -105,6 +105,28 @@ public static partial class ChatDemo
     }
     
     [TornadoTest]
+    public static async Task GoogleStreamingTokenEx()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Google.Gemini.Gemini2Flash001
+        });
+        
+        chat.AppendUserInput("What kind of a LLM are you?");
+        
+        Console.WriteLine("Google:");
+        
+        await chat.StreamResponseRich(new ChatStreamEventHandler
+        {
+            MessageTokenExHandler = (token) =>
+            {
+                Console.Write(token);
+                return ValueTask.CompletedTask;
+            }
+        });
+    }
+    
+    [TornadoTest]
     public static async Task Grok2Streaming()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
