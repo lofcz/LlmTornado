@@ -177,6 +177,7 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider,
         StringBuilder? reasoningBuilder = null;
         ChatUsage? usage = null;
         ChatMessageFinishReasons finishReason = ChatMessageFinishReasons.Unknown;
+        ChatResponseVendorExtensions? vendorExtensions = null;
         
         #if DEBUG
         List<string> data = [];
@@ -193,13 +194,46 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider,
                 goto afterStreamEnds;
             }
 
-            ChatResult? res = JsonConvert.DeserializeObject<ChatResult>(item.Data);
-
+            ChatResult? res = Provider switch
+            {
+                LLmProviders.OpenAi => JsonConvert.DeserializeObject<ChatResult>(item.Data),
+                LLmProviders.XAi => InboundMessageVariantProviderXAi<ChatResult>(item.Data, null),
+                _ => JsonConvert.DeserializeObject<ChatResult>(item.Data)
+            };
+     
             if (res is null)
             {
                 continue;
             }
 
+            // process extensions for variant providers
+            switch (Provider)
+            {
+                case LLmProviders.OpenAi:
+                {
+                    break;
+                }
+                case LLmProviders.XAi:
+                {
+                    if (res is ChatResultVendorXAi { Citations.Count: > 0 } xAiRes)
+                    {
+                        vendorExtensions = new ChatResponseVendorExtensions
+                        {
+                            XAi = new ChatResponseVendorXAiExtensions
+                            {
+                                Citations = xAiRes.Citations
+                            }
+                        };
+                    }
+
+                    break;
+                }
+                default:
+                {
+                    break;
+                }
+            }
+            
             if (res.Choices?.Count > 0)
             {
                 ChatChoice choice = res.Choices[0];
@@ -354,7 +388,15 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider,
                         }
                     }
                 ],
-                StreamInternalKind = ChatResultStreamInternalKinds.AppendAssistantMessage
+                StreamInternalKind = ChatResultStreamInternalKinds.AppendAssistantMessage,
+            };
+        }
+
+        if (vendorExtensions is not null)
+        {
+            yield return new ChatResult
+            {
+                VendorExtensions = vendorExtensions
             };
         }
 

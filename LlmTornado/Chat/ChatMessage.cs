@@ -201,7 +201,7 @@ public interface IChatMessageVendorExtensions
 }
 
 /// <summary>
-/// Anthropic extensions to chat messages.
+/// Anthropic's extensions to chat messages.
 /// </summary>
 public class ChatMessageVendorExtensionsAnthropic : IChatMessageVendorExtensions
 {

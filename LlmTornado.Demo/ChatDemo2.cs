@@ -75,6 +75,63 @@ public static partial class ChatDemo
     }
     
     [TornadoTest]
+    public static async Task GrokLiveSearchStreaming()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.XAi.Grok3.V3,
+            VendorExtensions = new ChatRequestVendorExtensions
+            {
+                XAi = new ChatRequestVendorXAiExtensions
+                {
+                    SearchParameters = new ChatRequestVendorXAiExtensionsSearchParameters
+                    {
+                        ReturnCitations = true,
+                        Mode = ChatRequestVendorXAiExtensionsSearchParametersModes.On,
+                        Sources = [
+                            new ChatRequestVendorXAiExtensionsSearchParametersSourceWeb
+                            {
+                                SafeSearch = false
+                            }
+                        ]
+                    }
+                }
+            }
+        });
+        
+        chat.AppendUserInput("What is the latest .NET Core version, including previews?");
+
+        await chat.StreamResponseRich(new ChatStreamEventHandler
+        {
+            MessageTokenHandler = (token) =>
+            {
+                Console.Write(token);
+                return ValueTask.CompletedTask;
+            },
+            BlockFinishedHandler = (block) =>
+            {
+                Console.WriteLine();
+                return ValueTask.CompletedTask;
+            },
+            VendorFeaturesHandler = (extensions) =>
+            {
+                if (extensions.XAi?.Citations is not null)
+                {
+                    Console.WriteLine("Citations:");
+                    Console.WriteLine("--------------------");
+
+                    foreach (string citation in extensions.XAi.Citations)
+                    {
+                        Console.WriteLine(citation);
+                    }
+                }
+
+                return ValueTask.CompletedTask;
+            }
+        });
+    }
+    
+    [TornadoTest]
     public static async Task Grok2Beta()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest

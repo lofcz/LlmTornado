@@ -10,6 +10,16 @@ namespace LlmTornado.Chat.Models.Mistral;
 public class ChatModelMistralFree : IVendorModelClassProvider
 {
     /// <summary>
+    /// A 24B text model, open source model that excels at using tools to explore codebases, editing multiple files and power software engineering agents.
+    /// </summary>
+    public static readonly ChatModel ModelDevstralSmall = new ChatModel("devstral-small-2505", LLmProviders.Mistral, 128_000);
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelDevstralSmall"/>
+    /// </summary>
+    public readonly ChatModel DevstralSmall = ModelDevstralSmall;
+    
+    /// <summary>
     /// A new leader in the small models category with image understanding capabilities, with the lastest version v3.1 released March 2025.
     /// </summary>
     public static readonly ChatModel ModelMistralSmall = new ChatModel("mistral-small-latest", LLmProviders.Mistral, 128_000);
@@ -46,7 +56,8 @@ public class ChatModelMistralFree : IVendorModelClassProvider
     [
         ModelMistralSmall2503,
         ModelMistralSmall,
-        ModelPixtral
+        ModelPixtral,
+        ModelDevstralSmall
     ];
 
     /// <summary>
