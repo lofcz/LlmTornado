@@ -200,17 +200,24 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
         public string? StopSequence { get; set; }
     }
     
-    public override string ApiUrl(CapabilityEndpoints endpoint, string? url)
+    /// <summary>
+    /// Gets endpoint url for a given capability.
+    /// </summary>
+    public static string GetEndpointUrlFragment(CapabilityEndpoints endpoint)
     {
-        string eStr = endpoint switch
+        return endpoint switch
         {
             CapabilityEndpoints.Chat => "messages",
             CapabilityEndpoints.Completions => "complete",
             CapabilityEndpoints.Models => "models",
             _ => throw new Exception($"Anthropic doesn't support endpoint {endpoint}")
         };
-
-        return UrlResolver is not null ? UrlResolver.Invoke(endpoint, url) : $"https://api.anthropic.com/v1/{eStr}{url}";
+    }
+    
+    public override string ApiUrl(CapabilityEndpoints endpoint, string? url)
+    {
+        string eStr = GetEndpointUrlFragment(endpoint);
+        return UrlResolver is not null ? string.Format(UrlResolver.Invoke(endpoint, url), eStr, url) : $"https://api.anthropic.com/v1/{eStr}{url}";
     }
     
     public override async IAsyncEnumerable<ChatResult?> InboundStream(StreamReader reader, ChatRequest request)

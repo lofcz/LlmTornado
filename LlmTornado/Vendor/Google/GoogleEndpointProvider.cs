@@ -43,6 +43,23 @@ internal class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider,
     public const string BaseUrl = "https://generativelanguage.googleapis.com/";
 
     /// <summary>
+    /// Gets endpoint url for a given capability.
+    /// </summary>
+    public static string GetEndpointUrlFragment(CapabilityEndpoints endpoint)
+    {
+        return endpoint switch
+        {
+            CapabilityEndpoints.Embeddings => "models",
+            CapabilityEndpoints.Chat => "models",
+            CapabilityEndpoints.ImageGeneration => "models",
+            CapabilityEndpoints.Files => "files",
+            CapabilityEndpoints.Caching => "cachedContents",
+            CapabilityEndpoints.Models => "models",
+            _ => throw new Exception($"Google doesn't support endpoint {endpoint}")
+        };
+    }
+    
+    /// <summary>
     /// 
     /// </summary>
     /// <param name="endpoint"></param>
@@ -67,18 +84,8 @@ internal class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider,
             }
             default:
             {
-                string eStr = endpoint switch
-                {
-                    CapabilityEndpoints.Embeddings => "models",
-                    CapabilityEndpoints.Chat => "models",
-                    CapabilityEndpoints.ImageGeneration => "models",
-                    CapabilityEndpoints.Files => "files",
-                    CapabilityEndpoints.Caching => "cachedContents",
-                    CapabilityEndpoints.Models => "models",
-                    _ => throw new Exception($"Google doesn't support endpoint {endpoint}")
-                };
-        
-                return UrlResolver is not null ? UrlResolver.Invoke(endpoint, url) : $"{baseUrlVersion}{eStr}{url}";
+                string eStr = GetEndpointUrlFragment(endpoint);
+                return UrlResolver is not null ? string.Format(UrlResolver.Invoke(endpoint, url), eStr, url) : $"{baseUrlVersion}{eStr}{url}";
             }
         }
     }

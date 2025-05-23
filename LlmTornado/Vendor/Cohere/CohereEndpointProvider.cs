@@ -97,21 +97,28 @@ internal class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider,
     }
 
     /// <summary>
-    /// 
+    /// Gets endpoint url for a given capability.
     /// </summary>
-    /// <param name="endpoint"></param>
-    /// <returns></returns>
-    public override string ApiUrl(CapabilityEndpoints endpoint, string? url)
+    public static string GetEndpointUrlFragment(CapabilityEndpoints endpoint)
     {
-        string eStr = endpoint switch
+        return endpoint switch
         {
             CapabilityEndpoints.Chat => "chat",
             CapabilityEndpoints.Embeddings => "embed",
             CapabilityEndpoints.Models => "models",
             _ => throw new Exception($"Cohere doesn't support endpoint {endpoint}")
         };
-
-        return UrlResolver is not null ? UrlResolver.Invoke(endpoint, url) : $"https://api.cohere.ai/v1/{eStr}{url}";
+    }
+    
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="endpoint"></param>
+    /// <returns></returns>
+    public override string ApiUrl(CapabilityEndpoints endpoint, string? url)
+    {
+        string eStr = GetEndpointUrlFragment(endpoint);
+        return UrlResolver is not null ? string.Format(UrlResolver.Invoke(endpoint, url), eStr, url) : $"https://api.cohere.ai/v1/{eStr}{url}";
     }
 
     enum ChatStreamEventTypes

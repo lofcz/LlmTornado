@@ -20,7 +20,7 @@ public static partial class ChatDemo
     [TornadoTest]
     public static async Task ProviderCustomServerApiKey()
     {
-        TornadoApi tornadoApi = new TornadoApi(new Uri("https://api.openai.com/"), Program.ApiKeys.OpenAi);
+        TornadoApi tornadoApi = new TornadoApi(new Uri("https://api.openai.com"), Program.ApiKeys.OpenAi);
         
         Conversation chat = tornadoApi.Chat.CreateConversation(new ChatRequest
         {
@@ -40,9 +40,11 @@ public static partial class ChatDemo
         TornadoApi tornadoApi = new TornadoApi(new AnthropicEndpointProvider
         {
             Auth = new ProviderAuthentication(Program.ApiKeys.Anthropic),
+            UrlResolver = (endpoint, url) => "https://api.anthropic.com/v1/{0}{1}",
             RequestResolver = (request, data, streaming) =>
             {
-                // by default, providing custom request resolved omits beta headers from all built-in providers
+                // by default, providing a custom request resolver omits beta headers
+                // request is HttpRequestMessage, data contains the payload
             }
         });
 

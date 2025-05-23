@@ -47,6 +47,9 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider,
         Tools
     }
 
+    /// <summary>
+    /// Gets endpoint url for a given capability.
+    /// </summary>
     public static string GetEndpointUrlFragment(CapabilityEndpoints endpoint, LLmProviders provider = LLmProviders.OpenAi)
     {
         return endpoint switch
@@ -76,7 +79,8 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider,
     /// <returns></returns>
     public override string ApiUrl(CapabilityEndpoints endpoint, string? url)
     {
-        return UrlResolver is not null ? UrlResolver.Invoke(endpoint, url) : $"{string.Format(Api.ApiUrlFormat ?? "https://api.openai.com/{0}/{1}", Api.ApiVersion, GetEndpointUrlFragment(endpoint))}{url}";
+        string eStr = GetEndpointUrlFragment(endpoint);
+        return UrlResolver is not null ? string.Format(UrlResolver.Invoke(endpoint, url), eStr, url) : $"{string.Format(Api?.ApiUrlFormat ?? "https://api.openai.com/{0}/{1}", Api?.ApiVersion ?? "v1", GetEndpointUrlFragment(endpoint))}{url}";
     }
     
     public override HttpRequestMessage OutboundMessage(string url, HttpMethod verb, object? data, bool streaming)
