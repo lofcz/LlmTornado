@@ -1033,7 +1033,7 @@ public enum LLmProviders
     /// </summary>
     Cohere,
     /// <summary>
-    /// Ollama, KoboldCpp and other self-hosted providers.
+    /// Ollama, vLLM, KoboldCpp and other (self-hosted) providers.
     /// </summary>
     Custom,
     /// <summary>

@@ -222,7 +222,7 @@ internal class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider,
 
     public override HttpRequestMessage OutboundMessage(string url, HttpMethod verb, object? data, bool streaming)
     {
-        ProviderAuthentication? auth = Api.GetProvider(LLmProviders.Google).Auth;
+        ProviderAuthentication? auth = Api?.GetProvider(LLmProviders.Google).Auth;
         UriBuilder uriBuilder = new UriBuilder(url);
         NameValueCollection query = HttpUtility.ParseQueryString(uriBuilder.Query);
         

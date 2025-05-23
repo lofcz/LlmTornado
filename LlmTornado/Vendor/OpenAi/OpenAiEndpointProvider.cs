@@ -87,7 +87,7 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider,
         };
         req.Headers.Add("User-Agent", EndpointBase.GetUserAgent().Trim());
 
-        ProviderAuthentication? auth = Api.GetProvider(Provider).Auth;
+        ProviderAuthentication? auth = Api?.GetProvider(Provider).Auth;
         
         if (auth is not null)
         {

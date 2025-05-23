@@ -18,6 +18,23 @@ namespace LlmTornado.Demo;
 public static partial class ChatDemo
 {
     [TornadoTest]
+    public static async Task ProviderCustomServerApiKey()
+    {
+        TornadoApi tornadoApi = new TornadoApi(new Uri("https://api.openai.com/"), Program.ApiKeys.OpenAi);
+        
+        Conversation chat = tornadoApi.Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.OpenAi.Gpt41.V41
+        });
+        
+        chat.AppendUserInput("Who are you?");
+        string? str = await chat.GetResponse();
+
+        Console.WriteLine("OpenAI:");
+        Console.WriteLine(str);
+    }
+    
+    [TornadoTest]
     public static async Task ProviderCustomHeaders()
     {
         TornadoApi tornadoApi = new TornadoApi(new AnthropicEndpointProvider

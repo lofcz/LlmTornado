@@ -575,7 +575,7 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
         req.Headers.Add("User-Agent", EndpointBase.GetUserAgent());
         req.Headers.Add("anthropic-version", "2023-06-01");
 
-        ProviderAuthentication? auth = Api.GetProvider(LLmProviders.Anthropic).Auth;
+        ProviderAuthentication? auth = Api?.GetProvider(LLmProviders.Anthropic).Auth;
 
         if (auth?.ApiKey is not null)
         {

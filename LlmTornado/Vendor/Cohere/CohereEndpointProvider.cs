@@ -445,7 +445,7 @@ internal class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider,
         };
         req.Headers.Add("User-Agent", EndpointBase.GetUserAgent());
 
-        ProviderAuthentication? auth = Api.GetProvider(LLmProviders.Cohere).Auth;
+        ProviderAuthentication? auth = Api?.GetProvider(LLmProviders.Cohere).Auth;
         
         if (auth?.ApiKey is not null)
         {

@@ -70,8 +70,9 @@ public class TornadoApi
     }
 
     /// <summary>
-    ///     Creates a new Tornado API for self-hosted / custom providers, such as Ollama and KoboldCpp.
-    ///     For Ollama use "http://localhost:11434".
+    ///     Creates a new Tornado API for self-hosted / custom providers, such as Ollama and vLLM.<br/>
+    ///     For Ollama use "http://localhost:11434" (by default).
+    ///     For vLLM use "http://localhost:8000" (by default).
     /// </summary>
     /// <param name="serverUri">Uri of the server. Tokens {0} and {1} are available for endpoint and action respectively. If provided values doesn't use neither, format /{0}/{1} is used automatically.</param>
     public TornadoApi(Uri serverUri) : this()
@@ -84,6 +85,27 @@ public class TornadoApi
         }
 
         ApiUrlFormat = serverUriStr;
+    }
+    
+    /// <summary>
+    ///     Creates a new Tornado API for self-hosted / custom providers, such as Ollama and vLLM.<br/>
+    ///     For Ollama use "http://localhost:11434" (by default).
+    ///     For vLLM use "http://localhost:8000" (by default).
+    /// </summary>
+    /// <param name="serverUri">Uri of the server. Tokens {0} and {1} are available for endpoint and action respectively. If provided values doesn't use neither, format /{0}/{1} is used automatically.</param>
+    /// <param name="apiKey">API key to use</param>
+    /// <param name="provider">Provider to use</param>
+    public TornadoApi(Uri serverUri, string apiKey, LLmProviders provider = LLmProviders.Custom) : this()
+    {
+        string serverUriStr = serverUri.ToString();
+
+        if (!serverUriStr.Contains("{0}"))
+        {
+            serverUriStr = $"{serverUriStr}{(serverUriStr.EndsWith('/') ? string.Empty : "/")}{{0}}/{{1}}";
+        }
+
+        ApiUrlFormat = serverUriStr;
+        Authentications.TryAdd(provider, new ProviderAuthentication(provider, apiKey));
     }
 
     /// <summary>
@@ -201,11 +223,31 @@ public class TornadoApi
         {
             return p;
         }
+
+        if (Authentications.TryGetValue(provider, out _))
+        {
+            IEndpointProvider newProvider = EndpointProviderConverter.CreateProvider(provider, this);
+            EndpointProviders.TryAdd(provider, newProvider);
+            return newProvider;   
+        }
         
-        IEndpointProvider newProvider = EndpointProviderConverter.CreateProvider(provider, this);
-        EndpointProviders.TryAdd(provider, newProvider);
+        if (!EndpointProviders.IsEmpty)
+        {
+            return EndpointProviders.FirstOrDefault().Value;
+        }
+
+        if (!Authentications.IsEmpty)
+        {
+            KeyValuePair<LLmProviders, ProviderAuthentication> auth = Authentications.FirstOrDefault();
+            IEndpointProvider newDefaultProvider = EndpointProviderConverter.CreateProvider(provider, this);
+            newDefaultProvider.Auth = auth.Value;
+            EndpointProviders.TryAdd(provider, newDefaultProvider);
+            return newDefaultProvider;   
+        }
         
-        return newProvider;
+        IEndpointProvider newFallbackProvider = EndpointProviderConverter.CreateProvider(provider, this);
+        EndpointProviders.TryAdd(provider, newFallbackProvider);
+        return newFallbackProvider;   
     }
 
     /// <summary>

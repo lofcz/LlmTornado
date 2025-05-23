@@ -40,6 +40,12 @@ internal static class EndpointProviderConverter
         };
 
         createdProvider.Api = api;
+        
+        if (api.Authentications.TryGetValue(provider, out ProviderAuthentication? auth))
+        {
+            createdProvider.Auth = auth;
+        }
+
         return createdProvider;
     }
 }
