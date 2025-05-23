@@ -24,6 +24,11 @@ public class ChatModelAnthropic : BaseVendorModelProvider
     public readonly ChatModelAnthropicClaude37 Claude37 = new ChatModelAnthropicClaude37();
     
     /// <summary>
+    /// Claude 4 models.
+    /// </summary>
+    public readonly ChatModelAnthropicClaude4 Claude4 = new ChatModelAnthropicClaude4();
+    
+    /// <summary>
     /// All known chat models from Anthropic.
     /// </summary>
     public override List<IModel> AllModels { get; }
@@ -49,7 +54,8 @@ public class ChatModelAnthropic : BaseVendorModelProvider
     public static readonly List<IModel> ModelsAll = [
         ..ChatModelAnthropicClaude3.ModelsAll,
         ..ChatModelAnthropicClaude35.ModelsAll,
-        ..ChatModelAnthropicClaude37.ModelsAll
+        ..ChatModelAnthropicClaude37.ModelsAll,
+        ..ChatModelAnthropicClaude4.ModelsAll
     ];
     
     static ChatModelAnthropic()
