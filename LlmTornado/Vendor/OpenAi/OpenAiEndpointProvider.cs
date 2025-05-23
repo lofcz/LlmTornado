@@ -26,16 +26,16 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider,
     private static readonly HashSet<string> toolFinishReasons = [ "function_call", "tool_calls" ];
 
     public static Version OutboundVersion { get; set; } = HttpVersion.Version20;
-    public override HashSet<string> ToolFinishReasons => toolFinishReasons;
-    public Func<CapabilityEndpoints, string?, string>? UrlResolver { get; set; } 
+    public Func<CapabilityEndpoints, string?, string>? UrlResolver { get; set; }
+    public Action<HttpRequestMessage, object?, bool>? RequestResolver { get; set; }
     
-    public OpenAiEndpointProvider(TornadoApi api) : base(api)
+    public OpenAiEndpointProvider() : base()
     {
         Provider = LLmProviders.OpenAi;   
         StoreApiAuth();
     }
     
-    public OpenAiEndpointProvider(TornadoApi api, LLmProviders provider) : base(api)
+    public OpenAiEndpointProvider(LLmProviders provider) : base()
     {
         Provider = provider;
         StoreApiAuth();
@@ -86,7 +86,6 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider,
             Version = OutboundVersion
         };
         req.Headers.Add("User-Agent", EndpointBase.GetUserAgent().Trim());
-        req.Headers.Add("OpenAI-Beta", "assistants=v2");
 
         ProviderAuthentication? auth = Api.GetProvider(Provider).Auth;
         
@@ -102,6 +101,15 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider,
             {
                 req.Headers.Add("OpenAI-Organization", auth.Organization.Trim());
             }
+        }
+
+        if (RequestResolver is not null)
+        {
+            RequestResolver.Invoke(req, data, streaming);   
+        }
+        else
+        {
+            req.Headers.Add("OpenAI-Beta", "assistants=v2");
         }
         
         return req;

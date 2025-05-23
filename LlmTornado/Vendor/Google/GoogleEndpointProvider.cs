@@ -31,10 +31,10 @@ internal class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider,
     private static readonly HashSet<string> toolFinishReasons = [ "tool_use" ];
     
     public static Version OutboundVersion { get; set; } = HttpVersion.Version20;
-    public override HashSet<string> ToolFinishReasons => toolFinishReasons;
-    public Func<CapabilityEndpoints, string?, string>? UrlResolver { get; set; } 
+    public Func<CapabilityEndpoints, string?, string>? UrlResolver { get; set; }
+    public Action<HttpRequestMessage, object?, bool>? RequestResolver { get; set; }
     
-    public GoogleEndpointProvider(TornadoApi api) : base(api)
+    public GoogleEndpointProvider() : base()
     {
         Provider = LLmProviders.Google;
         StoreApiAuth();
@@ -239,6 +239,9 @@ internal class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider,
         };
 
         req.Headers.Add("User-Agent", EndpointBase.GetUserAgent());
+
+        RequestResolver?.Invoke(req, data, streaming);
+
         return req;
     }
 

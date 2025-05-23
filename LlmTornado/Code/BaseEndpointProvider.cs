@@ -19,19 +19,19 @@ namespace LlmTornado.Code;
 /// </summary>
 public abstract class BaseEndpointProvider : IEndpointProviderExtended
 {
-    public TornadoApi Api { get; set; }
+    public TornadoApi? Api { get; set; }
     public LLmProviders Provider { get; set; } = LLmProviders.Unknown;
     
     internal static readonly JsonSerializerSettings NullSettings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore };
     
-    public BaseEndpointProvider(TornadoApi api)
+    public BaseEndpointProvider()
     {
-        Api = api;
+        
     }
 
     public void StoreApiAuth()
     {
-        if (Api.Authentications.TryGetValue(Provider, out ProviderAuthentication? auth))
+        if (Api?.Authentications.TryGetValue(Provider, out ProviderAuthentication? auth) ?? false)
         {
             Auth = auth;
         }
@@ -46,7 +46,6 @@ public abstract class BaseEndpointProvider : IEndpointProviderExtended
     public abstract IAsyncEnumerable<T?> InboundStream<T>(StreamReader streamReader) where T : class;
     public abstract IAsyncEnumerable<ChatResult?> InboundStream(StreamReader streamReader, ChatRequest request);
     public abstract HttpRequestMessage OutboundMessage(string url, HttpMethod verb, object? data, bool streaming);
-    public abstract HashSet<string> ToolFinishReasons { get;  }
     public ProviderAuthentication? Auth { get; set; }
     static Version IEndpointProviderExtended.OutboundVersion { get; set; } = HttpVersion.Version20;
 

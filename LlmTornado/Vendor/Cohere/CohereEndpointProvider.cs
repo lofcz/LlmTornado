@@ -33,8 +33,8 @@ internal class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider,
     private static readonly HashSet<string> toolFinishReasons = [ "tool_use" ];
     
     public static Version OutboundVersion { get; set; } = HttpVersion.Version20;
-    public override HashSet<string> ToolFinishReasons => toolFinishReasons;
     public Func<CapabilityEndpoints, string?, string>? UrlResolver { get; set; } 
+    public Action<HttpRequestMessage, object?, bool>? RequestResolver { get; set; }
     
     private enum StreamNextAction
     {
@@ -46,7 +46,7 @@ internal class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider,
         MsgStart
     }
     
-    public CohereEndpointProvider(TornadoApi api) : base(api)
+    public CohereEndpointProvider() : base()
     {
         Provider = LLmProviders.Cohere;
         StoreApiAuth();

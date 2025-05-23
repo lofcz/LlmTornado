@@ -85,6 +85,42 @@ public class TornadoApi
 
         ApiUrlFormat = serverUriStr;
     }
+
+    /// <summary>
+    /// Creates an instance from a custom provider.<br/>
+    /// This constructor is needed only for custom deployments where setting <see cref="ApiUrlFormat"/> is not sufficient.
+    /// </summary>
+    /// <param name="provider">The provider to use</param>
+    public TornadoApi(IEndpointProvider provider) : this()
+    {
+        EnlistProvider(provider);
+    }
+    
+    /// <summary>
+    /// Creates an instance from a custom provider.<br/>
+    /// This constructor is needed only for custom deployments where setting <see cref="ApiUrlFormat"/> is not sufficient.
+    /// </summary>
+    /// <param name="providers">Providers to use</param>
+    public TornadoApi(IEnumerable<IEndpointProvider> providers) : this()
+    {
+        foreach (IEndpointProvider provider in providers)
+        {
+            EnlistProvider(provider);
+        }
+    }
+
+    void EnlistProvider(IEndpointProvider provider)
+    {
+        provider.Api = this;
+
+        if (provider.Auth is not null)
+        {
+            provider.Auth.Provider = provider.Provider;
+            Authentications.TryAdd(provider.Provider, provider.Auth);
+        }
+        
+        EndpointProviders.TryAdd(provider.Provider, provider);
+    }
     
     /// <summary>
     ///     Creates a new Tornado API with a specific provider authentication. Use when the API will be used only with a single provider.

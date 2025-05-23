@@ -1116,19 +1116,36 @@ public interface IChatUsage
 /// </summary>
 public class ProviderAuthentication
 {
+    /// <summary>
+    /// The provider.
+    /// </summary>
     public LLmProviders Provider { get; set; }
+    
+    /// <summary>
+    /// API key, if any.
+    /// </summary>
     public string? ApiKey { get; set; }
+    
+    /// <summary>
+    /// Organization, if any.
+    /// </summary>
     public string? Organization { get; set; }
 
     /// <summary>
-    /// 
+    /// Crates a new authentication.
     /// </summary>
-    /// <param name="providers"></param>
-    /// <param name="ApiKey"></param>
-    /// <param name="organization"></param>
     public ProviderAuthentication(LLmProviders provider, string apiKey, string? organization = null)
     {
         Provider = provider;
+        ApiKey = apiKey;
+        Organization = organization;
+    }
+    
+    /// <summary>
+    /// Creates a new authentication. This constructor can be used when creating authentication if context of an existing <see cref="IEndpointProvider"/> instance.
+    /// </summary>
+    public ProviderAuthentication(string apiKey, string? organization = null)
+    {
         ApiKey = apiKey;
         Organization = organization;
     }

@@ -45,8 +45,9 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
     public static Version OutboundVersion { get; set; } = HttpVersion.Version20;
     
     public Func<CapabilityEndpoints, string?, string>? UrlResolver { get; set; } 
-    public override HashSet<string> ToolFinishReasons => toolFinishReasons;
-
+    
+    public Action<HttpRequestMessage, object?, bool>? RequestResolver { get; set; }
+    
     private enum StreamRawActions
     {
         Unknown,
@@ -60,7 +61,7 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
         ContentBlockStop
     }
     
-    public AnthropicEndpointProvider(TornadoApi api) : base(api)
+    public AnthropicEndpointProvider() : base()
     {
         Provider = LLmProviders.Anthropic;
         StoreApiAuth();
@@ -198,12 +199,7 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
         [JsonProperty("stop_sequence")]
         public string? StopSequence { get; set; }
     }
-
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="endpoint"></param>
-    /// <returns></returns>
+    
     public override string ApiUrl(CapabilityEndpoints endpoint, string? url)
     {
         string eStr = endpoint switch
@@ -578,13 +574,21 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
         
         req.Headers.Add("User-Agent", EndpointBase.GetUserAgent());
         req.Headers.Add("anthropic-version", "2023-06-01");
-        req.Headers.Add("anthropic-beta", "interleaved-thinking-2025-05-14");
 
         ProviderAuthentication? auth = Api.GetProvider(LLmProviders.Anthropic).Auth;
 
         if (auth?.ApiKey is not null)
         {
             req.Headers.Add("x-api-key", auth.ApiKey);
+        }
+
+        if (RequestResolver is not null)
+        {
+            RequestResolver.Invoke(req, data, streaming);
+        }
+        else
+        {
+            req.Headers.Add("anthropic-beta", "interleaved-thinking-2025-05-14");
         }
 
         return req;

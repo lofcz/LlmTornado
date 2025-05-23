@@ -18,6 +18,30 @@ namespace LlmTornado.Demo;
 public static partial class ChatDemo
 {
     [TornadoTest]
+    public static async Task ProviderCustomHeaders()
+    {
+        TornadoApi tornadoApi = new TornadoApi(new AnthropicEndpointProvider
+        {
+            Auth = new ProviderAuthentication(Program.ApiKeys.Anthropic),
+            RequestResolver = (request, data, streaming) =>
+            {
+                // by default, providing custom request resolved omits beta headers from all built-in providers
+            }
+        });
+
+        Conversation chat = tornadoApi.Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Anthropic.Claude4.Sonnet250514
+        });
+        
+        chat.AppendUserInput("Who are you?");
+        string? str = await chat.GetResponse();
+
+        Console.WriteLine("Anthropic:");
+        Console.WriteLine(str);
+    }
+    
+    [TornadoTest]
     public static async Task Grok2()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest

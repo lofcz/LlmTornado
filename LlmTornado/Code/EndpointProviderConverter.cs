@@ -6,37 +6,40 @@ internal static class EndpointProviderConverter
 {
     public static IEndpointProvider CreateProvider(LLmProviders provider, TornadoApi api)
     {
-        return provider switch
+        IEndpointProvider createdProvider = provider switch
         {
-            LLmProviders.OpenAi => new OpenAiEndpointProvider(api),
-            LLmProviders.Anthropic => new AnthropicEndpointProvider(api),
-            LLmProviders.Cohere => new CohereEndpointProvider(api),
-            LLmProviders.Google => new GoogleEndpointProvider(api),
-            LLmProviders.DeepSeek => new OpenAiEndpointProvider(api, LLmProviders.DeepSeek)
+            LLmProviders.OpenAi => new OpenAiEndpointProvider(),
+            LLmProviders.Anthropic => new AnthropicEndpointProvider(),
+            LLmProviders.Cohere => new CohereEndpointProvider(),
+            LLmProviders.Google => new GoogleEndpointProvider(),
+            LLmProviders.DeepSeek => new OpenAiEndpointProvider(LLmProviders.DeepSeek)
             {
                 UrlResolver = (endpoint, url) => $"{string.Format(api.ApiUrlFormat ?? "https://api.deepseek.com/{0}/{1}", api.ApiVersion, OpenAiEndpointProvider.GetEndpointUrlFragment(endpoint, LLmProviders.DeepSeek))}{url}"
             },
-            LLmProviders.Mistral => new OpenAiEndpointProvider(api, LLmProviders.Mistral)
+            LLmProviders.Mistral => new OpenAiEndpointProvider(LLmProviders.Mistral)
             {
                 UrlResolver = (endpoint, url) => $"{string.Format(api.ApiUrlFormat ?? "https://api.mistral.ai/{0}/{1}", api.ApiVersion, OpenAiEndpointProvider.GetEndpointUrlFragment(endpoint, LLmProviders.DeepSeek))}{url}"
             },
-            LLmProviders.Groq => new OpenAiEndpointProvider(api, LLmProviders.Groq)
+            LLmProviders.Groq => new OpenAiEndpointProvider(LLmProviders.Groq)
             {
                 UrlResolver = (endpoint, url) => $"{string.Format(api.ApiUrlFormat ?? "https://api.groq.com/openai/{0}/{1}", api.ApiVersion, OpenAiEndpointProvider.GetEndpointUrlFragment(endpoint, LLmProviders.Groq))}{url}"
             },
-            LLmProviders.XAi => new OpenAiEndpointProvider(api, LLmProviders.XAi)
+            LLmProviders.XAi => new OpenAiEndpointProvider(LLmProviders.XAi)
             {
                 UrlResolver = (endpoint, url) => $"{string.Format(api.ApiUrlFormat ?? "https://api.x.ai/{0}/{1}", api.ApiVersion, OpenAiEndpointProvider.GetEndpointUrlFragment(endpoint, LLmProviders.XAi))}{url}"
             },
-            LLmProviders.Perplexity => new OpenAiEndpointProvider(api, LLmProviders.Perplexity)
+            LLmProviders.Perplexity => new OpenAiEndpointProvider(LLmProviders.Perplexity)
             {
                 UrlResolver = (endpoint, url) => $"{string.Format(api.ApiUrlFormat ?? "https://api.perplexity.ai/{0}", OpenAiEndpointProvider.GetEndpointUrlFragment(endpoint, LLmProviders.Perplexity))}{url}"
             },
-            LLmProviders.Voyage => new OpenAiEndpointProvider(api, LLmProviders.Voyage)
+            LLmProviders.Voyage => new OpenAiEndpointProvider(LLmProviders.Voyage)
             {
                 UrlResolver = (endpoint, url) => $"{string.Format(api.ApiUrlFormat ?? "https://api.voyageai.com/v1/{0}", OpenAiEndpointProvider.GetEndpointUrlFragment(endpoint, LLmProviders.Voyage))}{url}"
             },
-            _ => new OpenAiEndpointProvider(api)
+            _ => new OpenAiEndpointProvider()
         };
+
+        createdProvider.Api = api;
+        return createdProvider;
     }
 }
