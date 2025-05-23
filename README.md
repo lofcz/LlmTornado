@@ -132,17 +132,32 @@ public static async Task AnthropicSonnet37Thinking()
 
 ## 🔮 Self-Hosted/Custom Providers
 
-Instead of consuming commercial APIs, one can roll their own inference servers easily with [a myriad](https://github.com/janhq/awesome-local-ai) of tools available. Here is a simple demo for streaming response with Ollama, but the same approach can be used for any custom provider:
+Instead of consuming commercial APIs, one can easily roll their inference servers with [a plethora](https://github.com/janhq/awesome-local-ai) of available tools. Here is a simple demo for streaming response with Ollama, but the same approach can be used for any custom provider:
 
 ```cs
 public static async Task OllamaStreaming()
 {
-    TornadoApi api = new TornadoApi(new Uri("http://localhost:11434")); // default Ollama port
+    TornadoApi api = new TornadoApi(new Uri("http://localhost:11434")); // default Ollama port, API key can be passed in the second argument if needed
     
     await api.Chat.CreateConversation(new ChatModel("falcon3:1b")) // <-- replace with your model
         .AppendUserInput("Why is the sky blue?")
         .StreamResponse(Console.Write);
 }
+```
+
+If you need more control over requests, for example, custom headers, you can create an instance of a built-in Provider. This is useful for custom deployments like Amazon Bedrock, Vertex AI, etc.
+
+```cs
+TornadoApi tornadoApi = new TornadoApi(new AnthropicEndpointProvider
+{
+    Auth = new ProviderAuthentication("ANTHROPIC_API_KEY"),
+    UrlResolver = (endpoint, url) => "https://api.anthropic.com/v1/{0}{1}",
+    RequestResolver = (request, data, streaming) =>
+    {
+        // by default, providing a custom request resolver omits beta headers
+        // request is HttpRequestMessage, data contains the payload
+    }
+});
 ```
 
 https://github.com/user-attachments/assets/de62f0fe-93e0-448c-81d0-8ab7447ad780
