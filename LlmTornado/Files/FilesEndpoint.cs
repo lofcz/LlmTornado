@@ -62,6 +62,7 @@ public class FilesEndpoint : EndpointBase
 			{
 				Items = (await HttpGet<TornadoFiles>(resolvedProvider, Endpoint, queryParams: query?.ToQueryParams(resolvedProvider), ct: token).ConfigureAwait(ConfigureAwaitOptions.None))?.Data ?? []
 			},
+			LLmProviders.Anthropic => (await HttpGet<VendorAnthropicTornadoFiles>(resolvedProvider, Endpoint, queryParams: query?.ToQueryParams(resolvedProvider), ct: token).ConfigureAwait(ConfigureAwaitOptions.None))?.ToList(),
 			_ => null
 		};
 	}

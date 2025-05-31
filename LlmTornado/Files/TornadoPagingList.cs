@@ -16,4 +16,9 @@ public class TornadoPagingList<T>
     /// Used by Google.
     /// </summary>
     public string? PageToken { get; set; }
+    
+    /// <summary>
+    /// Used by Anthropic.
+    /// </summary>
+    public bool? MoreData { get; set; }
 }

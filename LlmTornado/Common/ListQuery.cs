@@ -118,6 +118,21 @@ public sealed class ListQuery
             return parameters;
         }
         
+        if (provider is LLmProviders.Anthropic)
+        {
+            if (query.Limit is not null)
+            {
+                parameters["pageSize"] = query.Limit;
+            }
+            
+            if (query.PageToken is not null)
+            {
+                parameters["after_id"] = query.PageToken;
+            }
+
+            return parameters;
+        }
+        
         if (query.Limit is not null)
         {
             parameters.Add("limit", query.Limit);

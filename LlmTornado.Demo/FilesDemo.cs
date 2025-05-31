@@ -61,6 +61,24 @@ public class FilesDemo : DemoBase
     }
     
     [TornadoTest]
+    public static async Task<TornadoPagingList<TornadoFile>?> GetAllFilesAnthropic()
+    {
+        TornadoPagingList<TornadoFile>? items = await Program.Connect().Files.Get(new ListQuery(100), provider: LLmProviders.Anthropic);
+
+        if (items is not null)
+        {
+            Console.WriteLine($"Found {items.Items.Count} files.");
+            
+            foreach (TornadoFile item in items.Items)
+            {
+                Console.WriteLine(item.Id);
+            }
+        }
+
+        return items;
+    }
+    
+    [TornadoTest]
     public static async Task<TornadoPagingList<TornadoFile>?> GetAllFilesOpenAi()
     {
         TornadoPagingList<TornadoFile>? items = await Program.Connect().Files.Get(provider: LLmProviders.OpenAi);
