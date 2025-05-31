@@ -277,6 +277,24 @@ public partial class VendorAnthropicChatRequestMessageContent
 
                             break;
                         }
+                        case ChatMessageTypes.FileLink:
+                        {
+                            writer.WritePropertyName("type");
+                            writer.WriteValue("document");
+                            
+                            writer.WritePropertyName("source");
+                            writer.WriteStartObject();
+                            
+                            writer.WritePropertyName("type");
+                            writer.WriteValue("file");
+                            
+                            writer.WritePropertyName("file_id");
+                            writer.WriteValue(part.FileLinkData?.File?.Id ?? part.FileLinkData?.FileUri);
+                            
+                            writer.WriteEndObject();
+                            
+                            break;
+                        }
                     }
                     
                     SerializeCache(part);

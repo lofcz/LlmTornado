@@ -80,7 +80,8 @@ internal class VendorAnthropicTornadoFile
 			MimeType = MimeType,
 			Bytes = SizeBytes,
 			Object = "file",
-			Downloadable = Downloadable
+			Downloadable = Downloadable,
+			Uri = Id
 		};
 	}
 }

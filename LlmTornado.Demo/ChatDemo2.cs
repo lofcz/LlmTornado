@@ -765,6 +765,28 @@ public partial class ChatDemo : DemoBase
             }
         }
     }
+    
+    [TornadoTest]
+    public static async Task AnthropicFileInput()
+    {
+        TornadoApi api = Program.Connect();
+        HttpCallResult<TornadoFile> uploadedFile = await api.Files.Upload("Static/Files/prezSample.pdf", mimeType: "application/pdf", provider: LLmProviders.Anthropic);
+
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Anthropic.Claude4.Sonnet250514
+        });
+        
+        chat.AppendUserInput([
+            new ChatMessagePart("What is this file about?"),
+            new ChatMessagePart(new ChatMessagePartFileLinkData(uploadedFile.Data.Uri))
+        ]);
+        
+        ChatRichResponse response = await chat.GetResponseRich();
+        
+        Console.WriteLine(response);
+        Console.WriteLine(response.Result?.Usage?.TotalTokens);
+    }
 
     [Flaky("access limited in Europe")]
     [TornadoTest]
