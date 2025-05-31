@@ -49,9 +49,9 @@ _*`/v1` APIs, future support is unsure and probably won't be implemented._
 
 ## Mistral Specific
 
- FIM | Agents | Classifiers | OCR |
-|-----------|------------ | ------------ | ------------ |
-| ❌ | ❌ |  ❌ | ❌ |
+ FIM | Agents | Classifiers | OCR | Agents |
+|-----------|------------ | ------------ | ------------ | ------------ |
+| ❌ | ❌ |  ❌ | ❌ | ❌ |
 
 ## Misc
 
