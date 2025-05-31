@@ -22,7 +22,7 @@ public class ResponseFormatAuto : ResponseFormat
     /// <summary>
     /// An instance of the "auto" format.
     /// </summary>
-    public static ResponseFormatAuto Inst { get; } = new();
+    public static ResponseFormatAuto Inst { get; } = new ResponseFormatAuto();
 }
 
 /// <summary>
@@ -48,7 +48,7 @@ public class ResponseFormatText : ResponseFormat
     /// <summary>
     /// An instance of the "text" format.
     /// </summary>
-    public static ResponseFormatText Inst { get; } = new();
+    public static ResponseFormatText Inst { get; } = new ResponseFormatText();
     
     /// <summary>
     /// The type of the response format. Set to "text".

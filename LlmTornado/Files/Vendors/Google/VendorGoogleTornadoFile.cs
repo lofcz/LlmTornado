@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using LlmTornado.Chat;
 using Newtonsoft.Json;
 
-namespace LlmTornado.Files.Vendors;
+namespace LlmTornado.Files.Vendors.Google;
 
 internal class VendorGoogleTornadoFileContent
 {

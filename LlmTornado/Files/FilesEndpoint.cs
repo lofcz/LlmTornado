@@ -11,6 +11,8 @@ using LlmTornado.Code;
 using LlmTornado.Code.Vendor;
 using LlmTornado.Common;
 using LlmTornado.Files.Vendors;
+using LlmTornado.Files.Vendors.Anthropic;
+using LlmTornado.Files.Vendors.Google;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Files;
@@ -121,15 +123,24 @@ public class FilesEndpoint : EndpointBase
 	{
 		IEndpointProvider resolvedProvider = Api.ResolveProvider(provider);
 
-		// sadly, when creating the file there is an extra wrapper which is not in place when retrieving it, so we have to do this
-		if (resolvedProvider.Provider is LLmProviders.Google)
+		switch (resolvedProvider.Provider)
 		{
-			string resolvedUrl = fileId.StartsWith(GoogleEndpointProvider.BaseUrl) ? fileId : GetUrl(resolvedProvider, CapabilityEndpoints.BaseUrl, fileId);
-			VendorGoogleTornadoFileContent? result = await HttpGet<VendorGoogleTornadoFileContent>(resolvedProvider, CapabilityEndpoints.BaseUrl, resolvedUrl).ConfigureAwait(ConfigureAwaitOptions.None);
-
-			if (result is not null)
+			// sadly, when creating the file there is an extra wrapper which is not in place when retrieving it, so we have to do this
+			case LLmProviders.Google:
 			{
-				return result.ToFile(null);
+				string resolvedUrl = fileId.StartsWith(GoogleEndpointProvider.BaseUrl) ? fileId : GetUrl(resolvedProvider, CapabilityEndpoints.BaseUrl, fileId);
+				VendorGoogleTornadoFileContent? result = await HttpGet<VendorGoogleTornadoFileContent>(resolvedProvider, CapabilityEndpoints.BaseUrl, resolvedUrl).ConfigureAwait(ConfigureAwaitOptions.None);
+
+				if (result is not null)
+				{
+					return result.ToFile(null);
+				}
+
+				break;
+			}
+			case LLmProviders.Anthropic:
+			{
+				return (await HttpGet<VendorAnthropicTornadoFile>(resolvedProvider, Endpoint, GetUrl(resolvedProvider, $"/{fileId}")).ConfigureAwait(ConfigureAwaitOptions.None))?.ToFile();
 			}
 		}
 	    
@@ -189,12 +200,12 @@ public class FilesEndpoint : EndpointBase
 	/// <param name="provider">Which provider will be used</param>
 	public async Task<HttpCallResult<TornadoFile>> Upload(string filePath, FilePurpose purpose = FilePurpose.Finetune, string? fileName = null, string? mimeType = null, LLmProviders? provider = null)
     {
-	    IEndpointProvider resolvedProvider = Api.ResolveProvider(provider);
-	    
 	    if (!File.Exists(filePath))
 	    {
 		    return new HttpCallResult<TornadoFile>(HttpStatusCode.UnprocessableEntity, null, null, false, new RestDataOrException<HttpResponseData>(new Exception($"File {filePath} not found")));
 	    }
+	    
+	    IEndpointProvider resolvedProvider = Api.ResolveProvider(provider);
 
 	    byte[] bytes = await File.ReadAllBytesAsync(filePath).ConfigureAwait(ConfigureAwaitOptions.None);
 	    string finalFileName = fileName ?? (resolvedProvider.Provider is LLmProviders.Google ? Guid.NewGuid().ToString() : Path.GetFileName(filePath)); // google requires alphanum + dashes, up to 40 chars
@@ -264,16 +275,31 @@ public class FilesEndpoint : EndpointBase
 			_ => GetUrl(resolvedProvider)
 		};
 
-		if (resolvedProvider.Provider is LLmProviders.OpenAi)
+		switch (resolvedProvider.Provider)
 		{
-			HttpCallResult<TornadoFile> file = await HttpPost<TornadoFile>(resolvedProvider, CapabilityEndpoints.Files, url, content.Body).ConfigureAwait(ConfigureAwaitOptions.None);
-
-			if (content.Body is IDisposable disposableOaiBody)
+			case LLmProviders.Custom:
+			case LLmProviders.OpenAi:
 			{
-				disposableOaiBody.Dispose();
-			}
+				HttpCallResult<TornadoFile> file = await HttpPost<TornadoFile>(resolvedProvider, CapabilityEndpoints.Files, url, content.Body).ConfigureAwait(ConfigureAwaitOptions.None);
 
-			return file;
+				if (content.Body is IDisposable disposableOaiBody)
+				{
+					disposableOaiBody.Dispose();
+				}
+
+				return file;
+			}
+			case LLmProviders.Anthropic:
+			{
+				HttpCallResult<VendorAnthropicTornadoFile> file = await HttpPost<VendorAnthropicTornadoFile>(resolvedProvider, CapabilityEndpoints.Files, url, content.Body).ConfigureAwait(ConfigureAwaitOptions.None);
+
+				if (content.Body is IDisposable disposableOaiBody)
+				{
+					disposableOaiBody.Dispose();
+				}
+
+				return new HttpCallResult<TornadoFile>(file.Code, file.Response, file.Data?.ToFile(), file.Ok, file.Request);
+			}
 		}
 
 		if (resolvedProvider.Provider is not LLmProviders.Google)

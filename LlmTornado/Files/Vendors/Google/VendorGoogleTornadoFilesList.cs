@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using Newtonsoft.Json;
 
-namespace LlmTornado.Files.Vendors;
+namespace LlmTornado.Files.Vendors.Google;
 
 internal class VendorGoogleTornadoFilesList
 {

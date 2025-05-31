@@ -1,12 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Chat.Vendors.Cohere;
 using LlmTornado.Code;
 using LlmTornado.Files.Vendors;
+using LlmTornado.Files.Vendors.Google;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Files;
@@ -81,6 +83,19 @@ public class FileUploadRequest
                 content.Add(bc, "file", x.Name);
 
                 return content;
+            }
+        },
+        { 
+            LLmProviders.Anthropic, (x, y) =>
+            {
+                ByteArrayContent bc = new ByteArrayContent(x.Bytes);
+                bc.Headers.ContentType = new MediaTypeHeaderValue(x.MimeType ?? "application/pdf");
+
+                MultipartFormDataContent content = new MultipartFormDataContent();
+                content.Add(bc, "file", x.Name);
+
+                return content;
+
             }
         },
         { 
