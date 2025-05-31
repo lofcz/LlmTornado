@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -20,14 +19,7 @@ namespace LlmTornado.Chat;
 /// </summary>
 public class Conversation
 {
-    /// <summary>
-    ///     An internal reference to the API endpoint, needed for API requests
-    /// </summary>
     private readonly ChatEndpoint endpoint;
-
-    /// <summary>
-    ///     An internal handle to the messages currently enlisted in the conversation.
-    /// </summary>
     private readonly List<ChatMessage> messages;
 
     /// <summary>
@@ -158,6 +150,15 @@ public class Conversation
         }
 
         return false;
+    }
+    
+    /// <summary>
+    /// Clears the conversation, removing all messages.
+    /// </summary>
+    public void Clear()
+    {
+        MostRecentApiResult = null;
+        messages.Clear();
     }
 
     /// <summary>
@@ -443,6 +444,23 @@ public class Conversation
         return AppendMessage(new ChatMessage(ChatMessageRoles.Assistant, content));
     }
 
+    
+    /// <summary>
+    /// Appends assistant message to the conversation.
+    /// </summary>
+    public Conversation AppendAssistantMessage(string content)
+    {
+        return AppendMessage(new ChatMessage(ChatMessageRoles.Assistant, content));
+    }
+    
+    /// <summary>
+    /// Appends assistant message to the conversation.
+    /// </summary>
+    public Conversation AppendAssistantMessage(string content, Guid id)
+    {
+        return AppendMessage(new ChatMessage(ChatMessageRoles.Assistant, content, id));
+    }
+    
     /// <summary>
     ///     Creates and appends a <see cref="ChatMessage" /> to the chat history with the Role of
     ///     <see cref="ChatMessageRoles.Tool" />.  The function message is a response to a request from the system for
@@ -452,7 +470,10 @@ public class Conversation
     /// <param name="content">The text content (usually JSON)</param>
     public Conversation AppendFunctionMessage(string functionName, string content)
     {
-        return AppendMessage(new ChatMessage(ChatMessageRoles.Tool, content) { Name = functionName });
+        return AppendMessage(new ChatMessage(ChatMessageRoles.Tool, content)
+        {
+            Name = functionName
+        });
     }
 
     /// <summary>
