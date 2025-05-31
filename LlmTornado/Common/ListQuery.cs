@@ -103,36 +103,38 @@ public sealed class ListQuery
 
         Dictionary<string, object> parameters = [];
 
-        if (provider is LLmProviders.Google)
+        switch (provider)
         {
-            if (query.Limit is not null)
+            case LLmProviders.Google:
             {
-                parameters["pageSize"] = query.Limit;
-            }
+                if (query.Limit is not null)
+                {
+                    parameters["pageSize"] = query.Limit;
+                }
 
-            if (query.PageToken is not null)
-            {
-                parameters["pageToken"] = query.PageToken;
-            }
+                if (query.PageToken is not null)
+                {
+                    parameters["pageToken"] = query.PageToken;
+                }
 
-            return parameters;
-        }
-        
-        if (provider is LLmProviders.Anthropic)
-        {
-            if (query.Limit is not null)
-            {
-                parameters["pageSize"] = query.Limit;
+                return parameters;
             }
+            case LLmProviders.Anthropic:
+            {
+                if (query.Limit is not null)
+                {
+                    parameters["limit"] = Math.Clamp(query.Limit.Value, 1, 1_000); // https://docs.anthropic.com/en/api/files-list#parameter-limit
+                }
             
-            if (query.PageToken is not null)
-            {
-                parameters["after_id"] = query.PageToken;
-            }
+                if (query.PageToken is not null)
+                {
+                    parameters["after_id"] = query.PageToken;
+                }
 
-            return parameters;
+                return parameters;
+            }
         }
-        
+
         if (query.Limit is not null)
         {
             parameters.Add("limit", query.Limit);
