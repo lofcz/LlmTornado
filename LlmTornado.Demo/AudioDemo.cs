@@ -4,7 +4,7 @@ using LlmTornado.Code;
 
 namespace LlmTornado.Demo;
 
-public static class AudioDemo
+public class AudioDemo : DemoBase
 {
     [TornadoTest]
     public static async Task TranscribeFormatText()

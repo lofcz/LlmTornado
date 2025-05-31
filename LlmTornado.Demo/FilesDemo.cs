@@ -4,7 +4,7 @@ using LlmTornado.Files;
 
 namespace LlmTornado.Demo;
 
-public static class FilesDemo
+public class FilesDemo : DemoBase
 {
     [TornadoTest]
     public static async Task<TornadoFile?> Upload()

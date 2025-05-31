@@ -4,7 +4,7 @@ using LlmTornado.VectorStores;
 
 namespace LlmTornado.Demo;
 
-public static class VectorStoreDemo
+public class VectorStoreDemo : DemoBase
 {
     private static VectorStore? vectorStore;
 

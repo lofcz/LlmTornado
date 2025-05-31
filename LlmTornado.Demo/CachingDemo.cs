@@ -5,7 +5,7 @@ using LlmTornado.Common;
 
 namespace LlmTornado.Demo;
 
-public class CachingDemo
+public class CachingDemo : DemoBase
 {
     [TornadoTest]
     public static async Task<HttpCallResult<CachedContentInformation>> Create()

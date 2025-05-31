@@ -7,7 +7,7 @@ using LlmTornado.Models;
 
 namespace LlmTornado.Demo;
 
-public static class VisionDemo
+public class VisionDemo : DemoBase
 {
     [Flaky("Deprecated by OpenAI")]
     [TornadoTest]

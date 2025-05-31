@@ -595,7 +595,7 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
         }
         else
         {
-            req.Headers.Add("anthropic-beta", "interleaved-thinking-2025-05-14");
+            req.Headers.Add("anthropic-beta", ["interleaved-thinking-2025-05-14", "files-api-2025-04-14"]);
         }
 
         return req;

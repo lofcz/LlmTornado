@@ -493,8 +493,11 @@ public abstract class EndpointBase
             }
             catch (Exception e)
             {
-                Console.WriteLine("Error deserializing. String to parse: ");
+                #if DEBUG
+                Console.WriteLine($"Error deserializing to {typeof(T)}. String to parse: ");
                 Console.WriteLine(resultAsString);
+                #endif
+                
                 throw;
             }
             

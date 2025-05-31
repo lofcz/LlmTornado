@@ -4,7 +4,7 @@ using LlmTornado.Models;
 
 namespace LlmTornado.Demo;
 
-public static class SpeechDemo
+public class SpeechDemo : DemoBase
 {
     [TornadoTest]
     [Flaky("expensive")]

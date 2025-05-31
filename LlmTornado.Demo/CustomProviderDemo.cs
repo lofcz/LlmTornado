@@ -4,7 +4,7 @@ using LlmTornado.Code;
 
 namespace LlmTornado.Demo;
 
-public class CustomProviderDemo
+public class CustomProviderDemo : DemoBase
 {
     [Flaky("requires ollama")]
     [TornadoTest]

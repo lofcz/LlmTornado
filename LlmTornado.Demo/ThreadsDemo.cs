@@ -6,7 +6,7 @@ using LlmTornado.Threads;
 
 namespace LlmTornado.Demo;
 
-public static class ThreadsDemo
+public class ThreadsDemo : DemoBase
 {
     private static TornadoThread? generatedThread;
     private static AssistantMessage? generatedMessage;

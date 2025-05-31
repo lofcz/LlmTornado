@@ -6,7 +6,7 @@ using LlmTornado.VectorStores;
 
 namespace LlmTornado.Demo;
 
-public static class AssistantsDemo
+public class AssistantsDemo : DemoBase
 {
     private static string GenerateName() => $"demo_assistant_{DateTime.Now.Ticks}";
     private static Assistant? generatedAssistant;

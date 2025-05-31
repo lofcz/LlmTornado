@@ -2,6 +2,7 @@ using System.Reflection;
 using LlmTornado.Chat.Models;
 using LlmTornado.Code.Models;
 using LlmTornado.Demo;
+using Assert = NUnit.Framework.Assert;
 
 namespace LlmTornado.Tests;
 

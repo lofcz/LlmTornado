@@ -3,7 +3,7 @@ using LlmTornado.Chat.Models;
 
 namespace LlmTornado.Demo;
 
-public class ToolkitDemo
+public class ToolkitDemo : DemoBase
 {
     class DemoAggregatedItem
     {

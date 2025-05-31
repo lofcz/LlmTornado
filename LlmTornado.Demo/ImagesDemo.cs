@@ -7,7 +7,7 @@ using LlmTornado.Models;
 
 namespace LlmTornado.Demo;
 
-public class ImagesDemo
+public class ImagesDemo : DemoBase
 {
     static async Task DisplayImage(ImageGenerationResult generatedImg)
     {

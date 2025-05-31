@@ -3,7 +3,7 @@ using LlmTornado.Models;
 
 namespace LlmTornado.Demo;
 
-public class ModelsDemo
+public class ModelsDemo : DemoBase
 {
     static async Task GetProviderModels(LLmProviders provider)
     {

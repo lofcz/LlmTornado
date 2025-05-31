@@ -15,7 +15,7 @@ using LlmTornado.Files;
 
 namespace LlmTornado.Demo;
 
-public static partial class ChatDemo
+public partial class ChatDemo : DemoBase
 {
     [TornadoTest]
     public static async Task ProviderCustomServerApiKey()

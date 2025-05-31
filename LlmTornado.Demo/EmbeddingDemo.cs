@@ -6,7 +6,7 @@ using LlmTornado.Embedding.Vendors.Voyage;
 
 namespace LlmTornado.Demo;
 
-public static class EmbeddingDemo
+public class EmbeddingDemo : DemoBase
 {
     [TornadoTest]
     public static async Task Embed()
