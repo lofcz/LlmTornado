@@ -1,10 +1,12 @@
 using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
+using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 
@@ -24,6 +26,35 @@ internal static class Extensions
     {
         return string.IsNullOrWhiteSpace(str);
     }
+    
+    public static string? ToCsv(this IEnumerable? elems, string separator = ",")
+    {
+        if (elems == null)
+        {
+            return null;
+        }
+
+        StringBuilder sb = new StringBuilder();
+        foreach (object elem in elems)
+        {
+            if (sb.Length > 0)
+            {
+                sb.Append(separator);
+            }
+
+            if (elem is Enum)
+            {
+                sb.Append((int)elem);
+            }
+            else
+            {
+                sb.Append(elem);   
+            }
+        }
+
+        return sb.ToString();
+    }
+
     
     public static void AddOrUpdate<TK, TV>(this ConcurrentDictionary<TK, TV> dictionary, TK key, TV value) where TK : notnull
     {

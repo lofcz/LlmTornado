@@ -1,9 +1,11 @@
 using System.Collections.Generic;
+using System.Text;
 using LlmTornado.Chat.Models;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
 using LlmTornado.Embedding.Models.Cohere;
 using LlmTornado.Embedding.Models.Google;
+using LlmTornado.Embedding.Models.Mistral;
 using LlmTornado.Embedding.Models.OpenAi;
 using LlmTornado.Embedding.Models.Voyage;
 using LlmTornado.Models;
@@ -36,6 +38,11 @@ public class EmbeddingModel : ModelEmbeddingBase
     public static readonly EmbeddingModelGoogle Google = new EmbeddingModelGoogle();
     
     /// <summary>
+    /// Models from Mistral.
+    /// </summary>
+    public static readonly EmbeddingModelMistral Mistral = new EmbeddingModelMistral();
+    
+    /// <summary>
     /// All known models keyed by name.
     /// </summary>
     public static readonly Dictionary<string, IModel> AllModelsMap = [];
@@ -51,7 +58,8 @@ public class EmbeddingModel : ModelEmbeddingBase
             ..OpenAi.AllModels,
             ..Voyage.AllModels,
             ..Cohere.AllModels,
-            ..Google.AllModels
+            ..Google.AllModels,
+            ..Mistral.AllModels
         ];
         
         AllModels.ForEach(x =>
@@ -158,10 +166,23 @@ public class EmbeddingModel : ModelEmbeddingBase
     }
 
     /// <summary>
-    /// Returns name of the model.
+    /// Returns name and information about the model.
     /// </summary>
     public override string ToString()
     {
+        StringBuilder sb = new StringBuilder();
+        sb.Append(Name);
+        
+        if (OutputDimensions > 0)
+        {
+            sb.Append($", dims: {OutputDimensions}");
+        }
+
+        if (MatryoshkaDimensions?.Count > 0)
+        {
+            sb.Append($", possible dims: [{MatryoshkaDimensions.ToCsv(", ")}]");
+        }
+        
         return Name;
     }
 }

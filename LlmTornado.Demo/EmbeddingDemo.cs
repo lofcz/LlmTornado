@@ -26,6 +26,30 @@ public class EmbeddingDemo : DemoBase
     }
     
     [TornadoTest]
+    public static async Task EmbedMistral()
+    {
+        EmbeddingResult? result = await Program.ConnectMulti().Embeddings.CreateEmbedding(new EmbeddingRequest
+        {
+            Model = EmbeddingModel.Mistral.Premier.CodestralEmbed,
+            InputScalar = "<div>hello world</div>",
+            Dimensions = 512,
+            OutputDType = EmbeddingOutputDtypes.Int8
+        });
+        
+        float[]? data = result?.Data.FirstOrDefault()?.Embedding;
+
+        if (data is not null)
+        {
+            for (int i = 0; i < Math.Min(data.Length, 10); i++)
+            {
+                Console.WriteLine(data[i]);
+            }
+            
+            Console.WriteLine($"... (length: {data.Length})");
+        }
+    }
+    
+    [TornadoTest]
     public static async Task EmbedGoogle()
     {
         EmbeddingResult? result = await Program.ConnectMulti().Embeddings.CreateEmbedding(EmbeddingModel.Google.Gemini.Embedding4, "lorem ipsum");
@@ -49,7 +73,7 @@ public class EmbeddingDemo : DemoBase
         {
             Voyage = new EmbeddingRequestVendorVoyageExtensions
             {
-                OutputDtype = EmbeddingVendorVoyageOutputDtypes.Uint8,
+                OutputDtype = EmbeddingOutputDtypes.Uint8,
                 InputType = EmbeddingVendorVoyageInputTypes.Document
             }
         });

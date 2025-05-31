@@ -6,6 +6,7 @@ using LlmTornado.Chat.Vendors.Cohere;
 using LlmTornado.Code;
 using LlmTornado.Embedding.Models;
 using LlmTornado.Embedding.Vendors.Google;
+using LlmTornado.Embedding.Vendors.Mistral;
 using LlmTornado.Embedding.Vendors.OpenAi;
 using LlmTornado.Embedding.Vendors.Voyage;
 using LlmTornado.Models;
@@ -239,6 +240,12 @@ public class EmbeddingRequest
 	[JsonProperty("dimensions")]
     public int? Dimensions { get; set; }
 	
+	/// <summary>
+	///		Precision and format of the embeddings. Currently supported by Voyage and Mistral.
+	/// </summary>
+	[JsonIgnore]
+	public EmbeddingOutputDtypes? OutputDType { get; set; }
+	
 	[JsonIgnore]
 	internal string? UrlOverride { get; set; }
 	
@@ -252,6 +259,7 @@ public class EmbeddingRequest
 		string content = provider.Provider switch
 		{
 			LLmProviders.OpenAi => JsonConvert.SerializeObject(new VendorOpenAiEmbeddingRequest(this, provider), EndpointBase.NullSettings),
+			LLmProviders.Mistral => JsonConvert.SerializeObject(new VendorMistralEmbeddingRequest(this, provider), EndpointBase.NullSettings),
 			//LLmProviders.Anthropic => JsonConvert.SerializeObject(new VendorAnthropicEmbeddingRequest(this, provider), EndpointBase.NullSettings),
 			LLmProviders.Cohere => JsonConvert.SerializeObject(new VendorCohereEmbeddingRequest(this, provider), EndpointBase.NullSettings),
 			LLmProviders.Google => JsonConvert.SerializeObject(new VendorGoogleEmbeddingRequest(this, provider), EndpointBase.NullSettings),

@@ -1,3 +1,5 @@
+using System;
+
 namespace LlmTornado.Embedding.Vendors.Voyage;
 
 /// <summary>
@@ -18,13 +20,14 @@ public class EmbeddingRequestVendorVoyageExtensions
     /// <summary>
     /// The data type for the embeddings to be returned. Defaults to float.
     /// </summary>
-    public EmbeddingVendorVoyageOutputDtypes? OutputDtype { get; set; }
+    [Obsolete("Will be removed. Please use OutputDtype on the EmbeddingRequest itself.")]
+    public EmbeddingOutputDtypes? OutputDtype { get; set; }
 }
 
 /// <summary>
 /// The data type for the embeddings to be returned. Defaults to float.
 /// </summary>
-public enum EmbeddingVendorVoyageOutputDtypes
+public enum EmbeddingOutputDtypes
 {
     /// <summary>
     /// <see cref="float"/>

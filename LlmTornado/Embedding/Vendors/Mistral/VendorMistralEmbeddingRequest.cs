@@ -1,9 +1,10 @@
 using LlmTornado.Code;
+using LlmTornado.Embedding.Vendors.Voyage;
 using Newtonsoft.Json;
 
-namespace LlmTornado.Embedding.Vendors.Voyage;
+namespace LlmTornado.Embedding.Vendors.Mistral;
 
-internal class VendorVoyageEmbeddingRequest
+internal class VendorMistralEmbeddingRequest
 {
     /// <summary>
     ///     Model to use.
@@ -48,7 +49,7 @@ internal class VendorVoyageEmbeddingRequest
     [JsonProperty("output_dimension")]
     public int? Dimensions { get; set; }
     
-    public VendorVoyageEmbeddingRequest(EmbeddingRequest request, IEndpointProvider provider)
+    public VendorMistralEmbeddingRequest(EmbeddingRequest request, IEndpointProvider provider)
     {
         Model = request.Model.Name;
 
@@ -62,7 +63,7 @@ internal class VendorVoyageEmbeddingRequest
         }
 
         Dimensions = request.Dimensions;
-
+        
         if (request.OutputDType is not null)
         {
             OutputDtype = request.OutputDType switch
@@ -74,30 +75,6 @@ internal class VendorVoyageEmbeddingRequest
                 EmbeddingOutputDtypes.Binary => "binary",
                 EmbeddingOutputDtypes.Ubinary => "ubinary",
                 _ => "float"
-            };
-        }
-        
-        if (request.VendorExtensions?.Voyage is not null)
-        {
-            Truncation = request.VendorExtensions.Voyage.Truncation;
-            
-            // note: legacy extension
-            OutputDtype = request.VendorExtensions.Voyage.OutputDtype switch
-            {
-                null => null,
-                EmbeddingOutputDtypes.Float => "float",
-                EmbeddingOutputDtypes.Int8 => "int8",
-                EmbeddingOutputDtypes.Uint8 => "uint8",
-                EmbeddingOutputDtypes.Binary => "binary",
-                EmbeddingOutputDtypes.Ubinary => "ubinary",
-                _ => "float"
-            };
-            InputType = request.VendorExtensions.Voyage.InputType switch
-            {
-                null => null,
-                EmbeddingVendorVoyageInputTypes.Query => "query",
-                EmbeddingVendorVoyageInputTypes.Document => "document",
-                _ => null
             };
         }
     }
