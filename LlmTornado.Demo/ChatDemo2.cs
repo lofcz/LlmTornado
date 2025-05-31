@@ -770,7 +770,7 @@ public partial class ChatDemo : DemoBase
     [TornadoTest]
     public static async Task GoogleStreamImages()
     {
-        Conversation chat = Program.Connect(LLmProviders.Google).Chat.CreateConversation(new ChatRequest
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
             Model = ChatModel.Google.GeminiExperimental.Gemini2FlashImageGeneration,
             Modalities = [ ChatModelModalities.Text, ChatModelModalities.Image ]
@@ -812,7 +812,7 @@ public partial class ChatDemo : DemoBase
     [TornadoTest]
     public static async Task GoogleStreamVideo()
     {
-        TornadoApi api = Program.Connect(LLmProviders.Google);
+        TornadoApi api = Program.Connect();
         HttpCallResult<TornadoFile> uploadedFile = await api.Files.Upload("Static/Files/video.mp4", mimeType: "video/mp4", provider: LLmProviders.Google);
 
         if (uploadedFile.Data is null)
@@ -820,7 +820,7 @@ public partial class ChatDemo : DemoBase
             return;
         }
         
-        Conversation chat = Program.Connect(LLmProviders.Google).Chat.CreateConversation(new ChatRequest
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
             Model = ChatModel.Google.Gemini.Gemini2Flash001
         });

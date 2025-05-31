@@ -50,9 +50,9 @@ public class Program
         return tornadoApi;
     }
     
-    public static TornadoApi Connect(LLmProviders provider = LLmProviders.OpenAi)
+    public static TornadoApi Connect(bool httpStrict = true)
     {
-        return ConnectMulti();
+        return ConnectMulti(httpStrict);
     }
 
     public static async Task<bool> SetupApi()

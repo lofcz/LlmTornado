@@ -224,7 +224,7 @@ public partial class ChatDemo : DemoBase
     [TornadoTest]
     public static async Task AnthropicCachingChat()
     {
-        Conversation chat = Program.Connect(LLmProviders.Cohere).Chat.CreateConversation(new ChatRequest
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
             Model = ChatModel.Anthropic.Claude35.SonnetLatest,
             Tools =
@@ -322,7 +322,7 @@ public partial class ChatDemo : DemoBase
     {
         string longPrompt = await File.ReadAllTextAsync("Static/Files/pride_and_prejudice.txt");
         
-        Conversation chat = Program.Connect(LLmProviders.Cohere).Chat.CreateConversation(new ChatRequest
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
             Model = ChatModel.Anthropic.Claude35.SonnetLatest
         });
@@ -395,7 +395,7 @@ public partial class ChatDemo : DemoBase
     [TornadoTest]
     public static async Task CohereWebSearch()
     {
-        Conversation chat = Program.Connect(LLmProviders.Cohere).Chat.CreateConversation(new ChatRequest
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
             Model = ChatModel.Cohere.Command.Default,
             VendorExtensions = new ChatRequestVendorExtensions(new ChatRequestVendorCohereExtensions([
@@ -432,7 +432,7 @@ public partial class ChatDemo : DemoBase
     [TornadoTest]
     public static async Task CohereWebSearchStreaming()
     {
-        Conversation chat = Program.Connect(LLmProviders.Cohere).Chat.CreateConversation(new ChatRequest
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
             Model = ChatModel.Cohere.Command.Default,
             VendorExtensions = new ChatRequestVendorExtensions(new ChatRequestVendorCohereExtensions([
@@ -657,10 +657,10 @@ public partial class ChatDemo : DemoBase
     [TornadoTest]
     public static async Task GoogleFileInput()
     {
-        TornadoApi api = Program.Connect(LLmProviders.Google);
+        TornadoApi api = Program.Connect();
         HttpCallResult<TornadoFile> uploadedFile = await api.Files.Upload("Static/Files/prezSample.pdf", mimeType: "application/pdf", provider: LLmProviders.Google);
 
-        Conversation chat = Program.Connect(LLmProviders.Google).Chat.CreateConversation(new ChatRequest
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
             Model = ChatModel.Google.Gemini.Gemini2Flash001
         });
@@ -676,7 +676,7 @@ public partial class ChatDemo : DemoBase
     [TornadoTest]
     public static async Task GoogleStreamFileInput()
     {
-        TornadoApi api = Program.Connect(LLmProviders.Google);
+        TornadoApi api = Program.Connect();
         HttpCallResult<TornadoFile> uploadedFile = await api.Files.Upload("Static/Files/sample.pdf", mimeType: "application/pdf", provider: LLmProviders.Google);
 
         if (uploadedFile.Data is null)
@@ -684,7 +684,7 @@ public partial class ChatDemo : DemoBase
             return;
         }
         
-        Conversation chat = Program.Connect(LLmProviders.Google).Chat.CreateConversation(new ChatRequest
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
             Model = ChatModel.Google.Gemini.Gemini15Flash
         });
@@ -715,7 +715,7 @@ public partial class ChatDemo : DemoBase
     [TornadoTest]
     public static async Task GoogleStream()
     {
-        Conversation chat = Program.Connect(LLmProviders.Google).Chat.CreateConversation(new ChatRequest
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
             Model = ChatModel.Google.Gemini.Gemini15Flash
         });
@@ -729,7 +729,7 @@ public partial class ChatDemo : DemoBase
     [TornadoTest]
     public static async Task Google()
     {
-        Conversation chat = Program.Connect(LLmProviders.Google).Chat.CreateConversation(new ChatRequest
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
             Model = ChatModel.Google.Gemini.Gemini15Flash
         });
@@ -978,7 +978,7 @@ public partial class ChatDemo : DemoBase
     [TornadoTest]
     public static async Task Cohere()
     {
-        Conversation chat = Program.Connect(LLmProviders.Cohere).Chat.CreateConversation(new ChatRequest
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
             Model = ChatModel.Cohere.Command.R7B
         });
@@ -994,7 +994,7 @@ public partial class ChatDemo : DemoBase
     [TornadoTest]
     public static async Task Cohere2408()
     {
-        Conversation chat = Program.Connect(LLmProviders.Cohere).Chat.CreateConversation(new ChatRequest
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
             Model = ChatModel.Cohere.Command.RPlus2408,
             VendorExtensions = new ChatRequestVendorExtensions
@@ -1050,7 +1050,7 @@ public partial class ChatDemo : DemoBase
     [TornadoTest]
     public static async Task CohereStreaming()
     {
-        Conversation chat = Program.Connect(LLmProviders.Cohere).Chat.CreateConversation(new ChatRequest
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
             Model = ChatModel.Cohere.Command.Default
         });
@@ -1066,7 +1066,7 @@ public partial class ChatDemo : DemoBase
     [TornadoTest]
     public static async Task CohereStreamingRich()
     {
-        Conversation chat = Program.Connect(LLmProviders.Cohere).Chat.CreateConversation(new ChatRequest
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
             Model = ChatModel.Cohere.Command.Default
         });
@@ -1095,7 +1095,7 @@ public partial class ChatDemo : DemoBase
     [TornadoTest]
     public static async Task AnthropicSonnet37()
     {
-        Conversation chat = Program.Connect(LLmProviders.Anthropic).Chat.CreateConversation(new ChatRequest
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
             Model = ChatModel.Anthropic.Claude37.Sonnet
         });
@@ -1112,7 +1112,7 @@ public partial class ChatDemo : DemoBase
     [TornadoTest]
     public static async Task AnthropicSonnet37Thinking()
     {
-        Conversation chat = Program.Connect(LLmProviders.Anthropic).Chat.CreateConversation(new ChatRequest
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
             Model = ChatModel.Anthropic.Claude37.Sonnet,
             VendorExtensions = new ChatRequestVendorExtensions(new ChatRequestVendorAnthropicExtensions
@@ -1148,7 +1148,7 @@ public partial class ChatDemo : DemoBase
     [TornadoTest]
     public static async Task AnthropicSonnet37ThinkingStreaming()
     {
-        Conversation chat = Program.Connect(LLmProviders.Anthropic).Chat.CreateConversation(new ChatRequest
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
             Model = ChatModel.Anthropic.Claude37.Sonnet,
             VendorExtensions = new ChatRequestVendorExtensions(new ChatRequestVendorAnthropicExtensions
@@ -1199,7 +1199,7 @@ public partial class ChatDemo : DemoBase
     [TornadoTest]
     public static async Task AnthropicSonnet37ThinkingStreamingMultiturn()
     {
-        Conversation chat = Program.Connect(LLmProviders.Anthropic).Chat.CreateConversation(new ChatRequest
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
             Model = ChatModel.Anthropic.Claude37.Sonnet,
             Stream = true,
@@ -1256,7 +1256,7 @@ public partial class ChatDemo : DemoBase
     [TornadoTest]
     public static async Task Anthropic()
     {
-       Conversation chat = Program.Connect(LLmProviders.Anthropic).Chat.CreateConversation(new ChatRequest
+       Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
        {
            Model = ChatModel.Anthropic.Claude3.Sonnet
        });
@@ -1525,7 +1525,7 @@ public partial class ChatDemo : DemoBase
     [TornadoTest]
     public static async Task AnthropicToolsForceNone()
     {
-        Conversation chat = Program.Connect(LLmProviders.Anthropic).Chat.CreateConversation(new ChatRequest
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
             Model = ChatModel.Anthropic.Claude3.Sonnet,
             Tools = [
@@ -1591,7 +1591,7 @@ public partial class ChatDemo : DemoBase
     [TornadoTest]
     public static async Task AnthropicFunctionsParallel()
     {
-        Conversation chat = Program.Connect(LLmProviders.Anthropic).Chat.CreateConversation(new ChatRequest
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
             Model = ChatModel.Anthropic.Claude3.Sonnet,
             Tools = [
@@ -1652,7 +1652,7 @@ public partial class ChatDemo : DemoBase
     [TornadoTest]
     public static async Task GoogleFunctions()
     {
-        Conversation chat = Program.Connect(LLmProviders.Google).Chat.CreateConversation(new ChatRequest
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
             Model = ChatModel.Google.Gemini.Gemini15Flash,
             Tools = [
@@ -1705,7 +1705,7 @@ public partial class ChatDemo : DemoBase
     [TornadoTest]
     public static async Task GoogleFunctionsStrict()
     {
-        Conversation chat = Program.Connect(LLmProviders.Google).Chat.CreateConversation(new ChatRequest
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
             Model = ChatModel.Google.Gemini.Gemini15Flash,
             Tools = [
@@ -1761,7 +1761,7 @@ public partial class ChatDemo : DemoBase
     {
         StringBuilder sb = new StringBuilder();
 
-        Conversation chat = Program.Connect(LLmProviders.Anthropic).Chat.CreateConversation(new ChatRequest
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
             Model = ChatModel.Anthropic.Claude3.Sonnet,
             Tools = [
@@ -1821,7 +1821,7 @@ public partial class ChatDemo : DemoBase
     {
         StringBuilder sb = new StringBuilder();
 
-        Conversation chat = Program.Connect(LLmProviders.Anthropic).Chat.CreateConversation(new ChatRequest
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
             Model = ChatModel.Anthropic.Claude3.Sonnet,
             Tools = [
@@ -1872,7 +1872,7 @@ public partial class ChatDemo : DemoBase
     [TornadoTest]
     public static async Task Azure()
     {
-        Conversation chat = Program.Connect(LLmProviders.AzureOpenAi).Chat.CreateConversation(new ChatRequest
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
             Model = ChatModel.OpenAi.Gpt4.Default
         });
@@ -1889,7 +1889,7 @@ public partial class ChatDemo : DemoBase
     [TornadoTest]
     public static async Task AnthropicStreaming()
     {
-        Conversation chat = Program.Connect(LLmProviders.Anthropic).Chat.CreateConversation(new ChatRequest
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
             Model = ChatModel.Anthropic.Claude3.Sonnet
         });

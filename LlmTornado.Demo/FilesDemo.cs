@@ -118,8 +118,8 @@ public class FilesDemo : DemoBase
     public static async Task<bool> DeleteFileOpenAi()
     {
         HttpCallResult<TornadoFile> uploadedFile = await Program.Connect().Files.Upload("Static/Files/sample.pdf", FilePurpose.Assistants, provider: LLmProviders.OpenAi);
-        DeletedTornadoFile? deleteResult = await Program.Connect().Files.Delete(uploadedFile.Data.Id);
-        Console.WriteLine($"{(deleteResult?.Deleted ?? false ? "File delted" : "File not deleted")}");
+        HttpCallResult<DeletedTornadoFile> deleteResult = await Program.Connect().Files.Delete(uploadedFile.Data.Id);
+        Console.WriteLine($"{(deleteResult.Data?.Deleted ?? false ? "File deleted" : "File not deleted")}");
         return deleteResult is not null;
     }
     
@@ -128,8 +128,18 @@ public class FilesDemo : DemoBase
     {
         HttpCallResult<TornadoFile> uploadedFile = await Program.Connect().Files.Upload("Static/Files/sample.pdf", provider: LLmProviders.Google);
         
-        DeletedTornadoFile? deleteResult = await Program.Connect().Files.Delete(uploadedFile.Data.Id, provider: LLmProviders.Google);
-        Console.WriteLine($"{(deleteResult?.Deleted ?? false ? "File delted" : "File not deleted")}");
+        HttpCallResult<DeletedTornadoFile> deleteResult = await Program.Connect().Files.Delete(uploadedFile.Data.Id, provider: LLmProviders.Google);
+        Console.WriteLine($"{(deleteResult.Data?.Deleted ?? false ? "File deleted" : "File not deleted")}");
+        return deleteResult is not null;
+    }
+    
+    [TornadoTest]
+    public static async Task<bool> DeleteFileAnthropic()
+    {
+        HttpCallResult<TornadoFile> uploadedFile = await Program.Connect().Files.Upload("Static/Files/sample.pdf", provider: LLmProviders.Anthropic);
+        HttpCallResult<DeletedTornadoFile> deleteResult = await Program.Connect().Files.Delete(uploadedFile.Data.Id, provider: LLmProviders.Anthropic);
+        HttpCallResult<DeletedTornadoFile> deleteResult2 = await Program.Connect(false).Files.Delete(uploadedFile.Data.Id, provider: LLmProviders.Anthropic);
+        Console.WriteLine($"{(deleteResult.Data?.Deleted ?? false ? $"File deleted - {deleteResult.Data.Id}" : "File not deleted")}");
         return deleteResult is not null;
     }
 }

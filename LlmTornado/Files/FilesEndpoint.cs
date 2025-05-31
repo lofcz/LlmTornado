@@ -166,7 +166,7 @@ public class FilesEndpoint : EndpointBase
 	/// <param name="fileId">The ID of the file to use for this request</param>
 	/// <param name="provider">Which provider will be used</param>
 	/// <returns></returns>
-	public async Task<DeletedTornadoFile?> Delete(string fileId, LLmProviders? provider = null)
+	public async Task<HttpCallResult<DeletedTornadoFile>> Delete(string fileId, LLmProviders? provider = null)
     {
 	    IEndpointProvider resolvedProvider = Api.ResolveProvider(provider);
 
@@ -176,13 +176,13 @@ public class FilesEndpoint : EndpointBase
 		    _ => GetUrl(resolvedProvider, $"/{fileId}")
 	    };
 	    
-	    DeletedTornadoFile? file = await HttpDelete<DeletedTornadoFile>(resolvedProvider, Endpoint, url).ConfigureAwait(ConfigureAwaitOptions.None);
+	    HttpCallResult<DeletedTornadoFile> file = await HttpDeleteRaw<DeletedTornadoFile>(resolvedProvider, Endpoint, url).ConfigureAwait(ConfigureAwaitOptions.None);
 
-	    if (file is not null)
+	    if (file.Data is not null)
 	    {
 		    // this is set automatically only by OpenAi
-		    file.Deleted = true;
-		    file.Id = fileId;
+		    file.Data.Deleted = true;
+		    file.Data.Id = fileId;
 	    }
 
 	    return file;

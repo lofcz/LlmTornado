@@ -461,7 +461,7 @@ public abstract class EndpointBase
 
             if (response.Exception is not null)
             {
-                return new HttpCallResult<T>(HttpStatusCode.ServiceUnavailable, response.HttpResult?.Response, default, false, new RestDataOrException<HttpResponseData>(response.Exception))
+                return new HttpCallResult<T>(response.HttpResult?.Code ?? HttpStatusCode.ServiceUnavailable, response.HttpResult?.Response, default, false, new RestDataOrException<HttpResponseData>(response.Exception))
                 {
                     Exception = response.Exception
                 };
@@ -469,7 +469,7 @@ public abstract class EndpointBase
 
             if (response.Data is null)
             {
-                return new HttpCallResult<T>(HttpStatusCode.Found, null, default, false, new RestDataOrException<HttpResponseData>(new Exception("Data is null")))
+                return new HttpCallResult<T>(response.HttpResult?.Code ?? HttpStatusCode.Found, null, default, false, new RestDataOrException<HttpResponseData>(new Exception("Data is null")))
                 {
                     Exception = new Exception("Data is null")
                 };
@@ -626,6 +626,11 @@ public abstract class EndpointBase
         return HttpRequest<T>(provider, endpoint, url, queryParams, HttpMethod.Delete, postData, ct);
     }
 
+    internal Task<HttpCallResult<T>> HttpDeleteRaw<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, Dictionary<string, object>? queryParams = null, object? postData = null, CancellationToken? ct = null)
+    {
+        return HttpRequestRaw<T>(provider, endpoint, url, queryParams, HttpMethod.Delete, postData, ct);
+    }
+    
     internal Task<HttpCallResult<T>> HttpAtomic<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, HttpMethod method, string? url = null, Dictionary<string, object>? queryParams = null, object? postData = null, CancellationToken? ct = null, bool allowNon200Codes = false)
     {
         return HttpRequestRaw<T>(provider, endpoint, url, queryParams, method, postData, ct);
