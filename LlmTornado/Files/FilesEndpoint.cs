@@ -149,13 +149,15 @@ public class FilesEndpoint : EndpointBase
     }
 
 	/// <summary>
-	///     Returns the contents of the specific file as string. Supported only by OpenAi.
+	///     Returns the contents of the specific file as string. Supported only by OpenAi and Anthropic.
 	/// </summary>
 	/// <param name="fileId">The ID of the file to use for this request</param>
+	/// <param name="provider">Which provider will be used</param>
 	/// <returns></returns>
-	public Task<string> GetContent(string fileId)
+	public Task<string> GetContent(string fileId, LLmProviders? provider = null)
     {
-        return HttpGetContent(Api.GetProvider(LLmProviders.OpenAi), Endpoint, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{fileId}/content"));
+	    IEndpointProvider resolvedProvider = Api.ResolveProvider(provider);
+        return HttpGetContent(resolvedProvider, Endpoint, GetUrl(resolvedProvider, $"/{fileId}/content"));
     }
 
 	/// <summary>

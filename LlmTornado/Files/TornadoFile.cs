@@ -72,6 +72,12 @@ public class TornadoFile
 	public string? MimeType { get; set; }
 	
 	/// <summary>
+	///		Whether the content can be downloaded, supported only by Anthropic.
+	/// </summary>
+	[JsonIgnore]
+	public bool Downloadable { get; set; }
+	
+	/// <summary>
 	///     Date the file will be automatically deleted, output only. Used only by Google.
 	/// </summary>
 	[JsonIgnore]

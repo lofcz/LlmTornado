@@ -79,6 +79,24 @@ public class FilesDemo : DemoBase
     }
     
     [TornadoTest]
+    public static async Task<TornadoPagingList<TornadoFile>?> DownloadAnthropic()
+    {
+        TornadoPagingList<TornadoFile>? items = await Program.Connect().Files.Get(new ListQuery(100), provider: LLmProviders.Anthropic);
+
+        if (items?.Items.Count > 0)
+        {
+            TornadoFile? first = items.Items.FirstOrDefault(x => x.Downloadable);
+
+            if (first is not null)
+            {
+                string content = await Program.Connect().Files.GetContent(first.Id, provider: LLmProviders.Anthropic);
+            }
+        }
+
+        return items;
+    }
+    
+    [TornadoTest]
     public static async Task<TornadoPagingList<TornadoFile>?> GetAllFilesOpenAi()
     {
         TornadoPagingList<TornadoFile>? items = await Program.Connect().Files.Get(provider: LLmProviders.OpenAi);

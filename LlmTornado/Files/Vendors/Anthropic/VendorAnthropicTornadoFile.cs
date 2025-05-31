@@ -79,7 +79,8 @@ internal class VendorAnthropicTornadoFile
 			Id = Id,
 			MimeType = MimeType,
 			Bytes = SizeBytes,
-			Object = "file"
+			Object = "file",
+			Downloadable = Downloadable
 		};
 	}
 }
