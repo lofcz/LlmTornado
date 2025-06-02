@@ -24,7 +24,7 @@ public class ModelVendor<T> where T : ModelBase
 /// <summary>
 /// LLM model.
 /// </summary>
-public interface IModel
+public interface IModel : IEquatable<IModel>
 {
     /// <summary>
     /// Name of the model. This must be globally unique.
@@ -95,7 +95,7 @@ interface IVendorModelClassProvider
 /// <summary>
 /// Represents a base shared between all LLMs.
 /// </summary>
-public abstract class ModelBase : IModel, IEquatable<IModel>
+public abstract class ModelBase : IModel
 {
     /// <summary>
     ///     The id/name of the model.
@@ -231,7 +231,7 @@ public abstract class ModelBase : IModel, IEquatable<IModel>
     /// <returns></returns>
     public override int GetHashCode()
     {
-        return HashCode.Combine(Name, ApiName, OwnedBy, (int)Provider, ContextTokens, Aliases);
+        return HashCode.Combine(Name, ApiName);
     }
 }
 

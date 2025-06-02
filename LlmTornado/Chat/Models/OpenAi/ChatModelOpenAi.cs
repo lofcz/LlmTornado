@@ -87,6 +87,21 @@ public class ChatModelOpenAi : BaseVendorModelProvider
         ..ChatModelOpenAiO3.ModelsAll,
         ..ChatModelOpenAiO4.ModelsAll
     ];
+
+    /// <summary>
+    /// All models compatible with web_search. Requests for these models are serialized differently.
+    /// </summary>
+    public static readonly List<IModel> WebSearchCompatibleModelsAll =
+    [
+        ChatModelOpenAiGpt4.ModelOSearchPreview,
+        ChatModelOpenAiGpt4.ModelOMiniSearchPreview
+    ];
+
+    internal static readonly HashSet<IModel> TempIncompatibleModels =
+    [
+        //..ReasoningModelsAll,
+        ..WebSearchCompatibleModelsAll
+    ];
     
     static ChatModelOpenAi()
     {

@@ -771,7 +771,8 @@ public partial class ChatDemo : DemoBase
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.OpenAi.Gpt4.OMiniSearchPreview,
+            Temperature = 0.4d, // harmonized away by us
+            Model = "gpt-4o-mini-search-preview",
             WebSearchOptions = new ChatRequestWebSearchOptions
             {
                 UserLocation = new ChatRequestWebSearchUserLocation
@@ -782,9 +783,7 @@ public partial class ChatDemo : DemoBase
             }
         });
         
-        chat.AppendUserInput([
-            new ChatMessagePart("Tell me about some local news")
-        ]);
+        chat.AppendUserInput("Tell me about some local news");
         
         ChatRichResponse response = await chat.GetResponseRich();
         

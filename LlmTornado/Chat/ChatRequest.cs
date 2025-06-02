@@ -446,9 +446,8 @@ public class ChatRequest
 			{
 				if (x.Model is not null)
 				{
-					if (ChatModelOpenAi.ReasoningModelsAll.Contains(x.Model))
+					if (ChatModelOpenAi.TempIncompatibleModels.Contains(x.Model))
 					{
-						// reasoning models do not support temperature
 						x.Temperature = null;
 					}
 				}
