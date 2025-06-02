@@ -213,7 +213,7 @@ public class ChatRequestWebSearchUserLocation
     /// <summary>
     /// The type of location approximation. Always approximate.
     /// </summary>
-    [JsonProperty("type")]
+    [JsonIgnore]
     public ChatRequestWebSearchUserLocationTypes Type { get; set; } = ChatRequestWebSearchUserLocationTypes.Approximate;
     
     /// <summary>
@@ -225,7 +225,7 @@ public class ChatRequestWebSearchUserLocation
     /// <summary>
     /// The two-letter ISO country code of the user, e.g. US.
     /// </summary>
-    [JsonProperty("city")]
+    [JsonProperty("country")]
     public string? Country { get; set; }
     
     /// <summary>
@@ -424,6 +424,7 @@ public interface IChatChoiceVendorExtensions
 /// <summary>
 /// Configuration of the web search options.
 /// </summary>
+[JsonConverter(typeof(ChatRequestWebSearchOptionsJsonConverter))]
 public class ChatRequestWebSearchOptions
 {
     /// <summary>
@@ -437,6 +438,72 @@ public class ChatRequestWebSearchOptions
     /// </summary>
     [JsonProperty("user_location")]
     public ChatRequestWebSearchUserLocation? UserLocation { get; set; }
+}
+
+internal class ChatRequestWebSearchOptionsJsonConverter : JsonConverter<ChatRequestWebSearchOptions>
+{
+    public override void WriteJson(JsonWriter writer, ChatRequestWebSearchOptions? value, JsonSerializer serializer)
+    {
+        if (value == null)
+        {
+            writer.WriteNull();
+            return;
+        }
+
+        writer.WriteStartObject();
+
+        if (value.SearchContextSize.HasValue)
+        {
+            writer.WritePropertyName("search_context_size");
+            serializer.Serialize(writer, value.SearchContextSize.Value);
+        }
+
+        if (value.UserLocation != null)
+        {
+            writer.WritePropertyName("user_location");
+            writer.WriteStartObject();
+        
+            writer.WritePropertyName("type");
+            writer.WriteValue("approximate");
+            
+            writer.WritePropertyName("approximate");
+            writer.WriteStartObject();
+        
+            if (!string.IsNullOrEmpty(value.UserLocation.City))
+            {
+                writer.WritePropertyName("city");
+                writer.WriteValue(value.UserLocation.City);
+            }
+        
+            if (!string.IsNullOrEmpty(value.UserLocation.Country))
+            {
+                writer.WritePropertyName("country");
+                writer.WriteValue(value.UserLocation.Country);
+            }
+        
+            if (!string.IsNullOrEmpty(value.UserLocation.Region))
+            {
+                writer.WritePropertyName("region");
+                writer.WriteValue(value.UserLocation.Region);
+            }
+        
+            if (!string.IsNullOrEmpty(value.UserLocation.Timezone))
+            {
+                writer.WritePropertyName("timezone");
+                writer.WriteValue(value.UserLocation.Timezone);
+            }
+        
+            writer.WriteEndObject();
+            writer.WriteEndObject();
+        }
+
+        writer.WriteEndObject();
+    }
+
+    public override ChatRequestWebSearchOptions? ReadJson(JsonReader reader, Type objectType, ChatRequestWebSearchOptions? existingValue, bool hasExistingValue, JsonSerializer serializer)
+    {
+        return existingValue;
+    }
 }
 
 /// <summary>

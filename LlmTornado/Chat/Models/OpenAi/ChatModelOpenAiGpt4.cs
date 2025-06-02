@@ -11,6 +11,26 @@ namespace LlmTornado.Chat.Models;
 public class ChatModelOpenAiGpt4 : IVendorModelClassProvider
 {
     /// <summary>
+    /// GPT-4o Search Preview is a specialized model trained to understand and execute web search queries with the Chat Completions API.
+    /// </summary>
+    public static readonly ChatModel ModelOSearchPreview = new ChatModel("gpt-4o-search-preview", LLmProviders.OpenAi, 128_000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelOSearchPreview"/>
+    /// </summary>
+    public readonly ChatModel OSearchPreview = ModelOSearchPreview;
+    
+    /// <summary>
+    /// GPT-4o mini Search Preview is a specialized model trained to understand and execute web search queries with the Chat Completions API. 
+    /// </summary>
+    public static readonly ChatModel ModelOMiniSearchPreview = new ChatModel("gpt-4o-mini-search-preview", LLmProviders.OpenAi, 128_000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelOMiniSearchPreview"/>
+    /// </summary>
+    public readonly ChatModel OMiniSearchPreview = ModelOMiniSearchPreview;
+    
+    /// <summary>
     /// Latest o1 model snapshot.
     /// </summary>
     public static readonly ChatModel ModelO1Pro = new ChatModel("o1-pro", LLmProviders.OpenAi, 200_000);
@@ -299,7 +319,9 @@ public class ChatModelOpenAiGpt4 : IVendorModelClassProvider
         ModelAudioPreview,
         ModelAudioPreview241001,
         ModelO1241217,
-        ModelAudioPreview241217
+        ModelAudioPreview241217,
+        ModelOSearchPreview,
+        ModelOMiniSearchPreview
     ];
 
     /// <summary>

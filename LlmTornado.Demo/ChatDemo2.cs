@@ -767,6 +767,32 @@ public partial class ChatDemo : DemoBase
     }
     
     [TornadoTest]
+    public static async Task OpenAiWebSearchUserLocation()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.OpenAi.Gpt4.OMiniSearchPreview,
+            WebSearchOptions = new ChatRequestWebSearchOptions
+            {
+                UserLocation = new ChatRequestWebSearchUserLocation
+                {
+                    City = "Prague",
+                    Country = "CZ"
+                }
+            }
+        });
+        
+        chat.AppendUserInput([
+            new ChatMessagePart("Tell me about some local news")
+        ]);
+        
+        ChatRichResponse response = await chat.GetResponseRich();
+        
+        Console.WriteLine(response);
+        Console.WriteLine(response.Result?.Usage?.TotalTokens);
+    }
+    
+    [TornadoTest]
     public static async Task AnthropicFileInput()
     {
         TornadoApi api = Program.Connect();
