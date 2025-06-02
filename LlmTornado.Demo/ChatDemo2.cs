@@ -92,6 +92,7 @@ public partial class ChatDemo : DemoBase
                         Sources = [
                             new ChatRequestVendorXAiExtensionsSearchParametersSourceWeb
                             {
+                                Country = "FR",
                                 SafeSearch = false
                             }
                         ]
@@ -784,6 +785,30 @@ public partial class ChatDemo : DemoBase
         });
         
         chat.AppendUserInput("Tell me about some local news");
+        
+        ChatRichResponse response = await chat.GetResponseRich();
+        
+        Console.WriteLine(response);
+        Console.WriteLine(response.Result?.Usage?.TotalTokens);
+    }
+    
+    [TornadoTest]
+    public static async Task XAiWebSearchUserLocation()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Temperature = 0.4d,
+            Model = ChatModel.XAi.Grok3.V3,
+            WebSearchOptions = new ChatRequestWebSearchOptions
+            {
+                UserLocation = new ChatRequestWebSearchUserLocation
+                {
+                    Country = "FR"
+                }
+            }
+        });
+        
+        chat.AppendUserInput("Best place to eat out in our capital?");
         
         ChatRichResponse response = await chat.GetResponseRich();
         

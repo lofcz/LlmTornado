@@ -25,10 +25,29 @@ internal class VendorXAiChatRequest
         SourceRequest = request;
         ChatRequestVendorXAiExtensions? extensions = request.VendorExtensions?.XAi;
 
+        if (request.WebSearchOptions is not null)
+        {
+            ExtendedRequest ??= new VendorXAiChatRequestData(request);
+
+            ExtendedRequest.SearchParameters = new VendorXAiChatRequestDataSearchParameters
+            {
+                Mode = "auto",
+                Sources = [
+                    new VendorXAiChatRequestDataSearchParametersSource
+                    {
+                        Type = "news",
+                        Country = request.WebSearchOptions.UserLocation?.Country
+                    }
+                ]
+            };
+
+            ExtendedRequest.WebSearchOptions = null;
+        }
+        
         if (extensions is not null)
         {
-            ExtendedRequest = new VendorXAiChatRequestData(request);
-
+            ExtendedRequest ??= new VendorXAiChatRequestData(request);
+            
             if (extensions.SearchParameters is not null)
             {
                 ExtendedRequest.SearchParameters = new VendorXAiChatRequestDataSearchParameters
