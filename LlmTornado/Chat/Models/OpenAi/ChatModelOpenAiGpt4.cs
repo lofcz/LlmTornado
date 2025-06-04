@@ -171,14 +171,24 @@ public class ChatModelOpenAiGpt4 : IVendorModelClassProvider
     public readonly ChatModel AudioPreview241001 = ModelAudioPreview241001;
     
     /// <summary>
-    /// Newest snapshot for the Audio API model.
+    /// Snapshot for the Audio API model.
     /// </summary>
     public static readonly ChatModel ModelAudioPreview241217 = new ChatModel("gpt-4o-audio-preview-2024-12-17", LLmProviders.OpenAi, 128_000);
-
+    
     /// <summary>
     /// <inheritdoc cref="ModelAudioPreview241217"/>
     /// </summary>
     public readonly ChatModel AudioPreview241217 = ModelAudioPreview241217;
+    
+    /// <summary>
+    /// Newest snapshot for the Audio API model.
+    /// </summary>
+    public static readonly ChatModel ModelAudioPreview250603 = new ChatModel("gpt-4o-audio-preview-2025-06-03", LLmProviders.OpenAi, 128_000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelAudioPreview250603"/>
+    /// </summary>
+    public readonly ChatModel AudioPreview250603 = ModelAudioPreview250603;
     
     /// <summary>
     /// Dynamic model continuously updated to the current version of GPT-4o in ChatGPT.
@@ -321,7 +331,8 @@ public class ChatModelOpenAiGpt4 : IVendorModelClassProvider
         ModelO1241217,
         ModelAudioPreview241217,
         ModelOSearchPreview,
-        ModelOMiniSearchPreview
+        ModelOMiniSearchPreview,
+        ModelAudioPreview250603
     ];
 
     /// <summary>
@@ -345,7 +356,8 @@ public class ChatModelOpenAiGpt4 : IVendorModelClassProvider
     [
         ModelAudioPreview,
         ModelAudioPreview241001,
-        ModelAudioPreview241217
+        ModelAudioPreview241217,
+        ModelAudioPreview250603
     ];
 
     /// <summary>
