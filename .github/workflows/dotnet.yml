@@ -58,8 +58,8 @@ jobs:
             repo: context.repo.repo,
             sha: context.payload.pull_request?.head.sha || context.sha,
             state: status === 'success' ? 'success' : 'failure',
-            context: 'Build .NET 8/10',
-            description: `The .NET 8/10 build ${status === 'success' ? 'passed' : 'failed'}`,
+            context: 'Build .NET Core',
+            description: `The .NET Core build ${status === 'success' ? 'passed' : 'failed'}`,
             target_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
           });
 
