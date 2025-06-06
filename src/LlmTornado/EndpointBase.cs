@@ -17,6 +17,9 @@ using LlmTornado.Code;
 using LlmTornado.Common;
 using LlmTornado.Common;
 using Newtonsoft.Json;
+#if !MODERN
+using HttpUtility = LlmTornado.Code.HttpUtility;
+#endif
 
 namespace LlmTornado;
 

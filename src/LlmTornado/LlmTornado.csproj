@@ -24,7 +24,7 @@
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>
         <Deterministic>true</Deterministic>
         <Nullable>enable</Nullable>
-        <TargetFrameworks>net8.0;net462</TargetFrameworks>
+        <TargetFrameworks>net8.0;net462;netstandard2.0</TargetFrameworks>
     </PropertyGroup>
     <PropertyGroup>
         <PackageIcon>nuget_logo.jpg</PackageIcon>
@@ -52,10 +52,10 @@
     <PropertyGroup>
         <DefineConstants Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">$(DefineConstants);MODERN</DefineConstants>
     </PropertyGroup>
-    <PropertyGroup Condition="$(TargetFramework.StartsWith('net4'))">
+    <PropertyGroup Condition="$(TargetFramework.StartsWith('net4')) OR $(TargetFramework.StartsWith('netstandard'))">
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
-    <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
+    <ItemGroup Condition="$(TargetFramework.StartsWith('net4')) OR $(TargetFramework.StartsWith('netstandard'))">
         <Reference Include="System.Net.Http" />
         <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="9.0.5" />
         <PackageReference Include="IndexRange" Version="1.0.3" />
