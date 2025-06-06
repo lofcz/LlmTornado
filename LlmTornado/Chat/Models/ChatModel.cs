@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using LlmTornado.Chat.Models.DeepInfra;
 using LlmTornado.Chat.Models.DeepSeek;
 using LlmTornado.Chat.Models.Mistral;
 using LlmTornado.Chat.Models.Perplexity;
@@ -62,10 +63,17 @@ public class ChatModel : ModelBase
     public static readonly ChatModelPerplexity Perplexity = new ChatModelPerplexity();
     
     /// <summary>
+    /// Models provided by DeepInfra.
+    /// </summary>
+    public static readonly ChatModelDeepInfra DeepInfra = new ChatModelDeepInfra();
+    
+    /// <summary>
     /// All known models keyed by name.
     /// </summary>
     public static readonly Dictionary<string, IModel> AllModelsMap = [];
 
+    internal static readonly Dictionary<string, IModel> AllModelsApiMap = [];
+    
     /// <summary>
     /// All known chat models.
     /// </summary>
@@ -82,12 +90,18 @@ public class ChatModel : ModelBase
             ..DeepSeek.AllModels,
             ..Mistral.AllModels,
             ..XAi.AllModels,
-            ..Perplexity.AllModels
+            ..Perplexity.AllModels,
+            ..DeepInfra.AllModels
         ];
         
         AllModels.ForEach(x =>
         {
             AllModelsMap.TryAdd(x.Name, x);
+
+            if (!x.ApiName.IsNullOrWhiteSpace())
+            {
+                AllModelsApiMap.TryAdd(x.ApiName, x);
+            }
         });
     }
     
@@ -124,6 +138,14 @@ public class ChatModel : ModelBase
     public ChatModel(string name, LLmProviders provider, int contextTokens)
     {
         Name = name;
+        Provider = provider;
+        ContextTokens = contextTokens;
+    }
+    
+    internal ChatModel(string name, string apiName, LLmProviders provider, int contextTokens)
+    {
+        Name = name;
+        ApiName = apiName;
         Provider = provider;
         ContextTokens = contextTokens;
     }
@@ -189,7 +211,7 @@ public class ChatModel : ModelBase
     /// <param name="name">The id/<see cref="IModel.Name" /> to use</param>
     public static implicit operator ChatModel(string? name)
     {
-        return new ChatModel(name ?? string.Empty, name is null ? LLmProviders.OpenAi : GetProvider(name) ?? LLmProviders.OpenAi);
+        return new ChatModel(name ?? string.Empty, name is null ? LLmProviders.Unknown : GetProvider(name) ?? LLmProviders.Unknown);
     }
 }
 

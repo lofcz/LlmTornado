@@ -1132,6 +1132,10 @@ public enum LLmProviders
     /// </summary>
     Voyage,
     /// <summary>
+    /// DeepInfra.
+    /// </summary>
+    DeepInfra,
+    /// <summary>
     /// Internal value.
     /// </summary>
     Length

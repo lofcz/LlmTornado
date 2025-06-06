@@ -8,6 +8,7 @@ using LlmTornado.Assistants;
 using LlmTornado.Audio;
 using LlmTornado.Caching;
 using LlmTornado.Chat;
+using LlmTornado.Chat.Models;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
 using LlmTornado.Code.Vendor;
@@ -262,10 +263,28 @@ public class TornadoApi
     /// <summary>
     /// Returns a concrete implementation of endpoint provider for a given known model.
     /// </summary>
-    /// <param name="model"></param>
-    /// <returns></returns>
     public IEndpointProvider GetProvider(IModel model)
     {
+        return GetProvider(model.Provider);
+    }
+    
+    /// <summary>
+    /// Returns a concrete implementation of endpoint provider for a given known model.
+    /// </summary>
+    public IEndpointProvider GetProvider(ChatModel model)
+    {
+        if (model.Provider is LLmProviders.Unknown)
+        {
+            IModel? match = model.ApiName is null ? null : ChatModel.AllModelsApiMap!.GetValueOrDefault(model.ApiName, null);
+            match ??= ChatModel.AllModelsMap!.GetValueOrDefault(model.Name, null);
+            match ??= ChatModel.AllModelsApiMap!.GetValueOrDefault(model.Name, null);
+            
+            if (match is not null)
+            {
+                model.Provider = match.Provider;
+            }
+        }
+        
         return GetProvider(model.Provider);
     }
 

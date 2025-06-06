@@ -768,6 +768,38 @@ public partial class ChatDemo : DemoBase
     }
     
     [TornadoTest]
+    public static async Task DeepInfra()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.DeepInfra.DeepSeek.R10528
+        });
+        
+        chat.AppendUserInput("Tell me a curt joke");
+        
+        ChatRichResponse response = await chat.GetResponseRich();
+        
+        Console.WriteLine(response);
+        Console.WriteLine(response.Result?.Usage?.TotalTokens);
+    }
+    
+    [TornadoTest]
+    public static async Task DeepInfraNamed()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = "Qwen/Qwen3-235B-A22B"
+        });
+        
+        chat.AppendUserInput("Tell me a curt joke");
+        
+        ChatRichResponse response = await chat.GetResponseRich();
+        
+        Console.WriteLine(response);
+        Console.WriteLine(response.Result?.Usage?.TotalTokens);
+    }
+    
+    [TornadoTest]
     public static async Task OpenAiWebSearchUserLocation()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest

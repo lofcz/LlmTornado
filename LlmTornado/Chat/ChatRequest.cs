@@ -3,22 +3,17 @@ using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
-using System.Runtime.Serialization;
 using System.Threading;
 using LlmTornado.Chat.Models;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Common;
-using LlmTornado.Completions;
 using Newtonsoft.Json;
-using LlmTornado.Code.Models;
-using LlmTornado;
 using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Chat.Vendors.Cohere;
 using LlmTornado.Chat.Vendors.Mistral;
 using LlmTornado.Chat.Vendors.Perplexity;
 using LlmTornado.Chat.Vendors.XAi;
-using LlmTornado.Vendor.Anthropic;
 using Newtonsoft.Json.Converters;
 
 namespace LlmTornado.Chat;
@@ -508,6 +503,12 @@ public class ChatRequest
 			{
 				VendorPerplexityChatRequest request = new VendorPerplexityChatRequest(x, y);
 				return request.Serialize(GetSerializer(EndpointBase.NullSettings, z));
+			} 
+		},
+		{ 
+			LLmProviders.DeepInfra, (x, y, z) =>
+			{
+				return JsonConvert.SerializeObject(x, GetSerializer(EndpointBase.NullSettings, z));
 			} 
 		}
 	}.ToFrozenDictionary();

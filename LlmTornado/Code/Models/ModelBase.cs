@@ -144,7 +144,7 @@ public abstract class ModelBase : IModel
     ///     The type of object. Should always be 'model'.
     /// </summary>
     [JsonIgnore]
-    public LLmProviders Provider { get; init; }
+    public LLmProviders Provider { get; internal set; }
     
     /// <summary>
     ///     The time when the model was created in unix epoch format.
