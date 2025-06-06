@@ -38,6 +38,10 @@ jobs:
       run: dotnet build --no-restore
       working-directory: ./src
 
+    - name: Build LlmTornado for .NET Framework 4.6.2
+      run: dotnet build --no-restore --framework net462
+      working-directory: ./src/LlmTornado
+
     - name: Update GitHub status check
       if: always()
       uses: actions/github-script@v6
