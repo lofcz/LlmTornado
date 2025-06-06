@@ -24,7 +24,7 @@
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>
         <Deterministic>true</Deterministic>
         <Nullable>enable</Nullable>
-        <TargetFramework>net8.0</TargetFramework>
+        <TargetFrameworks>net8.0;net462</TargetFrameworks>
     </PropertyGroup>
     <PropertyGroup>
         <PackageIcon>nuget_logo.jpg</PackageIcon>
@@ -48,5 +48,22 @@
         <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
             <_Parameter1>LlmTornado.Contrib</_Parameter1>
         </AssemblyAttribute>
+    </ItemGroup>
+    <PropertyGroup>
+        <DefineConstants Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">$(DefineConstants);MODERN</DefineConstants>
+    </PropertyGroup>
+    <PropertyGroup Condition="$(TargetFramework.StartsWith('net4'))">
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    </PropertyGroup>
+    <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
+        <Reference Include="System.Net.Http" />
+        <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="9.0.5" />
+        <PackageReference Include="IndexRange" Version="1.0.3" />
+        <PackageReference Include="PolySharp" Version="1.15.0">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="System.Memory" Version="4.6.3" />
+        <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
     </ItemGroup>
 </Project>

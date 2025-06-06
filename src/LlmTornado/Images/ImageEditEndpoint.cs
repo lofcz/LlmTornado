@@ -123,7 +123,7 @@ public class ImageEditEndpoint : EndpointBase
             content.Add(new StringContent(request.NumOfImages.ToString() ?? string.Empty), "n");   
         }
         
-        ImageGenerationResult? data = await HttpPost1<ImageGenerationResult>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, postData: content).ConfigureAwait(ConfigureAwaitOptions.None);
+        ImageGenerationResult? data = await HttpPost1<ImageGenerationResult>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, postData: content).ConfigureAwait(false);
         return data;
     }
 }

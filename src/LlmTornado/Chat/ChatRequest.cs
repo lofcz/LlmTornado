@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -434,9 +433,9 @@ public class ChatRequest
 		return newSettings;
 	}
 
-	private static readonly FrozenDictionary<LLmProviders, Func<ChatRequest, IEndpointProvider, JsonSerializerSettings?, string>> SerializeMap = new Dictionary<LLmProviders, Func<ChatRequest, IEndpointProvider, JsonSerializerSettings?, string>>
+	private static readonly Dictionary<LLmProviders, Func<ChatRequest, IEndpointProvider, JsonSerializerSettings?, string>> SerializeMap = new Dictionary<LLmProviders, Func<ChatRequest, IEndpointProvider, JsonSerializerSettings?, string>>((int)LLmProviders.Length)
 	{
-		{ 
+		{
 			LLmProviders.OpenAi, (x, y, z) =>
 			{
 				if (x.Model is not null)
@@ -456,7 +455,7 @@ public class ChatRequest
 							if (ChatModelOpenAi.ReasoningModelsAll.Contains(x.Model))
 							{
 								return JsonConvert.SerializeObject(x, GetSerializer(MaxTokensRenamerSettings, z));
-							}	
+							}
 						}
 
 						return JsonConvert.SerializeObject(x, GetSerializer(EndpointBase.NullSettings, z));
@@ -476,42 +475,42 @@ public class ChatRequest
 		{ LLmProviders.Anthropic, (x, y, z) => JsonConvert.SerializeObject(new VendorAnthropicChatRequest(x, y), GetSerializer(EndpointBase.NullSettings, z)) },
 		{ LLmProviders.Cohere, (x, y, z) => JsonConvert.SerializeObject(new VendorCohereChatRequest(x, y), GetSerializer(EndpointBase.NullSettings, z)) },
 		{ LLmProviders.Google, (x, y, z) => JsonConvert.SerializeObject(new VendorGoogleChatRequest(x, y), GetSerializer(EndpointBase.NullSettings, z)) },
-		{ 
+		{
 			LLmProviders.Mistral, (x, y, z) =>
 			{
 				VendorMistralChatRequest request = new VendorMistralChatRequest(x, y);
 				return request.Serialize(GetSerializer(EndpointBase.NullSettings, z));
 			}
 		},
-		{ 
+		{
 			LLmProviders.Groq, (x, y, z) =>
 			{
 				// fields unsupported by groq
-				x.LogitBias = null; 
+				x.LogitBias = null;
 				return JsonConvert.SerializeObject(x, GetSerializer(EndpointBase.NullSettings, z));
-			} 
+			}
 		},
-		{ 
+		{
 			LLmProviders.XAi, (x, y, z) =>
 			{
 				VendorXAiChatRequest request = new VendorXAiChatRequest(x, y);
 				return request.Serialize(GetSerializer(EndpointBase.NullSettings, z));
-			} 
+			}
 		},
-		{ 
+		{
 			LLmProviders.Perplexity, (x, y, z) =>
 			{
 				VendorPerplexityChatRequest request = new VendorPerplexityChatRequest(x, y);
 				return request.Serialize(GetSerializer(EndpointBase.NullSettings, z));
-			} 
+			}
 		},
-		{ 
+		{
 			LLmProviders.DeepInfra, (x, y, z) =>
 			{
 				return JsonConvert.SerializeObject(x, GetSerializer(EndpointBase.NullSettings, z));
-			} 
+			}
 		}
-	}.ToFrozenDictionary();
+	};
 
 	/// <summary>
 	/// Serializes the request with debugging options
@@ -529,8 +528,7 @@ public class ChatRequest
 		if (options?.IncludeHeaders ?? false)
 		{
 			using HttpRequestMessage msg = provider.OutboundMessage(finalUrl, HttpMethod.Post, serialized.Body, options.Stream);
-			Dictionary<string, IEnumerable<string>> dict = msg.Headers.ToDictionary();
-			serialized.Headers = dict;
+			serialized.Headers = msg.Headers.ConvertHeaders();
 		}
 
 		return serialized;

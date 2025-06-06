@@ -760,7 +760,7 @@ internal class VendorGoogleChatRequest
 
         GenerationConfig = new VendorGoogleChatRequestGenerationConfig
         {
-            Temperature = request.Temperature is null ? null : Math.Clamp((double)request.Temperature, 0, 2),
+            Temperature = request.Temperature is null ? null : (request.Temperature ?? 0).Clamp(0, 2),
             TopP = request.TopP,
             MaxOutputTokens = request.MaxTokens,
             StopSequences = request.MultipleStopSequences is not null ? request.MultipleStopSequences.Take(5).ToList() : request.StopSequence is not null ? [ request.StopSequence ] : null,

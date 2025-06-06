@@ -47,7 +47,18 @@ public abstract class BaseEndpointProvider : IEndpointProviderExtended
     public abstract IAsyncEnumerable<ChatResult?> InboundStream(StreamReader streamReader, ChatRequest request);
     public abstract HttpRequestMessage OutboundMessage(string url, HttpMethod verb, object? data, bool streaming);
     public ProviderAuthentication? Auth { get; set; }
-    static Version IEndpointProviderExtended.OutboundVersion { get; set; } = HttpVersion.Version20;
+    
+#if MODERN
+    public static Version OutboundDefaultVersion { get; set; } = HttpVersion.Version20;
+#else
+    public static Version OutboundDefaultVersion { get; set; } = HttpVersion.Version11;
+#endif
+
+    #if MODERN
+    public Version OutboundVersion { get; set; } = HttpVersion.Version20;
+    #else 
+    public Version OutboundVersion { get; set; } = HttpVersion.Version11;
+    #endif
 
     private static Dictionary<Type, StreamRequestTypes> StreamTypes = new Dictionary<Type, StreamRequestTypes> {
         { typeof(ChatResult), StreamRequestTypes.Chat }

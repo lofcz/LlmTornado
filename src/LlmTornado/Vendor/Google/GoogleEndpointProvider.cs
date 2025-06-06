@@ -30,7 +30,7 @@ internal class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider,
 {
     private static readonly HashSet<string> toolFinishReasons = [ "tool_use" ];
     
-    public static Version OutboundVersion { get; set; } = HttpVersion.Version20;
+    public static Version OutboundVersion { get; set; } = OutboundDefaultVersion;
     public Func<CapabilityEndpoints, string?, string>? UrlResolver { get; set; }
     public Action<HttpRequestMessage, object?, bool>? RequestResolver { get; set; }
     
@@ -96,7 +96,11 @@ internal class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider,
         ChatUsage? usage = null;
         ChatMessageFinishReasons finishReason = ChatMessageFinishReasons.Unknown;
         
+#if MODERN
         await using JsonTextReader jsonReader = new JsonTextReader(reader);
+#else
+        using JsonTextReader jsonReader = new JsonTextReader(reader);
+#endif
         JsonSerializer serializer = new JsonSerializer();
 
         // use for debugging to inspect the raw data:

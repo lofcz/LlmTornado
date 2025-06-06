@@ -1,7 +1,7 @@
 using System;
-using System.Collections.Frozen;
 using System.Collections.Generic;
 using LlmTornado.Chat;
+using LlmTornado.Code;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Files.Vendors.Google;
@@ -44,13 +44,13 @@ internal class VendorGoogleTornadoFileContent
     [JsonProperty("Source")]
     public string Source { get; set; }
 
-    private static readonly FrozenDictionary<string, FileLinkStates> statesMap = new Dictionary<string, FileLinkStates>
+    private static readonly Dictionary<string, FileLinkStates> statesMap = new Dictionary<string, FileLinkStates>(4)
     {
         { "STATE_UNSPECIFIED", FileLinkStates.Unknown },
         { "PROCESSING", FileLinkStates.Processing },
         { "ACTIVE", FileLinkStates.Active },
         { "FAILED", FileLinkStates.Failed }
-    }.ToFrozenDictionary();
+    };
     
     public TornadoFile ToFile(string? postData)
     {

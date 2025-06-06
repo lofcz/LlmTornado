@@ -1,6 +1,5 @@
 using System.Collections.Frozen;
 using System.Collections.Generic;
-using LlmTornado.Chat;
 
 namespace LlmTornado.Chat.Vendors.Anthropic;
 
@@ -21,5 +20,5 @@ internal static class VendorAnthropicChatMessageTypesCls
         { "tool_use", VendorAnthropicChatMessageTypes.ToolUse },
         { "tool_result", VendorAnthropicChatMessageTypes.ToolResult },
         { "thinking", VendorAnthropicChatMessageTypes.Thinking }
-    }.ToFrozenDictionary();
+    } .ToFrozenDictionary();
 }

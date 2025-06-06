@@ -28,7 +28,7 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
     private const string StreamContentBlockDelta = $"content_block_delta";
     private const string StreamContentBlockStart = $"content_block_start";
     private const string StreamContentBlockStop = $"content_block_stop";
-    private static readonly HashSet<string> toolFinishReasons = [ "tool_use" ];
+    private static readonly HashSet<string> toolFinishReasons = ["tool_use"];
 
     private static readonly Dictionary<string, StreamRawActions> StreamEventsMap = new Dictionary<string, StreamRawActions>
     {
@@ -41,9 +41,10 @@ internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvid
         { StreamContentBlockStart, StreamRawActions.ContentBlockStart },
         { StreamContentBlockStop, StreamRawActions.ContentBlockStop }
     };
-    
-    public static Version OutboundVersion { get; set; } = HttpVersion.Version20;
-    
+
+
+    public static Version OutboundVersion { get; set; } = OutboundDefaultVersion;
+
     public Func<CapabilityEndpoints, string?, string>? UrlResolver { get; set; } 
     
     public Action<HttpRequestMessage, object?, bool>? RequestResolver { get; set; }

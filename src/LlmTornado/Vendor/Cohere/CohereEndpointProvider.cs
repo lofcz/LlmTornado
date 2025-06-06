@@ -32,7 +32,7 @@ internal class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider,
     private static readonly HashSet<string> StreamSkip = [StreamMsgStart, StreamMsgStop, StreamPing];
     private static readonly HashSet<string> toolFinishReasons = [ "tool_use" ];
     
-    public static Version OutboundVersion { get; set; } = HttpVersion.Version20;
+    public static Version OutboundVersion { get; set; } = OutboundDefaultVersion;
     public Func<CapabilityEndpoints, string?, string>? UrlResolver { get; set; } 
     public Action<HttpRequestMessage, object?, bool>? RequestResolver { get; set; }
     

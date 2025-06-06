@@ -9,6 +9,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -408,7 +409,11 @@ namespace LlmTornado.Code.Sse
                 // Spec: "If the field value consists of only ASCII digits, then interpret the field value as an integer in base ten,
                 // and set the event stream's reconnection time to that integer. Otherwise, ignore the field."
                 if (long.TryParse(
-                    fieldValue,
+#if MODERN
+                        fieldValue,
+#else
+                        Encoding.UTF8.GetString(fieldValue.ToArray()),
+#endif
                     NumberStyles.None, CultureInfo.InvariantCulture, out long milliseconds) &&
                     0 <= milliseconds && milliseconds <= TimeSpan_MaxValueMilliseconds)
                 {
@@ -457,7 +462,12 @@ namespace LlmTornado.Code.Sse
             ShiftOrGrowLineBufferIfNecessary();
 
             int offset = _lineOffset + _lineLength;
+#if MODERN
             int bytesRead = _stream.Read(_lineBuffer.AsSpan(offset));
+#else
+            int availableSpace = _lineBuffer.Length - offset;
+            int bytesRead = _stream.Read(_lineBuffer, offset, availableSpace);
+#endif
             
             if (bytesRead > 0)
             {
@@ -478,7 +488,12 @@ namespace LlmTornado.Code.Sse
             ShiftOrGrowLineBufferIfNecessary();
 
             int offset = _lineOffset + _lineLength;
+#if MODERN
             int bytesRead = await _stream.ReadAsync(_lineBuffer.AsMemory(offset), cancellationToken).ConfigureAwait(false);
+#else
+            int availableSpace = _lineBuffer.Length - offset;
+            int bytesRead = await _stream.ReadAsync(_lineBuffer, offset, availableSpace, cancellationToken).ConfigureAwait(false);
+#endif
 
             if (bytesRead > 0)
             {

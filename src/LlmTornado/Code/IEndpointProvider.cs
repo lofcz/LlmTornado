@@ -93,5 +93,5 @@ public interface IEndpointProviderExtended
     /// <summary>
     /// Gets version of the protocol.
     /// </summary>
-    public static abstract Version OutboundVersion { get; set; }
+    public abstract Version OutboundVersion { get; set; }
 }

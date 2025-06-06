@@ -101,7 +101,13 @@ public abstract class ModelBase : IModel
     ///     The id/name of the model.
     /// </summary>
     [JsonIgnore]
-    public string Name { get; init; }
+    public string Name { get; 
+        #if MODERN
+        init; 
+        #else
+        set;
+        #endif
+    }
     
     /// <summary>
     /// Gets the vendor specific name.
@@ -113,26 +119,50 @@ public abstract class ModelBase : IModel
     ///     In case a model is hosted by multiple vendor, this is the vendor-specific name.
     /// </summary>
     [JsonIgnore]
-    public string? ApiName { get; init; }
+    public string? ApiName { get; 
+#if MODERN
+        init; 
+#else
+        set;
+#endif
+    }
 
     /// <summary>
     ///     Aliases of the model.
     /// </summary>
     [JsonIgnore]
-    public List<string>? Aliases { get; init; }
+    public List<string>? Aliases { get; 
+#if MODERN
+        init; 
+#else
+        set;
+#endif
+    }
     
     /// <summary>
     ///     The owner of this model.  Generally "openai" is a generic OpenAI model, or the organization if a custom or
     ///     fine-tuned model.
     /// </summary>
     [JsonProperty("owned_by")]
-    public string? OwnedBy { get; init; }
+    public string? OwnedBy { get; 
+#if MODERN
+        init; 
+#else
+        set;
+#endif
+    }
 
     /// <summary>
     ///     The type of object. Should always be 'model'.
     /// </summary>
     [JsonProperty("object")]
-    public string Object { get; init; }
+    public string Object { get;
+#if MODERN
+        init; 
+#else
+        set;
+#endif
+    }
 
     /// <summary>
     ///     The time when the model was created.
@@ -150,13 +180,25 @@ public abstract class ModelBase : IModel
     ///     The time when the model was created in unix epoch format.
     /// </summary>
     [JsonProperty("created")]
-    public long? CreatedUnixTime { get; init; }
+    public long? CreatedUnixTime { get; 
+#if MODERN
+        init; 
+#else
+        set;
+#endif
+    }
 
     /// <summary>
     ///     Permissions for use of the model.
     /// </summary>
     [JsonProperty("permission")]
-    public List<Permissions>? Permission { get; init; }
+    public List<Permissions>? Permission { get;
+#if MODERN
+        init; 
+#else
+        set;
+#endif
+    }
     
     /// <summary>
     ///     Maximum context length the model supports. For self-hosted models with ROPE support,
@@ -164,7 +206,13 @@ public abstract class ModelBase : IModel
     ///     the supported context size.
     /// </summary>
     [JsonIgnore]
-    public int? ContextTokens { get; init; }
+    public int? ContextTokens { get;
+#if MODERN
+        init; 
+#else
+        set;
+#endif
+    }
 
     /// <summary>
     ///     Allows a model to be implicitly cast to the string of its <see cref="Name" />

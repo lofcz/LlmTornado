@@ -3,6 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using LlmTornado.Code;
 
 namespace LlmTornado.Common;
 
@@ -69,7 +70,7 @@ public class RestDataOrException<T>
         {
             Method = httpRequest.Method,
             Url = httpRequest.RequestUri?.AbsoluteUri ?? string.Empty,
-            Headers = httpRequest.Headers.ToDictionary(),
+            Headers = httpRequest.Headers.ConvertHeaders(),
             Body = requestContent
         };
     }

@@ -78,7 +78,7 @@ public sealed class AssistantsEndpoint : EndpointBase
     /// <returns>True, if the assistant was deleted.</returns>
     public async Task<HttpCallResult<bool>> DeleteAssistantAsync(string assistantId, CancellationToken? cancellationToken = null)
     {
-        HttpCallResult<DeletionStatus> status = await HttpAtomic<DeletionStatus>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Assistants, HttpMethod.Delete, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{assistantId}"), ct: cancellationToken).ConfigureAwait(ConfigureAwaitOptions.None);
+        HttpCallResult<DeletionStatus> status = await HttpAtomic<DeletionStatus>(Api.GetProvider(LLmProviders.OpenAi), CapabilityEndpoints.Assistants, HttpVerbs.Delete, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{assistantId}"), ct: cancellationToken).ConfigureAwait(false);
         return new HttpCallResult<bool>(status.Code, status.Response, status.Data?.Deleted ?? false, status.Ok, status.Request);
     }
 }

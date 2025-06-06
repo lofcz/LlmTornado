@@ -31,7 +31,6 @@ internal class CryptoRandom : Random, IDisposable
     /// <exception cref="ArgumentNullException"></exception>
     public override void NextBytes(byte[] buffer)
     {
-        ArgumentNullException.ThrowIfNull(buffer);
         r.GetBytes(buffer);
     }
     
@@ -41,9 +40,19 @@ internal class CryptoRandom : Random, IDisposable
     /// <returns></returns>
     public override double NextDouble()
     {
+#if MODERN
         Span<byte> uint32Buffer = stackalloc byte[4];
         RandomNumberGenerator.Fill(uint32Buffer);
-        return BitConverter.ToUInt32(uint32Buffer) / (1.0 + UInt32.MaxValue);
+        return BitConverter.ToUInt32(uint32Buffer) / (1.0 + uint.MaxValue);
+#else
+        byte[] uint32Buffer = new byte[4];
+        using (RandomNumberGenerator? rng = RandomNumberGenerator.Create())
+        {
+            rng.GetBytes(uint32Buffer);
+        }
+        return BitConverter.ToUInt32(uint32Buffer, 0) / (1.0 + uint.MaxValue);
+#endif
+
     }
 
     /// <inheritdoc />
@@ -55,7 +64,6 @@ internal class CryptoRandom : Random, IDisposable
     /// <exception cref="T:System.ArgumentOutOfRangeException"></exception>
     public override int Next(int minValue, int maxValue)
     {
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(minValue, maxValue);
         if (minValue == maxValue) return minValue;
         long range = (long)maxValue - minValue;
         return (int)((long)Math.Floor(NextDouble() * range) + minValue);
@@ -78,7 +86,6 @@ internal class CryptoRandom : Random, IDisposable
     /// <exception cref="T:System.ArgumentOutOfRangeException"></exception>
     public override int Next(int maxValue)
     {
-        ArgumentOutOfRangeException.ThrowIfNegative(maxValue);
         return Next(0, maxValue);
     }
 

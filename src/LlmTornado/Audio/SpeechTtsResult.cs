@@ -53,12 +53,21 @@ public class SpeechTtsResult : ApiResultBase
             }
         }
 
+#if MODERN
         await using FileStream fileStream = File.Create(path);
+#else 
+        using FileStream fileStream = File.Create(path);
+#endif
 
         if (AudioStream.CanSeek) AudioStream.Seek(0, SeekOrigin.Begin);
 
         await AudioStream.CopyToAsync(fileStream);
+        
+#if MODERN
         await AudioStream.DisposeAsync();
+#else
+        AudioStream.Dispose();
+#endif
         Response.Dispose();
     }
 }

@@ -5,6 +5,9 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Linq;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
@@ -12,14 +15,66 @@ using Newtonsoft.Json;
 
 namespace LlmTornado.Code;
 
-internal static class Extensions
+internal static partial class Extensions
 {
-    private static readonly ConcurrentDictionary<string, string?> DescriptionAttrCache = [];
+    #if MODERN
+    public static Dictionary<string, IEnumerable<string>> ConvertHeaders(this HttpRequestHeaders headers)
+    {
+        return headers.ToDictionary(h => h.Key, h => h.Value);
+    }
+    
+    public static double Clamp(this double value, double min, double max)
+    {
+        if (value < min)
+            return min;
+        return value > max ? max : value;
+    }
+    
+    public static float Clamp(this float value, float min, float max)
+    {
+        if (value < min)
+            return min;
+        return value > max ? max : value;
+    }
+    
+    public static int Clamp(this int value, int min, int max)
+    {
+        if (value < min)
+            return min;
+        return value > max ? max : value;
+    }
+    
+    public static long Clamp(this long value, long min, long max)
+    {
+        if (value < min)
+            return min;
+        return value > max ? max : value;
+    }
     
     public static string ReplaceFirst(this string text, string search, string replace)
     {
         int pos = text.IndexOf(search, StringComparison.InvariantCulture);
         return pos < 0 ? text : string.Concat(text.AsSpan(0, pos), replace, text.AsSpan(pos + search.Length));
+    }
+    #endif
+    
+    private static readonly ConcurrentDictionary<string, string?> DescriptionAttrCache = [];
+
+    public static HttpMethod ToMethod(this HttpVerbs verb)
+    {
+        return verb switch
+        {
+            HttpVerbs.Get => HttpVerbsCls.Get,
+            HttpVerbs.Head => HttpVerbsCls.Head,
+            HttpVerbs.Post => HttpVerbsCls.Post,
+            HttpVerbs.Put => HttpVerbsCls.Put,
+            HttpVerbs.Delete => HttpVerbsCls.Delete,
+            HttpVerbs.Options => HttpVerbsCls.Options,
+            HttpVerbs.Trace => HttpVerbsCls.Trace,
+            HttpVerbs.Patch => HttpVerbsCls.Patch,
+            HttpVerbs.Connect => HttpVerbsCls.Connect,
+            _ => HttpMethod.Get
+        };
     }
     
     internal static bool IsNullOrWhiteSpace([NotNullWhen(returnValue: false)] this string? str)
@@ -60,8 +115,6 @@ internal static class Extensions
     {
         dictionary.AddOrUpdate(key, value, (k, v) => value);
     }
-    
-    public static bool ContainsLineBreaks(this ReadOnlySpan<char> text) => text.IndexOfAny('\r', '\n') >= 0;
     
     public static JsonSerializerSettings DeepCopy(this JsonSerializerSettings serializer)
     {

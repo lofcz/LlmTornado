@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Frozen;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -9,16 +8,12 @@ using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
 using LlmTornado.Images;
-using LlmTornado;
 using LlmTornado.Audio;
 using LlmTornado.Chat;
 using LlmTornado.ChatFunctions;
-using LlmTornado.Code.Vendor;
 using LlmTornado.Common;
-using LlmTornado.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
-using Newtonsoft.Json.Linq;
 
 namespace LlmTornado.Code;
 
@@ -84,7 +79,11 @@ public class TornadoStreamRequest : IAsyncDisposable
     {
         if (Stream is not null)
         {
+#if MODERN
             await Stream.DisposeAsync().ConfigureAwait(false);   
+#else
+            Stream.Dispose();
+#endif
         }
         
         Response?.Dispose();
@@ -280,19 +279,19 @@ internal class ChatMessageFinishReasonsConverter : JsonConverter<ChatMessageFini
         { "end_turn", ChatMessageFinishReasons.EndTurn },
         { "STOP", ChatMessageFinishReasons.EndTurn },
         { "COMPLETE", ChatMessageFinishReasons.EndTurn },
-        
+
         { "stop_sequence", ChatMessageFinishReasons.StopSequence },
         { "STOP_SEQUENCE", ChatMessageFinishReasons.StopSequence },
-            
+
         { "length", ChatMessageFinishReasons.Length },
         { "max_tokens", ChatMessageFinishReasons.Length },
         { "MAX_TOKENS", ChatMessageFinishReasons.Length },
         { "ERROR_LIMIT", ChatMessageFinishReasons.Length },
-            
+
         { "content_filter", ChatMessageFinishReasons.ContentFilter },
         { "SAFETY", ChatMessageFinishReasons.ContentFilter },
         { "ERROR_TOXIC", ChatMessageFinishReasons.ContentFilter },
-        
+
         { "RECITATION", ChatMessageFinishReasons.Recitation },
         { "LANGUAGE", ChatMessageFinishReasons.UnsupportedLanguage },
         { "BLOCKLIST", ChatMessageFinishReasons.Blocklist },
@@ -302,7 +301,7 @@ internal class ChatMessageFinishReasonsConverter : JsonConverter<ChatMessageFini
         { "IMAGE_SAFETY", ChatMessageFinishReasons.ImageSafety },
         { "USER_CANCEL", ChatMessageFinishReasons.Cancel },
         { "ERROR", ChatMessageFinishReasons.Error },
-        
+
         { "tool_use", ChatMessageFinishReasons.ToolCalls },
         { "tool_calls", ChatMessageFinishReasons.ToolCalls },
         { "function_call", ChatMessageFinishReasons.ToolCalls },
@@ -1442,11 +1441,11 @@ internal class AudioStreamEvent
     [JsonProperty("text")]
     public string? Text { get; set; }
 
-    public static readonly FrozenDictionary<string, AudioStreamEventTypes> Map = new Dictionary<string, AudioStreamEventTypes>
+    public static readonly Dictionary<string, AudioStreamEventTypes> Map = new Dictionary<string, AudioStreamEventTypes>(2)
     {
         { "transcript.text.delta", AudioStreamEventTypes.TranscriptDelta },
         { "transcript.text.done", AudioStreamEventTypes.TranscriptDone }
-    }.ToFrozenDictionary();
+    };
 }
 
 internal enum AudioStreamEventTypes

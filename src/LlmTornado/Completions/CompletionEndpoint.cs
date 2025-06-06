@@ -221,7 +221,7 @@ public class CompletionEndpoint : EndpointBase
         {
             Stream = true
         };
-        return HttpStreamingRequest<CompletionResult>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, GetUrl(provider), queryParams: null, HttpMethod.Post, request);
+        return HttpStreamingRequest<CompletionResult>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, GetUrl(provider), queryParams: null, HttpVerbs.Post, request);
     }
 
     /// <summary>

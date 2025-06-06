@@ -78,9 +78,9 @@ public sealed class ThreadsEndpoint : EndpointBase
         CancellationToken? cancellationToken = null)
     {
         HttpCallResult<DeletionStatus> status = await HttpAtomic<DeletionStatus>(Api.GetProvider(LLmProviders.OpenAi),
-                CapabilityEndpoints.Threads, HttpMethod.Delete,
+                CapabilityEndpoints.Threads, HttpVerbs.Delete,
                 GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}"), ct: cancellationToken)
-            .ConfigureAwait(ConfigureAwaitOptions.None);
+            .ConfigureAwait(false);
         return new HttpCallResult<bool>(status.Code, status.Response, status.Data?.Deleted ?? false, status.Ok, status.Request);
     }
 
@@ -158,10 +158,10 @@ public sealed class ThreadsEndpoint : EndpointBase
         CancellationToken? cancellationToken = null)
     {
         HttpCallResult<DeletionStatus> status = await HttpAtomic<DeletionStatus>(Api.GetProvider(LLmProviders.OpenAi),
-                Endpoint, HttpMethod.Delete,
+                Endpoint, HttpVerbs.Delete,
                 GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{threadId}/messages/{messageId}"),
                 ct: cancellationToken)
-            .ConfigureAwait(ConfigureAwaitOptions.None);
+            .ConfigureAwait(false);
         return new HttpCallResult<bool>(status.Code, status.Response, status.Data?.Deleted ?? false, status.Ok, status.Request);
     }
 
@@ -302,7 +302,7 @@ public sealed class ThreadsEndpoint : EndpointBase
         request.Stream = true;
         string url = GetUrl(provider, $"/{threadId}/runs");
         TornadoStreamRequest tornadoStreamRequest = await HttpStreamingRequestData(provider, CapabilityEndpoints.Threads,
-            url, postData: request, verb: HttpMethod.Post, token: cancellationToken);
+            url, postData: request, verb: HttpVerbs.Post, token: cancellationToken);
 
         try
         {
@@ -358,7 +358,7 @@ public sealed class ThreadsEndpoint : EndpointBase
         request.Stream = true;
         string url = GetUrl(provider, $"/{threadId}/runs/{runId}/submit_tool_outputs");
         TornadoStreamRequest tornadoStreamRequest = await HttpStreamingRequestData(provider, CapabilityEndpoints.Threads,
-            url, postData: request, verb: HttpMethod.Post, token: cancellationToken);
+            url, postData: request, verb: HttpVerbs.Post, token: cancellationToken);
 
         try
         {
@@ -526,7 +526,7 @@ public sealed class ThreadsEndpoint : EndpointBase
         request.Stream = true;
         string url = GetUrl(provider, $"/runs");
         TornadoStreamRequest tornadoStreamRequest = await HttpStreamingRequestData(provider, CapabilityEndpoints.Threads,
-            url, postData: request, verb: HttpMethod.Post, token: cancellationToken);
+            url, postData: request, verb: HttpVerbs.Post, token: cancellationToken);
 
         try
         {

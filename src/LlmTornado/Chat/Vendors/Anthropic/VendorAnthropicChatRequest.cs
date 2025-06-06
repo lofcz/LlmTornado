@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -99,7 +98,7 @@ public partial class VendorAnthropicChatRequestMessageContent
                     if (block.Content is not null)
                     {
                         writer.WritePropertyName("content");
-
+                        
                         if (block.Content.TrimStart().StartsWith('"')) // [todo] hack?
                         {
                             writer.WriteRawValue(block.Content);
@@ -184,7 +183,13 @@ public partial class VendorAnthropicChatRequestMessageContent
                                 
                                 if (dataPrefix)
                                 {
+#if MODERN
                                     img = Base64HeaderRegex().Replace(img, string.Empty, 1);
+
+#else
+                                    img = Base64HeaderRegex.Replace(img, string.Empty, 1);
+#endif
+                                    
                                 }
                         
                                 writer.WritePropertyName("type");
@@ -375,8 +380,13 @@ public partial class VendorAnthropicChatRequestMessageContent
             return new VendorAnthropicChatRequestMessageContent();
         }
 
+#if !MODERN
+        private static readonly Regex Base64HeaderRegex = new Regex(@"^data:image\/[a-zA-Z]+;base64,", RegexOptions.Compiled);
+#else
         [GeneratedRegex(@"^data:image\/[a-zA-Z]+;base64,", RegexOptions.Compiled)]
         private static partial Regex Base64HeaderRegex();
+#endif
+
     }
 }
 
@@ -398,14 +408,14 @@ public class VendorAnthropicChatRequestMessage
 
 internal class VendorAnthropicChatRequest
 {
-    internal static readonly FrozenDictionary<OutboundToolChoiceModes, string> ToolChoiceMap = new Dictionary<OutboundToolChoiceModes, string>
+    internal static readonly Dictionary<OutboundToolChoiceModes, string> ToolChoiceMap = new Dictionary<OutboundToolChoiceModes, string>(5)
     {
         { OutboundToolChoiceModes.Auto, "auto" },
         { OutboundToolChoiceModes.Legacy, "auto" },
         { OutboundToolChoiceModes.None, "none" },
         { OutboundToolChoiceModes.Required, "any" },
         { OutboundToolChoiceModes.ToolFunction, "tool" }
-    }.ToFrozenDictionary();
+    };
 
     internal class VendorAnthropicChatRequestMetadata
     {

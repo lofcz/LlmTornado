@@ -47,7 +47,7 @@ public class FilesEndpoint : EndpointBase
 
 		if (provider is LLmProviders.Google)
 		{
-			VendorGoogleTornadoFilesList? ilResult = await HttpGet<VendorGoogleTornadoFilesList>(resolvedProvider, Endpoint, queryParams: query?.ToQueryParams(resolvedProvider), ct: token).ConfigureAwait(ConfigureAwaitOptions.None);
+			VendorGoogleTornadoFilesList? ilResult = await HttpGet<VendorGoogleTornadoFilesList>(resolvedProvider, Endpoint, queryParams: query?.ToQueryParams(resolvedProvider), ct: token).ConfigureAwait(false);
 			
 			return new TornadoPagingList<TornadoFile>
 			{
@@ -60,9 +60,9 @@ public class FilesEndpoint : EndpointBase
 		{
 			LLmProviders.OpenAi => new TornadoPagingList<TornadoFile>
 			{
-				Items = (await HttpGet<TornadoFiles>(resolvedProvider, Endpoint, queryParams: query?.ToQueryParams(resolvedProvider), ct: token).ConfigureAwait(ConfigureAwaitOptions.None))?.Data ?? []
+				Items = (await HttpGet<TornadoFiles>(resolvedProvider, Endpoint, queryParams: query?.ToQueryParams(resolvedProvider), ct: token).ConfigureAwait(false))?.Data ?? []
 			},
-			LLmProviders.Anthropic => (await HttpGet<VendorAnthropicTornadoFiles>(resolvedProvider, Endpoint, queryParams: query?.ToQueryParams(resolvedProvider), ct: token).ConfigureAwait(ConfigureAwaitOptions.None))?.ToList(),
+			LLmProviders.Anthropic => (await HttpGet<VendorAnthropicTornadoFiles>(resolvedProvider, Endpoint, queryParams: query?.ToQueryParams(resolvedProvider), ct: token).ConfigureAwait(false))?.ToList(),
 			_ => null
 		};
 	}
@@ -130,7 +130,7 @@ public class FilesEndpoint : EndpointBase
 			case LLmProviders.Google:
 			{
 				string resolvedUrl = fileId.StartsWith(GoogleEndpointProvider.BaseUrl) ? fileId : GetUrl(resolvedProvider, CapabilityEndpoints.BaseUrl, fileId);
-				VendorGoogleTornadoFileContent? result = await HttpGet<VendorGoogleTornadoFileContent>(resolvedProvider, CapabilityEndpoints.BaseUrl, resolvedUrl).ConfigureAwait(ConfigureAwaitOptions.None);
+				VendorGoogleTornadoFileContent? result = await HttpGet<VendorGoogleTornadoFileContent>(resolvedProvider, CapabilityEndpoints.BaseUrl, resolvedUrl).ConfigureAwait(false);
 
 				if (result is not null)
 				{
@@ -141,11 +141,11 @@ public class FilesEndpoint : EndpointBase
 			}
 			case LLmProviders.Anthropic:
 			{
-				return (await HttpGet<VendorAnthropicTornadoFile>(resolvedProvider, Endpoint, GetUrl(resolvedProvider, $"/{fileId}")).ConfigureAwait(ConfigureAwaitOptions.None))?.ToFile();
+				return (await HttpGet<VendorAnthropicTornadoFile>(resolvedProvider, Endpoint, GetUrl(resolvedProvider, $"/{fileId}")).ConfigureAwait(false))?.ToFile();
 			}
 		}
 	    
-        return await HttpGet<TornadoFile>(resolvedProvider, Endpoint, GetUrl(resolvedProvider, $"/{fileId}")).ConfigureAwait(ConfigureAwaitOptions.None);
+        return await HttpGet<TornadoFile>(resolvedProvider, Endpoint, GetUrl(resolvedProvider, $"/{fileId}")).ConfigureAwait(false);
     }
 
 	/// <summary>
@@ -176,7 +176,7 @@ public class FilesEndpoint : EndpointBase
 		    _ => GetUrl(resolvedProvider, $"/{fileId}")
 	    };
 	    
-	    HttpCallResult<DeletedTornadoFile> file = await HttpDeleteRaw<DeletedTornadoFile>(resolvedProvider, Endpoint, url).ConfigureAwait(ConfigureAwaitOptions.None);
+	    HttpCallResult<DeletedTornadoFile> file = await HttpDeleteRaw<DeletedTornadoFile>(resolvedProvider, Endpoint, url).ConfigureAwait(false);
 
 	    if (file.Data is not null)
 	    {
@@ -205,15 +205,19 @@ public class FilesEndpoint : EndpointBase
     {
 	    if (!File.Exists(filePath))
 	    {
-		    return new HttpCallResult<TornadoFile>(HttpStatusCode.UnprocessableEntity, null, null, false, new RestDataOrException<HttpResponseData>(new Exception($"File {filePath} not found")));
+		    return new HttpCallResult<TornadoFile>(HttpStatusCode.BadRequest, null, null, false, new RestDataOrException<HttpResponseData>(new Exception($"File {filePath} not found")));
 	    }
 	    
 	    IEndpointProvider resolvedProvider = Api.ResolveProvider(provider);
 
-	    byte[] bytes = await File.ReadAllBytesAsync(filePath).ConfigureAwait(ConfigureAwaitOptions.None);
+#if MODERN
+	    byte[] bytes = await File.ReadAllBytesAsync(filePath).ConfigureAwait(false);
+#else
+	    byte[] bytes = File.ReadAllBytes(filePath);
+#endif
 	    string finalFileName = fileName ?? (resolvedProvider.Provider is LLmProviders.Google ? Guid.NewGuid().ToString() : Path.GetFileName(filePath)); // google requires alphanum + dashes, up to 40 chars
 
-        return await Upload(bytes, finalFileName, purpose, mimeType, resolvedProvider.Provider).ConfigureAwait(ConfigureAwaitOptions.None);
+        return await Upload(bytes, finalFileName, purpose, mimeType, resolvedProvider.Provider).ConfigureAwait(false);
     }
 	
 	/// <summary>
@@ -231,8 +235,8 @@ public class FilesEndpoint : EndpointBase
 	/// <param name="provider">Which provider will be used</param>
 	public async Task<HttpCallResult<TornadoFile>> Upload(Stream stream, string fileName, FilePurpose purpose = FilePurpose.Finetune, string? mimeType = null, LLmProviders? provider = null)
 	{
-		byte[] bytes = await stream.ToArrayAsync().ConfigureAwait(ConfigureAwaitOptions.None);
-		return await Upload(bytes, fileName, purpose, mimeType, provider).ConfigureAwait(ConfigureAwaitOptions.None);
+		byte[] bytes = await stream.ToArrayAsync().ConfigureAwait(false);
+		return await Upload(bytes, fileName, purpose, mimeType, provider).ConfigureAwait(false);
 	}
 	
 	/// <summary>
@@ -256,7 +260,7 @@ public class FilesEndpoint : EndpointBase
 			Name = fileName,
 			Purpose = purpose,
 			MimeType = mimeType
-		}, provider).ConfigureAwait(ConfigureAwaitOptions.None);
+		}, provider).ConfigureAwait(false);
 	}
 
 	/// <summary>
@@ -283,7 +287,7 @@ public class FilesEndpoint : EndpointBase
 			case LLmProviders.Custom:
 			case LLmProviders.OpenAi:
 			{
-				HttpCallResult<TornadoFile> file = await HttpPost<TornadoFile>(resolvedProvider, CapabilityEndpoints.Files, url, content.Body).ConfigureAwait(ConfigureAwaitOptions.None);
+				HttpCallResult<TornadoFile> file = await HttpPost<TornadoFile>(resolvedProvider, CapabilityEndpoints.Files, url, content.Body).ConfigureAwait(false);
 
 				if (content.Body is IDisposable disposableOaiBody)
 				{
@@ -294,7 +298,7 @@ public class FilesEndpoint : EndpointBase
 			}
 			case LLmProviders.Anthropic:
 			{
-				HttpCallResult<VendorAnthropicTornadoFile> file = await HttpPost<VendorAnthropicTornadoFile>(resolvedProvider, CapabilityEndpoints.Files, url, content.Body).ConfigureAwait(ConfigureAwaitOptions.None);
+				HttpCallResult<VendorAnthropicTornadoFile> file = await HttpPost<VendorAnthropicTornadoFile>(resolvedProvider, CapabilityEndpoints.Files, url, content.Body).ConfigureAwait(false);
 
 				if (content.Body is IDisposable disposableOaiBody)
 				{
@@ -322,7 +326,7 @@ public class FilesEndpoint : EndpointBase
 			{ "X-Goog-Upload-Command", "start" },
 			{ "X-Goog-Upload-Header-Content-Length", request.Bytes.Length },
 			{ "X-Goog-Upload-Header-Content-Type", request.MimeType }
-		}).ConfigureAwait(ConfigureAwaitOptions.None);
+		}).ConfigureAwait(false);
 
 		if (content.Body is IDisposable disposable)
 		{
@@ -343,7 +347,7 @@ public class FilesEndpoint : EndpointBase
 		{
 			{ "X-Goog-Upload-Offset", "0" },
 			{ "X-Goog-Upload-Command", "upload, finalize" }
-		}).ConfigureAwait(ConfigureAwaitOptions.None);
+		}).ConfigureAwait(false);
 
 		result = new HttpCallResult<TornadoFile>(resultWrapper.Code, resultWrapper.Response, resultWrapper.Data?.ToFile(null), resultWrapper.Ok, resultWrapper.Request);
 		

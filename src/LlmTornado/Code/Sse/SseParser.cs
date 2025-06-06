@@ -50,7 +50,12 @@ namespace LlmTornado.Code.Sse
         /// <summary>Encoding.UTF8.GetString(bytes)</summary>
         internal static string Utf8GetString(ReadOnlySpan<byte> bytes)
         {
+#if MODERN
             return Encoding.UTF8.GetString(bytes);
+#else
+            return Encoding.UTF8.GetString(bytes.ToArray());
+#endif
         }
+
     }
 }

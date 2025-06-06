@@ -73,7 +73,7 @@ public class ResponseFormatJsonSchema : ResponseFormat
     /// The JSON schema configuration for the response.
     /// </summary>
     [JsonProperty("json_schema")]
-    public required ResponseFormatJsonSchemaConfig JsonSchema { get; set; } // Adjust type based on schema structure
+    public ResponseFormatJsonSchemaConfig JsonSchema { get; set; } // Adjust type based on schema structure
 }
 
 /// <summary>
@@ -87,7 +87,7 @@ public class ResponseFormatJsonSchemaConfig
     /// Maximum length is 64 characters.
     /// </summary>
     [JsonProperty("name")]
-    public required string Name { get; set; }
+    public string Name { get; set; }
 
     /// <summary>
     /// A description of the purpose of the schema.

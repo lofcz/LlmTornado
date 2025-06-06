@@ -66,7 +66,7 @@ public class VectorStoresEndpoint : EndpointBase
     /// <returns></returns>
     public async Task<HttpCallResult<bool>> Delete(string vectorStoreId, CancellationToken? cancellationToken = null)
     {
-        HttpCallResult<DeletionStatus> status = await HttpAtomic<DeletionStatus>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, HttpMethod.Delete, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{vectorStoreId}"), ct: cancellationToken).ConfigureAwait(ConfigureAwaitOptions.None);
+        HttpCallResult<DeletionStatus> status = await HttpAtomic<DeletionStatus>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, HttpVerbs.Delete, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{vectorStoreId}"), ct: cancellationToken).ConfigureAwait(false);
         return new HttpCallResult<bool>(status.Code, status.Response, status.Data?.Deleted ?? false, status.Ok, status.Request);
     }
     
@@ -129,7 +129,7 @@ public class VectorStoresEndpoint : EndpointBase
     /// <returns></returns>
     public async Task<HttpCallResult<bool>> DeleteFile(string vectorStoreId, string fileId, CancellationToken? cancellationToken = null)
     {
-        HttpCallResult<DeletionStatus> status = await HttpAtomic<DeletionStatus>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, HttpMethod.Delete, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{vectorStoreId}/files/{fileId}"), ct: cancellationToken).ConfigureAwait(ConfigureAwaitOptions.None);
+        HttpCallResult<DeletionStatus> status = await HttpAtomic<DeletionStatus>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, HttpVerbs.Delete, GetUrl(Api.GetProvider(LLmProviders.OpenAi), $"/{vectorStoreId}/files/{fileId}"), ct: cancellationToken).ConfigureAwait(false);
         return new HttpCallResult<bool>(status.Code, status.Response, status.Data?.Deleted ?? false, status.Ok, status.Request);
     }
 

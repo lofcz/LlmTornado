@@ -85,7 +85,12 @@ namespace LlmTornado.Code.Sse
                     eventId: item.EventId,
                     reconnectionInterval: item.ReconnectionInterval);
 
+#if MODERN
                 await destination.WriteAsync(bufferWriter.WrittenMemory, cancellationToken).ConfigureAwait(false);
+#else
+                byte[] buffer = bufferWriter.WrittenMemory.ToArray();
+                await destination.WriteAsync(buffer, 0, buffer.Length, cancellationToken).ConfigureAwait(false);
+#endif
 
                 userDataBufferWriter.Reset();
                 bufferWriter.Reset();

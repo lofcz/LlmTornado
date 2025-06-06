@@ -25,7 +25,7 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider,
     private const string DoneString = "[DONE]";
     private static readonly HashSet<string> toolFinishReasons = [ "function_call", "tool_calls" ];
 
-    public static Version OutboundVersion { get; set; } = HttpVersion.Version20;
+    public static Version OutboundVersion { get; set; } = OutboundDefaultVersion;
     public Func<CapabilityEndpoints, string?, string>? UrlResolver { get; set; }
     public Action<HttpRequestMessage, object?, bool>? RequestResolver { get; set; }
     

@@ -52,7 +52,7 @@ internal class VendorGoogleEmbeddingRequest
     /// </summary>
     [JsonProperty("outputDimensionality")]
     public int? OutputDimensionality { get; set; }
-
+    
     private static readonly FrozenDictionary<EmbeddingRequestVendorGoogleExtensionsTaskTypes, string> TaskTypesMap = new Dictionary<EmbeddingRequestVendorGoogleExtensionsTaskTypes, string>
     {
         { EmbeddingRequestVendorGoogleExtensionsTaskTypes.Unspecified, "TASK_TYPE_UNSPECIFIED" },

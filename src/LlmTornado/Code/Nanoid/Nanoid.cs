@@ -220,7 +220,11 @@ internal static class Nanoid
 
         // Use `Int32.LeadingZeroCount` on .net7 and above
       
+#if MODERN
         int mask = (2 << 31 - int.LeadingZeroCount(alphabet.Length - 1 | 1)) - 1;
+#else 
+        int mask = (2 << 31 - (alphabet.Length - 1 | 1).LeadingZeroCount()) - 1;
+#endif
         
         // Original dev notes regarding this algorithm.
         // Source: https://github.com/ai/nanoid/blob/0454333dee4612d2c2e163d271af6cc3ce1e5aa4/index.js#L45
@@ -230,9 +234,14 @@ internal static class Nanoid
         // alphabet length, and magic number 1.6 (using 1.6 peaks at performance
         // according to benchmarks)."
         int step = (int) Math.Ceiling(1.6 * mask * size / alphabet.Length);
+        
+#if MODERN
         Span<char> idBuilder = stackalloc char[size];
         Span<byte> bytes = stackalloc byte[step];
-
+#else
+        char[] idBuilder = new char[size];
+        byte[] bytes = new byte[step];
+#endif
         int cnt = 0;
 
         while (true)

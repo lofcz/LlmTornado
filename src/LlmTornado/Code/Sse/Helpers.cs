@@ -13,8 +13,16 @@ namespace LlmTornado.Code.Sse
         public static void WriteUtf8Number(this IBufferWriter<byte> writer, long value)
         {
             const int MaxDecimalDigits = 20;
+#if MODERN
             Span<byte> buffer = writer.GetSpan(MaxDecimalDigits);
             bool success = value.TryFormat(buffer, out int bytesWritten, provider: CultureInfo.InvariantCulture);
+#else 
+            string numberString = value.ToString(CultureInfo.InvariantCulture);
+            byte[] utf8Bytes = Encoding.UTF8.GetBytes(numberString);
+            int bytesWritten = utf8Bytes.Length;
+            Span<byte> buffer = writer.GetSpan(bytesWritten);
+            utf8Bytes.CopyTo(buffer.ToArray(), 0); 
+#endif
             writer.Advance(bytesWritten);
         }
 
@@ -37,11 +45,21 @@ namespace LlmTornado.Code.Sse
                 return;
             }
 
+#if MODERN
             int maxByteCount = Encoding.UTF8.GetMaxByteCount(value.Length);
             Span<byte> buffer = writer.GetSpan(maxByteCount);
             int bytesWritten = Encoding.UTF8.GetBytes(value, buffer);
+#else
+            string stringValue = value.ToString();
+            byte[] utf8Bytes = Encoding.UTF8.GetBytes(stringValue);
+            int bytesWritten = utf8Bytes.Length;
+            Span<byte> buffer = writer.GetSpan(bytesWritten);
+            Array.Copy(utf8Bytes, 0, buffer.ToArray(), 0, bytesWritten);
+#endif
+    
             writer.Advance(bytesWritten);
         }
+
         
         public static bool ContainsLineBreaks(this ReadOnlySpan<char> text) => 
             text.IndexOfAny('\r', '\n') >= 0;

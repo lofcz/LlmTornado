@@ -35,7 +35,7 @@ public class CachingEndpoint : EndpointBase
     /// <returns></returns>
     public async Task<HttpCallResult<CachedContentInformation>> Create(CreateCachedContentRequest request, CancellationToken? cancellationToken = null)
     {
-        HttpCallResult<CachedContentInformation> result = await HttpPostRaw<CachedContentInformation>(Api.GetProvider(LLmProviders.Google), Endpoint, postData: request.Serialize(LLmProviders.Google), ct: cancellationToken).ConfigureAwait(ConfigureAwaitOptions.None);
+        HttpCallResult<CachedContentInformation> result = await HttpPostRaw<CachedContentInformation>(Api.GetProvider(LLmProviders.Google), Endpoint, postData: request.Serialize(LLmProviders.Google), ct: cancellationToken).ConfigureAwait(false);
 
         if (result.Data is not null)
         {
@@ -81,7 +81,7 @@ public class CachingEndpoint : EndpointBase
         return HttpRequestRaw<CachedContentInformation>(resolvedProvider, Endpoint, GetUrl(resolvedProvider, CapabilityEndpoints.BaseUrl, name), postData: new
         {
             ttl = $"{newTimeToLive.TotalSeconds.ToString(CultureInfo.InvariantCulture)}s"
-        }, verb: HttpMethod.Patch, ct: cancellationToken);
+        }, verb: HttpVerbs.Patch, ct: cancellationToken);
     }
     
     /// <summary>
@@ -105,7 +105,7 @@ public class CachingEndpoint : EndpointBase
     public async Task<HttpCallResult<bool>> Delete(string name, CancellationToken? cancellationToken = null)
     {
         IEndpointProvider resolvedProvider = Api.ResolveProvider(LLmProviders.Google);
-        HttpCallResult<bool> result = await HttpRequestRaw<bool>(resolvedProvider, Endpoint, GetUrl(resolvedProvider, CapabilityEndpoints.BaseUrl, name), verb: HttpMethod.Delete, ct: cancellationToken).ConfigureAwait(ConfigureAwaitOptions.None);
+        HttpCallResult<bool> result = await HttpRequestRaw<bool>(resolvedProvider, Endpoint, GetUrl(resolvedProvider, CapabilityEndpoints.BaseUrl, name), verb: HttpVerbs.Delete, ct: cancellationToken).ConfigureAwait(false);
 
         // google returns empty response if ok
         if (result.Ok)

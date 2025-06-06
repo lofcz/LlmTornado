@@ -123,7 +123,7 @@ public sealed class ListQuery
             {
                 if (query.Limit is not null)
                 {
-                    parameters["limit"] = Math.Clamp(query.Limit.Value, 1, 1_000); // https://docs.anthropic.com/en/api/files-list#parameter-limit
+                    parameters["limit"] = query.Limit.Value.Clamp(1, 1_000); // https://docs.anthropic.com/en/api/files-list#parameter-limit
                 }
             
                 if (query.PageToken is not null)

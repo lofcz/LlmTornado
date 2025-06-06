@@ -338,7 +338,7 @@ public class ChatEndpoint : EndpointBase
         }
         
         TornadoRequestContent requestBody = request.Serialize(provider);
-        await using TornadoStreamRequest tornadoStreamRequest = await HttpStreamingRequestData(Api.GetProvider(request.Model ?? ChatModel.OpenAi.Gpt35.Turbo), Endpoint, requestBody.Url, queryParams: null, HttpMethod.Post, requestBody.Body, request.CancellationToken);
+        await using TornadoStreamRequest tornadoStreamRequest = await HttpStreamingRequestData(Api.GetProvider(request.Model ?? ChatModel.OpenAi.Gpt35.Turbo), Endpoint, requestBody.Url, queryParams: null, HttpVerbs.Post, requestBody.Body, request.CancellationToken);
 
         if (tornadoStreamRequest.Exception is not null)
         {
