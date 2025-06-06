@@ -1,0 +1,35 @@
+name: github pages
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout the code
+      - uses: actions/checkout@v4
+
+      # Install .NET SDK
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.100-preview.4.25258.110'
+
+      - name: Install .NET WebAssembly Tools
+        run: dotnet workload install wasm-tools
+
+      # Publish the site
+      - name: Publish
+        working-directory: src/LlmTornado.Docs
+        run: dotnet publish LlmTornado.Docs.csproj -c:Release -o:publish -p:GHPages=true
+
+      # Deploy the site
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: src/LlmTornado.Docs/publish/wwwroot
+          force_orphan: true
