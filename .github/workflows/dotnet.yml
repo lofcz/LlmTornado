@@ -34,10 +34,10 @@ jobs:
       run: dotnet restore
       working-directory: ./src
 
-    - name: Build
-      run: dotnet build --no-restore
+    - name: Build for .NET 10 only
+      run: dotnet build --no-restore --framework net8
       working-directory: ./src
-      
+
     - name: Update GitHub status check
       if: always()
       uses: actions/github-script@v6
@@ -49,7 +49,45 @@ jobs:
             repo: context.repo.repo,
             sha: context.payload.pull_request?.head.sha || context.sha,
             state: status === 'success' ? 'success' : 'failure',
-            context: 'Build',
-            description: `The build ${status === 'success' ? 'passed' : 'failed'}`,
+            context: 'Build .NET 10',
+            description: `The .NET 10 build ${status === 'success' ? 'passed' : 'failed'}`,
+            target_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+          });
+
+  build-netfw:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.pull_request.head.sha }}
+        
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.100-preview.4.25258.110'
+        
+    - name: Restore dependencies for LlmTornado
+      run: dotnet restore
+      working-directory: ./src/LlmTornado
+
+    - name: Build LlmTornado for .NET Framework 4.6.2
+      run: dotnet build --no-restore --framework net462
+      working-directory: ./src/LlmTornado
+
+    - name: Update GitHub status check for .NET Framework build
+      if: always()
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const status = '${{ job.status }}';
+          await github.rest.repos.createCommitStatus({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            sha: context.payload.pull_request?.head.sha || context.sha,
+            state: status === 'success' ? 'success' : 'failure',
+            context: 'Build .NET Framework 4.6.2',
+            description: `The .NET Framework 4.6.2 build ${status === 'success' ? 'passed' : 'failed'}`,
             target_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
           });
