@@ -11,7 +11,7 @@ permissions:
   statuses: write
 
 jobs:
-  build:
+  build-core:
     runs-on: ubuntu-latest
 
     steps:
@@ -36,14 +36,14 @@ jobs:
       run: dotnet restore
       working-directory: ./src
 
-    - name: Build projects for .NET 8.0 (excluding LlmTornado.Docs)
+    - name: Build projects for .NET Core
       run: |
         for project in $(find . -name "*.csproj" -not -path "./LlmTornado.Docs/*"); do
           dotnet build "$project" --no-restore --framework net8.0
         done
       working-directory: ./src
 
-    - name: Build LlmTornado.Docs for .NET 10
+    - name: Build LlmTornado.Docs
       run: dotnet build --no-restore --framework net10.0
       working-directory: ./src/LlmTornado.Docs
 
@@ -81,7 +81,7 @@ jobs:
       run: dotnet restore
       working-directory: ./src/LlmTornado
 
-    - name: Build LlmTornado for .NET Framework 4.6.2
+    - name: Build LlmTornado for .NET Framework
       run: dotnet build --no-restore --framework net462
       working-directory: ./src/LlmTornado
 
