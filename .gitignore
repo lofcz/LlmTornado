@@ -338,6 +338,5 @@ ASALocalRun/
 
 # BeatPulse healthcheck temp database
 healthchecksdb
-LlmTornado.Demo/apiKey.json
-LlmTornado.Tests/apiKey.json
+apiKey.json
 nupkgs

@@ -44,7 +44,7 @@ jobs:
         }
         
         # Check each project for changes and update versions
-        for proj in $(find . -name "*.csproj"); do
+        for proj in $(find ./src -name "*.csproj"); do
           PROJECT_NAME=$(basename "$proj")
           PROJECT_DIR=$(dirname "$proj")
           
@@ -127,16 +127,19 @@ jobs:
     - name: Restore dependencies
       if: env.SHOULD_RELEASE == 'true'
       run: dotnet restore
+      working-directory: ./src
       
     # Build solution
     - name: Build
       if: env.SHOULD_RELEASE == 'true'
       run: dotnet build --configuration Release --no-restore
+      working-directory: ./src
       
     # Create NuGet packages
     - name: Pack
       if: env.SHOULD_RELEASE == 'true'
-      run: dotnet pack --configuration Release --no-build --output nupkgs
+      run: dotnet pack --configuration Release --no-build --output ../nupkgs
+      working-directory: ./src
     
     # Create GitHub release
     - name: Create Release
