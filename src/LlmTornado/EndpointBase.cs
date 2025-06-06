@@ -32,7 +32,11 @@ public abstract class EndpointBase
     {
         Dictionary<LLmProviders, Lazy<HttpClient>> dict = new Dictionary<LLmProviders, Lazy<HttpClient>>((int)LLmProviders.Length + 1);
         
+#if MODERN
         foreach (LLmProviders provider in Enum.GetValues<LLmProviders>())
+#else
+        foreach (LLmProviders provider in (LLmProviders[])Enum.GetValues(typeof(LLmProviders)))
+#endif
         {
             dict.Add(provider, new Lazy<HttpClient>(() =>
             {
