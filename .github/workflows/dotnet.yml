@@ -23,7 +23,9 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '10.0.100-preview.4.25258.110'
+        dotnet-version: |
+          8.0.x
+          10.0.100-preview.4.25258.110
 
     - name: Setup Node.js
       uses: actions/setup-node@v3
@@ -34,9 +36,16 @@ jobs:
       run: dotnet restore
       working-directory: ./src
 
-    - name: Build for .NET 10 only
-      run: dotnet build --no-restore --framework net8
+    - name: Build projects for .NET 8.0 (excluding LlmTornado.Docs)
+      run: |
+        for project in $(find . -name "*.csproj" -not -path "./LlmTornado.Docs/*"); do
+          dotnet build "$project" --no-restore --framework net8.0
+        done
       working-directory: ./src
+
+    - name: Build LlmTornado.Docs for .NET 10
+      run: dotnet build --no-restore --framework net10.0
+      working-directory: ./src/LlmTornado.Docs
 
     - name: Update GitHub status check
       if: always()
@@ -49,8 +58,8 @@ jobs:
             repo: context.repo.repo,
             sha: context.payload.pull_request?.head.sha || context.sha,
             state: status === 'success' ? 'success' : 'failure',
-            context: 'Build .NET 10',
-            description: `The .NET 10 build ${status === 'success' ? 'passed' : 'failed'}`,
+            context: 'Build .NET 8/10',
+            description: `The .NET 8/10 build ${status === 'success' ? 'passed' : 'failed'}`,
             target_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
           });
 
