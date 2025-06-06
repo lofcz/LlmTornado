@@ -7,8 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LlmTornado", "LlmTornado\Ll
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{1B37C1A8-1122-49FD-A3C1-C8F697714C1B}"
 	ProjectSection(SolutionItems) = preProject
-		LICENSE.md = LICENSE.md
-		README.md = README.md
+		..\LICENSE = ..\LICENSE
+		..\README.md = ..\README.md
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.Demo", "LlmTornado.Demo\LlmTornado.Demo.csproj", "{DB9F35E7-05AC-4731-9B3B-6B142B454B71}"
