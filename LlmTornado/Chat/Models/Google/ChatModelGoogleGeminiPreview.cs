@@ -53,6 +53,16 @@ public class ChatModelGoogleGeminiPreview : IVendorModelClassProvider
     /// <summary>
     /// A public experimental Gemini model with thinking mode always on by default.
     /// </summary>
+    public static readonly ChatModel ModelGemini25ProPreview0605 = new ChatModel("gemini-2.5-pro-preview-06-05", LLmProviders.Google, 2_000_000);
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelGemini25ProPreview0605"/>
+    /// </summary>
+    public readonly ChatModel Gemini25ProPreview0605 = ModelGemini25ProPreview0605;
+    
+    /// <summary>
+    /// A public experimental Gemini model with thinking mode always on by default.
+    /// </summary>
     public static readonly ChatModel ModelGemini25ProPreview0506 = new ChatModel("gemini-2.5-pro-preview-05-06", LLmProviders.Google, 2_000_000);
     
     /// <summary>
@@ -85,8 +95,9 @@ public class ChatModelGoogleGeminiPreview : IVendorModelClassProvider
     /// </summary>
     public static readonly List<IModel> ModelsAll =
     [
-        ModelGemini25ProPreview0506,
         ModelGemini25ProPreview0325,
+        ModelGemini25ProPreview0506,
+        ModelGemini25ProPreview0605,
         ModelGemini25FlashPreview0417,
         ModelGemini25FlashPreview0520,
         ModelGemini2FlashPreviewImageGeneration,
