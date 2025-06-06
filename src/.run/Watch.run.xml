@@ -1,0 +1,12 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Watch" type="RunDotNetWatch" factoryName="RunDotNetWatch">
+    <option name="exePath" value="$USER_HOME$/.nuget/packages/microsoft.aspnetcore.components.webassembly.devserver/10.0.0-preview.4.25258.110/tools/blazor-devserver.dll" />
+    <option name="programParameters" value="" />
+    <option name="projectFilePath" value="$PROJECT_DIR$/LlmTornado.Docs/LlmTornado.Docs.csproj" />
+    <option name="projectTfm" value="net10.0" />
+    <option name="restartOnRudeEditEditor" value="true" />
+    <option name="watchParameters" value="" />
+    <option name="workingDirectory" value="$PROJECT_DIR$/LlmTornado.Docs" />
+    <method v="2" />
+  </configuration>
+</component>
