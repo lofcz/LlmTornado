@@ -165,7 +165,7 @@ public class ChatRequest
     public int? NumChoicesPerMessage { get; set; }
 	
 	/// <summary>
-	///     Balance option between response time & cost/latency. Currently supported only by O1, O1 Mini & Grok 3 series.
+	///     Balance option between response time & cost/latency. Currently supported only by O1, O1 Mini, Grok 3 series, and Sonar Deep Research.
 	/// </summary>
 	[JsonProperty("reasoning_effort")]
 	[JsonConverter(typeof(StringEnumConverter), true)]

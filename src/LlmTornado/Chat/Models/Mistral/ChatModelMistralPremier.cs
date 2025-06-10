@@ -10,6 +10,16 @@ namespace LlmTornado.Chat.Models.Mistral;
 public class ChatModelMistralPremier : IVendorModelClassProvider
 {
     /// <summary>
+    /// Our frontier-class reasoning model released June 2025. 
+    /// </summary>
+    public static readonly ChatModel ModelMagistralMedium = new ChatModel("magistral-medium-2506", LLmProviders.Mistral, 40_000);
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelMagistralMedium"/>
+    /// </summary>
+    public readonly ChatModel MagistralMedium = ModelMagistralMedium;
+    
+    /// <summary>
     /// Our cutting-edge language model for coding with the second version released January 2025, Codestral specializes in low-latency, high-frequency tasks such as fill-in-the-middle (FIM), code correction and test generation.
     /// </summary>
     public static readonly ChatModel ModelCodestral = new ChatModel("codestral-2501", LLmProviders.Mistral, 256_000, [ "codestral-latest" ]);
@@ -89,7 +99,8 @@ public class ChatModelMistralPremier : IVendorModelClassProvider
         ModelMistralSaba,
         ModelMinistral3B,
         ModelMinistral8B,
-        ModelMedium3
+        ModelMedium3,
+        ModelMagistralMedium
     ];
 
     /// <summary>

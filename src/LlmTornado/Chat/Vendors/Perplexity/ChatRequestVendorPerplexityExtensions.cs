@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace LlmTornado.Chat.Vendors.Perplexity;
 
@@ -9,6 +11,11 @@ namespace LlmTornado.Chat.Vendors.Perplexity;
 /// </summary>
 public class ChatRequestVendorPerplexityExtensions
 {
+    /// <summary>
+    /// What results to prioritize.
+    /// </summary>
+    public ChatRequestVendorPerplexitySearchModes? SearchMode { get; set; }
+    
     /// <summary>
     /// Include only results after given date.
     /// </summary>
@@ -43,4 +50,17 @@ public class ChatRequestVendorPerplexityExtensions
     /// Domains which will be excluded from the search.
     /// </summary>
     public List<string>? ExcludeDomains { get; set; }
+}
+
+/// <summary>
+/// Search modes for Perplexity
+/// </summary>
+[JsonConverter(typeof(StringEnumConverter))]
+public enum ChatRequestVendorPerplexitySearchModes
+{
+    /// <summary>
+    /// Prioritize results from peer-reviewed papers, journal articles, and research publications.
+    /// </summary>
+    [EnumMember(Value = "academic")] 
+    Academic
 }

@@ -34,6 +34,15 @@ internal class VendorPerplexityChatRequest
                 ExtendedRequest.SearchRecencyFilter = extensions.SearchRecencyFilter;
             }
 
+            if (extensions.SearchMode is not null)
+            {
+                ExtendedRequest.SearchMode = extensions.SearchMode switch
+                {
+                    ChatRequestVendorPerplexitySearchModes.Academic => "academic",
+                    _ => null
+                };
+            }
+
             if (extensions.SearchBeforeDateFilter is not null)
             {
                 ExtendedRequest.SearchBeforeDateFilter = extensions.SearchBeforeDateFilter.Value.ToString("M/d/yyyy", CultureInfo.InvariantCulture);
@@ -100,6 +109,12 @@ internal class VendorPerplexityChatRequestData : ChatRequest
     /// </summary>
     [JsonProperty("search_recency_filter")]
     public string? SearchRecencyFilter { get; set; }
+    
+    /// <summary>
+    /// "academic"
+    /// </summary>
+    [JsonProperty("search_mode")]
+    public string? SearchMode { get; set; }
     
     /// <summary>
     /// Determines whether related questions should be returned.
