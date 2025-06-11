@@ -254,6 +254,14 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider,
                 {
                     finishReason = choice.FinishReason ?? ChatMessageFinishReasons.Unknown;
                 }
+
+                if (choice.FinishReason is not (null or ChatMessageFinishReasons.Unknown))
+                {
+                    if (res.Usage?.TotalTokens > 0)
+                    {
+                        usage ??= res.Usage;   
+                    }
+                }
             }
             
             if (request.StreamOptions?.IncludeUsage ?? false)
@@ -264,7 +272,7 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider,
                     continue;
                 }
             }
-            
+
             switch (state)
             {
                 case ChatStreamParsingStates.Text when res is { Choices.Count: > 0 } && res.Choices[0].Delta?.ToolCalls?.Count > 0:
@@ -362,7 +370,7 @@ internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider,
         }
         
         afterStreamEnds:
-
+        
         if (parseTools && toolsAccumulator is not null && toolsMessage?.ToolCalls is not null && toolsMessage.ToolCallsDict is not null)
         {
             foreach (KeyValuePair<string, ToolCallInboundAccumulator> tool in toolsMessage.ToolCallsDict)

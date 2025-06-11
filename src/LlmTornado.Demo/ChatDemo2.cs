@@ -497,6 +497,45 @@ public partial class ChatDemo : DemoBase
         string str = response.Result?.Choices[0].Message?.Content;
         Console.WriteLine(str);
     }
+    
+    [TornadoTest]
+    public static async Task Issue45()
+    {
+        Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.DeepSeek.Models.Chat
+        });
+        
+        chat2.AppendUserInput("Tell a curt joke");
+       
+        await chat2.StreamResponseRich(new ChatStreamEventHandler 
+        {
+            MessagePartHandler = async (part) =>
+            {
+                Console.ForegroundColor = ConsoleColor.DarkGray;
+                Console.Write(part.Text);
+                Console.ResetColor();
+            },
+            BlockFinishedHandler = (chatMessage) =>
+            {
+                string str = chatMessage?.Content ?? string.Empty;
+                Console.WriteLine(str);
+                return ValueTask.CompletedTask;
+            },
+            OnUsageReceived = (usage) =>
+            {
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine($"AsyncCompletionV2: LlmTornado OnUsageReceived. Usage: {usage.PromptTokens} in, {usage.CompletionTokens} out.");
+                Console.ResetColor();
+                return ValueTask.CompletedTask;
+            },
+            OnFinished = (data) =>
+            {
+                int z = 0;
+                return ValueTask.CompletedTask;
+            }
+        });
+    }
 
     [TornadoTest]
     public static async Task AnthropicIssue38()
