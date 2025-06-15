@@ -17,7 +17,7 @@ using ToolCall = LlmTornado.ChatFunctions.ToolCall;
 namespace LlmTornado.Code.Vendor;
 
 /// <summary>
-/// 
+/// Built-in OpenAI provider.
 /// </summary>
 internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, IEndpointProviderExtended
 {

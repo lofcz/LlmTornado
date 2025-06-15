@@ -17,9 +17,9 @@ using Newtonsoft.Json;
 namespace LlmTornado.Code.Vendor;
 
 /// <summary>
-/// 
+/// Built-in Cohere provider.
 /// </summary>
-internal class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider, IEndpointProviderExtended
+public class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider, IEndpointProviderExtended
 {
     private const string Event = "event:";
     private const string Data = "data:";

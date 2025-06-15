@@ -16,9 +16,9 @@ using Newtonsoft.Json;
 namespace LlmTornado.Code.Vendor;
 
 /// <summary>
-/// 
+/// Built-in Anthropic provider.
 /// </summary>
-internal class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider, IEndpointProviderExtended
+public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider, IEndpointProviderExtended
 {
     private const string StreamMsgStart = $"message_start";
     private const string StreamMsgStop = $"message_stop";
