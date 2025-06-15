@@ -3,14 +3,12 @@ using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
 using System.Text;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.ChatFunctions;
-using LlmTornado.Code.Sse;
-using LlmTornado.Vendor.Anthropic;
+using LlmTornado.Code.Sse; 
 using Newtonsoft.Json;
 
 namespace LlmTornado.Code.Vendor;
@@ -28,7 +26,6 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
     private const string StreamContentBlockDelta = $"content_block_delta";
     private const string StreamContentBlockStart = $"content_block_start";
     private const string StreamContentBlockStop = $"content_block_stop";
-    private static readonly HashSet<string> toolFinishReasons = ["tool_use"];
 
     private static readonly Dictionary<string, StreamRawActions> StreamEventsMap = new Dictionary<string, StreamRawActions>
     {

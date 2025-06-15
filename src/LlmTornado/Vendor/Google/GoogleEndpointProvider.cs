@@ -26,7 +26,7 @@ namespace LlmTornado.Code.Vendor;
 /// <summary>
 /// Built-in Google provider.
 /// </summary>
-internal class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider, IEndpointProviderExtended
+public class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider, IEndpointProviderExtended
 {
     private static readonly HashSet<string> toolFinishReasons = [ "tool_use" ];
     

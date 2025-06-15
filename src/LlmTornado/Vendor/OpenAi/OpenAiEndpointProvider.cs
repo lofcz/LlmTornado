@@ -19,7 +19,7 @@ namespace LlmTornado.Code.Vendor;
 /// <summary>
 /// Built-in OpenAI provider.
 /// </summary>
-internal class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, IEndpointProviderExtended
+public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, IEndpointProviderExtended
 {
     private const string DataString = "data:";
     private const string DoneString = "[DONE]";
