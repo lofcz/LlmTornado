@@ -11,7 +11,7 @@ namespace LlmTornado.Threads;
 /// <summary>
 /// See: https://platform.openai.com/docs/api-reference/assistants-streaming/events
 /// </summary>
-internal class RunStreamEvent
+public class RunStreamEvent
 {
     public string EventType { get; set; } = null!;
     public string Data { get; set; } = null!;
