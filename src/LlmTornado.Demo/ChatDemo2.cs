@@ -583,6 +583,19 @@ public partial class ChatDemo : DemoBase
         string? str2 = await chat2.GetResponse();
         Console.WriteLine(str2);
     }
+    
+    [TornadoTest]
+    public static async Task Issue47()
+    {
+        TornadoApi api = Program.Connect();
+        ChatResult? response = await api.Chat.CreateChatCompletion(new ChatRequest {
+            Messages = [new ChatMessage(ChatMessageRoles.User, "How many r's are there in strawberry?")],
+            ReasoningBudget = 0,
+            Model = "gemini-2.5-flash-preview-05-20"
+        });
+
+        Console.WriteLine(response.Usage.CompletionTokensDetails.ReasoningTokens); // Outputs >0
+    }
 
     [TornadoTest]
     public static async Task FinishReasonLength()

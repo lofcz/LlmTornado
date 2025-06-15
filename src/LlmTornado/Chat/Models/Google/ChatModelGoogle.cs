@@ -65,7 +65,10 @@ public class ChatModelGoogle : BaseVendorModelProvider
     public static readonly List<IModel> ReasoningModels =
     [
         ChatModelGoogleGeminiPreview.ModelGemini25FlashPreview0417,
-        ChatModelGoogleGeminiPreview.ModelGemini25ProPreview0325
+        ChatModelGoogleGeminiPreview.ModelGemini25ProPreview0325,
+        ChatModelGoogleGeminiPreview.ModelGemini25FlashPreview0520,
+        ChatModelGoogleGeminiPreview.ModelGemini25ProPreview0506,
+        ChatModelGoogleGeminiPreview.ModelGemini25ProPreview0605
     ];
 
     /// <summary>
