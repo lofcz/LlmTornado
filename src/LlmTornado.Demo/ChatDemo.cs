@@ -1676,12 +1676,17 @@ public partial class ChatDemo : DemoBase
         chat.OnAfterToolsCall = async (result) =>
         {
             chat.RequestParameters.ToolChoice = null; // stop forcing the model to use the get_weather tool
-            string? str = await chat.GetResponse();
-
-            if (str is not null)
+            ChatRichResponse response = await chat.GetResponseRich(functions =>
             {
-                Console.WriteLine(str);
-            }
+                foreach (FunctionCall fn in functions)
+                {
+                    fn.Result = new FunctionResult(fn.Name, "A mild rain is expected around noon.");
+                }
+
+                return Task.CompletedTask;
+            });
+            
+            Console.WriteLine(response);
         };
         
         chat.AppendMessage(ChatMessageRoles.System, "You are a helpful assistant");
@@ -1721,7 +1726,7 @@ public partial class ChatDemo : DemoBase
                         }
                     },
                     required = new List<string> { "location" }
-                }), true)
+                }))
             ],
             ToolChoice = new OutboundToolChoice("get_weather")
         });
