@@ -811,6 +811,35 @@ internal class VendorGoogleChatRequest
                 GenerationConfig.ResponseSchema = configUpdate.Item3.ResponseSchema;
             }
         }
+        else
+        {
+            if (request.ResponseFormat?.Type is ChatRequestResponseFormatTypes.StructuredJson or ChatRequestResponseFormatTypes.Json)
+            {
+                string fnName = request.ResponseFormat.Schema?.Name ?? string.Empty;
+                
+                Tuple<List<VendorGoogleChatTool>?, VendorGoogleChatToolConfig?, VendorGoogleChatRequestGenerationConfig?> configUpdate = GetToolsAndToolChoice([
+                    new Tool(new ToolFunction(fnName, string.Empty, request.ResponseFormat.Schema?.Schema ?? new
+                    {
+                        
+                    }), request.ResponseFormat.Type is ChatRequestResponseFormatTypes.StructuredJson)
+                ], request.ToolChoice ?? (request.ResponseFormat.Type is ChatRequestResponseFormatTypes.StructuredJson ? new OutboundToolChoice(OutboundToolChoiceModes.ToolFunction)
+                {
+                    Function = new OutboundToolCallFunction
+                    {
+                        Name = fnName
+                    }
+                } : null));
+                
+                Tools = configUpdate.Item1;
+                ToolConfig = configUpdate.Item2;
+
+                if (configUpdate.Item3 is not null)
+                {
+                    GenerationConfig.ResponseMimeType = configUpdate.Item3.ResponseMimeType;
+                    GenerationConfig.ResponseSchema = configUpdate.Item3.ResponseSchema;
+                }
+            }
+        }
 
         if (request.VendorExtensions?.Google is not null)
         {

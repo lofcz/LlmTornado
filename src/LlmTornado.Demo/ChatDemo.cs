@@ -1668,7 +1668,7 @@ public partial class ChatDemo : DemoBase
                         }
                     },
                     required = new List<string> { "location" }
-                }))
+                }), true)
             ],
             ToolChoice = new OutboundToolChoice("get_weather")
         });

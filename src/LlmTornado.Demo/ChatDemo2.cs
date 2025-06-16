@@ -774,6 +774,92 @@ public partial class ChatDemo : DemoBase
         Console.WriteLine("Google:");
         Console.WriteLine(str2);
     }
+
+    [TornadoTest]
+    public static async Task Issue48Raw()
+    {
+        var mappingSchema = new {
+            type = "object",
+            properties = new {
+                mapping = new {
+                    type = "array",
+                    description = "List of mappings from the text",
+                    items = new {
+                        type = "object",
+                        properties = new {
+                            source = new {
+                                type = "string",
+                            },
+                            targets = new {
+                                type = "array",
+                                items = new { type = "string" }
+                            }
+                        },
+                        required = new[] { "source", "targets" }
+                    },
+                }
+            },
+            required = new[] { "mapping" }
+        };
+
+        ChatRequest request = new ChatRequest {
+            Messages = [new ChatMessage(ChatMessageRoles.User, "Here is a message from a user, please identify the list of equivalencies: In my book, I list b as c, and also b as d, and then f as g and h as either b or c.")],
+            ResponseFormat = ChatRequestResponseFormats.StructuredJson(
+                name: "text_mapping",
+                schema: mappingSchema,
+                strict: true
+            ),
+            Temperature = 0,
+            Model = "gemini-2.0-flash-001"
+        };
+        
+        ChatResult? response = await Program.Connect().Chat.CreateChatCompletion(request);
+    }
+
+    [TornadoTest]
+    public static async Task Issue48()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Google.Gemini.Gemini2Flash001,
+            Tools = [
+                new Tool(new ToolFunction("text_mapping", string.Empty, new
+                {
+                    type = "object",
+                    properties = new {
+                        mapping = new {
+                            type = "array",
+                            description = "List of mappings from the text",
+                            items = new {
+                                type = "object",
+                                properties = new {
+                                    source = new {
+                                        type = "string",
+                                    },
+                                    targets = new {
+                                        type = "array",
+                                        items = new { type = "string" }
+                                    }
+                                },
+                                required = new[] { "source", "targets" },
+                            },
+                        }
+                    },
+                    required = new[] { "mapping" },
+                }), true) // <-- this "true" sets the tool to strict JSON schema
+            ],
+            ToolChoice = OutboundToolChoice.Required
+        });
+
+        chat.AppendUserInput("Here is a message from a user, please identify the list of equivalencies: In my book, I list b as c, and also b as d, and then f as g and h as either b or c.");
+
+        ChatRichResponse response = await chat.GetResponseRich(calls =>
+        {
+            // do whatever
+            return Task.CompletedTask;
+        });
+    }
+
     
     [TornadoTest]
     public static async Task YoutubeVideo()

@@ -2,8 +2,20 @@ using System.Runtime.Serialization;
 
 namespace LlmTornado.Common;
 
+/// <summary>
+/// Sorting order.
+/// </summary>
 public enum SortOrder
 {
-    [EnumMember(Value = "desc")] Descending,
-    [EnumMember(Value = "asc")] Ascending
+    /// <summary>
+    /// Descending.
+    /// </summary>
+    [EnumMember(Value = "desc")] 
+    Descending,
+    
+    /// <summary>
+    /// Ascending.
+    /// </summary>
+    [EnumMember(Value = "asc")] 
+    Ascending
 }

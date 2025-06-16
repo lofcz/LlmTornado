@@ -1,5 +1,7 @@
 using System;
+using System.Runtime.Serialization;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace LlmTornado.Chat;
 
@@ -22,7 +24,6 @@ public class ChatRequestResponseFormats
     ///     Type of the response
     /// </summary>
     [JsonProperty("type")]
-    [JsonConverter(typeof(ChatRequestResponseFormatTypes.ChatRequestResponseFormatTypesJsonConverter))]
     public ChatRequestResponseFormatTypes? Type { get; set; }
 
     [JsonProperty("json_schema", NullValueHandling = NullValueHandling.Ignore)]
@@ -53,7 +54,7 @@ public class ChatRequestResponseFormats
     /// <param name="schema">JSON serializable class / anonymous object.</param>
     /// <param name="strict"></param>
     /// <returns></returns>
-    public static ChatRequestResponseFormats StructuredJson(string name, object schema, bool strict)
+    public static ChatRequestResponseFormats StructuredJson(string name, object schema, bool strict = true)
     {
         return new ChatRequestResponseFormats
         {
@@ -71,58 +72,24 @@ public class ChatRequestResponseFormats
 /// <summary>
 ///     Represents response types 
 /// </summary>
-public class ChatRequestResponseFormatTypes
+[JsonConverter(typeof(StringEnumConverter))]
+public enum ChatRequestResponseFormatTypes
 {
-    private ChatRequestResponseFormatTypes(string value)
-    {
-        Value = value;
-    }
-
-    private string Value { get; }
-
     /// <summary>
-    ///     Response should be in plaintext format, default.
+    /// Response should be in plaintext format, default.
     /// </summary>
-    public static ChatRequestResponseFormatTypes Text => new ChatRequestResponseFormatTypes("text");
-
-    /// <summary>
-    ///     Response should be in JSON. System prompt must include "JSON" substring.
-    /// </summary>
-    public static ChatRequestResponseFormatTypes Json => new ChatRequestResponseFormatTypes("json_object");
+    [EnumMember(Value = "text")]
+    Text,
     
     /// <summary>
-    ///     Response should be in structured JSON. The model will always follow the provided schema.
+    /// Response should be in JSON. System prompt must include "JSON" substring.
     /// </summary>
-    public static ChatRequestResponseFormatTypes StructuredJson => new ChatRequestResponseFormatTypes("json_schema");
-
+    [EnumMember(Value = "json_object")]
+    Json,
+    
     /// <summary>
-    ///     Gets the string value for this response format to pass to the API
+    /// Response should be in structured JSON. The model will always follow the provided schema.
     /// </summary>
-    /// <returns>The response format as a string</returns>
-    public override string ToString()
-    {
-        return Value;
-    }
-
-    /// <summary>
-    ///     Gets the string value for this response format to pass to the API
-    /// </summary>
-    /// <param name="value">The ChatRequestResponseFormatTypes to convert</param>
-    public static implicit operator string(ChatRequestResponseFormatTypes value)
-    {
-        return value.Value;
-    }
-
-    internal class ChatRequestResponseFormatTypesJsonConverter : JsonConverter<ChatRequestResponseFormatTypes>
-    {
-        public override void WriteJson(JsonWriter writer, ChatRequestResponseFormatTypes? value, JsonSerializer serializer)
-        {
-            writer.WriteValue(value?.ToString());
-        }
-
-        public override ChatRequestResponseFormatTypes ReadJson(JsonReader reader, Type objectType, ChatRequestResponseFormatTypes? existingValue, bool hasExistingValue, JsonSerializer serializer)
-        {
-            return new ChatRequestResponseFormatTypes(reader.ReadAsString());
-        }
-    }
+    [EnumMember(Value = "json_schema")]
+    StructuredJson
 }
