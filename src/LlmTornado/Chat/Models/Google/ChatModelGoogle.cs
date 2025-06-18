@@ -68,7 +68,10 @@ public class ChatModelGoogle : BaseVendorModelProvider
         ChatModelGoogleGeminiPreview.ModelGemini25ProPreview0325,
         ChatModelGoogleGeminiPreview.ModelGemini25FlashPreview0520,
         ChatModelGoogleGeminiPreview.ModelGemini25ProPreview0506,
-        ChatModelGoogleGeminiPreview.ModelGemini25ProPreview0605
+        ChatModelGoogleGeminiPreview.ModelGemini25ProPreview0605,
+        ChatModelGoogleGemini.ModelGemini25Pro,
+        ChatModelGoogleGemini.ModelGemini25Flash,
+        ChatModelGoogleGeminiPreview.ModelGemini25FlashLitePreview0617
     ];
 
     /// <summary>

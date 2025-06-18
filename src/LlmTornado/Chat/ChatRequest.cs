@@ -174,7 +174,7 @@ public class ChatRequest
 	/// <summary>
 	///		Sets a token limit on reasoning. 0 disables reasoning. Currently supported by Google (natively "thinkingBudget") and Anthropic (natively "budget_tokens").<br/>
 	///		Note: Some providers (Google) don't guarantee this limit is honored without under/over-flowing.<br/>
-	///		Google: clamps to 0,1024-24576.<br/>
+	///		Google: 2.5 pro: 128-32768; 2.5 flash: 0-24576; 2.5 flash lite: 512-24576; dynamic thinking for any model: -1;<br/>
 	///		Anthropic: 0,1024+
 	/// </summary>
 	[JsonIgnore]

@@ -11,6 +11,16 @@ namespace LlmTornado.Chat.Models;
 public class ChatModelGoogleGeminiPreview : IVendorModelClassProvider
 {
     /// <summary>
+    /// A Gemini 2.5 Flash model optimized for cost efficiency and low latency.
+    /// </summary>
+    public static readonly ChatModel ModelGemini25FlashLitePreview0617 = new ChatModel("gemini-2.5-flash-lite-preview-06-17", LLmProviders.Google, 1_000_000);
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelGemini25FlashLitePreview0617"/>
+    /// </summary>
+    public readonly ChatModel Gemini25FlashLitePreview0617 = ModelGemini25FlashLitePreview0617;
+    
+    /// <summary>
     /// Gemini 2.5 Flash Preview TTS is our price-performant text-to-speech model, delivering high control and transparency for structured workflows like podcast generation, audiobooks, customer support, and more. Gemini 2.5 Flash rate limits are more restricted since it is an experimental / preview model.
     /// </summary>
     public static readonly ChatModel ModelGemini25FlashPreviewTts = new ChatModel("gemini-2.5-flash-preview-tts", LLmProviders.Google, 8_000);
@@ -102,7 +112,8 @@ public class ChatModelGoogleGeminiPreview : IVendorModelClassProvider
         ModelGemini25FlashPreview0520,
         ModelGemini2FlashPreviewImageGeneration,
         ModelGemini25FlashPreviewTts,
-        ModelGemini25ProPreviewTts
+        ModelGemini25ProPreviewTts,
+        ModelGemini25FlashLitePreview0617
     ];
 
     /// <summary>

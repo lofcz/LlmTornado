@@ -10,6 +10,26 @@ namespace LlmTornado.Chat.Models;
 public class ChatModelGoogleGemini : IVendorModelClassProvider
 {
     /// <summary>
+    /// Gemini 2.5 Pro is our state-of-the-art thinking model, capable of reasoning over complex problems in code, math, and STEM, as well as analyzing large datasets, codebases, and documents using long context.
+    /// </summary>
+    public static readonly ChatModel ModelGemini25Pro = new ChatModel("gemini-2.5-pro", LLmProviders.Google, 1_000_000);
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelGemini25Pro"/>
+    /// </summary>
+    public readonly ChatModel Gemini25Pro = ModelGemini25Pro;
+    
+    /// <summary>
+    /// Our best model in terms of price-performance, offering well-rounded capabilities. 2.5 Flash is best for large scale processing, low-latency, high volume tasks that require thinking, and agentic use cases.
+    /// </summary>
+    public static readonly ChatModel ModelGemini25Flash = new ChatModel("gemini-2.5-flash", LLmProviders.Google, 1_000_000);
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelGemini25Flash"/>
+    /// </summary>
+    public readonly ChatModel Gemini25Flash = ModelGemini25Flash;
+
+    /// <summary>
     /// Fast and versatile performance across a diverse variety of tasks (stable).
     /// </summary>
     public static readonly ChatModel ModelGemini2Flash001 = new ChatModel("gemini-2.0-flash-001", LLmProviders.Google, 1_000_000);
@@ -171,7 +191,10 @@ public class ChatModelGoogleGemini : IVendorModelClassProvider
         ModelGemini2FlashLatest,
         
         ModelGemini2FlashLite001,
-        ModelGemini2FlashLiteLatest
+        ModelGemini2FlashLiteLatest,
+        
+        ModelGemini25Pro,
+        ModelGemini25Flash,
     ];
 
     /// <summary>
