@@ -3,7 +3,7 @@
 [![LlmTornado.Contrib](https://badgen.net/nuget/v/LlmTornado.Contrib?v=302&icon=nuget&label=LlmTornado.Contrib)](https://www.nuget.org/packages/LlmTornado.Contrib)
 
 
-# 🌪️ LLM Tornado - The .NET library to consume 100+ APIs.
+# 🌪️ LLM Tornado
 
 At least one new large language model is released each month. Wouldn't it be awesome if using the latest, shiniest model was as easy as switching one argument?
 LLM Tornado is a framework for building AI, RAG/Agentic-enabled applications, allowing you to do just that.
