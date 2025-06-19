@@ -373,6 +373,43 @@ public partial class ChatDemo : DemoBase
     }
     
     [TornadoTest]
+    public static async Task Gemini25ProReasoningStreaming()
+    {
+        Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Google.Gemini.Gemini25Pro,
+            ReasoningBudget = 0 // automatically harmonized to 128
+        });
+        chat2.AppendUserInput("Solve 10+5=? Reason silently before answering.");
+
+        await chat2.StreamResponseRich(new ChatStreamEventHandler
+        {
+            ReasoningTokenHandler = (reasoning) =>
+            {
+                Console.ForegroundColor = ConsoleColor.DarkGray;
+                Console.Write(reasoning.Content);
+                Console.ResetColor();
+                return ValueTask.CompletedTask;
+            },
+            MessageTokenExHandler = (token) =>
+            {
+                if (token.Index is 0)
+                {
+                    Console.WriteLine();
+                }
+                
+                Console.Write(token);
+                return ValueTask.CompletedTask;
+            },
+            BlockFinishedHandler = (block) =>
+            {
+                Console.WriteLine();
+                return ValueTask.CompletedTask;
+            }
+        });
+    }
+    
+    [TornadoTest]
     public static async Task Grok3ReasoningStreaming()
     {
         Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest

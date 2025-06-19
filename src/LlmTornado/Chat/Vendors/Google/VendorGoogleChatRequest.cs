@@ -218,6 +218,9 @@ internal class VendorGoogleChatRequestThinkingConfig
 
 internal class VendorGoogleChatRequestMessagePart
 {
+    [JsonProperty("thought", NullValueHandling = NullValueHandling.Ignore)]
+    public bool? Thought { get; set; }
+
     [JsonProperty("text", NullValueHandling = NullValueHandling.Ignore)]
     public string? Text { get; set; }
     
@@ -233,7 +236,7 @@ internal class VendorGoogleChatRequestMessagePart
     [JsonProperty("fileData", NullValueHandling = NullValueHandling.Ignore)]
     public VendorGoogleChatRequest.VendorGoogleChatRequestMessagePartFileData? FileData { get; set; }
     
-    // todo: map executableCode, codeExecutionResult; https://ai.google.dev/api/caching#Part
+    // todo: map executableCode, codeExecutionResult, videoMetadata; https://ai.google.dev/api/caching#Part
     
     public VendorGoogleChatRequestMessagePart()
     {
@@ -308,6 +311,16 @@ internal class VendorGoogleChatRequestMessagePart
                     MimeType = InlineData.MimeType
                 };   
             }
+        }
+
+        if (Thought ?? false)
+        {
+            part.Type = ChatMessageTypes.Reasoning;
+            part.Reasoning = new ChatMessageReasoningData
+            {
+                Provider = LLmProviders.Google,
+                Content = Text
+            };
         }
 
         return part;
@@ -769,11 +782,14 @@ internal class VendorGoogleChatRequest
         };
 
         // thinkingConfig is not supported for non-thinking models
-        if (request.Model is not null && request.ReasoningBudget is not null && ChatModelGoogle.ReasoningModels.Contains(request.Model))
+        if (request.Model is not null && ChatModelGoogle.ReasoningModels.Contains(request.Model))
         {
+            int? clamped = request.Model.ClampReasoningTokens(request.ReasoningBudget);
+            
             GenerationConfig.ThinkingConfig = new VendorGoogleChatRequestThinkingConfig
             {
-                ThinkingBudget = request.ReasoningBudget
+                ThinkingBudget = clamped,
+                IncludeThoughts = true
             };
         } 
 

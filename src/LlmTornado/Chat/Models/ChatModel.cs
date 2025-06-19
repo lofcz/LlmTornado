@@ -79,6 +79,55 @@ public class ChatModel : ModelBase
     /// </summary>
     public static readonly List<IModel> AllModels;
     
+    /// <summary>
+    /// Minimum reasoning tokens
+    /// </summary>
+    public int? ReasoningTokensMin { get; set; }
+    
+    /// <summary>
+    /// Maximum reasoning tokens
+    /// </summary>
+    public int? ReasoningTokensMax { get; set; }
+    
+    /// <summary>
+    /// Special values enabled for reasoning mode
+    /// </summary>
+    public HashSet<int>? ReasoningTokensSpecialValues { get; set; }
+
+    /// <summary>
+    /// Clamps the preferred reasoning tokens so that they are compatible with the model.
+    /// </summary>
+    internal int? ClampReasoningTokens(int? preferred)
+    {
+        if (preferred is null)
+        {
+            // 0 and -1 are common special values for disabled thinking / dynamic thinking
+            return (ReasoningTokensSpecialValues?.Contains(0) ?? false) ? 0 : (ReasoningTokensSpecialValues?.Contains(-1) ?? false) ? -1 : ReasoningTokensMin;
+        }
+        
+        if (ReasoningTokensSpecialValues?.Contains(preferred.Value) ?? false)
+        {
+            return preferred;
+        }
+
+        if (ReasoningTokensMin is not null && ReasoningTokensMax is null)
+        {
+            return Math.Min(ReasoningTokensMin.Value, preferred.Value);
+        }
+        
+        if (ReasoningTokensMax is not null && ReasoningTokensMin is null)
+        {
+            return Math.Min(ReasoningTokensMax.Value, preferred.Value);
+        }
+        
+        if (ReasoningTokensMin is not null && ReasoningTokensMax is not null)
+        {
+            return preferred.Value.Clamp(ReasoningTokensMin.Value, ReasoningTokensMax.Value);
+        }
+
+        return preferred.Value;
+    }
+    
     static ChatModel()
     {
         AllModels = [

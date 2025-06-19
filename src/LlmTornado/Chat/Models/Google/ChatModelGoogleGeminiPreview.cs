@@ -13,7 +13,12 @@ public class ChatModelGoogleGeminiPreview : IVendorModelClassProvider
     /// <summary>
     /// A Gemini 2.5 Flash model optimized for cost efficiency and low latency.
     /// </summary>
-    public static readonly ChatModel ModelGemini25FlashLitePreview0617 = new ChatModel("gemini-2.5-flash-lite-preview-06-17", LLmProviders.Google, 1_000_000);
+    public static readonly ChatModel ModelGemini25FlashLitePreview0617 = new ChatModel("gemini-2.5-flash-lite-preview-06-17", LLmProviders.Google, 1_000_000) 
+    {
+        ReasoningTokensMin = 512,
+        ReasoningTokensMax = 24_576,
+        ReasoningTokensSpecialValues = [ -1, 0 ]
+    };
     
     /// <summary>
     /// <inheritdoc cref="ModelGemini25FlashLitePreview0617"/>
