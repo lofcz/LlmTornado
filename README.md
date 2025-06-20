@@ -2,22 +2,19 @@
 [![LlmTornado.Toolkit](https://badgen.net/nuget/v/LlmTornado.Toolkit?v=302&icon=nuget&label=LlmTornado.Toolkit)](https://www.nuget.org/packages/LlmTornado.Toolkit)
 [![LlmTornado.Contrib](https://badgen.net/nuget/v/LlmTornado.Contrib?v=302&icon=nuget&label=LlmTornado.Contrib)](https://www.nuget.org/packages/LlmTornado.Contrib)
 
-
 # 🌪️ LLM Tornado
 
-At least one new large language model is released each month. Wouldn't it be awesome if using the latest, shiniest model was as easy as switching one argument?
-LLM Tornado is a framework for building AI, RAG/Agentic-enabled applications, allowing you to do just that.
+**Build AI agents and multi-agent systems in minutes with one Toolkit. Use any Provider, switch without refactoring anything. Deploy today.**
 
-Features:
--  100+ supported providers: **OpenAI, Anthropic, Google, DeepSeek, Cohere, Mistral, Azure, xAI, Perplexity, Groq, Voyage, DeepInfra, OpenRouter**, and any (self-hosted) OpenAI-compatible inference servers, such as [Ollama](https://github.com/lofcz/LlmTornado/blob/4c70e7d8586cb79fd9d9fe9614c85c5dda654deb/LlmTornado.Demo/CustomProviderDemo.cs#L11). Check the full Feature Matrix [here](https://github.com/lofcz/LlmTornado/blob/master/FeatureMatrix.md).
-- _API harmonization_. The shape of APIs changes often. Certain parameters can't be used for reasoning models, certain parameters have different names based on the model (for example, `developer_message` vs `system_prompt`), certain providers implement standard endpoints in a non-standard way (for example, Google has two endpoints for embeddings). We take care of these annoyances as much as possible, reducing maintenance on your side.
-- Powerful, strongly-typed `Vendor Extensions` for each provider offering something unique. Minimize vendor lock-in, maximize the benefits.
-- Easy-to-grasp primitives for building Agentic systems, Chatbots, and RAG-based applications (`Memory/Conversation`, etc.). Less complex than Semantic Kernel, and more powerful than the raw APIs.
-- Observability as a first-class citizen. Observe requests before/after firing them, with automatic secrets anonymization. Unified `usage` information with optional, vendor-specific details.
-- As few breaking changes as possible. We take these _seriously_ and think ahead. Updating Tornado typically requires no action on your side, even when a new major version is released.
-- Actively maintained for over two years, often with day 1 support for new features. 50+ releases.
+## Key Features:
+-  **Use any model from any Provider**: All you need to know is the model's name; we handle the rest. Built-in: [OpenAI](https://platform.openai.com/docs), [Anthropic](https://docs.anthropic.com/en/docs/intro), [Google](https://ai.google.dev/gemini-api/docs), [DeepSeek](https://api-docs.deepseek.com/), [Cohere](https://docs.cohere.com/changelog), [Mistral](https://docs.mistral.ai/getting-started), [Azure](https://azure.microsoft.com/en-us/products/ai-services/openai-service), [xAI](https://docs.x.ai/docs), [Perplexity](https://docs.perplexity.ai/home), [Groq](https://console.groq.com/docs/overview), [Voyage](https://www.voyageai.com/), [DeepInfra](https://deepinfra.com/docs/), [OpenRouter](https://openrouter.ai/docs/quickstart), [vLLM](https://docs.vllm.ai/en/latest/), [Ollama](https://ollama.com/search). Check the full Feature Matrix [here](https://github.com/lofcz/LlmTornado/blob/master/FeatureMatrix.md).
+- **Multi-Agent Systems**: Toolkit for the orchestration of multiple collaborating specialist agents.
+- **Maximize request success rate**: We keep track which parameters are supported by which models, how long the reasoning context can be, etc., and silently modify your requests to comply with rules enforced by a diverse set of Providers.
+- **Leverage unique capabilities**: Non-standard features from all major Providers are carefully mapped, documented, and ready to use via strongly-typed code.
+- **Fully multimodal**: Text, vision (image, video, documents), and audio inputs are supported.
+- **Enterprise ready**: Observability as a first-class citizen. Preview any request before committing to it. Streamlined usage information as a monitoring backbone. Flexibility with multilingual apps in mind.
 
-⭐ Awesome things you can do with Tornado:
+## ⭐ With a few lines of code you can:
 - [Chat with your documents](https://github.com/lofcz/LlmTornado/blob/61d2a4732c88c45d4a8c053204ecdef807c34652/LlmTornado.Demo/ChatDemo.cs#L722-L757)
 - [Make multiple-speaker podcasts](https://github.com/lofcz/LlmTornado/blob/d1042281082ea5ff1de9dcb438a847d4cd9c416b/LlmTornado.Demo/ChatDemo2.cs#L332-L374)
 - [Voice call with AI using your microphone](https://github.com/lofcz/LlmTornado/blob/61d2a4732c88c45d4a8c053204ecdef807c34652/LlmTornado.Demo/ChatDemo.cs#L905-L968)
@@ -26,9 +23,6 @@ Features:
 - [Summarize a video (local file / YouTube)](https://github.com/lofcz/LlmTornado/blob/cfd47f915584728d9a2365fc9d38d158673da68a/LlmTornado.Demo/ChatDemo2.cs#L119)
 - [Turn text & images into high quality embeddings](https://github.com/lofcz/LlmTornado/blob/61d2a4732c88c45d4a8c053204ecdef807c34652/LlmTornado.Demo/EmbeddingDemo.cs#L50-L75)
 - [Transcribe audio in real time](https://github.com/lofcz/LlmTornado/blob/e592a2fc0a37dbd0e754dac7b1655703367369df/LlmTornado.Demo/AudioDemo.cs#L29)
-- Create Chatbots utilizing multiple Agents: 
-
-https://github.com/lofcz/LlmTornado/assets/10260230/05c27b37-397d-4b4c-96a4-4138ade48dbe
 
 ... and a lot more! Now, instead of relying on one LLM provider, you can combine the unique strengths of many.
 
@@ -37,9 +31,7 @@ https://github.com/lofcz/LlmTornado/assets/10260230/05c27b37-397d-4b4c-96a4-4138
 Install LLM Tornado via NuGet:
 
 ```bash
-dotnet add package LlmTornado.Toolkit # core + toolkit, recommended
-# or
-dotnet add package LlmTornado # slim, minimal dependencies
+dotnet add package LlmTornado.Toolkit
 ```
 
 Optional addons:
@@ -355,20 +347,16 @@ orange: 2
 
 - 50,000+ installs on NuGet (previous names [Lofcz.Forks.OpenAI](https://www.nuget.org/packages/Lofcz.Forks.OpenAI), [OpenAiNg](https://www.nuget.org/packages/OpenAiNg)).
 - Used in [award-winning](https://www-aiawards-cz.translate.goog/?_x_tr_sl=cs&_x_tr_tl=en&_x_tr_hl=cs) commercial projects, processing > 100B tokens monthly.
-- Supports streaming, functions/tools, modalities (text, images, audio, video, files), and strongly typed LLM plugins/connectors.
-- Covered by 200+ tests.
-- Great performance, nullability annotations.
-- Maintained actively for two years, often with day 1 support for new features.
+- Covered by 250+ tests.
+- Great performance.
 - The license will never change.
 
 [![Star History Chart](https://api.star-history.com/svg?repos=lofcz/llmtornado&type=Date)](https://www.star-history.com/#lofcz/llmtornado&Date)
 
-## 📚 Documentation
+## 📚 Contributing
 
-Most public classes, methods, and properties (90%+) are extensively XML documented. Feel free to open an issue here if you have any questions.
+PRs are welcome! We are accepting new Provider implementations, contributions towards a 100 % green [Feature Matrix](https://github.com/lofcz/LlmTornado/blob/master/FeatureMatrix.md), and, after public discussion, new abstractions.
 
-PRs are welcome!
+## License
 
-## 💜 License
-
-This library is licensed under the [MIT license](https://github.com/lofcz/LlmTornado/blob/master/LICENSE).
+This library is licensed under the [MIT](https://github.com/lofcz/LlmTornado/blob/master/LICENSE) license. 💜
