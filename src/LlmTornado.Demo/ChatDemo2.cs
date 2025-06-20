@@ -373,6 +373,21 @@ public partial class ChatDemo : DemoBase
     }
     
     [TornadoTest]
+    public static async Task OpenRouterFree()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = "google/gemma-3n-e4b-it:free"
+        });
+        
+        chat.AppendUserInput("2+2=?");
+        string? str = await chat.GetResponse();
+
+        Console.WriteLine("OpenRouter:");
+        Console.WriteLine(str);
+    }
+    
+    [TornadoTest]
     public static async Task Gemini25ProReasoningStreaming()
     {
         Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
