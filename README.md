@@ -65,7 +65,8 @@ TornadoApi api = new TornadoApi([
     new (LLmProviders.XAi, "XAI_KEY"),
     new (LLmProviders.Perplexity, "PERPLEXITY_KEY"),
     new (LLmProviders.Voyage, "VOYAGE_KEY"),
-    new (LLmProviders.DeepInfra, "DEEP_INFRA_KEY")
+    new (LLmProviders.DeepInfra, "DEEP_INFRA_KEY"),
+    new (LLmProviders.OpenRouter, "OPEN_ROUTER_KEY")
 ]);
 
 // this sample iterates a bunch of models, gives each the same task, and prints results.

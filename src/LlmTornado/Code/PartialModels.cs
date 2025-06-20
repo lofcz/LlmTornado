@@ -1135,6 +1135,10 @@ public enum LLmProviders
     /// </summary>
     DeepInfra,
     /// <summary>
+    /// Open Router.
+    /// </summary>
+    OpenRouter,
+    /// <summary>
     /// Internal value.
     /// </summary>
     Length

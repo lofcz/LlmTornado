@@ -21,6 +21,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.Toolkit", "LlmTo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.Docs", "LlmTornado.Docs\LlmTornado.Docs.csproj", "{A64DF195-6247-4EF3-9690-865CE7619D9F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.Internal.OpenRouter", "LlmTornado.Internal.OpenRouter\LlmTornado.Internal.OpenRouter.csproj", "{C0B4FA4F-03AA-4372-AC82-6B55A2153B68}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -51,6 +53,10 @@ Global
 		{A64DF195-6247-4EF3-9690-865CE7619D9F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A64DF195-6247-4EF3-9690-865CE7619D9F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A64DF195-6247-4EF3-9690-865CE7619D9F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C0B4FA4F-03AA-4372-AC82-6B55A2153B68}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C0B4FA4F-03AA-4372-AC82-6B55A2153B68}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C0B4FA4F-03AA-4372-AC82-6B55A2153B68}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C0B4FA4F-03AA-4372-AC82-6B55A2153B68}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -509,6 +509,12 @@ public class ChatRequest
 			{
 				return JsonConvert.SerializeObject(x, GetSerializer(EndpointBase.NullSettings, z));
 			}
+		},
+		{
+			LLmProviders.OpenRouter, (x, y, z) =>
+			{
+				return JsonConvert.SerializeObject(x, GetSerializer(EndpointBase.NullSettings, z));
+			}
 		}
 	};
 

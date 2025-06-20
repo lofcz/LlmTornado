@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using LlmTornado.Chat.Models.DeepInfra;
 using LlmTornado.Chat.Models.DeepSeek;
 using LlmTornado.Chat.Models.Mistral;
+using LlmTornado.Chat.Models.OpenRouter;
 using LlmTornado.Chat.Models.Perplexity;
 using LlmTornado.Chat.Models.XAi;
 using LlmTornado.Code;
@@ -66,6 +67,11 @@ public class ChatModel : ModelBase
     /// Models provided by DeepInfra.
     /// </summary>
     public static readonly ChatModelDeepInfra DeepInfra = new ChatModelDeepInfra();
+    
+    /// <summary>
+    /// Models from Open Router.
+    /// </summary>
+    public static readonly ChatModelOpenRouter OpenRouter = new ChatModelOpenRouter();
     
     /// <summary>
     /// All known models keyed by name.
@@ -140,7 +146,8 @@ public class ChatModel : ModelBase
             ..Mistral.AllModels,
             ..XAi.AllModels,
             ..Perplexity.AllModels,
-            ..DeepInfra.AllModels
+            ..DeepInfra.AllModels,
+            ..OpenRouter.AllModels
         ];
         
         AllModels.ForEach(x =>

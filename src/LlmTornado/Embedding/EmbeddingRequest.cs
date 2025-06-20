@@ -264,6 +264,7 @@ public class EmbeddingRequest
 			LLmProviders.Cohere => JsonConvert.SerializeObject(new VendorCohereEmbeddingRequest(this, provider), EndpointBase.NullSettings),
 			LLmProviders.Google => JsonConvert.SerializeObject(new VendorGoogleEmbeddingRequest(this, provider), EndpointBase.NullSettings),
 			LLmProviders.Voyage => JsonConvert.SerializeObject(new VendorVoyageEmbeddingRequest(this, provider), EndpointBase.NullSettings),
+			LLmProviders.OpenRouter => JsonConvert.SerializeObject(new VendorOpenAiEmbeddingRequest(this, provider), EndpointBase.NullSettings),
 			_ => string.Empty
 		};
 		
