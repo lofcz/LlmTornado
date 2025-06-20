@@ -7,20 +7,20 @@ _Empty field means the feature is unsupported by the provider._
 
 ## Inference
 
-|               | OpenAI | Anthropic | Google | Cohere | DeepSeek | Groq | Mistral | xAI | Perplexity | Voyage | DeepInfra | Custom* |
-|-------|-----------|-----------|-----------| -----------| -----------| -----------| -----------| -----------| -----------| -----------| -----------| -----------|
-|**Audio**      | ✅ |    |     |     |   |     |     |     |     |     |      |      |
-|**Chat**       | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |  ✅ | ✅ |   |   ✅   | ✅      |
-|**Embeddings** | ✅ |    | ✅  | ✅ |    |    | ✅ |     |     |   ✅      |     |      |
-|**Fine-Tuning**| ✅ |    | ❌  |    |    |    | ❌  |    |     |        |      |      |
-|**Batch**      | ❌ | ❌ | ❌ | ❌ |    | ❌ | ❌ |    |     |        |      |      |
-|**Files**      | ✅ | ✅ | ✅ |     |    |     | ❌ |    |     |        |      |      |
-|**Uploads**    | ❌ |    |     |    |    |     |     |     |     |        |      |      |
-|**Images**     | ✅ |    | ✅ |    |    |     |     |  ✅  |     |        |      |      |
-|**Models**     | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |  ✅ |   |    |      |  ✅    |
-|**Moderation** | ✅ |    |     |    |    |     |     |    |     |        |      |      |
-|**Responses**   | ❌   |  |     |  |    |     |     |     |     |        |      |      |
-|**Tokenize**   |    | ❌ |     | ❌ |    |     |     |    |     |       |      |      |
+|               | OpenAI | Anthropic | Google | Cohere | DeepSeek | Groq | Mistral | xAI | Perplexity | Voyage | DeepInfra | OpenRouter | Custom* |
+|-------|-----------|-----------|-----------| -----------| -----------| -----------| -----------| -----------| -----------| -----------| -----------| -----------| -----------|
+|**Audio**      | ✅ |    |     |     |   |     |     |     |     |     |      |      |      |
+|**Chat**       | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |  ✅ | ✅ |   |   ✅   | ✅      |✅      |
+|**Embeddings** | ✅ |    | ✅  | ✅ |    |    | ✅ |     |     |   ✅      |     |  ✅   |      |
+|**Fine-Tuning**| ✅ |    | ❌  |    |    |    | ❌  |    |     |        |      |      |     |
+|**Batch**      | ❌ | ❌ | ❌ | ❌ |    | ❌ | ❌ |    |     |        |      |      |      |
+|**Files**      | ✅ | ✅ | ✅ |     |    |     | ❌ |    |     |        |      |      |      |
+|**Uploads**    | ❌ |    |     |    |    |     |     |     |     |        |      |      |      |
+|**Images**     | ✅ |    | ✅ |    |    |     |     |  ✅  |     |        |      |      |     |
+|**Models**     | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |  ✅ |   |    |      |  ✅    |  ✅    |
+|**Moderation** | ✅ |    |     |    |    |     |     |    |     |        |      |      |      |
+|**Responses**   | ❌   |  |     |  |    |     |     |     |     |        |      |      |      |
+|**Tokenize**   |    | ❌ |     | ❌ |    |     |     |    |     |       |      |      |      |
 
 _*Custom means any OpenAI compatible provider, such as Azure OpenAI, Ollama, KoboldCpp, etc._
 
