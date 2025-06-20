@@ -9,6 +9,42 @@ using Newtonsoft.Json;
 namespace LlmTornado.Models;
 
 /// <summary>
+/// Architecture of a fetched model.
+/// </summary>
+public class RetrievedModelArchitecture
+{
+    /// <summary>
+    /// Modality summary.
+    /// </summary>
+    [JsonProperty("modality")]
+    public string? Modality { get; set; }
+    
+    /// <summary>
+    /// Input modalities.
+    /// </summary>
+    [JsonProperty("input_modalities")]
+    public List<string>? InputModalities { get; set; }
+    
+    /// <summary>
+    /// Output modalities.
+    /// </summary>
+    [JsonProperty("output_modalities")]
+    public List<string>? OutputModalities { get; set; }
+    
+    /// <summary>
+    /// Tokenizer.
+    /// </summary>
+    [JsonProperty("tokenizer")]
+    public string? Tokenizer { get; set; }
+    
+    /// <summary>
+    /// Instruct type.
+    /// </summary>
+    [JsonProperty("instruct_type")]
+    public string? InstructType { get; set; }
+}
+
+/// <summary>
 /// Model information retrieved by API.
 /// </summary>
 public class RetrievedModel
@@ -18,6 +54,12 @@ public class RetrievedModel
     /// </summary>
     [JsonProperty("id")]
     public string Id { get; set; }
+    
+    /// <summary>
+    /// Only reported by Open Router.
+    /// </summary>
+    [JsonProperty("canonical_slug")]
+    public string? CanonicalSlug { get; set; }
     
     [JsonProperty("display_name")]
     internal string? InternalDisplayName { get; set; }
@@ -63,6 +105,30 @@ public class RetrievedModel
     /// </summary>
     [JsonProperty("object")]
     public string? Object { get; init; }
+    
+    /// <summary>
+    /// Context length, currently reported only by Open Router.
+    /// </summary>
+    [JsonProperty("context_length")]
+    public int? ContextLength { get; set; }
+    
+    /// <summary>
+    /// Hugging face listing, currently reported only by Open Router.
+    /// </summary>
+    [JsonProperty("hugging_face_id")]
+    public string? HuggingFaceId { get; set; }
+    
+    /// <summary>
+    /// Supported arguments, currently reported only by Open Router.
+    /// </summary>
+    [JsonProperty("supported_parameters")]
+    public List<string>? SupportedParameters { get; set; }
+    
+    /// <summary>
+    /// Architecture of the model, currently reported only by Open Router.
+    /// </summary>
+    [JsonProperty("architecture")]
+    public RetrievedModelArchitecture? Architecture { get; set; }
     
     /// <summary>
     ///     The time when the model was created.

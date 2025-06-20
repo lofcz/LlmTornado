@@ -156,6 +156,23 @@ public class TornadoApi
     /// <summary>
     ///     Creates a new Tornado API with a specific provider authentication. Use when the API will be used only with a single provider.
     /// </summary>
+    public TornadoApi(LLmProviders provider, string apiKey) : this()
+    {
+        Authentications.TryAdd(provider, new ProviderAuthentication(provider, apiKey));
+    }
+    
+    /// <summary>
+    /// Creates a new Tornado API with a specific provider authentication. Use when the API will be used only with a single provider.<br/>
+    /// <b>This overload is without API key! Suitable only for self-hosted models and endpoints without authorization, such as <see cref="ModelsEndpoint"/>.</b>
+    /// </summary>
+    public TornadoApi(LLmProviders provider) : this()
+    {
+        Authentications.TryAdd(provider, new ProviderAuthentication(provider, string.Empty));
+    }
+    
+    /// <summary>
+    ///     Creates a new Tornado API with a specific provider authentication. Use when the API will be used only with a single provider.
+    /// </summary>
     public TornadoApi(IEnumerable<ProviderAuthentication> providerKeys) : this()
     {
         foreach (ProviderAuthentication provider in providerKeys)
