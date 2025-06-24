@@ -1,0 +1,71 @@
+﻿using LlmTornado.Chat;
+using LlmTornado.Chat.Models;
+using LlmTornado.ChatFunctions;
+using LlmTornado.Code;
+using LlmTornado.Common;
+using ModelContextProtocol.Client;
+using Newtonsoft.Json;
+
+namespace LlmTornado.Mcp.Sample;
+
+class Program
+{
+    static async Task Main(string[] args)
+    {
+        ApiKeys apiKeys = JsonConvert.DeserializeObject<ApiKeys>(await File.ReadAllTextAsync("apiKey.json"));
+        (string command, string[] arguments) = GetCommandAndArguments(args);
+        
+        StdioClientTransport clientTransport = new StdioClientTransport(new StdioClientTransportOptions
+        {
+            Name = "Demo Server",
+            Command = command,
+            Arguments = arguments,
+        });
+        
+        await using IMcpClient mcpClient = await McpClientFactory.CreateAsync(clientTransport);
+        List<Tool> tools = await mcpClient.ListTornadoToolsAsync();
+
+        TornadoApi api = new TornadoApi(LLmProviders.OpenAi, apiKeys.OpenAi);
+        Conversation conversation = api.Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.OpenAi.Gpt41.V41,
+            Tools = tools
+        });
+        
+        await conversation
+            .AddSystemMessage("You are a helpful assistant")
+            .AddUserMessage("What is the weather like in Prague?")
+            .GetResponseRich(calls =>
+            {
+                foreach (FunctionCall call in calls)
+                {
+                    call.Resolve(new
+                    {
+                        weather = "heavy rain is expected"
+                    });
+                }
+
+                return Task.CompletedTask;
+            });
+        
+        await conversation.StreamResponse(Console.Write);
+    }
+    
+    static (string command, string[] arguments) GetCommandAndArguments(string[] args)
+    {
+        string serverPath = Path.GetFullPath(Path.Join("..", "..", "..", "..", "LlmTornado.Mcp.Sample.Server"));
+
+        return args switch
+        {
+            [var script] when script.EndsWith(".py") => ("python", args),
+            [var script] when script.EndsWith(".js") => ("node", args),
+            [var script] when Directory.Exists(script) || (File.Exists(script) && script.EndsWith(".csproj")) => ("dotnet", ["run", "--project", script]),
+            _ => ("dotnet", ["run", "--project", serverPath])
+        };
+    }
+    
+    class ApiKeys
+    {
+        public string OpenAi { get; set; }
+    }
+}

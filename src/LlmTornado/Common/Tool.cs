@@ -1,8 +1,10 @@
 using System;
+using System.Text.Json;
 using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.ChatFunctions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using JsonSerializer = Newtonsoft.Json.JsonSerializer;
 
 namespace LlmTornado.Common;
 
@@ -255,7 +257,7 @@ public class ToolFunction
     ///     The input parameters of the tool, if any.
     /// </summary>
     [JsonProperty("parameters")]
-    public JObject? Parameters { get; set; }
+    public object? Parameters { get; set; }
     
     [JsonIgnore]
     internal object? RawParameters { get; set; }
@@ -296,6 +298,20 @@ public class ToolFunction
         Name = name;
         Description = description;
         Parameters = parameters;
+        RawParameters = parameters;
+    }
+    
+    /// <summary>
+    ///     Create a function with parameters.
+    /// </summary>
+    /// <param name="name"></param>
+    /// <param name="description"></param>
+    /// <param name="parameters"></param>
+    public ToolFunction(string name, string description, JsonElement parameters)
+    {
+        Name = name;
+        Description = description;
+        Parameters = JObject.Parse(parameters.ToString());
         RawParameters = parameters;
     }
 

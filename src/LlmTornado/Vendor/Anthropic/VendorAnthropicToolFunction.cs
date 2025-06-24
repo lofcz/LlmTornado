@@ -43,7 +43,7 @@ public class VendorAnthropicToolFunction : IAnthropicChatRequestItem
     ///     The input parameters of the tool, if any.
     /// </summary>
     [JsonProperty("input_schema")]
-    public JObject? Parameters { get; set; }
+    public object? Parameters { get; set; }
 
     /// <summary>
     ///     Cache indicator for the tool.

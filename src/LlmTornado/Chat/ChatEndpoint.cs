@@ -118,9 +118,14 @@ public class ChatEndpoint : EndpointBase
         {
             foreach (ChatChoice choice in result.Data.Choices)
             {
-                if (choice.Message is not null && choice.Message.Parts?.Count > 0 && choice.Message.Content is null)
+                if (choice.Message is not null)
                 {
-                    choice.Message.Content = choice.Message.Parts.FirstOrDefault(x => x.Type is ChatMessageTypes.Text)?.Text;
+                    choice.Message.Role = ChatMessageRoles.Assistant;
+                    
+                    if (choice.Message.Parts?.Count > 0 && choice.Message.Content is null)
+                    {
+                        choice.Message.Content = choice.Message.Parts.FirstOrDefault(x => x.Type is ChatMessageTypes.Text)?.Text;
+                    }
                 }
             }
         }

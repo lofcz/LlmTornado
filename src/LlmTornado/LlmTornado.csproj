@@ -57,13 +57,14 @@
     </PropertyGroup>
     <ItemGroup Condition="$(TargetFramework.StartsWith('net4')) OR $(TargetFramework.StartsWith('netstandard'))">
         <Reference Include="System.Net.Http" />
-        <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="9.0.5" />
-        <PackageReference Include="IndexRange" Version="1.0.3" />
-        <PackageReference Include="PolySharp" Version="1.15.0">
+        <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="[8.0.0, )" />
+        <PackageReference Include="IndexRange" Version="[1.0.3, )" />
+        <PackageReference Include="PolySharp" Version="[1.15.0, )">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="System.Memory" Version="4.6.3" />
-        <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
+        <PackageReference Include="System.Memory" Version="[4.6.3, )" />
+        <PackageReference Include="Microsoft.CSharp" Version="[4.7.0, )" />
+        <PackageReference Include="System.Text.Json" Version="[8.0.5, )" />
     </ItemGroup>
 </Project>

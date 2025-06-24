@@ -1,0 +1,6 @@
+@LlmTornado.Mcp.Sample.Server_HostAddress = http://localhost:5052
+
+GET {{LlmTornado.Mcp.Sample.Server_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <LangVersion>preview</LangVersion>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <TargetFrameworks>net8.0;netstandard2.0</TargetFrameworks>
+    </PropertyGroup>
+    <ItemGroup>
+      <ProjectReference Include="..\LlmTornado\LlmTornado.csproj" />
+    </ItemGroup>
+    <ItemGroup>
+      <PackageReference Include="ModelContextProtocol" Version="[0.3.0-preview.1, )" />
+    </ItemGroup>
+</Project>

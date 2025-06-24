@@ -10,6 +10,16 @@ namespace LlmTornado.Chat.Models.Mistral;
 public class ChatModelMistralFree : IVendorModelClassProvider
 {
     /// <summary>
+    /// Mistral Small 3.2
+    /// </summary>
+    public static readonly ChatModel ModelMistralSmall2506 = new ChatModel("mistral-small-2506", LLmProviders.Mistral, 128_000);
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelMistralSmall2506"/>
+    /// </summary>
+    public readonly ChatModel MistralSmall2506 = ModelMistralSmall2506;
+    
+    /// <summary>
     /// Building upon Mistral Small 3.1 (2503), with added reasoning capabilities, undergoing SFT from Magistral Medium traces and RL on top, it's a small, efficient reasoning model with 24B parameters.
     /// </summary>
     public static readonly ChatModel ModelMagistralSmall = new ChatModel("magistral-small-2506", LLmProviders.Mistral, 40_000);
@@ -68,7 +78,8 @@ public class ChatModelMistralFree : IVendorModelClassProvider
         ModelMistralSmall,
         ModelPixtral,
         ModelDevstralSmall,
-        ModelMagistralSmall
+        ModelMagistralSmall,
+        ModelMistralSmall2506
     ];
 
     /// <summary>

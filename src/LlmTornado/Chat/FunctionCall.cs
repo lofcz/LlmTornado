@@ -77,4 +77,40 @@ public class FunctionCall
     {
         return JsonEncoded ??= JsonConvert.SerializeObject(this, EndpointBase.NullSettings);
     }
+
+    /// <summary>
+    /// Resolves the call.
+    /// </summary>
+    public FunctionCall Resolve(object? result)
+    {
+        Result = new FunctionResult(this, result);
+        return this;
+    }
+    
+    /// <summary>
+    /// Resolves the call.
+    /// </summary>
+    public FunctionCall Resolve(object? result, bool invocationSucceeded)
+    {
+        Result = new FunctionResult(this, result, invocationSucceeded);
+        return this;
+    }
+    
+    /// <summary>
+    /// Resolves the call.
+    /// </summary>
+    public FunctionCall Resolve(object? result, object? passthroughData)
+    {
+        Result = new FunctionResult(this, result, passthroughData);
+        return this;
+    }
+    
+    /// <summary>
+    /// Resolves the call.
+    /// </summary>
+    public FunctionCall Resolve(object? result, object? passthroughData, bool invocationSucceeded)
+    {
+        Result = new FunctionResult(this, result, passthroughData, invocationSucceeded);
+        return this;
+    }
 }
