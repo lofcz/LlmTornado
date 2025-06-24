@@ -11,7 +11,8 @@
 - **Multi-Agent Systems**: Toolkit for the orchestration of multiple collaborating specialist agents.
 - **Maximize request success rate**: We keep track of which parameters are supported by which models, how long the reasoning context can be, etc., and silently modify your requests to comply with rules enforced by a diverse set of Providers.
 - **Leverage unique capabilities**: Non-standard features from all major Providers are carefully mapped, documented, and ready to use via strongly-typed code.
-- **Fully multimodal**: Text, image, video, document, url, and audio inputs are supported.
+- **Fully multimodal**: Text, image, video, document, URL, and audio inputs are supported.
+- **MCP compatible**: Seamlessly integrate MCP using the official .NET SDK and `LlmTornado.Mcp`.
 - **Enterprise ready**: Observability as a first-class citizen. Preview any request before committing to it. Streamlined usage information as a monitoring backbone. Flexibility with multilingual apps in mind.
 
 ## ⭐ With a few lines of code you can:
@@ -37,6 +38,7 @@ dotnet add package LlmTornado.Toolkit
 Optional addons:
 
 ```bash
+dotnet add package LlmTornado.Mcp # Model Context Protocol (MCP) integration
 dotnet add package LlmTornado.Contrib # productivity, quality of life enhancements
 ```
 
