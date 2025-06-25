@@ -2,6 +2,7 @@ using System.Text.RegularExpressions;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.ChatFunctions;
+using LlmTornado.Code;
 using LlmTornado.Common;
 using Newtonsoft.Json;
 

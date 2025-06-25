@@ -11,6 +11,7 @@ using LlmTornado.Images;
 using LlmTornado.Audio;
 using LlmTornado.Chat;
 using LlmTornado.ChatFunctions;
+using LlmTornado.Code.Vendor;
 using LlmTornado.Common;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -1293,6 +1294,8 @@ public class TornadoRequestContent
 
         return EndpointBase.BuildRequestUrl(Url, Provider, CapabilityEndpoint.Value);
     }
+
+    internal static TornadoRequestContent Dummy => new TornadoRequestContent(new { }, null, new OpenAiEndpointProvider(LLmProviders.OpenAi), CapabilityEndpoints.Chat);
 
     internal TornadoRequestContent()
     {

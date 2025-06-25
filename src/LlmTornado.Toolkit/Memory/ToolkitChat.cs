@@ -4,6 +4,7 @@ using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
+using LlmTornado.Code.Vendor;
 using LlmTornado.Common;
 using LlmTornado.Toolkit;
 using LlmTornado.Toolkit.Memory;
@@ -13,15 +14,24 @@ public class ToolkitChat
 {
     public ToolkitChatConfig Cfg => cfg;
     public int? ConversationId { get; set; }
+    
     /// <summary>
     /// Number of functions called since the last user message
     /// </summary>
     public int FunctionsCalledInSuccession => functionsCalledInSuccession;
+    
     public bool SingleUse { get; set; }
+    
     /// <summary>
     /// True if a user's request is being processed
     /// </summary>
     public bool Busy { get; private set; }
+    
+    /// <summary>
+    /// Underlying conversation.
+    /// </summary>
+    public Conversation Memory => chat;
+    
     public Func<string, Task>? TokenHandler { get; set; }
     public Func<ToolkitChat, Task<bool>>? OutboundMessageVerifier { get; set; }
     private TornadoApi api;
@@ -101,8 +111,7 @@ public class ToolkitChat
     /// </summary>
     public static async Task<LlmResponseParsedRich> GetSingleResponseRich(TornadoApi api, ToolkitChatConfig? config, string userInput, List<ChatFunction>? functions = null, object? key = null)
     {
-        ToolkitChat sc = new ToolkitChat(api, true);
-        await sc.Init(config, functions, userInput);
+        ToolkitChat sc = await Create(api, config, userInput, functions, key);
         
         LlmResponseParsedRich response = await sc.GetLlmResponseRich();
         response.Key = key;
@@ -110,11 +119,19 @@ public class ToolkitChat
         return response;
     }
 
-    public static async Task<LlmResponseParsedRich> GetSingleResponseRich(TornadoApi api, ChatModel model, ChatModel? backupModel, string sysPrompt, string userInput, double temp = 0d, int maxTokens = 8196, object? key = null)
+    /// <summary>
+    /// Creates a new instance of toolkit chat and instantiates it. 
+    /// </summary>
+    public static async Task<ToolkitChat> Create(TornadoApi api, ToolkitChatConfig? config, string userInput, List<ChatFunction>? functions = null, object? key = null)
     {
         ToolkitChat sc = new ToolkitChat(api, true);
-        await sc.Init(new ToolkitChatConfig(model, sysPrompt, maxTokens, temp), [], userInput);
-        
+        await sc.Init(config, functions, userInput);
+        return sc;
+    }
+
+    public static async Task<LlmResponseParsedRich> GetSingleResponseRich(TornadoApi api, ChatModel model, ChatModel? backupModel, string sysPrompt, string userInput, double temp = 0d, int maxTokens = 8196, object? key = null)
+    {
+        ToolkitChat sc = await Create(api, model, backupModel, sysPrompt, userInput, temp, maxTokens, key);
         LlmResponseParsedRich response = await sc.GetLlmResponseRich();
         response.Key = key;
 
@@ -126,24 +143,34 @@ public class ToolkitChat
         
         return response;
     }
+    
+    public static async Task<ToolkitChat> Create(TornadoApi api, ChatModel model, ChatModel? backupModel, string sysPrompt, string userInput, double temp = 0d, int maxTokens = 8196, object? key = null)
+    {
+        ToolkitChat sc = new ToolkitChat(api, true);
+        await sc.Init(new ToolkitChatConfig(model, sysPrompt, maxTokens, temp), [], userInput);
+        return sc;
+    }
 
     /// <summary>
     /// Instantiates a new stateful chat configured to execute a single function, executes the function and returns the result
     /// </summary>
     public static async Task<LlmResponseParsed> GetSingleResponse(TornadoApi api, ToolkitChatConfig? config, ChatFunction function, string userInput)
     {
-        ToolkitChat sc = new ToolkitChat(api, true);
-        await sc.Init(config, function, userInput, false, true);
-        
+        ToolkitChat sc = await Create(api, config, function, userInput);
         LlmResponseParsed response = await sc.GetLlmResponse();
         return response;
+    }
+    
+    public static async Task<ToolkitChat> Create(TornadoApi api, ToolkitChatConfig? config, ChatFunction function, string userInput)
+    {
+        ToolkitChat sc = new ToolkitChat(api, true);
+        await sc.Init(config, function, userInput, false, true);
+        return sc;
     }
 
     public static async Task<LlmResponseParsed> GetSingleResponse(TornadoApi api, ChatModel model, ChatModel? backupModel, string sysPrompt, string userInput, double temp = 0d, int maxTokens = 8196, string? prefill = null)
     {
-        ToolkitChat sc = new ToolkitChat(api, true);
-        await sc.Init(new ToolkitChatConfig(model, sysPrompt, maxTokens, temp), (ChatFunction?)null, userInput, false, true, prefill);
-        
+        ToolkitChat sc = await Create(api, model, backupModel, sysPrompt, userInput, temp, maxTokens, prefill);
         LlmResponseParsed response = await sc.GetLlmResponse();
 
         if (!response.Ok)
@@ -154,13 +181,17 @@ public class ToolkitChat
         
         return response;
     }
+    
+    public static async Task<ToolkitChat> Create(TornadoApi api, ChatModel model, ChatModel? backupModel, string sysPrompt, string userInput, double temp = 0d, int maxTokens = 8196, string? prefill = null)
+    {
+        ToolkitChat sc = new ToolkitChat(api, true);
+        await sc.Init(new ToolkitChatConfig(model, sysPrompt, maxTokens, temp), (ChatFunction?)null, userInput, false, true, prefill);
+        return sc;
+    }
 
     public static async Task<LlmResponseParsed> GetSingleResponse(TornadoApi api, ChatModel model, ChatModel? backupModel, string sysPrompt, ChatFunction function, string userInput, double temp = 0d, int maxTokens = 8196, bool strict = true)
     {
-        ToolkitChat sc = new ToolkitChat(api, true);
-        function.Strict = strict;
-        await sc.Init(new ToolkitChatConfig(model, sysPrompt, maxTokens, temp), function, userInput, false, true);
-        
+        ToolkitChat sc = await Create(api, model, backupModel, sysPrompt, function, userInput, temp, maxTokens, strict);
         LlmResponseParsed response = await sc.GetLlmResponse();
 
         // retry unless we don't think it makes sense (for errors induced by us)
@@ -171,6 +202,14 @@ public class ToolkitChat
         }
         
         return response;
+    }
+    
+    public static async Task<ToolkitChat> Create(TornadoApi api, ChatModel model, ChatModel? backupModel, string sysPrompt, ChatFunction function, string userInput, double temp = 0d, int maxTokens = 8196, bool strict = true)
+    {
+        ToolkitChat sc = new ToolkitChat(api, true);
+        function.Strict = strict;
+        await sc.Init(new ToolkitChatConfig(model, sysPrompt, maxTokens, temp), function, userInput, false, true);
+        return sc;
     }
     
     /*public static Task<LlmResponseParsed> GetSingleResponse(ChatModel model, ChatModel? backupModel, string sysPrompt, AttachedFile file, string? userInput = null, ChatFunction? chatFunction = null, double temp = 0d, int maxTokens = 8196, bool strict = true, string? prefill = null)
@@ -235,12 +274,17 @@ public class ToolkitChat
     /// <returns></returns>
     public static async Task<LlmResponseParsed> GetSingleResponse(TornadoApi api, ToolkitChatConfig? config, ChatFunction function, string userInput, bool strict)
     {
+        ToolkitChat sc = await Create(api, config, function, userInput, strict);
+        LlmResponseParsed response = await sc.GetLlmResponse();
+        return response;
+    }
+    
+    public static async Task<ToolkitChat> Create(TornadoApi api, ToolkitChatConfig? config, ChatFunction function, string userInput, bool strict)
+    {
         ToolkitChat sc = new ToolkitChat(api, true);
         function.Strict = strict;
         await sc.Init(config, function, userInput, false, true);
-        
-        LlmResponseParsed response = await sc.GetLlmResponse();
-        return response;
+        return sc;
     }
     
     /// <summary>
@@ -248,11 +292,16 @@ public class ToolkitChat
     /// </summary>
     public static async Task<LlmResponseParsed> GetSingleResponse(TornadoApi api, ToolkitChatConfig? config, List<ChatFunction> functions, string userInput)
     {
-        ToolkitChat sc = new ToolkitChat(api, true);
-        await sc.Init(config, functions, userInput, false, true);
-        
+        ToolkitChat sc = await Create(api, config, functions, userInput);
         LlmResponseParsed response = await sc.GetLlmResponse();
         return response;
+    }
+    
+    public static async Task<ToolkitChat> Create(TornadoApi api, ToolkitChatConfig? config, List<ChatFunction> functions, string userInput)
+    {
+        ToolkitChat sc = new ToolkitChat(api, true);
+        await sc.Init(config, functions, userInput, false, true);
+        return sc;
     }
     
     /// <summary>
@@ -786,6 +835,16 @@ public class ToolkitChat
         {
             return new LlmResponseParsedRich { Error = LlmResponseErrors.Generic, NativeException = e };
         }
+    }
+
+    public TornadoRequestContent Serialize(ChatRequestSerializeOptions? options = null)
+    {
+        if (chat is null)
+        {
+            InitChatIfNull();
+        }
+        
+        return chat?.Serialize(options) ?? TornadoRequestContent.Dummy;
     }
 
     public async Task<LlmResponseParsed> GetLlmResponse(bool mergeBlockMsgs = false)

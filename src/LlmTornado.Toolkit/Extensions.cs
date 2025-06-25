@@ -55,11 +55,6 @@ internal static class Extensions
         return baseTypes;
     }
     
-    public static void AddOrUpdate<TKey, TVal>(this Dictionary<TKey, TVal> dict, TKey key, TVal val) where TKey : notnull
-    {
-        dict[key] = val;
-    }
-    
     public static Dictionary<string, object?> ComponentToDictionary(this object source, BindingFlags bindingAttr = BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance)
     {
         List<PropertyInfo> props = [];
@@ -215,11 +210,6 @@ internal static class Extensions
     {
         return StringEnum.GetStringValue(e, key);
     }
-
-    public static bool IsNullOrWhiteSpace([NotNullWhen(returnValue: false)] this string? value)
-    {
-        return value == null || value.All(char.IsWhiteSpace);
-    }
     
     public static T? GetTypeValue<T>(this Enum e, string key)
     {
@@ -229,44 +219,5 @@ internal static class Extensions
     public static T? GetTypeValue<T>(this Enum e)
     {
         return StringEnum.GetTypeValue<T>(e);
-    }
-    
-    public static T? JsonDecode<T>(this string? s)
-    {
-        if (string.IsNullOrEmpty(s))
-        {
-            return default;
-        }
-
-        try
-        {
-            return JsonConvert.DeserializeObject<T>(s);
-        }
-        catch (Exception e)
-        {
-            return default;
-        }
-    }
-    
-    public static T? JsonDecode<T>(this JsonElement el)
-    {
-        return el.GetRawText().JsonDecode<T>();
-    }
-    
-    public static object? JsonDecode(this string? s, Type type)
-    {
-        if (string.IsNullOrEmpty(s))
-        {
-            return null;
-        }
-
-        try
-        {
-            return JsonConvert.DeserializeObject(s, type);
-        }
-        catch (Exception e)
-        {
-            return null;
-        }
     }
 }
