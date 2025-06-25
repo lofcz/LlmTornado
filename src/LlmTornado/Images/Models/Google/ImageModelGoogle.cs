@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using LlmTornado.Code.Models;
-using LlmTornado.Images.Models.OpenAi;
 
 namespace LlmTornado.Images.Models.Google;
 
@@ -10,9 +9,14 @@ namespace LlmTornado.Images.Models.Google;
 public class ImageModelGoogle : BaseVendorModelProvider
 {
     /// <summary>
-    /// Dalle models.
+    /// Imagen models.
     /// </summary>
     public readonly ImageModelGoogleImagen Imagen = new ImageModelGoogleImagen();
+    
+    /// <summary>
+    /// Imagen preview models.
+    /// </summary>
+    public readonly ImageModelGoogleImagenPreview ImagenPreview = new ImageModelGoogleImagenPreview();
     
     /// <summary>
     /// All known image models from OpenAI.
@@ -38,7 +42,8 @@ public class ImageModelGoogle : BaseVendorModelProvider
     /// <inheritdoc cref="AllModels"/>
     /// </summary>
     public static readonly List<IModel> ModelsAll = [
-        ..ImageModelGoogleImagen.ModelsAll
+        ..ImageModelGoogleImagen.ModelsAll,
+        ..ImageModelGoogleImagenPreview.ModelsAll
     ];
     
     static ImageModelGoogle()
