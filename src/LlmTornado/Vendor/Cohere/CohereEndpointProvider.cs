@@ -9,6 +9,7 @@ using LlmTornado.Chat;
 using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Chat.Vendors.Cohere;
 using LlmTornado.ChatFunctions;
+using LlmTornado.Code.Models;
 using LlmTornado.Embedding;
 using LlmTornado.Models.Vendors;
 using LlmTornado.Vendor.Anthropic;
@@ -115,10 +116,10 @@ public class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
     /// </summary>
     /// <param name="endpoint"></param>
     /// <returns></returns>
-    public override string ApiUrl(CapabilityEndpoints endpoint, string? url)
+    public override string ApiUrl(CapabilityEndpoints endpoint, string? url, IModel? model = null)
     {
         string eStr = GetEndpointUrlFragment(endpoint);
-        return UrlResolver is not null ? string.Format(UrlResolver.Invoke(endpoint, url), eStr, url) : $"https://api.cohere.ai/v1/{eStr}{url}";
+        return UrlResolver is not null ? string.Format(UrlResolver.Invoke(endpoint, url), eStr, url, model?.Name) : $"https://api.cohere.ai/v1/{eStr}{url}";
     }
 
     enum ChatStreamEventTypes

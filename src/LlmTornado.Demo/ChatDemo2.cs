@@ -386,6 +386,24 @@ public partial class ChatDemo : DemoBase
         Console.WriteLine("OpenRouter:");
         Console.WriteLine(str);
     }
+
+    [TornadoTest]
+    public static async Task AiFoundry()
+    {
+        TornadoApi tornadoApi = new TornadoApi(new OpenAiEndpointProvider
+        {
+            Auth = new ProviderAuthentication(Program.ApiKeys.AiFoundry),
+            UrlResolver = (endpoint, url) => "https://{2}.eastus2.models.ai.azure.com/v1/{0}{1}"
+        });
+
+        await tornadoApi.Chat.CreateConversation(new ChatRequest
+            {
+                Model = "DeepSeek-R1-wxdlm"
+            })
+            .AddSystemMessage("You are a helpful assistant.")
+            .AddUserMessage("2+2=?")
+            .StreamResponse(Console.Write);
+    }
     
     [TornadoTest]
     public static async Task Gemini25ProReasoningStreaming()

@@ -8,6 +8,7 @@ using System.Text;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.ChatFunctions;
+using LlmTornado.Code.Models;
 using LlmTornado.Code.Sse; 
 using Newtonsoft.Json;
 
@@ -213,10 +214,10 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
         };
     }
     
-    public override string ApiUrl(CapabilityEndpoints endpoint, string? url)
+    public override string ApiUrl(CapabilityEndpoints endpoint, string? url, IModel? model = null)
     {
         string eStr = GetEndpointUrlFragment(endpoint);
-        return UrlResolver is not null ? string.Format(UrlResolver.Invoke(endpoint, url), eStr, url) : $"https://api.anthropic.com/v1/{eStr}{url}";
+        return UrlResolver is not null ? string.Format(UrlResolver.Invoke(endpoint, url), eStr, url, model?.Name) : $"https://api.anthropic.com/v1/{eStr}{url}";
     }
     
     public override async IAsyncEnumerable<ChatResult?> InboundStream(StreamReader reader, ChatRequest request)

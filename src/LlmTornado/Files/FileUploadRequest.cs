@@ -127,6 +127,6 @@ public class FileUploadRequest
     /// <returns></returns>
     public TornadoRequestContent Serialize(IEndpointProvider provider)
     {
-        return SerializeMap.TryGetValue(provider.Provider, out Func<FileUploadRequest, IEndpointProvider, object>? serializerFn) ? new TornadoRequestContent(serializerFn.Invoke(this, provider), null, provider, CapabilityEndpoints.Files) : new TornadoRequestContent(string.Empty, null, provider, CapabilityEndpoints.Files);
+        return SerializeMap.TryGetValue(provider.Provider, out Func<FileUploadRequest, IEndpointProvider, object>? serializerFn) ? new TornadoRequestContent(serializerFn.Invoke(this, provider), null, null, provider, CapabilityEndpoints.Files) : new TornadoRequestContent(string.Empty, null, null, provider, CapabilityEndpoints.Files);
     }
 }

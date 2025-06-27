@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using LlmTornado.Chat;
+using LlmTornado.Code.Models;
 using LlmTornado.Vendor.Anthropic;
 
 namespace LlmTornado.Code;
@@ -37,7 +38,7 @@ public abstract class BaseEndpointProvider : IEndpointProviderExtended
         }
     }
 
-    public abstract string ApiUrl(CapabilityEndpoints endpoint, string? url);
+    public abstract string ApiUrl(CapabilityEndpoints endpoint, string? url, IModel? model = null);
     public abstract T? InboundMessage<T>(string jsonData, string? postData);
     public abstract object? InboundMessage(Type type, string jsonData, string? postData);
     public abstract void ParseInboundHeaders<T>(T res, HttpResponseMessage response) where T : ApiResultBase;

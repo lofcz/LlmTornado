@@ -268,7 +268,7 @@ public class EmbeddingRequest
 			_ => string.Empty
 		};
 		
-		return new TornadoRequestContent(content, UrlOverride, provider, CapabilityEndpoints.Embeddings);
+		return new TornadoRequestContent(content, Model, UrlOverride, provider, CapabilityEndpoints.Embeddings);
 	}
 	
 	internal void OverrideUrl(string url)

@@ -13,6 +13,7 @@ using LlmTornado.Chat;
 using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Chat.Vendors.Cohere;
 using LlmTornado.ChatFunctions;
+using LlmTornado.Code.Models;
 using LlmTornado.Code.Sse;
 using LlmTornado.Embedding;
 using LlmTornado.Files;
@@ -64,7 +65,7 @@ public class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
     /// </summary>
     /// <param name="endpoint"></param>
     /// <returns></returns>
-    public override string ApiUrl(CapabilityEndpoints endpoint, string? url)
+    public override string ApiUrl(CapabilityEndpoints endpoint, string? url, IModel? model = null)
     {
         const string baseUrlVersion = $"{BaseUrl}v1beta/";
         
@@ -85,7 +86,7 @@ public class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
             default:
             {
                 string eStr = GetEndpointUrlFragment(endpoint);
-                return UrlResolver is not null ? string.Format(UrlResolver.Invoke(endpoint, url), eStr, url) : $"{baseUrlVersion}{eStr}{url}";
+                return UrlResolver is not null ? string.Format(UrlResolver.Invoke(endpoint, url), eStr, url, model?.Name) : $"{baseUrlVersion}{eStr}{url}";
             }
         }
     }

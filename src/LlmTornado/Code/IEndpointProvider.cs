@@ -4,6 +4,7 @@ using System.IO;
 using System.Net;
 using System.Net.Http;
 using LlmTornado.Chat;
+using LlmTornado.Code.Models;
 
 namespace LlmTornado.Code;
 
@@ -65,7 +66,7 @@ public interface IEndpointProvider
     /// <summary>
     /// API url resolver.
     /// </summary>
-    public string ApiUrl(CapabilityEndpoints endpoint, string? url);
+    public string ApiUrl(CapabilityEndpoints endpoint, string? url, IModel? model = null);
 
     /// <summary>
     /// Authentication.

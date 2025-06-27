@@ -85,7 +85,7 @@ public class ChatEndpoint : EndpointBase
         request.Stream = null;
         IEndpointProvider provider = Api.GetProvider(request.Model ?? ChatModel.OpenAi.Gpt35.Turbo);
         TornadoRequestContent requestBody = request.Serialize(provider);
-        HttpCallResult<ChatResult> result = await HttpPost<ChatResult>(provider, Endpoint, requestBody.Url, requestBody.Body, request.CancellationToken);
+        HttpCallResult<ChatResult> result = await HttpPost<ChatResult>(provider, Endpoint, requestBody.Url, requestBody.Body, request.Model, request.CancellationToken);
         
         if (result.Exception is not null)
         {
@@ -146,7 +146,7 @@ public class ChatEndpoint : EndpointBase
         request.Stream = null;
         IEndpointProvider provider = Api.GetProvider(request.Model ?? ChatModel.OpenAi.Gpt35.Turbo);
         TornadoRequestContent requestBody = request.Serialize(provider);
-        HttpCallResult<ChatResult> result = await HttpPost<ChatResult>(provider, Endpoint, requestBody.Url, requestBody.Body, request.CancellationToken);
+        HttpCallResult<ChatResult> result = await HttpPost<ChatResult>(provider, Endpoint, requestBody.Url, requestBody.Body, request.Model, request.CancellationToken);
         NormalizeChatResult(result);
         
         if (Api.ChatRequestInterceptor is not null && result.Ok)
@@ -343,7 +343,7 @@ public class ChatEndpoint : EndpointBase
         }
         
         TornadoRequestContent requestBody = request.Serialize(provider);
-        await using TornadoStreamRequest tornadoStreamRequest = await HttpStreamingRequestData(Api.GetProvider(request.Model ?? ChatModel.OpenAi.Gpt35.Turbo), Endpoint, requestBody.Url, queryParams: null, HttpVerbs.Post, requestBody.Body, request.CancellationToken);
+        await using TornadoStreamRequest tornadoStreamRequest = await HttpStreamingRequestData(Api.GetProvider(request.Model ?? ChatModel.OpenAi.Gpt35.Turbo), Endpoint, requestBody.Url, queryParams: null, HttpVerbs.Post, requestBody.Body, request.Model, request.CancellationToken);
 
         if (tornadoStreamRequest.Exception is not null)
         {

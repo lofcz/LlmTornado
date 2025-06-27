@@ -30,6 +30,7 @@ public class Program
         public string Voyage { get; set; }
         public string DeepInfra { get; set; }
         public string OpenRouter { get; set; }
+        public string AiFoundry { get; set; }
     }
 
     public static TornadoApi ConnectMulti(bool httpStrict = true)

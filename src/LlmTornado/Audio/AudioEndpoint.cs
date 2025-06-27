@@ -181,8 +181,8 @@ public class AudioEndpoint : EndpointBase
 
         TranscriptionSerializedRequest serialized = SerializeRequest(request); 
 
-        TornadoRequestContent requestBody = new TornadoRequestContent(serialized.Content, url, provider, CapabilityEndpoints.Audio);
-        await using TornadoStreamRequest tornadoStreamRequest = await HttpStreamingRequestData(provider, Endpoint, requestBody.Url, queryParams: null, HttpVerbs.Post, requestBody.Body, request.CancellationToken);
+        TornadoRequestContent requestBody = new TornadoRequestContent(serialized.Content, request.Model, url, provider, CapabilityEndpoints.Audio);
+        await using TornadoStreamRequest tornadoStreamRequest = await HttpStreamingRequestData(provider, Endpoint, requestBody.Url, queryParams: null, HttpVerbs.Post, requestBody.Body, request.Model, request.CancellationToken);
 
         if (tornadoStreamRequest.Exception is not null)
         {

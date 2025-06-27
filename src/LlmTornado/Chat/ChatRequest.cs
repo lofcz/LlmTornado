@@ -13,6 +13,7 @@ using LlmTornado.Chat.Vendors.Cohere;
 using LlmTornado.Chat.Vendors.Mistral;
 using LlmTornado.Chat.Vendors.Perplexity;
 using LlmTornado.Chat.Vendors.XAi;
+using LlmTornado.Code.Models;
 using Newtonsoft.Json.Converters;
 
 namespace LlmTornado.Chat;
@@ -22,7 +23,7 @@ namespace LlmTornado.Chat;
 ///     <see cref="Completions.CompletionRequest" />
 ///     Based on the <see href="https://platform.openai.com/docs/api-reference/chat">OpenAI API docs</see>
 /// </summary>
-public class ChatRequest
+public class ChatRequest : IModelRequest
 {
 	/// <summary>
 	///     Creates a new, empty <see cref="ChatRequest" />
@@ -105,7 +106,10 @@ public class ChatRequest
 	[JsonProperty("model")]
 	[JsonConverter(typeof(ChatModelJsonConverter))]
 	public ChatModel? Model { get; set; } = ChatModel.OpenAi.Gpt35.Turbo;
-	
+
+	[JsonIgnore]
+	IModel? IModelRequest.RequestModel => Model;
+
 	/// <summary>
 	///		Modalities of the model. Can be omitted for text only conversations.
 	///		For audio, OpenAI requires both: <see cref="ChatModelModalities.Text"/> and <see cref="ChatModelModalities.Audio"/>, using only <see cref="ChatModelModalities.Audio"/> is invalid.
@@ -528,7 +532,7 @@ public class ChatRequest
 	{
 		TornadoRequestContent serialized = Serialize(provider, options?.Pretty ?? false);
 		
-		string finalUrl = EndpointBase.BuildRequestUrl(serialized.Url, provider, CapabilityEndpoints.Chat);
+		string finalUrl = EndpointBase.BuildRequestUrl(serialized.Url, provider, CapabilityEndpoints.Chat, Model);
 		serialized.Url = finalUrl;
 
 		if (options?.IncludeHeaders ?? false)
@@ -579,7 +583,7 @@ public class ChatRequest
 		TornadoRequestContent serialized = SerializeMap.TryGetValue(provider.Provider, out Func<ChatRequest, IEndpointProvider, JsonSerializerSettings?, string>? serializerFn) ? new TornadoRequestContent(serializerFn.Invoke(this, provider, pretty ? new JsonSerializerSettings
 		{
 			Formatting = Formatting.Indented
-		} : null), UrlOverride, provider, CapabilityEndpoints.Chat) : new TornadoRequestContent(string.Empty, UrlOverride, provider, CapabilityEndpoints.Chat);
+		} : null), Model, UrlOverride, provider, CapabilityEndpoints.Chat) : new TornadoRequestContent(string.Empty, Model, UrlOverride, provider, CapabilityEndpoints.Chat);
 
 		if (restoreStreamOptions)
 		{

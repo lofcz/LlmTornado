@@ -11,6 +11,7 @@ using LlmTornado.Images;
 using LlmTornado.Audio;
 using LlmTornado.Chat;
 using LlmTornado.ChatFunctions;
+using LlmTornado.Code.Models;
 using LlmTornado.Code.Vendor;
 using LlmTornado.Common;
 using Newtonsoft.Json;
@@ -1241,6 +1242,11 @@ public enum StreamRequestTypes
     Chat
 }
 
+internal interface IModelRequest
+{
+    internal IModel? RequestModel { get; }
+}
+
 /// <summary>
 ///  A Tornado HTTP request.
 /// </summary>
@@ -1250,6 +1256,11 @@ public class TornadoRequestContent
     /// Content of the request.
     /// </summary>
     public object Body { get; set; }
+    
+    /// <summary>
+    /// Model associated with this request.
+    /// </summary>
+    public IModel? Model { get; set; }
     
     /// <summary>
     /// Forces the URl to differ from the one inferred further down the pipeline.
@@ -1273,12 +1284,13 @@ public class TornadoRequestContent
     /// </summary>
     public Dictionary<string, IEnumerable<string>>? Headers { get; set; }
     
-    internal TornadoRequestContent(object body, string? url, IEndpointProvider provider, CapabilityEndpoints endpoint)
+    internal TornadoRequestContent(object body, IModel? model, string? url, IEndpointProvider provider, CapabilityEndpoints endpoint)
     {
         Body = body;
         Url = url;
         Provider = provider;
         CapabilityEndpoint = endpoint;
+        Model = model;
     }
 
     /// <summary>
@@ -1292,10 +1304,10 @@ public class TornadoRequestContent
             return Url;
         }
 
-        return EndpointBase.BuildRequestUrl(Url, Provider, CapabilityEndpoint.Value);
+        return EndpointBase.BuildRequestUrl(Url, Provider, CapabilityEndpoint.Value, Model);
     }
 
-    internal static TornadoRequestContent Dummy => new TornadoRequestContent(new { }, null, new OpenAiEndpointProvider(LLmProviders.OpenAi), CapabilityEndpoints.Chat);
+    internal static TornadoRequestContent Dummy => new TornadoRequestContent(new { }, null, null, new OpenAiEndpointProvider(LLmProviders.OpenAi), CapabilityEndpoints.Chat);
 
     internal TornadoRequestContent()
     {

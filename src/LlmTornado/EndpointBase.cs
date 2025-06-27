@@ -13,7 +13,9 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
+using LlmTornado.Chat;
 using LlmTornado.Code;
+using LlmTornado.Code.Models;
 using LlmTornado.Common;
 using LlmTornado.Common;
 using Newtonsoft.Json;
@@ -76,14 +78,14 @@ public abstract class EndpointBase
         Api = api;
     }
 
-    internal string GetUrl(IEndpointProvider provider, string? url = null)
+    internal string GetUrl(IEndpointProvider provider, string? url = null, IModel? model = null)
     {
-        return provider.ApiUrl(Endpoint, url);
+        return provider.ApiUrl(Endpoint, url, model);
     }
     
-    internal static string GetUrl(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null)
+    internal static string GetUrl(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, IModel? model = null)
     {
-        return provider.ApiUrl(endpoint, url);
+        return provider.ApiUrl(endpoint, url, model);
     }
 
     /// <summary>
@@ -199,14 +201,9 @@ public abstract class EndpointBase
     /// <summary>
     /// Builds the final request url.
     /// </summary>
-    /// <param name="url"></param>
-    /// <param name="provider"></param>
-    /// <param name="endpoint"></param>
-    /// <param name="queryParams"></param>
-    /// <returns></returns>
-    internal static string BuildRequestUrl(string? url, IEndpointProvider provider, CapabilityEndpoints endpoint, Dictionary<string, object>? queryParams = null)
+    internal static string BuildRequestUrl(string? url, IEndpointProvider provider, CapabilityEndpoints endpoint, IModel? model, Dictionary<string, object>? queryParams = null)
     {
-        url ??= provider.ApiUrl(endpoint, url);
+        url ??= provider.ApiUrl(endpoint, url, model);
 
         if (queryParams?.Count > 0)
         {
@@ -238,9 +235,9 @@ public abstract class EndpointBase
     /// <param name="endpoint"></param>
     /// <returns>The HttpResponseMessage of the response, which is confirmed to be successful.</returns>
     /// <exception cref="HttpRequestException">Throws an exception if a non-success HTTP response was returned</exception>
-    private async Task<HttpResponseMessage> HttpRequestRaw(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, Dictionary<string, object>? queryParams = null, HttpVerbs? verb = null, object? postData = null, bool streaming = false, CancellationToken? ct = null)
+    private async Task<HttpResponseMessage> HttpRequestRaw(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, Dictionary<string, object>? queryParams = null, HttpVerbs? verb = null, object? postData = null, IModel? model = null, bool streaming = false, CancellationToken? ct = null)
     {
-        url = BuildRequestUrl(url, provider, endpoint, queryParams);
+        url = BuildRequestUrl(url, provider, endpoint, model, queryParams);
         verb ??= HttpVerbs.Get;
 
         HttpClient client = GetClient(provider.Provider);
@@ -313,9 +310,9 @@ public abstract class EndpointBase
         }
     }
 
-    private async Task<RestDataOrException<HttpResponseMessage>> HttpRequestRawWithAllCodes(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, Dictionary<string, object>? queryParams = null, HttpVerbs? verb = null, object? content = null, bool streaming = false, CancellationToken? ct = null, Dictionary<string, object?>? headers = null)
+    private async Task<RestDataOrException<HttpResponseMessage>> HttpRequestRawWithAllCodes(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, Dictionary<string, object>? queryParams = null, HttpVerbs? verb = null, object? content = null, IModel? model = null, bool streaming = false, CancellationToken? ct = null, Dictionary<string, object?>? headers = null)
     {
-        url = BuildRequestUrl(url, provider, endpoint, queryParams);
+        url = BuildRequestUrl(url, provider, endpoint, model, queryParams);
         verb ??= HttpVerbs.Get;
 
         HttpClient client = GetClient(provider.Provider);
@@ -431,9 +428,9 @@ public abstract class EndpointBase
     ///     Throws an exception if a non-success HTTP response was returned or if the result
     ///     couldn't be parsed.
     /// </exception>
-    private async Task<T?> HttpRequest<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, Dictionary<string, object>? queryParams = null, HttpVerbs? verb = null, object? postData = null, CancellationToken? ct = null)
+    private async Task<T?> HttpRequest<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, Dictionary<string, object>? queryParams = null, HttpVerbs? verb = null, object? postData = null, IModel? model = null, CancellationToken? ct = null)
     {
-        using HttpResponseMessage response = await HttpRequestRaw(provider, endpoint, url, queryParams, verb, postData, false, ct).ConfigureAwait(false);
+        using HttpResponseMessage response = await HttpRequestRaw(provider, endpoint, url, queryParams, verb, postData, model, false, ct).ConfigureAwait(false);
         string resultAsString = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
         T? res = provider.InboundMessage<T>(resultAsString, postData?.ToString());
         
@@ -445,9 +442,9 @@ public abstract class EndpointBase
         return res;
     }
 
-    private async Task<object?> HttpRequest(Type type, IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, Dictionary<string, object>? queryParams = null, HttpVerbs? verb = null, object? postData = null, CancellationToken? ct = null)
+    private async Task<object?> HttpRequest(Type type, IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, Dictionary<string, object>? queryParams = null, HttpVerbs? verb = null, object? postData = null, IModel? model = null, CancellationToken? ct = null)
     {
-        using HttpResponseMessage response = await HttpRequestRaw(provider, endpoint, url, queryParams, verb, postData, false, ct).ConfigureAwait(false);
+        using HttpResponseMessage response = await HttpRequestRaw(provider, endpoint, url, queryParams, verb, postData, model, false, ct).ConfigureAwait(false);
         string resultAsString = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
         if (type == typeof(string))
@@ -465,9 +462,9 @@ public abstract class EndpointBase
         return res;
     }
     
-    internal async Task<HttpCallResult<T>> HttpRequestRaw<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, Dictionary<string, object>? queryParams = null, HttpVerbs? verb = null, object? postData = null, CancellationToken? ct = null, Dictionary<string, object?>? headers = null)
+    internal async Task<HttpCallResult<T>> HttpRequestRaw<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, Dictionary<string, object>? queryParams = null, HttpVerbs? verb = null, object? postData = null, IModel? model = null, CancellationToken? ct = null, Dictionary<string, object?>? headers = null)
     {
-        RestDataOrException<HttpResponseMessage> response = await HttpRequestRawWithAllCodes(provider, endpoint, url, queryParams, verb, postData, false, ct, headers).ConfigureAwait(false);
+        RestDataOrException<HttpResponseMessage> response = await HttpRequestRawWithAllCodes(provider, endpoint, url, queryParams, verb, postData, model, false, ct, headers).ConfigureAwait(false);
         
         try
         {
@@ -531,9 +528,9 @@ public abstract class EndpointBase
         }
     }
 
-    private async Task<StreamResponse?> HttpRequestStream(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, Dictionary<string, object>? queryParams = null, HttpVerbs? verb = null, object? postData = null, CancellationToken ct = default)
+    private async Task<StreamResponse?> HttpRequestStream(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, Dictionary<string, object>? queryParams = null, HttpVerbs? verb = null, object? postData = null, IModel? model = null, CancellationToken ct = default)
     {
-        HttpResponseMessage response = await HttpRequestRaw(provider, endpoint, url, queryParams, verb, postData, ct: ct).ConfigureAwait(false);
+        HttpResponseMessage response = await HttpRequestRaw(provider, endpoint, url, queryParams, verb, postData, model, ct: ct).ConfigureAwait(false);
         Stream resultAsStream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
 
         StreamResponse res = new StreamResponse
@@ -574,14 +571,14 @@ public abstract class EndpointBase
         return HttpRequestRaw<T>(provider, endpoint, url, queryParams, HttpVerbs.Get, ct: ct);
     }
 
-    internal Task<T?> HttpPost1<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, object? postData = null, CancellationToken? ct = null) where T : ApiResultBase
+    internal Task<T?> HttpPost1<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, object? postData = null, IModel? model = null, CancellationToken? ct = null) where T : ApiResultBase
     {
-        return HttpRequest<T>(provider, endpoint, url, null, HttpVerbs.Post, postData, ct);
+        return HttpRequest<T>(provider, endpoint, url, null, HttpVerbs.Post, postData, model, ct);
     }
     
-    internal Task<object?> HttpPost1(Type type, IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, object? postData = null, CancellationToken? ct = null)
+    internal Task<object?> HttpPost1(Type type, IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, object? postData = null, IModel? model = null, CancellationToken? ct = null)
     {
-        return HttpRequest(type, provider, endpoint, url, null, HttpVerbs.Post, postData, ct);
+        return HttpRequest(type, provider, endpoint, url, null, HttpVerbs.Post, postData, model, ct);
     }
 
     /// <summary>
@@ -602,19 +599,19 @@ public abstract class EndpointBase
     ///     Throws an exception if a non-success HTTP response was returned or if the result
     ///     couldn't be parsed.
     /// </exception>
-    internal Task<HttpCallResult<T>> HttpPost<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, object? postData = null, CancellationToken? ct = null, Dictionary<string, object?>? headers = null)
+    internal Task<HttpCallResult<T>> HttpPost<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, object? postData = null, IModel? model = null, CancellationToken? ct = null, Dictionary<string, object?>? headers = null)
     {
-        return HttpRequestRaw<T>(provider, endpoint, url, null, HttpVerbs.Post, postData, ct, headers);
+        return HttpRequestRaw<T>(provider, endpoint, url, null, HttpVerbs.Post, postData, model, ct, headers);
     }
 
-    internal Task<HttpCallResult<T>> HttpPostRaw<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, object? postData = null, Dictionary<string, object?>? headers = null, CancellationToken? ct = null)
+    internal Task<HttpCallResult<T>> HttpPostRaw<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, object? postData = null, IModel? model = null, Dictionary<string, object?>? headers = null, CancellationToken? ct = null)
     {
-        return HttpRequestRaw<T>(provider, endpoint, url, null, HttpVerbs.Post, postData, ct, headers);
+        return HttpRequestRaw<T>(provider, endpoint, url, null, HttpVerbs.Post, postData, model, ct, headers);
     }
 
-    internal Task<StreamResponse?> HttpPostStream(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, object? postData = null, CancellationToken ct = default)
+    internal Task<StreamResponse?> HttpPostStream(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, object? postData = null, IModel? model = null, CancellationToken ct = default)
     {
-        return HttpRequestStream(provider, endpoint, url, null, HttpVerbs.Post, postData, ct);
+        return HttpRequestStream(provider, endpoint, url, null, HttpVerbs.Post, postData, model, ct);
     }
 
     /// <summary>
@@ -634,19 +631,19 @@ public abstract class EndpointBase
     ///     Throws an exception if a non-success HTTP response was returned or if the result
     ///     couldn't be parsed.
     /// </exception>
-    internal Task<T?> HttpDelete<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, Dictionary<string, object>? queryParams = null, object? postData = null, CancellationToken? ct = null)
+    internal Task<T?> HttpDelete<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, Dictionary<string, object>? queryParams = null, object? postData = null, IModel? model = null, CancellationToken? ct = null)
     {
-        return HttpRequest<T>(provider, endpoint, url, queryParams, HttpVerbs.Delete, postData, ct);
+        return HttpRequest<T>(provider, endpoint, url, queryParams, HttpVerbs.Delete, postData, model, ct);
     }
 
-    internal Task<HttpCallResult<T>> HttpDeleteRaw<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, Dictionary<string, object>? queryParams = null, object? postData = null, CancellationToken? ct = null)
+    internal Task<HttpCallResult<T>> HttpDeleteRaw<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, Dictionary<string, object>? queryParams = null, object? postData = null, IModel? model = null, CancellationToken? ct = null)
     {
-        return HttpRequestRaw<T>(provider, endpoint, url, queryParams, HttpVerbs.Delete, postData, ct);
+        return HttpRequestRaw<T>(provider, endpoint, url, queryParams, HttpVerbs.Delete, postData, model, ct);
     }
     
-    internal Task<HttpCallResult<T>> HttpAtomic<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, HttpVerbs method, string? url = null, Dictionary<string, object>? queryParams = null, object? postData = null, CancellationToken? ct = null, bool allowNon200Codes = false)
+    internal Task<HttpCallResult<T>> HttpAtomic<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, HttpVerbs method, string? url = null, Dictionary<string, object>? queryParams = null, object? postData = null, IModel? model = null, CancellationToken? ct = null, bool allowNon200Codes = false)
     {
-        return HttpRequestRaw<T>(provider, endpoint, url, queryParams, method, postData, ct);
+        return HttpRequestRaw<T>(provider, endpoint, url, queryParams, method, postData, model, ct);
     }
 
     /// <summary>
@@ -666,9 +663,9 @@ public abstract class EndpointBase
     ///     Throws an exception if a non-success HTTP response was returned or if the result
     ///     couldn't be parsed.
     /// </exception>
-    internal Task<T?> HttpPut<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, Dictionary<string, object>? queryParams = null, object? postData = null, CancellationToken ct = default) where T : ApiResultBase
+    internal Task<T?> HttpPut<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, Dictionary<string, object>? queryParams = null, object? postData = null, IModel? model = null, CancellationToken ct = default) where T : ApiResultBase
     {
-        return HttpRequest<T>(provider, endpoint, url, queryParams, HttpVerbs.Put, postData, ct);
+        return HttpRequest<T>(provider, endpoint, url, queryParams, HttpVerbs.Put, postData, model, ct);
     }
 
     /// <summary>
@@ -689,9 +686,9 @@ public abstract class EndpointBase
     /// <param name="requestRef">(optional) A container for JSON-encoded outbound request.</param>
     /// <returns>The HttpResponseMessage of the response, which is confirmed to be successful.</returns>
     /// <exception cref="HttpRequestException">Throws an exception if a non-success HTTP response was returned</exception>
-    internal async IAsyncEnumerable<T> HttpStreamingRequest<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, Dictionary<string, object>? queryParams = null, HttpVerbs? verb = null, object? postData = null, Ref<string>? requestRef = null, CancellationToken token = default) where T : ApiResultBase
+    internal async IAsyncEnumerable<T> HttpStreamingRequest<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, Dictionary<string, object>? queryParams = null, HttpVerbs? verb = null, object? postData = null, IModel? model = null, Ref<string>? requestRef = null, CancellationToken token = default) where T : ApiResultBase
     {
-        using HttpResponseMessage response = await HttpRequestRaw(provider, endpoint, url, queryParams, verb, postData, true).ConfigureAwait(false);
+        using HttpResponseMessage response = await HttpRequestRaw(provider, endpoint, url, queryParams, verb, postData, model, true).ConfigureAwait(false);
         
 #if MODERN
         await using Stream stream = await response.Content.ReadAsStreamAsync(token);
@@ -715,17 +712,9 @@ public abstract class EndpointBase
     /// <summary>
     /// Gets data as a series of server sent events (SSE).
     /// </summary>
-    /// <param name="provider"></param>
-    /// <param name="endpoint"></param>
-    /// <param name="url"></param>
-    /// <param name="queryParams"></param>
-    /// <param name="verb"></param>
-    /// <param name="postData"></param>
-    /// <param name="token"></param>
-    /// <returns></returns>
-    internal async Task<TornadoStreamRequest> HttpStreamingRequestData(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, Dictionary<string, object>? queryParams = null, HttpVerbs? verb = null, object? postData = null, CancellationToken token = default)
+    internal async Task<TornadoStreamRequest> HttpStreamingRequestData(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, Dictionary<string, object>? queryParams = null, HttpVerbs? verb = null, object? postData = null, IModel? model = null, CancellationToken token = default)
     {
-        RestDataOrException<HttpResponseMessage> response = await HttpRequestRawWithAllCodes(provider, endpoint, url, queryParams, verb, postData, true, token).ConfigureAwait(false);
+        RestDataOrException<HttpResponseMessage> response = await HttpRequestRawWithAllCodes(provider, endpoint, url, queryParams, verb, postData, model, true, token).ConfigureAwait(false);
 
         if (response.Exception is not null || response.Data is null)
         {

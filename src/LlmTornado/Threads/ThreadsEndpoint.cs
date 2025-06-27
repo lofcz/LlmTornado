@@ -302,7 +302,7 @@ public sealed class ThreadsEndpoint : EndpointBase
         request.Stream = true;
         string url = GetUrl(provider, $"/{threadId}/runs");
         TornadoStreamRequest tornadoStreamRequest = await HttpStreamingRequestData(provider, CapabilityEndpoints.Threads,
-            url, postData: request, verb: HttpVerbs.Post, token: cancellationToken);
+            url, postData: request, verb: HttpVerbs.Post, model: request.Model, token: cancellationToken);
 
         try
         {
@@ -316,7 +316,7 @@ public sealed class ThreadsEndpoint : EndpointBase
                         Result = tornadoStreamRequest.CallResponse,
                         Request = tornadoStreamRequest.CallRequest,
                         RawMessage = tornadoStreamRequest.Response ?? new HttpResponseMessage(),
-                        Body = new TornadoRequestContent(request, url, provider, CapabilityEndpoints.Threads)
+                        Body = new TornadoRequestContent(request, request.Model, url, provider, CapabilityEndpoints.Threads)
                     });
                 }
 
@@ -372,7 +372,7 @@ public sealed class ThreadsEndpoint : EndpointBase
                         Result = tornadoStreamRequest.CallResponse,
                         Request = tornadoStreamRequest.CallRequest,
                         RawMessage = tornadoStreamRequest.Response ?? new HttpResponseMessage(),
-                        Body = new TornadoRequestContent(request, url, provider, CapabilityEndpoints.Threads)
+                        Body = new TornadoRequestContent(request, null, url, provider, CapabilityEndpoints.Threads)
                     });   
                 }
             }
@@ -540,7 +540,7 @@ public sealed class ThreadsEndpoint : EndpointBase
                         Result = tornadoStreamRequest.CallResponse,
                         Request = tornadoStreamRequest.CallRequest,
                         RawMessage = tornadoStreamRequest.Response ?? new HttpResponseMessage(),
-                        Body = new TornadoRequestContent(request, url, provider, CapabilityEndpoints.Threads)
+                        Body = new TornadoRequestContent(request, null, url, provider, CapabilityEndpoints.Threads)
                     });
                 }
 
