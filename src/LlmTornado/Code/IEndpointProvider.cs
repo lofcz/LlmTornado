@@ -75,7 +75,12 @@ public interface IEndpointProvider
     
     /// <summary>
     /// Invoked when resolving concrete API url.<br/>
-    /// Arguments: endpoint, url (if any). This function can return deferred fragments <c>{0}</c>, <c>{1}</c> which are resolved to endpoint and url fragment, for example:<br/><c>https://api.anthropic.com/v1/{0}{1}</c>.<br/>Alternatively, fully resolved url can be returned.
+    /// Arguments: endpoint, url (if any). This function can return deferred fragments <c>{0}</c>, <c>{1}</c>, <c>{2}</c> which are resolved to endpoint and url fragment, for example:<br/>
+    /// <c>https://api.anthropic.com/v1/{0}{1}</c>.<br/>Alternatively, fully resolved url can be returned.<br/>
+    /// Fragments substituted by the library:<br/>
+    /// <c>{0}</c> = endpoint<br/>
+    /// <c>{1}</c> = action<br/>
+    /// <c>{2}</c> = model's name (if any)
     /// </summary>
     public Func<CapabilityEndpoints, string?, string>? UrlResolver { get; set; }
     
