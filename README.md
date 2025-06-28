@@ -148,11 +148,17 @@ If you need more control over requests, for example, custom headers, you can cre
 TornadoApi tornadoApi = new TornadoApi(new AnthropicEndpointProvider
 {
     Auth = new ProviderAuthentication("ANTHROPIC_API_KEY"),
-    UrlResolver = (endpoint, url) => "https://api.anthropic.com/v1/{0}{1}",
+    // {0} = endpoint, {1} = action, {2} = model's name
+    UrlResolver = (endpoint, url, ctx) => "https://api.anthropic.com/v1/{0}{1}",
     RequestResolver = (request, data, streaming) =>
     {
         // by default, providing a custom request resolver omits beta headers
         // request is HttpRequestMessage, data contains the payload
+    },
+    RequestSerializer = (data, ctx) =>
+    {
+       // data is JObject, which can be modified before
+       // being serialized into a string.
     }
 });
 ```
