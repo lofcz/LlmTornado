@@ -11,6 +11,7 @@ using LlmTornado.ChatFunctions;
 using LlmTornado.Code.Models;
 using LlmTornado.Code.Sse; 
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace LlmTornado.Code.Vendor;
 
@@ -43,9 +44,11 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
 
     public static Version OutboundVersion { get; set; } = OutboundDefaultVersion;
 
-    public Func<CapabilityEndpoints, string?, string>? UrlResolver { get; set; } 
+    public Func<CapabilityEndpoints, string?, RequestUrlContext, string>? UrlResolver { get; set; } 
     
     public Action<HttpRequestMessage, object?, bool>? RequestResolver { get; set; }
+    
+    public Action<JObject, RequestSerializerContext>? RequestSerializer { get; set; }
     
     private enum StreamRawActions
     {
@@ -217,7 +220,7 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
     public override string ApiUrl(CapabilityEndpoints endpoint, string? url, IModel? model = null)
     {
         string eStr = GetEndpointUrlFragment(endpoint);
-        return UrlResolver is not null ? string.Format(UrlResolver.Invoke(endpoint, url), eStr, url, model?.Name) : $"https://api.anthropic.com/v1/{eStr}{url}";
+        return UrlResolver is not null ? string.Format(UrlResolver.Invoke(endpoint, url, new RequestUrlContext(eStr, url, model)), eStr, url, model?.Name) : $"https://api.anthropic.com/v1/{eStr}{url}";
     }
     
     public override async IAsyncEnumerable<ChatResult?> InboundStream(StreamReader reader, ChatRequest request)
@@ -600,7 +603,7 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
 
         return req;
     }
-
+    
     public override void ParseInboundHeaders<T>(T res, HttpResponseMessage response)
     {
         res.Provider = this;

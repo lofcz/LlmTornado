@@ -29,8 +29,9 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
 
     public static Version OutboundVersion { get; set; } = OutboundDefaultVersion;
 
-    public Func<CapabilityEndpoints, string?, string>? UrlResolver { get; set; }
+    public Func<CapabilityEndpoints, string?, RequestUrlContext, string>? UrlResolver { get; set; }
     public Action<HttpRequestMessage, object?, bool>? RequestResolver { get; set; }
+    public Action<JObject, RequestSerializerContext>? RequestSerializer { get; set; }
     
     public OpenAiEndpointProvider() : base()
     {
@@ -84,7 +85,7 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
     public override string ApiUrl(CapabilityEndpoints endpoint, string? url, IModel? model = null)
     {
         string eStr = GetEndpointUrlFragment(endpoint);
-        return UrlResolver is not null ? string.Format(UrlResolver.Invoke(endpoint, url), eStr, url, model?.Name) : $"{string.Format(Api?.ApiUrlFormat ?? "https://api.openai.com/{0}/{1}", Api?.ApiVersion ?? "v1", GetEndpointUrlFragment(endpoint), model?.Name)}{url}";
+        return UrlResolver is not null ? string.Format(UrlResolver.Invoke(endpoint, url, new RequestUrlContext(eStr, url, model)), eStr, url, model?.Name) : $"{string.Format(Api?.ApiUrlFormat ?? "https://api.openai.com/{0}/{1}", Api?.ApiVersion ?? "v1", GetEndpointUrlFragment(endpoint), model?.Name)}{url}";
     }
     
     public override HttpRequestMessage OutboundMessage(string url, HttpMethod verb, object? data, bool streaming)

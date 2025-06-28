@@ -384,20 +384,6 @@ public class ChatEndpoint : EndpointBase
         
         request.StreamOptions = requestStreamOpts;
     }
-    
-    /// <summary>
-    ///     Yields a single http result. Used for cases where streaming capability is in the public API but the vendor targeted by the request doesn't support streaming in
-    ///     the given scenario.
-    /// </summary>
-    /// <param name="provider"></param>
-    /// <param name="request"></param>
-    /// <returns></returns>
-    private async IAsyncEnumerable<ChatResult> StreamChatFake(IEndpointProvider provider, ChatRequest request)
-    {
-        TornadoRequestContent requestBody = request.Serialize(provider);
-        ChatResult result = await HttpPost1<ChatResult>(provider, Endpoint, requestBody.Url, requestBody.Body) ?? new ChatResult();
-        yield return result;
-    }
 
     /// <summary>
     ///     Ask the API to complete the message(s) using the specified request, and stream the results as they come in.

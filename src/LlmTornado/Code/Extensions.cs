@@ -12,6 +12,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace LlmTornado.Code;
 
@@ -57,6 +58,19 @@ internal static partial class Extensions
         return pos < 0 ? text : string.Concat(text.AsSpan(0, pos), replace, text.AsSpan(pos + search.Length));
     }
     #endif
+    
+    public static JObject ToJObject(this object sourceObject, JsonSerializerSettings? settings = null)
+    {
+        JsonSerializer serializer = JsonSerializer.CreateDefault(settings ?? EndpointBase.NullSettings);
+        return JObject.FromObject(sourceObject, serializer);
+    }
+
+    public static string SerializeRequestObject(this object sourceObject, object refObject, IEndpointProvider provider, RequestActionTypes action, JsonSerializerSettings? settings = null)
+    {
+        JObject jObj = sourceObject.ToJObject();
+        provider.RequestSerializer?.Invoke(jObj, new RequestSerializerContext(refObject, provider, action));
+        return jObj.ToString(settings?.Formatting ?? Formatting.None);
+    }
     
     private static readonly ConcurrentDictionary<string, string?> DescriptionAttrCache = [];
 

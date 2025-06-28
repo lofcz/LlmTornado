@@ -445,18 +445,20 @@ public class ChatRequest : IModelRequest
 		return newSettings;
 	}
 
-	private static string PreparePayload(object sourceObject, ChatRequest context, JsonSerializerSettings? settings)
+	private static string PreparePayload(object sourceObject, ChatRequest context, IEndpointProvider provider, JsonSerializerSettings? settings)
 	{
-		if (sourceObject is JObject jObject)
-		{
-			context.OnSerialize?.Invoke(jObject, context);
-			return jObject.ToString(settings?.Formatting ?? Formatting.None);
-		}
-		
 		JsonSerializer serializer = JsonSerializer.CreateDefault(settings);
 		JObject jsonPayload = JObject.FromObject(sourceObject, serializer);
 		context.OnSerialize?.Invoke(jsonPayload, context);
+		provider.RequestSerializer?.Invoke(jsonPayload, new RequestSerializerContext(sourceObject, provider, RequestActionTypes.ChatCompletionCreate));
 		return jsonPayload.ToString(settings?.Formatting ?? Formatting.None);
+	}
+	
+	private static string PreparePayload(JObject sourceObject, ChatRequest context, IEndpointProvider provider, JsonSerializerSettings? settings)
+	{
+		context.OnSerialize?.Invoke(sourceObject, context);
+		provider.RequestSerializer?.Invoke(sourceObject, new RequestSerializerContext(sourceObject, provider, RequestActionTypes.ChatCompletionCreate));
+		return sourceObject.ToString(settings?.Formatting ?? Formatting.None);
 	}
 
 	private static readonly Dictionary<LLmProviders, Func<ChatRequest, IEndpointProvider, JsonSerializerSettings?, string>> SerializeMap = new Dictionary<LLmProviders, Func<ChatRequest, IEndpointProvider, JsonSerializerSettings?, string>>((int)LLmProviders.Length)
@@ -479,19 +481,19 @@ public class ChatRequest : IModelRequest
 					_ => GetSerializer(EndpointBase.NullSettings, z)
 				};
 
-				return PreparePayload(x, x, settings);
+				return PreparePayload(x, x, y, settings);
 			}
 		},
-		{ LLmProviders.DeepSeek, (x, y, z) => PreparePayload(x, x, GetSerializer(EndpointBase.NullSettings, z)) },
-		{ LLmProviders.Anthropic, (x, y, z) => PreparePayload(new VendorAnthropicChatRequest(x, y), x, GetSerializer(EndpointBase.NullSettings, z)) },
-		{ LLmProviders.Cohere, (x, y, z) => PreparePayload(new VendorCohereChatRequest(x, y), x, GetSerializer(EndpointBase.NullSettings, z)) },
-		{ LLmProviders.Google, (x, y, z) => PreparePayload(new VendorGoogleChatRequest(x, y), x, GetSerializer(EndpointBase.NullSettings, z)) },
+		{ LLmProviders.DeepSeek, (x, y, z) => PreparePayload(x, x, y, GetSerializer(EndpointBase.NullSettings, z)) },
+		{ LLmProviders.Anthropic, (x, y, z) => PreparePayload(new VendorAnthropicChatRequest(x, y), x, y, GetSerializer(EndpointBase.NullSettings, z)) },
+		{ LLmProviders.Cohere, (x, y, z) => PreparePayload(new VendorCohereChatRequest(x, y), x, y, GetSerializer(EndpointBase.NullSettings, z)) },
+		{ LLmProviders.Google, (x, y, z) => PreparePayload(new VendorGoogleChatRequest(x, y), x, y, GetSerializer(EndpointBase.NullSettings, z)) },
 		{
 			LLmProviders.Mistral, (x, y, z) =>
 			{
 				VendorMistralChatRequest request = new VendorMistralChatRequest(x, y);
 				JsonSerializerSettings serializer = GetSerializer(EndpointBase.NullSettings, z);
-				return PreparePayload(request.Serialize(serializer), x, serializer);
+				return PreparePayload(request.Serialize(serializer), x, y, serializer);
 			}
 		},
 		{
@@ -499,7 +501,7 @@ public class ChatRequest : IModelRequest
 			{
 				// fields unsupported by groq
 				x.LogitBias = null;
-				return PreparePayload(x, x, GetSerializer(EndpointBase.NullSettings, z));
+				return PreparePayload(x, x, y, GetSerializer(EndpointBase.NullSettings, z));
 			}
 		},
 		{
@@ -507,7 +509,7 @@ public class ChatRequest : IModelRequest
 			{
 				VendorXAiChatRequest request = new VendorXAiChatRequest(x, y);
 				JsonSerializerSettings serializer = GetSerializer(EndpointBase.NullSettings, z);
-				return PreparePayload(request.Serialize(serializer), x, serializer);
+				return PreparePayload(request.Serialize(serializer), x, y, serializer);
 			}
 		},
 		{
@@ -515,19 +517,19 @@ public class ChatRequest : IModelRequest
 			{
 				VendorPerplexityChatRequest request = new VendorPerplexityChatRequest(x, y);
 				JsonSerializerSettings serializer = GetSerializer(EndpointBase.NullSettings, z);
-				return PreparePayload(request.Serialize(serializer), x, serializer);
+				return PreparePayload(request.Serialize(serializer), x, y, serializer);
 			}
 		},
 		{
 			LLmProviders.DeepInfra, (x, y, z) =>
 			{
-				return PreparePayload(x, x, GetSerializer(EndpointBase.NullSettings, z));
+				return PreparePayload(x, x, y, GetSerializer(EndpointBase.NullSettings, z));
 			}
 		},
 		{
 			LLmProviders.OpenRouter, (x, y, z) =>
 			{
-				return PreparePayload(x, x, GetSerializer(EndpointBase.NullSettings, z));
+				return PreparePayload(x, x, y, GetSerializer(EndpointBase.NullSettings, z));
 			}
 		}
 	};

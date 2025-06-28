@@ -21,6 +21,7 @@ using LlmTornado.Images;
 using LlmTornado.Models.Vendors;
 using LlmTornado.Vendor.Anthropic;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace LlmTornado.Code.Vendor;
 
@@ -32,8 +33,9 @@ public class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
     private static readonly HashSet<string> toolFinishReasons = [ "tool_use" ];
     
     public static Version OutboundVersion { get; set; } = OutboundDefaultVersion;
-    public Func<CapabilityEndpoints, string?, string>? UrlResolver { get; set; }
+    public Func<CapabilityEndpoints, string?, RequestUrlContext, string>? UrlResolver { get; set; }
     public Action<HttpRequestMessage, object?, bool>? RequestResolver { get; set; }
+    public Action<JObject, RequestSerializerContext>? RequestSerializer { get; set; }
     
     public GoogleEndpointProvider() : base()
     {
@@ -86,7 +88,7 @@ public class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
             default:
             {
                 string eStr = GetEndpointUrlFragment(endpoint);
-                return UrlResolver is not null ? string.Format(UrlResolver.Invoke(endpoint, url), eStr, url, model?.Name) : $"{baseUrlVersion}{eStr}{url}";
+                return UrlResolver is not null ? string.Format(UrlResolver.Invoke(endpoint, url, new RequestUrlContext(eStr, url, model)), eStr, url, model?.Name) : $"{baseUrlVersion}{eStr}{url}";
             }
         }
     }

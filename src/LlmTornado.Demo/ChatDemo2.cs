@@ -67,7 +67,7 @@ public partial class ChatDemo : DemoBase
         TornadoApi tornadoApi = new TornadoApi(new AnthropicEndpointProvider
         {
             Auth = new ProviderAuthentication(Program.ApiKeys.Anthropic),
-            UrlResolver = (endpoint, url) => "https://api.anthropic.com/v1/{0}{1}",
+            UrlResolver = (endpoint, url, ctx) => "https://api.anthropic.com/v1/{0}{1}",
             RequestResolver = (request, data, streaming) =>
             {
                 // by default, providing a custom request resolver omits beta headers
@@ -257,21 +257,29 @@ public partial class ChatDemo : DemoBase
         TornadoApi tornadoApi = new TornadoApi(new AnthropicEndpointProvider
         {
             Auth = new ProviderAuthentication(Program.ApiKeys.Anthropic),
-            UrlResolver = (endpoint, url) => "https://us-east5-aiplatform.googleapis.com/v1/projects/priprava/locations/us-east5/publishers/anthropic/models/{2}:rawPredict",
+            UrlResolver = (endpoint, url, ctx) =>
+            {
+                // model can be accessed:
+                // if (ctx.Model) { }
+                return "https://us-east5-aiplatform.googleapis.com/v1/projects/priprava/locations/us-east5/publishers/anthropic/models/{2}:rawPredict";
+            },
             RequestResolver = (request, data, streaming) =>
             {
                 request.Headers.Remove("anthropic_version");
+            },
+            RequestSerializer = (data, ctx) =>
+            {
+                if (ctx.Type is RequestActionTypes.ChatCompletionCreate)
+                {
+                    data.Remove("model");
+                    data["anthropic_version"] = "vertex-2023-10-16";
+                }
             }
         });
         
         Conversation chat = tornadoApi.Chat.CreateConversation(new ChatRequest
         {
             Model = "claude-sonnet-4",
-            OnSerialize = (data, ctx) =>
-            {
-                data.Remove("model");
-                data["anthropic_version"] = "vertex-2023-10-16";
-            }
         });
 
         chat.AddUserMessage("2+2=?");
@@ -448,7 +456,7 @@ public partial class ChatDemo : DemoBase
         TornadoApi tornadoApi = new TornadoApi(new OpenAiEndpointProvider
         {
             Auth = new ProviderAuthentication(Program.ApiKeys.AiFoundry),
-            UrlResolver = (endpoint, url) => "https://{2}.eastus2.models.ai.azure.com/v1/{0}{1}"
+            UrlResolver = (endpoint, url, ctx) => "https://{2}.eastus2.models.ai.azure.com/v1/{0}{1}"
         });
 
         await tornadoApi.Chat.CreateConversation(new ChatRequest

@@ -11,6 +11,8 @@ using LlmTornado.Embedding.Vendors.OpenAi;
 using LlmTornado.Embedding.Vendors.Voyage;
 using LlmTornado.Models;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using Extensions = LlmTornado.Code.Extensions;
 
 namespace LlmTornado.Embedding;
 
@@ -258,17 +260,21 @@ public class EmbeddingRequest
 	{
 		string content = provider.Provider switch
 		{
-			LLmProviders.OpenAi => JsonConvert.SerializeObject(new VendorOpenAiEmbeddingRequest(this, provider), EndpointBase.NullSettings),
-			LLmProviders.Mistral => JsonConvert.SerializeObject(new VendorMistralEmbeddingRequest(this, provider), EndpointBase.NullSettings),
-			//LLmProviders.Anthropic => JsonConvert.SerializeObject(new VendorAnthropicEmbeddingRequest(this, provider), EndpointBase.NullSettings),
-			LLmProviders.Cohere => JsonConvert.SerializeObject(new VendorCohereEmbeddingRequest(this, provider), EndpointBase.NullSettings),
-			LLmProviders.Google => JsonConvert.SerializeObject(new VendorGoogleEmbeddingRequest(this, provider), EndpointBase.NullSettings),
-			LLmProviders.Voyage => JsonConvert.SerializeObject(new VendorVoyageEmbeddingRequest(this, provider), EndpointBase.NullSettings),
-			LLmProviders.OpenRouter => JsonConvert.SerializeObject(new VendorOpenAiEmbeddingRequest(this, provider), EndpointBase.NullSettings),
+			LLmProviders.OpenAi => PreparePayload(new VendorOpenAiEmbeddingRequest(this, provider), this, provider, EndpointBase.NullSettings),
+			LLmProviders.Mistral => PreparePayload(new VendorMistralEmbeddingRequest(this, provider), this, provider, EndpointBase.NullSettings),
+			LLmProviders.Cohere => PreparePayload(new VendorCohereEmbeddingRequest(this, provider), this, provider, EndpointBase.NullSettings),
+			LLmProviders.Google => PreparePayload(new VendorGoogleEmbeddingRequest(this, provider), this, provider, EndpointBase.NullSettings),
+			LLmProviders.Voyage => PreparePayload(new VendorVoyageEmbeddingRequest(this, provider), this, provider, EndpointBase.NullSettings),
+			LLmProviders.OpenRouter => PreparePayload(new VendorOpenAiEmbeddingRequest(this, provider), this, provider, EndpointBase.NullSettings),
 			_ => string.Empty
 		};
 		
 		return new TornadoRequestContent(content, Model, UrlOverride, provider, CapabilityEndpoints.Embeddings);
+	}
+	
+	private static string PreparePayload(object sourceObject, EmbeddingRequest context, IEndpointProvider provider, JsonSerializerSettings? settings)
+	{
+		return sourceObject.SerializeRequestObject(context, provider, RequestActionTypes.EmbeddingCreate, settings);
 	}
 	
 	internal void OverrideUrl(string url)

@@ -14,6 +14,7 @@ using LlmTornado.Embedding;
 using LlmTornado.Models.Vendors;
 using LlmTornado.Vendor.Anthropic;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace LlmTornado.Code.Vendor;
 
@@ -34,8 +35,11 @@ public class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
     private static readonly HashSet<string> toolFinishReasons = [ "tool_use" ];
     
     public static Version OutboundVersion { get; set; } = OutboundDefaultVersion;
-    public Func<CapabilityEndpoints, string?, string>? UrlResolver { get; set; } 
+    public Func<CapabilityEndpoints, string?, RequestUrlContext, string>? UrlResolver { get; set; } 
+    
     public Action<HttpRequestMessage, object?, bool>? RequestResolver { get; set; }
+    
+    public Action<JObject, RequestSerializerContext>? RequestSerializer { get; set; }
     
     private enum StreamNextAction
     {
@@ -119,7 +123,7 @@ public class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
     public override string ApiUrl(CapabilityEndpoints endpoint, string? url, IModel? model = null)
     {
         string eStr = GetEndpointUrlFragment(endpoint);
-        return UrlResolver is not null ? string.Format(UrlResolver.Invoke(endpoint, url), eStr, url, model?.Name) : $"https://api.cohere.ai/v1/{eStr}{url}";
+        return UrlResolver is not null ? string.Format(UrlResolver.Invoke(endpoint, url, new RequestUrlContext(eStr, url, model)), eStr, url, model?.Name) : $"https://api.cohere.ai/v1/{eStr}{url}";
     }
 
     enum ChatStreamEventTypes
