@@ -46,7 +46,8 @@ public class Program
             new ProviderAuthentication(LLmProviders.XAi, ApiKeys.XAi),
             new ProviderAuthentication(LLmProviders.Voyage, ApiKeys.Voyage),
             new ProviderAuthentication(LLmProviders.DeepInfra, ApiKeys.DeepInfra),
-            new ProviderAuthentication(LLmProviders.OpenRouter, ApiKeys.OpenRouter)
+            new ProviderAuthentication(LLmProviders.OpenRouter, ApiKeys.OpenRouter),
+            new ProviderAuthentication(LLmProviders.Perplexity, ApiKeys.Perplexity)
         ])
         {
             httpStrict = httpStrict

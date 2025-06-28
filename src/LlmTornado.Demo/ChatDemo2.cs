@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Net.Http.Headers;
 using LibVLCSharp.Shared;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
@@ -12,6 +13,7 @@ using LlmTornado.Code.Vendor;
 using LlmTornado.Common;
 using LlmTornado.Contrib;
 using LlmTornado.Files;
+using Newtonsoft.Json.Linq;
 
 namespace LlmTornado.Demo;
 
@@ -31,6 +33,31 @@ public partial class ChatDemo : DemoBase
         string? str = await chat.GetResponse();
 
         Console.WriteLine("OpenAI:");
+        Console.WriteLine(str);
+    }
+
+    [TornadoTest]
+    public static async Task VllmKwargs()
+    {
+        Conversation chat = new TornadoApi(new Uri("http://localhost:8000")).Chat.CreateConversation(new ChatRequest
+        {
+            Model = "Qwen/Qwen2.5-1.5B-Instruct",
+            OnSerialize = (data, ctx) =>
+            {
+                data["chat_template_kwargs"] = JToken.FromObject(new
+                {
+                    enable_thinking = false
+                });
+            }
+        })
+        .AddSystemMessage("Sys prompt")
+        .AddUserMessage("User prompt");
+
+        TornadoRequestContent str = chat.Serialize(new ChatRequestSerializeOptions
+        {
+            Pretty = true
+        });
+        
         Console.WriteLine(str);
     }
     
@@ -221,6 +248,34 @@ public partial class ChatDemo : DemoBase
         string? str = await chat.GetResponse();
 
         Console.WriteLine("Perplexity:");
+        Console.WriteLine(str);
+    }
+
+    [TornadoTest]
+    public static async Task VertexAiAnthropic()
+    {
+        TornadoApi tornadoApi = new TornadoApi(new AnthropicEndpointProvider
+        {
+            Auth = new ProviderAuthentication(Program.ApiKeys.Anthropic),
+            UrlResolver = (endpoint, url) => "https://us-east5-aiplatform.googleapis.com/v1/projects/priprava/locations/us-east5/publishers/anthropic/models/{2}:rawPredict",
+            RequestResolver = (request, data, streaming) =>
+            {
+                request.Headers.Remove("anthropic_version");
+            }
+        });
+        
+        Conversation chat = tornadoApi.Chat.CreateConversation(new ChatRequest
+        {
+            Model = "claude-sonnet-4",
+            OnSerialize = (data, ctx) =>
+            {
+                data.Remove("model");
+                data["anthropic_version"] = "vertex-2023-10-16";
+            }
+        });
+
+        chat.AddUserMessage("2+2=?");
+        string? str = await chat.GetResponse();
         Console.WriteLine(str);
     }
     

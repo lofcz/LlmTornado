@@ -15,6 +15,7 @@ using LlmTornado.Chat.Vendors.Perplexity;
 using LlmTornado.Chat.Vendors.XAi;
 using LlmTornado.Code.Models;
 using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Linq;
 
 namespace LlmTornado.Chat;
 
@@ -98,6 +99,7 @@ public class ChatRequest : IModelRequest
 		Logprobs = basedOn.Logprobs;
 		TopLogprobs = basedOn.TopLogprobs;
 		WebSearchOptions = basedOn.WebSearchOptions;
+		OnSerialize = basedOn.OnSerialize;
 	}
 
 	/// <summary>
@@ -154,6 +156,12 @@ public class ChatRequest : IModelRequest
 	[JsonProperty("temperature")]
     public double? Temperature { get; set; }
 
+	/// <summary>
+	/// Allows transforming the request on JSON level, before it is serialized into a string.
+	/// </summary>
+	[JsonIgnore]
+	public Action<JObject, ChatRequest>? OnSerialize { get; set; }
+	
 	/// <summary>
 	///     An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the
 	///     tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10% probability mass are
@@ -437,6 +445,20 @@ public class ChatRequest : IModelRequest
 		return newSettings;
 	}
 
+	private static string PreparePayload(object sourceObject, ChatRequest context, JsonSerializerSettings? settings)
+	{
+		if (sourceObject is JObject jObject)
+		{
+			context.OnSerialize?.Invoke(jObject, context);
+			return jObject.ToString(settings?.Formatting ?? Formatting.None);
+		}
+		
+		JsonSerializer serializer = JsonSerializer.CreateDefault(settings);
+		JObject jsonPayload = JObject.FromObject(sourceObject, serializer);
+		context.OnSerialize?.Invoke(jsonPayload, context);
+		return jsonPayload.ToString(settings?.Formatting ?? Formatting.None);
+	}
+
 	private static readonly Dictionary<LLmProviders, Func<ChatRequest, IEndpointProvider, JsonSerializerSettings?, string>> SerializeMap = new Dictionary<LLmProviders, Func<ChatRequest, IEndpointProvider, JsonSerializerSettings?, string>>((int)LLmProviders.Length)
 	{
 		{
@@ -449,41 +471,27 @@ public class ChatRequest : IModelRequest
 						x.Temperature = null;
 					}
 				}
-
-				switch (x.MaxTokensSerializer)
+				
+				JsonSerializerSettings settings = (x.MaxTokensSerializer, x.Model) switch
 				{
-					case ChatRequestMaxTokensSerializers.Auto:
-					{
-						if (x.Model is not null)
-						{
-							if (ChatModelOpenAi.ReasoningModelsAll.Contains(x.Model))
-							{
-								return JsonConvert.SerializeObject(x, GetSerializer(MaxTokensRenamerSettings, z));
-							}
-						}
+					(ChatRequestMaxTokensSerializers.Auto, not null) when ChatModelOpenAi.ReasoningModelsAll.Contains(x.Model) => GetSerializer(MaxTokensRenamerSettings, z),
+					(ChatRequestMaxTokensSerializers.MaxCompletionTokens, _) => GetSerializer(MaxTokensRenamerSettings, z),
+					_ => GetSerializer(EndpointBase.NullSettings, z)
+				};
 
-						return JsonConvert.SerializeObject(x, GetSerializer(EndpointBase.NullSettings, z));
-					}
-					case ChatRequestMaxTokensSerializers.MaxCompletionTokens:
-					{
-						return JsonConvert.SerializeObject(x, GetSerializer(MaxTokensRenamerSettings, z));
-					}
-					default:
-					{
-						return JsonConvert.SerializeObject(x, GetSerializer(EndpointBase.NullSettings, z));
-					}
-				}
+				return PreparePayload(x, x, settings);
 			}
 		},
-		{ LLmProviders.DeepSeek, (x, y, z) => JsonConvert.SerializeObject(x, GetSerializer(EndpointBase.NullSettings, z)) },
-		{ LLmProviders.Anthropic, (x, y, z) => JsonConvert.SerializeObject(new VendorAnthropicChatRequest(x, y), GetSerializer(EndpointBase.NullSettings, z)) },
-		{ LLmProviders.Cohere, (x, y, z) => JsonConvert.SerializeObject(new VendorCohereChatRequest(x, y), GetSerializer(EndpointBase.NullSettings, z)) },
-		{ LLmProviders.Google, (x, y, z) => JsonConvert.SerializeObject(new VendorGoogleChatRequest(x, y), GetSerializer(EndpointBase.NullSettings, z)) },
+		{ LLmProviders.DeepSeek, (x, y, z) => PreparePayload(x, x, GetSerializer(EndpointBase.NullSettings, z)) },
+		{ LLmProviders.Anthropic, (x, y, z) => PreparePayload(new VendorAnthropicChatRequest(x, y), x, GetSerializer(EndpointBase.NullSettings, z)) },
+		{ LLmProviders.Cohere, (x, y, z) => PreparePayload(new VendorCohereChatRequest(x, y), x, GetSerializer(EndpointBase.NullSettings, z)) },
+		{ LLmProviders.Google, (x, y, z) => PreparePayload(new VendorGoogleChatRequest(x, y), x, GetSerializer(EndpointBase.NullSettings, z)) },
 		{
 			LLmProviders.Mistral, (x, y, z) =>
 			{
 				VendorMistralChatRequest request = new VendorMistralChatRequest(x, y);
-				return request.Serialize(GetSerializer(EndpointBase.NullSettings, z));
+				JsonSerializerSettings serializer = GetSerializer(EndpointBase.NullSettings, z);
+				return PreparePayload(request.Serialize(serializer), x, serializer);
 			}
 		},
 		{
@@ -491,33 +499,35 @@ public class ChatRequest : IModelRequest
 			{
 				// fields unsupported by groq
 				x.LogitBias = null;
-				return JsonConvert.SerializeObject(x, GetSerializer(EndpointBase.NullSettings, z));
+				return PreparePayload(x, x, GetSerializer(EndpointBase.NullSettings, z));
 			}
 		},
 		{
 			LLmProviders.XAi, (x, y, z) =>
 			{
 				VendorXAiChatRequest request = new VendorXAiChatRequest(x, y);
-				return request.Serialize(GetSerializer(EndpointBase.NullSettings, z));
+				JsonSerializerSettings serializer = GetSerializer(EndpointBase.NullSettings, z);
+				return PreparePayload(request.Serialize(serializer), x, serializer);
 			}
 		},
 		{
 			LLmProviders.Perplexity, (x, y, z) =>
 			{
 				VendorPerplexityChatRequest request = new VendorPerplexityChatRequest(x, y);
-				return request.Serialize(GetSerializer(EndpointBase.NullSettings, z));
+				JsonSerializerSettings serializer = GetSerializer(EndpointBase.NullSettings, z);
+				return PreparePayload(request.Serialize(serializer), x, serializer);
 			}
 		},
 		{
 			LLmProviders.DeepInfra, (x, y, z) =>
 			{
-				return JsonConvert.SerializeObject(x, GetSerializer(EndpointBase.NullSettings, z));
+				return PreparePayload(x, x, GetSerializer(EndpointBase.NullSettings, z));
 			}
 		},
 		{
 			LLmProviders.OpenRouter, (x, y, z) =>
 			{
-				return JsonConvert.SerializeObject(x, GetSerializer(EndpointBase.NullSettings, z));
+				return PreparePayload(x, x, GetSerializer(EndpointBase.NullSettings, z));
 			}
 		}
 	};
@@ -584,7 +594,7 @@ public class ChatRequest : IModelRequest
 		{
 			Formatting = Formatting.Indented
 		} : null), Model, UrlOverride, provider, CapabilityEndpoints.Chat) : new TornadoRequestContent(string.Empty, Model, UrlOverride, provider, CapabilityEndpoints.Chat);
-
+		
 		if (restoreStreamOptions)
 		{
 			StreamOptions = storedOptions;

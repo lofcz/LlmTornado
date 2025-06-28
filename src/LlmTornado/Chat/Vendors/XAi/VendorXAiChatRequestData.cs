@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Linq;
 using LlmTornado.Code;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace LlmTornado.Chat.Vendors.XAi;
 
@@ -14,10 +15,11 @@ internal class VendorXAiChatRequest
     [JsonIgnore]
     public ChatRequest SourceRequest { get; set; }
     
-    public string Serialize(JsonSerializerSettings settings)
+    public JObject Serialize(JsonSerializerSettings settings)
     {
-        string serialized = JsonConvert.SerializeObject(ExtendedRequest ?? NativeRequest, settings);
-        return serialized;
+        JsonSerializer serializer = JsonSerializer.CreateDefault(settings);
+        JObject jsonPayload = JObject.FromObject(ExtendedRequest ?? NativeRequest, serializer);
+        return jsonPayload;
     }
     
     public VendorXAiChatRequest(ChatRequest request, IEndpointProvider provider)

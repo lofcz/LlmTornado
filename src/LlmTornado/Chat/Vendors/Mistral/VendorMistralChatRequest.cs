@@ -1,6 +1,7 @@
 using System.Linq;
 using LlmTornado.Code;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace LlmTornado.Chat.Vendors.Mistral;
 
@@ -18,16 +19,17 @@ internal class VendorMistralChatRequest
     [JsonIgnore]
     public ChatRequest SourceRequest { get; set; }
     
-    public string Serialize(JsonSerializerSettings settings)
+    public JObject Serialize(JsonSerializerSettings settings)
     {
-        string serialized = JsonConvert.SerializeObject(ExtendedRequest ?? NativeRequest, settings);
-
+        JsonSerializer serializer = JsonSerializer.CreateDefault(settings);
+        JObject jsonPayload = JObject.FromObject(ExtendedRequest ?? NativeRequest, serializer);
+        
         if (TempMessage is not null)
         {
             SourceRequest.Messages?.Remove(TempMessage);
         }
         
-        return serialized;
+        return jsonPayload;
     }
     
     internal class VendorMistralChatRequestData : ChatRequest

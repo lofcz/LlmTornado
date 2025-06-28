@@ -13,6 +13,7 @@ using LlmTornado.Code.Models;
 using LlmTornado.Code.Sse;
 using LlmTornado.Threads;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using ToolCall = LlmTornado.ChatFunctions.ToolCall;
 
 namespace LlmTornado.Code.Vendor;

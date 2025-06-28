@@ -110,12 +110,13 @@ public partial class ChatDemo : DemoBase
                 },
                 required = new List<string> { "city" },
                 additionalProperties = false
-            }, true)
+            })
         });
+        
         chat.AppendUserInput("what is 2+2, also what is the weather in prague"); // user asks something unrelated, but we force the model to use the tool
-
+    
         ChatRichResponse response = await chat.GetResponseRich();
-        int z = 1;
+        Console.Write(response);
     }
     
     [TornadoTest]

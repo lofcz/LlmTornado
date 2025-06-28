@@ -12,6 +12,7 @@ using Newtonsoft.Json;
 using LlmTornado.Chat;
 using LlmTornado.Code.Models;
 using LlmTornado.Vendor.Anthropic;
+using Newtonsoft.Json.Linq;
 
 namespace LlmTornado.Code;
 
