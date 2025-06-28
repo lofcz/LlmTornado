@@ -67,6 +67,24 @@ public class ChatEndpoint : EndpointBase
             MaxTokens = maxTokens
         });
     }
+    
+    /// <summary>
+    ///     Creates an ongoing chat which can easily encapsulate the conversation.  This is the simplest way to use the Chat
+    ///     endpoint.
+    /// </summary>
+    /// <param name="model">The model to use.</param>
+    /// <param name="temperature">The temperature.</param>
+    /// <param name="maxTokens">The maximum amount of tokens to be used in response.</param>
+    /// <returns>A <see cref="Conversation" /> which encapsulates a back and forth chat between a user and an assistant.</returns>
+    public Conversation CreateConversation(string model, double? temperature = null, int? maxTokens = null)
+    {
+        return new Conversation(this, model, new ChatRequest
+        {
+            Model = model,
+            Temperature = temperature,
+            MaxTokens = maxTokens
+        });
+    }
 
     #region Non-streaming
 
