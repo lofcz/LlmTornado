@@ -50,7 +50,7 @@ public class Program
             new ProviderAuthentication(LLmProviders.Perplexity, ApiKeys.Perplexity)
         ])
         {
-            httpStrict = httpStrict
+            HttpStrict = httpStrict
         };
 
         return tornadoApi;

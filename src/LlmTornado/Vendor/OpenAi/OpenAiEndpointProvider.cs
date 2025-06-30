@@ -71,6 +71,7 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
             CapabilityEndpoints.Assistants => "assistants",
             CapabilityEndpoints.Threads => "threads",
             CapabilityEndpoints.VectorStores => "vector_stores",
+            CapabilityEndpoints.Responses => "responses",
             _ => throw new Exception($"OpenAI doesn't support endpoint {endpoint}")
         };
     }

@@ -29,10 +29,10 @@ public class ModerationEndpoint : EndpointBase
 	/// </summary>
 	/// <param name="input">Text to classify</param>
 	/// <returns>Asynchronously returns the classification result</returns>
-	public async Task<ModerationResult?> CallModerationAsync(string input)
+	public async Task<ModerationResult?> CreateModeration(string input)
     {
         ModerationRequest req = new ModerationRequest(input, DefaultModerationRequestArgs.Model);
-        return await CallModerationAsync(req);
+        return await CreateModeration(req);
     }
 
 	/// <summary>
@@ -40,7 +40,7 @@ public class ModerationEndpoint : EndpointBase
 	/// </summary>
 	/// <param name="request">Request to send to the API</param>
 	/// <returns>Asynchronously returns the classification result</returns>
-	public async Task<ModerationResult?> CallModerationAsync(ModerationRequest request)
+	public async Task<ModerationResult?> CreateModeration(ModerationRequest request)
     {
         return await HttpPost1<ModerationResult>(Api.GetProvider(LLmProviders.OpenAi), Endpoint, postData: request);
     }

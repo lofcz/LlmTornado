@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using LlmTornado.Assistants;
 using LlmTornado.Audio;
@@ -18,6 +19,7 @@ using LlmTornado.Files;
 using LlmTornado.Images;
 using LlmTornado.Models;
 using LlmTornado.Moderation;
+using LlmTornado.Responses;
 using LlmTornado.Threads;
 using LlmTornado.VectorStores;
 
@@ -44,30 +46,32 @@ public class TornadoApi
     private readonly Lazy<ThreadsEndpoint> threads;
     private readonly Lazy<VectorStoresEndpoint> vectorStores;
     private readonly Lazy<CachingEndpoint> caching;
+    private readonly Lazy<ResponsesEndpoint> responses;
 
     /// <summary>
     ///     If true, the API will throw exceptions for non-200 responses.
     /// </summary>
-    internal bool httpStrict;
+    internal bool HttpStrict { get; set; }
     
     /// <summary>
     ///     Creates a new Tornado API without any authentication. Use this with self-hosted models.
     /// </summary>
     public TornadoApi()
     {
-        assistants = new Lazy<AssistantsEndpoint>(() => new AssistantsEndpoint(this));
-        audio = new Lazy<AudioEndpoint>(() => new AudioEndpoint(this));
-        chat = new Lazy<ChatEndpoint>(() => new ChatEndpoint(this));
-        completion = new Lazy<CompletionEndpoint>(() => new CompletionEndpoint(this));
-        embedding = new Lazy<EmbeddingEndpoint>(() => new EmbeddingEndpoint(this));
-        files = new Lazy<FilesEndpoint>(() => new FilesEndpoint(this));
-        imageEdit = new Lazy<ImageEditEndpoint>(() => new ImageEditEndpoint(this));
-        imageGeneration = new Lazy<ImageGenerationEndpoint>(() => new ImageGenerationEndpoint(this));
-        models = new Lazy<ModelsEndpoint>(() => new ModelsEndpoint(this));
-        moderation = new Lazy<ModerationEndpoint>(() => new ModerationEndpoint(this));
-        threads = new Lazy<ThreadsEndpoint>(() => new ThreadsEndpoint(this));
-        vectorStores = new Lazy<VectorStoresEndpoint>(() => new VectorStoresEndpoint(this));
-        caching = new Lazy<CachingEndpoint>(() => new CachingEndpoint(this));
+        assistants = new Lazy<AssistantsEndpoint>(() => new AssistantsEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
+        audio = new Lazy<AudioEndpoint>(() => new AudioEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
+        chat = new Lazy<ChatEndpoint>(() => new ChatEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
+        completion = new Lazy<CompletionEndpoint>(() => new CompletionEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
+        embedding = new Lazy<EmbeddingEndpoint>(() => new EmbeddingEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
+        files = new Lazy<FilesEndpoint>(() => new FilesEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
+        imageEdit = new Lazy<ImageEditEndpoint>(() => new ImageEditEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
+        imageGeneration = new Lazy<ImageGenerationEndpoint>(() => new ImageGenerationEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
+        models = new Lazy<ModelsEndpoint>(() => new ModelsEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
+        moderation = new Lazy<ModerationEndpoint>(() => new ModerationEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
+        threads = new Lazy<ThreadsEndpoint>(() => new ThreadsEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
+        vectorStores = new Lazy<VectorStoresEndpoint>(() => new VectorStoresEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
+        caching = new Lazy<CachingEndpoint>(() => new CachingEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
+        responses = new Lazy<ResponsesEndpoint>(() => new ResponsesEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
     }
 
     /// <summary>
@@ -350,6 +354,11 @@ public class TornadoApi
     ///     Text generation in the form of chat messages. This interacts with the ChatGPT API.
     /// </summary>
     public ChatEndpoint Chat => chat.Value;
+    
+    /// <summary>
+    ///     OpenAI's most advanced interface for generating model responses. Supports text and image inputs, and text outputs. Create stateful interactions with the model, using the output of previous responses as input. Extend the model's capabilities with built-in tools for file search, web search, computer use, and more. Allow the model access to external systems and data using function calling.
+    /// </summary>
+    internal ResponsesEndpoint Responses => responses.Value;
 
     /// <summary>
     ///     Classify text against the OpenAI Content Policy.
