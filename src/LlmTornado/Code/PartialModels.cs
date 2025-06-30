@@ -1147,7 +1147,7 @@ public enum LLmProviders
 }
 
 /// <summary>
-/// 
+/// Capability endpoints - each provider supports a subset of these.
 /// </summary>
 public enum CapabilityEndpoints
 {
@@ -1163,20 +1163,66 @@ public enum CapabilityEndpoints
     /// Special value returning even shorter shared url prefix
     /// </summary>
     BaseUrlStripped,
+    /// <summary>
+    /// Chat endpoint.
+    /// </summary>
     Chat,
+    /// <summary>
+    /// Moderation endpoint.
+    /// </summary>
     Moderation,
+    /// <summary>
+    /// Legacy.
+    /// </summary>
     Completions,
+    /// <summary>
+    /// Embeddings endpoint.
+    /// </summary>
     Embeddings,
+    /// <summary>
+    /// Models endpoint.
+    /// </summary>
     Models,
+    /// <summary>
+    /// Files endpoint.
+    /// </summary>
     Files,
+    /// <summary>
+    /// Images endpoint.
+    /// </summary>
     ImageGeneration,
+    /// <summary>
+    /// Audio endpoint.
+    /// </summary>
     Audio,
+    /// <summary>
+    /// Assistants endpoint.
+    /// </summary>
     Assistants,
+    /// <summary>
+    /// Image editing endpoint.
+    /// </summary>
     ImageEdit,
+    /// <summary>
+    /// Threads endpoint.
+    /// </summary>
     Threads,
+    /// <summary>
+    /// Fine tuning endpoint.
+    /// </summary>
     FineTuning,
+    /// <summary>
+    /// Vector stores endpoint.
+    /// </summary>
     VectorStores,
-    Caching
+    /// <summary>
+    /// Caching endpoint.
+    /// </summary>
+    Caching,
+    /// <summary>
+    /// Responses endpoint.
+    /// </summary>
+    Responses
 }
 
 /// <summary>

@@ -1,3 +1,4 @@
+#if !MODERN
 using System;
 using System.Buffers;
 using System.Collections.Generic;
@@ -13,40 +14,8 @@ using System.Threading.Tasks;
 
 namespace LlmTornado.Code;
 
-#if !MODERN
 internal static partial class Extensions
 {
-    public static bool StartsWith(this string str, char value)
-    {
-        return str.Length > 0 && str[0] == value;
-    }
-    
-    public static bool StartsWith(this string str, char value, StringComparison comparisonType)
-    {
-        if (str.Length == 0)
-            return false;
-            
-        return string.Compare(str, 0, value.ToString(), 0, 1, comparisonType) == 0;
-    }
-    
-    public static bool TryAdd<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, TKey key, TValue value)
-    {
-        if (dictionary.ContainsKey(key))
-            return false;
-
-        dictionary.Add(key, value);
-        return true;
-    }
-
-    public static bool TryAdd<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, TValue value)
-    {
-        if (dictionary.ContainsKey(key))
-            return false;
-
-        dictionary.Add(key, value);
-        return true;
-    }
-    
     public static Dictionary<string, IEnumerable<string>> ConvertHeaders(this HttpRequestHeaders headers)
     {
         Dictionary<string, IEnumerable<string>> result = new Dictionary<string, IEnumerable<string>>();
@@ -57,26 +26,6 @@ internal static partial class Extensions
         }
     
         return result;
-    }
-    
-    public static TValue? GetValueOrDefault<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, TKey key)
-    {
-        return dictionary.TryGetValue(key, out TValue value) ? value : default;
-    }
-    
-    public static TValue GetValueOrDefault<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, TKey key, TValue defaultValue)
-    {
-        return dictionary.TryGetValue(key, out TValue value) ? value : defaultValue;
-    }
-    
-    public static TValue? GetValueOrDefault<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key)
-    {
-        return dictionary.TryGetValue(key, out TValue value) ? value : default;
-    }
-    
-    public static TValue GetValueOrDefault<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, TValue defaultValue)
-    {
-        return dictionary.TryGetValue(key, out TValue value) ? value : defaultValue;
     }
     
     public static double Clamp(this double value, double min, double max)
@@ -166,17 +115,6 @@ internal static partial class Extensions
         sb.Append(replace);
         sb.Append(text, pos + search.Length, text.Length - pos - search.Length);
         return sb.ToString();
-    }
-    
-    public static async Task<Stream> ReadAsStreamAsync(this HttpContent content, CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        return await content.ReadAsStreamAsync().ConfigureAwait(false);
-    }
-    
-    public static bool EndsWith(this string str, char value)
-    {
-        return str.Length > 0 && str[^1] == value;
     }
 }
 #endif

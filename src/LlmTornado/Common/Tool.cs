@@ -13,6 +13,9 @@ namespace LlmTornado.Common;
 /// </summary>
 public class FunctionResult
 {
+    /// <summary>
+    /// Creates an empty result.
+    /// </summary>
     public FunctionResult()
     {
     }

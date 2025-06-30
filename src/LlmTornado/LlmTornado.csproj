@@ -39,9 +39,6 @@
         </None>
     </ItemGroup>
     <ItemGroup>
-        <PackageReference Include="Newtonsoft.Json" Version="[13.0.3, )"/>
-    </ItemGroup>
-    <ItemGroup>
       <Folder Include="Embedding\Vendors\Anthropic\" />
     </ItemGroup>
     <ItemGroup>
@@ -60,14 +57,17 @@
     </PropertyGroup>
     <ItemGroup Condition="$(TargetFramework.StartsWith('net4')) OR $(TargetFramework.StartsWith('netstandard'))">
         <Reference Include="System.Net.Http" />
+        <PackageReference Include="Newtonsoft.Json" Version="[13.0.1, )"/>
         <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="[8.0.0, )" />
-        <PackageReference Include="IndexRange" Version="[1.0.3, )" />
-        <PackageReference Include="PolySharp" Version="[1.15.0, )">
+        <PackageReference Include="Polyfill" Version="[8.2.0, )">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Include="System.Memory" Version="[4.6.3, )" />
         <PackageReference Include="Microsoft.CSharp" Version="[4.7.0, )" />
         <PackageReference Include="System.Text.Json" Version="[8.0.5, )" />
+    </ItemGroup>
+    <ItemGroup Condition="!$(TargetFramework.StartsWith('net4')) AND !$(TargetFramework.StartsWith('netstandard'))">
+        <PackageReference Include="Newtonsoft.Json" Version="[13.0.3, )"/>
     </ItemGroup>
 </Project>
