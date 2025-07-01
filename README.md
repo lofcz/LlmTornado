@@ -304,7 +304,7 @@ _`GetResponseRichSafe()` API is also available, which is guaranteed not to throw
 
 ## 🌐 MCP
 
-To use Model Context Protocol, install `LlmTornado.Mcp` adapter. After that, new interop methods become available on `ModelContextProtocol` types. The following example uses the tool `GetForecast` defined on an MCP server:
+To use Model Context Protocol, install `LlmTornado.Mcp` adapter. After that, new interop methods become available on `ModelContextProtocol` types. The following example uses the tool `GetForecast` defined on an [example MCP server](https://modelcontextprotocol.io/quickstart/server#c%23):
 ```cs
 [McpServerToolType]
 public sealed class WeatherTools
