@@ -303,8 +303,7 @@ ChatRichResponse response = await chat.GetResponseRich(); // the response contai
 _`GetResponseRichSafe()` API is also available, which is guaranteed not to throw on the network level. The response is wrapped in a network-level wrapper, containing additional information. For production use cases, either use `try {} catch {}` on all the HTTP request-producing Tornado APIs, or use the safe APIs._
 
 ## 🌐 MCP
-
-To use Model Context Protocol, install `LlmTornado.Mcp` adapter. After that, new interop methods become available on `ModelContextProtocol` types. The following example uses the tool `GetForecast` defined on an [example MCP server](https://modelcontextprotocol.io/quickstart/server#c%23):
+To use Model Context Protocol, install the `LlmTornado.Mcp` adapter. After that, new interop methods will become available on the `ModelContextProtocol` types. The following example uses the `GetForecast` tool defined on an [example MCP server](https://modelcontextprotocol.io/quickstart/server#c%23):
 ```cs
 [McpServerToolType]
 public sealed class WeatherTools
