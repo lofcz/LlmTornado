@@ -351,7 +351,7 @@ Conversation conversation = api.Chat.CreateConversation(new ChatRequest
     ToolChoice = OutboundToolChoice.Required
 });
 
-// 3. let the model call the tool and infer argument values
+// 3. let the model call the tool and infer arguments
 await conversation
     .AddSystemMessage("You are a helpful assistant")
     .AddUserMessage("What is the weather like in Dallas?")
