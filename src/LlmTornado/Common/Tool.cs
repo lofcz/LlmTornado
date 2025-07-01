@@ -1,7 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Threading;
+using System.Threading.Tasks;
 using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.ChatFunctions;
+using LlmTornado.Code;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using JsonSerializer = Newtonsoft.Json.JsonSerializer;
@@ -115,10 +120,16 @@ public class FunctionResult
     public string Name { get; set; }
 
     /// <summary>
-    ///     JSON of the function output.
+    /// Function output. This string contains JSON-encoded data unless received from an MCP tool.
     /// </summary>
     [JsonProperty("content", Required = Required.Always)]
     public string Content { get; set; }
+    
+    /// <summary>
+    /// Function output when received from remote protocols, such as MCP.
+    /// </summary>
+    [JsonIgnore]
+    public IRemoteContent? RemoteContent { get; set; }
 
     /// <summary>
     ///     A passthrough arbitrary data.
@@ -145,6 +156,298 @@ public class FunctionResult
         RawContent = content;
         return content is null ? "{}" : JsonConvert.SerializeObject(content);
     }
+}
+
+/// <summary>
+/// Content from remote protocols.
+/// </summary>
+public interface IRemoteContent
+{
+    
+}
+
+/// <summary>
+/// MCP content.
+/// </summary>
+public class McpContent : IRemoteContent
+{
+    /// <summary>
+    /// The response content from the tool call.
+    /// </summary>
+    public List<IMcpContentBlock> McpContentBlocks { get; set; }
+    
+    /// <summary>
+    /// Gets or sets an indication of whether the tool call was unsuccessful.
+    /// </summary>
+    /// <remarks>
+    /// When set to <see langword="true" />, it signifies that the tool execution failed.
+    /// Tool errors are reported with this property set to <see langword="true" /> and details in the <see cref="P:ModelContextProtocol.Protocol.CallToolResult.Content" />
+    /// property, rather than as protocol-level errors. This allows LLMs to see that an error occurred
+    /// and potentially self-correct in subsequent requests.
+    /// </remarks>
+    public bool IsError { get; set; }
+    
+    /// <summary>
+    /// Optional JSON object representing the structured result of the tool call.
+    /// </summary>
+    public JsonNode? StructuredContent { get; set; }
+}
+
+/// <summary>
+/// Shared interface for MCP content blocks.
+/// </summary>
+public interface IMcpContentBlock
+{
+    /// <summary>
+    /// This determines the structure of the content object. Valid values include "image", "audio", "text", "resource", and "resource_link".
+    /// </summary>
+    public string Type { get; set; }
+    
+    /// <summary>Optional annotations for the content.</summary>
+    /// <remarks>
+    /// These annotations can be used to specify the intended audience (<see cref="F:ModelContextProtocol.Protocol.Role.User" />, <see cref="F:ModelContextProtocol.Protocol.Role.Assistant" />, or both)
+    /// and the priority level of the content. Clients can use this information to filter or prioritize content for different roles.
+    /// </remarks>
+    public McpAnnotations? Annotations { get; init; }
+}
+
+/// <summary>
+/// Unknown MCP content block.
+/// </summary>
+public class McpContentBlockUnknown : McpContentBlock
+{
+    
+}
+
+/// <summary>
+/// MCP annotations.
+/// </summary>
+public class McpAnnotations
+{
+    public IList<ChatMessageRoles>? Audience { get; init; }
+    
+    public float? Priority { get; init; }
+    
+    public DateTimeOffset? LastModified { get; set; }
+}
+
+/// <summary>
+/// Base MCP content block.
+/// </summary>
+public abstract class McpContentBlock : IMcpContentBlock
+{
+    public string Type { get; set; } = string.Empty;
+    public McpAnnotations? Annotations { get; init; }
+    public NativeMcpContentBlock NativeBlock { get; set; }
+}
+
+public class NativeMcpContentBlock
+{
+    public object NativeBlock { get; set; }
+}
+
+/// <summary>
+/// Text content block.
+/// </summary>
+public class McpContentBlockText : McpContentBlock
+{
+    /// <summary>
+    /// The text content of the message.
+    /// </summary>
+    public string Text { get; set; }
+}
+
+/// <summary>
+/// Text content block.
+/// </summary>
+public class McpContentBlockImage : McpContentBlock
+{
+    /// <summary>
+    /// The base64-encoded image data.
+    /// </summary>
+    public string Data { get; set; }
+    
+    /// <summary>
+    /// The MIME type (or "media type") of the content, specifying the format of the data.
+    /// </summary>
+    public string MimeType { get; set; }
+}
+
+/// <summary>
+/// Represents audio provided to or from an LLM.
+/// </summary>
+public class McpContentBlockAudio : McpContentBlock
+{
+    /// <summary>
+    /// The base64-encoded audio data.
+    /// </summary>
+    public string Data { get; set; }
+    
+    /// <summary>
+    /// Gets or sets the MIME type (or "media type") of the content, specifying the format of the data.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Common values include "audio/wav" and "audio/mp3".
+    /// </para>
+    /// </remarks>
+    public string MimeType { get; set; }
+}
+
+/// <summary>Represents the contents of a resource, embedded into a prompt or tool call result.</summary>
+/// <remarks>
+/// It is up to the client how best to render embedded resources for the benefit of the LLM and/or the user.
+/// </remarks>
+public class McpContentBlockEmbeddedResource : McpContentBlock
+{
+    /// <summary>
+    /// Gets or sets the resource content of the message when <see cref="T:System.Type" /> is "resource".
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Resources can be either text-based (<see cref="T:ModelContextProtocol.Protocol.TextResourceContents" />) or
+    /// binary (<see cref="T:ModelContextProtocol.Protocol.BlobResourceContents" />), allowing for flexible data representation.
+    /// Each resource has a URI that can be used for identification and retrieval.
+    /// </para>
+    /// </remarks>
+    public McpContentBlockEmbeddedResourceContents Resource { get; set; }
+    
+    /// <summary>
+    /// Gets or sets the MIME type (or "media type") of the content, specifying the format of the data.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Common values include "audio/wav" and "audio/mp3".
+    /// </para>
+    /// </remarks>
+    public string MimeType { get; set; }
+}
+
+/// <summary>
+/// Represents a resource that the server is capable of reading, included in a prompt or tool call result.
+/// </summary>
+/// <remarks>
+/// Resource links returned by tools are not guaranteed to appear in the results of `resources/list` requests.
+/// </remarks>
+public class McpContentBlockLinkResource : McpContentBlock
+{
+    /// <summary>
+    /// The URI of this resource.
+    /// </summary>
+    public string Uri { get; init; }
+
+    /// <summary>
+    /// Human-readable name for this resource.
+    /// </summary>
+    public string Name { get; init; }
+    
+    /// <summary>
+    /// Gets or sets a description of what this resource represents.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This can be used by clients to improve the LLM's understanding of available resources. It can be thought of like a \"hint\" to the model.
+    /// </para>
+    /// <para>
+    /// The description should provide clear context about the resource's content, format, and purpose.
+    /// This helps AI models make better decisions about when to access or reference the resource.
+    /// </para>
+    /// <para>
+    /// Client applications can also use this description for display purposes in user interfaces
+    /// or to help users understand the available resources.
+    /// </para>
+    /// </remarks>
+    public string? Description { get; init; }
+
+    /// <summary>Gets or sets the MIME type of this resource.</summary>
+    /// <remarks>
+    /// <para>
+    /// <see cref="P:ModelContextProtocol.Protocol.ResourceLinkBlock.MimeType" /> specifies the format of the resource content, helping clients to properly interpret and display the data.
+    /// Common MIME types include "text/plain" for plain text, "application/pdf" for PDF documents,
+    /// "image/png" for PNG images, and "application/json" for JSON data.
+    /// </para>
+    /// <para>
+    /// This property may be <see langword="null" /> if the MIME type is unknown or not applicable for the resource.
+    /// </para>
+    /// </remarks>
+    public string? MimeType { get; init; }
+
+    /// <summary>
+    /// Gets or sets the size of the raw resource content (before base64 encoding), in bytes, if known.
+    /// </summary>
+    /// <remarks>
+    /// This can be used by applications to display file sizes and estimate context window usage.
+    /// </remarks>
+    public long? Size { get; init; }
+}
+
+/// <summary>Represents the contents of a resource, embedded into a prompt or tool call result.</summary>
+/// <remarks>
+/// It is up to the client how best to render embedded resources for the benefit of the LLM and/or the user.
+/// </remarks>
+public abstract class McpContentBlockEmbeddedResourceContents
+{
+    /// <summary>
+    /// The URI of the resource.
+    /// </summary>
+    public string Uri { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The MIME type of the resource content.
+    /// </summary>
+    public string? MimeType { get; set; }
+}
+
+/// <summary>
+/// Represents text-based contents of a resource in the Model Context Protocol.
+/// </summary>
+/// <remarks>
+/// <para>
+/// <see cref="T:ModelContextProtocol.Protocol.TextResourceContents" /> is used when textual data needs to be exchanged through
+/// the Model Context Protocol. The text is stored directly in the <see cref="P:ModelContextProtocol.Protocol.TextResourceContents.Text" /> property.
+/// </para>
+/// <para>
+/// See the <see href="https://github.com/modelcontextprotocol/specification/blob/main/schema/">schema</see> for more details.
+/// </para>
+/// </remarks>
+public class McpContentBlockEmbeddedResourceContentsText : McpContentBlockEmbeddedResourceContents
+{
+    /// <summary>
+    /// The text of the item.
+    /// </summary>
+    public string Text { get; set; }
+}
+
+/// <summary>
+/// Represents the binary contents of a resource in the Model Context Protocol.
+/// </summary>
+/// <remarks>
+/// <para>
+/// <see cref="T:ModelContextProtocol.Protocol.BlobResourceContents" /> is used when binary data needs to be exchanged through
+/// the Model Context Protocol. The binary data is represented as a base64-encoded string
+/// in the <see cref="P:ModelContextProtocol.Protocol.BlobResourceContents.Blob" /> property.
+/// </para>
+/// <para>
+/// See the <see href="https://github.com/modelcontextprotocol/specification/blob/main/schema/">schema</see> for more details.
+/// </para>
+/// </remarks>
+public class McpContentBlockEmbeddedResourceContentsBlob : McpContentBlockEmbeddedResourceContents
+{
+    /// <summary>
+    /// The base64-encoded string representing the binary data of the item.
+    /// </summary>
+    public string Blob { get; set; }
+}
+
+/// <summary>
+/// Unknown embedded resource content.
+/// </summary>
+public class McpContentBlockEmbeddedResourceContentsUnknown : McpContentBlockEmbeddedResourceContents
+{
+    /// <summary>
+    /// The native object.
+    /// </summary>
+    public object Native { get; set; }
 }
 
 /// <summary>
@@ -210,6 +513,12 @@ public class Tool
     public ToolVendorExtensions? VendorExtensions { get; set; }
     
     /// <summary>
+    /// Remote tool, for example MCP.
+    /// </summary>
+    [JsonIgnore]
+    public IRemoteTool? RemoteTool { get; set; }
+    
+    /// <summary>
     ///     Creates a tool from <see cref="ToolFunction" />
     /// </summary>
     /// <param name="function"></param>
@@ -218,6 +527,55 @@ public class Tool
     {
         return new Tool(function);
     }
+}
+
+/// <summary>
+/// Remote tools, such as those provided by MCP.
+/// </summary>
+public interface IRemoteTool
+{
+    /// <summary>
+    /// Method to execute the tool.
+    /// </summary>
+    public Func<Dictionary<string, object?>?, IProgress<ToolCallProgress>?, JsonSerializerOptions?, bool, CancellationToken?, ValueTask<FunctionResult>> CallAsync { get; set; }
+}
+
+/// <summary>
+/// Tool provided by MCP.
+/// </summary>
+public class McpTool : IRemoteTool
+{ 
+    public Func<Dictionary<string, object?>?, IProgress<ToolCallProgress>?, JsonSerializerOptions?, bool, CancellationToken?, ValueTask<FunctionResult>> CallAsync { get; set; }
+
+    internal McpTool()
+    {
+        
+    }
+}
+
+/// <summary>
+/// Progress of the tool call.
+/// </summary>
+public sealed class ToolCallProgress
+{
+    /// <summary>Gets or sets the progress thus far.</summary>
+    /// <remarks>
+    /// <para>
+    /// This value typically represents either a percentage (0-100) or the number of items processed so far (when used with the <see cref="P:ModelContextProtocol.ProgressNotificationValue.Total" /> property).
+    /// </para>
+    /// <para>
+    /// When reporting progress, this value should increase monotonically as the operation proceeds.
+    /// Values are typically between 0 and 100 when representing percentages, or can be any positive number
+    /// when representing completed items in combination with the <see cref="P:ModelContextProtocol.ProgressNotificationValue.Total" /> property.
+    /// </para>
+    /// </remarks>
+    public required float Progress { get; init; }
+
+    /// <summary>Gets or sets the total number of items to process (or total progress required), if known.</summary>
+    public float? Total { get; init; }
+
+    /// <summary>Gets or sets an optional message describing the current progress.</summary>
+    public string? Message { get; init; }
 }
 
 /// <summary>

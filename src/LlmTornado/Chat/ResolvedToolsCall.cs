@@ -22,7 +22,7 @@ public class ResolvedToolCall
     public FunctionResult Result { get; set; }
     
     /// <summary>
-    ///     The message with role <see cref="ChatMessageRoles.Tool"/>
+    ///     The message with role <see cref="Tool"/>
     /// </summary>
     public ChatMessage ToolMessage { get; set; }
 }

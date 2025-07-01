@@ -42,7 +42,7 @@ namespace System.Collections.Frozen
         public static FrozenDictionary<TKey, TValue> ToFrozenDictionary<TKey, TValue>(
             this IEnumerable<KeyValuePair<TKey, TValue>> source)
         {
-            var dictionary = source.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+            Dictionary<TKey, TValue> dictionary = source.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
             return new FrozenDictionary<TKey, TValue>(dictionary);
         }
 
@@ -51,7 +51,7 @@ namespace System.Collections.Frozen
             Func<TSource, TKey> keySelector,
             Func<TSource, TValue> valueSelector)
         {
-            var dictionary = source.ToDictionary(keySelector, valueSelector);
+            Dictionary<TKey, TValue> dictionary = source.ToDictionary(keySelector, valueSelector);
             return new FrozenDictionary<TKey, TValue>(dictionary);
         }
     }

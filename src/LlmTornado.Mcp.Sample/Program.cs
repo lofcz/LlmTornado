@@ -24,31 +24,53 @@ class Program
         
         await using IMcpClient mcpClient = await McpClientFactory.CreateAsync(clientTransport);
         List<Tool> tools = await mcpClient.ListTornadoToolsAsync();
-
+        
         TornadoApi api = new TornadoApi(LLmProviders.OpenAi, apiKeys.OpenAi);
         Conversation conversation = api.Chat.CreateConversation(new ChatRequest
         {
             Model = ChatModel.OpenAi.Gpt41.V41,
-            Tools = tools
+            Tools = tools,
+            ToolChoice = OutboundToolChoice.Required
         });
         
         await conversation
             .AddSystemMessage("You are a helpful assistant")
-            .AddUserMessage("What is the weather like in Prague?")
-            .GetResponseRich(calls =>
+            .AddUserMessage("What is the weather like in Dallas?")
+            .GetResponseRich(async calls =>
             {
                 foreach (FunctionCall call in calls)
                 {
-                    call.Resolve(new
+                    // retrieve arguments inferred by the model
+                    double latitude = call.GetOrDefault<double>("latitude");
+                    double longitude = call.GetOrDefault<double>("longitude");
+                    
+                    // call the tool on MCP server, pass args
+                    await call.ResolveRemote(new
                     {
-                        weather = "heavy rain is expected"
+                        latitude = latitude,
+                        longitude = longitude
                     });
-                }
 
-                return Task.CompletedTask;
+                    // extract tool result and pass it back to the model
+                    if (call.Result?.RemoteContent is McpContent mcpContent)
+                    {
+                        foreach (IMcpContentBlock block in mcpContent.McpContentBlocks)
+                        {
+                            if (block is McpContentBlockText textBlock)
+                            {
+                                call.Result.Content = textBlock.Text;
+                            }
+                        }
+                    }
+                }
             });
+
+        // stop forcing the client to call the tool
+        conversation.RequestParameters.ToolChoice = null;
         
+        // stream final response
         await conversation.StreamResponse(Console.Write);
+        Console.ReadKey();
     }
     
     static (string command, string[] arguments) GetCommandAndArguments(string[] args)

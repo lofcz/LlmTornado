@@ -815,7 +815,8 @@ public class Conversation
                 {
                     Name = x.FunctionCall.Name,
                     Arguments = x.FunctionCall.Arguments,
-                    ToolCall = x
+                    ToolCall = x,
+                    Tool = RequestParameters.Tools?.FirstOrDefault(y => string.Equals(y.Function?.Name, x.FunctionCall.Name))
                 }).ToList();
 
                 if (calls is not null)
@@ -1375,7 +1376,8 @@ public class Conversation
                             {
                                 Name = x.FunctionCall.Name,
                                 Arguments = x.FunctionCall.Arguments,
-                                ToolCall = x
+                                ToolCall = x,
+                                Tool = RequestParameters.Tools?.FirstOrDefault(y => string.Equals(y.Function?.Name, x.FunctionCall.Name))
                             }).ToList();
 
                             if (calls is not null)

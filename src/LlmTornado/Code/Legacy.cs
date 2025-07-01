@@ -933,7 +933,7 @@ public struct HashCode
     private static uint GenerateGlobalSeed()
     {
         byte[] randomBytes = new byte[sizeof(uint)];
-        using (var rng = new RNGCryptoServiceProvider())
+        using (RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider())
         {
             rng.GetBytes(randomBytes);
         }

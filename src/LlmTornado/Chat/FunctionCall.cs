@@ -1,9 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 using LlmTornado.Code;
 using LlmTornado.Common;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace LlmTornado.ChatFunctions;
 
@@ -32,6 +36,12 @@ public class FunctionCall
         ArgGetter = new Lazy<ChatFunctionParamsGetter>(() => new ChatFunctionParamsGetter(DecodedArguments?.Value));
         DecodedArguments = new Lazy<Dictionary<string, object?>?>(() => Arguments.IsNullOrWhiteSpace() ? [] : JsonConvert.DeserializeObject<Dictionary<string, object?>>(Arguments));
     }
+    
+    /// <summary>
+    /// Tool this call is linked to. This property might not be set outside remote tools (MCP).
+    /// </summary>
+    [JsonIgnore]
+    public Tool? Tool { get; set; }
     
     [JsonIgnore] 
     private string? JsonEncoded { get; set; }
@@ -68,6 +78,89 @@ public class FunctionCall
     {
         return ArgGetter.Value.Source ?? [];
     }
+
+    /// <summary>
+    /// Gets the specified argument or default value.
+    /// </summary>
+    public T? GetOrDefault<T>(string param, T? defaultValue = default)
+    {
+        return Get(param, out T? data, out _) ? data : defaultValue;
+    }
+    
+    /// <summary>
+    /// Gets the specified argument.
+    /// </summary>
+    /// <param name="param">Key</param>
+    /// <param name="data">Type to which the argument should be converted.</param>
+    /// <param name="exception">If the conversion fails, the exception is returned here.</param>
+    public bool Get<T>(string param, out T? data, out Exception? exception)
+    {
+        exception = null;
+        Dictionary<string, object?>? source = GetArguments();
+        
+        if (!source.TryGetValue(param, out object? rawData))
+        {
+            data = default;
+            return false; 
+        }
+
+        if (rawData is T obj)
+        {
+            data = obj;
+            return true;
+        }
+
+        switch (rawData)
+        {
+            case JArray jArr:
+            {
+                data = jArr.ToObject<T?>();
+                return true;
+            }
+            case JObject jObj:
+            {
+                data = jObj.ToObject<T?>();
+                return true;
+            }
+            case string str:
+            {
+                if (typeof(T).IsClass || (typeof(T).IsValueType && !typeof(T).IsPrimitive && !typeof(T).IsEnum))
+                {
+                    if (str.SanitizeJsonTrailingComma().CaptureJsonDecode(out T? decoded, out Exception? parseException))
+                    {
+                        data = decoded;
+                        return true;
+                    }
+                }
+                
+                try
+                {
+                    data = (T?)rawData.ChangeType(typeof(T));
+                    return true;
+                }
+                catch (Exception e)
+                {
+                    data = default;
+                    exception = e;
+                    return false;
+                }
+            }
+            default:
+            {
+                try
+                {
+                    data = (T?)rawData.ChangeType(typeof(T));
+                    return true;
+                }
+                catch (Exception e)
+                {
+                    data = default;
+                    exception = e;
+                    return false;
+                }
+            }
+        }
+    }
     
     /// <summary>
     ///     Gets the json encoded function call, this is cached to avoid serializing the function over and over.
@@ -84,6 +177,26 @@ public class FunctionCall
     public FunctionCall Resolve(object? result)
     {
         Result = new FunctionResult(this, result);
+        return this;
+    }
+
+    /// <summary>
+    /// Executes the attached <see cref="IRemoteTool"/> - call this only for tools sourced from an MCP connection.
+    /// </summary>
+    public async ValueTask<FunctionCall> ResolveRemote(object? args = null, IProgress<ToolCallProgress>? progress = null, JsonSerializerOptions? serializerOptions = null, bool fillContent = true, CancellationToken cancellationToken = default)
+    {
+        if (Tool?.RemoteTool is null)
+        {
+            Result = new FunctionResult
+            {
+                InvocationSucceeded = false,
+                Content = "Prototype or Prototype.RemoteTool is null, cannot call the tool."
+            };
+            
+            return this;
+        }
+        
+        Result = await Tool.RemoteTool.CallAsync.Invoke(args?.ToDictionary(), progress, serializerOptions, fillContent, cancellationToken);
         return this;
     }
     

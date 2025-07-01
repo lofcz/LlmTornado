@@ -72,6 +72,49 @@ internal static partial class Extensions
         return jObj.ToString(settings?.Formatting ?? Formatting.None);
     }
     
+    public static Dictionary<TKey, TValue> ToDictionary<TKey, TValue>(this object source)
+    {
+        Dictionary<TKey, TValue> result = new Dictionary<TKey, TValue>();
+
+        TKey[] keys = [];
+        TValue[] values = [];
+
+        bool outLoopingKeys = false, outLoopingValues = false;
+
+        foreach (PropertyDescriptor property in TypeDescriptor.GetProperties(source))
+        {
+            object value = property.GetValue(source);
+            
+            switch (value)
+            {
+                case Dictionary<TKey, TValue>.KeyCollection collection:
+                {
+                    keys = collection.ToArray();
+                    outLoopingKeys = true;
+                    break;
+                }
+                case Dictionary<TKey, TValue>.ValueCollection valueCollection:
+                {
+                    values = valueCollection.ToArray();
+                    outLoopingValues = true;
+                    break;
+                }
+            }
+
+            if (outLoopingKeys & outLoopingValues)
+            {
+                break;
+            }
+        }
+
+        for (int i = 0; i < keys.Length; i++)
+        {
+            result.Add(keys[i], values[i]);
+        }
+
+        return result;
+    }
+    
     private static readonly ConcurrentDictionary<string, string?> DescriptionAttrCache = [];
 
     public static HttpMethod ToMethod(this HttpVerbs verb)
@@ -179,6 +222,117 @@ internal static partial class Extensions
         using MemoryStream memoryStream = new MemoryStream();
         await stream.CopyToAsync(memoryStream);
         return memoryStream.ToArray();
+    }
+    
+    public static bool CaptureJsonDecode<T>(this string? s, out T? data, out Exception? parseException)
+    {
+        if (string.IsNullOrEmpty(s))
+        {
+            data = default;
+            parseException = null;
+            return true;
+        }
+
+        try
+        {
+            data = JsonConvert.DeserializeObject<T>(s);
+            parseException = null;
+            return true;
+        }
+        catch (Exception e)
+        {
+            data = default;
+            parseException = e;
+            return false;
+        }
+    }
+    
+    public static object? ChangeType(this object? value, Type conversion) 
+    {
+        Type? t = conversion;
+
+        if (t.IsEnum && value != null)
+        {
+            if (EnumsParser.TryParse(t, value.ToString(), true, out object? x))
+            {
+                return x;
+            }
+        }
+            
+        if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(Nullable<>)) 
+        {
+            if (value == null) 
+            { 
+                return null; 
+            }
+
+            t = Nullable.GetUnderlyingType(t);
+        }
+
+        if (t == typeof(int) && value?.ToString() == "")
+        {
+            return 0;
+        }
+            
+        if (t == typeof(int) && ((value?.ToString()?.Contains('.') ?? false) || (value?.ToString()?.Contains(',') ?? false)))
+        {
+            if (double.TryParse(value.ToString()?.Replace(",", "."), out double x))
+            {
+                return (int)x;
+            }
+        }
+
+        if (value != null && t is {IsGenericType: true} && value.GetType().IsGenericType)
+        {
+            Type destT = t.GetGenericArguments()[0];
+            Type sourceT = value.GetType().GetGenericArguments()[0];
+
+            if (destT.IsEnum && sourceT == typeof(int))
+            {
+                IList? instance = (IList?)t.Instantiate();
+
+                foreach (object? x in (IList) value)
+                {
+                    instance?.Add(x);
+                }
+
+                return instance;
+            }
+        }
+
+        if (t == typeof(bool) && value is string str)
+        {
+            return truthyStrings.Contains(str);
+        }
+
+        return t != null ? System.Convert.ChangeType(value, t) : null;
+    }
+    
+    public static object? Instantiate(this Type type, params object[] args)
+    {
+        return Activator.CreateInstance(type, args);
+    }
+    
+    private static readonly HashSet<string> truthyStrings = ["1", "on", "true", "True", "TRUE", "yes", "ok", "success"];
+    
+    public static string SanitizeJsonTrailingComma(this string json)
+    {
+        string originalJson = json;
+        string trimmedStart = json.TrimStart();
+            
+        if (trimmedStart.StartsWith('{') || trimmedStart.StartsWith('['))
+        {
+            json = trimmedStart;
+        }
+
+        json = json.TrimEnd();
+            
+        if (json.EndsWith(','))
+        {
+            json = json.TrimEnd(',');
+        }
+            
+        return json != originalJson ? json : originalJson;
     }
     
     public static string? GetDescription<T>(this T source)
