@@ -304,7 +304,37 @@ _`GetResponseRichSafe()` API is also available, which is guaranteed not to throw
 
 ## 🌐 MCP
 
-To use Model Context Protocol, install `LlmTornado.Mcp` adapter. After that, new interop methods become available on `ModelContextProtocol` types:
+To use Model Context Protocol, install `LlmTornado.Mcp` adapter. After that, new interop methods become available on `ModelContextProtocol` types. The following example uses the tool `GetForecast` defined on an MCP server:
+```
+[McpServerToolType]
+public sealed class WeatherTools
+{
+    [McpServerTool, Description("Get weather forecast for a location.")]
+    public static async Task<string> GetForecast(
+        HttpClient client,
+        [Description("Latitude of the location.")] double latitude,
+        [Description("Longitude of the location.")] double longitude)
+    {
+        var pointUrl = string.Create(CultureInfo.InvariantCulture, $"/points/{latitude},{longitude}");
+        using var jsonDocument = await client.ReadJsonDocumentAsync(pointUrl);
+        var forecastUrl = jsonDocument.RootElement.GetProperty("properties").GetProperty("forecast").GetString()
+            ?? throw new Exception($"No forecast URL provided by {client.BaseAddress}points/{latitude},{longitude}");
+
+        using var forecastDocument = await client.ReadJsonDocumentAsync(forecastUrl);
+        var periods = forecastDocument.RootElement.GetProperty("properties").GetProperty("periods").EnumerateArray();
+
+        return string.Join("\n---\n", periods.Select(period => $"""
+                {period.GetProperty("name").GetString()}
+                Temperature: {period.GetProperty("temperature").GetInt32()}°F
+                Wind: {period.GetProperty("windSpeed").GetString()} {period.GetProperty("windDirection").GetString()}
+                Forecast: {period.GetProperty("detailedForecast").GetString()}
+                """));
+    }
+}
+```
+
+The following is done from a client:
+
 ```cs
 // your clientTransport, for example StdioClientTransport
 await using IMcpClient mcpClient = await McpClientFactory.CreateAsync(clientTransport);
@@ -317,31 +347,52 @@ TornadoApi api = new TornadoApi(LLmProviders.OpenAi, apiKeys.OpenAi);
 Conversation conversation = api.Chat.CreateConversation(new ChatRequest
 {
     Model = ChatModel.OpenAi.Gpt41.V41,
-    Tools = tools
+    Tools = tools,
+    // force any of the available tools to be used (use new OutboundToolChoice("toolName") to specify which if needed)
+    ToolChoice = OutboundToolChoice.Required
 });
 
-// 3. let model pick a tool, resolve the result
+// 3. let the model call the tool and infer argument values
 await conversation
     .AddSystemMessage("You are a helpful assistant")
-    .AddUserMessage("What is the weather like in Prague?")
-    .GetResponseRich(calls =>
+    .AddUserMessage("What is the weather like in Dallas?")
+    .GetResponseRich(async calls =>
     {
         foreach (FunctionCall call in calls)
         {
-            call.Resolve(new
+            // retrieve arguments inferred by the model
+            double latitude = call.GetOrDefault<double>("latitude");
+            double longitude = call.GetOrDefault<double>("longitude");
+            
+            // call the tool on the MCP server, pass args
+            await call.ResolveRemote(new
             {
-                weather = "heavy rain is expected"
+                latitude = latitude,
+                longitude = longitude
             });
-        }
 
-        return Task.CompletedTask;
+            // extract the tool result and pass it back to the model
+            if (call.Result?.RemoteContent is McpContent mcpContent)
+            {
+                foreach (IMcpContentBlock block in mcpContent.McpContentBlocks)
+                {
+                    if (block is McpContentBlockText textBlock)
+                    {
+                        call.Result.Content = textBlock.Text;
+                    }
+                }
+            }
+        }
     });
 
-// 4. stream the response
+// stop forcing the client to call the tool
+conversation.RequestParameters.ToolChoice = null;
+
+// 4. stream final response
 await conversation.StreamResponse(Console.Write);
 ```
 
-A complete example with Client & Server is available [here](https://github.com/lofcz/LlmTornado/blob/master/src/LlmTornado.Mcp.Sample/Program.cs).
+A complete example is available here: [client](https://github.com/lofcz/LlmTornado/blob/master/src/LlmTornado.Mcp.Sample.Server/WeatherTools.cs), [server](https://github.com/lofcz/LlmTornado/blob/master/src/LlmTornado.Mcp.Sample/Program.cs).
 
 ## 🧰 Toolkit
 
