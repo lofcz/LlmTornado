@@ -1563,7 +1563,7 @@ public partial class ChatDemo : DemoBase
             {
                 foreach (FunctionCall fn in functions)
                 {
-                    if (fn.TryGetArgument("location", out string? str) && str.ToLowerInvariant() is "prague")
+                    if (fn.Get("location", out string? str) && str.ToLowerInvariant() is "prague")
                     {
                         fn.Result = new FunctionResult(fn.Name, "A mild rain is expected around noon.");  
                     }
@@ -1624,7 +1624,7 @@ public partial class ChatDemo : DemoBase
             {
                 foreach (FunctionCall fn in functions)
                 {
-                    if (fn.TryGetArgument("location", out string? str) && str.ToLowerInvariant() is "prague")
+                    if (fn.Get("location", out string? str) && str.ToLowerInvariant() is "prague")
                     {
                         fn.Result = new FunctionResult(fn.Name, "A mild rain is expected around noon.");  
                     }
@@ -2141,12 +2141,12 @@ public partial class ChatDemo : DemoBase
                     {
                         x.Result = new FunctionResult(x, null);
 
-                        if (x.TryGetArgument("title", out string? title))
+                        if (x.Get("title", out string? title))
                         {
                             Console.WriteLine($"TITLE: {title}");
                         }
                         
-                        if (x.TryGetArgument("content", out string? content))
+                        if (x.Get("content", out string? content))
                         {
                             Console.WriteLine($"CONTENT: {content}");
                         }

@@ -86,7 +86,27 @@ public class FunctionCall
     {
         return Get(param, out T? data, out _) ? data : defaultValue;
     }
+
+    /// <summary>
+    /// Gets the specified argument. If the conversion to T fails, the exception is ignored.
+    /// </summary>
+    /// <param name="param">Key</param>
+    /// <param name="data">Type to which the argument should be converted.</param>
+    public bool Get<T>(string param, out T? data)
+    {
+        return Get(param, out data, out _);
+    }
     
+    /// <summary>
+    /// Gets the specified argument. If the conversion to T fails, the exception is ignored.
+    /// </summary>
+    /// <param name="param">Key</param>
+    /// <param name="data">Type to which the argument should be converted.</param>
+    public bool TryGetArgument<T>(string param, out T? data)
+    {
+        return Get(param, out data, out _);
+    }
+
     /// <summary>
     /// Gets the specified argument.
     /// </summary>
