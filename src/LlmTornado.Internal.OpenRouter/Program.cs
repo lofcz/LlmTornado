@@ -11,7 +11,8 @@ class Program
     {
         // no auth needed
         List<RetrievedModel>? models = await new TornadoApi(LLmProviders.OpenRouter).Models.GetModels(LLmProviders.OpenRouter);
-
+        models = models?.OrderBy(x => x.Name, StringComparer.Ordinal).ToList();
+        
         StringBuilder sb = new StringBuilder();
 
         AppendLine("// This code was generated with LlmTornado.Internal.OpenRouter");
