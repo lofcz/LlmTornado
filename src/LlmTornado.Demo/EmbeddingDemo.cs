@@ -4,6 +4,7 @@ using LlmTornado.Embedding.Vendors.Cohere;
 using LlmTornado.Embedding.Vendors.Google;
 using LlmTornado.Embedding.Vendors.Voyage;
 
+
 namespace LlmTornado.Demo;
 
 public class EmbeddingDemo : DemoBase

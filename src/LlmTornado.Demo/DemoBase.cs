@@ -1,6 +1,6 @@
 namespace LlmTornado.Demo;
 
-public class DemoBase
+public class DemoBase : TornadoTextFixture
 {
-   
+    
 }

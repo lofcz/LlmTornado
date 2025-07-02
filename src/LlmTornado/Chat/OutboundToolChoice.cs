@@ -23,7 +23,7 @@ public class OutboundToolCallFunction
 public enum OutboundToolChoiceModes
 {
     /// <summary>
-    /// The behavior is inferred from the <see cref="OutboundToolChoice.Function.Name"/>.
+    /// The behavior is inferred from the Function.Name
     /// </summary>
     Legacy,
     /// <summary>

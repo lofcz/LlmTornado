@@ -5,6 +5,7 @@ using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Common;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace LlmTornado.Responses;
 
@@ -27,27 +28,40 @@ public class ResponseRequest
 
     /// <summary>
     /// Specify additional output data to include in the model response. 
+    /// See <see cref="ResponseIncludeFields"/> for supported values.
     /// </summary>
     [JsonProperty("include")]
-    public List<string>? Include { get; set; }
+    public List<ResponseIncludeFields>? Include { get; set; }
 
     /// <summary>
-    /// Text input.
+    /// Text input for text requests.
     /// </summary>
     [JsonIgnore]
     public string? InputString { get; set; }
 
     /// <summary>
-    /// Text, image, or file inputs to the model, used to generate a response.
+    /// Multi-part, multi-modal requests.
     /// </summary>
     [JsonIgnore]
-    public List<object>? InputParts { get; set; }
+    public List<ResponseInputItem>? InputItems { get; set; }
 
     /// <summary>
     /// Text, image, or file inputs to the model, used to generate a response.
+    /// Can be either a simple string or a list of input items.
     /// </summary>
     [JsonProperty("input")]
-    internal object? Input => InputString;
+    internal object? Input
+    {
+        get
+        {
+            if (InputString is not null)
+            {
+                return InputString;
+            }
+            
+            return InputItems is { Count: > 0 } ? InputItems : null;
+        }
+    }
 
     /// <summary>
     /// A system (or developer) message inserted into the model's context. When using along with previous_response_id, the instructions from a previous response will not be carried over to the next response. This makes it simple to swap out system (or developer) messages in new responses.
@@ -97,13 +111,13 @@ public class ResponseRequest
     /// Reference to a prompt template and its variables.
     /// </summary>
     [JsonProperty("prompt")]
-    public object? Prompt { get; set; }
+    public PromptConfiguration? Prompt { get; set; }
     
     /// <summary>
-    /// Configuration options for reasoning models.
+    /// Configuration options for reasoning models (o-series models only).
     /// </summary>
     [JsonProperty("reasoning")]
-    public object? Reasoning { get; set; }
+    public ReasoningConfiguration? Reasoning { get; set; }
     
     /// <summary>
     /// Specifies the processing type used for serving the request.
@@ -133,7 +147,7 @@ public class ResponseRequest
     /// Configuration options for a text response from the model. Can be plain text or structured JSON data.
     /// </summary>
     [JsonProperty("text")]
-    public object? Text { get; set; }
+    public TextConfiguration? Text { get; set; }
     
     /// <summary>
     ///     Represents an optional field when sending tools calling prompt.
@@ -171,13 +185,19 @@ public class ResponseRequest
     /// The truncation strategy to use for the model response.
     /// </summary>
     [JsonProperty("truncation")]
-    public string? Truncation { get; set; }
+    public ResponseTruncationStrategies? Truncation { get; set; }
     
     /// <summary>
     /// A stable identifier for your end-users. Used to boost cache hit rates by better bucketing similar requests and to help OpenAI detect and prevent abuse.
     /// </summary>
     [JsonProperty("user")]
     public string? User { get; set; }
+
+    /// <summary>
+    /// An object specifying the format that the model must output. Used to enable JSON mode.
+    /// </summary>
+    [JsonProperty("response_format")]
+    public ResponseFormat? ResponseFormat { get; set; }
 
     /// <summary>
     ///	Serializes the chat request into the request body, based on the conventions used by the LLM provider.
@@ -191,5 +211,34 @@ public class ResponseRequest
     {
         string body = this.ToJson();
         return new TornadoRequestContent(body, Model, null, provider, CapabilityEndpoints.Responses);
+    }
+
+    /// <summary>
+    /// Creates a new ResponseRequest with the specified model and input string.
+    /// </summary>
+    /// <param name="model">The model to use for the response</param>
+    /// <param name="input">The text input for the response</param>
+    public ResponseRequest(ChatModel model, string input)
+    {
+        Model = model;
+        InputString = input;
+    }
+
+    /// <summary>
+    /// Creates a new ResponseRequest with the specified model and input items.
+    /// </summary>
+    /// <param name="model">The model to use for the response</param>
+    /// <param name="inputItems">The input items for the response</param>
+    public ResponseRequest(ChatModel model, List<ResponseInputItem> inputItems)
+    {
+        Model = model;
+        InputItems = inputItems;
+    }
+
+    /// <summary>
+    /// Creates a new empty ResponseRequest.
+    /// </summary>
+    public ResponseRequest()
+    {
     }
 }

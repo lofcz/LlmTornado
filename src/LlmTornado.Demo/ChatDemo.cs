@@ -15,6 +15,7 @@ using LlmTornado.Contrib;
 using LlmTornado.Files;
 using LlmTornado.Images;
 
+
 namespace LlmTornado.Demo;
 
 public partial class ChatDemo : DemoBase
@@ -342,7 +343,7 @@ public partial class ChatDemo : DemoBase
         Console.ResetColor();
         Console.WriteLine(longPrompt);
         
-        string shortPrompt = "In the text above, who cries  “I am sick of Mr. Bingley”?";
+        string shortPrompt = "In the text above, who cries  \"I am sick of Mr. Bingley\"?";
         
         Console.WriteLine();
         Console.ForegroundColor = ConsoleColor.Cyan;
@@ -357,7 +358,7 @@ public partial class ChatDemo : DemoBase
         Console.ResetColor();
         await StreamResponse();
 
-        string shortPrompt2 = "When Elizabeth replied “He is also handsome”, who does she mean?";
+        string shortPrompt2 = "When Elizabeth replied \"He is also handsome\", who does she mean?";
         Console.WriteLine();
         Console.WriteLine();
         Console.ForegroundColor = ConsoleColor.Cyan;

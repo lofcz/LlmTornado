@@ -21,21 +21,6 @@ public class MethodAttribute : Attribute
     }
 }
 
-public class TornadoTestAttribute : Attribute
-{
-    public string? FriendlyName { get; set; }
-    
-    public TornadoTestAttribute()
-    {
-
-    }
-    
-    public TornadoTestAttribute(string friendlyName)
-    {
-        FriendlyName = friendlyName;
-    }
-}
-
 public class DemoEnumAttribute : Attribute
 {
     public Type DemoType { get; set; }

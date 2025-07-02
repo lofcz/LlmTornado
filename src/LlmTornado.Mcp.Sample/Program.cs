@@ -1,4 +1,5 @@
-﻿using LlmTornado.Chat;
+﻿using System.Text.RegularExpressions;
+using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
