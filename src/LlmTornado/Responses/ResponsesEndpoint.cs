@@ -185,13 +185,18 @@ public class ResponsesEndpoint : EndpointBase
     /// <param name="token">Optional cancellation token.</param>
     public async Task StreamResponseRich(ResponseRequest request, ResponseStreamEventHandler? eventsHandler = null, CancellationToken token = default)
     {
+        await StreamResponseRichInternal(request, null, eventsHandler, token).ConfigureAwait(false);
+    }
+    
+    internal async Task StreamResponseRichInternal(ResponseRequest request, ResponsesSession? session = null, ResponseStreamEventHandler? eventsHandler = null, CancellationToken token = default)
+    {
         bool? streamOption = request.Stream;
         request.Stream = true;
         IEndpointProvider provider = Api.GetProvider(request.Model ?? ChatModel.OpenAi.Gpt35.Turbo);
         TornadoRequestContent requestBody = request.Serialize(provider);
         request.Stream = streamOption;
 
-        await using TornadoStreamRequest tornadoStreamRequest = await HttpStreamingRequestData(provider, Endpoint, requestBody.Url, queryParams: null, HttpVerbs.Post, requestBody.Body, request.Model, token);
+        await using TornadoStreamRequest tornadoStreamRequest = await HttpStreamingRequestData(provider, Endpoint, requestBody.Url, queryParams: null, HttpVerbs.Post, requestBody.Body, request.Model, token).ConfigureAwait(false);
 
         if (tornadoStreamRequest.Exception is not null)
         {
@@ -200,7 +205,7 @@ public class ResponsesEndpoint : EndpointBase
 
         if (tornadoStreamRequest.StreamReader is not null)
         {
-            await foreach (ServerSentEvent runStreamEvent in provider.InboundStream(tornadoStreamRequest.StreamReader).WithCancellation(token))
+            await foreach (ServerSentEvent runStreamEvent in provider.InboundStream(tornadoStreamRequest.StreamReader).WithCancellation(token).ConfigureAwait(false))
             {
                 if (eventsHandler is null)
                 {
@@ -216,14 +221,20 @@ public class ResponsesEndpoint : EndpointBase
                 
                 if (EventTypeToEnum.TryGetValue(type, out ResponseEventTypes eventType))
                 {
-                    if (eventsHandler.OnEvent is not null || eventType is ResponseEventTypes.ResponseCompleted)
+                    if (eventsHandler.OnEvent is not null || eventType is ResponseEventTypes.ResponseCompleted or ResponseEventTypes.ResponseCreated)
                     {
-                        if (eventType is ResponseEventTypes.ResponseCompleted)
-                        {
-                            // int z = 0;
-                        }
-                        
                         IResponsesEvent? evt = DeserializeEvent(runStreamEvent.Data, eventType);
+                        
+                        if (eventType is ResponseEventTypes.ResponseCreated)
+                        {
+                            if (evt is ResponseCreatedEvent created)
+                            {
+                                if (session is not null)
+                                {
+                                    session.CurrentResponse = created.Response;
+                                }
+                            }
+                        }
                         
                         if (evt is not null && eventsHandler.OnEvent is not null)
                         {

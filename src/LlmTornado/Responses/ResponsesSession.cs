@@ -8,6 +8,8 @@ namespace LlmTornado.Responses;
 /// </summary>
 public class ResponsesSession
 {
+    public ResponseResult? CurrentResponse { get; set; }
+    
     /// <summary>
     /// The current request.
     /// </summary>
@@ -26,8 +28,13 @@ public class ResponsesSession
     /// <summary>
     /// Streams next response.
     /// </summary>
-    public async Task StreamNext(CancellationToken token = default)
+    public async Task StreamResponseRich(CancellationToken token = default)
     {
-        await Endpoint.StreamResponseRich(Request, EventsHandler, token);
+        if (CurrentResponse is not null)
+        {
+            Request.PreviousResponseId = CurrentResponse.Id;
+        }
+        
+        await Endpoint.StreamResponseRichInternal(Request, this, EventsHandler, token);
     }
 }
