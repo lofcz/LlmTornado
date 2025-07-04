@@ -55,6 +55,8 @@ public class ResponsesDemo : DemoBase
     [TornadoTest]
     public static async Task ResponseSimpleFunctionsStream()
     {
+        string fnCallId = string.Empty;
+        
         ResponsesSession session = Program.Connect().Responses.CreateSession(new ResponseRequest
         {
             Model = ChatModel.OpenAi.Gpt41.V41,
@@ -103,6 +105,7 @@ public class ResponsesDemo : DemoBase
                     if (itemDone.Item is FunctionToolCallItem fn)
                     {
                         // call the function
+                        fnCallId = fn.CallId;
                     }
                 }
                 
@@ -114,7 +117,11 @@ public class ResponsesDemo : DemoBase
 
         session.Request.InputItems =
         [
-            new ResponseInputMessage()
+            new FunctionToolCallOutput(fnCallId, new
+            {
+                weather = "sunny, no rain, mild fog, humididy: 65%",
+                confidence = "very_high"
+            }.ToJson())
         ];
         
         int z = 0;

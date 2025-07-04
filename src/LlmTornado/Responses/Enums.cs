@@ -17,6 +17,12 @@ public enum ResponseMessageStatuses
     InProgress,
     
     /// <summary>
+    /// Item is searching (for file search tool calls).
+    /// </summary>
+    [EnumMember(Value = "searching")]
+    Searching,
+    
+    /// <summary>
     /// Item is completed.
     /// </summary>
     [EnumMember(Value = "completed")]
@@ -26,7 +32,13 @@ public enum ResponseMessageStatuses
     /// Item is incomplete.
     /// </summary>
     [EnumMember(Value = "incomplete")]
-    Incomplete
+    Incomplete,
+    
+    /// <summary>
+    /// Item has failed.
+    /// </summary>
+    [EnumMember(Value = "failed")]
+    Failed
 }
 
 /// <summary>
@@ -140,4 +152,41 @@ public enum ResponseIncludeFields
     /// </summary>
     [EnumMember(Value = "reasoning.encrypted_content")]
     ReasoningEncryptedContent
+}
+
+/// <summary>
+/// Mouse button types for computer actions.
+/// </summary>
+[JsonConverter(typeof(StringEnumConverter))]
+public enum ComputerMouseButton
+{
+    /// <summary>
+    /// Left mouse button.
+    /// </summary>
+    [EnumMember(Value = "left")]
+    Left,
+    
+    /// <summary>
+    /// Right mouse button.
+    /// </summary>
+    [EnumMember(Value = "right")]
+    Right,
+    
+    /// <summary>
+    /// Mouse wheel button.
+    /// </summary>
+    [EnumMember(Value = "wheel")]
+    Wheel,
+    
+    /// <summary>
+    /// Back mouse button.
+    /// </summary>
+    [EnumMember(Value = "back")]
+    Back,
+    
+    /// <summary>
+    /// Forward mouse button.
+    /// </summary>
+    [EnumMember(Value = "forward")]
+    Forward
 } 
