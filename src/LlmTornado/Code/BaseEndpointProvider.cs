@@ -11,6 +11,8 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using LlmTornado.Chat;
 using LlmTornado.Code.Models;
+using LlmTornado.Code.Sse;
+using LlmTornado.Threads;
 using LlmTornado.Vendor.Anthropic;
 using Newtonsoft.Json.Linq;
 
@@ -74,5 +76,20 @@ public abstract class BaseEndpointProvider : IEndpointProviderExtended
     public static StreamRequestTypes GetStreamType(Type t)
     {
         return StreamTypes.GetValueOrDefault(t, StreamRequestTypes.Unknown);
+    }
+    
+    /// <summary>
+    /// Basic SSE stream.
+    /// </summary>
+    public async IAsyncEnumerable<ServerSentEvent> InboundStream(StreamReader reader)
+    {
+        await foreach (SseItem<string> item in SseParser.Create(reader.BaseStream).EnumerateAsync())
+        {
+            yield return new ServerSentEvent
+            {
+                Data = item.Data,
+                EventType = item.EventType
+            };
+        }
     }
 }

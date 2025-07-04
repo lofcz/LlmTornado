@@ -71,25 +71,33 @@ public class InputImageContent : InputContent
     [JsonProperty("detail")]
     public ImageDetail Detail { get; set; } = ImageDetail.Auto;
 
-    public InputImageContent() { }
-
-    public InputImageContent(string imageUrl, ImageDetail detail = ImageDetail.Auto)
+    public InputImageContent()
     {
-        ImageUrl = imageUrl;
-        Detail = detail;
+        
     }
 
-    public InputImageContent(string fileId, ImageDetail detail = ImageDetail.Auto, bool isFileId = true)
+    /// <summary>
+    /// Creates image content from the URL of the image to be sent to the model. A fully qualified URL or base64 encoded image in a data URL.
+    /// </summary>
+    public static InputImageContent CreateImageUrl(string imageUrl, ImageDetail detail = ImageDetail.Auto)
     {
-        if (isFileId)
+        return new InputImageContent
         {
-            FileId = fileId;
-        }
-        else
+            ImageUrl = imageUrl,
+            Detail = detail
+        };
+    }
+    
+    /// <summary>
+    /// Creates image content from the file id.
+    /// </summary>
+    public static InputImageContent CreateFileId(string imageUrl, ImageDetail detail = ImageDetail.Auto)
+    {
+        return new InputImageContent
         {
-            ImageUrl = fileId;
-        }
-        Detail = detail;
+            ImageUrl = imageUrl,
+            Detail = detail
+        };
     }
 }
 

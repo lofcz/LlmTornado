@@ -40,6 +40,8 @@
     </ItemGroup>
     <ItemGroup>
       <Folder Include="Embedding\Vendors\Anthropic\" />
+      <Folder Include="Realtime\" />
+      <Folder Include="Responses\Events\" />
     </ItemGroup>
     <ItemGroup>
         <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">

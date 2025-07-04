@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.Http;
 using LlmTornado.Chat;
 using LlmTornado.Code.Models;
+using LlmTornado.Threads;
 using Newtonsoft.Json.Linq;
 
 namespace LlmTornado.Code;
@@ -43,6 +44,11 @@ public interface IEndpointProvider
     /// Invoked to process any inbound streams where type conditionally changes.
     /// </summary>
     public IAsyncEnumerable<object?> InboundStream(Type type, StreamReader streamReader);
+
+    /// <summary>
+    /// Raw SSE stream.
+    /// </summary>
+    public IAsyncEnumerable<ServerSentEvent> InboundStream(StreamReader reader);
     
     /// <summary>
     /// Invoked to process any inbound streams where type is known ahead of time.

@@ -330,7 +330,7 @@ public sealed class ThreadsEndpoint : EndpointBase
             
             if (provider is OpenAiEndpointProvider oaiProvider && tornadoStreamRequest.StreamReader is not null)
             {
-                await foreach (RunStreamEvent runStreamEvent in oaiProvider.InboundStream(tornadoStreamRequest.StreamReader).WithCancellation(cancellationToken))
+                await foreach (ServerSentEvent runStreamEvent in oaiProvider.InboundStream(tornadoStreamRequest.StreamReader).WithCancellation(cancellationToken))
                 {
                     await HandleOpenAiStreamEvent(eventHandler, runStreamEvent);
                 }
@@ -384,7 +384,7 @@ public sealed class ThreadsEndpoint : EndpointBase
             
             if (provider is OpenAiEndpointProvider oaiProvider && tornadoStreamRequest.StreamReader is not null)
             {
-                await foreach (RunStreamEvent runStreamEvent in oaiProvider.InboundStream(tornadoStreamRequest.StreamReader).WithCancellation(cancellationToken))
+                await foreach (ServerSentEvent runStreamEvent in oaiProvider.InboundStream(tornadoStreamRequest.StreamReader).WithCancellation(cancellationToken))
                 {
                     await HandleOpenAiStreamEvent(eventHandler, runStreamEvent);
                 }
@@ -396,9 +396,9 @@ public sealed class ThreadsEndpoint : EndpointBase
         }
     }
     
-    private static async ValueTask HandleOpenAiStreamEvent(RunStreamEventHandler eventHandler, RunStreamEvent runStreamEvent)
+    private static async ValueTask HandleOpenAiStreamEvent(RunStreamEventHandler eventHandler, ServerSentEvent serverSentEvent)
     {
-        if (RunStreamEventTypeObjectCls.EventsMap.TryGetValue(runStreamEvent.EventType, out OpenAiAssistantStreamEvent? sse))
+        if (RunStreamEventTypeObjectCls.EventsMap.TryGetValue(serverSentEvent.EventType, out OpenAiAssistantStreamEvent? sse))
         {
             RunStreamEventTypeObject objectType = sse.ObjectType;
             RunStreamEventTypeStatus status = sse.Status;
@@ -407,7 +407,7 @@ public sealed class ThreadsEndpoint : EndpointBase
             {
                 case RunStreamEventTypeObject.Thread:
                 {
-                    TornadoThread? thread = runStreamEvent.Data.JsonDecode<TornadoThread>();
+                    TornadoThread? thread = serverSentEvent.Data.JsonDecode<TornadoThread>();
 
                     if (thread is not null && eventHandler.OnThreadStatusChanged is not null)
                     {
@@ -418,7 +418,7 @@ public sealed class ThreadsEndpoint : EndpointBase
                 }
                 case RunStreamEventTypeObject.Run:
                 {
-                    TornadoRun? run = runStreamEvent.Data.JsonDecode<TornadoRun>();
+                    TornadoRun? run = serverSentEvent.Data.JsonDecode<TornadoRun>();
 
                     if (run is not null && eventHandler.OnRunStatusChanged is not null)
                     {
@@ -431,7 +431,7 @@ public sealed class ThreadsEndpoint : EndpointBase
                 {
                     if (status is RunStreamEventTypeStatus.Delta)
                     {
-                        RunStepDelta? delta = runStreamEvent.Data.JsonDecode<RunStepDelta>();
+                        RunStepDelta? delta = serverSentEvent.Data.JsonDecode<RunStepDelta>();
 
                         if (delta is not null && eventHandler.OnRunStepDelta is not null)
                         {
@@ -440,7 +440,7 @@ public sealed class ThreadsEndpoint : EndpointBase
                     }
                     else
                     {
-                        TornadoRunStep? runStep = runStreamEvent.Data.JsonDecode<TornadoRunStep>();
+                        TornadoRunStep? runStep = serverSentEvent.Data.JsonDecode<TornadoRunStep>();
 
                         if (runStep is not null && eventHandler.OnRunStepStatusChanged is not null)
                         {
@@ -454,7 +454,7 @@ public sealed class ThreadsEndpoint : EndpointBase
                 {
                     if (status is RunStreamEventTypeStatus.Delta)
                     {
-                        MessageDelta? delta = runStreamEvent.Data.JsonDecode<MessageDelta>();
+                        MessageDelta? delta = serverSentEvent.Data.JsonDecode<MessageDelta>();
 
                         if (delta is not null && eventHandler.OnMessageDelta is not null)
                         {
@@ -463,7 +463,7 @@ public sealed class ThreadsEndpoint : EndpointBase
                     }
                     else
                     {
-                        AssistantMessage? message = JsonConvert.DeserializeObject<AssistantMessage>(runStreamEvent.Data);
+                        AssistantMessage? message = JsonConvert.DeserializeObject<AssistantMessage>(serverSentEvent.Data);
 
                         if (message is not null && eventHandler.OnMessageStatusChanged is not null)
                         {
@@ -477,7 +477,7 @@ public sealed class ThreadsEndpoint : EndpointBase
                 {
                     if (eventHandler.OnErrorReceived is not null)
                     {
-                        await eventHandler.OnErrorReceived.Invoke(runStreamEvent.Data);
+                        await eventHandler.OnErrorReceived.Invoke(serverSentEvent.Data);
                     }
                     
                     break;
@@ -496,7 +496,7 @@ public sealed class ThreadsEndpoint : EndpointBase
                 {
                     if (eventHandler.OnUnknownEventReceived is not null)
                     {
-                        await eventHandler.OnUnknownEventReceived.Invoke(runStreamEvent.EventType, runStreamEvent.Data);
+                        await eventHandler.OnUnknownEventReceived.Invoke(serverSentEvent.EventType, serverSentEvent.Data);
                     }
                     
                     break;
@@ -554,7 +554,7 @@ public sealed class ThreadsEndpoint : EndpointBase
             
             if (provider is OpenAiEndpointProvider oaiProvider && tornadoStreamRequest.StreamReader is not null)
             {
-                await foreach (RunStreamEvent runStreamEvent in oaiProvider.InboundStream(tornadoStreamRequest.StreamReader).WithCancellation(cancellationToken))
+                await foreach (ServerSentEvent runStreamEvent in oaiProvider.InboundStream(tornadoStreamRequest.StreamReader).WithCancellation(cancellationToken))
                 {
                     await HandleOpenAiStreamEvent(eventHandler, runStreamEvent);
                 }

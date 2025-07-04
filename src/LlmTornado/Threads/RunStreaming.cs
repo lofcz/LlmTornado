@@ -9,9 +9,9 @@ using LlmTornado.Common;
 namespace LlmTornado.Threads;
 
 /// <summary>
-/// See: https://platform.openai.com/docs/api-reference/assistants-streaming/events
+/// SSE.
 /// </summary>
-public class RunStreamEvent
+public class ServerSentEvent
 {
     public string EventType { get; set; } = null!;
     public string Data { get; set; } = null!;

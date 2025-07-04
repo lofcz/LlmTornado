@@ -459,16 +459,4 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
             yield return JsonConvert.DeserializeObject<T>(item.Data);
         }
     }
-    
-    public async IAsyncEnumerable<RunStreamEvent> InboundStream(StreamReader reader)
-    {
-        await foreach (SseItem<string> item in SseParser.Create(reader.BaseStream).EnumerateAsync())
-        {
-            yield return new RunStreamEvent
-            {
-                Data = item.Data,
-                EventType = item.EventType
-            };
-        }
-    }
 }

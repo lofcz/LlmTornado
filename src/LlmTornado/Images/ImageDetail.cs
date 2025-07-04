@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Runtime.Serialization;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace LlmTornado.Images;
 
 /// <summary>
 ///     Represents available response formats for image generation endpoints
 /// </summary>
+[JsonConverter(typeof(StringEnumConverter))]
 public enum ImageDetail
 {
     /// <summary>

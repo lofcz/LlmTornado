@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Converters;
@@ -21,6 +22,17 @@ public interface IResponseOutputItem
 /// Interface for all output content types.
 /// </summary>
 public interface IOutputContent
+{
+    /// <summary>
+    /// The type of the content part.
+    /// </summary>
+    string Type { get; }
+}
+
+/// <summary>
+/// Interface for all response content part types.
+/// </summary>
+public interface IResponseContentPart
 {
     /// <summary>
     /// The type of the content part.
@@ -90,6 +102,55 @@ public class RefusalContent : IOutputContent
 }
 
 /// <summary>
+/// Response content part for output text from the model.
+/// </summary>
+public class ResponseContentPartOutputText : IResponseContentPart
+{
+    /// <summary>
+    /// The type of the content part. Always "output_text".
+    /// </summary>
+    [JsonProperty("type")]
+    public string Type { get; set; } = "output_text";
+
+    /// <summary>
+    /// The text output from the model.
+    /// </summary>
+    [JsonProperty("text")]
+    public string Text { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The annotations of the text output.
+    /// </summary>
+    [JsonProperty("annotations")]
+    [JsonConverter(typeof(OutputContentAnnotationListConverter))]
+    public List<IResponseOutputContentAnnotation>? Annotations { get; set; }
+
+    /// <summary>
+    /// Log probability objects for output tokens.
+    /// </summary>
+    [JsonProperty("logprobs")]
+    public List<LogProbProperties>? Logprobs { get; set; }
+}
+
+/// <summary>
+/// Response content part for refusal from the model.
+/// </summary>
+public class ResponseContentPartRefusal : IResponseContentPart
+{
+    /// <summary>
+    /// The type of the content part. Always "refusal".
+    /// </summary>
+    [JsonProperty("type")]
+    public string Type { get; set; } = "refusal";
+
+    /// <summary>
+    /// The refusal explanation from the model.
+    /// </summary>
+    [JsonProperty("refusal")]
+    public string Refusal { get; set; } = string.Empty;
+}
+
+/// <summary>
 /// Custom JsonConverter for List<IOutputContent>.
 /// </summary>
 internal class OutputContentListConverter : JsonConverter<List<IOutputContent>>
@@ -125,12 +186,18 @@ internal class OutputContentListConverter : JsonConverter<List<IOutputContent>>
 /// <summary>
 /// Status of an output message or tool call.
 /// </summary>
+[JsonConverter(typeof(StringEnumConverter))]
 public enum OutputItemStatus
 {
+    [EnumMember(Value = "in_progress")]
     InProgress,
+    [EnumMember(Value = "searching")]
     Searching,
+    [EnumMember(Value = "completed")]
     Completed,
+    [EnumMember(Value = "incomplete")]
     Incomplete,
+    [EnumMember(Value = "failed")]
     Failed
 }
 
@@ -384,10 +451,21 @@ public class ComputerToolCallItem : IResponseOutputItem
     /// </summary>
     public class ComputerToolCallSafetyCheck
     {
+        /// <summary>
+        /// The ID of the pending safety check.
+        /// </summary>
         [JsonProperty("id")]
         public string Id { get; set; } = string.Empty;
+        
+        /// <summary>
+        /// The type of the pending safety check.
+        /// </summary>
         [JsonProperty("code")]
         public string Code { get; set; } = string.Empty;
+        
+        /// <summary>
+        /// Details about the pending safety check.
+        /// </summary>
         [JsonProperty("message")]
         public string Message { get; set; } = string.Empty;
     }
@@ -409,12 +487,27 @@ public interface IComputerAction
 /// </summary>
 public class ClickAction : IComputerAction
 {
+    /// <summary>
+    /// Specifies the event type. For a click action, this property is always set to "click".
+    /// </summary>
     [JsonProperty("type")]
     public string Type { get; set; } = "click";
+    
+    /// <summary>
+    /// Indicates which mouse button was pressed during the click. One of "left", "right", "wheel", "back", or "forward".
+    /// </summary>
     [JsonProperty("button")]
     public string Button { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// The x-coordinate where the click occurred.
+    /// </summary>
     [JsonProperty("x")]
     public int X { get; set; }
+    
+    /// <summary>
+    /// The y-coordinate where the click occurred.
+    /// </summary>
     [JsonProperty("y")]
     public int Y { get; set; }
 }
@@ -424,10 +517,21 @@ public class ClickAction : IComputerAction
 /// </summary>
 public class DoubleClickAction : IComputerAction
 {
+    /// <summary>
+    /// Specifies the event type. For a double click action, this property is always set to "double_click".
+    /// </summary>
     [JsonProperty("type")]
     public string Type { get; set; } = "double_click";
+    
+    /// <summary>
+    /// The x-coordinate where the double click occurred.
+    /// </summary>
     [JsonProperty("x")]
     public int X { get; set; }
+    
+    /// <summary>
+    /// The y-coordinate where the double click occurred.
+    /// </summary>
     [JsonProperty("y")]
     public int Y { get; set; }
 }
@@ -437,8 +541,15 @@ public class DoubleClickAction : IComputerAction
 /// </summary>
 public class DragAction : IComputerAction
 {
+    /// <summary>
+    /// Specifies the event type. For a drag action, this property is always set to "drag".
+    /// </summary>
     [JsonProperty("type")]
     public string Type { get; set; } = "drag";
+    
+    /// <summary>
+    /// An array of coordinates representing the path of the drag action. Coordinates will appear as an array of objects, eg [{ x: 100, y: 200 }, { x: 200, y: 300 }]
+    /// </summary>
     [JsonProperty("path")]
     public List<Coordinate> Path { get; set; } = new();
 
@@ -447,11 +558,138 @@ public class DragAction : IComputerAction
     /// </summary>
     public class Coordinate
     {
+        /// <summary>
+        /// The x-coordinate.
+        /// </summary>
         [JsonProperty("x")]
         public int X { get; set; }
+        
+        /// <summary>
+        /// The y-coordinate.
+        /// </summary>
         [JsonProperty("y")]
         public int Y { get; set; }
     }
+}
+
+/// <summary>
+/// A collection of keypresses the model would like to perform.
+/// </summary>
+public class KeyPressAction : IComputerAction
+{
+    /// <summary>
+    /// Specifies the event type. For a keypress action, this property is always set to "keypress".
+    /// </summary>
+    [JsonProperty("type")]
+    public string Type { get; set; } = "keypress";
+    
+    /// <summary>
+    /// The combination of keys the model is requesting to be pressed. This is an array of strings, each representing a key.
+    /// </summary>
+    [JsonProperty("keys")]
+    public List<string> Keys { get; set; } = new();
+}
+
+/// <summary>
+/// A mouse move action.
+/// </summary>
+public class MoveAction : IComputerAction
+{
+    /// <summary>
+    /// Specifies the event type. For a move action, this property is always set to "move".
+    /// </summary>
+    [JsonProperty("type")]
+    public string Type { get; set; } = "move";
+    
+    /// <summary>
+    /// The x-coordinate to move to.
+    /// </summary>
+    [JsonProperty("x")]
+    public int X { get; set; }
+    
+    /// <summary>
+    /// The y-coordinate to move to.
+    /// </summary>
+    [JsonProperty("y")]
+    public int Y { get; set; }
+}
+
+/// <summary>
+/// A screenshot action.
+/// </summary>
+public class ScreenshotAction : IComputerAction
+{
+    /// <summary>
+    /// Specifies the event type. For a screenshot action, this property is always set to "screenshot".
+    /// </summary>
+    [JsonProperty("type")]
+    public string Type { get; set; } = "screenshot";
+}
+
+/// <summary>
+/// A scroll action.
+/// </summary>
+public class ScrollAction : IComputerAction
+{
+    /// <summary>
+    /// Specifies the event type. For a scroll action, this property is always set to "scroll".
+    /// </summary>
+    [JsonProperty("type")]
+    public string Type { get; set; } = "scroll";
+    
+    /// <summary>
+    /// The x-coordinate where the scroll occurred.
+    /// </summary>
+    [JsonProperty("x")]
+    public int X { get; set; }
+    
+    /// <summary>
+    /// The y-coordinate where the scroll occurred.
+    /// </summary>
+    [JsonProperty("y")]
+    public int Y { get; set; }
+    
+    /// <summary>
+    /// The horizontal scroll distance.
+    /// </summary>
+    [JsonProperty("scroll_x")]
+    public int ScrollX { get; set; }
+    
+    /// <summary>
+    /// The vertical scroll distance.
+    /// </summary>
+    [JsonProperty("scroll_y")]
+    public int ScrollY { get; set; }
+}
+
+/// <summary>
+/// An action to type in text.
+/// </summary>
+public class TypeAction : IComputerAction
+{
+    /// <summary>
+    /// Specifies the event type. For a type action, this property is always set to "type".
+    /// </summary>
+    [JsonProperty("type")]
+    public string Type { get; set; } = "type";
+    
+    /// <summary>
+    /// The text to type.
+    /// </summary>
+    [JsonProperty("text")]
+    public string Text { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// A wait action.
+/// </summary>
+public class WaitAction : IComputerAction
+{
+    /// <summary>
+    /// Specifies the event type. For a wait action, this property is always set to "wait".
+    /// </summary>
+    [JsonProperty("type")]
+    public string Type { get; set; } = "wait";
 }
 
 /// <summary>
@@ -492,8 +730,15 @@ public class ReasoningItem : IResponseOutputItem
     /// </summary>
     public class ReasoningSummaryText
     {
+        /// <summary>
+        /// The type of the object. Always "summary_text".
+        /// </summary>
         [JsonProperty("type")]
         public string Type { get; set; } = "summary_text";
+        
+        /// <summary>
+        /// A short summary of the reasoning used by the model when generating the response.
+        /// </summary>
         [JsonProperty("text")]
         public string Text { get; set; } = string.Empty;
     }
@@ -584,8 +829,15 @@ public interface ICodeInterpreterOutput
 /// </summary>
 public class CodeInterpreterOutputLogs : ICodeInterpreterOutput
 {
+    /// <summary>
+    /// The type of the output. Always "logs".
+    /// </summary>
     [JsonProperty("type")]
     public string Type { get; set; } = "logs";
+    
+    /// <summary>
+    /// The logs output from the code interpreter.
+    /// </summary>
     [JsonProperty("logs")]
     public string Logs { get; set; } = string.Empty;
 }
@@ -595,8 +847,15 @@ public class CodeInterpreterOutputLogs : ICodeInterpreterOutput
 /// </summary>
 public class CodeInterpreterOutputImage : ICodeInterpreterOutput
 {
+    /// <summary>
+    /// The type of the output. Always "image".
+    /// </summary>
     [JsonProperty("type")]
     public string Type { get; set; } = "image";
+    
+    /// <summary>
+    /// The URL of the image output from the code interpreter.
+    /// </summary>
     [JsonProperty("url")]
     public string Url { get; set; } = string.Empty;
 }
@@ -662,16 +921,39 @@ public class LocalShellToolCallItem : IResponseOutputItem
 /// </summary>
 public class LocalShellExecAction
 {
+    /// <summary>
+    /// The type of the local shell action. Always "exec".
+    /// </summary>
     [JsonProperty("type")]
     public string Type { get; set; } = "exec";
+    
+    /// <summary>
+    /// The command to run.
+    /// </summary>
     [JsonProperty("command")]
     public List<string> Command { get; set; } = new();
+    
+    /// <summary>
+    /// Optional timeout in milliseconds for the command.
+    /// </summary>
     [JsonProperty("timeout_ms")]
     public int? TimeoutMs { get; set; }
+    
+    /// <summary>
+    /// Optional working directory to run the command in.
+    /// </summary>
     [JsonProperty("working_directory")]
     public string? WorkingDirectory { get; set; }
+    
+    /// <summary>
+    /// Environment variables to set for the command.
+    /// </summary>
     [JsonProperty("env")]
     public Dictionary<string, string> Env { get; set; } = new();
+    
+    /// <summary>
+    /// Optional user to run the command as.
+    /// </summary>
     [JsonProperty("user")]
     public string? User { get; set; }
 }
@@ -684,16 +966,40 @@ public class McpToolCallItem : IResponseOutputItem
     /// <inheritdoc/>
     [JsonProperty("type")]
     public string Type { get; set; } = "mcp_call";
+    
+    /// <summary>
+    /// The unique ID of the tool call.
+    /// </summary>
     [JsonProperty("id")]
     public string Id { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// The label of the MCP server running the tool.
+    /// </summary>
     [JsonProperty("server_label")]
     public string ServerLabel { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// The name of the tool that was run.
+    /// </summary>
     [JsonProperty("name")]
     public string Name { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// A JSON string of the arguments passed to the tool.
+    /// </summary>
     [JsonProperty("arguments")]
     public string Arguments { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// The output from the tool call.
+    /// </summary>
     [JsonProperty("output")]
     public string? Output { get; set; }
+    
+    /// <summary>
+    /// The error from the tool call, if any.
+    /// </summary>
     [JsonProperty("error")]
     public string? Error { get; set; }
 }
@@ -706,12 +1012,28 @@ public class McpListToolsItem : IResponseOutputItem
     /// <inheritdoc/>
     [JsonProperty("type")]
     public string Type { get; set; } = "mcp_list_tools";
+    
+    /// <summary>
+    /// The unique ID of the list.
+    /// </summary>
     [JsonProperty("id")]
     public string Id { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// The label of the MCP server.
+    /// </summary>
     [JsonProperty("server_label")]
     public string ServerLabel { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// The tools available on the server.
+    /// </summary>
     [JsonProperty("tools")]
     public List<McpListToolsTool> Tools { get; set; } = new();
+    
+    /// <summary>
+    /// Error message if the server could not list tools.
+    /// </summary>
     [JsonProperty("error")]
     public string? Error { get; set; }
 
@@ -720,12 +1042,27 @@ public class McpListToolsItem : IResponseOutputItem
     /// </summary>
     public class McpListToolsTool
     {
+        /// <summary>
+        /// The name of the tool.
+        /// </summary>
         [JsonProperty("name")]
         public string Name { get; set; } = string.Empty;
+        
+        /// <summary>
+        /// The description of the tool.
+        /// </summary>
         [JsonProperty("description")]
         public string? Description { get; set; }
+        
+        /// <summary>
+        /// The JSON schema describing the tool's input.
+        /// </summary>
         [JsonProperty("input_schema")]
         public object InputSchema { get; set; } = new();
+        
+        /// <summary>
+        /// Additional annotations about the tool.
+        /// </summary>
         [JsonProperty("annotations")]
         public object? Annotations { get; set; }
     }
@@ -739,14 +1076,67 @@ public class McpApprovalRequestItem : IResponseOutputItem
     /// <inheritdoc/>
     [JsonProperty("type")]
     public string Type { get; set; } = "mcp_approval_request";
+    
+    /// <summary>
+    /// The unique ID of the approval request.
+    /// </summary>
     [JsonProperty("id")]
     public string Id { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// The label of the MCP server making the request.
+    /// </summary>
     [JsonProperty("server_label")]
     public string ServerLabel { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// The name of the tool to run.
+    /// </summary>
     [JsonProperty("name")]
     public string Name { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// A JSON string of arguments for the tool.
+    /// </summary>
     [JsonProperty("arguments")]
     public string Arguments { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Custom JsonConverter for IResponseOutputItem that handles the oneOf structure.
+/// </summary>
+internal class ResponseOutputItemConverter : JsonConverter<IResponseOutputItem>
+{
+    public override void WriteJson(JsonWriter writer, IResponseOutputItem? value, JsonSerializer serializer)
+    {
+        serializer.Serialize(writer, value);
+    }
+
+    public override IResponseOutputItem? ReadJson(JsonReader reader, Type objectType, IResponseOutputItem? existingValue, bool hasExistingValue, JsonSerializer serializer)
+    {
+        if (reader.TokenType == JsonToken.Null)
+            return null;
+
+        JObject jsonObject = JObject.Load(reader);
+        string? type = jsonObject["type"]?.ToString();
+
+        return type switch
+        {
+            "message" => jsonObject.ToObject<OutputMessageItem>(serializer),
+            "file_search_call" => jsonObject.ToObject<FileSearchToolCallItem>(serializer),
+            "function_call" => jsonObject.ToObject<FunctionToolCallItem>(serializer),
+            "web_search_call" => jsonObject.ToObject<WebSearchToolCallItem>(serializer),
+            "computer_call" => jsonObject.ToObject<ComputerToolCallItem>(serializer),
+            "reasoning" => jsonObject.ToObject<ReasoningItem>(serializer),
+            "image_generation_call" => jsonObject.ToObject<ImageGenToolCallItem>(serializer),
+            "code_interpreter_call" => jsonObject.ToObject<CodeInterpreterToolCallItem>(serializer),
+            "local_shell_call" => jsonObject.ToObject<LocalShellToolCallItem>(serializer),
+            "mcp_call" => jsonObject.ToObject<McpToolCallItem>(serializer),
+            "mcp_list_tools" => jsonObject.ToObject<McpListToolsItem>(serializer),
+            "mcp_approval_request" => jsonObject.ToObject<McpApprovalRequestItem>(serializer),
+            _ => null
+        };
+    }
 }
 
 /// <summary>
@@ -829,12 +1219,44 @@ internal class ComputerActionConverter : JsonConverter<IComputerAction>
             "click" => jo.ToObject<ClickAction>(serializer),
             "double_click" => jo.ToObject<DoubleClickAction>(serializer),
             "drag" => jo.ToObject<DragAction>(serializer),
-            // Add other ComputerAction types as needed
+            "keypress" => jo.ToObject<KeyPressAction>(serializer),
+            "move" => jo.ToObject<MoveAction>(serializer),
+            "screenshot" => jo.ToObject<ScreenshotAction>(serializer),
+            "scroll" => jo.ToObject<ScrollAction>(serializer),
+            "type" => jo.ToObject<TypeAction>(serializer),
+            "wait" => jo.ToObject<WaitAction>(serializer),
             _ => throw new JsonSerializationException($"Unknown computer action type: {type}")
         };
     }
     public override void WriteJson(JsonWriter writer, IComputerAction? value, JsonSerializer serializer)
     {
         serializer.Serialize(writer, value);
+    }
+}
+
+/// <summary>
+/// Custom JsonConverter for IResponseContentPart that handles the oneOf structure.
+/// </summary>
+internal class ResponseContentPartConverter : JsonConverter<IResponseContentPart>
+{
+    public override void WriteJson(JsonWriter writer, IResponseContentPart? value, JsonSerializer serializer)
+    {
+        serializer.Serialize(writer, value);
+    }
+
+    public override IResponseContentPart? ReadJson(JsonReader reader, Type objectType, IResponseContentPart? existingValue, bool hasExistingValue, JsonSerializer serializer)
+    {
+        if (reader.TokenType == JsonToken.Null)
+            return null;
+
+        JObject jsonObject = JObject.Load(reader);
+        string? type = jsonObject["type"]?.ToString();
+
+        return type switch
+        {
+            "output_text" => jsonObject.ToObject<ResponseContentPartOutputText>(serializer),
+            "refusal" => jsonObject.ToObject<ResponseContentPartRefusal>(serializer),
+            _ => null
+        };
     }
 } 

@@ -54,12 +54,12 @@ public class ResponseRequest
     {
         get
         {
-            if (InputString is not null)
+            if (InputItems?.Count > 0)
             {
-                return InputString;
+                return InputItems;
             }
             
-            return InputItems is { Count: > 0 } ? InputItems : null;
+            return InputString;
         }
     }
 
