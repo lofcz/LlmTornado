@@ -32,7 +32,7 @@ public abstract class ResponseOutputItemEventBase : IResponsesEvent
     /// The output item that was added or completed.
     /// </summary>
     [JsonProperty("item")]
-    [Newtonsoft.Json.JsonConverter(typeof(ResponseOutputItemConverter))]
+    [JsonConverter(typeof(ResponseOutputItemConverter))]
     public IResponseOutputItem Item { get; set; } = null!;
 
     /// <summary>

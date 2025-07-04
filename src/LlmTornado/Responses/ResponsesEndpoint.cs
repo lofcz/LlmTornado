@@ -165,6 +165,19 @@ public class ResponsesEndpoint : EndpointBase
     }
 
     /// <summary>
+    /// Creates a new session.
+    /// </summary>
+    public ResponsesSession CreateSession(ResponseRequest request, ResponseStreamEventHandler eventsHandler)
+    {
+        return new ResponsesSession
+        {
+            Request = request,
+            Endpoint = this,
+            EventsHandler = eventsHandler
+        };
+    }
+
+    /// <summary>
     ///     Stream Realtime API events as they arrive, using the provided event handler to process each event type.
     /// </summary>
     /// <param name="request">The request to send to the API.</param>
@@ -177,7 +190,7 @@ public class ResponsesEndpoint : EndpointBase
         IEndpointProvider provider = Api.GetProvider(request.Model ?? ChatModel.OpenAi.Gpt35.Turbo);
         TornadoRequestContent requestBody = request.Serialize(provider);
         request.Stream = streamOption;
-        
+
         await using TornadoStreamRequest tornadoStreamRequest = await HttpStreamingRequestData(provider, Endpoint, requestBody.Url, queryParams: null, HttpVerbs.Post, requestBody.Body, request.Model, token);
 
         if (tornadoStreamRequest.Exception is not null)
@@ -193,23 +206,29 @@ public class ResponsesEndpoint : EndpointBase
                 {
                     continue;
                 }
-
-                // Call OnSse first for debugging purposes
+                
                 if (eventsHandler.OnSse != null)
                 {
                     await eventsHandler.OnSse(runStreamEvent);
                 }
 
                 string type = runStreamEvent.EventType;
+                
                 if (EventTypeToEnum.TryGetValue(type, out ResponseEventTypes eventType))
                 {
-                    // Call generic handler first
-                    if (eventsHandler.OnEvent != null)
+                    if (eventsHandler.OnEvent is not null || eventType is ResponseEventTypes.ResponseCompleted)
                     {
-                        // We need to deserialize to the correct type based on the enum
-                        var evt = DeserializeEvent(runStreamEvent.Data, eventType);
-                        if (evt != null)
+                        if (eventType is ResponseEventTypes.ResponseCompleted)
+                        {
+                            // int z = 0;
+                        }
+                        
+                        IResponsesEvent? evt = DeserializeEvent(runStreamEvent.Data, eventType);
+                        
+                        if (evt is not null && eventsHandler.OnEvent is not null)
+                        {
                             await eventsHandler.OnEvent(evt);
+                        }
                     }
                     
                     // Call specific handler based on event type enum

@@ -161,7 +161,7 @@ public class ResponseResult
     /// An array of tools the model may call while generating a response. You can specify which tool to use by setting the tool_choice parameter.
     /// </summary>
     [JsonProperty("tools")]
-    public List<Tool>? Tools { get; set; }
+    public List<ResponseTool>? Tools { get; set; }
 
     /// <summary>
     /// An integer between 0 and 20 specifying the number of most likely tokens to return at each token position, each with an associated log probability.

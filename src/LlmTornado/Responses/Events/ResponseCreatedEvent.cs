@@ -1,4 +1,4 @@
-using LlmTornado.Responses.Events;
+using LlmTornado.Responses;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Responses.Events;
@@ -6,17 +6,29 @@ namespace LlmTornado.Responses.Events;
 /// <summary>
 /// Event emitted when a response is created.
 /// </summary>
-public class ResponseCreatedEvent : ResponseInProgressEvent
+public class ResponseCreatedEvent : IResponsesEvent
 {
     /// <summary>
     /// The type of the event. Always "response.created".
     /// </summary>
     [JsonProperty("type")]
-    public override string Type { get; set; } = "response.created";
+    public string Type { get; set; } = "response.created";
+
+    /// <summary>
+    /// The sequence number of this event.
+    /// </summary>
+    [JsonProperty("sequence_number")]
+    public int SequenceNumber { get; set; }
+
+    /// <summary>
+    /// The full response object returned by the API.
+    /// </summary>
+    [JsonProperty("response")]
+    public ResponseResult Response { get; set; } = null!;
 
     /// <summary>
     /// The type of this response event.
     /// </summary>
     [JsonIgnore]
-    public override ResponseEventTypes EventType => ResponseEventTypes.ResponseCreated;
+    public ResponseEventTypes EventType => ResponseEventTypes.ResponseCreated;
 } 
