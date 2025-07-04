@@ -111,10 +111,11 @@ public class ResponsesDemo : DemoBase
         });
 
         await session.StreamResponseRich();
-        
-        session.Request.InputItems = [
+
+        session.Request.InputItems =
+        [
             new ResponseInputMessage()
-        ]
+        ];
         
         int z = 0;
         await session.StreamResponseRich();
