@@ -44,7 +44,7 @@ public class ResponseReasoningSummaryPartAddedEvent : IResponsesEvent
     /// The summary part that was added.
     /// </summary>
     [JsonProperty("part")]
-    public ReasoningSummaryPart Part { get; set; } = new();
+    public ReasoningSummaryPart Part { get; set; } = new ReasoningSummaryPart();
 
     /// <summary>
     /// The type of this response event.

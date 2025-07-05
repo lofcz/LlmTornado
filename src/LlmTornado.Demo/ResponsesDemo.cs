@@ -1,12 +1,9 @@
-using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
-using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
-using LlmTornado.Common;
+using LlmTornado.Images.Models;
 using LlmTornado.Responses;
 using LlmTornado.Responses.Events;
 using Newtonsoft.Json.Linq;
-
 
 namespace LlmTornado.Demo;
 
@@ -25,8 +22,12 @@ public class ResponsesDemo : DemoBase
                 ResponseIncludeFields.MessageOutputTextLogprobs
             ]
         });
-        
+
+        ResponseOutputMessageItem itm = result.Output.OfType<ResponseOutputMessageItem>().FirstOrDefault();
         Assert.That(result.Output.OfType<ResponseOutputMessageItem>().Count(), Is.EqualTo(1));
+
+        ResponseOutputTextContent? text = itm.Content.OfType<ResponseOutputTextContent>().FirstOrDefault();
+        Console.WriteLine(text.Text);
     }
     
     [TornadoTest]
@@ -200,6 +201,53 @@ public class ResponsesDemo : DemoBase
                 new ResponseCodeInterpreterTool()
             ]
         });
+
+        int z = 0;
+    }
+    
+    [TornadoTest, Flaky("long running")]
+    public static async Task ResponseDeepResearchMcp()
+    {
+        EndpointBase.SetRequestsTimeout(20000);
+        
+        ResponseResult? result = await Program.Connect().Responses.CreateResponse(new ResponseRequest
+        {
+            Model = ChatModel.OpenAi.Gpt41.V41,
+            Background = false,
+            InputItems = [
+                new ResponseInputMessage(ChatMessageRoles.User, "Research detailed information about latest development in the Ukraine war and predict how long will Pokrovsk hold. Create some images describing the situation. Run python code for quantitative analysis. Please send e-mail analysis to EMAIL using the MCP.")
+            ],
+            Tools = [
+                new ResponseWebSearchTool(),
+                new ResponseCodeInterpreterTool(),
+                new ResponseMcpTool
+                {
+                    ServerLabel = "mailgun_mcp",
+                    ServerUrl = "https://mcp.pipedream.net/id/mailgun",
+                    RequireApproval = ResponseMcpRequireApprovalOption.Never
+                },
+                new ResponseImageGenerationTool
+                {
+                    Model = ImageModel.OpenAi.Gpt.V1
+                }
+            ]
+        });
+
+        int z = 0;
+    }
+
+    [TornadoTest, Flaky("only for dev")]
+    public static async Task Deserialize()
+    {
+        string text = await File.ReadAllTextAsync("Static/Json/Sensitive/response1.json");
+        ResponseResult result = text.JsonDecode<ResponseResult>();
+        int z = 0;
+    }
+    
+    [TornadoTest, Flaky("only for dev")]
+    public static async Task ResponseDeepResearchBackgroundGet()
+    {
+        ResponseResult? result = await Program.Connect().Responses.GetResponse("<id>");
 
         int z = 0;
     }

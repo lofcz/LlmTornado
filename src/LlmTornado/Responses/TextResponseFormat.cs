@@ -55,7 +55,7 @@ public class TextResponseFormatJsonSchema : TextResponseFormatConfiguration
     /// The JSON schema object describing the parameters of the function.
     /// </summary>
     [JsonProperty("schema")]
-    public object Schema { get; set; } = new();
+    public object Schema { get; set; } = new object();
 
     /// <summary>
     /// Whether to enable strict schema adherence when generating the output.

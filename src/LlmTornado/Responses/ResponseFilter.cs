@@ -48,7 +48,7 @@ public class ResponseCompoundFilter : ResponseFilter
     /// Array of filters to combine. Items can be ResponseComparisonFilter or ResponseCompoundFilter
     /// </summary>
     [JsonProperty("filters")]
-    public List<ResponseFilter> Filters { get; set; } = new();
+    public List<ResponseFilter> Filters { get; set; } = new List<ResponseFilter>();
 
     /// <summary>
     /// Type of operation: 'and' or 'or'
@@ -126,7 +126,7 @@ public class ResponseFilterConverter : JsonConverter<ResponseFilter>
 {
     public override ResponseFilter? ReadJson(JsonReader reader, Type objectType, ResponseFilter? existingValue, bool hasExistingValue, JsonSerializer serializer)
     {
-        var token = JToken.ReadFrom(reader);
+        JToken token = JToken.ReadFrom(reader);
         
         // Check if this is a compound filter (has "filters" property) or comparison filter (has "key" property)
         if (token["filters"] != null)
@@ -151,7 +151,7 @@ public class ResponseFilterConverter : JsonConverter<ResponseFilter>
             return;
         }
 
-        var token = JToken.FromObject(value, serializer);
+        JToken token = JToken.FromObject(value, serializer);
         token.WriteTo(writer);
     }
 }

@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
 using LlmTornado.Common;
+using LlmTornado.Images;
+using LlmTornado.Images.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
@@ -218,26 +220,333 @@ public class ResponseComputerUseTool : ResponseTool
 }
 
 /// <summary>
-/// Represents an MCP tool (remote Model Context Protocol server).
+/// Represents an MCP (Model Context Protocol) tool.
 /// </summary>
 public class ResponseMcpTool : ResponseTool
 {
+    /// <summary>
+    /// The type of the MCP tool. Always "mcp".
+    /// </summary>
+    [JsonIgnore]
     public override string Type => "mcp";
 
+    /// <summary>
+    /// A label for this MCP server, used to identify it in tool calls.
+    /// </summary>
     [JsonProperty("server_label")]
-    public string? ServerLabel { get; set; }
+    public string ServerLabel { get; set; }
 
+    /// <summary>
+    /// The URL for the MCP server.
+    /// </summary>
     [JsonProperty("server_url")]
-    public string? ServerUrl { get; set; }
+    public string ServerUrl { get; set; }
 
+    /// <summary>
+    /// List of allowed tool names or a filter object.
+    /// </summary>
     [JsonProperty("allowed_tools")]
-    public List<string>? AllowedTools { get; set; }
+    [JsonConverter(typeof(ResponseMcpAllowedToolsConverter))]
+    public ResponseMcpAllowedTools? AllowedTools { get; set; }
 
+    /// <summary>
+    /// Optional HTTP headers to send to the MCP server. Use for authentication or other purposes.
+    /// </summary>
     [JsonProperty("headers")]
     public JObject? Headers { get; set; }
 
+    /// <summary>
+    /// Specify which of the MCP server's tools require approval.<br/>
+    /// Either a filter or <c>ResponseMcpRequireApprovalOption.Never</c> / <c>ResponseMcpRequireApprovalOption.Always</c>
+    /// </summary>
     [JsonProperty("require_approval")]
-    public bool? RequireApproval { get; set; }
+    public ResponseMcpRequireApproval? RequireApproval { get; set; }
+}
+
+/// <summary>
+/// Base class for MCP allowed tools configuration
+/// </summary>
+public abstract class ResponseMcpAllowedTools
+{
+}
+
+/// <summary>
+/// A simple array of allowed tool names
+/// </summary>
+public class ResponseMcpAllowedToolsArray : ResponseMcpAllowedTools
+{
+    /// <summary>
+    /// List of allowed tool names
+    /// </summary>
+    public List<string> ToolNames { get; set; } = new List<string>();
+
+    public ResponseMcpAllowedToolsArray() { }
+
+    public ResponseMcpAllowedToolsArray(List<string> toolNames)
+    {
+        ToolNames = toolNames;
+    }
+
+    public static implicit operator ResponseMcpAllowedToolsArray(List<string> toolNames)
+    {
+        return new ResponseMcpAllowedToolsArray(toolNames);
+    }
+
+    public static implicit operator List<string>(ResponseMcpAllowedToolsArray allowedTools)
+    {
+        return allowedTools.ToolNames;
+    }
+}
+
+/// <summary>
+/// A filter object to specify which tools are allowed
+/// </summary>
+public class ResponseMcpAllowedToolsFilter : ResponseMcpAllowedTools
+{
+    /// <summary>
+    /// List of allowed tool names
+    /// </summary>
+    [JsonProperty("tool_names")]
+    public List<string>? ToolNames { get; set; }
+}
+
+/// <summary>
+/// Base class for MCP require approval configuration
+/// </summary>
+[JsonConverter(typeof(ResponseMcpRequireApprovalConverter))]
+public abstract class ResponseMcpRequireApproval
+{
+    /// <summary>
+    /// Implicit conversion from ResponseMcpApprovalPolicy to ResponseMcpRequireApproval
+    /// </summary>
+    public static implicit operator ResponseMcpRequireApproval(ResponseMcpApprovalPolicy policy)
+    {
+        return policy switch
+        {
+            ResponseMcpApprovalPolicy.Always => ResponseMcpRequireApprovalOption.Always,
+            ResponseMcpApprovalPolicy.Never => ResponseMcpRequireApprovalOption.Never,
+            _ => throw new ArgumentException($"Invalid approval policy: {policy}")
+        };
+    }
+}
+
+/// <summary>
+/// Approval policy options for MCP tools
+/// </summary>
+[JsonConverter(typeof(StringEnumConverter))]
+public enum ResponseMcpApprovalPolicy
+{
+    /// <summary>
+    /// All tools require approval
+    /// </summary>
+    [EnumMember(Value = "always")]
+    Always = 1,
+
+    /// <summary>
+    /// No tools require approval
+    /// </summary>
+    [EnumMember(Value = "never")]
+    Never = 2
+}
+
+/// <summary>
+/// Simple option setting for approval policy - "always" or "never"
+/// </summary>
+public class ResponseMcpRequireApprovalOption : ResponseMcpRequireApproval
+{
+    /// <summary>
+    /// Static instance for "always" policy
+    /// </summary>
+    public static readonly ResponseMcpRequireApprovalOption Always = new ResponseMcpRequireApprovalOption(ResponseMcpApprovalPolicy.Always);
+
+    /// <summary>
+    /// Static instance for "never" policy
+    /// </summary>
+    public static readonly ResponseMcpRequireApprovalOption Never = new ResponseMcpRequireApprovalOption(ResponseMcpApprovalPolicy.Never);
+
+    /// <summary>
+    /// The approval policy string value
+    /// </summary>
+    internal ResponseMcpApprovalPolicy PolicyValue { get; }
+
+    private ResponseMcpRequireApprovalOption(ResponseMcpApprovalPolicy value)
+    {
+        PolicyValue = value;
+    }
+
+    public static implicit operator ResponseMcpRequireApprovalOption(ResponseMcpApprovalPolicy policy)
+    {
+        return policy switch
+        {
+            ResponseMcpApprovalPolicy.Always => Always,
+            ResponseMcpApprovalPolicy.Never => Never,
+            _ => throw new ArgumentException($"Invalid approval policy: {policy}")
+        };
+    }
+}
+
+/// <summary>
+/// Object with detailed approval configuration
+/// </summary>
+public class ResponseMcpRequireApprovalFilter : ResponseMcpRequireApproval
+{
+    /// <summary>
+    /// Tools that always require approval
+    /// </summary>
+    [JsonProperty("always")]
+    public ResponseMcpApprovalToolList? Always { get; set; }
+
+    /// <summary>
+    /// Tools that never require approval
+    /// </summary>
+    [JsonProperty("never")]
+    public ResponseMcpApprovalToolList? Never { get; set; }
+}
+
+/// <summary>
+/// List of tools for approval configuration
+/// </summary>
+public class ResponseMcpApprovalToolList
+{
+    /// <summary>
+    /// List of tool names
+    /// </summary>
+    [JsonProperty("tool_names")]
+    public List<string>? ToolNames { get; set; }
+}
+
+/// <summary>
+/// Custom converter for polymorphic deserialization of MCP allowed tools
+/// </summary>
+internal class ResponseMcpAllowedToolsConverter : JsonConverter<ResponseMcpAllowedTools>
+{
+    public override ResponseMcpAllowedTools? ReadJson(JsonReader reader, Type objectType, ResponseMcpAllowedTools? existingValue, bool hasExistingValue, JsonSerializer serializer)
+    {
+        if (reader.TokenType == JsonToken.Null)
+            return null;
+
+        JToken token = JToken.ReadFrom(reader);
+
+        switch (token.Type)
+        {
+            case JTokenType.Array:
+                // It's an array of strings
+                List<string>? toolNames = token.ToObject<List<string>>();
+                return toolNames != null ? new ResponseMcpAllowedToolsArray(toolNames) : null;
+
+            case JTokenType.Object:
+                // It's a filter object
+                return new ResponseMcpAllowedToolsFilter
+                {
+                    ToolNames = token["tool_names"]?.ToObject<List<string>>()
+                };
+
+            default:
+                throw new JsonSerializationException($"Unable to deserialize allowed_tools from token type: {token.Type}");
+        }
+    }
+
+    public override void WriteJson(JsonWriter writer, ResponseMcpAllowedTools? value, JsonSerializer serializer)
+    {
+        if (value == null)
+        {
+            writer.WriteNull();
+            return;
+        }
+
+        switch (value)
+        {
+            case ResponseMcpAllowedToolsArray array:
+                serializer.Serialize(writer, array.ToolNames);
+                break;
+
+            case ResponseMcpAllowedToolsFilter filter:
+                writer.WriteStartObject();
+                if (filter.ToolNames != null)
+                {
+                    writer.WritePropertyName("tool_names");
+                    serializer.Serialize(writer, filter.ToolNames);
+                }
+                writer.WriteEndObject();
+                break;
+
+            default:
+                throw new JsonSerializationException($"Unknown MCP allowed tools type: {value.GetType()}");
+        }
+    }
+}
+
+/// <summary>
+/// Custom converter for polymorphic deserialization of MCP require approval
+/// </summary>
+internal class ResponseMcpRequireApprovalConverter : JsonConverter<ResponseMcpRequireApproval>
+{
+    public override ResponseMcpRequireApproval? ReadJson(JsonReader reader, Type objectType, ResponseMcpRequireApproval? existingValue, bool hasExistingValue, JsonSerializer serializer)
+    {
+        if (reader.TokenType == JsonToken.Null)
+            return null;
+
+        JToken token = JToken.ReadFrom(reader);
+
+        switch (token.Type)
+        {
+            case JTokenType.String:
+                // It's a simple string value
+                string stringValue = token.ToString();
+                return stringValue.ToLowerInvariant() switch
+                {
+                    "always" => ResponseMcpRequireApprovalOption.Always,
+                    "never" => ResponseMcpRequireApprovalOption.Never,
+                    _ => throw new JsonSerializationException($"Invalid approval policy: {stringValue}")
+                };
+
+            case JTokenType.Object:
+                // It's a filter object
+                return new ResponseMcpRequireApprovalFilter
+                {
+                    Always = token["always"]?.ToObject<ResponseMcpApprovalToolList>(),
+                    Never = token["never"]?.ToObject<ResponseMcpApprovalToolList>()
+                };
+
+            default:
+                throw new JsonSerializationException($"Unable to deserialize require_approval from token type: {token.Type}");
+        }
+    }
+
+    public override void WriteJson(JsonWriter writer, ResponseMcpRequireApproval? value, JsonSerializer serializer)
+    {
+        if (value == null)
+        {
+            writer.WriteNull();
+            return;
+        }
+
+        switch (value)
+        {
+            case ResponseMcpRequireApprovalOption optionValue:
+                // Write the string value directly
+                writer.WriteValue(optionValue.PolicyValue);
+                break;
+
+            case ResponseMcpRequireApprovalFilter filter:
+                writer.WriteStartObject();
+                if (filter.Always != null)
+                {
+                    writer.WritePropertyName("always");
+                    serializer.Serialize(writer, filter.Always);
+                }
+                if (filter.Never != null)
+                {
+                    writer.WritePropertyName("never");
+                    serializer.Serialize(writer, filter.Never);
+                }
+                writer.WriteEndObject();
+                break;
+
+            default:
+                throw new JsonSerializationException($"Unknown MCP require approval type: {value.GetType()}");
+        }
+    }
 }
 
 /// <summary>
@@ -245,13 +554,83 @@ public class ResponseMcpTool : ResponseTool
 /// </summary>
 public class ResponseImageGenerationTool : ResponseTool
 {
+    /// <summary>
+    /// The type of the image generation tool. Always "image_generation".
+    /// </summary>
+    [JsonIgnore]
     public override string Type => "image_generation";
 
+    /// <summary>
+    /// Background type for the generated image. One of "transparent", "opaque", or "auto". Default: "auto".
+    /// </summary>
     [JsonProperty("background")]
-    public string? Background { get; set; }
+    public ImageBackgroundTypes? Background { get; set; }
 
+    /// <summary>
+    /// Optional mask for inpainting.
+    /// </summary>
     [JsonProperty("input_image_mask")]
-    public JObject? InputImageMask { get; set; }
+    public ResponseImageMask? InputImageMask { get; set; }
+
+    /// <summary>
+    /// The image generation model to use. Default: "gpt-image-1".
+    /// </summary>
+    [JsonProperty("model")]
+    public ImageModel? Model { get; set; }
+
+    /// <summary>
+    /// Moderation level for the generated image. Default: "auto".
+    /// </summary>
+    [JsonProperty("moderation")]
+    public ImageModerationTypes? Moderation { get; set; }
+
+    /// <summary>
+    /// Compression level for the output image. Default: 100.
+    /// </summary>
+    [JsonProperty("output_compression")]
+    public int? OutputCompression { get; set; }
+
+    /// <summary>
+    /// The output format of the generated image. One of "png", "webp", or "jpeg". Default: "png".
+    /// </summary>
+    [JsonProperty("output_format")]
+    public ImageOutputFormats? OutputFormat { get; set; }
+
+    /// <summary>
+    /// Number of partial images to generate in streaming mode, from 0 (default value) to 3.
+    /// </summary>
+    [JsonProperty("partial_images")]
+    public int? PartialImages { get; set; }
+
+    /// <summary>
+    /// The quality of the generated image. One of "low", "medium", "high", or "auto". Default: "auto".
+    /// </summary>
+    [JsonProperty("quality")]
+    public TornadoImageQualities? Quality { get; set; }
+
+    /// <summary>
+    /// The size of the generated image. One of "1024x1024", "1024x1536", "1536x1024", or "auto". Default: "auto".
+    /// </summary>
+    [JsonProperty("size")]
+    public TornadoImageSizes? Size { get; set; }
+}
+
+/// <summary>
+/// Optional mask for inpainting.
+/// </summary>
+public class ResponseImageMask
+{
+    /// <summary>
+    /// File ID for the mask image.
+    /// </summary>
+    [JsonProperty("file_id")]
+    public string? FileId { get; set; }
+
+    /// <summary>
+    /// Base64-encoded mask image.
+    /// </summary>
+    [JsonProperty("image_url")]
+    public string? ImageUrl { get; set; }
 }
 
 /// <summary>
@@ -326,7 +705,7 @@ public class ResponseCodeInterpreterContainerAuto : ResponseCodeInterpreterConta
 /// <summary>
 /// Custom converter for polymorphic deserialization of code interpreter containers
 /// </summary>
-public class ResponseCodeInterpreterContainerConverter : JsonConverter<ResponseCodeInterpreterContainer>
+internal class ResponseCodeInterpreterContainerConverter : JsonConverter<ResponseCodeInterpreterContainer>
 {
     public override ResponseCodeInterpreterContainer? ReadJson(JsonReader reader, Type objectType, ResponseCodeInterpreterContainer? existingValue, bool hasExistingValue, JsonSerializer serializer)
     {
@@ -376,7 +755,7 @@ public class ResponseCodeInterpreterContainerConverter : JsonConverter<ResponseC
 /// <summary>
 /// Custom converter for polymorphic deserialization of response tools.
 /// </summary>
-public class ResponseToolConverter : JsonConverter
+internal class ResponseToolConverter : JsonConverter
 {
     public override bool CanConvert(Type objectType) => objectType == typeof(ResponseTool);
     public override bool CanWrite => true;
@@ -432,17 +811,29 @@ public class ResponseToolConverter : JsonConverter
             case "image_generation":
                 return new ResponseImageGenerationTool
                 {
-                    Background = (string?)jo["background"],
-                    InputImageMask = (JObject?)jo["input_image_mask"]
+                    Background = jo["background"]?.ToObject<ImageBackgroundTypes>(serializer),
+                    InputImageMask = jo["input_image_mask"]?.ToObject<ResponseImageMask>(serializer),
+                    Model = jo["model"]?.ToString(),
+                    Moderation = jo["moderation"]?.ToObject<ImageModerationTypes>(serializer),
+                    OutputCompression = (int?)jo["output_compression"],
+                    OutputFormat = jo["output_format"]?.ToObject<ImageOutputFormats>(serializer),
+                    PartialImages = (int?)jo["partial_images"],
+                    Quality = jo["quality"]?.ToObject<TornadoImageQualities>(serializer),
+                    Size = jo["size"]?.ToObject<TornadoImageSizes>(serializer)
                 };
             case "mcp":
+                JToken? headersToken = jo["headers"];
+                JObject? headersObject = headersToken != null && headersToken.Type != JTokenType.Null
+                    ? headersToken.ToObject<JObject>(serializer)
+                    : null;
+
                 return new ResponseMcpTool
                 {
                     ServerLabel = (string?)jo["server_label"],
                     ServerUrl = (string?)jo["server_url"],
-                    AllowedTools = jo["allowed_tools"]?.ToObject<List<string>>(serializer),
-                    Headers = (JObject?)jo["headers"],
-                    RequireApproval = (bool?)jo["require_approval"]
+                    AllowedTools = jo["allowed_tools"]?.Type == JTokenType.Null ? null : jo["allowed_tools"]?.ToObject<ResponseMcpAllowedTools>(serializer),
+                    Headers = headersObject,
+                    RequireApproval = jo["require_approval"]?.ToObject<ResponseMcpRequireApproval>(serializer)
                 };
             case "computer_use":
                 return new ResponseComputerUseTool
@@ -537,12 +928,47 @@ public class ResponseToolConverter : JsonConverter
                 if (img.Background != null)
                 {
                     writer.WritePropertyName("background");
-                    writer.WriteValue(img.Background);
+                    serializer.Serialize(writer, img.Background);
                 }
                 if (img.InputImageMask != null)
                 {
                     writer.WritePropertyName("input_image_mask");
                     serializer.Serialize(writer, img.InputImageMask);
+                }
+                if (img.Model != null)
+                {
+                    writer.WritePropertyName("model");
+                    writer.WriteValue(img.Model);
+                }
+                if (img.Moderation != null)
+                {
+                    writer.WritePropertyName("moderation");
+                    serializer.Serialize(writer, img.Moderation);
+                }
+                if (img.OutputCompression != null)
+                {
+                    writer.WritePropertyName("output_compression");
+                    writer.WriteValue(img.OutputCompression);
+                }
+                if (img.OutputFormat != null)
+                {
+                    writer.WritePropertyName("output_format");
+                    serializer.Serialize(writer, img.OutputFormat);
+                }
+                if (img.PartialImages != null)
+                {
+                    writer.WritePropertyName("partial_images");
+                    writer.WriteValue(img.PartialImages);
+                }
+                if (img.Quality != null)
+                {
+                    writer.WritePropertyName("quality");
+                    serializer.Serialize(writer, img.Quality);
+                }
+                if (img.Size != null)
+                {
+                    writer.WritePropertyName("size");
+                    serializer.Serialize(writer, img.Size);
                 }
                 break;
             case ResponseMcpTool mcp:
@@ -571,7 +997,7 @@ public class ResponseToolConverter : JsonConverter
                 if (mcp.RequireApproval != null)
                 {
                     writer.WritePropertyName("require_approval");
-                    writer.WriteValue(mcp.RequireApproval);
+                    serializer.Serialize(writer, mcp.RequireApproval);
                 }
                 break;
             case ResponseComputerUseTool comp:

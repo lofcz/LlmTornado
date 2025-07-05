@@ -146,6 +146,15 @@ public class ResponsesEndpoint : EndpointBase
     protected override CapabilityEndpoints Endpoint => CapabilityEndpoints.Responses;
 
     /// <summary>
+    /// Retrieves a model response with the given ID.
+    /// </summary>
+    public async Task<ResponseResult?> GetResponse(string responseId, CancellationToken cancellationToken = default)
+    {
+        IEndpointProvider provider = Api.GetProvider(LLmProviders.OpenAi);
+        return await HttpGet<ResponseResult>(provider, Endpoint, url: GetUrl(provider, $"/{responseId}"), ct: cancellationToken).ConfigureAwait(false);
+    }
+    
+    /// <summary>
     /// Creates a responses API request.
     /// </summary>
     /// <param name="request">The request</param>
@@ -177,6 +186,9 @@ public class ResponsesEndpoint : EndpointBase
         };
     }
     
+    /// <summary>
+    /// Creates a new session.
+    /// </summary>
     public ResponsesSession CreateSession()
     {
         return new ResponsesSession
@@ -187,6 +199,9 @@ public class ResponsesEndpoint : EndpointBase
         };
     }
     
+    /// <summary>
+    /// Creates a new session.
+    /// </summary>
     public ResponsesSession CreateSession(ResponseStreamEventHandler eventsHandler)
     {
         return new ResponsesSession
