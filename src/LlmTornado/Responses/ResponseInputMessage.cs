@@ -333,7 +333,7 @@ public class OutputMessageInput : ResponseInputItem
     /// The content of the output message.
     /// </summary>
     [JsonProperty("content")]
-    public List<IOutputContent> Content { get; set; } = new();
+    public List<IResponseOutputContent> Content { get; set; } = new();
 
     /// <summary>
     /// The unique ID of the output message.
@@ -355,7 +355,7 @@ public class OutputMessageInput : ResponseInputItem
 
     public OutputMessageInput() { }
 
-    public OutputMessageInput(string id, List<IOutputContent> content, ResponseMessageStatuses status)
+    public OutputMessageInput(string id, List<IResponseOutputContent> content, ResponseMessageStatuses status)
     {
         Id = id;
         Content = content;

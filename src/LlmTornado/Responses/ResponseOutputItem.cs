@@ -21,7 +21,7 @@ public interface IResponseOutputItem
 /// <summary>
 /// Interface for all output content types.
 /// </summary>
-public interface IOutputContent
+public interface IResponseOutputContent
 {
     /// <summary>
     /// The type of the content part.
@@ -70,7 +70,7 @@ public class LogProbProperties
 /// <summary>
 /// Output text content from the model.
 /// </summary>
-public class OutputTextContent : IOutputContent
+public class ResponseOutputTextContent : IResponseOutputContent
 {
     [JsonProperty("type")]
     public string Type { get; set; } = "output_text";
@@ -92,7 +92,7 @@ public class OutputTextContent : IOutputContent
 /// <summary>
 /// Refusal content from the model.
 /// </summary>
-public class RefusalContent : IOutputContent
+public class RefusalContent : IResponseOutputContent
 {
     [JsonProperty("type")]
     public string Type { get; set; } = "refusal";
@@ -153,26 +153,26 @@ public class ResponseContentPartRefusal : IResponseContentPart
 /// <summary>
 /// Custom JsonConverter for List<IOutputContent>.
 /// </summary>
-internal class OutputContentListConverter : JsonConverter<List<IOutputContent>>
+internal class OutputContentListConverter : JsonConverter<List<IResponseOutputContent>>
 {
-    public override void WriteJson(JsonWriter writer, List<IOutputContent>? value, JsonSerializer serializer)
+    public override void WriteJson(JsonWriter writer, List<IResponseOutputContent>? value, JsonSerializer serializer)
     {
         serializer.Serialize(writer, value);
     }
 
-    public override List<IOutputContent>? ReadJson(JsonReader reader, Type objectType, List<IOutputContent>? existingValue, bool hasExistingValue, JsonSerializer serializer)
+    public override List<IResponseOutputContent>? ReadJson(JsonReader reader, Type objectType, List<IResponseOutputContent>? existingValue, bool hasExistingValue, JsonSerializer serializer)
     {
         if (reader.TokenType == JsonToken.Null)
             return null;
 
         JArray array = JArray.Load(reader);
-        List<IOutputContent> result = new List<IOutputContent>();
+        List<IResponseOutputContent> result = new List<IResponseOutputContent>();
         foreach (JToken? token in array)
         {
             string? type = token["type"]?.ToString();
-            IOutputContent? content = type switch
+            IResponseOutputContent? content = type switch
             {
-                "output_text" => token.ToObject<OutputTextContent>(serializer),
+                "output_text" => token.ToObject<ResponseOutputTextContent>(serializer),
                 "refusal" => token.ToObject<RefusalContent>(serializer),
                 _ => null
             };
@@ -187,7 +187,7 @@ internal class OutputContentListConverter : JsonConverter<List<IOutputContent>>
 /// Status of an output message or tool call.
 /// </summary>
 [JsonConverter(typeof(StringEnumConverter))]
-public enum OutputItemStatus
+public enum ResponseOutputItemStatus
 {
     [EnumMember(Value = "in_progress")]
     InProgress,
@@ -204,7 +204,7 @@ public enum OutputItemStatus
 /// <summary>
 /// Output message from the model.
 /// </summary>
-public class OutputMessageItem : IResponseOutputItem
+public class ResponseOutputMessageItem : IResponseOutputItem
 {
     /// <inheritdoc/>
     [JsonProperty("type")]
@@ -227,19 +227,19 @@ public class OutputMessageItem : IResponseOutputItem
     /// </summary>
     [JsonProperty("content")]
     [JsonConverter(typeof(OutputContentListConverter))]
-    public List<IOutputContent> Content { get; set; } = [];
+    public List<IResponseOutputContent> Content { get; set; } = [];
 
     /// <summary>
     /// The status of the message input.
     /// </summary>
     [JsonProperty("status")]
-    public OutputItemStatus Status { get; set; }
+    public ResponseOutputItemStatus Status { get; set; }
 }
 
 /// <summary>
 /// The results of a file search tool call.
 /// </summary>
-public class FileSearchToolCallItem : IResponseOutputItem
+public class ResponseFileSearchToolCallItem : IResponseOutputItem
 {
     /// <inheritdoc/>
     [JsonProperty("type")]
@@ -255,7 +255,7 @@ public class FileSearchToolCallItem : IResponseOutputItem
     /// The status of the file search tool call.
     /// </summary>
     [JsonProperty("status")]
-    public OutputItemStatus Status { get; set; }
+    public ResponseOutputItemStatus Status { get; set; }
 
     /// <summary>
     /// The queries used to search for files.
@@ -290,7 +290,7 @@ public class FileSearchToolCallItem : IResponseOutputItem
 /// <summary>
 /// A tool call to run a function.
 /// </summary>
-public class FunctionToolCallItem : IResponseOutputItem
+public class ResponseFunctionToolCallItem : IResponseOutputItem
 {
     /// <inheritdoc/>
     [JsonProperty("type")]
@@ -324,13 +324,13 @@ public class FunctionToolCallItem : IResponseOutputItem
     /// The status of the item.
     /// </summary>
     [JsonProperty("status")]
-    public OutputItemStatus? Status { get; set; }
+    public ResponseOutputItemStatus? Status { get; set; }
 }
 
 /// <summary>
 /// The results of a web search tool call.
 /// </summary>
-public class WebSearchToolCallItem : IResponseOutputItem
+public class ResponseWebSearchToolCallItem : IResponseOutputItem
 {
     /// <inheritdoc/>
     [JsonProperty("type")]
@@ -346,7 +346,7 @@ public class WebSearchToolCallItem : IResponseOutputItem
     /// The status of the web search tool call.
     /// </summary>
     [JsonProperty("status")]
-    public OutputItemStatus Status { get; set; }
+    public ResponseOutputItemStatus Status { get; set; }
 
     /// <summary>
     /// The action taken in this web search call.
@@ -409,7 +409,7 @@ public class WebSearchActionFind : IWebSearchAction
 /// <summary>
 /// A tool call to a computer use tool.
 /// </summary>
-public class ComputerToolCallItem : IResponseOutputItem
+public class ResponseComputerToolCallItem : IResponseOutputItem
 {
     /// <inheritdoc/>
     [JsonProperty("type")]
@@ -444,7 +444,7 @@ public class ComputerToolCallItem : IResponseOutputItem
     /// The status of the item.
     /// </summary>
     [JsonProperty("status")]
-    public OutputItemStatus Status { get; set; }
+    public ResponseOutputItemStatus Status { get; set; }
 
     /// <summary>
     /// A pending safety check for the computer call.
@@ -695,7 +695,7 @@ public class WaitAction : IComputerAction
 /// <summary>
 /// A description of the chain of thought used by a reasoning model while generating a response.
 /// </summary>
-public class ReasoningItem : IResponseOutputItem
+public class ResponseReasoningItem : IResponseOutputItem
 {
     /// <inheritdoc/>
     [JsonProperty("type")]
@@ -723,7 +723,7 @@ public class ReasoningItem : IResponseOutputItem
     /// The status of the item.
     /// </summary>
     [JsonProperty("status")]
-    public OutputItemStatus Status { get; set; }
+    public ResponseOutputItemStatus Status { get; set; }
 
     /// <summary>
     /// A short summary of the reasoning used by the model when generating the response.
@@ -747,7 +747,7 @@ public class ReasoningItem : IResponseOutputItem
 /// <summary>
 /// An image generation request made by the model.
 /// </summary>
-public class ImageGenToolCallItem : IResponseOutputItem
+public class ResponseImageGenToolCallItem : IResponseOutputItem
 {
     /// <inheritdoc/>
     [JsonProperty("type")]
@@ -763,7 +763,7 @@ public class ImageGenToolCallItem : IResponseOutputItem
     /// The status of the image generation call.
     /// </summary>
     [JsonProperty("status")]
-    public OutputItemStatus Status { get; set; }
+    public ResponseOutputItemStatus Status { get; set; }
 
     /// <summary>
     /// The generated image encoded in base64.
@@ -775,7 +775,7 @@ public class ImageGenToolCallItem : IResponseOutputItem
 /// <summary>
 /// A tool call to run code.
 /// </summary>
-public class CodeInterpreterToolCallItem : IResponseOutputItem
+public class ResponseCodeInterpreterToolCallItem : IResponseOutputItem
 {
     /// <inheritdoc/>
     [JsonProperty("type")]
@@ -791,7 +791,7 @@ public class CodeInterpreterToolCallItem : IResponseOutputItem
     /// The status of the code interpreter tool call.
     /// </summary>
     [JsonProperty("status")]
-    public OutputItemStatus Status { get; set; }
+    public ResponseOutputItemStatus Status { get; set; }
 
     /// <summary>
     /// The ID of the container used to run the code.
@@ -885,7 +885,7 @@ internal class CodeInterpreterOutputConverter : JsonConverter<ICodeInterpreterOu
 /// <summary>
 /// A tool call to run a command on the local shell.
 /// </summary>
-public class LocalShellToolCallItem : IResponseOutputItem
+public class ResponseLocalShellToolCallItem : IResponseOutputItem
 {
     /// <inheritdoc/>
     [JsonProperty("type")]
@@ -913,7 +913,7 @@ public class LocalShellToolCallItem : IResponseOutputItem
     /// The status of the local shell call.
     /// </summary>
     [JsonProperty("status")]
-    public OutputItemStatus Status { get; set; }
+    public ResponseOutputItemStatus Status { get; set; }
 }
 
 /// <summary>
@@ -961,7 +961,7 @@ public class LocalShellExecAction
 /// <summary>
 /// An invocation of a tool on an MCP server.
 /// </summary>
-public class McpToolCallItem : IResponseOutputItem
+public class ResponseMcpToolCallItem : IResponseOutputItem
 {
     /// <inheritdoc/>
     [JsonProperty("type")]
@@ -1007,7 +1007,7 @@ public class McpToolCallItem : IResponseOutputItem
 /// <summary>
 /// A list of tools available on an MCP server.
 /// </summary>
-public class McpListToolsItem : IResponseOutputItem
+public class ResponseMcpListToolsItem : IResponseOutputItem
 {
     /// <inheritdoc/>
     [JsonProperty("type")]
@@ -1071,7 +1071,7 @@ public class McpListToolsItem : IResponseOutputItem
 /// <summary>
 /// A request for human approval of a tool invocation.
 /// </summary>
-public class McpApprovalRequestItem : IResponseOutputItem
+public class ResponseMcpApprovalRequestItem : IResponseOutputItem
 {
     /// <inheritdoc/>
     [JsonProperty("type")]
@@ -1122,18 +1122,18 @@ internal class ResponseOutputItemConverter : JsonConverter<IResponseOutputItem>
 
         return type switch
         {
-            "message" => jsonObject.ToObject<OutputMessageItem>(serializer),
-            "file_search_call" => jsonObject.ToObject<FileSearchToolCallItem>(serializer),
-            "function_call" => jsonObject.ToObject<FunctionToolCallItem>(serializer),
-            "web_search_call" => jsonObject.ToObject<WebSearchToolCallItem>(serializer),
-            "computer_call" => jsonObject.ToObject<ComputerToolCallItem>(serializer),
-            "reasoning" => jsonObject.ToObject<ReasoningItem>(serializer),
-            "image_generation_call" => jsonObject.ToObject<ImageGenToolCallItem>(serializer),
-            "code_interpreter_call" => jsonObject.ToObject<CodeInterpreterToolCallItem>(serializer),
-            "local_shell_call" => jsonObject.ToObject<LocalShellToolCallItem>(serializer),
-            "mcp_call" => jsonObject.ToObject<McpToolCallItem>(serializer),
-            "mcp_list_tools" => jsonObject.ToObject<McpListToolsItem>(serializer),
-            "mcp_approval_request" => jsonObject.ToObject<McpApprovalRequestItem>(serializer),
+            "message" => jsonObject.ToObject<ResponseOutputMessageItem>(serializer),
+            "file_search_call" => jsonObject.ToObject<ResponseFileSearchToolCallItem>(serializer),
+            "function_call" => jsonObject.ToObject<ResponseFunctionToolCallItem>(serializer),
+            "web_search_call" => jsonObject.ToObject<ResponseWebSearchToolCallItem>(serializer),
+            "computer_call" => jsonObject.ToObject<ResponseComputerToolCallItem>(serializer),
+            "reasoning" => jsonObject.ToObject<ResponseReasoningItem>(serializer),
+            "image_generation_call" => jsonObject.ToObject<ResponseImageGenToolCallItem>(serializer),
+            "code_interpreter_call" => jsonObject.ToObject<ResponseCodeInterpreterToolCallItem>(serializer),
+            "local_shell_call" => jsonObject.ToObject<ResponseLocalShellToolCallItem>(serializer),
+            "mcp_call" => jsonObject.ToObject<ResponseMcpToolCallItem>(serializer),
+            "mcp_list_tools" => jsonObject.ToObject<ResponseMcpListToolsItem>(serializer),
+            "mcp_approval_request" => jsonObject.ToObject<ResponseMcpApprovalRequestItem>(serializer),
             _ => null
         };
     }
@@ -1161,18 +1161,18 @@ internal class ResponseOutputItemListConverter : JsonConverter<List<IResponseOut
             string? type = token["type"]?.ToString();
             IResponseOutputItem? item = type switch
             {
-                "message" => token.ToObject<OutputMessageItem>(serializer),
-                "file_search_call" => token.ToObject<FileSearchToolCallItem>(serializer),
-                "function_call" => token.ToObject<FunctionToolCallItem>(serializer),
-                "web_search_call" => token.ToObject<WebSearchToolCallItem>(serializer),
-                "computer_call" => token.ToObject<ComputerToolCallItem>(serializer),
-                "reasoning" => token.ToObject<ReasoningItem>(serializer),
-                "image_generation_call" => token.ToObject<ImageGenToolCallItem>(serializer),
-                "code_interpreter_call" => token.ToObject<CodeInterpreterToolCallItem>(serializer),
-                "local_shell_call" => token.ToObject<LocalShellToolCallItem>(serializer),
-                "mcp_call" => token.ToObject<McpToolCallItem>(serializer),
-                "mcp_list_tools" => token.ToObject<McpListToolsItem>(serializer),
-                "mcp_approval_request" => token.ToObject<McpApprovalRequestItem>(serializer),
+                "message" => token.ToObject<ResponseOutputMessageItem>(serializer),
+                "file_search_call" => token.ToObject<ResponseFileSearchToolCallItem>(serializer),
+                "function_call" => token.ToObject<ResponseFunctionToolCallItem>(serializer),
+                "web_search_call" => token.ToObject<ResponseWebSearchToolCallItem>(serializer),
+                "computer_call" => token.ToObject<ResponseComputerToolCallItem>(serializer),
+                "reasoning" => token.ToObject<ResponseReasoningItem>(serializer),
+                "image_generation_call" => token.ToObject<ResponseImageGenToolCallItem>(serializer),
+                "code_interpreter_call" => token.ToObject<ResponseCodeInterpreterToolCallItem>(serializer),
+                "local_shell_call" => token.ToObject<ResponseLocalShellToolCallItem>(serializer),
+                "mcp_call" => token.ToObject<ResponseMcpToolCallItem>(serializer),
+                "mcp_list_tools" => token.ToObject<ResponseMcpListToolsItem>(serializer),
+                "mcp_approval_request" => token.ToObject<ResponseMcpApprovalRequestItem>(serializer),
                 _ => null
             };
             if (item != null)

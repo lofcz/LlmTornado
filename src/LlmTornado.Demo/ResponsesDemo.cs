@@ -26,7 +26,68 @@ public class ResponsesDemo : DemoBase
             ]
         });
         
-        Assert.That(result.Output.OfType<OutputMessageItem>().Count(), Is.EqualTo(1));
+        Assert.That(result.Output.OfType<ResponseOutputMessageItem>().Count(), Is.EqualTo(1));
+    }
+    
+    [TornadoTest]
+    public static async Task ResponseSimpleTool()
+    {
+        ResponseResult? result = await Program.Connect().Responses.CreateResponse(new ResponseRequest
+        {
+            Model = ChatModel.OpenAi.Gpt41.V41,
+            InputItems =
+            [
+                new ResponseInputMessage(ChatMessageRoles.User, "What is the weather in prague?")
+            ],
+            Tools =
+            [
+                new ResponseFunctionTool
+                {
+                    Name = "get_weather",
+                    Description = "fetches weather in a given city",
+                    Parameters = JObject.FromObject(new
+                    {
+                        type = "object",
+                        properties = new
+                        {
+                            location = new
+                            {
+                                type = "string",
+                                description = "name of the location"
+                            }
+                        },
+                        required = new List<string> { "location" },
+                        additionalProperties = false
+                    }),
+                    Strict = true
+                }
+            ]
+        });
+
+        ResponseFunctionToolCallItem? fn = result.Output.OfType<ResponseFunctionToolCallItem>().FirstOrDefault();
+        Assert.That(fn, Is.NotNull);
+        
+        result = await Program.Connect().Responses.CreateResponse(new ResponseRequest
+        {
+            PreviousResponseId = result.Id,
+            Model = ChatModel.OpenAi.Gpt41.V41,
+            InputItems =
+            [
+                new FunctionToolCallOutput(fn.CallId, new
+                {
+                    weather = "sunny, no rain, mild fog, humididy: 65%",
+                    confidence = "very_high"
+                }.ToJson())
+            ]
+        });
+
+        ResponseOutputMessageItem? itm = result.Output.OfType<ResponseOutputMessageItem>().FirstOrDefault();
+        Assert.That(itm, Is.NotNull);
+
+        ResponseOutputTextContent? text = itm.Content.OfType<ResponseOutputTextContent>().FirstOrDefault();
+        Assert.That(text, Is.NotNull);
+        
+        Console.WriteLine(text.Text);
     }
 
     [TornadoTest]
@@ -57,7 +118,29 @@ public class ResponsesDemo : DemoBase
     {
         string fnCallId = string.Empty;
         
-        ResponsesSession session = Program.Connect().Responses.CreateSession(new ResponseRequest
+        ResponsesSession session = Program.Connect().Responses.CreateSession(new ResponseStreamEventHandler
+        {
+            OnEvent = (data) =>
+            {
+                if (data is ResponseOutputTextDeltaEvent delta)
+                {
+                    Console.Write(delta.Delta);
+                }
+
+                if (data is ResponseOutputItemDoneEvent itemDone)
+                {
+                    if (itemDone.Item is ResponseFunctionToolCallItem fn)
+                    {
+                        // call the function
+                        fnCallId = fn.CallId;
+                    }
+                }
+                
+                return ValueTask.CompletedTask;
+            }
+        });
+
+        await session.StreamResponseRich(new ResponseRequest
         {
             Model = ChatModel.OpenAi.Gpt41.V41,
             InputItems =
@@ -87,44 +170,20 @@ public class ResponsesDemo : DemoBase
                     Strict = true
                 }
             ]
-        }, new ResponseStreamEventHandler
+        });
+        
+        await session.StreamResponseRich(new ResponseRequest
         {
-            OnSse = (sse) =>
-            {
-                return ValueTask.CompletedTask;
-            },
-            OnEvent = (data) =>
-            {
-                if (data is ResponseOutputTextDeltaEvent delta)
+            Model = ChatModel.OpenAi.Gpt41.V41,
+            InputItems = [
+                new FunctionToolCallOutput(fnCallId, new
                 {
-                    Console.Write(delta.Delta);
-                }
-
-                if (data is ResponseOutputItemDoneEvent itemDone)
-                {
-                    if (itemDone.Item is FunctionToolCallItem fn)
-                    {
-                        // call the function
-                        fnCallId = fn.CallId;
-                    }
-                }
-                
-                return ValueTask.CompletedTask;
-            }
+                    weather = "sunny, no rain, mild fog, humididy: 65%",
+                    confidence = "very_high"
+                }.ToJson())
+            ]
         });
 
-        await session.StreamResponseRich();
-
-        session.Request.InputItems =
-        [
-            new FunctionToolCallOutput(fnCallId, new
-            {
-                weather = "sunny, no rain, mild fog, humididy: 65%",
-                confidence = "very_high"
-            }.ToJson())
-        ];
-        
         int z = 0;
-        await session.StreamResponseRich();
     }
 }

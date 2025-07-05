@@ -13,7 +13,7 @@ public class ResponsesSession
     /// <summary>
     /// The current request.
     /// </summary>
-    public ResponseRequest Request { get; set; }
+    public ResponseRequest? Request { get; set; }
     
     /// <summary>
     /// The endpoint.
@@ -23,18 +23,25 @@ public class ResponsesSession
     /// <summary>
     /// Events handler.
     /// </summary>
-    public ResponseStreamEventHandler EventsHandler { get; set; }
+    public ResponseStreamEventHandler? EventsHandler { get; set; }
 
     /// <summary>
     /// Streams next response.
     /// </summary>
-    public async Task StreamResponseRich(CancellationToken token = default)
+    public async Task StreamResponseRich(ResponseRequest? request = null, ResponseStreamEventHandler? eventHandler = null, CancellationToken token = default)
     {
-        if (CurrentResponse is not null)
+        ResponseRequest requestToUse = request ?? Request;
+
+        if (request is not null)
         {
-            Request.PreviousResponseId = CurrentResponse.Id;
+            // todo: go through all fields and if the field is null, set the value from the stored Request
         }
         
-        await Endpoint.StreamResponseRichInternal(Request, this, EventsHandler, token);
+        if (CurrentResponse is not null && requestToUse is not null)
+        {
+            requestToUse.PreviousResponseId ??= CurrentResponse.Id;
+        }
+        
+        await Endpoint.StreamResponseRichInternal(requestToUse, this, eventHandler ?? EventsHandler, token);
     }
 }

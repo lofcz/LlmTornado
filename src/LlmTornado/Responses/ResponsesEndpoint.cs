@@ -176,6 +176,26 @@ public class ResponsesEndpoint : EndpointBase
             EventsHandler = eventsHandler
         };
     }
+    
+    public ResponsesSession CreateSession()
+    {
+        return new ResponsesSession
+        {
+            Request = null,
+            Endpoint = this,
+            EventsHandler = null
+        };
+    }
+    
+    public ResponsesSession CreateSession(ResponseStreamEventHandler eventsHandler)
+    {
+        return new ResponsesSession
+        {
+            Request = null,
+            Endpoint = this,
+            EventsHandler = eventsHandler
+        };
+    }
 
     /// <summary>
     ///     Stream Realtime API events as they arrive, using the provided event handler to process each event type.
