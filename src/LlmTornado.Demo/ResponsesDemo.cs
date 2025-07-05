@@ -241,6 +241,7 @@ public class ResponsesDemo : DemoBase
     {
         string text = await File.ReadAllTextAsync("Static/Json/Sensitive/response1.json");
         ResponseResult result = text.JsonDecode<ResponseResult>();
+        string data = result.ToJson();
         int z = 0;
     }
     

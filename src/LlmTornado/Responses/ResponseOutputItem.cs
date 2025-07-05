@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
+using LlmTornado.Images;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Converters;
@@ -770,6 +771,36 @@ public class ResponseImageGenToolCallItem : IResponseOutputItem
     /// </summary>
     [JsonProperty("result")]
     public string? Result { get; set; }
+    
+    /// <summary>
+    /// Revised prompt.
+    /// </summary>
+    [JsonProperty("revised_prompt")]
+    public string? RevisedPrompt { get; set; }
+
+    /// <summary>
+    /// Background.
+    /// </summary>
+    [JsonProperty("background")]
+    public ImageBackgroundTypes? Background { get; set; }
+
+    /// <summary>
+    /// Quality.
+    /// </summary>
+    [JsonProperty("quality")]
+    public TornadoImageQualities? Quality { get; set; }
+    
+    /// <summary>
+    /// Size.
+    /// </summary>
+    [JsonProperty("size")]
+    public TornadoImageSizes? Size { get; set; }
+    
+    /// <summary>
+    /// Format.
+    /// </summary>
+    [JsonProperty("output_format")]
+    public ImageOutputFormats? OutputFormat { get; set; }
 }
 
 /// <summary>
@@ -1057,6 +1088,12 @@ public class ResponseMcpToolCallItem : IResponseOutputItem
     /// </summary>
     [JsonProperty("error")]
     public string? Error { get; set; }
+    
+    /// <summary>
+    /// The approval request, if any.
+    /// </summary>
+    [JsonProperty("approval_request_id")]
+    public string? ApprovalRequestId { get; set; }
 }
 
 /// <summary>
