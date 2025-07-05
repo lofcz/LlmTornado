@@ -183,6 +183,23 @@ public class ResponsesDemo : DemoBase
                 }.ToJson())
             ]
         });
+    }
+    
+    [TornadoTest]
+    public static async Task ResponseDeepResearchBackground()
+    {
+        ResponseResult? result = await Program.Connect().Responses.CreateResponse(new ResponseRequest
+        {
+            Model = ChatModel.OpenAi.O4.V4MiniDeepResearch,
+            Background = true,
+            InputItems = [
+                new ResponseInputMessage(ChatMessageRoles.User, "Research detailed information about latest development in the Ukraine war and predict how long will Pokrovsk hold.")
+            ],
+            Tools = [
+                new ResponseWebSearchTool(),
+                new ResponseCodeInterpreterTool()
+            ]
+        });
 
         int z = 0;
     }

@@ -24,6 +24,25 @@ public class Ref<T>
     public T? Ptr { get; set; }
 }
 
+/// <summary>
+/// Endpoints with which a model is compatible.
+/// </summary>
+public enum ChatModelEndpointCapabilities
+{
+    /// <summary>
+    /// /chat
+    /// </summary>
+    Chat,
+    /// <summary>
+    /// /responses
+    /// </summary>
+    Responses,
+    /// <summary>
+    /// /batch
+    /// </summary>
+    Batch
+}
+
 internal class StreamResponse
 {
     public Stream Stream { get; set; }

@@ -99,6 +99,11 @@ public class ChatModel : ModelBase
     /// Special values enabled for reasoning mode
     /// </summary>
     public HashSet<int>? ReasoningTokensSpecialValues { get; set; }
+    
+    /// <summary>
+    /// Endpoints supporting this model.
+    /// </summary>
+    public HashSet<ChatModelEndpointCapabilities>? EndpointCapabilities { get; set; }
 
     /// <summary>
     /// Clamps the preferred reasoning tokens so that they are compatible with the model.

@@ -10,6 +10,19 @@ namespace LlmTornado.Chat.Models;
 public class ChatModelOpenAiO3 : IVendorModelClassProvider
 {
     /// <summary>
+    /// o3-deep-research is our most advanced model for deep research, designed to tackle complex, multi-step research tasks. It can search and synthesize information from across the internet as well as from your own data—brought in through MCP connectors.
+    /// </summary>
+    public static readonly ChatModel ModelV3DeepResearch = new ChatModel("o3-deep-research", LLmProviders.OpenAi, 200_000, [ "o3-deep-research-2025-06-26" ])
+    {
+        EndpointCapabilities = [ ChatModelEndpointCapabilities.Responses, ChatModelEndpointCapabilities.Batch ]
+    };
+
+    /// <summary>
+    /// <inheritdoc cref="ModelV3DeepResearch"/>
+    /// </summary>
+    public readonly ChatModel V3DeepResearch = ModelV3DeepResearch;
+    
+    /// <summary>
     /// Latest o3 mini model snapshot.
     /// </summary>
     public static readonly ChatModel ModelMini250131 = new ChatModel("o3-mini-2025-01-31", LLmProviders.OpenAi, 200_000);
@@ -42,7 +55,8 @@ public class ChatModelOpenAiO3 : IVendorModelClassProvider
     public static readonly List<IModel> ModelsAll = [
         ModelMini250131,
         ModelMini,
-        ModelV3
+        ModelV3,
+        ModelV3DeepResearch
     ];
     
     /// <summary>

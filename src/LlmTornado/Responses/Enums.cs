@@ -38,7 +38,13 @@ public enum ResponseMessageStatuses
     /// Item has failed.
     /// </summary>
     [EnumMember(Value = "failed")]
-    Failed
+    Failed,
+    
+    /// <summary>
+    /// Item has been queued (background mode).
+    /// </summary>
+    [EnumMember(Value = "queued")]
+    Queued
 }
 
 /// <summary>

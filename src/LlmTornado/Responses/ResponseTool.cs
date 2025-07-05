@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
+using LlmTornado.Common;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
 
 namespace LlmTornado.Responses;
@@ -67,7 +70,7 @@ public class ResponseFileSearchTool : ResponseTool
     /// A filter to apply (optional).
     /// </summary>
     [JsonProperty("filters")]
-    public JObject? Filters { get; set; }
+    public ResponseFilter? Filters { get; set; }
 
     /// <summary>
     /// The maximum number of results to return (optional, 1-50).
@@ -79,7 +82,7 @@ public class ResponseFileSearchTool : ResponseTool
     /// Ranking options for search (optional).
     /// </summary>
     [JsonProperty("ranking_options")]
-    public JObject? RankingOptions { get; set; }
+    public RankingOptions? RankingOptions { get; set; }
 }
 
 /// <summary>
@@ -87,14 +90,114 @@ public class ResponseFileSearchTool : ResponseTool
 /// </summary>
 public class ResponseWebSearchTool : ResponseTool
 {
-    public override string Type => "web_search";
+    /// <summary>
+    /// Type of the web search tool.
+    /// </summary>
+    public override string Type => 
+        WebSearchToolType switch
+        {
+            ResponseWebSearchToolType.WebSearchPreview => "web_search_preview",
+            ResponseWebSearchToolType.WebSearchPreview20250311 => "web_search_preview_2025_03_11",
+            _ => "web_search_preview"
+        };
 
-    // Optionally add properties like location, sites, etc. as needed
-    [JsonProperty("location")]
-    public JObject? Location { get; set; }
+    /// <summary>
+    /// The type of the web search tool. One of web_search_preview or web_search_preview_2025_03_11.
+    /// </summary>
+    [JsonIgnore]
+    public ResponseWebSearchToolType WebSearchToolType { get; set; } = ResponseWebSearchToolType.WebSearchPreview;
 
-    [JsonProperty("sites")]
-    public List<string>? Sites { get; set; }
+    /// <summary>
+    /// High level guidance for the amount of context window space to use for the search.
+    /// </summary>
+    [JsonProperty("search_context_size")]
+    public ResponseSearchContextSize? SearchContextSize { get; set; }
+
+    /// <summary>
+    /// The user's location.
+    /// </summary>
+    [JsonProperty("user_location")]
+    public ResponseUserLocation? UserLocation { get; set; }
+}
+
+/// <summary>
+/// Web search tool types
+/// </summary>
+[JsonConverter(typeof(StringEnumConverter))]
+public enum ResponseWebSearchToolType
+{
+    /// <summary>
+    /// Web search preview
+    /// </summary>
+    [EnumMember(Value = "web_search_preview")]
+    WebSearchPreview,
+
+    /// <summary>
+    /// Web search preview 2025-03-11
+    /// </summary>
+    [EnumMember(Value = "web_search_preview_2025_03_11")]
+    WebSearchPreview20250311
+}
+
+/// <summary>
+/// Search context size options for web search
+/// </summary>
+[JsonConverter(typeof(StringEnumConverter))]
+public enum ResponseSearchContextSize
+{
+    /// <summary>
+    /// Low context size
+    /// </summary>
+    [EnumMember(Value = "low")]
+    Low,
+
+    /// <summary>
+    /// Medium context size (default)
+    /// </summary>
+    [EnumMember(Value = "medium")]
+    Medium,
+
+    /// <summary>
+    /// High context size
+    /// </summary>
+    [EnumMember(Value = "high")]
+    High
+}
+
+/// <summary>
+/// User location for web search
+/// </summary>
+public class ResponseUserLocation
+{
+    /// <summary>
+    /// The type of location approximation. Always "approximate".
+    /// </summary>
+    [JsonProperty("type")]
+    public string Type { get; set; } = "approximate";
+
+    /// <summary>
+    /// Free text input for the city of the user, e.g. "San Francisco".
+    /// </summary>
+    [JsonProperty("city")]
+    public string? City { get; set; }
+
+    /// <summary>
+    /// The two-letter ISO country code of the user, e.g. "US".
+    /// </summary>
+    [JsonProperty("country")]
+    public string? Country { get; set; }
+
+    /// <summary>
+    /// Free text input for the region of the user, e.g. "California".
+    /// </summary>
+    [JsonProperty("region")]
+    public string? Region { get; set; }
+
+    /// <summary>
+    /// The IANA timezone of the user, e.g. "America/Los_Angeles".
+    /// </summary>
+    [JsonProperty("timezone")]
+    public string? Timezone { get; set; }
 }
 
 /// <summary>
@@ -158,8 +261,116 @@ public class ResponseCodeInterpreterTool : ResponseTool
 {
     public override string Type => "code_interpreter";
 
+    /// <summary>
+    /// The code interpreter container. Can be a container ID or an object that specifies uploaded file IDs to make available to your code.
+    /// </summary>
     [JsonProperty("container")]
-    public JObject? Container { get; set; }
+    [JsonConverter(typeof(ResponseCodeInterpreterContainerConverter))]
+    public ResponseCodeInterpreterContainer Container { get; set; } = new ResponseCodeInterpreterContainerAuto();
+}
+
+/// <summary>
+/// Base class for code interpreter containers
+/// </summary>
+public abstract class ResponseCodeInterpreterContainer
+{
+    
+}
+
+/// <summary>
+/// Container ID as a string
+/// </summary>
+public class ResponseCodeInterpreterContainerString : ResponseCodeInterpreterContainer
+{
+    /// <summary>
+    /// The container ID
+    /// </summary>
+    public string ContainerId { get; set; } = string.Empty;
+
+    public ResponseCodeInterpreterContainerString() { }
+    
+    public ResponseCodeInterpreterContainerString(string containerId)
+    {
+        ContainerId = containerId;
+    }
+
+    public static implicit operator ResponseCodeInterpreterContainerString(string containerId)
+    {
+        return new ResponseCodeInterpreterContainerString(containerId);
+    }
+
+    public static implicit operator string(ResponseCodeInterpreterContainerString container)
+    {
+        return container.ContainerId;
+    }
+}
+
+/// <summary>
+/// Configuration for a code interpreter container. Optionally specify the IDs of the files to run the code on.
+/// </summary>
+public class ResponseCodeInterpreterContainerAuto : ResponseCodeInterpreterContainer
+{
+    /// <summary>
+    /// Always "auto"
+    /// </summary>
+    [JsonProperty("type")]
+    public string Type => "auto";
+
+    /// <summary>
+    /// An optional list of uploaded files to make available to your code
+    /// </summary>
+    [JsonProperty("file_ids")]
+    public List<string>? FileIds { get; set; }
+}
+
+/// <summary>
+/// Custom converter for polymorphic deserialization of code interpreter containers
+/// </summary>
+public class ResponseCodeInterpreterContainerConverter : JsonConverter<ResponseCodeInterpreterContainer>
+{
+    public override ResponseCodeInterpreterContainer? ReadJson(JsonReader reader, Type objectType, ResponseCodeInterpreterContainer? existingValue, bool hasExistingValue, JsonSerializer serializer)
+    {
+        switch (reader.TokenType)
+        {
+            case JsonToken.String:
+            {
+                // Container is a string (container ID)
+                string? containerId = (string?)reader.Value;
+                return containerId != null ? new ResponseCodeInterpreterContainerString(containerId) : null;
+            }
+            case JsonToken.StartObject:
+            {
+                // Container is an object
+                JToken token = JToken.ReadFrom(reader);
+                return token.ToObject<ResponseCodeInterpreterContainerAuto>(serializer);
+            }
+            default:
+            {
+                return null;
+            }
+        }
+    }
+
+    public override void WriteJson(JsonWriter writer, ResponseCodeInterpreterContainer? value, JsonSerializer serializer)
+    {
+        if (value == null)
+        {
+            writer.WriteNull();
+            return;
+        }
+
+        switch (value)
+        {
+            case ResponseCodeInterpreterContainerString stringContainer:
+                writer.WriteValue(stringContainer.ContainerId);
+                break;
+            case ResponseCodeInterpreterContainerAuto autoContainer:
+                serializer.Serialize(writer, autoContainer);
+                break;
+            default:
+                throw new JsonSerializationException($"Unknown container type: {value.GetType()}");
+        }
+    }
 }
 
 /// <summary>
@@ -173,8 +384,8 @@ public class ResponseToolConverter : JsonConverter
 
     public override object? ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
     {
-        var jo = JObject.Load(reader);
-        var type = jo["type"]?.ToString();
+        JObject jo = JObject.Load(reader);
+        string? type = jo["type"]?.ToString();
         switch (type)
         {
             case "function":
@@ -189,20 +400,34 @@ public class ResponseToolConverter : JsonConverter
                 return new ResponseFileSearchTool
                 {
                     VectorStoreIds = jo["vector_store_ids"]?.ToObject<List<string>>(serializer),
-                    Filters = (JObject?)jo["filters"],
+                    Filters = jo["filters"]?.ToObject<ResponseFilter>(serializer),
                     MaxNumResults = (int?)jo["max_num_results"],
-                    RankingOptions = (JObject?)jo["ranking_options"]
+                    RankingOptions = jo["ranking_options"]?.ToObject<RankingOptions>(serializer)
                 };
-            case "web_search":
+            case "web_search_preview":
+            case "web_search_preview_2025_03_11":
+                ResponseWebSearchToolType webSearchType = type == "web_search_preview_2025_03_11" 
+                    ? ResponseWebSearchToolType.WebSearchPreview20250311 
+                    : ResponseWebSearchToolType.WebSearchPreview;
+                
                 return new ResponseWebSearchTool
                 {
-                    Location = (JObject?)jo["location"],
-                    Sites = jo["sites"]?.ToObject<List<string>>(serializer)
+                    WebSearchToolType = webSearchType,
+                    SearchContextSize = jo["search_context_size"]?.ToObject<ResponseSearchContextSize>(serializer),
+                    UserLocation = jo["user_location"]?.ToObject<ResponseUserLocation>(serializer)
                 };
             case "code_interpreter":
+                ResponseCodeInterpreterContainer? container = null;
+                if (jo["container"] != null)
+                {
+                    ResponseCodeInterpreterContainerConverter containerConverter = new ResponseCodeInterpreterContainerConverter();
+                    using JsonReader containerReader = jo["container"]!.CreateReader();
+                    container = containerConverter.ReadJson(containerReader, typeof(ResponseCodeInterpreterContainer), null, false, serializer);
+                }
+                
                 return new ResponseCodeInterpreterTool
                 {
-                    Container = (JObject?)jo["container"]
+                    Container = container ?? new ResponseCodeInterpreterContainerAuto()
                 };
             case "image_generation":
                 return new ResponseImageGenerationTool
@@ -286,15 +511,15 @@ public class ResponseToolConverter : JsonConverter
             case ResponseWebSearchTool web:
                 writer.WritePropertyName("type");
                 writer.WriteValue(web.Type);
-                if (web.Location != null)
+                if (web.SearchContextSize != null)
                 {
-                    writer.WritePropertyName("location");
-                    serializer.Serialize(writer, web.Location);
+                    writer.WritePropertyName("search_context_size");
+                    serializer.Serialize(writer, web.SearchContextSize);
                 }
-                if (web.Sites != null)
+                if (web.UserLocation != null)
                 {
-                    writer.WritePropertyName("sites");
-                    serializer.Serialize(writer, web.Sites);
+                    writer.WritePropertyName("user_location");
+                    serializer.Serialize(writer, web.UserLocation);
                 }
                 break;
             case ResponseCodeInterpreterTool code:
