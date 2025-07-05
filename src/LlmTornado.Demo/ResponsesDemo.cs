@@ -205,6 +205,42 @@ public class ResponsesDemo : DemoBase
         int z = 0;
     }
     
+    [TornadoTest]
+    public static async Task ResponseComputerTool()
+    {
+        EndpointBase.SetRequestsTimeout(20000);
+        
+        byte[] bytes = await File.ReadAllBytesAsync("Static/Images/empty.jpg");
+        string base64 = $"data:image/jpeg;base64,{Convert.ToBase64String(bytes)}";
+        
+        ResponseResult? result = await Program.Connect().Responses.CreateResponse(new ResponseRequest
+        {
+            Model = ChatModel.OpenAi.Codex.ComputerUsePreview,
+            Background = false,
+            InputItems = [
+                new ResponseInputMessage(ChatMessageRoles.User, [
+                    new ResponseInputContentText("Check the latest OpenAI news on google.com."),
+                    ResponseInputContentImage.CreateImageUrl(base64)
+                ])
+            ],
+            Tools = [
+                new ResponseComputerUseTool
+                {
+                    DisplayWidth = 2560,
+                    DisplayHeight = 1440,
+                    Environment = ResponseComputerEnvironment.Windows
+                }
+            ],
+            Reasoning = new ReasoningConfiguration
+            {
+                Summary = ResponseReasoningSummaries.Concise
+            },
+            Truncation = ResponseTruncationStrategies.Auto
+        });
+
+        int z = 0;
+    }
+    
     [TornadoTest, Flaky("long running")]
     public static async Task ResponseDeepResearchMcp()
     {

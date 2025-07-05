@@ -275,7 +275,7 @@ namespace LlmTornado.Code
         // Set of safe chars, from RFC 1738.4 minus '+'
         private static readonly bool[] s_urlSafe = new bool[128];
         private static readonly char[] s_invalidJavaScriptChars;
-        private static readonly char[] s_htmlAttributeEncodingChars = new[] { '<', '"', '\'', '&' };
+        private static readonly char[] s_htmlAttributeEncodingChars = ['<', '"', '\'', '&'];
 
         static HttpEncoder()
         {
@@ -754,7 +754,7 @@ namespace LlmTornado.Code
                 char ch = toEncode[j];
                 if (ch < 33 || ch > 126)
                 {
-                    byte[] bytes = Encoding.UTF8.GetBytes(new[] { ch });
+                    byte[] bytes = Encoding.UTF8.GetBytes([ch]);
                     foreach (byte b in bytes)
                     {
                         sb.Append('%');
@@ -879,7 +879,7 @@ namespace LlmTornado.Code
                 int authorityEnd = input.IndexOf('/', schemeEnd + 3);
                 if (authorityEnd < 0)
                 {
-                    int queryStartNoPath = input.IndexOfAny(new[] { '?', '#' }, schemeEnd + 3);
+                    int queryStartNoPath = input.IndexOfAny(['?', '#'], schemeEnd + 3);
                     if (queryStartNoPath > 0)
                     {
                         schemeAndAuthority = input.Substring(0, queryStartNoPath);
@@ -897,7 +897,7 @@ namespace LlmTornado.Code
                 schemeAndAuthority = input.Substring(0, authorityEnd);
                 string rest = input.Substring(authorityEnd);
 
-                int queryStart = rest.IndexOfAny(new[] { '?', '#' });
+                int queryStart = rest.IndexOfAny(['?', '#']);
                 if (queryStart >= 0)
                 {
                     path = rest.Substring(0, queryStart);

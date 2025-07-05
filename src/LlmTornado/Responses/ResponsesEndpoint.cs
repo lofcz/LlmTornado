@@ -169,7 +169,7 @@ public class ResponsesEndpoint : EndpointBase
         {
             throw result.Exception;
         }
-
+        
         return result.Data;
     }
 

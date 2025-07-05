@@ -51,7 +51,7 @@ internal class EnumCache
         EnumMemberValueLookup = new(StringComparer.Ordinal);
         DisplayNameLookup = new(StringComparer.Ordinal);
         ValueLookup = new();
-        Members = new();
+        Members = [];
 
         foreach (FieldInfo field in enumType.GetFields(BindingFlags.Public | BindingFlags.Static))
         {

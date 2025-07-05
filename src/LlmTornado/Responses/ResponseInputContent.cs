@@ -10,7 +10,7 @@ namespace LlmTornado.Responses;
 /// Base class for input content types
 /// </summary>
 [JsonConverter(typeof(InputContentJsonConverter))]
-public abstract class InputContent
+public abstract class ResponseInputContent
 {
     /// <summary>
     /// The type of the input content
@@ -22,7 +22,7 @@ public abstract class InputContent
 /// <summary>
 /// Text input content
 /// </summary>
-public class InputTextContent : InputContent
+public class ResponseInputContentText : ResponseInputContent
 {
     /// <summary>
     /// The type of the input item. Always "input_text".
@@ -35,9 +35,9 @@ public class InputTextContent : InputContent
     [JsonProperty("text")]
     public string Text { get; set; } = string.Empty;
 
-    public InputTextContent() { }
+    public ResponseInputContentText() { }
 
-    public InputTextContent(string text)
+    public ResponseInputContentText(string text)
     {
         Text = text;
     }
@@ -46,7 +46,7 @@ public class InputTextContent : InputContent
 /// <summary>
 /// Image input content
 /// </summary>
-public class InputImageContent : InputContent
+public class ResponseInputContentImage : ResponseInputContent
 {
     /// <summary>
     /// The type of the input item. Always "input_image".
@@ -69,9 +69,9 @@ public class InputImageContent : InputContent
     /// The detail level of the image to be sent to the model.
     /// </summary>
     [JsonProperty("detail")]
-    public ImageDetail Detail { get; set; } = ImageDetail.Auto;
+    public ImageDetail? Detail { get; set; }
 
-    public InputImageContent()
+    public ResponseInputContentImage()
     {
         
     }
@@ -79,24 +79,22 @@ public class InputImageContent : InputContent
     /// <summary>
     /// Creates image content from the URL of the image to be sent to the model. A fully qualified URL or base64 encoded image in a data URL.
     /// </summary>
-    public static InputImageContent CreateImageUrl(string imageUrl, ImageDetail detail = ImageDetail.Auto)
+    public static ResponseInputContentImage CreateImageUrl(string imageUrl)
     {
-        return new InputImageContent
+        return new ResponseInputContentImage
         {
             ImageUrl = imageUrl,
-            Detail = detail
         };
     }
     
     /// <summary>
     /// Creates image content from the file id.
     /// </summary>
-    public static InputImageContent CreateFileId(string imageUrl, ImageDetail detail = ImageDetail.Auto)
+    public static ResponseInputContentImage CreateFileId(string imageUrl)
     {
-        return new InputImageContent
+        return new ResponseInputContentImage
         {
-            ImageUrl = imageUrl,
-            Detail = detail
+            ImageUrl = imageUrl
         };
     }
 }
@@ -104,7 +102,7 @@ public class InputImageContent : InputContent
 /// <summary>
 /// File input content
 /// </summary>
-public class InputFileContent : InputContent
+public class ResponseInputContentFile : ResponseInputContent
 {
     /// <summary>
     /// The type of the input item. Always "input_file".
@@ -129,14 +127,14 @@ public class InputFileContent : InputContent
     [JsonProperty("file_data")]
     public string? FileData { get; set; }
 
-    public InputFileContent() { }
+    public ResponseInputContentFile() { }
 
-    public InputFileContent(string fileId)
+    public ResponseInputContentFile(string fileId)
     {
         FileId = fileId;
     }
 
-    public InputFileContent(string filename, string fileData)
+    public ResponseInputContentFile(string filename, string fileData)
     {
         Filename = filename;
         FileData = fileData;
@@ -146,9 +144,9 @@ public class InputFileContent : InputContent
 /// <summary>
 /// JSON converter for InputContent types
 /// </summary>
-internal class InputContentJsonConverter : JsonConverter<InputContent>
+internal class InputContentJsonConverter : JsonConverter<ResponseInputContent>
 {
-    public override void WriteJson(JsonWriter writer, InputContent? value, JsonSerializer serializer)
+    public override void WriteJson(JsonWriter writer, ResponseInputContent? value, JsonSerializer serializer)
     {
         if (value == null)
         {
@@ -162,13 +160,13 @@ internal class InputContentJsonConverter : JsonConverter<InputContent>
 
         switch (value)
         {
-            case InputTextContent textContent:
+            case ResponseInputContentText textContent:
             {
                 writer.WritePropertyName("text");
                 writer.WriteValue(textContent.Text);
                 break;
             }
-            case InputImageContent imageContent:
+            case ResponseInputContentImage imageContent:
             {
                 if (!string.IsNullOrEmpty(imageContent.ImageUrl))
                 {
@@ -184,7 +182,7 @@ internal class InputContentJsonConverter : JsonConverter<InputContent>
                 serializer.Serialize(writer, imageContent.Detail);
                 break;
             }
-            case InputFileContent fileContent:
+            case ResponseInputContentFile fileContent:
             {
                 if (!string.IsNullOrEmpty(fileContent.FileId))
                 {
@@ -212,7 +210,7 @@ internal class InputContentJsonConverter : JsonConverter<InputContent>
         writer.WriteEndObject();
     }
 
-    public override InputContent? ReadJson(JsonReader reader, Type objectType, InputContent? existingValue, bool hasExistingValue, JsonSerializer serializer)
+    public override ResponseInputContent? ReadJson(JsonReader reader, Type objectType, ResponseInputContent? existingValue, bool hasExistingValue, JsonSerializer serializer)
     {
         if (reader.TokenType == JsonToken.Null)
             return null;
@@ -222,9 +220,9 @@ internal class InputContentJsonConverter : JsonConverter<InputContent>
 
         return type switch
         {
-            "input_text" => jo.ToObject<InputTextContent>(serializer),
-            "input_image" => jo.ToObject<InputImageContent>(serializer),
-            "input_file" => jo.ToObject<InputFileContent>(serializer),
+            "input_text" => jo.ToObject<ResponseInputContentText>(serializer),
+            "input_image" => jo.ToObject<ResponseInputContentImage>(serializer),
+            "input_file" => jo.ToObject<ResponseInputContentFile>(serializer),
             _ => throw new JsonSerializationException($"Unknown input content type: {type}")
         };
     }

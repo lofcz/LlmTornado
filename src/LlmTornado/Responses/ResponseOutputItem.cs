@@ -60,7 +60,7 @@ public class LogProbProperties
     /// The bytes that were used to generate the log probability.
     /// </summary>
     [JsonProperty("bytes")]
-    public List<int> Bytes { get; set; } = new List<int>();
+    public List<int> Bytes { get; set; } = [];
     /// <summary>
     /// The top log probabilities for the token.
     /// </summary>
@@ -167,7 +167,7 @@ internal class OutputContentListConverter : JsonConverter<List<IResponseOutputCo
             return null;
 
         JArray array = JArray.Load(reader);
-        List<IResponseOutputContent> result = new List<IResponseOutputContent>();
+        List<IResponseOutputContent> result = [];
         foreach (JToken? token in array)
         {
             string? type = token["type"]?.ToString();
@@ -262,7 +262,7 @@ public class ResponseFileSearchToolCallItem : IResponseOutputItem
     /// The queries used to search for files.
     /// </summary>
     [JsonProperty("queries")]
-    public List<string> Queries { get; set; } = new List<string>();
+    public List<string> Queries { get; set; } = [];
 
     /// <summary>
     /// The results of the file search tool call.
@@ -439,7 +439,7 @@ public class ResponseComputerToolCallItem : IResponseOutputItem
     /// The pending safety checks for the computer call.
     /// </summary>
     [JsonProperty("pending_safety_checks")]
-    public List<ComputerToolCallSafetyCheck> PendingSafetyChecks { get; set; } = new List<ComputerToolCallSafetyCheck>();
+    public List<ComputerToolCallSafetyCheck> PendingSafetyChecks { get; set; } = [];
 
     /// <summary>
     /// The status of the item.
@@ -495,10 +495,10 @@ public class ClickAction : IComputerAction
     public string Type { get; set; } = "click";
     
     /// <summary>
-    /// Indicates which mouse button was pressed during the click. One of "left", "right", "wheel", "back", or "forward".
+    /// Indicates which mouse button was pressed during the click.
     /// </summary>
     [JsonProperty("button")]
-    public string Button { get; set; } = string.Empty;
+    public ResponseMouseButton Button { get; set; }
     
     /// <summary>
     /// The x-coordinate where the click occurred.
@@ -552,7 +552,7 @@ public class DragAction : IComputerAction
     /// An array of coordinates representing the path of the drag action. Coordinates will appear as an array of objects, eg [{ x: 100, y: 200 }, { x: 200, y: 300 }]
     /// </summary>
     [JsonProperty("path")]
-    public List<Coordinate> Path { get; set; } = new List<Coordinate>();
+    public List<Coordinate> Path { get; set; } = [];
 
     /// <summary>
     /// A series of x/y coordinate pairs in the drag path.
@@ -588,7 +588,7 @@ public class KeyPressAction : IComputerAction
     /// The combination of keys the model is requesting to be pressed. This is an array of strings, each representing a key.
     /// </summary>
     [JsonProperty("keys")]
-    public List<string> Keys { get; set; } = new List<string>();
+    public List<string> Keys { get; set; } = [];
 }
 
 /// <summary>
@@ -718,7 +718,7 @@ public class ResponseReasoningItem : IResponseOutputItem
     /// Reasoning text contents.
     /// </summary>
     [JsonProperty("summary")]
-    public List<ReasoningSummaryText> Summary { get; set; } = new List<ReasoningSummaryText>();
+    public List<ReasoningSummaryText> Summary { get; set; } = [];
 
     /// <summary>
     /// The status of the item.
@@ -1017,7 +1017,7 @@ public class LocalShellExecAction
     /// The command to run.
     /// </summary>
     [JsonProperty("command")]
-    public List<string> Command { get; set; } = new List<string>();
+    public List<string> Command { get; set; } = [];
     
     /// <summary>
     /// Optional timeout in milliseconds for the command.
@@ -1121,7 +1121,7 @@ public class ResponseMcpListToolsItem : IResponseOutputItem
     /// The tools available on the server.
     /// </summary>
     [JsonProperty("tools")]
-    public List<McpListToolsTool> Tools { get; set; } = new List<McpListToolsTool>();
+    public List<McpListToolsTool> Tools { get; set; } = [];
     
     /// <summary>
     /// Error message if the server could not list tools.
@@ -1247,7 +1247,7 @@ internal class ResponseOutputItemListConverter : JsonConverter<List<IResponseOut
             return null;
 
         JArray array = JArray.Load(reader);
-        List<IResponseOutputItem> result = new List<IResponseOutputItem>();
+        List<IResponseOutputItem> result = [];
         foreach (JToken? token in array)
         {
             string? type = token["type"]?.ToString();
@@ -1352,4 +1352,41 @@ internal class ResponseContentPartConverter : JsonConverter<IResponseContentPart
             _ => null
         };
     }
+}
+
+/// <summary>
+/// Mouse buttons that can be reported by a <see cref="ClickAction"/>.
+/// </summary>
+[JsonConverter(typeof(StringEnumConverter))]
+public enum ResponseMouseButton
+{
+    /// <summary>
+    /// The primary (usually left) mouse button.
+    /// </summary>
+    [EnumMember(Value = "left")]
+    Left,
+
+    /// <summary>
+    /// The secondary (usually right) mouse button.
+    /// </summary>
+    [EnumMember(Value = "right")]
+    Right,
+
+    /// <summary>
+    /// The scroll-wheel / middle mouse button.
+    /// </summary>
+    [EnumMember(Value = "wheel")]
+    Wheel,
+
+    /// <summary>
+    /// The browser-back mouse button.
+    /// </summary>
+    [EnumMember(Value = "back")]
+    Back,
+
+    /// <summary>
+    /// The browser-forward mouse button.
+    /// </summary>
+    [EnumMember(Value = "forward")]
+    Forward
 } 

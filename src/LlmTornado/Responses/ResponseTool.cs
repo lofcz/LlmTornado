@@ -207,7 +207,7 @@ public class ResponseUserLocation
 /// </summary>
 public class ResponseComputerUseTool : ResponseTool
 {
-    public override string Type => "computer_use";
+    public override string Type => "computer_use_preview";
 
     [JsonProperty("display_height")]
     public int? DisplayHeight { get; set; }
@@ -215,8 +215,42 @@ public class ResponseComputerUseTool : ResponseTool
     [JsonProperty("display_width")]
     public int? DisplayWidth { get; set; }
 
+    /// <summary>
+    /// Execution environment for the computer use tool (browser / mac / windows / ubuntu).
+    /// </summary>
     [JsonProperty("environment")]
-    public string? Environment { get; set; }
+    public ResponseComputerEnvironment Environment { get; set; } = ResponseComputerEnvironment.Browser;
+}
+
+/// <summary>
+/// Supported execution environments for <see cref="ResponseComputerUseTool"/>.
+/// </summary>
+[JsonConverter(typeof(StringEnumConverter))]
+public enum ResponseComputerEnvironment
+{
+    /// <summary>
+    /// Run inside a headless browser container.
+    /// </summary>
+    [EnumMember(Value = "browser")]
+    Browser,
+
+    /// <summary>
+    /// macOS environment.
+    /// </summary>
+    [EnumMember(Value = "mac")]
+    Mac,
+
+    /// <summary>
+    /// Microsoft Windows environment.
+    /// </summary>
+    [EnumMember(Value = "windows")]
+    Windows,
+
+    /// <summary>
+    /// Ubuntu Linux environment.
+    /// </summary>
+    [EnumMember(Value = "ubuntu")]
+    Ubuntu
 }
 
 /// <summary>
@@ -278,7 +312,7 @@ public class ResponseMcpAllowedToolsArray : ResponseMcpAllowedTools
     /// <summary>
     /// List of allowed tool names
     /// </summary>
-    public List<string> ToolNames { get; set; } = new List<string>();
+    public List<string> ToolNames { get; set; } = [];
 
     public ResponseMcpAllowedToolsArray() { }
 
@@ -829,18 +863,19 @@ internal class ResponseToolConverter : JsonConverter
 
                 return new ResponseMcpTool
                 {
-                    ServerLabel = (string?)jo["server_label"],
-                    ServerUrl = (string?)jo["server_url"],
+                    ServerLabel = (string?)jo["server_label"]!,
+                    ServerUrl = (string?)jo["server_url"]!,
                     AllowedTools = jo["allowed_tools"]?.Type == JTokenType.Null ? null : jo["allowed_tools"]?.ToObject<ResponseMcpAllowedTools>(serializer),
                     Headers = headersObject,
                     RequireApproval = jo["require_approval"]?.ToObject<ResponseMcpRequireApproval>(serializer)
                 };
+            case "computer_use_preview":
             case "computer_use":
                 return new ResponseComputerUseTool
                 {
                     DisplayHeight = (int?)jo["display_height"],
                     DisplayWidth = (int?)jo["display_width"],
-                    Environment = (string?)jo["environment"]
+                    Environment = jo["environment"]?.ToObject<ResponseComputerEnvironment>(serializer) ?? ResponseComputerEnvironment.Browser
                 };
             default:
                 throw new JsonSerializationException($"Unknown tool type: {type}");
@@ -1016,7 +1051,7 @@ internal class ResponseToolConverter : JsonConverter
                 if (comp.Environment != null)
                 {
                     writer.WritePropertyName("environment");
-                    writer.WriteValue(comp.Environment);
+                    serializer.Serialize(writer, comp.Environment);
                 }
                 break;
         }

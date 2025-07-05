@@ -47,7 +47,7 @@ public class ResponseInputMessage : ResponseInputItem
     /// A list of one or many input items to the model, containing different content types.
     /// </summary>
     [JsonProperty("content")]
-    public List<InputContent> Content { get; set; } = new List<InputContent>();
+    public List<ResponseInputContent> Content { get; set; } = [];
 
     /// <summary>
     /// Creates a new empty message.
@@ -57,7 +57,7 @@ public class ResponseInputMessage : ResponseInputItem
         
     }
 
-    public ResponseInputMessage(ChatMessageRoles role, List<InputContent> content)
+    public ResponseInputMessage(ChatMessageRoles role, List<ResponseInputContent> content)
     {
         Role = role;
         Content = content;
@@ -67,7 +67,7 @@ public class ResponseInputMessage : ResponseInputItem
     {
         Role = role;
         Content = [
-            new InputTextContent(text)
+            new ResponseInputContentText(text)
         ];
     }
 }
@@ -333,7 +333,7 @@ public class OutputMessageInput : ResponseInputItem
     /// The content of the output message.
     /// </summary>
     [JsonProperty("content")]
-    public List<IResponseOutputContent> Content { get; set; } = new List<IResponseOutputContent>();
+    public List<IResponseOutputContent> Content { get; set; } = [];
 
     /// <summary>
     /// The unique ID of the output message.
@@ -383,7 +383,7 @@ public class FileSearchToolCallInput : ResponseInputItem
     /// The queries used to search for files.
     /// </summary>
     [JsonProperty("queries")]
-    public List<string> Queries { get; set; } = new List<string>();
+    public List<string> Queries { get; set; } = [];
 
     /// <summary>
     /// The status of the file search tool call. One of <c>in_progress</c>, <c>searching</c>, <c>incomplete</c> or <c>failed</c>.
@@ -475,7 +475,7 @@ public class ComputerToolCallInput : ResponseInputItem
     /// The pending safety checks for the computer call.
     /// </summary>
     [JsonProperty("pending_safety_checks")]
-    public List<PendingSafetyCheck> PendingSafetyChecks { get; set; } = new List<PendingSafetyCheck>();
+    public List<PendingSafetyCheck> PendingSafetyChecks { get; set; } = [];
 
     /// <summary>
     /// The status of the item. One of <c>in_progress</c>, <c>completed</c>, or <c>incomplete</c>. Populated when items are returned via API.
@@ -588,7 +588,7 @@ public class Reasoning : ResponseInputItem
     /// Reasoning text contents.
     /// </summary>
     [JsonProperty("summary")]
-    public List<ReasoningSummaryText> Summary { get; set; } = new List<ReasoningSummaryText>();
+    public List<ReasoningSummaryText> Summary { get; set; } = [];
 
     /// <summary>
     /// The encrypted content of the reasoning item - populated when a response is generated with reasoning.encrypted_content in the include parameter.
@@ -825,7 +825,7 @@ public class McpListToolsInput : ResponseInputItem
     /// The tools available on the server.
     /// </summary>
     [JsonProperty("tools")]
-    public List<McpTool> Tools { get; set; } = new List<McpTool>();
+    public List<McpTool> Tools { get; set; } = [];
 
     /// <summary>
     /// Error message if the server could not list tools.

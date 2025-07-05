@@ -182,10 +182,10 @@ public class ResponseResult
     public ResponseTruncationStrategies? Truncation { get; set; }
 
     /// <summary>
-    /// Represents token usage details including input tokens, output tokens, a breakdown of output tokens, and the total tokens used.
+    /// Represents token usage details including input tokens, output tokens, a breakdown of token categories, and the total tokens used.
     /// </summary>
     [JsonProperty("usage")]
-    public ChatUsage? Usage { get; set; }
+    public ResponseUsage? Usage { get; set; }
 
     /// <summary>
     /// A stable identifier for your end-users. Used to boost cache hit rates by better bucketing similar requests and to help OpenAI detect and prevent abuse.
@@ -265,4 +265,64 @@ public class OutputContent
     [JsonProperty("annotations")]
     [JsonConverter(typeof(OutputContentAnnotationListConverter))]
     public List<IResponseOutputContentAnnotation>? Annotations { get; set; }
+}
+
+/// <summary>
+/// Token usage details for a response.
+/// </summary>
+public class ResponseUsage
+{
+    /// <summary>
+    /// The number of input tokens.
+    /// </summary>
+    [JsonProperty("input_tokens")]
+    public int InputTokens { get; set; }
+
+    /// <summary>
+    /// Detailed breakdown of input tokens.
+    /// </summary>
+    [JsonProperty("input_tokens_details")]
+    public ResponseInputTokensDetails InputTokensDetails { get; set; }
+
+    /// <summary>
+    /// The number of output tokens.
+    /// </summary>
+    [JsonProperty("output_tokens")]
+    public int OutputTokens { get; set; }
+
+    /// <summary>
+    /// Detailed breakdown of output tokens.
+    /// </summary>
+    [JsonProperty("output_tokens_details")]
+    public ResponseOutputTokensDetails OutputTokensDetails { get; set; }
+
+    /// <summary>
+    /// The total number of tokens used (input + output).
+    /// </summary>
+    [JsonProperty("total_tokens")]
+    public int TotalTokens { get; set; }
+}
+
+/// <summary>
+/// Breakdown of input tokens.
+/// </summary>
+public class ResponseInputTokensDetails
+{
+    /// <summary>
+    /// Tokens retrieved from cache.
+    /// </summary>
+    [JsonProperty("cached_tokens")]
+    public int CachedTokens { get; set; }
+}
+
+/// <summary>
+/// Breakdown of output tokens.
+/// </summary>
+public class ResponseOutputTokensDetails
+{
+    /// <summary>
+    /// Number of reasoning tokens.
+    /// </summary>
+    [JsonProperty("reasoning_tokens")]
+    public int ReasoningTokens { get; set; }
 }

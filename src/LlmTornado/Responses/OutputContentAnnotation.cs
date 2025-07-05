@@ -107,7 +107,7 @@ internal class OutputContentAnnotationListConverter : JsonConverter<List<IRespon
             return null;
 
         JArray array = JArray.Load(reader);
-        List<IResponseOutputContentAnnotation> result = new List<IResponseOutputContentAnnotation>();
+        List<IResponseOutputContentAnnotation> result = [];
         foreach (JToken? token in array)
         {
             string? type = token["type"]?.ToString();

@@ -48,7 +48,7 @@ public class ResponseCompoundFilter : ResponseFilter
     /// Array of filters to combine. Items can be ResponseComparisonFilter or ResponseCompoundFilter
     /// </summary>
     [JsonProperty("filters")]
-    public List<ResponseFilter> Filters { get; set; } = new List<ResponseFilter>();
+    public List<ResponseFilter> Filters { get; set; } = [];
 
     /// <summary>
     /// Type of operation: 'and' or 'or'
