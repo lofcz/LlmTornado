@@ -6,15 +6,15 @@ using Newtonsoft.Json.Linq;
 namespace LlmTornado.Responses.Events;
 
 /// <summary>
-/// Base class for response content part events.
+/// Event that is fired when there is a partial refusal text.
 /// </summary>
-public abstract class ResponseContentPartEventBase : IResponseEvent
+public class ResponseEventRefusalDelta : IResponseEvent
 {
     /// <summary>
-    /// The type of the event.
+    /// The type of the event. Always "response.refusal.delta".
     /// </summary>
     [JsonProperty("type")]
-    public abstract string Type { get; set; }
+    public string Type { get; set; } = "response.refusal.delta";
 
     /// <summary>
     /// The sequence number of this event.
@@ -23,33 +23,32 @@ public abstract class ResponseContentPartEventBase : IResponseEvent
     public int SequenceNumber { get; set; }
 
     /// <summary>
-    /// The index of the content part.
+    /// The index of the content part that the refusal text is added to.
     /// </summary>
     [JsonProperty("content_index")]
     public int ContentIndex { get; set; }
 
     /// <summary>
-    /// The ID of the output item that the content part was added to.
+    /// The ID of the output item that the refusal text is added to.
     /// </summary>
     [JsonProperty("item_id")]
     public string ItemId { get; set; } = string.Empty;
 
     /// <summary>
-    /// The index of the output item that the content part was added to.
+    /// The index of the output item that the refusal text is added to.
     /// </summary>
     [JsonProperty("output_index")]
     public int OutputIndex { get; set; }
 
     /// <summary>
-    /// The content part that was added.
+    /// The refusal text that is added.
     /// </summary>
-    [JsonProperty("part")]
-    [JsonConverter(typeof(ResponseContentPartConverter))]
-    public IResponseContentPart Part { get; set; } = null!;
+    [JsonProperty("delta")]
+    public string Delta { get; set; } = string.Empty;
 
     /// <summary>
     /// The type of this response event.
     /// </summary>
     [JsonIgnore]
-    public abstract ResponseEventTypes EventType { get; }
+    public ResponseEventTypes EventType => ResponseEventTypes.ResponseRefusalDelta;
 } 

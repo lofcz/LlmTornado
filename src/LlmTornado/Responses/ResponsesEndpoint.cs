@@ -72,60 +72,60 @@ public class ResponsesEndpoint : EndpointBase
 
     private static readonly FrozenDictionary<ResponseEventTypes, Type> EventTypeToType = new Dictionary<ResponseEventTypes, Type>
     {
-        [ResponseEventTypes.ResponseWebSearchCallSearching] = typeof(ResponseWebSearchCallSearchingEvent),
-        [ResponseEventTypes.ResponseWebSearchCallInProgress] = typeof(ResponseWebSearchCallInProgressEvent),
-        [ResponseEventTypes.ResponseWebSearchCallCompleted] = typeof(ResponseWebSearchCallCompletedEvent),
-        [ResponseEventTypes.ResponseRefusalDone] = typeof(ResponseRefusalDoneEvent),
-        [ResponseEventTypes.ResponseRefusalDelta] = typeof(ResponseRefusalDeltaEvent),
-        [ResponseEventTypes.ResponseReasoningSummaryTextDone] = typeof(ResponseReasoningSummaryTextDoneEvent),
-        [ResponseEventTypes.ResponseReasoningSummaryTextDelta] = typeof(ResponseReasoningSummaryTextDeltaEvent),
-        [ResponseEventTypes.ResponseReasoningSummaryPartDone] = typeof(ResponseReasoningSummaryPartDoneEvent),
-        [ResponseEventTypes.ResponseReasoningSummaryPartAdded] = typeof(ResponseReasoningSummaryPartAddedEvent),
-        [ResponseEventTypes.ResponseReasoningSummaryDone] = typeof(ResponseReasoningSummaryDoneEvent),
-        [ResponseEventTypes.ResponseReasoningSummaryDelta] = typeof(ResponseReasoningSummaryDeltaEvent),
-        [ResponseEventTypes.ResponseReasoningDone] = typeof(ResponseReasoningDoneEvent),
-        [ResponseEventTypes.ResponseReasoningDelta] = typeof(ResponseReasoningDeltaEvent),
-        [ResponseEventTypes.ResponseQueued] = typeof(ResponseQueuedEvent),
-        [ResponseEventTypes.ResponseOutputTextDone] = typeof(ResponseOutputTextDoneEvent),
-        [ResponseEventTypes.ResponseOutputTextDelta] = typeof(ResponseOutputTextDeltaEvent),
-        [ResponseEventTypes.ResponseOutputTextAnnotationAdded] = typeof(ResponseOutputTextAnnotationAddedEvent),
-        [ResponseEventTypes.ResponseOutputItemAdded] = typeof(ResponseOutputItemAddedEvent),
-        [ResponseEventTypes.ResponseOutputItemDone] = typeof(ResponseOutputItemDoneEvent),
-        [ResponseEventTypes.ResponseContentPartAdded] = typeof(ResponseContentPartAddedEvent),
-        [ResponseEventTypes.ResponseContentPartDone] = typeof(ResponseContentPartDoneEvent),
-        [ResponseEventTypes.ResponseMcpListToolsInProgress] = typeof(ResponseMcpListToolsInProgressEvent),
-        [ResponseEventTypes.ResponseMcpListToolsFailed] = typeof(ResponseMcpListToolsFailedEvent),
-        [ResponseEventTypes.ResponseMcpListToolsCompleted] = typeof(ResponseMcpListToolsCompletedEvent),
-        [ResponseEventTypes.ResponseMcpCallInProgress] = typeof(ResponseMcpCallInProgressEvent),
-        [ResponseEventTypes.ResponseMcpCallFailed] = typeof(ResponseMcpCallFailedEvent),
-        [ResponseEventTypes.ResponseMcpCallCompleted] = typeof(ResponseMcpCallCompletedEvent),
-        [ResponseEventTypes.ResponseMcpCallArgumentsDone] = typeof(ResponseMcpCallArgumentsDoneEvent),
-        [ResponseEventTypes.ResponseMcpCallArgumentsDelta] = typeof(ResponseMcpCallArgumentsDeltaEvent),
-        [ResponseEventTypes.ResponseInProgress] = typeof(ResponseInProgressEvent),
-        [ResponseEventTypes.ResponseImageGenerationCallPartialImage] = typeof(ResponseImageGenerationCallPartialImageEvent),
-        [ResponseEventTypes.ResponseImageGenerationCallInProgress] = typeof(ResponseImageGenerationCallInProgressEvent),
-        [ResponseEventTypes.ResponseImageGenerationCallGenerating] = typeof(ResponseImageGenerationCallGeneratingEvent),
-        [ResponseEventTypes.ResponseImageGenerationCallCompleted] = typeof(ResponseImageGenerationCallCompletedEvent),
-        [ResponseEventTypes.ResponseFunctionCallArgumentsDone] = typeof(ResponseFunctionCallArgumentsDoneEvent),
-        [ResponseEventTypes.ResponseFunctionCallArgumentsDelta] = typeof(ResponseFunctionCallArgumentsDeltaEvent),
-        [ResponseEventTypes.ResponseFileSearchCallSearching] = typeof(ResponseFileSearchCallSearchingEvent),
-        [ResponseEventTypes.ResponseFileSearchCallInProgress] = typeof(ResponseFileSearchCallInProgressEvent),
-        [ResponseEventTypes.ResponseFileSearchCallCompleted] = typeof(ResponseFileSearchCallCompletedEvent),
-        [ResponseEventTypes.ResponseError] = typeof(ResponseErrorEvent),
-        [ResponseEventTypes.ResponseCodeInterpreterCallInProgress] = typeof(ResponseCodeInterpreterCallInProgressEvent),
-        [ResponseEventTypes.ResponseCodeInterpreterCallCodeDone] = typeof(ResponseCodeInterpreterCallCodeDoneEvent),
-        [ResponseEventTypes.ResponseCodeInterpreterCallCodeDelta] = typeof(ResponseCodeInterpreterCallCodeDeltaEvent),
-        [ResponseEventTypes.ResponseFailed] = typeof(ResponseFailedEvent),
-        [ResponseEventTypes.ResponseCompleted] = typeof(ResponseCompletedEvent),
-        [ResponseEventTypes.ResponseCreated] = typeof(ResponseCreatedEvent),
-        [ResponseEventTypes.ResponseIncomplete] = typeof(ResponseIncompleteEvent),
+        [ResponseEventTypes.ResponseWebSearchCallSearching] = typeof(ResponseEventWebSearchCallSearching),
+        [ResponseEventTypes.ResponseWebSearchCallInProgress] = typeof(ResponseEventWebSearchCallInProgress),
+        [ResponseEventTypes.ResponseWebSearchCallCompleted] = typeof(ResponseEventWebSearchCallCompleted),
+        [ResponseEventTypes.ResponseRefusalDone] = typeof(ResponseEventRefusalDone),
+        [ResponseEventTypes.ResponseRefusalDelta] = typeof(ResponseEventRefusalDelta),
+        [ResponseEventTypes.ResponseReasoningSummaryTextDone] = typeof(ResponseEventReasoningSummaryTextDone),
+        [ResponseEventTypes.ResponseReasoningSummaryTextDelta] = typeof(ResponseEventReasoningSummaryTextDelta),
+        [ResponseEventTypes.ResponseReasoningSummaryPartDone] = typeof(ResponseEventReasoningSummaryPartDone),
+        [ResponseEventTypes.ResponseReasoningSummaryPartAdded] = typeof(ResponseEventReasoningSummaryPartAdded),
+        [ResponseEventTypes.ResponseReasoningSummaryDone] = typeof(ResponseEventReasoningSummaryDone),
+        [ResponseEventTypes.ResponseReasoningSummaryDelta] = typeof(ResponseEventReasoningSummaryDelta),
+        [ResponseEventTypes.ResponseReasoningDone] = typeof(ResponseEventReasoningDone),
+        [ResponseEventTypes.ResponseReasoningDelta] = typeof(ResponseEventReasoningDelta),
+        [ResponseEventTypes.ResponseQueued] = typeof(ResponseEventQueued),
+        [ResponseEventTypes.ResponseOutputTextDone] = typeof(ResponseEventOutputTextDone),
+        [ResponseEventTypes.ResponseOutputTextDelta] = typeof(ResponseEventOutputTextDelta),
+        [ResponseEventTypes.ResponseOutputTextAnnotationAdded] = typeof(ResponseEventOutputTextAnnotationAdded),
+        [ResponseEventTypes.ResponseOutputItemAdded] = typeof(ResponseEventOutputItemAdded),
+        [ResponseEventTypes.ResponseOutputItemDone] = typeof(ResponseEventOutputItemDone),
+        [ResponseEventTypes.ResponseContentPartAdded] = typeof(ResponseEventContentPartAdded),
+        [ResponseEventTypes.ResponseContentPartDone] = typeof(ResponseEventContentPartDone),
+        [ResponseEventTypes.ResponseMcpListToolsInProgress] = typeof(ResponseEventMcpListToolsInProgress),
+        [ResponseEventTypes.ResponseMcpListToolsFailed] = typeof(ResponseEventMcpListToolsFailed),
+        [ResponseEventTypes.ResponseMcpListToolsCompleted] = typeof(ResponseEventMcpListToolsCompleted),
+        [ResponseEventTypes.ResponseMcpCallInProgress] = typeof(ResponseEventMcpCallInProgress),
+        [ResponseEventTypes.ResponseMcpCallFailed] = typeof(ResponseEventMcpCallFailed),
+        [ResponseEventTypes.ResponseMcpCallCompleted] = typeof(ResponseEventMcpCallCompleted),
+        [ResponseEventTypes.ResponseMcpCallArgumentsDone] = typeof(ResponseEventMcpCallArgumentsDone),
+        [ResponseEventTypes.ResponseMcpCallArgumentsDelta] = typeof(ResponseEventMcpCallArgumentsDelta),
+        [ResponseEventTypes.ResponseInProgress] = typeof(ResponseEventInProgress),
+        [ResponseEventTypes.ResponseImageGenerationCallPartialImage] = typeof(ResponseEventImageGenerationCallPartialImage),
+        [ResponseEventTypes.ResponseImageGenerationCallInProgress] = typeof(ResponseEventImageGenerationCallInProgress),
+        [ResponseEventTypes.ResponseImageGenerationCallGenerating] = typeof(ResponseEventImageGenerationCallGenerating),
+        [ResponseEventTypes.ResponseImageGenerationCallCompleted] = typeof(ResponseEventImageGenerationCallCompleted),
+        [ResponseEventTypes.ResponseFunctionCallArgumentsDone] = typeof(ResponseEventFunctionCallArgumentsDone),
+        [ResponseEventTypes.ResponseFunctionCallArgumentsDelta] = typeof(ResponseEventFunctionCallArgumentsDelta),
+        [ResponseEventTypes.ResponseFileSearchCallSearching] = typeof(ResponseEventFileSearchCallSearching),
+        [ResponseEventTypes.ResponseFileSearchCallInProgress] = typeof(ResponseEventFileSearchCallInProgress),
+        [ResponseEventTypes.ResponseFileSearchCallCompleted] = typeof(ResponseEventFileSearchCallCompleted),
+        [ResponseEventTypes.ResponseError] = typeof(ResponseEventError),
+        [ResponseEventTypes.ResponseCodeInterpreterCallInProgress] = typeof(ResponseEventCodeInterpreterCallInProgress),
+        [ResponseEventTypes.ResponseCodeInterpreterCallCodeDone] = typeof(ResponseEventCodeInterpreterCallCodeDone),
+        [ResponseEventTypes.ResponseCodeInterpreterCallCodeDelta] = typeof(ResponseEventCodeInterpreterCallCodeDelta),
+        [ResponseEventTypes.ResponseFailed] = typeof(ResponseEventFailed),
+        [ResponseEventTypes.ResponseCompleted] = typeof(ResponseEventCompleted),
+        [ResponseEventTypes.ResponseCreated] = typeof(ResponseEventCreated),
+        [ResponseEventTypes.ResponseIncomplete] = typeof(ResponseEventIncomplete),
     }.ToFrozenDictionary();
 
-    private static IResponsesEvent? DeserializeEvent(string data, ResponseEventTypes eventType)
+    private static IResponseEvent? DeserializeEvent(string data, ResponseEventTypes eventType)
     {
         if (EventTypeToType.TryGetValue(eventType, out Type? type))
         {
-            return (IResponsesEvent?)JsonConvert.DeserializeObject(data, type);
+            return (IResponseEvent?)JsonConvert.DeserializeObject(data, type);
         }
         
         return null;
@@ -258,11 +258,11 @@ public class ResponsesEndpoint : EndpointBase
                 {
                     if (eventsHandler.OnEvent is not null || eventType is ResponseEventTypes.ResponseCompleted or ResponseEventTypes.ResponseCreated)
                     {
-                        IResponsesEvent? evt = DeserializeEvent(runStreamEvent.Data, eventType);
+                        IResponseEvent? evt = DeserializeEvent(runStreamEvent.Data, eventType);
                         
                         if (eventType is ResponseEventTypes.ResponseCreated)
                         {
-                            if (evt is ResponseCreatedEvent created)
+                            if (evt is ResponseEventCreated created)
                             {
                                 if (session is not null)
                                 {
@@ -282,191 +282,191 @@ public class ResponsesEndpoint : EndpointBase
                     {
                         case ResponseEventTypes.ResponseCreated:
                             if (eventsHandler.OnResponseCreated != null)
-                                await eventsHandler.OnResponseCreated(DeserializeEvent<ResponseCreatedEvent>(runStreamEvent.Data));
+                                await eventsHandler.OnResponseCreated(DeserializeEvent<ResponseEventCreated>(runStreamEvent.Data));
                             break;
                         case ResponseEventTypes.ResponseInProgress:
                             if (eventsHandler.OnResponseInProgress != null)
-                                await eventsHandler.OnResponseInProgress(DeserializeEvent<ResponseInProgressEvent>(runStreamEvent.Data));
+                                await eventsHandler.OnResponseInProgress(DeserializeEvent<ResponseEventInProgress>(runStreamEvent.Data));
                             break;
                         case ResponseEventTypes.ResponseCompleted:
                             if (eventsHandler.OnResponseCompleted != null)
-                                await eventsHandler.OnResponseCompleted(DeserializeEvent<ResponseCompletedEvent>(runStreamEvent.Data));
+                                await eventsHandler.OnResponseCompleted(DeserializeEvent<ResponseEventCompleted>(runStreamEvent.Data));
                             break;
                         case ResponseEventTypes.ResponseFailed:
                             if (eventsHandler.OnResponseFailed != null)
-                                await eventsHandler.OnResponseFailed(DeserializeEvent<ResponseFailedEvent>(runStreamEvent.Data));
+                                await eventsHandler.OnResponseFailed(DeserializeEvent<ResponseEventFailed>(runStreamEvent.Data));
                             break;
                         case ResponseEventTypes.ResponseIncomplete:
                             if (eventsHandler.OnResponseIncomplete != null)
-                                await eventsHandler.OnResponseIncomplete(DeserializeEvent<ResponseIncompleteEvent>(runStreamEvent.Data));
+                                await eventsHandler.OnResponseIncomplete(DeserializeEvent<ResponseEventIncomplete>(runStreamEvent.Data));
                             break;
                         case ResponseEventTypes.ResponseQueued:
                             if (eventsHandler.OnResponseQueued != null)
-                                await eventsHandler.OnResponseQueued(DeserializeEvent<ResponseQueuedEvent>(runStreamEvent.Data));
+                                await eventsHandler.OnResponseQueued(DeserializeEvent<ResponseEventQueued>(runStreamEvent.Data));
                             break;
                         case ResponseEventTypes.ResponseError:
                             if (eventsHandler.OnResponseError != null)
-                                await eventsHandler.OnResponseError(DeserializeEvent<ResponseErrorEvent>(runStreamEvent.Data));
+                                await eventsHandler.OnResponseError(DeserializeEvent<ResponseEventError>(runStreamEvent.Data));
                             break;
                         case ResponseEventTypes.ResponseOutputItemAdded:
                             if (eventsHandler.OnResponseOutputItemAdded != null)
-                                await eventsHandler.OnResponseOutputItemAdded(DeserializeEvent<ResponseOutputItemAddedEvent>(runStreamEvent.Data));
+                                await eventsHandler.OnResponseOutputItemAdded(DeserializeEvent<ResponseEventOutputItemAdded>(runStreamEvent.Data));
                             break;
                         case ResponseEventTypes.ResponseOutputItemDone:
                             if (eventsHandler.OnResponseOutputItemDone != null)
-                                await eventsHandler.OnResponseOutputItemDone(DeserializeEvent<ResponseOutputItemDoneEvent>(runStreamEvent.Data));
+                                await eventsHandler.OnResponseOutputItemDone(DeserializeEvent<ResponseEventOutputItemDone>(runStreamEvent.Data));
                             break;
                         case ResponseEventTypes.ResponseContentPartAdded:
                             if (eventsHandler.OnResponseContentPartAdded != null)
-                                await eventsHandler.OnResponseContentPartAdded(DeserializeEvent<ResponseContentPartAddedEvent>(runStreamEvent.Data));
+                                await eventsHandler.OnResponseContentPartAdded(DeserializeEvent<ResponseEventContentPartAdded>(runStreamEvent.Data));
                             break;
                         case ResponseEventTypes.ResponseContentPartDone:
                             if (eventsHandler.OnResponseContentPartDone != null)
-                                await eventsHandler.OnResponseContentPartDone(DeserializeEvent<ResponseContentPartDoneEvent>(runStreamEvent.Data));
+                                await eventsHandler.OnResponseContentPartDone(DeserializeEvent<ResponseEventContentPartDone>(runStreamEvent.Data));
                             break;
                         case ResponseEventTypes.ResponseOutputTextDelta:
                             if (eventsHandler.OnResponseOutputTextDelta != null)
-                                await eventsHandler.OnResponseOutputTextDelta(DeserializeEvent<ResponseOutputTextDeltaEvent>(runStreamEvent.Data));
+                                await eventsHandler.OnResponseOutputTextDelta(DeserializeEvent<ResponseEventOutputTextDelta>(runStreamEvent.Data));
                             break;
                         case ResponseEventTypes.ResponseOutputTextDone:
                             if (eventsHandler.OnResponseOutputTextDone != null)
-                                await eventsHandler.OnResponseOutputTextDone(DeserializeEvent<ResponseOutputTextDoneEvent>(runStreamEvent.Data));
+                                await eventsHandler.OnResponseOutputTextDone(DeserializeEvent<ResponseEventOutputTextDone>(runStreamEvent.Data));
                             break;
                         case ResponseEventTypes.ResponseOutputTextAnnotationAdded:
                             if (eventsHandler.OnResponseOutputTextAnnotationAdded != null)
-                                await eventsHandler.OnResponseOutputTextAnnotationAdded(DeserializeEvent<ResponseOutputTextAnnotationAddedEvent>(runStreamEvent.Data));
+                                await eventsHandler.OnResponseOutputTextAnnotationAdded(DeserializeEvent<ResponseEventOutputTextAnnotationAdded>(runStreamEvent.Data));
                             break;
                         case ResponseEventTypes.ResponseRefusalDelta:
                             if (eventsHandler.OnResponseRefusalDelta != null)
-                                await eventsHandler.OnResponseRefusalDelta(DeserializeEvent<ResponseRefusalDeltaEvent>(runStreamEvent.Data));
+                                await eventsHandler.OnResponseRefusalDelta(DeserializeEvent<ResponseEventRefusalDelta>(runStreamEvent.Data));
                             break;
                         case ResponseEventTypes.ResponseRefusalDone:
                             if (eventsHandler.OnResponseRefusalDone != null)
-                                await eventsHandler.OnResponseRefusalDone(DeserializeEvent<ResponseRefusalDoneEvent>(runStreamEvent.Data));
+                                await eventsHandler.OnResponseRefusalDone(DeserializeEvent<ResponseEventRefusalDone>(runStreamEvent.Data));
                             break;
                         case ResponseEventTypes.ResponseFunctionCallArgumentsDelta:
                             if (eventsHandler.OnResponseFunctionCallArgumentsDelta != null)
-                                await eventsHandler.OnResponseFunctionCallArgumentsDelta(DeserializeEvent<ResponseFunctionCallArgumentsDeltaEvent>(runStreamEvent.Data));
+                                await eventsHandler.OnResponseFunctionCallArgumentsDelta(DeserializeEvent<ResponseEventFunctionCallArgumentsDelta>(runStreamEvent.Data));
                             break;
                         case ResponseEventTypes.ResponseFunctionCallArgumentsDone:
                             if (eventsHandler.OnResponseFunctionCallArgumentsDone != null)
-                                await eventsHandler.OnResponseFunctionCallArgumentsDone(DeserializeEvent<ResponseFunctionCallArgumentsDoneEvent>(runStreamEvent.Data));
+                                await eventsHandler.OnResponseFunctionCallArgumentsDone(DeserializeEvent<ResponseEventFunctionCallArgumentsDone>(runStreamEvent.Data));
                             break;
                         case ResponseEventTypes.ResponseFileSearchCallInProgress:
                             if (eventsHandler.OnResponseFileSearchCallInProgress != null)
-                                await eventsHandler.OnResponseFileSearchCallInProgress(DeserializeEvent<ResponseFileSearchCallInProgressEvent>(runStreamEvent.Data));
+                                await eventsHandler.OnResponseFileSearchCallInProgress(DeserializeEvent<ResponseEventFileSearchCallInProgress>(runStreamEvent.Data));
                             break;
                         case ResponseEventTypes.ResponseFileSearchCallSearching:
                             if (eventsHandler.OnResponseFileSearchCallSearching != null)
-                                await eventsHandler.OnResponseFileSearchCallSearching(DeserializeEvent<ResponseFileSearchCallSearchingEvent>(runStreamEvent.Data));
+                                await eventsHandler.OnResponseFileSearchCallSearching(DeserializeEvent<ResponseEventFileSearchCallSearching>(runStreamEvent.Data));
                             break;
                         case ResponseEventTypes.ResponseFileSearchCallCompleted:
                             if (eventsHandler.OnResponseFileSearchCallCompleted != null)
-                                await eventsHandler.OnResponseFileSearchCallCompleted(DeserializeEvent<ResponseFileSearchCallCompletedEvent>(runStreamEvent.Data));
+                                await eventsHandler.OnResponseFileSearchCallCompleted(DeserializeEvent<ResponseEventFileSearchCallCompleted>(runStreamEvent.Data));
                             break;
                         case ResponseEventTypes.ResponseWebSearchCallInProgress:
                             if (eventsHandler.OnResponseWebSearchCallInProgress != null)
-                                await eventsHandler.OnResponseWebSearchCallInProgress(DeserializeEvent<ResponseWebSearchCallInProgressEvent>(runStreamEvent.Data));
+                                await eventsHandler.OnResponseWebSearchCallInProgress(DeserializeEvent<ResponseEventWebSearchCallInProgress>(runStreamEvent.Data));
                             break;
                         case ResponseEventTypes.ResponseWebSearchCallSearching:
                             if (eventsHandler.OnResponseWebSearchCallSearching != null)
-                                await eventsHandler.OnResponseWebSearchCallSearching(DeserializeEvent<ResponseWebSearchCallSearchingEvent>(runStreamEvent.Data));
+                                await eventsHandler.OnResponseWebSearchCallSearching(DeserializeEvent<ResponseEventWebSearchCallSearching>(runStreamEvent.Data));
                             break;
                         case ResponseEventTypes.ResponseWebSearchCallCompleted:
                             if (eventsHandler.OnResponseWebSearchCallCompleted != null)
-                                await eventsHandler.OnResponseWebSearchCallCompleted(DeserializeEvent<ResponseWebSearchCallCompletedEvent>(runStreamEvent.Data));
+                                await eventsHandler.OnResponseWebSearchCallCompleted(DeserializeEvent<ResponseEventWebSearchCallCompleted>(runStreamEvent.Data));
                             break;
                         case ResponseEventTypes.ResponseReasoningDelta:
                             if (eventsHandler.OnResponseReasoningDelta != null)
-                                await eventsHandler.OnResponseReasoningDelta(DeserializeEvent<ResponseReasoningDeltaEvent>(runStreamEvent.Data));
+                                await eventsHandler.OnResponseReasoningDelta(DeserializeEvent<ResponseEventReasoningDelta>(runStreamEvent.Data));
                             break;
                         case ResponseEventTypes.ResponseReasoningDone:
                             if (eventsHandler.OnResponseReasoningDone != null)
-                                await eventsHandler.OnResponseReasoningDone(DeserializeEvent<ResponseReasoningDoneEvent>(runStreamEvent.Data));
+                                await eventsHandler.OnResponseReasoningDone(DeserializeEvent<ResponseEventReasoningDone>(runStreamEvent.Data));
                             break;
                         case ResponseEventTypes.ResponseReasoningSummaryPartAdded:
                             if (eventsHandler.OnResponseReasoningSummaryPartAdded != null)
-                                await eventsHandler.OnResponseReasoningSummaryPartAdded(DeserializeEvent<ResponseReasoningSummaryPartAddedEvent>(runStreamEvent.Data));
+                                await eventsHandler.OnResponseReasoningSummaryPartAdded(DeserializeEvent<ResponseEventReasoningSummaryPartAdded>(runStreamEvent.Data));
                             break;
                         case ResponseEventTypes.ResponseReasoningSummaryPartDone:
                             if (eventsHandler.OnResponseReasoningSummaryPartDone != null)
-                                await eventsHandler.OnResponseReasoningSummaryPartDone(DeserializeEvent<ResponseReasoningSummaryPartDoneEvent>(runStreamEvent.Data));
+                                await eventsHandler.OnResponseReasoningSummaryPartDone(DeserializeEvent<ResponseEventReasoningSummaryPartDone>(runStreamEvent.Data));
                             break;
                         case ResponseEventTypes.ResponseReasoningSummaryTextDelta:
                             if (eventsHandler.OnResponseReasoningSummaryTextDelta != null)
-                                await eventsHandler.OnResponseReasoningSummaryTextDelta(DeserializeEvent<ResponseReasoningSummaryTextDeltaEvent>(runStreamEvent.Data));
+                                await eventsHandler.OnResponseReasoningSummaryTextDelta(DeserializeEvent<ResponseEventReasoningSummaryTextDelta>(runStreamEvent.Data));
                             break;
                         case ResponseEventTypes.ResponseReasoningSummaryTextDone:
                             if (eventsHandler.OnResponseReasoningSummaryTextDone != null)
-                                await eventsHandler.OnResponseReasoningSummaryTextDone(DeserializeEvent<ResponseReasoningSummaryTextDoneEvent>(runStreamEvent.Data));
+                                await eventsHandler.OnResponseReasoningSummaryTextDone(DeserializeEvent<ResponseEventReasoningSummaryTextDone>(runStreamEvent.Data));
                             break;
                         case ResponseEventTypes.ResponseReasoningSummaryDelta:
                             if (eventsHandler.OnResponseReasoningSummaryDelta != null)
-                                await eventsHandler.OnResponseReasoningSummaryDelta(DeserializeEvent<ResponseReasoningSummaryDeltaEvent>(runStreamEvent.Data));
+                                await eventsHandler.OnResponseReasoningSummaryDelta(DeserializeEvent<ResponseEventReasoningSummaryDelta>(runStreamEvent.Data));
                             break;
                         case ResponseEventTypes.ResponseReasoningSummaryDone:
                             if (eventsHandler.OnResponseReasoningSummaryDone != null)
-                                await eventsHandler.OnResponseReasoningSummaryDone(DeserializeEvent<ResponseReasoningSummaryDoneEvent>(runStreamEvent.Data));
+                                await eventsHandler.OnResponseReasoningSummaryDone(DeserializeEvent<ResponseEventReasoningSummaryDone>(runStreamEvent.Data));
                             break;
                         case ResponseEventTypes.ResponseImageGenerationCallInProgress:
                             if (eventsHandler.OnResponseImageGenerationCallInProgress != null)
-                                await eventsHandler.OnResponseImageGenerationCallInProgress(DeserializeEvent<ResponseImageGenerationCallInProgressEvent>(runStreamEvent.Data));
+                                await eventsHandler.OnResponseImageGenerationCallInProgress(DeserializeEvent<ResponseEventImageGenerationCallInProgress>(runStreamEvent.Data));
                             break;
                         case ResponseEventTypes.ResponseImageGenerationCallGenerating:
                             if (eventsHandler.OnResponseImageGenerationCallGenerating != null)
-                                await eventsHandler.OnResponseImageGenerationCallGenerating(DeserializeEvent<ResponseImageGenerationCallGeneratingEvent>(runStreamEvent.Data));
+                                await eventsHandler.OnResponseImageGenerationCallGenerating(DeserializeEvent<ResponseEventImageGenerationCallGenerating>(runStreamEvent.Data));
                             break;
                         case ResponseEventTypes.ResponseImageGenerationCallPartialImage:
                             if (eventsHandler.OnResponseImageGenerationCallPartialImage != null)
-                                await eventsHandler.OnResponseImageGenerationCallPartialImage(DeserializeEvent<ResponseImageGenerationCallPartialImageEvent>(runStreamEvent.Data));
+                                await eventsHandler.OnResponseImageGenerationCallPartialImage(DeserializeEvent<ResponseEventImageGenerationCallPartialImage>(runStreamEvent.Data));
                             break;
                         case ResponseEventTypes.ResponseImageGenerationCallCompleted:
                             if (eventsHandler.OnResponseImageGenerationCallCompleted != null)
-                                await eventsHandler.OnResponseImageGenerationCallCompleted(DeserializeEvent<ResponseImageGenerationCallCompletedEvent>(runStreamEvent.Data));
+                                await eventsHandler.OnResponseImageGenerationCallCompleted(DeserializeEvent<ResponseEventImageGenerationCallCompleted>(runStreamEvent.Data));
                             break;
                         case ResponseEventTypes.ResponseMcpCallArgumentsDelta:
                             if (eventsHandler.OnResponseMcpCallArgumentsDelta != null)
-                                await eventsHandler.OnResponseMcpCallArgumentsDelta(DeserializeEvent<ResponseMcpCallArgumentsDeltaEvent>(runStreamEvent.Data));
+                                await eventsHandler.OnResponseMcpCallArgumentsDelta(DeserializeEvent<ResponseEventMcpCallArgumentsDelta>(runStreamEvent.Data));
                             break;
                         case ResponseEventTypes.ResponseMcpCallArgumentsDone:
                             if (eventsHandler.OnResponseMcpCallArgumentsDone != null)
-                                await eventsHandler.OnResponseMcpCallArgumentsDone(DeserializeEvent<ResponseMcpCallArgumentsDoneEvent>(runStreamEvent.Data));
+                                await eventsHandler.OnResponseMcpCallArgumentsDone(DeserializeEvent<ResponseEventMcpCallArgumentsDone>(runStreamEvent.Data));
                             break;
                         case ResponseEventTypes.ResponseMcpCallInProgress:
                             if (eventsHandler.OnResponseMcpCallInProgress != null)
-                                await eventsHandler.OnResponseMcpCallInProgress(DeserializeEvent<ResponseMcpCallInProgressEvent>(runStreamEvent.Data));
+                                await eventsHandler.OnResponseMcpCallInProgress(DeserializeEvent<ResponseEventMcpCallInProgress>(runStreamEvent.Data));
                             break;
                         case ResponseEventTypes.ResponseMcpCallCompleted:
                             if (eventsHandler.OnResponseMcpCallCompleted != null)
-                                await eventsHandler.OnResponseMcpCallCompleted(DeserializeEvent<ResponseMcpCallCompletedEvent>(runStreamEvent.Data));
+                                await eventsHandler.OnResponseMcpCallCompleted(DeserializeEvent<ResponseEventMcpCallCompleted>(runStreamEvent.Data));
                             break;
                         case ResponseEventTypes.ResponseMcpCallFailed:
                             if (eventsHandler.OnResponseMcpCallFailed != null)
-                                await eventsHandler.OnResponseMcpCallFailed(DeserializeEvent<ResponseMcpCallFailedEvent>(runStreamEvent.Data));
+                                await eventsHandler.OnResponseMcpCallFailed(DeserializeEvent<ResponseEventMcpCallFailed>(runStreamEvent.Data));
                             break;
                         case ResponseEventTypes.ResponseMcpListToolsInProgress:
                             if (eventsHandler.OnResponseMcpListToolsInProgress != null)
-                                await eventsHandler.OnResponseMcpListToolsInProgress(DeserializeEvent<ResponseMcpListToolsInProgressEvent>(runStreamEvent.Data));
+                                await eventsHandler.OnResponseMcpListToolsInProgress(DeserializeEvent<ResponseEventMcpListToolsInProgress>(runStreamEvent.Data));
                             break;
                         case ResponseEventTypes.ResponseMcpListToolsCompleted:
                             if (eventsHandler.OnResponseMcpListToolsCompleted != null)
-                                await eventsHandler.OnResponseMcpListToolsCompleted(DeserializeEvent<ResponseMcpListToolsCompletedEvent>(runStreamEvent.Data));
+                                await eventsHandler.OnResponseMcpListToolsCompleted(DeserializeEvent<ResponseEventMcpListToolsCompleted>(runStreamEvent.Data));
                             break;
                         case ResponseEventTypes.ResponseMcpListToolsFailed:
                             if (eventsHandler.OnResponseMcpListToolsFailed != null)
-                                await eventsHandler.OnResponseMcpListToolsFailed(DeserializeEvent<ResponseMcpListToolsFailedEvent>(runStreamEvent.Data));
+                                await eventsHandler.OnResponseMcpListToolsFailed(DeserializeEvent<ResponseEventMcpListToolsFailed>(runStreamEvent.Data));
                             break;
                         case ResponseEventTypes.ResponseCodeInterpreterCallInProgress:
                             if (eventsHandler.OnResponseCodeInterpreterCallInProgress != null)
-                                await eventsHandler.OnResponseCodeInterpreterCallInProgress(DeserializeEvent<ResponseCodeInterpreterCallInProgressEvent>(runStreamEvent.Data));
+                                await eventsHandler.OnResponseCodeInterpreterCallInProgress(DeserializeEvent<ResponseEventCodeInterpreterCallInProgress>(runStreamEvent.Data));
                             break;
                         case ResponseEventTypes.ResponseCodeInterpreterCallCodeDelta:
                             if (eventsHandler.OnResponseCodeInterpreterCallCodeDelta != null)
-                                await eventsHandler.OnResponseCodeInterpreterCallCodeDelta(DeserializeEvent<ResponseCodeInterpreterCallCodeDeltaEvent>(runStreamEvent.Data));
+                                await eventsHandler.OnResponseCodeInterpreterCallCodeDelta(DeserializeEvent<ResponseEventCodeInterpreterCallCodeDelta>(runStreamEvent.Data));
                             break;
                         case ResponseEventTypes.ResponseCodeInterpreterCallCodeDone:
                             if (eventsHandler.OnResponseCodeInterpreterCallCodeDone != null)
-                                await eventsHandler.OnResponseCodeInterpreterCallCodeDone(DeserializeEvent<ResponseCodeInterpreterCallCodeDoneEvent>(runStreamEvent.Data));
+                                await eventsHandler.OnResponseCodeInterpreterCallCodeDone(DeserializeEvent<ResponseEventCodeInterpreterCallCodeDone>(runStreamEvent.Data));
                             break;
                     }
                 }

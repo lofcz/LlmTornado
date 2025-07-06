@@ -6,15 +6,15 @@ using Newtonsoft.Json.Linq;
 namespace LlmTornado.Responses.Events;
 
 /// <summary>
-/// Base class for response content part events.
+/// Event that is fired when there is a delta (partial update) to the arguments of an MCP tool call.
 /// </summary>
-public abstract class ResponseContentPartEventBase : IResponseEvent
+public class ResponseEventMcpCallArgumentsDelta : IResponseEvent
 {
     /// <summary>
-    /// The type of the event.
+    /// The type of the event. Always "response.mcp_call.arguments.delta".
     /// </summary>
     [JsonProperty("type")]
-    public abstract string Type { get; set; }
+    public string Type { get; set; } = "response.mcp_call.arguments.delta";
 
     /// <summary>
     /// The sequence number of this event.
@@ -23,33 +23,26 @@ public abstract class ResponseContentPartEventBase : IResponseEvent
     public int SequenceNumber { get; set; }
 
     /// <summary>
-    /// The index of the content part.
-    /// </summary>
-    [JsonProperty("content_index")]
-    public int ContentIndex { get; set; }
-
-    /// <summary>
-    /// The ID of the output item that the content part was added to.
+    /// The unique identifier of the MCP tool call item being processed.
     /// </summary>
     [JsonProperty("item_id")]
     public string ItemId { get; set; } = string.Empty;
 
     /// <summary>
-    /// The index of the output item that the content part was added to.
+    /// The index of the output item in the response's output array.
     /// </summary>
     [JsonProperty("output_index")]
     public int OutputIndex { get; set; }
 
     /// <summary>
-    /// The content part that was added.
+    /// The partial update to the arguments for the MCP tool call.
     /// </summary>
-    [JsonProperty("part")]
-    [JsonConverter(typeof(ResponseContentPartConverter))]
-    public IResponseContentPart Part { get; set; } = null!;
+    [JsonProperty("delta")]
+    public JObject Delta { get; set; } = new JObject();
 
     /// <summary>
     /// The type of this response event.
     /// </summary>
     [JsonIgnore]
-    public abstract ResponseEventTypes EventType { get; }
+    public ResponseEventTypes EventType => ResponseEventTypes.ResponseMcpCallArgumentsDelta;
 } 

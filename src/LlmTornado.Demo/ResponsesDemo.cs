@@ -104,7 +104,7 @@ public class ResponsesDemo : DemoBase
         {
             OnEvent = (data) =>
             {
-                if (data is ResponseOutputTextDeltaEvent delta)
+                if (data is ResponseEventOutputTextDelta delta)
                 {
                     Console.Write(delta.Delta);
                 }
@@ -123,12 +123,12 @@ public class ResponsesDemo : DemoBase
         {
             OnEvent = (data) =>
             {
-                if (data is ResponseOutputTextDeltaEvent delta)
+                if (data is ResponseEventOutputTextDelta delta)
                 {
                     Console.Write(delta.Delta);
                 }
 
-                if (data is ResponseOutputItemDoneEvent itemDone)
+                if (data is ResponseEventOutputItemDone itemDone)
                 {
                     if (itemDone.Item is ResponseFunctionToolCallItem fn)
                     {
@@ -295,6 +295,45 @@ public class ResponsesDemo : DemoBase
         });
 
         Console.WriteLine(result.OutputText);
+        int z = 0;
+    }
+    
+    [TornadoTest]
+    public static async Task ResponseReasoningStreaming()
+    {
+        EndpointBase.SetRequestsTimeout(20000);
+
+        await Program.Connect().Responses.StreamResponseRich(new ResponseRequest
+        {
+            Model = ChatModel.OpenAi.O4.V4Mini,
+            InputItems =
+            [
+                new ResponseInputMessage(ChatMessageRoles.User, [
+                    new ResponseInputContentText("Write a bash script that takes a matrix represented as a string with format \"[1,2],[3,4],[5,6]\" and prints the transpose in the same format.")
+                ])
+            ],
+            Reasoning = new ReasoningConfiguration
+            {
+                Effort = ResponseReasoningEfforts.Medium
+            },
+            Include =
+            [
+                ResponseIncludeFields.ReasoningEncryptedContent
+            ],
+            Store = false
+        }, new ResponseStreamEventHandler
+        {
+            OnEvent = (data) =>
+            {
+                if (data.EventType is ResponseEventTypes.ResponseOutputTextDelta && data is ResponseEventOutputTextDelta delta)
+                {
+                    Console.Write(delta.Delta);
+                }
+                
+                return ValueTask.CompletedTask;
+            }
+        });
+
         int z = 0;
     }
     
