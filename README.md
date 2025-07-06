@@ -15,7 +15,7 @@
 - **Leverage Multiple APIs**: Non-standard features from all major Providers are carefully mapped, documented, and ready to use via strongly-typed code.
 - **Fully Multimodal**: Text, image, video, document, URL, and audio inputs are supported.
 - **MCP Compatible**: Seamlessly integrate Model Context Protocol using the official .NET SDK and `LlmTornado.Mcp` adapter.
-- **Enterprise Ready**: Observability as a first-class citizen. Preview any request before committing to it. Streamlined usage information as a monitoring backbone. Flexibility with multilingual apps in mind.
+- **Enterprise Ready**: Observability, monitoring, cost management. Preview any request before committing to it.
 
 ## ⭐ With a few lines of code you can:
 - [Chat with your documents](https://github.com/lofcz/LlmTornado/blob/61d2a4732c88c45d4a8c053204ecdef807c34652/LlmTornado.Demo/ChatDemo.cs#L722-L757)
