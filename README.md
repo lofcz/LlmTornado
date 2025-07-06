@@ -5,16 +5,17 @@
 
 # 🌪️ LLM Tornado
 
-**Build AI agents and multi-agent systems in minutes with one toolkit. Use any Provider, switch without refactoring anything. Deploy today.**
+**Build AI agents and multi-agent systems in minutes with one toolkit and the broadest Provider support.**
 
 ## Key Features:
--  **Use any model from any Provider**: All you need to know is the model's name; we handle the rest. Built-in: [Anthropic](https://docs.anthropic.com/en/docs/intro), [Azure](https://azure.microsoft.com/en-us/products/ai-services/openai-service), [Cohere](https://docs.cohere.com/changelog), [DeepInfra](https://deepinfra.com/docs/), [DeepSeek](https://api-docs.deepseek.com/), [Google](https://ai.google.dev/gemini-api/docs), [Groq](https://console.groq.com/docs/overview), [Mistral](https://docs.mistral.ai/getting-started), [Ollama](https://ollama.com/search), [OpenAI](https://platform.openai.com/docs), [OpenRouter](https://openrouter.ai/docs/quickstart), [Perplexity](https://docs.perplexity.ai/home), [Voyage](https://www.voyageai.com/), [vLLM](https://docs.vllm.ai/en/latest/), [xAI](https://docs.x.ai/docs). Check the full Feature Matrix [here](https://github.com/lofcz/LlmTornado/blob/master/FeatureMatrix.md).
+-  **Use Any Provider**: All you need to know is the model's name; we handle the rest. Built-in: [Anthropic](https://docs.anthropic.com/en/docs/intro), [Azure](https://azure.microsoft.com/en-us/products/ai-services/openai-service), [Cohere](https://docs.cohere.com/changelog), [DeepInfra](https://deepinfra.com/docs/), [DeepSeek](https://api-docs.deepseek.com/), [Google](https://ai.google.dev/gemini-api/docs), [Groq](https://console.groq.com/docs/overview), [Mistral](https://docs.mistral.ai/getting-started), [Ollama](https://ollama.com/search), [OpenAI](https://platform.openai.com/docs), [OpenRouter](https://openrouter.ai/docs/quickstart), [Perplexity](https://docs.perplexity.ai/home), [Voyage](https://www.voyageai.com/), [xAI](https://docs.x.ai/docs). Check the full Feature Matrix [here](https://github.com/lofcz/LlmTornado/blob/master/FeatureMatrix.md).
+- **First-class Local Deployments**: Run with [vLLM](https://docs.vllm.ai/en/latest), [Ollama](https://ollama.com/), or [LocalAI](https://localai.io/). Support for custom arguments.
 - **Multi-Agent Systems**: Toolkit for the orchestration of multiple collaborating specialist agents.
-- **Maximize request success rate**: We keep track of which parameters are supported by which models, how long the reasoning context can be, etc., and silently modify your requests to comply with rules enforced by a diverse set of Providers.
-- **Leverage unique capabilities**: Non-standard features from all major Providers are carefully mapped, documented, and ready to use via strongly-typed code.
-- **Fully multimodal**: Text, image, video, document, URL, and audio inputs are supported.
-- **MCP compatible**: Seamlessly integrate Model Context Protocol using the official .NET SDK and `LlmTornado.Mcp` adapter.
-- **Enterprise ready**: Observability as a first-class citizen. Preview any request before committing to it. Streamlined usage information as a monitoring backbone. Flexibility with multilingual apps in mind.
+- **Maximize Request Success Rate**: We keep track of which parameters are supported by which models, how long the reasoning context can be, etc., and silently modify your requests to comply with rules enforced by a diverse set of Providers.
+- **Leverage Multiple APIs**: Non-standard features from all major Providers are carefully mapped, documented, and ready to use via strongly-typed code.
+- **Fully Multimodal**: Text, image, video, document, URL, and audio inputs are supported.
+- **MCP Compatible**: Seamlessly integrate Model Context Protocol using the official .NET SDK and `LlmTornado.Mcp` adapter.
+- **Enterprise Ready**: Observability as a first-class citizen. Preview any request before committing to it. Streamlined usage information as a monitoring backbone. Flexibility with multilingual apps in mind.
 
 ## ⭐ With a few lines of code you can:
 - [Chat with your documents](https://github.com/lofcz/LlmTornado/blob/61d2a4732c88c45d4a8c053204ecdef807c34652/LlmTornado.Demo/ChatDemo.cs#L722-L757)
