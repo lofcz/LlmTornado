@@ -893,7 +893,7 @@ internal class CodeInterpreterOutputsConverter : JsonConverter<List<ICodeInterpr
 
         // Load the array token to iterate over items.
         JArray array = JArray.Load(reader);
-        var result = new List<ICodeInterpreterOutput>(array.Count);
+        List<ICodeInterpreterOutput> result = new List<ICodeInterpreterOutput>(array.Count);
 
         foreach (JToken item in array)
         {
@@ -920,7 +920,7 @@ internal class CodeInterpreterOutputsConverter : JsonConverter<List<ICodeInterpr
         }
 
         writer.WriteStartArray();
-        foreach (var output in value)
+        foreach (ICodeInterpreterOutput? output in value)
         {
             serializer.Serialize(writer, output);
         }

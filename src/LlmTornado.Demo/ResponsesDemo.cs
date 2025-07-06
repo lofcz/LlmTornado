@@ -1,5 +1,6 @@
 using LlmTornado.Chat.Models;
 using LlmTornado.Code;
+using LlmTornado.Common;
 using LlmTornado.Images.Models;
 using LlmTornado.Responses;
 using LlmTornado.Responses.Events;
@@ -12,7 +13,7 @@ public class ResponsesDemo : DemoBase
     [TornadoTest]
     public static async Task ResponseSimpleText()
     {
-        ResponseResult? result = await Program.Connect().Responses.CreateResponse(new ResponseRequest
+        ResponseResult result = await Program.Connect().Responses.CreateResponse(new ResponseRequest
         {
             Model = ChatModel.OpenAi.Gpt41.V41Mini,
             InputItems = [
@@ -33,7 +34,7 @@ public class ResponsesDemo : DemoBase
     [TornadoTest]
     public static async Task ResponseSimpleTool()
     {
-        ResponseResult? result = await Program.Connect().Responses.CreateResponse(new ResponseRequest
+        ResponseResult result = await Program.Connect().Responses.CreateResponse(new ResponseRequest
         {
             Model = ChatModel.OpenAi.Gpt41.V41,
             InputItems =
@@ -189,7 +190,7 @@ public class ResponsesDemo : DemoBase
     [TornadoTest]
     public static async Task ResponseDeepResearchBackground()
     {
-        ResponseResult? result = await Program.Connect().Responses.CreateResponse(new ResponseRequest
+        ResponseResult result = await Program.Connect().Responses.CreateResponse(new ResponseRequest
         {
             Model = ChatModel.OpenAi.O4.V4MiniDeepResearch,
             Background = true,
@@ -208,7 +209,7 @@ public class ResponsesDemo : DemoBase
     [TornadoTest]
     public static async Task ResponseBackground()
     {
-        ResponseResult? result = await Program.Connect().Responses.CreateResponse(new ResponseRequest
+        ResponseResult result = await Program.Connect().Responses.CreateResponse(new ResponseRequest
         {
             Model = ChatModel.OpenAi.O4.V4Mini,
             Background = true,
@@ -228,7 +229,7 @@ public class ResponsesDemo : DemoBase
         byte[] bytes = await File.ReadAllBytesAsync("Static/Images/empty.jpg");
         string base64 = $"data:image/jpeg;base64,{Convert.ToBase64String(bytes)}";
         
-        ResponseResult? result = await Program.Connect().Responses.CreateResponse(new ResponseRequest
+        ResponseResult result = await Program.Connect().Responses.CreateResponse(new ResponseRequest
         {
             Model = ChatModel.OpenAi.Codex.ComputerUsePreview,
             Background = false,
@@ -261,7 +262,7 @@ public class ResponsesDemo : DemoBase
     {
         EndpointBase.SetRequestsTimeout(20000);
         
-        ResponseResult? result = await Program.Connect().Responses.CreateResponse(new ResponseRequest
+        ResponseResult result = await Program.Connect().Responses.CreateResponse(new ResponseRequest
         {
             Model = ChatModel.OpenAi.Gpt41.V41,
             Background = false,
@@ -291,7 +292,7 @@ public class ResponsesDemo : DemoBase
     {
         EndpointBase.SetRequestsTimeout(20000);
         
-        ResponseResult? result = await Program.Connect().Responses.CreateResponse(new ResponseRequest
+        ResponseResult result = await Program.Connect().Responses.CreateResponse(new ResponseRequest
         {
             Model = ChatModel.OpenAi.O4.V4Mini,
             InputItems = [
@@ -357,7 +358,7 @@ public class ResponsesDemo : DemoBase
     {
         EndpointBase.SetRequestsTimeout(20000);
         
-        ResponseResult? result = await Program.Connect().Responses.CreateResponse(new ResponseRequest
+        ResponseResult result = await Program.Connect().Responses.CreateResponse(new ResponseRequest
         {
             Model = ChatModel.OpenAi.Gpt41.V41,
             Background = false,
@@ -405,7 +406,7 @@ public class ResponsesDemo : DemoBase
     {
         TornadoApi api = Program.Connect();
      
-        ResponseResult? createResult = await api.Responses.CreateResponse(new ResponseRequest
+        ResponseResult createResult = await api.Responses.CreateResponse(new ResponseRequest
         {
             Model = ChatModel.OpenAi.O4.V4Mini,
             Background = true,
@@ -414,7 +415,43 @@ public class ResponsesDemo : DemoBase
             ]
         });
         
-        ResponseDeleted? result = await api.Responses.DeleteResponse(createResult.Id);
+        ResponseDeleted result = await api.Responses.DeleteResponse(createResult.Id);
         Assert.That(result.Deleted, Is.True);
+    }
+    
+    [TornadoTest]
+    public static async Task ResponseCancel()
+    {
+        TornadoApi api = Program.Connect();
+     
+        ResponseResult createResult = await api.Responses.CreateResponse(new ResponseRequest
+        {
+            Model = ChatModel.OpenAi.O4.V4Mini,
+            Background = true,
+            InputItems = [
+                new ResponseInputMessage(ChatMessageRoles.User, "2+2=?")
+            ]
+        });
+        
+        ResponseResult result = await api.Responses.CancelResponse(createResult.Id);
+        int z = 0;
+    }
+    
+    [TornadoTest]
+    public static async Task ResponseListItems()
+    {
+        TornadoApi api = Program.Connect();
+     
+        ResponseResult createResult = await api.Responses.CreateResponse(new ResponseRequest
+        {
+            Model = ChatModel.OpenAi.O4.V4Mini,
+            Background = true,
+            InputItems = [
+                new ResponseInputMessage(ChatMessageRoles.User, "2+2=?")
+            ]
+        });
+        
+        ListResponse<ResponseInputItem> result = await api.Responses.ListResponseInputItems(createResult.Id);
+        int z = 0;
     }
 }

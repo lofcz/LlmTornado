@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using LlmTornado.Code;
 using LlmTornado.Responses.Events;
 using LlmTornado.Threads;
 
@@ -254,4 +255,9 @@ public class ResponseStreamEventHandler
     ///     Called when raw server-sent event data arrives. This handler receives the raw SSE data before any parsing.
     /// </summary>
     public Func<ServerSentEvent, ValueTask>? OnSse { get; set; }
+    
+    /// <summary>
+    ///     Called when the http request fails.
+    /// </summary>
+    public Func<TornadoStreamRequest, ValueTask>? OnException { get; set; }
 } 

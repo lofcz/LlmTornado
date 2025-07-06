@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using LlmTornado.Chat;
 using LlmTornado.Code;
+using LlmTornado.Images;
+using LlmTornado.Threads;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -1305,99 +1308,513 @@ internal class InputItemJsonConverter : JsonConverter<ResponseInputItem>
 
     private static bool IsOutputMessage(JObject jo)
     {
-        // Check if this is an output message by looking for assistant role or id field
+        // Check if this is an output message by looking for assistant role
         string? role = jo["role"]?.ToString();
-        string? id = jo["id"]?.ToString();
-        return role == "assistant" || !string.IsNullOrEmpty(id);
+        return role == "assistant";
     }
 
-    private static ResponseInputMessage? DeserializeMessage(JObject jo, JsonSerializer serializer)
+    private static ResponseInputMessage DeserializeMessage(JObject jo, JsonSerializer serializer)
     {
-        return jo.ToObject<ResponseInputMessage>(serializer);
+        ResponseInputMessage message = new ResponseInputMessage();
+
+        if (jo["role"]?.ToString() is { } roleStr && Enum.TryParse(roleStr, true, out ChatMessageRoles role))
+            message.Role = role;
+        
+        if (jo["status"]?.ToString() is { } statusStr && Enum.TryParse(statusStr, true, out ResponseMessageStatuses status))
+            message.Status = status;
+        
+        if (jo["content"] is JArray contentArray)
+        {
+            message.Content = [];
+            foreach (JToken? contentItem in contentArray)
+            {
+                if (contentItem is JObject contentObj)
+                {
+                    string? contentType = contentObj["type"]?.ToString();
+                    ResponseInputContent? content = contentType switch
+                    {
+                        "input_text" => new ResponseInputContentText
+                        {
+                            Text = contentObj["text"]?.ToString() ?? string.Empty
+                        },
+                        "input_image" => new ResponseInputContentImage
+                        {
+                            ImageUrl = contentObj["image_url"]?.ToString(),
+                            FileId = contentObj["file_id"]?.ToString(),
+                            Detail = contentObj["detail"]?.ToObject<ImageDetail>()
+                        },
+                        "input_file" => new ResponseInputContentFile
+                        {
+                            FileId = contentObj["file_id"]?.ToString(),
+                            Filename = contentObj["filename"]?.ToString(),
+                            FileData = contentObj["file_data"]?.ToString()
+                        },
+                        _ => null
+                    };
+                    
+                    if (content != null)
+                        message.Content.Add(content);
+                }
+            }
+        }
+        
+        return message;
     }
 
-    private static ItemReferenceParam? DeserializeItemReference(JObject jo, JsonSerializer serializer)
+    private static ItemReferenceParam DeserializeItemReference(JObject jo, JsonSerializer serializer)
     {
-        return jo.ToObject<ItemReferenceParam>(serializer);
+        ItemReferenceParam item = new ItemReferenceParam();
+        
+        if (jo["id"]?.ToString() is { } id)
+            item.Id = id;
+        
+        return item;
     }
 
-    private static FunctionToolCallOutput? DeserializeFunctionCallOutput(JObject jo, JsonSerializer serializer)
+    private static FunctionToolCallOutput DeserializeFunctionCallOutput(JObject jo, JsonSerializer serializer)
     {
-        return jo.ToObject<FunctionToolCallOutput>(serializer);
+        FunctionToolCallOutput output = new FunctionToolCallOutput();
+        
+        if (jo["call_id"]?.ToString() is { } callId)
+            output.CallId = callId;
+        
+        if (jo["output"]?.ToString() is { } outputStr)
+            output.Output = outputStr;
+        
+        if (jo["id"]?.ToString() is { } id)
+            output.Id = id;
+        
+        if (jo["status"]?.ToString() is { } statusStr && Enum.TryParse(statusStr, true, out ResponseMessageStatuses status))
+            output.Status = status;
+        
+        return output;
     }
 
-    private static ComputerToolCallOutput? DeserializeComputerCallOutput(JObject jo, JsonSerializer serializer)
+    private static ComputerToolCallOutput DeserializeComputerCallOutput(JObject jo, JsonSerializer serializer)
     {
-        return jo.ToObject<ComputerToolCallOutput>(serializer);
+        ComputerToolCallOutput output = new ComputerToolCallOutput();
+        
+        if (jo["call_id"]?.ToString() is { } callId)
+            output.CallId = callId;
+        
+        if (jo["output"] is JObject outputObj && outputObj.ToObject<ComputerScreenshot>() is { } screenshot)
+            output.Output = screenshot;
+        
+        if (jo["id"]?.ToString() is { } id)
+            output.Id = id;
+        
+        if (jo["status"]?.ToString() is { } statusStr && Enum.TryParse(statusStr, true, out ResponseMessageStatuses status))
+            output.Status = status;
+        
+        if (jo["acknowledged_safety_checks"] is JArray checksArray)
+        {
+            output.AcknowledgedSafetyChecks = checksArray.ToObject<List<AcknowledgedSafetyCheck>>();
+        }
+        
+        return output;
     }
 
-    private static LocalShellCallOutput? DeserializeLocalShellCallOutput(JObject jo, JsonSerializer serializer)
+    private static LocalShellCallOutput DeserializeLocalShellCallOutput(JObject jo, JsonSerializer serializer)
     {
-        return jo.ToObject<LocalShellCallOutput>(serializer);
+        LocalShellCallOutput output = new LocalShellCallOutput();
+        
+        if (jo["id"]?.ToString() is { } id)
+            output.Id = id;
+        
+        if (jo["output"]?.ToString() is { } outputStr)
+            output.Output = outputStr;
+        
+        if (jo["status"]?.ToString() is { } statusStr && Enum.TryParse(statusStr, true, out ResponseMessageStatuses status))
+            output.Status = status;
+        
+        return output;
     }
 
-    private static McpApprovalResponse? DeserializeMcpApprovalResponse(JObject jo, JsonSerializer serializer)
+    private static McpApprovalResponse DeserializeMcpApprovalResponse(JObject jo, JsonSerializer serializer)
     {
-        return jo.ToObject<McpApprovalResponse>(serializer);
+        McpApprovalResponse response = new McpApprovalResponse();
+        
+        if (jo["approval_request_id"]?.ToString() is { } approvalRequestId)
+            response.ApprovalRequestId = approvalRequestId;
+        
+        if (jo["approve"]?.ToObject<bool>() is { } approve)
+            response.Approve = approve;
+        
+        if (jo["id"]?.ToString() is { } id)
+            response.Id = id;
+        
+        if (jo["reason"]?.ToString() is { } reason)
+            response.Reason = reason;
+        
+        return response;
     }
 
-    private static OutputMessageInput? DeserializeOutputMessage(JObject jo, JsonSerializer serializer)
+    private static OutputMessageInput DeserializeOutputMessage(JObject jo, JsonSerializer serializer)
     {
-        return jo.ToObject<OutputMessageInput>(serializer);
+        OutputMessageInput message = new OutputMessageInput();
+        
+        if (jo["id"]?.ToString() is { } id)
+            message.Id = id;
+        
+        if (jo["role"]?.ToString() is { } role)
+            message.Role = role;
+        
+        if (jo["status"]?.ToString() is { } statusStr && Enum.TryParse(statusStr, true, out ResponseMessageStatuses status))
+            message.Status = status;
+        
+        if (jo["content"] is JArray contentArray)
+        {
+            message.Content = [];
+            foreach (JToken? contentItem in contentArray)
+            {
+                if (contentItem is JObject contentObj)
+                {
+                    string? contentType = contentObj["type"]?.ToString();
+                    IResponseOutputContent? content = contentType switch
+                    {
+                        "output_text" => new ResponseOutputTextContent
+                        {
+                            Type = "output_text",
+                            Text = contentObj["text"]?.ToString() ?? string.Empty,
+                            Annotations = DeserializeAnnotations(contentObj["annotations"] as JArray),
+                            Logprobs = contentObj["logprobs"]?.ToObject<List<LogProbProperties>>()
+                        },
+                        "refusal" => new RefusalContent
+                        {
+                            Type = "refusal",
+                            Refusal = contentObj["refusal"]?.ToString() ?? string.Empty
+                        },
+                        _ => null
+                    };
+                    
+                    if (content != null)
+                        message.Content.Add(content);
+                }
+            }
+        }
+        
+        return message;
     }
 
-    private static FileSearchToolCallInput? DeserializeFileSearchToolCall(JObject jo, JsonSerializer serializer)
+    private static FileSearchToolCallInput DeserializeFileSearchToolCall(JObject jo, JsonSerializer serializer)
     {
-        return jo.ToObject<FileSearchToolCallInput>(serializer);
+        FileSearchToolCallInput input = new FileSearchToolCallInput();
+        
+        if (jo["id"]?.ToString() is { } id)
+            input.Id = id;
+        
+        if (jo["queries"] is JArray queriesArray)
+        {
+            foreach (JToken? query in queriesArray)
+            {
+                if (query.ToString() is { } queryStr)
+                    input.Queries.Add(queryStr);
+            }
+        }
+        
+        if (jo["status"]?.ToString() is { } statusStr && Enum.TryParse(statusStr, true, out ResponseMessageStatuses status))
+            input.Status = status;
+        
+        if (jo["results"] is JArray resultsArray)
+        {
+            input.Results = resultsArray.ToObject<List<ResponseFileSearchToolCallItemResult>>();
+        }
+        
+        return input;
     }
 
-    private static ComputerToolCallInput? DeserializeComputerToolCall(JObject jo, JsonSerializer serializer)
+    private static ComputerToolCallInput DeserializeComputerToolCall(JObject jo, JsonSerializer serializer)
     {
-        return jo.ToObject<ComputerToolCallInput>(serializer);
+        ComputerToolCallInput input = new ComputerToolCallInput();
+        
+        if (jo["id"]?.ToString() is { } id)
+            input.Id = id;
+        
+        if (jo["call_id"]?.ToString() is { } callId)
+            input.CallId = callId;
+        
+        if (jo["action"] is JObject actionObj && actionObj.ToObject<IComputerAction>() is { } action)
+            input.Action = action;
+        
+        if (jo["status"]?.ToString() is { } statusStr && Enum.TryParse(statusStr, true, out ResponseMessageStatuses status))
+            input.Status = status;
+        
+        if (jo["pending_safety_checks"] is JArray checksArray)
+        {
+            input.PendingSafetyChecks = checksArray.ToObject<List<PendingSafetyCheck>>() ?? [];
+        }
+        
+        return input;
     }
 
-    private static FunctionToolCallInput? DeserializeFunctionToolCall(JObject jo, JsonSerializer serializer)
+    private static FunctionToolCallInput DeserializeFunctionToolCall(JObject jo, JsonSerializer serializer)
     {
-        return jo.ToObject<FunctionToolCallInput>(serializer);
+        FunctionToolCallInput input = new FunctionToolCallInput();
+        
+        if (jo["call_id"]?.ToString() is { } callId)
+            input.CallId = callId;
+        
+        if (jo["name"]?.ToString() is { } name)
+            input.Name = name;
+        
+        if (jo["arguments"]?.ToString() is { } arguments)
+            input.Arguments = arguments;
+        
+        if (jo["id"]?.ToString() is { } id)
+            input.Id = id;
+        
+        if (jo["status"]?.ToString() is { } statusStr && Enum.TryParse(statusStr, true, out ResponseMessageStatuses status))
+            input.Status = status;
+        
+        return input;
     }
 
-    private static Reasoning? DeserializeReasoning(JObject jo, JsonSerializer serializer)
+    private static Reasoning DeserializeReasoning(JObject jo, JsonSerializer serializer)
     {
-        return jo.ToObject<Reasoning>(serializer);
+        Reasoning reasoning = new Reasoning();
+        
+        if (jo["id"]?.ToString() is { } id)
+            reasoning.Id = id;
+        
+        if (jo["summary"] is JArray summaryArray)
+        {
+            foreach (JToken? summaryItem in summaryArray)
+            {
+                if (summaryItem.ToObject<ReasoningSummaryText>() is { } summary)
+                    reasoning.Summary.Add(summary);
+            }
+        }
+        
+        if (jo["encrypted_content"]?.ToString() is { } encryptedContent)
+            reasoning.EncryptedContent = encryptedContent;
+        
+        if (jo["status"]?.ToString() is { } statusStr && Enum.TryParse(statusStr, true, out ResponseMessageStatuses status))
+            reasoning.Status = status;
+        
+        return reasoning;
     }
 
-    private static WebSearchToolCallInput? DeserializeWebSearchToolCall(JObject jo, JsonSerializer serializer)
+    private static WebSearchToolCallInput DeserializeWebSearchToolCall(JObject jo, JsonSerializer serializer)
     {
-        return jo.ToObject<WebSearchToolCallInput>(serializer);
+        WebSearchToolCallInput input = new WebSearchToolCallInput();
+        
+        if (jo["id"]?.ToString() is { } id)
+            input.Id = id;
+        
+        if (jo["action"] is JObject actionObj && actionObj.ToObject<IWebSearchAction>() is { } action)
+            input.Action = action;
+        
+        if (jo["status"]?.ToString() is { } statusStr && Enum.TryParse(statusStr, true, out ResponseMessageStatuses status))
+            input.Status = status;
+        
+        return input;
     }
 
-    private static ImageGenerationCallInput? DeserializeImageGenerationCall(JObject jo, JsonSerializer serializer)
+    private static ImageGenerationCallInput DeserializeImageGenerationCall(JObject jo, JsonSerializer serializer)
     {
-        return jo.ToObject<ImageGenerationCallInput>(serializer);
+        ImageGenerationCallInput input = new ImageGenerationCallInput();
+        
+        if (jo["id"]?.ToString() is { } id)
+            input.Id = id;
+        
+        if (jo["status"]?.ToString() is { } statusStr && Enum.TryParse(statusStr, true, out ResponseMessageStatuses status))
+            input.Status = status;
+        
+        return input;
     }
 
-    private static CodeInterpreterToolCallInput? DeserializeCodeInterpreterCall(JObject jo, JsonSerializer serializer)
+    private static CodeInterpreterToolCallInput DeserializeCodeInterpreterCall(JObject jo, JsonSerializer serializer)
     {
-        return jo.ToObject<CodeInterpreterToolCallInput>(serializer);
+        CodeInterpreterToolCallInput input = new CodeInterpreterToolCallInput();
+        
+        if (jo["id"]?.ToString() is { } id)
+            input.Id = id;
+        
+        if (jo["container_id"]?.ToString() is { } containerId)
+            input.ContainerId = containerId;
+        
+        if (jo["code"]?.ToString() is { } code)
+            input.Code = code;
+        
+        if (jo["status"]?.ToString() is { } statusStr && Enum.TryParse(statusStr, true, out ResponseMessageStatuses status))
+            input.Status = status;
+        
+        if (jo["outputs"] is JArray outputsArray)
+        {
+            input.Outputs = [];
+            
+            foreach (JToken? outputItem in outputsArray)
+            {
+                if (outputItem is JObject outputObj)
+                {
+                    string? outputType = outputObj["type"]?.ToString();
+                    ICodeInterpreterOutput? output = outputType switch
+                    {
+                        "logs" => new CodeInterpreterOutputLogs
+                        {
+                            Type = "logs",
+                            Logs = outputObj["logs"]?.ToString() ?? string.Empty
+                        },
+                        "image" => new CodeInterpreterOutputImage
+                        {
+                            Type = "image",
+                            Url = outputObj["url"]?.ToString() ?? string.Empty
+                        },
+                        _ => null
+                    };
+                    
+                    if (output != null)
+                        input.Outputs.Add(output);
+                }
+            }
+        }
+        
+        return input;
     }
 
-    private static LocalShellCallInput? DeserializeLocalShellCall(JObject jo, JsonSerializer serializer)
+    private static LocalShellCallInput DeserializeLocalShellCall(JObject jo, JsonSerializer serializer)
     {
-        return jo.ToObject<LocalShellCallInput>(serializer);
+        LocalShellCallInput input = new LocalShellCallInput();
+        
+        if (jo["id"]?.ToString() is { } id)
+            input.Id = id;
+        
+        if (jo["call_id"]?.ToString() is { } callId)
+            input.CallId = callId;
+        
+        if (jo["action"] is JObject actionObj && actionObj.ToObject<LocalShellExecAction>() is { } action)
+            input.Action = action;
+        
+        if (jo["status"]?.ToString() is { } statusStr && Enum.TryParse(statusStr, true, out ResponseMessageStatuses status))
+            input.Status = status;
+        
+        return input;
     }
 
-    private static McpListToolsInput? DeserializeMcpListTools(JObject jo, JsonSerializer serializer)
+    private static McpListToolsInput DeserializeMcpListTools(JObject jo, JsonSerializer serializer)
     {
-        return jo.ToObject<McpListToolsInput>(serializer);
+        McpListToolsInput input = new McpListToolsInput();
+        
+        if (jo["id"]?.ToString() is { } id)
+            input.Id = id;
+        
+        if (jo["server_label"]?.ToString() is { } serverLabel)
+            input.ServerLabel = serverLabel;
+        
+        if (jo["tools"] is JArray toolsArray)
+        {
+            foreach (JToken? tool in toolsArray)
+            {
+                if (tool.ToObject<McpTool>() is { } mcpTool)
+                    input.Tools.Add(mcpTool);
+            }
+        }
+        
+        if (jo["error"]?.ToString() is { } error)
+            input.Error = error;
+        
+        return input;
     }
 
-    private static McpApprovalRequestInput? DeserializeMcpApprovalRequest(JObject jo, JsonSerializer serializer)
+    private static McpApprovalRequestInput DeserializeMcpApprovalRequest(JObject jo, JsonSerializer serializer)
     {
-        return jo.ToObject<McpApprovalRequestInput>(serializer);
+        McpApprovalRequestInput input = new McpApprovalRequestInput();
+        
+        if (jo["id"]?.ToString() is { } id)
+            input.Id = id;
+        
+        if (jo["name"]?.ToString() is { } name)
+            input.Name = name;
+        
+        if (jo["server_label"]?.ToString() is { } serverLabel)
+            input.ServerLabel = serverLabel;
+        
+        if (jo["arguments"]?.ToString() is { } arguments)
+            input.Arguments = arguments;
+        
+        return input;
     }
 
-    private static McpToolCallInput? DeserializeMcpToolCall(JObject jo, JsonSerializer serializer)
+    private static McpToolCallInput DeserializeMcpToolCall(JObject jo, JsonSerializer serializer)
     {
-        return jo.ToObject<McpToolCallInput>(serializer);
+        McpToolCallInput input = new McpToolCallInput();
+        
+        if (jo["id"]?.ToString() is { } id)
+            input.Id = id;
+        
+        if (jo["name"]?.ToString() is { } name)
+            input.Name = name;
+        
+        if (jo["server_label"]?.ToString() is { } serverLabel)
+            input.ServerLabel = serverLabel;
+        
+        if (jo["arguments"]?.ToString() is { } arguments)
+            input.Arguments = arguments;
+        
+        if (jo["error"]?.ToString() is { } error)
+            input.Error = error;
+        
+        if (jo["output"]?.ToString() is { } output)
+            input.Output = output;
+        
+        return input;
+    }
+
+    private static List<IResponseOutputContentAnnotation> DeserializeAnnotations(JArray? annotationsArray)
+    {
+        if (annotationsArray is null)
+        {
+            return [];
+        }
+
+        List<IResponseOutputContentAnnotation> annotations = [];
+        foreach (JToken? annotationToken in annotationsArray)
+        {
+            if (annotationToken is JObject annotationObj)
+            {
+                string? type = annotationObj["type"]?.ToString();
+                IResponseOutputContentAnnotation? annotation = type switch
+                {
+                    "file_citation" => new FileCitationAnnotation
+                    {
+                        Type = "file_citation",
+                        FileId = annotationObj["file_id"]?.ToString() ?? string.Empty,
+                        Index = annotationObj["index"]?.ToObject<int>() ?? 0,
+                        Filename = annotationObj["filename"]?.ToString() ?? string.Empty
+                    },
+                    "url_citation" => new UrlCitationAnnotation
+                    {
+                        Type = "url_citation",
+                        Url = annotationObj["url"]?.ToString() ?? string.Empty,
+                        StartIndex = annotationObj["start_index"]?.ToObject<int>() ?? 0,
+                        EndIndex = annotationObj["end_index"]?.ToObject<int>() ?? 0,
+                        Title = annotationObj["title"]?.ToString() ?? string.Empty
+                    },
+                    "container_file_citation" => new ContainerFileCitationAnnotation
+                    {
+                        Type = "container_file_citation",
+                        ContainerId = annotationObj["container_id"]?.ToString() ?? string.Empty,
+                        FileId = annotationObj["file_id"]?.ToString() ?? string.Empty,
+                        StartIndex = annotationObj["start_index"]?.ToObject<int>() ?? 0,
+                        EndIndex = annotationObj["end_index"]?.ToObject<int>() ?? 0,
+                        Filename = annotationObj["filename"]?.ToString() ?? string.Empty
+                    },
+                    "file_path" => new FilePathAnnotation
+                    {
+                        Type = "file_path",
+                        FileId = annotationObj["file_id"]?.ToString() ?? string.Empty,
+                        Index = annotationObj["index"]?.ToObject<int>() ?? 0
+                    },
+                    _ => null
+                };
+
+                if (annotation != null)
+                {
+                    annotations.Add(annotation);
+                }
+            }
+        }
+
+        return annotations;
     }
 } 

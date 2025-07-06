@@ -202,14 +202,9 @@ public class ResponseRequest
     /// <summary>
     ///	Serializes the chat request into the request body, based on the conventions used by the LLM provider.
     /// </summary>
-    public TornadoRequestContent Serialize(IEndpointProvider provider)
+    public TornadoRequestContent Serialize(IEndpointProvider provider, ResponseRequestSerializeOptions? options = null)
     {
-        return Serialize(provider, false);
-    }
-    
-    private TornadoRequestContent Serialize(IEndpointProvider provider, bool pretty)
-    {
-        string body = this.ToJson();
+        string body = this.ToJson(options?.Pretty ?? false);
         return new TornadoRequestContent(body, Model, null, provider, CapabilityEndpoints.Responses);
     }
 

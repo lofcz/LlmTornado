@@ -1429,6 +1429,27 @@ public class ChatRequestSerializeOptions
 }
 
 /// <summary>
+/// Options for serializing responses requests.
+/// </summary>
+public class ResponseRequestSerializeOptions
+{
+    /// <summary>
+    /// Whether the request is streamed.
+    /// </summary>
+    public bool? Stream { get; set; }
+
+    /// <summary>
+    /// Forces headers to be included. Warning: headers contain secrets, such as API keys.
+    /// </summary>
+    public bool IncludeHeaders { get; set;}
+    
+    /// <summary>
+    /// Prettifies the request's body.
+    /// </summary>
+    public bool Pretty { get; set; }
+}
+
+/// <summary>
 /// Represents the counts of files in different processing states within a vector store.
 /// </summary>
 public class VectorStoreFileCountInfo

@@ -150,17 +150,110 @@ public class ResponsesEndpoint : EndpointBase
     /// </summary>
     public async Task<ResponseResult?> GetResponse(string responseId, CancellationToken cancellationToken = default)
     {
+        HttpCallResult<ResponseResult>? data = await GetResponseSafe(responseId, cancellationToken).ConfigureAwait(false);
+        
+        if (!data.Ok)
+        {
+            throw data.Exception;
+        }
+        
+        return data.Data;
+    }
+    
+    /// <summary>
+    /// Retrieves a model response with the given ID.
+    /// </summary>
+    public async Task<HttpCallResult<ResponseResult>> GetResponseSafe(string responseId, CancellationToken cancellationToken = default)
+    {
         IEndpointProvider provider = Api.GetProvider(LLmProviders.OpenAi);
-        return (await HttpGet<ResponseResult>(provider, Endpoint, url: GetUrl(provider, $"/{responseId}"), ct: cancellationToken).ConfigureAwait(false)).Data;
+        return await HttpGet<ResponseResult>(provider, Endpoint, url: GetUrl(provider, $"/{responseId}"), ct: cancellationToken).ConfigureAwait(false);
     }
     
     /// <summary>
     /// Deletes a model response with the given ID.
     /// </summary>
-    public async Task<ResponseDeleted?> DeleteResponse(string responseId, CancellationToken cancellationToken = default)
+    public async Task<ResponseDeleted> DeleteResponse(string responseId, CancellationToken cancellationToken = default)
+    {
+        HttpCallResult<ResponseDeleted> data = await DeleteResponseSafe(responseId, cancellationToken);
+        
+        if (!data.Ok)
+        {
+            throw data.Exception;
+        }
+        
+        return data.Data;
+    }
+    
+    /// <summary>
+    /// Deletes a model response with the given ID.
+    /// </summary>
+    public async Task<HttpCallResult<ResponseDeleted>> DeleteResponseSafe(string responseId, CancellationToken cancellationToken = default)
     {
         IEndpointProvider provider = Api.GetProvider(LLmProviders.OpenAi);
-        HttpCallResult<ResponseDeleted> data = await HttpDelete<ResponseDeleted>(provider, Endpoint, url: GetUrl(provider, $"/{responseId}"), ct: cancellationToken).ConfigureAwait(false);
+        return await HttpDelete<ResponseDeleted>(provider, Endpoint, url: GetUrl(provider, $"/{responseId}"), ct: cancellationToken).ConfigureAwait(false);
+    }
+    
+    /// <summary>
+    /// Cancels a model response with the given ID.
+    /// </summary>
+    public async Task<ResponseResult> CancelResponse(string responseId, CancellationToken cancellationToken = default)
+    {
+        HttpCallResult<ResponseResult>? data = await CancelResponseSafe(responseId, cancellationToken).ConfigureAwait(false);
+        
+        if (!data.Ok)
+        {
+            throw data.Exception;
+        }
+        
+        return data.Data;
+    }
+    
+    /// <summary>
+    /// Cancels a model response with the given ID.
+    /// </summary>
+    public async Task<HttpCallResult<ResponseResult>> CancelResponseSafe(string responseId, CancellationToken cancellationToken = default)
+    {
+        IEndpointProvider provider = Api.GetProvider(LLmProviders.OpenAi);
+        return await HttpPost<ResponseResult>(provider, Endpoint, url: GetUrl(provider, $"/{responseId}/cancel"), ct: cancellationToken).ConfigureAwait(false);
+    }
+    
+    /// <summary>
+    /// Returns a list of input items for a given response.
+    /// </summary>
+    public async Task<ListResponse<ResponseInputItem>> ListResponseInputItems(string responseId, CancellationToken cancellationToken = default)
+    {
+        HttpCallResult<ListResponse<ResponseInputItem>> data = await ListResponseInputItemsSafe(responseId, cancellationToken).ConfigureAwait(false);
+
+        if (!data.Ok)
+        {
+            throw data.Exception;
+        }
+        
+        return data.Data;
+    }
+    
+    /// <summary>
+    /// Returns a list of input items for a given response.
+    /// </summary>
+    public async Task<HttpCallResult<ListResponse<ResponseInputItem>>> ListResponseInputItemsSafe(string responseId, CancellationToken cancellationToken = default)
+    {
+        IEndpointProvider provider = Api.GetProvider(LLmProviders.OpenAi);
+        return await HttpGet<ListResponse<ResponseInputItem>>(provider, Endpoint, url: GetUrl(provider, $"/{responseId}/input_items"), ct: cancellationToken).ConfigureAwait(false);
+    }
+    
+    /// <summary>
+    /// Creates a responses API request.
+    /// </summary>
+    /// <param name="request">The request</param>
+    public async Task<ResponseResult> CreateResponse(ResponseRequest request)
+    {
+        HttpCallResult<ResponseResult> data = await CreateResponseSafe(request).ConfigureAwait(false);
+
+        if (!data.Ok)
+        {
+            throw data.Exception;
+        }
+
         return data.Data;
     }
     
@@ -168,19 +261,11 @@ public class ResponsesEndpoint : EndpointBase
     /// Creates a responses API request.
     /// </summary>
     /// <param name="request">The request</param>
-    public async Task<ResponseResult?> CreateResponse(ResponseRequest request)
+    public async Task<HttpCallResult<ResponseResult>> CreateResponseSafe(ResponseRequest request)
     {
         IEndpointProvider provider = Api.GetProvider(request.Model ?? ChatModel.OpenAi.Gpt35.Turbo);
         TornadoRequestContent requestBody = request.Serialize(provider);
-        
-        HttpCallResult<ResponseResult> result = await HttpPost<ResponseResult>(provider, Endpoint, url: requestBody.Url, postData: requestBody.Body, model: request.Model, ct: request.CancellationToken).ConfigureAwait(false);
-        
-        if (result.Exception is not null)
-        {
-            throw result.Exception;
-        }
-        
-        return result.Data;
+        return await HttpPost<ResponseResult>(provider, Endpoint, url: requestBody.Url, postData: requestBody.Body, model: request.Model, ct: request.CancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -230,10 +315,21 @@ public class ResponsesEndpoint : EndpointBase
     /// <param name="token">Optional cancellation token.</param>
     public async Task StreamResponseRich(ResponseRequest request, ResponseStreamEventHandler? eventsHandler = null, CancellationToken token = default)
     {
-        await StreamResponseRichInternal(request, null, eventsHandler, token).ConfigureAwait(false);
+        await StreamResponseRichInternal(request, null, eventsHandler, false, token).ConfigureAwait(false);
     }
     
-    internal async Task StreamResponseRichInternal(ResponseRequest request, ResponsesSession? session = null, ResponseStreamEventHandler? eventsHandler = null, CancellationToken token = default)
+    /// <summary>
+    ///     Stream Realtime API events as they arrive, using the provided event handler to process each event type.
+    /// </summary>
+    /// <param name="request">The request to send to the API.</param>
+    /// <param name="eventsHandler">Optional event handler to process streaming events.</param>
+    /// <param name="token">Optional cancellation token.</param>
+    public async Task StreamResponseRichSafe(ResponseRequest request, ResponseStreamEventHandler? eventsHandler = null, CancellationToken token = default)
+    {
+        await StreamResponseRichInternal(request, null, eventsHandler, true, token).ConfigureAwait(false);
+    }
+    
+    internal async Task StreamResponseRichInternal(ResponseRequest request, ResponsesSession? session = null, ResponseStreamEventHandler? eventsHandler = null, bool isSafe = false, CancellationToken token = default)
     {
         bool? streamOption = request.Stream;
         request.Stream = true;
@@ -245,7 +341,17 @@ public class ResponsesEndpoint : EndpointBase
 
         if (tornadoStreamRequest.Exception is not null)
         {
-            throw tornadoStreamRequest.Exception;
+            if (isSafe || eventsHandler?.OnException is not null)
+            {
+                if (eventsHandler?.OnException != null)
+                {
+                    await eventsHandler.OnException(tornadoStreamRequest);
+                }
+            }
+            else
+            {
+                throw tornadoStreamRequest.Exception;   
+            }
         }
 
         if (tornadoStreamRequest.StreamReader is not null)

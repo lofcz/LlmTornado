@@ -44,7 +44,13 @@ public enum ResponseMessageStatuses
     /// Item has been queued (background mode).
     /// </summary>
     [EnumMember(Value = "queued")]
-    Queued
+    Queued,
+    
+    /// <summary>
+    /// Item has been cancelled (background mode).
+    /// </summary>
+    [EnumMember(Value = "cancelled")]
+    Cancelled
 }
 
 /// <summary>

@@ -111,15 +111,25 @@ public abstract class EndpointBase
     ///     Sets the timeout for all http requests.
     ///     This is not thread safe! Use only in app startup logic.
     /// </summary>
-    /// <returns></returns>
-    public static void SetRequestsTimeout(int seconds)
+    /// <returns>Whether the call succeeded. If this method is called after any requests started it will fail.</returns>
+    public static bool SetRequestsTimeout(int seconds)
     {
+        bool ok = true;
+        
         foreach (KeyValuePair<LLmProviders, Lazy<HttpClient>> x in EndpointClients.Value)
         {
-            x.Value.Value.Timeout = TimeSpan.FromSeconds(seconds);
+            try
+            {
+                x.Value.Value.Timeout = TimeSpan.FromSeconds(seconds);
+            }
+            catch (Exception e)
+            {
+                ok = false;
+            }
         }
         
         endpointTimeout = TimeSpan.FromSeconds(seconds);
+        return ok;
     }
 
     /// <summary>
