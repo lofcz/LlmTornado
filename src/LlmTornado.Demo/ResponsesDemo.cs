@@ -441,17 +441,18 @@ public class ResponsesDemo : DemoBase
     public static async Task ResponseListItems()
     {
         TornadoApi api = Program.Connect();
-     
-        ResponseResult createResult = await api.Responses.CreateResponse(new ResponseRequest
+        ResponseRequest request = new ResponseRequest
         {
             Model = ChatModel.OpenAi.O4.V4Mini,
             Background = true,
-            InputItems = [
+            InputItems =
+            [
                 new ResponseInputMessage(ChatMessageRoles.User, "2+2=?")
             ]
-        });
+        };
         
-        ListResponse<ResponseInputItem> result = await api.Responses.ListResponseInputItems(createResult.Id);
+        ResponseResult createResult = await api.Responses.CreateResponse(request);
+        ListResponse<ResponseInputItem> result = await api.Responses.ListResponseInputItems(createResult.Id, new ListQuery(100));
         int z = 0;
     }
 }

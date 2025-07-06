@@ -220,9 +220,9 @@ public class ResponsesEndpoint : EndpointBase
     /// <summary>
     /// Returns a list of input items for a given response.
     /// </summary>
-    public async Task<ListResponse<ResponseInputItem>> ListResponseInputItems(string responseId, CancellationToken cancellationToken = default)
+    public async Task<ListResponse<ResponseInputItem>> ListResponseInputItems(string responseId, ListQuery? query = null, CancellationToken cancellationToken = default)
     {
-        HttpCallResult<ListResponse<ResponseInputItem>> data = await ListResponseInputItemsSafe(responseId, cancellationToken).ConfigureAwait(false);
+        HttpCallResult<ListResponse<ResponseInputItem>> data = await ListResponseInputItemsSafe(responseId, query, cancellationToken).ConfigureAwait(false);
 
         if (!data.Ok)
         {
@@ -235,10 +235,10 @@ public class ResponsesEndpoint : EndpointBase
     /// <summary>
     /// Returns a list of input items for a given response.
     /// </summary>
-    public async Task<HttpCallResult<ListResponse<ResponseInputItem>>> ListResponseInputItemsSafe(string responseId, CancellationToken cancellationToken = default)
+    public async Task<HttpCallResult<ListResponse<ResponseInputItem>>> ListResponseInputItemsSafe(string responseId, ListQuery? query = null, CancellationToken cancellationToken = default)
     {
         IEndpointProvider provider = Api.GetProvider(LLmProviders.OpenAi);
-        return await HttpGet<ListResponse<ResponseInputItem>>(provider, Endpoint, url: GetUrl(provider, $"/{responseId}/input_items"), ct: cancellationToken).ConfigureAwait(false);
+        return await HttpGet<ListResponse<ResponseInputItem>>(provider, Endpoint, url: GetUrl(provider, $"/{responseId}/input_items"), queryParams: query?.ToQueryParams(LLmProviders.OpenAi), ct: cancellationToken).ConfigureAwait(false);
     }
     
     /// <summary>

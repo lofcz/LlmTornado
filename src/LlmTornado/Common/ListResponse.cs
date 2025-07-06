@@ -6,7 +6,7 @@ namespace LlmTornado.Common;
 /// <summary>
 /// List of items with pagination.
 /// </summary>
-public sealed class ListResponse<T> : ApiResultBase, IListResponse<T>
+public sealed class ListResponse<T> : IListResponse<T>
 {
     /// <summary>
     /// Always "list"
