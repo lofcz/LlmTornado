@@ -52,6 +52,6 @@ public class ModelsEndpoint : EndpointBase
 			_ => null
 		};
 
-		return (await HttpGet<RetrievedModelsResult>(Api.GetProvider(provider), Endpoint, queryParams: queryPars))?.Data;
+		return (await HttpGet<RetrievedModelsResult>(Api.GetProvider(provider), Endpoint, queryParams: queryPars)).Data?.Data;
 	}
 }

@@ -206,6 +206,21 @@ public class ResponsesDemo : DemoBase
     }
     
     [TornadoTest]
+    public static async Task ResponseBackground()
+    {
+        ResponseResult? result = await Program.Connect().Responses.CreateResponse(new ResponseRequest
+        {
+            Model = ChatModel.OpenAi.O4.V4Mini,
+            Background = true,
+            InputItems = [
+                new ResponseInputMessage(ChatMessageRoles.User, "2+2=?")
+            ]
+        });
+
+        Console.WriteLine(result.Id);
+    }
+    
+    [TornadoTest]
     public static async Task ResponseComputerTool()
     {
         EndpointBase.SetRequestsTimeout(20000);
@@ -383,5 +398,23 @@ public class ResponsesDemo : DemoBase
         ResponseResult? result = await Program.Connect().Responses.GetResponse("<id>");
 
         int z = 0;
+    }
+    
+    [TornadoTest]
+    public static async Task ResponseDelete()
+    {
+        TornadoApi api = Program.Connect();
+     
+        ResponseResult? createResult = await api.Responses.CreateResponse(new ResponseRequest
+        {
+            Model = ChatModel.OpenAi.O4.V4Mini,
+            Background = true,
+            InputItems = [
+                new ResponseInputMessage(ChatMessageRoles.User, "2+2=?")
+            ]
+        });
+        
+        ResponseDeleted? result = await api.Responses.DeleteResponse(createResult.Id);
+        Assert.That(result.Deleted, Is.True);
     }
 }

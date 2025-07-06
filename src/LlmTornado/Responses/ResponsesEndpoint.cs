@@ -15,7 +15,7 @@ using Newtonsoft.Json;
 namespace LlmTornado.Responses;
 
 /// <summary>
-///     This endpoint classifies text against the OpenAI Content Policy
+/// OpenAI's most advanced interface for generating model responses. Supports text and image inputs, and text outputs. Create stateful interactions with the model, using the output of previous responses as input. Extend the model's capabilities with built-in tools for file search, web search, computer use, and more. Allow the model access to external systems and data using function calling.
 /// </summary>
 public class ResponsesEndpoint : EndpointBase
 {
@@ -151,7 +151,17 @@ public class ResponsesEndpoint : EndpointBase
     public async Task<ResponseResult?> GetResponse(string responseId, CancellationToken cancellationToken = default)
     {
         IEndpointProvider provider = Api.GetProvider(LLmProviders.OpenAi);
-        return await HttpGet<ResponseResult>(provider, Endpoint, url: GetUrl(provider, $"/{responseId}"), ct: cancellationToken).ConfigureAwait(false);
+        return (await HttpGet<ResponseResult>(provider, Endpoint, url: GetUrl(provider, $"/{responseId}"), ct: cancellationToken).ConfigureAwait(false)).Data;
+    }
+    
+    /// <summary>
+    /// Deletes a model response with the given ID.
+    /// </summary>
+    public async Task<ResponseDeleted?> DeleteResponse(string responseId, CancellationToken cancellationToken = default)
+    {
+        IEndpointProvider provider = Api.GetProvider(LLmProviders.OpenAi);
+        HttpCallResult<ResponseDeleted> data = await HttpDelete<ResponseDeleted>(provider, Endpoint, url: GetUrl(provider, $"/{responseId}"), ct: cancellationToken).ConfigureAwait(false);
+        return data.Data;
     }
     
     /// <summary>

@@ -9,7 +9,7 @@ namespace LlmTornado.Responses
     /// Items to the Conversation, thus output from previous turns (text and
     /// audio tokens) will become the input for later turns.
     /// </summary>
-    public class ResponsesUsage
+    public class ResponseUsage
     {
         /// <summary>
         /// Details about the input tokens used in the Response.

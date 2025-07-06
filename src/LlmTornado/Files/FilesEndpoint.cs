@@ -47,7 +47,7 @@ public class FilesEndpoint : EndpointBase
 
 		if (provider is LLmProviders.Google)
 		{
-			VendorGoogleTornadoFilesList? ilResult = await HttpGet<VendorGoogleTornadoFilesList>(resolvedProvider, Endpoint, queryParams: query?.ToQueryParams(resolvedProvider), ct: token).ConfigureAwait(false);
+			VendorGoogleTornadoFilesList? ilResult = (await HttpGet<VendorGoogleTornadoFilesList>(resolvedProvider, Endpoint, queryParams: query?.ToQueryParams(resolvedProvider), ct: token).ConfigureAwait(false)).Data;
 			
 			return new TornadoPagingList<TornadoFile>
 			{
@@ -60,9 +60,9 @@ public class FilesEndpoint : EndpointBase
 		{
 			LLmProviders.OpenAi => new TornadoPagingList<TornadoFile>
 			{
-				Items = (await HttpGet<TornadoFiles>(resolvedProvider, Endpoint, queryParams: query?.ToQueryParams(resolvedProvider), ct: token).ConfigureAwait(false))?.Data ?? []
+				Items = (await HttpGet<TornadoFiles>(resolvedProvider, Endpoint, queryParams: query?.ToQueryParams(resolvedProvider), ct: token).ConfigureAwait(false)).Data?.Data ?? []
 			},
-			LLmProviders.Anthropic => (await HttpGet<VendorAnthropicTornadoFiles>(resolvedProvider, Endpoint, queryParams: query?.ToQueryParams(resolvedProvider), ct: token).ConfigureAwait(false))?.ToList(),
+			LLmProviders.Anthropic => (await HttpGet<VendorAnthropicTornadoFiles>(resolvedProvider, Endpoint, queryParams: query?.ToQueryParams(resolvedProvider), ct: token).ConfigureAwait(false)).Data?.ToList(),
 			_ => null
 		};
 	}
@@ -130,7 +130,7 @@ public class FilesEndpoint : EndpointBase
 			case LLmProviders.Google:
 			{
 				string resolvedUrl = fileId.StartsWith(GoogleEndpointProvider.BaseUrl) ? fileId : GetUrl(resolvedProvider, CapabilityEndpoints.BaseUrl, fileId);
-				VendorGoogleTornadoFileContent? result = await HttpGet<VendorGoogleTornadoFileContent>(resolvedProvider, CapabilityEndpoints.BaseUrl, resolvedUrl).ConfigureAwait(false);
+				VendorGoogleTornadoFileContent? result = (await HttpGet<VendorGoogleTornadoFileContent>(resolvedProvider, CapabilityEndpoints.BaseUrl, resolvedUrl).ConfigureAwait(false)).Data;
 
 				if (result is not null)
 				{
@@ -141,11 +141,11 @@ public class FilesEndpoint : EndpointBase
 			}
 			case LLmProviders.Anthropic:
 			{
-				return (await HttpGet<VendorAnthropicTornadoFile>(resolvedProvider, Endpoint, GetUrl(resolvedProvider, $"/{fileId}")).ConfigureAwait(false))?.ToFile();
+				return (await HttpGet<VendorAnthropicTornadoFile>(resolvedProvider, Endpoint, GetUrl(resolvedProvider, $"/{fileId}")).ConfigureAwait(false)).Data?.ToFile();
 			}
 		}
 	    
-        return await HttpGet<TornadoFile>(resolvedProvider, Endpoint, GetUrl(resolvedProvider, $"/{fileId}")).ConfigureAwait(false);
+        return (await HttpGet<TornadoFile>(resolvedProvider, Endpoint, GetUrl(resolvedProvider, $"/{fileId}")).ConfigureAwait(false)).Data;
     }
 
 	/// <summary>
