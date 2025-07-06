@@ -234,7 +234,7 @@ public class ResponseOutputMessageItem : IResponseOutputItem
     /// The status of the message input.
     /// </summary>
     [JsonProperty("status")]
-    public ResponseOutputItemStatus Status { get; set; }
+    public ResponseOutputItemStatus? Status { get; set; }
 }
 
 /// <summary>
@@ -256,7 +256,7 @@ public class ResponseFileSearchToolCallItem : IResponseOutputItem
     /// The status of the file search tool call.
     /// </summary>
     [JsonProperty("status")]
-    public ResponseOutputItemStatus Status { get; set; }
+    public ResponseOutputItemStatus? Status { get; set; }
 
     /// <summary>
     /// The queries used to search for files.
@@ -330,7 +330,7 @@ public class ResponseWebSearchToolCallItem : IResponseOutputItem
     /// The status of the web search tool call.
     /// </summary>
     [JsonProperty("status")]
-    public ResponseOutputItemStatus Status { get; set; }
+    public ResponseOutputItemStatus? Status { get; set; }
 
     /// <summary>
     /// The action taken in this web search call.
@@ -428,7 +428,7 @@ public class ResponseComputerToolCallItem : IResponseOutputItem
     /// The status of the item.
     /// </summary>
     [JsonProperty("status")]
-    public ResponseOutputItemStatus Status { get; set; }
+    public ResponseOutputItemStatus? Status { get; set; }
 
     /// <summary>
     /// A pending safety check for the computer call.
@@ -707,7 +707,7 @@ public class ResponseReasoningItem : IResponseOutputItem
     /// The status of the item.
     /// </summary>
     [JsonProperty("status")]
-    public ResponseOutputItemStatus Status { get; set; }
+    public ResponseOutputItemStatus? Status { get; set; }
 
     /// <summary>
     /// A short summary of the reasoning used by the model when generating the response.
@@ -747,7 +747,7 @@ public class ResponseImageGenToolCallItem : IResponseOutputItem
     /// The status of the image generation call.
     /// </summary>
     [JsonProperty("status")]
-    public ResponseOutputItemStatus Status { get; set; }
+    public ResponseOutputItemStatus? Status { get; set; }
 
     /// <summary>
     /// The generated image encoded in base64.
@@ -805,7 +805,7 @@ public class ResponseCodeInterpreterToolCallItem : IResponseOutputItem
     /// The status of the code interpreter tool call.
     /// </summary>
     [JsonProperty("status")]
-    public ResponseOutputItemStatus Status { get; set; }
+    public ResponseOutputItemStatus? Status { get; set; }
 
     /// <summary>
     /// The ID of the container used to run the code.
@@ -982,7 +982,7 @@ public class ResponseLocalShellToolCallItem : IResponseOutputItem
     /// The status of the local shell call.
     /// </summary>
     [JsonProperty("status")]
-    public ResponseOutputItemStatus Status { get; set; }
+    public ResponseOutputItemStatus? Status { get; set; }
 }
 
 /// <summary>

@@ -278,24 +278,23 @@ public class ResponsesDemo : DemoBase
         
         ResponseResult? result = await Program.Connect().Responses.CreateResponse(new ResponseRequest
         {
-            Model = ChatModel.OpenAi.Gpt41.V41,
-            Background = false,
+            Model = ChatModel.OpenAi.O4.V4Mini,
             InputItems = [
                 new ResponseInputMessage(ChatMessageRoles.User, [
-                    new ResponseInputContentText("Summarize available files."),
+                    new ResponseInputContentText("Write a bash script that takes a matrix represented as a string with format \"[1,2],[3,4],[5,6]\" and prints the transpose in the same format.")
                 ])
             ],
+            Reasoning = new ReasoningConfiguration
+            {
+                Effort = ResponseReasoningEfforts.Medium
+            },
             Include = [ 
-                ResponseIncludeFields.FileSearchCallResults
+                ResponseIncludeFields.ReasoningEncryptedContent 
             ],
-            Tools = [
-                new ResponseFileSearchTool
-                {
-                    VectorStoreIds = [ "vs_6869bbe2a93481919d52952ac7773144" ]
-                }
-            ]
+            Store = false
         });
 
+        Console.WriteLine(result.OutputText);
         int z = 0;
     }
     
