@@ -220,7 +220,7 @@ public class ResponsesDemo : DemoBase
             InputItems = [
                 new ResponseInputMessage(ChatMessageRoles.User, [
                     new ResponseInputContentText("Check the latest OpenAI news on google.com."),
-                    ResponseInputContentImage.CreateImageUrl(base64)
+                    ResponseInputContentImage.CreateImageUrl(base64),
                 ])
             ],
             Tools = [
@@ -236,6 +236,64 @@ public class ResponsesDemo : DemoBase
                 Summary = ResponseReasoningSummaries.Concise
             },
             Truncation = ResponseTruncationStrategies.Auto
+        });
+
+        int z = 0;
+    }
+    
+    [TornadoTest]
+    public static async Task ResponseFileSearch()
+    {
+        EndpointBase.SetRequestsTimeout(20000);
+        
+        ResponseResult? result = await Program.Connect().Responses.CreateResponse(new ResponseRequest
+        {
+            Model = ChatModel.OpenAi.Gpt41.V41,
+            Background = false,
+            InputItems = [
+                new ResponseInputMessage(ChatMessageRoles.User, [
+                    new ResponseInputContentText("Summarize all available files. Do not ask for further input."),
+                ])
+            ],
+            Include = [ 
+                ResponseIncludeFields.FileSearchCallResults
+            ],
+            Tools = [
+                new ResponseFileSearchTool
+                {
+                    VectorStoreIds = [ "vs_6869bbe2a93481919d52952ac7773144" ]
+                }
+            ]
+        });
+
+        Console.WriteLine(result.OutputText);
+        
+        int z = 0;
+    }
+    
+    [TornadoTest]
+    public static async Task ResponseReasoning()
+    {
+        EndpointBase.SetRequestsTimeout(20000);
+        
+        ResponseResult? result = await Program.Connect().Responses.CreateResponse(new ResponseRequest
+        {
+            Model = ChatModel.OpenAi.Gpt41.V41,
+            Background = false,
+            InputItems = [
+                new ResponseInputMessage(ChatMessageRoles.User, [
+                    new ResponseInputContentText("Summarize available files."),
+                ])
+            ],
+            Include = [ 
+                ResponseIncludeFields.FileSearchCallResults
+            ],
+            Tools = [
+                new ResponseFileSearchTool
+                {
+                    VectorStoreIds = [ "vs_6869bbe2a93481919d52952ac7773144" ]
+                }
+            ]
         });
 
         int z = 0;

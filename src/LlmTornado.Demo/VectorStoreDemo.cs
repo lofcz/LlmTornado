@@ -132,7 +132,8 @@ public class VectorStoreDemo : DemoBase
         vectorStoreFile ??= await CreateVectorStoreFile();
 
         HttpCallResult<VectorStoreFile> retrieveResult = await Program.Connect().VectorStores.RetrieveFiles(vectorStore!.Id, vectorStoreFile!.Id);
-        Console.WriteLine(retrieveResult.Response);
+        Console.WriteLine($"Vector store id: {vectorStore.Id}");
+        Console.WriteLine($"File:\n{retrieveResult.Response}");
         return retrieveResult.Data!;
     }
 

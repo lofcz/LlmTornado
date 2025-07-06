@@ -21,7 +21,8 @@ public abstract class ResponseInputItem
 }
 
 /// <summary>
-/// A message input to the model with a role indicating instruction following hierarchy. Instructions given with the <c>developer</c> or <c>system</c> role take precedence over instructions given with the <c>user</c> role.
+/// A message input to the model with a role indicating instruction following hierarchy. Instructions given with the <c>developer</c> or <c>system</c> role take precedence over instructions given with the <c>user</c> role.<br/>
+/// Message contain one or more <see cref="Content"/> parts.
 /// </summary>
 [JsonConverter(typeof(InputItemJsonConverter))]
 public class ResponseInputMessage : ResponseInputItem
@@ -395,7 +396,7 @@ public class FileSearchToolCallInput : ResponseInputItem
     /// The results of the file search tool call.
     /// </summary>
     [JsonProperty("results")]
-    public List<FileSearchResult>? Results { get; set; }
+    public List<ResponseFileSearchToolCallItemResult>? Results { get; set; }
 
     public FileSearchToolCallInput() { }
 
@@ -410,7 +411,7 @@ public class FileSearchToolCallInput : ResponseInputItem
 /// <summary>
 /// File search result.
 /// </summary>
-public class FileSearchResult
+public class ResponseFileSearchToolCallItemResult
 {
     /// <summary>
     /// Set of 16 key-value pairs that can be attached to an object. This can be useful for storing additional information about the object in a structured format, and querying for objects via API or the dashboard. Keys are strings with a maximum length of 64 characters. Values are strings with a maximum length of 512 characters, booleans, or numbers.

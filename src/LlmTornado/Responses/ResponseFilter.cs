@@ -122,25 +122,30 @@ public enum ResponseCompoundOperator
 /// <summary>
 /// Custom converter for polymorphic deserialization of filters
 /// </summary>
-public class ResponseFilterConverter : JsonConverter<ResponseFilter>
+internal class ResponseFilterConverter : JsonConverter<ResponseFilter>
 {
     public override ResponseFilter? ReadJson(JsonReader reader, Type objectType, ResponseFilter? existingValue, bool hasExistingValue, JsonSerializer serializer)
     {
         JToken token = JToken.ReadFrom(reader);
         
-        // Check if this is a compound filter (has "filters" property) or comparison filter (has "key" property)
-        if (token["filters"] != null)
+        if (token.Type != JTokenType.Object)
         {
-            return token.ToObject<ResponseCompoundFilter>(serializer);
+            return null;
         }
-        else if (token["key"] != null)
+
+        JObject obj = (JObject)token;
+        
+        if (obj["filters"] != null)
         {
-            return token.ToObject<ResponseComparisonFilter>(serializer);
+            return obj.ToObject<ResponseCompoundFilter>(serializer);
         }
-        else
+        
+        if (obj["key"] != null)
         {
-            throw new JsonSerializationException("Unable to determine filter type from JSON structure");
+            return obj.ToObject<ResponseComparisonFilter>(serializer);
         }
+
+        return null;
     }
 
     public override void WriteJson(JsonWriter writer, ResponseFilter? value, JsonSerializer serializer)

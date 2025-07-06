@@ -66,7 +66,7 @@ public class ResponseFileSearchTool : ResponseTool
     /// The IDs of the vector stores to search.
     /// </summary>
     [JsonProperty("vector_store_ids")]
-    public List<string>? VectorStoreIds { get; set; }
+    public List<string> VectorStoreIds { get; set; } = [];
 
     /// <summary>
     /// A filter to apply (optional).

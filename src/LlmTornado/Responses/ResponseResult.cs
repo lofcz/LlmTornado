@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.ChatFunctions;
@@ -93,9 +94,17 @@ public class ResponseResult
     /// <summary>
     /// Convenience property that contains the aggregated text output from all output_text items in the output array, if any are present.
     /// </summary>
-    [JsonProperty("output_text")]
-    public string? OutputText { get; set; }
+    [JsonIgnore]
+    public string? OutputText => GetOutputText();
 
+    string? GetOutputText()
+    {
+        IEnumerable<string>? outputTextSegments = Output?.OfType<ResponseOutputMessageItem>()
+            .SelectMany(x => x.Content.OfType<ResponseOutputTextContent>())
+            .Select(outputTextPart => outputTextPart.Text);
+        return outputTextSegments is null ? null : string.Join(string.Empty, outputTextSegments);
+    }
+        
     /// <summary>
     /// Whether to allow the model to run tool calls in parallel.
     /// </summary>

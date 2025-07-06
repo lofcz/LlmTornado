@@ -268,24 +268,7 @@ public class ResponseFileSearchToolCallItem : IResponseOutputItem
     /// The results of the file search tool call.
     /// </summary>
     [JsonProperty("results")]
-    public List<FileSearchResult>? Results { get; set; }
-
-    /// <summary>
-    /// File search result item.
-    /// </summary>
-    public class FileSearchResult
-    {
-        [JsonProperty("file_id")]
-        public string FileId { get; set; } = string.Empty;
-        [JsonProperty("text")]
-        public string Text { get; set; } = string.Empty;
-        [JsonProperty("filename")]
-        public string Filename { get; set; } = string.Empty;
-        [JsonProperty("attributes")]
-        public object? Attributes { get; set; } // TODO: Strong type if needed
-        [JsonProperty("score")]
-        public float? Score { get; set; }
-    }
+    public List<ResponseFileSearchToolCallItemResult>? Results { get; set; }
 }
 
 /// <summary>
