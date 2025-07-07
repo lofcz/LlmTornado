@@ -100,7 +100,9 @@ public class ChatModelOpenAi : BaseVendorModelProvider
     internal static readonly HashSet<IModel> TempIncompatibleModels =
     [
         //..ReasoningModelsAll,
-        ..WebSearchCompatibleModelsAll
+        ..WebSearchCompatibleModelsAll,
+        ..ChatModelOpenAiO3.ModelsAll,
+        ..ChatModelOpenAiO4.ModelsAll
     ];
     
     static ChatModelOpenAi()

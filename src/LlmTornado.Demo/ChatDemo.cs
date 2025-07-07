@@ -1685,7 +1685,7 @@ public partial class ChatDemo : DemoBase
                     fn.Result = new FunctionResult(fn.Name, "A mild rain is expected around noon.");
                 }
 
-                return Task.CompletedTask;
+                return ValueTask.CompletedTask;
             });
             
             Console.WriteLine(response);
@@ -1702,7 +1702,7 @@ public partial class ChatDemo : DemoBase
                 fn.Result = new FunctionResult(fn.Name, "A mild rain is expected around noon.");
             }
 
-            return Task.CompletedTask;
+            return ValueTask.CompletedTask;
         });
 
         string r = response.GetText();
@@ -1756,7 +1756,7 @@ public partial class ChatDemo : DemoBase
                 fn.Result = new FunctionResult(fn.Name, "A mild rain is expected around noon.");
             }
 
-            return Task.CompletedTask;
+            return ValueTask.CompletedTask;
         });
 
         string r = response.GetText();
@@ -1908,7 +1908,7 @@ public partial class ChatDemo : DemoBase
         Console.WriteLine();
     }
 
-    [TornadoTest]
+    [TornadoTest, Flaky("expensive")]
     public static async Task GroqStreaming()
     {
         foreach (IModel x in ChatModel.Groq.AllModels)

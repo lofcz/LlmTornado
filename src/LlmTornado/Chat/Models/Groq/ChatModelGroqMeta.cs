@@ -56,19 +56,6 @@ public class ChatModelGroqMeta : IVendorModelClassProvider
     public readonly ChatModel Llama318BInstant = ModelLlama318BInstant;
     
     /// <summary>
-    /// llama-guard-3-8b
-    /// </summary>
-    public static readonly ChatModel ModelLlamaGuard3BB = new ChatModel("groq-llama-guard-3-8b", LLmProviders.Groq, 8_192)
-    {
-        ApiName = "llama-guard-3-8b"
-    };
-    
-    /// <summary>
-    /// <inheritdoc cref="ModelLlamaGuard3BB"/>
-    /// </summary>
-    public readonly ChatModel LlamaGuard3BB = ModelLlamaGuard3BB;
-    
-    /// <summary>
     /// llama3-70b-8192
     /// </summary>
     public static readonly ChatModel ModelLlama370B = new ChatModel("groq-llama3-70b-8192", LLmProviders.Groq, 8_192)
@@ -101,7 +88,6 @@ public class ChatModelGroqMeta : IVendorModelClassProvider
     [
         ModelLlama3370BVersatile,
         ModelLlama318BInstant,
-        ModelLlamaGuard3BB,
         ModelLlama370B,
         ModelLlama38B,
         ModelLlama4Scout,

@@ -447,7 +447,9 @@ public class ResponsesDemo : DemoBase
             Background = true,
             InputItems =
             [
-                new ResponseInputMessage(ChatMessageRoles.User, "2+2=?")
+                new ResponseInputMessage(ChatMessageRoles.User, [
+                    new ResponseInputContentText("2+2")
+                ])
             ]
         };
         

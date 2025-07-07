@@ -203,7 +203,7 @@ public partial class ChatDemo : DemoBase
         });
     }
     
-    [TornadoTest]
+    [TornadoTest, Flaky("deprecated model")]
     public static async Task Grok2Beta()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
@@ -252,7 +252,7 @@ public partial class ChatDemo : DemoBase
         Console.WriteLine(str);
     }
 
-    [TornadoTest]
+    [TornadoTest, Flaky("todo: fix auth in demo")]
     public static async Task VertexAiAnthropic()
     {
         TornadoApi tornadoApi = new TornadoApi(new AnthropicEndpointProvider
@@ -990,7 +990,7 @@ public partial class ChatDemo : DemoBase
         ChatRichResponse response = await chat.GetResponseRich(calls =>
         {
             // do whatever
-            return Task.CompletedTask;
+            return ValueTask.CompletedTask;
         });
     }
 

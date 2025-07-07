@@ -682,81 +682,24 @@ public class Conversation
         IEndpointProvider provider = endpoint.Api.GetProvider(Model);
         return req.Serialize(provider, options);
     }
-
-    /// <summary>
-    ///     Calls the API to get a response. The response is split into multiple blocks.
-    ///     Unlike <see cref="GetResponse"/> the returned object also contains vendor specific extensions.
-    ///     Use this function to get more details about the returned data.
-    /// </summary>
-    /// <returns>The response from the chatbot API</returns>
-    public async Task<ChatRichResponse> GetResponseRich(CancellationToken token = default)
-    {
-        ChatRequest req = new ChatRequest(this, RequestParameters)
-        {
-            Messages = messages,
-            CancellationToken = token
-        };
-
-        ChatResult? res = await endpoint.CreateChatCompletion(req);
-
-        if (res is null)
-        {
-            return new ChatRichResponse(null, null);
-        }
-
-        MostRecentApiResult = res;
-
-        if (res.Choices is null)
-        {
-            return new ChatRichResponse(res, null);
-        }
-
-        ChatRichResponse response = await HandleResponseRich(res, null);
-        return response;
-    }
-    
     
     /// <summary>
-    ///     Calls the API to get a response. The response is split into text & tools blocks.
-    ///     The entire response is appended to the current chat's <see cref="Messages" /> as an
-    ///     <see cref="ChatMessageRoles.Assistant" /> <see cref="ChatMessage" />. This method doesn't throw on network level.
+    /// Calls the API to get a response. Safe on a network level.
     /// </summary>
-    /// <returns>The string of the response from the chatbot API</returns>
+    /// <param name="token">Cancellation token.</param>
+    /// <returns>The response with rich content blocks.</returns>
     public async Task<RestDataOrException<ChatRichResponse>> GetResponseRichSafe(CancellationToken token = default)
     {
-        ChatRequest req = new ChatRequest(this, RequestParameters)
-        {
-            Messages = messages,
-            CancellationToken = token
-        };
-
-        HttpCallResult<ChatResult> res = await endpoint.CreateChatCompletionSafe(req);
-
-        if (!res.Ok)
-        {
-            return new RestDataOrException<ChatRichResponse>(res);
-        }
-
-        MostRecentApiResult = res.Data;
-
-        if (res.Data.Choices is null)
-        {
-            return new RestDataOrException<ChatRichResponse>(new Exception("The service returned no choices"), res);
-        }
-
-        ChatRichResponse response = await HandleResponseRich(res.Data, null);
-        return new RestDataOrException<ChatRichResponse>(response, res);
+        return await GetResponseRichSafe(null, token).ConfigureAwait(false);
     }
 
     /// <summary>
-    ///     Calls the API to get a response. Thr response is split into text & tools blocks.
-    ///     The entire response is appended to the current chat's <see cref="Messages" /> as an
-    ///     <see cref="ChatMessageRoles.Assistant" /> <see cref="ChatMessage" />.
-    ///     Use this overload when resolving the function calls requested by the model can be done immediately.
-    ///     This method doesn't throw on network level.
+    /// Calls the API to get a response. Safe on a network level.
     /// </summary>
-    /// <returns>The string of the response from the chatbot API</returns>
-    public async Task<RestDataOrException<ChatRichResponse>> GetResponseRichSafe(Func<List<FunctionCall>, Task> functionCallHandler, CancellationToken token = default)
+    /// <param name="functionCallHandler">If provided, the tool calls are resolved immediately and a message is appended to the conversation with the result.</param>
+    /// <param name="token">Cancellation token.</param>
+    /// <returns>The response with rich content blocks.</returns>
+    public async Task<RestDataOrException<ChatRichResponse>> GetResponseRichSafe(Func<List<FunctionCall>, ValueTask>? functionCallHandler, CancellationToken token = default)
     {
         ChatRequest req = new ChatRequest(this, RequestParameters)
         {
@@ -782,7 +725,7 @@ public class Conversation
         return new RestDataOrException<ChatRichResponse>(response, res);
     }
 
-    private async Task<ChatRichResponse> HandleResponseRich(ChatResult? res, Func<List<FunctionCall>, Task>? functionCallHandler)
+    private async Task<ChatRichResponse> HandleResponseRich(ChatResult? res, Func<List<FunctionCall>, ValueTask>? functionCallHandler)
     {
         List<ChatRichResponseBlock> blocks = [];
         ChatRichResponse response = new ChatRichResponse(res, blocks);
@@ -810,7 +753,6 @@ public class Conversation
 
             if (newMsg.ToolCalls is { Count: > 0 } && !OutboundToolChoice.OutboundToolChoiceConverter.KnownFunctionNames.Contains(newMsg.ToolCalls[0].FunctionCall.Name))
             {
-                ResolvedToolsCall result = new ResolvedToolsCall();
                 List<FunctionCall>? calls = newMsg.ToolCalls?.Select(x => new FunctionCall
                 {
                     Name = x.FunctionCall.Name,
@@ -819,46 +761,47 @@ public class Conversation
                     Tool = RequestParameters.Tools?.FirstOrDefault(y => string.Equals(y.Function?.Name, x.FunctionCall.Name))
                 }).ToList();
 
-                if (calls is not null)
+                if (calls?.Count > 0)
                 {
-                    Guid currentMsgId = Guid.NewGuid();
+                    ResolvedToolsCall result = new ResolvedToolsCall();
+
+                    blocks.AddRange(calls.Select(x => new ChatRichResponseBlock
+                    {
+                        Type = ChatRichResponseBlockTypes.Function, 
+                        FunctionCall = x
+                    }));
 
                     if (functionCallHandler is not null)
                     {
+                        Guid currentMsgId = Guid.NewGuid();
                         await functionCallHandler.Invoke(calls);   
-                    }
-                        
-                    foreach (FunctionCall call in calls)
-                    {
-                        blocks.Add(new ChatRichResponseBlock
+                    
+                        foreach (FunctionCall call in calls)
                         {
-                            Type = ChatRichResponseBlockTypes.Function,
-                            FunctionCall = call
-                        });
-                            
-                        ChatMessage fnResultMsg = new ChatMessage(ChatMessageRoles.Tool, call.Result?.Content ?? "The service returned no data.".ToJson(), Guid.NewGuid())
-                        {
-                            Id = currentMsgId,
-                            ToolCallId = call.ToolCall?.Id ?? call.Name,
-                            ToolInvocationSucceeded = call.Result?.InvocationSucceeded ?? false,
-                            ContentJsonType = call.Result?.ContentJsonType ?? typeof(string)
-                        };
+                            ChatMessage fnResultMsg = new ChatMessage(ChatMessageRoles.Tool, call.Result?.Content ?? "The service returned no data.".ToJson(), Guid.NewGuid())
+                            {
+                                Id = currentMsgId,
+                                ToolCallId = call.ToolCall?.Id ?? call.Name,
+                                ToolInvocationSucceeded = call.Result?.InvocationSucceeded ?? false,
+                                ContentJsonType = call.Result?.ContentJsonType ?? typeof(string)
+                            };
 
-                        currentMsgId = Guid.NewGuid();
-                        AppendMessage(fnResultMsg);
-                                    
-                        result.ToolResults.Add(new ResolvedToolCall
+                            currentMsgId = Guid.NewGuid();
+                            AppendMessage(fnResultMsg);
+                                
+                            result.ToolResults.Add(new ResolvedToolCall
+                            {
+                                Call = call,
+                                Result = call.Result ?? new FunctionResult(call, null, null, false),
+                                ToolMessage = fnResultMsg
+                            });
+                        }
+                    
+                        if (OnAfterToolsCall is not null)
                         {
-                            Call = call,
-                            Result = call.Result ?? new FunctionResult(call, null, null, false),
-                            ToolMessage = fnResultMsg
-                        });
-                    }
-                        
-                    if (OnAfterToolsCall is not null)
-                    {
-                        await OnAfterToolsCall(result);
-                    } 
+                            await OnAfterToolsCall(result);
+                        } 
+                    }   
                 }
             }
 
@@ -893,13 +836,22 @@ public class Conversation
     }
     
     /// <summary>
-    ///     Calls the API to get a response. Thr response is split into text & tools blocks.
-    ///     The entire response is appended to the current chat's <see cref="Messages" /> as an
-    ///     <see cref="ChatMessageRoles.Assistant" /> <see cref="ChatMessage" />.
-    ///     Use this overload when resolving the function calls requested by the model can be done immediately.
+    /// Calls the API to get a response.
     /// </summary>
-    /// <returns>The string of the response from the chatbot API</returns>
-    public async Task<ChatRichResponse> GetResponseRich(Func<List<FunctionCall>, Task>? functionCallHandler, CancellationToken token = default)
+    /// <param name="token">Cancellation token.</param>
+    /// <returns>The response with rich content blocks.</returns>
+    public async Task<ChatRichResponse> GetResponseRich(CancellationToken token = default)
+    {
+        return await GetResponseRich(null, token).ConfigureAwait(false);
+    }
+    
+    /// <summary>
+    /// Calls the API to get a response.
+    /// </summary>
+    /// <param name="functionCallHandler">If provided, the tool calls are resolved immediately and a message is appended to the conversation with the result.</param>
+    /// <param name="token">Cancellation token.</param>
+    /// <returns>The response with rich content blocks.</returns>
+    public async Task<ChatRichResponse> GetResponseRich(Func<List<FunctionCall>, ValueTask>? functionCallHandler, CancellationToken token = default)
     {
         ChatRequest req = new ChatRequest(this, RequestParameters)
         {
