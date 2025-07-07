@@ -515,4 +515,41 @@ public class ResponsesDemo : DemoBase
         ResponseResult createResult = await api.Responses.CreateResponse(request);
         Console.WriteLine(createResult.OutputText);
     }
+    
+    [TornadoTest]
+    public static async Task ResponseReusablePromptComplex()
+    {
+        byte[] bytes = await File.ReadAllBytesAsync("Static/Images/catBoi.jpg");
+        string base64 = $"data:image/jpeg;base64,{Convert.ToBase64String(bytes)}";
+        
+        TornadoApi api = Program.Connect();
+        ResponseRequest request = new ResponseRequest
+        {
+            Model = ChatModel.OpenAi.O4.V4Mini,
+            Prompt = new PromptConfiguration
+            {
+                Id = "pmpt_686bb61c674081979cef4c95e2baaa570e95896814dffabf",
+                Variables = new Dictionary<string, IPromptVariable>
+                {
+                    { "imagename", new PromptVariableString("cats") },
+                    { 
+                        "image", 
+                        new ResponseInputContentImage
+                        {
+                            ImageUrl = base64
+                        } 
+                    }
+                },
+                Version = "2"
+            },
+            InputItems = [
+                new ResponseInputMessage(ChatMessageRoles.User, [
+                    new ResponseInputContentText("Can you describe the image?")
+                ])
+            ]
+        };
+        
+        ResponseResult createResult = await api.Responses.CreateResponse(request);
+        Console.WriteLine(createResult.OutputText);
+    }
 }
