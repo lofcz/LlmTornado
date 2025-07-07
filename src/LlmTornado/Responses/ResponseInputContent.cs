@@ -10,7 +10,7 @@ namespace LlmTornado.Responses;
 /// Base class for input content types
 /// </summary>
 [JsonConverter(typeof(InputContentJsonConverter))]
-public abstract class ResponseInputContent
+public abstract class ResponseInputContent : IPromptVariable
 {
     /// <summary>
     /// The type of the input content
@@ -218,12 +218,40 @@ internal class InputContentJsonConverter : JsonConverter<ResponseInputContent>
         JObject jo = JObject.Load(reader);
         string? type = jo["type"]?.ToString();
 
-        return type switch
+        switch (type)
         {
-            "input_text" => jo.ToObject<ResponseInputContentText>(serializer),
-            "input_image" => jo.ToObject<ResponseInputContentImage>(serializer),
-            "input_file" => jo.ToObject<ResponseInputContentFile>(serializer),
-            _ => throw new JsonSerializationException($"Unknown input content type: {type}")
-        };
+            case "input_text":
+            {
+                ResponseInputContentText textContent = new ResponseInputContentText
+                {
+                    Text = jo["text"]?.ToString() ?? string.Empty
+                };
+                return textContent;
+            }
+            case "input_image":
+            {
+                ResponseInputContentImage imageContent = new ResponseInputContentImage
+                {
+                    ImageUrl = jo["image_url"]?.ToString(),
+                    FileId = jo["file_id"]?.ToString(),
+                    Detail = jo["detail"]?.ToObject<ImageDetail>(serializer)
+                };
+                return imageContent;
+            }
+            case "input_file":
+            {
+                ResponseInputContentFile fileContent = new ResponseInputContentFile
+                {
+                    FileId = jo["file_id"]?.ToString(),
+                    Filename = jo["filename"]?.ToString(),
+                    FileData = jo["file_data"]?.ToString()
+                };
+                return fileContent;
+            }
+            default:
+            {
+                throw new JsonSerializationException($"Unknown input content type: {type}");
+            }
+        }
     }
 } 

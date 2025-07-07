@@ -25,11 +25,12 @@ public class PromptConfiguration
     /// The substitution values can either be strings, or other Response input types like images or files.
     /// </summary>
     [JsonProperty("variables")]
-    public Dictionary<string, object>? Variables { get; set; }
+    [JsonConverter(typeof(PromptVariablesJsonConverter))]
+    public Dictionary<string, IPromptVariable>? Variables { get; set; }
 
     public PromptConfiguration() { }
 
-    public PromptConfiguration(string id, string? version = null, Dictionary<string, object>? variables = null)
+    public PromptConfiguration(string id, string? version = null, Dictionary<string, IPromptVariable>? variables = null)
     {
         Id = id;
         Version = version;

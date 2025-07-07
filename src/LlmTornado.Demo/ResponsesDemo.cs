@@ -16,6 +16,7 @@ public class ResponsesDemo : DemoBase
         ResponseResult result = await Program.Connect().Responses.CreateResponse(new ResponseRequest
         {
             Model = ChatModel.OpenAi.Gpt41.V41Mini,
+            Instructions = "You are a helpful assistant",
             InputItems = [
                 new ResponseInputMessage(ChatMessageRoles.User, "how are you?")
             ],
@@ -456,5 +457,62 @@ public class ResponsesDemo : DemoBase
         ResponseResult createResult = await api.Responses.CreateResponse(request);
         ListResponse<ResponseInputItem> result = await api.Responses.ListResponseInputItems(createResult.Id, new ListQuery(100));
         int z = 0;
+    }
+    
+    [TornadoTest]
+    public static async Task ResponseReusablePromptList()
+    {
+        TornadoApi api = Program.Connect();
+        ResponseRequest request = new ResponseRequest
+        {
+            Model = ChatModel.OpenAi.O4.V4Mini,
+            Background = true,
+            Instructions = "You are a helpful assistant",
+            Prompt = new PromptConfiguration
+            {
+                Id = "pmpt_686bb61c674081979cef4c95e2baaa570e95896814dffabf",
+                Variables = new Dictionary<string, IPromptVariable>
+                {
+                    { "imagename", new PromptVariableString("cat") },
+                    { "image", new PromptVariableString("test") }
+                }
+            },
+            InputItems = [
+                new ResponseInputMessage(ChatMessageRoles.User, [
+                    new ResponseInputContentText("Can you describe it?")
+                ])
+            ]
+        };
+        
+        ResponseResult createResult = await api.Responses.CreateResponse(request);
+        ListResponse<ResponseInputItem> result = await api.Responses.ListResponseInputItems(createResult.Id, new ListQuery(100));
+    }
+    
+    [TornadoTest]
+    public static async Task ResponseReusablePrompt()
+    {
+        TornadoApi api = Program.Connect();
+        ResponseRequest request = new ResponseRequest
+        {
+            Model = ChatModel.OpenAi.O4.V4Mini,
+            Prompt = new PromptConfiguration
+            {
+                Id = "pmpt_686bb61c674081979cef4c95e2baaa570e95896814dffabf",
+                Variables = new Dictionary<string, IPromptVariable>
+                {
+                    { "imagename", new PromptVariableString("cats") },
+                    { "image", new PromptVariableString(string.Empty) }
+                },
+                Version = "2"
+            },
+            InputItems = [
+                new ResponseInputMessage(ChatMessageRoles.User, [
+                    new ResponseInputContentText("What are you expert on?")
+                ])
+            ]
+        };
+        
+        ResponseResult createResult = await api.Responses.CreateResponse(request);
+        Console.WriteLine(createResult.OutputText);
     }
 }

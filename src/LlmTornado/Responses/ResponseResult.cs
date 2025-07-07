@@ -54,9 +54,11 @@ public class ResponseResult
 
     /// <summary>
     /// A system (or developer) message inserted into the model's context.
+    /// Can be either a string or an array of input items.
     /// </summary>
     [JsonProperty("instructions")]
-    public string? Instructions { get; set; }
+    [JsonConverter(typeof(InstructionJsonConverter))]
+    public IResponseInstruction? Instructions { get; set; }
 
     /// <summary>
     /// An upper bound for the number of tokens that can be generated for a response, including visible output tokens and reasoning tokens.
