@@ -13,7 +13,7 @@ _Empty field means the feature is unsupported by the provider._
 |**Chat**       | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |  ✅ | ✅ |   |   ✅   | ✅      |✅      |
 |**Embeddings** | ✅ |    | ✅  | ✅ |    |    | ✅ |     |     |   ✅      |     |  ✅   |      |
 |**Fine-Tuning**| ✅ |    | ❌  |    |    |    | ❌  |    |     |        |      |      |     |
-|**Batch**      | ❌ | ❌ | ❌ | ❌ |    | ❌ | ❌ |    |     |        |      |      |      |
+|**Batch**      | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |    |     |        |      |      |      |
 |**Files**      | ✅ | ✅ | ✅ |     |    |     | ❌ |    |     |        |      |      |      |
 |**Uploads**    | ❌ |    |     |    |    |     |     |     |     |        |      |      |      |
 |**Images**     | ✅ |    | ✅ |    |    |     |     |  ✅  |     |        |      |      |     |
