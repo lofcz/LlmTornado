@@ -12,15 +12,16 @@ _Empty field means the feature is unsupported by the provider._
 |**Audio**      | ✅ |    |     |     |   |     |     |     |     |     |      |      |      |
 |**Chat**       | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |  ✅ | ✅ |   |   ✅   | ✅      |✅      |
 |**Embeddings** | ✅ |    | ✅  | ✅ |    |    | ✅ |     |     |   ✅      |     |  ✅   |      |
-|**Fine-Tuning**| ✅ |    | ❌  |    |    |    | ❌  |    |     |        |      |      |     |
-|**Batch**      | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |    |     |        |      |      |      |
-|**Files**      | ✅ | ✅ | ✅ |     |    |     | ❌ |    |     |        |      |      |      |
+|**Fine-tuning**| ✅ |    | ❌  |    |    |    | ❌  |    |     |        |      |      |     |
+|**Batch**      | ❌ | ❌ | ❌ |    |    | ❌ | ❌ |    |     |        |      |      |      |
+|**Files**      | ✅ | ✅ | ✅ |     |    | ❌ | ❌ |    |     |        |      |      |      |
 |**Uploads**    | ✅ |    |     |    |    |     |     |     |     |        |      |      |      |
 |**Images**     | ✅ |    | ✅ |    |    |     |     |  ✅  |     |        |      |      |     |
 |**Models**     | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |  ✅ |   |    |      |  ✅    |  ✅    |
 |**Moderation** | ✅ |    |     |    |    |     |     |    |     |        |      |      |      |
-|**Responses**   | ✅   |  |     |  |    |     |     |     |     |        |      |      |      |
+|**Responses**  | ✅ |    |     |    |    |     |     |     |     |        |      |      |      |
 |**Tokenize**   |    | ❌ |     | ❌ |    |     |     |    |     |       |      |      |      |
+|**FIM**        |    |     |     |    | ❌ |     | ❌  |    |     |       |      |      |      |
 
 _*Custom means any OpenAI compatible provider, such as Azure OpenAI, Ollama, KoboldCpp, etc._
 
@@ -49,9 +50,9 @@ _*`/v1` APIs, future support is unsure and probably won't be implemented._
 
 ## Mistral Specific
 
- FIM | Agents | Classifiers | OCR | Agents |
-|-----------|------------ | ------------ | ------------ | ------------ |
-| ❌ | ❌ |  ❌ | ❌ | ❌ |
+Agents | Classifiers | OCR | Agents |
+| ------------ | ------------ | ------------ | ------------ |
+| ❌ |  ❌ | ❌ | ❌ |
 
 ## Misc
 
