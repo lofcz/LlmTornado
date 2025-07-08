@@ -13,11 +13,11 @@
 - **Multi-Agent Systems**: Toolkit for the orchestration of multiple collaborating specialist agents.
 - **Maximize Request Success Rate**: If enabled, we keep track of which parameters are supported by which models, how long the reasoning context can be, etc., and silently modify your requests to comply with rules enforced by a diverse set of Providers.
 - **Leverage Multiple APIs**: Non-standard features from all major Providers are carefully mapped, documented, and ready to use via strongly-typed code.
-- **Fully Multimodal**: Text, image, video, document, URL, and audio inputs are supported.
+- **Fully Multimodal**: Text, images, videos, documents, URLs, and audio inputs are supported.
 - **MCP Compatible**: Seamlessly integrate Model Context Protocol using the official .NET SDK and `LlmTornado.Mcp` adapter.
 - **Enterprise Ready**: Preview any request before committing to it. Automatic redaction of secrets in outputs. Stable APIs.
 
-## ⭐ With a few lines of code you can:
+## ⭐ You Can Easily:
 - [Chat with your documents](https://github.com/lofcz/LlmTornado/blob/61d2a4732c88c45d4a8c053204ecdef807c34652/LlmTornado.Demo/ChatDemo.cs#L722-L757)
 - [Make multiple-speaker podcasts](https://github.com/lofcz/LlmTornado/blob/d1042281082ea5ff1de9dcb438a847d4cd9c416b/LlmTornado.Demo/ChatDemo2.cs#L332-L374)
 - [Voice call with AI using your microphone](https://github.com/lofcz/LlmTornado/blob/61d2a4732c88c45d4a8c053204ecdef807c34652/LlmTornado.Demo/ChatDemo.cs#L905-L968)
@@ -445,13 +445,21 @@ orange: 2
 
 ## 👉 Why Tornado?
 
-- 50,000+ installs on NuGet (previous names [Lofcz.Forks.OpenAI](https://www.nuget.org/packages/Lofcz.Forks.OpenAI), [OpenAiNg](https://www.nuget.org/packages/OpenAiNg)).
+- 50,000+ installs on NuGet (previous names [Lofcz.Forks.OpenAI](https://www.nuget.org/packages/Lofcz.Forks.OpenAI), [OpenAiNg](https://www.nuget.org/packages/OpenAiNg), currently [LlmTornado](https://www.nuget.org/packages/LlmTornado)).
 - Used in [award-winning](https://www-aiawards-cz.translate.goog/?_x_tr_sl=cs&_x_tr_tl=en&_x_tr_hl=cs) commercial projects, processing > 100B tokens monthly.
 - Covered by 250+ tests.
 - Great performance.
 - The license will never change.
 
-[![Star History Chart](https://api.star-history.com/svg?repos=lofcz/llmtornado&type=Date)](https://www.star-history.com/#lofcz/llmtornado&Date)
+## 📢 Projects Built With Tornado
+- [ScioBot](https://sciobot.org/) - AI For Educators, 100k+ users
+- [LombdaAgentSDK](https://github.com/Johnny2x2/LombdaAgentSDK) - A lightweight C# SDK designed to create and run modular agents
+- [NotT3Chat](https://github.com/shaltielshmid/NotT3Chat) - The C# Answer to the T3 Stack
+- [ClaudeCodeProxy](https://github.com/salty-flower/ClaudeCodeProxy) - Provider multiplexing proxy
+- [Semantic Search](https://github.com/primaryobjects/semantic-search) - AI semantic search where a query is matched by context and meaning
+- [Monster Collector](https://github.com/primaryobjects/monster-collector) - A database of AI-generated monsters
+
+_Have you built something with Tornado? Let us know about it in the issues to get a spotlight!_
 
 ## 📚 Contributing
 
