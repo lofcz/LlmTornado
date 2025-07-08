@@ -74,7 +74,7 @@ public static class McpExtensions
 
                     McpContent mcpContent = new McpContent
                     {
-                        IsError = callToolResult.IsError,
+                        IsError = callToolResult.IsError ?? false,
                         StructuredContent = callToolResult.StructuredContent,
                         McpContentBlocks = callToolResult.Content.Select(x =>
                         {

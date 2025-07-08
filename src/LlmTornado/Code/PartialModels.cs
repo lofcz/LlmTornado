@@ -1207,6 +1207,10 @@ public enum CapabilityEndpoints
     /// </summary>
     Files,
     /// <summary>
+    /// Uploads endpoint.
+    /// </summary>
+    Uploads,
+    /// <summary>
     /// Images endpoint.
     /// </summary>
     ImageGeneration,

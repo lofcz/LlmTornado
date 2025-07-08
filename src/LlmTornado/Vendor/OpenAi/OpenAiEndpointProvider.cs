@@ -64,6 +64,7 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
             CapabilityEndpoints.Embeddings => "embeddings",
             CapabilityEndpoints.FineTuning => "fine_tuning",
             CapabilityEndpoints.Files => "files",
+            CapabilityEndpoints.Uploads => "uploads",
             CapabilityEndpoints.ImageGeneration => "images/generations",
             CapabilityEndpoints.ImageEdit => "images/edits",
             CapabilityEndpoints.Models => "models",
