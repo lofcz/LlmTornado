@@ -451,7 +451,7 @@ orange: 2
 - Great performance.
 - The license will never change.
 
-## 📢 Projects Built With Tornado
+## 📢 Built With Tornado
 - [ScioBot](https://sciobot.org/) - AI For Educators, 100k+ users
 - [LombdaAgentSDK](https://github.com/Johnny2x2/LombdaAgentSDK) - A lightweight C# SDK designed to create and run modular agents
 - [NotT3Chat](https://github.com/shaltielshmid/NotT3Chat) - The C# Answer to the T3 Stack
