@@ -14,7 +14,7 @@
         <PackageTags>llmtornado</PackageTags>
         <PackageIcon>nuget_logo.jpg</PackageIcon>
         <LangVersion>preview</LangVersion>
-        <Version>1.1.1</Version>
+        <Version>1.1.2</Version>
         <Description>Provides extra functionality to LlmTornado.</Description>
     </PropertyGroup>
 
