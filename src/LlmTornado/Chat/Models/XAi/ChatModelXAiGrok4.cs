@@ -12,7 +12,7 @@ public class ChatModelXAiGrok4 : IVendorModelClassProvider
     /// <summary>
     /// Our latest and greatest flagship model, offering unparalleled performance in natural language, math and reasoning - the perfect jack of all trades.
     /// </summary>
-    public static readonly ChatModel ModelV4 = new ChatModel("grok-4", LLmProviders.XAi, 131_072, [ "grok-4-0709", "grok-4-latest" ]);
+    public static readonly ChatModel ModelV4 = new ChatModel("grok-4", LLmProviders.XAi, 256_000, [ "grok-4-0709", "grok-4-latest" ]);
 
     /// <summary>
     /// <inheritdoc cref="ModelV4"/>
