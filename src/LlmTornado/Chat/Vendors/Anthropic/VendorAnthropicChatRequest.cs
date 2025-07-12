@@ -14,6 +14,7 @@ using LlmTornado.Common;
 using LlmTornado.Images;
 using LlmTornado.Vendor.Anthropic;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace LlmTornado.Chat.Vendors.Anthropic;
 
@@ -300,6 +301,60 @@ public partial class VendorAnthropicChatRequestMessageContent
                             
                             break;
                         }
+                        case ChatMessageTypes.SearchResult:
+                        {
+                            writer.WritePropertyName("type");
+                            writer.WriteValue("search_result");
+
+                            if (part.SearchResult is null)
+                            {
+                                throw new Exception("SearchResult of this part is empty, expected not null");
+                            }
+                            
+                            writer.WritePropertyName("source");
+                            writer.WriteValue(part.SearchResult.Source);
+                            
+                            writer.WritePropertyName("title");
+                            writer.WriteValue(part.SearchResult.Title);
+                            
+                            writer.WritePropertyName("content");
+                            writer.WriteStartArray();
+
+                            foreach (ChatSearchResultContent item in part.SearchResult.Content)
+                            {
+                                writer.WritePropertyName("type");
+                                
+                                if (item is ChatSearchResultContentText text)
+                                {
+                                    writer.WriteValue("text");
+                                    
+                                    writer.WritePropertyName("text");
+                                    writer.WriteValue(text.Text);
+                                }
+                            }
+                            
+                            writer.WriteEndArray();
+
+                            if (part.SearchResult.Citations is not null)
+                            {
+                                writer.WritePropertyName("citations");
+                                writer.WriteStartObject();
+                                
+                                writer.WritePropertyName("enabled");
+                                writer.WriteValue(part.SearchResult.Citations.Enabled);
+                                
+                                writer.WriteEndObject();
+                            }
+
+                            if (part.SearchResult.Cache is not null)
+                            {
+                                writer.WritePropertyName("cache_control");
+                                JToken cacheToken = JToken.FromObject(part.SearchResult.Cache);
+                                cacheToken.WriteTo(writer);
+                            }
+                            
+                            break;
+                        }
                     }
                     
                     SerializeCache(part);
@@ -365,12 +420,8 @@ public partial class VendorAnthropicChatRequestMessageContent
                 if (part.VendorExtensions is ChatMessagePartAnthropicExtensions { Cache: not null } ac)
                 {
                     writer.WritePropertyName("cache_control");
-                    writer.WriteStartObject();
-                    
-                    writer.WritePropertyName("type");
-                    writer.WriteValue(ac.Cache.Type);
-                    
-                    writer.WriteEndObject();
+                    JToken cacheToken = JToken.FromObject(ac.Cache);
+                    cacheToken.WriteTo(writer);
                 }
             }
         }

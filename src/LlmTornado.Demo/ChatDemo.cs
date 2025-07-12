@@ -333,7 +333,7 @@ public partial class ChatDemo : DemoBase
             new ChatMessagePart("You are an assistant answering queries about the following text"),
             new ChatMessagePart(longPrompt, new ChatMessagePartAnthropicExtensions
             {
-                Cache = AnthropicCacheSettings.Ephemeral
+                Cache = AnthropicCacheSettings.EphemeralWithTtl(AnthropicCacheTtlOptions.OneHour)
             }) 
         ]);
         

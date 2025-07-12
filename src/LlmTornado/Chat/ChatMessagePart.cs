@@ -186,6 +186,12 @@ public class ChatMessagePart
     public ChatAudio? Audio { get; set; }
     
     /// <summary>
+    ///     Search result of the message part if type is <see cref="ChatMessageTypes.SearchResult" />.
+    /// </summary>
+    [JsonIgnore]
+    public ChatSearchResult? SearchResult { get; set; }
+    
+    /// <summary>
     ///     Specific features supported only by certain providers
     /// </summary>
     [JsonIgnore]

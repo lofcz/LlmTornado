@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using LlmTornado.Images;
 using LlmTornado.Audio;
 using LlmTornado.Chat;
+using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code.Models;
 using LlmTornado.Code.Vendor;
@@ -1562,4 +1563,106 @@ internal enum AudioStreamEventTypes
     Unknown,
     TranscriptDelta,
     TranscriptDone
+}
+
+/// <summary>
+/// Search result.
+/// </summary>
+public class ChatSearchResult
+{
+    /// <summary>
+    /// The source URL or identifier for the content.
+    /// </summary>
+    [JsonProperty("source")]
+    public string Source { get; set; }
+    
+    /// <summary>
+    /// A descriptive title for the search result.
+    /// </summary>
+    [JsonProperty("title")]
+    public string Title { get; set; }
+
+    /// <summary>
+    /// An array of text blocks containing the actual content.
+    /// </summary>
+    [JsonProperty("content")]
+    public List<ChatSearchResultContent> Content { get; set; } = [];
+    
+    /// <summary>
+    /// Citation configuration with <c>enabled</c> boolean field.
+    /// </summary>
+    [JsonProperty("citations")]
+    public ChatSearchResultCitations? Citations { get; set; }
+    
+    /// <summary>
+    /// Cache settings.
+    /// </summary>
+    [JsonProperty("cache_control")]
+    public AnthropicCacheSettings? Cache { get; set; } 
+}
+
+/// <summary>
+/// Citation configuration.
+/// </summary>
+public class ChatSearchResultCitations
+{
+    /// <summary>
+    /// Whether citing from this source is enabled or not.
+    /// </summary>
+    [JsonProperty("enabled")]
+    public bool Enabled { get; set; }
+
+    /// <summary>
+    /// Instance with enabled citations.
+    /// </summary>
+    public static readonly ChatSearchResultCitations InstanceEnabled = new ChatSearchResultCitations
+    {
+        Enabled = true
+    };
+    
+    /// <summary>
+    /// Instance with disabled citations.
+    /// </summary>
+    public static readonly ChatSearchResultCitations InstanceDisabled = new ChatSearchResultCitations
+    {
+        Enabled = false
+    };
+}
+
+/// <summary>
+/// Search result content block.
+/// </summary>
+public abstract class ChatSearchResultContent
+{
+    /// <summary>
+    /// Type of the block
+    /// </summary>
+    [JsonProperty("type")]
+    public abstract ChatSearchResultContentTypes Type { get; set; }
+}
+
+/// <summary>
+/// Text block.
+/// </summary>
+public class ChatSearchResultContentText : ChatSearchResultContent
+{
+    /// <inheritdoc />
+    public override ChatSearchResultContentTypes Type { get; set; } = ChatSearchResultContentTypes.Text;
+    
+    /// <summary>
+    /// Content.
+    /// </summary>
+    [JsonProperty("text")]
+    public string Text { get; set; }
+}
+
+/// <summary>
+/// Types of search result content blocks.
+/// </summary>
+public enum ChatSearchResultContentTypes
+{
+    /// <summary>
+    /// Text block.
+    /// </summary>
+    Text
 }
