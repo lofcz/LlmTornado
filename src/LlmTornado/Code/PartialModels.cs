@@ -1659,10 +1659,12 @@ public class ChatSearchResultContentText : ChatSearchResultContent
 /// <summary>
 /// Types of search result content blocks.
 /// </summary>
+[JsonConverter(typeof(StringEnumConverter))]
 public enum ChatSearchResultContentTypes
 {
     /// <summary>
     /// Text block.
     /// </summary>
+    [EnumMember(Value = "text")] 
     Text
 }

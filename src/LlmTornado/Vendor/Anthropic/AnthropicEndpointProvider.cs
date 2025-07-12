@@ -63,7 +63,7 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
         ContentBlockStop
     }
     
-    public AnthropicEndpointProvider() : base()
+    public AnthropicEndpointProvider()
     {
         Provider = LLmProviders.Anthropic;
         StoreApiAuth();

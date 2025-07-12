@@ -10,6 +10,7 @@ using LlmTornado.Chat.Models;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
+using LlmTornado.Code.Vendor;
 using LlmTornado.Common;
 using LlmTornado.Images;
 using LlmTornado.Vendor.Anthropic;
@@ -158,6 +159,19 @@ public partial class VendorAnthropicChatRequestMessageContent
                         {
                             writer.WritePropertyName("text");
                             writer.WriteValue(part.Text);
+                         
+                            if (part.Citations?.Count > 0)
+                            {
+                                writer.WritePropertyName("citations");
+                                writer.WriteStartArray();
+                                
+                                foreach (IChatMessagePartCitation cit in part.Citations)
+                                {
+                                    cit.Serialize(LLmProviders.Anthropic, writer);
+                                }
+                                
+                                writer.WriteEndArray();
+                            }
                             break;
                         }
                         case ChatMessageTypes.Image:
@@ -322,15 +336,7 @@ public partial class VendorAnthropicChatRequestMessageContent
 
                             foreach (ChatSearchResultContent item in part.SearchResult.Content)
                             {
-                                writer.WritePropertyName("type");
-                                
-                                if (item is ChatSearchResultContentText text)
-                                {
-                                    writer.WriteValue("text");
-                                    
-                                    writer.WritePropertyName("text");
-                                    writer.WriteValue(text.Text);
-                                }
+                                writer.Serialize(item);
                             }
                             
                             writer.WriteEndArray();
