@@ -8,13 +8,15 @@ using System.Text;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Chat.Vendors.Cohere;
-using LlmTornado.ChatFunctions;
 using LlmTornado.Code.Models;
 using LlmTornado.Embedding;
 using LlmTornado.Models.Vendors;
+using LlmTornado.Threads;
 using LlmTornado.Vendor.Anthropic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using FunctionCall = LlmTornado.ChatFunctions.FunctionCall;
+using ToolCall = LlmTornado.ChatFunctions.ToolCall;
 
 namespace LlmTornado.Code.Vendor;
 
@@ -199,7 +201,7 @@ public class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
         public VendorCohereChatResult? Response { get; set; }
     }
 
-    public override async IAsyncEnumerable<ChatResult?> InboundStream(StreamReader reader, ChatRequest request)
+    public override async IAsyncEnumerable<ChatResult?> InboundStream(StreamReader reader, ChatRequest request, ChatStreamEventHandler? eventHandler)
     {
         ChatResult baseResult = new ChatResult();
         ChatMessage? plaintextAccu = null;
@@ -218,6 +220,14 @@ public class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
             if (line.IsNullOrWhiteSpace())
             {
                 continue;
+            }
+
+            if (eventHandler?.OnSse is not null)
+            {
+                await eventHandler.OnSse.Invoke(new ServerSentEvent
+                {
+                    Data = line
+                });
             }
             
             ChatStreamEventBase? baseEvent = JsonConvert.DeserializeObject<ChatStreamEventBase>(line);

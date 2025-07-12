@@ -186,7 +186,7 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
         return JsonConvert.DeserializeObject(jsonData, type);
     }
 
-    public override async IAsyncEnumerable<ChatResult?> InboundStream(StreamReader reader, ChatRequest request)
+    public override async IAsyncEnumerable<ChatResult?> InboundStream(StreamReader reader, ChatRequest request, ChatStreamEventHandler? eventHandler)
     {
         ChatStreamParsingStates state = ChatStreamParsingStates.Text;
         bool parseTools = request.Tools?.Count > 0;
@@ -207,7 +207,7 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
             #if DEBUG
             data.Add(item.Data);
             #endif
-
+            
             if (string.Equals(item.Data, DoneString, StringComparison.InvariantCulture))
             {
                 goto afterStreamEnds;

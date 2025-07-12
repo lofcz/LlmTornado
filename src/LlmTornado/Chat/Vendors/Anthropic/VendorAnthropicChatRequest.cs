@@ -1,18 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Net;
-using System.Net.Http;
 using System.Text.RegularExpressions;
-using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
-using LlmTornado.Code.Models;
-using LlmTornado.Code.Vendor;
-using LlmTornado.Common;
-using LlmTornado.Images;
 using LlmTornado.Vendor.Anthropic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -48,8 +40,14 @@ public class ToolVendorExtensions
     }
 }
 
+/// <summary>
+/// Anthropic extensions to chat message parts.
+/// </summary>
 public class ChatMessagePartAnthropicExtensions : IChatMessagePartVendorExtensions
 {
+    /// <summary>
+    /// Cache settings.
+    /// </summary>
     public AnthropicCacheSettings? Cache { get; set; }
 }
 
@@ -64,10 +62,9 @@ public partial class VendorAnthropicChatRequestMessageContent
     public VendorAnthropicChatRequestMessageContent(ChatMessage msg)
     {
         Msg = msg;
-        Parts = msg.Parts?.Count > 0 ? msg.Parts.ToList() : msg.Content is not null ? new List<ChatMessagePart>
-        {
+        Parts = msg.Parts?.Count > 0 ? msg.Parts.ToList() : msg.Content is not null ? [
             new ChatMessagePart(msg.Content)
-        } : [];
+        ] : [];
         Role = msg.Role ?? ChatMessageRoles.Unknown;
     }
 
@@ -447,11 +444,11 @@ public partial class VendorAnthropicChatRequestMessageContent
     }
 }
 
-    
-public class VendorAnthropicChatRequestMessage
+internal class VendorAnthropicChatRequestMessage
 {
     [JsonProperty("role")]
     internal string Role { get; set; }
+    
     [JsonProperty("content")]
     [JsonConverter(typeof(VendorAnthropicChatRequestMessageContent.VendorAnthropicChatRequestMessageContentJsonConverter))]
     public VendorAnthropicChatRequestMessageContent Content { get; set; }

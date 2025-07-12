@@ -49,7 +49,11 @@ namespace LlmTornado.Chat
                 throw new JsonSerializationException($"Unsupported citation type '{type}'.");
             }
 
-            return (IChatMessagePartCitation)obj.ToObject(target, serializer)!;
+            // Avoid infinite recursion: create the concrete instance manually and populate it.
+            IChatMessagePartCitation instance = (IChatMessagePartCitation)Activator.CreateInstance(target)!;
+            using JsonReader subReader = obj.CreateReader();
+            serializer.Populate(subReader, instance);
+            return instance;
         }
     }
 } 

@@ -453,6 +453,76 @@ public partial class ChatDemo : DemoBase
     }
 
     [TornadoTest]
+    public static async Task AnthropicSearchResultsStream()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Anthropic.Claude4.Sonnet250514
+        });
+
+        chat.AddUserMessage([
+            new ChatMessagePart(new ChatSearchResult
+            {
+                Source = "https://github.com/lofcz/LlmTornado",
+                Title = "readme",
+                Content = [
+                    new ChatSearchResultContentText
+                    {
+                        Text = """
+                               Use Any Provider: All you need to know is the model's name; we handle the rest. Built-in: Anthropic, Azure, Cohere, DeepInfra, DeepSeek, Google, Groq, Mistral, Ollama, OpenAI, OpenRouter, Perplexity, Voyage, xAI. Check the full Feature Matrix here.
+                               First-class Local Deployments: Run with vLLM, Ollama, or LocalAI with integrated support for request transformations.
+                               Multi-Agent Systems: Toolkit for the orchestration of multiple collaborating specialist agents.
+                               Maximize Request Success Rate: If enabled, we keep track of which parameters are supported by which models, how long the reasoning context can be, etc., and silently modify your requests to comply with rules enforced by a diverse set of Providers.
+                               Leverage Multiple APIs: Non-standard features from all major Providers are carefully mapped, documented, and ready to use via strongly-typed code.
+                               Fully Multimodal: Text, images, videos, documents, URLs, and audio inputs are supported.
+                               MCP Compatible: Seamlessly integrate Model Context Protocol using the official .NET SDK and LlmTornado.Mcp adapter.
+                               Enterprise Ready: Preview any request before committing to it. Automatic redaction of secrets in outputs. Stable APIs.
+                               """
+                    }
+                ],
+                Citations = ChatSearchResultCitations.InstanceEnabled
+            }),
+            new ChatMessagePart("Which providers are supported by LlmTornado?")
+        ]);
+
+        int citIndex = 1;
+
+        await chat.StreamResponseRich(new ChatStreamEventHandler
+        {
+            OnSse = (sse) =>
+            {
+                return ValueTask.CompletedTask;
+            },
+            MessageTokenExHandler = (data) =>
+            {
+                Console.Write(data);
+                return ValueTask.CompletedTask;
+            },
+            MessagePartHandler = (part) =>
+            {
+                if (part.Citations is not null)
+                {
+                    foreach (IChatMessagePartCitation citation in part.Citations)
+                    {
+                        Console.ForegroundColor = ConsoleColor.Yellow;
+                        Console.Write($" [{citIndex}]");
+                        Console.ResetColor();
+                    
+                        Console.ForegroundColor = ConsoleColor.DarkGray;
+                        Console.Write($" ({citation.Text})");
+                        Console.ResetColor();
+                    
+                        citIndex++;
+                    }
+                }
+                
+                citIndex++;
+                return ValueTask.CompletedTask;
+            }
+        });
+    }
+
+    [TornadoTest]
     public static async Task AnthropicSearchResults()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest

@@ -389,7 +389,7 @@ public class ChatEndpoint : EndpointBase
 
         if (tornadoStreamRequest.StreamReader is not null)
         {
-            await foreach (ChatResult? x in provider.InboundStream(tornadoStreamRequest.StreamReader, request))
+            await foreach (ChatResult? x in provider.InboundStream(tornadoStreamRequest.StreamReader, request, handler))
             {
                 if (x is null)
                 {
