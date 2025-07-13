@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace LlmTornado.Chat.Vendors.Anthropic;
 
@@ -23,6 +24,9 @@ internal class VendorAnthropicChatMessageToolResult
     public string ToolCallId { get; set; }
     
     public bool? ToolInvocationSucceeded { get; set; }
+    
+    [JsonIgnore]
+    public ChatMessage SourceMessage { get; set; }
 
     public VendorAnthropicChatMessageToolResult(ChatMessage msg)
     {
@@ -30,5 +34,6 @@ internal class VendorAnthropicChatMessageToolResult
         ContentType = msg.ContentJsonType;
         ToolCallId = msg.ToolCallId ?? string.Empty;
         ToolInvocationSucceeded = msg.ToolInvocationSucceeded;
+        SourceMessage = msg;
     }
 }

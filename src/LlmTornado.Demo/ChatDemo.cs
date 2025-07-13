@@ -1474,6 +1474,65 @@ public partial class ChatDemo : DemoBase
     }
     
     [TornadoTest]
+    public static async Task OpenAiFunctionsRichBlocks()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+            {
+                Model = ChatModel.OpenAi.Gpt4.O,
+                Tools =
+                [
+                    new Tool(new ToolFunction("get_weather", "gets the current weather", new
+                    {
+                        type = "object",
+                        properties = new
+                        {
+                            location = new
+                            {
+                                type = "string",
+                                description = "The location for which the weather information is required."
+                            }
+                        },
+                        required = new List<string> { "location" }
+                    }))
+                ],
+                MaxTokens = 256
+            })
+            .AppendSystemMessage("You are a helpful assistant")
+            .AppendUserInput("What is the weather like today in Prague? also include date for which your prediction is made and confidence level.");
+
+        ChatStreamEventHandler handler = new ChatStreamEventHandler
+        {
+            MessageTokenHandler = (x) =>
+            {
+                Console.Write(x);
+                return ValueTask.CompletedTask;
+            },
+            FunctionCallHandler = (calls) =>
+            {
+                calls.ForEach(x => x.Resolve([
+                    new FunctionResultBlockText(new
+                    {
+                        prediction = "A mild rain is expected around noon.",
+                        confidenceLevel = "high",
+                        note = "data valid as of 7/13/2025 8:16 AM"
+                    }),
+                    new FunctionResultBlockText(new
+                    {
+                        moreDetails = "high chloric activity detected in rain due to the recent Janovský's store accident. While harmless, it is recommended to minimize the exposure."
+                    })
+                ]));
+                return ValueTask.CompletedTask;
+            },
+            AfterFunctionCallsResolvedHandler = async (results, handler) =>
+            {
+                await chat.StreamResponseRich(handler);
+            }
+        };
+
+        await chat.StreamResponseRich(handler);
+    }
+    
+    [TornadoTest]
     public static async Task OpenAiDisableParallelFunctions()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
@@ -1625,13 +1684,21 @@ public partial class ChatDemo : DemoBase
             {
                 foreach (FunctionCall fn in functions)
                 {
-                    if (fn.Get("location", out string? str) && str.ToLowerInvariant() is "prague")
+                    if (fn.Get("location", out string? str) && str?.ToLowerInvariant() is "prague")
                     {
-                        fn.Result = new FunctionResult(fn.Name, "A mild rain is expected around noon.");  
+                        fn.Resolve([
+                            new FunctionResultBlockText(new
+                            {
+                                summary = "A mild rain is expected around noon.",
+                                note = "Low level of confidence on this prediction"
+                            })
+                        ]);
                     }
                     else
                     {
-                        fn.Result = new FunctionResult(fn.Name, "A sunny, hot day is expected, 28 \u00b0C");
+                        fn.Resolve([
+                            new FunctionResultBlockText("A sunny, hot day is expected, 28 \u00b0C")
+                        ]);
                     }
                 }
 

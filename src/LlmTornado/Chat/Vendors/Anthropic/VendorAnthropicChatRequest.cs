@@ -89,23 +89,36 @@ public partial class VendorAnthropicChatRequestMessageContent
                     }
                     
                     writer.WriteStartObject();
+                    
                     writer.WritePropertyName("type");
                     writer.WriteValue("tool_result");
+                    
                     writer.WritePropertyName("tool_use_id");
                     writer.WriteValue(block.ToolCallId);
 
-                    if (block.Content is not null)
+                    if (block.SourceMessage.FunctionCall?.Result?.RawContentBlocks is not null)
                     {
                         writer.WritePropertyName("content");
                         
-                        if (block.Content.TrimStart().StartsWith('"')) // [todo] hack?
+                        writer.WriteStartArray();
+
+                        foreach (IFunctionResultBlock resultBlock in block.SourceMessage.FunctionCall.Result.RawContentBlocks)
+                        {
+                            writer.Serialize(resultBlock);
+                        }
+                        
+                        writer.WriteEndArray();
+                    }
+                    else if (block.Content is not null)
+                    {
+                        if (block.Content.TrimStart().StartsWith('"'))
                         {
                             writer.WriteRawValue(block.Content);
                         }
                         else
                         {
                             writer.WriteValue(block.Content);   
-                        }   
+                        }     
                     }
 
                     switch (block.ToolInvocationSucceeded)

@@ -298,6 +298,7 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
                             {
                                 toolsMessage.ToolCallsDict.TryAdd(toolCall.Index?.ToString() ?? toolCall.Id ?? string.Empty, new ToolCallInboundAccumulator
                                 {
+                                    ArgumentsBuilder = new StringBuilder(toolCall.FunctionCall.Arguments),
                                     ToolCall = toolCall
                                 });
                             }   
@@ -365,6 +366,7 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
                                     toolsMessage.ToolCalls.Add(toolCall);
                                     toolsMessage.ToolCallsDict.Add(key, new ToolCallInboundAccumulator
                                     {
+                                        ArgumentsBuilder = new StringBuilder(toolCall.FunctionCall.Arguments),
                                         ToolCall = toolCall
                                     });
                                 }

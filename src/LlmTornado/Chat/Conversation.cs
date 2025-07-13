@@ -783,7 +783,8 @@ public class Conversation
                                 Id = currentMsgId,
                                 ToolCallId = call.ToolCall?.Id ?? call.Name,
                                 ToolInvocationSucceeded = call.Result?.InvocationSucceeded ?? false,
-                                ContentJsonType = call.Result?.ContentJsonType ?? typeof(string)
+                                ContentJsonType = call.Result?.ContentJsonType ?? typeof(string),
+                                FunctionCall = call
                             };
 
                             currentMsgId = Guid.NewGuid();
@@ -1362,7 +1363,8 @@ public class Conversation
                                         Id = currentMsgId,
                                         ToolCallId = call.ToolCall?.Id ?? call.Name,
                                         ToolInvocationSucceeded = call.Result?.InvocationSucceeded ?? false,
-                                        ContentJsonType = call.Result?.ContentJsonType ?? typeof(string)
+                                        ContentJsonType = call.Result?.ContentJsonType ?? typeof(string),
+                                        FunctionCall = call
                                     };
 
                                     currentMsgId = Guid.NewGuid();

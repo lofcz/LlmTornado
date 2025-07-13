@@ -178,6 +178,9 @@ public class ChatMessage
     internal Type? ContentJsonType { get; set; }
     
     [JsonIgnore]
+    internal FunctionCall? FunctionCall { get; set; }
+    
+    [JsonIgnore]
     internal ChatRequest? Request { get; set; }
     
     /// <summary>

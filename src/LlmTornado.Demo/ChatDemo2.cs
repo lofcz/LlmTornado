@@ -1526,4 +1526,134 @@ public partial class ChatDemo : DemoBase
         ChatRichResponse response = await chat.GetResponseRich();
         Console.WriteLine(response);
     }
+    
+    [TornadoTest]
+    public static async Task AnthropicFunctionsRichImage()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Anthropic.Claude4.Sonnet250514,
+            Tools = [
+                new Tool(new ToolFunction("get_image", "gets an image for the given query", new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        query = new
+                        {
+                            type = "string",
+                            description = "The query."
+                        }
+                    },
+                    required = new List<string> { "query" }
+                }))
+            ],
+            ToolChoice = new OutboundToolChoice("get_image")
+        });
+
+        ChatStreamEventHandler eventsHandler = new ChatStreamEventHandler
+        {
+            MessageTokenHandler = (x) =>
+            {
+                Console.Write(x);
+                return ValueTask.CompletedTask;
+            },
+            FunctionCallHandler = async (functions) =>
+            {
+                foreach (FunctionCall fn in functions)
+                {
+                    byte[] bytes = await File.ReadAllBytesAsync("Static/Images/catBoi.jpg");
+                    string base64 = $"{Convert.ToBase64String(bytes)}";
+                    
+                    fn.Resolve([
+                        new FunctionResultBlockImage(new FunctionResultBlockImageSourceBase64
+                        {
+                            Data = base64,
+                            MediaType = "image/jpeg"
+                        })
+                    ]);
+                }
+            }
+        };
+
+        chat.OnAfterToolsCall = async (result) =>
+        {
+            chat.RequestParameters.ToolChoice = null; // stop forcing the model to use the get_image tool
+            await chat.StreamResponseRich(eventsHandler);
+        };
+        
+        chat.AppendMessage(ChatMessageRoles.User, "Please fetch and describe an image of cat for me.");
+        await chat.StreamResponseRich(eventsHandler);
+    }
+    
+    [TornadoTest]
+    public static async Task AnthropicFunctionsRichSearchResult()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Anthropic.Claude4.Sonnet250514,
+            Tools = [
+                new Tool(new ToolFunction("get_sources", "fetches sources for the given query", new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        query = new
+                        {
+                            type = "string",
+                            description = "The query."
+                        }
+                    },
+                    required = new List<string> { "query" }
+                }))
+            ],
+            ToolChoice = new OutboundToolChoice("get_sources")
+        });
+
+        ChatStreamEventHandler eventsHandler = new ChatStreamEventHandler
+        {
+            MessageTokenHandler = (x) =>
+            {
+                Console.Write(x);
+                return ValueTask.CompletedTask;
+            },
+            FunctionCallHandler = async (functions) =>
+            {
+                foreach (FunctionCall fn in functions)
+                {
+                    fn.Resolve([
+                        new FunctionResultBlockSearchResult
+                        {
+                            Title = "NodeJS Changelog",
+                            Source = "https://nodejs.org/en/blog/release/v24.4.0",
+                            Citations = ChatSearchResultCitations.InstanceEnabled,
+                            Content = [
+                                new ChatSearchResultContentText(
+                                    """
+                                    2025-07-09, Version 24.4.0 (Current), @RafaelGSS
+                                    Notable Changes
+                                    [22b60e8a57] - (SEMVER-MINOR) crypto: support outputLength option in crypto.hash for XOF functions (Aditi) #58121
+                                    [80dec9849d] - (SEMVER-MINOR) doc: add all watch-mode related flags to node.1 (Dario Piotrowicz) #58719
+                                    [87f4d078b3] - (SEMVER-MINOR) fs: add disposable mkdtempSync (Kevin Gibbons) #58516
+                                    [9623c50b53] - (SEMVER-MINOR) permission: propagate permission model flags on spawn (Rafael Gonzaga) #58853
+                                    [797ec4da04] - (SEMVER-MINOR) sqlite: add support for readBigInts option in db connection level (Miguel Marcondes Filho) #58697
+                                    [ed966a0215] - (SEMVER-MINOR) src,permission: add support to permission.has(addon) (Rafael Gonzaga) #58951
+                                    [fe17f5d285] - (SEMVER-MINOR) watch: add --watch-kill-signal flag (Dario Piotrowicz) #58719
+                                    """)
+                            ]
+                        }
+                    ]);
+                }
+            }
+        };
+
+        chat.OnAfterToolsCall = async (result) =>
+        {
+            chat.RequestParameters.ToolChoice = null; // stop forcing the model to use the get_sources tool
+            await chat.StreamResponseRich(eventsHandler);
+        };
+        
+        chat.AppendMessage(ChatMessageRoles.User, "What changed in NodeJS v24.4.0?");
+        await chat.StreamResponseRich(eventsHandler);
+    }
 }
