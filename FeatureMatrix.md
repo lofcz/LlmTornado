@@ -10,7 +10,7 @@ _Empty field means the feature is unsupported by the provider._
 |               | OpenAI | Anthropic | Google | Cohere | DeepSeek | Groq | Mistral | xAI | Perplexity | Voyage | DeepInfra | OpenRouter | Custom* |
 |-------|-----------|-----------|-----------| -----------| -----------| -----------| -----------| -----------| -----------| -----------| -----------| -----------| -----------|
 |**Audio**      | ✅ |    |     |     |   |     |     |     |     |     |      |      |      |
-|**Chat**       | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |  ✅ | ✅ |   |   ✅   | ✅      |✅      |
+|**Chat****       | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |  ✅ | ✅ |   |   ✅   | ✅      |✅      |
 |**Embeddings** | ✅ |    | ✅  | ✅ |    |    | ✅ |     |     |   ✅      |     |  ✅   |      |
 |**Fine-tuning**| ✅ |    | ❌  |    |    |    | ❌  |    |     |        |      |      |     |
 |**Batch**      | ❌ | ❌ | ❌ |    |    | ❌ | ❌ |    |     |        |      |      |      |
@@ -23,7 +23,8 @@ _Empty field means the feature is unsupported by the provider._
 |**Tokenize**   |    | ❌ |     | ❌ |    |     |     |    |     |       |      |      |      |
 |**FIM**        |    |     |     |    | ❌ |     | ❌  |    |     |       |      |      |      |
 
-_*Custom means any OpenAI compatible provider, such as Azure OpenAI, Ollama, KoboldCpp, etc._
+_*Custom means any OpenAI compatible provider, such as Azure OpenAI, Ollama, KoboldCpp, etc._  
+**_Includes caching, if implemented by the provider._
 
 ## OpenAI Specific
 
