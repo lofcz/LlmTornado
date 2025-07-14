@@ -10,6 +10,7 @@ using LlmTornado.Code;
 using LlmTornado.Common;
 using LlmTornado.Code.Vendor;
 using LlmTornado.Files;
+using LlmTornado.Responses;
 
 namespace LlmTornado.Chat;
 
@@ -21,6 +22,7 @@ public class Conversation
 {
     private readonly ChatEndpoint endpoint;
     private readonly List<ChatMessage> messages;
+    private ResponsesEndpoint responsesEndpoint;
 
     /// <summary>
     ///     Creates a new conversation.
@@ -54,12 +56,18 @@ public class Conversation
 
         messages = [];
         this.endpoint = endpoint;
+        responsesEndpoint = new ResponsesEndpoint(endpoint.Api);
     }
 
     /// <summary>
     ///     Allows setting the parameters to use when calling the Chat API.
     /// </summary>
     public ChatRequest RequestParameters { get; }
+
+    /// <summary>
+    /// Provides access to the response request parameters used in the chat conversation context.
+    /// </summary>
+    public ResponseRequest? ResponseRequestParameters { get; set; }
 
     /// <summary>
     ///     Specifies the model to use for Chat requests. This is just a shorthand to access
@@ -706,6 +714,22 @@ public class Conversation
             Messages = messages,
             CancellationToken = token
         };
+
+        if (ResponseRequestParameters is not null)
+        {
+            HttpCallResult<ResponseResult> result = await responsesEndpoint.CreateResponseSafe(new ResponseRequest
+            {
+                Model = ResponseRequestParameters.Model ?? req.Model,
+                Background = ResponseRequestParameters.Background,
+                Instructions = ResponseRequestParameters.Instructions ?? req.Messages.FirstOrDefault(x => x.Role is ChatMessageRoles.System)?.Content,
+                InputItems = ResponseRequestParameters.InputItems ?? ResponseHelpers.ToReponseInputItems(messages),
+                Prompt = ResponseRequestParameters.Prompt,
+                Reasoning = ResponseRequestParameters.Reasoning,
+                Stream = false,
+                Temperature = ResponseRequestParameters.Temperature ?? req.Temperature,
+                Text = ResponseRequestParameters.Text,
+            });
+        }
 
         HttpCallResult<ChatResult> res = await endpoint.CreateChatCompletionSafe(req);
 
