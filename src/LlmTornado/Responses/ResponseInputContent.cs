@@ -43,6 +43,7 @@ public class ResponseInputContentText : ResponseInputContent
     }
 }
 
+
 /// <summary>
 /// Image input content
 /// </summary>

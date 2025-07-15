@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Common;
+using LlmTornado.Responses.Events;
 
 namespace LlmTornado.Chat;
 
@@ -95,6 +96,11 @@ public class ChatStreamEventHandler
     ///     If this is set, HTTP level exceptions are caught and returned via this handler.
     /// </summary>
     public Func<HttpFailedRequest, ValueTask>? HttpExceptionHandler { get; set; }
+    
+    /// <summary>
+    ///     Called when any response event arrives. This handler receives the event as IResponsesEvent interface.
+    /// </summary>
+    public Func<IResponseEvent, ValueTask>? OnResponseEvent { get; set; }
     
     /// <summary>
     ///     The ID of the message that will be appended to the conversation, if null a random GUID is used.

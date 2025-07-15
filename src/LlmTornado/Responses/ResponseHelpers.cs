@@ -14,23 +14,86 @@ public static class ResponseHelpers
         
         foreach (ChatMessage chatMessage in messages)
         {
-            if (chatMessage.Content is not null)
+            if (chatMessage.Role is ChatMessageRoles.Assistant)
             {
-                var inputMessage = new ResponseInputMessage()
-                {
-                    Role = chatMessage.Role ?? ChatMessageRoles.User,
-                };
+                var outputMessage = new OutputMessageInput();
                 
-                inputMessage.Content.Add(new ResponseInputContentText(chatMessage.Content));
+                if (chatMessage.Content is not null)
+                {
+                    outputMessage.Content.Add(new ResponseOutputTextContent
+                    {
+                        Text = chatMessage.Content
+                    });
+                }
+                else if (chatMessage.Refusal is not null)
+                {
+                    outputMessage.Content.Add(new RefusalContent
+                    {
+                        Refusal = chatMessage.Refusal
+                    });
+                }
+                
+                items.Add(outputMessage);
             }
+            else
+            {
+                var inputMessage = new ResponseInputMessage();
+                
+                if (chatMessage.Parts is not null)
+                {
+                    foreach (ChatMessagePart part in chatMessage.Parts)
+                    {
+                        switch (part.Type)
+                        {
+                            case ChatMessageTypes.Text:
+                                if (part.Text is not null)
+                                {
+                                    inputMessage.Content.Add(new ResponseInputContentText(part.Text));
+                                }
+
+                                break;
+                            case ChatMessageTypes.Image:
+                                if (part.Image is not null)
+                                {
+                                    inputMessage.Content.Add(new ResponseInputContentImage
+                                    {
+                                        ImageUrl = part.Image.Url,
+                                        Detail = part.Image.Detail
+                                    });
+                                }
+                                
+                                break;
+                            case ChatMessageTypes.FileLink:
+                                //TODO: Does the file work across all providers?
+                                break;
+                        }
+                    }
+                }
+                
+                items.Add(inputMessage);
+            }
+            
         }
         
         return items;
     }
 
-    public static ResponseRequest ToResponseRequest(ResponseRequest request, ChatRequest fallback)
+    public static ResponseRequest ToResponseRequest(ResponseRequest request, ChatRequest chatRequest)
     {
-        return new ResponseRequest();
+        return new ResponseRequest()
+        {
+            Model = request.Model ?? chatRequest.Model,
+            Background = request.Background,
+            Instructions = request.Instructions ??
+                           chatRequest.Messages?.FirstOrDefault(x => x.Role is ChatMessageRoles.System)?.Content ??
+                           string.Empty,
+            InputItems = request.InputItems ?? ToReponseInputItems(chatRequest.Messages ?? []),
+            Prompt = request.Prompt,
+            Reasoning = request.Reasoning,
+            Stream = false,
+            Temperature = request.Temperature ?? chatRequest.Temperature,
+            Text = request.Text,
+        };
     }
 
     public static ChatResult ToChatResult(ResponseResult result)
@@ -39,7 +102,7 @@ public static class ResponseHelpers
         {
             Id = result.Id,
             Model = result.Model ?? string.Empty,
-            Choices = 
+            Choices = result.Output is not null ? [ToChatChoice(result.Output)] : []
         };
     }
 
@@ -53,7 +116,7 @@ public static class ResponseHelpers
             switch (responseItem)
             {
                 case ResponseOutputMessageItem messageItem:
-                    choice.Message.Role = Enum.Parse<ChatMessageRoles>(messageItem.Role);
+                    choice.Message.Role = messageItem.Role;
                     
                     if (messageItem.Content.FirstOrDefault(x => x is ResponseOutputTextContent) is ResponseOutputTextContent outputText)
                     {
@@ -63,9 +126,7 @@ public static class ResponseHelpers
                     {
                         choice.Message.Refusal = refusalContent.Refusal;
                     }
-                    
                     break;
-                case 
             }
         }
         

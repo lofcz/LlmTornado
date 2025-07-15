@@ -6,6 +6,7 @@ using LlmTornado.Vendor.Anthropic;
 using LlmTornado;
 using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Chat.Vendors.Cohere;
+using LlmTornado.Responses;
 using LlmTornado.Vendor.Google;
 using Newtonsoft.Json;
 
@@ -284,6 +285,26 @@ public class ChatUsage : Usage
 			AudioTokens = usage.CandidatesTokensDetails?.Where(x => x.Modality is "AUDIO").Sum(x => x.TokenCount)
 		};
 		Provider = LLmProviders.Google;
+	}
+
+	internal ChatUsage(ResponseUsage responseUsage)
+	{
+		CompletionTokens = responseUsage.OutputTokens;
+		
+		CompletionTokensDetails = new ChatUsageTokenDetails()
+		{
+			ReasoningTokens = responseUsage.OutputTokenDetails.ReasoningTokens
+		};
+		
+		PromptTokenDetails = new ChatPromptTokenDetails()
+		{
+			TextTokens = responseUsage.InputTokenDetails.TextTokens,
+			CachedTokens = responseUsage.InputTokenDetails.CachedTokens,
+			AudioTokens = responseUsage.InputTokenDetails.AudioTokens,
+		};
+		
+		CacheReadTokens = responseUsage.InputTokenDetails.CachedTokens;
+		Provider = LLmProviders.OpenAi;
 	}
 
 	/// <summary>

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
+using LlmTornado.Code;
 using LlmTornado.Images;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -221,7 +222,7 @@ public class ResponseOutputMessageItem : IResponseOutputItem
     /// The role of the output message. Always "assistant".
     /// </summary>
     [JsonProperty("role")]
-    public string Role { get; set; } = "assistant";
+    public ChatMessageRoles Role { get; set; } = ChatMessageRoles.Assistant;
 
     /// <summary>
     /// The content of the output message.
