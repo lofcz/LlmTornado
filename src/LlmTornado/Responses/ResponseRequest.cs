@@ -123,7 +123,7 @@ public class ResponseRequest
     /// Specifies the processing type used for serving the request.
     /// </summary>
     [JsonProperty("service_tier")]
-    public string? ServiceTier { get; set; }
+    public ChatRequestServiceTiers? ServiceTier { get; set; }
     
     /// <summary>
     /// Whether to store the generated model response for later retrieval via API. Defaults to true if null.

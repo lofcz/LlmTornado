@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using LlmTornado.Chat;
 using LlmTornado.Code;
 
@@ -88,11 +89,31 @@ public static class ResponseHelpers
                            chatRequest.Messages?.FirstOrDefault(x => x.Role is ChatMessageRoles.System)?.Content ??
                            string.Empty,
             InputItems = request.InputItems ?? ToReponseInputItems(chatRequest.Messages ?? []),
+            Temperature = request.Temperature ?? chatRequest.Temperature,
+            MaxOutputTokens = request.MaxOutputTokens ?? chatRequest.MaxTokens,
+            User = request.User ?? chatRequest.User,
+            TopP = request.TopP ?? chatRequest.TopP,
+            TopLogprobs = request.TopLogprobs ?? chatRequest.TopLogprobs,
+            ServiceTier = request.ServiceTier ?? chatRequest.ServiceTier,
+            Store = request.Store ?? chatRequest.Store,
+            Metadata = request.Metadata ?? (chatRequest.Metadata as Dictionary<string, string>), //this should be a safe conversion, due to that this is OpenAi only
+            ParallelToolCalls = request.ParallelToolCalls ?? chatRequest.ParallelToolCalls,
+            CancellationToken = request.CancellationToken != CancellationToken.None ? request.CancellationToken : chatRequest.CancellationToken,
+            Include = request.Include,
+            MaxToolCalls = request.MaxToolCalls,
+            PreviousResponseId = request.PreviousResponseId,
+            Truncation = request.Truncation,
+            ResponseFormat = request.ResponseFormat,
+            ToolChoice = request.ToolChoice,
+            Tools = request.Tools,
+            Text = request.Text,
             Prompt = request.Prompt,
             Reasoning = request.Reasoning,
             Stream = false,
-            Temperature = request.Temperature ?? chatRequest.Temperature,
-            Text = request.Text,
+        
+            // Note: These would need custom conversion logic
+            // Tools = request.Tools ?? ConvertChatToolsToResponseTools(chatRequest.Tools),
+            // ToolChoice = request.ToolChoice ?? ConvertChatToolChoiceToResponseToolChoice(chatRequest.ToolChoice),
         };
     }
 
