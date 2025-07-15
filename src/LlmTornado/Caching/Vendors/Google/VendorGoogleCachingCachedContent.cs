@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
-using LlmTornado.Chat.Vendors.Cohere;
+using LlmTornado.Chat.Vendors.Google;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Caching.Vendors.Google;

@@ -12,6 +12,7 @@ using LlmTornado.Caching;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Chat.Vendors.Cohere;
+using LlmTornado.Chat.Vendors.Google;
 using LlmTornado.Code.Models;
 using LlmTornado.Code.Sse;
 using LlmTornado.Embedding;

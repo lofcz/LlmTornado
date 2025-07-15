@@ -579,7 +579,19 @@ public enum ChatRequestServiceTiers
     /// If set to 'flex', the request will be processed with the Flex Processing service tier. Learn more.
     /// </summary>
     [EnumMember(Value = "flex")]
-    Flex
+    Flex,
+
+    /// <summary>
+    /// Additional option for service_tier supported by Groq
+    /// </summary>
+    [EnumMember(Value = "on_demand")]
+    OnDemand,
+
+    /// <summary>
+    /// Additional option for service_tier supported by Groq
+    /// </summary>
+    [EnumMember(Value = "performance")]
+    Performance,
 }
 
 /// <summary>
