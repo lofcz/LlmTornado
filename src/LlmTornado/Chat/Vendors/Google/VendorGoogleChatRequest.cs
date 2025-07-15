@@ -8,7 +8,7 @@ using LlmTornado.Code;
 using LlmTornado.Common;
 using Newtonsoft.Json;
 
-namespace LlmTornado.Chat.Vendors.Cohere;
+namespace LlmTornado.Chat.Vendors.Google;
 
 /// <summary>
 /// Generation config for Google.

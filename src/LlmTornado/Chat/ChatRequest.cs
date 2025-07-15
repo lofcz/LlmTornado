@@ -16,6 +16,7 @@ using LlmTornado.Chat.Vendors.XAi;
 using LlmTornado.Code.Models;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
+using LlmTornado.Chat.Vendors.Google;
 
 namespace LlmTornado.Chat;
 

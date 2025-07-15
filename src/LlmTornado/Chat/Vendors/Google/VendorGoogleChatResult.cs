@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
+using LlmTornado.Chat.Vendors.Google;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Vendor.Anthropic;
