@@ -1563,3 +1563,8 @@ internal enum AudioStreamEventTypes
     TranscriptDelta,
     TranscriptDone
 }
+
+public static class ResponseOutputTypes
+{
+    public static string Reasoning => "reasoning";
+}

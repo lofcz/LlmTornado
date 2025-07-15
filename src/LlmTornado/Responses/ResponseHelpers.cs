@@ -9,6 +9,12 @@ namespace LlmTornado.Responses;
 
 public static class ResponseHelpers
 {
+    /// <summary>
+    /// Converts a list of <see cref="ChatMessage"/> objects into a list of <see cref="ResponseInputItem"/> objects.
+    /// Maps input and output message properties based on the role and content of each <see cref="ChatMessage"/> in the list.
+    /// </summary>
+    /// <param name="messages">The list of <see cref="ChatMessage"/> objects representing the conversation history to be converted into response input items.</param>
+    /// <returns>A list of <see cref="ResponseInputItem"/> objects created from the provided chat messages, containing either input or output message mappings.</returns>
     public static List<ResponseInputItem> ToReponseInputItems(List<ChatMessage> messages)
     {
         List<ResponseInputItem> items = [];
@@ -79,6 +85,13 @@ public static class ResponseHelpers
         return items;
     }
 
+    /// <summary>
+    /// Converts a <see cref="ChatRequest"/> object and an existing <see cref="ResponseRequest"/> object into a new <see cref="ResponseRequest"/> object,
+    /// combining and mapping properties such as model, instructions, input items, and other settings.
+    /// </summary>
+    /// <param name="request">The existing <see cref="ResponseRequest"/> object containing optional property values to be used for the conversion.</param>
+    /// <param name="chatRequest">The <see cref="ChatRequest"/> object containing additional or default properties required for the new response request.</param>
+    /// <returns>A new <see cref="ResponseRequest"/> object with properties merged and populated from the provided request and chat request objects.</returns>
     public static ResponseRequest ToResponseRequest(ResponseRequest request, ChatRequest chatRequest)
     {
         return new ResponseRequest()
@@ -111,53 +124,58 @@ public static class ResponseHelpers
             Reasoning = request.Reasoning,
             Stream = false,
         
-            // Note: These would need custom conversion logic
+            // Note: Currently tools unsupported for cross-usage of chat and response API
             // Tools = request.Tools ?? ConvertChatToolsToResponseTools(chatRequest.Tools),
             // ToolChoice = request.ToolChoice ?? ConvertChatToolChoiceToResponseToolChoice(chatRequest.ToolChoice),
         };
     }
 
+    /// <summary>
+    /// Converts a <see cref="ResponseResult"/> object into a <see cref="ChatResult"/> object,
+    /// mapping properties such as ID, model, and output from the response result to the chat result structure.
+    /// </summary>
+    /// <param name="result">The <see cref="ResponseResult"/> object containing the data to be transformed into a chat result.</param>
+    /// <returns>A <see cref="ChatResult"/> object populated with the relevant properties from the provided response result.</returns>
     public static ChatResult ToChatResult(ResponseResult result)
     {
         return new ChatResult
         {
             Id = result.Id,
             Model = result.Model ?? string.Empty,
-            Choices = result.Output is not null ? [ToChatChoice(result.Output)] : []
+            Choices = result.Output is not null ? [ToChatChoice(result)] : [],
+            Usage = result.Usage is not null ? new ChatUsage(result.Usage) : null
         };
     }
 
-    public static ChatChoice ToChatChoice(List<IResponseOutputItem> responseItems)
+    /// <summary>
+    /// Converts a <see cref="ResponseResult"/> object into a <see cref="ChatChoice"/> object.
+    /// Extracts response details such as message content, reasoning, and parts, and maps them to a structured <see cref="ChatChoice"/> representation.
+    /// </summary>
+    /// <param name="response">The <see cref="ResponseResult"/> object containing the raw response data to be converted.</param>
+    /// <returns>A <see cref="ChatChoice"/> object populated with the structured message and associated components extracted from the input response.</returns>
+    public static ChatChoice ToChatChoice(ResponseResult response)
     {
         ChatChoice choice = new();
 
-        foreach (IResponseOutputItem responseItem in responseItems)
+        choice.Message ??= new ChatMessage();
+        choice.Message.Parts ??= [];
+        string? textOutput = response.OutputText;
+        if (textOutput is not null)
         {
-            choice.Message ??= new ChatMessage();
-            choice.Message.Parts ??= [];
-            switch (responseItem)
+            choice.Message.Parts.Add(new ChatMessagePart(textOutput));
+            choice.Message.Content = textOutput;
+        }
+        
+        foreach (IResponseOutputItem responseItem in response.Output ?? [])
+        {
+            if (responseItem.Type == ResponseOutputTypes.Reasoning && responseItem is ResponseReasoningItem reasoningItem)
             {
-                case ResponseOutputMessageItem messageItem:
-                    choice.Message.Role = messageItem.Role;
-                    
-                    if (messageItem.Content.FirstOrDefault(x => x is ResponseOutputTextContent) is ResponseOutputTextContent outputText)
-                    {
-                        choice.Message.Parts.Add(new ChatMessagePart(outputText.Text));
-                        choice.Message.Content = outputText.Text;
-                    }
-                    else if (messageItem.Content.FirstOrDefault(x => x is RefusalContent) is RefusalContent refusalContent)
-                    {
-                        choice.Message.Refusal = refusalContent.Refusal;
-                    }
-                    break;
-                case ResponseReasoningItem reasoningItem:
-                    string[] f = reasoningItem.Summary.Select(x => x.Text).ToArray();
-                    choice.Message.ReasoningContent = string.Join("\n", f);
-                    choice.Message.Parts.Add(new ChatMessagePart(new ChatMessageReasoningData()
-                    {
-                        Content = choice.Message.ReasoningContent
-                    }));
-                    break;
+                string[] reasoning = reasoningItem.Summary.Select(x => x.Text).ToArray();
+                choice.Message.ReasoningContent = string.Join('\n', reasoning);
+                choice.Message.Parts.Add(new ChatMessagePart(new ChatMessageReasoningData()
+                {
+                    Content = choice.Message.ReasoningContent
+                }));
             }
         }
         

@@ -684,7 +684,7 @@ public class ResponseReasoningItem : IResponseOutputItem
 {
     /// <inheritdoc/>
     [JsonProperty("type")]
-    public string Type { get; set; } = "reasoning";
+    public string Type { get; set; } = ResponseOutputTypes.Reasoning;
 
     /// <summary>
     /// The unique identifier of the reasoning content.

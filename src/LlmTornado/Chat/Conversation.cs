@@ -1282,7 +1282,7 @@ public class Conversation
                             evt is ResponseEventCompleted completedEvt)
                         {
 
-                            ChatChoice chatChoice = ResponseHelpers.ToChatChoice(completedEvt.Response.Output ?? []);
+                            ChatChoice chatChoice = ResponseHelpers.ToChatChoice(completedEvt.Response);
                             if (chatChoice.Message is not null)
                             {
                                 AppendMessage(chatChoice.Message);
