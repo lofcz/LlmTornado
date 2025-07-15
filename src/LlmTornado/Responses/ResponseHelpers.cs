@@ -134,6 +134,7 @@ public static class ResponseHelpers
         foreach (IResponseOutputItem responseItem in responseItems)
         {
             choice.Message ??= new ChatMessage();
+            choice.Message.Parts ??= [];
             switch (responseItem)
             {
                 case ResponseOutputMessageItem messageItem:
@@ -141,12 +142,21 @@ public static class ResponseHelpers
                     
                     if (messageItem.Content.FirstOrDefault(x => x is ResponseOutputTextContent) is ResponseOutputTextContent outputText)
                     {
+                        choice.Message.Parts.Add(new ChatMessagePart(outputText.Text));
                         choice.Message.Content = outputText.Text;
                     }
                     else if (messageItem.Content.FirstOrDefault(x => x is RefusalContent) is RefusalContent refusalContent)
                     {
                         choice.Message.Refusal = refusalContent.Refusal;
                     }
+                    break;
+                case ResponseReasoningItem reasoningItem:
+                    string[] f = reasoningItem.Summary.Select(x => x.Text).ToArray();
+                    choice.Message.ReasoningContent = string.Join("\n", f);
+                    choice.Message.Parts.Add(new ChatMessagePart(new ChatMessageReasoningData()
+                    {
+                        Content = choice.Message.ReasoningContent
+                    }));
                     break;
             }
         }

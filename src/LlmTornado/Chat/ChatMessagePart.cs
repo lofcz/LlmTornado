@@ -162,6 +162,15 @@ public class ChatMessagePart
     }
 
     /// <summary>
+    /// The part is a reasoning
+    /// </summary>
+    public ChatMessagePart(ChatMessageReasoningData reasoning)
+    {
+        Reasoning = reasoning;
+        Type = ChatMessageTypes.Reasoning;
+    }
+
+    /// <summary>
     ///     The type of message part.
     /// </summary>
     [JsonProperty("type")]

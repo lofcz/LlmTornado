@@ -1282,6 +1282,12 @@ public class Conversation
                             evt is ResponseEventCompleted completedEvt)
                         {
 
+                            ChatChoice chatChoice = ResponseHelpers.ToChatChoice(completedEvt.Response.Output ?? []);
+                            if (chatChoice.Message is not null)
+                            {
+                                AppendMessage(chatChoice.Message);
+                            }
+
                             if (eventsHandler?.OnFinished is not null)
                             {
                                 ChatUsage usage = new(LLmProviders.OpenAi);
