@@ -147,7 +147,7 @@ public class ResponseRequest
     /// Configuration options for a text response from the model. Can be plain text or structured JSON data.
     /// </summary>
     [JsonProperty("text")]
-    public TextConfiguration? Text { get; set; }
+    public ResponseTextConfiguration? Text { get; set; }
     
     /// <summary>
     ///     Represents an optional field when sending tools calling prompt.

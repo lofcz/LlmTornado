@@ -1,19 +1,13 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Net;
-using System.Net.Http;
 using System.Text.RegularExpressions;
-using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
-using LlmTornado.Code.Models;
-using LlmTornado.Common;
-using LlmTornado.Images;
 using LlmTornado.Vendor.Anthropic;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace LlmTornado.Chat.Vendors.Anthropic;
 
@@ -46,8 +40,14 @@ public class ToolVendorExtensions
     }
 }
 
+/// <summary>
+/// Anthropic extensions to chat message parts.
+/// </summary>
 public class ChatMessagePartAnthropicExtensions : IChatMessagePartVendorExtensions
 {
+    /// <summary>
+    /// Cache settings.
+    /// </summary>
     public AnthropicCacheSettings? Cache { get; set; }
 }
 
@@ -62,10 +62,9 @@ public partial class VendorAnthropicChatRequestMessageContent
     public VendorAnthropicChatRequestMessageContent(ChatMessage msg)
     {
         Msg = msg;
-        Parts = msg.Parts?.Count > 0 ? msg.Parts.ToList() : msg.Content is not null ? new List<ChatMessagePart>
-        {
+        Parts = msg.Parts?.Count > 0 ? msg.Parts.ToList() : msg.Content is not null ? [
             new ChatMessagePart(msg.Content)
-        } : [];
+        ] : [];
         Role = msg.Role ?? ChatMessageRoles.Unknown;
     }
 
@@ -90,23 +89,36 @@ public partial class VendorAnthropicChatRequestMessageContent
                     }
                     
                     writer.WriteStartObject();
+                    
                     writer.WritePropertyName("type");
                     writer.WriteValue("tool_result");
+                    
                     writer.WritePropertyName("tool_use_id");
                     writer.WriteValue(block.ToolCallId);
 
-                    if (block.Content is not null)
+                    if (block.SourceMessage.FunctionCall?.Result?.RawContentBlocks is not null)
                     {
                         writer.WritePropertyName("content");
                         
-                        if (block.Content.TrimStart().StartsWith('"')) // [todo] hack?
+                        writer.WriteStartArray();
+
+                        foreach (IFunctionResultBlock resultBlock in block.SourceMessage.FunctionCall.Result.RawContentBlocks)
+                        {
+                            writer.Serialize(resultBlock);
+                        }
+                        
+                        writer.WriteEndArray();
+                    }
+                    else if (block.Content is not null)
+                    {
+                        if (block.Content.TrimStart().StartsWith('"'))
                         {
                             writer.WriteRawValue(block.Content);
                         }
                         else
                         {
                             writer.WriteValue(block.Content);   
-                        }   
+                        }     
                     }
 
                     switch (block.ToolInvocationSucceeded)
@@ -157,6 +169,19 @@ public partial class VendorAnthropicChatRequestMessageContent
                         {
                             writer.WritePropertyName("text");
                             writer.WriteValue(part.Text);
+                         
+                            if (part.Citations?.Count > 0)
+                            {
+                                writer.WritePropertyName("citations");
+                                writer.WriteStartArray();
+                                
+                                foreach (IChatMessagePartCitation cit in part.Citations)
+                                {
+                                    cit.Serialize(LLmProviders.Anthropic, writer);
+                                }
+                                
+                                writer.WriteEndArray();
+                            }
                             break;
                         }
                         case ChatMessageTypes.Image:
@@ -300,6 +325,52 @@ public partial class VendorAnthropicChatRequestMessageContent
                             
                             break;
                         }
+                        case ChatMessageTypes.SearchResult:
+                        {
+                            writer.WritePropertyName("type");
+                            writer.WriteValue("search_result");
+
+                            if (part.SearchResult is null)
+                            {
+                                throw new Exception("SearchResult of this part is empty, expected not null");
+                            }
+                            
+                            writer.WritePropertyName("source");
+                            writer.WriteValue(part.SearchResult.Source);
+                            
+                            writer.WritePropertyName("title");
+                            writer.WriteValue(part.SearchResult.Title);
+                            
+                            writer.WritePropertyName("content");
+                            writer.WriteStartArray();
+
+                            foreach (ChatSearchResultContent item in part.SearchResult.Content)
+                            {
+                                writer.Serialize(item);
+                            }
+                            
+                            writer.WriteEndArray();
+
+                            if (part.SearchResult.Citations is not null)
+                            {
+                                writer.WritePropertyName("citations");
+                                writer.WriteStartObject();
+                                
+                                writer.WritePropertyName("enabled");
+                                writer.WriteValue(part.SearchResult.Citations.Enabled);
+                                
+                                writer.WriteEndObject();
+                            }
+
+                            if (part.SearchResult.Cache is not null)
+                            {
+                                writer.WritePropertyName("cache_control");
+                                JToken cacheToken = JToken.FromObject(part.SearchResult.Cache);
+                                cacheToken.WriteTo(writer);
+                            }
+                            
+                            break;
+                        }
                     }
                     
                     SerializeCache(part);
@@ -365,12 +436,8 @@ public partial class VendorAnthropicChatRequestMessageContent
                 if (part.VendorExtensions is ChatMessagePartAnthropicExtensions { Cache: not null } ac)
                 {
                     writer.WritePropertyName("cache_control");
-                    writer.WriteStartObject();
-                    
-                    writer.WritePropertyName("type");
-                    writer.WriteValue(ac.Cache.Type);
-                    
-                    writer.WriteEndObject();
+                    JToken cacheToken = JToken.FromObject(ac.Cache);
+                    cacheToken.WriteTo(writer);
                 }
             }
         }
@@ -390,11 +457,11 @@ public partial class VendorAnthropicChatRequestMessageContent
     }
 }
 
-    
-public class VendorAnthropicChatRequestMessage
+internal class VendorAnthropicChatRequestMessage
 {
     [JsonProperty("role")]
     internal string Role { get; set; }
+    
     [JsonProperty("content")]
     [JsonConverter(typeof(VendorAnthropicChatRequestMessageContent.VendorAnthropicChatRequestMessageContentJsonConverter))]
     public VendorAnthropicChatRequestMessageContent Content { get; set; }

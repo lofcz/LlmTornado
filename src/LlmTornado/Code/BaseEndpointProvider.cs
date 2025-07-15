@@ -48,7 +48,7 @@ public abstract class BaseEndpointProvider : IEndpointProviderExtended
     public abstract void ParseInboundHeaders(object? res, HttpResponseMessage response);
     public abstract IAsyncEnumerable<object?> InboundStream(Type type, StreamReader streamReader);
     public abstract IAsyncEnumerable<T?> InboundStream<T>(StreamReader streamReader) where T : class;
-    public abstract IAsyncEnumerable<ChatResult?> InboundStream(StreamReader streamReader, ChatRequest request);
+    public abstract IAsyncEnumerable<ChatResult?> InboundStream(StreamReader streamReader, ChatRequest request, ChatStreamEventHandler? eventHandler);
     public abstract HttpRequestMessage OutboundMessage(string url, HttpMethod verb, object? data, bool streaming);
     public ProviderAuthentication? Auth { get; set; }
     

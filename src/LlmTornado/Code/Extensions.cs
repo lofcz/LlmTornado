@@ -18,6 +18,17 @@ namespace LlmTornado.Code;
 
 internal static partial class Extensions
 {
+    public static void Serialize(this JsonWriter writer, object? obj)
+    {
+        if (obj is null)
+        {
+            return;
+        }
+        
+        JToken cacheToken = JToken.FromObject(obj);
+        cacheToken.WriteTo(writer);
+    }
+    
     #if MODERN
     public static Dictionary<string, IEnumerable<string>> ConvertHeaders(this HttpRequestHeaders headers)
     {
@@ -89,13 +100,13 @@ internal static partial class Extensions
             {
                 case Dictionary<TKey, TValue>.KeyCollection collection:
                 {
-                    keys = collection.ToArray();
+                    keys = collection.ToArray<TKey>();
                     outLoopingKeys = true;
                     break;
                 }
                 case Dictionary<TKey, TValue>.ValueCollection valueCollection:
                 {
-                    values = valueCollection.ToArray();
+                    values = valueCollection.ToArray<TValue>();
                     outLoopingValues = true;
                     break;
                 }

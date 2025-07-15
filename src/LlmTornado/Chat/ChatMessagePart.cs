@@ -43,6 +43,17 @@ public class ChatMessagePart
         FileLinkData = fileLinkData;
     }
     
+       
+    /// <summary>
+    /// Sets the part to <see cref="ChatMessageTypes.SearchResult"/>. Supported only by Anthropic.
+    /// </summary>
+    /// <param name="searchResultData"></param>
+    public ChatMessagePart(ChatSearchResult searchResultData)
+    {
+        Type = ChatMessageTypes.SearchResult;
+        SearchResult = searchResultData;
+    }
+    
     /// <summary>
     ///     The part is a text fragment.
     /// </summary>
@@ -195,6 +206,12 @@ public class ChatMessagePart
     public ChatAudio? Audio { get; set; }
     
     /// <summary>
+    ///     Search result of the message part if type is <see cref="ChatMessageTypes.SearchResult" />.
+    /// </summary>
+    [JsonIgnore]
+    public ChatSearchResult? SearchResult { get; set; }
+    
+    /// <summary>
     ///     Specific features supported only by certain providers
     /// </summary>
     [JsonIgnore]
@@ -223,6 +240,12 @@ public class ChatMessagePart
     /// </summary>
     [JsonIgnore]
     public object? CustomData { get; set; }
+    
+    /// <summary>
+    ///     List of citations associated with this message part.
+    /// </summary>
+    [JsonProperty("citations")]
+    public List<IChatMessagePartCitation>? Citations { get; set; }
     
     /// <summary>
     ///     Creates an audio part from a given stream.

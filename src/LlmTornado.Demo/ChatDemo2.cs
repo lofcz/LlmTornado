@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using LibVLCSharp.Shared;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
+using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Chat.Vendors.Google;
 using LlmTornado.Chat.Vendors.Mistral;
 using LlmTornado.Chat.Vendors.Perplexity;
@@ -449,6 +450,143 @@ public partial class ChatDemo : DemoBase
 
         Console.WriteLine("OpenRouter:");
         Console.WriteLine(str);
+    }
+
+    [TornadoTest]
+    public static async Task AnthropicSearchResultsStream()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Anthropic.Claude4.Sonnet250514
+        });
+
+        chat.AddUserMessage([
+            new ChatMessagePart(new ChatSearchResult
+            {
+                Source = "https://github.com/lofcz/LlmTornado",
+                Title = "readme",
+                Content = [
+                    new ChatSearchResultContentText
+                    {
+                        Text = """
+                               Use Any Provider: All you need to know is the model's name; we handle the rest. Built-in: Anthropic, Azure, Cohere, DeepInfra, DeepSeek, Google, Groq, Mistral, Ollama, OpenAI, OpenRouter, Perplexity, Voyage, xAI. Check the full Feature Matrix here.
+                               First-class Local Deployments: Run with vLLM, Ollama, or LocalAI with integrated support for request transformations.
+                               Multi-Agent Systems: Toolkit for the orchestration of multiple collaborating specialist agents.
+                               Maximize Request Success Rate: If enabled, we keep track of which parameters are supported by which models, how long the reasoning context can be, etc., and silently modify your requests to comply with rules enforced by a diverse set of Providers.
+                               Leverage Multiple APIs: Non-standard features from all major Providers are carefully mapped, documented, and ready to use via strongly-typed code.
+                               Fully Multimodal: Text, images, videos, documents, URLs, and audio inputs are supported.
+                               MCP Compatible: Seamlessly integrate Model Context Protocol using the official .NET SDK and LlmTornado.Mcp adapter.
+                               Enterprise Ready: Preview any request before committing to it. Automatic redaction of secrets in outputs. Stable APIs.
+                               """
+                    }
+                ],
+                Citations = ChatSearchResultCitations.InstanceEnabled
+            }),
+            new ChatMessagePart("Which providers are supported by LlmTornado?")
+        ]);
+
+        int citIndex = 1;
+
+        await chat.StreamResponseRich(new ChatStreamEventHandler
+        {
+            OnSse = (sse) =>
+            {
+                return ValueTask.CompletedTask;
+            },
+            MessageTokenExHandler = (data) =>
+            {
+                Console.Write(data);
+                return ValueTask.CompletedTask;
+            },
+            MessagePartHandler = (part) =>
+            {
+                if (part.Citations is not null)
+                {
+                    foreach (IChatMessagePartCitation citation in part.Citations)
+                    {
+                        Console.ForegroundColor = ConsoleColor.Yellow;
+                        Console.Write($" [{citIndex}]");
+                        Console.ResetColor();
+                    
+                        Console.ForegroundColor = ConsoleColor.DarkGray;
+                        Console.Write($" ({citation.Text})");
+                        Console.ResetColor();
+                    
+                        citIndex++;
+                    }
+                }
+                
+                citIndex++;
+                return ValueTask.CompletedTask;
+            }
+        });
+    }
+
+    [TornadoTest]
+    public static async Task AnthropicSearchResults()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Anthropic.Claude4.Sonnet250514
+        });
+
+        chat.AddUserMessage([
+            new ChatMessagePart(new ChatSearchResult
+            {
+                Source = "https://github.com/lofcz/LlmTornado",
+                Title = "readme",
+                Content = [
+                    new ChatSearchResultContentText
+                    {
+                        Text = """
+                               Use Any Provider: All you need to know is the model's name; we handle the rest. Built-in: Anthropic, Azure, Cohere, DeepInfra, DeepSeek, Google, Groq, Mistral, Ollama, OpenAI, OpenRouter, Perplexity, Voyage, xAI. Check the full Feature Matrix here.
+                               First-class Local Deployments: Run with vLLM, Ollama, or LocalAI with integrated support for request transformations.
+                               Multi-Agent Systems: Toolkit for the orchestration of multiple collaborating specialist agents.
+                               Maximize Request Success Rate: If enabled, we keep track of which parameters are supported by which models, how long the reasoning context can be, etc., and silently modify your requests to comply with rules enforced by a diverse set of Providers.
+                               Leverage Multiple APIs: Non-standard features from all major Providers are carefully mapped, documented, and ready to use via strongly-typed code.
+                               Fully Multimodal: Text, images, videos, documents, URLs, and audio inputs are supported.
+                               MCP Compatible: Seamlessly integrate Model Context Protocol using the official .NET SDK and LlmTornado.Mcp adapter.
+                               Enterprise Ready: Preview any request before committing to it. Automatic redaction of secrets in outputs. Stable APIs.
+                               """
+                    }
+                ],
+                Citations = ChatSearchResultCitations.InstanceEnabled
+            }),
+            new ChatMessagePart("Which providers are supported by LlmTornado?")
+        ]);
+
+        ChatRichResponse response = await chat.GetResponseRich();
+        PrintResponseWithCitations(response);
+        ChatRichResponse response2 = await chat.GetResponseRich();
+        PrintResponseWithCitations(response2);
+    }
+
+    static void PrintResponseWithCitations(ChatRichResponse response)
+    {
+        int citIndex = 1;
+        
+        foreach (ChatRichResponseBlock block in response.Blocks)
+        {
+            Console.Write(block.Message);
+
+            if (block.Citations is not null)
+            {
+                foreach (IChatMessagePartCitation citation in block.Citations)
+                {
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    Console.Write($" [{citIndex}]");
+                    Console.ResetColor();
+                    
+                    Console.ForegroundColor = ConsoleColor.DarkGray;
+                    Console.Write($" ({citation.Text})");
+                    Console.ResetColor();
+                    
+                    citIndex++;
+                }
+            }
+        }
+        
+        Console.WriteLine();
     }
 
     [TornadoTest]
@@ -1387,5 +1525,135 @@ public partial class ChatDemo : DemoBase
 
         ChatRichResponse response = await chat.GetResponseRich();
         Console.WriteLine(response);
+    }
+    
+    [TornadoTest]
+    public static async Task AnthropicFunctionsRichImage()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Anthropic.Claude4.Sonnet250514,
+            Tools = [
+                new Tool(new ToolFunction("get_image", "gets an image for the given query", new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        query = new
+                        {
+                            type = "string",
+                            description = "The query."
+                        }
+                    },
+                    required = new List<string> { "query" }
+                }))
+            ],
+            ToolChoice = new OutboundToolChoice("get_image")
+        });
+
+        ChatStreamEventHandler eventsHandler = new ChatStreamEventHandler
+        {
+            MessageTokenHandler = (x) =>
+            {
+                Console.Write(x);
+                return ValueTask.CompletedTask;
+            },
+            FunctionCallHandler = async (functions) =>
+            {
+                foreach (FunctionCall fn in functions)
+                {
+                    byte[] bytes = await File.ReadAllBytesAsync("Static/Images/catBoi.jpg");
+                    string base64 = $"{Convert.ToBase64String(bytes)}";
+                    
+                    fn.Resolve([
+                        new FunctionResultBlockImage(new FunctionResultBlockImageSourceBase64
+                        {
+                            Data = base64,
+                            MediaType = "image/jpeg"
+                        })
+                    ]);
+                }
+            }
+        };
+
+        chat.OnAfterToolsCall = async (result) =>
+        {
+            chat.RequestParameters.ToolChoice = null; // stop forcing the model to use the get_image tool
+            await chat.StreamResponseRich(eventsHandler);
+        };
+        
+        chat.AppendMessage(ChatMessageRoles.User, "Please fetch and describe an image of cat for me.");
+        await chat.StreamResponseRich(eventsHandler);
+    }
+    
+    [TornadoTest]
+    public static async Task AnthropicFunctionsRichSearchResult()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Anthropic.Claude4.Sonnet250514,
+            Tools = [
+                new Tool(new ToolFunction("get_sources", "fetches sources for the given query", new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        query = new
+                        {
+                            type = "string",
+                            description = "The query."
+                        }
+                    },
+                    required = new List<string> { "query" }
+                }))
+            ],
+            ToolChoice = new OutboundToolChoice("get_sources")
+        });
+
+        ChatStreamEventHandler eventsHandler = new ChatStreamEventHandler
+        {
+            MessageTokenHandler = (x) =>
+            {
+                Console.Write(x);
+                return ValueTask.CompletedTask;
+            },
+            FunctionCallHandler = async (functions) =>
+            {
+                foreach (FunctionCall fn in functions)
+                {
+                    fn.Resolve([
+                        new FunctionResultBlockSearchResult
+                        {
+                            Title = "NodeJS Changelog",
+                            Source = "https://nodejs.org/en/blog/release/v24.4.0",
+                            Citations = ChatSearchResultCitations.InstanceEnabled,
+                            Content = [
+                                new ChatSearchResultContentText(
+                                    """
+                                    2025-07-09, Version 24.4.0 (Current), @RafaelGSS
+                                    Notable Changes
+                                    [22b60e8a57] - (SEMVER-MINOR) crypto: support outputLength option in crypto.hash for XOF functions (Aditi) #58121
+                                    [80dec9849d] - (SEMVER-MINOR) doc: add all watch-mode related flags to node.1 (Dario Piotrowicz) #58719
+                                    [87f4d078b3] - (SEMVER-MINOR) fs: add disposable mkdtempSync (Kevin Gibbons) #58516
+                                    [9623c50b53] - (SEMVER-MINOR) permission: propagate permission model flags on spawn (Rafael Gonzaga) #58853
+                                    [797ec4da04] - (SEMVER-MINOR) sqlite: add support for readBigInts option in db connection level (Miguel Marcondes Filho) #58697
+                                    [ed966a0215] - (SEMVER-MINOR) src,permission: add support to permission.has(addon) (Rafael Gonzaga) #58951
+                                    [fe17f5d285] - (SEMVER-MINOR) watch: add --watch-kill-signal flag (Dario Piotrowicz) #58719
+                                    """)
+                            ]
+                        }
+                    ]);
+                }
+            }
+        };
+
+        chat.OnAfterToolsCall = async (result) =>
+        {
+            chat.RequestParameters.ToolChoice = null; // stop forcing the model to use the get_sources tool
+            await chat.StreamResponseRich(eventsHandler);
+        };
+        
+        chat.AppendMessage(ChatMessageRoles.User, "What changed in NodeJS v24.4.0?");
+        await chat.StreamResponseRich(eventsHandler);
     }
 }

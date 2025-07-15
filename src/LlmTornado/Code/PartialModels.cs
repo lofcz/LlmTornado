@@ -10,12 +10,14 @@ using System.Threading.Tasks;
 using LlmTornado.Images;
 using LlmTornado.Audio;
 using LlmTornado.Chat;
+using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code.Models;
 using LlmTornado.Code.Vendor;
 using LlmTornado.Common;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Linq;
 
 namespace LlmTornado.Code;
 
@@ -577,7 +579,19 @@ public enum ChatRequestServiceTiers
     /// If set to 'flex', the request will be processed with the Flex Processing service tier. Learn more.
     /// </summary>
     [EnumMember(Value = "flex")]
-    Flex
+    Flex,
+
+    /// <summary>
+    /// Additional option for service_tier supported by Groq
+    /// </summary>
+    [EnumMember(Value = "on_demand")]
+    OnDemand,
+
+    /// <summary>
+    /// Additional option for service_tier supported by Groq
+    /// </summary>
+    [EnumMember(Value = "performance")]
+    Performance,
 }
 
 /// <summary>
@@ -690,7 +704,7 @@ public class ChatFunctionParamsGetter
 internal class ToolCallInboundAccumulator
 {
     public ToolCall ToolCall { get; set; }
-    public StringBuilder ArgumentsBuilder { get; set; } = new StringBuilder();
+    public StringBuilder ArgumentsBuilder { get; set; }
 }
 
 /// <summary>
@@ -1562,6 +1576,462 @@ internal enum AudioStreamEventTypes
     Unknown,
     TranscriptDelta,
     TranscriptDone
+}
+
+/// <summary>
+/// Search result.
+/// </summary>
+public class ChatSearchResult
+{
+    /// <summary>
+    /// The source URL or identifier for the content.
+    /// </summary>
+    [JsonProperty("source")]
+    public string Source { get; set; }
+    
+    /// <summary>
+    /// A descriptive title for the search result.
+    /// </summary>
+    [JsonProperty("title")]
+    public string Title { get; set; }
+
+    /// <summary>
+    /// An array of text blocks containing the actual content.
+    /// </summary>
+    [JsonProperty("content")]
+    public List<ChatSearchResultContent> Content { get; set; } = [];
+    
+    /// <summary>
+    /// Citation configuration with <c>enabled</c> boolean field.
+    /// </summary>
+    [JsonProperty("citations")]
+    public ChatSearchResultCitations? Citations { get; set; }
+    
+    /// <summary>
+    /// Cache settings.
+    /// </summary>
+    [JsonProperty("cache_control")]
+    public AnthropicCacheSettings? Cache { get; set; } 
+}
+
+/// <summary>
+/// Citation configuration.
+/// </summary>
+public class ChatSearchResultCitations
+{
+    /// <summary>
+    /// Whether citing from this source is enabled or not.
+    /// </summary>
+    [JsonProperty("enabled")]
+    public bool Enabled { get; set; }
+
+    /// <summary>
+    /// Instance with enabled citations.
+    /// </summary>
+    public static readonly ChatSearchResultCitations InstanceEnabled = new ChatSearchResultCitations
+    {
+        Enabled = true
+    };
+    
+    /// <summary>
+    /// Instance with disabled citations.
+    /// </summary>
+    public static readonly ChatSearchResultCitations InstanceDisabled = new ChatSearchResultCitations
+    {
+        Enabled = false
+    };
+}
+
+/// <summary>
+/// Search result content block.
+/// </summary>
+public abstract class ChatSearchResultContent
+{
+    /// <summary>
+    /// Type of the block
+    /// </summary>
+    [JsonProperty("type")]
+    public abstract ChatSearchResultContentTypes Type { get; set; }
+}
+
+/// <summary>
+/// Text block.
+/// </summary>
+public class ChatSearchResultContentText : ChatSearchResultContent
+{
+    /// <inheritdoc />
+    public override ChatSearchResultContentTypes Type { get; set; } = ChatSearchResultContentTypes.Text;
+    
+    /// <summary>
+    /// Content.
+    /// </summary>
+    [JsonProperty("text")]
+    public string Text { get; set; }
+
+    /// <summary>
+    /// Creates a new empty text block.
+    /// </summary>
+    public ChatSearchResultContentText()
+    {
+        
+    }
+
+    /// <summary>
+    /// Creates a new text block with a given text.
+    /// </summary>
+    /// <param name="text"></param>
+    public ChatSearchResultContentText(string text)
+    {
+        Text = text;
+    }
+}
+
+/// <summary>
+/// Interface for function call result rich blocks.
+/// </summary>
+[JsonConverter(typeof(FunctionResultBlockJsonConverter))]
+public interface IFunctionResultBlock
+{
+    /// <summary>
+    /// Type of the block
+    /// </summary>
+    public FunctionResultBlockTypes Type { get; }
+}
+
+/// <summary>
+/// Text block.
+/// </summary>
+public class FunctionResultBlockText : IFunctionResultBlock
+{
+    /// <inheritdoc />
+    public FunctionResultBlockTypes Type => FunctionResultBlockTypes.Text;
+    
+    /// <summary>
+    /// JSON serialized output.
+    /// </summary>
+    public string Text { get; set; }
+    
+    /// <summary>
+    /// Creates a new result block, encoding the given data to a JSON string. The data should be an object that can be encoded into JSON.
+    /// </summary>
+    public FunctionResultBlockText(object data)
+    {
+        Text = JsonConvert.SerializeObject(data);
+    }
+    
+    /// <summary>
+    /// Creates a new result block. The data won't be JSON encoded.
+    /// </summary>
+    public FunctionResultBlockText(string data)
+    {
+        Text = data;
+    }
+}
+
+/// <summary>
+/// Image block.
+/// </summary>
+public class FunctionResultBlockImage : IFunctionResultBlock
+{
+    /// <inheritdoc />
+    public FunctionResultBlockTypes Type => FunctionResultBlockTypes.Image;
+    
+    /// <summary>
+    /// Image source.
+    /// </summary>
+    [JsonProperty("source")]
+    public IFunctionResultBlockImageSource Source { get; set; }
+
+    /// <summary>
+    /// Creates an empty image part.
+    /// </summary>
+    public FunctionResultBlockImage()
+    {
+        
+    }
+
+    /// <summary>
+    /// Creates an image part with the given source.
+    /// </summary>
+    /// <param name="source"></param>
+    public FunctionResultBlockImage(IFunctionResultBlockImageSource source)
+    {
+        Source = source;
+    }
+}
+
+/// <summary>
+/// Shared interface for image sources.
+/// </summary>
+public interface IFunctionResultBlockImageSource
+{
+    /// <summary>
+    /// Type of the image.
+    /// </summary>
+    [JsonProperty("type")]
+    public string Type { get; }
+}
+
+/// <summary>
+/// Base64 image part.
+/// </summary>
+public class FunctionResultBlockImageSourceBase64 : IFunctionResultBlockImageSource
+{
+    /// <inheritdoc />
+    public string Type => "base64";
+    
+    /// <summary>
+    /// Base64 encoded image.
+    /// </summary>
+    [JsonProperty("data")]
+    public string Data { get; set; }
+    
+    /// <summary>
+    /// image/jpeg, image/png, image/gif, image/webp 
+    /// </summary>
+    [JsonProperty("media_type")]
+    public string MediaType { get; set; }
+}
+
+/// <summary>
+/// Base64 image part.
+/// </summary>
+public class FunctionResultBlockImageSourceUrl : IFunctionResultBlockImageSource
+{
+    /// <inheritdoc />
+    public string Type => "url";
+    
+    /// <summary>
+    /// Publicly reachable url.
+    /// </summary>
+    [JsonProperty("url")]
+    public string Url { get; set; }
+}
+
+/// <summary>
+/// File image part.
+/// </summary>
+public class FunctionResultBlockImageSourceFile : IFunctionResultBlockImageSource
+{
+    /// <inheritdoc />
+    public string Type => "file";
+    
+    /// <summary>
+    /// Id of the file.
+    /// </summary>
+    [JsonProperty("file_id")]
+    public string FileId { get; set; }
+}
+
+/// <summary>
+/// Image block.
+/// </summary>
+public class FunctionResultBlockSearchResult : IFunctionResultBlock
+{
+    /// <inheritdoc />
+    public FunctionResultBlockTypes Type => FunctionResultBlockTypes.SearchResult;
+    
+    /// <summary>
+    /// The source URL or identifier for the content.
+    /// </summary>
+    [JsonProperty("source")]
+    public string Source { get; set; }
+    
+    /// <summary>
+    /// A descriptive title for the search result.
+    /// </summary>
+    [JsonProperty("title")]
+    public string Title { get; set; }
+
+    /// <summary>
+    /// An array of text blocks containing the actual content.
+    /// </summary>
+    [JsonProperty("content")]
+    public List<ChatSearchResultContent> Content { get; set; } = [];
+    
+    /// <summary>
+    /// Citation configuration with <c>enabled</c> boolean field.
+    /// </summary>
+    [JsonProperty("citations")]
+    public ChatSearchResultCitations? Citations { get; set; }
+}
+
+/// <summary>
+/// Types of function call result blocks.
+/// </summary>
+public enum FunctionResultBlockTypes
+{
+    /// <summary>
+    /// Text block, supported by all providers.
+    /// </summary>
+    Text,
+    /// <summary>
+    /// Image block. Supported only by Anthropic.
+    /// </summary>
+    Image,
+    /// <summary>
+    /// Search result block. Supported only by Anthropic.
+    /// </summary>
+    SearchResult
+}
+
+/// <summary>
+/// Types of search result content blocks.
+/// </summary>
+[JsonConverter(typeof(StringEnumConverter))]
+public enum ChatSearchResultContentTypes
+{
+    /// <summary>
+    /// Text block.
+    /// </summary>
+    [EnumMember(Value = "text")] 
+    Text
+}
+
+internal class FunctionResultBlockJsonConverter : JsonConverter<IFunctionResultBlock>
+{
+    public override void WriteJson(JsonWriter writer, IFunctionResultBlock? value, JsonSerializer serializer)
+    {
+        if (value is null)
+        {
+            writer.WriteNull();
+            return;
+        }
+
+        writer.WriteStartObject();
+        writer.WritePropertyName("type");
+        
+        string typeStr = value.Type switch
+        {
+            FunctionResultBlockTypes.Text => "text",
+            FunctionResultBlockTypes.Image => "image",
+            FunctionResultBlockTypes.SearchResult => "search_result",
+            _ => "unknown"
+        };
+        
+        writer.WriteValue(typeStr);
+        
+        switch (value)
+        {
+            case FunctionResultBlockText textBlock:
+            {
+                writer.WritePropertyName("text");
+                writer.WriteValue(textBlock.Text);
+                break;
+            }
+            case FunctionResultBlockImage imageBlock:
+            {
+                writer.WritePropertyName("source");
+                serializer.Serialize(writer, imageBlock.Source);
+                
+                break;
+            }
+            case FunctionResultBlockSearchResult searchResultBlock:
+            {
+                if (!string.IsNullOrEmpty(searchResultBlock.Source))
+                {
+                    writer.WritePropertyName("source");
+                    writer.WriteValue(searchResultBlock.Source);
+                }
+
+                if (!string.IsNullOrEmpty(searchResultBlock.Title))
+                {
+                    writer.WritePropertyName("title");
+                    writer.WriteValue(searchResultBlock.Title);
+                }
+
+                if (searchResultBlock.Content is { Count: > 0 })
+                {
+                    writer.WritePropertyName("content");
+                    serializer.Serialize(writer, searchResultBlock.Content);
+                }
+
+                if (searchResultBlock.Citations != null)
+                {
+                    writer.WritePropertyName("citations");
+                    serializer.Serialize(writer, searchResultBlock.Citations);
+                }
+                break;
+            }
+        }
+
+        writer.WriteEndObject();
+    }
+
+    public override IFunctionResultBlock? ReadJson(JsonReader reader, Type objectType, IFunctionResultBlock? existingValue, bool hasExistingValue, JsonSerializer serializer)
+    {
+        if (reader.TokenType == JsonToken.Null)
+        {
+            return null;
+        }
+
+        JObject obj = JObject.Load(reader);
+        string? type = obj["type"]?.Value<string>();
+
+        switch (type)
+        {
+            case "text":
+                string txt = obj["text"]?.Value<string>() ?? string.Empty;
+                return new FunctionResultBlockText(txt);
+
+            case "image":
+            {
+                JObject? srcToken = obj["source"] as JObject;
+                IFunctionResultBlockImageSource? src = null;
+
+                if (srcToken is not null)
+                {
+                    string? srcType = srcToken["type"]?.Value<string>();
+                    src = srcType switch
+                    {
+                        "base64" => new FunctionResultBlockImageSourceBase64
+                        {
+                            Data = srcToken["data"]?.Value<string>()!,
+                            MediaType = srcToken["media_type"]?.Value<string>()!
+                        },
+                        "url" => new FunctionResultBlockImageSourceUrl
+                        {
+                            Url = srcToken["url"]?.Value<string>()!
+                        },
+                        "file" => new FunctionResultBlockImageSourceFile
+                        {
+                            FileId = srcToken["file_id"]?.Value<string>()!
+                        },
+                        _ => src
+                    };
+                }
+
+                return src is not null ? new FunctionResultBlockImage(src) : new FunctionResultBlockImage();
+            }
+            case "search_result":
+            {
+                FunctionResultBlockSearchResult sr = new FunctionResultBlockSearchResult
+                {
+                    Source = obj["source"]?.Value<string>(),
+                    Title = obj["title"]?.Value<string>()
+                };
+
+                if (obj["content"] is JArray contentArr)
+                {
+                    sr.Content = contentArr.ToObject<List<ChatSearchResultContent>>(serializer) ?? [];
+                }
+
+                if (obj["citations"] is JObject citationsObj)
+                {
+                    sr.Citations = citationsObj.ToObject<ChatSearchResultCitations>(serializer);
+                }
+
+                return sr;
+            }
+            default:
+            {
+                return new FunctionResultBlockText(obj.ToString(Formatting.None));
+            }
+        }
+    }
+
+    public override bool CanRead => true;
+    public override bool CanWrite => true;
 }
 
 public static class ResponseOutputTypes

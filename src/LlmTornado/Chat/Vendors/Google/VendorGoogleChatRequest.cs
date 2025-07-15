@@ -8,7 +8,7 @@ using LlmTornado.Code;
 using LlmTornado.Common;
 using Newtonsoft.Json;
 
-namespace LlmTornado.Chat.Vendors.Cohere;
+namespace LlmTornado.Chat.Vendors.Google;
 
 /// <summary>
 /// Generation config for Google.
@@ -268,6 +268,24 @@ internal class VendorGoogleChatRequestMessagePart
                     };
                 }
                 
+                break;
+            }
+            case ChatMessageTypes.Audio:
+            {
+                if (part.Audio is not null)
+                {
+                    if (part.Audio.MimeType is null)
+                    {
+                        throw new Exception("Google requires MIME type of all audio to be set, supported values are: audio/wav, audio/mp3, audio/aiff, audio/aac, audio/ogg, audio/flac");
+                    }
+
+                    InlineData = new VendorGoogleChatRequest.VendorGoogleChatRequestMessagePartInlineData
+                    {
+                        MimeType = part.Audio.MimeType,
+                        Data = part.Audio.Data
+                    };
+                }
+
                 break;
             }
             case ChatMessageTypes.FileLink:

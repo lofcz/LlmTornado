@@ -7,11 +7,13 @@ using System.Net.Http;
 using System.Text;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Vendors.Anthropic;
-using LlmTornado.ChatFunctions;
 using LlmTornado.Code.Models;
-using LlmTornado.Code.Sse; 
+using LlmTornado.Code.Sse;
+using LlmTornado.Threads;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using FunctionCall = LlmTornado.ChatFunctions.FunctionCall;
+using ToolCall = LlmTornado.ChatFunctions.ToolCall;
 
 namespace LlmTornado.Code.Vendor;
 
@@ -63,7 +65,7 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
         ContentBlockStop
     }
     
-    public AnthropicEndpointProvider() : base()
+    public AnthropicEndpointProvider()
     {
         Provider = LLmProviders.Anthropic;
         StoreApiAuth();
@@ -125,7 +127,8 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
         TextDelta,
         ThinkingDelta,
         SignatureDelta,
-        InputJsonDelta
+        InputJsonDelta,
+        CitationDelta
     }
 
     private class AnthropicStreamBlockDelta
@@ -133,6 +136,7 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
         public static readonly FrozenDictionary<string, AnthropicStreamBlockDeltaTypes> Map = new Dictionary<string, AnthropicStreamBlockDeltaTypes>
         {
             { "text_delta", AnthropicStreamBlockDeltaTypes.TextDelta },
+            { "citations_delta", AnthropicStreamBlockDeltaTypes.CitationDelta },
             { "thinking_delta", AnthropicStreamBlockDeltaTypes.ThinkingDelta },
             { "signature_delta", AnthropicStreamBlockDeltaTypes.SignatureDelta },
             { "input_json_delta", AnthropicStreamBlockDeltaTypes.InputJsonDelta }
@@ -154,6 +158,9 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
             
             [JsonProperty("signature")]
             public string? Signature { get; set; }
+            
+            [JsonProperty("citation")]
+            public IChatMessagePartCitation? Citation { get; set; }
         }
         
         [JsonProperty("type")]
@@ -164,6 +171,9 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
         
         [JsonProperty("delta")]
         public AnthropicStreamBlockDeltaData? Delta { get; set; }
+        
+        [JsonProperty("citation")]
+        public IChatMessagePartCitation? Citation { get; set; }
     }
 
     private class AnthropicStreamBlockStop
@@ -223,14 +233,16 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
         return UrlResolver is not null ? string.Format(UrlResolver.Invoke(endpoint, url, new RequestUrlContext(eStr, url, model)), eStr, url, model?.Name) : $"https://api.anthropic.com/v1/{eStr}{url}";
     }
     
-    public override async IAsyncEnumerable<ChatResult?> InboundStream(StreamReader reader, ChatRequest request)
+    public override async IAsyncEnumerable<ChatResult?> InboundStream(StreamReader reader, ChatRequest request, ChatStreamEventHandler? eventHandler)
     {
         ChatMessage? accuToolsMessage = null;
-        ChatMessage? accuPlaintext = null;
+        ChatMessage? accuMessage = null;
         ChatUsage? plaintextUsage = null;
         ChatMessage? accuThinking = null;
         List<ChatMessagePart>? thinkingParts = null;
         ChatMessageFinishReasons finishReason = ChatMessageFinishReasons.Unknown;
+        ChatMessagePart? currentPart = null;
+        StringBuilder currentPartTextBuilder = new StringBuilder();
         
         #if DEBUG
         List<string> items = [];
@@ -241,6 +253,15 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
             #if DEBUG
             items.Add(item.Data);
             #endif
+
+            if (eventHandler?.OnSse is not null)
+            {
+                await eventHandler.OnSse.Invoke(new ServerSentEvent
+                {
+                    Data = item.Data,
+                    EventType = item.EventType
+                });
+            }
             
             if (request.CancellationToken.IsCancellationRequested)
             {
@@ -268,6 +289,19 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
                     }
 
                     AnthropicStreamBlockStartTypes type = AnthropicStreamBlockStart.Map.GetValueOrDefault(res.ContentBlock.Type, AnthropicStreamBlockStartTypes.Unknown);
+
+                    if (type is AnthropicStreamBlockStartTypes.Text)
+                    {
+                        currentPart = new ChatMessagePart
+                        {
+                            Type = ChatMessageTypes.Text
+                        };
+
+                        accuMessage ??= new ChatMessage(ChatMessageRoles.Assistant);
+                        accuMessage.Parts ??= [];
+                        accuMessage.Parts.Add(currentPart);
+                        currentPartTextBuilder.Clear();
+                    }
                     
                     switch (type)
                     {
@@ -354,10 +388,12 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
                         {
                             case AnthropicStreamBlockDeltaTypes.TextDelta:
                             {
-                                accuPlaintext ??= new ChatMessage(ChatMessageRoles.Assistant);
-                                accuPlaintext.ContentBuilder ??= new StringBuilder();
-                                accuPlaintext.ContentBuilder.Append(res.Delta.Text);
+                                accuMessage ??= new ChatMessage(ChatMessageRoles.Assistant);
+                                accuMessage.ContentBuilder ??= new StringBuilder();
+                                accuMessage.ContentBuilder.Append(res.Delta.Text);
 
+                                currentPartTextBuilder.Append(res.Delta.Text);
+                                
                                 yield return new ChatResult
                                 {
                                     Choices =
@@ -368,6 +404,41 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
                                         }
                                     ]
                                 };
+                                break;
+                            }
+                            case AnthropicStreamBlockDeltaTypes.CitationDelta:
+                            {
+                                IChatMessagePartCitation? cit = res.Delta?.Citation;
+
+                                if (cit is not null)
+                                {
+                                    if (currentPart is not null)
+                                    {
+                                        currentPart.Citations ??= [];
+                                        currentPart.Citations.Add(cit);
+                                    }
+
+                                    yield return new ChatResult
+                                    {
+                                        Choices =
+                                        [
+                                            new ChatChoice
+                                            {
+                                                Delta = new ChatMessage(ChatMessageRoles.Assistant)
+                                                {
+                                                    Parts = [
+                                                        new ChatMessagePart
+                                                        {
+                                                            Type = ChatMessageTypes.Text,
+                                                            Citations = [ cit ]
+                                                        }
+                                                    ]
+                                                }
+                                            }
+                                        ]
+                                    };
+                                }
+
                                 break;
                             }
                             case AnthropicStreamBlockDeltaTypes.SignatureDelta:
@@ -417,6 +488,11 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
                 case StreamRawActions.ContentBlockStop:
                 {
                     AnthropicStreamBlockStop? res = JsonConvert.DeserializeObject<AnthropicStreamBlockStop>(line);
+
+                    if (currentPart is not null)
+                    {
+                        currentPart.Text = currentPartTextBuilder.ToString();
+                    }
 
                     if (accuToolsMessage is not null)
                     {
@@ -470,19 +546,17 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
                         };
                     }
 
-                    if (accuPlaintext is not null)
+                    if (accuMessage is not null)
                     {
-                        accuPlaintext.Parts ??= [];
+                        accuMessage.Parts ??= [];
                         
                         if (accuThinking?.Parts?.Count > 0)
                         {
                             foreach (ChatMessagePart reasoningPart in accuThinking.Parts)
                             {
-                                accuPlaintext.Parts.Add(reasoningPart);
+                                accuMessage.Parts.Add(reasoningPart);
                             }
                         }
-                        
-                        accuPlaintext.Parts.Add(new ChatMessagePart( accuPlaintext.ContentBuilder?.ToString() ?? string.Empty));
                     }
                     
                     break;
@@ -534,9 +608,9 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
         plaintextUsage ??= new ChatUsage(LLmProviders.Anthropic);
         plaintextUsage.TotalTokens = plaintextUsage.CompletionTokens + plaintextUsage.PromptTokens;
 
-        if (accuPlaintext is not null)
+        if (accuMessage is not null)
         {
-            accuPlaintext.Content = accuPlaintext.ContentBuilder?.ToString();   
+            accuMessage.Content = accuMessage.ContentBuilder?.ToString();   
         }
         
         yield return new ChatResult
@@ -545,7 +619,7 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
             [
                 new ChatChoice
                 {
-                    Delta = accuPlaintext
+                    Delta = accuMessage
                 }
             ],
             StreamInternalKind = ChatResultStreamInternalKinds.AppendAssistantMessage,
@@ -598,7 +672,7 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
         }
         else
         {
-            req.Headers.Add("anthropic-beta", ["interleaved-thinking-2025-05-14", "files-api-2025-04-14"]);
+            req.Headers.Add("anthropic-beta", ["interleaved-thinking-2025-05-14", "extended-cache-ttl-2025-04-11", "files-api-2025-04-14", "search-results-2025-06-09"]);
         }
 
         return req;

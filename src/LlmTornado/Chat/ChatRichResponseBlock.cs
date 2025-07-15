@@ -1,9 +1,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Common;
+using Newtonsoft.Json;
 
 namespace LlmTornado.Chat;
 
@@ -49,12 +51,12 @@ public enum ChatRichResponseBlockTypes
 public class ChatRichResponse
 {
     private string? text;
-    
+
     /// <summary>
     /// The blocks, which together constitute the received response. A block can be either textual, tool call or an image.
     /// Different providers support different block types.
     /// </summary>
-    public List<ChatRichResponseBlock>? Blocks { get; set; }
+    public List<ChatRichResponseBlock> Blocks { get; set; }
 
     /// <summary>
     /// Extension information if the vendor used returns any.
@@ -92,7 +94,7 @@ public class ChatRichResponse
     public ChatRichResponse(ChatResult? result, List<ChatRichResponseBlock>? blocks)
     {
         Result = result;
-        Blocks = blocks;
+        Blocks = blocks ?? [];
     }
 
     /// <summary>
@@ -167,6 +169,29 @@ public class ChatRichResponseBlock
     public ChatMessageReasoningData? Reasoning { get; set; }
 
     /// <summary>
+    /// Citations associated with the block, if any.
+    /// </summary>
+    [JsonIgnore]
+    public List<IChatMessagePartCitation>? Citations => Part?.Citations;
+
+    /// <summary>
+    /// Vendor extensions associated with the block, if any.
+    /// </summary>
+    [JsonIgnore]
+    public IChatMessagePartVendorExtensions? VendorExtensions => Part?.VendorExtensions;
+    
+    /// <summary>
+    /// Search result of the message part if type is SearchResult.
+    /// </summary>
+    public ChatSearchResult? SearchResults => Part?.SearchResult;
+    
+    /// <summary>
+    /// The part this block is associated with.
+    /// </summary>
+    [JsonIgnore]
+    public ChatMessagePart? Part { get; set; }
+    
+    /// <summary>
     ///     Creates an empty block.
     /// </summary>
     public ChatRichResponseBlock()
@@ -190,6 +215,8 @@ public class ChatRichResponseBlock
             _ => ChatRichResponseBlockTypes.Unknown
         };
 
+        Part = part;
+        
         switch (part.Type)
         {
             case ChatMessageTypes.Text:

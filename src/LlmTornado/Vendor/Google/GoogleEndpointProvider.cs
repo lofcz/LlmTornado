@@ -12,16 +12,19 @@ using LlmTornado.Caching;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Chat.Vendors.Cohere;
-using LlmTornado.ChatFunctions;
+using LlmTornado.Chat.Vendors.Google;
 using LlmTornado.Code.Models;
 using LlmTornado.Code.Sse;
 using LlmTornado.Embedding;
 using LlmTornado.Files;
 using LlmTornado.Images;
 using LlmTornado.Models.Vendors;
+using LlmTornado.Threads;
 using LlmTornado.Vendor.Anthropic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using FunctionCall = LlmTornado.ChatFunctions.FunctionCall;
+using ToolCall = LlmTornado.ChatFunctions.ToolCall;
 
 namespace LlmTornado.Code.Vendor;
 
@@ -93,7 +96,7 @@ public class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
         }
     }
 
-    public override async IAsyncEnumerable<ChatResult?> InboundStream(StreamReader reader, ChatRequest request)
+    public override async IAsyncEnumerable<ChatResult?> InboundStream(StreamReader reader, ChatRequest request, ChatStreamEventHandler? eventHandler)
     {
         ChatMessage? plaintextAccu = null;
         ChatUsage? usage = null;
@@ -118,8 +121,17 @@ public class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
             {
                 if (jsonReader.TokenType is JsonToken.StartObject)
                 {
-                    VendorGoogleChatResult? obj = serializer.Deserialize<VendorGoogleChatResult>(jsonReader);
+                    JObject jsonObject = await JObject.LoadAsync(jsonReader, request.CancellationToken);
+                    VendorGoogleChatResult? obj = jsonObject.ToObject<VendorGoogleChatResult>();
 
+                    if (eventHandler?.OnSse is not null)
+                    {
+                        await eventHandler.OnSse.Invoke(new ServerSentEvent
+                        {
+                            Data = jsonObject.ToString(Formatting.Indented)
+                        });
+                    }
+                    
                     if (obj is not null)
                     {
                         foreach (VendorGoogleChatResult.VendorGoogleChatResultMessage candidate in obj.Candidates)

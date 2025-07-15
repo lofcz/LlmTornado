@@ -201,6 +201,18 @@ public class FunctionCall
     }
 
     /// <summary>
+    /// Resolves the call.<br/>
+    /// <remarks>
+    /// Rich blocks from tool calls are currently supported only by Anthropic. If you use other providers, use only one block of type <see cref="FunctionResultBlockText"/>, or use the overload accepting an arbitrary object to avoid double JSON encoding.
+    /// </remarks>
+    /// </summary>
+    public FunctionCall Resolve(List<IFunctionResultBlock> blocks)
+    {
+        Result = new FunctionResult(this, blocks);
+        return this;
+    }
+
+    /// <summary>
     /// Executes the attached <see cref="IRemoteTool"/> - call this only for tools sourced from an MCP connection.
     /// </summary>
     public async ValueTask<FunctionCall> ResolveRemote(object? args = null, IProgress<ToolCallProgress>? progress = null, JsonSerializerOptions? serializerOptions = null, bool fillContent = true, CancellationToken cancellationToken = default)

@@ -34,6 +34,97 @@ public class ResponsesDemo : DemoBase
         Console.WriteLine(text.Text);
     }
     
+    public struct math_reasoning
+    {
+        public math_step[] steps { get; set; }
+        public string final_answer { get; set; }
+
+        public void ConsoleWrite()
+        {
+            Console.WriteLine($"Final answer: {final_answer}");
+            Console.WriteLine("Reasoning steps:");
+            foreach (math_step step in steps)
+            {
+                Console.WriteLine($"  - Explanation: {step.explanation}");
+                Console.WriteLine($"    Output: {step.output}");
+            }
+        }
+    }
+
+    public struct math_step
+    {
+        public string explanation { get; set; }
+        public string output { get; set; }
+    }
+    
+    [TornadoTest]
+    public static async Task ResponseStructuredOutput()
+    {
+        ResponseResult response = await Program.Connect().Responses.CreateResponse(new ResponseRequest
+        {
+            Model = ChatModel.OpenAi.Gpt41.V41,
+            Instructions = "You are an assistant specialized on solving math problems.",
+            Text = ResponseTextFormatConfiguration.CreateJsonSchema(new
+            {
+                type = "object",
+                properties = new
+                {
+                    final_answer = new
+                    {
+                        type = "string",
+                        description = "final answer to the problem"
+                    },
+                    steps = new
+                    {
+                        type = "array",
+                        items = new
+                        {
+                            type = "object",
+                            properties = new
+                            {
+                                explanation = new
+                                {
+                                    type = "string",
+                                    description = "explanation of the step, curt"
+                                },
+                                output = new
+                                {
+                                    type = "string",
+                                    description = "output of the step"
+                                }
+                            },
+                            required = new List<string> { "explanation", "output" },
+                            additionalProperties = false
+                        }
+                    }
+                },
+                required = new List<string> { "final_answer", "steps" },
+                additionalProperties = false
+            }, "math_solver", strict: true),
+            InputItems =
+            [
+                new ResponseInputMessage(ChatMessageRoles.User, [
+                    new ResponseInputContentText("2x + 4 - x = 8")
+                ])
+            ]
+        });
+        
+        foreach (IResponseOutputItem outputItem in response.Output)
+        {
+            if (outputItem is ResponseOutputMessageItem msg)
+            {
+                foreach (IResponseOutputContent part in msg.Content)
+                {
+                    if (part is ResponseOutputTextContent text)
+                    {
+                        // the output JSON
+                        Console.WriteLine(text.Text);
+                    }
+                }
+            }
+        }
+    }
+    
     [TornadoTest]
     public static async Task ResponseSimpleTextUsingChat()
     {

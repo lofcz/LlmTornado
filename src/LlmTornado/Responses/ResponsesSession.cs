@@ -56,6 +56,33 @@ public class ResponsesSession
         
         await Endpoint.StreamResponseRichInternal(requestToUse, this, eventHandler ?? EventsHandler, HttpSafe, token);
     }
+    
+    /// <summary>
+    /// Gets next response.
+    /// </summary>
+    public async Task<ResponseResult?> CreateResponseRich(ResponseRequest? request = null, CancellationToken token = default)
+    {
+        ResponseRequest? requestToUse = request ?? Request;
+
+        if (requestToUse is null)
+        {
+            return null;
+        }
+        
+        // todo: go through all fields and if the field is null, set the value from the stored Request
+        
+        if (CurrentResponse is not null)
+        {
+            requestToUse.PreviousResponseId ??= CurrentResponse.Id;
+        }
+
+        if (requestToUse.CancellationToken == CancellationToken.None)
+        {
+            requestToUse.CancellationToken = token;   
+        }
+        
+        return await Endpoint.CreateResponse(requestToUse);
+    }
 
     /// <summary>
     /// Serializes either the given request or the last response in the session (if any).

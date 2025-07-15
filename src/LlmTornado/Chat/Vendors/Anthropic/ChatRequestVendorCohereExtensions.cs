@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 using LlmTornado.Vendor.Anthropic;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace LlmTornado.Chat.Vendors.Anthropic;
 
@@ -14,14 +16,66 @@ public class AnthropicCacheSettings
     /// "ephemeral" type of cache, shared object.
     /// </summary>
     public static readonly AnthropicCacheSettings Ephemeral = new AnthropicCacheSettings();
-    
+
+    /// <summary>
+    /// "ephemeral" type of cache, with variable time to live.
+    /// </summary>
+    public static AnthropicCacheSettings EphemeralWithTtl(AnthropicCacheTtlOptions ttl)
+    {
+        return new AnthropicCacheSettings
+        {
+            Type = AnthropicCacheTypes.Ephemeral,
+            Ttl = ttl
+        };
+    }
+
+    /// <summary>
+    /// Cache type.
+    /// </summary>
     [JsonProperty("type")]
-    public string Type { get; set; } = "ephemeral";
+    public AnthropicCacheTypes Type { get; set; } = AnthropicCacheTypes.Ephemeral;
+
+    /// <summary>
+    /// Time to live. Increasing this increases the price multiplier.
+    /// </summary>
+    [JsonProperty("ttl")]
+    public AnthropicCacheTtlOptions? Ttl { get; set; }
 
     private AnthropicCacheSettings()
     {
         
     }
+}
+
+/// <summary>
+/// Anthropic cache types.
+/// </summary>
+[JsonConverter(typeof(StringEnumConverter))]
+public enum AnthropicCacheTypes
+{
+    /// <summary>
+    /// Ephemeral cache.
+    /// </summary>
+    [EnumMember(Value = "ephemeral")]
+    Ephemeral
+}
+
+/// <summary>
+/// Time to live cache optins.
+/// </summary>
+[JsonConverter(typeof(StringEnumConverter))]
+public enum AnthropicCacheTtlOptions
+{
+    /// <summary>
+    /// 5m
+    /// </summary>
+    [EnumMember(Value = "5m")]
+    FiveMinutes,
+    /// <summary>
+    /// 1h
+    /// </summary>
+    [EnumMember(Value = "1h")]
+    OneHour
 }
 
 /// <summary>
