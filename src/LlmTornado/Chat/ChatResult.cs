@@ -291,12 +291,12 @@ public class ChatUsage : Usage
 	{
 		CompletionTokens = responseUsage.OutputTokens;
 		
-		CompletionTokensDetails = new ChatUsageTokenDetails()
+		CompletionTokensDetails = new ChatUsageTokenDetails
 		{
 			ReasoningTokens = responseUsage.OutputTokenDetails.ReasoningTokens
 		};
 		
-		PromptTokenDetails = new ChatPromptTokenDetails()
+		PromptTokenDetails = new ChatPromptTokenDetails
 		{
 			TextTokens = responseUsage.InputTokenDetails.TextTokens,
 			CachedTokens = responseUsage.InputTokenDetails.CachedTokens,

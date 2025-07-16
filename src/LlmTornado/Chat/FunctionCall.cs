@@ -102,7 +102,7 @@ public class FunctionCall
     /// </summary>
     /// <param name="param">Key</param>
     /// <param name="data">Type to which the argument should be converted.</param>
-    public bool TryGetArgument<T>(string param, out T? data)
+    public bool TryGetArgument<T>(string param, [NotNullWhen(true)] out T? data)
     {
         return Get(param, out data, out _);
     }

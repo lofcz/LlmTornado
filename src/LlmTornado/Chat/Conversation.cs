@@ -66,11 +66,6 @@ public class Conversation
     public ChatRequest RequestParameters { get; }
 
     /// <summary>
-    /// Provides access to the response request parameters used in the chat conversation context.
-    /// </summary>
-    public ResponseRequest? ResponseRequestParameters { get; set; }
-
-    /// <summary>
     ///     Specifies the model to use for Chat requests. This is just a shorthand to access
     ///     <see cref="RequestParameters" />.Model
     /// </summary>
@@ -718,9 +713,10 @@ public class Conversation
 
         ChatResult chatResult;
         IHttpCallResult httpResult;
-        if (ResponseRequestParameters is not null)
+        
+        if (req.ResponseRequestParameters is not null)
         {
-            HttpCallResult<ResponseResult> result = await responsesEndpoint.CreateResponseSafe(ResponseHelpers.ToResponseRequest(ResponseRequestParameters, req));
+            HttpCallResult<ResponseResult> result = await responsesEndpoint.CreateResponseSafe(ResponseHelpers.ToResponseRequest(req.ResponseRequestParameters, req));
             
             if (!result.Ok)
             {
@@ -1246,10 +1242,10 @@ public class Conversation
         bool isFirstMessageToken = true;
         int tokenIndex = 0;
 
-        if (ResponseRequestParameters is not null)
+        if (req.ResponseRequestParameters is not null)
         {
             await responsesEndpoint.StreamResponseRich(
-                ResponseHelpers.ToResponseRequest(ResponseRequestParameters, req), new ResponseStreamEventHandler()
+                ResponseHelpers.ToResponseRequest(req.ResponseRequestParameters, req), new ResponseStreamEventHandler
                 {
                     OnEvent = async (evt) =>
                     {

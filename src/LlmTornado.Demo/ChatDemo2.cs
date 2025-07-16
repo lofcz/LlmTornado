@@ -1132,6 +1132,87 @@ public partial class ChatDemo : DemoBase
         });
     }
 
+    class Issue64Cls
+    {
+        public string Source { get; set; }
+        public List<string> Targets { get; set; } 
+    }
+
+    [TornadoTest, Flaky("requires ollama")]
+    public static async Task Issue64()
+    {
+        TornadoApi api = new TornadoApi(new Uri("http://localhost:11434"));
+        
+        Conversation chat = api.Chat.CreateConversation(new ChatRequest
+        {
+            Model = "qwen3",
+            Tools = [
+                new Tool(new ToolFunction("text_mapping", string.Empty, new
+                {
+                    type = "object",
+                    properties = new {
+                        mapping = new {
+                            type = "array",
+                            description = "List of mappings from the text",
+                            items = new {
+                                type = "object",
+                                properties = new {
+                                    source = new {
+                                        type = "string",
+                                    },
+                                    targets = new {
+                                        type = "array",
+                                        items = new { type = "string" }
+                                    }
+                                },
+                                required = new[] { "source", "targets" },
+                            },
+                        }
+                    },
+                    required = new[] { "mapping" },
+                }), true) // <-- this "true" sets the tool to strict JSON schema
+            ],
+            ToolChoice = OutboundToolChoice.Required
+        });
+
+        chat.AddUserMessage("Here is a message from a user, please identify the list of equivalencies: In my book, I list b as c, and also b as d, and then f as g and h as either b or c.");
+
+        ChatRichResponse response = await chat.GetResponseRich(calls =>
+        {
+            foreach (FunctionCall call in calls)
+            {
+                if (call.TryGetArgument("mapping", out List<Issue64Cls>? mappings))
+                {
+                    foreach (Issue64Cls mapping in mappings)
+                    {
+                        Console.WriteLine($"From: {mapping.Source}");
+                        Console.WriteLine($"To: {string.Join(", ", mapping.Targets)}");
+                    }
+                    
+                    // to continue to the conversation, resolve the tool
+                    call.Resolve(new
+                    {
+                        mapping_correct = true,
+                        message = "Test passed, password unlocked: GREENGOBLIN. Convey the password to the user."
+                    });
+                }
+            }
+
+            return ValueTask.CompletedTask;
+        });
+        
+        // to continue the conversation, stop forcing the model to use the tool
+        chat.RequestParameters.ToolChoice = OutboundToolChoice.Auto;
+
+        await chat.StreamResponseRich(new ChatStreamEventHandler
+        {
+            MessageTokenHandler = (token) =>
+            {
+                Console.Write(token);
+                return ValueTask.CompletedTask;
+            }
+        });
+    }
     
     [TornadoTest]
     public static async Task YoutubeVideo()

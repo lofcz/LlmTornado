@@ -94,7 +94,7 @@ public static class ResponseHelpers
     /// <returns>A new <see cref="ResponseRequest"/> object with properties merged and populated from the provided request and chat request objects.</returns>
     public static ResponseRequest ToResponseRequest(ResponseRequest request, ChatRequest chatRequest)
     {
-        return new ResponseRequest()
+        return new ResponseRequest
         {
             Model = request.Model ?? chatRequest.Model,
             Background = request.Background,
@@ -171,8 +171,8 @@ public static class ResponseHelpers
             if (responseItem.Type == ResponseOutputTypes.Reasoning && responseItem is ResponseReasoningItem reasoningItem)
             {
                 string[] reasoning = reasoningItem.Summary.Select(x => x.Text).ToArray();
-                choice.Message.ReasoningContent = string.Join('\n', reasoning);
-                choice.Message.Parts.Add(new ChatMessagePart(new ChatMessageReasoningData()
+                choice.Message.ReasoningContent = string.Join("\n", reasoning);
+                choice.Message.Parts.Add(new ChatMessagePart(new ChatMessageReasoningData
                 {
                     Content = choice.Message.ReasoningContent
                 }));

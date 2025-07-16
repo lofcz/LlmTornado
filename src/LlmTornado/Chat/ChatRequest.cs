@@ -17,6 +17,7 @@ using LlmTornado.Code.Models;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
 using LlmTornado.Chat.Vendors.Google;
+using LlmTornado.Responses;
 
 namespace LlmTornado.Chat;
 
@@ -101,6 +102,7 @@ public class ChatRequest : IModelRequest
 		TopLogprobs = basedOn.TopLogprobs;
 		WebSearchOptions = basedOn.WebSearchOptions;
 		OnSerialize = basedOn.OnSerialize;
+		ResponseRequestParameters = basedOn.ResponseRequestParameters;
 	}
 
 	/// <summary>
@@ -162,6 +164,13 @@ public class ChatRequest : IModelRequest
 	/// </summary>
 	[JsonIgnore]
 	public Action<JObject, ChatRequest>? OnSerialize { get; set; }
+	
+	/// <summary>
+	/// If set, the request may be promoted from <see cref="CapabilityEndpoints.Chat"/> to <see cref="CapabilityEndpoints.Responses"/>, this is currently supported only by OpenAI.<br/>
+	/// This elevation is only supported when using <see cref="Conversation"/>, direct requests to <see cref="ChatEndpoint"/> are not supported.
+	/// </summary>
+	[JsonIgnore]
+	public ResponseRequest? ResponseRequestParameters { get; set; }
 	
 	/// <summary>
 	///     An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the

@@ -128,11 +128,11 @@ public class ResponsesDemo : DemoBase
     [TornadoTest]
     public static async Task ResponseSimpleTextUsingChat()
     {
-
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
             {
                 Model = ChatModel.OpenAi.Gpt41.V41Mini,
-                MaxTokens = 2000
+                MaxTokens = 2000,
+                ResponseRequestParameters = new ResponseRequest()
             })
             .AppendSystemMessage("You are a helpful assistant")
             .AppendUserInput([
@@ -141,8 +141,7 @@ public class ResponsesDemo : DemoBase
                     "https://as2.ftcdn.net/v2/jpg/05/94/28/01/1000_F_594280104_vZXB6JZANIRywkZcUQntU07p5KGpuZ7S.jpg",
                     ImageDetail.Auto)
             ]);
-
-        chat.ResponseRequestParameters = new ResponseRequest();
+        
         RestDataOrException<ChatRichResponse> response = await chat.GetResponseRichSafe();
         
         Console.WriteLine(response.Data.Text);
@@ -151,26 +150,25 @@ public class ResponsesDemo : DemoBase
     [TornadoTest]
     public static async Task StreamResponseSimpleTextUsingChat()
     {
-
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
             {
                 Model = ChatModel.OpenAi.O4.V4Mini,
-                MaxTokens = 4000
+                MaxTokens = 4000,
+                ResponseRequestParameters = new ResponseRequest
+                {
+                    Reasoning = new ReasoningConfiguration
+                    {
+                        Effort = ResponseReasoningEfforts.Medium,
+                        Summary = ResponseReasoningSummaries.Auto
+                    }
+                }
             })
             .AppendSystemMessage("You are a helpful assistant")
             .AppendUserInput([
                 new ChatMessagePart("How to explain theory of relativity to a 15 years old student?")
             ]);
-
-        chat.ResponseRequestParameters = new ResponseRequest()
-        {
-            Reasoning = new ReasoningConfiguration()
-            {
-                Effort = ResponseReasoningEfforts.Medium,
-                Summary = ResponseReasoningSummaries.Auto
-            }
-        };
-        await chat.StreamResponseRich(new ChatStreamEventHandler()
+        
+        await chat.StreamResponseRich(new ChatStreamEventHandler
         {
             MessageTokenHandler = (delta) =>
             {
