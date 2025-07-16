@@ -10,6 +10,26 @@ namespace LlmTornado.Chat.Models.Mistral;
 public class ChatModelMistralFree : IVendorModelClassProvider
 {
     /// <summary>
+    /// Voxtral Small (24B).
+    /// </summary>
+    public static readonly ChatModel ModelVoxtralSmall2507 = new ChatModel("voxtral-small-2507", LLmProviders.Mistral, 32_000, [ "voxtral-small-latest" ]);
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelVoxtralSmall2507"/>
+    /// </summary>
+    public readonly ChatModel VoxtralSmall2507 = ModelVoxtralSmall2507;
+    
+    /// <summary>
+    /// Voxtral Mini (3B).
+    /// </summary>
+    public static readonly ChatModel ModelVoxtralMini2507 = new ChatModel("voxtral-mini-2507", LLmProviders.Mistral, 32_000, [ "voxtral-mini-latest" ]);
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelVoxtralMini2507"/>
+    /// </summary>
+    public readonly ChatModel VoxtralMini2507 = ModelVoxtralMini2507;
+    
+    /// <summary>
     /// Devstral Small 1.1 (24B)
     /// </summary>
     public static readonly ChatModel ModelDevstralSmall2507 = new ChatModel("devstral-small-2507", LLmProviders.Mistral, 128_000);
@@ -90,7 +110,9 @@ public class ChatModelMistralFree : IVendorModelClassProvider
         ModelDevstralSmall2505,
         ModelMagistralSmall,
         ModelMistralSmall2506,
-        ModelDevstralSmall2507
+        ModelDevstralSmall2507,
+        ModelVoxtralSmall2507,
+        ModelVoxtralMini2507
     ];
 
     /// <summary>

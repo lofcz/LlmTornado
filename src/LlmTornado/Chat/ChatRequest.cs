@@ -129,11 +129,11 @@ public class ChatRequest : IModelRequest
 	public ChatRequestAudio? Audio { get; set; }
 	
 	/// <summary>
-	///		Developer-defined tags and values used for filtering completions in the dashboard.
-	///		Currently only works with OpenAI models. Can be any object, e.g. new { test = 1 }
+	/// Set of 16 key-value pairs that can be attached to an object. This can be useful for storing additional information about the object in a structured format, and querying for objects via API or the dashboard.<br/>
+	/// Keys are strings with a maximum length of 64 characters. Values are strings with a maximum length of 512 characters.
 	/// </summary>
 	[JsonProperty("metadata")]
-	public object? Metadata { get; set; }
+	public Dictionary<string, string>? Metadata { get; set; }
 	
 	/// <summary>
 	///		Whether to store the output of this chat completion request for use in our model distillation or evals products.
