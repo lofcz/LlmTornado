@@ -9,7 +9,7 @@ _Empty field means the feature is unsupported by the provider._
 
 |               | OpenAI | Anthropic | Google | Cohere | DeepSeek | Groq | Mistral | xAI | Perplexity | Voyage | DeepInfra | OpenRouter | Custom* |
 |-------|-----------|-----------|-----------| -----------| -----------| -----------| -----------| -----------| -----------| -----------| -----------| -----------| -----------|
-|**Audio**      | ✅ |    |     |     |   |     |     |     |     |     |      |      |      |
+|**Audio**      | ✅ |    |     |     |   |     |  ✅   |     |     |     |      |      |      |
 |**Chat****       | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |  ✅ | ✅ |   |   ✅   | ✅      |✅      |
 |**Embeddings** | ✅ |    | ✅  | ✅ |    |    | ✅ |     |     |   ✅      |     |  ✅   |      |
 |**Fine-tuning**| ✅ |    | ❌  |    |    |    | ❌  |    |     |        |      |      |     |
