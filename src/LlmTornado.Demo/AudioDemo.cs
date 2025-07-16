@@ -25,6 +25,24 @@ public class AudioDemo : DemoBase
     }
     
     [TornadoTest]
+    public static async Task TranscribeFormatTextMistral()
+    {
+        byte[] audioData = await File.ReadAllBytesAsync("Static/Audio/sample.wav");
+
+        TranscriptionResult? transcription = await Program.Connect().Audio.CreateTranscription(new TranscriptionRequest
+        {
+            File = new AudioFile(audioData, AudioFileTypes.Wav),
+            Model = AudioModel.Mistral.Free.VoxtralMini2507,
+            ResponseFormat = AudioTranscriptionResponseFormats.Text
+        });
+
+        if (transcription is not null)
+        {
+            Console.WriteLine(transcription.Text);
+        }
+    }
+    
+    [TornadoTest]
     public static async Task TranscribeFormatTextStreaming()
     {
         byte[] audioData = await File.ReadAllBytesAsync("Static/Audio/sample.wav");

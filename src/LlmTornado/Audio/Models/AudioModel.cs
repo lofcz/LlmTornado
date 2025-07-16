@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using LlmTornado.Audio.Models.Groq;
+using LlmTornado.Audio.Models.Mistral;
 using LlmTornado.Audio.Models.OpenAi;
-using LlmTornado.Chat.Models;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
 using LlmTornado.Models;
@@ -24,6 +24,11 @@ public class AudioModel : ModelBase
     /// Models provided by Groq.
     /// </summary>
     public static readonly AudioModelGroq Groq = new AudioModelGroq();
+    
+    /// <summary>
+    /// Models provided by Mistral.
+    /// </summary>
+    public static readonly AudioModelMistral Mistral = new AudioModelMistral();
     
     /// <summary>
     /// All known models keyed by name.
@@ -126,7 +131,8 @@ public class AudioModel : ModelBase
     {
         AllModels = [
             ..OpenAi.AllModels,
-            ..Groq.AllModels
+            ..Groq.AllModels,
+            ..Mistral.AllModels
         ];
         
         AllModels.ForEach(x =>

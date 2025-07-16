@@ -1,11 +1,10 @@
 using System.Collections.Generic;
-using LlmTornado.Chat.Models;
 using LlmTornado.Code.Models;
 
 namespace LlmTornado.Audio.Models.OpenAi;
 
 /// <summary>
-/// Known chat models from OpenAI.
+/// Known audio models from OpenAI.
 /// </summary>
 public class AudioModelOpenAi : BaseVendorModelProvider
 {
