@@ -807,7 +807,7 @@ internal class VendorGoogleChatRequest
             GenerationConfig.ThinkingConfig = new VendorGoogleChatRequestThinkingConfig
             {
                 ThinkingBudget = clamped,
-                IncludeThoughts = true
+                IncludeThoughts = clamped != 0
             };
         } 
 
