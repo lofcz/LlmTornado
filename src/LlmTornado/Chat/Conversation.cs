@@ -885,7 +885,17 @@ public class Conversation
             CancellationToken = token
         };
 
-        ChatResult? res = await endpoint.CreateChatCompletion(req);
+        ChatResult? res;
+
+        if (req.ResponseRequestParameters is not null)
+        {
+            var result = await responsesEndpoint.CreateResponse(ResponseHelpers.ToResponseRequest(req.ResponseRequestParameters, req));
+            res = ResponseHelpers.ToChatResult(result);
+        }
+        else
+        {
+            res = await endpoint.CreateChatCompletion(req);
+        }
 
         if (res is null)
         {
@@ -1278,12 +1288,69 @@ public class Conversation
                         if (evt.EventType is ResponseEventTypes.ResponseCompleted &&
                             evt is ResponseEventCompleted completedEvt)
                         {
-
                             ChatChoice chatChoice = ResponseHelpers.ToChatChoice(completedEvt.Response);
                             if (chatChoice.Message is not null)
                             {
                                 AppendMessage(chatChoice.Message);
                             }
+
+                            if (completedEvt.Response.Tools?.Count > 0)
+                            {
+                                if (eventsHandler?.FunctionCallHandler is not null)
+                                {
+                                    ResolvedToolsCall result = new ResolvedToolsCall();
+
+                                    List<FunctionCall>? calls = chatChoice.Message?.ToolCalls?.Select(x => new FunctionCall
+                                    {
+                                        Name = x.FunctionCall.Name,
+                                        Arguments = x.FunctionCall.Arguments,
+                                        ToolCall = x,
+                                        Tool = RequestParameters.Tools?.FirstOrDefault(y =>
+                                            string.Equals(y.Function?.Name, x.FunctionCall.Name))
+                                    }).ToList();
+
+                                    if (calls is not null)
+                                    {
+                                        await eventsHandler.FunctionCallHandler.Invoke(calls);
+                                        
+                                        foreach (FunctionCall call in calls)
+                                        {
+                                            ChatMessage fnResultMsg = new ChatMessage(ChatMessageRoles.Tool,
+                                                call.Result?.Content ?? "The service returned no data.".ToJson(),
+                                                Guid.NewGuid())
+                                            {
+                                                ToolCallId = call.ToolCall?.Id ?? call.Name,
+                                                ToolInvocationSucceeded = call.Result?.InvocationSucceeded ?? false,
+                                                ContentJsonType = call.Result?.ContentJsonType ?? typeof(string),
+                                                FunctionCall = call
+                                            };
+
+                                            AppendMessage(fnResultMsg);
+
+                                            result.ToolResults.Add(new ResolvedToolCall
+                                            {
+                                                Call = call,
+                                                Result = call.Result ?? new FunctionResult(call, null, null, false),
+                                                ToolMessage = fnResultMsg
+                                            });
+                                        }
+
+                                        if (eventsHandler.AfterFunctionCallsResolvedHandler is not null)
+                                        {
+                                            await eventsHandler.AfterFunctionCallsResolvedHandler.Invoke(result,
+                                                eventsHandler);
+                                        }
+
+                                        if (OnAfterToolsCall is not null)
+                                        {
+                                            await OnAfterToolsCall(result);
+                                        }
+                                    }
+
+                                    return;
+                                }
+                            }
+
 
                             if (eventsHandler?.OnFinished is not null)
                             {
@@ -1314,6 +1381,16 @@ public class Conversation
                             }
                         }
 
+                        if (evt.EventType is ResponseEventTypes.ResponseMcpListToolsCompleted)
+                        {
+                            
+                        }
+                        
+                        if (evt.EventType is ResponseEventTypes.ResponseMcpListToolsInProgress)
+                        {
+                            
+                        }
+                        
                         if (evt.EventType is ResponseEventTypes.ResponseFunctionCallArgumentsDone &&
                             evt is ResponseEventFunctionCallArgumentsDone functionCall)
                         {

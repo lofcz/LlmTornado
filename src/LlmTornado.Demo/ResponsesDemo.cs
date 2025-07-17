@@ -189,7 +189,7 @@ public class ResponsesDemo : DemoBase
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.OpenAi.Gpt41.V41Mini,
+            Model = ChatModel.OpenAi.Gpt41.V41,
             Tools =
             [
                 new Tool(new ToolFunction("get_weather", "gets the current weather in a given city", new
@@ -216,7 +216,7 @@ public class ResponsesDemo : DemoBase
         };
         
         chat.AppendUserInput([
-            new ChatMessagePart("Check the weather today in Paris")
+            new ChatMessagePart("Check the weather today in Paris and Prague")
         ]);
 
         await GetNextResponse();
@@ -229,11 +229,7 @@ public class ResponsesDemo : DemoBase
                 {
                     foreach (FunctionCall fn in fns)
                     {
-                        fn.Result = new FunctionResult(fn.Name, new
-                        {
-                            result = "ok",
-                            weather = "A mild rain is expected around noon."
-                        });
+                        fn.Result = fn.Arguments.Contains("Prague") ? new FunctionResult(fn.Name, "Sunny all day with occasionally clouds") : new FunctionResult(fn.Name, "A mild rain is expected around noon.");
                     }
                 
                     return ValueTask.CompletedTask;
