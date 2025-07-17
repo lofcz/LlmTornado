@@ -136,16 +136,58 @@ public static class ResponseHelpers
             MaxToolCalls = request.MaxToolCalls,
             PreviousResponseId = request.PreviousResponseId,
             Truncation = request.Truncation,
-            ResponseFormat = request.ResponseFormat,
             ToolChoice = request.ToolChoice,
             Tools = request.Tools ?? chatRequest.Tools?.Select(ToResponseTool).Where(x => x != null).Cast<ResponseTool>().ToList(),
-            Text = request.Text,
+            Text = request.Text ?? ToResponseConfiguration(chatRequest.ResponseFormat),
             Prompt = request.Prompt,
             Reasoning = request.Reasoning,
             Stream = false,
         };
     }
 
+    /// <summary>
+    /// Converts a <see cref="ChatRequestResponseFormats"/> object into a <see cref="ResponseTextConfiguration"/> object.
+    /// Determines the appropriate configuration based on the type of response format specified in the given chat request format.
+    /// </summary>
+    /// <param name="chatRequestFormat">The <see cref="ChatRequestResponseFormats"/> instance containing information about the response format and associated schema, if applicable.</param>
+    /// <returns>A <see cref="ResponseTextConfiguration"/> object representing the configured response based on the provided format, or null if no valid configuration could be determined.</returns>
+    public static ResponseTextConfiguration? ToResponseConfiguration(ChatRequestResponseFormats? chatRequestFormat)
+    {
+        if (chatRequestFormat is not null)
+        {
+            switch (chatRequestFormat.Type)
+            {
+                case ChatRequestResponseFormatTypes.Text:
+                    return new ResponseTextConfiguration
+                    {
+                        Format = new ResponseTextFormatConfigurationResponseTextFormat()
+                    };
+                case ChatRequestResponseFormatTypes.Json:
+                    return new ResponseTextConfiguration
+                    {
+                        Format = new ResponseTextFormatConfigurationJsonObject()
+                    };
+                case ChatRequestResponseFormatTypes.StructuredJson:
+                    if (chatRequestFormat.Schema is not null)
+                    {
+                        return new ResponseTextConfiguration
+                        {
+                            Format = new ResponseTextFormatConfigurationJsonSchema()
+                            {
+                                Schema = chatRequestFormat.Schema.Schema,
+                                Name = chatRequestFormat.Schema.Name,
+                                Strict = chatRequestFormat.Schema.Strict,
+                            }
+                        };
+                    }
+
+                    break;
+            }
+        }
+
+        return null;
+    }
+    
     /// <summary>
     /// Converts a <see cref="ResponseResult"/> object into a <see cref="ChatResult"/> object,
     /// mapping properties such as ID, model, and output from the response result to the chat result structure.

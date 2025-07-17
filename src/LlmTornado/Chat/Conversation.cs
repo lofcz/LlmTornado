@@ -1380,23 +1380,6 @@ public class Conversation
                                 // await eventsHandler.BlockFinishedHandler.Invoke(doneEvt.);
                             }
                         }
-
-                        if (evt.EventType is ResponseEventTypes.ResponseMcpListToolsCompleted)
-                        {
-                            
-                        }
-                        
-                        if (evt.EventType is ResponseEventTypes.ResponseMcpListToolsInProgress)
-                        {
-                            
-                        }
-                        
-                        if (evt.EventType is ResponseEventTypes.ResponseFunctionCallArgumentsDone &&
-                            evt is ResponseEventFunctionCallArgumentsDone functionCall)
-                        {
-                            
-                        }
-
                     }
                 }, token);
         }

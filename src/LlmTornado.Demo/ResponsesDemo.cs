@@ -149,6 +149,54 @@ public class ResponsesDemo : DemoBase
     }
     
     [TornadoTest]
+    public static async Task ResponseStructuredJsonUsingChat()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+            {
+                Model = ChatModel.OpenAi.Gpt41.V41Mini,
+                MaxTokens = 2000,
+                ResponseRequestParameters = new ResponseRequest(),
+                ResponseFormat = ChatRequestResponseFormats.StructuredJson("get_translation", new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        translation = new
+                        {
+                            type = "string",
+                        }
+                    },
+                    required = new List<string> { "translation" },
+                    additionalProperties = false
+                })
+            })
+            .AppendSystemMessage("You are a helpful assistant that translates from English to French")
+            .AppendUserInput([new ChatMessagePart("Hello, how are you?")]);
+        
+        RestDataOrException<ChatRichResponse> response = await chat.GetResponseRichSafe();
+        
+        Console.WriteLine(response.Data.Text);
+    }
+    
+    [TornadoTest]
+    public static async Task ResponseJsonUsingChat()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+            {
+                Model = ChatModel.OpenAi.Gpt41.V41Mini,
+                MaxTokens = 2000,
+                ResponseRequestParameters = new ResponseRequest(),
+                ResponseFormat = ChatRequestResponseFormats.Json
+            })
+            .AppendSystemMessage("You are a helpful assistant that translates from English to French")
+            .AppendUserInput([new ChatMessagePart("Hello, how are you? (respond in JSON format in property french_translation)")]);
+        
+        RestDataOrException<ChatRichResponse> response = await chat.GetResponseRichSafe();
+        
+        Console.WriteLine(response.Data.Text);
+    }
+    
+    [TornadoTest]
     public static async Task StreamResponseSimpleTextUsingChat()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
@@ -185,7 +233,7 @@ public class ResponsesDemo : DemoBase
     }
     
     [TornadoTest]
-    public static async Task ResponseChatStreamingToolsUsingChat()
+    public static async Task ResponseStreamingToolsUsingChat()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {

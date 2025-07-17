@@ -194,12 +194,6 @@ public class ResponseRequest
     public string? User { get; set; }
 
     /// <summary>
-    /// An object specifying the format that the model must output. Used to enable JSON mode.
-    /// </summary>
-    [JsonProperty("response_format")]
-    public ResponseFormat? ResponseFormat { get; set; }
-
-    /// <summary>
     ///	Serializes the chat request into the request body, based on the conventions used by the LLM provider.
     /// </summary>
     public TornadoRequestContent Serialize(IEndpointProvider provider, ResponseRequestSerializeOptions? options = null)
