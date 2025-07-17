@@ -23,7 +23,7 @@ public class Conversation
 {
     private readonly ChatEndpoint endpoint;
     private readonly List<ChatMessage> messages;
-    private ResponsesEndpoint responsesEndpoint;
+    private readonly ResponsesEndpoint responsesEndpoint;
 
     /// <summary>
     ///     Creates a new conversation.
@@ -1314,6 +1314,11 @@ public class Conversation
                             }
                         }
 
+                        if (evt.EventType is ResponseEventTypes.ResponseFunctionCallArgumentsDone &&
+                            evt is ResponseEventFunctionCallArgumentsDone functionCall)
+                        {
+                            
+                        }
 
                     }
                 }, token);

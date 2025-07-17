@@ -3,7 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using LlmTornado.Chat;
+using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
+using LlmTornado.Common;
+using Newtonsoft.Json.Linq;
 
 namespace LlmTornado.Responses;
 
@@ -42,9 +45,27 @@ public static class ResponseHelpers
                 
                 items.Add(outputMessage);
             }
+            else if (chatMessage is {Role: ChatMessageRoles.User, ToolCalls.Count: > 0})
+            {
+                foreach (ToolCall toolCall in chatMessage.ToolCalls)
+                {
+                    items.Add(new FunctionToolCallInput(toolCall.Id ?? string.Empty,
+                        toolCall.FunctionCall.Name, toolCall.FunctionCall.Arguments));
+                }
+            }
+            else if (chatMessage.FunctionCall?.Result is not null)
+            {
+                items.Add(new FunctionToolCallOutput(chatMessage.FunctionCall.ToolCall?.Id ?? string.Empty,
+                    chatMessage.FunctionCall.Result.Content));
+            }
             else
             {
                 var inputMessage = new ResponseInputMessage();
+
+                if (chatMessage.Content is not null)
+                {
+                    inputMessage.Content.Add(new ResponseInputContentText(chatMessage.Content));
+                }
                 
                 if (chatMessage.Parts is not null)
                 {
@@ -79,7 +100,6 @@ public static class ResponseHelpers
                 
                 items.Add(inputMessage);
             }
-            
         }
         
         return items;
@@ -118,15 +138,11 @@ public static class ResponseHelpers
             Truncation = request.Truncation,
             ResponseFormat = request.ResponseFormat,
             ToolChoice = request.ToolChoice,
-            Tools = request.Tools,
+            Tools = request.Tools ?? chatRequest.Tools?.Select(ToResponseTool).Where(x => x != null).Cast<ResponseTool>().ToList(),
             Text = request.Text,
             Prompt = request.Prompt,
             Reasoning = request.Reasoning,
             Stream = false,
-        
-            // Note: Currently tools unsupported for cross-usage of chat and response API
-            // Tools = request.Tools ?? ConvertChatToolsToResponseTools(chatRequest.Tools),
-            // ToolChoice = request.ToolChoice ?? ConvertChatToolChoiceToResponseToolChoice(chatRequest.ToolChoice),
         };
     }
 
@@ -177,8 +193,54 @@ public static class ResponseHelpers
                     Content = choice.Message.ReasoningContent
                 }));
             }
+            
+            if (responseItem.Type == ResponseOutputTypes.FunctionCall && responseItem is ResponseFunctionToolCallItem functionItem)
+            {
+                choice.Message.ToolCalls ??= [];
+                choice.Message.ToolCallId = functionItem.CallId;
+                choice.Message.ToolCalls.Add(new ToolCall
+                {
+                    Id = functionItem.CallId,
+                    FunctionCall = new FunctionCall
+                    {
+                        Arguments = functionItem.Arguments,
+                        Name = functionItem.Name,
+                    }
+                });
+            }
         }
         
         return choice;
+    }
+
+    public static Tool? ToChatTool(ResponseTool responseTool)
+    {
+        if (responseTool.Type is "function" && responseTool is ResponseFunctionTool functionTool)
+        {
+            return new Tool
+            {
+                Strict = functionTool.Strict,
+                Function = new ToolFunction(functionTool.Name, functionTool.Description ?? string.Empty,
+                    functionTool.Parameters)
+            };
+        }
+
+        return null;
+    }
+    
+    public static ResponseTool? ToResponseTool(Tool tool)
+    {
+        if (tool.Function?.Parameters != null)
+        {
+            return new ResponseFunctionTool()
+            {
+                Name = tool.Function.Name,
+                Description = tool.Function.Description,
+                Parameters = JObject.FromObject(tool.Function.Parameters),
+                Strict = tool.Strict
+            };
+        }
+
+        return null;
     }
 }

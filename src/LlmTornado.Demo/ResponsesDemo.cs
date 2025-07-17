@@ -1,5 +1,6 @@
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
+using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Common;
 using LlmTornado.Images;
@@ -181,6 +182,124 @@ public class ResponsesDemo : DemoBase
                 return ValueTask.CompletedTask;
             }
         });
+    }
+    
+    [TornadoTest]
+    public static async Task ResponseChatStreamingToolsUsingChat()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.OpenAi.Gpt41.V41Mini,
+            Tools =
+            [
+                new Tool(new ToolFunction("get_weather", "gets the current weather in a given city", new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        location = new
+                        {
+                            type = "string",
+                            description = "The city for which the weather information is required."
+                        }
+                    },
+                    required = new List<string> { "city" }
+                }))
+            ],
+            ResponseRequestParameters = new ResponseRequest()
+        });
+        
+        chat.OnAfterToolsCall = async (result) =>
+        {
+            Console.WriteLine();
+            await GetNextResponse();
+        };
+        
+        chat.AppendUserInput([
+            new ChatMessagePart("Check the weather today in Paris")
+        ]);
+
+        await GetNextResponse();
+
+        async Task GetNextResponse()
+        {
+            await chat.StreamResponseRich(new ChatStreamEventHandler
+            {
+                FunctionCallHandler = (fns) =>
+                {
+                    foreach (FunctionCall fn in fns)
+                    {
+                        fn.Result = new FunctionResult(fn.Name, new
+                        {
+                            result = "ok",
+                            weather = "A mild rain is expected around noon."
+                        });
+                    }
+                
+                    return ValueTask.CompletedTask;
+                },
+                MessageTokenHandler = (token) =>
+                {
+                    Console.Write(token);
+                    return ValueTask.CompletedTask;
+                },
+                BlockFinishedHandler = (block) =>
+                {
+                    Console.WriteLine();
+                    return ValueTask.CompletedTask;
+                }
+            });
+        }
+    }
+    
+    [TornadoTest]
+    public static async Task ResponseChatToolsUsingChat()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.OpenAi.Gpt41.V41,
+            ResponseRequestParameters = new ResponseRequest(),
+            Tools = [
+                new Tool(new ToolFunction("get_weather", "gets the current weather", new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        location = new
+                        {
+                            type = "string",
+                            description = "The location for which the weather information is required."
+                        }
+                    },
+                    required = new List<string> { "location" }
+                }), false)
+            ],
+            ToolChoice = new OutboundToolChoice("get_weather")
+        });
+
+        chat.OnAfterToolsCall = async (result) =>
+        {
+            chat.RequestParameters.ToolChoice = null; // stop forcing the model to use the get_weather tool
+            RestDataOrException<ChatRichResponse> responseResult = await chat.GetResponseRichSafe();
+            Console.WriteLine(responseResult.Data.Text);;
+        };
+        
+        chat.AppendMessage(ChatMessageRoles.System, "You are a helpful assistant");
+        Guid msgId = Guid.NewGuid();
+        chat.AppendMessage(ChatMessageRoles.User, "Fetch the weather information for Prague and Paris.", msgId);
+
+        RestDataOrException<ChatRichResponse> response = await chat.GetResponseRichSafe(functions =>
+        {
+            foreach (FunctionCall fn in functions)
+            {
+                fn.Result = fn.Arguments.Contains("Prague") ? new FunctionResult(fn.Name, "Sunny all day") : new FunctionResult(fn.Name, "A mild rain is expected around noon.");
+            }
+
+            return ValueTask.CompletedTask;
+        });
+
+        string r = response.Data.GetText();
+        Console.WriteLine(r);
     }
     
     [TornadoTest]

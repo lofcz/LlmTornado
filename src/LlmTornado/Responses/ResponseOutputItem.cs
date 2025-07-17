@@ -279,7 +279,7 @@ public class ResponseFunctionToolCallItem : IResponseOutputItem
 {
     /// <inheritdoc/>
     [JsonProperty("type")]
-    public string Type { get; set; } = "function_call";
+    public string Type { get; set; } = ResponseOutputTypes.FunctionCall;
 
     /// <summary>
     /// The unique ID of the function tool call.

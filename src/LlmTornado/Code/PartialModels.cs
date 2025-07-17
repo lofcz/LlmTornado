@@ -2037,4 +2037,5 @@ internal class FunctionResultBlockJsonConverter : JsonConverter<IFunctionResultB
 public static class ResponseOutputTypes
 {
     public static string Reasoning => "reasoning";
+    public static string FunctionCall => "function_call";
 }

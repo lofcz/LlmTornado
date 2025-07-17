@@ -293,17 +293,17 @@ public class ChatUsage : Usage
 		
 		CompletionTokensDetails = new ChatUsageTokenDetails
 		{
-			ReasoningTokens = responseUsage.OutputTokenDetails.ReasoningTokens
+			ReasoningTokens = responseUsage.OutputTokenDetails?.ReasoningTokens ?? 0
 		};
 		
 		PromptTokenDetails = new ChatPromptTokenDetails
 		{
-			TextTokens = responseUsage.InputTokenDetails.TextTokens,
-			CachedTokens = responseUsage.InputTokenDetails.CachedTokens,
-			AudioTokens = responseUsage.InputTokenDetails.AudioTokens,
+			TextTokens = responseUsage.InputTokenDetails?.TextTokens,
+			CachedTokens = responseUsage.InputTokenDetails?.CachedTokens,
+			AudioTokens = responseUsage.InputTokenDetails?.AudioTokens,
 		};
 		
-		CacheReadTokens = responseUsage.InputTokenDetails.CachedTokens;
+		CacheReadTokens = responseUsage.InputTokenDetails?.CachedTokens;
 		Provider = LLmProviders.OpenAi;
 	}
 
