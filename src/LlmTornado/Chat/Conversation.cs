@@ -672,7 +672,41 @@ public class Conversation
     }
 
     /// <summary>
-    /// Serializes the conversation, and returns the request that would be sent outbound
+    /// Determines the appropriate capability endpoint for the given chat request.
+    /// </summary>
+    /// <param name="req">
+    /// The chat request containing the parameters and model information used to determine the suitable endpoint.
+    /// </param>
+    /// <returns>
+    /// A <see cref="CapabilityEndpoints" /> value that represents the endpoint to be used for the given request.
+    /// </returns>
+    private CapabilityEndpoints GetCapabilityEndpoint(ChatRequest req)
+    {
+        if (req.UseResponseEndpointUpcast is false || req.Model?.Provider is not LLmProviders.OpenAi || req.Model.EndpointCapabilities is null || req.ResponseRequestParameters is null)
+        {
+            return CapabilityEndpoints.Chat;
+        }
+
+        //automatically upcast in case /chat endpoint is not available and only /response is
+        if (req.Model.EndpointCapabilities.Contains(ChatModelEndpointCapabilities.Responses) &&
+            !req.Model.EndpointCapabilities.Contains(ChatModelEndpointCapabilities.Chat))
+        {
+            return CapabilityEndpoints.Responses;
+        }
+
+
+        //upcast to the response endpoint if the user enabled it, provided a parameter for response request and model supports that feature
+        if (req.Model.EndpointCapabilities.Contains(ChatModelEndpointCapabilities.Responses) &&
+            req.UseResponseEndpointUpcast is not false && req.ResponseRequestParameters is not null)
+        {
+            return CapabilityEndpoints.Responses;
+        }
+
+        return CapabilityEndpoints.Chat;
+    }
+    
+    /// <summary>
+    /// Serializes the conversation and returns the request that would be sent outbound
     /// </summary>
     /// <returns></returns>
     public TornadoRequestContent Serialize(ChatRequestSerializeOptions? options = null)
@@ -680,11 +714,12 @@ public class Conversation
         ChatRequest req = new ChatRequest(this, RequestParameters)
         {
             Messages = messages,
-            Stream = options?.Stream
+            Stream = options?.Stream,
         };
         
+        CapabilityEndpoints capabilityEndpoint = GetCapabilityEndpoint(req);
         IEndpointProvider provider = endpoint.Api.GetProvider(Model);
-        return req.Serialize(provider, options);
+        return req.Serialize(provider, capabilityEndpoint, options);
     }
     
     /// <summary>
@@ -713,8 +748,9 @@ public class Conversation
 
         ChatResult chatResult;
         IHttpCallResult httpResult;
+        CapabilityEndpoints capabilityEndpoint = GetCapabilityEndpoint(req);
         
-        if (req.ResponseRequestParameters is not null)
+        if (capabilityEndpoint is CapabilityEndpoints.Responses && req.ResponseRequestParameters is not null)
         {
             HttpCallResult<ResponseResult> result = await responsesEndpoint.CreateResponseSafe(ResponseHelpers.ToResponseRequest(req.ResponseRequestParameters, req));
             
@@ -886,10 +922,11 @@ public class Conversation
         };
 
         ChatResult? res;
-
-        if (req.ResponseRequestParameters is not null)
+        CapabilityEndpoints capabilityEndpoint = GetCapabilityEndpoint(req);
+        
+        if (capabilityEndpoint is CapabilityEndpoints.Responses && req.ResponseRequestParameters is not null)
         {
-            var result = await responsesEndpoint.CreateResponse(ResponseHelpers.ToResponseRequest(req.ResponseRequestParameters, req));
+            ResponseResult result = await responsesEndpoint.CreateResponse(ResponseHelpers.ToResponseRequest(req.ResponseRequestParameters, req));
             res = ResponseHelpers.ToChatResult(result);
         }
         else
@@ -1252,7 +1289,9 @@ public class Conversation
         bool isFirstMessageToken = true;
         int tokenIndex = 0;
 
-        if (req.ResponseRequestParameters is not null)
+        CapabilityEndpoints capabilityEndpoint = GetCapabilityEndpoint(req);
+        
+        if (capabilityEndpoint is CapabilityEndpoints.Responses && req.ResponseRequestParameters is not null)
         {
             await responsesEndpoint.StreamResponseRich(
                 ResponseHelpers.ToResponseRequest(req.ResponseRequestParameters, req), new ResponseStreamEventHandler

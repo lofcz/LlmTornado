@@ -103,6 +103,7 @@ public class ChatRequest : IModelRequest
 		WebSearchOptions = basedOn.WebSearchOptions;
 		OnSerialize = basedOn.OnSerialize;
 		ResponseRequestParameters = basedOn.ResponseRequestParameters;
+		UseResponseEndpointUpcast = basedOn.UseResponseEndpointUpcast;
 	}
 
 	/// <summary>
@@ -426,6 +427,12 @@ public class ChatRequest : IModelRequest
 	[JsonIgnore]
 	internal Conversation? OwnerConversation { get; set; }
 	
+	/// <summary>
+	/// Indicates whether the request will be upcasted to OpenAI response endpoint, if supported. Defaults to true, if the model supports only response endpoint
+	/// </summary>
+	[JsonIgnore]
+	public bool? UseResponseEndpointUpcast { get; set; }
+	
 	internal void OverrideUrl(string url)
 	{
 		UrlOverride = url;
@@ -548,13 +555,14 @@ public class ChatRequest : IModelRequest
 	/// Serializes the request with debugging options
 	/// </summary>
 	/// <param name="provider"></param>
+	/// <param name="capabilityEndpoint"></param>
 	/// <param name="options"></param>
 	/// <returns></returns>
-	public TornadoRequestContent Serialize(IEndpointProvider provider, ChatRequestSerializeOptions? options)
+	public TornadoRequestContent Serialize(IEndpointProvider provider, CapabilityEndpoints capabilityEndpoint, ChatRequestSerializeOptions? options)
 	{
-		TornadoRequestContent serialized = Serialize(provider, options?.Pretty ?? false);
+		TornadoRequestContent serialized = Serialize(provider, capabilityEndpoint, options?.Pretty ?? false);
 		
-		string finalUrl = EndpointBase.BuildRequestUrl(serialized.Url, provider, CapabilityEndpoints.Chat, Model);
+		string finalUrl = EndpointBase.BuildRequestUrl(serialized.Url, provider, capabilityEndpoint, Model);
 		serialized.Url = finalUrl;
 
 		if (options?.IncludeHeaders ?? false)
@@ -566,7 +574,7 @@ public class ChatRequest : IModelRequest
 		return serialized;
 	}
 
-	private TornadoRequestContent Serialize(IEndpointProvider provider, bool pretty)
+	private TornadoRequestContent Serialize(IEndpointProvider provider, CapabilityEndpoints capabilityEndpoint, bool pretty)
 	{
 		if (OwnerConversation is not null)
 		{
@@ -605,7 +613,7 @@ public class ChatRequest : IModelRequest
 		TornadoRequestContent serialized = SerializeMap.TryGetValue(provider.Provider, out Func<ChatRequest, IEndpointProvider, JsonSerializerSettings?, string>? serializerFn) ? new TornadoRequestContent(serializerFn.Invoke(this, provider, pretty ? new JsonSerializerSettings
 		{
 			Formatting = Formatting.Indented
-		} : null), Model, UrlOverride, provider, CapabilityEndpoints.Chat) : new TornadoRequestContent(string.Empty, Model, UrlOverride, provider, CapabilityEndpoints.Chat);
+		} : null), Model, UrlOverride, provider, capabilityEndpoint) : new TornadoRequestContent(string.Empty, Model, UrlOverride, provider, CapabilityEndpoints.Chat);
 		
 		if (restoreStreamOptions)
 		{
@@ -614,15 +622,16 @@ public class ChatRequest : IModelRequest
 		
 		return serialized;
 	}
-	
-	/// <summary>
-	///		Serializes the chat request into the request body, based on the conventions used by the LLM provider.
-	/// </summary>
-	/// <param name="provider"></param>
-	/// <returns></returns>
-	public TornadoRequestContent Serialize(IEndpointProvider provider)
+
+	///  <summary>
+	/// 		Serializes the chat request into the request body, based on the conventions used by the LLM provider.
+	///  </summary>
+	///  <param name="provider"></param>
+	///  <param name="capabilityEndpoint"></param>
+	///  <returns></returns>
+	public TornadoRequestContent Serialize(IEndpointProvider provider, CapabilityEndpoints capabilityEndpoint)
 	{
-		return Serialize(provider, false);
+		return Serialize(provider, capabilityEndpoint, false);
 	}
 	
 	internal class ModalitiesJsonConverter : JsonConverter<List<ChatModelModalities>>

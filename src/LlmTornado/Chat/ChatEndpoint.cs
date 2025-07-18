@@ -102,7 +102,7 @@ public class ChatEndpoint : EndpointBase
     {
         request.Stream = null;
         IEndpointProvider provider = Api.GetProvider(request.Model ?? ChatModel.OpenAi.Gpt35.Turbo);
-        TornadoRequestContent requestBody = request.Serialize(provider);
+        TornadoRequestContent requestBody = request.Serialize(provider, CapabilityEndpoints.Chat);
         HttpCallResult<ChatResult> result = await HttpPost<ChatResult>(provider, Endpoint, requestBody.Url, requestBody.Body, request.Model, request.CancellationToken).ConfigureAwait(false);
         
         if (result.Exception is not null)
@@ -163,7 +163,7 @@ public class ChatEndpoint : EndpointBase
     {
         request.Stream = null;
         IEndpointProvider provider = Api.GetProvider(request.Model ?? ChatModel.OpenAi.Gpt35.Turbo);
-        TornadoRequestContent requestBody = request.Serialize(provider);
+        TornadoRequestContent requestBody = request.Serialize(provider, CapabilityEndpoints.Chat);
         HttpCallResult<ChatResult> result = await HttpPost<ChatResult>(provider, Endpoint, requestBody.Url, requestBody.Body, request.Model, request.CancellationToken).ConfigureAwait(false);
         NormalizeChatResult(result);
         
@@ -360,7 +360,7 @@ public class ChatEndpoint : EndpointBase
             request.StreamOptions = null;
         }
         
-        TornadoRequestContent requestBody = request.Serialize(provider);
+        TornadoRequestContent requestBody = request.Serialize(provider, CapabilityEndpoints.Chat);
         await using TornadoStreamRequest tornadoStreamRequest = await HttpStreamingRequestData(Api.GetProvider(request.Model ?? ChatModel.OpenAi.Gpt35.Turbo), Endpoint, requestBody.Url, queryParams: null, HttpVerbs.Post, requestBody.Body, request.Model, request.CancellationToken);
 
         if (tornadoStreamRequest.Exception is not null)
