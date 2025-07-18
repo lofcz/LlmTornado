@@ -118,9 +118,7 @@ public static class ResponseHelpers
         {
             Model = request.Model ?? chatRequest.Model,
             Background = request.Background,
-            Instructions = request.Instructions ??
-                           chatRequest.Messages?.FirstOrDefault(x => x.Role is ChatMessageRoles.System)?.Content ??
-                           string.Empty,
+            Instructions = request.Instructions ?? chatRequest.Messages?.FirstOrDefault(x => x.Role is ChatMessageRoles.System)?.Content,
             InputItems = request.InputItems ?? ToReponseInputItems(chatRequest.Messages ?? []),
             Temperature = request.Temperature ?? chatRequest.Temperature,
             MaxOutputTokens = request.MaxOutputTokens ?? chatRequest.MaxTokens,
