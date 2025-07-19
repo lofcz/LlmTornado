@@ -56,6 +56,6 @@ public class SerializeDemo : DemoBase
                      }
                      """;
         
-        ChatResult? result = new AnthropicEndpointProvider().InboundMessage<ChatResult>(str, null);
+        ChatResult? result = new AnthropicEndpointProvider().InboundMessage<ChatResult>(str, null, null);
     }
 }

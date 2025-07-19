@@ -487,18 +487,18 @@ public class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
         
     }
 
-    private static readonly Dictionary<Type, Func<string, string?, object?>> inboundMessageHandlers = new Dictionary<Type, Func<string, string?, object?>>
+    private static readonly Dictionary<Type, Func<string, string?, object?, object?>> inboundMessageHandlers = new Dictionary<Type, Func<string, string?, object?, object?>>
     {
-        { typeof(ChatResult), (jsonData, postData) => ChatResult.Deserialize(LLmProviders.Cohere, jsonData, postData) },
-        { typeof(EmbeddingResult), (jsonData, postData) => EmbeddingResult.Deserialize(LLmProviders.Cohere, jsonData, postData) },
-        { typeof(RetrievedModelsResult), (jsonData, postData) => RetrievedModelsResult.Deserialize(LLmProviders.Cohere, jsonData, postData) }
+        { typeof(ChatResult), (jsonData, postData, req) => ChatResult.Deserialize(LLmProviders.Cohere, jsonData, postData, req) },
+        { typeof(EmbeddingResult), (jsonData, postData, req) => EmbeddingResult.Deserialize(LLmProviders.Cohere, jsonData, postData) },
+        { typeof(RetrievedModelsResult), (jsonData, postData, req) => RetrievedModelsResult.Deserialize(LLmProviders.Cohere, jsonData, postData) }
     };
     
-    public override T? InboundMessage<T>(string jsonData, string? postData) where T : default
+    public override T? InboundMessage<T>(string jsonData, string? postData, object? requestObject) where T : default
     {
-        if (inboundMessageHandlers.TryGetValue(typeof(T), out Func<string, string?, object?>? fn))
+        if (inboundMessageHandlers.TryGetValue(typeof(T), out Func<string, string?, object?, object?>? fn))
         {
-            object? result = fn.Invoke(jsonData, postData);
+            object? result = fn.Invoke(jsonData, postData, requestObject);
 
             if (result is null)
             {
@@ -511,7 +511,7 @@ public class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
         return default;
     }
     
-    public override object? InboundMessage(Type type, string jsonData, string? postData)
+    public override object? InboundMessage(Type type, string jsonData, string? postData, object? requestObject)
     {
         return JsonConvert.DeserializeObject(jsonData, type);
     }

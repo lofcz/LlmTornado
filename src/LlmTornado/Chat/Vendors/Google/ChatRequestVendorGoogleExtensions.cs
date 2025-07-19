@@ -40,6 +40,12 @@ public class ChatRequestVendorGoogleExtensions
     public ChatRequestVendorGoogleSafetyFilters? SafetyFilters { get; set; }
     
     /// <summary>
+    /// Whether to include thoughts - applies only to reasoning models. Tornado sets this to "true" when null.
+    /// </summary>
+    [JsonIgnore]
+    public bool? IncludeThoughts { get; set; }
+    
+    /// <summary>
     /// Empty Google extensions.
     /// </summary>
     public ChatRequestVendorGoogleExtensions()

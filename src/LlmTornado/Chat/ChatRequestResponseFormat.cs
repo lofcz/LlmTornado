@@ -40,7 +40,8 @@ public class ChatRequestResponseFormats
     };
 
     /// <summary>
-    ///     Signals output should be JSON. The string "JSON" needs to be included in either system or user message in the conversation.
+    ///     Signals output should be JSON. The string "JSON" needs to be included in either system or user message in the conversation.<br/>
+    ///     <b>This is legacy tech. Consider switching to <see cref="ChatRequestResponseFormats.StructuredJson"/>.</b>
     /// </summary>
     public static readonly ChatRequestResponseFormats Json = new ChatRequestResponseFormats
     {

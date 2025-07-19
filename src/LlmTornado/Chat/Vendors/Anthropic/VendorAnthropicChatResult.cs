@@ -162,7 +162,7 @@ internal class VendorAnthropicChatResult : VendorChatResult
     [JsonProperty("usage")]
     public VendorAnthropicUsage Usage { get; set; }
     
-    public override ChatResult ToChatResult(string? postData)
+    public override ChatResult ToChatResult(string? postData, object? chatRequest)
     {
         ChatResult result = new ChatResult
         {

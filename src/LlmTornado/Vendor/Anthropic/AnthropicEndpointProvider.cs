@@ -688,17 +688,17 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
         
     }
     
-    public override T? InboundMessage<T>(string jsonData, string? postData) where T : default
+    public override T? InboundMessage<T>(string jsonData, string? postData, object? requestObject) where T : default
     {
         if (typeof(T) == typeof(ChatResult))
         {
-            return (T?)(dynamic)ChatResult.Deserialize(LLmProviders.Anthropic, jsonData, postData);
+            return (T?)(dynamic)ChatResult.Deserialize(LLmProviders.Anthropic, jsonData, postData, requestObject);
         }
         
         return JsonConvert.DeserializeObject<T>(jsonData);
     }
     
-    public override object? InboundMessage(Type type, string jsonData, string? postData)
+    public override object? InboundMessage(Type type, string jsonData, string? postData, object? requestObject)
     {
         return JsonConvert.DeserializeObject(jsonData, type);
     }

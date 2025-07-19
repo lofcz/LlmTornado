@@ -95,11 +95,10 @@ public partial class VendorAnthropicChatRequestMessageContent
                     
                     writer.WritePropertyName("tool_use_id");
                     writer.WriteValue(block.ToolCallId);
-
+                    
                     if (block.SourceMessage.FunctionCall?.Result?.RawContentBlocks is not null)
                     {
-                        writer.WritePropertyName("content");
-                        
+                        writer.WritePropertyName("content");    
                         writer.WriteStartArray();
 
                         foreach (IFunctionResultBlock resultBlock in block.SourceMessage.FunctionCall.Result.RawContentBlocks)
@@ -111,6 +110,8 @@ public partial class VendorAnthropicChatRequestMessageContent
                     }
                     else if (block.Content is not null)
                     {
+                        writer.WritePropertyName("content");
+                        
                         if (block.Content.TrimStart().StartsWith('"'))
                         {
                             writer.WriteRawValue(block.Content);

@@ -23,12 +23,12 @@ public interface IEndpointProvider
     /// <summary>
     /// Invoked to parse inbound messages.
     /// </summary>
-    public T? InboundMessage<T>(string jsonData, string? postData);
+    public T? InboundMessage<T>(string jsonData, string? postData, object? request);
     
     /// <summary>
     /// Invoked to parse inbound messages.
     /// </summary>
-    public object? InboundMessage(Type type, string jsonData, string? postData);
+    public object? InboundMessage(Type type, string jsonData, string? postData, object? request);
 
     /// <summary>
     /// Invoked to parse headers of inbound requests.

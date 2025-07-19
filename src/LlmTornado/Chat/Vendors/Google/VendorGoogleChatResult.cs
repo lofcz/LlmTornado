@@ -51,7 +51,7 @@ internal class VendorGoogleChatResult : VendorChatResult
     [JsonProperty("promptFeedback")]
     public VendorGooglePromptFeedback? PromptFeedback { get; set; }
     
-    public override ChatResult ToChatResult(string? postData)
+    public override ChatResult ToChatResult(string? postData, object? requestObject)
     {
         ChatResult result = new ChatResult
         {
@@ -69,7 +69,7 @@ internal class VendorGoogleChatResult : VendorChatResult
 
         foreach (VendorGoogleChatResultMessage candidate in Candidates)
         {
-            ChatMessage msg = candidate.Content.ToChatMessage(request);
+            ChatMessage msg = requestObject is ChatRequest cr ? candidate.Content.ToChatMessage(request, cr) : candidate.Content.ToChatMessage(request, null);
             
             result.Choices.Add(new ChatChoice
             {

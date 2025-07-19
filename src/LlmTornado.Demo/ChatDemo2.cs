@@ -1609,6 +1609,66 @@ public partial class ChatDemo : DemoBase
     }
     
     [TornadoTest]
+    public static async Task GoogleStructuredJson()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Google.Gemini.Gemini2Flash001,
+            ResponseFormat = ChatRequestResponseFormats.StructuredJson("get_weather", new
+            {
+                type = "object",
+                properties = new
+                {
+                    city = new
+                    {
+                        type = "string"
+                    }
+                },
+                required = new List<string> { "city" }
+            })
+        });
+        chat.AppendUserInput("what is 2+2, also what is the weather in prague"); // user asks something unrelated, but we force the model to use the tool
+        
+        ChatRichResponse response = await chat.GetResponseRich();
+        Console.WriteLine(response);
+    }
+    
+    [TornadoTest]
+    public static async Task GoogleLegacyJson()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Google.Gemini.Gemini2Flash001,
+            ResponseFormat = ChatRequestResponseFormats.Json
+        });
+        chat.AppendUserInput("what is 2+2, also what is the weather in prague. Respond in the JSON format.");
+        
+        ChatRichResponse response = await chat.GetResponseRich();
+        Console.WriteLine(response);
+    }
+    
+    [TornadoTest]
+    public static async Task GoogleReasoningDisableThoughts()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Google.Gemini.Gemini25Flash,
+            ResponseFormat = ChatRequestResponseFormats.Json,
+            VendorExtensions = new ChatRequestVendorExtensions(new ChatRequestVendorGoogleExtensions
+            {
+                SafetyFilters = ChatRequestVendorGoogleSafetyFilters.Default,
+                IncludeThoughts = false
+            }),
+            ReasoningBudget = 128
+        });
+        
+        chat.AppendUserInput("what is 2+2, also what is the weather in prague. Respond in the JSON format.");
+        
+        ChatRichResponse response = await chat.GetResponseRich();
+        Console.WriteLine(response);
+    }
+    
+    [TornadoTest]
     public static async Task AnthropicFunctionsRichImage()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest

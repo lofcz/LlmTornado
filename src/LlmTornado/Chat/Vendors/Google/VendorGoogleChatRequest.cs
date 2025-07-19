@@ -484,7 +484,7 @@ internal class VendorGoogleChatRequest
             }
         }
 
-        public ChatMessage ToChatMessage(VendorGoogleChatRequest? request)
+        public ChatMessage ToChatMessage(VendorGoogleChatRequest? request, ChatRequest? chatRequest)
         {
             ChatMessage msg = new ChatMessage
             {
@@ -493,6 +493,7 @@ internal class VendorGoogleChatRequest
 
             StringBuilder sb = new StringBuilder();
             bool roleSolved = false;
+            bool contentSolved = false;
             
             foreach (VendorGoogleChatRequestMessagePart x in Parts)
             {
@@ -505,7 +506,7 @@ internal class VendorGoogleChatRequest
                 {
                     if (request?.GenerationConfig?.ResponseMimeType is "application/json")
                     {
-                        string? fnName = request.ToolConfig?.FunctionConfig?.AllowedFunctionNames?.FirstOrDefault();
+                        string? fnName = chatRequest?.ResponseFormat?.Schema?.Name ?? request.ToolConfig?.FunctionConfig?.AllowedFunctionNames?.FirstOrDefault();
                         
                         msg.ToolCalls ??= [];
                         msg.ToolCalls.Add(new ToolCall
@@ -517,6 +518,8 @@ internal class VendorGoogleChatRequest
                                 Arguments = x.Text ?? string.Empty
                             }
                         });
+
+                        contentSolved = true;
                     }
                     else
                     {
@@ -525,7 +528,11 @@ internal class VendorGoogleChatRequest
                 }
             }
 
-            msg.Content = sb.ToString();
+            if (!contentSolved)
+            {
+                msg.Content = sb.ToString();   
+            }
+            
             msg.Role = Role is "user" ? ChatMessageRoles.User : ChatMessageRoles.Assistant;
             return msg;
         }
@@ -685,7 +692,14 @@ internal class VendorGoogleChatRequest
         
     }
 
-    public static Tuple<List<VendorGoogleChatTool>?, VendorGoogleChatToolConfig?, VendorGoogleChatRequestGenerationConfig?> GetToolsAndToolChoice(List<Tool>? tools, OutboundToolChoice? outboundToolChoice)
+    public enum VendorGoogleRequestToolsResponseMode
+    {
+        Default,
+        StructuredJson,
+        Json
+    }
+
+    public static Tuple<List<VendorGoogleChatTool>?, VendorGoogleChatToolConfig?, VendorGoogleChatRequestGenerationConfig?> GetToolsAndToolChoice(ChatRequestResponseFormats? responseFormat, List<Tool>? tools, OutboundToolChoice? outboundToolChoice)
     {
         if (tools is null || tools.Count is 0)
         {
@@ -804,7 +818,7 @@ internal class VendorGoogleChatRequest
             GenerationConfig.ThinkingConfig = new VendorGoogleChatRequestThinkingConfig
             {
                 ThinkingBudget = clamped,
-                IncludeThoughts = clamped != 0
+                IncludeThoughts = clamped is not 0 && (request.VendorExtensions?.Google?.IncludeThoughts ?? true)
             };
         } 
 
@@ -831,7 +845,7 @@ internal class VendorGoogleChatRequest
         
         if (request.Tools?.Count > 0)
         {
-            Tuple<List<VendorGoogleChatTool>?, VendorGoogleChatToolConfig?, VendorGoogleChatRequestGenerationConfig?> configUpdate = GetToolsAndToolChoice(request.Tools, request.ToolChoice);
+            Tuple<List<VendorGoogleChatTool>?, VendorGoogleChatToolConfig?, VendorGoogleChatRequestGenerationConfig?> configUpdate = GetToolsAndToolChoice(request.ResponseFormat, request.Tools, request.ToolChoice);
 
             Tools = configUpdate.Item1;
             ToolConfig = configUpdate.Item2;
@@ -848,7 +862,7 @@ internal class VendorGoogleChatRequest
             {
                 string fnName = request.ResponseFormat.Schema?.Name ?? string.Empty;
                 
-                Tuple<List<VendorGoogleChatTool>?, VendorGoogleChatToolConfig?, VendorGoogleChatRequestGenerationConfig?> configUpdate = GetToolsAndToolChoice([
+                Tuple<List<VendorGoogleChatTool>?, VendorGoogleChatToolConfig?, VendorGoogleChatRequestGenerationConfig?> configUpdate = GetToolsAndToolChoice(request.ResponseFormat, request.ResponseFormat.Type is ChatRequestResponseFormatTypes.Json ? null : [
                     new Tool(new ToolFunction(fnName, string.Empty, request.ResponseFormat.Schema?.Schema ?? new
                     {
                         
@@ -862,7 +876,7 @@ internal class VendorGoogleChatRequest
                 } : null));
                 
                 Tools = configUpdate.Item1;
-                ToolConfig = configUpdate.Item2;
+                ToolConfig = null; // configUpdate.Item2;
 
                 if (configUpdate.Item3 is not null)
                 {

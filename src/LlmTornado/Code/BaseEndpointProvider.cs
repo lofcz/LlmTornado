@@ -42,8 +42,8 @@ public abstract class BaseEndpointProvider : IEndpointProviderExtended
     }
 
     public abstract string ApiUrl(CapabilityEndpoints endpoint, string? url, IModel? model = null);
-    public abstract T? InboundMessage<T>(string jsonData, string? postData);
-    public abstract object? InboundMessage(Type type, string jsonData, string? postData);
+    public abstract T? InboundMessage<T>(string jsonData, string? postData, object? request);
+    public abstract object? InboundMessage(Type type, string jsonData, string? postData, object? request);
     public abstract void ParseInboundHeaders<T>(T res, HttpResponseMessage response) where T : ApiResultBase;
     public abstract void ParseInboundHeaders(object? res, HttpResponseMessage response);
     public abstract IAsyncEnumerable<object?> InboundStream(Type type, StreamReader streamReader);

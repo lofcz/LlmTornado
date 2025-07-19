@@ -516,11 +516,11 @@ public class McpContentBlockEmbeddedResourceContentsUnknown : McpContentBlockEmb
 public class Tool
 {
     [JsonIgnore]
-    public Delegate? Delegate { get; init; }
-
-    internal Tool(Delegate @delegate, string? name = null, string? description = null, bool? strict = null)
+    public Delegate? Delegate { get; }
+    
+    internal Tool(Delegate function, string? name = null, string? description = null, bool? strict = null)
     {
-        Delegate = @delegate;
+        Delegate = function;
         Strict = strict;
     }
     

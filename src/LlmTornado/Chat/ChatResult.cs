@@ -71,14 +71,14 @@ public class ChatResult : ApiResultBase
         return Choices is { Count: > 0 } ? Choices[0].ToString() : null;
     }
 
-	internal static ChatResult? Deserialize(LLmProviders provider, string jsonData, string? postData)
+	internal static ChatResult? Deserialize(LLmProviders provider, string jsonData, string? postData, object? requestObj)
 	{
 		return provider switch
 		{
 			LLmProviders.OpenAi => JsonConvert.DeserializeObject<ChatResult>(jsonData),
-			LLmProviders.Anthropic => JsonConvert.DeserializeObject<VendorAnthropicChatResult>(jsonData)?.ToChatResult(postData),
-			LLmProviders.Cohere => JsonConvert.DeserializeObject<VendorCohereChatResult>(jsonData)?.ToChatResult(postData),
-			LLmProviders.Google => JsonConvert.DeserializeObject<VendorGoogleChatResult>(jsonData)?.ToChatResult(postData),
+			LLmProviders.Anthropic => JsonConvert.DeserializeObject<VendorAnthropicChatResult>(jsonData)?.ToChatResult(postData, requestObj),
+			LLmProviders.Cohere => JsonConvert.DeserializeObject<VendorCohereChatResult>(jsonData)?.ToChatResult(postData, requestObj),
+			LLmProviders.Google => JsonConvert.DeserializeObject<VendorGoogleChatResult>(jsonData)?.ToChatResult(postData, requestObj),
 			_ => JsonConvert.DeserializeObject<ChatResult>(jsonData)
 		};
 	}

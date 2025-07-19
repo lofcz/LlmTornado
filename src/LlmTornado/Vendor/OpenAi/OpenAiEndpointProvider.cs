@@ -161,7 +161,7 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
         }
     }
     
-    public override T? InboundMessage<T>(string jsonData, string? postData) where T : default
+    public override T? InboundMessage<T>(string jsonData, string? postData, object? requestObject) where T : default
     {
         return Provider switch
         {
@@ -181,7 +181,7 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
         return JsonConvert.DeserializeObject<T>(jsonData);
     }
     
-    public override object? InboundMessage(Type type, string jsonData, string? postData)
+    public override object? InboundMessage(Type type, string jsonData, string? postData, object? requestObject)
     {
         return JsonConvert.DeserializeObject(jsonData, type);
     }
