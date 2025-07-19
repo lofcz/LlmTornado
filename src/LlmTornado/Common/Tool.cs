@@ -559,6 +559,9 @@ public class Tool
 
     private ConcurrentDictionary<int, ToolFunction>? serializedDict = [];
 
+    /// <summary>
+    /// Serializes tool for a given provider.
+    /// </summary>
     public void Serialize(IEndpointProvider provider)
     {
         if (Delegate is null)

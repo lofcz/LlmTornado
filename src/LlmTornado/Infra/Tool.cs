@@ -318,7 +318,7 @@ public class ToolParamString : ToolParamTypeBase
 {
     public override string Type => "string";
  
-    public ToolParamString(string description, bool required)
+    public ToolParamString(string? description, bool required)
     {
         Description = description;
         Required = required;
@@ -329,7 +329,7 @@ public class ToolParamError : ToolParamTypeBase
 {
     public override string Type => "";
  
-    public ToolParamError(string description, bool required)
+    public ToolParamError(string? description, bool required)
     {
         Description = description;
         Required = required;
@@ -390,7 +390,12 @@ public class ToolParamEnum : ToolParamTypeBase
 
     public override object Compile(Tool sourceFn, ToolMeta meta)
     {
-        return new { type = Type, description = Description, @enum = EnumValues };
+        return new
+        {
+            type = Type, 
+            description = Description,
+            @enum = EnumValues
+        };
     }
 }
 
