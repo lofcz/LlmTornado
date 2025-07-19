@@ -204,7 +204,11 @@ public partial class ChatDemo : DemoBase
                     },
                     required = new List<string> { "id" }
                 }), true)
-            ]
+            ],
+            VendorExtensions = new ChatRequestVendorExtensions(new ChatRequestVendorGoogleExtensions
+            {
+                SafetyFilters = ChatRequestVendorGoogleSafetyFilters.Default
+            })
         });
         chat.AppendUserInput("Contents of order with id A7GDX?");
 

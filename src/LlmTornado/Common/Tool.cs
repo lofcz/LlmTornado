@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Threading;
@@ -8,6 +10,7 @@ using System.Threading.Tasks;
 using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
+using LlmTornado.Infra;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using JsonSerializer = Newtonsoft.Json.JsonSerializer;
@@ -512,6 +515,15 @@ public class McpContentBlockEmbeddedResourceContentsUnknown : McpContentBlockEmb
 /// </summary>
 public class Tool
 {
+    [JsonIgnore]
+    public Delegate? Delegate { get; init; }
+
+    internal Tool(Delegate @delegate, string? name = null, string? description = null, bool? strict = null)
+    {
+        Delegate = @delegate;
+        Strict = strict;
+    }
+    
     /// <summary>
     ///     Creates a new function type tool.
     /// </summary>
@@ -543,6 +555,27 @@ public class Tool
 
     public Tool()
     {
+    }
+
+    private ConcurrentDictionary<int, ToolFunction>? serializedDict = [];
+
+    public void Serialize(IEndpointProvider provider)
+    {
+        if (Delegate is null)
+        {
+            return;
+        }
+
+        int hash = provider.GetHashCode();
+        serializedDict ??= [];
+
+        if (serializedDict.TryGetValue(hash, out ToolFunction? fn))
+        {
+            Function = fn;
+        }
+
+        Function = ToolFactory.CreateFromMethod(Delegate, provider);
+        serializedDict.TryAdd(hash, Function);
     }
 
     /// <summary>
@@ -751,5 +784,31 @@ public class ToolFunction
     /// </summary>
     private ToolFunction()
     {
+    }
+
+    /// <summary>
+    /// Text representation of the tool.
+    /// </summary>
+    /// <returns></returns>
+    public override string ToString()
+    {
+        StringBuilder sb = new StringBuilder();
+
+        if (!Name.IsNullOrWhiteSpace())
+        {
+            sb.AppendLine(Name);
+        }
+
+        if (!Description.IsNullOrWhiteSpace())
+        {
+            sb.AppendLine(Description);
+        }
+
+        if (Parameters is not null)
+        {
+            sb.AppendLine(Parameters.ToJson(true));
+        }
+
+        return sb.ToString().Trim();
     }
 }

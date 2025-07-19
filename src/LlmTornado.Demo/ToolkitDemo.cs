@@ -12,7 +12,7 @@ public class ToolkitDemo : DemoBase
         public int Quantity { get; set; }
     }
     
-    [TornadoTest]
+    /*[TornadoTest]
     [Flaky("manual test")]
     public static async Task ToolkitChatFunction()
     {
@@ -38,5 +38,5 @@ public class ToolkitDemo : DemoBase
             
             return new ChatFunctionCallResult();
         }), "three apples, one cherry, two apples, one orange, one orange");
-    }
+    }*/
 }

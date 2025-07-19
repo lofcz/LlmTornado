@@ -142,6 +142,8 @@ public class ResponsesDemo : DemoBase
                     "https://as2.ftcdn.net/v2/jpg/05/94/28/01/1000_F_594280104_vZXB6JZANIRywkZcUQntU07p5KGpuZ7S.jpg",
                     ImageDetail.Auto)
             ]);
+
+        var z = chat.Serialize();
         
         RestDataOrException<ChatRichResponse> response = await chat.GetResponseRichSafe();
         

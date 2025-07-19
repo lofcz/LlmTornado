@@ -10,7 +10,7 @@ using Newtonsoft.Json.Linq;
 
 namespace LlmTornado.Responses;
 
-public static class ResponseHelpers
+internal static class ResponseHelpers
 {
     /// <summary>
     /// Converts a list of <see cref="ChatMessage"/> objects into a list of <see cref="ResponseInputItem"/> objects.
@@ -18,7 +18,7 @@ public static class ResponseHelpers
     /// </summary>
     /// <param name="messages">The list of <see cref="ChatMessage"/> objects representing the conversation history to be converted into response input items.</param>
     /// <returns>A list of <see cref="ResponseInputItem"/> objects created from the provided chat messages, containing either input or output message mappings.</returns>
-    public static List<ResponseInputItem> ToReponseInputItems(List<ChatMessage> messages)
+    public static List<ResponseInputItem> ToResponseInputItems(List<ChatMessage> messages)
     {
         List<ResponseInputItem> items = [];
         
@@ -26,7 +26,7 @@ public static class ResponseHelpers
         {
             if (chatMessage.Role is ChatMessageRoles.Assistant)
             {
-                var outputMessage = new OutputMessageInput();
+                OutputMessageInput outputMessage = new OutputMessageInput();
                 
                 if (chatMessage.Content is not null)
                 {
@@ -60,7 +60,7 @@ public static class ResponseHelpers
             }
             else
             {
-                var inputMessage = new ResponseInputMessage();
+                ResponseInputMessage inputMessage = new ResponseInputMessage();
 
                 if (chatMessage.Content is not null)
                 {
@@ -112,14 +112,16 @@ public static class ResponseHelpers
     /// <param name="request">The existing <see cref="ResponseRequest"/> object containing optional property values to be used for the conversion.</param>
     /// <param name="chatRequest">The <see cref="ChatRequest"/> object containing additional or default properties required for the new response request.</param>
     /// <returns>A new <see cref="ResponseRequest"/> object with properties merged and populated from the provided request and chat request objects.</returns>
-    public static ResponseRequest ToResponseRequest(ResponseRequest request, ChatRequest chatRequest)
+    public static ResponseRequest ToResponseRequest(ResponseRequest? request, ChatRequest chatRequest)
     {
+        request ??= new ResponseRequest();
+        
         return new ResponseRequest
         {
             Model = request.Model ?? chatRequest.Model,
             Background = request.Background,
             Instructions = request.Instructions ?? chatRequest.Messages?.FirstOrDefault(x => x.Role is ChatMessageRoles.System)?.Content,
-            InputItems = request.InputItems ?? ToReponseInputItems(chatRequest.Messages ?? []),
+            InputItems = request.InputItems ?? ToResponseInputItems(chatRequest.Messages ?? []),
             Temperature = request.Temperature ?? chatRequest.Temperature,
             MaxOutputTokens = request.MaxOutputTokens ?? chatRequest.MaxTokens,
             User = request.User ?? chatRequest.User,
@@ -170,7 +172,7 @@ public static class ResponseHelpers
                     {
                         return new ResponseTextConfiguration
                         {
-                            Format = new ResponseTextFormatConfigurationJsonSchema()
+                            Format = new ResponseTextFormatConfigurationJsonSchema
                             {
                                 Schema = chatRequestFormat.Schema.Schema,
                                 Name = chatRequestFormat.Schema.Name,
@@ -211,7 +213,7 @@ public static class ResponseHelpers
     /// <returns>A <see cref="ChatChoice"/> object populated with the structured message and associated components extracted from the input response.</returns>
     public static ChatChoice ToChatChoice(ResponseResult response)
     {
-        ChatChoice choice = new();
+        ChatChoice choice = new ChatChoice();
 
         choice.Message ??= new ChatMessage();
         choice.Message.Parts ??= [];
@@ -272,7 +274,7 @@ public static class ResponseHelpers
     {
         if (tool.Function?.Parameters != null)
         {
-            return new ResponseFunctionTool()
+            return new ResponseFunctionTool
             {
                 Name = tool.Function.Name,
                 Description = tool.Function.Description,
