@@ -72,15 +72,9 @@ namespace LlmTornado.Responses
     public class ResponsesUsageOutputTokenDetails
     {
         /// <summary>
-        /// The number of audio tokens used in the Response.
+        /// The number of reasoning tokens in the Response.
         /// </summary>
-        [JsonProperty("audio_tokens")]
-        public int AudioTokens { get; set; }
-
-        /// <summary>
-        /// The number of text tokens used in the Response.
-        /// </summary>
-        [JsonProperty("text_tokens")]
-        public int TextTokens { get; set; }
+        [JsonProperty("reasoning_tokens")]
+        public int ReasoningTokens { get; set; }
     }
 } 

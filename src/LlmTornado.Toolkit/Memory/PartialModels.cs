@@ -8,6 +8,7 @@ using Newtonsoft.Json;
 
 namespace LlmTornado.Toolkit.Memory;
 
+#if FALSE
 public class LlmResponseParsed
 {
     public string? Message { get; set; }
@@ -267,3 +268,4 @@ public class LlmResponseRaw
     public bool Ok { get; set; }
     public LlmResponseErrors? Error { get; set; }
 }
+#endif

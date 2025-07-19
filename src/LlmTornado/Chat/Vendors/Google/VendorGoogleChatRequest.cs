@@ -693,13 +693,7 @@ internal class VendorGoogleChatRequest
         }
         
         List<VendorGoogleChatTool>? localTools = [];
-        VendorGoogleChatToolConfig localToolConfig = new VendorGoogleChatToolConfig
-        {
-            FunctionConfig = new VendorGoogleChatToolConfigFunctionConfig
-            {
-                Mode = "AUTO"
-            }
-        };
+        VendorGoogleChatToolConfig? localToolConfig = null;
         
         VendorGoogleChatRequestGenerationConfig? localConfig = null;
         bool anyStrictTool = false;
@@ -711,6 +705,9 @@ internal class VendorGoogleChatRequest
         
         if (outboundToolChoice is not null)
         {
+            localToolConfig = VendorGoogleChatToolConfig.Default;
+            localToolConfig.FunctionConfig ??= new VendorGoogleChatToolConfigFunctionConfig();
+            
             switch (outboundToolChoice.Mode)
             {
                 case OutboundToolChoiceModes.Auto or OutboundToolChoiceModes.Legacy:
@@ -920,8 +917,63 @@ internal class VendorGoogleChatRequest
                         : null
                 };
             }
+
+            if (request.VendorExtensions.Google.SafetyFilters is not null)
+            {
+                if (request.VendorExtensions.Google.SafetyFilters == ChatRequestVendorGoogleSafetyFilters.Default)
+                {
+                    
+                }
+                else if (request.VendorExtensions.Google.SafetyFilters == ChatRequestVendorGoogleSafetyFilters.Minimal)
+                {
+                    SafetySettings = VendorGoogleChatRequestSafetySetting.DisableAll;   
+                }
+                else
+                {
+                    SafetySettings = [];
+
+                    if (request.VendorExtensions.Google.SafetyFilters.SexuallyExplicit is not null)
+                    {
+                        SafetySettings.Add(new VendorGoogleChatRequestSafetySetting("HARM_CATEGORY_SEXUALLY_EXPLICIT", HarmFilter(request.VendorExtensions.Google.SafetyFilters.SexuallyExplicit)));
+                    }
+                    
+                    if (request.VendorExtensions.Google.SafetyFilters.Harassment is not null)
+                    {
+                        SafetySettings.Add(new VendorGoogleChatRequestSafetySetting("HARM_CATEGORY_HARASSMENT", HarmFilter(request.VendorExtensions.Google.SafetyFilters.Harassment)));
+                    }
+                    
+                    if (request.VendorExtensions.Google.SafetyFilters.DangerousContent is not null)
+                    {
+                        SafetySettings.Add(new VendorGoogleChatRequestSafetySetting("HARM_CATEGORY_DANGEROUS_CONTENT", HarmFilter(request.VendorExtensions.Google.SafetyFilters.DangerousContent)));
+                    }
+                    
+                    if (request.VendorExtensions.Google.SafetyFilters.HateSpeech is not null)
+                    {
+                        SafetySettings.Add(new VendorGoogleChatRequestSafetySetting("HARM_CATEGORY_HATE_SPEECH", HarmFilter(request.VendorExtensions.Google.SafetyFilters.HateSpeech)));
+                    }
+                }
+            }
+            else
+            {
+                SafetySettings = VendorGoogleChatRequestSafetySetting.DisableAll;   
+            }
         }
-        
-        SafetySettings = VendorGoogleChatRequestSafetySetting.DisableAll;
+        else
+        {
+            SafetySettings = VendorGoogleChatRequestSafetySetting.DisableAll;   
+        }
+    }
+
+    static string HarmFilter(GoogleSafetyFilterTypes? val)
+    {
+        return val switch
+        {
+            GoogleSafetyFilterTypes.BlockNone => "BLOCK_NONE",
+            GoogleSafetyFilterTypes.BlockFew => "BLOCK_ONLY_HIGH",
+            GoogleSafetyFilterTypes.BlockSome => "BLOCK_MEDIUM_AND_ABOVE",
+            GoogleSafetyFilterTypes.BlockMost => "BLOCK_LOW_AND_ABOVE",
+            GoogleSafetyFilterTypes.Default => "HARM_BLOCK_THRESHOLD_UNSPECIFIED",
+            _ => "BLOCK_NONE"
+        };
     }
  }

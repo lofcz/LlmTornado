@@ -33,8 +33,11 @@ public class ChatModelOpenAiGpt4 : IVendorModelClassProvider
     /// <summary>
     /// Latest o1 model snapshot.
     /// </summary>
-    public static readonly ChatModel ModelO1Pro = new ChatModel("o1-pro", LLmProviders.OpenAi, 200_000);
-
+    public static readonly ChatModel ModelO1Pro = new ChatModel("o1-pro", LLmProviders.OpenAi, 200_000)
+    {
+        EndpointCapabilities = [ ChatModelEndpointCapabilities.Responses, ChatModelEndpointCapabilities.Batch ]
+    };
+    
     /// <summary>
     /// <inheritdoc cref="ModelO1Pro"/>
     /// </summary>

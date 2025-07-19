@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
+using LlmTornado.Code;
 using LlmTornado.Images;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -221,7 +222,7 @@ public class ResponseOutputMessageItem : IResponseOutputItem
     /// The role of the output message. Always "assistant".
     /// </summary>
     [JsonProperty("role")]
-    public string Role { get; set; } = "assistant";
+    public ChatMessageRoles Role { get; set; } = ChatMessageRoles.Assistant;
 
     /// <summary>
     /// The content of the output message.
@@ -278,7 +279,7 @@ public class ResponseFunctionToolCallItem : IResponseOutputItem
 {
     /// <inheritdoc/>
     [JsonProperty("type")]
-    public string Type { get; set; } = "function_call";
+    public string Type { get; set; } = ResponseOutputTypes.FunctionCall;
 
     /// <summary>
     /// The unique ID of the function tool call.
@@ -683,7 +684,7 @@ public class ResponseReasoningItem : IResponseOutputItem
 {
     /// <inheritdoc/>
     [JsonProperty("type")]
-    public string Type { get; set; } = "reasoning";
+    public string Type { get; set; } = ResponseOutputTypes.Reasoning;
 
     /// <summary>
     /// The unique identifier of the reasoning content.

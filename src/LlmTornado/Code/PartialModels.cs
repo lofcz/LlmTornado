@@ -2033,3 +2033,9 @@ internal class FunctionResultBlockJsonConverter : JsonConverter<IFunctionResultB
     public override bool CanRead => true;
     public override bool CanWrite => true;
 }
+
+public static class ResponseOutputTypes
+{
+    public static string Reasoning => "reasoning";
+    public static string FunctionCall => "function_call";
+}
