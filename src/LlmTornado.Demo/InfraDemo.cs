@@ -74,4 +74,30 @@ public class InfraDemo : DemoBase
 
         int z = 0;
     }
+    
+    [TornadoTest]
+    public static async Task TornadoStructuredFunction()
+    {
+        Conversation conversation = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.OpenAi.Gpt41.V41,
+            ResponseFormat = ChatRequestResponseFormats.StructuredJson((string location, Continents continent, ComplexClass cls, List<string> names, List<Person> people, Dictionary<string, string> gameShortcutNamePairs) =>
+            {
+                return "";
+            })
+        });
+
+        conversation.AddUserMessage("Fill the provided JSON structure with mock data");
+
+        TornadoRequestContent serialized = conversation.Serialize(new ChatRequestSerializeOptions
+        {
+            Pretty = true
+        });
+        
+        Console.Write(serialized);
+
+        var data = await conversation.GetResponseRich();
+
+        int z = 0;
+    }
 }

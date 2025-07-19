@@ -1,5 +1,8 @@
 using System;
 using System.Runtime.Serialization;
+using LlmTornado.Code;
+using LlmTornado.Common;
+using LlmTornado.Infra;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
@@ -14,10 +17,15 @@ public class ChatRequestResponseFormats
     {
         [JsonProperty("strict")]
         public bool? Strict { get; set; }
+        
         [JsonProperty("name")]
         public string Name { get; set; }
+        
         [JsonProperty("schema")]
         public object Schema { get; set; }
+        
+        [JsonIgnore]
+        public Delegate? Delegate { get; set; }
     }
     
     /// <summary>
@@ -30,7 +38,21 @@ public class ChatRequestResponseFormats
     internal ChatRequestResponseJsonSchema? Schema { get; set; }
     
     internal ChatRequestResponseFormats() { }
-    
+
+    /// <summary>
+    /// Serializes schema for a given provider.
+    /// </summary>
+    public void Serialize(IEndpointProvider provider)
+    {
+        if (Schema?.Delegate is null)
+        {
+            return;
+        }
+
+        ToolFunction fn = ToolFactory.CreateFromMethod(Schema.Delegate, provider);
+        Schema.Schema = fn.Parameters;
+    }
+
     /// <summary>
     ///     Signals the output should be plaintext.
     /// </summary>
@@ -65,6 +87,20 @@ public class ChatRequestResponseFormats
                 Name = name,
                 Strict = strict,
                 Schema = schema
+            }
+        };
+    }
+
+    internal static ChatRequestResponseFormats StructuredJson(Delegate function, string? name = null, bool strict = true)
+    {
+        return new ChatRequestResponseFormats
+        {
+            Type = ChatRequestResponseFormatTypes.StructuredJson,
+            Schema = new ChatRequestResponseJsonSchema
+            {
+                Name = name ?? "output",
+                Strict = strict,
+                Delegate = function
             }
         };
     }

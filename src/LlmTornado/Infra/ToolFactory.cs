@@ -167,7 +167,41 @@ internal static class ToolFactory
             }
             else if (IsIDictionary(baseType))
             {
+                IToolParamType valueType;
                 
+                if (genericArgs.Length >= 2)
+                {
+                    Type valueTypeArg = genericArgs[1];
+                    Tuple<Type, bool> baseValueTypeInfo = GetNullableBaseType(valueTypeArg);
+                    Type baseValueType = baseValueTypeInfo.Item1;
+                    
+                    if (IsKnownAtomicType(baseValueType, out ToolParamAtomicTypes? atomicType))
+                    {
+                        valueType = atomicType.Value switch
+                        {
+                            ToolParamAtomicTypes.String => new ToolParamString(null, true),
+                            ToolParamAtomicTypes.Int => new ToolParamInt(null, true),
+                            ToolParamAtomicTypes.Float => new ToolParamNumber(null, true),
+                            ToolParamAtomicTypes.Bool => new ToolParamBool(null, true),
+                            _ => new ToolParamString(null, true)
+                        };
+                    }
+                    else
+                    {
+                        // todo
+                        valueType = new ToolParamObject(null, [
+                            new ToolParam("value", new ToolParamString(null, true)),
+                            new ToolParam("description", new ToolParamString(null, false))
+                        ]);
+                    }
+                }
+                else
+                {
+                    valueType = new ToolParamString(null, true);
+                }
+                
+                ToolParamDictionary dict = new ToolParamDictionary(null, true, valueType);
+                pars.Add(new ToolParam(name, dict));
             }
             else
             {

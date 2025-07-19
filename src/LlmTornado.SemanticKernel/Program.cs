@@ -23,27 +23,10 @@ public class Program
     {
         ApiKeys apiKeys = JsonConvert.DeserializeObject<ApiKeys>(await File.ReadAllTextAsync("apiKey.json"));
         
-        KernelFunction method = KernelFunctionFactory.CreateFromMethod(([Description("hello")] string text, string enm) =>
+        KernelFunction method = KernelFunctionFactory.CreateFromMethod(([Description("hello")] string text, string enm, Dictionary<string, string> gameShortcutNamePairs) =>
         {
             return 10;
-        }, functionName: "test", parameters: [
-            new KernelParameterMetadata(new KernelParameterMetadata("text")
-            {
-                ParameterType = typeof(string)
-            }),
-            new KernelParameterMetadata(new KernelParameterMetadata("enm")
-            {
-                Description = "choose from limited options", 
-                ParameterType = typeof(TestEnum),
-                Schema = KernelJsonSchema.Parse("""
-                                                {
-                                                    "type": "string",
-                                                    "enum": ["Option1", "Option2"],
-                                                    "description": "Limited enum values"
-                                                }
-                                                """)
-            })
-        ]);
+        }, functionName: "test");
         
         Kernel kernel = Kernel.CreateBuilder()
             .AddOpenAIChatClient("gpt-4.1", apiKeys.OpenAi)
@@ -55,7 +38,7 @@ public class Program
 
         FunctionResult result = await kernel.InvokePromptAsync(userPrompt, new KernelArguments(new OpenAIPromptExecutionSettings
             {
-                ToolCallBehavior = ToolCallBehavior.EnableKernelFunctions
+                FunctionChoiceBehavior = FunctionChoiceBehavior.Required([ method ])
             }));
 
         int z = 0;

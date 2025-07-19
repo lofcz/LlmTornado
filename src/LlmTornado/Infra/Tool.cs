@@ -535,7 +535,7 @@ public class ToolParamObject : ToolParamTypeBase
 
     public override object Compile(Tool sourceFn, ToolMeta meta)
     {
-        SerializedObject so = new SerializedObject
+        JsonSchemaSerializedObject so = new JsonSchemaSerializedObject
         {
             Type = "object",
             Description = Description,
@@ -560,11 +560,75 @@ public class ToolParamObject : ToolParamTypeBase
                 goto ret;
             }
             
-            so.Properties.AddOrUpdate("additionalProperties", false);
+            so.AdditionalProperties = false;
         }
 
         ret:
         return so;
+    }
+}
+
+public class ToolParamDictionary : ToolParamTypeBase
+{
+    public override string Type => "object";
+    
+    /// <summary>
+    /// Values.
+    /// </summary>
+    public IToolParamType ValueType { get; set; }
+    
+    /// <summary>
+    /// Minimum number of key-value pairs required in the dictionary.
+    /// </summary>
+    public int? MinProperties { get; set; }
+    
+    /// <summary>
+    /// Maximum number of key-value pairs allowed in the dictionary.
+    /// </summary>
+    public int? MaxProperties { get; set; }
+
+    public ToolParamDictionary(string description, bool required, IToolParamType valueType)
+    {
+        Description = description;
+        Required = required;
+        ValueType = valueType;
+    }
+
+    public override object Compile(Tool sourceFn, ToolMeta meta)
+    {
+        if (sourceFn.Strict)
+        {
+            ToolParamObject keyValueObject = new ToolParamObject(null, [
+                new ToolParam("key", new ToolParamString(null, true)),
+                new ToolParam("value", ValueType)
+            ]);
+            
+            ToolParamListObject listType = new ToolParamListObject(Description, true, keyValueObject);
+            return listType.Compile(sourceFn, meta);
+        }
+        
+        JsonSchemaSerializedObject result = new JsonSchemaSerializedObject
+        {
+            Type = Type,
+            Description = Description,
+            AdditionalProperties = ValueType.Compile(sourceFn, meta)
+        };
+
+        if (MaxProperties is not null)
+        {
+            Dictionary<string, object> dict = result.ToDictionary();
+            dict["maxProperties"] = MaxProperties.Value;
+            return dict;
+        }
+        
+        if (MinProperties is not null)
+        {
+            Dictionary<string, object> dict = result.ToDictionary();
+            dict["minProperties"] = MinProperties.Value;
+            return dict;
+        }
+
+        return result;
     }
 }
 
@@ -632,14 +696,42 @@ public interface ITornadoPlugin
 #endif
 }
 
-internal class SerializedObject
+internal class JsonSchemaSerializedObject
 {
     [JsonProperty("type")]
     public string? Type { get; set; }
+    
     [JsonProperty("properties")]
     public Dictionary<string, object>? Properties { get; set; }
+    
     [JsonProperty("required")]
     public List<string>? Required { get; set; }
+    
     [JsonProperty("description")]
     public string? Description { get; set; }
+    
+    [JsonProperty("additionalProperties")]
+    public object? AdditionalProperties { get; set; }
+    
+    public Dictionary<string, object> ToDictionary()
+    {
+        Dictionary<string, object> dict = new Dictionary<string, object>();
+        
+        if (Type != null)
+            dict["type"] = Type;
+            
+        if (Properties != null)
+            dict["properties"] = Properties;
+            
+        if (Required != null)
+            dict["required"] = Required;
+            
+        if (!string.IsNullOrEmpty(Description))
+            dict["description"] = Description;
+            
+        if (AdditionalProperties != null)
+            dict["additionalProperties"] = AdditionalProperties;
+            
+        return dict;
+    }
 }

@@ -582,7 +582,6 @@ public class ChatRequest : IModelRequest
 	/// Serializes the request with debugging options
 	/// </summary>
 	/// <param name="provider"></param>
-	/// <param name="capabilityEndpoint"></param>
 	/// <param name="options"></param>
 	/// <returns></returns>
 	public TornadoRequestContent Serialize(IEndpointProvider provider, ChatRequestSerializeOptions? options)
@@ -644,6 +643,11 @@ public class ChatRequest : IModelRequest
 			{
 				tool.Serialize(provider);
 			}	
+		}
+
+		if (ResponseFormat is { Type: ChatRequestResponseFormatTypes.StructuredJson, Schema.Delegate: not null })
+		{
+			ResponseFormat.Serialize(provider);
 		}
 		
 		TornadoRequestContent serialized = SerializeMap.TryGetValue(provider.Provider, out Func<ChatRequest, IEndpointProvider, CapabilityEndpoints, JsonSerializerSettings?, string>? serializerFn) ? new TornadoRequestContent(serializerFn.Invoke(this, provider, capabilityEndpoint, pretty ? new JsonSerializerSettings
