@@ -45,10 +45,10 @@ internal static class ToolFactory
         return type.GetInterfaces().Append(type).Any(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(ICollection<>));
     }
     
-    public static ToolFunction CreateFromMethod(Delegate del, IEndpointProvider provider)
+    public static DelegateMetadata CreateFromMethod(Delegate del, IEndpointProvider provider)
     {
         ParameterInfo[] pars = del.Method.GetParameters();
-        Tool function = new Tool
+        ToolDefinition function = new ToolDefinition
         {
             Name = "output",
             Params = []
@@ -69,7 +69,7 @@ internal static class ToolFactory
             Provider = provider
         });
         
-        return compiled;
+        return new DelegateMetadata(compiled, function);
     }
 
     static void UnpackType(Type type, ToolParamObject parent)
@@ -110,19 +110,19 @@ internal static class ToolFactory
 
         if (baseType == typeof(string))
         {
-            pars.Add(new ToolParam(name, new ToolParamString(null, true)));   
+            pars.Add(new ToolParam(name, new ToolParamString(null, !typeIsNullable) { DataType = type }));   
         }
         else if (baseType == typeof(int))
         {
-            pars.Add(new ToolParam(name, new ToolParamInt(null, true)));   
+            pars.Add(new ToolParam(name, new ToolParamInt(null, !typeIsNullable) { DataType = type }));   
         }
         else if (baseType == typeof(float) || baseType == typeof(double))
         {
-            pars.Add(new ToolParam(name, new ToolParamNumber(null, true)));   
+            pars.Add(new ToolParam(name, new ToolParamNumber(null, !typeIsNullable) { DataType = type }));   
         }
         else if (baseType == typeof(bool))
         {
-            pars.Add(new ToolParam(name, new ToolParamBool(null, true)));   
+            pars.Add(new ToolParam(name, new ToolParamBool(null, !typeIsNullable) { DataType = type }));   
         }
         else if (baseType.IsEnum)
         {
@@ -133,7 +133,7 @@ internal static class ToolFactory
                 vals.Add(x.ToString());
             }
                 
-            pars.Add(new ToolParam(name, new ToolParamEnum(null, true, vals)));   
+            pars.Add(new ToolParam(name, new ToolParamEnum(null, !typeIsNullable, vals) { DataType = type }));   
         }
         else if (IsIEnumerable(baseType))
         {
@@ -151,12 +151,12 @@ internal static class ToolFactory
 
                     if (IsKnownAtomicType(baseInnerType, out ToolParamAtomicTypes? atomicType))
                     {
-                        ToolParamListAtomic list = new ToolParamListAtomic(null, true, atomicType.Value);
+                        ToolParamListAtomic list = new ToolParamListAtomic(null, !typeIsNullable, atomicType.Value) { DataType = type };
                         pars.Add(new ToolParam(name, list));
                         return;
                     }
 
-                    ToolParamListObject listObj = new ToolParamListObject(null, true, []);
+                    ToolParamListObject listObj = new ToolParamListObject(null, !typeIsNullable, []) { DataType = type, Items = { DataType = innerType } };
                     UnpackType(baseInnerType, listObj.Items);
                     pars.Add(new ToolParam(name, listObj));
                 }
@@ -179,28 +179,26 @@ internal static class ToolFactory
                     {
                         valueType = atomicType.Value switch
                         {
-                            ToolParamAtomicTypes.String => new ToolParamString(null, true),
-                            ToolParamAtomicTypes.Int => new ToolParamInt(null, true),
-                            ToolParamAtomicTypes.Float => new ToolParamNumber(null, true),
-                            ToolParamAtomicTypes.Bool => new ToolParamBool(null, true),
-                            _ => new ToolParamString(null, true)
+                            ToolParamAtomicTypes.String => new ToolParamString(null, true) { DataType = valueTypeArg },
+                            ToolParamAtomicTypes.Int => new ToolParamInt(null, true) { DataType = valueTypeArg },
+                            ToolParamAtomicTypes.Float => new ToolParamNumber(null, true) { DataType = valueTypeArg },
+                            ToolParamAtomicTypes.Bool => new ToolParamBool(null, true) { DataType = valueTypeArg },
+                            _ => new ToolParamString(null, true) { DataType = valueTypeArg }
                         };
                     }
                     else
                     {
-                        // todo
-                        valueType = new ToolParamObject(null, [
-                            new ToolParam("value", new ToolParamString(null, true)),
-                            new ToolParam("description", new ToolParamString(null, false))
-                        ]);
+                        ToolParamObject obj = new ToolParamObject(null, []) { DataType = valueTypeArg };
+                        UnpackType(baseValueType, obj);
+                        valueType = obj;
                     }
                 }
                 else
                 {
-                    valueType = new ToolParamString(null, true);
+                    valueType = new ToolParamString(null, true) { DataType = typeof(string) };
                 }
                 
-                ToolParamDictionary dict = new ToolParamDictionary(null, true, valueType);
+                ToolParamDictionary dict = new ToolParamDictionary(null, !typeIsNullable, valueType) { DataType = type };
                 pars.Add(new ToolParam(name, dict));
             }
             else
@@ -210,7 +208,7 @@ internal static class ToolFactory
         }
         else
         {
-            ToolParamObject obj = new ToolParamObject(null, []);
+            ToolParamObject obj = new ToolParamObject(null, []) { DataType = type };
             UnpackType(baseType, obj);
             pars.Add(new ToolParam(name, obj));
         }

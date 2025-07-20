@@ -857,6 +857,12 @@ public class Conversation
                     ChatAudio = newMsg.Audio
                 });
             }
+
+            if (RequestParameters.ResponseFormat?.Schema?.Delegate is not null && RequestParameters.ResponseFormat.Type is ChatRequestResponseFormatTypes.StructuredJson)
+            {
+                string? content = blocks.FirstOrDefault(x => x.Type is ChatRichResponseBlockTypes.Message)?.Message;
+                await RequestParameters.ResponseFormat.Invoke(content ?? "{}");   
+            }
         }
 
         return response;

@@ -577,7 +577,7 @@ public class Tool
             Function = fn;
         }
 
-        Function = ToolFactory.CreateFromMethod(Delegate, provider);
+        Function = ToolFactory.CreateFromMethod(Delegate, provider).ToolFunction;
         serializedDict.TryAdd(hash, Function);
     }
 

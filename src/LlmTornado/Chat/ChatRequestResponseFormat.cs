@@ -1,10 +1,14 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.Serialization;
+using System.Threading.Tasks;
 using LlmTornado.Code;
 using LlmTornado.Common;
 using LlmTornado.Infra;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Linq;
+using System.Linq;
 
 namespace LlmTornado.Chat;
 
@@ -26,6 +30,9 @@ public class ChatRequestResponseFormats
         
         [JsonIgnore]
         public Delegate? Delegate { get; set; }
+        
+        [JsonIgnore]
+        internal DelegateMetadata? DelegateMetadata { get; set; }
     }
     
     /// <summary>
@@ -49,8 +56,17 @@ public class ChatRequestResponseFormats
             return;
         }
 
-        ToolFunction fn = ToolFactory.CreateFromMethod(Schema.Delegate, provider);
-        Schema.Schema = fn.Parameters;
+        DelegateMetadata cd = ToolFactory.CreateFromMethod(Schema.Delegate, provider);
+        Schema.DelegateMetadata = cd;
+        Schema.Schema = cd.ToolFunction.Parameters;
+    }
+
+    /// <summary>
+    /// Invokes the <see cref="Delegate"/> with the given JSON data.
+    /// </summary>
+    public async ValueTask<object?> Invoke(string data)
+    {
+        return await Clr.Invoke(Schema?.Delegate, Schema?.DelegateMetadata, data);
     }
 
     /// <summary>

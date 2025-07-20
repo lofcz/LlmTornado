@@ -13,7 +13,7 @@ namespace LlmTornado.Infra;
 /// <summary>
 /// Agentic tool.
 /// </summary>
-public class Tool
+public class ToolDefinition
 {
     /// <summary>
     /// A name of the function, no longer than 40 characters
@@ -35,19 +35,19 @@ public class Tool
     /// </summary>
     public bool Strict { get; set; } = true;
     
-    internal Tool()
+    internal ToolDefinition()
     {
 
     }
     
-    public Tool(string name, string description)
+    public ToolDefinition(string name, string description)
     {
         Name = name;
         Description = description;
         Params = null;
     }
     
-    public Tool(string name, string description, List<ToolParam>? pars)
+    public ToolDefinition(string name, string description, List<ToolParam>? pars)
     {
         Name = name;
         Description = description;
@@ -295,8 +295,14 @@ public interface IToolParamType
     public string Type { get; }
     public string? Description { get; set; }
     public bool Required { get; set; }
+    
+    /// <summary>
+    /// The CLR type of this parameter, used for deserialization.
+    /// </summary>
+    [JsonIgnore]
+    public Type? DataType { get; set; }
 
-    public object Compile(Tool sourceFn, ToolMeta meta);
+    public object Compile(ToolDefinition sourceFn, ToolMeta meta);
 }
 
 public abstract class ToolParamTypeBase : IToolParamType
@@ -304,7 +310,14 @@ public abstract class ToolParamTypeBase : IToolParamType
     public abstract string Type { get; }
     public string? Description { get; set; }
     public bool Required { get; set; }
-    public virtual object Compile(Tool sourceFn, ToolMeta meta)
+    
+    /// <summary>
+    /// <inheritdoc cref="IToolParamType.DataType"/>
+    /// </summary>
+    [JsonIgnore]
+    public Type? DataType { get; set; }
+    
+    public virtual object Compile(ToolDefinition sourceFn, ToolMeta meta)
     {
         return new
         {
@@ -335,7 +348,7 @@ public class ToolParamError : ToolParamTypeBase
         Required = required;
     }
 
-    public override object Compile(Tool sourceFn, ToolMeta meta)
+    public override object Compile(ToolDefinition sourceFn, ToolMeta meta)
     {
         throw new Exception("Error typ není možné zkompilovat!");
     }
@@ -388,7 +401,7 @@ public class ToolParamEnum : ToolParamTypeBase
         EnumValues = enumVales.ToList();
     }
 
-    public override object Compile(Tool sourceFn, ToolMeta meta)
+    public override object Compile(ToolDefinition sourceFn, ToolMeta meta)
     {
         return new
         {
@@ -443,7 +456,7 @@ public class ToolParamListEnum : ToolParamTypeBase
         Items = values;
     }
     
-    public override object Compile(Tool sourceFn, ToolMeta meta)
+    public override object Compile(ToolDefinition sourceFn, ToolMeta meta)
     {
         return new
         {
@@ -473,7 +486,7 @@ public class ToolParamListAtomic : ToolParamTypeBase
         };
     }
     
-    public override object Compile(Tool sourceFn, ToolMeta meta)
+    public override object Compile(ToolDefinition sourceFn, ToolMeta meta)
     {
         return new 
         { 
@@ -506,7 +519,7 @@ public class ToolParamListObject : ToolParamTypeBase
         Items = new ToolParamObject(properties);
     }
     
-    public override object Compile(Tool sourceFn, ToolMeta meta)
+    public override object Compile(ToolDefinition sourceFn, ToolMeta meta)
     {
         return new
         {
@@ -533,7 +546,7 @@ public class ToolParamObject : ToolParamTypeBase
         Properties = properties;
     }
 
-    public override object Compile(Tool sourceFn, ToolMeta meta)
+    public override object Compile(ToolDefinition sourceFn, ToolMeta meta)
     {
         JsonSchemaSerializedObject so = new JsonSchemaSerializedObject
         {
@@ -594,7 +607,7 @@ public class ToolParamDictionary : ToolParamTypeBase
         ValueType = valueType;
     }
 
-    public override object Compile(Tool sourceFn, ToolMeta meta)
+    public override object Compile(ToolDefinition sourceFn, ToolMeta meta)
     {
         if (sourceFn.Strict)
         {
@@ -640,7 +653,7 @@ public class ToolParamStringExt : ToolParamTypeBase
     [JsonProperty("minLength")]
     public int MinLength { get; set; }
     
-    public override object Compile(Tool sourceFn, ToolMeta meta)
+    public override object Compile(ToolDefinition sourceFn, ToolMeta meta)
     {
         // strict mode doesn't support min/max lenght yet
         if (sourceFn.Strict)
@@ -662,9 +675,9 @@ public class ToolParamStringExt : ToolParamTypeBase
 
 public class TornadoPluginExportResult
 {
-    public List<Tool> Functions { get; set; }
+    public List<ToolDefinition> Functions { get; set; }
 
-    public TornadoPluginExportResult(List<Tool> functions)
+    public TornadoPluginExportResult(List<ToolDefinition> functions)
     {
         Functions = functions;
     }

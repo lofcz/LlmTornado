@@ -15,6 +15,7 @@ using LlmTornado.ChatFunctions;
 using LlmTornado.Code.Models;
 using LlmTornado.Code.Vendor;
 using LlmTornado.Common;
+using LlmTornado.Infra;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
@@ -1422,6 +1423,18 @@ public class TornadoRequestContent
         sb.AppendLine(Body.ToString());
 
         return sb.ToString().TrimEnd();
+    }
+}
+
+internal class DelegateMetadata
+{
+    public ToolFunction ToolFunction { get; set; }
+    public ToolDefinition Tool { get; set; }
+
+    public DelegateMetadata(ToolFunction tf, ToolDefinition tool)
+    {
+        ToolFunction = tf;
+        Tool = tool;
     }
 }
 

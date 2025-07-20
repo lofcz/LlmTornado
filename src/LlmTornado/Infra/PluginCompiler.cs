@@ -14,7 +14,7 @@ internal static class ChatPluginCompiler
         ChatModel.Google.Gemini.Gemini2FlashLatest, ChatModel.Google.GeminiPreview.Gemini25FlashPreview0417, ChatModel.Google.GeminiPreview.Gemini25ProPreview0325, ChatModel.Google.GeminiPreview.Gemini25ProPreview0506
     ];
 
-    public static ToolFunction Compile(Tool function, ToolMeta meta)
+    public static ToolFunction Compile(ToolDefinition function, ToolMeta meta)
     {
         function.Params ??= [];
         

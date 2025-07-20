@@ -199,6 +199,15 @@ public class FunctionCall
         Result = new FunctionResult(this, result);
         return this;
     }
+    
+    /// <summary>
+    /// Resolves the call by asynchronously invoking the attached delegate.
+    /// </summary>
+    public async ValueTask<FunctionCall> Invoke()
+    {
+        
+        return this;
+    }
 
     /// <summary>
     /// Resolves the call.<br/>
