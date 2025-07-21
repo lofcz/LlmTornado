@@ -38,7 +38,9 @@ internal static class Clr
                     {
                         Type dataType = param.Type.DataType;
                         bool isDictionary = dataType.GetInterfaces().Append(dataType).Any(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(IDictionary<,>));
-
+                        bool isMdArray = dataType.IsArray && dataType.GetArrayRank() > 1;
+                        bool isNonGenericEnumerable = !dataType.IsArray && !dataType.IsGenericType && dataType.GetInterfaces().Append(dataType).Any(x => x == typeof(IEnumerable));
+                        
                         if (isDictionary && token is JArray array)
                         {
                             IDictionary dict = (IDictionary)Activator.CreateInstance(dataType)!;
@@ -61,6 +63,51 @@ internal static class Clr
                             }
                             
                             args.Add(dict);
+                        }
+                        else if (isMdArray && token is JObject mdArrayObject)
+                        {
+                            if (mdArrayObject.TryGetValue("lengths", StringComparison.OrdinalIgnoreCase, out JToken? lengthsToken) && mdArrayObject.TryGetValue("values", StringComparison.OrdinalIgnoreCase, out JToken? valuesToken))
+                            {
+                                int[]? lengths = lengthsToken.ToObject<int[]>();
+                                Type? elementType = dataType.GetElementType();
+
+                                if (lengths is not null && elementType is not null)
+                                {
+                                    Array mdArray = Array.CreateInstance(elementType, lengths);
+                                    JArray valuesArray = (JArray)valuesToken;
+                                    int[] indices = new int[lengths.Length];
+                                    
+                                    for(int i = 0; i < valuesArray.Count; i++)
+                                    {
+                                        int linearIndex = i;
+                                        for (int dim = lengths.Length - 1; dim >= 0; dim--)
+                                        {
+                                            indices[dim] = linearIndex % lengths[dim];
+                                            linearIndex /= lengths[dim];
+                                        }
+                                        mdArray.SetValue(valuesArray[i].ToObject(elementType), indices);
+                                    }
+                                    
+                                    args.Add(mdArray);
+                                }
+                                else
+                                {
+                                    args.Add(null);
+                                }
+                            }
+                            else
+                            {
+                                args.Add(null);
+                            }
+                        }
+                        else if (isNonGenericEnumerable && token is JArray jArray)
+                        {
+                            ArrayList list = new ArrayList();
+                            foreach (JToken item in jArray)
+                            {
+                                list.Add(item.ToObject<object>());
+                            }
+                            args.Add(list);
                         }
                         else
                         {
