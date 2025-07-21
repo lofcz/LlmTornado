@@ -26,7 +26,12 @@ internal static class ResponseHelpers
         {
             if (chatMessage.Role is ChatMessageRoles.Assistant)
             {
-                OutputMessageInput outputMessage = new OutputMessageInput();
+                OutputMessageInput outputMessage = new OutputMessageInput
+                {
+                    // leaving default values would trip the API
+                    Id = null!,
+                    Status = null
+                };
                 
                 if (chatMessage.Content is not null)
                 {
@@ -115,12 +120,31 @@ internal static class ResponseHelpers
     public static ResponseRequest ToResponseRequest(ResponseRequest? request, ChatRequest chatRequest)
     {
         request ??= new ResponseRequest();
+
+        string? instructions = request.Instructions;
+
+        if (instructions is null)
+        {
+            ChatMessage? sysMsg = chatRequest.Messages?.FirstOrDefault(x => x is { Role: ChatMessageRoles.System });
+
+            if (sysMsg is not null)
+            {
+                if (sysMsg.Content?.Length > 0)
+                {
+                    instructions = sysMsg.Content;
+                }
+                else if (sysMsg.Parts?.Count > 0)
+                {
+                    instructions = string.Join("\n", sysMsg.Parts.Where(x => x.Type is ChatMessageTypes.Text).Select(x => x.Text));
+                }
+            }
+        }
         
         return new ResponseRequest
         {
             Model = request.Model ?? chatRequest.Model,
             Background = request.Background,
-            Instructions = request.Instructions ?? chatRequest.Messages?.FirstOrDefault(x => x.Role is ChatMessageRoles.System)?.Content,
+            Instructions = instructions,
             InputItems = request.InputItems ?? ToResponseInputItems(chatRequest.Messages ?? []),
             Temperature = request.Temperature ?? chatRequest.Temperature,
             MaxOutputTokens = request.MaxOutputTokens ?? chatRequest.MaxTokens,
@@ -129,7 +153,7 @@ internal static class ResponseHelpers
             TopLogprobs = request.TopLogprobs ?? chatRequest.TopLogprobs,
             ServiceTier = request.ServiceTier ?? chatRequest.ServiceTier,
             Store = request.Store ?? chatRequest.Store,
-            Metadata = request.Metadata ?? (chatRequest.Metadata as Dictionary<string, string>), //this should be a safe conversion, due to that this is OpenAi only
+            Metadata = request.Metadata ?? chatRequest.Metadata,
             ParallelToolCalls = request.ParallelToolCalls ?? chatRequest.ParallelToolCalls,
             CancellationToken = request.CancellationToken != CancellationToken.None ? request.CancellationToken : chatRequest.CancellationToken,
             Include = request.Include,
@@ -200,7 +224,7 @@ internal static class ResponseHelpers
         {
             Id = result.Id,
             Model = result.Model ?? string.Empty,
-            Choices = result.Output is not null ? [ToChatChoice(result)] : [],
+            Choices = result.Output is not null ? [ ToChatChoice(result) ] : [],
             Usage = result.Usage is not null ? new ChatUsage(result.Usage) : null
         };
     }
@@ -218,6 +242,7 @@ internal static class ResponseHelpers
         choice.Message ??= new ChatMessage();
         choice.Message.Parts ??= [];
         string? textOutput = response.OutputText;
+        
         if (textOutput is not null)
         {
             choice.Message.Parts.Add(new ChatMessagePart(textOutput));

@@ -355,7 +355,7 @@ public class OutputMessageInput : ResponseInputItem
     /// The status of the message input. One of <c>in_progress</c>, <c>completed</c>, or <c>incomplete</c>. Populated when input items are returned via API.
     /// </summary>
     [JsonProperty("status")]
-    public ResponseMessageStatuses Status { get; set; }
+    public ResponseMessageStatuses? Status { get; set; }
 
     public OutputMessageInput() { }
 
@@ -1004,11 +1004,13 @@ internal class InputItemJsonConverter : JsonConverter<ResponseInputItem>
                 serializer.Serialize(writer, msg.Role);
                 writer.WritePropertyName("content");
                 serializer.Serialize(writer, msg.Content);
+                
                 if (msg.Status != null)
                 {
                     writer.WritePropertyName("status");
                     serializer.Serialize(writer, msg.Status);
                 }
+                
                 break;
             }
             case ItemReferenceParam refParam:
@@ -1023,11 +1025,13 @@ internal class InputItemJsonConverter : JsonConverter<ResponseInputItem>
                 writer.WriteValue(funcOutput.CallId);
                 writer.WritePropertyName("output");
                 writer.WriteValue(funcOutput.Output);
-                if (funcOutput.Id != null)
+                
+                if (funcOutput.Id is { Length: > 0 })
                 {
                     writer.WritePropertyName("id");
                     writer.WriteValue(funcOutput.Id);
                 }
+                
                 if (funcOutput.Status != null)
                 {
                     writer.WritePropertyName("status");
@@ -1041,16 +1045,19 @@ internal class InputItemJsonConverter : JsonConverter<ResponseInputItem>
                 writer.WriteValue(compOutput.CallId);
                 writer.WritePropertyName("output");
                 serializer.Serialize(writer, compOutput.Output);
+                
                 if (compOutput.AcknowledgedSafetyChecks != null)
                 {
                     writer.WritePropertyName("acknowledged_safety_checks");
                     serializer.Serialize(writer, compOutput.AcknowledgedSafetyChecks);
                 }
-                if (compOutput.Id != null)
+                
+                if (compOutput.Id is { Length: > 0 })
                 {
                     writer.WritePropertyName("id");
                     writer.WriteValue(compOutput.Id);
                 }
+                
                 if (compOutput.Status != null)
                 {
                     writer.WritePropertyName("status");
@@ -1064,6 +1071,7 @@ internal class InputItemJsonConverter : JsonConverter<ResponseInputItem>
                 writer.WriteValue(shellOutput.Id);
                 writer.WritePropertyName("output");
                 writer.WriteValue(shellOutput.Output);
+                
                 if (shellOutput.Status != null)
                 {
                     writer.WritePropertyName("status");
@@ -1077,28 +1085,41 @@ internal class InputItemJsonConverter : JsonConverter<ResponseInputItem>
                 writer.WriteValue(mcpResponse.ApprovalRequestId);
                 writer.WritePropertyName("approve");
                 writer.WriteValue(mcpResponse.Approve);
-                if (mcpResponse.Id != null)
+                
+                if (mcpResponse.Id is { Length: > 0 })
                 {
                     writer.WritePropertyName("id");
                     writer.WriteValue(mcpResponse.Id);
                 }
+                
                 if (mcpResponse.Reason != null)
                 {
                     writer.WritePropertyName("reason");
                     writer.WriteValue(mcpResponse.Reason);
                 }
+                
                 break;
             }
             case OutputMessageInput outputMessage:
             {
                 writer.WritePropertyName("content");
                 serializer.Serialize(writer, outputMessage.Content);
-                writer.WritePropertyName("id");
-                writer.WriteValue(outputMessage.Id);
+
+                if (outputMessage.Id is { Length: > 0 })
+                {
+                    writer.WritePropertyName("id");
+                    writer.WriteValue(outputMessage.Id);    
+                }
+                
                 writer.WritePropertyName("role");
                 writer.WriteValue(outputMessage.Role);
-                writer.WritePropertyName("status");
-                writer.WriteValue(outputMessage.Status);
+
+                if (outputMessage.Status is not null)
+                {
+                    writer.WritePropertyName("status");
+                    writer.WriteValue(outputMessage.Status);    
+                }
+                
                 break;
             }
             case FileSearchToolCallInput fileSearchToolCall:
@@ -1138,16 +1159,19 @@ internal class InputItemJsonConverter : JsonConverter<ResponseInputItem>
                 writer.WriteValue(functionToolCall.CallId);
                 writer.WritePropertyName("name");
                 writer.WriteValue(functionToolCall.Name);
-                if (functionToolCall.Id != null)
+                
+                if (functionToolCall.Id is { Length: > 0 })
                 {
                     writer.WritePropertyName("id");
                     writer.WriteValue(functionToolCall.Id);
                 }
-                if (functionToolCall.Status != null)
+                
+                if (functionToolCall.Status is not null)
                 {
                     writer.WritePropertyName("status");
                     writer.WriteValue(functionToolCall.Status);
                 }
+                
                 break;
             }
             case Reasoning reasoning:
@@ -1156,11 +1180,13 @@ internal class InputItemJsonConverter : JsonConverter<ResponseInputItem>
                 writer.WriteValue(reasoning.Id);
                 writer.WritePropertyName("summary");
                 serializer.Serialize(writer, reasoning.Summary);
+                
                 if (reasoning.EncryptedContent != null)
                 {
                     writer.WritePropertyName("encrypted_content");
                     writer.WriteValue(reasoning.EncryptedContent);
                 }
+                
                 if (reasoning.Status != null)
                 {
                     writer.WritePropertyName("status");
