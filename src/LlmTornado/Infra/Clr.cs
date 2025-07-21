@@ -30,7 +30,7 @@ internal static class Clr
 
                         if (isDictionary && token is JArray array)
                         {
-                            IDictionary dict = (System.Collections.IDictionary)Activator.CreateInstance(dataType)!;
+                            IDictionary dict = (IDictionary)Activator.CreateInstance(dataType)!;
                             Type[] genericArgs = dataType.GetGenericArguments();
                             Type keyType = genericArgs[0];
                             Type valueType = genericArgs[1];
