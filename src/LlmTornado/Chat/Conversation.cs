@@ -717,7 +717,7 @@ public class Conversation
         
         if (capabilityEndpoint is CapabilityEndpoints.Responses)
         {
-            HttpCallResult<ResponseResult> result = await responsesEndpoint.CreateResponseSafe(ResponseHelpers.ToResponseRequest(req.ResponseRequestParameters, req));
+            HttpCallResult<ResponseResult> result = await responsesEndpoint.CreateResponseSafe(ResponseHelpers.ToResponseRequest(req.ResponseRequestParameters, req)).ConfigureAwait(false);
             
             if (!result.Ok)
             {
@@ -729,7 +729,7 @@ public class Conversation
         }
         else
         {
-            HttpCallResult<ChatResult> res = await endpoint.CreateChatCompletionSafe(req);
+            HttpCallResult<ChatResult> res = await endpoint.CreateChatCompletionSafe(req).ConfigureAwait(false);
 
             if (!res.Ok)
             {
@@ -747,7 +747,7 @@ public class Conversation
             return new RestDataOrException<ChatRichResponse>(new Exception("The service returned no choices"));
         }
 
-        ChatRichResponse response = await HandleResponseRich(chatResult, functionCallHandler);
+        ChatRichResponse response = await HandleResponseRich(chatResult, functionCallHandler).ConfigureAwait(false);
         return new RestDataOrException<ChatRichResponse>(response, httpResult);
     }
 
@@ -826,7 +826,7 @@ public class Conversation
                     
                         if (OnAfterToolsCall is not null)
                         {
-                            await OnAfterToolsCall(result);
+                            await OnAfterToolsCall(result).ConfigureAwait(false);
                         } 
                     }   
                 }
@@ -856,12 +856,6 @@ public class Conversation
                     Type = ChatRichResponseBlockTypes.Audio,
                     ChatAudio = newMsg.Audio
                 });
-            }
-
-            if (RequestParameters.ResponseFormat?.Schema?.Delegate is not null && RequestParameters.ResponseFormat.Type is ChatRequestResponseFormatTypes.StructuredJson)
-            {
-                string? content = blocks.FirstOrDefault(x => x.Type is ChatRichResponseBlockTypes.Message)?.Message;
-                await RequestParameters.ResponseFormat.Invoke(content ?? "{}");   
             }
         }
 
@@ -897,12 +891,12 @@ public class Conversation
         
         if (capabilityEndpoint is CapabilityEndpoints.Responses && req.ResponseRequestParameters is not null)
         {
-            ResponseResult result = await responsesEndpoint.CreateResponse(ResponseHelpers.ToResponseRequest(req.ResponseRequestParameters, req));
+            ResponseResult result = await responsesEndpoint.CreateResponse(ResponseHelpers.ToResponseRequest(req.ResponseRequestParameters, req)).ConfigureAwait(false);
             res = ResponseHelpers.ToChatResult(result);
         }
         else
         {
-            res = await endpoint.CreateChatCompletion(req);
+            res = await endpoint.CreateChatCompletion(req).ConfigureAwait(false);
         }
 
         if (res is null)
@@ -917,7 +911,7 @@ public class Conversation
             return new ChatRichResponse(res, null);
         }
 
-        return await HandleResponseRich(res, functionCallHandler);
+        return await HandleResponseRich(res, functionCallHandler).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -933,7 +927,7 @@ public class Conversation
             CancellationToken = token
         };
 
-        HttpCallResult<ChatResult> res = await endpoint.CreateChatCompletionSafe(req);
+        HttpCallResult<ChatResult> res = await endpoint.CreateChatCompletionSafe(req).ConfigureAwait(false);
 
         if (!res.Ok)
         {

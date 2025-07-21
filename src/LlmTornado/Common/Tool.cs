@@ -518,6 +518,9 @@ public class Tool
     [JsonIgnore]
     public Delegate? Delegate { get; }
     
+    [JsonIgnore]
+    internal DelegateMetadata? DelegateMetadata { get; set; }
+    
     internal Tool(Delegate function, string? name = null, string? description = null, bool? strict = null)
     {
         Delegate = function;
@@ -577,7 +580,8 @@ public class Tool
             Function = fn;
         }
 
-        Function = ToolFactory.CreateFromMethod(Delegate, provider).ToolFunction;
+        DelegateMetadata = ToolFactory.CreateFromMethod(Delegate, provider);
+        Function = DelegateMetadata.ToolFunction;
         serializedDict.TryAdd(hash, Function);
     }
 

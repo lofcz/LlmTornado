@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using LlmTornado.Chat.Models;
+using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Models;
 using LlmTornado.Common;
@@ -122,6 +123,11 @@ public class ChatEndpoint : EndpointBase
             result.Data.Request = result.Request.HttpRequest;
         }
         
+        if (result.Data is not null)
+        {
+            await HandleChatResult(request, result.Data).ConfigureAwait(false);
+        }
+        
         return result.Data;
     }
 
@@ -165,6 +171,7 @@ public class ChatEndpoint : EndpointBase
         IEndpointProvider provider = Api.GetProvider(request.Model ?? ChatModel.OpenAi.Gpt35.Turbo);
         TornadoRequestContent requestBody = request.Serialize(provider);
         HttpCallResult<ChatResult> result = await HttpPost<ChatResult>(provider, Endpoint, requestBody.Url, requestBody.Body, request.Model, request, request.CancellationToken).ConfigureAwait(false);
+        
         NormalizeChatResult(result);
         
         if (Api.ChatRequestInterceptor is not null && result.Ok)
@@ -172,7 +179,60 @@ public class ChatEndpoint : EndpointBase
             await Api.ChatRequestInterceptor.Invoke(request, result.Data).ConfigureAwait(false);
         }
 
+        if (result.Data is not null)
+        {
+            await HandleChatResult(request, result.Data).ConfigureAwait(false);
+        }
+        
         return result;
+    }
+
+    static async ValueTask HandleChatResult(ChatRequest request, ChatResult result)
+    {
+        if (result.Choices is null)
+        {
+            return;
+        }
+        
+        foreach (ChatChoice choice in result.Choices)
+        {
+            if (choice.Message is null)
+            {
+                continue;
+            }
+
+            if (request.ResponseFormat?.Schema?.Delegate is not null && request.ResponseFormat.Type is ChatRequestResponseFormatTypes.StructuredJson)
+            {
+                string? content = choice.Message.Content ?? choice.Message.Parts?.FirstOrDefault(x => x.Type is ChatMessageTypes.Text)?.Text;
+                result.InvocationResult = await request.ResponseFormat.Invoke(content ?? "{}").ConfigureAwait(false); 
+            }
+            else if ((request.Tools?.Any(x => x.Delegate is not null) ?? false) && choice.Message.ToolCalls?.Count > 0)
+            {
+                List<Task> tasks = [];
+                
+                foreach (ToolCall toolCall in choice.Message.ToolCalls)
+                {
+                    Tool? match = request.Tools.FirstOrDefault(x => string.Equals(x.Function?.Name, toolCall.FunctionCall.Name));
+
+                    if (match?.Delegate is null)
+                    {
+                        continue;
+                    }
+
+                    toolCall.FunctionCall.Tool = match;
+                    
+                    tasks.Add(Task.Run(async () =>
+                    {
+                        await toolCall.FunctionCall.Invoke(toolCall.FunctionCall.Arguments).ConfigureAwait(false);
+                    }));
+                }
+
+                if (tasks.Count > 0)
+                {
+                    await Task.WhenAll(tasks).ConfigureAwait(false);   
+                }
+            }
+        }
     }
 
     /// <summary>

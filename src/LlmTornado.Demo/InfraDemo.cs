@@ -53,8 +53,16 @@ public class InfraDemo : DemoBase
             Model = ChatModel.OpenAi.Gpt41.V41,
             Tools =
             [
-                new Tool((string location, Continents continent, ComplexClass cls, List<string> names, List<Person> people) =>
+                new Tool((string location, Continents continent, ComplexClass cls, List<string> names, List<Person> people, ToolArguments args) =>
                 {
+                    if (args.TryGetArgument("people", out List<Person>? fetchedPeople))
+                    {
+                        foreach (Person person in fetchedPeople)
+                        {
+                            Console.WriteLine(person.Name);
+                        }
+                    }
+                    
                     return "";
                 })
             ],

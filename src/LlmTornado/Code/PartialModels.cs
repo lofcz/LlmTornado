@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Frozen;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -1423,6 +1424,73 @@ public class TornadoRequestContent
         sb.AppendLine(Body.ToString());
 
         return sb.ToString().TrimEnd();
+    }
+}
+
+/// <summary>
+/// Provides direct access to the arguments inferred by the model.
+/// </summary>
+public class ToolArguments
+{
+    [JsonIgnore] 
+    internal readonly Lazy<ChatFunctionParamsGetter> ArgGetter;
+    
+    [JsonIgnore] 
+    internal readonly Lazy<Dictionary<string, object?>?> DecodedArguments;
+
+    public ToolArguments()
+    {
+        ArgGetter = new Lazy<ChatFunctionParamsGetter>(() => new ChatFunctionParamsGetter(DecodedArguments?.Value));
+        DecodedArguments = new Lazy<Dictionary<string, object?>?>(() => Data.IsNullOrWhiteSpace() ? [] : JsonConvert.DeserializeObject<Dictionary<string, object?>>(Data));
+    }
+    
+    /// <summary>
+    /// The raw JSON.
+    /// </summary>
+    public string Data { get; set; }
+    
+    /// <summary>
+    ///     Gets all arguments passed to the function call as a dictionary.
+    /// </summary>
+    public Dictionary<string, object?> Arguments => ArgGetter.Value.Source ?? [];
+    
+    /// <summary>
+    /// Gets the specified argument or default value.
+    /// </summary>
+    public T? GetOrDefault<T>(string param, T? defaultValue = default)
+    {
+        return Get(param, out T? data, out _) ? data : defaultValue;
+    }
+
+    /// <summary>
+    /// Gets the specified argument. If the conversion to T fails, the exception is ignored.
+    /// </summary>
+    /// <param name="param">Key</param>
+    /// <param name="data">Type to which the argument should be converted.</param>
+    public bool Get<T>(string param, out T? data)
+    {
+        return Get(param, out data, out _);
+    }
+    
+    /// <summary>
+    /// Gets the specified argument. If the conversion to T fails, the exception is ignored.
+    /// </summary>
+    /// <param name="param">Key</param>
+    /// <param name="data">Type to which the argument should be converted.</param>
+    public bool TryGetArgument<T>(string param, [NotNullWhen(true)] out T? data)
+    {
+        return Get(param, out data, out _);
+    }
+
+    /// <summary>
+    /// Gets the specified argument.
+    /// </summary>
+    /// <param name="param">Key</param>
+    /// <param name="data">Type to which the argument should be converted.</param>
+    /// <param name="exception">If the conversion fails, the exception is returned here.</param>
+    public bool Get<T>(string param, out T? data, out Exception? exception)
+    {
+        return Clr.Get(param, Arguments, out data, out exception);
     }
 }
 

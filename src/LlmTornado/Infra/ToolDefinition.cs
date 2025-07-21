@@ -305,6 +305,21 @@ public interface IToolParamType
     public object Compile(ToolDefinition sourceFn, ToolMeta meta);
 }
 
+public class ToolParamArguments : IToolParamType
+{
+    public string Type { get; }
+    public string? Description { get; set; }
+    public bool Required { get; set; }
+
+    [JsonIgnore]
+    public Type? DataType { get; set; } = typeof(ToolArguments);
+
+    public object Compile(ToolDefinition sourceFn, ToolMeta meta)
+    {
+        return null!;
+    }
+}
+
 public abstract class ToolParamTypeBase : IToolParamType
 {
     public abstract string Type { get; }
@@ -557,6 +572,11 @@ public class ToolParamObject : ToolParamTypeBase
 
         foreach (ToolParam prop in Properties)
         {
+            if (prop.Type is ToolParamArguments)
+            {
+                continue;
+            }
+            
             if (prop.Type.Required || sourceFn.Strict) // in strict mode all props all required
             {
                 so.Required ??= [];

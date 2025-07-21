@@ -108,7 +108,11 @@ internal static class ToolFactory
         Type baseType = baseTypeInfo.Item1;
         bool typeIsNullable = baseTypeInfo.Item2;
 
-        if (baseType == typeof(string))
+        if (baseType == typeof(ToolArguments))
+        {
+            pars.Add(new ToolParam(name, new ToolParamArguments()));
+        }
+        else if (baseType == typeof(string))
         {
             pars.Add(new ToolParam(name, new ToolParamString(null, !typeIsNullable) { DataType = type }));   
         }

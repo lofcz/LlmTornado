@@ -17,12 +17,23 @@ internal static class Clr
             object? result = null;
 
             List<object?> args = [];
-            JObject jObject = JObject.Parse(data ?? "{}");
+            string normalizedData = data ?? "{}";
+            JObject jObject = JObject.Parse(normalizedData);
             
             if (metadata.Tool.Params is not null)
             {
                 foreach (ToolParam param in metadata.Tool.Params)
                 {
+                    if (param.Type is ToolParamArguments toolArgs)
+                    {
+                        args.Add(new ToolArguments
+                        {
+                            Data = normalizedData
+                        });
+                        
+                        continue;
+                    }
+                    
                     if (jObject.TryGetValue(param.Name, StringComparison.OrdinalIgnoreCase, out JToken? token) && param.Type.DataType is not null)
                     {
                         Type dataType = param.Type.DataType;
@@ -100,5 +111,76 @@ internal static class Clr
         }
 
         return null;
+    }
+    
+    /// <summary>
+    /// Gets the specified argument.
+    /// </summary>
+    public static bool Get<T>(string param, Dictionary<string, object?> arguments, out T? data, out Exception? exception)
+    {
+        exception = null;
+
+        if (!arguments.TryGetValue(param, out object? rawData))
+        {
+            data = default;
+            return false; 
+        }
+
+        if (rawData is T obj)
+        {
+            data = obj;
+            return true;
+        }
+
+        switch (rawData)
+        {
+            case JArray jArr:
+            {
+                data = jArr.ToObject<T?>();
+                return true;
+            }
+            case JObject jObj:
+            {
+                data = jObj.ToObject<T?>();
+                return true;
+            }
+            case string str:
+            {
+                if (typeof(T).IsClass || (typeof(T).IsValueType && !typeof(T).IsPrimitive && !typeof(T).IsEnum))
+                {
+                    if (str.SanitizeJsonTrailingComma().CaptureJsonDecode(out T? decoded, out Exception? parseException))
+                    {
+                        data = decoded;
+                        return true;
+                    }
+                }
+                
+                try
+                {
+                    data = (T?)rawData.ChangeType(typeof(T));
+                    return true;
+                }
+                catch (Exception e)
+                {
+                    data = default;
+                    exception = e;
+                    return false;
+                }
+            }
+            default:
+            {
+                try
+                {
+                    data = (T?)rawData.ChangeType(typeof(T));
+                    return true;
+                }
+                catch (Exception e)
+                {
+                    data = default;
+                    exception = e;
+                    return false;
+                }
+            }
+        }
     }
 }
