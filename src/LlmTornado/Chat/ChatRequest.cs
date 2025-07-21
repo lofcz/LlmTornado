@@ -558,19 +558,26 @@ public class ChatRequest : IModelRequest
 	
 	internal static CapabilityEndpoints GetCapabilityEndpoint(ChatRequest req)
 	{
-		if (req.UseResponseEndpoint is false || req.Model?.Provider is not LLmProviders.OpenAi || req.Model.EndpointCapabilities is null || req.ResponseRequestParameters is null)
-		{
-			return CapabilityEndpoints.Chat;
-		}
-
-		// automatically upcast in case /chat endpoint is not available and only /response is
-		if (req.Model.EndpointCapabilities.Contains(ChatModelEndpointCapabilities.Responses) && !req.Model.EndpointCapabilities.Contains(ChatModelEndpointCapabilities.Chat))
+		// if we are explicitly told to use responses, honor the setting
+		if (req.UseResponseEndpoint is true)
 		{
 			return CapabilityEndpoints.Responses;
 		}
-        
-		// upcast to the response endpoint if the user enabled it, provided a parameter for response request and model supports that feature
-		if (req.Model.EndpointCapabilities.Contains(ChatModelEndpointCapabilities.Responses) && req.UseResponseEndpoint is not false && req.ResponseRequestParameters is not null)
+		
+		// if we are explicitly told to not use responses, or the model is from an unsupported provider
+		if (req.UseResponseEndpoint is false || req.Model?.Provider is not LLmProviders.OpenAi)
+		{
+			return CapabilityEndpoints.Chat;
+		}
+		
+		// if we are missing metadata, use responses if we have parameters for it
+		if (req.Model.EndpointCapabilities is null || req.Model.EndpointCapabilities.Count is 0)
+		{
+			return req.ResponseRequestParameters is not null ? CapabilityEndpoints.Responses : CapabilityEndpoints.Chat;
+		}
+
+		// automatically upcast in the case of /chat endpoint not being supported by the model
+		if (req.Model.EndpointCapabilities.Contains(ChatModelEndpointCapabilities.Responses) && !req.Model.EndpointCapabilities.Contains(ChatModelEndpointCapabilities.Chat))
 		{
 			return CapabilityEndpoints.Responses;
 		}
