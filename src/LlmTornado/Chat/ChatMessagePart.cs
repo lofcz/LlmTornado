@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -161,7 +161,31 @@ public class ChatMessagePart
 
         Type = ChatMessageTypes.Document;
     }
-    
+
+    /// <summary>
+    ///     The part is an image, audio or video with a publicly available URL.
+    /// </summary>
+    /// <param name="uri">Publicly available URL to the image, audio or video content</param>
+    /// <param name="type">Image, Audio or Video type</param>
+    public ChatMessagePart(Uri uri, ChatMessageTypes type)
+    {
+        switch (type)
+        {
+            case ChatMessageTypes.Image:
+                Image = new ChatImage(uri.ToString());
+                break;
+            case ChatMessageTypes.Audio:
+                Audio = new ChatAudio(uri);
+                break;
+            case ChatMessageTypes.Video:
+                Video = new ChatVideo(uri);
+                break;
+            default:
+                throw new ArgumentException($"Invalid type '{type}'. Only image, audio or video type is allowed.");
+        }
+        Type = type;
+    }
+
     /// <summary>
     ///     The part is a document.
     /// </summary>
@@ -204,7 +228,13 @@ public class ChatMessagePart
     /// </summary>
     [JsonProperty("input_audio")]
     public ChatAudio? Audio { get; set; }
-    
+
+    /// <summary>
+    ///     Image of the message part if type is <see cref="ChatMessageTypes.Video" />.
+    /// </summary>
+    [JsonProperty("video_url")]
+    public ChatVideo? Video { get; set; }
+
     /// <summary>
     ///     Search result of the message part if type is <see cref="ChatMessageTypes.SearchResult" />.
     /// </summary>
@@ -314,5 +344,16 @@ public class ChatMessagePart
     public static ChatMessagePart Create(string documentPathOrBase64, DocumentLinkTypes linkType)
     {
         return new ChatMessagePart(documentPathOrBase64, linkType);
+    }
+
+    /// <summary>
+    ///     Creates an image, audio or video part from a given document.
+    /// </summary>
+    /// <param name="uri">Publicly available URL to the image, audio or video content</param>
+    /// <param name="type">Image, Audio or Video type</param>
+    /// <returns></returns>
+    public static ChatMessagePart Create(Uri uri, ChatMessageTypes type)
+    {
+        return new ChatMessagePart(uri, type);
     }
 }
