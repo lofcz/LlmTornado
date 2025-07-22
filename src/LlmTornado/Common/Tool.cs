@@ -521,7 +521,7 @@ public class Tool
     [JsonIgnore]
     internal DelegateMetadata? DelegateMetadata { get; set; }
     
-    internal Tool(Delegate function, string? name = null, string? description = null, bool? strict = null)
+    internal Tool(Delegate function, ToolMetadata? metadata = null, bool? strict = null)
     {
         Delegate = function;
         Strict = strict;

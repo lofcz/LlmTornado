@@ -1010,6 +1010,13 @@ public class ChatAudio
     }
 }
 
+public class ToolMetadata
+{
+    public string? Name { get; set; }
+    public string? Description { get; set; }
+    
+}
+
 /// <summary>
 ///     Represents a video part of a chat message.
 /// </summary>

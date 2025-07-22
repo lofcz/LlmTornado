@@ -284,6 +284,19 @@ public class ToolParam
     }
 }
 
+public enum ToolParamSerializer
+{
+    Undefined,
+    Arguments,
+    Dictionary,
+    Set,
+    MultidimensionalArray,
+    Array,
+    NonGenericEnumerable,
+    Object,
+    Atomic
+}
+
 public class ToolMeta
 {
     public IEndpointProvider Provider { get; set; }
@@ -301,6 +314,12 @@ public interface IToolParamType
     /// </summary>
     [JsonIgnore]
     public Type? DataType { get; set; }
+    
+    /// <summary>
+    /// The cached serializer for this parameter, used for fast deserialization.
+    /// </summary>
+    [JsonIgnore]
+    public ToolParamSerializer Serializer { get; set; }
 
     public object Compile(ToolDefinition sourceFn, ToolMeta meta);
 }
@@ -313,6 +332,9 @@ public class ToolParamArguments : IToolParamType
 
     [JsonIgnore]
     public Type? DataType { get; set; } = typeof(ToolArguments);
+    
+    [JsonIgnore]
+    public ToolParamSerializer Serializer { get; set; } = ToolParamSerializer.Arguments;
 
     public object Compile(ToolDefinition sourceFn, ToolMeta meta)
     {
@@ -331,6 +353,12 @@ public abstract class ToolParamTypeBase : IToolParamType
     /// </summary>
     [JsonIgnore]
     public Type? DataType { get; set; }
+    
+    /// <summary>
+    /// <inheritdoc cref="IToolParamType.Serializer"/>
+    /// </summary>
+    [JsonIgnore]
+    public ToolParamSerializer Serializer { get; set; }
     
     public virtual object Compile(ToolDefinition sourceFn, ToolMeta meta)
     {
@@ -515,23 +543,16 @@ public class ToolParamListAtomic : ToolParamTypeBase
     }
 }
 
-public class ToolParamListObject : ToolParamTypeBase
+public class ToolParamList : ToolParamTypeBase
 {
     public override string Type => "array";
-    public ToolParamObject Items { get; set; }
+    public IToolParamType Items { get; set; }
 
-    public ToolParamListObject(string description, bool required, ToolParamObject list)
+    public ToolParamList(string description, bool required, IToolParamType list)
     {
         Description = description;
         Required = required;
         Items = list;
-    }
-    
-    public ToolParamListObject(string description, bool required, List<ToolParam> properties)
-    {
-        Description = description;
-        Required = required;
-        Items = new ToolParamObject(properties);
     }
     
     public override object Compile(ToolDefinition sourceFn, ToolMeta meta)
@@ -636,7 +657,7 @@ public class ToolParamDictionary : ToolParamTypeBase
                 new ToolParam("value", ValueType)
             ]);
             
-            ToolParamListObject listType = new ToolParamListObject(Description, true, keyValueObject);
+            ToolParamList listType = new ToolParamList(Description, true, keyValueObject);
             return listType.Compile(sourceFn, meta);
         }
         

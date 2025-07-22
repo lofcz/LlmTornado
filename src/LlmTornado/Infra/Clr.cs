@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using LlmTornado.Code;
 using Newtonsoft.Json.Linq;
@@ -10,6 +11,136 @@ namespace LlmTornado.Infra;
 
 internal static class Clr
 {
+    private static object? DeserializePrimitive(JToken token, Type dataType)
+    {
+        return token.ToObject(dataType);
+    }
+
+    private static object? DeserializeObject(JToken token, Type dataType)
+    {
+        return token.ToObject(dataType);
+    }
+
+    private static object DeserializeNonGenericEnumerable(JToken token)
+    {
+        ArrayList list = new ArrayList();
+        
+        if (token is JArray jArray)
+        {
+            foreach (JToken item in jArray)
+            {
+                list.Add(item.ToObject<object>()!);
+            }
+        }
+
+        return list;
+    }
+
+    private static object? DeserializeMdArray(JToken token, Type dataType)
+    {
+        if (token is JObject mdArrayObject &&
+            mdArrayObject.TryGetValue("lengths", StringComparison.OrdinalIgnoreCase, out JToken? lengthsToken) &&
+            mdArrayObject.TryGetValue("values", StringComparison.OrdinalIgnoreCase, out JToken? valuesToken))
+        {
+            int[]? lengths = lengthsToken.ToObject<int[]>();
+            Type? elementType = dataType.GetElementType();
+
+            if (lengths is not null && elementType is not null)
+            {
+                Array mdArray = Array.CreateInstance(elementType, lengths);
+                JArray valuesArray = (JArray)valuesToken;
+                int[] indices = new int[lengths.Length];
+
+                for (int i = 0; i < valuesArray.Count; i++)
+                {
+                    int linearIndex = i;
+                    for (int dim = lengths.Length - 1; dim >= 0; dim--)
+                    {
+                        indices[dim] = linearIndex % lengths[dim];
+                        linearIndex /= lengths[dim];
+                    }
+
+                    mdArray.SetValue(valuesArray[i].ToObject(elementType), indices);
+                }
+
+                return mdArray;
+            }
+        }
+
+        return null;
+    }
+    
+    private static object DeserializeSet(JToken token, Type dataType)
+    {
+        Type[] genericArgs = dataType.GetGenericArguments();
+        Type elementType = genericArgs[0];
+
+        Type listType = typeof(List<>).MakeGenericType(elementType);
+        IList list = (IList)Activator.CreateInstance(listType)!;
+
+        if (token is JArray jSet)
+        {
+            foreach (JToken item in jSet)
+            {
+                list.Add(item.ToObject(elementType)!);
+            }
+        }
+        
+        Type concreteType = (dataType.IsInterface || dataType.IsAbstract) ? typeof(HashSet<>).MakeGenericType(elementType) : dataType;
+        object set;
+
+        try
+        {
+            set = Activator.CreateInstance(concreteType, list)!;
+        }
+        catch (MissingMethodException)
+        {
+            set = Activator.CreateInstance(concreteType)!;
+            MethodInfo? addMethod = concreteType.GetMethod("Add", [elementType]);
+
+            if (addMethod is not null)
+            {
+                foreach (object? listItem in list)
+                {
+                    addMethod.Invoke(set, [listItem]);
+                }
+            }
+            else
+            {
+                set = Activator.CreateInstance(typeof(HashSet<>).MakeGenericType(elementType), list)!;
+            }
+        }
+
+        return set;
+    }
+
+    private static object DeserializeDictionary(JToken token, Type dataType)
+    {
+        IDictionary dict = (IDictionary)Activator.CreateInstance(dataType)!;
+        Type[] genericArgs = dataType.GetGenericArguments();
+        Type keyType = genericArgs[0];
+        Type valueType = genericArgs[1];
+
+        if (token is JArray array)
+        {
+            foreach(JObject item in array.Children<JObject>())
+            {
+                if (item.TryGetValue("key", StringComparison.OrdinalIgnoreCase, out JToken? keyToken) && item.TryGetValue("value", StringComparison.OrdinalIgnoreCase, out JToken? valueToken))
+                {
+                    object? key = keyToken.ToObject(keyType);
+                    object? val = valueToken.ToObject(valueType);
+                                    
+                    if (key is not null)
+                    {
+                        dict.Add(key, val);
+                    }
+                }
+            }
+        }
+        
+        return dict;
+    }
+    
     public static async ValueTask<object?> Invoke(Delegate? function, DelegateMetadata? metadata, string? data)
     {
         if (function is not null && metadata is not null)
@@ -24,12 +155,15 @@ internal static class Clr
             {
                 foreach (ToolParam param in metadata.Tool.Params)
                 {
-                    if (param.Type is ToolParamArguments toolArgs)
+                    if (param.Type.Serializer is ToolParamSerializer.Arguments)
                     {
-                        args.Add(new ToolArguments
+                        if (param.Type is ToolParamArguments)
                         {
-                            Data = normalizedData
-                        });
+                            args.Add(new ToolArguments
+                            {
+                                Data = normalizedData
+                            });
+                        }
                         
                         continue;
                     }
@@ -37,81 +171,32 @@ internal static class Clr
                     if (jObject.TryGetValue(param.Name, StringComparison.OrdinalIgnoreCase, out JToken? token) && param.Type.DataType is not null)
                     {
                         Type dataType = param.Type.DataType;
-                        bool isDictionary = dataType.GetInterfaces().Append(dataType).Any(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(IDictionary<,>));
-                        bool isMdArray = dataType.IsArray && dataType.GetArrayRank() > 1;
-                        bool isNonGenericEnumerable = !dataType.IsArray && !dataType.IsGenericType && dataType.GetInterfaces().Append(dataType).Any(x => x == typeof(IEnumerable));
                         
-                        if (isDictionary && token is JArray array)
+                        switch (param.Type.Serializer)
                         {
-                            IDictionary dict = (IDictionary)Activator.CreateInstance(dataType)!;
-                            Type[] genericArgs = dataType.GetGenericArguments();
-                            Type keyType = genericArgs[0];
-                            Type valueType = genericArgs[1];
-
-                            foreach(JObject item in array.Children<JObject>())
-                            {
-                                if (item.TryGetValue("key", StringComparison.OrdinalIgnoreCase, out JToken? keyToken) && item.TryGetValue("value", StringComparison.OrdinalIgnoreCase, out JToken? valueToken))
-                                {
-                                    object? key = keyToken.ToObject(keyType);
-                                    object? val = valueToken.ToObject(valueType);
-                                    
-                                    if (key is not null)
-                                    {
-                                        dict.Add(key, val);
-                                    }
-                                }
-                            }
-                            
-                            args.Add(dict);
-                        }
-                        else if (isMdArray && token is JObject mdArrayObject)
-                        {
-                            if (mdArrayObject.TryGetValue("lengths", StringComparison.OrdinalIgnoreCase, out JToken? lengthsToken) && mdArrayObject.TryGetValue("values", StringComparison.OrdinalIgnoreCase, out JToken? valuesToken))
-                            {
-                                int[]? lengths = lengthsToken.ToObject<int[]>();
-                                Type? elementType = dataType.GetElementType();
-
-                                if (lengths is not null && elementType is not null)
-                                {
-                                    Array mdArray = Array.CreateInstance(elementType, lengths);
-                                    JArray valuesArray = (JArray)valuesToken;
-                                    int[] indices = new int[lengths.Length];
-                                    
-                                    for(int i = 0; i < valuesArray.Count; i++)
-                                    {
-                                        int linearIndex = i;
-                                        for (int dim = lengths.Length - 1; dim >= 0; dim--)
-                                        {
-                                            indices[dim] = linearIndex % lengths[dim];
-                                            linearIndex /= lengths[dim];
-                                        }
-                                        mdArray.SetValue(valuesArray[i].ToObject(elementType), indices);
-                                    }
-                                    
-                                    args.Add(mdArray);
-                                }
-                                else
-                                {
-                                    args.Add(null);
-                                }
-                            }
-                            else
-                            {
-                                args.Add(null);
-                            }
-                        }
-                        else if (isNonGenericEnumerable && token is JArray jArray)
-                        {
-                            ArrayList list = new ArrayList();
-                            foreach (JToken item in jArray)
-                            {
-                                list.Add(item.ToObject<object>());
-                            }
-                            args.Add(list);
-                        }
-                        else
-                        {
-                            args.Add(token.ToObject(dataType));
+                            case ToolParamSerializer.Dictionary:
+                                args.Add(DeserializeDictionary(token, dataType));
+                                break;
+                            case ToolParamSerializer.Set:
+                                args.Add(DeserializeSet(token, dataType));
+                                break;
+                            case ToolParamSerializer.MultidimensionalArray:
+                                args.Add(DeserializeMdArray(token, dataType));
+                                break;
+                            case ToolParamSerializer.NonGenericEnumerable:
+                                args.Add(DeserializeNonGenericEnumerable(token));
+                                break;
+                            case ToolParamSerializer.Array:
+                            case ToolParamSerializer.Object:
+                                args.Add(DeserializeObject(token, dataType));
+                                break;
+                            case ToolParamSerializer.Atomic:
+                                args.Add(DeserializePrimitive(token, dataType));
+                                break;
+                            case ToolParamSerializer.Undefined:
+                            default:
+                                args.Add(token.ToObject(dataType));
+                                break;
                         }
                     }
                     else

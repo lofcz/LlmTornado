@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.ComponentModel;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
@@ -45,6 +46,37 @@ public class InfraDemo : DemoBase
             public string Name { get; set; }
         }
     
+        [TornadoTest]
+        public static async Task TornadoFunctionConcurrentCollection()
+        {
+            Conversation conversation = Program.Connect().Chat.CreateConversation(new ChatRequest
+            {
+                Model = ChatModel.OpenAi.Gpt41.V41,
+                Tools =
+                [
+                    new Tool((ConcurrentDictionary<string, string> gameShortcutNamePairs, ToolArguments args) =>
+                    {
+                        
+                        return "";
+                    })
+                ],
+                ToolChoice = OutboundToolChoice.Required
+            });
+
+            conversation.AddUserMessage("Fill the provided JSON structure with mock data");
+
+            TornadoRequestContent serialized = conversation.Serialize(new ChatRequestSerializeOptions
+            {
+                Pretty = true
+            });
+        
+            Console.Write(serialized);
+
+            var data = await conversation.GetResponseRich();
+
+            int z = 0;
+        }
+        
     [TornadoTest]
     public static async Task TornadoFunction()
     {
@@ -53,7 +85,7 @@ public class InfraDemo : DemoBase
             Model = ChatModel.OpenAi.Gpt41.V41,
             Tools =
             [
-                new Tool((string location, Continents continent, ComplexClass cls, List<string> names, List<Person> people, string[] popularGames, string[,] wonGameOfCheckers3x3useXOchars, Continents[] allContinents, ToolArguments args) =>
+                new Tool((string location, Continents continent, ComplexClass cls, List<string> names, List<Person> people, string[] popularGames, string[,] wonGameOfCheckers3x3useXOchars, Continents[] allContinents, string[][] rpgInventoryItemsUseXForEmpty, HashSet<int> setOfUniqueInts, ToolArguments args) =>
                 {
                     if (args.TryGetArgument("people", out List<Person>? fetchedPeople))
                     {
@@ -89,7 +121,7 @@ public class InfraDemo : DemoBase
         Conversation conversation = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
             Model = ChatModel.OpenAi.Gpt41.V41,
-            ResponseFormat = ChatRequestResponseFormats.StructuredJson(async (string location, Continents continent, ComplexClass cls, List<string> names, List<Person> people, Dictionary<string, string> gameShortcutNamePairs) =>
+            ResponseFormat = ChatRequestResponseFormats.StructuredJson(async (string location, Continents continent, ComplexClass cls, List<string> names, List<Person> people, Dictionary<string, string> gameShortcutNamePairs, HashSet<int> setOfInts) =>
             {
                 await Task.Delay(500);
                 Console.WriteLine("test");

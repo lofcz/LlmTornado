@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -22,7 +23,7 @@ internal static class ToolFactory
     
     static bool IsIEnumerable(this Type type)
     {
-        return type.GetInterfaces().Append(type).Any(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(IEnumerable<>));
+        return type.GetInterfaces().Append(type).Any(x => x == typeof(IEnumerable) || x == typeof(IEnumerable<>));
     }
     
     static bool IsIList(this Type type)
@@ -72,42 +73,96 @@ internal static class ToolFactory
         return new DelegateMetadata(compiled, function);
     }
 
+    private static IToolParamType GetParamFromType(Type type)
+    {
+        Tuple<Type, bool> baseTypeInfo = GetNullableBaseType(type);
+        Type baseType = baseTypeInfo.Item1;
+        bool typeIsNullable = baseTypeInfo.Item2;
+
+        if (baseType == typeof(ToolArguments))
+        {
+            return new ToolParamArguments();
+        }
+
+        if (IsKnownAtomicType(baseType, out _))
+        {
+            return new ToolParamString(null, !typeIsNullable) { DataType = type, Serializer = ToolParamSerializer.Atomic };
+        }
+        
+        if (baseType.IsEnum)
+        {
+            List<string> vals = Enum.GetValues(baseType).Cast<object>().Select(x => x.ToString()!).ToList();
+            return new ToolParamEnum(null, !typeIsNullable, vals) { DataType = type, Serializer = ToolParamSerializer.Atomic };
+        }
+
+        if (baseType.IsArray)
+        {
+            int rank = baseType.GetArrayRank();
+
+            if (rank > 1)
+            {
+                Type elementType = baseType.GetElementType()!;
+                Type flatArrayType = Array.CreateInstance(elementType, 0).GetType();
+                IToolParamType valuesParamType = GetParamFromType(flatArrayType);
+                
+                return new ToolParamObject("A multi-dimensional array.",
+                [
+                    new ToolParam("lengths", new ToolParamListAtomic("Dimensions of the array", true, ToolParamAtomicTypes.Int) { DataType = typeof(int[]) }),
+                    new ToolParam("values", valuesParamType)
+                ]) { DataType = type, Serializer = ToolParamSerializer.MultidimensionalArray };
+            }
+
+            return new ToolParamList(null, !typeIsNullable, GetParamFromType(baseType.GetElementType()!)) { DataType = type, Serializer = ToolParamSerializer.Array };
+        }
+
+        if (IsIEnumerable(baseType))
+        {
+            if (!baseType.IsGenericType)
+            {
+                return new ToolParamList(null, !typeIsNullable, GetParamFromType(typeof(string))) { DataType = baseType, Serializer = ToolParamSerializer.NonGenericEnumerable };
+            }
+            
+            if (IsISet(baseType))
+            {
+                return new ToolParamList(null, !typeIsNullable, GetParamFromType(baseType.GetGenericArguments()[0])) { DataType = type, Serializer = ToolParamSerializer.Set };
+            }
+
+            if (IsIList(baseType))
+            {
+                return new ToolParamList(null, !typeIsNullable, GetParamFromType(baseType.GetGenericArguments()[0])) { DataType = type, Serializer = ToolParamSerializer.Array };
+            }
+
+            if (IsIDictionary(baseType))
+            {
+                Type[] genericArgs = baseType.GetGenericArguments();
+                IToolParamType valueType;
+
+                if (genericArgs.Length >= 2)
+                {
+                    valueType = GetParamFromType(genericArgs[1]);
+                }
+                else
+                {
+                    valueType = new ToolParamString(null, true) { DataType = typeof(string) };
+                }
+
+                return new ToolParamDictionary(null, !typeIsNullable, valueType) { DataType = type, Serializer = ToolParamSerializer.Dictionary };
+            }
+        }
+
+        ToolParamObject obj = new ToolParamObject(null, []) { DataType = type, Serializer = ToolParamSerializer.Object };
+        UnpackType(baseType, obj);
+        return obj;
+    }
+    
     static void UnpackType(Type type, ToolParamObject parent)
     {
         PropertyInfo[] props = type.GetProperties();
         
         foreach (PropertyInfo property in props)
         {
-            Handle(property.Name, property.PropertyType, parent.Properties);
+            parent.Properties.Add(new ToolParam(property.Name, GetParamFromType(property.PropertyType)));
         }
-    }
-
-    private static IToolParamType CreateListParameterType(Type type, bool isNullable, string? description = null)
-    {
-        Type elementType = type.IsArray ? type.GetElementType()! : type.GetGenericArguments()[0];
-        
-        Tuple<Type, bool> baseInnerTypeInfo = GetNullableBaseType(elementType);
-        Type baseInnerType = baseInnerTypeInfo.Item1;
-        
-        IToolParamType listType;
-
-        if (IsKnownAtomicType(baseInnerType, out ToolParamAtomicTypes? atomicType))
-        {
-            listType = new ToolParamListAtomic(description, !isNullable, atomicType.Value) { DataType = type };
-        }
-        else if (baseInnerType.IsEnum)
-        {
-            List<string> vals = Enum.GetValues(baseInnerType).Cast<object>().Select(x => x.ToString()!).ToList();
-            listType = new ToolParamListEnum(description, !isNullable, vals) { DataType = type };
-        }
-        else
-        {
-            ToolParamObject itemsObject = new ToolParamObject(null, []) { DataType = elementType };
-            UnpackType(baseInnerType, itemsObject);
-            listType = new ToolParamListObject(description, !isNullable, itemsObject) { DataType = type };
-        }
-        
-        return listType;
     }
 
     private static readonly Dictionary<Type, ToolParamAtomicTypes> atomicTypes = new Dictionary<Type, ToolParamAtomicTypes>
@@ -117,9 +172,11 @@ internal static class ToolFactory
         { typeof(float), ToolParamAtomicTypes.Float },
         { typeof(bool), ToolParamAtomicTypes.Bool },
         { typeof(int), ToolParamAtomicTypes.Int },
+        { typeof(uint), ToolParamAtomicTypes.Int },
         { typeof(byte), ToolParamAtomicTypes.Int },
         { typeof(short), ToolParamAtomicTypes.Int },
         { typeof(long), ToolParamAtomicTypes.Int },
+        { typeof(ulong), ToolParamAtomicTypes.Int },
         { typeof(decimal), ToolParamAtomicTypes.Float }
     };
 
@@ -132,129 +189,6 @@ internal static class ToolFactory
 
     static void Handle(string name, Type type, List<ToolParam> pars)
     {
-        Tuple<Type, bool> baseTypeInfo = GetNullableBaseType(type);
-        Type baseType = baseTypeInfo.Item1;
-        bool typeIsNullable = baseTypeInfo.Item2;
-
-        if (baseType == typeof(ToolArguments))
-        {
-            pars.Add(new ToolParam(name, new ToolParamArguments()));
-        }
-        else if (baseType == typeof(string))
-        {
-            pars.Add(new ToolParam(name, new ToolParamString(null, !typeIsNullable) { DataType = type }));   
-        }
-        else if (baseType == typeof(int))
-        {
-            pars.Add(new ToolParam(name, new ToolParamInt(null, !typeIsNullable) { DataType = type }));   
-        }
-        else if (baseType == typeof(float) || baseType == typeof(double))
-        {
-            pars.Add(new ToolParam(name, new ToolParamNumber(null, !typeIsNullable) { DataType = type }));   
-        }
-        else if (baseType == typeof(bool))
-        {
-            pars.Add(new ToolParam(name, new ToolParamBool(null, !typeIsNullable) { DataType = type }));   
-        }
-        else if (baseType.IsEnum)
-        {
-            List<string> vals = [];
-
-            foreach (object x in Enum.GetValues(baseType))
-            {
-                vals.Add(x.ToString());
-            }
-                
-            pars.Add(new ToolParam(name, new ToolParamEnum(null, !typeIsNullable, vals) { DataType = type }));   
-        }
-        else if (baseType.IsArray)
-        {
-            int rank = baseType.GetArrayRank();
-
-            if (rank > 1)
-            {
-                Type elementType = baseType.GetElementType()!;
-                Type flatArrayType = Array.CreateInstance(elementType, 0).GetType();
-                IToolParamType valuesParamType = CreateListParameterType(flatArrayType, false, "Flattened values of the array.");
-                
-                ToolParamObject mdArrayObject = new ToolParamObject("A multi-dimensional array.",
-                [
-                    new ToolParam("lengths", new ToolParamListAtomic("Dimensions of the array", true, ToolParamAtomicTypes.Int) { DataType = typeof(int[]) }),
-                    new ToolParam("values", valuesParamType)
-                ]) { DataType = type };
-                
-                pars.Add(new ToolParam(name, mdArrayObject));
-            }
-            else
-            {
-                pars.Add(new ToolParam(name, CreateListParameterType(baseType, typeIsNullable)));
-            }
-        }
-        else if (IsIEnumerable(baseType))
-        {
-            if (!baseType.IsGenericType)
-            {
-                pars.Add(new ToolParam(name, new ToolParamListAtomic(null, !typeIsNullable, ToolParamAtomicTypes.String) { DataType = baseType }));
-                return;
-            }
-            
-            Type[] genericArgs = baseType.GetGenericArguments();
-
-            if (IsIList(baseType))
-            {
-                pars.Add(new ToolParam(name, CreateListParameterType(baseType, typeIsNullable)));
-                return;
-            }
-            else if (IsISet(baseType))
-            {
-                // todo: implement sets handling
-            }
-            else if (IsIDictionary(baseType))
-            {
-                IToolParamType valueType;
-                
-                if (genericArgs.Length >= 2)
-                {
-                    Type valueTypeArg = genericArgs[1];
-                    Tuple<Type, bool> baseValueTypeInfo = GetNullableBaseType(valueTypeArg);
-                    Type baseValueType = baseValueTypeInfo.Item1;
-                    
-                    if (IsKnownAtomicType(baseValueType, out ToolParamAtomicTypes? atomicType))
-                    {
-                        valueType = atomicType.Value switch
-                        {
-                            ToolParamAtomicTypes.String => new ToolParamString(null, true) { DataType = valueTypeArg },
-                            ToolParamAtomicTypes.Int => new ToolParamInt(null, true) { DataType = valueTypeArg },
-                            ToolParamAtomicTypes.Float => new ToolParamNumber(null, true) { DataType = valueTypeArg },
-                            ToolParamAtomicTypes.Bool => new ToolParamBool(null, true) { DataType = valueTypeArg },
-                            _ => new ToolParamString(null, true) { DataType = valueTypeArg }
-                        };
-                    }
-                    else
-                    {
-                        ToolParamObject obj = new ToolParamObject(null, []) { DataType = valueTypeArg };
-                        UnpackType(baseValueType, obj);
-                        valueType = obj;
-                    }
-                }
-                else
-                {
-                    valueType = new ToolParamString(null, true) { DataType = typeof(string) };
-                }
-                
-                ToolParamDictionary dict = new ToolParamDictionary(null, !typeIsNullable, valueType) { DataType = type };
-                pars.Add(new ToolParam(name, dict));
-            }
-            else
-            {
-                // Potentially other IEnumerable types can be handled here
-            }
-        }
-        else
-        {
-            ToolParamObject obj = new ToolParamObject(null, []) { DataType = type };
-            UnpackType(baseType, obj);
-            pars.Add(new ToolParam(name, obj));
-        }
+        pars.Add(new ToolParam(name, GetParamFromType(type)));
     }
 }
