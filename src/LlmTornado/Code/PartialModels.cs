@@ -1,4 +1,16 @@
-﻿using System;
+using LlmTornado.Audio;
+using LlmTornado.Chat;
+using LlmTornado.Chat.Vendors.Anthropic;
+using LlmTornado.ChatFunctions;
+using LlmTornado.Code.Models;
+using LlmTornado.Code.Vendor;
+using LlmTornado.Common;
+using LlmTornado.Images;
+using LlmTornado.Infra;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -8,18 +20,6 @@ using System.Net.Http;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
-using LlmTornado.Images;
-using LlmTornado.Audio;
-using LlmTornado.Chat;
-using LlmTornado.Chat.Vendors.Anthropic;
-using LlmTornado.ChatFunctions;
-using LlmTornado.Code.Models;
-using LlmTornado.Code.Vendor;
-using LlmTornado.Common;
-using LlmTornado.Infra;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
-using Newtonsoft.Json.Linq;
 
 namespace LlmTornado.Code;
 
@@ -950,8 +950,14 @@ public class ChatAudio
     /// <summary>
     ///     Base64 encoded audio data.
     /// </summary>
-    public string Data { get; set; }
-    
+    public string? Data { get; set; }
+
+    /// <summary>
+    ///  Publicly available URL where the audio is stored.
+    /// </summary>
+    [JsonProperty("audio_url")]
+    public Uri? Url { get; set; }
+
     /// <summary>
     ///     MimeType of the audio.
     /// </summary>
@@ -980,7 +986,16 @@ public class ChatAudio
         Data = data;
         Format = format;
     }
-    
+
+    /// <summary>
+    ///     Creates an audio instance from a publicly available URL
+    /// </summary>
+    /// <param name="uri">Publicly available URL</param>
+    public ChatAudio(Uri uri)
+    {
+        Url = uri;
+    }
+
     /// <summary>
     ///     Creates an audio instance from data and format.
     /// </summary>
@@ -992,6 +1007,27 @@ public class ChatAudio
         Data = data;
         Format = format;
         MimeType = mimeType;
+    }
+}
+
+/// <summary>
+///     Represents a video part of a chat message.
+/// </summary>
+public class ChatVideo
+{
+    /// <summary>
+    ///  Publicly available URL for the video
+    /// </summary>
+    [JsonProperty("video_url")]
+    public Uri Url { get; set; }
+
+    /// <summary>
+    ///     Creates a video url instance from the uri.
+    /// </summary>
+    /// <param name="url">Publicly available URL for the resource</param>
+    public ChatVideo(Uri url)
+    {
+        Url = url;
     }
 }
 
