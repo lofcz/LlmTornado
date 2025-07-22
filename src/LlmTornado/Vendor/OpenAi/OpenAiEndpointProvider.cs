@@ -64,6 +64,7 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
             CapabilityEndpoints.Embeddings => "embeddings",
             CapabilityEndpoints.FineTuning => "fine_tuning",
             CapabilityEndpoints.Files => "files",
+            CapabilityEndpoints.Uploads => "uploads",
             CapabilityEndpoints.ImageGeneration => "images/generations",
             CapabilityEndpoints.ImageEdit => "images/edits",
             CapabilityEndpoints.Models => "models",
@@ -160,7 +161,7 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
         }
     }
     
-    public override T? InboundMessage<T>(string jsonData, string? postData) where T : default
+    public override T? InboundMessage<T>(string jsonData, string? postData, object? requestObject) where T : default
     {
         return Provider switch
         {
@@ -180,12 +181,12 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
         return JsonConvert.DeserializeObject<T>(jsonData);
     }
     
-    public override object? InboundMessage(Type type, string jsonData, string? postData)
+    public override object? InboundMessage(Type type, string jsonData, string? postData, object? requestObject)
     {
         return JsonConvert.DeserializeObject(jsonData, type);
     }
 
-    public override async IAsyncEnumerable<ChatResult?> InboundStream(StreamReader reader, ChatRequest request)
+    public override async IAsyncEnumerable<ChatResult?> InboundStream(StreamReader reader, ChatRequest request, ChatStreamEventHandler? eventHandler)
     {
         ChatStreamParsingStates state = ChatStreamParsingStates.Text;
         bool parseTools = request.Tools?.Count > 0;
@@ -206,7 +207,7 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
             #if DEBUG
             data.Add(item.Data);
             #endif
-
+            
             if (string.Equals(item.Data, DoneString, StringComparison.InvariantCulture))
             {
                 goto afterStreamEnds;
@@ -297,6 +298,7 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
                             {
                                 toolsMessage.ToolCallsDict.TryAdd(toolCall.Index?.ToString() ?? toolCall.Id ?? string.Empty, new ToolCallInboundAccumulator
                                 {
+                                    ArgumentsBuilder = new StringBuilder(toolCall.FunctionCall.Arguments),
                                     ToolCall = toolCall
                                 });
                             }   
@@ -364,6 +366,7 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
                                     toolsMessage.ToolCalls.Add(toolCall);
                                     toolsMessage.ToolCallsDict.Add(key, new ToolCallInboundAccumulator
                                     {
+                                        ArgumentsBuilder = new StringBuilder(toolCall.FunctionCall.Arguments),
                                         ToolCall = toolCall
                                     });
                                 }

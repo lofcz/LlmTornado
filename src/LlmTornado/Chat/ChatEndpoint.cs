@@ -103,7 +103,7 @@ public class ChatEndpoint : EndpointBase
         request.Stream = null;
         IEndpointProvider provider = Api.GetProvider(request.Model ?? ChatModel.OpenAi.Gpt35.Turbo);
         TornadoRequestContent requestBody = request.Serialize(provider);
-        HttpCallResult<ChatResult> result = await HttpPost<ChatResult>(provider, Endpoint, requestBody.Url, requestBody.Body, request.Model, request.CancellationToken).ConfigureAwait(false);
+        HttpCallResult<ChatResult> result = await HttpPost<ChatResult>(provider, Endpoint, requestBody.Url, requestBody.Body, request.Model, request, request.CancellationToken).ConfigureAwait(false);
         
         if (result.Exception is not null)
         {
@@ -164,7 +164,7 @@ public class ChatEndpoint : EndpointBase
         request.Stream = null;
         IEndpointProvider provider = Api.GetProvider(request.Model ?? ChatModel.OpenAi.Gpt35.Turbo);
         TornadoRequestContent requestBody = request.Serialize(provider);
-        HttpCallResult<ChatResult> result = await HttpPost<ChatResult>(provider, Endpoint, requestBody.Url, requestBody.Body, request.Model, request.CancellationToken).ConfigureAwait(false);
+        HttpCallResult<ChatResult> result = await HttpPost<ChatResult>(provider, Endpoint, requestBody.Url, requestBody.Body, request.Model, request, request.CancellationToken).ConfigureAwait(false);
         NormalizeChatResult(result);
         
         if (Api.ChatRequestInterceptor is not null && result.Ok)
@@ -389,7 +389,7 @@ public class ChatEndpoint : EndpointBase
 
         if (tornadoStreamRequest.StreamReader is not null)
         {
-            await foreach (ChatResult? x in provider.InboundStream(tornadoStreamRequest.StreamReader, request))
+            await foreach (ChatResult? x in provider.InboundStream(tornadoStreamRequest.StreamReader, request, handler))
             {
                 if (x is null)
                 {

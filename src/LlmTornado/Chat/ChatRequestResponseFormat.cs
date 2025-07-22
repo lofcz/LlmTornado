@@ -1,7 +1,14 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.Serialization;
+using System.Threading.Tasks;
+using LlmTornado.Code;
+using LlmTornado.Common;
+using LlmTornado.Infra;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Linq;
+using System.Linq;
 
 namespace LlmTornado.Chat;
 
@@ -14,10 +21,18 @@ public class ChatRequestResponseFormats
     {
         [JsonProperty("strict")]
         public bool? Strict { get; set; }
+        
         [JsonProperty("name")]
         public string Name { get; set; }
+        
         [JsonProperty("schema")]
         public object Schema { get; set; }
+        
+        [JsonIgnore]
+        public Delegate? Delegate { get; set; }
+        
+        [JsonIgnore]
+        internal DelegateMetadata? DelegateMetadata { get; set; }
     }
     
     /// <summary>
@@ -30,7 +45,30 @@ public class ChatRequestResponseFormats
     internal ChatRequestResponseJsonSchema? Schema { get; set; }
     
     internal ChatRequestResponseFormats() { }
-    
+
+    /// <summary>
+    /// Serializes schema for a given provider.
+    /// </summary>
+    public void Serialize(IEndpointProvider provider)
+    {
+        if (Schema?.Delegate is null)
+        {
+            return;
+        }
+
+        DelegateMetadata cd = ToolFactory.CreateFromMethod(Schema.Delegate, provider);
+        Schema.DelegateMetadata = cd;
+        Schema.Schema = cd.ToolFunction.Parameters;
+    }
+
+    /// <summary>
+    /// Invokes the <see cref="Delegate"/> with the given JSON data.
+    /// </summary>
+    public async ValueTask<object?> Invoke(string data)
+    {
+        return await Clr.Invoke(Schema?.Delegate, Schema?.DelegateMetadata, data);
+    }
+
     /// <summary>
     ///     Signals the output should be plaintext.
     /// </summary>
@@ -40,7 +78,8 @@ public class ChatRequestResponseFormats
     };
 
     /// <summary>
-    ///     Signals output should be JSON. The string "JSON" needs to be included in either system or user message in the conversation.
+    ///     Signals output should be JSON. The string "JSON" needs to be included in either system or user message in the conversation.<br/>
+    ///     <b>This is legacy tech. Consider switching to <see cref="ChatRequestResponseFormats.StructuredJson"/>.</b>
     /// </summary>
     public static readonly ChatRequestResponseFormats Json = new ChatRequestResponseFormats
     {
@@ -64,6 +103,20 @@ public class ChatRequestResponseFormats
                 Name = name,
                 Strict = strict,
                 Schema = schema
+            }
+        };
+    }
+
+    internal static ChatRequestResponseFormats StructuredJson(Delegate function, string? name = null, bool strict = true)
+    {
+        return new ChatRequestResponseFormats
+        {
+            Type = ChatRequestResponseFormatTypes.StructuredJson,
+            Schema = new ChatRequestResponseJsonSchema
+            {
+                Name = name ?? "output",
+                Strict = strict,
+                Delegate = function
             }
         };
     }

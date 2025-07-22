@@ -12,10 +12,70 @@ namespace LlmTornado.Chat.Vendors.Anthropic;
 
 internal class VendorAnthropicChatResult : VendorChatResult
 {
+    internal class VendorAnthropicChatResultContentBlockCitation
+    {
+        /// <summary>
+        /// char_location / page_location / content_block_location / web_search_result_location / search_result_location
+        /// </summary>
+        [JsonProperty("type")]
+        public string Type { get; set; }
+        
+        [JsonProperty("text")]
+        public string? Text { get; set; }
+        
+        [JsonProperty("encrypted_index")]
+        public string? EncryptedIndex { get; set; }
+        
+        [JsonProperty("cited_text")]
+        public string? CitedText { get; set; }
+        
+        [JsonProperty("title")]
+        public string? Title { get; set; }
+        
+        [JsonProperty("url")]
+        public string? Url { get; set; }
+        
+        [JsonProperty("document_index")]
+        public int? DocumentIndex { get; set; }
+        
+        [JsonProperty("document_title")]
+        public string? DocumentTitle { get; set; }
+        
+        [JsonProperty("end_char_index")]
+        public int? EndCharIndex { get; set; }
+        
+        [JsonProperty("start_char_index")]
+        public int? StartCharIndex { get; set; }
+        
+        [JsonProperty("end_page_number")]
+        public int? EndPageNumber { get; set; }
+        
+        [JsonProperty("start_page_number")]
+        public int? StartPageNumber { get; set; }
+        
+        [JsonProperty("end_block_index")]
+        public int? EndBlockIndex { get; set; }
+        
+        [JsonProperty("start_block_index")]
+        public int? StartBlockIndex { get; set; }
+        
+        [JsonProperty("search_result_index")]
+        public int? SearchResultIndex { get; set; }
+        
+        [JsonProperty("source")]
+        public string? Source { get; set; }
+    }
+    
     internal class VendorAnthropicChatResultContentBlock
     {
         [JsonProperty("type")]
         public string Type { get; set; }
+     
+        [JsonProperty("cache_control")]
+        public AnthropicCacheSettings? CacheControl { get; set; }
+        
+        [JsonProperty("citations")]
+        public List<VendorAnthropicChatResultContentBlockCitation>? Citations { get; set; }
         
         /// <summary>
         /// Text block.
@@ -102,7 +162,7 @@ internal class VendorAnthropicChatResult : VendorChatResult
     [JsonProperty("usage")]
     public VendorAnthropicUsage Usage { get; set; }
     
-    public override ChatResult ToChatResult(string? postData)
+    public override ChatResult ToChatResult(string? postData, object? chatRequest)
     {
         ChatResult result = new ChatResult
         {
@@ -134,7 +194,27 @@ internal class VendorAnthropicChatResult : VendorChatResult
             }
             else if (type is VendorAnthropicChatMessageTypes.Text)
             {
-                ChatMessage textBlockMsg = new ChatMessage(ChatMessageRoles.Assistant, [ new ChatMessagePart(contentBlock.Text ?? string.Empty) ] );
+                ChatMessagePart textPart = new ChatMessagePart(contentBlock.Text ?? string.Empty);
+                
+                if (contentBlock.Citations?.Count > 0)
+                {
+                    List<IChatMessagePartCitation> convertedCitations = [];
+                    
+                    foreach (VendorAnthropicChatResultContentBlockCitation cit in contentBlock.Citations)
+                    {
+                        if (TryConvertCitation(cit, out IChatMessagePartCitation? conv) && conv is not null)
+                        {
+                            convertedCitations.Add(conv);
+                        }
+                    }
+
+                    if (convertedCitations.Count > 0)
+                    {
+                        textPart.Citations = convertedCitations;
+                    }
+                }
+
+                ChatMessage textBlockMsg = new ChatMessage(ChatMessageRoles.Assistant, [ textPart ] );
 
                 textChoice = new ChatChoice
                 {
@@ -215,5 +295,67 @@ internal class VendorAnthropicChatResult : VendorChatResult
                 Arguments = contentBlock.Input?.ToString() ?? string.Empty
             }
         };
+    }
+
+    private static bool TryConvertCitation(VendorAnthropicChatResultContentBlockCitation cit, out IChatMessagePartCitation? converted)
+    {
+        converted = null;
+        switch (cit.Type)
+        {
+            case "char_location":
+                converted = new ChatMessagePartCitationCharLocation
+                {
+                    CitedText = cit.CitedText ?? string.Empty,
+                    DocumentIndex = cit.DocumentIndex ?? 0,
+                    DocumentTitle = cit.DocumentTitle,
+                    StartCharIndex = cit.StartCharIndex ?? 0,
+                    EndCharIndex = cit.EndCharIndex ?? 0
+                };
+                break;
+            case "page_location":
+                converted = new ChatMessagePartCitationPageLocation
+                {
+                    CitedText = cit.CitedText ?? string.Empty,
+                    DocumentIndex = cit.DocumentIndex ?? 0,
+                    DocumentTitle = cit.DocumentTitle,
+                    StartPageNumber = cit.StartPageNumber ?? 1,
+                    EndPageNumber = cit.EndPageNumber ?? 1
+                };
+                break;
+            case "content_block_location":
+                converted = new ChatMessagePartCitationContentBlockLocation
+                {
+                    CitedText = cit.CitedText ?? string.Empty,
+                    DocumentIndex = cit.DocumentIndex ?? 0,
+                    DocumentTitle = cit.DocumentTitle,
+                    StartBlockIndex = cit.StartBlockIndex ?? 0,
+                    EndBlockIndex = cit.EndBlockIndex ?? 0
+                };
+                break;
+            case "web_search_result_location":
+                converted = new ChatMessagePartCitationWebSearchResultLocation
+                {
+                    CitedText = cit.CitedText ?? string.Empty,
+                    EncryptedIndex = cit.EncryptedIndex ?? string.Empty,
+                    Title = cit.Title,
+                    Url = cit.Url ?? string.Empty
+                };
+                break;
+            case "search_result_location":
+                converted = new ChatMessagePartCitationSearchResultLocation
+                {
+                    CitedText = cit.CitedText ?? string.Empty,
+                    Source = cit.Source ?? string.Empty,
+                    Title = cit.Title,
+                    SearchResultIndex = cit.SearchResultIndex ?? 0,
+                    StartBlockIndex = cit.StartBlockIndex ?? 0,
+                    EndBlockIndex = cit.EndBlockIndex ?? 0
+                };
+                break;
+            default:
+                return false;
+        }
+
+        return true;
     }
 }

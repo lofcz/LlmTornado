@@ -3,25 +3,23 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Text;
 using System.Web;
 using LlmTornado.Caching;
 using LlmTornado.Chat;
-using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Chat.Vendors.Cohere;
-using LlmTornado.ChatFunctions;
+using LlmTornado.Chat.Vendors.Google;
 using LlmTornado.Code.Models;
-using LlmTornado.Code.Sse;
 using LlmTornado.Embedding;
 using LlmTornado.Files;
 using LlmTornado.Images;
 using LlmTornado.Models.Vendors;
-using LlmTornado.Vendor.Anthropic;
+using LlmTornado.Threads;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using FunctionCall = LlmTornado.ChatFunctions.FunctionCall;
+using ToolCall = LlmTornado.ChatFunctions.ToolCall;
 
 namespace LlmTornado.Code.Vendor;
 
@@ -93,7 +91,7 @@ public class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
         }
     }
 
-    public override async IAsyncEnumerable<ChatResult?> InboundStream(StreamReader reader, ChatRequest request)
+    public override async IAsyncEnumerable<ChatResult?> InboundStream(StreamReader reader, ChatRequest request, ChatStreamEventHandler? eventHandler)
     {
         ChatMessage? plaintextAccu = null;
         ChatUsage? usage = null;
@@ -118,8 +116,17 @@ public class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
             {
                 if (jsonReader.TokenType is JsonToken.StartObject)
                 {
-                    VendorGoogleChatResult? obj = serializer.Deserialize<VendorGoogleChatResult>(jsonReader);
+                    JObject jsonObject = await JObject.LoadAsync(jsonReader, request.CancellationToken);
+                    VendorGoogleChatResult? obj = jsonObject.ToObject<VendorGoogleChatResult>();
 
+                    if (eventHandler?.OnSse is not null)
+                    {
+                        await eventHandler.OnSse.Invoke(new ServerSentEvent
+                        {
+                            Data = jsonObject.ToString(Formatting.Indented)
+                        });
+                    }
+                    
                     if (obj is not null)
                     {
                         foreach (VendorGoogleChatResult.VendorGoogleChatResultMessage candidate in obj.Candidates)
@@ -135,7 +142,7 @@ public class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
                             }
                         }
                         
-                        ChatResult chatResult = obj.ToChatResult(null);
+                        ChatResult chatResult = obj.ToChatResult(null, request);
                         usage = chatResult.Usage;
 
                         string? strFinishReason = obj.Candidates.FirstOrDefault()?.FinishReason;
@@ -269,22 +276,22 @@ public class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
         
     }
 
-    private static readonly Dictionary<Type, Func<string, string?, object?>> InboundMap = new Dictionary<Type, Func<string, string?, object?>>
+    private static readonly Dictionary<Type, Func<string, string?, object?, object?>> InboundMap = new Dictionary<Type, Func<string, string?, object?, object?>>
     {
-        { typeof(ChatResult), (s, s1) => ChatResult.Deserialize(LLmProviders.Google, s, s1) },
-        { typeof(TornadoInputFile), (s, s1) => FileUploadRequest.Deserialize(LLmProviders.Google, s, s1) },
-        { typeof(CachedContentInformation), (s, s1) => CachedContentInformation.Deserialize(LLmProviders.Google, s, s1) },
-        { typeof(CachedContentList), (s, s1) => CachedContentList.Deserialize(LLmProviders.Google, s, s1) },
-        { typeof(ImageGenerationResult), (s, s1) => ImageGenerationResult.Deserialize(LLmProviders.Google, s, s1) },
-        { typeof(EmbeddingResult), (s, s1) => EmbeddingResult.Deserialize(LLmProviders.Google, s, s1) },
-        { typeof(RetrievedModelsResult), (s, s1) => RetrievedModelsResult.Deserialize(LLmProviders.Google, s, s1) }
+        { typeof(ChatResult), (s, s1, req) => ChatResult.Deserialize(LLmProviders.Google, s, s1, req) },
+        { typeof(TornadoInputFile), (s, s1, req) => FileUploadRequest.Deserialize(LLmProviders.Google, s, s1) },
+        { typeof(CachedContentInformation), (s, s1, req) => CachedContentInformation.Deserialize(LLmProviders.Google, s, s1) },
+        { typeof(CachedContentList), (s, s1, req) => CachedContentList.Deserialize(LLmProviders.Google, s, s1) },
+        { typeof(ImageGenerationResult), (s, s1, req) => ImageGenerationResult.Deserialize(LLmProviders.Google, s, s1) },
+        { typeof(EmbeddingResult), (s, s1, req) => EmbeddingResult.Deserialize(LLmProviders.Google, s, s1) },
+        { typeof(RetrievedModelsResult), (s, s1, req) => RetrievedModelsResult.Deserialize(LLmProviders.Google, s, s1) }
     };
     
-    public override T? InboundMessage<T>(string jsonData, string? postData) where T : default
+    public override T? InboundMessage<T>(string jsonData, string? postData, object? request) where T : default
     {
-        if (InboundMap.TryGetValue(typeof(T), out Func<string, string?, object?>? fn))
+        if (InboundMap.TryGetValue(typeof(T), out Func<string, string?, object?, object?>? fn))
         {
-            return (T?)fn.Invoke(jsonData, postData);
+            return (T?)fn.Invoke(jsonData, postData, request);
         }
 
         try
@@ -297,7 +304,7 @@ public class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
         }
     }
 
-    public override object? InboundMessage(Type type, string jsonData, string? postData)
+    public override object? InboundMessage(Type type, string jsonData, string? postData, object? request)
     {
         return JsonConvert.DeserializeObject(jsonData, type);
     }

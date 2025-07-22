@@ -10,6 +10,7 @@ using LlmTornado.Toolkit;
 using LlmTornado.Toolkit.Memory;
 using McfCs;
 
+#if FALSE
 public class ToolkitChat
 {
     public ToolkitChatConfig Cfg => cfg;
@@ -1016,3 +1017,4 @@ public class ToolkitChat
         contextTokens += n;
     }
 }
+#endif

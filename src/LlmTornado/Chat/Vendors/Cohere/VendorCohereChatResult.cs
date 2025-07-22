@@ -45,7 +45,7 @@ internal class VendorCohereChatResult : VendorChatResult
     public List<object>? ToolCalls { get; set; } // TODO: map me
 
     
-    public override ChatResult ToChatResult(string? postData)
+    public override ChatResult ToChatResult(string? postData, object? chatRequest)
     {
         string model = ChatModel.Cohere.Command.Default;
         

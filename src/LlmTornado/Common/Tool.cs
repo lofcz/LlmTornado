@@ -1,5 +1,8 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Threading;
@@ -7,6 +10,7 @@ using System.Threading.Tasks;
 using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
+using LlmTornado.Infra;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using JsonSerializer = Newtonsoft.Json.JsonSerializer;
@@ -90,6 +94,31 @@ public class FunctionResult
     /// <summary>
     /// </summary>
     /// <param name="call">The function call this result maps to.</param>
+    /// <param name="content">A list of rich blocks.</param>
+    public FunctionResult(FunctionCall call, List<IFunctionResultBlock> content)
+    {
+        Name = call.Name;
+        Content = SetContentBlocks(content);
+        InvocationSucceeded = true;
+        RawContentBlocks = content;
+    }
+    
+    /// <summary>
+    /// </summary>
+    /// <param name="call">The function call this result maps to.</param>
+    /// <param name="content">A list of rich blocks.</param>
+    /// <param name="invocationSucceeded">An indicator whether the tool invocation succeeded or not.</param>
+    public FunctionResult(FunctionCall call, List<IFunctionResultBlock> content, bool invocationSucceeded)
+    {
+        Name = call.Name;
+        Content = SetContentBlocks(content);
+        InvocationSucceeded = invocationSucceeded;
+        RawContentBlocks = content;
+    }
+    
+    /// <summary>
+    /// </summary>
+    /// <param name="call">The function call this result maps to.</param>
     /// <param name="content">A serializable object (e.g. class / dict / anonymous object) that will be serialized into JSON</param>
     /// <param name="invocationSucceeded">An indicator whether the tool invocation succeeded or not.</param>
     public FunctionResult(FunctionCall call, object? content, bool invocationSucceeded)
@@ -149,12 +178,43 @@ public class FunctionResult
     
     [JsonIgnore]
     internal object? RawContent { get; set; }
+    
+    [JsonIgnore]
+    internal IEnumerable<IFunctionResultBlock>? RawContentBlocks { get; set; }
 
     private string SetContent(object? content)
     {
         ContentJsonType = content?.GetType();
         RawContent = content;
         return content is null ? "{}" : JsonConvert.SerializeObject(content);
+    }
+    
+    private string SetContentBlocks(List<IFunctionResultBlock>? content)
+    {
+        ContentJsonType = content?.GetType();
+        RawContent = content;
+
+        if (content is null)
+        {
+            return "{}";
+        }
+
+        List<string> blocks = [];
+
+        foreach (IFunctionResultBlock block in content)
+        {
+            if (block is FunctionResultBlockText textBlock)
+            {
+                blocks.Add(textBlock.Text);
+            }
+        }
+
+        return blocks.Count switch
+        {
+            1 => blocks[0],
+            > 1 => JsonConvert.SerializeObject(blocks),
+            _ => JsonConvert.SerializeObject(content)
+        };
     }
 }
 
@@ -455,6 +515,15 @@ public class McpContentBlockEmbeddedResourceContentsUnknown : McpContentBlockEmb
 /// </summary>
 public class Tool
 {
+    [JsonIgnore]
+    public Delegate? Delegate { get; }
+    
+    internal Tool(Delegate function, string? name = null, string? description = null, bool? strict = null)
+    {
+        Delegate = function;
+        Strict = strict;
+    }
+    
     /// <summary>
     ///     Creates a new function type tool.
     /// </summary>
@@ -486,6 +555,30 @@ public class Tool
 
     public Tool()
     {
+    }
+
+    private ConcurrentDictionary<int, ToolFunction>? serializedDict = [];
+
+    /// <summary>
+    /// Serializes tool for a given provider.
+    /// </summary>
+    public void Serialize(IEndpointProvider provider)
+    {
+        if (Delegate is null)
+        {
+            return;
+        }
+
+        int hash = provider.GetHashCode();
+        serializedDict ??= [];
+
+        if (serializedDict.TryGetValue(hash, out ToolFunction? fn))
+        {
+            Function = fn;
+        }
+
+        Function = ToolFactory.CreateFromMethod(Delegate, provider).ToolFunction;
+        serializedDict.TryAdd(hash, Function);
     }
 
     /// <summary>
@@ -694,5 +787,31 @@ public class ToolFunction
     /// </summary>
     private ToolFunction()
     {
+    }
+
+    /// <summary>
+    /// Text representation of the tool.
+    /// </summary>
+    /// <returns></returns>
+    public override string ToString()
+    {
+        StringBuilder sb = new StringBuilder();
+
+        if (!Name.IsNullOrWhiteSpace())
+        {
+            sb.AppendLine(Name);
+        }
+
+        if (!Description.IsNullOrWhiteSpace())
+        {
+            sb.AppendLine(Description);
+        }
+
+        if (Parameters is not null)
+        {
+            sb.AppendLine(Parameters.ToJson(true));
+        }
+
+        return sb.ToString().Trim();
     }
 }

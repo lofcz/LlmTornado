@@ -10,6 +10,36 @@ namespace LlmTornado.Chat.Models.Mistral;
 public class ChatModelMistralFree : IVendorModelClassProvider
 {
     /// <summary>
+    /// Voxtral Small (24B).
+    /// </summary>
+    public static readonly ChatModel ModelVoxtralSmall2507 = new ChatModel("voxtral-small-2507", LLmProviders.Mistral, 32_000, [ "voxtral-small-latest" ]);
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelVoxtralSmall2507"/>
+    /// </summary>
+    public readonly ChatModel VoxtralSmall2507 = ModelVoxtralSmall2507;
+    
+    /// <summary>
+    /// Voxtral Mini (3B).
+    /// </summary>
+    public static readonly ChatModel ModelVoxtralMini2507 = new ChatModel("voxtral-mini-2507", LLmProviders.Mistral, 32_000, [ "voxtral-mini-latest" ]);
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelVoxtralMini2507"/>
+    /// </summary>
+    public readonly ChatModel VoxtralMini2507 = ModelVoxtralMini2507;
+    
+    /// <summary>
+    /// Devstral Small 1.1 (24B)
+    /// </summary>
+    public static readonly ChatModel ModelDevstralSmall2507 = new ChatModel("devstral-small-2507", LLmProviders.Mistral, 128_000);
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelDevstralSmall2507"/>
+    /// </summary>
+    public readonly ChatModel DevstralSmall2507 = ModelDevstralSmall2507;
+    
+    /// <summary>
     /// Mistral Small 3.2
     /// </summary>
     public static readonly ChatModel ModelMistralSmall2506 = new ChatModel("mistral-small-2506", LLmProviders.Mistral, 128_000);
@@ -32,12 +62,12 @@ public class ChatModelMistralFree : IVendorModelClassProvider
     /// <summary>
     /// A 24B text model, open source model that excels at using tools to explore codebases, editing multiple files and power software engineering agents.
     /// </summary>
-    public static readonly ChatModel ModelDevstralSmall = new ChatModel("devstral-small-2505", LLmProviders.Mistral, 128_000);
+    public static readonly ChatModel ModelDevstralSmall2505 = new ChatModel("devstral-small-2505", LLmProviders.Mistral, 128_000);
     
     /// <summary>
-    /// <inheritdoc cref="ModelDevstralSmall"/>
+    /// <inheritdoc cref="ModelDevstralSmall2505"/>
     /// </summary>
-    public readonly ChatModel DevstralSmall = ModelDevstralSmall;
+    public readonly ChatModel DevstralSmall = ModelDevstralSmall2505;
     
     /// <summary>
     /// A new leader in the small models category with image understanding capabilities, with the lastest version v3.1 released March 2025.
@@ -77,9 +107,12 @@ public class ChatModelMistralFree : IVendorModelClassProvider
         ModelMistralSmall2503,
         ModelMistralSmall,
         ModelPixtral,
-        ModelDevstralSmall,
+        ModelDevstralSmall2505,
         ModelMagistralSmall,
-        ModelMistralSmall2506
+        ModelMistralSmall2506,
+        ModelDevstralSmall2507,
+        ModelVoxtralSmall2507,
+        ModelVoxtralMini2507
     ];
 
     /// <summary>

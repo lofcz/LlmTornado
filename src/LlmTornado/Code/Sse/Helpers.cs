@@ -59,6 +59,27 @@ namespace LlmTornado.Code.Sse
     
             writer.Advance(bytesWritten);
         }
+        
+        public static void WriteUtf8String(this IBufferWriter<byte> writer, string? val)
+        {
+            if (val is null || val.Length is 0)
+            {
+                return;
+            }
+
+#if MODERN
+            int maxByteCount = Encoding.UTF8.GetMaxByteCount(val.Length);
+            Span<byte> buffer = writer.GetSpan(maxByteCount);
+            int bytesWritten = Encoding.UTF8.GetBytes(val, buffer);
+#else
+            byte[] utf8Bytes = Encoding.UTF8.GetBytes(val);
+            int bytesWritten = utf8Bytes.Length;
+            Span<byte> buffer = writer.GetSpan(bytesWritten);
+            Array.Copy(utf8Bytes, 0, buffer.ToArray(), 0, bytesWritten);
+#endif
+    
+            writer.Advance(bytesWritten);
+        }
 
         
         public static bool ContainsLineBreaks(this ReadOnlySpan<char> text) => 

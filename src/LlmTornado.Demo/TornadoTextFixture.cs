@@ -84,6 +84,14 @@ public abstract class TornadoTextFixture
             new TestPredicate<IEnumerable<T>>(col => col != null && col.Count() == expectedLength, $"Is.Length({expectedLength})");
         public static TestPredicate<IEnumerable<T>> Count<T>(int expectedCount) =>
             new TestPredicate<IEnumerable<T>>(col => col != null && col.Count() == expectedCount, $"Is.Count({expectedCount})");
+        public static TestPredicate<T> GreaterThan<T>(T threshold) where T : IComparable<T> =>
+            new TestPredicate<T>(actual => actual != null && actual.CompareTo(threshold) > 0, $"Is.GreaterThan({threshold})");
+        public static TestPredicate<T> LessThan<T>(T threshold) where T : IComparable<T> =>
+            new TestPredicate<T>(actual => actual != null && actual.CompareTo(threshold) < 0, $"Is.LessThan({threshold})");
+        public static TestPredicate<T> GreaterThanOrEqualTo<T>(T threshold) where T : IComparable<T> =>
+            new TestPredicate<T>(actual => actual != null && actual.CompareTo(threshold) >= 0, $"Is.GreaterThanOrEqualTo({threshold})");
+        public static TestPredicate<T> LessThanOrEqualTo<T>(T threshold) where T : IComparable<T> =>
+            new TestPredicate<T>(actual => actual != null && actual.CompareTo(threshold) <= 0, $"Is.LessThanOrEqualTo({threshold})");
     }
 
     public class TestPredicate<T>

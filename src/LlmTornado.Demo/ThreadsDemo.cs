@@ -161,7 +161,7 @@ public class ThreadsDemo : DemoBase
         CreateThreadRequest threadRequest = new CreateThreadRequest
         {
             Messages = [ new CreateMessageRequest("I need to think of a magic spell that turns cows into sheep.") ],
-            Metadata = new Dictionary<string, string>()
+            Metadata = new Dictionary<string, string>
             {
                 {"key1", "value1"},
                 {"key2", "value2"}

@@ -68,6 +68,23 @@ public class EmbeddingDemo : DemoBase
     }
     
     [TornadoTest]
+    public static async Task EmbedGoogleGemini()
+    {
+        EmbeddingResult? result = await Program.ConnectMulti().Embeddings.CreateEmbedding(EmbeddingModel.Google.Gemini.GeminiEmbedding001, "lorem ipsum");
+        float[]? data = result?.Data.FirstOrDefault()?.Embedding;
+
+        if (data is not null)
+        {
+            for (int i = 0; i < Math.Min(data.Length, 10); i++)
+            {
+                Console.WriteLine(data[i]);
+            }
+            
+            Console.WriteLine($"... (length: {data.Length})");
+        }
+    }
+    
+    [TornadoTest]
     public static async Task EmbedVoyage()
     {
         EmbeddingResult? result = await Program.ConnectMulti().Embeddings.CreateEmbedding(EmbeddingModel.Voyage.Gen35.Default, "lorem ipsum", 256, new EmbeddingRequestVendorExtensions

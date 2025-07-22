@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Common;
+using LlmTornado.Threads;
+using FunctionCall = LlmTornado.ChatFunctions.FunctionCall;
+using LlmTornado.Responses.Events;
 
 namespace LlmTornado.Chat;
 
@@ -51,7 +53,7 @@ public class ChatStreamEventHandler
     public Func<ChatMessagePart, ValueTask>? MessagePartHandler { get; set; }
     
     /// <summary>
-    ///     Called when one or more tools are to be executed. Execute the tools and return the responses in <see cref="FunctionCall.Result"/>.
+    ///     Called when one or more tools are to be executed. Execute the tools and return the responses in <see cref="ChatFunctions.FunctionCall.Result"/>.
     ///     If this field is empty once control is returned to the API, the tool call is considered to be failed with no data returned.
     /// </summary>
     public Func<List<FunctionCall>, ValueTask>? FunctionCallHandler { get; set; }
@@ -87,6 +89,11 @@ public class ChatStreamEventHandler
     public Func<ChatStreamFinishedData, ValueTask>? OnFinished { get; set; }
     
     /// <summary>
+    ///     Called when raw server-sent event data arrives. This handler receives the raw SSE data before any parsing.
+    /// </summary>
+    public Func<ServerSentEvent, ValueTask>? OnSse { get; set; }
+    
+    /// <summary>
     ///     Called whenever a successful HTTP request is made. In case of streaming requests this is called before the stream is read.
     /// </summary>
     public Func<HttpCallRequest, ValueTask>? OutboundHttpRequestHandler { get; set; }
@@ -95,6 +102,11 @@ public class ChatStreamEventHandler
     ///     If this is set, HTTP level exceptions are caught and returned via this handler.
     /// </summary>
     public Func<HttpFailedRequest, ValueTask>? HttpExceptionHandler { get; set; }
+    
+    /// <summary>
+    ///     Called when any response event arrives. This handler receives the event as IResponsesEvent interface.
+    /// </summary>
+    public Func<IResponseEvent, ValueTask>? OnResponseEvent { get; set; }
     
     /// <summary>
     ///     The ID of the message that will be appended to the conversation, if null a random GUID is used.

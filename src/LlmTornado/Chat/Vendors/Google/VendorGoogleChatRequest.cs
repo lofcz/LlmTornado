@@ -8,7 +8,7 @@ using LlmTornado.Code;
 using LlmTornado.Common;
 using Newtonsoft.Json;
 
-namespace LlmTornado.Chat.Vendors.Cohere;
+namespace LlmTornado.Chat.Vendors.Google;
 
 /// <summary>
 /// Generation config for Google.
@@ -270,6 +270,24 @@ internal class VendorGoogleChatRequestMessagePart
                 
                 break;
             }
+            case ChatMessageTypes.Audio:
+            {
+                if (part.Audio is not null)
+                {
+                    if (part.Audio.MimeType is null)
+                    {
+                        throw new Exception("Google requires MIME type of all audio to be set, supported values are: audio/wav, audio/mp3, audio/aiff, audio/aac, audio/ogg, audio/flac");
+                    }
+
+                    InlineData = new VendorGoogleChatRequest.VendorGoogleChatRequestMessagePartInlineData
+                    {
+                        MimeType = part.Audio.MimeType,
+                        Data = part.Audio.Data
+                    };
+                }
+
+                break;
+            }
             case ChatMessageTypes.FileLink:
             {
                 if (part.FileLinkData is not null)
@@ -466,7 +484,7 @@ internal class VendorGoogleChatRequest
             }
         }
 
-        public ChatMessage ToChatMessage(VendorGoogleChatRequest? request)
+        public ChatMessage ToChatMessage(VendorGoogleChatRequest? request, ChatRequest? chatRequest)
         {
             ChatMessage msg = new ChatMessage
             {
@@ -475,6 +493,7 @@ internal class VendorGoogleChatRequest
 
             StringBuilder sb = new StringBuilder();
             bool roleSolved = false;
+            bool contentSolved = false;
             
             foreach (VendorGoogleChatRequestMessagePart x in Parts)
             {
@@ -487,7 +506,7 @@ internal class VendorGoogleChatRequest
                 {
                     if (request?.GenerationConfig?.ResponseMimeType is "application/json")
                     {
-                        string? fnName = request.ToolConfig?.FunctionConfig?.AllowedFunctionNames?.FirstOrDefault();
+                        string? fnName = chatRequest?.ResponseFormat?.Schema?.Name ?? request.ToolConfig?.FunctionConfig?.AllowedFunctionNames?.FirstOrDefault();
                         
                         msg.ToolCalls ??= [];
                         msg.ToolCalls.Add(new ToolCall
@@ -499,6 +518,8 @@ internal class VendorGoogleChatRequest
                                 Arguments = x.Text ?? string.Empty
                             }
                         });
+
+                        contentSolved = true;
                     }
                     else
                     {
@@ -507,7 +528,11 @@ internal class VendorGoogleChatRequest
                 }
             }
 
-            msg.Content = sb.ToString();
+            if (!contentSolved)
+            {
+                msg.Content = sb.ToString();   
+            }
+            
             msg.Role = Role is "user" ? ChatMessageRoles.User : ChatMessageRoles.Assistant;
             return msg;
         }
@@ -667,7 +692,14 @@ internal class VendorGoogleChatRequest
         
     }
 
-    public static Tuple<List<VendorGoogleChatTool>?, VendorGoogleChatToolConfig?, VendorGoogleChatRequestGenerationConfig?> GetToolsAndToolChoice(List<Tool>? tools, OutboundToolChoice? outboundToolChoice)
+    public enum VendorGoogleRequestToolsResponseMode
+    {
+        Default,
+        StructuredJson,
+        Json
+    }
+
+    public static Tuple<List<VendorGoogleChatTool>?, VendorGoogleChatToolConfig?, VendorGoogleChatRequestGenerationConfig?> GetToolsAndToolChoice(ChatRequestResponseFormats? responseFormat, List<Tool>? tools, OutboundToolChoice? outboundToolChoice)
     {
         if (tools is null || tools.Count is 0)
         {
@@ -675,13 +707,7 @@ internal class VendorGoogleChatRequest
         }
         
         List<VendorGoogleChatTool>? localTools = [];
-        VendorGoogleChatToolConfig localToolConfig = new VendorGoogleChatToolConfig
-        {
-            FunctionConfig = new VendorGoogleChatToolConfigFunctionConfig
-            {
-                Mode = "AUTO"
-            }
-        };
+        VendorGoogleChatToolConfig? localToolConfig = null;
         
         VendorGoogleChatRequestGenerationConfig? localConfig = null;
         bool anyStrictTool = false;
@@ -693,6 +719,9 @@ internal class VendorGoogleChatRequest
         
         if (outboundToolChoice is not null)
         {
+            localToolConfig = VendorGoogleChatToolConfig.Default;
+            localToolConfig.FunctionConfig ??= new VendorGoogleChatToolConfigFunctionConfig();
+            
             switch (outboundToolChoice.Mode)
             {
                 case OutboundToolChoiceModes.Auto or OutboundToolChoiceModes.Legacy:
@@ -789,7 +818,7 @@ internal class VendorGoogleChatRequest
             GenerationConfig.ThinkingConfig = new VendorGoogleChatRequestThinkingConfig
             {
                 ThinkingBudget = clamped,
-                IncludeThoughts = true
+                IncludeThoughts = clamped is not 0 && (request.VendorExtensions?.Google?.IncludeThoughts ?? true)
             };
         } 
 
@@ -816,7 +845,7 @@ internal class VendorGoogleChatRequest
         
         if (request.Tools?.Count > 0)
         {
-            Tuple<List<VendorGoogleChatTool>?, VendorGoogleChatToolConfig?, VendorGoogleChatRequestGenerationConfig?> configUpdate = GetToolsAndToolChoice(request.Tools, request.ToolChoice);
+            Tuple<List<VendorGoogleChatTool>?, VendorGoogleChatToolConfig?, VendorGoogleChatRequestGenerationConfig?> configUpdate = GetToolsAndToolChoice(request.ResponseFormat, request.Tools, request.ToolChoice);
 
             Tools = configUpdate.Item1;
             ToolConfig = configUpdate.Item2;
@@ -833,7 +862,7 @@ internal class VendorGoogleChatRequest
             {
                 string fnName = request.ResponseFormat.Schema?.Name ?? string.Empty;
                 
-                Tuple<List<VendorGoogleChatTool>?, VendorGoogleChatToolConfig?, VendorGoogleChatRequestGenerationConfig?> configUpdate = GetToolsAndToolChoice([
+                Tuple<List<VendorGoogleChatTool>?, VendorGoogleChatToolConfig?, VendorGoogleChatRequestGenerationConfig?> configUpdate = GetToolsAndToolChoice(request.ResponseFormat, request.ResponseFormat.Type is ChatRequestResponseFormatTypes.Json ? null : [
                     new Tool(new ToolFunction(fnName, string.Empty, request.ResponseFormat.Schema?.Schema ?? new
                     {
                         
@@ -847,7 +876,7 @@ internal class VendorGoogleChatRequest
                 } : null));
                 
                 Tools = configUpdate.Item1;
-                ToolConfig = configUpdate.Item2;
+                ToolConfig = null; // configUpdate.Item2;
 
                 if (configUpdate.Item3 is not null)
                 {
@@ -902,8 +931,63 @@ internal class VendorGoogleChatRequest
                         : null
                 };
             }
+
+            if (request.VendorExtensions.Google.SafetyFilters is not null)
+            {
+                if (request.VendorExtensions.Google.SafetyFilters == ChatRequestVendorGoogleSafetyFilters.Default)
+                {
+                    
+                }
+                else if (request.VendorExtensions.Google.SafetyFilters == ChatRequestVendorGoogleSafetyFilters.Minimal)
+                {
+                    SafetySettings = VendorGoogleChatRequestSafetySetting.DisableAll;   
+                }
+                else
+                {
+                    SafetySettings = [];
+
+                    if (request.VendorExtensions.Google.SafetyFilters.SexuallyExplicit is not null)
+                    {
+                        SafetySettings.Add(new VendorGoogleChatRequestSafetySetting("HARM_CATEGORY_SEXUALLY_EXPLICIT", HarmFilter(request.VendorExtensions.Google.SafetyFilters.SexuallyExplicit)));
+                    }
+                    
+                    if (request.VendorExtensions.Google.SafetyFilters.Harassment is not null)
+                    {
+                        SafetySettings.Add(new VendorGoogleChatRequestSafetySetting("HARM_CATEGORY_HARASSMENT", HarmFilter(request.VendorExtensions.Google.SafetyFilters.Harassment)));
+                    }
+                    
+                    if (request.VendorExtensions.Google.SafetyFilters.DangerousContent is not null)
+                    {
+                        SafetySettings.Add(new VendorGoogleChatRequestSafetySetting("HARM_CATEGORY_DANGEROUS_CONTENT", HarmFilter(request.VendorExtensions.Google.SafetyFilters.DangerousContent)));
+                    }
+                    
+                    if (request.VendorExtensions.Google.SafetyFilters.HateSpeech is not null)
+                    {
+                        SafetySettings.Add(new VendorGoogleChatRequestSafetySetting("HARM_CATEGORY_HATE_SPEECH", HarmFilter(request.VendorExtensions.Google.SafetyFilters.HateSpeech)));
+                    }
+                }
+            }
+            else
+            {
+                SafetySettings = VendorGoogleChatRequestSafetySetting.DisableAll;   
+            }
         }
-        
-        SafetySettings = VendorGoogleChatRequestSafetySetting.DisableAll;
+        else
+        {
+            SafetySettings = VendorGoogleChatRequestSafetySetting.DisableAll;   
+        }
+    }
+
+    static string HarmFilter(GoogleSafetyFilterTypes? val)
+    {
+        return val switch
+        {
+            GoogleSafetyFilterTypes.BlockNone => "BLOCK_NONE",
+            GoogleSafetyFilterTypes.BlockFew => "BLOCK_ONLY_HIGH",
+            GoogleSafetyFilterTypes.BlockSome => "BLOCK_MEDIUM_AND_ABOVE",
+            GoogleSafetyFilterTypes.BlockMost => "BLOCK_LOW_AND_ABOVE",
+            GoogleSafetyFilterTypes.Default => "HARM_BLOCK_THRESHOLD_UNSPECIFIED",
+            _ => "BLOCK_NONE"
+        };
     }
  }

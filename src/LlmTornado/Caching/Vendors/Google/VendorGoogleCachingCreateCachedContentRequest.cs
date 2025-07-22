@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using LlmTornado.Chat.Vendors.Cohere;
+using LlmTornado.Chat.Vendors.Google;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Caching.Vendors.Google;
@@ -69,7 +69,7 @@ internal class VendorGoogleCachingCreateCachedContentRequest
         SystemInstruction = request.System is null ? null : new VendorGoogleCachingCachedContent(request.System);
         Contents = request.Contents?.Select(x => new VendorGoogleCachingCachedContent(x)).ToList();
 
-        Config = VendorGoogleChatRequest.GetToolsAndToolChoice(request.Tools, request.ToolChoice);
+        Config = VendorGoogleChatRequest.GetToolsAndToolChoice(null, request.Tools, request.ToolChoice);
         Tools = Config.Item1;
         ToolConfig = Config.Item2;
     }

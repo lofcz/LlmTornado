@@ -8,7 +8,7 @@ namespace LlmTornado.Responses;
 /// Abstract base class for text configuration settings for responses.
 /// </summary>
 [JsonConverter(typeof(TextConfigurationConverter))]
-public abstract class TextConfiguration
+public abstract class ResponseTextFormatConfiguration
 {
     /// <summary>
     /// The type of response format being defined.
@@ -19,9 +19,9 @@ public abstract class TextConfiguration
     /// Creates a text configuration with default text format.
     /// </summary>
     /// <returns>A text configuration with text format</returns>
-    public static TextConfiguration CreateText()
+    public static ResponseTextFormatConfiguration CreateText()
     {
-        return new TextConfigurationText();
+        return new ResponseTextFormatConfigurationResponseTextFormat();
     }
 
     /// <summary>
@@ -32,25 +32,25 @@ public abstract class TextConfiguration
     /// <param name="description">Description of the response format</param>
     /// <param name="strict">Whether to enable strict mode</param>
     /// <returns>A text configuration with JSON schema format</returns>
-    public static TextConfiguration CreateJsonSchema(object schema, string name, string? description = null, bool? strict = null)
+    public static ResponseTextFormatConfiguration CreateJsonSchema(object schema, string name, string? description = null, bool? strict = null)
     {
-        return new TextConfigurationJsonSchema(schema, name, description, strict);
+        return new ResponseTextFormatConfigurationJsonSchema(schema, name, description, strict);
     }
 
     /// <summary>
     /// Creates a text configuration with JSON object format.
     /// </summary>
     /// <returns>A text configuration with JSON object format</returns>
-    public static TextConfiguration CreateJsonObject()
+    public static ResponseTextFormatConfiguration CreateJsonObject()
     {
-        return new TextConfigurationJsonObject();
+        return new ResponseTextFormatConfigurationJsonObject();
     }
 }
 
 /// <summary>
 /// Default response format. Used to generate text responses.
 /// </summary>
-public class TextConfigurationText : TextConfiguration
+public class ResponseTextFormatConfigurationResponseTextFormat : ResponseTextFormatConfiguration
 {
     /// <summary>
     /// The type of response format being defined. Always "text".
@@ -62,7 +62,7 @@ public class TextConfigurationText : TextConfiguration
 /// <summary>
 /// JSON Schema response format. Used to generate structured JSON responses.
 /// </summary>
-public class TextConfigurationJsonSchema : TextConfiguration
+public class ResponseTextFormatConfigurationJsonSchema : ResponseTextFormatConfiguration
 {
     /// <summary>
     /// The type of response format being defined. Always "json_schema".
@@ -97,7 +97,7 @@ public class TextConfigurationJsonSchema : TextConfiguration
     /// <summary>
     /// Default constructor.
     /// </summary>
-    public TextConfigurationJsonSchema() { }
+    public ResponseTextFormatConfigurationJsonSchema() { }
 
     /// <summary>
     /// Constructor with parameters.
@@ -106,7 +106,7 @@ public class TextConfigurationJsonSchema : TextConfiguration
     /// <param name="name">The name of the response format</param>
     /// <param name="description">Description of the response format</param>
     /// <param name="strict">Whether to enable strict mode</param>
-    public TextConfigurationJsonSchema(object schema, string name, string? description = null, bool? strict = null)
+    public ResponseTextFormatConfigurationJsonSchema(object schema, string name, string? description = null, bool? strict = null)
     {
         Schema = schema;
         Name = name;
@@ -118,7 +118,7 @@ public class TextConfigurationJsonSchema : TextConfiguration
 /// <summary>
 /// JSON object response format. An older method of generating JSON responses.
 /// </summary>
-public class TextConfigurationJsonObject : TextConfiguration
+public class ResponseTextFormatConfigurationJsonObject : ResponseTextFormatConfiguration
 {
     /// <summary>
     /// The type of response format being defined. Always "json_object".
@@ -130,9 +130,9 @@ public class TextConfigurationJsonObject : TextConfiguration
 /// <summary>
 /// Custom converter for polymorphic deserialization of text configuration
 /// </summary>
-internal class TextConfigurationConverter : JsonConverter<TextConfiguration>
+internal class TextConfigurationConverter : JsonConverter<ResponseTextFormatConfiguration>
 {
-    public override TextConfiguration? ReadJson(JsonReader reader, Type objectType, TextConfiguration? existingValue, bool hasExistingValue, JsonSerializer serializer)
+    public override ResponseTextFormatConfiguration? ReadJson(JsonReader reader, Type objectType, ResponseTextFormatConfiguration? existingValue, bool hasExistingValue, JsonSerializer serializer)
     {
         if (reader.TokenType == JsonToken.Null)
             return null;
@@ -147,20 +147,20 @@ internal class TextConfigurationConverter : JsonConverter<TextConfiguration>
 
         return type switch
         {
-            "text" => new TextConfigurationText(),
-            "json_schema" => new TextConfigurationJsonSchema
+            "text" => new ResponseTextFormatConfigurationResponseTextFormat(),
+            "json_schema" => new ResponseTextFormatConfigurationJsonSchema
             {
                 Name = actualToken["name"]?.ToString() ?? string.Empty,
                 Schema = actualToken["schema"]?.ToObject<object>() ?? new object(),
                 Description = actualToken["description"]?.ToString(),
                 Strict = actualToken["strict"]?.ToObject<bool?>()
             },
-            "json_object" => new TextConfigurationJsonObject(),
+            "json_object" => new ResponseTextFormatConfigurationJsonObject(),
             _ => throw new JsonSerializationException($"Unknown text configuration type: {type}")
         };
     }
 
-    public override void WriteJson(JsonWriter writer, TextConfiguration? value, JsonSerializer serializer)
+    public override void WriteJson(JsonWriter writer, ResponseTextFormatConfiguration? value, JsonSerializer serializer)
     {
         if (value == null)
         {
@@ -172,12 +172,12 @@ internal class TextConfigurationConverter : JsonConverter<TextConfiguration>
 
         switch (value)
         {
-            case TextConfigurationText text:
+            case ResponseTextFormatConfigurationResponseTextFormat text:
                 writer.WritePropertyName("type");
                 writer.WriteValue("text");
                 break;
 
-            case TextConfigurationJsonSchema jsonSchema:
+            case ResponseTextFormatConfigurationJsonSchema jsonSchema:
                 writer.WritePropertyName("type");
                 writer.WriteValue("json_schema");
                 writer.WritePropertyName("name");
@@ -196,7 +196,7 @@ internal class TextConfigurationConverter : JsonConverter<TextConfiguration>
                 }
                 break;
 
-            case TextConfigurationJsonObject jsonObject:
+            case ResponseTextFormatConfigurationJsonObject jsonObject:
                 writer.WritePropertyName("type");
                 writer.WriteValue("json_object");
                 break;

@@ -9,26 +9,28 @@ _Empty field means the feature is unsupported by the provider._
 
 |               | OpenAI | Anthropic | Google | Cohere | DeepSeek | Groq | Mistral | xAI | Perplexity | Voyage | DeepInfra | OpenRouter | Custom* |
 |-------|-----------|-----------|-----------| -----------| -----------| -----------| -----------| -----------| -----------| -----------| -----------| -----------| -----------|
-|**Audio**      | ✅ |    |     |     |   |     |     |     |     |     |      |      |      |
-|**Chat**       | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |  ✅ | ✅ |   |   ✅   | ✅      |✅      |
+|**Audio**      | ✅ |    |     |     |   |     |  ✅   |     |     |     |      |      |      |
+|**Chat****       | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |  ✅ | ✅ |   |   ✅   | ✅      |✅      |
 |**Embeddings** | ✅ |    | ✅  | ✅ |    |    | ✅ |     |     |   ✅      |     |  ✅   |      |
-|**Fine-Tuning**| ✅ |    | ❌  |    |    |    | ❌  |    |     |        |      |      |     |
-|**Batch**      | ❌ | ❌ | ❌ | ❌ |    | ❌ | ❌ |    |     |        |      |      |      |
-|**Files**      | ✅ | ✅ | ✅ |     |    |     | ❌ |    |     |        |      |      |      |
-|**Uploads**    | ❌ |    |     |    |    |     |     |     |     |        |      |      |      |
+|**Fine-tuning**| ✅ |    | ❌  |    |    |    | ❌  |    |     |        |      |      |     |
+|**Batch**      | ❌ | ❌ | ❌ |    |    | ❌ | ❌ |    |     |        |      |      |      |
+|**Files**      | ✅ | ✅ | ✅ |     |    | ❌ | ❌ |    |     |        |      |      |      |
+|**Uploads**    | ✅ |    |     |    |    |     |     |     |     |        |      |      |      |
 |**Images**     | ✅ |    | ✅ |    |    |     |     |  ✅  |     |        |      |      |     |
 |**Models**     | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |  ✅ |   |    |      |  ✅    |  ✅    |
 |**Moderation** | ✅ |    |     |    |    |     |     |    |     |        |      |      |      |
-|**Responses**   | ✅   |  |     |  |    |     |     |     |     |        |      |      |      |
+|**Responses**  | ✅ |    |     |    |    |     |     |     |     |        |      |      |      |
 |**Tokenize**   |    | ❌ |     | ❌ |    |     |     |    |     |       |      |      |      |
+|**FIM**        |    |     |     |    | ❌ |     | ❌  |    |     |       |      |      |      |
 
-_*Custom means any OpenAI compatible provider, such as Azure OpenAI, Ollama, KoboldCpp, etc._
+_*Custom means any OpenAI compatible provider, such as Azure OpenAI, Ollama, KoboldCpp, etc._  
+**_Includes caching, if implemented by the provider._
 
 ## OpenAI Specific
 
- Assistants | Threads | Messages | Runs | Run steps | Vector stores | Vector store files | Vector store file batches | Realtime |
-|-----------|------------|---------|----------|------| ---------------|-------------------|-------------------------|-----------|
-| ✅ | ✅️ | ✅️ | ✅️ | ✅️ | ✅ | ✅ | ✅  | ❌ |
+ Assistants | Threads | Messages | Runs | Run steps | Vector stores | Vector store files | Vector store file batches | Realtime | Evals | Graders |
+|-----------|------------|---------|----------|------| ---------------|-------------------|-------------------------|-----------|-----------|-----------|
+| ✅ | ✅️ | ✅️ | ✅️ | ✅️ | ✅ | ✅ | ✅  | ❌ | ❌ | ❌ |
 
 ## Google Specific
 
@@ -49,9 +51,9 @@ _*`/v1` APIs, future support is unsure and probably won't be implemented._
 
 ## Mistral Specific
 
- FIM | Agents | Classifiers | OCR | Agents |
-|-----------|------------ | ------------ | ------------ | ------------ |
-| ❌ | ❌ |  ❌ | ❌ | ❌ |
+Agents | Classifiers | OCR | Agents |
+| ------------ | ------------ | ------------ | ------------ |
+| ❌ |  ❌ | ❌ | ❌ |
 
 ## Misc
 

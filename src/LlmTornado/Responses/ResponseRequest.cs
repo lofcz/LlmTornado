@@ -123,7 +123,7 @@ public class ResponseRequest
     /// Specifies the processing type used for serving the request.
     /// </summary>
     [JsonProperty("service_tier")]
-    public string? ServiceTier { get; set; }
+    public ChatRequestServiceTiers? ServiceTier { get; set; }
     
     /// <summary>
     /// Whether to store the generated model response for later retrieval via API. Defaults to true if null.
@@ -147,7 +147,7 @@ public class ResponseRequest
     /// Configuration options for a text response from the model. Can be plain text or structured JSON data.
     /// </summary>
     [JsonProperty("text")]
-    public TextConfiguration? Text { get; set; }
+    public ResponseTextConfiguration? Text { get; set; }
     
     /// <summary>
     ///     Represents an optional field when sending tools calling prompt.
@@ -192,12 +192,6 @@ public class ResponseRequest
     /// </summary>
     [JsonProperty("user")]
     public string? User { get; set; }
-
-    /// <summary>
-    /// An object specifying the format that the model must output. Used to enable JSON mode.
-    /// </summary>
-    [JsonProperty("response_format")]
-    public ResponseFormat? ResponseFormat { get; set; }
 
     /// <summary>
     ///	Serializes the chat request into the request body, based on the conventions used by the LLM provider.

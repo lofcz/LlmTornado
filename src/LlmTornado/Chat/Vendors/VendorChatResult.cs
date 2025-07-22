@@ -10,10 +10,10 @@ internal abstract class VendorChatResult : IVendorChatResult
     /// </summary>
     public ChatResult? ChatResult { get; set; }
 
-    public abstract ChatResult ToChatResult(string? postData);
+    public abstract ChatResult ToChatResult(string? postData, object? chatRequest);
 }
 
 internal interface IVendorChatResult
 {
-    public ChatResult ToChatResult(string? postData);
+    public ChatResult ToChatResult(string? postData, object? chatRequest);
 }

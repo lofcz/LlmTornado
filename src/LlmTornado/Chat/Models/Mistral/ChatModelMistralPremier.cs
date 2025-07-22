@@ -10,6 +10,16 @@ namespace LlmTornado.Chat.Models.Mistral;
 public class ChatModelMistralPremier : IVendorModelClassProvider
 {
     /// <summary>
+    /// An enterprise grade text model, that excels at using tools to explore codebases, editing multiple files and power software engineering agents.
+    /// </summary>
+    public static readonly ChatModel ModelDevstralMedium2507 = new ChatModel("devstral-medium-2507", LLmProviders.Mistral, 128_000);
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelDevstralMedium2507"/>
+    /// </summary>
+    public readonly ChatModel DevstralMedium2507 = ModelDevstralMedium2507;
+    
+    /// <summary>
     /// Our frontier-class reasoning model released June 2025. 
     /// </summary>
     public static readonly ChatModel ModelMagistralMedium = new ChatModel("magistral-medium-2506", LLmProviders.Mistral, 40_000);
@@ -100,7 +110,8 @@ public class ChatModelMistralPremier : IVendorModelClassProvider
         ModelMinistral3B,
         ModelMinistral8B,
         ModelMedium3,
-        ModelMagistralMedium
+        ModelMagistralMedium,
+        ModelDevstralMedium2507
     ];
 
     /// <summary>

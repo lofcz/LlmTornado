@@ -102,7 +102,7 @@ public class FunctionCall
     /// </summary>
     /// <param name="param">Key</param>
     /// <param name="data">Type to which the argument should be converted.</param>
-    public bool TryGetArgument<T>(string param, out T? data)
+    public bool TryGetArgument<T>(string param, [NotNullWhen(true)] out T? data)
     {
         return Get(param, out data, out _);
     }
@@ -197,6 +197,27 @@ public class FunctionCall
     public FunctionCall Resolve(object? result)
     {
         Result = new FunctionResult(this, result);
+        return this;
+    }
+    
+    /// <summary>
+    /// Resolves the call by asynchronously invoking the attached delegate.
+    /// </summary>
+    public async ValueTask<FunctionCall> Invoke()
+    {
+        
+        return this;
+    }
+
+    /// <summary>
+    /// Resolves the call.<br/>
+    /// <remarks>
+    /// Rich blocks from tool calls are currently supported only by Anthropic. If you use other providers, use only one block of type <see cref="FunctionResultBlockText"/>, or use the overload accepting an arbitrary object to avoid double JSON encoding.
+    /// </remarks>
+    /// </summary>
+    public FunctionCall Resolve(List<IFunctionResultBlock> blocks)
+    {
+        Result = new FunctionResult(this, blocks);
         return this;
     }
 

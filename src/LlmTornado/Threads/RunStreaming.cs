@@ -13,8 +13,23 @@ namespace LlmTornado.Threads;
 /// </summary>
 public class ServerSentEvent
 {
-    public string EventType { get; set; } = null!;
+    /// <summary>
+    /// Type of the event. Can be null if the provider doesn't use SSE protocol.
+    /// </summary>
+    public string? EventType { get; set; }
+    
+    /// <summary>
+    /// Data of the event.
+    /// </summary>
     public string Data { get; set; } = null!;
+
+    /// <summary>
+    /// Text representation.
+    /// </summary>
+    public override string ToString()
+    {
+        return EventType is null ? Data : $"Event type: {EventType}\n{Data}";
+    }
 }
 
 /// <summary>

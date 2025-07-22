@@ -1,7 +1,9 @@
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 using LlmTornado.Caching;
 using LlmTornado.Common;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace LlmTornado.Chat.Vendors.Google;
 
@@ -32,6 +34,18 @@ public class ChatRequestVendorGoogleExtensions
     public ChatRequestVendorGoogleSpeechConfig? SpeechConfig { get; set; }
     
     /// <summary>
+    /// The safety filters. Tornado defaults to minimal filers.
+    /// </summary>
+    [JsonIgnore]
+    public ChatRequestVendorGoogleSafetyFilters? SafetyFilters { get; set; }
+    
+    /// <summary>
+    /// Whether to include thoughts - applies only to reasoning models. Tornado sets this to "true" when null.
+    /// </summary>
+    [JsonIgnore]
+    public bool? IncludeThoughts { get; set; }
+    
+    /// <summary>
     /// Empty Google extensions.
     /// </summary>
     public ChatRequestVendorGoogleExtensions()
@@ -57,6 +71,88 @@ public class ChatRequestVendorGoogleExtensions
         CachedContent = cachedContent.Name;
         CachedContentInformation = cachedContent;
     }
+}
+
+/// <summary>
+/// Safety filters
+/// </summary>
+public class ChatRequestVendorGoogleSafetyFilters
+{
+    /// <summary>
+    /// The default filters as set by the provider.
+    /// </summary>
+    public static readonly ChatRequestVendorGoogleSafetyFilters Default = new ChatRequestVendorGoogleSafetyFilters
+    {
+        SpecialKind = 2
+    };
+
+    /// <summary>
+    /// The default filters used by Tornado.
+    /// </summary>
+    public static readonly ChatRequestVendorGoogleSafetyFilters Minimal = new ChatRequestVendorGoogleSafetyFilters
+    {
+        SpecialKind = 1
+    };
+    
+    /// <summary>
+    /// HARM_CATEGORY_HARASSMENT
+    /// </summary>
+    public GoogleSafetyFilterTypes? Harassment { get; set; }
+    
+    /// <summary>
+    /// HARM_CATEGORY_HATE_SPEECH
+    /// </summary>
+    public GoogleSafetyFilterTypes? HateSpeech { get; set; }
+    
+    /// <summary>
+    /// HARM_CATEGORY_SEXUALLY_EXPLICIT
+    /// </summary>
+    public GoogleSafetyFilterTypes? SexuallyExplicit { get; set; }
+    
+    /// <summary>
+    /// HARM_CATEGORY_DANGEROUS_CONTENT
+    /// </summary>
+    public GoogleSafetyFilterTypes? DangerousContent { get; set; }
+    
+    [JsonIgnore]
+    internal int SpecialKind { get; set; }
+}
+
+/// <summary>
+/// Safety filter types.
+/// </summary>
+[JsonConverter(typeof(StringEnumConverter))]
+public enum GoogleSafetyFilterTypes
+{
+    /// <summary>
+    /// Always show regardless of probability of unsafe content
+    /// </summary>
+    [EnumMember(Value = "BLOCK_NONE")] 
+    BlockNone,
+    
+    /// <summary>
+    /// Block when high probability of unsafe content
+    /// </summary>
+    [EnumMember(Value = "BLOCK_ONLY_HIGH")] 
+    BlockFew,
+    
+    /// <summary>
+    /// Block when medium or high probability of unsafe content
+    /// </summary>
+    [EnumMember(Value = "BLOCK_MEDIUM_AND_ABOVE")] 
+    BlockSome,
+    
+    /// <summary>
+    /// Block when low, medium or high probability of unsafe content
+    /// </summary>
+    [EnumMember(Value = "BLOCK_LOW_AND_ABOVE")] 
+    BlockMost,
+    
+    /// <summary>
+    /// Threshold is unspecified, block using default threshold
+    /// </summary>
+    [EnumMember(Value = "HARM_BLOCK_THRESHOLD_UNSPECIFIED")] 
+    Default
 }
 
 /// <summary>
