@@ -953,7 +953,7 @@ public class ChatAudio
     public string? Data { get; set; }
 
     /// <summary>
-    ///  Publicly available URL for the video
+    ///  Publicly available URL where the audio is stored.
     /// </summary>
     [JsonProperty("audio_url")]
     public Uri? Url { get; set; }

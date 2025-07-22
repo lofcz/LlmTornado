@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Chat;
@@ -24,11 +24,6 @@ public enum ChatMessageTypes
     Audio,
 
     /// <summary>
-    /// Message part is a video fragment.
-    /// </summary>
-    Video,
-
-    /// <summary>
     /// Message part is URI-based file.<br/>
     /// <b>Supported only by Google.</b>
     /// </summary>
@@ -50,5 +45,10 @@ public enum ChatMessageTypes
     /// Message part is a search result. This enables natural citations for RAG applications.<br/>
     /// <b>Supported only by Anthropic.</b>
     /// </summary>
-    SearchResult
+    SearchResult,
+    
+    /// <summary>
+    /// Message part is a video fragment.
+    /// </summary>
+    Video
 }

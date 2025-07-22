@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -165,24 +165,33 @@ public class ChatMessagePart
     /// <summary>
     ///     The part is an image, audio or video with a publicly available URL.
     /// </summary>
-    /// <param name="uri">Publicly available URL to the image, audio or video content</param>
-    /// <param name="type">Image, Audio or Video type</param>
+    /// <param name="uri">Publicly available URL to the resource.</param>
+    /// <param name="type"><see cref="ChatMessageTypes.Image"/>, <see cref="ChatMessageTypes.Audio"/>, or <see cref="ChatMessageTypes.Video"/></param>
     public ChatMessagePart(Uri uri, ChatMessageTypes type)
     {
         switch (type)
         {
             case ChatMessageTypes.Image:
+            {
                 Image = new ChatImage(uri.ToString());
                 break;
+            }
             case ChatMessageTypes.Audio:
+            {
                 Audio = new ChatAudio(uri);
                 break;
+            }
             case ChatMessageTypes.Video:
+            {
                 Video = new ChatVideo(uri);
                 break;
+            }
             default:
+            {
                 throw new ArgumentException($"Invalid type '{type}'. Only image, audio or video type is allowed.");
+            }
         }
+        
         Type = type;
     }
 
@@ -347,10 +356,10 @@ public class ChatMessagePart
     }
 
     /// <summary>
-    ///     Creates an image, audio or video part from a given document.
+    ///     Creates an image, audio or video part from a given uri and type.
     /// </summary>
-    /// <param name="uri">Publicly available URL to the image, audio or video content</param>
-    /// <param name="type">Image, Audio or Video type</param>
+    /// <param name="uri">Publicly available URL to the resource.</param>
+    /// <param name="type"><see cref="ChatMessageTypes.Image"/>, <see cref="ChatMessageTypes.Audio"/>, or <see cref="ChatMessageTypes.Video"/></param>
     /// <returns></returns>
     public static ChatMessagePart Create(Uri uri, ChatMessageTypes type)
     {

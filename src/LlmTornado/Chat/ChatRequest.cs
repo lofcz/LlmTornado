@@ -874,7 +874,7 @@ public class ChatRequest : IModelRequest
                         {
 	                        ChatMessageTypes.Text => "text",
 	                        ChatMessageTypes.Image => "image_url",
-	                        ChatMessageTypes.Audio => part.Audio?.Url != null ? "audio_url" : "input_audio",
+	                        ChatMessageTypes.Audio => part.Audio?.Url is not null ? "audio_url" : "input_audio",
                             ChatMessageTypes.Video => "video_url",
                             _ => "text"
                         };
@@ -902,7 +902,7 @@ public class ChatRequest : IModelRequest
 	                        }
 	                        case ChatMessageTypes.Audio:
 	                        {
-								if (part.Audio?.Url != null)
+								if (part.Audio?.Url is not null)
 								{
                                     writer.WritePropertyName("audio_url");
                                     writer.WriteStartObject();
@@ -913,52 +913,50 @@ public class ChatRequest : IModelRequest
                                     writer.WriteEndObject();
                                     break;
                                 }
-								else
+
+								writer.WritePropertyName("input_audio");
+								writer.WriteStartObject();
+
+								writer.WritePropertyName("data");
+								writer.WriteValue(part.Audio?.Data);
+
+								writer.WritePropertyName("format");
+
+								if (part.Audio is not null)
 								{
-									writer.WritePropertyName("input_audio");
-									writer.WriteStartObject();
-
-									writer.WritePropertyName("data");
-									writer.WriteValue(part.Audio?.Data);
-
-									writer.WritePropertyName("format");
-
-									if (part.Audio is not null)
+									switch (part.Audio.Format)
 									{
-										switch (part.Audio.Format)
+										case ChatAudioFormats.Wav:
 										{
-											case ChatAudioFormats.Wav:
-												{
-													writer.WriteValue("wav");
-													break;
-												}
-											case ChatAudioFormats.Mp3:
-												{
-													writer.WriteValue("mp3");
-													break;
-												}
+											writer.WriteValue("wav");
+											break;
+										}
+										case ChatAudioFormats.Mp3:
+										{
+											writer.WriteValue("mp3");
+											break;
 										}
 									}
-									else
-									{
-										writer.WriteValue(string.Empty);
-									}
-
-									writer.WriteEndObject();
 								}
-		                        break;
+								else
+								{
+									writer.WriteValue(string.Empty);
+								}
+
+								writer.WriteEndObject();
+								break;
 	                        }
                             case ChatMessageTypes.Video:
-                                {
-                                    writer.WritePropertyName("video_url");
-                                    writer.WriteStartObject();
+                            {
+                                writer.WritePropertyName("video_url");
+                                writer.WriteStartObject();
 
-                                    writer.WritePropertyName("url");
-                                    writer.WriteValue(part.Video?.Url);
+                                writer.WritePropertyName("url");
+                                writer.WriteValue(part.Video?.Url);
 
-                                    writer.WriteEndObject();
-                                    break;
-                                }
+                                writer.WriteEndObject();
+                                break;
+                            }
                         }
 
                         writer.WriteEndObject();
