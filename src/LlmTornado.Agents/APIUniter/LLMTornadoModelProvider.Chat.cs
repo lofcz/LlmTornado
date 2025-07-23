@@ -1,6 +1,8 @@
 ﻿using LlmTornado.Chat;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
+using LlmTornado.Responses;
+using LlmTornado.Responses.Events;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -10,6 +12,7 @@ using System.Threading.Tasks;
 
 namespace LlmTornado.Agents
 {
+    public delegate void TornadoStreamingCallbacks(IResponseEvent streamingResult);
     public partial class TornadoClient
     {
         /// <summary>
@@ -49,12 +52,13 @@ namespace LlmTornado.Agents
 
             if (options.ReasoningOptions != null)
             {
-                chat.RequestParameters.ReasoningEffort = options.ReasoningOptions.EffortLevel switch
+                chat.RequestParameters.ResponseRequestParameters = new ResponseRequest
                 {
-                    ModelReasoningEffortLevel.Low => ChatReasoningEfforts.Low,
-                    ModelReasoningEffortLevel.Medium => ChatReasoningEfforts.Medium,
-                    ModelReasoningEffortLevel.High => ChatReasoningEfforts.High,
-                    _ => ChatReasoningEfforts.Low
+                    Reasoning = new ReasoningConfiguration
+                    {
+                        Effort = ResponseReasoningEfforts.Medium,
+                        Summary = ResponseReasoningSummaries.Auto
+                    }
                 };
             }
 
@@ -63,7 +67,7 @@ namespace LlmTornado.Agents
             return chat;
         }
 
-        public async Task<ModelResponse> HandleStreaming(Conversation chat, List<ModelItem> messages, ModelResponseOptions options, StreamingCallbacks streamingCallback = null)
+        public async Task<ModelResponse> HandleStreaming(Conversation chat, List<ModelItem> messages, ModelResponseOptions options, TornadoStreamingCallbacks streamingCallback = null)
         {
             ModelResponse ResponseOutput = new();
             ResponseOutput.Model = options.Model;
@@ -71,10 +75,28 @@ namespace LlmTornado.Agents
             ResponseOutput.OutputItems = new List<ModelItem>();
             ResponseOutput.Messages = messages;
 
-
             //Create Open response
             await chat.StreamResponseRich(new ChatStreamEventHandler
             {
+                OnResponseEvent = (data) =>
+                {
+                    streamingCallback?.Invoke(data);
+
+                    if (data is ResponseEventCreated ResponseEvent)
+                    {
+                        ResponseOutput.Id = ResponseEvent.Response.Id ?? ResponseEvent.Response.PreviousResponseId;
+                    }
+                    else if (data is ResponseEventOutputItemDone itemDone)
+                    {
+                        ResponseOutput.OutputItems.Add(ConvertFromProviderOutputItem(itemDone.Item));
+                    }
+                    else if (data is ResponseEventCompleted completed)
+                    {
+                        ResponseOutput.Id = completed.Response.Id ?? completed.Response.PreviousResponseId;
+                    }
+
+                    return ValueTask.CompletedTask;
+                },
                 MessageTokenExHandler = (exText) =>
                 {
                     //Call the streaming callback for text
@@ -87,7 +109,7 @@ namespace LlmTornado.Agents
                 },
                 MessageTokenHandler = (text) =>
                 {
-                    streamingCallback?.Invoke(new ModelStreamingOutputTextDeltaEvent(1, 1, 1, text));
+                    streamingCallback?.Invoke(new ResponseEventOutputTextDelta() { ContentIndex=0,OutputIndex=0,SequenceNumber=0,Delta=text});
                     return ValueTask.CompletedTask;
                 },
                 ReasoningTokenHandler = (reasoning) =>
@@ -97,15 +119,12 @@ namespace LlmTornado.Agents
                 BlockFinishedHandler = (message) =>
                 {
                     //Call the streaming callback for completion
-                    streamingCallback?.Invoke(new ModelStreamingCompletedEvent(1, message.Id.ToString()));
+                    streamingCallback?.Invoke(new ResponseEventCompleted());
                     ResponseOutput.OutputItems.Add(ConvertFromProviderItem(message));
                     return ValueTask.CompletedTask;
                 },
                 MessagePartHandler = (part) =>
                 {
-                    if (part.Type == ChatMessageTypes.Text)
-                    {
-                    }
                     return ValueTask.CompletedTask;
                 },
                 FunctionCallHandler = (toolCall) =>
@@ -129,12 +148,13 @@ namespace LlmTornado.Agents
                 },
                 MutateChatRequestHandler = (request) =>
                 {
-                    streamingCallback?.Invoke(new ModelStreamingCreatedEvent(1));
+                    streamingCallback?.Invoke(new ResponseEventCreated());
                     //Mutate the request if needed
                     return ValueTask.FromResult(request);
                 },
                 HttpExceptionHandler = (exception) =>
                 {
+                    new ResponseEventError() { Message = exception.Exception.Message, Code = exception.Result.Code.ToString()};
                     //Handle any exceptions that occur during streaming
                     return ValueTask.CompletedTask;
                 }

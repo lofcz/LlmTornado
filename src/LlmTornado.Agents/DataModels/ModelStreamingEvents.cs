@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace LlmTornado.Agents
 {
     public delegate void StreamingCallbacks(ModelStreamingEvents streamingResult);
-
+    
     public enum ModelStreamingStatus
     {
         InProgress,

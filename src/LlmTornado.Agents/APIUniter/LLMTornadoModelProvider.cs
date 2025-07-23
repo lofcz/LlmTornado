@@ -94,7 +94,7 @@ namespace LlmTornado.Agents
 
             options.PreviousResponseId = response.Id;
 
-            return new ModelResponse(ModelItems, outputFormat: options.OutputFormat ?? null, messages, id: response.Id);
+            return new ModelResponse(ModelItems, outputFormat: options.OutputFormat ?? null, messages, responseId: response.Id);
         }
 
         public async Task<ModelResponse> CreateStreamingResponseAsync(List<ModelItem> messages, ModelResponseOptions options, StreamingCallbacks streamingCallback = null)
@@ -122,7 +122,7 @@ namespace LlmTornado.Agents
             List<ModelItem> ModelItems = ConvertFromProviderItems(response.Data!, chat).ToList();
 
             //Return results.
-            return new ModelResponse(options.Model, [ConvertLastFromProviderItems(chat),], outputFormat: options.OutputFormat ?? null, ModelItems);
+            return new ModelResponse([ConvertLastFromProviderItems(chat),], outputFormat: options.OutputFormat ?? null, ModelItems, responseId:response.Data.Result.Id ?? "");
         }
 
         public async Task<ModelResponse> StreamingChatAPIAsync(List<ModelItem> messages, ModelResponseOptions options, StreamingCallbacks streamingCallback = null)
