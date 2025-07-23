@@ -37,7 +37,7 @@ namespace LlmTornado.Agents
         public static async Task<RunResult> RunAsync(
             Agent agent,
             string input = "",
-            //GuardRailFunction? guard_rail = null,
+            GuardRailFunction? guard_rail = null,
             bool single_turn = false,
             int maxTurns = 10,
             List<ModelItem>? messages = null,

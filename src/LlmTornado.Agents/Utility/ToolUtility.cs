@@ -21,6 +21,16 @@ namespace LlmTornado.Agents
                 );
         }
 
+        /// <summary>
+        /// Converts a delegate function into a <see cref="FunctionTool"/> object.
+        /// </summary>
+        /// <remarks>The method extracts metadata from the function's parameters and attributes to
+        /// construct a <see cref="FunctionTool"/>.  It maps parameter types to JSON schema types and includes
+        /// descriptions from the <see cref="ToolAttribute"/>.</remarks>
+        /// <param name="function">The delegate function to convert. Must have a <see cref="ToolAttribute"/> applied.</param>
+        /// <returns>A <see cref="FunctionTool"/> representing the specified function, including its name, description, and
+        /// parameter schema.</returns>
+        /// <exception cref="Exception">Thrown if the function does not have a <see cref="ToolAttribute"/>.</exception>
         public static FunctionTool ConvertFunctionToTool(this Delegate function)
         {
             MethodInfo method = function.Method;
@@ -72,6 +82,20 @@ namespace LlmTornado.Agents
             return newTool;
         }
 
+        /// <summary>
+        /// Parses the function call arguments from a JSON representation and maps them to the parameters of the
+        /// specified delegate.
+        /// </summary>
+        /// <remarks>This method attempts to match JSON properties to the delegate's method parameters by
+        /// name, ignoring case. It supports primitive types, strings, decimals, and enums, as well as complex types
+        /// that can be deserialized from JSON. If a required parameter is missing and does not have a default value, a
+        /// <see cref="JsonException"/> is thrown.</remarks>
+        /// <param name="function">The delegate whose method parameters are to be matched with the provided arguments.</param>
+        /// <param name="functionCallArguments">A <see cref="BinaryData"/> object containing the JSON representation of the function call arguments.</param>
+        /// <returns>A list of objects representing the parsed arguments, ready to be passed to the delegate's method.</returns>
+        /// <exception cref="JsonException">Thrown if a required parameter is not found in the JSON arguments, or if an invalid value is provided for an
+        /// enum parameter.</exception>
+        /// <exception cref="NotImplementedException"></exception>
         public static List<object> ParseFunctionCallArgs(this Delegate function, BinaryData functionCallArguments)
         {
             MethodInfo method = function.Method;
