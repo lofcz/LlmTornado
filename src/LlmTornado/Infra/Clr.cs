@@ -143,106 +143,109 @@ internal static class Clr
     
     public static async ValueTask<object?> Invoke(Delegate? function, DelegateMetadata? metadata, string? data)
     {
-        if (function is not null && metadata is not null)
+        if (function is null || metadata?.Tool?.Params is null)
         {
-            object? result = null;
-
-            List<object?> args = [];
-            string normalizedData = data ?? "{}";
-            JObject jObject = JObject.Parse(normalizedData);
-            
-            if (metadata.Tool.Params is not null)
-            {
-                foreach (ToolParam param in metadata.Tool.Params)
-                {
-                    if (param.Type.Serializer is ToolParamSerializer.Arguments)
-                    {
-                        if (param.Type is ToolParamArguments)
-                        {
-                            args.Add(new ToolArguments
-                            {
-                                Data = normalizedData
-                            });
-                        }
-                        
-                        continue;
-                    }
-                    
-                    if (jObject.TryGetValue(param.Name, StringComparison.OrdinalIgnoreCase, out JToken? token) && param.Type.DataType is not null)
-                    {
-                        Type dataType = param.Type.DataType;
-                        
-                        switch (param.Type.Serializer)
-                        {
-                            case ToolParamSerializer.Dictionary:
-                                args.Add(DeserializeDictionary(token, dataType));
-                                break;
-                            case ToolParamSerializer.Set:
-                                args.Add(DeserializeSet(token, dataType));
-                                break;
-                            case ToolParamSerializer.MultidimensionalArray:
-                                args.Add(DeserializeMdArray(token, dataType));
-                                break;
-                            case ToolParamSerializer.NonGenericEnumerable:
-                                args.Add(DeserializeNonGenericEnumerable(token));
-                                break;
-                            case ToolParamSerializer.Array:
-                            case ToolParamSerializer.Object:
-                                args.Add(DeserializeObject(token, dataType));
-                                break;
-                            case ToolParamSerializer.Atomic:
-                                args.Add(DeserializePrimitive(token, dataType));
-                                break;
-                            case ToolParamSerializer.Undefined:
-                            default:
-                                args.Add(token.ToObject(dataType));
-                                break;
-                        }
-                    }
-                    else
-                    {
-                        args.Add(null);
-                    }
-                }
-            }
-            
-            try
-            {
-                object? invocationResult = function.DynamicInvoke(args.ToArray());
-                
-                if (invocationResult is Task task)
-                {
-                    await task.ConfigureAwait(false);
-                    
-                    if (task.GetType().IsGenericType)
-                    {
-                        result = (task as dynamic).Result; 
-                    }
-                }
-                else if (invocationResult is not null)
-                {
-                    Type type = invocationResult.GetType();
-                    
-                    if (type == typeof(ValueTask) || (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(ValueTask<>)))
-                    {
-                        result = await (dynamic)invocationResult;
-                    }
-                    else
-                    {
-                        result = invocationResult;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                // todo: handle
-                throw; 
-            }
-
-            return result;
+            return null;
         }
 
-        return null;
+        object? result = null;
+        List<object?> args = [];
+        string normalizedData = data ?? "{}";
+        JObject jObject = JObject.Parse(normalizedData);
+        
+        ParameterInfo[] delegateParams = function.Method.GetParameters();
+        Dictionary<string, ToolParam> toolParamsMap = metadata.Tool.Params.ToDictionary(p => p.Name);
+
+        foreach (ParameterInfo delegateParam in delegateParams)
+        {
+            if (delegateParam.Name is null)
+            {
+                args.Add(null);
+                continue;
+            }
+            
+            if (delegateParam.ParameterType == typeof(ToolArguments))
+            {
+                args.Add(new ToolArguments { Data = normalizedData });
+                continue;
+            }
+
+            if (toolParamsMap.TryGetValue(delegateParam.Name, out ToolParam? toolParam) && 
+                jObject.TryGetValue(toolParam.Name, StringComparison.OrdinalIgnoreCase, out JToken? token) && 
+                toolParam.Type.DataType is not null)
+            {
+                Type dataType = toolParam.Type.DataType;
+                        
+                switch (toolParam.Type.Serializer)
+                {
+                    case ToolParamSerializer.Dictionary:
+                        args.Add(DeserializeDictionary(token, dataType));
+                        break;
+                    case ToolParamSerializer.Set:
+                        args.Add(DeserializeSet(token, dataType));
+                        break;
+                    case ToolParamSerializer.MultidimensionalArray:
+                        args.Add(DeserializeMdArray(token, dataType));
+                        break;
+                    case ToolParamSerializer.NonGenericEnumerable:
+                        args.Add(DeserializeNonGenericEnumerable(token));
+                        break;
+                    case ToolParamSerializer.Array:
+                    case ToolParamSerializer.Object:
+                        args.Add(DeserializeObject(token, dataType));
+                        break;
+                    case ToolParamSerializer.Atomic:
+                        args.Add(DeserializePrimitive(token, dataType));
+                        break;
+                    case ToolParamSerializer.Any:
+                        args.Add(token.ToObject<object>());
+                        break;
+                    case ToolParamSerializer.Undefined:
+                    default:
+                        args.Add(token.ToObject(dataType));
+                        break;
+                }
+            }
+            else
+            {
+                args.Add(delegateParam.IsOptional ? Type.Missing : null);
+            }
+        }
+            
+        try
+        {
+            object? invocationResult = function.DynamicInvoke(args.ToArray());
+                
+            if (invocationResult is Task task)
+            {
+                await task.ConfigureAwait(false);
+                
+                if (task.GetType().IsGenericType)
+                {
+                    result = (task as dynamic).Result; 
+                }
+            }
+            else if (invocationResult is not null)
+            {
+                Type type = invocationResult.GetType();
+                
+                if (type == typeof(ValueTask) || (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(ValueTask<>)))
+                {
+                    result = await (dynamic)invocationResult;
+                }
+                else
+                {
+                    result = invocationResult;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            // todo: handle
+            throw; 
+        }
+
+        return result;
     }
     
     /// <summary>

@@ -46,7 +46,7 @@ internal static class ToolFactory
         return type.GetInterfaces().Append(type).Any(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(ICollection<>));
     }
     
-    public static DelegateMetadata CreateFromMethod(Delegate del, IEndpointProvider provider)
+    public static DelegateMetadata CreateFromMethod(Delegate del, ToolMetadata? metadata, IEndpointProvider provider)
     {
         ParameterInfo[] pars = del.Method.GetParameters();
         ToolDefinition function = new ToolDefinition
@@ -55,14 +55,53 @@ internal static class ToolFactory
             Params = []
         };
 
+        HashSet<string> ignored = metadata?.Ignore?.ToHashSet() ?? [];
+
         foreach (ParameterInfo par in pars)
         {
-            if (par.Name is null)
+            if (par.Name is null || ignored.Contains(par.Name))
             {
                 continue;
             }
 
             Handle(par.Name, par.ParameterType, function.Params);
+        }
+
+        if (metadata?.Params is not null)
+        {
+            foreach (ToolParamDefinition def in metadata.Params)
+            {
+                ToolParam? existing = function.Params.FirstOrDefault(x => x.Name == def.Name);
+
+                if (existing is not null)
+                {
+                    // Potentially an override
+                    if (existing.Type.GetType() == def.Param.GetType())
+                    {
+                        // Compatible override (e.g. string -> string)
+                        IToolParamType newParam = def.Param;
+                        newParam.DataType = existing.Type.DataType;
+                        newParam.Serializer = existing.Type.Serializer;
+                        existing.Type = newParam;
+                    }
+                    else if (existing.Type is ToolParamListEnum listEnum && def.Param is ToolParamEnum newEnumDefinition)
+                    {
+                        // Special case: User is overriding an array of enums with a new enum definition for the items.
+                        listEnum.Items = newEnumDefinition.EnumValues;
+                    }
+                    else
+                    {
+                        // Incompatible override. Remove the original, and the new one will be added as a ToolArgument-only parameter.
+                        function.Params.Remove(existing);
+                        function.Params.Add(new ToolParam(def.Name, def.Param));
+                    }
+                }
+                else
+                {
+                    // It's a new parameter
+                    function.Params.Add(new ToolParam(def.Name, def.Param));
+                }
+            }
         }
 
         ToolFunction compiled = ChatPluginCompiler.Compile(function, new ToolMeta
@@ -82,6 +121,11 @@ internal static class ToolFactory
         if (baseType == typeof(ToolArguments))
         {
             return new ToolParamArguments();
+        }
+
+        if (baseType == typeof(object))
+        {
+            return new ToolParamAny(null, !typeIsNullable) { DataType = type, Serializer = ToolParamSerializer.Any };
         }
 
         if (IsKnownAtomicType(baseType, out _))
@@ -112,7 +156,15 @@ internal static class ToolFactory
                 ]) { DataType = type, Serializer = ToolParamSerializer.MultidimensionalArray };
             }
 
-            return new ToolParamList(null, !typeIsNullable, GetParamFromType(baseType.GetElementType()!)) { DataType = type, Serializer = ToolParamSerializer.Array };
+            Type innerType = baseType.GetElementType()!;
+
+            if (GetNullableBaseType(innerType).Item1.IsEnum)
+            {
+                List<string> vals = Enum.GetValues(GetNullableBaseType(innerType).Item1).Cast<object>().Select(x => x.ToString()!).ToList();
+                return new ToolParamListEnum(null, !typeIsNullable, vals) { DataType = type, Serializer = ToolParamSerializer.Array };
+            }
+
+            return new ToolParamList(null, !typeIsNullable, GetParamFromType(innerType)) { DataType = type, Serializer = ToolParamSerializer.Array };
         }
 
         if (IsIEnumerable(baseType))

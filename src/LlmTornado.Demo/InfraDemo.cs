@@ -5,6 +5,7 @@ using LlmTornado.Chat.Models;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Common;
+using LlmTornado.Infra;
 
 namespace LlmTornado.Demo;
 
@@ -85,8 +86,21 @@ public class InfraDemo : DemoBase
             Model = ChatModel.OpenAi.Gpt41.V41,
             Tools =
             [
-                new Tool((string location, Continents continent, ComplexClass cls, List<string> names, List<Person> people, string[] popularGames, string[,] wonGameOfCheckers3x3useXOchars, Continents[] allContinents, string[][] rpgInventoryItemsUseXForEmpty, HashSet<int> setOfUniqueInts, ToolArguments args) =>
+                new Tool((
+                        string location, 
+                        Continents continent, 
+                        ComplexClass cls, 
+                        List<string> names, 
+                        List<Person> people, 
+                        string[] popularGames, 
+                        string[,] wonGameOfCheckers3x3useXOchars, 
+                        Continents[] allContinents, 
+                        string[][] rpgInventoryItemsUseXForEmpty, 
+                        HashSet<int> setOfUniqueInts, 
+                        object someDataAboutGames,
+                        ToolArguments args) =>
                 {
+                    // manual decoding example
                     if (args.TryGetArgument("people", out List<Person>? fetchedPeople))
                     {
                         foreach (Person person in fetchedPeople)
@@ -96,6 +110,12 @@ public class InfraDemo : DemoBase
                     }
                     
                     return "";
+                }, new ToolMetadata
+                {
+                    Params = [
+                        new ToolParamDefinition("allContinents", new ToolParamListEnum("continents", true, [ nameof(Continents.Africa), nameof(Continents.Antarctica) ]))
+                    ],
+                    Ignore = [ "wonGameOfCheckers3x3useXOchars" ]
                 })
             ],
             ToolChoice = OutboundToolChoice.Required

@@ -294,7 +294,8 @@ public enum ToolParamSerializer
     Array,
     NonGenericEnumerable,
     Object,
-    Atomic
+    Atomic,
+    Any
 }
 
 public class ToolMeta
@@ -427,6 +428,25 @@ public class ToolParamBool : ToolParamTypeBase
     {
         Description = description;
         Required = required;
+    }
+}
+
+public class ToolParamAny : ToolParamTypeBase
+{
+    public override string Type => "object";
+
+    public ToolParamAny(string? description, bool required)
+    {
+        Description = description;
+        Required = required;
+    }
+
+    public override object Compile(ToolDefinition sourceFn, ToolMeta meta)
+    {
+        return new
+        {
+            description = Description
+        };
     }
 }
 

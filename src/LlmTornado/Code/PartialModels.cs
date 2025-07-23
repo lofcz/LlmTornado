@@ -1014,7 +1014,20 @@ public class ToolMetadata
 {
     public string? Name { get; set; }
     public string? Description { get; set; }
-    
+    public List<ToolParamDefinition>? Params { get; set; }
+    public List<string>? Ignore { get; set; }
+}
+
+public class ToolParamDefinition
+{
+    public string Name { get; set; }
+    public IToolParamType Param { get; set; }
+
+    public ToolParamDefinition(string name, IToolParamType param)
+    {
+        Name = name;
+        Param = param;
+    }
 }
 
 /// <summary>
@@ -1479,18 +1492,27 @@ public class ToolArguments
     internal readonly Lazy<ChatFunctionParamsGetter> ArgGetter;
     
     [JsonIgnore] 
-    internal readonly Lazy<Dictionary<string, object?>?> DecodedArguments;
+    internal Dictionary<string, object?>? DecodedArguments;
 
     public ToolArguments()
     {
-        ArgGetter = new Lazy<ChatFunctionParamsGetter>(() => new ChatFunctionParamsGetter(DecodedArguments?.Value));
-        DecodedArguments = new Lazy<Dictionary<string, object?>?>(() => Data.IsNullOrWhiteSpace() ? [] : JsonConvert.DeserializeObject<Dictionary<string, object?>>(Data));
+        ArgGetter = new Lazy<ChatFunctionParamsGetter>(() => new ChatFunctionParamsGetter(DecodedArguments));
     }
     
     /// <summary>
     /// The raw JSON.
     /// </summary>
-    public string Data { get; set; }
+    public string Data
+    {
+        get => _data;
+        set
+        {
+            _data = value;
+            DecodedArguments = Data.IsNullOrWhiteSpace() ? [] : JsonConvert.DeserializeObject<Dictionary<string, object?>>(Data);
+        }
+    }
+    
+    private string _data;
     
     /// <summary>
     ///     Gets all arguments passed to the function call as a dictionary.
