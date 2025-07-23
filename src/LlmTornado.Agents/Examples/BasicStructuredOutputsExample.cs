@@ -2,11 +2,13 @@
 using LlmTornado.Code;
 using System.Text.Json;
 using System.ComponentModel;
+using NUnit.Framework;
 
 namespace LlmTornado.Agents
 {
     internal class LTBasicStructuredOutputsExample
     {
+        [Test]
         public async Task RunBasicStructuredOutputExample()
         {
             LLMTornadoModelProvider client =

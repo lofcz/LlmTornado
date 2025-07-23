@@ -1,4 +1,6 @@
 ﻿
+using LlmTornado.Responses;
+
 namespace LlmTornado.Agents
 {
     /// <summary>
@@ -23,6 +25,7 @@ namespace LlmTornado.Agents
 
         /// <summary>
         /// Tools to use during the run
+        /// (required uniter for response tool and function tool)
         /// </summary>
         public List<BaseTool> Tools { get; set; } = new List<BaseTool>();
 
@@ -34,7 +37,7 @@ namespace LlmTornado.Agents
         /// <summary>
         /// Reasoning Options
         /// </summary>
-        public ModelReasoningOptions ReasoningOptions { get; set; }
+        public ReasoningConfiguration ReasoningOptions { get; set; }
 
         public ModelResponseOptions() { }
     }

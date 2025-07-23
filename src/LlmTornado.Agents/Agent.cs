@@ -15,7 +15,7 @@ namespace LlmTornado.Agents
         /// <summary>
         /// Which provider client to use
         /// </summary>
-        public ModelClient Client { get; set; }
+        public TornadoClient Client { get; set; }
 
         /// <summary>
         /// Response options for the run
@@ -52,10 +52,10 @@ namespace LlmTornado.Agents
 
         public static Agent DummyAgent()
         {
-            LLMTornadoModelProvider client = new(ChatModel.OpenAi.O4.V4Mini,[new ProviderAuthentication(LLmProviders.OpenAi, Environment.GetEnvironmentVariable("OPENAI_API_KEY")!),]);
+            TornadoClient client = new(ChatModel.OpenAi.O4.V4Mini,[new ProviderAuthentication(LLmProviders.OpenAi, Environment.GetEnvironmentVariable("OPENAI_API_KEY")!),]);
             return new Agent(client, "");
         }
-        public Agent(ModelClient client, string _instructions = "", Type? _output_schema = null, List<Delegate>? _tools = null)
+        public Agent(TornadoClient client, string _instructions = "", Type? _output_schema = null, List<Delegate>? _tools = null)
         {
             Client = client;
             Instructions = string.IsNullOrEmpty(_instructions) ? "You are a helpful assistant" : _instructions;
@@ -108,96 +108,5 @@ namespace LlmTornado.Agents
         }
 
 
-    }
-
-    public class AgentTool
-    {
-        public Agent ToolAgent { get; set; }
-        //Need to abstract this
-        public BaseTool Tool { get; set; }
-
-        public AgentTool(Agent agent, BaseTool tool)
-        {
-            ToolAgent = agent;
-            Tool = tool;
-        }
-    }
-
-    public class FunctionTool : BaseTool
-    {
-        public Delegate Function { get; set; }
-        public FunctionTool(string toolName, string toolDescription, BinaryData toolParameters, Delegate function, bool strictSchema = false)
-            : base(toolName, toolDescription, toolParameters, strictSchema)
-        {
-            Function = function;
-        }
-    }
-
-    public class BaseTool
-    {
-        public string ToolName { get; set; }
-        public string ToolDescription { get; set; }
-        public BinaryData ToolParameters { get; set; }
-        public bool FunctionSchemaIsStrict { get; set; }
-        public BaseTool() { }
-
-        public BaseTool(string toolName, string toolDescription, BinaryData toolParameters, bool strictSchema = false)
-        {
-            ToolName = toolName;
-            ToolDescription = toolDescription;
-            ToolParameters = toolParameters;
-            FunctionSchemaIsStrict = strictSchema;
-        }
-
-        public virtual BaseTool CreateTool(string toolName, string toolDescription, BinaryData toolParameters, bool strictSchema = false)
-        {
-            return new BaseTool(toolName, toolDescription, toolParameters);
-        }
-    }
-
-    [AttributeUsage(AttributeTargets.Method)]
-    public class ToolAttribute : Attribute
-    {
-        private string description;
-        private string[] in_parameters_description;
-
-        public ToolAttribute()
-        {
-
-        }
-
-        public string Description
-        {
-            get { return description; }
-            set { description = value; }
-        }
-
-        public string[] In_parameters_description { get => in_parameters_description; set => in_parameters_description = value; }
-    }
-
-
-    public enum ModelReasoningEffortLevel
-    {
-        Low,
-        Medium,
-        High
-    }
-
-    public enum ModelReasoningSummarizationDetail
-    {
-        None, //no summarization
-        Basic, //concise summaries
-        Detailed //detailed summaries with more context
-    }
-
-    public class ModelReasoningOptions
-    {
-        public ModelReasoningEffortLevel EffortLevel { get; set; }
-        public ModelReasoningSummarizationDetail SummarizationLevel { get; set; }
-
-        public ModelReasoningOptions(ModelReasoningEffortLevel effortLevel = ModelReasoningEffortLevel.Medium)
-        {
-            EffortLevel = effortLevel;
-        }
     }
 }

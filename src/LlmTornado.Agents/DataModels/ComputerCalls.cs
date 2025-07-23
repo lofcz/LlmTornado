@@ -3,6 +3,12 @@
 namespace LlmTornado.Agents
 {
     /// <summary>
+    /// Represents a method that will handle actions performed on a computer tool.
+    /// </summary>
+    /// <param name="computerCall">The action to be performed on the computer tool.</param>
+    public delegate void ComputerActionCallbacks(ComputerToolAction computerCall);
+
+    /// <summary>
     /// Possible Computer Actions
     /// </summary>
     public enum ModelComputerCallAction

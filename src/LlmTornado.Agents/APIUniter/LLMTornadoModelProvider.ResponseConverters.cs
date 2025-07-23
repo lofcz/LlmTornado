@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace LlmTornado.Agents
 {
-    public partial class LLMTornadoModelProvider
+    public partial class TornadoClient
     {
         //Provider --> Model
         public List<ModelItem> ConvertOutputItems(List<IResponseOutputItem> outputItems)

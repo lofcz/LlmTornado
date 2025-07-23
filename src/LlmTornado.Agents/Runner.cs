@@ -10,13 +10,10 @@ using System.Threading.Tasks;
 
 namespace LlmTornado.Agents
 {
-    public delegate void ComputerActionCallbacks(ComputerToolAction computerCall);
     public delegate void RunnerVerboseCallbacks(string runnerAction);
-    public delegate Task ModelStreamingEvent(ModelStreamingEvents streamEvent);
 
     public class Runner
     {
-
         /// <summary>
         /// Invoke the agent loop to begin async
         /// </summary>
@@ -51,11 +48,11 @@ namespace LlmTornado.Agents
         {
             RunResult runResult = new RunResult();
 
-            //if (cancellationToken != null)
-            //{
-            //    //Set the cancellation token for the agent client
-            //    agent.Client.CancelTokenSource = cancellationToken;
-            //}
+            if (cancellationToken != null)
+            {
+                //Set the cancellation token for the agent client
+                agent.Client.CancelTokenSource = cancellationToken;
+            }
 
             //Setup the messages from previous runs or memory
             if (messages != null)
@@ -76,19 +73,19 @@ namespace LlmTornado.Agents
             }
 
             //Check if the input triggers a guardrail to stop the agent from continuing
-            //if (guard_rail != null)
-            //{
-            //    var guard_railResult = await (Task<GuardRailFunctionOutput>)guard_rail.DynamicInvoke([input])!;
-            //    if (guard_railResult != null)
-            //    {
-            //        GuardRailFunctionOutput grfOutput = guard_railResult;
-            //        if (grfOutput.TripwireTriggered) throw new GuardRailTriggerException($"Input Guardrail Stopped the agent from continuing because, {grfOutput.OutputInfo}");
-            //    }
-            //    else
-            //    {
-            //        throw new Exception($"GuardRail Failed To Run");
-            //    }
-            //}
+            if (guard_rail != null)
+            {
+                var guard_railResult = await (Task<GuardRailFunctionOutput>)guard_rail.DynamicInvoke([input])!;
+                if (guard_railResult != null)
+                {
+                    GuardRailFunctionOutput grfOutput = guard_railResult;
+                    if (grfOutput.TripwireTriggered) throw new GuardRailTriggerException($"Input Guardrail Stopped the agent from continuing because, {grfOutput.OutputInfo}");
+                }
+                else
+                {
+                    throw new Exception($"GuardRail Failed To Run");
+                }
+            }
 
             //Agent loop
             int currentTurn = 0;
@@ -225,7 +222,7 @@ namespace LlmTornado.Agents
 
             byte[] data = ComputerToolUtility.TakeScreenshotByteArray(ImageFormat.Png);
 
-            GC.Collect();
+            GC.Collect(); //not sure if this is needed, but it helps to free up memory after taking a screenshot
 
             return new ModelComputerCallOutputItem("cuo_" + Guid.NewGuid().ToString().Replace("-", "_"), computerCall.CallId, ModelStatus.Completed, new ModelMessageImageFileContent(BinaryData.FromBytes(data), "image/png"));
         }
@@ -244,9 +241,9 @@ namespace LlmTornado.Agents
             {
                 if (Streaming)
                 {
-                    return await agent.Client._CreateStreamingResponseAsync(messages, agent.Options, streamingCallback);
+                    return await agent.Client.CreateStreamingResponseAsync(messages, agent.Options, streamingCallback);
                 }
-                return await agent.Client._CreateResponseAsync(messages, agent.Options);
+                return await agent.Client.CreateResponseAsync(messages, agent.Options);
             }
             catch (Exception ex)
             {
@@ -259,7 +256,7 @@ namespace LlmTornado.Agents
         }
 
         /// <summary>
-        /// Try to rerun last message thread if it fails.
+        /// Try to rerun last message thread if it fails (mainly for computer use preview fails).
         /// </summary>
         /// <param name="messages"></param>
         public static void RemoveLastMessageThread(List<ModelItem> messages)

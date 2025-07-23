@@ -8,7 +8,7 @@ using System.Collections.Generic;
 
 namespace LlmTornado.Agents
 {
-    public partial class LLMTornadoModelProvider
+    public partial class TornadoClient
     {
         //Provider -> ModelItem conversion methods
         public IList<ModelItem> ConvertFromProviderItems(ChatRichResponse response, Conversation result)
