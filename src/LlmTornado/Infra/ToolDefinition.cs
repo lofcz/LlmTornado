@@ -450,6 +450,78 @@ public class ToolParamAny : ToolParamTypeBase
     }
 }
 
+public class ToolParamDateTime : ToolParamTypeBase
+{
+    public override string Type => "string";
+
+    [JsonProperty("format")]
+    public string Format => "date-time";
+
+    public ToolParamDateTime(string? description, bool required)
+    {
+        Description = description;
+        Required = required;
+    }
+
+    public override object Compile(ToolDefinition sourceFn, ToolMeta meta)
+    {
+        return new
+        {
+            type = Type,
+            description = Description,
+            format = Format
+        };
+    }
+}
+
+public class ToolParamDate : ToolParamTypeBase
+{
+    public override string Type => "string";
+
+    [JsonProperty("format")]
+    public string Format => "date";
+
+    public ToolParamDate(string? description, bool required)
+    {
+        Description = description;
+        Required = required;
+    }
+
+    public override object Compile(ToolDefinition sourceFn, ToolMeta meta)
+    {
+        return new
+        {
+            type = Type,
+            description = Description,
+            format = Format
+        };
+    }
+}
+
+public class ToolParamTime : ToolParamTypeBase
+{
+    public override string Type => "string";
+
+    [JsonProperty("format")]
+    public string Format => "time";
+
+    public ToolParamTime(string? description, bool required)
+    {
+        Description = description;
+        Required = required;
+    }
+
+    public override object Compile(ToolDefinition sourceFn, ToolMeta meta)
+    {
+        return new
+        {
+            type = Type,
+            description = Description,
+            format = Format
+        };
+    }
+}
+
 public class ToolParamEnum : ToolParamTypeBase
 {
     public override string Type => "string";

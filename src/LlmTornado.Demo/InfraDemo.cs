@@ -98,6 +98,7 @@ public class InfraDemo : DemoBase
                         string[][] rpgInventoryItemsUseXForEmpty, 
                         HashSet<int> setOfUniqueInts, 
                         object someDataAboutGames,
+                        DateTime dateBattleOfVerdunStarted,
                         ToolArguments args) =>
                 {
                     // manual decoding example

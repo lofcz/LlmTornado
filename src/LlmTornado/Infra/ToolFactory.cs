@@ -133,6 +133,23 @@ internal static class ToolFactory
             return new ToolParamString(null, !typeIsNullable) { DataType = type, Serializer = ToolParamSerializer.Atomic };
         }
         
+        if (baseType == typeof(DateTime))
+        {
+            return new ToolParamDateTime(null, !typeIsNullable) { DataType = type, Serializer = ToolParamSerializer.Atomic };
+        }
+            
+#if MODERN
+        if (baseType == typeof(DateOnly))
+        {
+            return new ToolParamDate(null, !typeIsNullable) { DataType = type, Serializer = ToolParamSerializer.Atomic };
+        }
+            
+        if (baseType == typeof(TimeOnly))
+        {
+            return new ToolParamTime(null, !typeIsNullable) { DataType = type, Serializer = ToolParamSerializer.Atomic };
+        }
+#endif
+        
         if (baseType.IsEnum)
         {
             List<string> vals = Enum.GetValues(baseType).Cast<object>().Select(x => x.ToString()!).ToList();
