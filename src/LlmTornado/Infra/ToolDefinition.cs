@@ -55,6 +55,11 @@ public class ToolDefinition
     }
 }
 
+internal static class ToolDefaults
+{
+    public static readonly List<string> DiscriminatorKeys = ["type", "_type", "discriminator_type", "discriminator"];
+}
+
 public enum ToolCallResultParameterErrors
 {
     MissingRequiredParameter,
@@ -270,16 +275,16 @@ public class ToolParam
         Type = type;
     }
 
-    public ToolParam(string name, string description, bool required, ToolParamAtomicTypes type)
+    public ToolParam(string name, string description, ToolParamAtomicTypes type)
     {
         Name = name;
         Type = type switch
         {
-            ToolParamAtomicTypes.Bool => new ToolParamBool(description, required),
-            ToolParamAtomicTypes.Float => new ToolParamNumber(description, required),
-            ToolParamAtomicTypes.Int => new ToolParamInt(description, required),
-            ToolParamAtomicTypes.String => new ToolParamString(description, required),
-            _ => new ToolParamError(name, required)
+            ToolParamAtomicTypes.Bool => new ToolParamBool(description),
+            ToolParamAtomicTypes.Float => new ToolParamNumber(description),
+            ToolParamAtomicTypes.Int => new ToolParamInt(description),
+            ToolParamAtomicTypes.String => new ToolParamString(description),
+            _ => new ToolParamError(name)
         };
     }
 }
@@ -295,7 +300,26 @@ public enum ToolParamSerializer
     NonGenericEnumerable,
     Object,
     Atomic,
-    Any
+    Any,
+    AnyOf,
+    Nullable
+}
+
+[AttributeUsage(AttributeTargets.Parameter)]
+public class SchemaNullableAttribute : Attribute
+{
+    
+}
+
+[AttributeUsage(AttributeTargets.Parameter)]
+public class SchemaAnyOfAttribute : Attribute
+{
+    public Type[] Types { get; }
+    
+    public SchemaAnyOfAttribute(params Type[] types)
+    {
+        Types = types;
+    }
 }
 
 public class ToolMeta
@@ -375,10 +399,9 @@ public class ToolParamString : ToolParamTypeBase
 {
     public override string Type => "string";
  
-    public ToolParamString(string? description, bool required)
+    public ToolParamString(string? description)
     {
         Description = description;
-        Required = required;
     }
 }
 
@@ -386,10 +409,9 @@ public class ToolParamError : ToolParamTypeBase
 {
     public override string Type => "";
  
-    public ToolParamError(string? description, bool required)
+    public ToolParamError(string? description)
     {
         Description = description;
-        Required = required;
     }
 
     public override object Compile(ToolDefinition sourceFn, ToolMeta meta)
@@ -402,10 +424,9 @@ public class ToolParamInt : ToolParamTypeBase
 {
     public override string Type => "integer";
     
-    public ToolParamInt(string description, bool required)
+    public ToolParamInt(string? description)
     {
         Description = description;
-        Required = required;
     }
 }
 
@@ -413,10 +434,9 @@ public class ToolParamNumber : ToolParamTypeBase
 {
     public override string Type => "number";
     
-    public ToolParamNumber(string description, bool required)
+    public ToolParamNumber(string? description)
     {
         Description = description;
-        Required = required;
     }
 }
 
@@ -424,10 +444,9 @@ public class ToolParamBool : ToolParamTypeBase
 {
     public override string Type => "boolean";
     
-    public ToolParamBool(string description, bool required)
+    public ToolParamBool(string? description)
     {
         Description = description;
-        Required = required;
     }
 }
 
@@ -435,10 +454,9 @@ public class ToolParamAny : ToolParamTypeBase
 {
     public override string Type => "object";
 
-    public ToolParamAny(string? description, bool required)
+    public ToolParamAny(string? description)
     {
         Description = description;
-        Required = required;
     }
 
     public override object Compile(ToolDefinition sourceFn, ToolMeta meta)
@@ -457,10 +475,9 @@ public class ToolParamDateTime : ToolParamTypeBase
     [JsonProperty("format")]
     public string Format => "date-time";
 
-    public ToolParamDateTime(string? description, bool required)
+    public ToolParamDateTime(string? description)
     {
         Description = description;
-        Required = required;
     }
 
     public override object Compile(ToolDefinition sourceFn, ToolMeta meta)
@@ -481,10 +498,9 @@ public class ToolParamDate : ToolParamTypeBase
     [JsonProperty("format")]
     public string Format => "date";
 
-    public ToolParamDate(string? description, bool required)
+    public ToolParamDate(string? description)
     {
         Description = description;
-        Required = required;
     }
 
     public override object Compile(ToolDefinition sourceFn, ToolMeta meta)
@@ -505,10 +521,9 @@ public class ToolParamTime : ToolParamTypeBase
     [JsonProperty("format")]
     public string Format => "time";
 
-    public ToolParamTime(string? description, bool required)
+    public ToolParamTime(string? description)
     {
         Description = description;
-        Required = required;
     }
 
     public override object Compile(ToolDefinition sourceFn, ToolMeta meta)
@@ -522,6 +537,53 @@ public class ToolParamTime : ToolParamTypeBase
     }
 }
 
+public class ToolParamAnyOf : ToolParamTypeBase
+{
+    public override string Type => "object";
+
+    [JsonProperty("anyOf")]
+    public List<IToolParamType> AnyOf { get; set; } = [];
+    
+    [JsonIgnore]
+    public List<Type> PossibleTypes { get; set; } = [];
+
+    public override object Compile(ToolDefinition sourceFn, ToolMeta meta)
+    {
+        return new
+        {
+            anyOf = AnyOf.Select(x => x.Compile(sourceFn, meta)).ToList()
+        };
+    }
+}
+
+public class ToolParamNullable : IToolParamType
+{
+    public IToolParamType InnerType { get; }
+
+    public ToolParamNullable(IToolParamType innerType)
+    {
+        InnerType = innerType;
+    }
+
+    public string Type => InnerType.Type;
+    public string? Description { get => InnerType.Description; set => InnerType.Description = value; }
+    public bool Required { get => InnerType.Required; set => InnerType.Required = value; }
+    public Type? DataType { get => InnerType.DataType; set => InnerType.DataType = value; }
+    public ToolParamSerializer Serializer { get; set; }
+
+    public object Compile(ToolDefinition sourceFn, ToolMeta meta)
+    {
+        return new
+        {
+            anyOf = new object[]
+            {
+                new { type = "null" },
+                InnerType.Compile(sourceFn, meta)
+            }
+        };
+    }
+}
+
 public class ToolParamEnum : ToolParamTypeBase
 {
     public override string Type => "string";
@@ -529,10 +591,9 @@ public class ToolParamEnum : ToolParamTypeBase
     [JsonProperty("enum")]
     public List<string> EnumValues { get; set; }
 
-    public ToolParamEnum(string description, bool required, IEnumerable<string> enumVales)
+    public ToolParamEnum(string? description, IEnumerable<string> enumVales)
     {
         Description = description;
-        Required = required;
         EnumValues = enumVales.ToList();
     }
 
@@ -584,10 +645,9 @@ public class ToolParamListEnum : ToolParamTypeBase
     public override string Type => "array";
     public IEnumerable<string> Items { get; set; }
 
-    public ToolParamListEnum(string description, bool required, IEnumerable<string> values)
+    public ToolParamListEnum(string? description, IEnumerable<string> values)
     {
         Description = description;
-        Required = required;
         Items = values;
     }
     
@@ -611,10 +671,9 @@ public class ToolParamListAtomic : ToolParamTypeBase
     public override string Type => "array";
     public ToolParamListItems Items { get; set; }
 
-    public ToolParamListAtomic(string description, bool required, ToolParamAtomicTypes listType)
+    public ToolParamListAtomic(string? description, ToolParamAtomicTypes listType)
     {
         Description = description;
-        Required = required;
         Items = new ToolParamListItems
         {
             Type = listType
@@ -640,10 +699,9 @@ public class ToolParamList : ToolParamTypeBase
     public override string Type => "array";
     public IToolParamType Items { get; set; }
 
-    public ToolParamList(string description, bool required, IToolParamType list)
+    public ToolParamList(string? description, IToolParamType list)
     {
         Description = description;
-        Required = required;
         Items = list;
     }
     
@@ -662,6 +720,8 @@ public class ToolParamObject : ToolParamTypeBase
 {
     public override string Type => "object";
     public List<ToolParam> Properties { get; set; }
+    
+    internal Dictionary<string, object>? ExtraProperties { get; set; }
     
     public ToolParamObject(List<ToolParam> properties)
     {
@@ -698,6 +758,15 @@ public class ToolParamObject : ToolParamTypeBase
             
             so.Properties.AddOrUpdate(prop.Name, prop.Type.Compile(sourceFn, meta));
         }
+        
+        if (ExtraProperties is not null)
+        {
+            foreach (var extra in ExtraProperties)
+            {
+                so.Properties.AddOrUpdate(extra.Key, extra.Value);
+                so.Required?.Add(extra.Key);
+            }
+        }
 
         if (sourceFn.Strict)
         {
@@ -733,10 +802,9 @@ public class ToolParamDictionary : ToolParamTypeBase
     /// </summary>
     public int? MaxProperties { get; set; }
 
-    public ToolParamDictionary(string description, bool required, IToolParamType valueType)
+    public ToolParamDictionary(string? description, IToolParamType valueType)
     {
         Description = description;
-        Required = required;
         ValueType = valueType;
     }
 
@@ -745,11 +813,11 @@ public class ToolParamDictionary : ToolParamTypeBase
         if (sourceFn.Strict)
         {
             ToolParamObject keyValueObject = new ToolParamObject(null, [
-                new ToolParam("key", new ToolParamString(null, true)),
+                new ToolParam("key", new ToolParamString(null)),
                 new ToolParam("value", ValueType)
             ]);
             
-            ToolParamList listType = new ToolParamList(Description, true, keyValueObject);
+            ToolParamList listType = new ToolParamList(Description, keyValueObject);
             return listType.Compile(sourceFn, meta);
         }
         

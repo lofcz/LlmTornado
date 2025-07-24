@@ -1,11 +1,13 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using LlmTornado.Code;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
 
 namespace LlmTornado.Infra;
 
@@ -21,7 +23,7 @@ internal static class Clr
         return token.ToObject(dataType);
     }
 
-    private static object DeserializeNonGenericEnumerable(JToken token)
+    private static ArrayList DeserializeNonGenericEnumerable(JToken token)
     {
         ArrayList list = new ArrayList();
         
@@ -36,7 +38,7 @@ internal static class Clr
         return list;
     }
 
-    private static object? DeserializeMdArray(JToken token, Type dataType)
+    private static Array? DeserializeMdArray(JToken token, Type dataType)
     {
         if (token is JObject mdArrayObject &&
             mdArrayObject.TryGetValue("lengths", StringComparison.OrdinalIgnoreCase, out JToken? lengthsToken) &&
@@ -171,40 +173,9 @@ internal static class Clr
             }
 
             if (toolParamsMap.TryGetValue(delegateParam.Name, out ToolParam? toolParam) && 
-                jObject.TryGetValue(toolParam.Name, StringComparison.OrdinalIgnoreCase, out JToken? token) && 
-                toolParam.Type.DataType is not null)
+                jObject.TryGetValue(toolParam.Name, StringComparison.OrdinalIgnoreCase, out JToken? token))
             {
-                Type dataType = toolParam.Type.DataType;
-                        
-                switch (toolParam.Type.Serializer)
-                {
-                    case ToolParamSerializer.Dictionary:
-                        args.Add(DeserializeDictionary(token, dataType));
-                        break;
-                    case ToolParamSerializer.Set:
-                        args.Add(DeserializeSet(token, dataType));
-                        break;
-                    case ToolParamSerializer.MultidimensionalArray:
-                        args.Add(DeserializeMdArray(token, dataType));
-                        break;
-                    case ToolParamSerializer.NonGenericEnumerable:
-                        args.Add(DeserializeNonGenericEnumerable(token));
-                        break;
-                    case ToolParamSerializer.Array:
-                    case ToolParamSerializer.Object:
-                        args.Add(DeserializeObject(token, dataType));
-                        break;
-                    case ToolParamSerializer.Atomic:
-                        args.Add(DeserializePrimitive(token, dataType));
-                        break;
-                    case ToolParamSerializer.Any:
-                        args.Add(token.ToObject<object>());
-                        break;
-                    case ToolParamSerializer.Undefined:
-                    default:
-                        args.Add(token.ToObject(dataType));
-                        break;
-                }
+                args.Add(Deserialize(token, toolParam.Type));
             }
             else
             {
@@ -246,6 +217,93 @@ internal static class Clr
         }
 
         return result;
+    }
+
+    private static object? Deserialize(JToken token, IToolParamType paramType)
+    {
+        if (token.Type == JTokenType.Null)
+        {
+            return null;
+        }
+
+        if (paramType is ToolParamNullable nullable)
+        {
+            return Deserialize(token, nullable.InnerType);
+        }
+
+        Type? dataType = paramType.DataType;
+        
+        if (dataType is null)
+        {
+            return null;
+        }
+        
+        switch (paramType.Serializer)
+        {
+            case ToolParamSerializer.Dictionary:
+                return DeserializeDictionary(token, dataType);
+            case ToolParamSerializer.Set:
+                return DeserializeSet(token, dataType);
+            case ToolParamSerializer.MultidimensionalArray:
+                return DeserializeMdArray(token, dataType);
+            case ToolParamSerializer.NonGenericEnumerable:
+                return DeserializeNonGenericEnumerable(token);
+            case ToolParamSerializer.Array:
+            case ToolParamSerializer.Object:
+                return DeserializeObject(token, dataType);
+            case ToolParamSerializer.Atomic:
+                return DeserializePrimitive(token, dataType);
+            case ToolParamSerializer.Any:
+                if (dataType == typeof(ExpandoObject))
+                {
+                    return token.ToObject<ExpandoObject>();
+                }
+                
+                return token.ToObject<object>();
+            case ToolParamSerializer.AnyOf:
+                if (paramType is ToolParamAnyOf anyOfParam)
+                {
+                    return DeserializeAnyOf(token, anyOfParam);
+                }
+
+                return null;
+            case ToolParamSerializer.Undefined:
+            default:
+                return token.ToObject(dataType);
+        }
+    }
+
+    private static object? DeserializeAnyOf(JToken token, ToolParamAnyOf anyOfParam)
+    {
+        if (token is not JObject jObject)
+        {
+            throw new JsonException("Expected a JSON object for 'anyOf' deserialization, but received a different type.");
+        }
+
+        string? typeName = null;
+        
+        foreach (string key in ToolDefaults.DiscriminatorKeys)
+        {
+            if (jObject.TryGetValue(key, StringComparison.OrdinalIgnoreCase, out JToken? discriminatorToken))
+            {
+                typeName = discriminatorToken.Value<string>();
+                break;
+            }
+        }
+        
+        if (typeName is null)
+        {
+            throw new JsonException($"Required discriminator property not found on object for 'anyOf' deserialization. Searched for: {string.Join(", ", ToolDefaults.DiscriminatorKeys)}");
+        }
+        
+        Type? targetType = anyOfParam.PossibleTypes.FirstOrDefault(t => t.Name.Equals(typeName, StringComparison.OrdinalIgnoreCase));
+
+        if (targetType is null)
+        {
+            throw new JsonException($"Received discriminator value '{typeName}' does not match any of the possible types for this 'anyOf' parameter.");
+        }
+
+        return token.ToObject(targetType);
     }
     
     /// <summary>
