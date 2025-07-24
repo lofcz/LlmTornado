@@ -12,7 +12,7 @@ namespace LlmTornado.Infra;
 
 internal static class ToolFactory
 {
-    static Tuple<Type, bool> GetNullableBaseType(Type type)
+    public static Tuple<Type, bool> GetNullableBaseType(Type type)
     {
         if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
         {
@@ -22,17 +22,17 @@ internal static class ToolFactory
         return new Tuple<Type, bool>(type, false);
     }
     
-    static bool IsIEnumerable(this Type type)
+    public static bool IsIEnumerable(this Type type)
     {
         return type.GetInterfaces().Append(type).Any(x => x == typeof(IEnumerable) || x == typeof(IEnumerable<>));
     }
     
-    static bool IsIList(this Type type)
+    public static bool IsIList(this Type type)
     {
         return type.GetInterfaces().Append(type).Any(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(IList<>));
     }
     
-    static bool IsISet(this Type type)
+    public static bool IsISet(this Type type)
     {
         return type.GetInterfaces().Append(type).Any(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(ISet<>));
     }
@@ -42,7 +42,7 @@ internal static class ToolFactory
         return type.GetInterfaces().Append(type).Any(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(IDictionary<,>));
     }
     
-    static bool IsICollection(this Type type)
+    public static bool IsICollection(this Type type)
     {
         return type.GetInterfaces().Append(type).Any(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(ICollection<>));
     }
@@ -113,10 +113,17 @@ internal static class ToolFactory
         return new DelegateMetadata(compiled, function);
     }
 
-    private static IToolParamType GetParamFromType(Type type)
+    private static IToolParamType GetParamFromType(Type type, ParameterInfo? par = null, PropertyInfo? prop = null)
     {
         Tuple<Type, bool> baseTypeInfo = GetNullableBaseType(type);
         Type baseType = baseTypeInfo.Item1;
+
+        SchemaAnyOfAttribute? anyOf = par?.GetCustomAttribute<SchemaAnyOfAttribute>() ?? prop?.GetCustomAttribute<SchemaAnyOfAttribute>();
+
+        if ((anyOf is not null || (baseType.IsInterface || baseType.IsAbstract)) && !baseType.IsArray && !baseType.IsIEnumerable())
+        {
+            return HandleAnyOf(type, anyOf);
+        }
 
         if (baseType == typeof(ToolArguments))
         {
@@ -164,7 +171,7 @@ internal static class ToolFactory
             {
                 Type elementType = baseType.GetElementType()!;
                 Type flatArrayType = Array.CreateInstance(elementType, 0).GetType();
-                IToolParamType valuesParamType = GetParamFromType(flatArrayType);
+                IToolParamType valuesParamType = GetParamFromType(flatArrayType, par, prop);
                 
                 return new ToolParamObject("A multi-dimensional array.",
                 [
@@ -181,24 +188,24 @@ internal static class ToolFactory
                 return new ToolParamListEnum(null, vals) { DataType = type, Serializer = ToolParamSerializer.Array };
             }
 
-            return new ToolParamList(null, GetParamFromType(innerType)) { DataType = type, Serializer = ToolParamSerializer.Array };
+            return new ToolParamList(null, GetParamFromType(innerType, par, prop)) { DataType = type, Serializer = ToolParamSerializer.Array };
         }
 
         if (IsIEnumerable(baseType))
         {
             if (!baseType.IsGenericType)
             {
-                return new ToolParamList(null, GetParamFromType(typeof(string))) { DataType = baseType, Serializer = ToolParamSerializer.NonGenericEnumerable };
+                return new ToolParamList(null, GetParamFromType(typeof(object), par, prop)) { DataType = baseType, Serializer = ToolParamSerializer.NonGenericEnumerable };
             }
             
             if (IsISet(baseType))
             {
-                return new ToolParamList(null, GetParamFromType(baseType.GetGenericArguments()[0])) { DataType = type, Serializer = ToolParamSerializer.Set };
+                return new ToolParamList(null, GetParamFromType(baseType.GetGenericArguments()[0], par, prop)) { DataType = type, Serializer = ToolParamSerializer.Set };
             }
 
             if (IsIList(baseType))
             {
-                return new ToolParamList(null, GetParamFromType(baseType.GetGenericArguments()[0])) { DataType = type, Serializer = ToolParamSerializer.Array };
+                return new ToolParamList(null, GetParamFromType(baseType.GetGenericArguments()[0], par, prop)) { DataType = type, Serializer = ToolParamSerializer.Array };
             }
 
             if (IsIDictionary(baseType))
@@ -208,7 +215,7 @@ internal static class ToolFactory
 
                 if (genericArgs.Length >= 2)
                 {
-                    valueType = GetParamFromType(genericArgs[1]);
+                    valueType = GetParamFromType(genericArgs[1], par, prop);
                 }
                 else
                 {
@@ -220,7 +227,7 @@ internal static class ToolFactory
         }
 
         ToolParamObject obj = new ToolParamObject(null, []) { DataType = type, Serializer = ToolParamSerializer.Object };
-        UnpackType(baseType, obj);
+        UnpackType(baseType, obj, par, prop);
         return obj;
     }
     
@@ -228,13 +235,13 @@ internal static class ToolFactory
     private static readonly NullabilityInfoContext nullabilityContext = new NullabilityInfoContext();
 #endif
     
-    static void UnpackType(Type type, ToolParamObject parent)
+    static void UnpackType(Type type, ToolParamObject parent, ParameterInfo? par = null, PropertyInfo? prop = null)
     {
         PropertyInfo[] props = type.GetProperties();
         
         foreach (PropertyInfo property in props)
         {
-            IToolParamType propType = GetParamFromType(property.PropertyType);
+            IToolParamType propType = GetParamFromType(property.PropertyType, par, property);
             
 #if MODERN
             NullabilityInfo nullabilityInfo = nullabilityContext.Create(property);
@@ -274,18 +281,7 @@ internal static class ToolFactory
     {
         if (par.Name is null) return;
 
-        IToolParamType baseParam;
-        SchemaAnyOfAttribute? anyOf = par.GetCustomAttribute<SchemaAnyOfAttribute>();
-        
-        if (anyOf is not null || (par.ParameterType.IsInterface || par.ParameterType.IsAbstract))
-        {
-            baseParam = HandleAnyOf(par, anyOf);
-        }
-        else
-        {
-            baseParam = GetParamFromType(par.ParameterType);
-        }
-
+        IToolParamType baseParam = GetParamFromType(par.ParameterType, par);
         baseParam.Required = !par.IsOptional;
         
         SchemaNullableAttribute? nullableAttribute = par.GetCustomAttribute<SchemaNullableAttribute>();
@@ -311,7 +307,7 @@ internal static class ToolFactory
         }
     }
 
-    private static IToolParamType HandleAnyOf(ParameterInfo par, SchemaAnyOfAttribute? anyOf)
+    private static IToolParamType HandleAnyOf(Type parameterType, SchemaAnyOfAttribute? anyOf)
     {
         List<Type> possibleTypes = [];
 
@@ -321,8 +317,6 @@ internal static class ToolFactory
         }
         else
         {
-            Type parameterType = par.ParameterType;
-            
             if (parameterType.IsInterface || parameterType.IsAbstract)
             {
                 IEnumerable<Type> discoveredTypes = AppDomain.CurrentDomain.GetAssemblies()
@@ -341,8 +335,8 @@ internal static class ToolFactory
         {
             case 0:
             {
-                string typeDescription = par.ParameterType.IsInterface ? "interface" : "abstract class";
-                throw new NotSupportedException($"Parameter '{par.Name}' of type '{par.ParameterType.Name}' is an {typeDescription} with no concrete implementations found in the current AppDomain. Please ensure at least one implementing class is available or specify concrete types using [SchemaAnyOf(typeof(MyImpl))].");
+                string typeDescription = parameterType.IsInterface ? "interface" : "abstract class";
+                throw new NotSupportedException($"Parameter of type '{parameterType.Name}' is an {typeDescription} with no concrete implementations found in the current AppDomain. Please ensure at least one implementing class is available or specify concrete types using [SchemaAnyOf(typeof(MyImpl))].");
             }
             case 1:
             {
@@ -354,7 +348,7 @@ internal static class ToolFactory
         {
             PossibleTypes = possibleTypes,
             Serializer = ToolParamSerializer.AnyOf,
-            DataType = par.ParameterType
+            DataType = parameterType
         };
 
         foreach (Type type in possibleTypes)

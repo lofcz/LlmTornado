@@ -72,50 +72,6 @@ internal static class Clr
         return null;
     }
     
-    private static object DeserializeSet(JToken token, Type dataType)
-    {
-        Type[] genericArgs = dataType.GetGenericArguments();
-        Type elementType = genericArgs[0];
-
-        Type listType = typeof(List<>).MakeGenericType(elementType);
-        IList list = (IList)Activator.CreateInstance(listType)!;
-
-        if (token is JArray jSet)
-        {
-            foreach (JToken item in jSet)
-            {
-                list.Add(item.ToObject(elementType)!);
-            }
-        }
-        
-        Type concreteType = (dataType.IsInterface || dataType.IsAbstract) ? typeof(HashSet<>).MakeGenericType(elementType) : dataType;
-        object set;
-
-        try
-        {
-            set = Activator.CreateInstance(concreteType, list)!;
-        }
-        catch (MissingMethodException)
-        {
-            set = Activator.CreateInstance(concreteType)!;
-            MethodInfo? addMethod = concreteType.GetMethod("Add", [elementType]);
-
-            if (addMethod is not null)
-            {
-                foreach (object? listItem in list)
-                {
-                    addMethod.Invoke(set, [listItem]);
-                }
-            }
-            else
-            {
-                set = Activator.CreateInstance(typeof(HashSet<>).MakeGenericType(elementType), list)!;
-            }
-        }
-
-        return set;
-    }
-
     private static object DeserializeDictionary(JToken token, Type dataType)
     {
         IDictionary dict = (IDictionary)Activator.CreateInstance(dataType)!;
@@ -141,6 +97,50 @@ internal static class Clr
         }
         
         return dict;
+    }
+    
+    private static object CreateCollection(Type dataType, Type elementType, IList intermediateValues)
+    {
+        if (dataType.IsArray)
+        {
+            Array finalArray = Array.CreateInstance(elementType, intermediateValues.Count);
+            intermediateValues.CopyTo(finalArray, 0);
+            return finalArray;
+        }
+        
+        if (dataType.IsInstanceOfType(intermediateValues))
+        {
+            return intermediateValues;
+        }
+        
+        Type defaultConcreteType = dataType.IsISet() ? typeof(HashSet<>).MakeGenericType(elementType) : typeof(List<>).MakeGenericType(elementType);
+        Type concreteType = (dataType.IsInterface || dataType.IsAbstract) ? defaultConcreteType : dataType;
+        object finalCollection;
+
+        try
+        {
+            finalCollection = Activator.CreateInstance(concreteType, intermediateValues)!;
+        }
+        catch (MissingMethodException)
+        {
+            finalCollection = Activator.CreateInstance(concreteType)!;
+            MethodInfo? addMethod = concreteType.GetMethod("Add", BindingFlags.Public | BindingFlags.Instance, null, [elementType], null);
+            addMethod ??= concreteType.GetMethod("TryAdd", BindingFlags.Public | BindingFlags.Instance, null, [elementType], null);
+            
+            if (addMethod is not null)
+            {
+                foreach (object? listItem in intermediateValues)
+                {
+                    addMethod.Invoke(finalCollection, [listItem]);
+                }
+            }
+            else
+            {
+                throw new NotSupportedException($"The collection type '{dataType.Name}' is not supported. It must either have a constructor that accepts an IEnumerable<T> or a public 'Add(T)'/'TryAdd(T)' method.");
+            }
+        }
+        
+        return finalCollection;
     }
     
     public static async ValueTask<object?> Invoke(Delegate? function, DelegateMetadata? metadata, string? data)
@@ -243,12 +243,18 @@ internal static class Clr
             case ToolParamSerializer.Dictionary:
                 return DeserializeDictionary(token, dataType);
             case ToolParamSerializer.Set:
-                return DeserializeSet(token, dataType);
+            case ToolParamSerializer.Array:
+                return paramType switch
+                {
+                    ToolParamListEnum listEnumParam => DeserializeListEnum(token, dataType, listEnumParam),
+                    ToolParamListAtomic listAtomicParam => DeserializeListAtomic(token, dataType, listAtomicParam),
+                    ToolParamList listParam => DeserializeListPolymorphic(token, dataType, listParam),
+                    _ => DeserializeObject(token, dataType)
+                };
             case ToolParamSerializer.MultidimensionalArray:
                 return DeserializeMdArray(token, dataType);
             case ToolParamSerializer.NonGenericEnumerable:
                 return DeserializeNonGenericEnumerable(token);
-            case ToolParamSerializer.Array:
             case ToolParamSerializer.Object:
                 return DeserializeObject(token, dataType);
             case ToolParamSerializer.Atomic:
@@ -271,6 +277,72 @@ internal static class Clr
             default:
                 return token.ToObject(dataType);
         }
+    }
+
+    private static object? DeserializeListEnum(JToken token, Type dataType, ToolParamListEnum param)
+    {
+        Type? elementType = dataType.IsArray ? dataType.GetElementType() : (dataType.IsGenericType ? dataType.GetGenericArguments()[0] : null);
+        if (elementType is null) { return DeserializeObject(token, dataType); }
+
+        Type underlyingEnumType = ToolFactory.GetNullableBaseType(elementType).Item1;
+    
+        Type listType = typeof(List<>).MakeGenericType(elementType);
+        IList intermediateList = (IList)Activator.CreateInstance(listType)!;
+
+        if (token is JArray jArray)
+        {
+            foreach (JToken item in jArray)
+            {
+                if (item.Type is JTokenType.String)
+                {
+                    intermediateList.Add(Enum.Parse(underlyingEnumType, item.Value<string>()!));
+                }
+            }
+        }
+        
+        return CreateCollection(dataType, elementType, intermediateList);
+    }
+    
+    private static object? DeserializeListAtomic(JToken token, Type dataType, ToolParamListAtomic param)
+    {
+        Type? elementType = dataType.IsArray ? dataType.GetElementType() : (dataType.IsGenericType ? dataType.GetGenericArguments()[0] : null);
+        if (elementType is null) { return DeserializeObject(token, dataType); }
+    
+        Type listType = typeof(List<>).MakeGenericType(elementType);
+        IList intermediateList = (IList)Activator.CreateInstance(listType)!;
+
+        if (token is JArray jArray)
+        {
+            foreach (JToken item in jArray)
+            {
+                intermediateList.Add(item.ToObject(elementType));
+            }
+        }
+        
+        return CreateCollection(dataType, elementType, intermediateList);
+    }
+    
+    private static object? DeserializeListPolymorphic(JToken token, Type dataType, ToolParamList listParam)
+    {
+        Type? elementType = dataType.IsArray ? dataType.GetElementType() : (dataType.IsGenericType ? dataType.GetGenericArguments()[0] : null);
+
+        if (elementType is not null)
+        {
+            Type listType = typeof(List<>).MakeGenericType(elementType);
+            IList intermediateList = (IList)Activator.CreateInstance(listType)!;
+
+            if (token is JArray jArray)
+            {
+                foreach (JToken item in jArray)
+                {
+                    intermediateList.Add(Deserialize(item, listParam.Items));
+                }
+            }
+            
+            return CreateCollection(dataType, elementType, intermediateList);
+        }
+
+        return DeserializeObject(token, dataType);
     }
 
     private static object? DeserializeAnyOf(JToken token, ToolParamAnyOf anyOfParam)

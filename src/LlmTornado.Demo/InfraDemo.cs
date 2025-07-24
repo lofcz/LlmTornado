@@ -127,6 +127,36 @@ public class InfraDemo : DemoBase
 
         int z = 0;
     }
+    
+    [TornadoTest]
+    public static async Task TornadoFunctionAnyOfIList()
+    {
+        Conversation conversation = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.OpenAi.Gpt41.V41,
+            Tools =
+            [
+                new Tool(([SchemaAnyOf(typeof(PayPal), typeof(BankTransfer))] IList<IPaymentMethod> paymentMethod, ToolArguments args) =>
+                {
+                    return $"Payment processed using {paymentMethod.GetType().Name}";
+                })
+            ],
+            ToolChoice = OutboundToolChoice.Required
+        });
+
+        conversation.AddUserMessage("Process a payment using all available payment methods (one for each). Use realistic mock data.");
+
+        TornadoRequestContent serialized = conversation.Serialize(new ChatRequestSerializeOptions
+        {
+            Pretty = true
+        });
+
+        Console.Write(serialized);
+
+        var data = await conversation.GetResponseRich();
+
+        int z = 0;
+    }
 
     [TornadoTest]
     public static async Task TornadoFunction()
