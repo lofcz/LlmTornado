@@ -55,7 +55,11 @@ public class InfraDemo : DemoBase
             Model = ChatModel.OpenAi.Gpt41.V41,
             Tools =
             [
-                new Tool((ConcurrentDictionary<string, string> gameShortcutNamePairs, ToolArguments args) => { return ""; })
+                new Tool((ConcurrentDictionary<string, string> gameShortcutNamePairs, ToolArguments args) =>
+                {
+                    Assert.That(gameShortcutNamePairs.Count, Is.GreaterThan(0));
+                    return "";
+                })
             ],
             ToolChoice = OutboundToolChoice.Required
         });
@@ -108,6 +112,7 @@ public class InfraDemo : DemoBase
             [
                 new Tool(([SchemaAnyOf(typeof(PayPal), typeof(BankTransfer))] IPaymentMethod paymentMethod, ToolArguments args) =>
                 {
+                    Assert.That(paymentMethod, Is.NotNull);
                     return $"Payment processed using {paymentMethod.GetType().Name}";
                 })
             ],
@@ -115,6 +120,174 @@ public class InfraDemo : DemoBase
         });
 
         conversation.AddUserMessage("Process a payment using BankTransfer available payment method. Use realistic mock data.");
+
+        TornadoRequestContent serialized = conversation.Serialize(new ChatRequestSerializeOptions
+        {
+            Pretty = true
+        });
+
+        Console.Write(serialized);
+
+        var data = await conversation.GetResponseRich();
+
+        int z = 0;
+    }
+    
+    [TornadoTest]
+    public static async Task TornadoTuple()
+    {
+        Conversation conversation = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.OpenAi.Gpt41.V41,
+            Tools =
+            [
+                new Tool((Tuple<string, int, bool, CreditCard> someTuple, ToolArguments args) =>
+                {
+                    Assert.That(someTuple.Item4.CVV.Length, Is.GreaterThan(0));
+                    return;
+                })
+            ],
+            ToolChoice = OutboundToolChoice.Required
+        });
+
+        conversation.AddUserMessage("Use realistic mock data for the provided function.");
+
+        TornadoRequestContent serialized = conversation.Serialize(new ChatRequestSerializeOptions
+        {
+            Pretty = true
+        });
+
+        Console.Write(serialized);
+
+        var data = await conversation.GetResponseRich();
+
+        int z = 0;
+    }
+    
+    [TornadoTest]
+    public static async Task TornadoDescription()
+    {
+        Conversation conversation = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.OpenAi.Gpt41.V41,
+            Tools =
+            [
+                new Tool((
+                    [Description("capital of Czech Republic")] string capital, 
+                    ToolArguments args
+                ) =>
+                {
+                    Assert.That(capital.ToLowerInvariant().Trim(), Is.EqualTo("prague"));
+                    return;
+                })
+            ],
+            ToolChoice = OutboundToolChoice.Required
+        });
+
+        conversation.AddUserMessage("Use realistic mock data for the provided function.");
+
+        TornadoRequestContent serialized = conversation.Serialize(new ChatRequestSerializeOptions
+        {
+            Pretty = true
+        });
+
+        Console.Write(serialized);
+
+        var data = await conversation.GetResponseRich();
+
+        int z = 0;
+    }
+    
+    [TornadoTest]
+    public static async Task TornadoTupleSchema()
+    {
+        Conversation conversation = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.OpenAi.Gpt41.V41,
+            Tools =
+            [
+                new Tool(([SchemaTuple("gameName", "numberOfTheBeast", "ozzyIsAlive", "mockCard")] Tuple<string, int, bool, CreditCard> someTuple, ToolArguments args) =>
+                {
+                    Assert.That(someTuple.Item1.Length, Is.GreaterThan(0));
+                    return;
+                })
+            ],
+            ToolChoice = OutboundToolChoice.Required
+        });
+
+        conversation.AddUserMessage("Use realistic mock data for the provided function.");
+
+        TornadoRequestContent serialized = conversation.Serialize(new ChatRequestSerializeOptions
+        {
+            Pretty = true
+        });
+
+        Console.Write(serialized);
+
+        var data = await conversation.GetResponseRich();
+
+        int z = 0;
+    }
+    
+    [TornadoTest]
+    public static async Task TornadoGenericNullable()
+    {
+        Conversation conversation = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.OpenAi.Gpt41.V41,
+            Tools =
+            [
+                new Tool((
+                   [Description("a one-hot vector with length 10")] List<string?> oneHotVector, 
+                    ToolArguments args) =>
+                {
+                    Assert.That(oneHotVector.Count, Is.EqualTo(10));
+                    
+                    // flaky, model randomly uses "0" / null
+                    // Assert.That(oneHotVector.Count(x => x is null), Is.EqualTo(9));
+                    // Assert.That(oneHotVector.Count(x => x is not null), Is.EqualTo(1));
+                    return "";
+                })
+            ],
+            ToolChoice = OutboundToolChoice.Required
+        });
+
+        conversation.AddUserMessage("Create mock data meeting the schema.");
+
+        TornadoRequestContent serialized = conversation.Serialize(new ChatRequestSerializeOptions
+        {
+            Pretty = true
+        });
+
+        Console.Write(serialized);
+
+        var data = await conversation.GetResponseRich();
+
+        int z = 0;
+    }
+    
+    [TornadoTest]
+    public static async Task TornadoNullable()
+    {
+        Conversation conversation = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.OpenAi.Gpt41.V41,
+            Tools =
+            [
+                new Tool((
+                    string? thisIsNull,
+                    string? thisIsNotNull,
+                    ToolArguments args) =>
+                {
+                    Assert.That(thisIsNull, Is.Null);
+                    Assert.That(thisIsNotNull, Is.NotNull);
+                    return "";
+                })
+            ],
+            ToolChoice = OutboundToolChoice.Required
+        });
+
+        conversation.AddUserMessage("Create mock data meeting the schema. Call the function only once, make sure to provide null as type for thisIsNull argument.");
 
         TornadoRequestContent serialized = conversation.Serialize(new ChatRequestSerializeOptions
         {
@@ -138,13 +311,79 @@ public class InfraDemo : DemoBase
             [
                 new Tool(([SchemaAnyOf(typeof(PayPal), typeof(BankTransfer))] IList<IPaymentMethod> paymentMethod, ToolArguments args) =>
                 {
+                    // model sometimes creates only one, flaky
+                    Assert.That(paymentMethod.Count, Is.GreaterThan(0));
                     return $"Payment processed using {paymentMethod.GetType().Name}";
                 })
             ],
             ToolChoice = OutboundToolChoice.Required
         });
 
-        conversation.AddUserMessage("Process a payment using all available payment methods (one for each). Use realistic mock data.");
+        conversation.AddUserMessage("Process mock payments using both available payment methods. Use both payment methods once.");
+
+        TornadoRequestContent serialized = conversation.Serialize(new ChatRequestSerializeOptions
+        {
+            Pretty = true
+        });
+
+        Console.Write(serialized);
+
+        var data = await conversation.GetResponseRich();
+
+        int z = 0;
+    }
+    
+    [TornadoTest]
+    public static async Task TornadoByteArray()
+    {
+        Conversation conversation = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.OpenAi.Gpt41.V41,
+            Tools =
+            [
+                new Tool((byte[] pngMagicHeader, Guid randomGuid, TimeSpan twoHoursThirtyMinutes, ToolArguments args) =>
+                {
+                    Assert.That(twoHoursThirtyMinutes.Hours, Is.EqualTo(2));
+                    Assert.That(twoHoursThirtyMinutes.Minutes, Is.EqualTo(30));
+                    return "";
+                })
+            ],
+            ToolChoice = OutboundToolChoice.Required
+        });
+
+        conversation.AddUserMessage("Use realistic mock data for the provided function.");
+
+        TornadoRequestContent serialized = conversation.Serialize(new ChatRequestSerializeOptions
+        {
+            Pretty = true
+        });
+
+        Console.Write(serialized);
+
+        var data = await conversation.GetResponseRich();
+
+        int z = 0;
+    }
+    
+    [TornadoTest]
+    public static async Task TornadoTask()
+    {
+        Conversation conversation = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.OpenAi.Gpt41.V41,
+            Tools =
+            [
+                new Tool(async (Task<CreditCard> creditCard, ToolArguments args) =>
+                {
+                    CreditCard cc = await creditCard;
+                    Assert.That(cc.CVV.Length, Is.GreaterThan(0));
+                    return "";
+                })
+            ],
+            ToolChoice = OutboundToolChoice.Required
+        });
+
+        conversation.AddUserMessage("Use realistic mock data for the provided function.");
 
         TornadoRequestContent serialized = conversation.Serialize(new ChatRequestSerializeOptions
         {
@@ -181,6 +420,9 @@ public class InfraDemo : DemoBase
                     DateTime dateBattleOfVerdunStarted,
                     ToolArguments args) =>
                 {
+                    Assert.That(setOfUniqueInts.Count, Is.GreaterThan(0));
+                    Assert.That(allContinents.Length, Is.EqualTo(2));
+                    
                     // manual decoding example
                     if (args.TryGetArgument("people", out List<Person>? fetchedPeople))
                     {
@@ -197,7 +439,7 @@ public class InfraDemo : DemoBase
                     [
                         new ToolParamDefinition("allContinents", new ToolParamListEnum("continents", [nameof(Continents.Africa), nameof(Continents.Antarctica)]))
                     ],
-                    Ignore = ["wonGameOfCheckers3x3useXOchars"]
+                    Ignore = ["location"]
                 })
             ],
             ToolChoice = OutboundToolChoice.Required

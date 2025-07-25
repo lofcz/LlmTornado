@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Dynamic;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -15,6 +16,59 @@ internal static class Clr
 {
     private static object? DeserializePrimitive(JToken token, Type dataType)
     {
+        if (dataType == typeof(Guid))
+        {
+            return Guid.Parse(token.ToString());
+        }
+
+        if (dataType == typeof(byte[]))
+        {
+            if (token is JArray jArray)
+            {
+                return jArray.Select(t => t.Value<byte>()).ToArray();
+            }
+            
+            string byteString = token.ToString();
+
+            try
+            {
+                return Convert.FromBase64String(byteString);
+            }
+            catch (FormatException)
+            {
+                return System.Text.Encoding.GetEncoding("iso-8859-1").GetBytes(byteString);
+            }
+        }
+        
+        if (dataType == typeof(TimeSpan))
+        {
+            string timeSpanString = token.ToString();
+            
+            if (TimeSpan.TryParse(timeSpanString, CultureInfo.InvariantCulture, out TimeSpan parsedTimeSpan))
+            {
+                return parsedTimeSpan;
+            }
+            
+            try
+            {
+                return System.Xml.XmlConvert.ToTimeSpan(timeSpanString);
+            }
+            catch (FormatException)
+            {
+                throw new JsonException($"The string '{timeSpanString}' could not be parsed as a valid TimeSpan. It must be in a common format (e.g., 'd.hh:mm:ss') or the ISO 8601 duration format (e.g., 'P1DT2H').");
+            }
+        }
+
+        if (dataType == typeof(Uri))
+        {
+            return new Uri(token.ToString(), UriKind.RelativeOrAbsolute);
+        }
+
+        if (dataType == typeof(char))
+        {
+            return token.ToString()[0];
+        }
+        
         return token.ToObject(dataType);
     }
 
@@ -251,6 +305,44 @@ internal static class Clr
                     ToolParamList listParam => DeserializeListPolymorphic(token, dataType, listParam),
                     _ => DeserializeObject(token, dataType)
                 };
+            case ToolParamSerializer.Awaitable:
+                if (paramType is ToolParamAwaitable awaitableParam)
+                {
+                    object? innerValue = Deserialize(token, awaitableParam.InnerParam);
+                    
+                    if (dataType == typeof(Task)) return Task.FromResult(innerValue);
+                    if (dataType == typeof(ValueTask)) return new ValueTask();
+                    if (dataType!.IsGenericType)
+                    {
+                        if (dataType.GetGenericTypeDefinition() == typeof(Task<>))
+                        {
+                            MethodInfo fromResult = typeof(Task).GetMethod("FromResult")!.MakeGenericMethod(dataType.GetGenericArguments()[0]);
+                            return fromResult.Invoke(null, [innerValue]);
+                        }
+
+                        if (dataType.GetGenericTypeDefinition() == typeof(ValueTask<>))
+                        {
+                            return Activator.CreateInstance(dataType, innerValue);
+                        }
+                    }
+                }
+                return null;
+            case ToolParamSerializer.Tuple: 
+                return DeserializeTuple(token, (ToolParamTuple)paramType);
+            case ToolParamSerializer.Json:
+                if (dataType == typeof(JToken) || dataType.IsSubclassOf(typeof(JToken)))
+                {
+                    return token;
+                }
+                
+#if MODERN
+                if (dataType == typeof(System.Text.Json.JsonElement))
+                {
+                    return System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(token.ToString(Formatting.None));
+                }
+#endif
+                
+                return token;
             case ToolParamSerializer.MultidimensionalArray:
                 return DeserializeMdArray(token, dataType);
             case ToolParamSerializer.NonGenericEnumerable:
@@ -277,6 +369,29 @@ internal static class Clr
             default:
                 return token.ToObject(dataType);
         }
+    }
+
+    private static object? DeserializeTuple(JToken token, ToolParamTuple tupleParam)
+    {
+        if (token is not JObject obj) throw new JsonException("Expected a JSON object for tuple deserialization.");
+
+        List<object?> items = [];
+        for (int i = 0; i < tupleParam.Items.Count; i++)
+        {
+            string key = tupleParam.Names?.Count == tupleParam.Items.Count ? tupleParam.Names[i] : $"item_{i + 1}";
+            
+            if (obj.TryGetValue(key, StringComparison.OrdinalIgnoreCase, out JToken? itemToken))
+            {
+                items.Add(Deserialize(itemToken, tupleParam.Items[i]));
+            }
+            else
+            {
+                Type? itemType = tupleParam.Items[i].DataType;
+                items.Add(itemType is not null && itemType.IsValueType ? Activator.CreateInstance(itemType) : null);
+            }
+        }
+
+        return Activator.CreateInstance(tupleParam.DataType!, items.ToArray());
     }
 
     private static object? DeserializeListEnum(JToken token, Type dataType, ToolParamListEnum param)
