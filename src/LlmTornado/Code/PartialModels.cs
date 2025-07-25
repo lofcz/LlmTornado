@@ -1012,10 +1012,13 @@ public class ChatAudio
 
 public class ToolMetadata
 {
-    public string? Name { get; set; }
-    public string? Description { get; set; }
     public List<ToolParamDefinition>? Params { get; set; }
     public List<string>? Ignore { get; set; }
+
+    public ToolMetadata()
+    {
+        
+    }
 }
 
 public class ToolParamDefinition
@@ -1027,6 +1030,19 @@ public class ToolParamDefinition
     {
         Name = name;
         Param = param;
+    }
+}
+
+public class ToolCallsHandler
+{
+    /// <summary>
+    /// Continues the conversation automatically.
+    /// </summary>
+    public static readonly ToolCallsHandler ContinueConversation = new ToolCallsHandler();
+    
+    private ToolCallsHandler()
+    {
+        
     }
 }
 

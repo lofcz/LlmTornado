@@ -117,8 +117,10 @@ internal static class ResponseHelpers
     /// <param name="request">The existing <see cref="ResponseRequest"/> object containing optional property values to be used for the conversion.</param>
     /// <param name="chatRequest">The <see cref="ChatRequest"/> object containing additional or default properties required for the new response request.</param>
     /// <returns>A new <see cref="ResponseRequest"/> object with properties merged and populated from the provided request and chat request objects.</returns>
-    public static ResponseRequest ToResponseRequest(ResponseRequest? request, ChatRequest chatRequest)
+    public static ResponseRequest ToResponseRequest(IEndpointProvider provider, ResponseRequest? request, ChatRequest chatRequest)
     {
+        // warm up the request
+        chatRequest.Preserialize(provider);
         request ??= new ResponseRequest();
 
         string? instructions = request.Instructions;
@@ -161,7 +163,7 @@ internal static class ResponseHelpers
             PreviousResponseId = request.PreviousResponseId,
             Truncation = request.Truncation,
             ToolChoice = request.ToolChoice,
-            Tools = request.Tools ?? chatRequest.Tools?.Select(ToResponseTool).Where(x => x != null).Cast<ResponseTool>().ToList(),
+            Tools = request.Tools ?? chatRequest.Tools?.Select(ToResponseTool).OfType<ResponseTool>().ToList(),
             Text = request.Text ?? ToResponseConfiguration(chatRequest.ResponseFormat),
             Prompt = request.Prompt,
             Reasoning = request.Reasoning,

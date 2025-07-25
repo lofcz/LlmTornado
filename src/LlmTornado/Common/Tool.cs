@@ -524,11 +524,34 @@ public class Tool
     [JsonIgnore]
     internal ToolMetadata? Metadata { get; set; }
     
+    [JsonIgnore]
+    internal string? ToolName { get; set; }
+    
+    [JsonIgnore]
+    internal string? ToolDescription { get; set; }
+    
     internal Tool(Delegate function, ToolMetadata? metadata = null, bool? strict = null)
     {
         Delegate = function;
         Strict = strict;
         Metadata = metadata;
+    }
+    
+    internal Tool(Delegate function, string name, ToolMetadata? metadata = null, bool? strict = null)
+    {
+        Delegate = function;
+        Strict = strict;
+        Metadata = metadata;
+        ToolName = name;
+    }
+    
+    internal Tool(Delegate function, string name, string description, ToolMetadata? metadata = null, bool? strict = null)
+    {
+        Delegate = function;
+        Strict = strict;
+        Metadata = metadata;
+        ToolName = name;
+        ToolDescription = description;
     }
     
     /// <summary>
@@ -585,6 +608,17 @@ public class Tool
         }
 
         DelegateMetadata = ToolFactory.CreateFromMethod(Delegate, Metadata, provider);
+
+        if (!ToolName.IsNullOrWhiteSpace())
+        {
+            DelegateMetadata.ToolFunction.Name = ToolName;
+        }
+
+        if (!ToolDescription.IsNullOrWhiteSpace())
+        {
+            DelegateMetadata.ToolFunction.Description = ToolDescription;
+        }
+
         Function = DelegateMetadata.ToolFunction;
         serializedDict.TryAdd(hash, Function);
     }

@@ -187,7 +187,52 @@ public class ChatEndpoint : EndpointBase
         return result;
     }
 
-    static async ValueTask HandleChatResult(ChatRequest request, ChatResult result)
+    internal static async ValueTask<object?> HandleChatResult(ChatRequest request, ChatMessage contentSource, ChatResult? result)
+    {
+        if (request.ResponseFormat?.Schema?.Delegate is not null && request.ResponseFormat.Type is ChatRequestResponseFormatTypes.StructuredJson)
+        {
+            string? content = contentSource.Content ?? contentSource.Parts?.FirstOrDefault(x => x.Type is ChatMessageTypes.Text)?.Text;
+            object? structuredResult = await request.ResponseFormat.Invoke(content ?? "{}").ConfigureAwait(false);
+
+            if (result is not null)
+            {
+                result.InvocationResult = structuredResult;
+            }
+
+            return structuredResult;
+        }
+        
+        if ((request.Tools?.Any(x => x.Delegate is not null) ?? false) && contentSource.ToolCalls?.Count > 0)
+        {
+            List<Task> tasks = [];
+                
+            foreach (ToolCall toolCall in contentSource.ToolCalls)
+            {
+                Tool? match = request.Tools.FirstOrDefault(x => string.Equals(x.Function?.Name, toolCall.FunctionCall.Name));
+
+                if (match?.Delegate is null)
+                {
+                    continue;
+                }
+
+                toolCall.FunctionCall.Tool = match;
+                    
+                tasks.Add(Task.Run(async () =>
+                {
+                    await toolCall.FunctionCall.Invoke(toolCall.FunctionCall.Arguments).ConfigureAwait(false);
+                }));
+            }
+
+            if (tasks.Count > 0)
+            {
+                await Task.WhenAll(tasks).ConfigureAwait(false);   
+            }
+        }
+
+        return null;
+    }
+
+    internal static async ValueTask HandleChatResult(ChatRequest request, ChatResult result)
     {
         if (result.Choices is null)
         {
@@ -196,42 +241,14 @@ public class ChatEndpoint : EndpointBase
         
         foreach (ChatChoice choice in result.Choices)
         {
-            if (choice.Message is null)
+            ChatMessage? contentSource = choice.Message ?? choice.Delta;
+            
+            if (contentSource is null)
             {
                 continue;
             }
 
-            if (request.ResponseFormat?.Schema?.Delegate is not null && request.ResponseFormat.Type is ChatRequestResponseFormatTypes.StructuredJson)
-            {
-                string? content = choice.Message.Content ?? choice.Message.Parts?.FirstOrDefault(x => x.Type is ChatMessageTypes.Text)?.Text;
-                result.InvocationResult = await request.ResponseFormat.Invoke(content ?? "{}").ConfigureAwait(false); 
-            }
-            else if ((request.Tools?.Any(x => x.Delegate is not null) ?? false) && choice.Message.ToolCalls?.Count > 0)
-            {
-                List<Task> tasks = [];
-                
-                foreach (ToolCall toolCall in choice.Message.ToolCalls)
-                {
-                    Tool? match = request.Tools.FirstOrDefault(x => string.Equals(x.Function?.Name, toolCall.FunctionCall.Name));
-
-                    if (match?.Delegate is null)
-                    {
-                        continue;
-                    }
-
-                    toolCall.FunctionCall.Tool = match;
-                    
-                    tasks.Add(Task.Run(async () =>
-                    {
-                        await toolCall.FunctionCall.Invoke(toolCall.FunctionCall.Arguments).ConfigureAwait(false);
-                    }));
-                }
-
-                if (tasks.Count > 0)
-                {
-                    await Task.WhenAll(tasks).ConfigureAwait(false);   
-                }
-            }
+            await HandleChatResult(request, contentSource, result).ConfigureAwait(false);
         }
     }
 

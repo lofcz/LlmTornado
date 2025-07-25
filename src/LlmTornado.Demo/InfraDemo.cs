@@ -7,6 +7,7 @@ using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Common;
 using LlmTornado.Infra;
+using LlmTornado.Responses;
 
 namespace LlmTornado.Demo;
 
@@ -74,7 +75,7 @@ public class InfraDemo : DemoBase
 
         Console.Write(serialized);
 
-        var data = await conversation.GetResponseRich();
+        ChatRichResponse data = await conversation.GetResponseRich();
 
         int z = 0;
     }
@@ -129,7 +130,7 @@ public class InfraDemo : DemoBase
 
         Console.Write(serialized);
 
-        var data = await conversation.GetResponseRich();
+        ChatRichResponse data = await conversation.GetResponseRich();
 
         int z = 0;
     }
@@ -160,7 +161,7 @@ public class InfraDemo : DemoBase
 
         Console.Write(serialized);
 
-        var data = await conversation.GetResponseRich();
+        ChatRichResponse data = await conversation.GetResponseRich();
 
         int z = 0;
     }
@@ -194,7 +195,7 @@ public class InfraDemo : DemoBase
 
         Console.Write(serialized);
 
-        var data = await conversation.GetResponseRich();
+        ChatRichResponse data = await conversation.GetResponseRich();
 
         int z = 0;
     }
@@ -225,7 +226,7 @@ public class InfraDemo : DemoBase
 
         Console.Write(serialized);
 
-        var data = await conversation.GetResponseRich();
+        ChatRichResponse data = await conversation.GetResponseRich();
 
         int z = 0;
     }
@@ -262,7 +263,7 @@ public class InfraDemo : DemoBase
 
         Console.Write(serialized);
 
-        var data = await conversation.GetResponseRich();
+        ChatRichResponse data = await conversation.GetResponseRich();
 
         int z = 0;
     }
@@ -297,7 +298,7 @@ public class InfraDemo : DemoBase
 
         Console.Write(serialized);
 
-        var data = await conversation.GetResponseRich();
+        ChatRichResponse data = await conversation.GetResponseRich();
 
         int z = 0;
     }
@@ -329,7 +330,7 @@ public class InfraDemo : DemoBase
 
         Console.Write(serialized);
 
-        var data = await conversation.GetResponseRich();
+        ChatRichResponse data = await conversation.GetResponseRich();
 
         int z = 0;
     }
@@ -359,9 +360,146 @@ public class InfraDemo : DemoBase
 
         Console.Write(serialized);
 
-        var data = await conversation.GetResponseRich();
+        ChatRichResponse data = await conversation.GetResponseRich();
 
         int z = 0;
+    }
+    
+    [TornadoTest]
+    public static async Task TornadoMultiturn()
+    {
+        Conversation conversation = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.OpenAi.Gpt41.V41,
+            Tools =
+            [
+                new Tool((string city, ToolArguments args) =>
+                {
+                    return new
+                    {
+                        result = "heavy rain, possible thunder"
+                    };
+                }, "get_weather", "gets weather in a given city")
+            ],
+            ToolChoice = OutboundToolChoice.Required
+        });
+
+        conversation.AddUserMessage("What is the weather like in Prague?");
+
+        TornadoRequestContent serialized = conversation.Serialize(new ChatRequestSerializeOptions
+        {
+            Pretty = true
+        });
+
+        Console.Write(serialized);
+
+        ChatRichResponse data = await conversation.GetResponseRich(ToolCallsHandler.ContinueConversation);
+
+        conversation.Update(x =>
+        {
+            x.ToolChoice = OutboundToolChoice.None;
+        });
+        
+        serialized = conversation.Serialize(new ChatRequestSerializeOptions
+        {
+            Pretty = true
+        });
+
+        Console.Write(serialized);
+        
+        data = await conversation.GetResponseRich();
+        
+        Console.WriteLine(data);
+        int z = 0;
+    }
+    
+    [TornadoTest]
+    public static async Task TornadoMultiturnStream()
+    {
+        Conversation conversation = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.OpenAi.Gpt41.V41,
+            Tools =
+            [
+                new Tool((string city, ToolArguments args) =>
+                {
+                    return new
+                    {
+                        result = "heavy rain, possible thunder"
+                    };
+                }, "get_weather", "gets weather in a given city")
+            ],
+            ToolChoice = OutboundToolChoice.Required
+        });
+
+        conversation.AddUserMessage("What is the weather like in Prague?");
+
+        await StreamNext();
+        
+        conversation.Update(x =>
+        {
+            x.ToolChoice = OutboundToolChoice.None;
+        });
+
+        await StreamNext();
+        
+        async Task StreamNext()
+        {
+            await conversation.StreamResponseRich(new ChatStreamEventHandler
+            {
+                ToolCallsHandler = ToolCallsHandler.ContinueConversation,
+                MessageTokenHandler = token =>
+                {
+                    Console.Write(token);
+                    return ValueTask.CompletedTask;
+                }
+            });
+        }
+    }
+    
+    [TornadoTest]
+    public static async Task TornadoMultiturnStreamResponses()
+    {
+        Conversation conversation = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.OpenAi.Gpt41.V41,
+            Tools =
+            [
+                new Tool((string city, ToolArguments args) =>
+                {
+                    return new
+                    {
+                        result = "heavy rain, possible thunder"
+                    };
+                }, "get_weather", "gets weather in a given city")
+            ],
+            ToolChoice = OutboundToolChoice.Required,
+            ResponseRequestParameters = new ResponseRequest()
+        });
+
+        conversation.AddUserMessage("What is the weather like in Prague?");
+        
+        await StreamNext();
+        
+        conversation.Update(x =>
+        {
+            x.ToolChoice = OutboundToolChoice.None;
+        });
+
+        await StreamNext();
+        
+        async Task StreamNext()
+        {
+            await conversation.StreamResponseRich(new ChatStreamEventHandler
+            {
+                ToolCallsHandler = ToolCallsHandler.ContinueConversation,
+                MessageTokenHandler = token =>
+                {
+                    Console.Write(token);
+                    return ValueTask.CompletedTask;
+                }
+            });
+        }
     }
     
     [TornadoTest]
@@ -391,7 +529,7 @@ public class InfraDemo : DemoBase
 
         Console.Write(serialized);
 
-        var data = await conversation.GetResponseRich();
+        ChatRichResponse data = await conversation.GetResponseRich();
 
         int z = 0;
     }
@@ -423,7 +561,7 @@ public class InfraDemo : DemoBase
 
         Console.Write(serialized);
 
-        var data = await conversation.GetResponseRich();
+        ChatRichResponse data = await conversation.GetResponseRich();
 
         int z = 0;
     }
@@ -485,7 +623,7 @@ public class InfraDemo : DemoBase
 
         Console.Write(serialized);
 
-        var data = await conversation.GetResponseRich();
+        ChatRichResponse data = await conversation.GetResponseRich();
 
         int z = 0;
     }
@@ -513,7 +651,7 @@ public class InfraDemo : DemoBase
 
         Console.Write(serialized);
 
-        var data = await conversation.GetResponseRich();
+        ChatRichResponse data = await conversation.GetResponseRich();
 
 
         int z = 0;

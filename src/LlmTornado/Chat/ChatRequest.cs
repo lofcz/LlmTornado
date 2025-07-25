@@ -291,7 +291,7 @@ public class ChatRequest : IModelRequest
             };
         }
     }
-
+	
 	/// <summary>
 	///     One or more sequences where the API will stop generating further tokens. The returned text will not contain the
 	///     stop sequence.
@@ -497,7 +497,7 @@ public class ChatRequest : IModelRequest
 					_ => GetSerializer(EndpointBase.NullSettings, a)
 				};
 
-				object obj = z is CapabilityEndpoints.Chat ? x : ResponseHelpers.ToResponseRequest(x.ResponseRequestParameters, x);
+				object obj = z is CapabilityEndpoints.Chat ? x : ResponseHelpers.ToResponseRequest(y, x.ResponseRequestParameters, x);
 				return PreparePayload(obj, x, y, z, settings);
 			}
 		},
@@ -582,7 +582,7 @@ public class ChatRequest : IModelRequest
 			return CapabilityEndpoints.Responses;
 		}
 
-		return CapabilityEndpoints.Chat;
+		return req.ResponseRequestParameters is not null ? CapabilityEndpoints.Responses : CapabilityEndpoints.Chat;
 	}
 
 	/// <summary>
@@ -608,7 +608,7 @@ public class ChatRequest : IModelRequest
 		return serialized;
 	}
 
-	private TornadoRequestContent Serialize(IEndpointProvider provider, CapabilityEndpoints capabilityEndpoint, bool pretty)
+	internal void Preserialize(IEndpointProvider provider)
 	{
 		if (OwnerConversation is not null)
 		{
@@ -622,7 +622,25 @@ public class ChatRequest : IModelRequest
 				msg.Request = this;
 			}	
 		}
+		
+		if (Tools is not null)
+		{
+			foreach (Tool tool in Tools)
+			{
+				tool.Serialize(provider);
+			}	
+		}
 
+		if (ResponseFormat is { Type: ChatRequestResponseFormatTypes.StructuredJson, Schema.Delegate: not null })
+		{
+			ResponseFormat.Serialize(provider);
+		}
+	}
+
+	private TornadoRequestContent Serialize(IEndpointProvider provider, CapabilityEndpoints capabilityEndpoint, bool pretty)
+	{
+		Preserialize(provider);
+		
 		ChatStreamOptions? storedOptions = null;
 		bool restoreStreamOptions = false;
 		
@@ -644,19 +662,6 @@ public class ChatRequest : IModelRequest
 			}
 		}
 
-		if (Tools is not null)
-		{
-			foreach (Tool tool in Tools)
-			{
-				tool.Serialize(provider);
-			}	
-		}
-
-		if (ResponseFormat is { Type: ChatRequestResponseFormatTypes.StructuredJson, Schema.Delegate: not null })
-		{
-			ResponseFormat.Serialize(provider);
-		}
-		
 		TornadoRequestContent serialized = SerializeMap.TryGetValue(provider.Provider, out Func<ChatRequest, IEndpointProvider, CapabilityEndpoints, JsonSerializerSettings?, string>? serializerFn) ? new TornadoRequestContent(serializerFn.Invoke(this, provider, capabilityEndpoint, pretty ? new JsonSerializerSettings
 		{
 			Formatting = Formatting.Indented

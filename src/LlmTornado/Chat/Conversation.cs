@@ -121,6 +121,15 @@ public class Conversation
     }
 
     /// <summary>
+    /// Updates <see cref="RequestParameters"/>.
+    /// </summary>
+    public Conversation Update(Action<ChatRequest> updateFn)
+    {
+        updateFn.Invoke(RequestParameters);
+        return this;
+    }
+
+    /// <summary>
     ///     Removes given message from the conversation. If the message is not found, nothing happens
     /// </summary>
     /// <param name="message"></param>
@@ -717,7 +726,8 @@ public class Conversation
         
         if (capabilityEndpoint is CapabilityEndpoints.Responses)
         {
-            HttpCallResult<ResponseResult> result = await responsesEndpoint.CreateResponseSafe(ResponseHelpers.ToResponseRequest(req.ResponseRequestParameters, req)).ConfigureAwait(false);
+            IEndpointProvider provider = responsesEndpoint.Api.GetProvider(req.Model ?? ChatModel.OpenAi.Gpt35.Turbo);
+            HttpCallResult<ResponseResult> result = await responsesEndpoint.CreateResponseSafe(ResponseHelpers.ToResponseRequest(provider, req.ResponseRequestParameters, req)).ConfigureAwait(false);
             
             if (!result.Ok)
             {
@@ -747,11 +757,11 @@ public class Conversation
             return new RestDataOrException<ChatRichResponse>(new Exception("The service returned no choices"));
         }
 
-        ChatRichResponse response = await HandleResponseRich(chatResult, functionCallHandler).ConfigureAwait(false);
+        ChatRichResponse response = await HandleResponseRich(chatResult, functionCallHandler, null).ConfigureAwait(false);
         return new RestDataOrException<ChatRichResponse>(response, httpResult);
     }
 
-    private async Task<ChatRichResponse> HandleResponseRich(ChatResult? res, Func<List<FunctionCall>, ValueTask>? functionCallHandler)
+    private async Task<ChatRichResponse> HandleResponseRich(ChatResult? res, Func<List<FunctionCall>, ValueTask>? functionCallHandler, ToolCallsHandler? toolCallsHandler)
     {
         List<ChatRichResponseBlock> blocks = [];
         ChatRichResponse response = new ChatRichResponse(res, blocks);
@@ -784,7 +794,8 @@ public class Conversation
                     Name = x.FunctionCall.Name,
                     Arguments = x.FunctionCall.Arguments,
                     ToolCall = x,
-                    Tool = RequestParameters.Tools?.FirstOrDefault(y => string.Equals(y.Function?.Name, x.FunctionCall.Name))
+                    Tool = RequestParameters.Tools?.FirstOrDefault(y => string.Equals(y.Function?.Name, x.FunctionCall.Name)),
+                    Result = x.FunctionCall.Result
                 }).ToList();
 
                 if (calls?.Count > 0)
@@ -796,11 +807,15 @@ public class Conversation
                         Type = ChatRichResponseBlockTypes.Function, 
                         FunctionCall = x
                     }));
-
-                    if (functionCallHandler is not null)
+                    
+                    if (functionCallHandler is not null || toolCallsHandler is not null)
                     {
                         Guid currentMsgId = Guid.NewGuid();
-                        await functionCallHandler.Invoke(calls);   
+
+                        if (functionCallHandler is not null)
+                        {
+                            await functionCallHandler.Invoke(calls);      
+                        }
                     
                         foreach (FunctionCall call in calls)
                         {
@@ -869,16 +884,32 @@ public class Conversation
     /// <returns>The response with rich content blocks.</returns>
     public async Task<ChatRichResponse> GetResponseRich(CancellationToken token = default)
     {
-        return await GetResponseRich(null, token).ConfigureAwait(false);
+        return await GetResponseRichInternal(null, null, token).ConfigureAwait(false);
     }
     
     /// <summary>
     /// Calls the API to get a response.
     /// </summary>
-    /// <param name="functionCallHandler">If provided, the tool calls are resolved immediately and a message is appended to the conversation with the result.</param>
+    /// <param name="toolCallsHandler">Results from tools with attached delegates will be added to the conversation automatically.</param>
     /// <param name="token">Cancellation token.</param>
     /// <returns>The response with rich content blocks.</returns>
-    public async Task<ChatRichResponse> GetResponseRich(Func<List<FunctionCall>, ValueTask>? functionCallHandler, CancellationToken token = default)
+    public async Task<ChatRichResponse> GetResponseRich(ToolCallsHandler toolCallsHandler, CancellationToken token = default)
+    {
+        return await GetResponseRichInternal(null, toolCallsHandler, token).ConfigureAwait(false);
+    }
+    
+    /// <summary>
+    /// Calls the API to get a response.
+    /// </summary>
+    /// <param name="fnHandler">If provided, the tool calls are resolved immediately and a message is appended to the conversation with the result.</param>
+    /// <param name="token">Cancellation token.</param>
+    /// <returns>The response with rich content blocks.</returns>
+    public async Task<ChatRichResponse> GetResponseRich(Func<List<FunctionCall>, ValueTask> fnHandler, CancellationToken token = default)
+    {
+        return await GetResponseRichInternal(fnHandler, null, token);
+    }
+    
+    private async Task<ChatRichResponse> GetResponseRichInternal(Func<List<FunctionCall>, ValueTask>? fnHandler, ToolCallsHandler? toolCallsHandler, CancellationToken token = default)
     {
         ChatRequest req = new ChatRequest(this, RequestParameters)
         {
@@ -891,7 +922,8 @@ public class Conversation
         
         if (capabilityEndpoint is CapabilityEndpoints.Responses && req.ResponseRequestParameters is not null)
         {
-            ResponseResult result = await responsesEndpoint.CreateResponse(ResponseHelpers.ToResponseRequest(req.ResponseRequestParameters, req)).ConfigureAwait(false);
+            IEndpointProvider provider = responsesEndpoint.Api.GetProvider(req.Model ?? ChatModel.OpenAi.Gpt35.Turbo);
+            ResponseResult result = await responsesEndpoint.CreateResponse(ResponseHelpers.ToResponseRequest(provider, req.ResponseRequestParameters, req)).ConfigureAwait(false);
             res = ResponseHelpers.ToChatResult(result);
         }
         else
@@ -911,7 +943,7 @@ public class Conversation
             return new ChatRichResponse(res, null);
         }
 
-        return await HandleResponseRich(res, functionCallHandler).ConfigureAwait(false);
+        return await HandleResponseRich(res, fnHandler, toolCallsHandler).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -1256,10 +1288,11 @@ public class Conversation
 
         CapabilityEndpoints capabilityEndpoint = req.GetCapabilityEndpoint();
         
-        if (capabilityEndpoint is CapabilityEndpoints.Responses && req.ResponseRequestParameters is not null)
+        if (capabilityEndpoint is CapabilityEndpoints.Responses)
         {
-            await responsesEndpoint.StreamResponseRich(
-                ResponseHelpers.ToResponseRequest(req.ResponseRequestParameters, req), new ResponseStreamEventHandler
+            ResponseRequest responsesRequest = ResponseHelpers.ToResponseRequest(provider, req.ResponseRequestParameters, req);
+            
+            await responsesEndpoint.StreamResponseRich(responsesRequest, new ResponseStreamEventHandler
                 {
                     OnEvent = async (evt) =>
                     {
@@ -1297,6 +1330,7 @@ public class Conversation
                                 evt is ResponseEventCompleted completedEvt:
                             {
                                 ChatChoice chatChoice = ResponseHelpers.ToChatChoice(completedEvt.Response);
+                                
                                 if (chatChoice.Message is not null)
                                 {
                                     AppendMessage(chatChoice.Message);
@@ -1304,7 +1338,14 @@ public class Conversation
 
                                 if (completedEvt.Response.Tools?.Count > 0)
                                 {
-                                    if (eventsHandler?.FunctionCallHandler is not null)
+                                    object? structuredResult = null;
+                                    
+                                    if (chatChoice.Message is not null)
+                                    {
+                                        structuredResult = await ChatEndpoint.HandleChatResult(req, chatChoice.Message, null).ConfigureAwait(false);   
+                                    }
+                                    
+                                    if (eventsHandler?.FunctionCallHandler is not null || eventsHandler?.ToolCallsHandler is not null)
                                     {
                                         ResolvedToolsCall result = new ResolvedToolsCall();
 
@@ -1313,13 +1354,16 @@ public class Conversation
                                             Name = x.FunctionCall.Name,
                                             Arguments = x.FunctionCall.Arguments,
                                             ToolCall = x,
-                                            Tool = RequestParameters.Tools?.FirstOrDefault(y =>
-                                                string.Equals(y.Function?.Name, x.FunctionCall.Name))
+                                            Tool = RequestParameters.Tools?.FirstOrDefault(y => string.Equals(y.Function?.Name, x.FunctionCall.Name)),
+                                            Result = x.FunctionCall.Result
                                         }).ToList();
 
-                                        if (calls is not null)
+                                        if (calls?.Count > 0)
                                         {
-                                            await eventsHandler.FunctionCallHandler.Invoke(calls);
+                                            if (eventsHandler.FunctionCallHandler is not null)
+                                            {
+                                                await eventsHandler.FunctionCallHandler.Invoke(calls);   
+                                            }
                                         
                                             foreach (FunctionCall call in calls)
                                             {
@@ -1345,8 +1389,7 @@ public class Conversation
 
                                             if (eventsHandler.AfterFunctionCallsResolvedHandler is not null)
                                             {
-                                                await eventsHandler.AfterFunctionCallsResolvedHandler.Invoke(result,
-                                                    eventsHandler);
+                                                await eventsHandler.AfterFunctionCallsResolvedHandler.Invoke(result, eventsHandler);
                                             }
 
                                             if (OnAfterToolsCall is not null)
@@ -1497,6 +1540,11 @@ public class Conversation
                         isFirst = false;
                     }
 
+                    if (delta?.ToolCalls?.Count > 0)
+                    {
+                        await ChatEndpoint.HandleChatResult(req, delta, res).ConfigureAwait(false);
+                    }
+
                     if (delta is not null && eventsHandler is not null)
                     {
                         // role can be either Tool or Assistant, we need to handle both cases
@@ -1504,23 +1552,26 @@ public class Conversation
                         {
                             delta.Role = ChatMessageRoles.Assistant;
 
-                            if (eventsHandler.FunctionCallHandler is not null)
+                            List<FunctionCall>? calls = delta.ToolCalls?.Select(x => new FunctionCall
+                            {
+                                Name = x.FunctionCall.Name,
+                                Arguments = x.FunctionCall.Arguments,
+                                ToolCall = x,
+                                Tool = RequestParameters.Tools?.FirstOrDefault(y => string.Equals(y.Function?.Name, x.FunctionCall.Name)),
+                                Result = x.FunctionCall.Result
+                            }).ToList();
+                            
+                            if (eventsHandler.FunctionCallHandler is not null && calls?.Count > 0)
+                            {
+                                await eventsHandler.FunctionCallHandler.Invoke(calls);   
+                            }
+                            
+                            if (eventsHandler.FunctionCallHandler is not null || eventsHandler.ToolCallsHandler is not null)
                             {
                                 ResolvedToolsCall result = new ResolvedToolsCall();
 
-                                List<FunctionCall>? calls = delta.ToolCalls?.Select(x => new FunctionCall
+                                if (calls?.Count > 0)
                                 {
-                                    Name = x.FunctionCall.Name,
-                                    Arguments = x.FunctionCall.Arguments,
-                                    ToolCall = x,
-                                    Tool = RequestParameters.Tools?.FirstOrDefault(y =>
-                                        string.Equals(y.Function?.Name, x.FunctionCall.Name))
-                                }).ToList();
-
-                                if (calls is not null)
-                                {
-                                    await eventsHandler.FunctionCallHandler.Invoke(calls);
-
                                     if (MostRecentApiResult?.Choices?.Count > 0 &&
                                         MostRecentApiResult.Choices[0].FinishReason is ChatMessageFinishReasons
                                             .ToolCalls)
