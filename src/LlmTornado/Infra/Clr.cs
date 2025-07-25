@@ -5,6 +5,8 @@ using System.Dynamic;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using LlmTornado.Code;
 using Newtonsoft.Json.Linq;
@@ -36,7 +38,7 @@ internal static class Clr
             }
             catch (FormatException)
             {
-                return System.Text.Encoding.GetEncoding("iso-8859-1").GetBytes(byteString);
+                return Encoding.GetEncoding("iso-8859-1").GetBytes(byteString);
             }
         }
         
@@ -64,10 +66,22 @@ internal static class Clr
             return new Uri(token.ToString(), UriKind.RelativeOrAbsolute);
         }
 
+        if (dataType == typeof(Regex))
+        {
+            return new Regex(token.ToString());
+        }
+
         if (dataType == typeof(char))
         {
             return token.ToString()[0];
         }
+        
+#if MODERN
+        if (dataType == typeof(Rune))
+        {
+            return new Rune(token.ToString()[0]);
+        }
+#endif
         
         return token.ToObject(dataType);
     }

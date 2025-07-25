@@ -5,7 +5,9 @@ using System.ComponentModel;
 using System.Dynamic;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using LlmTornado.Code;
 using LlmTornado.Common;
@@ -306,6 +308,10 @@ internal static class ToolFactory
     private static readonly Dictionary<Type, Func<Delegate?, Type, string?, IToolParamType>> TypeLookup = new Dictionary<Type, Func<Delegate?, Type, string?, IToolParamType>>
     {
         { typeof(string), (del, t, d) => new ToolParamString(d) { DataType = t, Serializer = ToolParamSerializer.Atomic } },
+        { typeof(char), (del, t, d) => new ToolParamString(d) { DataType = t, Serializer = ToolParamSerializer.Atomic, MinLength = 1, MaxLength = 1 } },
+#if MODERN
+        { typeof(Rune), (del, t, d) => new ToolParamString(d) { DataType = t, Serializer = ToolParamSerializer.Atomic } },
+#endif
         { typeof(double), (del, t, d) => new ToolParamNumber(d) { DataType = t, Serializer = ToolParamSerializer.Atomic } },
         { typeof(float), (del, t, d) => new ToolParamNumber(d) { DataType = t, Serializer = ToolParamSerializer.Atomic } },
         { typeof(bool), (del, t, d) => new ToolParamBool(d) { DataType = t, Serializer = ToolParamSerializer.Atomic } },
@@ -319,20 +325,20 @@ internal static class ToolFactory
         { typeof(long), (del, t, d) => new ToolParamInt(d) { DataType = t, Serializer = ToolParamSerializer.Atomic } },
         { typeof(ulong), (del, t, d) => new ToolParamInt(d) { DataType = t, Serializer = ToolParamSerializer.Atomic } },
         { typeof(decimal), (del, t, d) => new ToolParamNumber(d) { DataType = t, Serializer = ToolParamSerializer.Atomic } },
+        { typeof(object), (del, t, d) => new ToolParamAny(d) { DataType = t, Serializer = ToolParamSerializer.Any } },
         { typeof(Guid), (del, t, d) => new ToolParamString(d) { DataType = t, Serializer = ToolParamSerializer.Atomic, Format = "uuid" } },
-        { typeof(Uri), (del, t, d) => new ToolParamString(d) { DataType = t, Serializer = ToolParamSerializer.Atomic, Format = "uri" } },
-        { typeof(char), (del, t, d) => new ToolParamString(d) { DataType = t, Serializer = ToolParamSerializer.Atomic, MinLength = 1, MaxLength = 1 } },
-        { typeof(DateTime), (del, t, d) => new ToolParamDateTime(d) { DataType = t, Serializer = ToolParamSerializer.Atomic } },
         { typeof(TimeSpan), (del, t, d) => new ToolParamString(d) { DataType = t, Serializer = ToolParamSerializer.Atomic, Format = "duration" } },
+        { typeof(Uri), (del, t, d) => new ToolParamString(d) { DataType = t, Serializer = ToolParamSerializer.Atomic, Format = "uri" } },
+        { typeof(Regex), (del, t, d) => new ToolParamString(d) { DataType = t, Serializer = ToolParamSerializer.Atomic, Format = "regex" } },
+        { typeof(DateTime), (del, t, d) => new ToolParamDateTime(d) { DataType = t, Serializer = ToolParamSerializer.Atomic } },
+        { typeof(ExpandoObject), (del, t, d) => new ToolParamAny(d) { DataType = t, Serializer = ToolParamSerializer.Any } },
 #if MODERN
         { typeof(DateOnly), (del, t, d) => new ToolParamDate(d) { DataType = t, Serializer = ToolParamSerializer.Atomic } },
         { typeof(TimeOnly), (del, t, d) => new ToolParamTime(d) { DataType = t, Serializer = ToolParamSerializer.Atomic } },
 #endif
         
         // special
-        { typeof(ToolArguments), (del, t, d) => new ToolParamArguments() },
-        { typeof(object), (del, t, d) => new ToolParamAny(d) { DataType = t, Serializer = ToolParamSerializer.Any } },
-        { typeof(ExpandoObject), (del, t, d) => new ToolParamAny(d) { DataType = t, Serializer = ToolParamSerializer.Any } }
+        { typeof(ToolArguments), (del, t, d) => new ToolParamArguments() }
     };
 
     private static string? GetDescription(ICustomAttributeProvider element)

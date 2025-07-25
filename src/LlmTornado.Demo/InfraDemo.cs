@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.ComponentModel;
+using System.Text.RegularExpressions;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.ChatFunctions;
@@ -320,6 +321,36 @@ public class InfraDemo : DemoBase
         });
 
         conversation.AddUserMessage("Process mock payments using both available payment methods. Use both payment methods once.");
+
+        TornadoRequestContent serialized = conversation.Serialize(new ChatRequestSerializeOptions
+        {
+            Pretty = true
+        });
+
+        Console.Write(serialized);
+
+        var data = await conversation.GetResponseRich();
+
+        int z = 0;
+    }
+    
+    [TornadoTest]
+    public static async Task TornadoRegex()
+    {
+        Conversation conversation = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.OpenAi.Gpt41.V41,
+            Tools =
+            [
+                new Tool(([Description("regex user asked to create")] Regex regex, ToolArguments args) =>
+                {
+                    Assert.That(regex, Is.NotNull);
+                })
+            ],
+            ToolChoice = OutboundToolChoice.Required
+        });
+
+        conversation.AddUserMessage("Create a regex for validating e-mail address.");
 
         TornadoRequestContent serialized = conversation.Serialize(new ChatRequestSerializeOptions
         {
