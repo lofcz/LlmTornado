@@ -43,9 +43,9 @@ _*Other providers expose caching as part of `/chat`, or don't offer the feature.
 
 ## Cohere Specific
 
- Rerank | Embed Jobs* | Classify* | Datasets* | Connectors* |
-|-----------|------------ | ------------ | ------------ | ------------ |
-| ❌ | ❌ |  ❌ | ❌ | ❌ | ❌
+ Rerank | Embed Jobs* |  Datasets* | 
+|-----------|------------ | ------------ |
+| ❌ | ❌ |  ❌ | ❌
 
 _*`/v1` APIs, future support is unsure and probably won't be implemented._
 
