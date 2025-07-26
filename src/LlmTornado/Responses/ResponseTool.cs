@@ -589,7 +589,7 @@ internal class ResponseMcpRequireApprovalConverter : JsonConverter<ResponseMcpRe
         switch (value)
         {
             case ResponseMcpRequireApprovalOption optionValue:
-                writer.WriteValue(optionValue.PolicyValue is ResponseMcpApprovalPolicy.Always ? "always" : "never");
+                serializer.Serialize(writer, optionValue.PolicyValue);
                 break;
 
             case ResponseMcpRequireApprovalFilter filter:
