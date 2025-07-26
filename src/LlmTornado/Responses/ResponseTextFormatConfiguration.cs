@@ -74,7 +74,7 @@ public class ResponseTextFormatConfigurationJsonSchema : ResponseTextFormatConfi
     /// The name of the response format. Must be a-z, A-Z, 0-9, or contain underscores and dashes, with a maximum length of 64.
     /// </summary>
     [JsonProperty("name")]
-    public string Name { get; set; } = string.Empty;
+    public string Name { get; set; }
 
     /// <summary>
     /// The schema for the response format, described as a JSON Schema object.

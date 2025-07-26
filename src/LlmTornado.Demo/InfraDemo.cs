@@ -656,4 +656,65 @@ public class InfraDemo : DemoBase
 
         int z = 0;
     }
+    
+    [TornadoTest]
+    public static async Task TornadoResponseToolMultiturn()
+    {
+        Conversation conversation = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.OpenAi.Gpt41.V41,
+            Tools = [
+                new Tool((string city, ToolArguments args) =>
+                {
+                    return new
+                    {
+                        result = "heavy rain, possible thunder"
+                    };
+                }, "get_weather", "gets weather in a given city")
+            ],
+            ResponseRequestParameters = new ResponseRequest()
+        });
+
+        conversation.AddUserMessage("What is the weather like in Prague?");
+        
+        ChatRichResponse data = await conversation.GetResponseRich(ToolCallsHandler.ContinueConversation);
+
+        TornadoRequestContent serialized = conversation.Serialize(new ChatRequestSerializeOptions
+        {
+            Pretty = true
+        });
+
+        Console.Write(serialized);
+        
+        ChatRichResponse finalResponse = await conversation.GetResponseRich();
+        Console.WriteLine(finalResponse);
+    }
+    
+    [TornadoTest]
+    public static async Task TornadoStructuredResponse()
+    {
+        Conversation conversation = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.OpenAi.Gpt41.V41,
+            ResponseFormat = ChatRequestResponseFormats.StructuredJson((string city, ToolArguments args) =>
+            {
+                return new
+                {
+                    result = "heavy rain, possible thunder"
+                };
+            }, "get_weather", "gets weather in a given city"),
+            ResponseRequestParameters = new ResponseRequest()
+        });
+
+        conversation.AddUserMessage("What is the weather like in Prague?");
+
+        TornadoRequestContent serialized = conversation.Serialize(new ChatRequestSerializeOptions
+        {
+            Pretty = true
+        });
+
+        Console.Write(serialized);
+
+        ChatRichResponse data = await conversation.GetResponseRich(ToolCallsHandler.ContinueConversation);
+    }
 }

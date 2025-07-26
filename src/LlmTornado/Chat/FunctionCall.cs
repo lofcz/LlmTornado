@@ -148,7 +148,7 @@ public class FunctionCall
         }
 
         object? invocationResult = await Clr.Invoke(Tool.Delegate, Tool.DelegateMetadata, data).ConfigureAwait(false);
-        Result = new FunctionResult(this, invocationResult as string ?? invocationResult.ToJson());
+        Result = new FunctionResult(this, invocationResult as string ?? invocationResult.ToJson(), FunctionResultSetContentModes.Passthrough);
         return this;
     }
 

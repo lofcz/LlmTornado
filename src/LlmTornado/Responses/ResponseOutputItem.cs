@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
 using LlmTornado.Code;
+using LlmTornado.Common;
 using LlmTornado.Images;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -310,6 +311,9 @@ public class ResponseFunctionToolCallItem : IResponseOutputItem
     /// </summary>
     [JsonProperty("status")]
     public ResponseOutputItemStatus? Status { get; set; }
+    
+    [JsonIgnore]
+    internal FunctionResult? Result { get; set; }
 }
 
 /// <summary>

@@ -1,9 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
+using System.Threading.Tasks;
+using LlmTornado.ChatFunctions;
+using LlmTornado.Code;
 using LlmTornado.Common;
 using LlmTornado.Images;
 using LlmTornado.Images.Models;
+using LlmTornado.Infra;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
@@ -45,14 +49,41 @@ public class ResponseFunctionTool : ResponseTool
     /// <summary>
     /// A JSON schema object describing the parameters of the function.
     /// </summary>
-    [JsonProperty("parameters", Required = Required.Always)]
-    public JObject Parameters { get; set; } = null!;
+    [JsonProperty("parameters")]
+    public JObject? Parameters { get; set; }
 
     /// <summary>
     /// Whether to enforce strict parameter validation. Default true.
     /// </summary>
     [JsonProperty("strict")]
     public bool? Strict { get; set; }
+    
+    [JsonIgnore]
+    internal Delegate? Delegate { get; set; }
+    
+    [JsonIgnore]
+    internal DelegateMetadata? DelegateMetadata { get; set; }
+    
+    [JsonIgnore]
+    internal ToolMetadata? Metadata { get; set; }
+    
+    [JsonIgnore]
+    internal FunctionResult? Result { get; set; }
+    
+    /// <summary>
+    /// Resolves the call by asynchronously invoking the attached delegate with given JSON data.
+    /// </summary>
+    public async ValueTask<ResponseFunctionTool> Invoke(string data)
+    {
+        if (Delegate is null)
+        {
+            return this;
+        }
+
+        object? invocationResult = await Clr.Invoke(Delegate, DelegateMetadata, data).ConfigureAwait(false);
+        Result = new FunctionResult(Name, invocationResult as string ?? invocationResult.ToJson(), FunctionResultSetContentModes.Passthrough);
+        return this;
+    }
 }
 
 /// <summary>

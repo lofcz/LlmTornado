@@ -203,6 +203,7 @@ internal static class ResponseHelpers
                                 Schema = chatRequestFormat.Schema.Schema,
                                 Name = chatRequestFormat.Schema.Name,
                                 Strict = chatRequestFormat.Schema.Strict,
+                                Description = chatRequestFormat.Schema.Description
                             }
                         };
                     }
@@ -267,6 +268,7 @@ internal static class ResponseHelpers
             {
                 choice.Message.ToolCalls ??= [];
                 choice.Message.ToolCallId = functionItem.CallId;
+                
                 choice.Message.ToolCalls.Add(new ToolCall
                 {
                     Id = functionItem.CallId,
@@ -274,6 +276,7 @@ internal static class ResponseHelpers
                     {
                         Arguments = functionItem.Arguments,
                         Name = functionItem.Name,
+                        Result = functionItem.Result
                     }
                 });
             }
@@ -303,10 +306,13 @@ internal static class ResponseHelpers
         {
             return new ResponseFunctionTool
             {
-                Name = tool.Function.Name,
-                Description = tool.Function.Description,
+                Name = tool.ToolName ?? tool.Function.Name,
+                Description = tool.ToolDescription ?? tool.Function.Description,
                 Parameters = JObject.FromObject(tool.Function.Parameters),
-                Strict = tool.Strict
+                Strict = tool.Strict,
+                Delegate = tool.Delegate,
+                DelegateMetadata = tool.DelegateMetadata,
+                Metadata = tool.Metadata
             };
         }
 

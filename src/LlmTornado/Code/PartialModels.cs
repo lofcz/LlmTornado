@@ -1036,7 +1036,8 @@ public class ToolParamDefinition
 public class ToolCallsHandler
 {
     /// <summary>
-    /// Continues the conversation automatically.
+    /// Continues the conversation automatically.<br/>
+    /// Note: if the request is set to return <see cref="ChatRequestResponseFormatTypes.StructuredJson"/>, there is no tool call generated, and hence the conversation won't be continued automatically.
     /// </summary>
     public static readonly ToolCallsHandler ContinueConversation = new ToolCallsHandler();
     

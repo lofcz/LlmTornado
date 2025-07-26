@@ -757,11 +757,11 @@ public class Conversation
             return new RestDataOrException<ChatRichResponse>(new Exception("The service returned no choices"));
         }
 
-        ChatRichResponse response = await HandleResponseRich(chatResult, functionCallHandler, null).ConfigureAwait(false);
+        ChatRichResponse response = await HandleResponseRich(req, chatResult, functionCallHandler, null).ConfigureAwait(false);
         return new RestDataOrException<ChatRichResponse>(response, httpResult);
     }
 
-    private async Task<ChatRichResponse> HandleResponseRich(ChatResult? res, Func<List<FunctionCall>, ValueTask>? functionCallHandler, ToolCallsHandler? toolCallsHandler)
+    private async Task<ChatRichResponse> HandleResponseRich(ChatRequest request, ChatResult? res, Func<List<FunctionCall>, ValueTask>? functionCallHandler, ToolCallsHandler? toolCallsHandler)
     {
         List<ChatRichResponseBlock> blocks = [];
         ChatRichResponse response = new ChatRichResponse(res, blocks);
@@ -943,7 +943,7 @@ public class Conversation
             return new ChatRichResponse(res, null);
         }
 
-        return await HandleResponseRich(res, fnHandler, toolCallsHandler).ConfigureAwait(false);
+        return await HandleResponseRich(req, res, fnHandler, toolCallsHandler).ConfigureAwait(false);
     }
 
     /// <summary>

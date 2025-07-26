@@ -18,6 +18,22 @@ using JsonSerializer = Newtonsoft.Json.JsonSerializer;
 namespace LlmTornado.Common;
 
 /// <summary>
+/// Modes available for serialization of the content
+/// </summary>
+public enum FunctionResultSetContentModes
+{
+    /// <summary>
+    /// Does nothing, expects the data is already serialized into a string, if not, calls <see cref="Object.ToString"/>.
+    /// </summary>
+    Passthrough,
+    
+    /// <summary>
+    /// Serializes the input using JSON serializer, unless the input is already a string.
+    /// </summary>
+    Serialize
+}
+
+/// <summary>
 ///     Represents a function call result
 /// </summary>
 public class FunctionResult
@@ -38,6 +54,31 @@ public class FunctionResult
         Name = name;
         Content = SetContent(content);
         InvocationSucceeded = true;
+    }
+    
+    /// <summary>
+    /// </summary>
+    /// <param name="name">Name of the function that was called. Can differ from the originally intended function.</param>
+    /// <param name="content">Either a serializable object (e.g. class / dict / anonymous object) that will be serialized into JSON, or already serialized data.</param>
+    /// <param name="mode">Whether the content should be serialized or is already serialized.</param>
+    public FunctionResult(string name, object? content, FunctionResultSetContentModes mode)
+    {
+        Name = name;
+        Content = SetContent(content, mode);
+        InvocationSucceeded = true;
+    }
+    
+    /// <summary>
+    /// </summary>
+    /// <param name="name">Name of the function that was called. Can differ from the originally intended function.</param>
+    /// <param name="content">Either a serializable object (e.g. class / dict / anonymous object) that will be serialized into JSON, or already serialized data.</param>
+    /// <param name="mode">Whether the content should be serialized or is already serialized.</param>
+    /// <param name="invocationSucceeded">An indicator whether the tool invocation succeeded or not.</param>
+    public FunctionResult(string name, object? content, FunctionResultSetContentModes mode, bool invocationSucceeded)
+    {
+        Name = name;
+        Content = SetContent(content, mode);
+        InvocationSucceeded = invocationSucceeded;
     }
 
     /// <summary>
@@ -182,11 +223,13 @@ public class FunctionResult
     [JsonIgnore]
     internal IEnumerable<IFunctionResultBlock>? RawContentBlocks { get; set; }
 
-    private string SetContent(object? content)
+    private string SetContent(object? content, FunctionResultSetContentModes mode = FunctionResultSetContentModes.Serialize)
     {
         ContentJsonType = content?.GetType();
         RawContent = content;
-        return content is null ? "{}" : JsonConvert.SerializeObject(content);
+        return mode is FunctionResultSetContentModes.Passthrough ? 
+            content as string ?? content?.ToString() ?? "{}" : 
+            content is null ? "{}" : JsonConvert.SerializeObject(content);
     }
     
     private string SetContentBlocks(List<IFunctionResultBlock>? content)
