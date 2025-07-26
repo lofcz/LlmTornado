@@ -879,6 +879,18 @@ public class Conversation
                     ChatAudio = newMsg.Audio
                 });
             }
+            
+            if (!newMsg.Reasoning.IsNullOrWhiteSpace() && !blocks.Any(x => x.Type is ChatRichResponseBlockTypes.Reasoning))
+            {
+                blocks.Add(new ChatRichResponseBlock
+                {
+                    Type = ChatRichResponseBlockTypes.Reasoning,
+                    Reasoning = new ChatMessageReasoningData
+                    {
+                        Content = newMsg.Reasoning
+                    }
+                });
+            }
         }
 
         return response;

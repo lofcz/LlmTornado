@@ -98,11 +98,17 @@ public class ChatMessage
     public int? Tokens { get; set; }
 
     /// <summary>
-    ///     The content of the message
+    ///     The content of the message.
     /// </summary>
-    [JsonProperty("content", NullValueHandling = NullValueHandling.Include)]
+    [JsonProperty("content")]
     public string? Content { get; set; }
 
+    /// <summary>
+    ///		Reasoning, if any. Most providers report this as a rich block, Tornado uses this property only for reading.
+    /// </summary>
+    [JsonProperty("reasoning")]
+    public string? Reasoning { get; set; }
+    
     /// <summary>
     ///     The reason why model refused to respond.
     /// </summary>
