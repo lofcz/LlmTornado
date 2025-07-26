@@ -78,6 +78,16 @@ class Program
     {
         string serverPath = Path.GetFullPath(Path.Join("..", "..", "..", "..", "LlmTornado.Mcp.Sample.Server"));
 
+        if (serverPath.EndsWith(".py"))
+        {
+            return ("python", args.Length is 0 ? [ serverPath ] : args);
+        }
+
+        if (serverPath.EndsWith(".js"))
+        {
+            return ("node", args.Length is 0 ? [ serverPath ] : args);
+        }
+        
         return args switch
         {
             [var script] when script.EndsWith(".py") => ("python", args),
