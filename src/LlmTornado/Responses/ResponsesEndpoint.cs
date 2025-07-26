@@ -279,18 +279,18 @@ public class ResponsesEndpoint : EndpointBase
 
     internal static async Task<object?> HandleResponse(ResponseRequest request, ResponseResult result)
     {
-        /*if (request.Text?.Format?.Type is "json_schema")
+        if (request.Text?.Format is ResponseTextFormatConfigurationJsonSchema jsonSchema)
         {
-            string? content = contentSource.Content ?? contentSource.Parts?.FirstOrDefault(x => x.Type is ChatMessageTypes.Text)?.Text;
-            object? structuredResult = await request.ResponseFormat.Invoke(content ?? "{}").ConfigureAwait(false);
-
-            if (result is not null)
+            string? outputText = result.OutputText;
+            
+            if (!outputText.IsNullOrWhiteSpace())
             {
-                result.InvocationResult = structuredResult;
+                await jsonSchema.Invoke(outputText).ConfigureAwait(false);
+                return jsonSchema.Result;
             }
 
-            return structuredResult;
-        }*/
+            return null;
+        }
 
         List<ResponseFunctionTool>? toolDefs = request.Tools?.OfType<ResponseFunctionTool>().ToList();
         

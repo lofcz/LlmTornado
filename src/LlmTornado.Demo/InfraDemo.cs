@@ -715,6 +715,6 @@ public class InfraDemo : DemoBase
 
         Console.Write(serialized);
 
-        ChatRichResponse data = await conversation.GetResponseRich(ToolCallsHandler.ContinueConversation);
+        ChatRichResponse data = await conversation.GetResponseRich();
     }
 }

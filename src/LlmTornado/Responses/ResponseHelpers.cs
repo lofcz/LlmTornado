@@ -203,7 +203,10 @@ internal static class ResponseHelpers
                                 Schema = chatRequestFormat.Schema.Schema,
                                 Name = chatRequestFormat.Schema.Name,
                                 Strict = chatRequestFormat.Schema.Strict,
-                                Description = chatRequestFormat.Schema.Description
+                                Description = chatRequestFormat.Schema.Description,
+                                Delegate = chatRequestFormat.Schema.Delegate,
+                                DelegateMetadata = chatRequestFormat.Schema.DelegateMetadata,
+                                Metadata = chatRequestFormat.Schema.ToolMetadata
                             }
                         };
                     }

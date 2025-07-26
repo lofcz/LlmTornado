@@ -1,4 +1,8 @@
 using System;
+using System.Threading.Tasks;
+using LlmTornado.Code;
+using LlmTornado.Common;
+using LlmTornado.Infra;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -112,6 +116,33 @@ public class ResponseTextFormatConfigurationJsonSchema : ResponseTextFormatConfi
         Name = name;
         Description = description;
         Strict = strict;
+    }
+    
+    [JsonIgnore]
+    internal Delegate? Delegate { get; set; }
+    
+    [JsonIgnore]
+    internal DelegateMetadata? DelegateMetadata { get; set; }
+    
+    [JsonIgnore]
+    internal ToolMetadata? Metadata { get; set; }
+    
+    [JsonIgnore]
+    internal FunctionResult? Result { get; set; }
+    
+    /// <summary>
+    /// Resolves the call by asynchronously invoking the attached delegate with given JSON data.
+    /// </summary>
+    public async ValueTask<ResponseTextFormatConfigurationJsonSchema> Invoke(string data)
+    {
+        if (Delegate is null)
+        {
+            return this;
+        }
+
+        object? invocationResult = await Clr.Invoke(Delegate, DelegateMetadata, data).ConfigureAwait(false);
+        Result = new FunctionResult(Name, invocationResult as string ?? invocationResult.ToJson(), FunctionResultSetContentModes.Passthrough);
+        return this;
     }
 }
 
