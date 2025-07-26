@@ -110,9 +110,9 @@ public class ChatRequestResponseFormats
     }
 
     /// <summary>
-    ///     Signals output should be structured JSON. The provided schema will always be followed.
+    ///     Signals output should be structured JSON. The provided schema will always be followed. An attempt will be made to invoke the attached delegate with inferred arguments.
     /// </summary>
-    internal static ChatRequestResponseFormats StructuredJson(Delegate function)
+    public static ChatRequestResponseFormats StructuredJson(Delegate function)
     {
         return new ChatRequestResponseFormats
         {
@@ -127,9 +127,9 @@ public class ChatRequestResponseFormats
     }
     
     /// <summary>
-    ///     Signals output should be structured JSON. The provided schema will always be followed.
+    ///     Signals output should be structured JSON. The provided schema will always be followed. An attempt will be made to invoke the attached delegate with inferred arguments.
     /// </summary>
-    internal static ChatRequestResponseFormats StructuredJson(Delegate function, string name, bool? strict = true)
+    public static ChatRequestResponseFormats StructuredJson(Delegate function, string name, bool? strict = true)
     {
         return new ChatRequestResponseFormats
         {
@@ -144,9 +144,9 @@ public class ChatRequestResponseFormats
     }
     
     /// <summary>
-    ///     Signals output should be structured JSON. The provided schema will always be followed.
+    ///     Signals output should be structured JSON. The provided schema will always be followed. An attempt will be made to invoke the attached delegate with inferred arguments.
     /// </summary>
-    internal static ChatRequestResponseFormats StructuredJson(Delegate function, string name, string description, bool? strict = true)
+    public static ChatRequestResponseFormats StructuredJson(Delegate function, string name, string description, bool? strict = true)
     {
         return new ChatRequestResponseFormats
         {
@@ -162,9 +162,9 @@ public class ChatRequestResponseFormats
     }
     
     /// <summary>
-    ///     Signals output should be structured JSON. The provided schema will always be followed.
+    ///     Signals output should be structured JSON. The provided schema will always be followed. An attempt will be made to invoke the attached delegate with inferred arguments.
     /// </summary>
-    internal static ChatRequestResponseFormats StructuredJson(Delegate function, ToolMetadata metadata, bool? strict = true)
+    public static ChatRequestResponseFormats StructuredJson(Delegate function, ToolMetadata metadata, bool? strict = true)
     {
         return new ChatRequestResponseFormats
         {
@@ -180,9 +180,9 @@ public class ChatRequestResponseFormats
     }
     
     /// <summary>
-    ///     Signals output should be structured JSON. The provided schema will always be followed.
+    ///     Signals output should be structured JSON. The provided schema will always be followed. An attempt will be made to invoke the attached delegate with inferred arguments.
     /// </summary>
-    internal static ChatRequestResponseFormats StructuredJson(Delegate function, string name, ToolMetadata metadata, bool? strict = true)
+    public static ChatRequestResponseFormats StructuredJson(Delegate function, string name, ToolMetadata metadata, bool? strict = true)
     {
         return new ChatRequestResponseFormats
         {
@@ -198,9 +198,9 @@ public class ChatRequestResponseFormats
     }
     
     /// <summary>
-    ///     Signals output should be structured JSON. The provided schema will always be followed.
+    ///     Signals output should be structured JSON. The provided schema will always be followed. An attempt will be made to invoke the attached delegate with inferred arguments.
     /// </summary>
-    internal static ChatRequestResponseFormats StructuredJson(Delegate function, string name, string description, ToolMetadata metadata, bool? strict = true)
+    public static ChatRequestResponseFormats StructuredJson(Delegate function, string name, string description, ToolMetadata metadata, bool? strict = true)
     {
         return new ChatRequestResponseFormats
         {

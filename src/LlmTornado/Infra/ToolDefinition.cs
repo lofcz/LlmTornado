@@ -361,6 +361,9 @@ public class SchemaNullableAttribute : Attribute
     
 }
 
+/// <summary>
+/// Allows controlling anyOf JSON schema generation.
+/// </summary>
 [AttributeUsage(AttributeTargets.Parameter)]
 public class SchemaAnyOfAttribute : Attribute
 {
@@ -372,6 +375,9 @@ public class SchemaAnyOfAttribute : Attribute
     }
 }
 
+/// <summary>
+/// Allows controlling JSON schema generation of tuples.
+/// </summary>
 [AttributeUsage(AttributeTargets.Parameter | AttributeTargets.Property)]
 public class SchemaTupleAttribute : Attribute
 {

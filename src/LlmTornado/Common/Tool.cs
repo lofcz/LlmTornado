@@ -558,6 +558,9 @@ public class McpContentBlockEmbeddedResourceContentsUnknown : McpContentBlockEmb
 /// </summary>
 public class Tool
 {
+    /// <summary>
+    /// Attached delegate, if any.
+    /// </summary>
     [JsonIgnore]
     public Delegate? Delegate { get; }
     
@@ -573,13 +576,26 @@ public class Tool
     [JsonIgnore]
     internal string? ToolDescription { get; set; }
     
-    internal Tool(Delegate function, ToolMetadata? metadata = null, bool? strict = null)
+    /// <summary>
+    /// Creates the tool with a delegate attached. This delegate is serialized into JSON schema and potentially invoked by a LLM.
+    /// </summary>
+    /// <param name="function">The function, can be an anonymous function.</param>
+    /// <param name="metadata">Optional metadata: additional parameters, excluded parameters, and other options.</param>
+    /// <param name="strict">Whether strict JSON schema validation is enabled.</param>
+    public Tool(Delegate function, ToolMetadata? metadata = null, bool? strict = null)
     {
         Delegate = function;
         Strict = strict;
         Metadata = metadata;
     }
     
+    /// <summary>
+    /// Creates the tool with a delegate attached. This delegate is serialized into JSON schema and potentially invoked by a LLM.
+    /// </summary>
+    /// <param name="function">The function, can be an anonymous function.</param>
+    /// <param name="name">Name of the function.</param>
+    /// <param name="metadata">Optional metadata: additional parameters, excluded parameters, and other options.</param>
+    /// <param name="strict">Whether strict JSON schema validation is enabled.</param>
     internal Tool(Delegate function, string name, ToolMetadata? metadata = null, bool? strict = null)
     {
         Delegate = function;
@@ -588,6 +604,14 @@ public class Tool
         ToolName = name;
     }
     
+    /// <summary>
+    /// Creates the tool with a delegate attached. This delegate is serialized into JSON schema and potentially invoked by a LLM.
+    /// </summary>
+    /// <param name="function">The function, can be an anonymous function.</param>
+    /// <param name="name">Name of the function.</param>
+    /// <param name="description">Description of the function.</param>
+    /// <param name="metadata">Optional metadata: additional parameters, excluded parameters, and other options.</param>
+    /// <param name="strict">Whether strict JSON schema validation is enabled.</param>
     internal Tool(Delegate function, string name, string description, ToolMetadata? metadata = null, bool? strict = null)
     {
         Delegate = function;
@@ -626,6 +650,9 @@ public class Tool
         Type = type;
     }
 
+    /// <summary>
+    /// Empty tool.
+    /// </summary>
     public Tool()
     {
     }
