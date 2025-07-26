@@ -8,7 +8,7 @@
 
     <ItemGroup>
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.17"/>
-        <PackageReference Include="ModelContextProtocol" Version="0.3.0-preview.2" />
+        <PackageReference Include="ModelContextProtocol" Version="0.3.0-preview.3" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2"/>
     </ItemGroup>
 

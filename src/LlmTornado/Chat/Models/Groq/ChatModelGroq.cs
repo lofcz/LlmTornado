@@ -29,6 +29,16 @@ public class ChatModelGroq : BaseVendorModelProvider
     public readonly ChatModelGroqGoogle Google = new ChatModelGroqGoogle();
     
     /// <summary>
+    /// Models by Alibaba (Qwen).
+    /// </summary>
+    public readonly ChatModelGroqAlibaba Alibaba = new ChatModelGroqAlibaba();
+    
+    /// <summary>
+    /// Models by Moonshot AI.
+    /// </summary>
+    public readonly ChatModelGroqMoonshotAi MoonshotAi = new ChatModelGroqMoonshotAi();
+    
+    /// <summary>
     /// All known chat models hosted by Groq.
     /// </summary>
     public override List<IModel> AllModels { get; }
@@ -55,7 +65,9 @@ public class ChatModelGroq : BaseVendorModelProvider
         ..ChatModelGroqMeta.ModelsAll,
         ..ChatModelGroqGoogle.ModelsAll,
         ..ChatModelGroqGroq.ModelsAll,
-        ..ChatModelGroqMistral.ModelsAll
+        ..ChatModelGroqMistral.ModelsAll,
+        ..ChatModelGroqAlibaba.ModelsAll,
+        ..ChatModelGroqMoonshotAi.ModelsAll
     ];
     
     static ChatModelGroq()

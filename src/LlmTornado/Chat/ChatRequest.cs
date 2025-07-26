@@ -104,6 +104,7 @@ public class ChatRequest : IModelRequest
 		OnSerialize = basedOn.OnSerialize;
 		ResponseRequestParameters = basedOn.ResponseRequestParameters;
 		UseResponseEndpoint = basedOn.UseResponseEndpoint;
+		ReasoningFormat = basedOn.ReasoningFormat;
 	}
 
 	/// <summary>
@@ -187,11 +188,16 @@ public class ChatRequest : IModelRequest
     public int? NumChoicesPerMessage { get; set; }
 	
 	/// <summary>
-	///     Balance option between response time & cost/latency. Currently supported only by O1, O1 Mini, Grok 3 series, and Sonar Deep Research.
+	///     Balance option between response time and cost/latency. Currently supported only by O1, O1 Mini, Grok 3 series, Sonar Deep Research, and Qwen.
 	/// </summary>
 	[JsonProperty("reasoning_effort")]
-	[JsonConverter(typeof(StringEnumConverter), true)]
 	public ChatReasoningEfforts? ReasoningEffort { get; set; }
+	
+	/// <summary>
+	///     Format of the reasoning. Currently supported only by Grok/Qwen.
+	/// </summary>
+	[JsonProperty("reasoning_format")]
+	public ChatReasoningFormats? ReasoningFormat { get; set; }
 	
 	/// <summary>
 	///		Sets a token limit on reasoning. 0 disables reasoning. Currently supported by Google (natively "thinkingBudget") and Anthropic (natively "budget_tokens").<br/>
@@ -489,7 +495,7 @@ public class ChatRequest : IModelRequest
 						x.Temperature = null;
 					}
 				}
-				
+
 				JsonSerializerSettings settings = (x.MaxTokensSerializer, x.Model) switch
 				{
 					(ChatRequestMaxTokensSerializers.Auto, not null) when ChatModelOpenAi.ReasoningModelsAll.Contains(x.Model) => GetSerializer(MaxTokensRenamerSettings, a),
@@ -640,37 +646,32 @@ public class ChatRequest : IModelRequest
 	private TornadoRequestContent Serialize(IEndpointProvider provider, CapabilityEndpoints capabilityEndpoint, bool pretty)
 	{
 		Preserialize(provider);
-		
-		ChatStreamOptions? storedOptions = null;
-		bool restoreStreamOptions = false;
-		
+
+		ChatRequest outboundCopy = new ChatRequest(this);
+
 		switch (StreamResolved)
 		{
 			case false when StreamOptions is not null:
 			{
-				storedOptions = ChatStreamOptions.Duplicate(StreamOptions);
-				StreamOptions = null;
-				restoreStreamOptions = true;
+				outboundCopy.StreamOptions = null;
 				break;
 			}
 			case true when StreamOptions is null:
 			{
-				storedOptions = null;
-				StreamOptions = ChatStreamOptions.KnownOptionsIncludeUsage;
-				restoreStreamOptions = true;
+				outboundCopy.StreamOptions = ChatStreamOptions.KnownOptionsIncludeUsage;
 				break;
 			}
 		}
 
-		TornadoRequestContent serialized = SerializeMap.TryGetValue(provider.Provider, out Func<ChatRequest, IEndpointProvider, CapabilityEndpoints, JsonSerializerSettings?, string>? serializerFn) ? new TornadoRequestContent(serializerFn.Invoke(this, provider, capabilityEndpoint, pretty ? new JsonSerializerSettings
+		if (provider.Provider is not LLmProviders.Groq)
+		{
+			outboundCopy.ReasoningFormat = null;
+		}
+		
+		TornadoRequestContent serialized = SerializeMap.TryGetValue(provider.Provider, out Func<ChatRequest, IEndpointProvider, CapabilityEndpoints, JsonSerializerSettings?, string>? serializerFn) ? new TornadoRequestContent(serializerFn.Invoke(outboundCopy, provider, capabilityEndpoint, pretty ? new JsonSerializerSettings
 		{
 			Formatting = Formatting.Indented
 		} : null), Model, UrlOverride, provider, capabilityEndpoint) : new TornadoRequestContent(string.Empty, Model, UrlOverride, provider, CapabilityEndpoints.Chat);
-		
-		if (restoreStreamOptions)
-		{
-			StreamOptions = storedOptions;
-		}
 		
 		return serialized;
 	}

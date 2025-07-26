@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,7 +11,6 @@ using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
-using LlmTornado.Code.Vendor;
 using LlmTornado.Completions;
 using LlmTornado.Embedding;
 using LlmTornado.Files;

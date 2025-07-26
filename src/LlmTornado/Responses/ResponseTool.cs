@@ -589,8 +589,7 @@ internal class ResponseMcpRequireApprovalConverter : JsonConverter<ResponseMcpRe
         switch (value)
         {
             case ResponseMcpRequireApprovalOption optionValue:
-                // Write the string value directly
-                writer.WriteValue(optionValue.PolicyValue);
+                writer.WriteValue(optionValue.PolicyValue is ResponseMcpApprovalPolicy.Always ? "always" : "never");
                 break;
 
             case ResponseMcpRequireApprovalFilter filter:

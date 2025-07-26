@@ -622,25 +622,65 @@ public class StreamedMessageToken
 }
 
 /// <summary>
+///     Reasoning formats.
+/// </summary>
+[JsonConverter(typeof(StringEnumConverter))]
+public enum ChatReasoningFormats
+{
+    /// <summary>
+    /// Separates reasoning into a dedicated field while keeping the response concise.
+    /// </summary>
+    [EnumMember(Value = "parsed")]
+    Parsed,
+    
+    /// <summary>
+    /// Includes reasoning within think tags in the content.
+    /// </summary>
+    [EnumMember(Value = "raw")]
+    Raw,
+    
+    /// <summary>
+    /// Returns only the final answer.
+    /// </summary>
+    [EnumMember(Value = "hidden")]
+    Hidden
+}
+
+/// <summary>
 ///     Level of reasoning suggested.
 /// </summary>
+[JsonConverter(typeof(StringEnumConverter))]
 public enum ChatReasoningEfforts
 {
     /// <summary>
     ///     Low reasoning - fast responses (O1, O1 Mini, Grok 3)
     /// </summary>
-    [JsonProperty("low")]
+    [EnumMember(Value = "low")]
     Low,
+    
     /// <summary>
     ///     Balanced reasoning (O1, O1 Mini)
     /// </summary>
-    [JsonProperty("medium")]
+    [EnumMember(Value = "medium")]
     Medium,
+    
     /// <summary>
     ///     High reasoning - slow responses (O1, O1 Mini, Grok 3)
     /// </summary>
-    [JsonProperty("high")]
-    High
+    [EnumMember(Value = "high")]
+    High,
+    
+    /// <summary>
+    ///     Disable reasoning. Supported only by Groq.
+    /// </summary>
+    [EnumMember(Value = "none")]
+    None,
+    
+    /// <summary>
+    ///     Enable reasoning. Supported only by Groq.
+    /// </summary>
+    [EnumMember(Value = "default")]
+    Default
 }
 
 internal enum ChatResultStreamInternalKinds
@@ -1593,6 +1633,14 @@ internal class DelegateMetadata
 /// </summary>
 public class ChatRequestSerializeOptions
 {
+    /// <summary>
+    /// Instance with <see cref="Pretty"/> set to true.
+    /// </summary>
+    public static readonly ChatRequestSerializeOptions PresetPretty = new ChatRequestSerializeOptions
+    {
+        Pretty = true
+    };
+    
     /// <summary>
     /// Whether the request is streamed.
     /// </summary>

@@ -683,7 +683,6 @@ public class Conversation
     /// <summary>
     /// Serializes the conversation and returns the request that would be sent outbound
     /// </summary>
-    /// <returns></returns>
     public TornadoRequestContent Serialize(ChatRequestSerializeOptions? options = null)
     {
         ChatRequest req = new ChatRequest(this, RequestParameters)
@@ -695,7 +694,15 @@ public class Conversation
         IEndpointProvider provider = endpoint.Api.GetProvider(Model);
         return req.Serialize(provider, options);
     }
-    
+
+    /// <summary>
+    /// Serializes the conversation and returns the request that would be sent outbound
+    /// </summary>
+    public TornadoRequestContent Serialize(bool pretty)
+    {
+        return Serialize(pretty ? ChatRequestSerializeOptions.PresetPretty : null);
+    }
+
     /// <summary>
     /// Calls the API to get a response. Safe on a network level.
     /// </summary>
