@@ -180,7 +180,6 @@ public class InfraDemo : DemoBase
                 ) =>
                 {
                     Assert.That(capital.ToLowerInvariant().Trim(), Is.EqualTo("prague"));
-                    return;
                 })
             ],
             ToolChoice = OutboundToolChoice.Required
@@ -197,6 +196,40 @@ public class InfraDemo : DemoBase
 
         ChatRichResponse data = await conversation.GetResponseRich();
 
+        int z = 0;
+    }
+    
+    [TornadoTest]
+    public static async Task TornadoInvalidMethod()
+    {
+        try
+        {
+            Conversation conversation = Program.Connect().Chat.CreateConversation(new ChatRequest
+            {
+                Model = ChatModel.OpenAi.Gpt41.V41,
+                Tools =
+                [
+                    new Tool((
+                        FileStream capital,
+                        ToolArguments args
+                    ) =>
+                    {
+                        return;
+                    })
+                ],
+                ToolChoice = OutboundToolChoice.Required
+            });
+
+            conversation.AddUserMessage("Use realistic mock data for the provided function.");
+
+            ChatRichResponse data = await conversation.GetResponseRich();
+            AssertFail();
+        }
+        catch (Exception e)
+        {
+            Assert.That(e.Message, Is.NotNull);
+            Console.WriteLine(e);
+        }
         int z = 0;
     }
     

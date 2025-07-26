@@ -386,6 +386,8 @@ public class SchemaTupleAttribute : Attribute
 public class ToolMeta
 {
     public IEndpointProvider Provider { get; set; }
+    internal int RecursionLevel { get; set; }
+    internal const int MaxRecursionLevel = 64;
 }
 
 /// <summary>
@@ -655,10 +657,24 @@ public class ToolParamAnyOf : ToolParamTypeBase
 
     public override object Compile(ToolDefinition sourceFn, ToolMeta meta)
     {
-        return new
+        if (meta.RecursionLevel >= ToolMeta.MaxRecursionLevel)
         {
-            anyOf = AnyOf.Select(x => x.Compile(sourceFn, meta)).ToList()
-        };
+            throw new InvalidOperationException($"Tool schema generation exceeded max recursion depth of {ToolMeta.MaxRecursionLevel}. This may be caused by a self-referencing type.");
+        }
+
+        meta.RecursionLevel++;
+
+        try
+        {
+            return new
+            {
+                anyOf = AnyOf.Select(x => x.Compile(sourceFn, meta)).ToList()
+            };
+        }
+        finally
+        {
+            meta.RecursionLevel--;
+        }
     }
 }
 
@@ -679,25 +695,39 @@ public class ToolParamNullable : IToolParamType
 
     public object Compile(ToolDefinition sourceFn, ToolMeta meta)
     {
-        object compiledInner = InnerType.Compile(sourceFn, meta);
-        
-        string json = JsonConvert.SerializeObject(compiledInner, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
-        Dictionary<string, object>? schemaDict = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
-
-        if (schemaDict is not null && schemaDict.TryGetValue("type", out object? typeValue) && typeValue is string typeString)
+        if (meta.RecursionLevel >= ToolMeta.MaxRecursionLevel)
         {
-            schemaDict["type"] = new[] { typeString, "null" };
-            return schemaDict;
+            throw new InvalidOperationException($"Tool schema generation exceeded max recursion depth of {ToolMeta.MaxRecursionLevel}. This may be caused by a self-referencing type.");
         }
-        
-        return new
+
+        meta.RecursionLevel++;
+
+        try
         {
-            anyOf = new object[]
+            object compiledInner = InnerType.Compile(sourceFn, meta);
+        
+            string json = JsonConvert.SerializeObject(compiledInner, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+            Dictionary<string, object>? schemaDict = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
+
+            if (schemaDict is not null && schemaDict.TryGetValue("type", out object? typeValue) && typeValue is string typeString)
             {
-                new { type = "null" },
-                compiledInner
+                schemaDict["type"] = new[] { typeString, "null" };
+                return schemaDict;
             }
-        };
+        
+            return new
+            {
+                anyOf = new object[]
+                {
+                    new { type = "null" },
+                    compiledInner
+                }
+            };
+        }
+        finally
+        {
+            meta.RecursionLevel--;
+        }
     }
 }
 
@@ -723,7 +753,21 @@ public class ToolParamAwaitable : IToolParamType
 
     public object Compile(ToolDefinition sourceFn, ToolMeta meta)
     {
-        return InnerParam.Compile(sourceFn, meta);
+        if (meta.RecursionLevel >= ToolMeta.MaxRecursionLevel)
+        {
+            throw new InvalidOperationException($"Tool schema generation exceeded max recursion depth of {ToolMeta.MaxRecursionLevel}. This may be caused by a self-referencing type.");
+        }
+        
+        meta.RecursionLevel++;
+
+        try
+        {
+            return InnerParam.Compile(sourceFn, meta);
+        }
+        finally
+        {
+            meta.RecursionLevel--;
+        }
     }
 }
 
@@ -742,12 +786,26 @@ public class ToolParamEnum : ToolParamTypeBase
 
     public override object Compile(ToolDefinition sourceFn, ToolMeta meta)
     {
-        return new
+        if (meta.RecursionLevel >= ToolMeta.MaxRecursionLevel)
         {
-            type = Type, 
-            description = Description,
-            @enum = Values
-        };
+            throw new InvalidOperationException($"Tool schema generation exceeded max recursion depth of {ToolMeta.MaxRecursionLevel}. This may be caused by a self-referencing type.");
+        }
+        
+        meta.RecursionLevel++;
+
+        try
+        {
+            return new
+            {
+                type = Type, 
+                description = Description,
+                @enum = Values
+            };
+        }
+        finally
+        {
+            meta.RecursionLevel--;
+        }
     }
 }
 
@@ -796,16 +854,30 @@ public class ToolParamListEnum : ToolParamTypeBase
     
     public override object Compile(ToolDefinition sourceFn, ToolMeta meta)
     {
-        return new
+        if (meta.RecursionLevel >= ToolMeta.MaxRecursionLevel)
         {
-            type = Type, 
-            description = Description, 
-            items = new
+            throw new InvalidOperationException($"Tool schema generation exceeded max recursion depth of {ToolMeta.MaxRecursionLevel}. This may be caused by a self-referencing type.");
+        }
+        
+        meta.RecursionLevel++;
+
+        try
+        {
+            return new
             {
-                type = "string",
-                @enum = Values
-            }
-        };
+                type = Type, 
+                description = Description, 
+                items = new
+                {
+                    type = "string",
+                    @enum = Values
+                }
+            };
+        }
+        finally
+        {
+            meta.RecursionLevel--;
+        }
     }
 }
 
@@ -822,24 +894,38 @@ public class ToolParamListAtomic : ToolParamTypeBase
     
     public override object Compile(ToolDefinition sourceFn, ToolMeta meta)
     {
-        string itemType = Items switch
+        if (meta.RecursionLevel >= ToolMeta.MaxRecursionLevel)
         {
-            ToolParamAtomicTypes.Int => "integer",
-            ToolParamAtomicTypes.Float => "number",
-            ToolParamAtomicTypes.Bool => "boolean",
-            ToolParamAtomicTypes.String => "string",
-            _ => throw new Exception($"Please implement the type of the atomic {Items} in ToolParamListAtomic.Compile")
-        };
+            throw new InvalidOperationException($"Tool schema generation exceeded max recursion depth of {ToolMeta.MaxRecursionLevel}. This may be caused by a self-referencing type.");
+        }
         
-        return new
+        meta.RecursionLevel++;
+
+        try
         {
-            type = Type,
-            description = Description,
-            items = new
+            string itemType = Items switch
             {
-                type = itemType
-            }
-        };
+                ToolParamAtomicTypes.Int => "integer",
+                ToolParamAtomicTypes.Float => "number",
+                ToolParamAtomicTypes.Bool => "boolean",
+                ToolParamAtomicTypes.String => "string",
+                _ => throw new Exception($"Please implement the type of the atomic {Items} in ToolParamListAtomic.Compile")
+            };
+        
+            return new
+            {
+                type = Type,
+                description = Description,
+                items = new
+                {
+                    type = itemType
+                }
+            };
+        }
+        finally
+        {
+            meta.RecursionLevel--;
+        }
     }
 }
 
@@ -856,12 +942,26 @@ public class ToolParamList : ToolParamTypeBase
     
     public override object Compile(ToolDefinition sourceFn, ToolMeta meta)
     {
-        return new
+        if (meta.RecursionLevel >= ToolMeta.MaxRecursionLevel)
         {
-            type = Type,
-            description = Description,
-            items = Items.Compile(sourceFn, meta)
-        };
+            throw new InvalidOperationException($"Tool schema generation exceeded max recursion depth of {ToolMeta.MaxRecursionLevel}. This may be caused by a self-referencing type.");
+        }
+        
+        meta.RecursionLevel++;
+
+        try
+        {
+            return new
+            {
+                type = Type,
+                description = Description,
+                items = Items.Compile(sourceFn, meta)
+            };
+        }
+        finally
+        {
+            meta.RecursionLevel--;
+        }
     }
 }
 
@@ -884,51 +984,64 @@ public class ToolParamObject : ToolParamTypeBase
     
     public override object Compile(ToolDefinition sourceFn, ToolMeta meta)
     {
-        JsonSchemaSerializedObject so = new JsonSchemaSerializedObject
+        if (meta.RecursionLevel >= ToolMeta.MaxRecursionLevel)
         {
-            Type = "object",
-            Description = Description,
-            Properties = new Dictionary<string, object>()
-        };
-
-        foreach (ToolParam prop in Properties)
-        {
-            if (prop.Type is ToolParamArguments)
-            {
-                continue;
-            }
-            
-            if (prop.Type.Required || sourceFn.Strict) // in strict mode all props all required
-            {
-                so.Required ??= [];
-                so.Required.Add(prop.Name);
-            }
-            
-            so.Properties.AddOrUpdate(prop.Name, prop.Type.Compile(sourceFn, meta));
+            throw new InvalidOperationException($"Tool schema generation exceeded max recursion depth of {ToolMeta.MaxRecursionLevel}. This may be caused by a self-referencing type.");
         }
+
+        meta.RecursionLevel++;
+
+        try
+        {
+            JsonSchemaSerializedObject so = new JsonSchemaSerializedObject
+            {
+                Type = "object",
+                Description = Description,
+                Properties = new Dictionary<string, object>()
+            };
+
+            foreach (ToolParam prop in Properties)
+            {
+                if (prop.Type is ToolParamArguments)
+                {
+                    continue;
+                }
+            
+                if (prop.Type.Required || sourceFn.Strict) // in strict mode all props all required
+                {
+                    so.Required ??= [];
+                    so.Required.Add(prop.Name);
+                }
+            
+                so.Properties.AddOrUpdate(prop.Name, prop.Type.Compile(sourceFn, meta));
+            }
         
-        if (ExtraProperties is not null)
-        {
-            foreach (KeyValuePair<string, object> extra in ExtraProperties)
+            if (ExtraProperties is not null)
             {
-                so.Properties.AddOrUpdate(extra.Key, extra.Value);
-                so.Required?.Add(extra.Key);
+                foreach (KeyValuePair<string, object> extra in ExtraProperties)
+                {
+                    so.Properties.AddOrUpdate(extra.Key, extra.Value);
+                    so.Required?.Add(extra.Key);
+                }
+
             }
 
-        }
-
-        if (sourceFn.Strict && !AllowAdditionalProperties)
-        {
-            if (meta.Provider.Provider is LLmProviders.Google)
+            if (sourceFn.Strict && !AllowAdditionalProperties)
             {
-                goto ret;
-            }
+                if (meta.Provider.Provider is LLmProviders.Google)
+                {
+                    return so;
+                }
             
-            so.AdditionalProperties = false;
-        }
+                so.AdditionalProperties = false;
+            }
 
-        ret:
-        return so;
+            return so;
+        }
+        finally
+        {
+            meta.RecursionLevel--;
+        }
     }
 }
 
@@ -959,19 +1072,33 @@ public class ToolParamDictionary : ToolParamTypeBase
 
     public override object Compile(ToolDefinition sourceFn, ToolMeta meta)
     {
-        ToolParamString keyParam = new ToolParamString("The key of the dictionary item.");
-
-        ToolParamObject itemsSchema = new ToolParamObject("A key-value pair for the dictionary.", [
-            new ToolParam("key", keyParam) { Type = { Required = true } },
-            new ToolParam("value", ValueType) { Type = { Required = true } }
-        ]);
-        
-        ToolParamList arraySchema = new ToolParamList(Description, itemsSchema)
+        if (meta.RecursionLevel >= ToolMeta.MaxRecursionLevel)
         {
-            DataType = DataType
-        };
+            throw new InvalidOperationException($"Tool schema generation exceeded max recursion depth of {ToolMeta.MaxRecursionLevel}. This may be caused by a self-referencing type.");
+        }
         
-        return arraySchema.Compile(sourceFn, meta);
+        meta.RecursionLevel++;
+
+        try
+        {
+            ToolParamString keyParam = new ToolParamString("The key of the dictionary item.");
+
+            ToolParamObject itemsSchema = new ToolParamObject("A key-value pair for the dictionary.", [
+                new ToolParam("key", keyParam) { Type = { Required = true } },
+                new ToolParam("value", ValueType) { Type = { Required = true } }
+            ]);
+        
+            ToolParamList arraySchema = new ToolParamList(Description, itemsSchema)
+            {
+                DataType = DataType
+            };
+        
+            return arraySchema.Compile(sourceFn, meta);
+        }
+        finally
+        {
+            meta.RecursionLevel--;
+        }
     }
 }
 
@@ -1074,22 +1201,36 @@ public class ToolParamTuple : ToolParamTypeBase
 
     public override object Compile(ToolDefinition sourceFn, ToolMeta meta)
     {
-        Dictionary<string, object> properties = new Dictionary<string, object>();
-        List<string> required = [];
-
-        for (int i = 0; i < Items.Count; i++)
+        if (meta.RecursionLevel >= ToolMeta.MaxRecursionLevel)
         {
-            string key = Names?.Count == Items.Count ? Names[i] : $"item_{i + 1}";
-            properties.Add(key, Items[i].Compile(sourceFn, meta));
-            required.Add(key);
+            throw new InvalidOperationException($"Tool schema generation exceeded max recursion depth of {ToolMeta.MaxRecursionLevel}. This may be caused by a self-referencing type.");
         }
-        
-        return new
+
+        meta.RecursionLevel++;
+
+        try
         {
-            type = Type,
-            description = Description,
-            properties,
-            required
-        };
+            Dictionary<string, object> properties = new Dictionary<string, object>();
+            List<string> required = [];
+
+            for (int i = 0; i < Items.Count; i++)
+            {
+                string key = Names?.Count == Items.Count ? Names[i] : $"item_{i + 1}";
+                properties.Add(key, Items[i].Compile(sourceFn, meta));
+                required.Add(key);
+            }
+        
+            return new
+            {
+                type = Type,
+                description = Description,
+                properties,
+                required
+            };
+        }
+        finally
+        {
+            meta.RecursionLevel--;
+        }
     }
 }

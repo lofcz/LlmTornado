@@ -133,16 +133,21 @@ public class ResponseTextFormatConfigurationJsonSchema : ResponseTextFormatConfi
     /// <summary>
     /// Resolves the call by asynchronously invoking the attached delegate with given JSON data.
     /// </summary>
-    public async ValueTask<ResponseTextFormatConfigurationJsonSchema> Invoke(string data)
+    public async ValueTask<MethodInvocationResult> Invoke(string data)
     {
         if (Delegate is null)
         {
-            return this;
+            return new MethodInvocationResult(new Exception("Delegate is null, nothing to invoke"));
         }
 
-        object? invocationResult = await Clr.Invoke(Delegate, DelegateMetadata, data).ConfigureAwait(false);
-        Result = new FunctionResult(Name, invocationResult as string ?? invocationResult.ToJson(), FunctionResultSetContentModes.Passthrough);
-        return this;
+        MethodInvocationResult invocationResult = await Clr.Invoke(Delegate, DelegateMetadata, data).ConfigureAwait(false);
+
+        if (invocationResult.InvocationException is null)
+        {
+            Result = new FunctionResult(Name, invocationResult.Result as string ?? invocationResult.ToJson(), FunctionResultSetContentModes.Passthrough);    
+        }
+        
+        return invocationResult;
     }
 }
 

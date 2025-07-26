@@ -218,7 +218,7 @@ public class ChatEndpoint : EndpointBase
                 toolCall.FunctionCall.Tool = match;
                     
                 tasks.Add(Task.Run(async () =>
-                {
+                { 
                     await toolCall.FunctionCall.Invoke(toolCall.FunctionCall.Arguments).ConfigureAwait(false);
                 }));
             }

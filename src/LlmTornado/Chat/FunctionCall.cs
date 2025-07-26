@@ -66,6 +66,12 @@ public class FunctionCall
     public FunctionResult? Result { get; set; }
     
     /// <summary>
+    ///     If a delegate is attached to the <see cref="Tool"/>, this property holds the last result of the delegate invocation.
+    /// </summary>
+    [JsonIgnore]
+    public MethodInvocationResult? LastInvocationResult { get; set; }
+    
+    /// <summary>
     ///     The full tool call object.
     /// </summary>
     [JsonIgnore]
@@ -140,16 +146,22 @@ public class FunctionCall
     /// <summary>
     /// Resolves the call by asynchronously invoking the attached delegate with given JSON data.
     /// </summary>
-    public async ValueTask<FunctionCall> Invoke(string data)
+    public async ValueTask<MethodInvocationResult> Invoke(string data)
     {
         if (Tool is null)
         {
-            return this;
+            return new MethodInvocationResult(new Exception("Tool is null, nothing to invoke"));
         }
 
-        object? invocationResult = await Clr.Invoke(Tool.Delegate, Tool.DelegateMetadata, data).ConfigureAwait(false);
-        Result = new FunctionResult(this, invocationResult as string ?? invocationResult.ToJson(), FunctionResultSetContentModes.Passthrough);
-        return this;
+        MethodInvocationResult invocationResult = await Clr.Invoke(Tool.Delegate, Tool.DelegateMetadata, data).ConfigureAwait(false);
+
+        if (invocationResult.InvocationException is null)
+        {
+            Result = new FunctionResult(this, invocationResult.Result as string ?? invocationResult.ToJson(), FunctionResultSetContentModes.Passthrough);    
+        }
+
+        LastInvocationResult = invocationResult;
+        return invocationResult;
     }
 
     /// <summary>

@@ -70,7 +70,7 @@ public class ChatRequestResponseFormats
     /// <summary>
     /// Invokes the <see cref="Delegate"/> with the given JSON data.
     /// </summary>
-    public async ValueTask<object?> Invoke(string data)
+    public async ValueTask<MethodInvocationResult> Invoke(string data)
     {
         return await Clr.Invoke(Schema?.Delegate, Schema?.DelegateMetadata, data);
     }

@@ -802,7 +802,8 @@ public class Conversation
                     Arguments = x.FunctionCall.Arguments,
                     ToolCall = x,
                     Tool = RequestParameters.Tools?.FirstOrDefault(y => string.Equals(y.Function?.Name, x.FunctionCall.Name)),
-                    Result = x.FunctionCall.Result
+                    Result = x.FunctionCall.Result,
+                    LastInvocationResult = x.FunctionCall.LastInvocationResult
                 }).ToList();
 
                 if (calls?.Count > 0)
@@ -1374,7 +1375,8 @@ public class Conversation
                                             Arguments = x.FunctionCall.Arguments,
                                             ToolCall = x,
                                             Tool = RequestParameters.Tools?.FirstOrDefault(y => string.Equals(y.Function?.Name, x.FunctionCall.Name)),
-                                            Result = x.FunctionCall.Result
+                                            Result = x.FunctionCall.Result,
+                                            LastInvocationResult = x.FunctionCall.LastInvocationResult
                                         }).ToList();
 
                                         if (calls?.Count > 0)
@@ -1577,7 +1579,8 @@ public class Conversation
                                 Arguments = x.FunctionCall.Arguments,
                                 ToolCall = x,
                                 Tool = RequestParameters.Tools?.FirstOrDefault(y => string.Equals(y.Function?.Name, x.FunctionCall.Name)),
-                                Result = x.FunctionCall.Result
+                                Result = x.FunctionCall.Result,
+                                LastInvocationResult = x.FunctionCall.LastInvocationResult
                             }).ToList();
                             
                             if (eventsHandler.FunctionCallHandler is not null && calls?.Count > 0)

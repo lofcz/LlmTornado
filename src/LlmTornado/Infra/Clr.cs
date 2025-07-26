@@ -14,6 +14,44 @@ using Newtonsoft.Json;
 
 namespace LlmTornado.Infra;
 
+/// <summary>
+/// Result of invoking a method.
+/// </summary>
+public class MethodInvocationResult
+{
+    /// <summary>
+    /// Result returned by the method, if any.
+    /// </summary>
+    public object? Result { get; set; }
+    
+    /// <summary>
+    /// Captured exception during invocation, null if invocation is successful.
+    /// </summary>
+    public Exception? InvocationException { get; set; }
+    
+    /// <summary>
+    /// Whether the invocation ran without errors.
+    /// </summary>
+    public bool InvocationSuccessful { get; set; }
+
+    /// <summary>
+    /// Creates an invocation result from an exception.
+    /// </summary>
+    public MethodInvocationResult(Exception exception)
+    {
+        InvocationException = exception;
+    }
+
+    /// <summary>
+    /// Creates an invocation result from a result.
+    /// </summary>
+    public MethodInvocationResult(object? result)
+    {
+        Result = result;
+        InvocationSuccessful = true;
+    }
+}
+
 internal static class Clr
 {
     private static object? DeserializePrimitive(JToken token, Type dataType)
@@ -211,11 +249,11 @@ internal static class Clr
         return finalCollection;
     }
     
-    public static async ValueTask<object?> Invoke(Delegate? function, DelegateMetadata? metadata, string? data)
+    public static async ValueTask<MethodInvocationResult> Invoke(Delegate? function, DelegateMetadata? metadata, string? data)
     {
         if (function is null || metadata?.Tool?.Params is null)
         {
-            return null;
+            return new MethodInvocationResult(new Exception("Function is null or no params are defined in the metadata"));
         }
 
         object? result = null;
@@ -277,14 +315,13 @@ internal static class Clr
                     result = invocationResult;
                 }
             }
+
+            return new MethodInvocationResult(result);
         }
         catch (Exception ex)
         {
-            // todo: handle
-            throw; 
+            return new MethodInvocationResult(ex);
         }
-
-        return result;
     }
 
     private static object? Deserialize(JToken token, IToolParamType paramType)
