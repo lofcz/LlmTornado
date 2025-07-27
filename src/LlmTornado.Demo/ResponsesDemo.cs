@@ -706,11 +706,9 @@ public class ResponsesDemo : DemoBase
         int z = 0;
     }
 
-    [TornadoTest, Flaky("long running")]
+    [TornadoTest]
     public static async Task ResponseLocalShellTool()
     {
-        EndpointBase.SetRequestsTimeout(20000);
-
         ResponseResult result = await Program.Connect().Responses.CreateResponse(new ResponseRequest
         {
             Model = ChatModel.OpenAi.Codex.MiniLatest,
@@ -723,6 +721,7 @@ public class ResponsesDemo : DemoBase
             ]
         });
 
+        Assert.That(result.Output.OfType<ResponseLocalShellToolCallItem>().Count(), Is.GreaterThan(0));
         int z = 0;
     }
 
