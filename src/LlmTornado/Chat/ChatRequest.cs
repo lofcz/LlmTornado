@@ -671,7 +671,7 @@ public class ChatRequest : IModelRequest
 		TornadoRequestContent serialized = SerializeMap.TryGetValue(provider.Provider, out Func<ChatRequest, IEndpointProvider, CapabilityEndpoints, JsonSerializerSettings?, string>? serializerFn) ? new TornadoRequestContent(serializerFn.Invoke(outboundCopy, provider, capabilityEndpoint, pretty ? new JsonSerializerSettings
 		{
 			Formatting = Formatting.Indented
-		} : null), Model, UrlOverride, provider, capabilityEndpoint) : new TornadoRequestContent(string.Empty, Model, UrlOverride, provider, CapabilityEndpoints.Chat);
+		} : null), outboundCopy.Model, outboundCopy.UrlOverride, provider, capabilityEndpoint) : new TornadoRequestContent(string.Empty, outboundCopy.Model, outboundCopy.UrlOverride, provider, CapabilityEndpoints.Chat);
 		
 		return serialized;
 	}
