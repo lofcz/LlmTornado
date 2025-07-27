@@ -706,6 +706,26 @@ public class ResponsesDemo : DemoBase
         int z = 0;
     }
 
+    [TornadoTest, Flaky("long running")]
+    public static async Task ResponseLocalShellTool()
+    {
+        EndpointBase.SetRequestsTimeout(20000);
+
+        ResponseResult result = await Program.Connect().Responses.CreateResponse(new ResponseRequest
+        {
+            Model = ChatModel.OpenAi.Codex.MiniLatest,
+            Background = false,
+            InputItems = [
+                new ResponseInputMessage(ChatMessageRoles.User, "List files in the current directory?")
+            ],
+            Tools = [
+                new ResponseLocalShellTool()
+            ]
+        });
+
+        int z = 0;
+    }
+
     [TornadoTest, Flaky("only for dev")]
     public static async Task Deserialize()
     {

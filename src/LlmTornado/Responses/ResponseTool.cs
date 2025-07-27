@@ -821,6 +821,14 @@ internal class ResponseCodeInterpreterContainerConverter : JsonConverter<Respons
     }
 }
 
+
+/// <summary>
+/// Represents a computer use tool.
+/// </summary>
+public class ResponseLocalShellTool : ResponseTool
+{
+    public override string Type => "local_shell";
+}
 /// <summary>
 /// Custom converter for polymorphic deserialization of response tools.
 /// </summary>
@@ -912,6 +920,8 @@ internal class ResponseToolConverter : JsonConverter
                     DisplayWidth = (int?)jo["display_width"],
                     Environment = jo["environment"]?.ToObject<ResponseComputerEnvironment>(serializer) ?? ResponseComputerEnvironment.Browser
                 };
+            case "local_shell":
+                return new ResponseLocalShellTool();
             default:
                 throw new JsonSerializationException($"Unknown tool type: {type}");
         }
@@ -1088,6 +1098,10 @@ internal class ResponseToolConverter : JsonConverter
                     writer.WritePropertyName("environment");
                     serializer.Serialize(writer, comp.Environment);
                 }
+                break;
+            case ResponseLocalShellTool localShell:
+                writer.WritePropertyName("type");
+                writer.WriteValue(localShell.Type);
                 break;
         }
         writer.WriteEndObject();
