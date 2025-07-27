@@ -6,11 +6,10 @@ public static class Helpers
 {
     public static async Task<bool> ProgramExists(string name)
     {
-        bool exists = false;
+        bool exists;
         
         try 
         {
-            // Zkusíme zjistit, zda je chafa dostupný v cestě
             using Process checkProcess = new Process();
             checkProcess.StartInfo = new ProcessStartInfo
             {
@@ -36,18 +35,24 @@ public static class Helpers
     }
 }
 
-[AttributeUsage(AttributeTargets.Method)]
+[AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
 public class TornadoTestAttribute : Attribute
 {
     public string? FriendlyName { get; set; }
-    
-    public TornadoTestAttribute()
-    {
 
-    }
-    
-    public TornadoTestAttribute(string friendlyName)
+    public TornadoTestAttribute(string? friendlyName = null)
     {
         FriendlyName = friendlyName;
+    }
+}
+
+[AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
+public class TornadoTestCaseAttribute : Attribute
+{
+    public object[] Arguments { get; }
+    
+    public TornadoTestCaseAttribute(params object[] arguments)
+    {
+        Arguments = arguments;
     }
 }

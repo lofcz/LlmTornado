@@ -33,16 +33,24 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
     public Action<HttpRequestMessage, object?, bool>? RequestResolver { get; set; }
     public Action<JObject, RequestSerializerContext>? RequestSerializer { get; set; }
     
-    public OpenAiEndpointProvider() : base()
+    public OpenAiEndpointProvider()
     {
-        Provider = LLmProviders.OpenAi;   
+        Provider = LLmProviders.OpenAi;
         StoreApiAuth();
     }
     
-    public OpenAiEndpointProvider(LLmProviders provider) : base()
+    public OpenAiEndpointProvider(LLmProviders provider)
     {
         Provider = provider;
         StoreApiAuth();
+    }
+    
+    public override JsonSchemaCapabilities GetJsonSchemaCapabilities()
+    {
+        return new JsonSchemaCapabilities
+        {
+            Const = true
+        };
     }
 
     enum ChatStreamParsingStates

@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using LlmTornado.Code;
 using LlmTornado.Common;
+using LlmTornado.Infra;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -65,6 +66,12 @@ public class FunctionCall
     public FunctionResult? Result { get; set; }
     
     /// <summary>
+    ///     If a delegate is attached to the <see cref="Tool"/>, this property holds the last result of the delegate invocation.
+    /// </summary>
+    [JsonIgnore]
+    public MethodInvocationResult? LastInvocationResult { get; set; }
+    
+    /// <summary>
     ///     The full tool call object.
     /// </summary>
     [JsonIgnore]
@@ -115,71 +122,7 @@ public class FunctionCall
     /// <param name="exception">If the conversion fails, the exception is returned here.</param>
     public bool Get<T>(string param, out T? data, out Exception? exception)
     {
-        exception = null;
-        Dictionary<string, object?>? source = GetArguments();
-        
-        if (!source.TryGetValue(param, out object? rawData))
-        {
-            data = default;
-            return false; 
-        }
-
-        if (rawData is T obj)
-        {
-            data = obj;
-            return true;
-        }
-
-        switch (rawData)
-        {
-            case JArray jArr:
-            {
-                data = jArr.ToObject<T?>();
-                return true;
-            }
-            case JObject jObj:
-            {
-                data = jObj.ToObject<T?>();
-                return true;
-            }
-            case string str:
-            {
-                if (typeof(T).IsClass || (typeof(T).IsValueType && !typeof(T).IsPrimitive && !typeof(T).IsEnum))
-                {
-                    if (str.SanitizeJsonTrailingComma().CaptureJsonDecode(out T? decoded, out Exception? parseException))
-                    {
-                        data = decoded;
-                        return true;
-                    }
-                }
-                
-                try
-                {
-                    data = (T?)rawData.ChangeType(typeof(T));
-                    return true;
-                }
-                catch (Exception e)
-                {
-                    data = default;
-                    exception = e;
-                    return false;
-                }
-            }
-            default:
-            {
-                try
-                {
-                    data = (T?)rawData.ChangeType(typeof(T));
-                    return true;
-                }
-                catch (Exception e)
-                {
-                    data = default;
-                    exception = e;
-                    return false;
-                }
-            }
-        }
+        return Clr.Get(param, GetArguments(), out data, out exception);
     }
     
     /// <summary>
@@ -201,12 +144,24 @@ public class FunctionCall
     }
     
     /// <summary>
-    /// Resolves the call by asynchronously invoking the attached delegate.
+    /// Resolves the call by asynchronously invoking the attached delegate with given JSON data.
     /// </summary>
-    public async ValueTask<FunctionCall> Invoke()
+    public async ValueTask<MethodInvocationResult> Invoke(string data)
     {
-        
-        return this;
+        if (Tool is null)
+        {
+            return new MethodInvocationResult(new Exception("Tool is null, nothing to invoke"));
+        }
+
+        MethodInvocationResult invocationResult = await Clr.Invoke(Tool.Delegate, Tool.DelegateMetadata, data).ConfigureAwait(false);
+
+        if (invocationResult.InvocationException is null)
+        {
+            Result = new FunctionResult(this, invocationResult.Result as string ?? invocationResult.ToJson(), FunctionResultSetContentModes.Passthrough);    
+        }
+
+        LastInvocationResult = invocationResult;
+        return invocationResult;
     }
 
     /// <summary>

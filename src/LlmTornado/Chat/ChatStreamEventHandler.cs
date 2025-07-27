@@ -59,6 +59,11 @@ public class ChatStreamEventHandler
     public Func<List<FunctionCall>, ValueTask>? FunctionCallHandler { get; set; }
     
     /// <summary>
+    ///     If this handler isn't null, results from tool calls with delegates attached are automatically added to the conversation.
+    /// </summary>
+    public ToolCallsHandler? ToolCallsHandler { get; set; }
+    
+    /// <summary>
     ///     Called after <see cref="FunctionCallHandler"/> and internal upkeep. Use this handler to implement tool request -> tool execution -> model response pattern.
     /// </summary>
     public Func<ResolvedToolsCall, ChatStreamEventHandler?, ValueTask>? AfterFunctionCallsResolvedHandler { get; set; } 

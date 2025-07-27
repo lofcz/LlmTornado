@@ -221,6 +221,11 @@ public class ResponsesDemo : DemoBase
         
         await chat.StreamResponseRich(new ChatStreamEventHandler
         {
+            OnResponseEvent = (evt) =>
+            {
+                // "evt" is IResponseEvent
+                return ValueTask.CompletedTask;
+            },
             MessageTokenHandler = (delta) =>
             {
                 Console.Write(delta);

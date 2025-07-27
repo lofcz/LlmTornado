@@ -56,6 +56,16 @@ public class Program
 
         return tornadoApi;
     }
+
+    public class TestRun
+    {
+        public MethodInfo Method { get; set; }
+        public string? FriendlyName { get; set; }
+        public Type Type { get; set; }
+        public FlakyAttribute? Flaky { get; set; }
+        public object[]? Arguments { get; set; }
+        public string Name { get; set; }
+    }
     
     public static TornadoApi Connect(bool httpStrict = true)
     {
@@ -91,7 +101,7 @@ public class Program
         return true;
     }
 
-    public static readonly Dictionary<string, Tuple<MethodInfo, string?, Type, FlakyAttribute?>> DemoDict = [];
+    public static readonly Dictionary<string, TestRun> DemoDict = [];
     public static readonly List<Tuple<Type, Type>> DemoEnumTypes = [];
     
     static Program()
@@ -123,7 +133,40 @@ public class Program
                     if (testAttrs.Length > 0 && testAttrs[0] is TornadoTestAttribute tta)
                     {
                         object[] flaky = method.GetCustomAttributes(typeof(FlakyAttribute), false);
-                        DemoDict[$"{type.FullName}.{method.Name}"] = new Tuple<MethodInfo, string?, Type, FlakyAttribute?>(method, tta.FriendlyName, type, flaky.Length is 0 ? null : flaky[0] as FlakyAttribute);   
+                        object[] testCaseAttrs = method.GetCustomAttributes(typeof(TornadoTestCaseAttribute), false);
+
+                        if (testCaseAttrs.Length > 0)
+                        {
+                            foreach (object testCaseAttr in testCaseAttrs)
+                            {
+                                if (testCaseAttr is TornadoTestCaseAttribute tca)
+                                {
+                                    string testName = $"{type.FullName}.{method.Name}({string.Join(", ", tca.Arguments)})";
+                                    DemoDict[testName] = new TestRun
+                                    {
+                                        Method = method,
+                                        FriendlyName = tta.FriendlyName,
+                                        Type = type,
+                                        Flaky = flaky.Length is 0 ? null : flaky[0] as FlakyAttribute,
+                                        Arguments = tca.Arguments,
+                                        Name = testName
+                                    };
+                                }
+                            }
+                        }
+                        else
+                        {
+                            string testName = $"{type.FullName}.{method.Name}";
+                            DemoDict[testName] = new TestRun
+                            {
+                                Method = method,
+                                FriendlyName = tta.FriendlyName,
+                                Type = type,
+                                Flaky = flaky.Length is 0 ? null : flaky[0] as FlakyAttribute,
+                                Arguments = null,
+                                Name = testName
+                            };
+                        }
                     }
                 }   
             }
@@ -137,14 +180,14 @@ public class Program
 
         int i = 1;
         
-        foreach (KeyValuePair<string, Tuple<MethodInfo, string?, Type, FlakyAttribute?>> demo in DemoDict.OrderBy(x => x.Key, StringComparer.InvariantCultureIgnoreCase))
+        foreach (KeyValuePair<string, TestRun> demo in DemoDict.OrderBy(x => x.Key, StringComparer.InvariantCultureIgnoreCase))
         {
             Console.ForegroundColor = ConsoleColor.Yellow;
             Console.Write($"({i}");
 
-            if (demo.Value.Item2?.Length > 0)
+            if (demo.Value.FriendlyName?.Length > 0)
             {
-                Console.Write($", {demo.Value.Item2}");
+                Console.Write($", {demo.Value.FriendlyName}");
             }
             
             Console.Write(")");
@@ -168,8 +211,8 @@ public class Program
         // 1. try to interpret as numeric input
         if (int.TryParse(toPlay, out int demoN) && demoN > 0 && demoN <= DemoDict.Count)
         {
-            KeyValuePair<string, Tuple<MethodInfo, string?, Type, FlakyAttribute?>> selected = DemoDict.OrderBy(x => x.Key, StringComparer.InvariantCultureIgnoreCase).Skip(demoN - 1).FirstOrDefault();
-            await (Task)selected.Value.Item1.Invoke(null, null);
+            KeyValuePair<string, TestRun> selected = DemoDict.OrderBy(x => x.Key, StringComparer.InvariantCultureIgnoreCase).Skip(demoN - 1).FirstOrDefault();
+            await (Task)selected.Value.Method.Invoke(null, selected.Value.Arguments);
 
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("Demo finished");
@@ -179,16 +222,16 @@ public class Program
         }
 
         // 2. try looking up by friendly name (grossly ineffective..)
-        foreach (KeyValuePair<string, Tuple<MethodInfo, string?, Type, FlakyAttribute?>> x in DemoDict)
+        foreach (KeyValuePair<string, TestRun> x in DemoDict)
         {
-            if (x.Value.Item2 is null)
+            if (x.Value.FriendlyName is null)
             {
                 continue;
             }
 
-            if (string.Equals(x.Value.Item2.Trim(), toPlay?.Trim()))
+            if (string.Equals(x.Value.FriendlyName.Trim(), toPlay?.Trim()))
             {
-                await (Task)x.Value.Item1.Invoke(null, null);
+                await (Task)x.Value.Method.Invoke(null, x.Value.Arguments);
 
                 Console.ForegroundColor = ConsoleColor.Green;
                 Console.WriteLine("Demo finished");
@@ -199,11 +242,11 @@ public class Program
         }
         
         // 3. interpret the input as method name
-        foreach (KeyValuePair<string, Tuple<MethodInfo, string?, Type, FlakyAttribute?>> x in DemoDict)
+        foreach (KeyValuePair<string, TestRun> x in DemoDict)
         {
-            if (x.Value.Item1.Name == toPlay?.Trim())
+            if (x.Value.Method.Name == toPlay?.Trim())
             {
-                await (Task)x.Value.Item1.Invoke(null, null);
+                await (Task)x.Value.Method.Invoke(null, x.Value.Arguments);
 
                 Console.ForegroundColor = ConsoleColor.Green;
                 Console.WriteLine("Demo finished");

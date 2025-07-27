@@ -12,7 +12,7 @@
         <PackageTags>OpenAI;Anthropic;Google;DeepSeek;Mistral;Cohere;Azure;Perplexity;xAi;Voyage;Gateway;API;SDK</PackageTags>
         <Title>LlmTornado</Title>
         <PackageId>LlmTornado</PackageId>
-        <Version>3.7.12</Version>
+        <Version>3.7.15</Version>
         <AssemblyVersion>3.0.5</AssemblyVersion>
         <FileVersion>3.0.5</FileVersion>
         <GenerateDocumentationFile>True</GenerateDocumentationFile>
@@ -70,7 +70,7 @@
         </PackageReference>
         <PackageReference Include="System.Memory" Version="[4.6.3, )" />
         <PackageReference Include="Microsoft.CSharp" Version="[4.7.0, )" />
-        <PackageReference Include="System.Text.Json" Version="[8.0.5, )" />
+        <PackageReference Include="System.Text.Json" Version="[8.0.6, )" />
     </ItemGroup>
     <ItemGroup Condition="!$(TargetFramework.StartsWith('net4')) AND !$(TargetFramework.StartsWith('netstandard'))">
         <PackageReference Include="Newtonsoft.Json" Version="[13.0.3, )"/>

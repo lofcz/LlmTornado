@@ -8,7 +8,9 @@ using LlmTornado.Common;
 using LlmTornado.Threads;
 using System.Collections.Frozen;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json.Serialization;
+using LlmTornado.Chat;
 using LlmTornado.Responses.Events;
 using Newtonsoft.Json;
 
@@ -265,7 +267,66 @@ public class ResponsesEndpoint : EndpointBase
     {
         IEndpointProvider provider = Api.GetProvider(request.Model ?? ChatModel.OpenAi.Gpt35.Turbo);
         TornadoRequestContent requestBody = request.Serialize(provider);
-        return await HttpPost<ResponseResult>(provider, Endpoint, url: requestBody.Url, postData: requestBody.Body, model: request.Model, ct: request.CancellationToken).ConfigureAwait(false);
+        HttpCallResult<ResponseResult> result = await HttpPost<ResponseResult>(provider, Endpoint, url: requestBody.Url, postData: requestBody.Body, model: request.Model, ct: request.CancellationToken).ConfigureAwait(false);
+
+        if (result is { Ok: true, Data: not null })
+        {
+            await HandleResponse(request, result.Data).ConfigureAwait(false);
+        }
+
+        return result;
+    }
+
+    internal static async Task<object?> HandleResponse(ResponseRequest request, ResponseResult result)
+    {
+        if (request.Text?.Format is ResponseTextFormatConfigurationJsonSchema jsonSchema)
+        {
+            string? outputText = result.OutputText;
+            
+            if (!outputText.IsNullOrWhiteSpace())
+            {
+                await jsonSchema.Invoke(outputText).ConfigureAwait(false);
+                return jsonSchema.Result;
+            }
+
+            return null;
+        }
+
+        List<ResponseFunctionTool>? toolDefs = request.Tools?.OfType<ResponseFunctionTool>().ToList();
+        
+        if (toolDefs?.Any(x => x.Delegate is not null) ?? false)
+        {
+            List<ResponseFunctionToolCallItem>? toolCalls = result.Output?.OfType<ResponseFunctionToolCallItem>().ToList();
+
+            if (toolCalls?.Count > 0)
+            {
+                List<Task> tasks = [];
+                
+                foreach (ResponseFunctionToolCallItem toolCall in toolCalls)
+                {
+                    toolCall.Result = null;
+                    ResponseFunctionTool? match = toolDefs.FirstOrDefault(x => string.Equals(x.Name, toolCall.Name));
+
+                    if (match?.Delegate is null)
+                    {
+                        continue;
+                    }
+                    
+                    tasks.Add(Task.Run(async () =>
+                    {
+                        await match.Invoke(toolCall.Arguments).ConfigureAwait(false);
+                        toolCall.Result = match.Result;
+                    }));
+                }
+
+                if (tasks.Count > 0)
+                {
+                    await Task.WhenAll(tasks).ConfigureAwait(false);   
+                }   
+            }
+        }
+
+        return null;
     }
 
     /// <summary>

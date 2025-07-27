@@ -18,7 +18,7 @@ internal static class ChatPluginCompiler
     {
         function.Params ??= [];
         
-        ToolParamObject root = new ToolParamObject(function.Params);
+        ToolParamObject root = new ToolParamObject(null, function.Params);
         object obj = root.Compile(function, meta);
         return new ToolFunction(function.Name, function.Description, obj);
     }

@@ -62,6 +62,9 @@ public class ChatResult : ApiResultBase
 	[JsonIgnore]
 	internal ChatResultStreamInternalKinds? StreamInternalKind { get; set; }
 	
+	[JsonIgnore]
+	internal object? InvocationResult { get; set; }
+	
 	/// <summary>
 	///     A convenience method to return the content of the message in the first choice of this response
 	/// </summary>

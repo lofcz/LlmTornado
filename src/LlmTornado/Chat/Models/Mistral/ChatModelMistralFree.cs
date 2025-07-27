@@ -52,12 +52,22 @@ public class ChatModelMistralFree : IVendorModelClassProvider
     /// <summary>
     /// Building upon Mistral Small 3.1 (2503), with added reasoning capabilities, undergoing SFT from Magistral Medium traces and RL on top, it's a small, efficient reasoning model with 24B parameters.
     /// </summary>
-    public static readonly ChatModel ModelMagistralSmall = new ChatModel("magistral-small-2506", LLmProviders.Mistral, 40_000);
+    public static readonly ChatModel ModelMagistralSmall2507 = new ChatModel("magistral-small-2507", LLmProviders.Mistral, 40_000);
     
     /// <summary>
-    /// <inheritdoc cref="ModelMagistralSmall"/>
+    /// <inheritdoc cref="ModelMagistralSmall2507"/>
     /// </summary>
-    public readonly ChatModel MagistralSmall = ModelMagistralSmall;
+    public readonly ChatModel MagistralSmall2507 = ModelMagistralSmall2507;
+    
+    /// <summary>
+    /// Building upon Mistral Small 3.1 (2503), with added reasoning capabilities, undergoing SFT from Magistral Medium traces and RL on top, it's a small, efficient reasoning model with 24B parameters.
+    /// </summary>
+    public static readonly ChatModel ModelMagistralSmall2506 = new ChatModel("magistral-small-2506", LLmProviders.Mistral, 40_000);
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelMagistralSmall2506"/>
+    /// </summary>
+    public readonly ChatModel MagistralSmall2506 = ModelMagistralSmall2506;
     
     /// <summary>
     /// A 24B text model, open source model that excels at using tools to explore codebases, editing multiple files and power software engineering agents.
@@ -108,7 +118,8 @@ public class ChatModelMistralFree : IVendorModelClassProvider
         ModelMistralSmall,
         ModelPixtral,
         ModelDevstralSmall2505,
-        ModelMagistralSmall,
+        ModelMagistralSmall2506,
+        ModelMagistralSmall2507,
         ModelMistralSmall2506,
         ModelDevstralSmall2507,
         ModelVoxtralSmall2507,

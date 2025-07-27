@@ -104,6 +104,7 @@ public class ChatRequest : IModelRequest
 		OnSerialize = basedOn.OnSerialize;
 		ResponseRequestParameters = basedOn.ResponseRequestParameters;
 		UseResponseEndpoint = basedOn.UseResponseEndpoint;
+		ReasoningFormat = basedOn.ReasoningFormat;
 	}
 
 	/// <summary>
@@ -187,11 +188,16 @@ public class ChatRequest : IModelRequest
     public int? NumChoicesPerMessage { get; set; }
 	
 	/// <summary>
-	///     Balance option between response time & cost/latency. Currently supported only by O1, O1 Mini, Grok 3 series, and Sonar Deep Research.
+	///     Balance option between response time and cost/latency. Currently supported only by O1, O1 Mini, Grok 3 series, Sonar Deep Research, and Qwen.
 	/// </summary>
 	[JsonProperty("reasoning_effort")]
-	[JsonConverter(typeof(StringEnumConverter), true)]
 	public ChatReasoningEfforts? ReasoningEffort { get; set; }
+	
+	/// <summary>
+	///     Format of the reasoning. Currently supported only by Grok/Qwen.
+	/// </summary>
+	[JsonProperty("reasoning_format")]
+	public ChatReasoningFormats? ReasoningFormat { get; set; }
 	
 	/// <summary>
 	///		Sets a token limit on reasoning. 0 disables reasoning. Currently supported by Google (natively "thinkingBudget") and Anthropic (natively "budget_tokens").<br/>
@@ -291,7 +297,7 @@ public class ChatRequest : IModelRequest
             };
         }
     }
-
+	
 	/// <summary>
 	///     One or more sequences where the API will stop generating further tokens. The returned text will not contain the
 	///     stop sequence.
@@ -489,7 +495,7 @@ public class ChatRequest : IModelRequest
 						x.Temperature = null;
 					}
 				}
-				
+
 				JsonSerializerSettings settings = (x.MaxTokensSerializer, x.Model) switch
 				{
 					(ChatRequestMaxTokensSerializers.Auto, not null) when ChatModelOpenAi.ReasoningModelsAll.Contains(x.Model) => GetSerializer(MaxTokensRenamerSettings, a),
@@ -497,7 +503,7 @@ public class ChatRequest : IModelRequest
 					_ => GetSerializer(EndpointBase.NullSettings, a)
 				};
 
-				object obj = z is CapabilityEndpoints.Chat ? x : ResponseHelpers.ToResponseRequest(x.ResponseRequestParameters, x);
+				object obj = z is CapabilityEndpoints.Chat ? x : ResponseHelpers.ToResponseRequest(y, x.ResponseRequestParameters, x);
 				return PreparePayload(obj, x, y, z, settings);
 			}
 		},
@@ -582,7 +588,7 @@ public class ChatRequest : IModelRequest
 			return CapabilityEndpoints.Responses;
 		}
 
-		return CapabilityEndpoints.Chat;
+		return req.ResponseRequestParameters is not null ? CapabilityEndpoints.Responses : CapabilityEndpoints.Chat;
 	}
 
 	/// <summary>
@@ -608,7 +614,7 @@ public class ChatRequest : IModelRequest
 		return serialized;
 	}
 
-	private TornadoRequestContent Serialize(IEndpointProvider provider, CapabilityEndpoints capabilityEndpoint, bool pretty)
+	internal void Preserialize(IEndpointProvider provider)
 	{
 		if (OwnerConversation is not null)
 		{
@@ -622,28 +628,7 @@ public class ChatRequest : IModelRequest
 				msg.Request = this;
 			}	
 		}
-
-		ChatStreamOptions? storedOptions = null;
-		bool restoreStreamOptions = false;
 		
-		switch (StreamResolved)
-		{
-			case false when StreamOptions is not null:
-			{
-				storedOptions = ChatStreamOptions.Duplicate(StreamOptions);
-				StreamOptions = null;
-				restoreStreamOptions = true;
-				break;
-			}
-			case true when StreamOptions is null:
-			{
-				storedOptions = null;
-				StreamOptions = ChatStreamOptions.KnownOptionsIncludeUsage;
-				restoreStreamOptions = true;
-				break;
-			}
-		}
-
 		if (Tools is not null)
 		{
 			foreach (Tool tool in Tools)
@@ -656,16 +641,37 @@ public class ChatRequest : IModelRequest
 		{
 			ResponseFormat.Serialize(provider);
 		}
+	}
+
+	private TornadoRequestContent Serialize(IEndpointProvider provider, CapabilityEndpoints capabilityEndpoint, bool pretty)
+	{
+		Preserialize(provider);
+
+		ChatRequest outboundCopy = new ChatRequest(this);
+
+		switch (StreamResolved)
+		{
+			case false when StreamOptions is not null:
+			{
+				outboundCopy.StreamOptions = null;
+				break;
+			}
+			case true when StreamOptions is null:
+			{
+				outboundCopy.StreamOptions = ChatStreamOptions.KnownOptionsIncludeUsage;
+				break;
+			}
+		}
+
+		if (provider.Provider is not LLmProviders.Groq)
+		{
+			outboundCopy.ReasoningFormat = null;
+		}
 		
-		TornadoRequestContent serialized = SerializeMap.TryGetValue(provider.Provider, out Func<ChatRequest, IEndpointProvider, CapabilityEndpoints, JsonSerializerSettings?, string>? serializerFn) ? new TornadoRequestContent(serializerFn.Invoke(this, provider, capabilityEndpoint, pretty ? new JsonSerializerSettings
+		TornadoRequestContent serialized = SerializeMap.TryGetValue(provider.Provider, out Func<ChatRequest, IEndpointProvider, CapabilityEndpoints, JsonSerializerSettings?, string>? serializerFn) ? new TornadoRequestContent(serializerFn.Invoke(outboundCopy, provider, capabilityEndpoint, pretty ? new JsonSerializerSettings
 		{
 			Formatting = Formatting.Indented
-		} : null), Model, UrlOverride, provider, capabilityEndpoint) : new TornadoRequestContent(string.Empty, Model, UrlOverride, provider, CapabilityEndpoints.Chat);
-		
-		if (restoreStreamOptions)
-		{
-			StreamOptions = storedOptions;
-		}
+		} : null), outboundCopy.Model, outboundCopy.UrlOverride, provider, capabilityEndpoint) : new TornadoRequestContent(string.Empty, outboundCopy.Model, outboundCopy.UrlOverride, provider, CapabilityEndpoints.Chat);
 		
 		return serialized;
 	}
@@ -874,8 +880,9 @@ public class ChatRequest : IModelRequest
                         {
 	                        ChatMessageTypes.Text => "text",
 	                        ChatMessageTypes.Image => "image_url",
-	                        ChatMessageTypes.Audio => "input_audio",
-	                        _ => "text"
+	                        ChatMessageTypes.Audio => part.Audio?.Url is not null ? "audio_url" : "input_audio",
+                            ChatMessageTypes.Video => "video_url",
+                            _ => "text"
                         };
                         
 	                    writer.WriteValue(type);   
@@ -901,38 +908,61 @@ public class ChatRequest : IModelRequest
 	                        }
 	                        case ChatMessageTypes.Audio:
 	                        {
-		                        writer.WritePropertyName("input_audio");
-		                        writer.WriteStartObject();
-								
-		                        writer.WritePropertyName("data");
-		                        writer.WriteValue(part.Audio?.Data);
+								if (part.Audio?.Url is not null)
+								{
+                                    writer.WritePropertyName("audio_url");
+                                    writer.WriteStartObject();
 
-		                        writer.WritePropertyName("format");
+                                    writer.WritePropertyName("url");
+                                    writer.WriteValue(part.Audio.Url);
 
-		                        if (part.Audio is not null)
-		                        {
-			                        switch (part.Audio.Format)
-			                        {
-				                        case ChatAudioFormats.Wav:
-				                        {
-					                        writer.WriteValue("wav");
-					                        break;
-				                        }
-				                        case ChatAudioFormats.Mp3:
-				                        {
-					                        writer.WriteValue("mp3");
-					                        break;
-				                        }
-			                        }
-		                        }
-		                        else
-		                        {
-			                        writer.WriteValue(string.Empty);
-		                        }
+                                    writer.WriteEndObject();
+                                    break;
+                                }
 
-		                        writer.WriteEndObject();
-		                        break;
+								writer.WritePropertyName("input_audio");
+								writer.WriteStartObject();
+
+								writer.WritePropertyName("data");
+								writer.WriteValue(part.Audio?.Data);
+
+								writer.WritePropertyName("format");
+
+								if (part.Audio is not null)
+								{
+									switch (part.Audio.Format)
+									{
+										case ChatAudioFormats.Wav:
+										{
+											writer.WriteValue("wav");
+											break;
+										}
+										case ChatAudioFormats.Mp3:
+										{
+											writer.WriteValue("mp3");
+											break;
+										}
+									}
+								}
+								else
+								{
+									writer.WriteValue(string.Empty);
+								}
+
+								writer.WriteEndObject();
+								break;
 	                        }
+                            case ChatMessageTypes.Video:
+                            {
+                                writer.WritePropertyName("video_url");
+                                writer.WriteStartObject();
+
+                                writer.WritePropertyName("url");
+                                writer.WriteValue(part.Video?.Url);
+
+                                writer.WriteEndObject();
+                                break;
+                            }
                         }
 
                         writer.WriteEndObject();

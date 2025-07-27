@@ -105,7 +105,7 @@ public abstract class TornadoTextFixture
         }
     }
 
-    protected static void AssertThat<T>(T actual, TestPredicate<T> constraint, string? message = null)
+    private static void AssertThat<T>(T actual, TestPredicate<T> constraint, string? message = null)
     {
         if (!constraint.Predicate(actual))
         {
