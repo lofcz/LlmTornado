@@ -70,7 +70,7 @@ internal static class ToolFactory
                 continue;
             }
 
-            Handle(del, par, function.Params, 0);
+            Handle(del, par, function.Params, 0, provider);
         }
 
         if (metadata?.Params is not null)
@@ -114,7 +114,7 @@ internal static class ToolFactory
         return new DelegateMetadata(compiled, function);
     }
 
-    private static IToolParamType GetParamFromType(Delegate? del, Type type, string? description, ParameterInfo? par, PropertyInfo? prop, int recursionLevel, Type topLevelType)
+    private static IToolParamType GetParamFromType(Delegate? del, Type type, string? description, ParameterInfo? par, PropertyInfo? prop, int recursionLevel, Type topLevelType, IEndpointProvider provider)
     {
         if (recursionLevel > ToolMeta.MaxRecursionLevel)
         {
@@ -128,7 +128,7 @@ internal static class ToolFactory
 
         if ((anyOf is not null || (baseType.IsInterface || baseType.IsAbstract)) && !baseType.IsArray && !baseType.IsIEnumerable())
         {
-            return HandleAnyOf(del, type, description, anyOf, recursionLevel + 1, topLevelType);
+            return HandleAnyOf(del, type, description, anyOf, recursionLevel + 1, topLevelType, provider);
         }
         
         // atomic types
@@ -170,7 +170,7 @@ internal static class ToolFactory
             {
                 Type elementType = baseType.GetElementType()!;
                 Type flatArrayType = Array.CreateInstance(elementType, 0).GetType();
-                IToolParamType valuesParamType = GetParamFromType(del, flatArrayType, null, par, prop, recursionLevel + 1, topLevelType);
+                IToolParamType valuesParamType = GetParamFromType(del, flatArrayType, null, par, prop, recursionLevel + 1, topLevelType, provider);
 
                 return new ToolParamObject("A multi-dimensional array.",
                 [
@@ -187,20 +187,20 @@ internal static class ToolFactory
                 return new ToolParamListEnum(description, vals) { DataType = type, Serializer = ToolParamSerializer.Array };
             }
 
-            return new ToolParamList(description, GetParamFromType(del, innerType, null, par, prop, recursionLevel + 1, topLevelType)) { DataType = type, Serializer = ToolParamSerializer.Array };
+            return new ToolParamList(description, GetParamFromType(del, innerType, null, par, prop, recursionLevel + 1, topLevelType, provider)) { DataType = type, Serializer = ToolParamSerializer.Array };
         }
         
         if (baseType != typeof(string) && baseType.IsIEnumerable())
         {
             if (!baseType.IsGenericType)
             {
-                return new ToolParamList(description, GetParamFromType(del, typeof(object), null, par, prop, recursionLevel + 1, topLevelType)) { DataType = baseType, Serializer = ToolParamSerializer.NonGenericEnumerable };
+                return new ToolParamList(description, GetParamFromType(del, typeof(object), null, par, prop, recursionLevel + 1, topLevelType, provider)) { DataType = baseType, Serializer = ToolParamSerializer.NonGenericEnumerable };
             }
             
             if (baseType.IsISet() || baseType.IsIList())
             {
                 Type innerType = baseType.GetGenericArguments()[0];
-                IToolParamType innerParam = GetParamFromType(del, innerType, null, par, prop, recursionLevel + 1, topLevelType);
+                IToolParamType innerParam = GetParamFromType(del, innerType, null, par, prop, recursionLevel + 1, topLevelType, provider);
                 innerParam = WrapIfNullable(innerParam, 0, par, prop);
 
                 return new ToolParamList(description, innerParam) { DataType = type, Serializer = baseType.IsISet() ? ToolParamSerializer.Set : ToolParamSerializer.Array };
@@ -213,7 +213,7 @@ internal static class ToolFactory
 
                 if (genericArgs.Length >= 2)
                 {
-                    valueType = GetParamFromType(del, genericArgs[1], null, par, prop, recursionLevel + 1, topLevelType);
+                    valueType = GetParamFromType(del, genericArgs[1], null, par, prop, recursionLevel + 1, topLevelType, provider);
                     valueType = WrapIfNullable(valueType, 1, par, prop);
                 }
                 else
@@ -228,7 +228,7 @@ internal static class ToolFactory
         if (typeof(Task).IsAssignableFrom(baseType))
         {
             Type innerType = baseType.IsGenericType ? baseType.GetGenericArguments()[0] : typeof(object);
-            IToolParamType innerParam = GetParamFromType(del, innerType, description, par, prop, recursionLevel + 1, topLevelType);
+            IToolParamType innerParam = GetParamFromType(del, innerType, description, par, prop, recursionLevel + 1, topLevelType, provider);
             return new ToolParamAwaitable(innerParam) { DataType = type };
         }
         
@@ -240,7 +240,7 @@ internal static class ToolFactory
             
             foreach (Type genericArgument in genericArgs)
             {
-                itemTypes.Add(GetParamFromType(del, genericArgument, null, par, prop, recursionLevel + 1, topLevelType));
+                itemTypes.Add(GetParamFromType(del, genericArgument, null, par, prop, recursionLevel + 1, topLevelType, provider));
             }
 
             ToolParamTuple tupleParam = new ToolParamTuple(description, itemTypes) { DataType = type };
@@ -256,7 +256,7 @@ internal static class ToolFactory
 #endif
         
         ToolParamObject obj = new ToolParamObject(description, []) { DataType = type, Serializer = ToolParamSerializer.Object };
-        UnpackType(del, baseType, obj, par, prop, recursionLevel + 1, topLevelType);
+        UnpackType(del, baseType, obj, par, prop, recursionLevel + 1, topLevelType, provider);
         return obj;
     }
     
@@ -290,7 +290,7 @@ internal static class ToolFactory
     private static readonly NullabilityInfoContext nullabilityContext = new NullabilityInfoContext();
 #endif
     
-    static void UnpackType(Delegate? del, Type type, ToolParamObject parent, ParameterInfo? par, PropertyInfo? prop, int recursionLevel, Type topLevelType)
+    static void UnpackType(Delegate? del, Type type, ToolParamObject parent, ParameterInfo? par, PropertyInfo? prop, int recursionLevel, Type topLevelType, IEndpointProvider provider)
     {
         if (recursionLevel > ToolMeta.MaxRecursionLevel)
         {
@@ -301,7 +301,7 @@ internal static class ToolFactory
         
         foreach (PropertyInfo property in props)
         {
-            IToolParamType propType = GetParamFromType(del, property.PropertyType, GetDescription(property), par, property, recursionLevel + 1, topLevelType);
+            IToolParamType propType = GetParamFromType(del, property.PropertyType, GetDescription(property), par, property, recursionLevel + 1, topLevelType, provider);
             
 #if MODERN
             NullabilityInfo nullabilityInfo = nullabilityContext.Create(property);
@@ -356,11 +356,11 @@ internal static class ToolFactory
         return (element.GetCustomAttributes(typeof(DescriptionAttribute), false).FirstOrDefault() as DescriptionAttribute)?.Description;
     }
 
-    private static void Handle(Delegate? del, ParameterInfo par, List<ToolParam> pars, int recursionLevel)
+    private static void Handle(Delegate? del, ParameterInfo par, List<ToolParam> pars, int recursionLevel, IEndpointProvider provider)
     {
         if (par.Name is null) return;
 
-        IToolParamType baseParam = GetParamFromType(del, par.ParameterType, GetDescription(par), par, null, recursionLevel + 1, par.ParameterType);
+        IToolParamType baseParam = GetParamFromType(del, par.ParameterType, GetDescription(par), par, null, recursionLevel + 1, par.ParameterType, provider);
         baseParam.Required = !par.IsOptional;
         
         SchemaNullableAttribute? nullableAttribute = par.GetCustomAttribute<SchemaNullableAttribute>();
@@ -386,7 +386,7 @@ internal static class ToolFactory
         }
     }
 
-    private static IToolParamType HandleAnyOf(Delegate? del, Type parameterType, string? description, SchemaAnyOfAttribute? anyOf, int recursionLevel, Type topLevelType)
+    private static IToolParamType HandleAnyOf(Delegate? del, Type parameterType, string? description, SchemaAnyOfAttribute? anyOf, int recursionLevel, Type topLevelType, IEndpointProvider provider)
     {
         if (recursionLevel > ToolMeta.MaxRecursionLevel)
         {
@@ -424,7 +424,7 @@ internal static class ToolFactory
             }
             case 1:
             {
-                return GetParamFromType(del, possibleTypes[0], description, null, null, recursionLevel + 1, topLevelType);
+                return GetParamFromType(del, possibleTypes[0], description, null, null, recursionLevel + 1, topLevelType, provider);
             }
         }
 
@@ -437,7 +437,7 @@ internal static class ToolFactory
 
         foreach (Type type in possibleTypes)
         {
-            IToolParamType paramType = GetParamFromType(del, type, GetDescription(type), null, null, recursionLevel + 1, topLevelType);
+            IToolParamType paramType = GetParamFromType(del, type, GetDescription(type), null, null, recursionLevel + 1, topLevelType, provider);
             
             if (paramType is ToolParamObject obj)
             {
@@ -448,11 +448,21 @@ internal static class ToolFactory
                 {
                     throw new NotSupportedException($"The type '{type.Name}' cannot be used in [SchemaAnyOf] because all possible discriminator keys ({string.Join(", ", ToolDefaults.DiscriminatorKeys)}) are already defined as properties on the class. Please rename one of the conflicting properties.");
                 }
-                
-                obj.ExtraProperties = new Dictionary<string, object>
+
+                if (provider.JsonSchemaCapabilities.Const)
                 {
-                    { safeDiscriminatorKey, new { @const = type.Name } }
-                };
+                    obj.ExtraProperties = new Dictionary<string, object>
+                    {
+                        { safeDiscriminatorKey, new { @const = type.Name } }
+                    };
+                }
+                else
+                {
+                    obj.ExtraProperties = new Dictionary<string, object>
+                    {
+                        { safeDiscriminatorKey, new { type = "string", @enum = new[] { type.Name } } }
+                    };
+                }
                 
                 anyOfParam.AnyOf.Add(obj);
             }

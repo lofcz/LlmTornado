@@ -104,6 +104,22 @@ public interface IEndpointProvider
     /// <see cref="RequestActionTypes.ChatCompletionCreate"/>, <see cref="RequestActionTypes.EmbeddingCreate"/>
     /// </summary>
     public Action<JObject, RequestSerializerContext>? RequestSerializer { get; set; }
+    
+    /// <summary>
+    /// JSON schema capabilities of the provider.
+    /// </summary>
+    public JsonSchemaCapabilities JsonSchemaCapabilities { get; }
+}
+
+/// <summary>
+/// Describes JSON schema capabilities of a provider.
+/// </summary>
+public class JsonSchemaCapabilities
+{
+    /// <summary>
+    /// Whether the provider supports 'const' keyword. If not, enum with a single value is used as a fallback.
+    /// </summary>
+    public bool Const { get; set; }
 }
 
 /// <summary>

@@ -35,12 +35,11 @@ public class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
     public Action<HttpRequestMessage, object?, bool>? RequestResolver { get; set; }
     public Action<JObject, RequestSerializerContext>? RequestSerializer { get; set; }
     
-    public GoogleEndpointProvider() : base()
+    public GoogleEndpointProvider()
     {
         Provider = LLmProviders.Google;
-        StoreApiAuth();
     }
-    
+
     public const string BaseUrl = "https://generativelanguage.googleapis.com/";
 
     /// <summary>

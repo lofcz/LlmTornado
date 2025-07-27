@@ -259,7 +259,16 @@ internal static class Clr
         object? result = null;
         List<object?> args = [];
         string normalizedData = data ?? "{}";
-        JObject jObject = JObject.Parse(normalizedData);
+        JObject jObject;
+        
+        try
+        {
+            jObject = JObject.Parse(normalizedData);
+        }
+        catch (Exception e)
+        {
+            return new MethodInvocationResult(new Exception($"Model responded with invalid JSON:\n{normalizedData}", e));
+        }
         
         ParameterInfo[] delegateParams = function.Method.GetParameters();
         Dictionary<string, ToolParam> toolParamsMap = metadata.Tool.Params.ToDictionary(p => p.Name);

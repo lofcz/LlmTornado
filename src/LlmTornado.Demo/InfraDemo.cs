@@ -103,13 +103,12 @@ public class InfraDemo : DemoBase
     {
         public string Email { get; set; }
     }
-
-    [TornadoTest]
-    public static async Task TornadoFunctionAnyOf()
+    
+    public static async Task TornadoFunctionAnyOfModel(ChatModel model)
     {
         Conversation conversation = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.OpenAi.Gpt41.V41,
+            Model = model,
             Tools =
             [
                 new Tool(([SchemaAnyOf(typeof(PayPal), typeof(BankTransfer))] IPaymentMethod paymentMethod, ToolArguments args) =>
@@ -118,7 +117,8 @@ public class InfraDemo : DemoBase
                     return $"Payment processed using {paymentMethod.GetType().Name}";
                 })
             ],
-            ToolChoice = OutboundToolChoice.Required
+            ToolChoice = OutboundToolChoice.Required,
+            ReasoningBudget = 0
         });
 
         conversation.AddUserMessage("Process a payment using BankTransfer available payment method. Use realistic mock data.");
@@ -134,13 +134,21 @@ public class InfraDemo : DemoBase
 
         int z = 0;
     }
-    
+
     [TornadoTest]
-    public static async Task TornadoTuple()
+    [TornadoTestCase("gpt-4.1")]
+    [TornadoTestCase("gemini-2.5-flash")]
+    [TornadoTestCase("claude-sonnet-4-20250514")]
+    public static async Task TornadoFunctionAnyOf(string model)
+    {
+        await TornadoFunctionAnyOfModel(model);
+    }
+
+    public static async Task TornadoTupleModel(ChatModel model)
     {
         Conversation conversation = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.OpenAi.Gpt41.V41,
+            Model = model,
             Tools =
             [
                 new Tool((Tuple<string, int, bool, CreditCard> someTuple, ToolArguments args) =>
@@ -164,6 +172,15 @@ public class InfraDemo : DemoBase
         ChatRichResponse data = await conversation.GetResponseRich();
 
         int z = 0;
+    }
+    
+    [TornadoTest]
+    [TornadoTestCase("gpt-4.1")]
+    [TornadoTestCase("gemini-2.5-flash")]
+    [TornadoTestCase("claude-sonnet-4-20250514")]
+    public static async Task TornadoTuple(string model)
+    {
+        await TornadoTupleModel(model);
     }
     
     [TornadoTest]
@@ -671,7 +688,8 @@ public class InfraDemo : DemoBase
                 await Task.Delay(100);
                 Console.WriteLine("test");
                 return "";
-            })
+            }),
+            ReasoningBudget = 0
         });
 
         conversation.AddUserMessage("Fill the provided JSON structure with mock data");
@@ -687,9 +705,11 @@ public class InfraDemo : DemoBase
     }
 
     [TornadoTest]
-    public static async Task TornadoStructuredFunctionOpenAi()
+    [TornadoTestCase("gpt-4.1")]
+    [TornadoTestCase("gemini-2.5-flash")]
+    public static async Task TornadoStructuredFunction(string model)
     {
-        await TornadoStructuredFunctionModel(ChatModel.OpenAi.Gpt41.V41);
+        await TornadoStructuredFunctionModel(model);
     }
     
     [TornadoTest]
