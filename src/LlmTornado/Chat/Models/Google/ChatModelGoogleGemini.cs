@@ -38,6 +38,21 @@ public class ChatModelGoogleGemini : IVendorModelClassProvider
     /// <inheritdoc cref="ModelGemini25Flash"/>
     /// </summary>
     public readonly ChatModel Gemini25Flash = ModelGemini25Flash;
+    
+    /// <summary>
+    /// A Gemini 2.5 Flash model optimized for cost-efficiency and high throughput.
+    /// </summary>
+    public static readonly ChatModel ModelGemini25FlashLite = new ChatModel("gemini-2.5-flash-lite", LLmProviders.Google, 1_000_000) 
+    {
+        ReasoningTokensMin = 512,
+        ReasoningTokensMax = 24_576,
+        ReasoningTokensSpecialValues = [ 0, -1 ]
+    };
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelGemini25FlashLite"/>
+    /// </summary>
+    public readonly ChatModel Gemini25FlashLite = ModelGemini25FlashLite;
 
     /// <summary>
     /// Fast and versatile performance across a diverse variety of tasks (stable).
@@ -205,6 +220,7 @@ public class ChatModelGoogleGemini : IVendorModelClassProvider
         
         ModelGemini25Pro,
         ModelGemini25Flash,
+        ModelGemini25FlashLite
     ];
 
     /// <summary>

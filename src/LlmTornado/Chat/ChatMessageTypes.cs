@@ -22,7 +22,7 @@ public enum ChatMessageTypes
     /// Message part is an audio fragment.
     /// </summary>
     Audio,
-    
+
     /// <summary>
     /// Message part is URI-based file.<br/>
     /// <b>Supported only by Google.</b>
@@ -45,5 +45,10 @@ public enum ChatMessageTypes
     /// Message part is a search result. This enables natural citations for RAG applications.<br/>
     /// <b>Supported only by Anthropic.</b>
     /// </summary>
-    SearchResult
+    SearchResult,
+    
+    /// <summary>
+    /// Message part is a video fragment.
+    /// </summary>
+    Video
 }

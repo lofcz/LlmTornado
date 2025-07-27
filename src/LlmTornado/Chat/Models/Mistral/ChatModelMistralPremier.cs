@@ -22,12 +22,22 @@ public class ChatModelMistralPremier : IVendorModelClassProvider
     /// <summary>
     /// Our frontier-class reasoning model released June 2025. 
     /// </summary>
-    public static readonly ChatModel ModelMagistralMedium = new ChatModel("magistral-medium-2506", LLmProviders.Mistral, 40_000);
+    public static readonly ChatModel ModelMagistralMedium2507 = new ChatModel("magistral-medium-2507", LLmProviders.Mistral, 40_000);
     
     /// <summary>
-    /// <inheritdoc cref="ModelMagistralMedium"/>
+    /// <inheritdoc cref="ModelMagistralMedium2507"/>
     /// </summary>
-    public readonly ChatModel MagistralMedium = ModelMagistralMedium;
+    public readonly ChatModel MagistralMedium2507 = ModelMagistralMedium2507;
+    
+    /// <summary>
+    /// Our frontier-class reasoning model released June 2025. 
+    /// </summary>
+    public static readonly ChatModel ModelMagistralMedium2506 = new ChatModel("magistral-medium-2506", LLmProviders.Mistral, 40_000);
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelMagistralMedium2506"/>
+    /// </summary>
+    public readonly ChatModel MagistralMedium2506 = ModelMagistralMedium2506;
     
     /// <summary>
     /// Our cutting-edge language model for coding with the second version released January 2025, Codestral specializes in low-latency, high-frequency tasks such as fill-in-the-middle (FIM), code correction and test generation.
@@ -110,7 +120,8 @@ public class ChatModelMistralPremier : IVendorModelClassProvider
         ModelMinistral3B,
         ModelMinistral8B,
         ModelMedium3,
-        ModelMagistralMedium,
+        ModelMagistralMedium2506,
+        ModelMagistralMedium2507,
         ModelDevstralMedium2507
     ];
 

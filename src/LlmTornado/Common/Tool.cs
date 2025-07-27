@@ -18,6 +18,22 @@ using JsonSerializer = Newtonsoft.Json.JsonSerializer;
 namespace LlmTornado.Common;
 
 /// <summary>
+/// Modes available for serialization of the content
+/// </summary>
+public enum FunctionResultSetContentModes
+{
+    /// <summary>
+    /// Does nothing, expects the data is already serialized into a string, if not, calls <see cref="Object.ToString"/>.
+    /// </summary>
+    Passthrough,
+    
+    /// <summary>
+    /// Serializes the input using JSON serializer, unless the input is already a string.
+    /// </summary>
+    Serialize
+}
+
+/// <summary>
 ///     Represents a function call result
 /// </summary>
 public class FunctionResult
@@ -38,6 +54,31 @@ public class FunctionResult
         Name = name;
         Content = SetContent(content);
         InvocationSucceeded = true;
+    }
+    
+    /// <summary>
+    /// </summary>
+    /// <param name="name">Name of the function that was called. Can differ from the originally intended function.</param>
+    /// <param name="content">Either a serializable object (e.g. class / dict / anonymous object) that will be serialized into JSON, or already serialized data.</param>
+    /// <param name="mode">Whether the content should be serialized or is already serialized.</param>
+    public FunctionResult(string name, object? content, FunctionResultSetContentModes mode)
+    {
+        Name = name;
+        Content = SetContent(content, mode);
+        InvocationSucceeded = true;
+    }
+    
+    /// <summary>
+    /// </summary>
+    /// <param name="name">Name of the function that was called. Can differ from the originally intended function.</param>
+    /// <param name="content">Either a serializable object (e.g. class / dict / anonymous object) that will be serialized into JSON, or already serialized data.</param>
+    /// <param name="mode">Whether the content should be serialized or is already serialized.</param>
+    /// <param name="invocationSucceeded">An indicator whether the tool invocation succeeded or not.</param>
+    public FunctionResult(string name, object? content, FunctionResultSetContentModes mode, bool invocationSucceeded)
+    {
+        Name = name;
+        Content = SetContent(content, mode);
+        InvocationSucceeded = invocationSucceeded;
     }
 
     /// <summary>
@@ -182,11 +223,13 @@ public class FunctionResult
     [JsonIgnore]
     internal IEnumerable<IFunctionResultBlock>? RawContentBlocks { get; set; }
 
-    private string SetContent(object? content)
+    private string SetContent(object? content, FunctionResultSetContentModes mode = FunctionResultSetContentModes.Serialize)
     {
         ContentJsonType = content?.GetType();
         RawContent = content;
-        return content is null ? "{}" : JsonConvert.SerializeObject(content);
+        return mode is FunctionResultSetContentModes.Passthrough ? 
+            content as string ?? content?.ToString() ?? "{}" : 
+            content is null ? "{}" : JsonConvert.SerializeObject(content);
     }
     
     private string SetContentBlocks(List<IFunctionResultBlock>? content)
@@ -515,13 +558,67 @@ public class McpContentBlockEmbeddedResourceContentsUnknown : McpContentBlockEmb
 /// </summary>
 public class Tool
 {
+    /// <summary>
+    /// Attached delegate, if any.
+    /// </summary>
     [JsonIgnore]
     public Delegate? Delegate { get; }
     
-    internal Tool(Delegate function, string? name = null, string? description = null, bool? strict = null)
+    [JsonIgnore]
+    internal DelegateMetadata? DelegateMetadata { get; set; }
+    
+    [JsonIgnore]
+    internal ToolMetadata? Metadata { get; set; }
+    
+    [JsonIgnore]
+    internal string? ToolName { get; set; }
+    
+    [JsonIgnore]
+    internal string? ToolDescription { get; set; }
+    
+    /// <summary>
+    /// Creates the tool with a delegate attached. This delegate is serialized into JSON schema and potentially invoked by a LLM.
+    /// </summary>
+    /// <param name="function">The function, can be an anonymous function.</param>
+    /// <param name="metadata">Optional metadata: additional parameters, excluded parameters, and other options.</param>
+    /// <param name="strict">Whether strict JSON schema validation is enabled.</param>
+    public Tool(Delegate function, ToolMetadata? metadata = null, bool? strict = null)
     {
         Delegate = function;
         Strict = strict;
+        Metadata = metadata;
+    }
+    
+    /// <summary>
+    /// Creates the tool with a delegate attached. This delegate is serialized into JSON schema and potentially invoked by a LLM.
+    /// </summary>
+    /// <param name="function">The function, can be an anonymous function.</param>
+    /// <param name="name">Name of the function.</param>
+    /// <param name="metadata">Optional metadata: additional parameters, excluded parameters, and other options.</param>
+    /// <param name="strict">Whether strict JSON schema validation is enabled.</param>
+    internal Tool(Delegate function, string name, ToolMetadata? metadata = null, bool? strict = null)
+    {
+        Delegate = function;
+        Strict = strict;
+        Metadata = metadata;
+        ToolName = name;
+    }
+    
+    /// <summary>
+    /// Creates the tool with a delegate attached. This delegate is serialized into JSON schema and potentially invoked by a LLM.
+    /// </summary>
+    /// <param name="function">The function, can be an anonymous function.</param>
+    /// <param name="name">Name of the function.</param>
+    /// <param name="description">Description of the function.</param>
+    /// <param name="metadata">Optional metadata: additional parameters, excluded parameters, and other options.</param>
+    /// <param name="strict">Whether strict JSON schema validation is enabled.</param>
+    internal Tool(Delegate function, string name, string description, ToolMetadata? metadata = null, bool? strict = null)
+    {
+        Delegate = function;
+        Strict = strict;
+        Metadata = metadata;
+        ToolName = name;
+        ToolDescription = description;
     }
     
     /// <summary>
@@ -553,6 +650,9 @@ public class Tool
         Type = type;
     }
 
+    /// <summary>
+    /// Empty tool.
+    /// </summary>
     public Tool()
     {
     }
@@ -577,7 +677,19 @@ public class Tool
             Function = fn;
         }
 
-        Function = ToolFactory.CreateFromMethod(Delegate, provider).ToolFunction;
+        DelegateMetadata = ToolFactory.CreateFromMethod(Delegate, Metadata, provider);
+
+        if (!ToolName.IsNullOrWhiteSpace())
+        {
+            DelegateMetadata.ToolFunction.Name = ToolName;
+        }
+
+        if (!ToolDescription.IsNullOrWhiteSpace())
+        {
+            DelegateMetadata.ToolFunction.Description = ToolDescription;
+        }
+
+        Function = DelegateMetadata.ToolFunction;
         serializedDict.TryAdd(hash, Function);
     }
 

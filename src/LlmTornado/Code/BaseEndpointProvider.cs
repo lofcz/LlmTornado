@@ -25,12 +25,18 @@ public abstract class BaseEndpointProvider : IEndpointProviderExtended
 {
     public TornadoApi? Api { get; set; }
     public LLmProviders Provider { get; set; } = LLmProviders.Unknown;
+    public JsonSchemaCapabilities JsonSchemaCapabilities { get; set; }
     
     internal static readonly JsonSerializerSettings NullSettings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore };
     
     public BaseEndpointProvider()
     {
-        
+        JsonSchemaCapabilities = GetJsonSchemaCapabilities();
+    }
+
+    public virtual JsonSchemaCapabilities GetJsonSchemaCapabilities()
+    {
+        return new JsonSchemaCapabilities();
     }
 
     public void StoreApiAuth()

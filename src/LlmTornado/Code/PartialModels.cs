@@ -1,13 +1,3 @@
-﻿using System;
-using System.Collections.Frozen;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Net.Http;
-using System.Runtime.Serialization;
-using System.Text;
-using System.Threading.Tasks;
-using LlmTornado.Images;
 using LlmTornado.Audio;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Vendors.Anthropic;
@@ -15,10 +5,21 @@ using LlmTornado.ChatFunctions;
 using LlmTornado.Code.Models;
 using LlmTornado.Code.Vendor;
 using LlmTornado.Common;
+using LlmTornado.Images;
 using LlmTornado.Infra;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Frozen;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.Linq;
+using System.Net.Http;
+using System.Runtime.Serialization;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace LlmTornado.Code;
 
@@ -621,25 +622,65 @@ public class StreamedMessageToken
 }
 
 /// <summary>
+///     Reasoning formats.
+/// </summary>
+[JsonConverter(typeof(StringEnumConverter))]
+public enum ChatReasoningFormats
+{
+    /// <summary>
+    /// Separates reasoning into a dedicated field while keeping the response concise.
+    /// </summary>
+    [EnumMember(Value = "parsed")]
+    Parsed,
+    
+    /// <summary>
+    /// Includes reasoning within think tags in the content.
+    /// </summary>
+    [EnumMember(Value = "raw")]
+    Raw,
+    
+    /// <summary>
+    /// Returns only the final answer.
+    /// </summary>
+    [EnumMember(Value = "hidden")]
+    Hidden
+}
+
+/// <summary>
 ///     Level of reasoning suggested.
 /// </summary>
+[JsonConverter(typeof(StringEnumConverter))]
 public enum ChatReasoningEfforts
 {
     /// <summary>
     ///     Low reasoning - fast responses (O1, O1 Mini, Grok 3)
     /// </summary>
-    [JsonProperty("low")]
+    [EnumMember(Value = "low")]
     Low,
+    
     /// <summary>
     ///     Balanced reasoning (O1, O1 Mini)
     /// </summary>
-    [JsonProperty("medium")]
+    [EnumMember(Value = "medium")]
     Medium,
+    
     /// <summary>
     ///     High reasoning - slow responses (O1, O1 Mini, Grok 3)
     /// </summary>
-    [JsonProperty("high")]
-    High
+    [EnumMember(Value = "high")]
+    High,
+    
+    /// <summary>
+    ///     Disable reasoning. Supported only by Groq.
+    /// </summary>
+    [EnumMember(Value = "none")]
+    None,
+    
+    /// <summary>
+    ///     Enable reasoning. Supported only by Groq.
+    /// </summary>
+    [EnumMember(Value = "default")]
+    Default
 }
 
 internal enum ChatResultStreamInternalKinds
@@ -949,8 +990,14 @@ public class ChatAudio
     /// <summary>
     ///     Base64 encoded audio data.
     /// </summary>
-    public string Data { get; set; }
-    
+    public string? Data { get; set; }
+
+    /// <summary>
+    ///  Publicly available URL where the audio is stored.
+    /// </summary>
+    [JsonProperty("audio_url")]
+    public Uri? Url { get; set; }
+
     /// <summary>
     ///     MimeType of the audio.
     /// </summary>
@@ -979,7 +1026,16 @@ public class ChatAudio
         Data = data;
         Format = format;
     }
-    
+
+    /// <summary>
+    ///     Creates an audio instance from a publicly available URL
+    /// </summary>
+    /// <param name="uri">Publicly available URL</param>
+    public ChatAudio(Uri uri)
+    {
+        Url = uri;
+    }
+
     /// <summary>
     ///     Creates an audio instance from data and format.
     /// </summary>
@@ -991,6 +1047,64 @@ public class ChatAudio
         Data = data;
         Format = format;
         MimeType = mimeType;
+    }
+}
+
+public class ToolMetadata
+{
+    public List<ToolParamDefinition>? Params { get; set; }
+    public List<string>? Ignore { get; set; }
+
+    public ToolMetadata()
+    {
+        
+    }
+}
+
+public class ToolParamDefinition
+{
+    public string Name { get; set; }
+    public IToolParamType Param { get; set; }
+
+    public ToolParamDefinition(string name, IToolParamType param)
+    {
+        Name = name;
+        Param = param;
+    }
+}
+
+public class ToolCallsHandler
+{
+    /// <summary>
+    /// Continues the conversation automatically.<br/>
+    /// Note: if the request is set to return <see cref="ChatRequestResponseFormatTypes.StructuredJson"/>, there is no tool call generated, and hence the conversation won't be continued automatically.
+    /// </summary>
+    public static readonly ToolCallsHandler ContinueConversation = new ToolCallsHandler();
+    
+    private ToolCallsHandler()
+    {
+        
+    }
+}
+
+/// <summary>
+///     Represents a video part of a chat message.
+/// </summary>
+public class ChatVideo
+{
+    /// <summary>
+    ///  Publicly available URL for the video
+    /// </summary>
+    [JsonProperty("video_url")]
+    public Uri Url { get; set; }
+
+    /// <summary>
+    ///     Creates a video url instance from the uri.
+    /// </summary>
+    /// <param name="url">Publicly available URL for the resource</param>
+    public ChatVideo(Uri url)
+    {
+        Url = url;
     }
 }
 
@@ -1426,6 +1540,82 @@ public class TornadoRequestContent
     }
 }
 
+/// <summary>
+/// Provides direct access to the arguments inferred by the model.
+/// </summary>
+public class ToolArguments
+{
+    [JsonIgnore] 
+    internal readonly Lazy<ChatFunctionParamsGetter> ArgGetter;
+    
+    [JsonIgnore] 
+    internal Dictionary<string, object?>? DecodedArguments;
+
+    public ToolArguments()
+    {
+        ArgGetter = new Lazy<ChatFunctionParamsGetter>(() => new ChatFunctionParamsGetter(DecodedArguments));
+    }
+    
+    /// <summary>
+    /// The raw JSON.
+    /// </summary>
+    public string Data
+    {
+        get => _data;
+        set
+        {
+            _data = value;
+            DecodedArguments = Data.IsNullOrWhiteSpace() ? [] : JsonConvert.DeserializeObject<Dictionary<string, object?>>(Data);
+        }
+    }
+    
+    private string _data;
+    
+    /// <summary>
+    ///     Gets all arguments passed to the function call as a dictionary.
+    /// </summary>
+    public Dictionary<string, object?> Arguments => ArgGetter.Value.Source ?? [];
+    
+    /// <summary>
+    /// Gets the specified argument or default value.
+    /// </summary>
+    public T? GetOrDefault<T>(string param, T? defaultValue = default)
+    {
+        return Get(param, out T? data, out _) ? data : defaultValue;
+    }
+
+    /// <summary>
+    /// Gets the specified argument. If the conversion to T fails, the exception is ignored.
+    /// </summary>
+    /// <param name="param">Key</param>
+    /// <param name="data">Type to which the argument should be converted.</param>
+    public bool Get<T>(string param, out T? data)
+    {
+        return Get(param, out data, out _);
+    }
+    
+    /// <summary>
+    /// Gets the specified argument. If the conversion to T fails, the exception is ignored.
+    /// </summary>
+    /// <param name="param">Key</param>
+    /// <param name="data">Type to which the argument should be converted.</param>
+    public bool TryGetArgument<T>(string param, [NotNullWhen(true)] out T? data)
+    {
+        return Get(param, out data, out _);
+    }
+
+    /// <summary>
+    /// Gets the specified argument.
+    /// </summary>
+    /// <param name="param">Key</param>
+    /// <param name="data">Type to which the argument should be converted.</param>
+    /// <param name="exception">If the conversion fails, the exception is returned here.</param>
+    public bool Get<T>(string param, out T? data, out Exception? exception)
+    {
+        return Clr.Get(param, Arguments, out data, out exception);
+    }
+}
+
 internal class DelegateMetadata
 {
     public ToolFunction ToolFunction { get; set; }
@@ -1443,6 +1633,14 @@ internal class DelegateMetadata
 /// </summary>
 public class ChatRequestSerializeOptions
 {
+    /// <summary>
+    /// Instance with <see cref="Pretty"/> set to true.
+    /// </summary>
+    public static readonly ChatRequestSerializeOptions PresetPretty = new ChatRequestSerializeOptions
+    {
+        Pretty = true
+    };
+    
     /// <summary>
     /// Whether the request is streamed.
     /// </summary>

@@ -857,6 +857,24 @@ public partial class ChatDemo : DemoBase
     }
     
     [TornadoTest]
+    public static async Task Qwen3()
+    {
+        Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Groq.Alibaba.Qwen332B,
+            ReasoningFormat = ChatReasoningFormats.Parsed,
+            ReasoningEffort = ChatReasoningEfforts.Default
+        });
+        
+        chat2.AppendUserInput("How is beer brewed?");
+
+        Console.WriteLine(chat2.Serialize(true));
+        
+        ChatRichResponse str2 = await chat2.GetResponseRich();
+        Console.WriteLine(str2);
+    }
+    
+    [TornadoTest]
     public static async Task Issue47()
     {
         TornadoApi api = Program.Connect();

@@ -25,6 +25,9 @@ public class ChatRequestResponseFormats
         [JsonProperty("name")]
         public string Name { get; set; }
         
+        [JsonProperty("description")]
+        public string? Description { get; set; }
+        
         [JsonProperty("schema")]
         public object Schema { get; set; }
         
@@ -33,6 +36,9 @@ public class ChatRequestResponseFormats
         
         [JsonIgnore]
         internal DelegateMetadata? DelegateMetadata { get; set; }
+        
+        [JsonIgnore]
+        internal ToolMetadata? ToolMetadata { get; set; }
     }
     
     /// <summary>
@@ -56,7 +62,7 @@ public class ChatRequestResponseFormats
             return;
         }
 
-        DelegateMetadata cd = ToolFactory.CreateFromMethod(Schema.Delegate, provider);
+        DelegateMetadata cd = ToolFactory.CreateFromMethod(Schema.Delegate, null, provider);
         Schema.DelegateMetadata = cd;
         Schema.Schema = cd.ToolFunction.Parameters;
     }
@@ -64,7 +70,7 @@ public class ChatRequestResponseFormats
     /// <summary>
     /// Invokes the <see cref="Delegate"/> with the given JSON data.
     /// </summary>
-    public async ValueTask<object?> Invoke(string data)
+    public async ValueTask<MethodInvocationResult> Invoke(string data)
     {
         return await Clr.Invoke(Schema?.Delegate, Schema?.DelegateMetadata, data);
     }
@@ -72,7 +78,7 @@ public class ChatRequestResponseFormats
     /// <summary>
     ///     Signals the output should be plaintext.
     /// </summary>
-    public static ChatRequestResponseFormats Text = new ChatRequestResponseFormats
+    public static readonly ChatRequestResponseFormats Text = new ChatRequestResponseFormats
     {
         Type = ChatRequestResponseFormatTypes.Text
     };
@@ -89,11 +95,7 @@ public class ChatRequestResponseFormats
     /// <summary>
     ///     Signals output should be structured JSON. The provided schema will always be followed.
     /// </summary>
-    /// <param name="name"></param>
-    /// <param name="schema">JSON serializable class / anonymous object.</param>
-    /// <param name="strict"></param>
-    /// <returns></returns>
-    public static ChatRequestResponseFormats StructuredJson(string name, object schema, bool strict = true)
+    public static ChatRequestResponseFormats StructuredJson(string name, object schema, bool? strict = true)
     {
         return new ChatRequestResponseFormats
         {
@@ -107,16 +109,109 @@ public class ChatRequestResponseFormats
         };
     }
 
-    internal static ChatRequestResponseFormats StructuredJson(Delegate function, string? name = null, bool strict = true)
+    /// <summary>
+    ///     Signals output should be structured JSON. The provided schema will always be followed. An attempt will be made to invoke the attached delegate with inferred arguments.
+    /// </summary>
+    public static ChatRequestResponseFormats StructuredJson(Delegate function)
     {
         return new ChatRequestResponseFormats
         {
             Type = ChatRequestResponseFormatTypes.StructuredJson,
             Schema = new ChatRequestResponseJsonSchema
             {
-                Name = name ?? "output",
+                Name = "output",
+                Strict = true,
+                Delegate = function
+            }
+        };
+    }
+    
+    /// <summary>
+    ///     Signals output should be structured JSON. The provided schema will always be followed. An attempt will be made to invoke the attached delegate with inferred arguments.
+    /// </summary>
+    public static ChatRequestResponseFormats StructuredJson(Delegate function, string name, bool? strict = true)
+    {
+        return new ChatRequestResponseFormats
+        {
+            Type = ChatRequestResponseFormatTypes.StructuredJson,
+            Schema = new ChatRequestResponseJsonSchema
+            {
+                Name = name,
                 Strict = strict,
                 Delegate = function
+            }
+        };
+    }
+    
+    /// <summary>
+    ///     Signals output should be structured JSON. The provided schema will always be followed. An attempt will be made to invoke the attached delegate with inferred arguments.
+    /// </summary>
+    public static ChatRequestResponseFormats StructuredJson(Delegate function, string name, string description, bool? strict = true)
+    {
+        return new ChatRequestResponseFormats
+        {
+            Type = ChatRequestResponseFormatTypes.StructuredJson,
+            Schema = new ChatRequestResponseJsonSchema
+            {
+                Name = name,
+                Strict = strict,
+                Delegate = function,
+                Description = description
+            }
+        };
+    }
+    
+    /// <summary>
+    ///     Signals output should be structured JSON. The provided schema will always be followed. An attempt will be made to invoke the attached delegate with inferred arguments.
+    /// </summary>
+    public static ChatRequestResponseFormats StructuredJson(Delegate function, ToolMetadata metadata, bool? strict = true)
+    {
+        return new ChatRequestResponseFormats
+        {
+            Type = ChatRequestResponseFormatTypes.StructuredJson,
+            Schema = new ChatRequestResponseJsonSchema
+            {
+                Name = "output",
+                Strict = strict,
+                Delegate = function,
+                ToolMetadata = metadata
+            }
+        };
+    }
+    
+    /// <summary>
+    ///     Signals output should be structured JSON. The provided schema will always be followed. An attempt will be made to invoke the attached delegate with inferred arguments.
+    /// </summary>
+    public static ChatRequestResponseFormats StructuredJson(Delegate function, string name, ToolMetadata metadata, bool? strict = true)
+    {
+        return new ChatRequestResponseFormats
+        {
+            Type = ChatRequestResponseFormatTypes.StructuredJson,
+            Schema = new ChatRequestResponseJsonSchema
+            {
+                Name = name,
+                Strict = strict,
+                Delegate = function,
+                ToolMetadata = metadata
+            }
+        };
+    }
+    
+    /// <summary>
+    ///     Signals output should be structured JSON. The provided schema will always be followed. An attempt will be made to invoke the attached delegate with inferred arguments.
+    /// </summary>
+    public static ChatRequestResponseFormats StructuredJson(Delegate function, string name, string description, ToolMetadata metadata, bool? strict = true)
+    {
+        return new ChatRequestResponseFormats
+        {
+            Type = ChatRequestResponseFormatTypes.StructuredJson,
+            Schema = new ChatRequestResponseJsonSchema
+            {
+                Name = name,
+                Strict = strict,
+                Delegate = function,
+                ToolMetadata = metadata,
+                Description = description
             }
         };
     }

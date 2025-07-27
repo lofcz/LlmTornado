@@ -1,16 +1,23 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
+using System.ComponentModel;
+using System.Dynamic;
 using System.Linq;
 using System.Reflection;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using LlmTornado.Code;
 using LlmTornado.Common;
+using Newtonsoft.Json.Linq;
 
 namespace LlmTornado.Infra;
 
 internal static class ToolFactory
 {
-    static Tuple<Type, bool> GetNullableBaseType(Type type)
+    public static Tuple<Type, bool> GetNullableBaseType(Type type)
     {
         if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
         {
@@ -20,17 +27,17 @@ internal static class ToolFactory
         return new Tuple<Type, bool>(type, false);
     }
     
-    static bool IsIEnumerable(this Type type)
+    public static bool IsIEnumerable(this Type type)
     {
-        return type.GetInterfaces().Append(type).Any(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(IEnumerable<>));
+        return type.GetInterfaces().Append(type).Any(x => x == typeof(IEnumerable) || x == typeof(IEnumerable<>));
     }
     
-    static bool IsIList(this Type type)
+    public static bool IsIList(this Type type)
     {
         return type.GetInterfaces().Append(type).Any(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(IList<>));
     }
     
-    static bool IsISet(this Type type)
+    public static bool IsISet(this Type type)
     {
         return type.GetInterfaces().Append(type).Any(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(ISet<>));
     }
@@ -40,12 +47,12 @@ internal static class ToolFactory
         return type.GetInterfaces().Append(type).Any(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(IDictionary<,>));
     }
     
-    static bool IsICollection(this Type type)
+    public static bool IsICollection(this Type type)
     {
         return type.GetInterfaces().Append(type).Any(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(ICollection<>));
     }
     
-    public static DelegateMetadata CreateFromMethod(Delegate del, IEndpointProvider provider)
+    public static DelegateMetadata CreateFromMethod(Delegate del, ToolMetadata? metadata, IEndpointProvider provider)
     {
         ParameterInfo[] pars = del.Method.GetParameters();
         ToolDefinition function = new ToolDefinition
@@ -54,14 +61,49 @@ internal static class ToolFactory
             Params = []
         };
 
+        HashSet<string> ignored = metadata?.Ignore?.ToHashSet() ?? [];
+
         foreach (ParameterInfo par in pars)
         {
-            if (par.Name is null)
+            if (par.Name is null || ignored.Contains(par.Name))
             {
                 continue;
             }
 
-            Handle(par.Name, par.ParameterType, function.Params);
+            Handle(del, par, function.Params, 0, provider);
+        }
+
+        if (metadata?.Params is not null)
+        {
+            foreach (ToolParamDefinition def in metadata.Params)
+            {
+                ToolParam? existing = function.Params.FirstOrDefault(x => x.Name == def.Name);
+
+                if (existing is not null)
+                {
+                    // override vs new parameter
+                    if (existing.Type.GetType() == def.Param.GetType())
+                    {
+                        IToolParamType newParam = def.Param;
+                        newParam.DataType = existing.Type.DataType;
+                        newParam.Serializer = existing.Type.Serializer;
+                        existing.Type = newParam;
+                    }
+                    else if (existing.Type is ToolParamListEnum listEnum && def.Param is ToolParamEnum newEnumDefinition)
+                    {
+                        listEnum.Values = newEnumDefinition.Values;
+                    }
+                    else
+                    {
+                        function.Params.Remove(existing);
+                        function.Params.Add(new ToolParam(def.Name, def.Param));
+                    }
+                }
+                else
+                {
+                    function.Params.Add(new ToolParam(def.Name, def.Param));
+                }
+            }
         }
 
         ToolFunction compiled = ChatPluginCompiler.Compile(function, new ToolMeta
@@ -72,145 +114,364 @@ internal static class ToolFactory
         return new DelegateMetadata(compiled, function);
     }
 
-    static void UnpackType(Type type, ToolParamObject parent)
+    private static IToolParamType GetParamFromType(Delegate? del, Type type, string? description, ParameterInfo? par, PropertyInfo? prop, int recursionLevel, Type topLevelType, IEndpointProvider provider)
     {
+        if (recursionLevel > ToolMeta.MaxRecursionLevel)
+        {
+            throw new InvalidOperationException($"Tool schema generation exceeded max recursion depth of {ToolMeta.MaxRecursionLevel} for type '{topLevelType.Name}'. This may be caused by a self-referencing type.");
+        }
+
+        Tuple<Type, bool> baseTypeInfo = GetNullableBaseType(type);
+        Type baseType = baseTypeInfo.Item1;
+
+        SchemaAnyOfAttribute? anyOf = par?.GetCustomAttribute<SchemaAnyOfAttribute>() ?? prop?.GetCustomAttribute<SchemaAnyOfAttribute>();
+
+        if ((anyOf is not null || (baseType.IsInterface || baseType.IsAbstract)) && !baseType.IsArray && !baseType.IsIEnumerable())
+        {
+            return HandleAnyOf(del, type, description, anyOf, recursionLevel + 1, topLevelType, provider);
+        }
+        
+        // atomic types
+        if (TypeLookup.TryGetValue(baseType, out Func<Delegate?, Type, string?, IToolParamType>? factory))
+        {
+            return factory(del, type, description);
+        }
+
+        // complex types
+        if (baseType.IsEnum)
+        {
+            List<string> vals = Enum.GetValues(baseType).Cast<object>().Select(x => x.ToString()!).ToList();
+            return new ToolParamEnum(description, vals) { DataType = type, Serializer = ToolParamSerializer.Atomic };
+        }
+
+        if (baseType == typeof(JsonElement) || baseType.IsSubclassOf(typeof(JToken)) || baseType == typeof(JToken))
+        {
+            if (baseType == typeof(JValue) || baseType == typeof(JsonElement))
+            {
+                return new ToolParamAny(description) { DataType = type, Serializer = ToolParamSerializer.Json };
+            }
+
+            if (baseType == typeof(JObject))
+            {
+                return new ToolParamObject(description, []) { DataType = type, Serializer = ToolParamSerializer.Json, AllowAdditionalProperties = true };
+            }
+
+            if (baseType == typeof(JArray))
+            {
+                return new ToolParamList(description, new ToolParamAny(null)) { DataType = type, Serializer = ToolParamSerializer.Json };
+            }
+
+            return new ToolParamAny(description) { DataType = type, Serializer = ToolParamSerializer.Json };
+        }
+        
+        if (baseType.IsArray)
+        {
+            if (baseType.GetArrayRank() > 1)
+            {
+                Type elementType = baseType.GetElementType()!;
+                Type flatArrayType = Array.CreateInstance(elementType, 0).GetType();
+                IToolParamType valuesParamType = GetParamFromType(del, flatArrayType, null, par, prop, recursionLevel + 1, topLevelType, provider);
+
+                return new ToolParamObject("A multi-dimensional array.",
+                [
+                    new ToolParam("lengths", new ToolParamListAtomic("Dimensions of the array", ToolParamAtomicTypes.Int) { DataType = typeof(int[]) }),
+                    new ToolParam("values", valuesParamType)
+                ]) { DataType = type, Serializer = ToolParamSerializer.MultidimensionalArray };
+            }
+
+            Type innerType = baseType.GetElementType()!;
+
+            if (GetNullableBaseType(innerType).Item1.IsEnum)
+            {
+                List<string> vals = Enum.GetValues(GetNullableBaseType(innerType).Item1).Cast<object>().Select(x => x.ToString()!).ToList();
+                return new ToolParamListEnum(description, vals) { DataType = type, Serializer = ToolParamSerializer.Array };
+            }
+
+            return new ToolParamList(description, GetParamFromType(del, innerType, null, par, prop, recursionLevel + 1, topLevelType, provider)) { DataType = type, Serializer = ToolParamSerializer.Array };
+        }
+        
+        if (baseType != typeof(string) && baseType.IsIEnumerable())
+        {
+            if (!baseType.IsGenericType)
+            {
+                return new ToolParamList(description, GetParamFromType(del, typeof(object), null, par, prop, recursionLevel + 1, topLevelType, provider)) { DataType = baseType, Serializer = ToolParamSerializer.NonGenericEnumerable };
+            }
+            
+            if (baseType.IsISet() || baseType.IsIList())
+            {
+                Type innerType = baseType.GetGenericArguments()[0];
+                IToolParamType innerParam = GetParamFromType(del, innerType, null, par, prop, recursionLevel + 1, topLevelType, provider);
+                innerParam = WrapIfNullable(innerParam, 0, par, prop);
+
+                return new ToolParamList(description, innerParam) { DataType = type, Serializer = baseType.IsISet() ? ToolParamSerializer.Set : ToolParamSerializer.Array };
+            }
+
+            if (baseType.IsIDictionary())
+            {
+                Type[] genericArgs = baseType.GetGenericArguments();
+                IToolParamType valueType;
+
+                if (genericArgs.Length >= 2)
+                {
+                    valueType = GetParamFromType(del, genericArgs[1], null, par, prop, recursionLevel + 1, topLevelType, provider);
+                    valueType = WrapIfNullable(valueType, 1, par, prop);
+                }
+                else
+                {
+                    valueType = new ToolParamString(null) { DataType = typeof(string) };
+                }
+
+                return new ToolParamDictionary(description, valueType) { DataType = type, Serializer = ToolParamSerializer.Dictionary };
+            }
+        }
+        
+        if (typeof(Task).IsAssignableFrom(baseType))
+        {
+            Type innerType = baseType.IsGenericType ? baseType.GetGenericArguments()[0] : typeof(object);
+            IToolParamType innerParam = GetParamFromType(del, innerType, description, par, prop, recursionLevel + 1, topLevelType, provider);
+            return new ToolParamAwaitable(innerParam) { DataType = type };
+        }
+        
+#if MODERN
+        if (typeof(System.Runtime.CompilerServices.ITuple).IsAssignableFrom(baseType))
+        {
+            List<IToolParamType> itemTypes = [];
+            Type[] genericArgs = baseType.GetGenericArguments();
+            
+            foreach (Type genericArgument in genericArgs)
+            {
+                itemTypes.Add(GetParamFromType(del, genericArgument, null, par, prop, recursionLevel + 1, topLevelType, provider));
+            }
+
+            ToolParamTuple tupleParam = new ToolParamTuple(description, itemTypes) { DataType = type };
+            
+            SchemaTupleAttribute? tupleAttribute = par?.GetCustomAttribute<SchemaTupleAttribute>() ?? prop?.GetCustomAttribute<SchemaTupleAttribute>();
+            if (tupleAttribute?.Names.Length == genericArgs.Length)
+            {
+                tupleParam.Names = tupleAttribute.Names.ToList();
+            }
+            
+            return tupleParam;
+        }
+#endif
+        
+        ToolParamObject obj = new ToolParamObject(description, []) { DataType = type, Serializer = ToolParamSerializer.Object };
+        UnpackType(del, baseType, obj, par, prop, recursionLevel + 1, topLevelType, provider);
+        return obj;
+    }
+    
+    private static IToolParamType WrapIfNullable(IToolParamType param, int genericArgumentIndex, ParameterInfo? par, PropertyInfo? prop)
+    {
+        #if MODERN
+        NullabilityInfo? nullabilityInfo = null;
+        if (par is not null) nullabilityInfo = nullabilityContext.Create(par);
+        else if (prop is not null) nullabilityInfo = nullabilityContext.Create(prop);
+
+        if (nullabilityInfo?.GenericTypeArguments.Length > genericArgumentIndex && 
+            nullabilityInfo.GenericTypeArguments[genericArgumentIndex].ReadState == NullabilityState.Nullable)
+        {
+            return new ToolParamNullable(param);
+        }
+        #else
+        Type? innerType = null;
+        if (par is not null) innerType = par.ParameterType.GetGenericArguments().ElementAtOrDefault(genericArgumentIndex);
+        else if (prop is not null) innerType = prop.PropertyType.GetGenericArguments().ElementAtOrDefault(genericArgumentIndex);
+        
+        if (innerType is not null && Nullable.GetUnderlyingType(innerType) is not null)
+        {
+            return new ToolParamNullable(param);
+        }
+        #endif
+
+        return param;
+    }
+
+#if MODERN
+    private static readonly NullabilityInfoContext nullabilityContext = new NullabilityInfoContext();
+#endif
+    
+    static void UnpackType(Delegate? del, Type type, ToolParamObject parent, ParameterInfo? par, PropertyInfo? prop, int recursionLevel, Type topLevelType, IEndpointProvider provider)
+    {
+        if (recursionLevel > ToolMeta.MaxRecursionLevel)
+        {
+            throw new InvalidOperationException($"Tool schema generation exceeded max recursion depth of {ToolMeta.MaxRecursionLevel} for type '{topLevelType.Name}'. This may be caused by a self-referencing type.");
+        }
+        
         PropertyInfo[] props = type.GetProperties();
         
         foreach (PropertyInfo property in props)
         {
-            Handle(property.Name, property.PropertyType, parent.Properties);
+            IToolParamType propType = GetParamFromType(del, property.PropertyType, GetDescription(property), par, property, recursionLevel + 1, topLevelType, provider);
+            
+#if MODERN
+            NullabilityInfo nullabilityInfo = nullabilityContext.Create(property);
+            propType.Required = nullabilityInfo.WriteState is NullabilityState.NotNull;
+#else
+            (Type? baseType, bool isNullableValueType) = GetNullableBaseType(property.PropertyType);
+            propType.Required = baseType.IsValueType && !isNullableValueType;
+#endif
+            
+            parent.Properties.Add(new ToolParam(property.Name, propType));
         }
     }
 
-    private static readonly Dictionary<Type, ToolParamAtomicTypes> atomicTypes = new Dictionary<Type, ToolParamAtomicTypes>
+    private static readonly Dictionary<Type, Func<Delegate?, Type, string?, IToolParamType>> TypeLookup = new Dictionary<Type, Func<Delegate?, Type, string?, IToolParamType>>
     {
-        { typeof(string), ToolParamAtomicTypes.String },
-        { typeof(double), ToolParamAtomicTypes.Float },
-        { typeof(float), ToolParamAtomicTypes.Float },
-        { typeof(bool), ToolParamAtomicTypes.Bool },
-        { typeof(int), ToolParamAtomicTypes.Int },
-        { typeof(byte), ToolParamAtomicTypes.Int },
-        { typeof(short), ToolParamAtomicTypes.Int },
-        { typeof(long), ToolParamAtomicTypes.Int },
-        { typeof(decimal), ToolParamAtomicTypes.Float }
+        { typeof(string), (del, t, d) => new ToolParamString(d) { DataType = t, Serializer = ToolParamSerializer.Atomic } },
+        { typeof(char), (del, t, d) => new ToolParamString(d) { DataType = t, Serializer = ToolParamSerializer.Atomic, MinLength = 1, MaxLength = 1 } },
+#if MODERN
+        { typeof(Rune), (del, t, d) => new ToolParamString(d) { DataType = t, Serializer = ToolParamSerializer.Atomic } },
+#endif
+        { typeof(double), (del, t, d) => new ToolParamNumber(d) { DataType = t, Serializer = ToolParamSerializer.Atomic } },
+        { typeof(float), (del, t, d) => new ToolParamNumber(d) { DataType = t, Serializer = ToolParamSerializer.Atomic } },
+        { typeof(bool), (del, t, d) => new ToolParamBool(d) { DataType = t, Serializer = ToolParamSerializer.Atomic } },
+        { typeof(int), (del, t, d) => new ToolParamInt(d) { DataType = t, Serializer = ToolParamSerializer.Atomic } },
+        { typeof(uint), (del, t, d) => new ToolParamInt(d) { DataType = t, Serializer = ToolParamSerializer.Atomic } },
+        { typeof(nuint), (del, t, d) => new ToolParamInt(d) { DataType = t, Serializer = ToolParamSerializer.Atomic } },
+        { typeof(byte), (del, t, d) => new ToolParamInt(d) { DataType = t, Serializer = ToolParamSerializer.Atomic } },
+        { typeof(sbyte), (del, t, d) => new ToolParamInt(d) { DataType = t, Serializer = ToolParamSerializer.Atomic } },
+        { typeof(short), (del, t, d) => new ToolParamInt(d) { DataType = t, Serializer = ToolParamSerializer.Atomic } },
+        { typeof(ushort), (del, t, d) => new ToolParamInt(d) { DataType = t, Serializer = ToolParamSerializer.Atomic } },
+        { typeof(long), (del, t, d) => new ToolParamInt(d) { DataType = t, Serializer = ToolParamSerializer.Atomic } },
+        { typeof(ulong), (del, t, d) => new ToolParamInt(d) { DataType = t, Serializer = ToolParamSerializer.Atomic } },
+        { typeof(decimal), (del, t, d) => new ToolParamNumber(d) { DataType = t, Serializer = ToolParamSerializer.Atomic } },
+        { typeof(object), (del, t, d) => new ToolParamAny(d) { DataType = t, Serializer = ToolParamSerializer.Any } },
+        { typeof(Guid), (del, t, d) => new ToolParamString(d) { DataType = t, Serializer = ToolParamSerializer.Atomic, Format = "uuid" } },
+        { typeof(TimeSpan), (del, t, d) => new ToolParamString(d) { DataType = t, Serializer = ToolParamSerializer.Atomic, Format = "duration" } },
+        { typeof(Uri), (del, t, d) => new ToolParamString(d) { DataType = t, Serializer = ToolParamSerializer.Atomic, Format = "uri" } },
+        { typeof(Regex), (del, t, d) => new ToolParamString(d) { DataType = t, Serializer = ToolParamSerializer.Atomic, Format = "regex" } },
+        { typeof(DateTime), (del, t, d) => new ToolParamDateTime(d) { DataType = t, Serializer = ToolParamSerializer.Atomic } },
+        { typeof(ExpandoObject), (del, t, d) => new ToolParamAny(d) { DataType = t, Serializer = ToolParamSerializer.Any } },
+#if MODERN
+        { typeof(DateOnly), (del, t, d) => new ToolParamDate(d) { DataType = t, Serializer = ToolParamSerializer.Atomic } },
+        { typeof(TimeOnly), (del, t, d) => new ToolParamTime(d) { DataType = t, Serializer = ToolParamSerializer.Atomic } },
+#endif
+        
+        // special
+        { typeof(ToolArguments), (del, t, d) => new ToolParamArguments() }
     };
 
-    static bool IsKnownAtomicType(Type type, [NotNullWhen(true)] out ToolParamAtomicTypes? atomicType)
+    private static string? GetDescription(ICustomAttributeProvider element)
     {
-        bool val = atomicTypes.TryGetValue(type, out ToolParamAtomicTypes cc);
-        atomicType = cc;
-        return val;
+        return (element.GetCustomAttributes(typeof(DescriptionAttribute), false).FirstOrDefault() as DescriptionAttribute)?.Description;
     }
 
-    static void Handle(string name, Type type, List<ToolParam> pars)
+    private static void Handle(Delegate? del, ParameterInfo par, List<ToolParam> pars, int recursionLevel, IEndpointProvider provider)
     {
-        Tuple<Type, bool> baseTypeInfo = GetNullableBaseType(type);
-        Type baseType = baseTypeInfo.Item1;
-        bool typeIsNullable = baseTypeInfo.Item2;
+        if (par.Name is null) return;
 
-        if (baseType == typeof(string))
-        {
-            pars.Add(new ToolParam(name, new ToolParamString(null, !typeIsNullable) { DataType = type }));   
-        }
-        else if (baseType == typeof(int))
-        {
-            pars.Add(new ToolParam(name, new ToolParamInt(null, !typeIsNullable) { DataType = type }));   
-        }
-        else if (baseType == typeof(float) || baseType == typeof(double))
-        {
-            pars.Add(new ToolParam(name, new ToolParamNumber(null, !typeIsNullable) { DataType = type }));   
-        }
-        else if (baseType == typeof(bool))
-        {
-            pars.Add(new ToolParam(name, new ToolParamBool(null, !typeIsNullable) { DataType = type }));   
-        }
-        else if (baseType.IsEnum)
-        {
-            List<string> vals = [];
+        IToolParamType baseParam = GetParamFromType(del, par.ParameterType, GetDescription(par), par, null, recursionLevel + 1, par.ParameterType, provider);
+        baseParam.Required = !par.IsOptional;
+        
+        SchemaNullableAttribute? nullableAttribute = par.GetCustomAttribute<SchemaNullableAttribute>();
+        
+#if MODERN
+        NullabilityInfo nullabilityInfo = nullabilityContext.Create(par);
+        bool isNullable = nullabilityInfo.WriteState is NullabilityState.Nullable;
+#else
+        (_, bool isNullableValueType) = GetNullableBaseType(par.ParameterType);
+        bool isNullable = isNullableValueType;
+#endif
 
-            foreach (object x in Enum.GetValues(baseType))
-            {
-                vals.Add(x.ToString());
-            }
-                
-            pars.Add(new ToolParam(name, new ToolParamEnum(null, !typeIsNullable, vals) { DataType = type }));   
-        }
-        else if (IsIEnumerable(baseType))
+        if (nullableAttribute is not null || isNullable)
         {
-            Type genericType = baseType.GetGenericTypeDefinition();
-            Type[] genericArgs = baseType.GetGenericArguments();
-
-            if (IsIList(baseType))
+            pars.Add(new ToolParam(par.Name, new ToolParamNullable(baseParam)
             {
-                if (genericArgs.Length > 0)
-                {
-                    Type innerType = genericArgs[0];
-                    Tuple<Type, bool> baseInnerTypeInfo = GetNullableBaseType(innerType);
-                    Type baseInnerType = baseInnerTypeInfo.Item1;
-                    bool innerTypeIsNullable = baseInnerTypeInfo.Item2;
-
-                    if (IsKnownAtomicType(baseInnerType, out ToolParamAtomicTypes? atomicType))
-                    {
-                        ToolParamListAtomic list = new ToolParamListAtomic(null, !typeIsNullable, atomicType.Value) { DataType = type };
-                        pars.Add(new ToolParam(name, list));
-                        return;
-                    }
-
-                    ToolParamListObject listObj = new ToolParamListObject(null, !typeIsNullable, []) { DataType = type, Items = { DataType = innerType } };
-                    UnpackType(baseInnerType, listObj.Items);
-                    pars.Add(new ToolParam(name, listObj));
-                }
-            }
-            else if (IsISet(baseType))
-            {
-                
-            }
-            else if (IsIDictionary(baseType))
-            {
-                IToolParamType valueType;
-                
-                if (genericArgs.Length >= 2)
-                {
-                    Type valueTypeArg = genericArgs[1];
-                    Tuple<Type, bool> baseValueTypeInfo = GetNullableBaseType(valueTypeArg);
-                    Type baseValueType = baseValueTypeInfo.Item1;
-                    
-                    if (IsKnownAtomicType(baseValueType, out ToolParamAtomicTypes? atomicType))
-                    {
-                        valueType = atomicType.Value switch
-                        {
-                            ToolParamAtomicTypes.String => new ToolParamString(null, true) { DataType = valueTypeArg },
-                            ToolParamAtomicTypes.Int => new ToolParamInt(null, true) { DataType = valueTypeArg },
-                            ToolParamAtomicTypes.Float => new ToolParamNumber(null, true) { DataType = valueTypeArg },
-                            ToolParamAtomicTypes.Bool => new ToolParamBool(null, true) { DataType = valueTypeArg },
-                            _ => new ToolParamString(null, true) { DataType = valueTypeArg }
-                        };
-                    }
-                    else
-                    {
-                        ToolParamObject obj = new ToolParamObject(null, []) { DataType = valueTypeArg };
-                        UnpackType(baseValueType, obj);
-                        valueType = obj;
-                    }
-                }
-                else
-                {
-                    valueType = new ToolParamString(null, true) { DataType = typeof(string) };
-                }
-                
-                ToolParamDictionary dict = new ToolParamDictionary(null, !typeIsNullable, valueType) { DataType = type };
-                pars.Add(new ToolParam(name, dict));
-            }
-            else
-            {
-                
-            }
+                Serializer = ToolParamSerializer.Nullable
+            }));
         }
         else
         {
-            ToolParamObject obj = new ToolParamObject(null, []) { DataType = type };
-            UnpackType(baseType, obj);
-            pars.Add(new ToolParam(name, obj));
+            pars.Add(new ToolParam(par.Name, baseParam));
         }
+    }
+
+    private static IToolParamType HandleAnyOf(Delegate? del, Type parameterType, string? description, SchemaAnyOfAttribute? anyOf, int recursionLevel, Type topLevelType, IEndpointProvider provider)
+    {
+        if (recursionLevel > ToolMeta.MaxRecursionLevel)
+        {
+            throw new InvalidOperationException($"Tool schema generation exceeded max recursion depth of {ToolMeta.MaxRecursionLevel} for type '{topLevelType.Name}'. This may be caused by a self-referencing type.");
+        }
+        
+        List<Type> possibleTypes = [];
+
+        if (anyOf?.Types.Length > 0)
+        {
+            possibleTypes.AddRange(anyOf.Types);
+        }
+        else
+        {
+            if (parameterType.IsInterface || parameterType.IsAbstract)
+            {
+                IEnumerable<Type> discoveredTypes = AppDomain.CurrentDomain.GetAssemblies()
+                    .SelectMany(s => s.GetTypes())
+                    .Where(p => parameterType.IsAssignableFrom(p) && p is { IsInterface: false, IsAbstract: false });
+                
+                possibleTypes.AddRange(discoveredTypes);
+            }
+            else
+            {
+                possibleTypes.Add(parameterType);
+            }
+        }
+
+        switch (possibleTypes.Count)
+        {
+            case 0:
+            {
+                string typeDescription = parameterType.IsInterface ? "interface" : "abstract class";
+                throw new NotSupportedException($"Parameter of type '{parameterType.Name}' is an {typeDescription} with no concrete implementations found in the current AppDomain. Please ensure at least one implementing class is available or specify concrete types using [SchemaAnyOf(typeof(MyImpl))].");
+            }
+            case 1:
+            {
+                return GetParamFromType(del, possibleTypes[0], description, null, null, recursionLevel + 1, topLevelType, provider);
+            }
+        }
+
+        ToolParamAnyOf anyOfParam = new ToolParamAnyOf
+        {
+            PossibleTypes = possibleTypes,
+            Serializer = ToolParamSerializer.AnyOf,
+            DataType = parameterType
+        };
+
+        foreach (Type type in possibleTypes)
+        {
+            IToolParamType paramType = GetParamFromType(del, type, GetDescription(type), null, null, recursionLevel + 1, topLevelType, provider);
+            
+            if (paramType is ToolParamObject obj)
+            {
+                HashSet<string> existingPropNames = new HashSet<string>(obj.Properties.Select(p => p.Name), StringComparer.OrdinalIgnoreCase);
+                string? safeDiscriminatorKey = ToolDefaults.DiscriminatorKeys.FirstOrDefault(key => !existingPropNames.Contains(key));
+
+                if (safeDiscriminatorKey is null)
+                {
+                    throw new NotSupportedException($"The type '{type.Name}' cannot be used in [SchemaAnyOf] because all possible discriminator keys ({string.Join(", ", ToolDefaults.DiscriminatorKeys)}) are already defined as properties on the class. Please rename one of the conflicting properties.");
+                }
+
+                if (provider.JsonSchemaCapabilities.Const)
+                {
+                    obj.ExtraProperties = new Dictionary<string, object>
+                    {
+                        { safeDiscriminatorKey, new { @const = type.Name } }
+                    };
+                }
+                else
+                {
+                    obj.ExtraProperties = new Dictionary<string, object>
+                    {
+                        { safeDiscriminatorKey, new { type = "string", @enum = new[] { type.Name } } }
+                    };
+                }
+                
+                anyOfParam.AnyOf.Add(obj);
+            }
+            else
+            {
+                throw new NotSupportedException($"The type '{type.Name}' cannot be used in [SchemaAnyOf] because it is not a complex object. Only classes or structs that serialize to objects are supported in anyOf lists to ensure safe deserialization with a type discriminator.");
+            }
+        }
+
+        return anyOfParam;
     }
 }

@@ -537,7 +537,7 @@ internal class VendorAnthropicChatRequest
 
     public VendorAnthropicChatRequest(ChatRequest request, IEndpointProvider provider)
     {
-        Model = request.Model?.Name ?? ChatModel.Anthropic.Claude3.Opus.Name;
+        Model = request.Model?.Name ?? ChatModel.Anthropic.Claude4.Sonnet250514.Name;
         MaxTokens = request.MaxTokens ?? 1024;
         StopSequences = request.StopSequence?.Split(',').ToList();
         Stream = request.Stream;
