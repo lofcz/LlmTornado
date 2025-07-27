@@ -23,16 +23,16 @@ public class Tests
 
     private static IEnumerable<TestCaseData> DemoCases()
     {
-        foreach (KeyValuePair<string, Tuple<MethodInfo, string?, Type, FlakyAttribute?>> mi in Program.DemoDict.OrderBy(x => x.Key, StringComparer.InvariantCulture))
+        foreach (KeyValuePair<string, Program.TestRun> mi in Program.DemoDict.OrderBy(x => x.Key, StringComparer.InvariantCulture))
         {
             TestCaseData testCase = new TestCaseData(string.Empty, new GeneratedTestCase
             {
-                Fn = () => (Task)mi.Value.Item1.Invoke(null, null),
-                Flaky = mi.Value.Item4 is not null,
-                FlakyReason = mi.Value.Item4?.Reason
+                Fn = () => (Task)mi.Value.Method.Invoke(null, mi.Value.Arguments),
+                Flaky = mi.Value.Flaky is not null,
+                FlakyReason = mi.Value.Flaky?.Reason
             }) 
             {
-                TestName = $"{mi.Value.Item3.Name} - {mi.Value.Item1.Name}"
+                TestName = mi.Value.Name
             };
                 
             yield return testCase;

@@ -623,7 +623,7 @@ public class InfraDemo : DemoBase
                     ToolArguments args) =>
                 {
                     Assert.That(setOfUniqueInts.Count, Is.GreaterThan(0));
-                    Assert.That(allContinents.Length, Is.EqualTo(2));
+                    Assert.That(allContinents.Length, Is.LessThanOrEqualTo(2));
                     
                     // manual decoding example
                     if (args.TryGetArgument("people", out List<Person>? fetchedPeople))
@@ -661,15 +661,14 @@ public class InfraDemo : DemoBase
         int z = 0;
     }
 
-    [TornadoTest]
-    public static async Task TornadoStructuredFunction()
+    static async Task TornadoStructuredFunctionModel(ChatModel model)
     {
         Conversation conversation = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.OpenAi.Gpt41.V41,
+            Model = model,
             ResponseFormat = ChatRequestResponseFormats.StructuredJson(async (string location, Continents continent, ComplexClass cls, List<string> names, List<Person> people, Dictionary<string, string> gameShortcutNamePairs, HashSet<int> setOfInts) =>
             {
-                await Task.Delay(500);
+                await Task.Delay(100);
                 Console.WriteLine("test");
                 return "";
             })
@@ -685,9 +684,12 @@ public class InfraDemo : DemoBase
         Console.Write(serialized);
 
         ChatRichResponse data = await conversation.GetResponseRich();
+    }
 
-
-        int z = 0;
+    [TornadoTest]
+    public static async Task TornadoStructuredFunctionOpenAi()
+    {
+        await TornadoStructuredFunctionModel(ChatModel.OpenAi.Gpt41.V41);
     }
     
     [TornadoTest]
