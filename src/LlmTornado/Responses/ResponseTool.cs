@@ -823,7 +823,7 @@ internal class ResponseCodeInterpreterContainerConverter : JsonConverter<Respons
 
 
 /// <summary>
-/// Represents a computer use tool.
+/// Represents a Local Shell Tool.
 /// </summary>
 public class ResponseLocalShellTool : ResponseTool
 {
