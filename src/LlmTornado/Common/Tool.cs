@@ -596,7 +596,7 @@ public class Tool
     /// <param name="name">Name of the function.</param>
     /// <param name="metadata">Optional metadata: additional parameters, excluded parameters, and other options.</param>
     /// <param name="strict">Whether strict JSON schema validation is enabled.</param>
-    internal Tool(Delegate function, string name, ToolMetadata? metadata = null, bool? strict = null)
+    public Tool(Delegate function, string name, ToolMetadata? metadata = null, bool? strict = null)
     {
         Delegate = function;
         Strict = strict;
@@ -612,7 +612,7 @@ public class Tool
     /// <param name="description">Description of the function.</param>
     /// <param name="metadata">Optional metadata: additional parameters, excluded parameters, and other options.</param>
     /// <param name="strict">Whether strict JSON schema validation is enabled.</param>
-    internal Tool(Delegate function, string name, string description, ToolMetadata? metadata = null, bool? strict = null)
+    public Tool(Delegate function, string name, string description, ToolMetadata? metadata = null, bool? strict = null)
     {
         Delegate = function;
         Strict = strict;
