@@ -1,0 +1,11 @@
+{
+  "OpenAi": "",
+  "Anthropic": "",
+  "Cohere": "",
+  "Azure": {
+    "Version": "",
+    "ApiUrlFormat": "",
+    "Key": ""
+  },
+  "Groq": ""
+}
