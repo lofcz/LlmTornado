@@ -706,6 +706,25 @@ public class ResponsesDemo : DemoBase
         int z = 0;
     }
 
+    [TornadoTest]
+    public static async Task ResponseLocalShellTool()
+    {
+        ResponseResult result = await Program.Connect().Responses.CreateResponse(new ResponseRequest
+        {
+            Model = ChatModel.OpenAi.Codex.MiniLatest,
+            Background = false,
+            InputItems = [
+                new ResponseInputMessage(ChatMessageRoles.User, "List files in the current directory?")
+            ],
+            Tools = [
+                new ResponseLocalShellTool()
+            ]
+        });
+
+        Assert.That(result.Output.OfType<ResponseLocalShellToolCallItem>().Count(), Is.GreaterThan(0));
+        int z = 0;
+    }
+
     [TornadoTest, Flaky("only for dev")]
     public static async Task Deserialize()
     {
