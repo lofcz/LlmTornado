@@ -126,7 +126,44 @@ public class ChatRichResponse
         foreach (ChatRichResponseBlock x in Blocks)
         {
             sb.AppendLine($"[block: {x.Type.ToString()}]");
-            sb.AppendLine(x.Type is ChatRichResponseBlockTypes.Reasoning ? x.Reasoning?.Content : x.Message);
+
+            switch (x.Type)
+            {
+                case ChatRichResponseBlockTypes.Function:
+                {
+                    sb.AppendLine($"name: {x.FunctionCall?.Name}");
+                    sb.AppendLine($"arguments:");
+                    sb.AppendLine(x.FunctionCall?.GetArguments().ToJson(true));
+                    break;
+                }
+                case ChatRichResponseBlockTypes.Reasoning or ChatRichResponseBlockTypes.Message:
+                {
+                    sb.AppendLine(x.Type is ChatRichResponseBlockTypes.Reasoning ? x.Reasoning?.Content : x.Message);
+                    break;
+                }
+                case ChatRichResponseBlockTypes.Audio:
+                {
+                    if (x.ChatAudio is not null && !x.ChatAudio.Transcript.IsNullOrWhiteSpace())
+                    {
+                        sb.AppendLine($"transcript:");
+                        sb.AppendLine(x.ChatAudio.Transcript);
+                    }
+                    
+                    sb.AppendLine($"data: {x.ChatAudio?.Data}");
+                    sb.AppendLine($"mime: {x.ChatAudio?.MimeType}");
+                    break;
+                }
+                case ChatRichResponseBlockTypes.Image:
+                {
+                    sb.AppendLine($"url/data: {x.ChatImage?.Url}");
+                    sb.AppendLine($"mime: {x.ChatImage?.MimeType}");
+                    break;
+                }
+                default:
+                {
+                    break;
+                }
+            }
         }
 
         return sb.ToString();

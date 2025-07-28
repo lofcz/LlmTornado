@@ -942,7 +942,7 @@ public partial class ChatDemo : DemoBase
     {
         Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.Google.GeminiPreview.Gemini25FlashPreview0417,
+            Model = ChatModel.Google.Gemini.Gemini25Flash,
             ReasoningBudget = 0
         });
         chat2.AppendUserInput("Explain how beer is created");
@@ -954,7 +954,7 @@ public partial class ChatDemo : DemoBase
         
         chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.Google.GeminiPreview.Gemini25FlashPreview0417,
+            Model = ChatModel.Google.Gemini.Gemini25Flash,
             ReasoningBudget = 1024
         });
         chat2.AppendUserInput("Explain how beer is created");

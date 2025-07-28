@@ -71,6 +71,7 @@
         <PackageReference Include="System.Memory" Version="[4.6.3, )" />
         <PackageReference Include="Microsoft.CSharp" Version="[4.7.0, )" />
         <PackageReference Include="System.Text.Json" Version="[8.0.6, )" />
+        <PackageReference Include="System.Runtime" Version="[4.3.1, )" />
     </ItemGroup>
     <ItemGroup Condition="!$(TargetFramework.StartsWith('net4')) AND !$(TargetFramework.StartsWith('netstandard'))">
         <PackageReference Include="Newtonsoft.Json" Version="[13.0.3, )"/>

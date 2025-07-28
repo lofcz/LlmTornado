@@ -7,6 +7,7 @@ using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Common;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace LlmTornado.Chat.Vendors.Google;
 
@@ -507,6 +508,17 @@ internal class VendorGoogleChatRequest
                     if (request?.GenerationConfig?.ResponseMimeType is "application/json")
                     {
                         string? fnName = chatRequest?.ResponseFormat?.Schema?.Name ?? request.ToolConfig?.FunctionConfig?.AllowedFunctionNames?.FirstOrDefault();
+
+                        if (fnName is null)
+                        {
+                            Tool? firstTool = chatRequest?.Tools?.FirstOrDefault();
+
+                            if (firstTool is not null)
+                            {
+                                fnName = firstTool.ToolName;
+                                fnName ??= firstTool.Function?.Name;
+                            }
+                        }
                         
                         msg.ToolCalls ??= [];
                         msg.ToolCalls.Add(new ToolCall
@@ -748,15 +760,46 @@ internal class VendorGoogleChatRequest
 
                     if ((match?.Strict ?? false) && match.Function?.Parameters is not null)
                     {
-                        localConfig = new VendorGoogleChatRequestGenerationConfig
+                        bool canUpcast = false;
+                        object? schemaObj = match.Function.Parameters;
+                        
+                        // check if we have compatible data in params
+                        if (match.Function.Parameters is JObject jObject)
                         {
-                            ResponseMimeType = "application/json",
-                            ResponseSchema = match.Function.Parameters
-                        };
+                            JToken? type = jObject["type"];
+                            
+                            if (type?.Type is JTokenType.String)
+                            {
+                                canUpcast = true;
+                            }
+                            else
+                            {
+                                JToken? pars = jObject["parameters"];
 
-                        // if we force strict json mode, these two fields must be cleared, otherwise the api throws due to these having precedence over responseMimeType
-                        localTools = null;
-                        // ToolConfig = null; // we keep this in the request as they accept it and we can match the function name later with it
+                                if (pars?.Type is JTokenType.Object)
+                                {
+                                    canUpcast = true;
+                                    schemaObj = pars;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            canUpcast = true;
+                        }
+
+                        if (canUpcast)
+                        {
+                            localConfig = new VendorGoogleChatRequestGenerationConfig
+                            {
+                                ResponseMimeType = "application/json",
+                                ResponseSchema = schemaObj
+                            };
+
+                            // if we force strict json mode, these two fields must be cleared, otherwise the api throws due to these having precedence over responseMimeType
+                            localTools = null;
+                            localToolConfig = null;    
+                        }
                     }
                     
                     break;

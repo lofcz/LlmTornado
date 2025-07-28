@@ -39,6 +39,9 @@ public class ChatRequestResponseFormats
         
         [JsonIgnore]
         internal ToolMetadata? ToolMetadata { get; set; }
+        
+        [JsonIgnore]
+        public List<ToolParam>? SchemaParams { get; set; }
     }
     
     /// <summary>
@@ -50,6 +53,9 @@ public class ChatRequestResponseFormats
     [JsonProperty("json_schema", NullValueHandling = NullValueHandling.Ignore)]
     internal ChatRequestResponseJsonSchema? Schema { get; set; }
     
+    /// <summary>
+    /// Creates a new instance of <see cref="ChatRequestResponseFormats" />.
+    /// </summary>
     internal ChatRequestResponseFormats() { }
 
     /// <summary>
@@ -57,6 +63,20 @@ public class ChatRequestResponseFormats
     /// </summary>
     public void Serialize(IEndpointProvider provider)
     {
+        if (Schema?.SchemaParams is not null)
+        {
+            ToolFunction tf = ToolFactory.Compile(new ToolDefinition(Schema.Name, Schema.Description, Schema.SchemaParams), new ToolMeta
+            {
+                Provider = provider
+            });
+            
+            Schema.Schema = tf.Parameters ?? new
+            {
+                
+            };
+            return;
+        }
+        
         if (Schema?.Delegate is null)
         {
             return;
@@ -64,7 +84,10 @@ public class ChatRequestResponseFormats
 
         DelegateMetadata cd = ToolFactory.CreateFromMethod(Schema.Delegate, null, provider);
         Schema.DelegateMetadata = cd;
-        Schema.Schema = cd.ToolFunction.Parameters;
+        Schema.Schema = cd.ToolFunction.Parameters ?? new
+        {
+            
+        };
     }
 
     /// <summary>
@@ -105,6 +128,66 @@ public class ChatRequestResponseFormats
                 Name = name,
                 Strict = strict,
                 Schema = schema
+            }
+        };
+    }
+    
+    /// <summary>
+    ///     Signals output should be structured JSON. The provided schema will always be followed.
+    /// </summary>
+    /// <param name="pars">A list of parameters to be used in the JSON schema.</param>
+    /// <param name="strict">Whether to strictly enforce the schema. If true, the model will only output JSON that conforms to the schema. Defaults to true.</param>
+    public static ChatRequestResponseFormats StructuredJson(List<ToolParam> pars, bool? strict = true)
+    {
+        return new ChatRequestResponseFormats
+        {
+            Type = ChatRequestResponseFormatTypes.StructuredJson,
+            Schema = new ChatRequestResponseJsonSchema
+            {
+                Strict = strict,
+                SchemaParams = pars
+            }
+        };
+    }
+    
+    /// <summary>
+    ///     Signals output should be structured JSON. The provided schema will always be followed.
+    /// </summary>
+    /// <param name="pars">A list of parameters to be used in the JSON schema.</param>
+    /// <param name="name">The name of the JSON schema.</param>
+    /// <param name="strict">Whether to strictly enforce the schema. If true, the model will only output JSON that conforms to the schema. Defaults to true.</param>
+    public static ChatRequestResponseFormats StructuredJson(List<ToolParam> pars, string name, bool? strict = true)
+    {
+        return new ChatRequestResponseFormats
+        {
+            Type = ChatRequestResponseFormatTypes.StructuredJson,
+            Schema = new ChatRequestResponseJsonSchema
+            {
+                Strict = strict,
+                SchemaParams = pars,
+                Name = name
+            }
+        };
+    }
+    
+    /// <summary>
+    ///     Signals output should be structured JSON. The provided schema will always be followed.
+    /// </summary>
+    /// <param name="pars">A list of parameters to be used in the JSON schema.</param>
+    /// <param name="name">The name of the JSON schema.</param>
+    /// <param name="description">A description of the JSON schema.</param>
+    /// <param name="strict">Whether to strictly enforce the schema. If true, the model will only output JSON that conforms to the schema. Defaults to true.</param>
+    public static ChatRequestResponseFormats StructuredJson(List<ToolParam> pars, string name, string description, bool? strict = true)
+    {
+        return new ChatRequestResponseFormats
+        {
+            Type = ChatRequestResponseFormatTypes.StructuredJson,
+            Schema = new ChatRequestResponseJsonSchema
+            {
+                Strict = strict,
+                SchemaParams = pars,
+                Name = name,
+                Description = description
             }
         };
     }

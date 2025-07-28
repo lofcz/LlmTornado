@@ -35,7 +35,7 @@ public class MethodInvocationResult
     public bool InvocationSuccessful { get; set; }
 
     /// <summary>
-    /// Creates an invocation result from an exception.
+    /// A failed invocation result, containing the exception that occurred.
     /// </summary>
     public MethodInvocationResult(Exception exception)
     {
@@ -43,7 +43,7 @@ public class MethodInvocationResult
     }
 
     /// <summary>
-    /// Creates an invocation result from a result.
+    /// A successful invocation result, containing the value returned by the method.
     /// </summary>
     public MethodInvocationResult(object? result)
     {

@@ -631,13 +631,16 @@ public class ChatRequest : IModelRequest
 		
 		if (Tools is not null)
 		{
+			int i = 0;
+			
 			foreach (Tool tool in Tools)
 			{
-				tool.Serialize(provider);
+				tool.Serialize(provider, i);
+				i++;
 			}	
 		}
 
-		if (ResponseFormat is { Type: ChatRequestResponseFormatTypes.StructuredJson, Schema.Delegate: not null })
+		if (ResponseFormat is { Type: ChatRequestResponseFormatTypes.StructuredJson, Schema: not null } && (ResponseFormat.Schema.Delegate is not null || ResponseFormat.Schema.SchemaParams is not null))
 		{
 			ResponseFormat.Serialize(provider);
 		}

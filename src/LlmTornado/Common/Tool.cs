@@ -576,6 +576,9 @@ public class Tool
     [JsonIgnore]
     internal string? ToolDescription { get; set; }
     
+    [JsonIgnore]
+    internal List<ToolParam>? SchemaParams { get; set; }
+    
     /// <summary>
     /// Creates the tool with a delegate attached. This delegate is serialized into JSON schema and potentially invoked by a LLM.
     /// </summary>
@@ -622,6 +625,34 @@ public class Tool
     }
     
     /// <summary>
+    /// Creates a new tool from given high-level JSON schema parameters. 
+    /// </summary>
+    /// <param name="pars">Input parameters, if any.</param>
+    /// <param name="name">Name of the function.</param>
+    /// <param name="description">Description forwarded to the model.</param>
+    /// <param name="strict">Whether strict JSON schema validation is enabled.</param>
+    public Tool(List<ToolParam> pars, string name, string description, bool? strict = null)
+    {
+        ToolName = name;
+        ToolDescription = description;
+        Strict = strict;
+        SchemaParams = pars;
+    }
+    
+    /// <summary>
+    /// Creates a new tool from given high-level JSON schema parameters. 
+    /// </summary>
+    /// <param name="pars">Input parameters, if any.</param>
+    /// <param name="name">Name of the function.</param>
+    /// <param name="strict">Whether strict JSON schema validation is enabled.</param>
+    public Tool(List<ToolParam> pars, string name, bool? strict = null)
+    {
+        ToolName = name;
+        Strict = strict;
+        SchemaParams = pars;
+    }
+    
+    /// <summary>
     ///     Creates a new function type tool.
     /// </summary>
     /// <param name="function"></param>
@@ -664,11 +695,16 @@ public class Tool
     /// </summary>
     public void Serialize(IEndpointProvider provider)
     {
-        if (Delegate is null)
+        Serialize(provider, 0);
+    }
+
+    internal void Serialize(IEndpointProvider provider, int functionIndex)
+    {
+        if (Delegate is null && SchemaParams is null)
         {
             return;
         }
-
+        
         int hash = provider.GetHashCode();
         serializedDict ??= [];
 
@@ -677,20 +713,28 @@ public class Tool
             Function = fn;
         }
 
-        DelegateMetadata = ToolFactory.CreateFromMethod(Delegate, Metadata, provider);
-
-        if (!ToolName.IsNullOrWhiteSpace())
+        if (Delegate is not null)
         {
-            DelegateMetadata.ToolFunction.Name = ToolName;
-        }
+            DelegateMetadata = ToolFactory.CreateFromMethod(Delegate, Metadata, provider);
+            DelegateMetadata.ToolFunction.Name = !ToolName.IsNullOrWhiteSpace() ? ToolName : $"tool_{functionIndex + 1}";
 
-        if (!ToolDescription.IsNullOrWhiteSpace())
+            if (!ToolDescription.IsNullOrWhiteSpace())
+            {
+                DelegateMetadata.ToolFunction.Description = ToolDescription;
+            }
+
+            Function = DelegateMetadata.ToolFunction;
+            serializedDict.TryAdd(hash, Function);      
+        }
+        else if (SchemaParams is not null)
         {
-            DelegateMetadata.ToolFunction.Description = ToolDescription;
+            Function = ToolFactory.Compile(new ToolDefinition(ToolName ?? $"tool_{functionIndex + 1}", ToolDescription, SchemaParams), new ToolMeta
+            {
+                Provider = provider
+            });
+            
+            serializedDict.TryAdd(hash, Function);      
         }
-
-        Function = DelegateMetadata.ToolFunction;
-        serializedDict.TryAdd(hash, Function);
     }
 
     /// <summary>
