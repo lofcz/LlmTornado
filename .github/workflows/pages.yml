@@ -33,6 +33,9 @@ jobs:
         run: npm run docs:build
         working-directory: src/LlmTornado.Docs/website
 
+      - name: Add CNAME
+        run: echo "llmtornado.ai" > src/LlmTornado.Docs/website/docs/.vitepress/dist/CNAME
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
