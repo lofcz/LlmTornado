@@ -1,0 +1,57 @@
+@page "/generated/example"
+@code {
+    
+    string co = """
+                  using System;
+                  using System.Threading.Tasks;
+                  using LlmTornado.Chat;
+                  using LlmTornado.Chat.Models;
+                  using LlmTornado.Code;
+                  using LlmTornado;
+                  
+                  public static class __ExecutionBridge
+                  {
+                      public static TaskCompletionSource<object?>? CompletionSource;
+                  }
+                  
+                  
+                  class Program
+                  {
+                    public static void Main(string[] argsGeneratedCode) {
+                    
+                        __ExecutionBridge.CompletionSource = new TaskCompletionSource<object?>();
+                    
+                        var userTask = Task.Run(async () => {
+                             var api = new TornadoApi("%%API_KEY%%");
+                             await Task.Delay(1000);
+                             Console.WriteLine("hello world");
+                            // Console.WriteLine(result?.Choices?.Count > 0 ? result.Choices?[0].Message?.Content : "no response"); 
+                        });
+                        
+                        userTask.ContinueWith(t => 
+                          {
+                              if (__ExecutionBridge.CompletionSource is null) return;
+                          
+                              if (t.IsFaulted)
+                              {
+                                  __ExecutionBridge.CompletionSource.SetException(t.Exception.GetBaseException());
+                              }
+                              else if (t.IsCanceled)
+                              {
+                                  __ExecutionBridge.CompletionSource.SetCanceled();
+                              }
+                              else
+                              {
+                                  __ExecutionBridge.CompletionSource.SetResult(null);
+                              }
+                          });
+                    }
+                  }
+                  """;
+
+}
+
+<h1>Generated Page</h1>
+
+<p>This is a page generated from a Scriban template.</p>
+<CodeSnippet Code="@co" />

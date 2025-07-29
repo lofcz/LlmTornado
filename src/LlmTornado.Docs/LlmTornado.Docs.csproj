@@ -7,13 +7,18 @@
         <LangVersion>preview</LangVersion>
         <GHPages>true</GHPages>
         <ServiceWorkerAssetsManifest>service-worker-assets.js</ServiceWorkerAssetsManifest>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <Optimize>false</Optimize>
+        <WasmBundlerFriendlyBootConfig>true</WasmBundlerFriendlyBootConfig>
     </PropertyGroup>
 
     <ItemGroup>
         <PackageReference Include="BlazorWasmBrotliLoader.Build" Version="1.0.1" />
         <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.0-preview.5.25277.114" />
         <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.0-preview.5.25277.114" PrivateAssets="all" />
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
         <PackageReference Include="PublishSPAforGitHubPages.Build" Version="3.0.1" />
+        <PackageReference Include="Scriban" Version="5.10.0" />
     </ItemGroup>
 
     <ItemGroup>
@@ -22,6 +27,31 @@
     
     <ItemGroup>
       <ProjectReference Include="..\LlmTornado\LlmTornado.csproj" />
+    </ItemGroup>
+    
+    <ItemGroup>
+      <Compile Remove="reference\**" />
+    </ItemGroup>
+    
+    <ItemGroup>
+      <EmbeddedResource Remove="reference\**" />
+    </ItemGroup>
+    
+    <ItemGroup>
+      <Content Remove="reference\**" />
+    </ItemGroup>
+    
+    <ItemGroup>
+      <None Remove="reference\**" />
+    </ItemGroup>
+    
+    <ItemGroup>
+      <_ContentIncludedByDefault Remove="reference\BlazorCodeEditor\Properties\launchSettings.json" />
+      <_ContentIncludedByDefault Remove="reference\BlazorCodeEditor\App.razor" />
+      <_ContentIncludedByDefault Remove="reference\BlazorCodeEditor\Console\ConsoleOutput.razor" />
+      <_ContentIncludedByDefault Remove="reference\BlazorCodeEditor\Layout\MainLayout.razor" />
+      <_ContentIncludedByDefault Remove="reference\BlazorCodeEditor\Pages\Home.razor" />
+      <_ContentIncludedByDefault Remove="reference\BlazorCodeEditor\_Imports.razor" />
     </ItemGroup>
 
 </Project>

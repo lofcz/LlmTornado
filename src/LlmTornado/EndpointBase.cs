@@ -51,7 +51,14 @@ public abstract class EndpointBase
                 {
                     return userClient;
                 }
-                
+
+                if (Runtime.IsBrowser)
+                {
+                    HttpClient basicClient = new HttpClient();
+                    OnHttpClientCreated?.Invoke(basicClient, provider);
+                    return basicClient;
+                }
+
                 HttpClient client = TornadoConfig.CreateClient is null ? new HttpClient(
 #if MODERN
                     new SocketsHttpHandler

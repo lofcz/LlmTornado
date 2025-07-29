@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using LlmTornado.Docs.Code;
+using LlmTornado.Docs.Console;
 
 namespace LlmTornado.Docs;
 
@@ -12,6 +14,10 @@ public class Program
         builder.RootComponents.Add<HeadOutlet>("head::after");
 
         builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
+
+        builder.Services.AddSingleton<ICodeExecutor, WebAssemblyCodeRunner>();
+        builder.Services.AddSingleton<ConsoleOutputService>();
+        builder.Services.AddSingleton<IResourceResolver, ResourceResolver>();
 
         await builder.Build().RunAsync();
     }

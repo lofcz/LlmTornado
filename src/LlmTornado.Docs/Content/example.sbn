@@ -1,0 +1,24 @@
+@page "/generated/example"
+
+<h1>Generated Page</h1>
+
+<p>This is a page generated from a Scriban template.</p>
+
+{{-
+    capture code
+-}}
+var api = new TornadoApi("%%API_KEY%%");
+var result = await api.Chat.CreateChatCompletionAsync(new ChatRequest
+{
+    Model = ChatModel.OpenAi.Gpt4.Turbo,
+    ResponseFormat = ChatRequestResponseFormats.Json,
+    Messages = [
+        new ChatMessage(ChatMessageRoles.System, "Solve the math problem given by user, respond in JSON format."),
+        new ChatMessage(ChatMessageRoles.User, "2+2=?")
+    ]
+});
+Console.WriteLine(result?.Choices?.Count > 0 ? result.Choices?[0].Message?.Content : "no response");
+{{-
+    end
+-}}
+{{ CodeSnippet(code) }}
