@@ -5,6 +5,7 @@ using LlmTornado.Docs.Webcil;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Emit;
 
 namespace LlmTornado.Docs.Code;
 
@@ -27,13 +28,15 @@ public class WebAssemblyCodeRunner : ICodeExecutor
     {
         try
         {
-            var stopwatch = Stopwatch.StartNew();
+            Stopwatch stopwatch = Stopwatch.StartNew();
 
-            var syntaxTree = CSharpSyntaxTree.ParseText(code);
+            SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(code, cancellationToken: cancellationToken);
             _consoleOutputService.AddLog("Parsed syntax tree.", ConsoleSeverity.Debug);
+            _consoleOutputService.AddLog($"Env base address: {_env.BaseAddress}", ConsoleSeverity.Debug);
+            _consoleOutputService.AddLog($"Env environment: {_env.Environment}", ConsoleSeverity.Debug);
 
-            var references = new List<MetadataReference>
-            {
+            List<MetadataReference?> references =
+            [
                 await GetMetadataReferenceAsync("System.wasm"),
                 await GetMetadataReferenceAsync("System.Private.Uri.wasm"),
                 await GetMetadataReferenceAsync("System.Private.CoreLib.wasm"),
@@ -44,24 +47,21 @@ public class WebAssemblyCodeRunner : ICodeExecutor
                 await GetMetadataReferenceAsync("System.Net.Http.wasm"),
                 await GetMetadataReferenceAsync("System.Text.Json.wasm"),
                 await GetMetadataReferenceAsync("LlmTornado.wasm")
-            };
+            ];
             
-            /*
-             * await GetMetadataReferenceAsync("System.Runtime.wasm"),
-                await GetMetadataReferenceAsync("System.Console.wasm"),
-                await GetMetadataReferenceAsync("System.Collections.wasm"),
-                await GetMetadataReferenceAsync("System.Net.Http.wasm"),
-                await GetMetadataReferenceAsync("System.Text.Json.wasm"),
-                await GetMetadataReferenceAsync("LlmTornado.wasm")
-             */
-
             int zz = 1;
 
+            if (references.Any(x => x is null))
+            {
+                _consoleOutputService.AddLog("Aborted, because some requested references were not resolved.", ConsoleSeverity.Error);
+                return;
+            }
+
             stopwatch.Restart();
-            var compilation = CSharpCompilation.Create(
+            CSharpCompilation compilation = CSharpCompilation.Create(
                 "InMemoryAssembly",
-                new[] { syntaxTree },
-                references,
+                [syntaxTree],
+                references.OfType<MetadataReference>(),
                 new CSharpCompilationOptions(
                     OutputKind.ConsoleApplication,
                     metadataImportOptions: MetadataImportOptions.All,
@@ -71,9 +71,9 @@ public class WebAssemblyCodeRunner : ICodeExecutor
             );
             _consoleOutputService.AddLog($"Compilation completed in {stopwatch.ElapsedMilliseconds} ms.", ConsoleSeverity.Debug);
 
-            foreach (var diagnostic in compilation.GetDiagnostics())
+            foreach (Diagnostic diagnostic in compilation.GetDiagnostics(cancellationToken))
             {
-                var severity = diagnostic.Severity switch
+                ConsoleSeverity severity = diagnostic.Severity switch
                 {
                     DiagnosticSeverity.Error => ConsoleSeverity.Error,
                     DiagnosticSeverity.Warning => ConsoleSeverity.Warning,
@@ -83,16 +83,16 @@ public class WebAssemblyCodeRunner : ICodeExecutor
             }
 
             stopwatch.Restart();
-            using var memoryStream = new MemoryStream();
-            var emitResult = compilation.Emit(memoryStream);
+            using MemoryStream memoryStream = new MemoryStream();
+            EmitResult emitResult = compilation.Emit(memoryStream, cancellationToken: cancellationToken);
 
             _consoleOutputService.AddLog($"Emit completed in {stopwatch.ElapsedMilliseconds} ms.", ConsoleSeverity.Debug);
 
             if (!emitResult.Success)
             {
-                foreach (var diagnostic in emitResult.Diagnostics)
+                foreach (Diagnostic diagnostic in emitResult.Diagnostics)
                 {
-                    var severity = diagnostic.Severity switch
+                    ConsoleSeverity severity = diagnostic.Severity switch
                     {
                         DiagnosticSeverity.Error => ConsoleSeverity.Error,
                         DiagnosticSeverity.Warning => ConsoleSeverity.Warning,
@@ -105,10 +105,10 @@ public class WebAssemblyCodeRunner : ICodeExecutor
             }
 
             memoryStream.Seek(0, SeekOrigin.Begin);
-            var assembly = Assembly.Load(memoryStream.ToArray());
+            Assembly assembly = Assembly.Load(memoryStream.ToArray());
             _consoleOutputService.AddLog($"Assembly loaded: {assembly.FullName}", ConsoleSeverity.Debug);
 
-            var entryPoint = assembly.EntryPoint;
+            MethodInfo? entryPoint = assembly.EntryPoint;
             if (entryPoint == null)
             {
                 _consoleOutputService.AddLog("No entry point found in the assembly.", ConsoleSeverity.Error);
@@ -118,13 +118,13 @@ public class WebAssemblyCodeRunner : ICodeExecutor
             try
             {
                 stopwatch.Restart();
-                var parameters = entryPoint.GetParameters();
-                var invokeArgs = parameters.Length == 1 && parameters[0].ParameterType == typeof(string[])
-                    ? new object?[] { Array.Empty<string>() }
+                ParameterInfo[] parameters = entryPoint.GetParameters();
+                object?[]? invokeArgs = parameters.Length == 1 && parameters[0].ParameterType == typeof(string[])
+                    ? [Array.Empty<string>()]
                     : null;
                 
-                var bridgeType = assembly.GetType("__ExecutionBridge");
-                var tcsField = bridgeType.GetField("CompletionSource", BindingFlags.Public | BindingFlags.Static);
+                Type? bridgeType = assembly.GetType("__ExecutionBridge");
+                FieldInfo? tcsField = bridgeType.GetField("CompletionSource", BindingFlags.Public | BindingFlags.Static);
                 
                 
                 
@@ -136,7 +136,7 @@ public class WebAssemblyCodeRunner : ICodeExecutor
                 }
                 
                 object? tcsObject = tcsField.GetValue(null);
-                var taskProperty = tcsObject.GetType().GetProperty("Task");
+                PropertyInfo? taskProperty = tcsObject.GetType().GetProperty("Task");
                 object? taskObject = taskProperty?.GetValue(tcsObject);
          
                 if (taskObject is Task resultTask2)
@@ -148,7 +148,7 @@ public class WebAssemblyCodeRunner : ICodeExecutor
             }
             catch (Exception ex)
             {
-                var exceptionMessage = ex.InnerException != null
+                string exceptionMessage = ex.InnerException != null
                     ? $"Unhandled Exception: {ex.InnerException.Message}"
                     : $"Unhandled Exception: {ex.Message}";
                 _consoleOutputService.AddLog(exceptionMessage, ConsoleSeverity.Error);
@@ -162,28 +162,40 @@ public class WebAssemblyCodeRunner : ICodeExecutor
     
     private async Task<string> ResolveResourceStreamUri(string resource)
     {
+        _consoleOutputService.AddLog($"Reading: {resource}", ConsoleSeverity.Info);
+        
         if (_env.BaseAddress.Contains("localhost"))
         {
+            _consoleOutputService.AddLog($"Read from: /_framework/{resource}", ConsoleSeverity.Info);
             // on localhost, we can request the resource directly
             return $"/_framework/{resource}";
         }
         
         // on prod, we need to transform the request into hashed version, e.g.
         // System.wasm -> System.82w3kc2qw3.wasm
+        _consoleOutputService.AddLog($"Read from: /LlmTornado/PRODTEST/_framework/{resource}", ConsoleSeverity.Info);
         return $"/LlmTornado/PRODTEST/_framework/{resource}";
     }
 
-    private async Task<PortableExecutableReference> GetMetadataReferenceAsync(string wasmModule)
+    private async Task<PortableExecutableReference?> GetMetadataReferenceAsync(string wasmModule)
     {
-        await using var stream = await _httpClient.GetStreamAsync(await ResolveResourceStreamUri(wasmModule));
-        using MemoryStream ms = new MemoryStream();
-        await stream.CopyToAsync(ms);
-        ms.Seek(0, SeekOrigin.Begin);
+        try
+        {
+            await using Stream stream = await _httpClient.GetStreamAsync(await ResolveResourceStreamUri(wasmModule));
+            using MemoryStream ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            ms.Seek(0, SeekOrigin.Begin);
         
-        var peBytes = WebcilConverterUtil.ConvertFromWebcil(ms);
+            byte[] peBytes = WebcilConverterUtil.ConvertFromWebcil(ms);
 
-        using var peStream = new MemoryStream(peBytes);
-        return MetadataReference.CreateFromStream(peStream);
+            using MemoryStream peStream = new MemoryStream(peBytes);
+            return MetadataReference.CreateFromStream(peStream);
+        }
+        catch (Exception e)
+        {
+            _consoleOutputService.AddLog($"GetMetadataReferenceAsync: {e.Message}", ConsoleSeverity.Error);
+            return null;
+        }
     }
 }
 
