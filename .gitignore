@@ -346,3 +346,6 @@ src/LlmTornado/openai_openapi.yml
 /src/LlmTornado.Docs/dist
 /src/LlmTornado.Docs/website/static/playground
 /src/LlmTornado.Docs/website/blazor-dist
+/src/LlmTornado.Docs/website/docs/.vitepress/dist
+/src/LlmTornado.Docs/website/docs/.vitepress/cache
+/src/LlmTornado.Docs/website/docs/public/playground
