@@ -187,6 +187,18 @@ h2.mystical-section-title {
   color: #f8fafc;
 }
 
+.home.VPNavBar.screen-open {
+  background-color: rgba(10, 16, 29, 0.9) !important;
+}
+
+.VPNavScreen {
+  bottom: auto !important;
+}
+
+.VPNav:has(.home) .VPNavScreen {
+  background-color: rgba(10, 16, 29, 1) !important;
+}
+
 @media (max-width: 1200px) {
   .is-home .vp-doc.container {
     padding: 0 !important;

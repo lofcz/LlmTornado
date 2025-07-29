@@ -12,6 +12,8 @@ export default defineConfig({
     ],
 
     sidebar: [
+      { text: 'Guide', link: '/getting-started' },
+      { text: 'Playground', link: '/playground/', target: '_blank' },
       {
         text: 'Guide',
         items: [
