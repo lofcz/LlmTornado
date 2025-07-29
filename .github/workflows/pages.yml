@@ -7,27 +7,39 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      # Checkout the code
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      # Install .NET SDK
+      # 1. Setup .NET for the Blazor build
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.100-preview.4.25258.110'
+          dotnet-version: '10.0.100-preview.5.25277.114'
 
       - name: Install .NET WebAssembly Tools
         run: dotnet workload install wasm-tools
 
-      # Publish the site
-      - name: Publish
-        working-directory: src/LlmTornado.Docs
-        run: dotnet publish LlmTornado.Docs.csproj -c:Release -o:publish -p:GHPages=true
+      # 2. Setup Node.js for the Docusaurus build
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: 'npm'
+          cache-dependency-path: 'src/LlmTornado.Docs/website/package-lock.json'
 
-      # Deploy the site
-      - name: Deploy
+      - name: Install Docusaurus dependencies
+        run: npm ci
+        working-directory: src/LlmTornado.Docs/website
+
+      # 3. Build the combined site using the orchestrated npm script
+      - name: Build Blazor and Docusaurus site
+        run: npm run build:gh-pages
+        working-directory: src/LlmTornado.Docs/website
+
+      # 4. Deploy the final output from the Docusaurus build directory
+      - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: src/LlmTornado.Docs/publish/wwwroot
+          publish_dir: src/LlmTornado.Docs/website/build
           force_orphan: true
