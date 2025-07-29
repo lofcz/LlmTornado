@@ -1358,6 +1358,59 @@ public partial class ChatDemo : DemoBase
     }
     
     [TornadoTest]
+    public static async Task PerplexityWebSearchMerged()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Temperature = 0.4d,
+            Model = ChatModel.Perplexity.Sonar.Default,
+            WebSearchOptions = new ChatRequestWebSearchOptions
+            {
+                SearchContextSize = ChatRequestWebSearchContextSize.Low,
+                UserLocation = new ChatRequestWebSearchUserLocation
+                {
+                    Country = "CS"
+                }
+            },
+            VendorExtensions = new ChatRequestVendorExtensions(new ChatRequestVendorPerplexityExtensions
+            {
+                LatestUpdated = new DateTime(2025, 6, 1)
+            })
+        });
+        
+        chat.AppendUserInput("Best place to eat out in our capital?");
+
+        Console.WriteLine(chat.Serialize(true));
+        
+        ChatRichResponse response = await chat.GetResponseRich();
+        
+        Console.WriteLine(response);
+        Console.WriteLine(response.Result?.Usage?.TotalTokens);
+    }
+    
+    [TornadoTest]
+    public static async Task PerplexitySecSearchTest()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Perplexity.Sonar.Default,
+            VendorExtensions = new ChatRequestVendorExtensions(new ChatRequestVendorPerplexityExtensions
+            {
+                SearchMode = ChatRequestVendorPerplexitySearchModes.Sec
+            })
+        });
+        
+        chat.AppendUserInput("What was Apple's revenue growth in their latest quarterly report?");
+
+        Console.WriteLine(chat.Serialize(true));
+        
+        ChatRichResponse response = await chat.GetResponseRich();
+        
+        Console.WriteLine(response);
+        Console.WriteLine(response.Result?.Usage?.TotalTokens);
+    }
+    
+    [TornadoTest]
     public static async Task AnthropicFileInput()
     {
         TornadoApi api = Program.Connect();

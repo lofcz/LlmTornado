@@ -19,6 +19,18 @@ internal class VendorPerplexityChatRequest
     {
         JsonSerializer serializer = JsonSerializer.CreateDefault(settings);
         JObject jsonPayload = JObject.FromObject(ExtendedRequest ?? NativeRequest, serializer);
+
+        if (SourceRequest.VendorExtensions?.Perplexity?.LatestUpdated is not null)
+        {
+            if (jsonPayload["web_search_options"] is not JObject webSearchOptions)
+            {
+                webSearchOptions = new JObject();
+                jsonPayload["web_search_options"] = webSearchOptions;
+            }
+            
+            webSearchOptions["latest_updated"] = SourceRequest.VendorExtensions.Perplexity.LatestUpdated.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        }
+        
         return jsonPayload;
     }
     
@@ -41,6 +53,7 @@ internal class VendorPerplexityChatRequest
                 ExtendedRequest.SearchMode = extensions.SearchMode switch
                 {
                     ChatRequestVendorPerplexitySearchModes.Academic => "academic",
+                    ChatRequestVendorPerplexitySearchModes.Sec => "sec",
                     _ => null
                 };
             }
@@ -53,6 +66,16 @@ internal class VendorPerplexityChatRequest
             if (extensions.SearchAfterDateFilter is not null)
             {
                 ExtendedRequest.SearchAfterDateFilter = extensions.SearchAfterDateFilter.Value.ToString("M/d/yyyy", CultureInfo.InvariantCulture);
+            }
+            
+            if (extensions.LastUpdatedBeforeFilter is not null)
+            {
+                ExtendedRequest.LastUpdatedBeforeFilter = extensions.LastUpdatedBeforeFilter.Value.ToString("M/d/yyyy", CultureInfo.InvariantCulture);
+            }
+            
+            if (extensions.LastUpdatedAfterFilter is not null)
+            {
+                ExtendedRequest.LastUpdatedAfterFilter = extensions.LastUpdatedAfterFilter.Value.ToString("M/d/yyyy", CultureInfo.InvariantCulture);
             }
             
             if (extensions.ReturnImages is not null)
@@ -105,6 +128,18 @@ internal class VendorPerplexityChatRequestData : ChatRequest
     /// </summary>
     [JsonProperty("search_before_date_filter")]
     public string? SearchBeforeDateFilter { get; set; }
+
+    /// <summary>
+    /// %m/%d/%Y
+    /// </summary>
+    [JsonProperty("last_updated_after_filter")]
+    public string? LastUpdatedAfterFilter { get; set; }
+    
+    /// <summary>
+    /// %m/%d/%Y
+    /// </summary>
+    [JsonProperty("last_updated_before_filter")]
+    public string? LastUpdatedBeforeFilter { get; set; }
     
     /// <summary>
     /// "week", "day", "month"

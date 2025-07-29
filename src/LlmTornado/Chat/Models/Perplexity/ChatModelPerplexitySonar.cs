@@ -20,7 +20,7 @@ public class ChatModelPerplexitySonar : IVendorModelClassProvider
     public readonly ChatModel Pro = ModelPro;
     
     /// <summary>
-    /// Latest o3 mini model snapshot.
+    /// Latest Sonar snapshot.
     /// </summary>
     public static readonly ChatModel ModelDefault = new ChatModel("sonar", LLmProviders.Perplexity, 128_000);
     
