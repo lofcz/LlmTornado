@@ -342,5 +342,6 @@ apiKey.json
 nupkgs
 src/LlmTornado/openai_openapi.yml
 /src/LlmTornado.Demo/Static/Json/Sensitive
-/src/LlmTornado.Docs/website
 /src/LlmTornado.Docs/reference
+/src/LlmTornado.Docs/dist
+/src/LlmTornado.Docs/website/static/playground
