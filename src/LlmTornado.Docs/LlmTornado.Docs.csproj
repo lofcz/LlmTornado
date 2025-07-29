@@ -5,8 +5,6 @@
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <LangVersion>preview</LangVersion>
-        <GHPages>true</GHPages>
-        <GHPagesBase>/LlmTornado/playground/</GHPagesBase>
         <ServiceWorkerAssetsManifest>service-worker-assets.js</ServiceWorkerAssetsManifest>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <Optimize>false</Optimize>

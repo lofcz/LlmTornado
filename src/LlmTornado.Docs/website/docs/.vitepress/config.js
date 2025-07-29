@@ -1,7 +1,7 @@
 import { defineConfig } from 'vitepress'
 
 export default defineConfig({
-  base: '/LlmTornado/',
+  base: '/',
   title: "LlmTornado",
   description: "LlmTornado Documentation",
 
