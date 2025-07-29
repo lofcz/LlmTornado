@@ -10,7 +10,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 1. Setup .NET for the Blazor build
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v4
         with:
@@ -19,7 +18,6 @@ jobs:
       - name: Install .NET WebAssembly Tools
         run: dotnet workload install wasm-tools
 
-      # 2. Setup Node.js for the Docusaurus build
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -27,19 +25,17 @@ jobs:
           cache: 'npm'
           cache-dependency-path: 'src/LlmTornado.Docs/website/package-lock.json'
 
-      - name: Install Docusaurus dependencies
+      - name: Install dependencies
         run: npm ci
         working-directory: src/LlmTornado.Docs/website
 
-      # 3. Build the combined site using the orchestrated npm script
-      - name: Build Blazor and Docusaurus site
-        run: npm run build:gh-pages
+      - name: Build VitePress site
+        run: npm run docs:build
         working-directory: src/LlmTornado.Docs/website
 
-      # 4. Deploy the final output from the Docusaurus build directory
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: src/LlmTornado.Docs/website/build
+          publish_dir: src/LlmTornado.Docs/website/docs/.vitepress/dist
           force_orphan: true
