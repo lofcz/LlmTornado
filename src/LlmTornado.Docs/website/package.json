@@ -7,7 +7,7 @@
     "start": "docusaurus start",
     "build": "docusaurus build",
     "build:gh-pages": "npm run clean && npm run build:blazor && npm run build:docusaurus",
-    "build:blazor": "dotnet publish ../LlmTornado.Docs.csproj -c Release -o ./blazor-dist /p:GHPages=true && cpr ./blazor-dist/wwwroot ./static/playground -o",
+    "build:blazor": "dotnet publish ../LlmTornado.Docs.csproj -c Release -o ./blazor-dist /p:GHPages=true /p:WarningLevel=0 && cpr ./blazor-dist/wwwroot ./static/playground -o",
     "build:docusaurus": "docusaurus build",
     "swizzle": "docusaurus swizzle",
     "deploy": "docusaurus deploy",

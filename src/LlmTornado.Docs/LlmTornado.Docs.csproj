@@ -38,4 +38,10 @@
         <Content Remove="website\build\**" />
         <None Remove="website\build\**" />
     </ItemGroup>
+
+    <Target Name="CreateBmetaJson" AfterTargets="AfterPublish">
+        <Message Text="Executing LlmTornado.BuildInfo to create bmeta.json..." Importance="high" />
+        <Exec Command="dotnet run --project ../LlmTornado.BuildInfo/LlmTornado.BuildInfo.csproj -- &quot;$(PublishDir)wwwroot\_framework\dotnet.js&quot;" />
+    </Target>
+
 </Project>

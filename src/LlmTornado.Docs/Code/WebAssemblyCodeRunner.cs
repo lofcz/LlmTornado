@@ -162,8 +162,15 @@ public class WebAssemblyCodeRunner : ICodeExecutor
     
     private async Task<string> ResolveResourceStreamUri(string resource)
     {
-        //var resolved = await _resourceResolver.ResolveResource(resource);
-        return $"/_framework/{resource}";
+        if (_env.BaseAddress.Contains("localhost"))
+        {
+            // on localhost, we can request the resource directly
+            return $"/_framework/{resource}";
+        }
+        
+        // on prod, we need to transform the request into hashed version, e.g.
+        // System.wasm -> System.82w3kc2qw3.wasm
+        return $"/LlmTornado/PRODTEST/_framework/{resource}";
     }
 
     private async Task<PortableExecutableReference> GetMetadataReferenceAsync(string wasmModule)
