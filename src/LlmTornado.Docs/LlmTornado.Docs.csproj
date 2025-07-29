@@ -40,8 +40,10 @@
     </ItemGroup>
 
     <Target Name="CreateBmetaJson" AfterTargets="AfterPublish">
+        <Message Text="Restoring LlmTornado.BuildInfo project..." Importance="high" />
+        <MSBuild Projects="../LlmTornado.BuildInfo/LlmTornado.BuildInfo.csproj" Targets="Restore" />
         <Message Text="Executing LlmTornado.BuildInfo to create bmeta.json..." Importance="high" />
-        <Exec Command="dotnet run --project ../LlmTornado.BuildInfo/LlmTornado.BuildInfo.csproj -- &quot;$(PublishDir)wwwroot\_framework\dotnet.js&quot;" />
+        <Exec Command="dotnet run --project ../LlmTornado.BuildInfo/LlmTornado.BuildInfo.csproj --no-restore -- &quot;$(PublishDir)wwwroot\_framework\dotnet.js&quot;" />
     </Target>
 
 </Project>
