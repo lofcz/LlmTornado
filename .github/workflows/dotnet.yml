@@ -38,7 +38,7 @@ jobs:
 
     - name: Build projects for .NET Core
       run: |
-        for project in $(find . -name "*.csproj" -not -path "./LlmTornado.Docs/*"); do
+        for project in $(find . -name "*.csproj" -not -path "./LlmTornado.Docs/*" -not -path "./LlmTornado.BuildInfo/*"); do
           dotnet build "$project" --no-restore --framework net8.0
         done
       working-directory: ./src
