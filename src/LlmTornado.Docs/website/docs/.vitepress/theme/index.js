@@ -1,9 +1,17 @@
 import DefaultTheme from 'vitepress/theme'
-import { handleRedirect } from './redirect.js'
+import 'aos/dist/aos.css'
+import './custom.css'
+import LandingPageSections from './LandingPageSections.vue';
 
 export default {
   ...DefaultTheme,
-  enhanceApp({ app, router, siteData }) {
-    handleRedirect();
+  enhanceApp({ app }) {
+    app.component('LandingPageSections', LandingPageSections);
+
+    if (typeof window !== 'undefined') {
+      import('aos').then(AOS => {
+        AOS.init()
+      })
+    }
   }
 }

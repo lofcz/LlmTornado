@@ -4,7 +4,7 @@ export default defineConfig({
   base: '/',
   title: "LlmTornado",
   description: "LlmTornado Documentation",
-
+  appearance: 'force-dark',
   themeConfig: {
     nav: [
       { text: 'Guide', link: '/getting-started' },

@@ -1,0 +1,239 @@
+@import "tailwindcss";
+
+/* Apply the mystical gradient background to the entire page */
+:root .VPHome {
+  /*background: radial-gradient(ellipse at top, rgba(15, 23, 42, 0.9) 0%, rgba(15, 23, 42, 1) 70%), linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%) !important;*/
+  min-height: 100vh;
+}
+
+.vp-doc,
+.Layout {
+  min-height: 100vh;
+}
+
+/* Ensure the main content area continues the gradient */
+.vp-doc .container,
+.vp-doc .content,
+.VPContent {
+  background: transparent !important;
+}
+
+/* Make VitePress features section blend seamlessly with gradient */
+.VPFeatures,
+.VPHomeFeatures,
+.VPFeature,
+.VPFeatures .container,
+.VPHomeFeatures .container {
+  background: transparent !important;
+}
+
+/* Move features closer to hero section */
+.VPHomeFeatures {
+  padding-top: 2rem !important;
+  padding-bottom: 4rem !important;
+}
+
+/* Style the feature cards to blend with the mystical gradient */
+.VPFeature .box {
+  background: rgba(30, 41, 59, 0.8) !important;
+  border: 1px solid rgba(148, 163, 184, 0.4) !important;
+  backdrop-filter: blur(16px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 16px !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.VPFeature .box::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(148, 163, 184, 0.6), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.VPFeature .box:hover::before {
+  opacity: 1;
+}
+
+.VPFeature .box:hover {
+  background: rgba(51, 65, 85, 0.9) !important;
+  border-color: rgba(148, 163, 184, 0.6) !important;
+  transform: translateY(-6px);
+}
+
+/* Ensure feature text is readable */
+.VPFeature .title {
+  color: #f1f5f9 !important;
+}
+
+.VPFeature .details {
+  color: #cbd5e1 !important;
+}
+
+/* Style feature icons */
+.VPFeature .icon {
+  filter: brightness(1.2) saturate(1.1);
+}
+
+/* Make sure text remains readable in the gradient background */
+.vp-doc h1,
+.vp-doc h2,
+.vp-doc h3,
+.vp-doc h4,
+.vp-doc h5,
+.vp-doc h6 {
+  color: #f1f5f9 !important;
+}
+
+/* Style code blocks to fit the mystical theme */
+.home .vp-doc div[class*="language-"] {
+  background: rgba(15, 23, 42, 0.8) !important;
+  border: 1px solid rgba(100, 116, 139, 0.3) !important;
+  backdrop-filter: blur(10px);
+}
+
+/* Style inline code */
+.vp-doc code {
+ 
+}
+
+/* Style links */
+.vp-doc a {
+  color: #60a5fa !important;
+}
+
+.vp-doc a:hover {
+  color: #93c5fd !important;
+}
+
+/* Style tables */
+.vp-doc table {
+  background: rgba(15, 23, 42, 0.6) !important;
+  border: 1px solid rgba(100, 116, 139, 0.3) !important;
+}
+
+.vp-doc th {
+  background: rgba(30, 41, 59, 0.8) !important;
+  color: #f1f5f9 !important;
+  border-bottom: 1px solid rgba(100, 116, 139, 0.3) !important;
+}
+
+.vp-doc td {
+  border-bottom: 1px solid rgba(100, 116, 139, 0.2) !important;
+  color: #cbd5e1 !important;
+}
+
+/* Style blockquotes */
+.vp-doc blockquote {
+  background: rgba(15, 23, 42, 0.6) !important;
+  border-left: 4px solid #60a5fa !important;
+  color: #cbd5e1 !important;
+}
+
+/* Ensure sidebar (if any) also follows the theme */
+.home .VPSidebar {
+  background: rgba(15, 23, 42, 0.9) !important;
+  backdrop-filter: blur(10px);
+}
+
+/* Style navigation */
+.VPNav:has(.home) {
+  background: rgba(15, 23, 42, 0.9) !important;
+  backdrop-filter: blur(10px);
+}
+
+h2.mystical-section-title {
+  border-top: none;
+}
+
+/* Custom navbar styling for landing page only */
+@media (min-width: 960px) {
+    .VPNavBar.home:not(.has-sidebar):not(.home.top) {
+        background-color: rgba(10, 16, 29, 0.9) !important;
+        border-bottom: none !important;
+    }
+}
+
+.VPNavBar.home:not(.has-sidebar):not(.home.top) .divider .divider-line {
+  display: none;
+}
+
+
+.VPNavBar.home:not(.has-sidebar):not(.home.top) .divider {
+  display: none;
+}
+
+/* Custom Footer Styles for the Landing Page */
+.home .VPFooter {
+  background: linear-gradient(180deg, rgba(15, 23, 42, 1) 0%, rgba(2, 6, 23, 1) 100%) !important;
+  border-top: 1px solid rgba(148, 163, 184, 0.1) !important;
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+}
+
+.home .VPFooter .container .message,
+.home .VPFooter .container .copyright {
+  color: #94a3b8;
+  transition: color 0.3s ease;
+}
+
+.home .VPFooter .container .message:hover,
+.home .VPFooter .container .copyright:hover {
+  color: #f8fafc;
+}
+
+@media (max-width: 1200px) {
+  .is-home .vp-doc.container {
+    padding: 0 !important;
+  }
+
+  .is-home .eclipse-panel::before {
+    border-radius: 0 !important;
+  }
+
+  .is-home .eclipse-panel {
+    margin: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+  }
+
+  .mystical-section-title {
+    margin-top: 1.5rem !important;
+  }
+
+  .is-home .core-features {
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+
+  .code-mystique {
+    padding: 2rem 15px !important;
+  }
+
+  .testimonials-mystique {
+    padding: 0 15px !important;
+  }
+
+  .testimonials-grid {
+    gap: 1rem !important;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)) !important;
+  }
+
+  .cosmic-stats {
+    padding: 0rem 2rem !important;
+    padding-top: 0 !important;
+  }
+  
+  .is-home .cta-title {
+    margin-top: 0 !important;
+  }
+
+  .mystical-cta {
+    padding: 2rem 15px !important;
+  }
+}

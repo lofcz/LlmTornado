@@ -14,6 +14,11 @@
     "rimraf": "^6.0.1"
   },
   "dependencies": {
+    "@tailwindcss/vite": "^4.1.11",
+    "@tsparticles/vue3": "^3.0.1",
+    "@types/aos": "^3.0.7",
+    "aos": "^2.3.4",
+    "tsparticles-slim": "^2.12.0",
     "vitepress": "^1.6.3"
   }
 }
