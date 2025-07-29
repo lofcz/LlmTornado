@@ -345,3 +345,4 @@ src/LlmTornado/openai_openapi.yml
 /src/LlmTornado.Docs/reference
 /src/LlmTornado.Docs/dist
 /src/LlmTornado.Docs/website/static/playground
+/src/LlmTornado.Docs/website/blazor-dist

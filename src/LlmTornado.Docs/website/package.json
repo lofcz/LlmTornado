@@ -7,13 +7,13 @@
     "start": "docusaurus start",
     "build": "docusaurus build",
     "build:gh-pages": "npm run clean && npm run build:blazor && npm run build:docusaurus",
-    "build:blazor": "dotnet publish ../LlmTornado.Docs.csproj -c Release -o ../dist /p:GHPages=true && xcopy /E /I /Y ..\\dist\\wwwroot .\\static\\playground",
+    "build:blazor": "dotnet publish ../LlmTornado.Docs.csproj -c Release -o ./blazor-dist /p:GHPages=true && cpr ./blazor-dist/wwwroot ./static/playground -o",
     "build:docusaurus": "docusaurus build",
     "swizzle": "docusaurus swizzle",
     "deploy": "docusaurus deploy",
     "clear": "docusaurus clear",
     "serve": "docusaurus serve",
-    "clean": "if exist build rmdir /s /q build && if exist static\\playground rmdir /s /q static\\playground",
+    "clean": "rimraf ./build ./static/playground ./blazor-dist",
     "write-translations": "docusaurus write-translations",
     "write-heading-ids": "docusaurus write-heading-ids",
     "typecheck": "tsc"
@@ -31,6 +31,8 @@
     "@docusaurus/module-type-aliases": "3.8.1",
     "@docusaurus/tsconfig": "3.8.1",
     "@docusaurus/types": "3.8.1",
+    "cpr": "^3.0.1",
+    "rimraf": "^5.0.1",
     "typescript": "~5.6.2"
   },
   "browserslist": {
