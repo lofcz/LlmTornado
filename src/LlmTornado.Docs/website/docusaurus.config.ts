@@ -38,6 +38,26 @@ const config: Config = {
     locales: ['en'],
   },
 
+  plugins: [
+    () => ({
+      name: 'docusaurus-blazor-routing-plugin',
+      configureWebpack() {
+        return {
+          devServer: {
+            historyApiFallback: {
+              rewrites: [
+                {
+                  from: /^\/LlmTornado\/playground\/.*$/,
+                  to: '/LlmTornado/playground/index.html',
+                },
+              ],
+            },
+          },
+        };
+      },
+    }),
+  ],
+
   presets: [
     [
       'classic',
