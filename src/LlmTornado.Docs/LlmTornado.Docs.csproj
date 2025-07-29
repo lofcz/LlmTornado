@@ -31,28 +31,11 @@
     </ItemGroup>
     
     <ItemGroup>
-      <Compile Remove="reference\**" />
+        <Content Remove="dist\**" />
+        <None Remove="dist\**" />
+        <Content Remove="website\blazor-dist\**" />
+        <None Remove="website\blazor-dist\**" />
+        <Content Remove="website\build\**" />
+        <None Remove="website\build\**" />
     </ItemGroup>
-    
-    <ItemGroup>
-      <EmbeddedResource Remove="reference\**" />
-    </ItemGroup>
-    
-    <ItemGroup>
-      <Content Remove="reference\**" />
-    </ItemGroup>
-    
-    <ItemGroup>
-      <None Remove="reference\**" />
-    </ItemGroup>
-    
-    <ItemGroup>
-      <_ContentIncludedByDefault Remove="reference\BlazorCodeEditor\Properties\launchSettings.json" />
-      <_ContentIncludedByDefault Remove="reference\BlazorCodeEditor\App.razor" />
-      <_ContentIncludedByDefault Remove="reference\BlazorCodeEditor\Console\ConsoleOutput.razor" />
-      <_ContentIncludedByDefault Remove="reference\BlazorCodeEditor\Layout\MainLayout.razor" />
-      <_ContentIncludedByDefault Remove="reference\BlazorCodeEditor\Pages\Home.razor" />
-      <_ContentIncludedByDefault Remove="reference\BlazorCodeEditor\_Imports.razor" />
-    </ItemGroup>
-
 </Project>
