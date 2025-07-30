@@ -7,6 +7,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
 using JetBrains.Annotations;
+using System.Diagnostics.CodeAnalysis;
 
 namespace LlmTornado.Docs.Code;
 
@@ -22,7 +23,14 @@ public class WebAssemblyCodeRunner : ICodeExecutor
 
     // force System.Threading.Tasks to be emitted in the release build
     [UsedImplicitly] 
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(Task))]
     private static readonly Task task = Task.CompletedTask;
+
+    [UsedImplicitly]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(TaskCompletionSource))]
+    private static readonly TaskCompletionSource taskSource = new TaskCompletionSource();
+
+    private bool IsLocalhost => _env.BaseAddress.Contains("localhost");
     
     public WebAssemblyCodeRunner(ConsoleOutputService consoleOutputService, IResourceResolver resourceResolver, IWebAssemblyHostEnvironment env, HttpClient httpClient)
     {
@@ -42,8 +50,9 @@ public class WebAssemblyCodeRunner : ICodeExecutor
             _consoleOutputService.AddLog("Parsed syntax tree.", ConsoleSeverity.Debug);
             _consoleOutputService.AddLog($"Env base address: {_env.BaseAddress}", ConsoleSeverity.Debug);
             _consoleOutputService.AddLog($"Env environment: {_env.Environment}", ConsoleSeverity.Debug);
+            _consoleOutputService.AddLog($"Resolved IsLocalhost: {(IsLocalhost ? "YES" : "NO")}", ConsoleSeverity.Debug);
 
-            if (Meta is null && !_env.BaseAddress.Contains("localhost"))
+            if (Meta is null && !IsLocalhost)
             {
                 try
                 {
@@ -68,8 +77,7 @@ public class WebAssemblyCodeRunner : ICodeExecutor
                 await GetMetadataReferenceAsync("System.Runtime.wasm"),
                 await GetMetadataReferenceAsync("System.Console.wasm"),
                 await GetMetadataReferenceAsync("System.Collections.wasm"),
-                // not needed?
-                //await GetMetadataReferenceAsync("System.Threading.Tasks.wasm"),
+                await GetMetadataReferenceAsync("System.Threading.Tasks.wasm"),
                 await GetMetadataReferenceAsync("System.Net.Http.wasm"),
                 await GetMetadataReferenceAsync("System.Text.Json.wasm"),
                 await GetMetadataReferenceAsync("LlmTornado.wasm")
@@ -191,7 +199,7 @@ public class WebAssemblyCodeRunner : ICodeExecutor
         _consoleOutputService.AddLog($"Reading: {resource}", ConsoleSeverity.Info);
         
         // on localhost, we can request the resource directly
-        if (_env.BaseAddress.Contains("localhost"))
+        if (IsLocalhost)
         {
             _consoleOutputService.AddLog($"Read from: /_framework/{resource}", ConsoleSeverity.Info);
             return $"/_framework/{resource}";
