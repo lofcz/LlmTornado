@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
-using System.Threading.Tasks;
 using JetBrains.Annotations;
 
 namespace LlmTornado.Docs.Code;
@@ -69,7 +68,8 @@ public class WebAssemblyCodeRunner : ICodeExecutor
                 await GetMetadataReferenceAsync("System.Runtime.wasm"),
                 await GetMetadataReferenceAsync("System.Console.wasm"),
                 await GetMetadataReferenceAsync("System.Collections.wasm"),
-                await GetMetadataReferenceAsync("System.Threading.Tasks.wasm"),
+                // not needed?
+                //await GetMetadataReferenceAsync("System.Threading.Tasks.wasm"),
                 await GetMetadataReferenceAsync("System.Net.Http.wasm"),
                 await GetMetadataReferenceAsync("System.Text.Json.wasm"),
                 await GetMetadataReferenceAsync("LlmTornado.wasm")
