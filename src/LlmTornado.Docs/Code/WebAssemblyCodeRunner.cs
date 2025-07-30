@@ -29,6 +29,10 @@ public class WebAssemblyCodeRunner : ICodeExecutor
     [UsedImplicitly]
     [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(TaskCompletionSource))]
     private static readonly TaskCompletionSource taskSource = new TaskCompletionSource();
+    
+    [UsedImplicitly]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(TaskCompletionSource<>))]
+    private static readonly TaskCompletionSource<object?> taskSourceGeneric = new TaskCompletionSource<object?>();
 
     private bool IsLocalhost => _env.BaseAddress.Contains("localhost");
     
