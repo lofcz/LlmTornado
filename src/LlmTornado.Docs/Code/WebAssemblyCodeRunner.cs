@@ -8,6 +8,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
 using JetBrains.Annotations;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace LlmTornado.Docs.Code;
 
@@ -33,6 +34,11 @@ public class WebAssemblyCodeRunner : ICodeExecutor
     [UsedImplicitly]
     [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(TaskCompletionSource<>))]
     private static readonly TaskCompletionSource<object?> taskSourceGeneric = new TaskCompletionSource<object?>();
+
+    [UsedImplicitly]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(AsyncTaskMethodBuilder))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(AsyncTaskMethodBuilder<>))]
+    private static readonly object refObject = new object();
 
     private bool IsLocalhost => _env.BaseAddress.Contains("localhost");
     

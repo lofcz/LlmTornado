@@ -15,6 +15,7 @@
 
     <ItemGroup>
         <TrimmerRootAssembly Include="System.Threading.Tasks" />
+        <TrimmerRootAssembly Include="System.Runtime.CompilerServices" />
     </ItemGroup>
     
     <ItemGroup>
