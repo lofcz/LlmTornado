@@ -42,7 +42,7 @@ public class WebAssemblyCodeRunner : ICodeExecutor
             {
                 try
                 {
-                    await using Stream stream = await _httpClient.GetStreamAsync("/_framework/bmeta.json", cancellationToken); 
+                    await using Stream stream = await _httpClient.GetStreamAsync("/playground/_framework/bmeta.json", cancellationToken); 
                     using StreamReader reader = new StreamReader(stream);
                     Meta = await reader.ReadToEndAsync(cancellationToken);
                     MetaDict = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(Meta) ?? MetaDict;
@@ -194,8 +194,8 @@ public class WebAssemblyCodeRunner : ICodeExecutor
         // on prod, we need to transform the request into hashed version, e.g.
         // System.wasm -> System.82w3kc2qw3.wasm
         string resolvedName = MetaDict.GetValueOrDefault(resource, $"[Entry: {resource} not found!]");
-        _consoleOutputService.AddLog($"Read from: /_framework/{resolvedName}", ConsoleSeverity.Info);
-        return $"/_framework/{resolvedName}";
+        _consoleOutputService.AddLog($"Read from: /playground/_framework/{resolvedName}", ConsoleSeverity.Info);
+        return $"/playground/_framework/{resolvedName}";
     }
 
     private async Task<PortableExecutableReference?> GetMetadataReferenceAsync(string wasmModule)
