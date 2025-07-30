@@ -11,6 +11,8 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <Optimize>false</Optimize>
         <WasmBundlerFriendlyBootConfig>true</WasmBundlerFriendlyBootConfig>
+        <TrimMode>none</TrimMode>
+        <PublishTrimmed>false</PublishTrimmed>
     </PropertyGroup>
 
     <ItemGroup>

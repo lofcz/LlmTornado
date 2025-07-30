@@ -87,7 +87,7 @@ public class WebAssemblyCodeRunner : ICodeExecutor
                 await GetMetadataReferenceAsync("System.Runtime.wasm"),
                 await GetMetadataReferenceAsync("System.Console.wasm"),
                 await GetMetadataReferenceAsync("System.Collections.wasm"),
-                await GetMetadataReferenceAsync("System.Runtime.CompilerServices.wasm"),
+                //await GetMetadataReferenceAsync("System.Runtime.CompilerServices.wasm"),
                 await GetMetadataReferenceAsync("System.Threading.Tasks.wasm"),
                 await GetMetadataReferenceAsync("System.Net.Http.wasm"),
                 await GetMetadataReferenceAsync("System.Text.Json.wasm"),
