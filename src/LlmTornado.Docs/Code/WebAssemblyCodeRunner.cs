@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
+using System.Threading.Tasks;
+using JetBrains.Annotations;
 
 namespace LlmTornado.Docs.Code;
 
@@ -18,6 +20,10 @@ public class WebAssemblyCodeRunner : ICodeExecutor
 
     private static string? Meta;
     private static Dictionary<string, string> MetaDict = [];
+
+    // force System.Threading.Tasks to be emitted in the release build
+    [UsedImplicitly] 
+    private static readonly Task task = Task.CompletedTask;
     
     public WebAssemblyCodeRunner(ConsoleOutputService consoleOutputService, IResourceResolver resourceResolver, IWebAssemblyHostEnvironment env, HttpClient httpClient)
     {
