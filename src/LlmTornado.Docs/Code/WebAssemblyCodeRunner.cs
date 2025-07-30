@@ -16,6 +16,9 @@ public class WebAssemblyCodeRunner : ICodeExecutor
     private readonly IWebAssemblyHostEnvironment _env;
     private readonly HttpClient _httpClient;
 
+    private static string? Meta;
+    private static Dictionary<string, string> MetaDict = [];
+    
     public WebAssemblyCodeRunner(ConsoleOutputService consoleOutputService, IResourceResolver resourceResolver, IWebAssemblyHostEnvironment env, HttpClient httpClient)
     {
         _consoleOutputService = consoleOutputService;
@@ -35,6 +38,23 @@ public class WebAssemblyCodeRunner : ICodeExecutor
             _consoleOutputService.AddLog($"Env base address: {_env.BaseAddress}", ConsoleSeverity.Debug);
             _consoleOutputService.AddLog($"Env environment: {_env.Environment}", ConsoleSeverity.Debug);
 
+            if (Meta is null && !_env.BaseAddress.Contains("localhost"))
+            {
+                try
+                {
+                    await using Stream stream = await _httpClient.GetStreamAsync("/_framework/bmeta.json", cancellationToken); 
+                    using StreamReader reader = new StreamReader(stream);
+                    Meta = await reader.ReadToEndAsync(cancellationToken);
+                    MetaDict = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(Meta) ?? MetaDict;
+                    _consoleOutputService.AddLog($"bmeta.json read correctly: {MetaDict.Count} entries found.", ConsoleSeverity.Debug);
+                }
+                catch (Exception e)
+                {
+                    _consoleOutputService.AddLog($"bmeta.json file not read: {e.Message}", ConsoleSeverity.Error);
+                }
+                
+            }
+            
             List<MetadataReference?> references =
             [
                 await GetMetadataReferenceAsync("System.wasm"),
@@ -164,17 +184,18 @@ public class WebAssemblyCodeRunner : ICodeExecutor
     {
         _consoleOutputService.AddLog($"Reading: {resource}", ConsoleSeverity.Info);
         
+        // on localhost, we can request the resource directly
         if (_env.BaseAddress.Contains("localhost"))
         {
             _consoleOutputService.AddLog($"Read from: /_framework/{resource}", ConsoleSeverity.Info);
-            // on localhost, we can request the resource directly
             return $"/_framework/{resource}";
         }
         
         // on prod, we need to transform the request into hashed version, e.g.
         // System.wasm -> System.82w3kc2qw3.wasm
-        _consoleOutputService.AddLog($"Read from: /LlmTornado/PRODTEST/_framework/{resource}", ConsoleSeverity.Info);
-        return $"/LlmTornado/PRODTEST/_framework/{resource}";
+        string resolvedName = MetaDict.GetValueOrDefault(resource, $"[Entry: {resource} not found!]");
+        _consoleOutputService.AddLog($"Read from: /_framework/{resolvedName}", ConsoleSeverity.Info);
+        return $"/_framework/{resolvedName}";
     }
 
     private async Task<PortableExecutableReference?> GetMetadataReferenceAsync(string wasmModule)
