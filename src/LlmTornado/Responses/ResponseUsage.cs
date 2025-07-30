@@ -15,7 +15,7 @@ namespace LlmTornado.Responses
         /// Details about the input tokens used in the Response.
         /// </summary>
         [JsonProperty("input_token_details")]
-        public ResponsesUsageInputTokenDetails InputTokenDetails { get; set; }
+        public ResponsesUsageInputTokenDetails? InputTokenDetails { get; set; }
 
         /// <summary>
         /// The number of input tokens used in the Response, including text and audio tokens.
@@ -27,7 +27,7 @@ namespace LlmTornado.Responses
         /// Details about the output tokens used in the Response.
         /// </summary>
         [JsonProperty("output_token_details")]
-        public ResponsesUsageOutputTokenDetails OutputTokenDetails { get; set; }
+        public ResponsesUsageOutputTokenDetails? OutputTokenDetails { get; set; }
 
         /// <summary>
         /// The number of output tokens sent in the Response, including text and audio tokens.

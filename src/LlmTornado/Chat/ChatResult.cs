@@ -293,6 +293,9 @@ public class ChatUsage : Usage
 	internal ChatUsage(ResponseUsage responseUsage)
 	{
 		CompletionTokens = responseUsage.OutputTokens;
+		PromptTokens = responseUsage.InputTokens;
+		TotalTokens = responseUsage.TotalTokens;
+		CacheReadTokens = responseUsage.InputTokenDetails?.CachedTokens;
 		
 		CompletionTokensDetails = new ChatUsageTokenDetails
 		{
@@ -305,8 +308,7 @@ public class ChatUsage : Usage
 			CachedTokens = responseUsage.InputTokenDetails?.CachedTokens,
 			AudioTokens = responseUsage.InputTokenDetails?.AudioTokens,
 		};
-		
-		CacheReadTokens = responseUsage.InputTokenDetails?.CachedTokens;
+
 		Provider = LLmProviders.OpenAi;
 	}
 
