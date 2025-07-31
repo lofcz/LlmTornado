@@ -26,7 +26,7 @@ namespace LlmTornado.Chat;
 ///     <see cref="Completions.CompletionRequest" />
 ///     Based on the <see href="https://platform.openai.com/docs/api-reference/chat">OpenAI API docs</see>
 /// </summary>
-public class ChatRequest : IModelRequest
+public class ChatRequest : IModelRequest, ISerializableRequest
 {
 	/// <summary>
 	///     Creates a new, empty <see cref="ChatRequest" />
@@ -612,6 +612,17 @@ public class ChatRequest : IModelRequest
 		}
 
 		return serialized;
+	}
+
+	/// <summary>
+	/// Serializes the request.
+	/// </summary>
+	public TornadoRequestContent Serialize(IEndpointProvider provider, RequestSerializeOptions options)
+	{
+		return Serialize(provider, new ChatRequestSerializeOptions
+		{
+			Pretty = options.Pretty
+		});
 	}
 
 	internal void Preserialize(IEndpointProvider provider)

@@ -92,6 +92,7 @@ public abstract class TornadoTextFixture
             new TestPredicate<T>(actual => actual != null && actual.CompareTo(threshold) >= 0, $"Is.GreaterThanOrEqualTo({threshold})");
         public static TestPredicate<T> LessThanOrEqualTo<T>(T threshold) where T : IComparable<T> =>
             new TestPredicate<T>(actual => actual != null && actual.CompareTo(threshold) <= 0, $"Is.LessThanOrEqualTo({threshold})");
+        public static TestPredicate<object> InstanceOf<T>() => new TestPredicate<object>(obj => obj is T, $"Is.InstanceOf<{typeof(T).Name}>");
     }
 
     public class TestPredicate<T>

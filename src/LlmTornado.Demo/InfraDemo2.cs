@@ -51,7 +51,7 @@ public class InfraDemo2 : DemoBase
 
         conversation.AddUserMessage("Generate realistic mock data.");
 
-        var ss = conversation.Serialize();
+        TornadoRequestContent ss = conversation.Serialize();
         
         ChatRichResponse data = await conversation.GetResponseRich();
 

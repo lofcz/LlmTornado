@@ -23,6 +23,11 @@ public class EmbeddingModelVoyage : BaseVendorModelProvider
     /// Voyage 3.5 models.
     /// </summary>
     public readonly EmbeddingModelVoyageGen35 Gen35 = new EmbeddingModelVoyageGen35();
+
+    /// <summary>
+    /// Voyage contextual models.
+    /// </summary>
+    public readonly EmbeddingModelVoyageContextual Contextual = new EmbeddingModelVoyageContextual();
     
     /// <summary>
     /// All known embedding models from Voyage.
@@ -50,7 +55,8 @@ public class EmbeddingModelVoyage : BaseVendorModelProvider
     public static readonly List<IModel> ModelsAll = [
         ..EmbeddingModelVoyageGen2.ModelsAll,
         ..EmbeddingModelVoyageGen3.ModelsAll,
-        ..EmbeddingModelVoyageGen35.ModelsAll
+        ..EmbeddingModelVoyageGen35.ModelsAll,
+        ..EmbeddingModelVoyageContextual.ModelsAll
     ];
     
     static EmbeddingModelVoyage()

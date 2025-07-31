@@ -143,7 +143,7 @@ public class ResponsesDemo : DemoBase
                     ImageDetail.Auto)
             ]);
 
-        var z = chat.Serialize();
+        TornadoRequestContent z = chat.Serialize();
         
         RestDataOrException<ChatRichResponse> response = await chat.GetResponseRichSafe();
         

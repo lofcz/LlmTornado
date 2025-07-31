@@ -37,6 +37,7 @@ public class TornadoApi
     private readonly Lazy<ChatEndpoint> chat;
     private readonly Lazy<CompletionEndpoint> completion;
     private readonly Lazy<EmbeddingEndpoint> embedding;
+    private readonly Lazy<ContextualEmbeddingEndpoint> contextualEmbedding;
     private readonly Lazy<FilesEndpoint> files;
     private readonly Lazy<ImageEditEndpoint> imageEdit;
     private readonly Lazy<ImageGenerationEndpoint> imageGeneration;
@@ -63,6 +64,7 @@ public class TornadoApi
         chat = new Lazy<ChatEndpoint>(() => new ChatEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
         completion = new Lazy<CompletionEndpoint>(() => new CompletionEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
         embedding = new Lazy<EmbeddingEndpoint>(() => new EmbeddingEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
+        contextualEmbedding = new Lazy<ContextualEmbeddingEndpoint>(() => new ContextualEmbeddingEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
         files = new Lazy<FilesEndpoint>(() => new FilesEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
         imageEdit = new Lazy<ImageEditEndpoint>(() => new ImageEditEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
         imageGeneration = new Lazy<ImageGenerationEndpoint>(() => new ImageGenerationEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
@@ -350,6 +352,11 @@ public class TornadoApi
     ///     measures their relatedness. Small distances suggest high relatedness and large distances suggest low relatedness.
     /// </summary>
     public EmbeddingEndpoint Embeddings => embedding.Value;
+
+    /// <summary>
+    ///     Contextualized chunk embedding endpoint accepts document chunks—in addition to queries and full documents—and returns a response containing contextualized chunk vector embeddings.
+    /// </summary>
+    public ContextualEmbeddingEndpoint ContextualEmbeddings => contextualEmbedding.Value;
 
     /// <summary>
     ///     Text generation in the form of chat messages. This interacts with the ChatGPT API.
