@@ -1395,14 +1395,19 @@ public enum CapabilityEndpoints
     Responses,
     
     /// <summary>
-    /// Contextual embeddings.
+    /// Contextual embeddings endpoint.
     /// </summary>
     ContextualEmbeddings,
     
     /// <summary>
-    /// Multimodal embeddings.
+    /// Multimodal embeddings endpoint.
     /// </summary>
-    MultimodalEmbeddings
+    MultimodalEmbeddings,
+    
+    /// <summary>
+    /// Reranker endpoint.
+    /// </summary>
+    Rerank
 }
 
 /// <summary>

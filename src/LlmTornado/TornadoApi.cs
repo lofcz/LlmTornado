@@ -17,6 +17,7 @@ using LlmTornado.Files;
 using LlmTornado.Images;
 using LlmTornado.Models;
 using LlmTornado.Moderation;
+using LlmTornado.Rerank;
 using LlmTornado.Responses;
 using LlmTornado.Threads;
 using LlmTornado.VectorStores;
@@ -49,6 +50,7 @@ public class TornadoApi
     private readonly Lazy<CachingEndpoint> caching;
     private readonly Lazy<ResponsesEndpoint> responses;
     private readonly Lazy<UploadsEndpoint> uploads;
+    private readonly Lazy<RerankEndpoint> rerank;
 
     /// <summary>
     ///     If true, the API will throw exceptions for non-200 responses.
@@ -77,6 +79,7 @@ public class TornadoApi
         caching = new Lazy<CachingEndpoint>(() => new CachingEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
         responses = new Lazy<ResponsesEndpoint>(() => new ResponsesEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
         uploads = new Lazy<UploadsEndpoint>(() => new UploadsEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
+        rerank = new Lazy<RerankEndpoint>(() => new RerankEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
     }
 
     /// <summary>
@@ -411,4 +414,9 @@ public class TornadoApi
     ///     The API lets you do operations with uploads.
     /// </summary>
     public UploadsEndpoint Uploads => uploads.Value;
+
+    /// <summary>
+    ///     Voyage reranker endpoint receives as input a query, a list of documents, and other arguments such as the model name, and returns a response containing the reranking results.
+    /// </summary>
+    public RerankEndpoint Rerank => rerank.Value;
 }
