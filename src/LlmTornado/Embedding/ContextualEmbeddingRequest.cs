@@ -83,9 +83,6 @@ public class ContextualEmbeddingRequest : ISerializableRequest
         return SerializeInternal(provider, null);
     }
     
-    /// <summary>
-    /// Serializes the request.
-    /// </summary>
     internal TornadoRequestContent SerializeInternal(IEndpointProvider provider, RequestSerializeOptions? options)
     {
         return new TornadoRequestContent(this.ToJson(options?.Pretty ?? false), Model, UrlOverride ?? EndpointBase.BuildRequestUrl(null, provider, CapabilityEndpoints.ContextualEmbeddings, Model), provider, CapabilityEndpoints.ContextualEmbeddings);

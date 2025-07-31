@@ -1397,7 +1397,12 @@ public enum CapabilityEndpoints
     /// <summary>
     /// Contextual embeddings.
     /// </summary>
-    ContextualEmbeddings
+    ContextualEmbeddings,
+    
+    /// <summary>
+    /// Multimodal embeddings.
+    /// </summary>
+    MultimodalEmbeddings
 }
 
 /// <summary>

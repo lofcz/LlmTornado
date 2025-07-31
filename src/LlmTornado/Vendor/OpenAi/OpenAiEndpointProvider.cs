@@ -80,9 +80,10 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
             CapabilityEndpoints.Assistants => "assistants",
             CapabilityEndpoints.Threads => "threads",
             CapabilityEndpoints.VectorStores => "vector_stores",
-            CapabilityEndpoints.ContextualEmbeddings => "contextualizedembeddings",
+            CapabilityEndpoints.ContextualEmbeddings when provider is LLmProviders.Voyage => "contextualizedembeddings",
+            CapabilityEndpoints.MultimodalEmbeddings when provider is LLmProviders.Voyage => "multimodalembeddings",
             CapabilityEndpoints.Responses => "responses",
-            _ => throw new Exception($"OpenAI doesn't support endpoint {endpoint}")
+            _ => throw new Exception($"{provider} doesn't support endpoint {endpoint}")
         };
     }
     

@@ -38,6 +38,7 @@ public class TornadoApi
     private readonly Lazy<CompletionEndpoint> completion;
     private readonly Lazy<EmbeddingEndpoint> embedding;
     private readonly Lazy<ContextualEmbeddingEndpoint> contextualEmbedding;
+    private readonly Lazy<MultimodalEmbeddingEndpoint> multimodalEmbedding;
     private readonly Lazy<FilesEndpoint> files;
     private readonly Lazy<ImageEditEndpoint> imageEdit;
     private readonly Lazy<ImageGenerationEndpoint> imageGeneration;
@@ -65,6 +66,7 @@ public class TornadoApi
         completion = new Lazy<CompletionEndpoint>(() => new CompletionEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
         embedding = new Lazy<EmbeddingEndpoint>(() => new EmbeddingEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
         contextualEmbedding = new Lazy<ContextualEmbeddingEndpoint>(() => new ContextualEmbeddingEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
+        multimodalEmbedding = new Lazy<MultimodalEmbeddingEndpoint>(() => new MultimodalEmbeddingEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
         files = new Lazy<FilesEndpoint>(() => new FilesEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
         imageEdit = new Lazy<ImageEditEndpoint>(() => new ImageEditEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
         imageGeneration = new Lazy<ImageGenerationEndpoint>(() => new ImageGenerationEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
@@ -357,6 +359,11 @@ public class TornadoApi
     ///     Contextualized chunk embedding endpoint accepts document chunks—in addition to queries and full documents—and returns a response containing contextualized chunk vector embeddings.
     /// </summary>
     public ContextualEmbeddingEndpoint ContextualEmbeddings => contextualEmbedding.Value;
+
+    /// <summary>
+    ///     The Voyage multimodal embedding endpoint returns vector representations for a given list of multimodal inputs consisting of text, images, or an interleaving of both modalities.
+    /// </summary>
+    public MultimodalEmbeddingEndpoint MultimodalEmbeddings => multimodalEmbedding.Value;
 
     /// <summary>
     ///     Text generation in the form of chat messages. This interacts with the ChatGPT API.

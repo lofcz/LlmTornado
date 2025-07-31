@@ -28,6 +28,11 @@ public class EmbeddingModelVoyage : BaseVendorModelProvider
     /// Voyage contextual models.
     /// </summary>
     public readonly EmbeddingModelVoyageContextual Contextual = new EmbeddingModelVoyageContextual();
+
+    /// <summary>
+    /// Voyage multimodal models.
+    /// </summary>
+    public readonly EmbeddingModelVoyageMultimodal Multimodal = new EmbeddingModelVoyageMultimodal();
     
     /// <summary>
     /// All known embedding models from Voyage.
@@ -56,7 +61,8 @@ public class EmbeddingModelVoyage : BaseVendorModelProvider
         ..EmbeddingModelVoyageGen2.ModelsAll,
         ..EmbeddingModelVoyageGen3.ModelsAll,
         ..EmbeddingModelVoyageGen35.ModelsAll,
-        ..EmbeddingModelVoyageContextual.ModelsAll
+        ..EmbeddingModelVoyageContextual.ModelsAll,
+        ..EmbeddingModelVoyageMultimodal.ModelsAll
     ];
     
     static EmbeddingModelVoyage()
