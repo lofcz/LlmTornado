@@ -115,8 +115,13 @@ public class ChatRequestVendorAnthropicExtensions
     public Action<VendorAnthropicChatRequestMessageContent?, List<VendorAnthropicChatRequestMessageContent>, List<VendorAnthropicToolFunction>?>? OutboundRequest;
     
     /// <summary>
-    /// Thinking settings for Claude 3.7+ models.
-    /// Instead of using this vendor-specific setting, <see cref="ChatRequest.ReasoningBudget"/> can be used.
+    /// Thinking settings for Claude 3.7+ models.<br/>
+    /// Important: while supported, please use <see cref="ChatRequest.ReasoningBudget"/> instead.
     /// </summary>
     public AnthropicThinkingSettings? Thinking { get; set; }
+    
+    /// <summary>
+    /// Server-side tools.
+    /// </summary>
+    public List<IVendorAnthropicChatRequestBuiltInTool>? BuiltInTools { get; set; }
 }

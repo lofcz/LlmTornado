@@ -615,7 +615,6 @@ internal class VendorAnthropicChatRequest
 
         if (request.Tools is not null)
         {
-            //Stream = false; // Claude 3 models (Haiku, Sonnet, Opus) don't support streaming in conjunction with tools.
             Tools = request.Tools.Where(x => x.Function is not null).Select(t => new VendorAnthropicToolFunction(t)).ToList();
         }
 
@@ -630,6 +629,12 @@ internal class VendorAnthropicChatRequest
 
         if (request.VendorExtensions?.Anthropic is not null)
         {
+            if (request.VendorExtensions.Anthropic.BuiltInTools is not null)
+            {
+                Tools ??= [];
+                Tools.AddRange(request.VendorExtensions.Anthropic.BuiltInTools.Select(x => new VendorAnthropicToolFunction(x)));
+            }
+            
             if (request.VendorExtensions.Anthropic.Thinking is not null)
             {
                 if (request.VendorExtensions.Anthropic.Thinking.Enabled)

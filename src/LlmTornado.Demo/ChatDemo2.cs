@@ -1050,6 +1050,32 @@ public partial class ChatDemo : DemoBase
     }
     
     [TornadoTest]
+    public static async Task AnthropicTextEditorTool()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Anthropic.Claude4.Sonnet250514,
+            VendorExtensions = new ChatRequestVendorExtensions
+            {
+                Anthropic = new ChatRequestVendorAnthropicExtensions
+                {
+                    BuiltInTools =
+                    [
+                        new VendorAnthropicChatRequestBuiltInToolTextEditor20250728()
+                    ]
+                }
+            }
+        });
+        
+        chat.AppendUserInput("Can you help me fix my primes.py file? I have a bug in it.");
+        
+        ChatRichResponse response = await chat.GetResponseRich();
+        
+        Console.WriteLine("Anthropic Text Editor Tool Demo:");
+        Console.WriteLine(response);
+    }
+    
+    [TornadoTest]
     public static async Task Gemma327B()
     {
         Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
