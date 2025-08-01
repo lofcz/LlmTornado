@@ -1,0 +1,64 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <PackageId>Lofcz.Forks.BlazorWorker.BackgroundService</PackageId>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Description>Use dotnet Web Workers Threads in Blazor. PERSONAL FORK FOR EARLY .NET 10 SUPPORT, PLEASE USE UPSTREAM.</Description>
+    <PackageProjectUrl>https://github.com/Tewr/BlazorWorker</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Tewr/BlazorWorker</RepositoryUrl>
+    <PackageTags>WebWorker Worker Process Threading Multithreading Blazor Isolation</PackageTags>
+    <Authors>Tewr</Authors>
+    <Product>BlazorWorker</Product>
+    <Configurations>Debug;Release;Nuget</Configurations>
+    <Version>5.0.5</Version>
+    <AssemblyVersion>5.0.0</AssemblyVersion>
+    <PackageIcon>icon.png</PackageIcon>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="icon.png" Pack="true" Visible="false" PackagePath="" />
+  </ItemGroup>
+    
+  <ItemGroup>
+      <PackageReference Include="Microsoft.JSInterop" Version="10.0.0-preview.5.25277.114" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Serialize.Linq" Version="4.0.167" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BlazorWorker.WorkerBackgroundService\BlazorWorker.WorkerBackgroundService.csproj">
+    </ProjectReference>
+    <ProjectReference Include="..\BlazorWorker.WorkerCore\BlazorWorker.WorkerCore.csproj">
+    </ProjectReference>
+    <ProjectReference Include="..\BlazorWorker\BlazorWorker.Core.csproj">
+    </ProjectReference>
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Nuget|AnyCPU'">
+    <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);CopyProjectReferencesToPackage</TargetsForTfmSpecificBuildOutput>
+    
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <DocumentationFile>BlazorWorker.BackgroundServiceFactory.xml</DocumentationFile>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <NoWarn>1701;1702;1591;CA1416</NoWarn>
+  </PropertyGroup>
+
+  <Target Name="CopyProjectReferencesToPackage" DependsOnTargets="ResolveReferences">
+    <ItemGroup>
+      <BuildOutputInPackage Include="@(ReferenceCopyLocalPaths-&gt;WithMetadataValue('ReferenceSourceTarget', 'ProjectReference'))" />
+      <BuildOutputInPackage Include="..\BlazorWorker.WorkerBackgroundService\BlazorWorker.WorkerBackgroundService.xml" />
+    </ItemGroup>
+  </Target>
+
+</Project>

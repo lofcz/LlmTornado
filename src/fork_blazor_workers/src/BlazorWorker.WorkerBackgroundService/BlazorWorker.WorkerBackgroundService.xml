@@ -1,0 +1,85 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>BlazorWorker.WorkerBackgroundService</name>
+    </assembly>
+    <members>
+        <member name="M:BlazorWorker.WorkerBackgroundService.IWorkerBackgroundService`1.RegisterEventListenerAsync``1(System.String,System.EventHandler{``0})">
+            <summary>
+            Registers an event listener to the specified event.
+            </summary>
+            <typeparam name="TResult"></typeparam>
+            <param name="eventName"></param>
+            <param name="myHandler"></param>
+            <returns></returns>
+        </member>
+        <member name="M:BlazorWorker.WorkerBackgroundService.IWorkerBackgroundService`1.RunAsync``1(System.Linq.Expressions.Expression{System.Func{`0,``0}})">
+            <summary>
+            Queues the specified work to run on the underlying worker and returns a <see cref="T:System.Threading.Tasks.Task"/> object that represents that work.
+            </summary>
+            <typeparam name="TResult"></typeparam>
+            <param name="function"></param>
+            <returns></returns>
+        </member>
+        <member name="M:BlazorWorker.WorkerBackgroundService.IWorkerBackgroundService`1.RunAsync(System.Linq.Expressions.Expression{System.Action{`0}})">
+            <summary>
+            Queues the specified work to run on the underlying worker and returns a <see cref="T:System.Threading.Tasks.Task"/> object that represents that work.
+            </summary>
+            <param name="action"></param>
+            <returns></returns>
+        </member>
+        <member name="M:BlazorWorker.WorkerBackgroundService.IWorkerBackgroundService`1.RunAsync``1(System.Linq.Expressions.Expression{System.Func{`0,System.Threading.Tasks.Task{``0}}})">
+            <summary>
+            Queues the specified awaitable work to run on the underlying worker, awaits the result, and returns a <see cref="T:System.Threading.Tasks.Task"/> object that represents that work.
+            </summary>
+            <typeparam name="TResult"></typeparam>
+            <param name="function"></param>
+            <returns></returns>
+        </member>
+        <member name="M:BlazorWorker.WorkerBackgroundService.IWorkerBackgroundService`1.RunAsync(System.Linq.Expressions.Expression{System.Func{`0,System.Threading.Tasks.Task}})">
+            <summary>
+            Queues the specified awaitable work to run on the underlying worker, awaits the execution, and returns a <see cref="T:System.Threading.Tasks.Task"/> object that represents that work.
+            </summary>
+            <param name="function"></param>
+            <returns></returns>
+        </member>
+        <member name="M:BlazorWorker.WorkerBackgroundService.IWorkerBackgroundService`1.GetWorkerMessageService">
+            <summary>
+            Returns the message service used by the underlying worker.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:BlazorWorker.WorkerBackgroundService.IWorkerBackgroundService`1.UnRegisterEventListenerAsync(BlazorWorker.WorkerBackgroundService.EventHandle)">
+            <summary>
+            Unregisters the event corresponding to the specified <paramref name="handle"/>
+            </summary>
+        </member>
+        <member name="T:BlazorWorker.WorkerBackgroundService.SerializeLinqExpressionJsonSerializerBase">
+            <summary>
+            Base class for adding known types to a serializer using <see cref="T:Serialize.Linq.Serializers.JsonSerializer"/>.
+            </summary>
+        </member>
+        <member name="P:BlazorWorker.WorkerBackgroundService.SerializeLinqExpressionJsonSerializerBase.AutoAddKnownTypesAsArrayTypes">
+            <summary>
+            Automatically adds known types as array types. If set to <c>true</c>, sets <see cref="P:BlazorWorker.WorkerBackgroundService.SerializeLinqExpressionJsonSerializerBase.AutoAddKnownTypesAsListTypes"/> to <c>false</c>.
+            </summary>
+        </member>
+        <member name="P:BlazorWorker.WorkerBackgroundService.SerializeLinqExpressionJsonSerializerBase.AutoAddKnownTypesAsListTypes">
+            <summary>
+            Automatically adds known types as list types. If set to <c>true</c>, sets <see cref="P:BlazorWorker.WorkerBackgroundService.SerializeLinqExpressionJsonSerializerBase.AutoAddKnownTypesAsArrayTypes"/> to <c>false</c>.
+            </summary>
+        </member>
+        <member name="F:BlazorWorker.WorkerBackgroundService.WebWorkerOptions.ExpressionSerializerTypeEnvKey">
+            <summary>
+            Name of environment variable to be used for transferring the serializer typename
+            </summary>
+        </member>
+        <member name="M:BlazorWorker.WorkerBackgroundService.WebWorkerOptions.ValidateExpressionSerializerType(System.Type)">
+            <summary>
+            Ensures that the provided type implements <see cref="T:BlazorWorker.WorkerBackgroundService.IExpressionSerializer"/>
+            </summary>
+            <param name="sourceType"></param>
+            <returns></returns>
+        </member>
+    </members>
+</doc>

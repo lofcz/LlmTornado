@@ -1,0 +1,91 @@
+﻿@inject IWorkerFactory workerFactory
+
+<div class="row">
+    <div class="col-5 col-xs-12">
+        <h1>Using HttpClient</h1>
+
+        This demo calls the github api from a new thread.
+
+        <br /><br />
+
+        <button disabled=@RunDisabled @onclick=OnClick class="btn btn-primary">Run test</button><br />
+        <br />
+        <br />
+        <strong>Output:</strong>
+        <hr />
+<pre>
+@output
+</pre>
+    </div>
+    <div class="col-7 col-xs-12">
+        <GithubSource RelativePath="Pages/Http.razor" />
+    </div>
+</div>
+@code {
+    string output;
+    IWorker worker;
+    IWorkerBackgroundService<WebCallerService> backgroundService;
+    string canDisposeWorker => worker == null ? null : "disabled";
+    string canDisposeService => backgroundService == null ? null : "disabled";
+    string RunDisabled => Running ? "disabled" : null;
+    bool Running = false;
+    private string rn = Environment.NewLine;
+
+    public async Task OnClick(EventArgs _)
+    {
+        Running = true;
+        output = "";
+        try
+        {
+
+            if (worker == null)
+            {
+                worker = await workerFactory.CreateAsync();
+            }
+
+            var sw = new System.Diagnostics.Stopwatch();
+            if (backgroundService == null)
+            {
+                output = $"{rn}{LogDate()} Creating background service...";
+                StateHasChanged();
+
+                sw.Start();
+                backgroundService = await worker.CreateBackgroundServiceAsync<WebCallerService>(
+                    /*options => options
+                        .AddConventionalAssemblyOfService()
+                        .AddHttpClient()*/
+                );
+
+                sw.Stop();
+                output += $"{rn}{LogDate()} Background service created in {sw.ElapsedMilliseconds}ms";
+                StateHasChanged();
+            }
+
+            output += $"{rn}{LogDate()} Calling Github WebService...";
+            var result = await backgroundService.RunAsync(s => s.CallGitHubApi());
+
+            output += $"{rn}{LogDate()} Result:{rn}{FormatJson(result)}";
+            StateHasChanged();
+
+        }
+        catch (Exception e)
+        {
+            output += $"{rn}Error = {e}";
+        }
+        finally
+        {
+            Running = false;
+        }
+    }
+
+    private string LogDate()
+    {
+        return DateTime.Now.ToString("HH:mm:ss:fff");
+    }
+
+    private static string FormatJson(string json)
+    {
+        var parsedJson = Newtonsoft.Json.JsonConvert.DeserializeObject(json);
+        return Newtonsoft.Json.JsonConvert.SerializeObject(parsedJson, Newtonsoft.Json.Formatting.Indented);
+    }
+}

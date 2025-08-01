@@ -1,0 +1,101 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31808.319
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlazorWorker.Core", "BlazorWorker\BlazorWorker.Core.csproj", "{8170248B-F92D-4DFA-8F1A-2C637A9A9188}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlazorWorker.WorkerCore", "BlazorWorker.WorkerCore\BlazorWorker.WorkerCore.csproj", "{8CA72346-9A79-4000-99CA-76E3363ABC9A}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlazorWorker.WorkerBackgroundService", "BlazorWorker.WorkerBackgroundService\BlazorWorker.WorkerBackgroundService.csproj", "{200356FF-169F-412F-9B75-14C776758576}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlazorWorker.BackgroundServiceFactory", "BlazorWorker.ServiceFactory\BlazorWorker.BackgroundServiceFactory.csproj", "{812BE8C1-B20F-40AC-A174-239053076CB9}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{E58AD245-A40B-4C78-B28C-FC972C81DFBA}"
+	ProjectSection(SolutionItems) = preProject
+		nuget.config = nuget.config
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Core", "Core", "{DE16E88B-D523-4898-AD61-F0D981B7EA71}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "BackgroundService", "BackgroundService", "{E1426FFD-B41C-4594-AEBE-0760941D61A0}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{775EF4B5-04A1-40D8-8E0A-BC04EF624F98}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorWorker.Extensions.JSRuntime", "BlazorWorker.Extensions.JSRuntime\BlazorWorker.Extensions.JSRuntime.csproj", "{5E980B72-D3D7-4EDA-B089-31BD74FEAA42}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorWorker.Demo.Client", "BlazorWorker.Demo\Net10\BLazorWorker.Demo.Client\BlazorWorker.Demo.Client.csproj", "{7357C8C4-47AE-441A-8651-6A35FE611DC2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorWorker.Demo.Shared", "BlazorWorker.Demo\Shared\BlazorWorker.Demo.Shared.csproj", "{32A94CE6-8807-410C-A716-49D60EA188F3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorWorker.Demo.SharedPages", "BlazorWorker.Demo\SharedPages\BlazorWorker.Demo.SharedPages.csproj", "{A708355A-7D8D-4CED-8C84-6C02430488D6}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Nuget|Any CPU = Nuget|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8170248B-F92D-4DFA-8F1A-2C637A9A9188}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8170248B-F92D-4DFA-8F1A-2C637A9A9188}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8170248B-F92D-4DFA-8F1A-2C637A9A9188}.Nuget|Any CPU.ActiveCfg = Nuget|Any CPU
+		{8170248B-F92D-4DFA-8F1A-2C637A9A9188}.Nuget|Any CPU.Build.0 = Nuget|Any CPU
+		{8170248B-F92D-4DFA-8F1A-2C637A9A9188}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8170248B-F92D-4DFA-8F1A-2C637A9A9188}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8CA72346-9A79-4000-99CA-76E3363ABC9A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8CA72346-9A79-4000-99CA-76E3363ABC9A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8CA72346-9A79-4000-99CA-76E3363ABC9A}.Nuget|Any CPU.ActiveCfg = Nuget|Any CPU
+		{8CA72346-9A79-4000-99CA-76E3363ABC9A}.Nuget|Any CPU.Build.0 = Nuget|Any CPU
+		{8CA72346-9A79-4000-99CA-76E3363ABC9A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8CA72346-9A79-4000-99CA-76E3363ABC9A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{200356FF-169F-412F-9B75-14C776758576}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{200356FF-169F-412F-9B75-14C776758576}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{200356FF-169F-412F-9B75-14C776758576}.Nuget|Any CPU.ActiveCfg = Nuget|Any CPU
+		{200356FF-169F-412F-9B75-14C776758576}.Nuget|Any CPU.Build.0 = Nuget|Any CPU
+		{200356FF-169F-412F-9B75-14C776758576}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{200356FF-169F-412F-9B75-14C776758576}.Release|Any CPU.Build.0 = Release|Any CPU
+		{812BE8C1-B20F-40AC-A174-239053076CB9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{812BE8C1-B20F-40AC-A174-239053076CB9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{812BE8C1-B20F-40AC-A174-239053076CB9}.Nuget|Any CPU.ActiveCfg = Nuget|Any CPU
+		{812BE8C1-B20F-40AC-A174-239053076CB9}.Nuget|Any CPU.Build.0 = Nuget|Any CPU
+		{812BE8C1-B20F-40AC-A174-239053076CB9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{812BE8C1-B20F-40AC-A174-239053076CB9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5E980B72-D3D7-4EDA-B089-31BD74FEAA42}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5E980B72-D3D7-4EDA-B089-31BD74FEAA42}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5E980B72-D3D7-4EDA-B089-31BD74FEAA42}.Nuget|Any CPU.ActiveCfg = Nuget|Any CPU
+		{5E980B72-D3D7-4EDA-B089-31BD74FEAA42}.Nuget|Any CPU.Build.0 = Nuget|Any CPU
+		{5E980B72-D3D7-4EDA-B089-31BD74FEAA42}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5E980B72-D3D7-4EDA-B089-31BD74FEAA42}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7357C8C4-47AE-441A-8651-6A35FE611DC2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7357C8C4-47AE-441A-8651-6A35FE611DC2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7357C8C4-47AE-441A-8651-6A35FE611DC2}.Nuget|Any CPU.ActiveCfg = Debug|Any CPU
+		{7357C8C4-47AE-441A-8651-6A35FE611DC2}.Nuget|Any CPU.Build.0 = Debug|Any CPU
+		{7357C8C4-47AE-441A-8651-6A35FE611DC2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7357C8C4-47AE-441A-8651-6A35FE611DC2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{32A94CE6-8807-410C-A716-49D60EA188F3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{32A94CE6-8807-410C-A716-49D60EA188F3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{32A94CE6-8807-410C-A716-49D60EA188F3}.Nuget|Any CPU.ActiveCfg = Nuget|Any CPU
+		{32A94CE6-8807-410C-A716-49D60EA188F3}.Nuget|Any CPU.Build.0 = Nuget|Any CPU
+		{32A94CE6-8807-410C-A716-49D60EA188F3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{32A94CE6-8807-410C-A716-49D60EA188F3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A708355A-7D8D-4CED-8C84-6C02430488D6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A708355A-7D8D-4CED-8C84-6C02430488D6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A708355A-7D8D-4CED-8C84-6C02430488D6}.Nuget|Any CPU.ActiveCfg = Debug|Any CPU
+		{A708355A-7D8D-4CED-8C84-6C02430488D6}.Nuget|Any CPU.Build.0 = Debug|Any CPU
+		{A708355A-7D8D-4CED-8C84-6C02430488D6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A708355A-7D8D-4CED-8C84-6C02430488D6}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{8170248B-F92D-4DFA-8F1A-2C637A9A9188} = {DE16E88B-D523-4898-AD61-F0D981B7EA71}
+		{8CA72346-9A79-4000-99CA-76E3363ABC9A} = {DE16E88B-D523-4898-AD61-F0D981B7EA71}
+		{200356FF-169F-412F-9B75-14C776758576} = {E1426FFD-B41C-4594-AEBE-0760941D61A0}
+		{812BE8C1-B20F-40AC-A174-239053076CB9} = {E1426FFD-B41C-4594-AEBE-0760941D61A0}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {0CCA60FE-BC52-494C-B600-B35B8865535C}
+	EndGlobalSection
+EndGlobal

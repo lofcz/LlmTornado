@@ -1,0 +1,113 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>BlazorWorker.WorkerCore</name>
+    </assembly>
+    <members>
+        <member name="E:BlazorWorker.WorkerCore.IWorkerMessageService.IncomingMessage">
+            <summary>
+            Events for incoming messages to the current context
+            </summary>
+        </member>
+        <member name="M:BlazorWorker.WorkerCore.IWorkerMessageService.PostMessageAsync(System.String)">
+            <summary>
+            Post a message to the context this message service belongs to
+            </summary>
+            <param name="message"></param>
+            <returns></returns>
+        </member>
+        <member name="M:BlazorWorker.WorkerCore.IWorkerMessageService.PostMessageJsDirectAsync(System.String)">
+            <summary>
+            Post a message that can be read directly on the main js thread using the "blazorworker:jsdirect" event on the window object
+            </summary>
+            <param name="message"></param>
+            <returns></returns>
+        </member>
+        <member name="T:BlazorWorker.WorkerCore.MessageService">
+            <summary>
+            Simple static message service that runs in the worker thread.
+            </summary>
+        </member>
+        <member name="T:BlazorWorker.Core.WorkerInitOptions">
+            <summary>
+            Options for initializing the worker.
+            </summary>
+        </member>
+        <member name="M:BlazorWorker.Core.WorkerInitOptions.#ctor">
+            <summary>
+            Creates a new instance of WorkerInitOptions
+            </summary>
+        </member>
+        <member name="P:BlazorWorker.Core.WorkerInitOptions.DeployPrefix">
+            <summary>
+            Specifies the location of binaries
+            </summary>
+        </member>
+        <member name="P:BlazorWorker.Core.WorkerInitOptions.WasmRoot">
+            <summary>
+            Specifies the location of the wasm binary
+            </summary>
+        </member>
+        <member name="P:BlazorWorker.Core.WorkerInitOptions.Debug">
+            <summary>
+            Outputs additional debug information to the console
+            </summary>
+        </member>
+        <member name="P:BlazorWorker.Core.WorkerInitOptions.MessageEndPoint">
+            <summary>
+            Mono-wasm-annotated endpoint for sending messages to the worker. Experts only.
+            </summary>
+        </member>
+        <member name="P:BlazorWorker.Core.WorkerInitOptions.InitEndPoint">
+            <summary>
+            Mono-wasm-annotated endpoint for instantiating the worker. Experts only.
+            </summary>
+        </member>
+        <member name="P:BlazorWorker.Core.WorkerInitOptions.CallbackMethod">
+            <summary>
+            Unique blazor identifier for handling callbacks. As referenced by JSInvokableAttribute. Experts only.
+            </summary>
+        </member>
+        <member name="P:BlazorWorker.Core.WorkerInitOptions.EndInvokeCallBackEndpoint">
+            <summary>
+            Mono-wasm-annotated endpoint for doing callbacks on self invocations from the worker. Experts only.
+            </summary>
+        </member>
+        <member name="P:BlazorWorker.Core.WorkerInitOptions.RuntimePreprocessorSymbols">
+            <summary>
+            https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/preprocessor-directives
+            </summary>
+        </member>
+        <member name="P:BlazorWorker.Core.WorkerInitOptions.EnvMap">
+            <summary>
+            Sets environment variables in the target worker. 
+            </summary>
+            <remarks>
+            Defaults to a single entry: DOTNET_SYSTEM_GLOBALIZATION_INVARIANT = '0'.
+            For more information see https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-environment-variables
+            </remarks>
+        </member>
+        <member name="P:BlazorWorker.Core.WorkerInitOptions.AssetMap">
+            <summary>
+            Provides a map of assembly names to their content-hashed filenames for .NET 10+.
+            </summary>
+        </member>
+        <member name="T:BlazorWorker.Core.WorkerInitOptionsExtensions">
+            <summary>
+            Contains convenience extensions for <see cref="T:BlazorWorker.Core.WorkerInitOptions"/>
+            </summary>
+        </member>
+        <member name="M:BlazorWorker.Core.WorkerInitOptionsExtensions.SetEnv(BlazorWorker.Core.WorkerInitOptions,System.String,System.String)">
+            <summary>
+            Set the specified <paramref name="environmentVariableName"/> to the specified <paramref name="value"/> when the worker runtime has been initialized
+            </summary>
+            <param name="source"></param>
+            <param name="environmentVariableName"></param>
+            <param name="value"></param>
+            <returns></returns>
+            <remarks>
+            For more information see https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-environment-variables
+            </remarks>
+        </member>
+    </members>
+</doc>

@@ -1,0 +1,15 @@
+﻿Source for this page<br/>
+<a href=@FullUrl>@RelativePath</a>
+<br />
+<!-- <PrettyCode CodeFile="@FullRawUrl" /> -->
+@code {
+    private const string Tag = "a293b710";
+    private static readonly string RawRoot = $"https://rawcdn.githack.com/Tewr/BlazorWorker/{Tag}/src/BlazorWorker.Demo/SharedPages/";
+    private static readonly string Root = $"https://github.com/Tewr/BlazorWorker/blob/{Tag}/src/BlazorWorker.Demo/SharedPages/";
+
+    [Parameter]
+    public string RelativePath { get; set; }
+
+    public string FullRawUrl => RawRoot + RelativePath;
+    public string FullUrl => Root + RelativePath;
+}

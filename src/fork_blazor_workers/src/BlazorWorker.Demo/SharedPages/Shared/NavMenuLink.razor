@@ -1,0 +1,28 @@
+﻿<style>
+    span.oi {
+        margin-right:0.5em;
+    }
+
+    small {
+        font-size: 14px;
+        font-weight: 400;
+        line-height: 14px;
+    }
+</style>
+<NavLink class="nav-link" href=@(Model.Href) Match=Model.Match>
+    <span class="oi oi-@(Model.Icon)" aria-hidden="true"></span>
+    
+    @if (Model.Small)
+    {
+        <small>@(Model.Text)</small>
+    }
+    else
+    {
+        <text>@(Model.Text)</text>
+    }
+</NavLink>
+@code {
+    [Parameter]
+    public NavMenuLinkInfo Model { get; set; }
+
+}

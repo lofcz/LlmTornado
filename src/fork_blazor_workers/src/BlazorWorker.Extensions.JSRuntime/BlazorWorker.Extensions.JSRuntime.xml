@@ -1,0 +1,84 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>BlazorWorker.Extensions.JSRuntime</name>
+    </assembly>
+    <members>
+        <member name="T:BlazorWorker.Extensions.JSRuntime.BlazorWorkerJSRuntime">
+            <summary>
+            IJSRuntime implementation for use in a worker process
+            </summary>
+        </member>
+        <member name="P:BlazorWorker.Extensions.JSRuntime.BlazorWorkerJSRuntime.Serializer">
+            <summary>
+            Serializer that will be used
+            </summary>
+        </member>
+        <member name="P:BlazorWorker.Extensions.JSRuntime.BlazorWorkerJSRuntime.SerializerOptions">
+            <summary>
+            The serializer options to be used for the underlying serializer
+            </summary>
+        </member>
+        <member name="M:BlazorWorker.Extensions.JSRuntime.BlazorWorkerJSRuntime.#ctor">
+            <summary>
+            Creates a new JSRuntime
+            </summary>
+        </member>
+        <member name="M:BlazorWorker.Extensions.JSRuntime.BlazorWorkerJSRuntime.Invoke``1(System.String,System.Object[])">
+            <summary>
+            Invokes a method defined on the worker globalThis (self) object
+            </summary>
+            <typeparam name="T">expected return type</typeparam>
+            <param name="identifier">js method name</param>
+            <param name="args">JSON serializable arguments to send to the js method</param>
+            <returns></returns>
+        </member>
+        <member name="M:BlazorWorker.Extensions.JSRuntime.BlazorWorkerJSRuntime.InvokeAsync``1(System.String,System.Object[])">
+            <summary>
+            Invokes a method defined on the worker globalThis (self) object asynchronically
+            </summary>
+            <typeparam name="TValue">expected return type</typeparam>
+            <param name="identifier">js method name</param>
+            <param name="args">JSON serializable arguments to send to the js method</param>
+            <returns></returns>
+        </member>
+        <member name="M:BlazorWorker.Extensions.JSRuntime.JSInvokeService.ImportLocalScripts(System.String[])">
+            <summary>
+            Imports locally hosted module scripts
+            </summary>
+            <param name="relativeUrls"></param>
+            <returns></returns>
+        </member>
+        <member name="M:BlazorWorker.Extensions.JSRuntime.JSInvokeService.WorkerInvoke``1(System.String,System.String)">
+            <summary>
+            Invokes a method defined on the worker globalThis / self object
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="method"></param>
+            <param name="args">JSON serialized parameters</param>
+            <returns></returns>
+        </member>
+        <member name="M:BlazorWorker.Extensions.JSRuntime.JSInvokeService.WorkerInvokeAsync``1(System.String,System.String)">
+            <summary>
+            Asynchronically Invokes a method defined on the worker globalThis / self object
+            </summary>
+            <typeparam name="T"></typeparam>
+            <param name="method"></param>
+            <param name="args">JSON serialized parameters</param>
+            <returns></returns>
+        </member>
+        <member name="M:BlazorWorker.Extensions.JSRuntime.JSInvokeService.IsObjectDefined(System.String)">
+            <summary>
+            Checks if the specified object path is defined using the self / globalThis object as root.
+            </summary>
+            <param name="objectPath"></param>
+            <returns></returns>
+        </member>
+        <member name="M:BlazorWorker.Extensions.JSRuntime.JSInvokeService.PrivateImportLocalScripts(System.String[])">
+            <summary>
+            Prepending the specified <paramref name="relativeUrls"/> with the base path of the application, invokes the importScripts() method of the WorkerGlobalScope interface, which synchronously imports one or more scripts into the worker's scope.
+            </summary>
+            <param name="relativeUrls"></param>
+        </member>
+    </members>
+</doc>

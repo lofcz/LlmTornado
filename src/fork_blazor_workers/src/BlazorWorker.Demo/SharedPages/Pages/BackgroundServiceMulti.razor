@@ -1,0 +1,146 @@
+﻿@inject IWorkerFactory workerFactory
+
+@using BlazorWorker.BackgroundServiceFactory
+@using BlazorWorker.WorkerBackgroundService 
+@using BlazorWorker.Demo.Shared
+@using BlazorWorker.Core
+    <div class="row">
+        <div class="col-6 col-xs-12">
+            <h1>.NET Worker Multithreading</h1>
+
+            Welcome to your new multithreaded app.
+
+            <br /><br />
+            Pi estimation demo. Specify number of iterations.<br />
+            <input type="text" @bind="piIterations" placeholder="estimation iterations" /><br />
+            Specify number of workers to use.<br />
+            <input type="text" @bind="workerNum" placeholder="Number of workers" /><br /><br />
+            <button @onclick="OnClick" class="btn btn-primary">Run Test</button><br />
+            @foreach (var workerProgress in piProgress.Take(workerNum))
+            {
+                <progress max="100" value="@(workerProgress.Progress)" /><br/>
+            }
+
+            <br />
+            <br />
+            <strong>Output:</strong>
+            <hr />
+<pre>
+@output
+</pre>
+        </div>
+        <div class="col-6 col-xs-12">
+            <GithubSource RelativePath="Pages/BackgroundServiceMulti.razor" />
+        </div>
+        </div>
+        @code {
+            int piIterations = 5_000_000;
+            int sliceSize;
+
+            int _workerNum = 1;
+
+            int workerNum {
+                get => _workerNum;
+                set {
+
+                    if (value < 1) {
+                        _workerNum = 1;
+                    }
+                    else if (value > 15)
+                    {
+                        _workerNum = 15;
+                    }
+                    else
+                    {
+                        _workerNum = value;
+                    }
+                }
+            }
+
+            string output;
+
+            public class ProgressRef { public int Progress { get; set; } }
+            List<ProgressRef> piProgress = new List<ProgressRef>();
+            List<IWorker> workers = new List<IWorker>();
+            List<IWorkerBackgroundService<MathsService>> backgroundServices =
+                new List<IWorkerBackgroundService<MathsService>>();
+
+            string RunDisabled => Running ? "disabled" : null;
+            bool Running = false;
+
+            public async Task OnClick(EventArgs _)
+            {
+                Running = true;
+                piProgress.ForEach(p => p.Progress = 0);
+                output = "";
+                var rn = Environment.NewLine;
+                try
+                {
+                    sliceSize = (int)Math.Floor((decimal)piIterations / workerNum);
+
+                    while (workers.Count() < workerNum)
+                    {
+                        output += $"{rn}{LogDate()} Initializing a worker.";
+                        StateHasChanged();
+                        var worker = await workerFactory.CreateAsync();
+                        workers.Add(worker);
+                        var service = await worker.CreateBackgroundServiceAsync<MathsService>();
+                        backgroundServices.Add(service);
+                        var progressRef = new ProgressRef();
+                        piProgress.Add(progressRef);
+                        await service.RegisterEventListenerAsync(nameof(MathsService.Pi),
+                            (object s, PiProgress eventInfo) =>
+                            {
+                                progressRef.Progress = (int)Math.Floor((100 * ((decimal)eventInfo.Progress / sliceSize)));
+                                StateHasChanged();
+                            });
+                    }
+
+                    var start = 0;
+                    var sw = new System.Diagnostics.Stopwatch();
+                    sw.Start();
+                    var allTasks = new List<Task<double>>();
+                    var servicesStarted = 0;
+                    foreach (var backgroundService in backgroundServices.Take(workerNum))
+                    {
+                        var end = start + sliceSize;
+
+                        var localStart = start;
+                        var localSliceSize = sliceSize;
+                        output += $"{rn}{LogDate()} Worker {servicesStarted + 1}: EstimatePISlice({localStart},{localSliceSize})...";
+                        var task = backgroundService.RunAsync(s => s.EstimatePISlice(localStart, localSliceSize));
+                        allTasks.Add(task);
+
+                        start = end;
+                        servicesStarted++;
+                    }
+
+                    var result  = await Task.WhenAll(allTasks.ToArray()).ContinueWith(t =>
+                    {
+                        return 4 * t.Result.Sum();
+                    });
+
+                    sw.Stop();
+                    output += $"{rn}{LogDate()} All calls complete.";
+                    output += $"{rn}{LogDate()} EstimatePISlice({piIterations}) = {result}" +
+                              $"{rn}   (Workers: {workerNum} Time: {sw.Elapsed})";
+                    piProgress.ForEach(p => p.Progress = 100);
+
+                    StateHasChanged();
+
+                }
+                catch (Exception e)
+                {
+                    output = $"{rn}Error = {e}";
+                }
+                finally
+                {
+                    Running = false;
+                }
+            }
+
+            private string LogDate()
+            {
+                return DateTime.Now.ToString("HH:mm:ss:fff");
+            }
+        }

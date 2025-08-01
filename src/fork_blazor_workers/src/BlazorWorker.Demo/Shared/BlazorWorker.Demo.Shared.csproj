@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Configurations>Debug;Release;Nuget</Configurations>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <NoWarn>1701;1702;1591;CA1416</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\BlazorWorker.Extensions.JSRuntime\BlazorWorker.Extensions.JSRuntime.csproj" />
+    <ProjectReference Include="..\..\BlazorWorker.ServiceFactory\BlazorWorker.BackgroundServiceFactory.csproj" />
+    <ProjectReference Include="..\..\BlazorWorker.WorkerBackgroundService\BlazorWorker.WorkerBackgroundService.csproj" />
+    <ProjectReference Include="..\..\BlazorWorker.WorkerCore\BlazorWorker.WorkerCore.csproj" />
+    <ProjectReference Include="..\..\BlazorWorker\BlazorWorker.Core.csproj" />
+  </ItemGroup>
+
+</Project>

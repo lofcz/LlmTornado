@@ -1,0 +1,35 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Configurations>Debug;Release;Nuget</Configurations>
+    <Version>5.0.5</Version>
+    <AssemblyVersion>5.0.4.0</AssemblyVersion>
+    <Authors>Tor Knutsson (Tewr)</Authors>
+    <Company>Tor Knutsson (Tewr)</Company>
+    <Product>BlazorWorker</Product>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TargetFramework>net10.0</TargetFramework>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <DocumentationFile>BlazorWorker.WorkerCore.xml</DocumentationFile>
+    <OutputType>Library</OutputType>
+  </PropertyGroup>
+  
+  <PropertyGroup>
+    <NoWarn>1701;1702;1591;CA1416</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="LinkerConfig.xml">
+      <LogicalName>$(MSBuildProjectName).xml</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <BlazorLinkerDescriptor Include="LinkerConfig.xml" />
+  </ItemGroup>
+
+  
+</Project>

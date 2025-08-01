@@ -1,0 +1,133 @@
+﻿@inject IWorkerFactory workerFactory
+
+@using BlazorWorker.BackgroundServiceFactory
+@using BlazorWorker.WorkerBackgroundService 
+@using BlazorWorker.Demo.Shared
+@using BlazorWorker.Core
+    <div class="row">
+        <div class="col-6 col-xs-12">
+            <h1>.NET Worker Multithreading</h1>
+
+            Complex / Custom Serialization <br />
+            <br /><br />
+            <button @onclick="OnClick" class="btn btn-primary">Run Test</button><br />
+
+            <br />
+            <br />
+            <strong>Output:</strong>
+            <hr />
+<pre>
+@output
+</pre>
+        </div>
+        <div class="col-6 col-xs-12">
+        <GithubSource RelativePath="Pages/ComplexSerialization.razor" />
+        </div>
+        </div>
+@code {
+
+    string output;
+
+    IWorker worker;
+    IWorkerBackgroundService<ComplexService> backgroundService;
+
+    string RunDisabled => Running ? "disabled" : null;
+    bool Running = false;
+
+
+    public class ComplexService
+    {
+        public ComplexServiceResponse ComplexCall(ComplexServiceArg arg)
+        {
+            return new ComplexServiceResponse
+            {
+                OriginalArg = arg,
+                OnlyInResponse = "This is only in response."
+            };
+        }
+    }
+
+    public class ComplexServiceArg
+    {
+        public string ThisIsJustAString { get; set; }
+        public OhLookARecord ARecord { get; set; }
+        public Dictionary<string, string> ADictionary { get; set; }
+        public ComplexServiceArg TypeRecursive { get; set; }
+    }
+
+    public class ComplexServiceResponse
+    {
+        public ComplexServiceArg OriginalArg { get; set; }
+        public string OnlyInResponse { get; set; }
+    }
+
+    public record OhLookARecord
+    {
+        public int Number { get; set; }
+    }
+
+    public async Task OnClick(EventArgs _)
+    {
+        Running = true;
+        await this.InvokeAsync(StateHasChanged);
+
+        output = "";
+        var rn = Environment.NewLine;
+        try
+        {
+            if (worker == null)
+            {
+                output += $"Starting worker...{rn}";
+                await this.InvokeAsync(StateHasChanged);
+                worker = await workerFactory.CreateAsync();
+            }
+            if (backgroundService == null)
+            {
+
+                output += $"Starting BackgroundService...{rn}";
+                await this.InvokeAsync(StateHasChanged);
+                /* 
+                * have a look here. This is the essence of this example.
+                * */
+
+                backgroundService = await worker.CreateBackgroundServiceAsync<ComplexService>(options 
+                    => options.UseCustomExpressionSerializer(typeof(CustomSerializeLinqExpressionJsonSerializer)));
+            }
+
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+
+            var complexArgInstance = new ComplexServiceArg
+                {
+                    ThisIsJustAString = "just a string",
+                    ARecord = new OhLookARecord { Number = 5 },
+                    ADictionary = new Dictionary<string, string>
+                    {
+                        { "Test", "TestValue" } 
+                    },
+                    TypeRecursive = new ComplexServiceArg
+                    {
+                        ThisIsJustAString = "SubString"
+                    }
+                };
+
+            var result = await backgroundService.RunAsync(service => service.ComplexCall(complexArgInstance));
+            var elapsed = sw.ElapsedMilliseconds;
+            output += $"{rn}result: " + System.Text.Json.JsonSerializer.Serialize(result);
+            output += $"{rn}roundtrip to worker in {elapsed}ms";
+        }
+        catch (Exception e)
+        {
+            output += $"{rn}Error = {e}";
+        }
+        finally
+        {
+            Running = false;
+            output += $"{rn}Done.";
+        }
+    }
+
+    private string LogDate()
+    {
+        return DateTime.Now.ToString("HH:mm:ss:fff");
+    }
+}

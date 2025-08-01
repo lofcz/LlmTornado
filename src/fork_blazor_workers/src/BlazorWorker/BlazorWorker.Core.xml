@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>BlazorWorker.Core</name>
+    </assembly>
+    <members>
+        <member name="M:BlazorWorker.Core.SetupExtensions.AddWorkerFactory(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Adds <see cref="T:BlazorWorker.Core.IWorkerFactory"/> as a singleton service
+            to the specified <see cref="T:Microsoft.Extensions.DependencyInjection.IServiceCollection"/>.
+            </summary>
+            <param name="services"></param>
+        </member>
+    </members>
+</doc>
