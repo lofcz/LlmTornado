@@ -37,14 +37,13 @@ jobs:
       working-directory: ./src
 
     - name: Build projects for .NET Core
-      run: |
-        for project in $(find . -name "*.csproj" -not -path "./LlmTornado.Docs/*" -not -path "./LlmTornado.BuildInfo/*"); do
-          dotnet build "$project" --no-restore --framework net8.0
-        done
+      run: dotnet build LlmTornado.sln --no-restore --framework net8.0 --configuration Release
       working-directory: ./src
 
     - name: Build LlmTornado.Docs
-      run: dotnet build --no-restore --framework net10.0
+      run: |
+        dotnet restore LlmTornado.sln
+        dotnet build ./src/LlmTornado.Docs/LlmTornado.Docs.csproj --no-restore --framework net10.0 --configuration Release
       working-directory: ./src/LlmTornado.Docs
 
     - name: Update GitHub status check
@@ -78,11 +77,11 @@ jobs:
         dotnet-version: '10.0.100-preview.4.25258.110'
         
     - name: Restore dependencies for LlmTornado
-      run: dotnet restore
+      run: dotnet restore LlmTornado.sln.
       working-directory: ./src/LlmTornado
 
     - name: Build LlmTornado for .NET Framework
-      run: dotnet build --no-restore --framework net462
+      run: dotnet build LlmTornado.sln --no-restore --framework net462 --configuration Release
       working-directory: ./src/LlmTornado
 
     - name: Update GitHub status check for .NET Framework build
@@ -116,11 +115,11 @@ jobs:
         dotnet-version: '10.0.100-preview.4.25258.110'
         
     - name: Restore dependencies for LlmTornado
-      run: dotnet restore
+      run: dotnet restore LlmTornado.sln
       working-directory: ./src/LlmTornado
 
     - name: Build LlmTornado for .NET Standard 2.0
-      run: dotnet build --no-restore --framework netstandard2.0
+      run: dotnet build LlmTornado.sln --no-restore --framework netstandard2.0 --configuration Release
       working-directory: ./src/LlmTornado
 
     - name: Update GitHub status check for .NET Standard build
