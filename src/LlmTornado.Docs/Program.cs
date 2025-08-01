@@ -1,6 +1,8 @@
+using BlazorWorker.Core;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using LlmTornado.Docs.Code;
+using LlmTornado.Docs.Code.Intellisense;
 using LlmTornado.Docs.Console;
 
 namespace LlmTornado.Docs;
@@ -18,7 +20,10 @@ public class Program
         builder.Services.AddSingleton<ICodeExecutor, WebAssemblyCodeRunner>();
         builder.Services.AddSingleton<ConsoleOutputService>();
         builder.Services.AddSingleton<IResourceResolver, ResourceResolver>();
+        builder.Services.AddWorkerFactory();
 
+        await new RoslynProject("").Init(new HttpClient());
+        
         await builder.Build().RunAsync();
     }
 }

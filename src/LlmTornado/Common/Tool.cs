@@ -215,7 +215,7 @@ public class FunctionResult
     public bool? InvocationSucceeded { get; set; }
     
     [JsonIgnore]
-    internal Type? ContentJsonType { get; set; }
+    public Type? ContentJsonType { get; set; }
     
     [JsonIgnore]
     internal object? RawContent { get; set; }
@@ -796,7 +796,7 @@ public class McpTool : IRemoteTool
 { 
     public Func<Dictionary<string, object?>?, IProgress<ToolCallProgress>?, JsonSerializerOptions?, bool, CancellationToken?, ValueTask<FunctionResult>> CallAsync { get; set; }
 
-    internal McpTool()
+    public McpTool()
     {
         
     }

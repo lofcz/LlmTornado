@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
 
@@ -24,13 +25,20 @@ if (match.Success)
     JsonElement fingerprinting = resources.GetProperty("fingerprinting");
 
     Dictionary<string, string> invertedFingerprinting = new Dictionary<string, string>();
-
+    JsonObject assemblyResources = new JsonObject();
+    
     foreach (JsonProperty property in fingerprinting.EnumerateObject())
     {
         var key = property.Value.GetString();
         if (key is not null)
         {
             invertedFingerprinting[key] = property.Name;
+
+            if (key.EndsWith(".wasm"))
+            {
+                var dllKey = key.Replace(".wasm", ".dll");
+                assemblyResources[dllKey] = property.Name;
+            }
         }
     }
 
@@ -39,11 +47,29 @@ if (match.Success)
     
     if (outputDir is not null)
     {
-        string outputPath = Path.Combine(outputDir, "bmeta.json");
-        string outputJson = JsonSerializer.Serialize(invertedFingerprinting, new JsonSerializerOptions { WriteIndented = true });
-
-        File.WriteAllText(outputPath, outputJson);
-        Console.WriteLine($"Successfully created bmeta.json at {outputPath}");
+        // Write bmeta.json
+        string bmetaOutputPath = Path.Combine(outputDir, "bmeta.json");
+        string bmetaOutputJson = JsonSerializer.Serialize(invertedFingerprinting, new JsonSerializerOptions { WriteIndented = true });
+        File.WriteAllText(bmetaOutputPath, bmetaOutputJson);
+        Console.WriteLine($"Successfully created bmeta.json at {bmetaOutputPath}");
+        
+        // Write blazor.boot.json
+        var bootJsonResources = new JsonObject();
+        bootJsonResources["assembly"] = assemblyResources;
+        bootJsonResources["pdb"] = new JsonObject();
+        bootJsonResources["runtime"] = new JsonObject();
+        
+        var bootJson = new JsonObject
+        {
+            ["cacheBootResources"] = true,
+            ["entryAssembly"] = "LlmTornado.Docs.dll",
+            ["resources"] = bootJsonResources
+        };
+        
+        string bootJsonOutputPath = Path.Combine(outputDir, "blazor.boot.json");
+        string bootJsonOutputJson = bootJson.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+        File.WriteAllText(bootJsonOutputPath, bootJsonOutputJson);
+        Console.WriteLine($"Successfully created blazor.boot.json at {bootJsonOutputPath}");
     }
     else
     {

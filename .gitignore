@@ -349,3 +349,5 @@ src/LlmTornado/openai_openapi.yml
 /src/LlmTornado.Docs/website/docs/.vitepress/dist
 /src/LlmTornado.Docs/website/docs/.vitepress/cache
 /src/LlmTornado.Docs/website/docs/public/playground
+/src/LlmTornado.Docs/reference_intellisage
+/src/LlmTornado.Docs/wwwroot/dist

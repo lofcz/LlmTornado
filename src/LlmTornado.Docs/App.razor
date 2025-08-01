@@ -1,4 +1,10 @@
-﻿<Router AppAssembly="@typeof(App).Assembly">
+﻿@using LlmTornado.Docs.Code.Intellisense
+@inject IJSRuntime JS
+@inject NavigationManager NavigationManager
+@inject BlazorWorker.Core.IWorkerFactory WorkerFactory
+@inject HttpClient Http
+
+<Router AppAssembly="@typeof(App).Assembly">
     <Found Context="routeData">
         <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)"/>
         <FocusOnNavigate RouteData="@routeData" Selector="h1"/>
@@ -10,3 +16,11 @@
         </LayoutView>
     </NotFound>
 </Router>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await Intellisense.Init(JS, NavigationManager, WorkerFactory, Http);
+    }
+}
