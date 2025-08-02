@@ -16,7 +16,7 @@ namespace LlmTornado.Demo
     public class AgentsDemo : DemoBase
     {
         [TornadoTest]
-        public async Task BasicTornadoRun()
+        public static async Task BasicTornadoRun()
         {
             TornadoAgent agent = new(
                 Program.Connect(),
@@ -29,7 +29,7 @@ namespace LlmTornado.Demo
         }
 
         [TornadoTest]
-        public async Task RunHelloWorldStreaming()
+        public static async Task RunHelloWorldStreaming()
         {
             TornadoAgent agent = new(
                 Program.Connect(),
@@ -106,7 +106,7 @@ namespace LlmTornado.Demo
 
 
         [TornadoTest]
-        public async Task<GuardRailFunctionOutput> MathGuardRail()
+        public static async Task<GuardRailFunctionOutput> MathGuardRail()
         {
             TornadoAgent math_guardrail = new(
                Program.Connect(),
@@ -153,7 +153,7 @@ namespace LlmTornado.Demo
         }
 
         [TornadoTest]
-        public async Task RunBasicStructuredOutputExample()
+        public static async Task RunBasicStructuredOutputExample()
         {
             TornadoAgent agent = new(
                 Program.Connect(),

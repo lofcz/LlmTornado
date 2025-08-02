@@ -13,7 +13,7 @@ namespace LlmTornado.Demo
     public class AgentStateMachineDemo : DemoBase
     {
         [TornadoTest]
-        public async Task BasicTestStreaming()
+        public static async Task BasicTestStreaming()
         {
             // Create an instance of the BasicLombdaAgent
             BasicLombdaAgent agent = new BasicLombdaAgent();
@@ -30,11 +30,10 @@ namespace LlmTornado.Demo
         }
 
         [TornadoTest]
-        public async Task BasicTest()
+        public static async Task BasicTest()
         {
             // Create an instance of the BasicLombdaAgent
             BasicLombdaAgent agent = new BasicLombdaAgent();
-            agent.RootStreamingEvent += ReceiveStream; // Subscribe to the streaming event
             // Example task to run through the state machine
 
             string task = "What is the capital of France?";
@@ -43,11 +42,11 @@ namespace LlmTornado.Demo
             // Run the state machine and get the result
             var result = await agent.AddToConversation(task, streaming: false);
             // Output the result
-            Console.Write("\n");
+            Console.Write(result);
         }
 
         [TornadoTest]
-        public async Task BasicImageTestStreaming()
+        public static async Task BasicImageTestStreaming()
         {
             // Create an instance of the BasicLombdaAgent
             BasicLombdaAgent agent = new BasicLombdaAgent();
@@ -59,14 +58,16 @@ namespace LlmTornado.Demo
             Console.Write("[Agent]: ");
             // Run the state machine and get the result
             //Preprocessor cannot handle image input
-            var result = await agent.AddImageToConversation(task, "C:\\Users\\johnl\\Pictures\\dogs cropped.jpg", streaming: true);
+            var result = await agent.AddImageToConversation(task, $"{Directory.GetCurrentDirectory()}\\Static\\Images\\catBoi.jpg", streaming: true);
             // Output the result
             Console.Write("\n");
         }
 
-        public async Task ReceiveStream(ModelStreamingEvents stream)
+        public static async Task<ValueTask> ReceiveStream(ModelStreamingEvents stream)
         {
-            Console.Write($"{stream.EventType}");
+            if(stream is ModelStreamingOutputTextDeltaEvent text)
+                Console.Write($"{text.DeltaText}");
+            return ValueTask.CompletedTask;
         }
     }
 

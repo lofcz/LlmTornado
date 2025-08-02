@@ -282,6 +282,7 @@ namespace LlmTornado.Agents
                 MessageTokenHandler = (text) =>
                 {
                     streamingCallback?.Invoke(new ModelStreamingOutputTextDeltaEvent(1, 1, 1, text));
+                    Console.Write(text);
                     return ValueTask.CompletedTask;
                 },
                 ReasoningTokenHandler = (reasoning) =>

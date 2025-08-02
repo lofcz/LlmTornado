@@ -15,7 +15,7 @@ namespace LlmTornado.Agents.AgentStates
 
     public delegate string UserInputRequestDelegate(string prompt);
 
-    public delegate Task ModelStreamingEvent(ModelStreamingEvents streamEvent);
+    public delegate Task<ValueTask> ModelStreamingEvent(ModelStreamingEvents streamEvent);
 
     public abstract class ControllerAgent
     {
@@ -296,10 +296,19 @@ namespace LlmTornado.Agents.AgentStates
                     userMessage.Parts?.Add(message.Parts?.FirstOrDefault()!);
                 }
             }
+            if(CurrentResult != null)
+            {
+                //Run the ControlAgent with the current messages
+                CurrentResult = await TornadoRunner.RunAsync(ControlAgent, messages: new(CurrentResult.Messages), verboseCallback: MainVerboseCallback,
+                    streaming: streaming, streamingCallback: MainStreamingCallback, cancellationToken: CancellationTokenSource, responseId: string.IsNullOrEmpty(MainThreadId) ? "" : MainThreadId);
+            }
+            else
+            {
+                //Run the ControlAgent with the current messages
+                CurrentResult = await TornadoRunner.RunAsync(ControlAgent, messages: new([userMessage]), verboseCallback: MainVerboseCallback,
+                    streaming: streaming, streamingCallback: MainStreamingCallback, cancellationToken: CancellationTokenSource, responseId: string.IsNullOrEmpty(MainThreadId) ? "" : MainThreadId);
+            }
 
-            //Run the ControlAgent with the current messages
-            CurrentResult = await TornadoRunner.RunAsync(ControlAgent, messages: new(CurrentResult.Messages), verboseCallback: MainVerboseCallback, 
-                streaming: streaming, streamingCallback: MainStreamingCallback, cancellationToken: CancellationTokenSource,responseId: string.IsNullOrEmpty(MainThreadId) ? "" : MainThreadId);
 
             if (CurrentResult.MostRecentApiResult != null)
             {
