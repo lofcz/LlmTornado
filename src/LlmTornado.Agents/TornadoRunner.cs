@@ -23,15 +23,15 @@ namespace LlmTornado.Agents
         /// </summary>
         /// <param name="agent">Agent to Run</param>
         /// <param name="input">Message to the Agent</param>
-        /// <param name="guard_rail">Input Guardrail To perform</param>
-        /// <param name="single_turn">Set loop to not loop</param>
+        /// <param name="guardRail">Input Guardrail To perform</param>
+        /// <param name="singleTurn">Set loop to not loop</param>
         /// <param name="maxTurns">Max loops to perform</param>
         /// <param name="messages"> Input messages to add to response</param>
         /// <param name="computerUseCallback">delegate to send computer actions</param>
         /// <param name="verboseCallback">delegate to send process info</param>
         /// <param name="streaming">Enable streaming</param>
         /// <param name="streamingCallback">delegate to send streaming information (Console.Write)</param>
-        /// <param name="responseID">Previous Response ID from response API</param>
+        /// <param name="responseId">Previous Response ID from response API</param>
         /// <param name="cancellationToken">Cancellation token to cancel the run</param>
         /// <param name="toolPermissionRequest">Delegate to request tool permission from user</param>
         /// <returns>Result of the run</returns>
@@ -40,15 +40,15 @@ namespace LlmTornado.Agents
         public static async Task<Conversation> RunAsync(
             TornadoAgent agent,
             string input = "",
-            GuardRailFunction? guard_rail = null,
-            bool single_turn = false,
+            GuardRailFunction? guardRail = null,
+            bool singleTurn = false,
             int maxTurns = 10,
             List<ChatMessage>? messages = null,
             //ComputerActionCallbacks? computerUseCallback = null,
             RunnerVerboseCallbacks? verboseCallback = null,
             bool streaming = false,
             StreamingCallbacks? streamingCallback = null,
-            string responseID = "",
+            string responseId = "",
             CancellationTokenSource? cancellationToken = default,
             ToolPermissionRequest? toolPermissionRequest = null
             )
@@ -88,11 +88,11 @@ namespace LlmTornado.Agents
             }
 
             //Set response id
-            if (!string.IsNullOrEmpty(responseID))
+            if (!string.IsNullOrEmpty(responseId))
             {
                 if(chat.RequestParameters.ResponseRequestParameters != null)
                 {
-                    chat.RequestParameters.ResponseRequestParameters!.PreviousResponseId = responseID;
+                    chat.RequestParameters.ResponseRequestParameters!.PreviousResponseId = responseId;
                 }
             }
 
@@ -103,9 +103,9 @@ namespace LlmTornado.Agents
             }
 
             //Check if the input triggers a guardrail to stop the agent from continuing
-            if (guard_rail != null)
+            if (guardRail != null)
             {
-                var guard_railResult = await (Task<GuardRailFunctionOutput>)guard_rail.DynamicInvoke([input])!;
+                var guard_railResult = await (Task<GuardRailFunctionOutput>)guardRail.DynamicInvoke([input])!;
                 if (guard_railResult != null)
                 {
                     GuardRailFunctionOutput grfOutput = guard_railResult;
@@ -119,7 +119,6 @@ namespace LlmTornado.Agents
 
             //Agent loop
             int currentTurn = 0;
-            ChatRichResponse response;
             ProcessResult processResult;
             try
             {
@@ -129,12 +128,12 @@ namespace LlmTornado.Agents
 
                     if (currentTurn >= maxTurns) throw new Exception("Max Turns Reached");
 
-                    chat = await _get_new_response(agent, chat, streaming, streamingCallback, verboseCallback) ?? chat;
+                    chat = await GetNewResponse(agent, chat, streaming, streamingCallback, verboseCallback) ?? chat;
 
                     currentTurn++;
                     processResult = await ProcessOutputItems(agent, chat, verboseCallback, toolPermissionRequest);
                     chat = processResult.Chat;
-                } while (processResult.RequiresAction && !single_turn);
+                } while (processResult.RequiresAction && !singleTurn);
             }
             catch (Exception ex)
             {
@@ -244,8 +243,8 @@ namespace LlmTornado.Agents
         /// <returns></returns>
         private static async Task<FunctionResult> HandleToolCall(TornadoAgent agent, FunctionCall toolCall)
         {
-            if (agent.mcp_tools.ContainsKey(toolCall.Name)) return await ToolRunner.CallMcpToolAsync(agent, toolCall);
-            return agent.agent_tools.ContainsKey(toolCall.Name) ? await ToolRunner.CallAgentToolAsync(agent, toolCall) : await ToolRunner.CallFuncToolAsync(agent, toolCall);
+            if (agent.McpTools.ContainsKey(toolCall.Name)) return await ToolRunner.CallMcpToolAsync(agent, toolCall);
+            return agent.AgentTools.ContainsKey(toolCall.Name) ? await ToolRunner.CallAgentToolAsync(agent, toolCall) : await ToolRunner.CallFuncToolAsync(agent, toolCall);
         }
 
         /// <summary>
@@ -268,7 +267,7 @@ namespace LlmTornado.Agents
         /// <param name="Streaming"></param>
         /// <param name="streamingCallback"></param>
         /// <returns></returns>
-        public static async Task<Conversation>? _get_new_response(TornadoAgent agent, Conversation chat, bool Streaming = false, StreamingCallbacks? streamingCallback = null, RunnerVerboseCallbacks? verboseCallback = null)
+        public static async Task<Conversation>? GetNewResponse(TornadoAgent agent, Conversation chat, bool Streaming = false, StreamingCallbacks? streamingCallback = null, RunnerVerboseCallbacks? verboseCallback = null)
         {
             try
             {

@@ -19,7 +19,7 @@ namespace LlmTornado.Agents
             TornadoAgent agent = new TornadoAgent(new TornadoApi([new ProviderAuthentication(LLmProviders.OpenAi, Environment.GetEnvironmentVariable("OPENAI_API_KEY")!),]),
                 ChatModel.OpenAi.Gpt41.V41Mini,
                 "You are a useful assistant.",
-                _tools: [GetCurrentWeather]);
+                tools: [GetCurrentWeather]);
 
             var result = await TornadoRunner.RunAsync(agent, "What is the weather in boston?");
 

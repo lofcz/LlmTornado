@@ -15,7 +15,7 @@ namespace LlmTornado.Agents
                 new TornadoApi([new ProviderAuthentication(LLmProviders.OpenAi, Environment.GetEnvironmentVariable("OPENAI_API_KEY")!),]),
                 ChatModel.OpenAi.Gpt41.V41Mini,
                 "Have fun",
-                _output_schema: typeof(math_reasoning));
+                outputSchema: typeof(math_reasoning));
 
             var result = await TornadoRunner.RunAsync(agent, "How can I solve 8x + 7 = -23?");
 

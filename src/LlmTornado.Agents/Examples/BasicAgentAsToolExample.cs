@@ -19,7 +19,7 @@ namespace LlmTornado.Agents
                  new TornadoApi([new ProviderAuthentication(LLmProviders.OpenAi, Environment.GetEnvironmentVariable("OPENAI_API_KEY")!),]),
                  ChatModel.OpenAi.Gpt41.V41Mini,
                 "You are a useful assistant that when asked to translate you only can rely on the given tools to translate language.",
-                _tools: [agent_translator.AsTool]);
+                tools: [agent_translator.AsTool]);
 
             Conversation result = await TornadoRunner.RunAsync(agent, "What is 2+2? and can you provide the result to me in spanish?");
 

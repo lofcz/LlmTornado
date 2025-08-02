@@ -7,7 +7,7 @@ using System.Text.Json.Serialization;
 
 namespace LlmTornado.Agents
 {
-    public static class json_util
+    public static class JsonUtility
     {
         /// <summary>
         /// Determines whether the specified string is a valid JSON format.
@@ -210,7 +210,7 @@ namespace LlmTornado.Agents
             var properties = new Dictionary<string, object>();
             if (fromArray)
             {
-                var jsonType = json_util.MapClrTypeToJsonType(type);
+                var jsonType = JsonUtility.MapClrTypeToJsonType(type);
                 properties.Add("type", jsonType);
 
                 if (jsonType == "object")

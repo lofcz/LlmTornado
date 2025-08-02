@@ -58,35 +58,34 @@ namespace LlmTornado.Agents
         /// Gets or sets the permissions for tools, represented as a dictionary where the key is the tool name and the
         /// value indicates whether the tool requires permission to be used.
         /// </summary>
-        public Dictionary<string, bool> ToolPermissionRequired { get => toolPermission; set => toolPermission = value; }
+        public Dictionary<string, bool> ToolPermissionRequired = new();
 
         /// <summary>
         /// Map of function tools to their methods
         /// </summary>
-        public Dictionary<string, FunctionTool> tool_list = new();
+        public Dictionary<string, FunctionTool> ToolList = new();
         /// <summary>
         /// Map of agent tools to their agents
         /// </summary>
-        public Dictionary<string, TornadoAgentTool> agent_tools = new();
+        public Dictionary<string, TornadoAgentTool> AgentTools = new();
 
-        public Dictionary<string, MCPServer> mcp_tools = new();
+        public Dictionary<string, MCPServer> McpTools = new();
 
-        public List<MCPServer> MCPServers = new();
+        public List<MCPServer> McpServers = new();
 
-        private Dictionary<string, bool> toolPermission = new();
 
         public static TornadoAgent DummyAgent()
         {
             TornadoApi client = new([new ProviderAuthentication(LLmProviders.OpenAi, Environment.GetEnvironmentVariable("OPENAI_API_KEY")!),]);
             return new TornadoAgent(client, "");
         }
-        public TornadoAgent(TornadoApi client, ChatModel model, string _instructions = "", Type? _output_schema = null, List<Delegate>? _tools = null)
+        public TornadoAgent(TornadoApi client, ChatModel model, string instructions = "", Type? outputSchema = null, List<Delegate>? tools = null)
         {
             Client = client;
-            Instructions = string.IsNullOrEmpty(_instructions) ? "You are a helpful assistant" : _instructions;
-            OutputSchema = _output_schema;
-            Tools = _tools ?? Tools;
-            Instructions = _instructions;
+            Instructions = string.IsNullOrEmpty(instructions) ? "You are a helpful assistant" : instructions;
+            OutputSchema = outputSchema;
+            Tools = tools ?? Tools;
+            Instructions = instructions;
             Model = model;
             Options.Model = model;
 
@@ -119,7 +118,7 @@ namespace LlmTornado.Agents
                                                                             //Add agent tool to context list
                     if (tool != null)
                     {
-                        agent_tools.Add(tool.ToolAgent.Id, tool);
+                        AgentTools.Add(tool.ToolAgent.Id, tool);
                         //Convert Tools here
                         if (Options.Tools == null) Options.Tools = new List<LlmTornado.Common.Tool>();
                         Options.Tools?.Add(
@@ -138,7 +137,7 @@ namespace LlmTornado.Agents
                     FunctionTool? tool = fun.ConvertFunctionToTool();
                     if (tool != null)
                     {
-                        tool_list.Add(tool.ToolName, tool);
+                        ToolList.Add(tool.ToolName, tool);
                         if (Options.Tools == null) Options.Tools = new List<LlmTornado.Common.Tool>();
                         Options.Tools?.Add(
                             new LlmTornado.Common.Tool(

@@ -53,7 +53,7 @@ namespace LlmTornado.Agents
             {
                 if (param.Name == null) continue;
 
-                string typeName = param.ParameterType.IsEnum ? "string" : json_util.MapClrTypeToJsonType(param.ParameterType);
+                string typeName = param.ParameterType.IsEnum ? "string" : JsonUtility.MapClrTypeToJsonType(param.ParameterType);
 
                 string paramDescription = param.Name;
                 if (param.IsDefined(typeof(DescriptionAttribute), inherit: false))

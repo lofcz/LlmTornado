@@ -22,7 +22,7 @@ namespace LlmTornado.Agents
                 ChatModel.OpenAi.Gpt41.V41Mini,
                 "You are a useful assistant.");
 
-            var result = await TornadoRunner.RunAsync(agent, "What is 2+2?", guard_rail: MathGuardRail);
+            var result = await TornadoRunner.RunAsync(agent, "What is 2+2?", guardRail: MathGuardRail);
 
             Console.WriteLine(result.Messages.Last().Content);
         }
@@ -34,7 +34,7 @@ namespace LlmTornado.Agents
                ChatModel.OpenAi.Gpt41.V41Mini,
                "You are a useful assistant.");
 
-            var result = await TornadoRunner.RunAsync(agent, "What is the weather in boston?", guard_rail: MathGuardRail);
+            var result = await TornadoRunner.RunAsync(agent, "What is the weather in boston?", guardRail: MathGuardRail);
 
             Console.WriteLine(result.Messages.Last().Content);
         }
@@ -56,9 +56,9 @@ namespace LlmTornado.Agents
                new TornadoApi([new ProviderAuthentication(LLmProviders.OpenAi, Environment.GetEnvironmentVariable("OPENAI_API_KEY")!),]),
                ChatModel.OpenAi.Gpt41.V41Mini,
                 "Check if the user is asking you a Math related question.", 
-                _output_schema: typeof(IsMath));
+                outputSchema: typeof(IsMath));
 
-            var result = await TornadoRunner.RunAsync(weather_guardrail, input, single_turn:true);
+            var result = await TornadoRunner.RunAsync(weather_guardrail, input, singleTurn:true);
 
             IsMath? isMath = result.Messages.Last().Content.ParseJson<IsMath>();
 
