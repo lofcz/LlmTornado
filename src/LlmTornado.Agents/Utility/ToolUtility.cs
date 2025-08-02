@@ -52,7 +52,7 @@ namespace LlmTornado.Agents
                     required_inputs.Add(param.Name);
                 }
 
-                if (param.IsDefined(typeof(IgnoreParamAttribute), inherit: false))
+                if (param.IsDefined(typeof(SchemaIgnoreAttribute), inherit: false))
                 {
                     if(!toolMetadata.Ignore.Contains(param.Name))
                     {

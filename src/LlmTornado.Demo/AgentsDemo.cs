@@ -165,7 +165,7 @@ namespace LlmTornado.Demo
         [Description("Get the current weather in a given location")]
         public static string GetCurrentWeather(
             [Description("The city and state, e.g. Boston, MA")] string location,
-            [IgnoreParam] Unit unit = Unit.celsius)
+            [SchemaIgnore] Unit unit = Unit.celsius)
         {
             // Call the weather API here.
             return $"31 C";

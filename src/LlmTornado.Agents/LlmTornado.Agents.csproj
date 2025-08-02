@@ -7,7 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Lombda.StateMachine" Version="1.0.1" />
     <PackageReference Include="System.Drawing.Common" Version="9.0.7" />
     <PackageReference Include="System.Memory.Data" Version="9.0.6" />
   </ItemGroup>
