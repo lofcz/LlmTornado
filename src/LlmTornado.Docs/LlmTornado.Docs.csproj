@@ -83,7 +83,7 @@
         <Copy SourceFiles="$(WwwRootPath)_framework\blazor.boot.json" DestinationFolder="wwwroot\_framework\" />
     </Target>
 
-    <Target Name="ViteBuild" BeforeTargets="BeforeBuild">
+    <Target Name="ViteBuild" BeforeTargets="BeforeBuild" Condition="'$(SkipViteBuild)' != 'true'">
         <Exec Command="npm install" WorkingDirectory="ClientApp" />
         <Exec Command="npm run build" WorkingDirectory="ClientApp" />
     </Target>

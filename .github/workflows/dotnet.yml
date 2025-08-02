@@ -41,7 +41,7 @@ jobs:
       working-directory: ./src
 
     - name: Build LlmTornado.Docs (no npm)
-      run: dotnet build src/LlmTornado.Docs/LlmTornado.Docs.csproj --no-restore --framework net10.0 --configuration Release -p:RunNpmBuild=false
+      run: dotnet build src/LlmTornado.Docs/LlmTornado.Docs.csproj --no-restore --framework net10.0 --configuration Release -p:SkipViteBuild=true
 
     - name: Update GitHub status check
       if: always()
