@@ -41,37 +41,13 @@ namespace LlmTornado.Demo
             {
                 switch (streamingEvent.EventType)
                 {
-                    case ModelStreamingEventType.Created:
-                        Console.WriteLine($"[STREAMING] Stream created (Sequence: {streamingEvent.SequenceId})");
-                        break;
-
                     case ModelStreamingEventType.OutputTextDelta:
                         if (streamingEvent is ModelStreamingOutputTextDeltaEvent deltaEvent)
                         {
                             Console.Write(deltaEvent.DeltaText); // Write the text delta directly
                         }
                         break;
-
-                    case ModelStreamingEventType.Completed:
-                        Console.WriteLine($"\n[STREAMING] Stream completed (Sequence: {streamingEvent.SequenceId})");
-                        break;
-
-                    case ModelStreamingEventType.Error:
-                        if (streamingEvent is ModelStreamingErrorEvent errorEvent)
-                        {
-                            Console.WriteLine($"\n[STREAMING] Error: {errorEvent.ErrorMessage}");
-                        }
-                        break;
-
-                    case ModelStreamingEventType.ReasoningPartAdded:
-                        if (streamingEvent is ModelStreamingReasoningPartAddedEvent reasoningEvent)
-                        {
-                            Console.WriteLine($"\n[REASONING] {reasoningEvent.DeltaText}");
-                        }
-                        break;
-
                     default:
-                        Console.WriteLine($"[STREAMING] Event: {streamingEvent.EventType} (Status: {streamingEvent.Status})");
                         break;
                 }
             }
@@ -169,14 +145,15 @@ namespace LlmTornado.Demo
             Console.WriteLine(mathResult.ToString());
         }
 
-       
+        [TornadoTest]
         public async Task RunBasicTornadoToolUse()
         {
 
             TornadoAgent agent = new TornadoAgent(Program.Connect(),
                 ChatModel.OpenAi.Gpt41.V41Mini,
                 "You are a useful assistant.",
-                tools: [GetCurrentWeather]);
+                tools: [GetCurrentWeather],
+                outputSchema: typeof(math_reasoning));
 
             var result = await TornadoRunner.RunAsync(agent, "What is the weather in boston?");
 

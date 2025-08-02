@@ -110,6 +110,7 @@ namespace LlmTornado.Agents
         /// <param name="Tools"></param>
         private void SetupTools(List<Delegate> Tools)
         {
+            if (Options.Tools == null) Options.Tools = new List<LlmTornado.Common.Tool>();
             foreach (var fun in Tools)
             {
                 //Convert Agent to tool
@@ -120,8 +121,6 @@ namespace LlmTornado.Agents
                     if (tool != null)
                     {
                         AgentTools.Add(tool.ToolAgent.Id, tool);
-                        //Convert Tools here
-                        if (Options.Tools == null) Options.Tools = new List<LlmTornado.Common.Tool>();
                         Options.Tools?.Add(tool.Tool);
                     }
                 }
@@ -132,7 +131,6 @@ namespace LlmTornado.Agents
                     if (tool != null)
                     {
                         ToolList.Add(tool.Delegate.Method.Name, tool);
-                        if (Options.Tools == null) Options.Tools = new List<LlmTornado.Common.Tool>();
                         Options.Tools?.Add(tool);
                     }
                 }

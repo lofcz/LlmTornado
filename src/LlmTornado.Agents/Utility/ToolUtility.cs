@@ -41,6 +41,7 @@ namespace LlmTornado.Agents
 
             var parameters = method.GetParameters();
             ToolMetadata toolMetadata = new ToolMetadata();
+            if (toolMetadata.Ignore == null) toolMetadata.Ignore = new List<string>();
 
             foreach (ParameterInfo param in parameters)
             {
@@ -53,7 +54,6 @@ namespace LlmTornado.Agents
 
                 if (param.IsDefined(typeof(IgnoreParamAttribute), inherit: false))
                 {
-                    if(toolMetadata.Ignore == null) toolMetadata.Ignore = new List<string>();
                     if(!toolMetadata.Ignore.Contains(param.Name))
                     {
                         toolMetadata.Ignore.Add(param.Name);
