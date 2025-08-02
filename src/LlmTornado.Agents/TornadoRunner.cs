@@ -4,9 +4,11 @@ using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Common;
 using LlmTornado.Responses.Events;
+using Microsoft.VisualBasic;
 using System.Drawing.Imaging;
 using System.Net;
 using System.Text.Json;
+using static LlmTornado.Agents.TornadoRunner;
 
 namespace LlmTornado.Agents
 {
@@ -119,7 +121,6 @@ namespace LlmTornado.Agents
 
             //Agent loop
             int currentTurn = 0;
-            ProcessResult processResult;
             try
             {
                 do
@@ -128,12 +129,10 @@ namespace LlmTornado.Agents
 
                     if (currentTurn >= maxTurns) throw new Exception("Max Turns Reached");
 
-                    chat = await GetNewResponse(agent, chat, streaming, streamingCallback, verboseCallback) ?? chat;
+                    chat = await GetNewResponse(agent, chat, streaming, streamingCallback, verboseCallback, toolPermissionRequest) ?? chat;
 
                     currentTurn++;
-                    processResult = await ProcessOutputItems(agent, chat, verboseCallback, toolPermissionRequest);
-                    chat = processResult.Chat;
-                } while (processResult.RequiresAction && !singleTurn);
+                } while (await ProcessOutputItems(agent, chat, verboseCallback) && !singleTurn);
             }
             catch (Exception ex)
             {
@@ -154,17 +153,6 @@ namespace LlmTornado.Agents
             }
         }
 
-        public class ProcessResult
-        {
-            public bool RequiresAction { get; set; }
-            public Conversation Chat { get; set; }
-            public ProcessResult(bool requiresAction, Conversation chat)
-            {
-                RequiresAction = requiresAction;
-                Chat = chat;
-            }
-        }
-
         /// <summary>
         /// Add output to messages and handle function and tool calls
         /// </summary>
@@ -174,65 +162,21 @@ namespace LlmTornado.Agents
         /// <param name="computerUseCallback"></param>
         /// <param name="toolPermissionRequest"
         /// <returns></returns>
-        private static async Task<ProcessResult> ProcessOutputItems(TornadoAgent agent,  Conversation chat, RunnerVerboseCallbacks? callback, ToolPermissionRequest? toolPermissionRequest)
+        private static async Task<bool> ProcessOutputItems(TornadoAgent agent,  Conversation chat, RunnerVerboseCallbacks? callback)
         {
             bool requiresAction = false;
+
             var lastResult = chat.Messages.Last();
-            if(lastResult == null) 
-            { 
-                return new ProcessResult(requiresAction, chat);
-            }
-            if(lastResult.ToolCalls != null)
+
+            if(lastResult != null) 
             {
-                foreach (var call in lastResult.ToolCalls)
+                if (lastResult.Role == ChatMessageRoles.Tool)
                 {
-                    if (call.FunctionCall != null)
-                    {
-                        bool permissionGranted = true;
-                        if (toolPermissionRequest != null)
-                        {
-                            if (toolPermissionRequest?.GetInvocationList().Length > 0 && agent.ToolPermissionRequired[call.FunctionCall.Name])
-                            {
-                                //If tool permission is required, ask user for permission
-                                permissionGranted = toolPermissionRequest.Invoke($"Do you want to allow the agent to use the tool: {call.FunctionCall.Name}?");
-                            }
-                        }
-
-                        if (permissionGranted)
-                        {
-                            var toolOutput = await HandleToolCall(agent, call.FunctionCall);
-                            ChatMessage chatMessage = new ChatMessage();
-                            chatMessage.Role = ChatMessageRoles.Tool;
-                            chatMessage.ToolCallId = call.Id;
-                            chatMessage.Content = toolOutput.Content;
-
-                            chat.AppendMessage(chatMessage);
-
-                            requiresAction = true;
-                        }
-                        else
-                        {
-                            var toolOutput = await HandleToolCall(agent, call.FunctionCall);
-                            ChatMessage chatMessage = new ChatMessage();
-                            chatMessage.Role = ChatMessageRoles.Tool;
-                            chatMessage.ToolCallId = call.Id;
-                            chatMessage.Content = "Tool Permission was not granted by user";
-
-                            chat.AppendMessage(chatMessage);
-
-                            requiresAction = true;
-                        }
-                    }
+                    requiresAction = true;
                 }
             }
-            //else if (item is ModelComputerCallItem computerCall)
-            //{
-            //    var computerOutput = await HandleComputerCall(computerCall, computerUseCallback);
-            //    //chat.AppendMessage();  need to verify if we can get this to work
-            //    requiresAction = true;
-            //}
-            
-            return new ProcessResult(requiresAction, chat);
+
+            return requiresAction;
         }
 
         /// <summary>
@@ -241,10 +185,28 @@ namespace LlmTornado.Agents
         /// <param name="agent"></param>
         /// <param name="toolCall"></param>
         /// <returns></returns>
-        private static async Task<FunctionResult> HandleToolCall(TornadoAgent agent, FunctionCall toolCall)
+        private static async Task<FunctionResult> HandleToolCall(TornadoAgent agent, FunctionCall toolCall, ToolPermissionRequest? toolPermissionRequest = null)
         {
-            if (agent.McpTools.ContainsKey(toolCall.Name)) return await ToolRunner.CallMcpToolAsync(agent, toolCall);
-            return agent.AgentTools.ContainsKey(toolCall.Name) ? await ToolRunner.CallAgentToolAsync(agent, toolCall) : await ToolRunner.CallFuncToolAsync(agent, toolCall);
+            bool permissionGranted = true;
+            if (toolPermissionRequest != null)
+            {
+                if (toolPermissionRequest?.GetInvocationList().Length > 0 && agent.ToolPermissionRequired[toolCall.Name])
+                {
+                    //If tool permission is required, ask user for permission
+                    permissionGranted = toolPermissionRequest.Invoke($"Do you want to allow the agent to use the tool: {toolCall.Name}?");
+                }
+            }
+
+            if (!permissionGranted)
+            {
+                //If permission is not granted, remove the tool call from the request
+                return new FunctionResult(toolCall, "Tool Permission was not granted by user", FunctionResultSetContentModes.Passthrough);
+            }
+            else
+            {
+                if (agent.McpTools.ContainsKey(toolCall.Name)) return await ToolRunner.CallMcpToolAsync(agent, toolCall);
+                return agent.AgentTools.ContainsKey(toolCall.Name) ? await ToolRunner.CallAgentToolAsync(agent, toolCall) : await ToolRunner.CallFuncToolAsync(agent, toolCall);
+            }
         }
 
         /// <summary>
@@ -267,29 +229,42 @@ namespace LlmTornado.Agents
         /// <param name="Streaming"></param>
         /// <param name="streamingCallback"></param>
         /// <returns></returns>
-        public static async Task<Conversation>? GetNewResponse(TornadoAgent agent, Conversation chat, bool Streaming = false, StreamingCallbacks? streamingCallback = null, RunnerVerboseCallbacks? verboseCallback = null)
+        public static async Task<Conversation>? GetNewResponse(TornadoAgent agent, Conversation chat, bool Streaming = false, StreamingCallbacks? streamingCallback = null, RunnerVerboseCallbacks? verboseCallback = null, ToolPermissionRequest? toolPermissionRequest = null)
         {
             try
             {
+                TornadoRequestContent serialized = chat.Serialize(new ChatRequestSerializeOptions { Pretty = true });
+
                 if (Streaming && streamingCallback != null)
                 {
                     return await HandleStreaming(agent, chat, streamingCallback);
                 }
-                RestDataOrException<ChatRichResponse> response = await chat.GetResponseRichSafe();
-                return chat;
+                else
+                {
+
+                    RestDataOrException<ChatRichResponse> response = await chat.GetResponseRichSafe(functions =>
+                    {
+                        foreach (FunctionCall fn in functions)
+                        {
+                            Task.Run(async () => fn.Result = await HandleToolCall(agent, fn, toolPermissionRequest)).Wait();
+                        }
+                        return ValueTask.CompletedTask;
+                    });
+
+                    return chat;
+                }
             }
             catch (Exception ex)
             {
                 verboseCallback?.Invoke(ex.ToString());
                 verboseCallback?.Invoke("Removing Last Message thread");
-                //RemoveLastMessageThread(messages); //Removed due to parallel tool calling moving input to InputItems so messages has no bearing on input
             }
 
             return null;
         }
 
 
-        public static async Task<Conversation> HandleStreaming(TornadoAgent agent, Conversation chat, StreamingCallbacks? streamingCallback = null)
+        public static async Task<Conversation> HandleStreaming(TornadoAgent agent, Conversation chat, StreamingCallbacks? streamingCallback = null, ToolPermissionRequest? toolPermissionRequest = null)
         {
             //Create Open response
             await chat.StreamResponseRich(new ChatStreamEventHandler
@@ -333,7 +308,7 @@ namespace LlmTornado.Agents
                         //Add the tool call to the response output
                         foreach (FunctionCall fn in toolCall)
                         {
-                            Task.Run(async () => fn.Result = await HandleToolCall(agent, fn)).Wait();
+                            Task.Run(async () => fn.Result = await HandleToolCall(agent, fn, toolPermissionRequest)).Wait();
                         }
                     }
                     return ValueTask.CompletedTask;

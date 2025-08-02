@@ -2,6 +2,7 @@
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Code;
+using LlmTornado.Common;
 using LlmTornado.Responses;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -63,7 +64,7 @@ namespace LlmTornado.Agents
         /// <summary>
         /// Map of function tools to their methods
         /// </summary>
-        public Dictionary<string, FunctionTool> ToolList = new();
+        public Dictionary<string, Tool> ToolList = new();
         /// <summary>
         /// Map of agent tools to their agents
         /// </summary>
@@ -121,32 +122,18 @@ namespace LlmTornado.Agents
                         AgentTools.Add(tool.ToolAgent.Id, tool);
                         //Convert Tools here
                         if (Options.Tools == null) Options.Tools = new List<LlmTornado.Common.Tool>();
-                        Options.Tools?.Add(
-                            new LlmTornado.Common.Tool(
-                                new LlmTornado.Common.ToolFunction(
-                                    tool.Tool.ToolName,
-                                    tool.Tool.ToolDescription,
-                                    tool.Tool.ToolParameters.ToString()), true
-                                )
-                            );
+                        Options.Tools?.Add(tool.Tool);
                     }
                 }
                 else
                 {
                     //Convert Method to tool
-                    FunctionTool? tool = fun.ConvertFunctionToTool();
+                    Tool? tool = fun.ConvertFunctionToTornadoTool();
                     if (tool != null)
                     {
-                        ToolList.Add(tool.ToolName, tool);
+                        ToolList.Add(tool.Delegate.Method.Name, tool);
                         if (Options.Tools == null) Options.Tools = new List<LlmTornado.Common.Tool>();
-                        Options.Tools?.Add(
-                            new LlmTornado.Common.Tool(
-                                new LlmTornado.Common.ToolFunction(
-                                    tool.ToolName,
-                                    tool.ToolDescription,
-                                    tool.ToolParameters.ToString()), true
-                                )
-                            );
+                        Options.Tools?.Add(tool);
                     }
                 }
             }

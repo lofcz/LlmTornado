@@ -26,18 +26,20 @@ namespace LlmTornado.Agents
         {
             List<object> arguments = new();
 
-            if (!agent.ToolList.TryGetValue(call.Name, out FunctionTool? tool))
+            if (!agent.ToolList.TryGetValue(call.Name, out Common.Tool tool))
                 throw new Exception($"I don't have a tool called {call.Name}");
 
             //Need to check if function has required parameters and if so, parse them from the call.FunctionArguments
-            if (call.Arguments != null)
+            if (call.Arguments != null && tool.Delegate != null)
             {
-                arguments = tool.Function.ParseFunctionCallArgs(BinaryData.FromString(call.Arguments)) ?? new();
+                arguments = tool.Delegate?.ParseFunctionCallArgs(BinaryData.FromString(call.Arguments)) ?? new();
+
+                string? result = (string?)await CallFuncAsync(tool.Delegate, [.. arguments]);
+
+                return new FunctionResult(call, result);
             }
 
-            string? result = (string?)await CallFuncAsync(tool.Function, [.. arguments]);
-
-            return new FunctionResult(call,result);
+            return new FunctionResult(call, "Error No Delegate found");
         }
 
 
