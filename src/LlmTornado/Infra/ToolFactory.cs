@@ -9,6 +9,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using LlmTornado.Chat.Models;
 using LlmTornado.Code;
 using LlmTornado.Common;
 using Newtonsoft.Json.Linq;
@@ -17,6 +18,22 @@ namespace LlmTornado.Infra;
 
 internal static class ToolFactory
 {
+    public static readonly HashSet<ChatModel> ModelsSupportingStrictFunctions = [ 
+        ChatModel.OpenAi.Gpt41.V41, ChatModel.OpenAi.Gpt41.V41Mini, ChatModel.OpenAi.Gpt41.V41Nano,
+        ChatModel.OpenAi.Gpt4.O, ChatModel.OpenAi.Gpt4.O240806, ChatModel.OpenAi.Gpt4.O241120, ChatModel.OpenAi.Gpt4.O240513,
+        ChatModel.Google.Gemini.Gemini15Flash, ChatModel.Google.Gemini.Gemini2Flash001, ChatModel.Google.Gemini.Gemini15Pro, ChatModel.Google.Gemini.Gemini15Pro002, ChatModel.Google.Gemini.Gemini15Pro001, ChatModel.Google.Gemini.Gemini15ProLatest,
+        ChatModel.Google.Gemini.Gemini2FlashLatest, ChatModel.Google.GeminiPreview.Gemini25FlashPreview0417, ChatModel.Google.GeminiPreview.Gemini25ProPreview0325, ChatModel.Google.GeminiPreview.Gemini25ProPreview0506
+    ];
+
+    public static ToolFunction Compile(ToolDefinition function, ToolMeta meta)
+    {
+        function.Params ??= [];
+        
+        ToolParamObject root = new ToolParamObject(null, function.Params);
+        object obj = root.Compile(function, meta);
+        return new ToolFunction(function.Name, function.Description, obj);
+    }
+    
     public static Tuple<Type, bool> GetNullableBaseType(Type type)
     {
         if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
@@ -106,7 +123,7 @@ internal static class ToolFactory
             }
         }
 
-        ToolFunction compiled = ChatPluginCompiler.Compile(function, new ToolMeta
+        ToolFunction compiled = Compile(function, new ToolMeta
         {
             Provider = provider
         });
@@ -153,7 +170,12 @@ internal static class ToolFactory
 
             if (baseType == typeof(JObject))
             {
-                return new ToolParamObject(description, []) { DataType = type, Serializer = ToolParamSerializer.Json, AllowAdditionalProperties = true };
+                return new ToolParamObject(description, [])
+                {
+                    DataType = type, 
+                    Serializer = ToolParamSerializer.Json, 
+                    AllowAdditionalProperties = true
+                };
             }
 
             if (baseType == typeof(JArray))

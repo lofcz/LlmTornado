@@ -1,0 +1,24 @@
+{
+  "type": "module",
+  "scripts": {
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "npm run clean && npm run build:blazor && npm run docs:build-vitepress",
+    "docs:build-vitepress": "vitepress build docs",
+    "docs:preview": "vitepress preview docs",
+    "build:blazor": "dotnet publish ../LlmTornado.Docs.csproj -c Release -o ./blazor-dist /p:GHPages=true && cpr ./blazor-dist/wwwroot ./docs/public/playground -o",
+    "clean": "rimraf ./docs/.vitepress/dist"
+  },
+  "keywords": [],
+  "devDependencies": {
+    "cpr": "^3.0.1",
+    "rimraf": "^6.0.1"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.1.11",
+    "@tsparticles/vue3": "^3.0.1",
+    "@types/aos": "^3.0.7",
+    "aos": "^2.3.4",
+    "tsparticles-slim": "^2.12.0",
+    "vitepress": "^1.6.3"
+  }
+}

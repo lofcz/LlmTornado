@@ -29,6 +29,20 @@ public class InfraDemo : DemoBase
         public string ComplexClassString { get; set; }
         public ComplexClass2 Class2 { get; set; }
     }
+    
+    class ComplexAnnotatedClass
+    {
+        [Description("name of the newest DOOM game")]
+        public string Name { get; set; }
+        
+        [Description("names of the DOOM 1993 authors")]
+        public ComplexAnnotatedClass2 Class2 { get; set; }
+    }
+
+    public class ComplexAnnotatedClass2
+    {
+        public List<string> Names { get; set; }
+    }
 
     class ComplexClass2
     {
@@ -445,6 +459,22 @@ public class InfraDemo : DemoBase
 
         ChatRichResponse data = await conversation.GetResponseRich(ToolCallsHandler.ContinueConversation);
 
+        conversation.StreamResponseRich(new ChatStreamEventHandler
+        {
+            FunctionCallHandler = (calls) =>
+            {
+                foreach (FunctionCall fn in calls)
+                {
+                    fn.Resolve(new
+                    {
+                        result = "something"
+                    });
+                }
+                
+                return ValueTask.CompletedTask;
+            }
+        });
+        
         conversation.Update(x =>
         {
             x.ToolChoice = OutboundToolChoice.None;
@@ -659,6 +689,39 @@ public class InfraDemo : DemoBase
                         new ToolParamDefinition("allContinents", new ToolParamListEnum("continents", [nameof(Continents.Africa), nameof(Continents.Antarctica)]))
                     ],
                     Ignore = ["location"]
+                })
+            ],
+            ToolChoice = OutboundToolChoice.Required
+        });
+
+        conversation.AddUserMessage("Fill the provided JSON structure with mock data");
+
+        TornadoRequestContent serialized = conversation.Serialize(new ChatRequestSerializeOptions
+        {
+            Pretty = true
+        });
+
+        Console.Write(serialized);
+
+        ChatRichResponse data = await conversation.GetResponseRich();
+
+        int z = 0;
+    }
+    
+    [TornadoTest]
+    public static async Task TornadoFunctionDescriptionFromOwner()
+    {
+        Conversation conversation = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.OpenAi.Gpt41.V41,
+            Tools =
+            [
+                new Tool((
+                    ComplexAnnotatedClass cls,
+                    ToolArguments args) =>
+                {
+                    Assert.That(cls.Name.ToLowerInvariant().Trim().Contains("doom"), Is.True);
+                    return "";
                 })
             ],
             ToolChoice = OutboundToolChoice.Required

@@ -1,0 +1,33 @@
+@page "/generated/example"
+@using LlmTornado.Docs.Code.Intellisense
+@inject IJSRuntime JS
+@inject NavigationManager NavigationManager
+@inject BlazorWorker.Core.IWorkerFactory WorkerFactory
+@inject HttpClient Http
+
+@code {
+    string co = """
+                using System;
+                class Program
+                {
+                  public static void Main() {
+                      Console.WriteLine("Hello, World!");
+                  }
+                }
+                """;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Initializes the C# worker and tells the JS side to start listening
+            await Intellisense.Init(JS, NavigationManager, WorkerFactory, Http);
+        }
+    }
+}
+
+<h1>Generated Page</h1>
+
+<p>This is a page generated from a Scriban template.</p>
+
+<MonacoEditor Code="@co" />

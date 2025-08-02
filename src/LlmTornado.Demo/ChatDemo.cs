@@ -1785,7 +1785,7 @@ public partial class ChatDemo : DemoBase
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.Google.Gemini.Gemini15Flash,
+            Model = ChatModel.Google.Gemini.Gemini25Flash,
             Tools = [
                 new Tool(new ToolFunction("get_weather", "gets the current weather", new
                 {

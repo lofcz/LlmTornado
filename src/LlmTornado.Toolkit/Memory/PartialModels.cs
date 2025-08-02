@@ -3,12 +3,13 @@ using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
+using LlmTornado.Code.Vendor;
 using LlmTornado.Common;
+using LlmTornado.Infra;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Toolkit.Memory;
 
-#if FALSE
 public class LlmResponseParsed
 {
     public string? Message { get; set; }
@@ -134,6 +135,13 @@ public enum ChatSides
     Decoration
 }
 
+public class LlmResponseRaw
+{
+    public ChatChoice Response { get; set; }
+    public bool Ok { get; set; }
+    public LlmResponseErrors? Error { get; set; }
+}
+
 public class ChatPluginCompiler
 {
     private List<IChatPlugin>? plugins;
@@ -146,25 +154,21 @@ public class ChatPluginCompiler
         ToolkitChat = chat;
     }
 
-    private static readonly HashSet<ChatModel> ModelsSupportingStrictFunctions = [ 
-        ChatModel.OpenAi.Gpt41.V41, ChatModel.OpenAi.Gpt41.V41Mini, ChatModel.OpenAi.Gpt41.V41Nano,
-        ChatModel.OpenAi.Gpt4.O, ChatModel.OpenAi.Gpt4.O240806, ChatModel.OpenAi.Gpt4.O241120, ChatModel.OpenAi.Gpt4.O240513,
-        ChatModel.Google.Gemini.Gemini15Flash, ChatModel.Google.Gemini.Gemini2Flash001, ChatModel.Google.Gemini.Gemini15Pro, ChatModel.Google.Gemini.Gemini15Pro002, ChatModel.Google.Gemini.Gemini15Pro001, ChatModel.Google.Gemini.Gemini15ProLatest,
-        ChatModel.Google.Gemini.Gemini2FlashLatest, ChatModel.Google.GeminiPreview.Gemini25FlashPreview0417, ChatModel.Google.GeminiPreview.Gemini25ProPreview0325, ChatModel.Google.GeminiPreview.Gemini25ProPreview0506
-    ];
-
-    private Tool SerializeFunction(ChatFunction function)
+    private Tool SerializeFunction(ChatFunction function, IEndpointProvider provider)
     {
         function.Params ??= [];
+
+        object obj = ToolFactory.Compile(new ToolDefinition(function.Name, function.Description, function.Params), new ToolMeta
+        {
+            Provider = provider
+        });
         
-        ChatFunctionTypeObject root = new ChatFunctionTypeObject(function.Params);
-        object obj = root.Compile(function, ToolkitChat);
-        return ModelsSupportingStrictFunctions.Contains(ToolkitChat.Cfg.Model) ? new Tool(new ToolFunction(function.Name, function.Description, obj), function.Strict) : new Tool(new ToolFunction(function.Name, function.Description, obj));
+        return ToolFactory.ModelsSupportingStrictFunctions.Contains(ToolkitChat.Cfg.Model) ? new Tool(new ToolFunction(function.Name, function.Description, obj), function.Strict) : new Tool(new ToolFunction(function.Name, function.Description, obj));
     }
 
-    private Tool Serialize(IChatPlugin plugin, ChatFunction function)
+    private Tool Serialize(IChatPlugin plugin, ChatFunction function, IEndpointProvider provider)
     {
-        Tool f = SerializeFunction(function);
+        Tool f = SerializeFunction(function, provider);
 
         if (f.Function is not null)
         {
@@ -174,7 +178,7 @@ public class ChatPluginCompiler
         return f;
     }
 
-    public async Task SetPlugins(IEnumerable<IChatPlugin> plgs)
+    public async Task SetPlugins(IEnumerable<IChatPlugin> plgs, IEndpointProvider provider)
     {
         plugins = plgs.ToList();
         functions ??= [];
@@ -185,7 +189,7 @@ public class ChatPluginCompiler
             foreach (ChatFunction x in (await plugin.Export()).Functions)
             {
                 callMap.AddOrUpdate($"{plugin.Namespace}-{x.Name}", x);
-                functions.Add(Serialize(plugin, x));
+                functions.Add(Serialize(plugin, x, provider));
             }
         }
     }
@@ -194,20 +198,20 @@ public class ChatPluginCompiler
     /// Use only for standalone functions not incorporated into plugins
     /// </summary>
     /// <param name="function"></param>
-    public void SetFunction(ChatFunction function)
+    public void SetFunction(ChatFunction function, IEndpointProvider provider)
     {
         functions ??= [];
         functions.Clear();
         
         callMap.AddOrUpdate(function.Name, function);
-        functions.Add(SerializeFunction(function));
+        functions.Add(SerializeFunction(function, provider));
     }
     
     /// <summary>
     /// Use only for standalone functions not incorporated into plugins
     /// </summary>
     /// <param name="fns"></param>
-    public void SetFunctions(IEnumerable<ChatFunction> fns)
+    public void SetFunctions(IEnumerable<ChatFunction> fns, IEndpointProvider provider)
     {
         functions ??= [];
         functions.Clear();
@@ -215,7 +219,7 @@ public class ChatPluginCompiler
         foreach (ChatFunction fn in fns)
         {
             callMap.AddOrUpdate(fn.Name, fn);
-            functions.Add(SerializeFunction(fn));
+            functions.Add(SerializeFunction(fn, provider));
         }
     }
 
@@ -262,10 +266,36 @@ public class ChatPluginCompiler
     }
 }
 
-public class LlmResponseRaw
+public class ChatPluginExportResult
 {
-    public ChatChoice Response { get; set; }
-    public bool Ok { get; set; }
-    public LlmResponseErrors? Error { get; set; }
+    public List<ChatFunction> Functions { get; set; }
+
+    public ChatPluginExportResult(List<ChatFunction> functions)
+    {
+        Functions = functions;
+    }
 }
-#endif
+
+public interface IChatPlugin
+{
+    /// <summary>
+    /// A unique vendor namespace to avoid collisions between function symbols cross plugins. Max 20 characters
+    /// </summary>
+    public string Namespace { get; }
+
+    /// <summary>
+    /// A list o
+    /// </summary>
+    /// <returns></returns>
+    public Task<ChatPluginExportResult> Export();
+    
+    ChatFunctionCallResult MissingParam(string name)
+    {
+        return new ChatFunctionCallResult(ChatFunctionCallResultParameterErrors.MissingRequiredParameter, name);
+    }
+    
+    ChatFunctionCallResult MalformedParam(string name)
+    {
+        return new ChatFunctionCallResult(ChatFunctionCallResultParameterErrors.MalformedParam, name);
+    }
+}

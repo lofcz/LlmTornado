@@ -942,7 +942,7 @@ public partial class ChatDemo : DemoBase
     {
         Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.Google.GeminiPreview.Gemini25FlashPreview0417,
+            Model = ChatModel.Google.Gemini.Gemini25Flash,
             ReasoningBudget = 0
         });
         chat2.AppendUserInput("Explain how beer is created");
@@ -954,7 +954,7 @@ public partial class ChatDemo : DemoBase
         
         chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.Google.GeminiPreview.Gemini25FlashPreview0417,
+            Model = ChatModel.Google.Gemini.Gemini25Flash,
             ReasoningBudget = 1024
         });
         chat2.AppendUserInput("Explain how beer is created");
@@ -1047,6 +1047,32 @@ public partial class ChatDemo : DemoBase
        
         string? str2 = await chat2.GetResponse();
         Console.WriteLine(str2);
+    }
+    
+    [TornadoTest]
+    public static async Task AnthropicTextEditorTool()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Anthropic.Claude4.Sonnet250514,
+            VendorExtensions = new ChatRequestVendorExtensions
+            {
+                Anthropic = new ChatRequestVendorAnthropicExtensions
+                {
+                    BuiltInTools =
+                    [
+                        new VendorAnthropicChatRequestBuiltInToolTextEditor20250728()
+                    ]
+                }
+            }
+        });
+        
+        chat.AppendUserInput("Can you help me fix my primes.py file? I have a bug in it.");
+        
+        ChatRichResponse response = await chat.GetResponseRich();
+        
+        Console.WriteLine("Anthropic Text Editor Tool Demo:");
+        Console.WriteLine(response);
     }
     
     [TornadoTest]
@@ -1350,6 +1376,59 @@ public partial class ChatDemo : DemoBase
         });
         
         chat.AppendUserInput("Best place to eat out in our capital?");
+        
+        ChatRichResponse response = await chat.GetResponseRich();
+        
+        Console.WriteLine(response);
+        Console.WriteLine(response.Result?.Usage?.TotalTokens);
+    }
+    
+    [TornadoTest]
+    public static async Task PerplexityWebSearchMerged()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Temperature = 0.4d,
+            Model = ChatModel.Perplexity.Sonar.Default,
+            WebSearchOptions = new ChatRequestWebSearchOptions
+            {
+                SearchContextSize = ChatRequestWebSearchContextSize.Low,
+                UserLocation = new ChatRequestWebSearchUserLocation
+                {
+                    Country = "CS"
+                }
+            },
+            VendorExtensions = new ChatRequestVendorExtensions(new ChatRequestVendorPerplexityExtensions
+            {
+                LatestUpdated = new DateTime(2025, 6, 1)
+            })
+        });
+        
+        chat.AppendUserInput("Best place to eat out in our capital?");
+
+        Console.WriteLine(chat.Serialize(true));
+        
+        ChatRichResponse response = await chat.GetResponseRich();
+        
+        Console.WriteLine(response);
+        Console.WriteLine(response.Result?.Usage?.TotalTokens);
+    }
+    
+    [TornadoTest]
+    public static async Task PerplexitySecSearchTest()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Perplexity.Sonar.Default,
+            VendorExtensions = new ChatRequestVendorExtensions(new ChatRequestVendorPerplexityExtensions
+            {
+                SearchMode = ChatRequestVendorPerplexitySearchModes.Sec
+            })
+        });
+        
+        chat.AppendUserInput("What was Apple's revenue growth in their latest quarterly report?");
+
+        Console.WriteLine(chat.Serialize(true));
         
         ChatRichResponse response = await chat.GetResponseRich();
         

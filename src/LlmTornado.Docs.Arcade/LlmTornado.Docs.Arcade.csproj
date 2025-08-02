@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <LangVersion>preview</LangVersion>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AssemblyName>Microsoft.CodeAnalysis.Workspaces.UnitTests</AssemblyName>
+        <KeyOriginatorFile>$(PkgMicrosoft_DotNet_Arcade_Sdk)\tools\snk\35MSSharedLib1024.snk</KeyOriginatorFile>
+        <PublicSign>true</PublicSign>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <!-- version shouldn't be hardcoded here but it complained otherwise :/ -->
+        <PackageReference Version="5.0.0-beta.19558.13" Include="Microsoft.DotNet.Arcade.Sdk" PrivateAssets="all" IncludeAssets="none" GeneratePathProperty="true" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.9.2" />
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Features" Version="4.9.2" />
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.9.2" />
+        <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.Common" Version="4.9.2" />
+        <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic.Workspaces" Version="4.9.2" />
+        <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic.Features" Version="4.9.2" />
+        <PackageReference Include="OmniSharp.Roslyn.CSharp" Version="1.37.8" />
+    </ItemGroup>
+</Project>

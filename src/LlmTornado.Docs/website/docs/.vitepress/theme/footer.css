@@ -1,0 +1,18 @@
+/* Custom Footer Styles */
+.VPFooter {
+  background: linear-gradient(180deg, rgba(15, 23, 42, 1) 0%, rgba(2, 6, 23, 1) 100%) !important;
+  border-top: 1px solid rgba(148, 163, 184, 0.1) !important;
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+}
+
+.VPFooter .container .message,
+.VPFooter .container .copyright {
+  color: #94a3b8;
+  transition: color 0.3s ease;
+}
+
+.VPFooter .container .message:hover,
+.VPFooter .container .copyright:hover {
+  color: #f8fafc;
+} 

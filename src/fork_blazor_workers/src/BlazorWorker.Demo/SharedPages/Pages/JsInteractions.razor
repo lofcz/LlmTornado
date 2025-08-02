@@ -1,0 +1,82 @@
+﻿@inject JsInteractionsExample jsDirectExample
+
+<div class="row">
+    <div class="col-9 col-xs-12">
+        <h1>Interacting with Js Calls</h1>
+
+        Demonstrates how to call to js from a worker using IJsRuntime, 
+        and how call back directly to a dotnet instance.
+
+
+        <br />
+        <br />
+        <button disabled=@RunDisabled @onclick=OnClick class="btn btn-primary">Run test</button><br /><br />
+        <br />
+        <br />
+        <div class="row">
+            <div class="col-6 col-xs-12">
+                <strong>JsInteractions.razor Output:</strong>
+
+                <hr />
+                <pre style="text-wrap: pretty">@output</pre>
+            </div>
+            <div class="col-6 col-xs-12">
+                <strong>Worker dotnet Output:</strong>
+                <hr />
+                <pre style="text-wrap: pretty">@workeroutput</pre>
+            </div>
+        </div>
+        
+    </div>
+    <div class="col-3 col-xs-12">
+        <GithubSource RelativePath="Pages/JsDirect.razor" />
+    </div>
+</div>
+@code {
+    string output;
+    string workeroutput;
+    string RunDisabled => Running ? "disabled" : null;
+    bool Running = false;
+
+    protected override void OnInitialized()
+    {
+        jsDirectExample.LogHandler += (s, e) => log(e);
+        jsDirectExample.WorkerLogHandler += (s, e) => workerlog(e);
+        output = "";
+        workeroutput = "";
+        base.OnInitialized();
+    }
+
+    public async Task OnClick(EventArgs _)
+    {
+        Running = true;
+        try
+        {
+            await jsDirectExample.Execute();
+        }
+        catch (Exception e)
+        {
+            log($"Error = {e}");
+        }
+        finally
+        {
+            Running = false;
+        }
+    }
+
+    void log(string logStr){
+        output += $"{Environment.NewLine}{LogDate()} {logStr}";
+        StateHasChanged();
+    }
+
+    void workerlog(string logStr)
+    {
+        workeroutput += $"{Environment.NewLine}{LogDate()} {logStr}";
+        StateHasChanged();
+    }
+
+    private string LogDate()
+    {
+        return DateTime.Now.ToString("HH:mm:ss:fff");
+    }
+}

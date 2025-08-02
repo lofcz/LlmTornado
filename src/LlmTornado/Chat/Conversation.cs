@@ -859,7 +859,7 @@ public class Conversation
             {
                 blocks.AddRange(newMsg.Parts.Select(x => new ChatRichResponseBlock(x, newMsg)));
             }
-            else if (newMsg.Content is not null)
+            else if (newMsg.Content?.Length > 0)
             {
                 blocks.Add(new ChatRichResponseBlock
                 {

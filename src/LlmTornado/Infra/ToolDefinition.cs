@@ -21,7 +21,7 @@ public class ToolDefinition
     /// <summary>
     /// A description passed to LLM. This need to explain the function as much as possible, as the LLM decided when to call the function based on this information
     /// </summary>
-    public string Description { get; set; }
+    public string? Description { get; set; }
 
     /// <summary>
     /// Leave as null if arity = 0
@@ -38,14 +38,25 @@ public class ToolDefinition
 
     }
     
-    public ToolDefinition(string name, string description)
+    /// <summary>
+    /// Defines a function that can be called by the model.
+    /// </summary>
+    /// <param name="name">A name for the function, which must be unique within a single request. Should be composed of letters, digits, and underscores, with a maximum length of 40 characters.</param>
+    /// <param name="description">A detailed description of the function's purpose and its parameters. The model uses this information to decide when and how to call the function.</param>
+    public ToolDefinition(string name, string? description)
     {
         Name = name;
         Description = description;
         Params = null;
     }
     
-    public ToolDefinition(string name, string description, List<ToolParam>? pars)
+    /// <summary>
+    /// Defines a function with parameters that can be called by the model.
+    /// </summary>
+    /// <param name="name">A name for the function, which must be unique within a single request. Should be composed of letters, digits, and underscores, with a maximum length of 40 characters.</param>
+    /// <param name="description">A detailed description of the function's purpose and its parameters. The model uses this information to decide when and how to call the function.</param>
+    /// <param name="pars">A list of parameters that the function accepts.</param>
+    public ToolDefinition(string name, string? description, List<ToolParam>? pars)
     {
         Name = name;
         Description = description;
@@ -75,7 +86,7 @@ public class ToolCallResult
     public bool AllowSuccessiveFunctionCalls { get; private set;  }
 
     /// <summary>
-    /// Use only when discarding the result
+    /// Creates a tool call result that is discarded and not sent to the model. Useful for functions that have side effects but no return value for the model.
     /// </summary>
     public ToolCallResult()
     {
@@ -83,9 +94,10 @@ public class ToolCallResult
     }
     
     /// <summary>
-    /// Function call cancelled or failed. This is the most general constructor, use specialized overloads if applicable. Include a descriptive reason why, LLM uses this
+    /// Creates a failed tool call result with a generic error message. Use this for general failures that are not specific to a single parameter.
     /// </summary>
-    /// <param name="errorMessage"></param>
+    /// <param name="errorMessage">A descriptive message explaining the reason for the failure. This is sent to the model.</param>
+    /// <param name="reason">The generic category of the error.</param>
     public ToolCallResult(string errorMessage, ToolCallResultParameterErrors reason)
     {
         Error = errorMessage;
@@ -93,10 +105,10 @@ public class ToolCallResult
     }
     
     /// <summary>
-    /// Function call cancelled. Include a descriptive reason why, LLM uses this
+    /// Creates a failed tool call result due to a parameter error. Use this to indicate that the function call failed because a parameter was missing or had an invalid type.
     /// </summary>
-    /// <param name="paramErrorKind"></param>
-    /// <param name="paramName"></param>
+    /// <param name="paramErrorKind">The type of parameter error.</param>
+    /// <param name="paramName">The name of the parameter that caused the error.</param>
     public ToolCallResult(ToolCallResultParameterErrors paramErrorKind, string paramName)
     {
         Error = paramErrorKind switch
@@ -110,23 +122,21 @@ public class ToolCallResult
     }
 
     /// <summary>
-    /// Function call succeeded. LLM will use <see cref="data"/> to generate the next message<br/>
-    /// Note this function automatically adds key "result": "ok" to the <see cref="data"/> if it's not found
+    /// Creates a successful tool call result with data to be sent back to the model. The model will use this data to generate its next response.
     /// </summary>
-    /// <param name="data">Dictionary / anonymous object / JSON serializable class</param>
-    /// <param name="allowSuccessiveFunctionCalls">If true, LLM may decide to call this or any other available function again before passing control to the user</param>
+    /// <param name="data">A dictionary, anonymous object, or JSON-serializable class containing the results of the function call.</param>
+    /// <param name="allowSuccessiveFunctionCalls">If true, the model may choose to call another function before generating a user-facing response.</param>
     public ToolCallResult(object? data, bool allowSuccessiveFunctionCalls = true)
     {
         BaseCtor(data, allowSuccessiveFunctionCalls);
     }
     
     /// <summary>
-    /// Function call succeeded. LLM will use <see cref="data"/> to generate the next message<br/>
-    /// Note this function automatically adds key "result": "ok" to the <see cref="data"/> if it's not found
+    /// Creates a successful tool call result, providing separate data for model feedback and for post-render processing. This is useful for passing structured data to a UI after the model's response is fully streamed, without exposing that data to the model.
     /// </summary>
-    /// <param name="llmFeedbackData">Dictionary / anonymous object / JSON serializable class</param>
-    /// <param name="passtroughData">This data will be stored in the chat message and are available after the messages is fully streamed for rendering</param>
-    /// <param name="allowSuccessiveFunctionCalls">If true, LLM may decide to call this or any other available function again before passing control to the user</param>
+    /// <param name="llmFeedbackData">Data to be sent to the model for generating the next response.</param>
+    /// <param name="passtroughData">Data that will be stored in the chat message and made available after the message is fully streamed. This is not sent to the model.</param>
+    /// <param name="allowSuccessiveFunctionCalls">If true, the model may choose to call another function before generating a user-facing response.</param>
     public ToolCallResult(object? llmFeedbackData, object? passtroughData, bool allowSuccessiveFunctionCalls = true)
     {
         llmFeedbackData ??= new
@@ -162,96 +172,6 @@ public class ToolCallResult
     }
 }
 
-public class ToolInputParams
-{
-    private readonly Dictionary<string, object?>? source;
-
-    public ToolInputParams(Dictionary<string, object?>? pars)
-    {
-        source = pars;
-    }
-    
-    public bool ParamTryGet<T>(string paramName, out T? val)
-    {
-        if (!Get(paramName, out T? paramValue, out Exception? e))
-        {
-            val = default;
-            return false;
-        }
-
-        val = paramValue;
-        return true;
-    }
-
-    public bool Get<T>(string param, out T? data, out Exception? exception)
-    {
-        exception = null;
-        
-        if (source is null || !source.TryGetValue(param, out object? rawData))
-        {
-            data = default;
-            return false; 
-        }
-
-        if (rawData is T obj)
-        {
-            data = obj;
-            return true;
-        }
-
-        switch (rawData)
-        {
-            case JArray jArr:
-            {
-                data = jArr.ToObject<T?>();
-                return true;
-            }
-            case JObject jObj:
-            {
-                data = jObj.ToObject<T?>();
-                return true;
-            }
-            case string str:
-            {
-                if (typeof(T).IsClass || (typeof(T).IsValueType && !typeof(T).IsPrimitive && !typeof(T).IsEnum))
-                {
-                    if (str.SanitizeJsonTrailingComma().CaptureJsonDecode(out T? decoded, out Exception? parseException))
-                    {
-                        data = decoded;
-                        return true;
-                    }
-                }
-                
-                try
-                {
-                    data = (T?)rawData.ChangeType(typeof(T));
-                    return true;
-                }
-                catch (Exception e)
-                {
-                    data = default;
-                    exception = e;
-                    return false;
-                }
-            }
-            default:
-            {
-                try
-                {
-                    data = (T?)rawData.ChangeType(typeof(T));
-                    return true;
-                }
-                catch (Exception e)
-                {
-                    data = default;
-                    exception = e;
-                    return false;
-                }
-            }
-        }
-    }
-}
-
 /// <summary>
 /// Tool parameter.
 /// </summary>
@@ -267,10 +187,36 @@ public class ToolParam
     /// </summary>
     public IToolParamType Type { get; set; }
 
+    /// <summary>
+    /// Defines a single parameter for a tool, combining its name and its schema definition.
+    /// </summary>
+    /// <param name="name">The name of the parameter.</param>
+    /// <param name="type">The schema definition for the parameter (e.g., string, number, object).</param>
     public ToolParam(string name, IToolParamType type)
     {
         Name = name;
         Type = type;
+    }
+
+    /// <summary>
+    /// Defines a single parameter for a tool with a primitive type (string, boolean, integer, or float).
+    /// This constructor is a convenient way to create simple parameters without manually instantiating the specific `ToolParam` type classes.
+    /// </summary>
+    /// <param name="name">The name of the parameter, which will be used to identify it in the tool call.</param>
+    /// <param name="description">A clear and concise description of the parameter's purpose, which helps the model understand how to use it.</param>
+    /// <param name="type">The fundamental data type of the parameter, such as string, boolean, integer, or float.</param>
+    /// <param name="required">Specifies whether the parameter must be included in the tool call. Defaults to `true`.</param>
+    public ToolParam(string name, string? description, ToolParamAtomicTypes type, bool required = true)
+    {
+        Name = name;
+        Type = type switch
+        {
+            ToolParamAtomicTypes.String => new ToolParamString(description, required),
+            ToolParamAtomicTypes.Bool => new ToolParamBool(description, required),
+            ToolParamAtomicTypes.Int => new ToolParamInt(description, required),
+            ToolParamAtomicTypes.Float => new ToolParamNumber(description, required),
+            _ => Type
+        } ?? new ToolParamError(description, required);
     }
 }
 
@@ -369,6 +315,10 @@ public class SchemaAnyOfAttribute : Attribute
 {
     public Type[] Types { get; }
     
+    /// <summary>
+    /// Defines a parameter that can be one of several different object types, forming a discriminated union.
+    /// </summary>
+    /// <param name="types">An array of possible types for the parameter.</param>
     public SchemaAnyOfAttribute(params Type[] types)
     {
         Types = types;
@@ -376,13 +326,17 @@ public class SchemaAnyOfAttribute : Attribute
 }
 
 /// <summary>
-/// Allows controlling JSON schema generation of tuples.
+/// Allows providing specific names for the elements of a tuple when generating the JSON schema.
 /// </summary>
 [AttributeUsage(AttributeTargets.Parameter | AttributeTargets.Property)]
 public class SchemaTupleAttribute : Attribute
 {
     public string[] Names { get; }
 
+    /// <summary>
+    /// Specifies custom names for the elements of a tuple parameter. This allows providing meaningful names instead of the default 'item_1', 'item_2', etc., in the generated JSON schema.
+    /// </summary>
+    /// <param name="names">An array of names corresponding to the tuple elements.</param>
     public SchemaTupleAttribute(params string[] names)
     {
         Names = names;
@@ -435,18 +389,42 @@ public interface IToolParamType
     public object Compile(ToolDefinition sourceFn, ToolMeta meta);
 }
 
+/// <summary>
+/// Represents a special parameter type that provides access to all raw tool arguments.
+/// This parameter is not part of the generated JSON schema but is populated at runtime with the arguments provided by the model.
+/// </summary>
 public class ToolParamArguments : IToolParamType
 {
-    public string Type { get; } = string.Empty;
+    /// <summary>
+    /// Gets the JSON schema type, which is an empty string for this parameter as it's not represented in the schema.
+    /// </summary>
+    public string Type => string.Empty;
+
+    /// <summary>
+    /// <inheritdoc />
+    /// </summary>
     public string? Description { get; set; }
+    
+    /// <summary>
+    /// <inheritdoc />
+    /// </summary>
     public bool Required { get; set; }
 
+    /// <summary>
+    /// Gets the CLR type of this parameter, which is <see cref="ToolArguments"/>.
+    /// </summary>
     [JsonIgnore]
     public Type? DataType { get; set; } = typeof(ToolArguments);
     
+    /// <summary>
+    /// <inheritdoc />
+    /// </summary>
     [JsonIgnore]
     public ToolParamSerializer Serializer { get; set; } = ToolParamSerializer.Undefined;
 
+    /// <summary>
+    /// This method returns null as this parameter is not included in the generated JSON schema.
+    /// </summary>
     public object Compile(ToolDefinition sourceFn, ToolMeta meta)
     {
         return null!;
@@ -457,7 +435,7 @@ public abstract class ToolParamTypeBase : IToolParamType
 {
     public abstract string Type { get; }
     public string? Description { get; set; }
-    public bool Required { get; set; }
+    public bool Required { get; set; } = true;
     
     /// <summary>
     /// <inheritdoc cref="IToolParamType.DataType"/>
@@ -481,13 +459,25 @@ public abstract class ToolParamTypeBase : IToolParamType
     }
 }
 
+/// <summary>
+/// Represents a string parameter for a tool.
+/// </summary>
 public class ToolParamString : ToolParamTypeBase
 {
+    /// <summary>
+    /// <inheritdoc />
+    /// </summary>
     public override string Type => "string";
     
-    public ToolParamString(string? description)
+    /// <summary>
+    /// A parameter that accepts a string value.
+    /// </summary>
+    /// <param name="description">The description of the parameter.</param>
+    /// <param name="required">Whether the parameter is required.</param>
+    public ToolParamString(string? description = null, bool required = true)
     {
         Description = description;
+        Required = required;
     }
     
     /// <summary>
@@ -509,40 +499,82 @@ public class ToolParamString : ToolParamTypeBase
     public int? MaxLength { get; set; }
 }
 
+/// <summary>
+/// Represents an error parameter type. This is a special type that cannot be compiled and indicates a problem during schema generation.
+/// </summary>
 public class ToolParamError : ToolParamTypeBase
 {
+    /// <summary>
+    /// <inheritdoc />
+    /// </summary>
     public override string Type => "";
  
-    public ToolParamError(string? description)
+    /// <summary>
+    /// An error during schema generation. This is a special type that is not sent to the model but indicates a problem with the tool's definition.
+    /// </summary>
+    /// <param name="description">The description of the error.</param>
+    /// <param name="required">Indicates if the parameter was required. Defaults to true.</param>
+    public ToolParamError(string? description, bool required = true)
     {
         Description = description;
+        Required = required;
     }
 
+    /// <summary>
+    /// Throws an exception as this type cannot be compiled.
+    /// </summary>
     public override object Compile(ToolDefinition sourceFn, ToolMeta meta)
     {
         throw new Exception("Error typ can't be compiled!");
     }
 }
 
+/// <summary>
+/// Represents an integer parameter for a tool.
+/// </summary>
 public class ToolParamInt : ToolParamTypeBase
 {
+    /// <summary>
+    /// <inheritdoc />
+    /// </summary>
     public override string Type => "integer";
     
-    public ToolParamInt(string? description)
+    /// <summary>
+    /// A parameter that accepts an integer value.
+    /// </summary>
+    /// <param name="description">A description of what the integer represents.</param>
+    /// <param name="required">Whether the parameter must be provided.</param>
+    public ToolParamInt(string? description, bool required = true)
     {
         Description = description;
+        Required = required;
     }
 }
 
+/// <summary>
+/// Represents a number parameter for a tool.
+/// </summary>
 public class ToolParamNumber : ToolParamTypeBase
 {
+    /// <summary>
+    /// <inheritdoc />
+    /// </summary>
     public override string Type => "number";
     
-    public ToolParamNumber(string? description)
+    /// <summary>
+    /// A parameter that accepts a numeric (floating-point) value.
+    /// </summary>
+    /// <param name="description">A description of what the number represents.</param>
+    /// <param name="required">Whether the parameter must be provided.</param>
+    public ToolParamNumber(string? description, bool required = true)
     {
         Description = description;
+        Required = required;
     }
     
+    /// <summary>
+    /// <inheritdoc />
+    /// </summary>
     public override object Compile(ToolDefinition sourceFn, ToolMeta meta)
     {
         return new
@@ -553,26 +585,53 @@ public class ToolParamNumber : ToolParamTypeBase
     }
 }
 
+/// <summary>
+/// Represents a boolean parameter for a tool.
+/// </summary>
 public class ToolParamBool : ToolParamTypeBase
 {
+    /// <summary>
+    /// <inheritdoc />
+    /// </summary>
     public override string Type => "boolean";
     
-    public ToolParamBool(string? description)
+    /// <summary>
+    /// A parameter that accepts a boolean (true/false) value.
+    /// </summary>
+    /// <param name="description">A description of what the boolean value represents.</param>
+    /// <param name="required">Whether the parameter must be provided.</param>
+    public ToolParamBool(string? description, bool required = true)
     {
         Description = description;
+        Required = required;
     }
 }
 
+/// <summary>
+/// Represents a parameter of any type, which will be serialized as a generic object.
+/// </summary>
 public class ToolParamAny : ToolParamTypeBase
 {
+    /// <summary>
+    /// <inheritdoc />
+    /// </summary>
     public override string Type => "object"; // Placeholder, not used in Compile
 
-    public ToolParamAny(string? description)
+    /// <summary>
+    /// A parameter that can accept any JSON object. Use this when the structure of the parameter is dynamic or unknown.
+    /// </summary>
+    /// <param name="description">A description of what this parameter represents.</param>
+    /// <param name="required">Whether the parameter must be provided.</param>
+    public ToolParamAny(string? description, bool required = true)
     {
         Description = description;
+        Required = required;
         Serializer = ToolParamSerializer.Any;
     }
 
+    /// <summary>
+    /// <inheritdoc />
+    /// </summary>
     public override object Compile(ToolDefinition sourceFn, ToolMeta meta)
     {
         if (Description is null) return new { };
@@ -580,18 +639,36 @@ public class ToolParamAny : ToolParamTypeBase
     }
 }
 
+/// <summary>
+/// Represents a date-time parameter, serialized as a string in 'date-time' format.
+/// </summary>
 public class ToolParamDateTime : ToolParamTypeBase
 {
+    /// <summary>
+    /// <inheritdoc />
+    /// </summary>
     public override string Type => "string";
 
+    /// <summary>
+    /// Specifies the format of the string ('date-time').
+    /// </summary>
     [JsonProperty("format")]
     public string Format => "date-time";
 
-    public ToolParamDateTime(string? description)
+    /// <summary>
+    /// A parameter that accepts a date and time, serialized as a string in the 'date-time' format according to RFC 3339.
+    /// </summary>
+    /// <param name="description">A description of the date-time value.</param>
+    /// <param name="required">Whether the parameter must be provided.</param>
+    public ToolParamDateTime(string? description, bool required = true)
     {
         Description = description;
+        Required = required;
     }
 
+    /// <summary>
+    /// <inheritdoc />
+    /// </summary>
     public override object Compile(ToolDefinition sourceFn, ToolMeta meta)
     {
         return new
@@ -604,18 +681,36 @@ public class ToolParamDateTime : ToolParamTypeBase
 }
 
 #if MODERN
+/// <summary>
+/// Represents a date parameter, serialized as a string in 'date' format.
+/// </summary>
 public class ToolParamDate : ToolParamTypeBase
 {
+    /// <summary>
+    /// <inheritdoc />
+    /// </summary>
     public override string Type => "string";
 
+    /// <summary>
+    /// Specifies the format of the string ('date').
+    /// </summary>
     [JsonProperty("format")]
     public string Format => "date";
 
-    public ToolParamDate(string? description)
+    /// <summary>
+    /// A parameter that accepts a date, serialized as a string in the 'date' format according to RFC 3339.
+    /// </summary>
+    /// <param name="description">A description of the date value.</param>
+    /// <param name="required">Whether the parameter must be provided.</param>
+    public ToolParamDate(string? description, bool required = true)
     {
         Description = description;
+        Required = required;
     }
 
+    /// <summary>
+    /// <inheritdoc />
+    /// </summary>
     public override object Compile(ToolDefinition sourceFn, ToolMeta meta)
     {
         return new
@@ -627,18 +722,36 @@ public class ToolParamDate : ToolParamTypeBase
     }
 }
 
+/// <summary>
+/// Represents a time parameter, serialized as a string in 'time' format.
+/// </summary>
 public class ToolParamTime : ToolParamTypeBase
 {
+    /// <summary>
+    /// <inheritdoc />
+    /// </summary>
     public override string Type => "string";
 
+    /// <summary>
+    /// Specifies the format of the string ('time').
+    /// </summary>
     [JsonProperty("format")]
     public string Format => "time";
 
-    public ToolParamTime(string? description)
+    /// <summary>
+    /// A parameter that accepts a time, serialized as a string in the 'time' format according to RFC 3339.
+    /// </summary>
+    /// <param name="description">A description of the time value.</param>
+    /// <param name="required">Whether the parameter must be provided.</param>
+    public ToolParamTime(string? description, bool required = true)
     {
         Description = description;
+        Required = required;
     }
 
+    /// <summary>
+    /// <inheritdoc />
+    /// </summary>
     public override object Compile(ToolDefinition sourceFn, ToolMeta meta)
     {
         return new
@@ -651,16 +764,61 @@ public class ToolParamTime : ToolParamTypeBase
 }
 #endif
 
+/// <summary>
+/// Represents a parameter that can be one of several types (discriminated union).
+/// </summary>
 public class ToolParamAnyOf : ToolParamTypeBase
 {
+    /// <summary>
+    /// <inheritdoc />
+    /// </summary>
     public override string Type => "object";
 
+    /// <summary>
+    /// A list of possible types for this parameter.
+    /// </summary>
     [JsonProperty("anyOf")]
     public List<IToolParamType> AnyOf { get; set; } = [];
     
+    /// <summary>
+    /// The list of possible CLR types, used for deserialization.
+    /// </summary>
     [JsonIgnore]
     public List<Type> PossibleTypes { get; set; } = [];
 
+    /// <summary>
+    /// A parameter that can be one of several different object types, forming a discriminated union. This constructor initializes an empty container, which can be populated later.
+    /// </summary>
+    public ToolParamAnyOf()
+    {
+        
+    }
+
+    /// <summary>
+    /// A parameter that can be one of several different object types, forming a discriminated union.
+    /// </summary>
+    /// <param name="anyOf">A list of <see cref="IToolParamType"/> representing the possible schemas for this parameter.</param>
+    /// <param name="description">A description of what this parameter represents.</param>
+    /// <param name="required">Whether the parameter must be provided.</param>
+    public ToolParamAnyOf(List<IToolParamType> anyOf, string? description = null, bool required = true)
+    {
+        AnyOf = anyOf;
+        Description = description;
+        Required = required;
+    }
+
+    /// <summary>
+    /// A parameter that can be one of several different object types, forming a discriminated union.
+    /// </summary>
+    /// <param name="anyOf">An array of <see cref="IToolParamType"/> representing the possible schemas for this parameter.</param>
+    public ToolParamAnyOf(params IToolParamType[] anyOf)
+    {
+        AnyOf = anyOf.ToList();
+    }
+    
+    /// <summary>
+    /// <inheritdoc />
+    /// </summary>
     public override object Compile(ToolDefinition sourceFn, ToolMeta meta)
     {
         if (meta.RecursionLevel >= ToolMeta.MaxRecursionLevel)
@@ -777,19 +935,38 @@ public class ToolParamAwaitable : IToolParamType
     }
 }
 
+/// <summary>
+/// Represents an enum parameter, serialized as a string with a predefined set of values.
+/// </summary>
 public class ToolParamEnum : ToolParamTypeBase
 {
+    /// <summary>
+    /// <inheritdoc />
+    /// </summary>
     public override string Type => "string";
     
+    /// <summary>
+    /// The list of possible enum values.
+    /// </summary>
     [JsonProperty("enum")]
     public List<string> Values { get; }
 
-    public ToolParamEnum(string? description, List<string> values)
+    /// <summary>
+    /// A parameter that must be one of a predefined set of string values.
+    /// </summary>
+    /// <param name="description">A description of what this enum represents.</param>
+    /// <param name="values">The list of allowed string values.</param>
+    /// <param name="required">Whether the parameter must be provided.</param>
+    public ToolParamEnum(string? description, List<string> values, bool required = true)
     {
         Description = description;
         Values = values;
+        Required = required;
     }
 
+    /// <summary>
+    /// <inheritdoc />
+    /// </summary>
     public override object Compile(ToolDefinition sourceFn, ToolMeta meta)
     {
         if (meta.RecursionLevel >= ToolMeta.MaxRecursionLevel)
@@ -842,22 +1019,37 @@ public enum ToolParamAtomicTypes
     Bool
 }
 
-public class ToolParamListItems
-{
-    public ToolParamAtomicTypes Type { get; set; }
-}
-
+/// <summary>
+/// Represents a list parameter where each item is a string from an enumeration.
+/// </summary>
 public class ToolParamListEnum : ToolParamTypeBase
 {
+    /// <summary>
+    /// <inheritdoc />
+    /// </summary>
     public override string Type => "array";
+
+    /// <summary>
+    /// The enumerable collection of possible string values for the items in the list.
+    /// </summary>
     public IEnumerable<string> Values { get; set; }
 
-    public ToolParamListEnum(string? description, IEnumerable<string> values)
+    /// <summary>
+    /// A list parameter where each item must be one of a predefined set of string values.
+    /// </summary>
+    /// <param name="description">A description of what the list represents.</param>
+    /// <param name="values">The enumerable collection of allowed string values for each item.</param>
+    /// <param name="required">Whether the parameter must be provided.</param>
+    public ToolParamListEnum(string? description, IEnumerable<string> values, bool required = true)
     {
         Description = description;
         Values = values;
+        Required = required;
     }
     
+    /// <summary>
+    /// <inheritdoc />
+    /// </summary>
     public override object Compile(ToolDefinition sourceFn, ToolMeta meta)
     {
         if (meta.RecursionLevel >= ToolMeta.MaxRecursionLevel)
@@ -887,17 +1079,37 @@ public class ToolParamListEnum : ToolParamTypeBase
     }
 }
 
+/// <summary>
+/// Represents a list parameter containing atomic types (string, integer, number, boolean).
+/// </summary>
 public class ToolParamListAtomic : ToolParamTypeBase
 {
+    /// <summary>
+    /// <inheritdoc />
+    /// </summary>
     public override string Type => "array";
-    public ToolParamAtomicTypes Items { get; set; }
 
-    public ToolParamListAtomic(string? description, ToolParamAtomicTypes items)
+    /// <summary>
+    /// The atomic type of the items in the list.
+    /// </summary>
+    public ToolParamAtomicTypes ItemsType { get; set; }
+
+    /// <summary>
+    /// A list parameter containing simple, or "atomic," types (e.g., string, integer, boolean).
+    /// </summary>
+    /// <param name="description">A description of what the list represents.</param>
+    /// <param name="type">The atomic type for all items in the list.</param>
+    /// <param name="required">Whether the parameter must be provided.</param>
+    public ToolParamListAtomic(string? description, ToolParamAtomicTypes type, bool required = true)
     {
         Description = description;
-        Items = items;
+        ItemsType = type;
+        Required = required;
     }
     
+    /// <summary>
+    /// <inheritdoc />
+    /// </summary>
     public override object Compile(ToolDefinition sourceFn, ToolMeta meta)
     {
         if (meta.RecursionLevel >= ToolMeta.MaxRecursionLevel)
@@ -909,13 +1121,13 @@ public class ToolParamListAtomic : ToolParamTypeBase
 
         try
         {
-            string itemType = Items switch
+            string itemType = ItemsType switch
             {
                 ToolParamAtomicTypes.Int => "integer",
                 ToolParamAtomicTypes.Float => "number",
                 ToolParamAtomicTypes.Bool => "boolean",
                 ToolParamAtomicTypes.String => "string",
-                _ => throw new Exception($"Please implement the type of the atomic {Items} in ToolParamListAtomic.Compile")
+                _ => throw new Exception($"Please implement the type of the atomic {ItemsType} in ToolParamListAtomic.Compile")
             };
         
             return new
@@ -935,17 +1147,44 @@ public class ToolParamListAtomic : ToolParamTypeBase
     }
 }
 
+/// <summary>
+/// Represents a generic list parameter with items of a specified complex type.
+/// </summary>
 public class ToolParamList : ToolParamTypeBase
 {
+    /// <summary>
+    /// <inheritdoc />
+    /// </summary>
     public override string Type => "array";
+
+    /// <summary>
+    /// The schema for the items in the list.
+    /// </summary>
     public IToolParamType Items { get; }
 
-    public ToolParamList(string? description, IToolParamType items)
+    /// <summary>
+    /// A list parameter where each item conforms to a specified schema.
+    /// </summary>
+    /// <param name="description">A description of what the list represents.</param>
+    /// <param name="items">The schema that each item in the list must conform to.</param>
+    /// <param name="required">Whether the parameter must be provided.</param>
+    public ToolParamList(string? description, IToolParamType items, bool required = true)
     {
         Description = description;
         Items = items;
+        Required = required;
     }
     
+    public ToolParamList(string? description, List<ToolParam> objectProperties, bool required = true, string? objectDescription = null)
+    {
+        Description = description;
+        Items = new ToolParamObject(objectDescription, objectProperties, required);
+        Required = required;
+    }
+    
+    /// <summary>
+    /// <inheritdoc />
+    /// </summary>
     public override object Compile(ToolDefinition sourceFn, ToolMeta meta)
     {
         if (meta.RecursionLevel >= ToolMeta.MaxRecursionLevel)
@@ -971,23 +1210,48 @@ public class ToolParamList : ToolParamTypeBase
     }
 }
 
+/// <summary>
+/// Represents an object parameter with a defined set of properties.
+/// </summary>
 public class ToolParamObject : ToolParamTypeBase
 {
+    /// <summary>
+    /// <inheritdoc />
+    /// </summary>
     public override string Type => "object";
     
+    /// <summary>
+    /// The list of properties for this object.
+    /// </summary>
     [JsonProperty("properties")]
     public List<ToolParam> Properties { get; set; }
     
+    /// <summary>
+    /// Gets or sets a value indicating whether additional properties are allowed.
+    /// </summary>
     public bool AllowAdditionalProperties { get; set; }
     
+    /// <summary>
+    /// Gets or sets any extra properties to be included in the schema.
+    /// </summary>
     internal Dictionary<string, object>? ExtraProperties { get; set; }
     
-    public ToolParamObject(string? description, List<ToolParam> properties)
+    /// <summary>
+    /// A parameter that is a structured object with a predefined set of properties.
+    /// </summary>
+    /// <param name="description">A description of the object.</param>
+    /// <param name="properties">The list of properties that define the object's structure.</param>
+    /// <param name="required">Whether the parameter must be provided.</param>
+    public ToolParamObject(string? description, List<ToolParam> properties, bool required = true)
     {
         Description = description;
         Properties = properties;
+        Required = required;
     }
     
+    /// <summary>
+    /// <inheritdoc />
+    /// </summary>
     public override object Compile(ToolDefinition sourceFn, ToolMeta meta)
     {
         if (meta.RecursionLevel >= ToolMeta.MaxRecursionLevel)
@@ -1051,12 +1315,18 @@ public class ToolParamObject : ToolParamTypeBase
     }
 }
 
+/// <summary>
+/// Represents a dictionary parameter, which is serialized as an array of key-value pairs.
+/// </summary>
 public class ToolParamDictionary : ToolParamTypeBase
 {
+    /// <summary>
+    /// <inheritdoc />
+    /// </summary>
     public override string Type => "object";
     
     /// <summary>
-    /// Values.
+    /// The schema for the values in the dictionary.
     /// </summary>
     public IToolParamType ValueType { get; set; }
     
@@ -1070,12 +1340,22 @@ public class ToolParamDictionary : ToolParamTypeBase
     /// </summary>
     public int? MaxProperties { get; set; }
 
-    public ToolParamDictionary(string? description, IToolParamType valueType)
+    /// <summary>
+    /// A parameter that is a dictionary (or map), where keys are strings and values conform to a specified schema. Note: This is serialized as an array of key-value pair objects to be compatible with JSON schema.
+    /// </summary>
+    /// <param name="description">A description of the dictionary.</param>
+    /// <param name="valueType">The schema that all values in the dictionary must conform to.</param>
+    /// <param name="required">Whether the parameter must be provided.</param>
+    public ToolParamDictionary(string? description, IToolParamType valueType, bool required = true)
     {
         Description = description;
         ValueType = valueType;
+        Required = required;
     }
 
+    /// <summary>
+    /// <inheritdoc />
+    /// </summary>
     public override object Compile(ToolDefinition sourceFn, ToolMeta meta)
     {
         if (meta.RecursionLevel >= ToolMeta.MaxRecursionLevel)
@@ -1106,42 +1386,6 @@ public class ToolParamDictionary : ToolParamTypeBase
             meta.RecursionLevel--;
         }
     }
-}
-
-public class TornadoPluginExportResult
-{
-    public List<ToolDefinition> Functions { get; set; }
-
-    public TornadoPluginExportResult(List<ToolDefinition> functions)
-    {
-        Functions = functions;
-    }
-}
-
-public interface ITornadoPlugin
-{
-    /// <summary>
-    /// A unique vendor namespace to avoid collisions between function symbols cross plugins. Max 20 characters
-    /// </summary>
-    public string Namespace { get; }
-
-    /// <summary>
-    /// A list o
-    /// </summary>
-    /// <returns></returns>
-    public Task<TornadoPluginExportResult> Export();
-    
-#if MODERN
-    ToolCallResult MissingParam(string name)
-    {
-        return new ToolCallResult(ToolCallResultParameterErrors.MissingRequiredParameter, name);
-    }
-    
-    ToolCallResult MalformedParam(string name)
-    {
-        return new ToolCallResult(ToolCallResultParameterErrors.MalformedParam, name);
-    }
-#endif
 }
 
 internal class JsonSchemaSerializedObject
@@ -1192,19 +1436,43 @@ internal class JsonSchemaSerializedObject
     }
 }
 
+/// <summary>
+/// Represents a tuple parameter, which is serialized as an object with named or indexed properties.
+/// </summary>
 public class ToolParamTuple : ToolParamTypeBase
 {
+    /// <summary>
+    /// <inheritdoc />
+    /// </summary>
     public override string Type => "object";
+    
+    /// <summary>
+    /// The list of types for the items in the tuple.
+    /// </summary>
     public List<IToolParamType> Items { get; }
+    
+    /// <summary>
+    /// The optional list of names for the items in the tuple.
+    /// </summary>
     public List<string>? Names { get; set; }
 
-    public ToolParamTuple(string? description, List<IToolParamType> items)
+    /// <summary>
+    /// A parameter that is a tuple—an ordered, fixed-size collection of elements that can have different types.
+    /// </summary>
+    /// <param name="description">A description of the tuple.</param>
+    /// <param name="items">A list of schemas, one for each element in the tuple, defining its type.</param>
+    /// <param name="required">Whether the parameter must be provided.</param>
+    public ToolParamTuple(string? description, List<IToolParamType> items, bool required = true)
     {
         Description = description;
         Items = items;
+        Required = required;
         Serializer = ToolParamSerializer.Tuple;
     }
 
+    /// <summary>
+    /// <inheritdoc />
+    /// </summary>
     public override object Compile(ToolDefinition sourceFn, ToolMeta meta)
     {
         if (meta.RecursionLevel >= ToolMeta.MaxRecursionLevel)

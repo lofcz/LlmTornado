@@ -244,4 +244,10 @@ internal static class EnumsParser
         }
         catch { num = null!; return false; }
     }
+    
+    public static string? ToEnumMember<T>(this T value) where T : Enum
+    {
+        EnumCache cache = GetCache(typeof(T));
+        return cache.ValueLookup.TryGetValue(value, out EnumCache.EnumMemberInfo info) ? info.EnumMemberValue : null;
+    }
 } 

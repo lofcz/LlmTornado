@@ -45,6 +45,20 @@ public abstract class EndpointBase
         {
             dict.Add(provider, new Lazy<HttpClient>(() =>
             {
+                HttpClient? userClient = OnHttpClientRequested?.Invoke(provider);
+
+                if (userClient is not null)
+                {
+                    return userClient;
+                }
+
+                if (Runtime.IsBrowser)
+                {
+                    HttpClient basicClient = new HttpClient();
+                    OnHttpClientCreated?.Invoke(basicClient, provider);
+                    return basicClient;
+                }
+
                 HttpClient client = TornadoConfig.CreateClient is null ? new HttpClient(
 #if MODERN
                     new SocketsHttpHandler
@@ -61,12 +75,23 @@ public abstract class EndpointBase
 #endif
                 } : TornadoConfig.CreateClient.Invoke(provider);
 
+                OnHttpClientCreated?.Invoke(client, provider);
                 return client;
             }));
         }
         
         return dict;
     });
+
+    /// <summary>
+    /// Invoked when a <see cref="HttpClient"/> is created. Can be used to customize the client.
+    /// </summary>
+    public static Action<HttpClient, LLmProviders>? OnHttpClientCreated { get; set; }
+    
+    /// <summary>
+    /// Invoked when a <see cref="HttpClient"/> is requested. Can be used to reuse your http client, instead of creating new one. If null is returned, http client is created via the built-in way.
+    /// </summary>
+    public static Func<LLmProviders, HttpClient?>? OnHttpClientRequested { get; set; }
 
     /// <summary>
     ///     Constructor of the api endpoint base, to be called from the contructor of any devived classes.  Rather than

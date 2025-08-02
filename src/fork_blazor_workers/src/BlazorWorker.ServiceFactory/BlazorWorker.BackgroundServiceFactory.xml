@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>BlazorWorker.BackgroundServiceFactory</name>
+    </assembly>
+    <members>
+        <member name="M:BlazorWorker.BackgroundServiceFactory.WorkerBackgroundServiceExtensions.CreateBackgroundServiceUsingFactoryAsync``2(BlazorWorker.Core.IWorker,System.Linq.Expressions.Expression{System.Func{``0,``1}},System.Action{BlazorWorker.Core.WorkerInitOptions})">
+            <summary>
+            Creates a background service using the specified <paramref name="factoryExpression"/>.
+            </summary>
+            <typeparam name="TFactory"></typeparam>
+            <typeparam name="TService"></typeparam>
+            <param name="webWorkerProxy"></param>
+            <param name="factoryExpression"></param>
+            <param name="workerInitOptionsModifier"></param>
+            <returns></returns>
+        </member>
+        <member name="M:BlazorWorker.BackgroundServiceFactory.WorkerBackgroundServiceExtensions.CreateBackgroundServiceAsync``2(BlazorWorker.WorkerBackgroundService.IWorkerBackgroundService{``0},System.Linq.Expressions.Expression{System.Func{``0,``1}})">
+            <summary>
+            Creates a new background service using the specified <paramref name="factoryExpression"/>
+            </summary>
+            <typeparam name="TFactory"></typeparam>
+            <typeparam name="TService"></typeparam>
+            <param name="webWorkerService"></param>
+            <param name="factoryExpression"></param>
+            <returns></returns>
+        </member>
+        <member name="P:BlazorWorker.BackgroundServiceFactory.WorkerBackgroundServiceProxy`1.Disposables">
+            <summary>
+            Attached objects, notably parent worker proxy which may have been created without consumer being directly able to dispose
+            </summary>
+        </member>
+        <member name="M:BlazorWorker.BackgroundServiceFactory.WorkerInitExtension.UseCustomExpressionSerializer(BlazorWorker.Core.WorkerInitOptions,System.Type)">
+            <summary>
+            Sets a custom ExpressionSerializer type. Must implement <see cref="T:BlazorWorker.WorkerBackgroundService.IExpressionSerializer"/>..
+            </summary>
+            <param name="source"></param>
+            <param name="expressionSerializerType">A type that implements <see cref="T:BlazorWorker.WorkerBackgroundService.IExpressionSerializer"/></param>
+            <returns></returns>
+            <exception cref="T:System.ArgumentNullException"></exception>
+        </member>
+    </members>
+</doc>

@@ -6,14 +6,28 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <LangVersion>preview</LangVersion>
         <GHPages>true</GHPages>
+        <GHPagesBase>/playground/</GHPagesBase>
         <ServiceWorkerAssetsManifest>service-worker-assets.js</ServiceWorkerAssetsManifest>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <Optimize>false</Optimize>
+        <WasmBundlerFriendlyBootConfig>true</WasmBundlerFriendlyBootConfig>
+        <TrimMode>none</TrimMode>
+        <PublishTrimmed>false</PublishTrimmed>
+        <WasmEnableWebcil>false</WasmEnableWebcil>
     </PropertyGroup>
 
     <ItemGroup>
+        <TrimmerRootAssembly Include="System.Threading.Tasks" />
+    </ItemGroup>
+    
+    <ItemGroup>
         <PackageReference Include="BlazorWasmBrotliLoader.Build" Version="1.0.1" />
-        <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="8.0.8" />
-        <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="8.0.8" PrivateAssets="all" />
+        <PackageReference Include="JetBrains.Annotations" Version="2025.2.0" />
+        <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.0-preview.5.25277.114" />
+        <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.0-preview.5.25277.114" PrivateAssets="all" />
+        <ProjectReference Include="..\fork_blazor_workers\src\BlazorWorker.ServiceFactory\BlazorWorker.BackgroundServiceFactory.csproj" />
         <PackageReference Include="PublishSPAforGitHubPages.Build" Version="3.0.1" />
+        <PackageReference Include="Scriban" Version="6.2.1" />
     </ItemGroup>
 
     <ItemGroup>
@@ -21,7 +35,57 @@
     </ItemGroup>
     
     <ItemGroup>
+      <ProjectReference Include="..\LlmTornado.Docs.Arcade\LlmTornado.Docs.Arcade.csproj" />
       <ProjectReference Include="..\LlmTornado\LlmTornado.csproj" />
     </ItemGroup>
+    
+    <ItemGroup>
+        <Content Remove="dist\**" />
+        <None Remove="dist\**" />
+        <Content Remove="website\blazor-dist\**" />
+        <None Remove="website\blazor-dist\**" />
+        <Content Remove="website\build\**" />
+        <None Remove="website\build\**" />
+        <Content Remove="reference_intellisage\**" />
+        <None Remove="reference_intellisage\**" />
+        <Content Remove="fork_blazor_workers\src\BlazorWorker.Demo\**" />
+        <None Remove="fork_blazor_workers\src\BlazorWorker.Demo\**" />
+        <Content Remove="fork_blazor_workers\src\BlazorWorker.Demo.IoCExample\**" />
+        <None Remove="fork_blazor_workers\src\BlazorWorker.Demo.IoCExample\**" />
+        <Content Remove="fork_blazor_workers\test\**" />
+        <None Remove="fork_blazor_workers\test\**" />
+    </ItemGroup>
+    
+    <ItemGroup>
+      <Compile Remove="reference_intellisage\**" />
+      <Compile Remove="fork_blazor_workers\src\BlazorWorker.Demo\**" />
+      <Compile Remove="fork_blazor_workers\src\BlazorWorker.Demo.IoCExample\**" />
+      <Compile Remove="fork_blazor_workers\test\**" />
+    </ItemGroup>
+    
+    <ItemGroup>
+      <EmbeddedResource Remove="reference_intellisage\**" />
+      <EmbeddedResource Remove="fork_blazor_workers\src\BlazorWorker.Demo\**" />
+      <EmbeddedResource Remove="fork_blazor_workers\src\BlazorWorker.Demo.IoCExample\**" />
+      <EmbeddedResource Remove="fork_blazor_workers\test\**" />
+    </ItemGroup>
+    
+    <Target Name="CreateBmetaJson" AfterTargets="AfterBuild;AfterPublish" Condition="'$(SkipViteBuild)' != 'true'">
+        <PropertyGroup>
+            <WwwRootPath Condition=" '$(WasmFinalAssetPublishPath)' != '' ">$(WasmFinalAssetPublishPath)</WwwRootPath>
+            <WwwRootPath Condition=" '$(WasmFinalAssetPublishPath)' == '' ">$(OutDir)wwwroot\</WwwRootPath>
+        </PropertyGroup>
+        <Message Text="Restoring LlmTornado.BuildInfo project..." Importance="high" />
+        <MSBuild Projects="../LlmTornado.BuildInfo/LlmTornado.BuildInfo.csproj" Targets="Restore" />
+        <Message Text="Executing LlmTornado.BuildInfo to create bmeta.json..." Importance="high" />
+        <Exec Command="dotnet run --project ../LlmTornado.BuildInfo/LlmTornado.BuildInfo.csproj --no-restore -- &quot;$(WwwRootPath)_framework\dotnet.js&quot;" />
+        <Copy SourceFiles="$(WwwRootPath)_framework\bmeta.json" DestinationFolder="wwwroot\_framework\" />
+        <Copy SourceFiles="$(WwwRootPath)_framework\blazor.boot.json" DestinationFolder="wwwroot\_framework\" />
+    </Target>
+
+    <Target Name="ViteBuild" BeforeTargets="BeforeBuild" Condition="'$(SkipViteBuild)' != 'true'">
+        <Exec Command="npm install" WorkingDirectory="ClientApp" />
+        <Exec Command="npm run build" WorkingDirectory="ClientApp" />
+    </Target>
 
 </Project>

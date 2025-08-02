@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using LlmTornado.Code;
 
@@ -103,6 +104,7 @@ public class Program
 
     public static readonly Dictionary<string, TestRun> DemoDict = [];
     public static readonly List<Tuple<Type, Type>> DemoEnumTypes = [];
+    static readonly Regex DemoTypeRegex = new Regex(@"Demo\d*$", RegexOptions.Compiled);
     
     static Program()
     {
@@ -124,7 +126,7 @@ public class Program
                 continue;
             }
 
-            if (type.FullName.EndsWith("Demo"))
+            if (DemoTypeRegex.IsMatch(type.FullName))
             {
                 foreach (MethodInfo method in type.GetMethods(BindingFlags.Public | BindingFlags.Static))
                 {

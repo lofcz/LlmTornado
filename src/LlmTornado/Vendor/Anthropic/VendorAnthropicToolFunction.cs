@@ -1,15 +1,15 @@
 using System.Collections.Generic;
 using LlmTornado.Chat.Vendors.Anthropic;
+using LlmTornado.Code;
 using LlmTornado.Common;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace LlmTornado.Vendor.Anthropic;
 
 /// <summary>
 /// Tool converted to Anthropic schema.
 /// </summary>
-public class VendorAnthropicToolFunction : IAnthropicChatRequestItem
+public class VendorAnthropicToolFunction : IVendorAnthropicChatRequestTool
 {
     /// <summary>
     ///     Converts a generic tool function into Anthropic schema.
@@ -23,6 +23,33 @@ public class VendorAnthropicToolFunction : IAnthropicChatRequestItem
         Name = func?.Name ?? string.Empty;
         Description = func?.Description;
         Cache = tool.VendorExtensions?.Anthropic?.Cache;
+    }
+
+    /// <summary>
+    ///     Converts a built-in tool into Anthropic schema.
+    /// </summary>
+    /// <param name="builtInTool"></param>
+    public VendorAnthropicToolFunction(IVendorAnthropicChatRequestBuiltInTool builtInTool)
+    {
+        Name = builtInTool.Name;
+        Type = builtInTool.Type.ToEnumMember();
+        Cache = builtInTool.Cache;
+        
+        switch (builtInTool)
+        {
+            case VendorAnthropicChatRequestBuiltInToolBash20250124 bash:
+            case VendorAnthropicChatRequestBuiltInToolCodeExecution20250522 code:
+                // nothing specific
+                break;
+            case VendorAnthropicChatRequestBuiltInToolComputer20250124 computer:
+                DisplayHeightPx = computer.DisplayHeightPx;
+                DisplayWidthPx = computer.DisplayWidthPx;
+                DisplayNumber = computer.DisplayNumber;
+                break;
+            case VendorAnthropicChatRequestBuiltInToolTextEditor20250728 textEditor:
+                MaxCharacters = textEditor.MaxCharacters;
+                break;
+        }
     }
     
     /// <summary>
@@ -52,7 +79,7 @@ public class VendorAnthropicToolFunction : IAnthropicChatRequestItem
     public AnthropicCacheSettings? Cache { get; set; }
     
     /// <summary>
-    /// custom | web_search_20250305 | text_editor_20250124 | bash_20250124 | computer_20250124 | text_editor_20241022
+    /// custom | web_search_20250305 | text_editor_20250728 | text_editor_20250124 | bash_20250124 | computer_20250124 | text_editor_20241022
     /// </summary>
     [JsonProperty("type")]
     public string? Type { get; set; }
@@ -99,6 +126,12 @@ public class VendorAnthropicToolFunction : IAnthropicChatRequestItem
     /// </summary>
     [JsonProperty("display_number")]
     public int? DisplayNumber { get; set; }
+    
+    /// <summary>
+    /// Optional parameter that allows you to control the truncation length when viewing large files.
+    /// </summary>
+    [JsonProperty("max_characters")]
+    public int? MaxCharacters { get; set; }
 }
 
 /// <summary>

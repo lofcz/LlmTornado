@@ -10,7 +10,6 @@ using LlmTornado.Toolkit;
 using LlmTornado.Toolkit.Memory;
 using McfCs;
 
-#if FALSE
 public class ToolkitChat
 {
     public ToolkitChatConfig Cfg => cfg;
@@ -56,7 +55,6 @@ public class ToolkitChat
     private int tenantId;
     private readonly ChatPluginCompiler pluginCompiler;
     private string? forceFunctionName;
-    private IList<IChatPlugin>? plugins;
     private ChatFunction? function;
     private bool enableMultipleFunctionCalls;
     private int functionsCalledInSuccession;
@@ -70,6 +68,7 @@ public class ToolkitChat
     private string? prefill;
     private bool prefillSolved;
     private ToolkitChatConfig? cfg;
+    private IList<IChatPlugin>? plugins;
 
     private ToolkitChat()
     {
@@ -403,16 +402,16 @@ public class ToolkitChat
         
         if (plugins is not null)
         {
-            await pluginCompiler.SetPlugins(plugins);
+            await pluginCompiler.SetPlugins(plugins, api.GetProvider(cfg.Model));
         }
         else if (function is not null)
         {
             this.forceFunctionName = function.Name;
-            pluginCompiler.SetFunction(function);
+            pluginCompiler.SetFunction(function, api.GetProvider(cfg.Model));
         }
         else if (functions?.Count > 0)
         {
-            pluginCompiler.SetFunctions(functions);
+            pluginCompiler.SetFunctions(functions, api.GetProvider(cfg.Model));
         }
 
         if (function is not null)
@@ -869,6 +868,8 @@ public class ToolkitChat
         try
         {
             RestDataOrException<ChatRichResponse>? response = null;
+
+            var ss = chat.Serialize();
             
             if (chat.RequestParameters.Tools?.Count > 0)
             {
@@ -1017,4 +1018,3 @@ public class ToolkitChat
         contextTokens += n;
     }
 }
-#endif

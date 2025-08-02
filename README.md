@@ -412,11 +412,11 @@ class DemoAggregatedItem
 string sysPrompt = "aggregate items by type";
 string userPrompt = "three apples, one cherry, two apples, one orange, one orange";
 
-await ToolkitChat.GetSingleResponse(api, ChatModel.Google.Gemini.Gemini2Flash001, ChatModel.OpenAi.Gpt41.V41Mini, sysPrompt, new ChatFunction([
-    new ChatFunctionParam("items", new ChatFunctionTypeListTypedObject("aggregated items", true, [
-        new ChatFunctionParam("name", "name of the item", true, ChatFunctionAtomicParamTypes.String),
-        new ChatFunctionParam("quantity", "aggregated quantity", true, ChatFunctionAtomicParamTypes.Int),
-        new ChatFunctionParam("known_name", new ChatFunctionTypeEnum("known name of the item", true, [ "apple", "cherry", "orange", "other" ]))
+await ToolkitChat.GetSingleResponse(Program.Connect(), ChatModel.Google.Gemini.Gemini25Flash, ChatModel.OpenAi.Gpt41.V41Mini, sysPrompt, new ChatFunction([
+    new ToolParam("items", new ToolParamList("aggregated items", [
+        new ToolParam("name", "name of the item", ToolParamAtomicTypes.String),
+        new ToolParam("quantity", "aggregated quantity", ToolParamAtomicTypes.Int),
+        new ToolParam("known_name", new ToolParamEnum("known name of the item", [ "apple", "cherry", "orange", "other" ]))
     ]))
 ], async (args, ctx) =>
 {

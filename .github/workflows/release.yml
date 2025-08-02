@@ -126,19 +126,19 @@ jobs:
     # Restore project dependencies
     - name: Restore dependencies
       if: env.SHOULD_RELEASE == 'true'
-      run: dotnet restore
+      run: dotnet restore LlmTornado.sln
       working-directory: ./src
       
     # Build solution
     - name: Build
       if: env.SHOULD_RELEASE == 'true'
-      run: dotnet build --configuration Release --no-restore
+      run: dotnet build LlmTornado.sln --configuration Release --no-restore
       working-directory: ./src
       
     # Create NuGet packages
     - name: Pack
       if: env.SHOULD_RELEASE == 'true'
-      run: dotnet pack --configuration Release --no-build --output ../nupkgs
+      run: dotnet pack LlmTornado.sln --configuration Release --no-build --output ../nupkgs
       working-directory: ./src
     
     # Create GitHub release

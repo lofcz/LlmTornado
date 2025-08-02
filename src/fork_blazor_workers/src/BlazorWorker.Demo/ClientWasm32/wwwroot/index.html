@@ -1,0 +1,106 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>BlazorWorker Demo</title>
+    <base href="/" />
+    <link href="css/bootstrap/bootstrap.min.css" rel="stylesheet" />
+    <link href="css/app.css" rel="stylesheet" />
+</head>
+
+<body>
+    <app>
+        <div class="loader-box">
+            <img src="loading-icon.svg" width="97" height="88" />
+            <br /><br />
+            <p id="loadingText">Loading...</p>
+            <br />
+            <progress id="pbar"></progress>
+        </div>
+        <style>
+            .loader-box {
+                width: 500px;
+                height: 120px;
+                margin: 100px auto;
+                text-align: center;
+                font-family: Consolas, Verdana;
+                font-size: 10px;
+            }
+        </style>
+    </app>
+
+    <script type="text/javascript">
+
+        (function () {
+            /*
+             * Loader/splash screen
+             * */
+
+            var total = 0;
+            var loaded = 0;
+
+            var proxied = window.fetch;
+            window.fetch = function (input, init) {
+                var file = input;
+                total++;
+
+                return proxied(input, init).then(function (response) {
+                    loaded++;
+                    var progress = Math.floor(((loaded / total) * 100));
+                    document.getElementById("pbar").max = total;
+                    document.getElementById("pbar").value = loaded;
+                    document.getElementById("loadingText").innerHTML = "Loaded " + file + ", " + progress + " %..."
+
+                    if (loaded == total) {
+                        // Reset override.
+                        window.fetch = proxied;
+                        document.getElementById("loadingText").innerHTML = "Loading 100%, opening application...";
+                    }
+
+                    return response;
+                });
+
+            };
+        })();
+
+        // Single Page Apps for GitHub Pages
+        // https://github.com/rafrex/spa-github-pages
+        // Copyright (c) 2016 Rafael Pedicini, licensed under the MIT License
+        // ----------------------------------------------------------------------
+        // This script checks to see if a redirect is present in the query string
+        // and converts it back into the correct url and adds it to the
+        // browser's history using window.history.replaceState(...),
+        // which won't cause the browser to attempt to load the new url.
+        // When the single page app is loaded further down in this file,
+        // the correct url will be waiting in the browser's history for
+        // the single page app to route accordingly.
+        (function (l) {
+            if (l.search) {
+                var q = {};
+                l.search.slice(1).split('&').forEach(function (v) {
+                    var a = v.split('=');
+                    q[a[0]] = a.slice(1).join('=').replace(/~and~/g, '&');
+                });
+                if (q.p !== undefined) {
+                    window.history.replaceState(null, null,
+                        l.pathname.slice(0, -1) + (q.p || '') +
+                        (q.q ? ('?' + q.q) : '') +
+                        l.hash
+                    );
+                }
+            }
+        }(window.location))
+    </script>
+
+    <div id="blazor-error-ui">
+        An unhandled error has occurred.
+        <a href="" class="reload">Reload</a>
+        <a class="dismiss">🗙</a>
+    </div>
+    <script src="_framework/blazor.webassembly.js"></script>
+    <script src="_content/TG.Blazor.IndexedDB/indexedDb.Blazor.js"></script>
+</body>
+
+</html>

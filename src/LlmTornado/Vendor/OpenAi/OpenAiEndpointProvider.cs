@@ -81,7 +81,11 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
             CapabilityEndpoints.Threads => "threads",
             CapabilityEndpoints.VectorStores => "vector_stores",
             CapabilityEndpoints.Responses => "responses",
-            _ => throw new Exception($"OpenAI doesn't support endpoint {endpoint}")
+            // conditionally supported
+            CapabilityEndpoints.ContextualEmbeddings when provider is LLmProviders.Voyage => "contextualizedembeddings",
+            CapabilityEndpoints.MultimodalEmbeddings when provider is LLmProviders.Voyage => "multimodalembeddings",
+            CapabilityEndpoints.Rerank when provider is LLmProviders.Voyage => "rerank",
+            _ => throw new Exception($"{provider} doesn't support endpoint {endpoint}")
         };
     }
     
@@ -94,7 +98,7 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
     /// <returns></returns>
     public override string ApiUrl(CapabilityEndpoints endpoint, string? url, IModel? model = null)
     {
-        string eStr = GetEndpointUrlFragment(endpoint);
+        string eStr = GetEndpointUrlFragment(endpoint, Provider);
         return UrlResolver is not null ? string.Format(UrlResolver.Invoke(endpoint, url, new RequestUrlContext(eStr, url, model)), eStr, url, model?.Name) : $"{string.Format(Api?.ApiUrlFormat ?? "https://api.openai.com/{0}/{1}", Api?.ApiVersion ?? "v1", GetEndpointUrlFragment(endpoint), model?.Name)}{url}";
     }
     

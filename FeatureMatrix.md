@@ -38,8 +38,11 @@ _*Custom means any OpenAI compatible provider, such as Azure OpenAI, Ollama, Kob
 |-----------|------------ | ------------ | ------------ | ------------ |
 | ✅ | ❌ | ❌ | ❌ | ✅ |
 
-_*Other providers expose caching as part of `/chat`, or don't offer the feature._
+## Voyage Specific
 
+ Multimodal Embedding | Contextualized Embedding | Rerankers
+|-----------|------------ | ------------ |
+| ✅ | ✅ | ✅ |
 
 ## Cohere Specific
 

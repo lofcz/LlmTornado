@@ -1,0 +1,22 @@
+@using Microsoft.JSInterop
+@inject IJSRuntime JSRuntime
+
+<div class="monaco-editor-container" style="height: 600px;">
+    <iframe @ref="_iframe" src="/dist/index.html" style="width: 100%; height: 100%; border: 0;"></iframe>
+</div>
+
+@code {
+    private ElementReference _iframe;
+
+    [Parameter]
+    public string? Code { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // This just handles the initial handshake and code loading
+            await JSRuntime.InvokeVoidAsync("monacoEditor.init", _iframe, Code);
+        }
+    }
+}

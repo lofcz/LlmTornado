@@ -27,6 +27,16 @@ public class ChatRequestVendorPerplexityExtensions
     public DateTime? SearchBeforeDateFilter { get; set; }
     
     /// <summary>
+    /// Include only results last updated after given date.
+    /// </summary>
+    public DateTime? LastUpdatedAfterFilter { get; set; }
+    
+    /// <summary>
+    /// Include only results last updated before given date.
+    /// </summary>
+    public DateTime? LastUpdatedBeforeFilter { get; set; }
+    
+    /// <summary>
     /// Filters search results based on time (e.g., 'week', 'day').
     /// </summary>
     public string? SearchRecencyFilter { get; set; }
@@ -50,6 +60,12 @@ public class ChatRequestVendorPerplexityExtensions
     /// Domains which will be excluded from the search.
     /// </summary>
     public List<string>? ExcludeDomains { get; set; }
+    
+    /// <summary>
+    /// Filter results based on when the webpage was last modified or updated.
+    /// Used inside web_search_options.
+    /// </summary>
+    public DateTime? LatestUpdated { get; set; }
 }
 
 /// <summary>
@@ -62,5 +78,11 @@ public enum ChatRequestVendorPerplexitySearchModes
     /// Prioritize results from peer-reviewed papers, journal articles, and research publications.
     /// </summary>
     [EnumMember(Value = "academic")] 
-    Academic
+    Academic,
+    
+    /// <summary>
+    /// Prioritize results from SEC filings.
+    /// </summary>
+    [EnumMember(Value = "sec")]
+    Sec
 }

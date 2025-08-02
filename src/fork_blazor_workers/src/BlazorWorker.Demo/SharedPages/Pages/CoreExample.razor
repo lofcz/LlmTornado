@@ -1,0 +1,118 @@
+﻿@inject IWorkerFactory workerFactory
+
+@using BlazorWorker.Core.CoreInstanceService
+@using BlazorWorker.Demo.Shared
+@using BlazorWorker.Core
+<div class="row">
+    <div class="col-5 col-xs-12">
+        <h1>Core .NET Worker threads with messaging.</h1>
+
+        Welcome to your new multithreaded app.
+
+        This example uses the Core module, which does not provide any serialization.<br />
+
+        This is useful for scenarios with simple API's (smaller download size), or for building a custom high-level API.
+        <br /><br />
+        Pi estimation demo. Specify number of iterations.<br />
+
+        <input type="text" @bind="piIterations" placeholder="estimation iterations" />
+        <br />
+        <progress max="@piIterations" value="@piProgress" /><br /><br />
+        <button disabled=@RunDisabled @onclick="OnClick" class="btn btn-primary">Run Test</button>
+
+        <button disabled="@disabled" @onclick="OnDispose" class="btn btn-secondary">Dispose Service</button>
+        <br />
+        <br />
+        <strong>Output:</strong>
+        <hr />
+<pre>
+@output
+</pre>
+    </div>
+    <div class="col-7 col-xs-12">
+        <GithubSource RelativePath="Pages/CoreExample.razor" />
+    </div>
+</div>
+@code {
+    string RunDisabled => Running ? "disabled" : null;
+    bool Running = false;
+    int piIterations = 5_000_000;
+    int piProgress = 0;
+    string output;
+    IWorker worker;
+    ICoreInstanceService backgroundService;
+    IInstanceHandle handle;
+    string disabled = "disabled";
+    string rn = Environment.NewLine;
+
+    public async Task OnClick(EventArgs _)
+    {
+        output = "";
+
+        try
+        {
+            if (worker == null)
+            {
+                worker = await workerFactory.CreateAsync();
+                worker.IncomingMessage += this.OnWorkerMessage;
+            }
+
+            if (backgroundService == null)
+            {
+                disabled = null;
+                output = $"{rn}{LogDate()} Creating background service...";
+                StateHasChanged();
+
+                backgroundService = worker.CreateCoreInstanceService();
+
+                handle = await backgroundService.CreateInstance<CoreMathsService>(options =>
+                    options.EnvMap["DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"] = "0" // CSV message format needs globalization support in trimmed scenarios
+                );
+
+                output += $"{rn}{LogDate()} Background service created.";
+                StateHasChanged();
+            }
+
+            output += $"{rn}{LogDate()} Calling EstimatePI({piIterations})...";
+            await worker.PostMessageAsync($"{nameof(MathsService.EstimatePI)}({piIterations})");
+            // Result is obtained in message listener "OnWorkerMessage"
+        }
+        catch (Exception e)
+        {
+            output = $"{rn}Error = {e}";
+        }
+    }
+
+    public void OnWorkerMessage(object sender, string message)
+    {
+        if (message.StartsWith($"{CoreMathsService.EventsPi}:"))
+        {
+            piProgress = int.Parse(message.Substring($"{CoreMathsService.EventsPi}:".Length).Trim());
+            StateHasChanged();
+        }
+
+        if (message.StartsWith($"{CoreMathsService.ResultMessage}:"))
+        {
+            var result = double.Parse(message.Substring($"{CoreMathsService.ResultMessage}:".Length).Trim());
+            output += $"{rn}{LogDate()} EstimatePI({piIterations}) = {result}";
+            StateHasChanged();
+        }
+    }
+
+    public async Task OnDispose()
+    {
+        await handle.DisposeAsync();
+        backgroundService = null;
+
+
+        await worker.DisposeAsync();
+        worker = null;
+
+        disabled = "disabled";
+    }
+
+    private string LogDate()
+    {
+        return DateTime.Now.ToString("HH:mm:ss:fff");
+    }
+}

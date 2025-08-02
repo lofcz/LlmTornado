@@ -1,0 +1,29 @@
+@using LlmTornado.Chat
+@using LlmTornado.Chat.Models
+@using LlmTornado.Code
+@inject ICodeExecutor CodeExecutor
+@inject ConsoleOutputService ConsoleOutputService
+@namespace LlmTornado.Docs.Shared
+
+<div>
+    <input name="apiKey" @bind="apiKey" placeholder="Enter your API key" />
+    <pre><code>@Code</code></pre>
+    <button @onclick="RunCode">Run</button>
+</div>
+<div>
+    <ConsoleOutput />
+</div>
+
+@code {
+    private string? apiKey;
+
+    [Parameter]
+    public string? Code { get; set; }
+
+    private async Task RunCode()
+    {
+        var codeToRun = Code.Replace("%%API_KEY%%", apiKey);
+        ConsoleOutputService.ClearLogs();
+        await CodeExecutor.ExecuteAsync(codeToRun);
+    }
+}

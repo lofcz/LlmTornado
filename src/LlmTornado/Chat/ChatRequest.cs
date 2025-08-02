@@ -26,7 +26,7 @@ namespace LlmTornado.Chat;
 ///     <see cref="Completions.CompletionRequest" />
 ///     Based on the <see href="https://platform.openai.com/docs/api-reference/chat">OpenAI API docs</see>
 /// </summary>
-public class ChatRequest : IModelRequest
+public class ChatRequest : IModelRequest, ISerializableRequest
 {
 	/// <summary>
 	///     Creates a new, empty <see cref="ChatRequest" />
@@ -614,6 +614,17 @@ public class ChatRequest : IModelRequest
 		return serialized;
 	}
 
+	/// <summary>
+	/// Serializes the request.
+	/// </summary>
+	public TornadoRequestContent Serialize(IEndpointProvider provider, RequestSerializeOptions options)
+	{
+		return Serialize(provider, new ChatRequestSerializeOptions
+		{
+			Pretty = options.Pretty
+		});
+	}
+
 	internal void Preserialize(IEndpointProvider provider)
 	{
 		if (OwnerConversation is not null)
@@ -631,13 +642,16 @@ public class ChatRequest : IModelRequest
 		
 		if (Tools is not null)
 		{
+			int i = 0;
+			
 			foreach (Tool tool in Tools)
 			{
-				tool.Serialize(provider);
+				tool.Serialize(provider, i);
+				i++;
 			}	
 		}
 
-		if (ResponseFormat is { Type: ChatRequestResponseFormatTypes.StructuredJson, Schema.Delegate: not null })
+		if (ResponseFormat is { Type: ChatRequestResponseFormatTypes.StructuredJson, Schema: not null } && (ResponseFormat.Schema.Delegate is not null || ResponseFormat.Schema.SchemaParams is not null))
 		{
 			ResponseFormat.Serialize(provider);
 		}

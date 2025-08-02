@@ -1303,78 +1303,111 @@ public enum CapabilityEndpoints
     /// Returns input url
     /// </summary>
     None,
+    
     /// <summary>
     /// Special value returning the base url
     /// </summary>
     BaseUrl,
+    
     /// <summary>
     /// Special value returning even shorter shared url prefix
     /// </summary>
     BaseUrlStripped,
+    
     /// <summary>
     /// Chat endpoint.
     /// </summary>
     Chat,
+    
     /// <summary>
     /// Moderation endpoint.
     /// </summary>
     Moderation,
+    
     /// <summary>
     /// Legacy.
     /// </summary>
     Completions,
+    
     /// <summary>
     /// Embeddings endpoint.
     /// </summary>
     Embeddings,
+    
     /// <summary>
     /// Models endpoint.
     /// </summary>
     Models,
+    
     /// <summary>
     /// Files endpoint.
     /// </summary>
     Files,
+    
     /// <summary>
     /// Uploads endpoint.
     /// </summary>
     Uploads,
+    
     /// <summary>
     /// Images endpoint.
     /// </summary>
     ImageGeneration,
+    
     /// <summary>
     /// Audio endpoint.
     /// </summary>
     Audio,
+    
     /// <summary>
     /// Assistants endpoint.
     /// </summary>
     Assistants,
+    
     /// <summary>
     /// Image editing endpoint.
     /// </summary>
     ImageEdit,
+    
     /// <summary>
     /// Threads endpoint.
     /// </summary>
     Threads,
+    
     /// <summary>
     /// Fine tuning endpoint.
     /// </summary>
     FineTuning,
+    
     /// <summary>
     /// Vector stores endpoint.
     /// </summary>
     VectorStores,
+    
     /// <summary>
     /// Caching endpoint.
     /// </summary>
     Caching,
+    
     /// <summary>
     /// Responses endpoint.
     /// </summary>
-    Responses
+    Responses,
+    
+    /// <summary>
+    /// Contextual embeddings endpoint.
+    /// </summary>
+    ContextualEmbeddings,
+    
+    /// <summary>
+    /// Multimodal embeddings endpoint.
+    /// </summary>
+    MultimodalEmbeddings,
+    
+    /// <summary>
+    /// Reranker endpoint.
+    /// </summary>
+    Rerank
 }
 
 /// <summary>
@@ -2249,4 +2282,58 @@ public static class ResponseOutputTypes
 {
     public static string Reasoning => "reasoning";
     public static string FunctionCall => "function_call";
+}
+
+internal class IModelConverter : JsonConverter
+{
+    public override bool CanConvert(Type objectType)
+    {
+        return typeof(IModel).IsAssignableFrom(objectType);
+    }
+
+    public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
+    {
+        if (value is IModel model)
+        {
+            writer.WriteValue(model.Name);
+        }
+        else
+        {
+            writer.WriteNull();
+        }
+    }
+
+    public override object? ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
+    {
+        return existingValue;
+    }
+
+    public override bool CanRead => false;
+}
+
+/// <summary>
+/// Shared interface for serializable requests.
+/// </summary>
+public interface ISerializableRequest
+{
+    /// <summary>
+    /// Serializes the request.
+    /// </summary>
+    public TornadoRequestContent Serialize(IEndpointProvider provider);
+    
+    /// <summary>
+    /// Serializes the request with options.
+    /// </summary>
+    public TornadoRequestContent Serialize(IEndpointProvider provider, RequestSerializeOptions options);
+}
+
+/// <summary>
+/// Options for serializing requests.
+/// </summary>
+public class RequestSerializeOptions
+{
+    /// <summary>
+    /// Should the JSON be prettified.
+    /// </summary>
+    public bool Pretty { get; set; }
 }
