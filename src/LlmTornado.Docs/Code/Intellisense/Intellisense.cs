@@ -78,7 +78,7 @@ public class MonacoServiceWrapper {
 
 public static class Intellisense
 {
-    public static bool UseWorker = false; // Toggle for debugging
+    public static bool UseWorker = true; // Toggle for debugging
     public static NavigationManager? NavigationManager {get;set;}
     public static IWorkerBackgroundService<MonacoService>? MonacoWorkerWrapper {get;set;}
     public static MonacoService? MainThreadMonacoService { get; set; }
