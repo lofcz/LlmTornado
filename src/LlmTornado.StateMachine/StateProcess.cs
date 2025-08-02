@@ -1,4 +1,4 @@
-﻿namespace LlmTornado.Agents.AgentStates
+﻿namespace LlmTornado.StateMachines
 {
     /// <summary>
     /// Represents a process that manages the execution state and input for a state-based operation.

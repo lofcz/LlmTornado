@@ -1,6 +1,6 @@
 ﻿using System.Collections.Concurrent;
 
-namespace LlmTornado.Agents.AgentStates
+namespace LlmTornado.StateMachines
 {
     public delegate void StateEnteredEvent<T>(StateProcess<T> input);
     public delegate void StateExitEvent(BaseState input);

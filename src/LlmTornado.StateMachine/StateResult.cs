@@ -1,4 +1,4 @@
-﻿namespace LlmTornado.Agents.AgentStates
+﻿namespace LlmTornado.StateMachines
 {
     /// <summary>
     /// Result from a state machine process.

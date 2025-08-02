@@ -1,4 +1,4 @@
-﻿namespace LlmTornado.Agents.AgentStates
+﻿namespace LlmTornado.StateMachines
 {
     /// <summary>
     /// Delegate for a transition event that takes an input of type T and returns a boolean indicating whether the transition should occur.

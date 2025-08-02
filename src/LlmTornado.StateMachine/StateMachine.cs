@@ -1,6 +1,6 @@
 ﻿using System.Collections.Concurrent;
 
-namespace LlmTornado.Agents.AgentStates
+namespace LlmTornado.StateMachines
 {
     public delegate void VerboseLogHandler(string message);
     /// <summary>

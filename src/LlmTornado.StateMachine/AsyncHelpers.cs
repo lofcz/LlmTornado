@@ -1,4 +1,4 @@
-﻿namespace Lombda.StateMachine
+﻿namespace LlmTornado.StateMachines
 {
     public static class AsyncHelpers
     {
