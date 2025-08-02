@@ -12,6 +12,7 @@ using System.Text.Json;
 using LlmTornado.Docs.Code.Intellisense;
 using Microsoft.CodeAnalysis.Emit;
 using Microsoft.Extensions.Logging;
+using Microsoft.JSInterop;
 
 namespace LlmTornado.Docs.Code.Intellisense;
 
@@ -24,7 +25,10 @@ public class MonacoService
     OmniSharpCompletionService _completionService;
     OmniSharpSignatureHelpService _signatureService;
     OmniSharpQuickInfoProvider _quickInfoProvider;
-    private readonly HttpClient _httpClient;
+    private HttpClient _httpClient;
+    private IAssemblyCache _cache;
+    private IIntellisenseStatus _status;
+    private IJSRuntime js;
     
     #endregion
 
@@ -42,9 +46,31 @@ public class MonacoService
 
     #region Constructors
 
-    public MonacoService(HttpClient httpClient)
+    // Primary DI ctor
+    public MonacoService(HttpClient httpClient, IAssemblyCache cache, IIntellisenseStatus status, IJSRuntime js)
     {
+        this.js = js;
         _httpClient = httpClient;
+        _cache = cache;
+        _status = status;
+        DefaultCode =
+$@"using System; 
+    class Filter 
+    {{               
+        public Filter() 
+        {{ 
+            
+        }}
+    }} 
+";
+    }
+
+    // Fallback parameterless ctor for worker scenarios without DI
+    public MonacoService()
+    {
+        _httpClient = new HttpClient();
+        _cache = new AssemblyCache();
+        _status = new IntellisenseStatus();
         DefaultCode =
 $@"using System; 
     class Filter 
@@ -69,20 +95,53 @@ $@"using System;
 
     internal record ResponsePayload(object? Payload, string? Type);
     
-    public async Task Init(string uri)
+    public async Task Init(string uri, IJSRuntime? js)
     {
+        this.js = js;
+        
+        // Ensure minimal fields exist even if constructed via parameterless ctor
+        _cache ??= new AssemblyCache();
+        _status ??= new IntellisenseStatus();
+        _httpClient ??= new HttpClient();
+
         _httpClient.BaseAddress = new Uri(uri);
-        _completionProject = new RoslynProject(uri);
-        await _completionProject.Init(_httpClient);
-        _diagnosticProject = new RoslynProject(uri);
-        await _diagnosticProject.Init(_httpClient);
+        
+        System.Console.WriteLine("HELLO FROM INIT");
+        System.Console.WriteLine("=================================");
+
+        try
+        {
+            await js.InvokeVoidAsync("console.log", "=============WEBWORKER==========");
+        }
+        catch (Exception e)
+        {
+            System.Console.WriteLine($"{(js is null ? "JS IS NULL" : "JS IS NOT NULL")}");
+            System.Console.WriteLine($"{e} {e.Message} {e.StackTrace} {e.InnerException?.Message}");
+        }
+        
+        _status?.Publish(IntelliStage.SpinningWorker, 20, "Initializing assembly cache…");
+
+        // Explicitly ensure assemblies are loaded BEFORE creating projects
+        await _cache.InitializeAsync(_httpClient, _status);
+
+        _status?.Publish(IntelliStage.SpinningWorker, 35, "Preparing workspace…");
+
+        _completionProject = new RoslynProject(uri, _cache, _status);
+        await _completionProject.Init(_httpClient, "LlmTornado.Docs.Completion");
+
+        _diagnosticProject = new RoslynProject(uri, _cache, _status);
+        await _diagnosticProject.Init(_httpClient, "LlmTornado.Docs.Diagnostics");
 
         ILoggerFactory loggerFactory = LoggerFactory.Create(configure => { });
         FormattingOptions formattingOptions = new FormattingOptions();
 
+        _status?.Publish(IntelliStage.WiringChannels, 60, "Wiring language services…");
+
         _completionService = new OmniSharpCompletionService(_completionProject.Workspace, formattingOptions, loggerFactory);
         _signatureService = new OmniSharpSignatureHelpService(_completionProject.Workspace);
         _quickInfoProvider = new OmniSharpQuickInfoProvider(_completionProject.Workspace, formattingOptions, loggerFactory);
+
+        _status?.MarkReady();
     }
 
     private static readonly JsonSerializerOptions jsonOptions = new JsonSerializerOptions
@@ -168,7 +227,7 @@ $@"using System;
                 [st],
                 options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, concurrentBuild: true,
                 optimizationLevel: OptimizationLevel.Debug),
-                references: RoslynProject.MetadataReferences
+                references: _cache.MetadataReferences
             );
 
         using (MemoryStream temp = new MemoryStream())

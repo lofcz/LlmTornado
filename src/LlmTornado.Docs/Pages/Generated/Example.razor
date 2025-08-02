@@ -4,8 +4,12 @@
 @inject NavigationManager NavigationManager
 @inject BlazorWorker.Core.IWorkerFactory WorkerFactory
 @inject HttpClient Http
+@inject IIntellisenseStatus IntelliStatus
+
+@implements IDisposable
 
 @code {
+    // Initial code should render immediately in Monaco (React Suspense-like behavior)
     string co = """
                 using System;
                 class Program
@@ -16,13 +20,88 @@
                 }
                 """;
 
+    // Track initialization state
+    private bool _isInitialized = false;
+    private bool _isIntellisenseInitialized = false;
+    
+    IntelliStatus? _last;
+    bool _showDetails;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Start Intellisense in background; do not block Monaco rendering
+        IntelliStatus.Updated += OnStatusUpdated;
+
+        // prime last-known status so UI shows something meaningful
+        if (IntelliStatus.History.Count > 0)
+        {
+            _last = IntelliStatus.History[^1];
+        }
+        else
+        {
+            // show an initial line so it doesn't appear empty
+            IntelliStatus.Publish(IntelliStage.Starting, 0, "Starting…");
+        }
+
+        // Start per-page initialization without blocking UI.
+        _ = Intellisense.Init(JS, NavigationManager, WorkerFactory, Http)
+            .ContinueWith(_ =>
+            {
+                // If Init doesn't publish, at least mark ready when it finishes
+                if (!IntelliStatus.IsReady)
+                {
+                    IntelliStatus.MarkReady();
+                }
+                _isIntellisenseInitialized = true;
+                InvokeAsync(StateHasChanged);
+            });
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            // Initializes the C# worker and tells the JS side to start listening
-            await Intellisense.Init(JS, NavigationManager, WorkerFactory, Http);
+            _isInitialized = true;
+            await InitializeMonacoEditor();
         }
+        else if (!_isInitialized)
+        {
+            _isInitialized = true;
+            await InitializeMonacoEditor();
+        }
+    }
+
+    private async Task InitializeMonacoEditor()
+    {
+        try
+        {
+            // Ensure Monaco editor is initialized with the correct code
+            await JS.InvokeVoidAsync("initializeMonacoEditor", co);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error initializing Monaco editor: {ex.Message}");
+        }
+    }
+
+    private void OnStatusUpdated(IntelliStatus s)
+    {
+        _last = s;
+        InvokeAsync(StateHasChanged);
+    }
+
+    string OneLine()
+    {
+        if (_last is null)
+            return "Intellisense: starting…";
+        if (IntelliStatus.IsReady)
+            return "Intellisense: Ready";
+        return $"Intellisense: {_last.Message} ({_last.Percent}%)";
+    }
+
+    public void Dispose()
+    {
+        IntelliStatus.Updated -= OnStatusUpdated;
     }
 }
 
@@ -30,4 +109,30 @@
 
 <p>This is a page generated from a Scriban template.</p>
 
-<MonacoEditor Code="@co" />
+<!-- Editor renders immediately with the correct initial code -->
+<MonacoEditor Code="@co" Initialized="@_isInitialized" />
+
+<!-- Suspense-like status / progress with expandable details -->
+<div class="intelli-status" style="margin-top:8px; padding:8px; border:1px solid #444; border-radius:6px;">
+  <div class="status-line" style="display:flex; justify-content:space-between; align-items:center;">
+    <span>@OneLine()</span>
+    <button class="toggle btn btn-sm btn-secondary" @onclick="() => _showDetails = !_showDetails">
+      @(_showDetails ? "Hide details" : "Show details")
+    </button>
+  </div>
+  @if (_showDetails)
+  {
+    <div class="status-details" style="margin-top:8px; max-height:220px; overflow:auto;">
+      <ol>
+        @foreach (var s in IntelliStatus.History)
+        {
+          <li>
+            <span>@s.TimestampUtc.ToLocalTime().ToString("HH:mm:ss")</span>
+            <strong style="margin-left:6px;">@s.Stage</strong>
+            <span style="margin-left:6px;">— @s.Message (@s.Percent%)</span>
+          </li>
+        }
+      </ol>
+    </div>
+  }
+</div>
