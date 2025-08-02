@@ -1,4 +1,5 @@
-﻿using LlmTornado.Responses.Events;
+﻿using LlmTornado.Chat;
+using LlmTornado.Responses.Events;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -180,9 +181,10 @@ namespace LlmTornado.Agents
     {
         public string? Id { get; set; }
         public ModelStreamingStatus Status { get; set; } = ModelStreamingStatus.InProgress;
-        public ModelContentType type { get; set; } = ModelContentType.OutputText;
+        
+        public ChatMessageTypes type { get; set; } = ChatMessageTypes.Text;
         public string Role { get; set; } = "assistant";
-        public ModelMessageContent[]? Content { get; set; }
+        public ChatMessagePart[]? Content { get; set; }
     }
     /// <summary>
     /// Provides data for streaming callback events.
@@ -221,11 +223,11 @@ namespace LlmTornado.Agents
     {
         public int OutputIndex { get; set; } = 0;
         public int ContentPartIndex { get; set; } = 0;
-        public ModelContentType ContentPartType { get; set; } = ModelContentType.OutputText;
+        public ChatMessageTypes ContentPartType { get; set; } = ChatMessageTypes.Text;
         public string? ContentPartText { get; set; } = null;
         //Need annotation for the content part
 
-        public ModelStreamingContentPartAddEvent(int seqNum, int outputIndex, int contentPartIndex, ModelContentType contentPartType, string? contentPartText = null, string responseID = "")
+        public ModelStreamingContentPartAddEvent(int seqNum, int outputIndex, int contentPartIndex, ChatMessageTypes contentPartType, string? contentPartText = null, string responseID = "")
             :base(seqNum, responseID, ModelStreamingEventType.ContentPartAdded, ModelStreamingStatus.InProgress)
         { 
             OutputIndex = outputIndex;
@@ -242,11 +244,11 @@ namespace LlmTornado.Agents
     {
         public int OutputIndex { get; set; } = 0;
         public int ContentPartIndex { get; set; } = 0;
-        public ModelContentType ContentPartType { get; set; } = ModelContentType.OutputText;
+        public ChatMessageTypes ContentPartType { get; set; } = ChatMessageTypes.Text;
         public string? ContentPartText { get; set; } = null;
         //Need annotation for the content part
 
-        public ModelStreamingContentPartDoneEvent(int seqNum, int outputIndex, int contentPartIndex, ModelContentType contentPartType, string? contentPartText = null, string responseID = "")
+        public ModelStreamingContentPartDoneEvent(int seqNum, int outputIndex, int contentPartIndex, ChatMessageTypes contentPartType, string? contentPartText = null, string responseID = "")
             : base(seqNum, responseID, ModelStreamingEventType.ContentPartDone, ModelStreamingStatus.Completed)
         {
             OutputIndex = outputIndex;

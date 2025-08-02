@@ -1,4 +1,11 @@
-﻿using System.Reflection;
+﻿using LlmTornado.Agents.DataModels;
+using LlmTornado.Chat;
+using LlmTornado.ChatFunctions;
+using LlmTornado.Common;
+using ModelContextProtocol.Client;
+using ModelContextProtocol.Protocol;
+using Newtonsoft.Json;
+using System.Reflection;
 using System.Text.Json;
 
 namespace LlmTornado.Agents
@@ -15,52 +22,115 @@ namespace LlmTornado.Agents
         /// <param name="call"></param>
         /// <returns></returns>
         /// <exception cref="Exception"></exception>
-        public static async Task<ModelFunctionCallOutputItem> CallFuncToolAsync(Agent agent, ModelFunctionCallItem call)
+        public static async Task<FunctionResult> CallFuncToolAsync(TornadoAgent agent, FunctionCall call)
         {
             List<object> arguments = new();
 
-            if (!agent.tool_list.TryGetValue(call.FunctionName, out FunctionTool? tool))
-                throw new Exception($"I don't have a tool called {call.FunctionName}");
+            if (!agent.tool_list.TryGetValue(call.Name, out FunctionTool? tool))
+                throw new Exception($"I don't have a tool called {call.Name}");
 
             //Need to check if function has required parameters and if so, parse them from the call.FunctionArguments
-            if (call.FunctionArguments != null)
+            if (call.Arguments != null)
             {
-                arguments = tool.Function.ParseFunctionCallArgs(call.FunctionArguments) ?? new();
+                arguments = tool.Function.ParseFunctionCallArgs(BinaryData.FromString(call.Arguments)) ?? new();
             }
 
             string? result = (string?)await CallFuncAsync(tool.Function, [.. arguments]);
 
-            return new ModelFunctionCallOutputItem("fc_"+Guid.NewGuid().ToString().Replace("-", "_"), call.CallId, result!, call.Status, call.FunctionName);
+            return new FunctionResult(call,result);
         }
 
-        
-        /// <summary>
-        /// Invoke Agent from FunctionCallItem and return FunctionOutputItem
-        /// </summary>
-        /// <param name="agent"></param>
-        /// <param name="call"></param>
-        /// <returns></returns>
-        /// <exception cref="Exception"></exception>
-        public static async Task<ModelFunctionCallOutputItem> CallAgentToolAsync(Agent agent, ModelFunctionCallItem call)
-        {
-            if (!agent.agent_tools.TryGetValue(call.FunctionName, out AgentTool? tool))
-                throw new Exception($"I don't have a Agent tool called {call.FunctionName}");
 
-            Agent newAgent = tool.ToolAgent;
-            if (call.FunctionArguments != null)
+        public static async Task<FunctionResult> CallAgentToolAsync(TornadoAgent agent, FunctionCall call)
+        {
+            if (!agent.agent_tools.TryGetValue(call.Name, out TornadoAgentTool? tool))
+                throw new Exception($"I don't have a Agent tool called {call.Name}");
+
+            TornadoAgent newAgent = tool.ToolAgent;
+
+            if (call.Arguments != null)
             {
-                using JsonDocument argumentsJson = JsonDocument.Parse(call.FunctionArguments);
+                using JsonDocument argumentsJson = JsonDocument.Parse(call.Arguments);
 
                 if (argumentsJson.RootElement.TryGetProperty("input", out JsonElement jValue))
                 {
-                    RunResult agentToolResult = await Runner.RunAsync(newAgent, jValue.GetString());
-                    return new ModelFunctionCallOutputItem("fc_" + Guid.NewGuid().ToString().Replace("-", "_"), call.CallId, agentToolResult.Text ?? "Could not get function result", call.Status, call.FunctionName);
+                    Conversation agentToolResult = await TornadoRunner.RunAsync(newAgent, jValue.GetString());
+                    return new FunctionResult(call, agentToolResult.MostRecentApiResult!.Choices?.Last().Message?.Content);
+                }
+                else
+                {
+                    return new FunctionResult(call, "Error Could not deserialize json argument Input from last function call");
                 }
             }
 
-            return new ModelFunctionCallOutputItem(Guid.NewGuid().ToString(), call.CallId, string.Empty, call.Status, call.FunctionName);
+            return new FunctionResult(call, "Error");
         }
+        public static async Task<FunctionResult> CallMcpToolAsync(TornadoAgent agent, FunctionCall call)
+        {
+            List<object> arguments = new();
 
+            if (!agent.mcp_tools.TryGetValue(call.Name, out MCPServer? server))
+                throw new Exception($"I don't have a tool called {call.Name}");
+
+            CallToolResult _result;
+            //Need to check if function has required parameters and if so, parse them from the call.FunctionArguments
+            if (call.Arguments != null)
+            {
+                if (!json_util.IsValidJson(call.Arguments.ToString()))
+                    throw new System.Text.Json.JsonException($"Function arguments for {call.Name} are not valid JSON");
+
+                var json = call.Arguments.ToString();
+                var dict = JsonConvert.DeserializeObject<Dictionary<string, object?>>(json);
+                _result = await server.McpClient!.CallToolAsync(call.Name, dict);
+            }
+            else
+            {
+                _result = await server.McpClient!.CallToolAsync(call.Name);
+            }
+
+            if (_result is CallToolResult callToolResult)
+            {
+                string? result = "";
+
+                if (callToolResult.Content.Count > 0)
+                {
+                    ContentBlock firstBlock = callToolResult.Content[0];
+
+                    switch (firstBlock)
+                    {
+                        case TextContentBlock textBlock:
+                            {
+                                result = textBlock.Text;
+                                break;
+                            }
+                        case ImageContentBlock imageBlock:
+                            {
+                                result = imageBlock.Data;
+                                break;
+                            }
+                        case AudioContentBlock audioBlock:
+                            {
+                                result = audioBlock.Data;
+                                break;
+                            }
+                        case EmbeddedResourceBlock embeddedResourceBlock:
+                            {
+                                result = embeddedResourceBlock.Resource.Uri;
+                                break;
+                            }
+                        case ResourceLinkBlock resourceLinkBlock:
+                            {
+                                result = resourceLinkBlock.Uri;
+                                break;
+                            }
+                    }
+                }
+                return new FunctionResult(call, result);
+            }
+
+
+            return new FunctionResult(call, "Error");
+        }
         /// <summary>
         /// Handles the actual Method Invoke async/syncr and returns the result
         /// </summary>

@@ -1,20 +1,24 @@
 ﻿using LlmTornado.Chat.Models;
 using LlmTornado.Code;
+using NUnit.Framework;
 
 namespace LlmTornado.Agents
 {
     public class BasicTornadoRunner
     {
+        [Test]
         public async Task BasicTornadoRun()
         {
-            LLMTornadoModelProvider client = 
-                new(ChatModel.OpenAi.Gpt41.V41Mini,[new ProviderAuthentication(LLmProviders.OpenAi, Environment.GetEnvironmentVariable("OPENAI_API_KEY")!),], true);
+            var client = new TornadoApi([new ProviderAuthentication(LLmProviders.OpenAi, Environment.GetEnvironmentVariable("OPENAI_API_KEY")!),]);
 
-            Agent agent = new Agent(client, "You are a useful assistant.");
+            TornadoAgent agent = new(
+                client,
+                ChatModel.OpenAi.Gpt41.V41Mini,
+                "You are a useful assistant.");
 
-            RunResult result = await Runner.RunAsync(agent, "what is 2+2");
+            var result = await TornadoRunner.RunAsync(agent, "What is 2+2?");
 
-            Console.WriteLine(result.Text);
+            Console.WriteLine(result.Messages.Last().Content);
         }
     }
 }

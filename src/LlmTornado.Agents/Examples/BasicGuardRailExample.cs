@@ -1,13 +1,14 @@
 ﻿using LlmTornado.Chat.Models;
 using LlmTornado.Code;
+using NUnit.Framework;
 using static LlmTornado.Demo.TornadoTextFixture;
 
 namespace LlmTornado.Agents
 {
-
+    
     public class LTBasicGuardRailExample
     {
-
+        [Test]
         public async Task Run()
         {
             await TestPassingGuardRail();
@@ -16,30 +17,26 @@ namespace LlmTornado.Agents
 
         public async Task TestPassingGuardRail()
         {
-            LLMTornadoModelProvider client =
-              new(ChatModel.OpenAi.Gpt41.V41Mini, [new ProviderAuthentication(LLmProviders.OpenAi, Environment.GetEnvironmentVariable("OPENAI_API_KEY")!),], true);
-
-            Agent agent = new Agent(
-                client,
+            TornadoAgent agent = new(
+                new TornadoApi([new ProviderAuthentication(LLmProviders.OpenAi, Environment.GetEnvironmentVariable("OPENAI_API_KEY")!),]),
+                ChatModel.OpenAi.Gpt41.V41Mini,
                 "You are a useful assistant.");
 
-            RunResult result = await Runner.RunAsync(agent, "What is 2+2?", guard_rail: MathGuardRail);
+            var result = await TornadoRunner.RunAsync(agent, "What is 2+2?", guard_rail: MathGuardRail);
 
-            Console.WriteLine(result.Text);
+            Console.WriteLine(result.Messages.Last().Content);
         }
 
         async Task TestFailingGuardRail()
         {
-            LLMTornadoModelProvider client =
-              new(ChatModel.OpenAi.Gpt41.V41Mini, [new ProviderAuthentication(LLmProviders.OpenAi, Environment.GetEnvironmentVariable("OPENAI_API_KEY")!),], true);
+            TornadoAgent agent = new(
+               new TornadoApi([new ProviderAuthentication(LLmProviders.OpenAi, Environment.GetEnvironmentVariable("OPENAI_API_KEY")!),]),
+               ChatModel.OpenAi.Gpt41.V41Mini,
+               "You are a useful assistant.");
 
-            Agent agent = new Agent(
-                client,
-                "You are a useful assistant.");
+            var result = await TornadoRunner.RunAsync(agent, "What is the weather in boston?", guard_rail: MathGuardRail);
 
-            RunResult result = await Runner.RunAsync(agent, "What is the weather in boston?", guard_rail: MathGuardRail);
-
-            Console.WriteLine(result.Text);
+            Console.WriteLine(result.Messages.Last().Content);
         }
 
         public struct IsMath
@@ -54,17 +51,16 @@ namespace LlmTornado.Agents
             bool trigger = false;
 
             if (string.IsNullOrWhiteSpace(input)) return new GuardRailFunctionOutput(oInfo, trigger);
-            LLMTornadoModelProvider client =
-              new(ChatModel.OpenAi.Gpt41.V41Mini, [new ProviderAuthentication(LLmProviders.OpenAi, Environment.GetEnvironmentVariable("OPENAI_API_KEY")!),], true);
 
-            Agent weather_guardrail = new Agent(
-                client,
+            TornadoAgent weather_guardrail = new(
+               new TornadoApi([new ProviderAuthentication(LLmProviders.OpenAi, Environment.GetEnvironmentVariable("OPENAI_API_KEY")!),]),
+               ChatModel.OpenAi.Gpt41.V41Mini,
                 "Check if the user is asking you a Math related question.", 
                 _output_schema: typeof(IsMath));
 
-            RunResult result = await Runner.RunAsync(weather_guardrail, input, single_turn:true);
+            var result = await TornadoRunner.RunAsync(weather_guardrail, input, single_turn:true);
 
-            IsMath? isMath = result.ParseJson<IsMath>();
+            IsMath? isMath = result.Messages.Last().Content.ParseJson<IsMath>();
 
             return new GuardRailFunctionOutput(isMath?.Reasoning ?? "", !isMath?.is_math_request ?? false);
         }

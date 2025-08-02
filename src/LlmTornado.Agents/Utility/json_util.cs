@@ -10,6 +10,31 @@ namespace LlmTornado.Agents
     public static class json_util
     {
         /// <summary>
+        /// Determines whether the specified string is a valid JSON format.
+        /// </summary>
+        /// <remarks>This method attempts to parse the input string as JSON. If parsing succeeds without
+        /// exceptions, the string is considered valid JSON.</remarks>
+        /// <param name="jsonString">The string to validate as JSON. Cannot be null or whitespace.</param>
+        /// <returns><see langword="true"/> if the specified string is valid JSON; otherwise, <see langword="false"/>.</returns>
+        public static bool IsValidJson(string jsonString)
+        {
+            if (string.IsNullOrWhiteSpace(jsonString))
+            {
+                return false;
+            }
+            try
+            {
+                // Attempt to parse the JSON string
+                JsonDocument.Parse(jsonString);
+                return true;
+            }
+            catch (JsonException)
+            {
+                // If a JsonException is caught, the string is not valid JSON
+                return false;
+            }
+        }
+        /// <summary>
         /// Creates a <see cref="ModelOutputFormat"/> instance representing the JSON schema of the specified type.
         /// </summary>
         /// <remarks>If the specified type has a <see cref="DescriptionAttribute"/>, the first description
@@ -22,7 +47,7 @@ namespace LlmTornado.Agents
         {
             string formatDescription = "";
             var descriptions = type.GetCustomAttributes<DescriptionAttribute>();
-            if(descriptions.Count() > 0)
+            if (descriptions.Count() > 0)
             {
                 formatDescription = descriptions.First().Description;
             }
@@ -34,22 +59,6 @@ namespace LlmTornado.Agents
                 );
         }
 
-        /// <summary>
-        /// Deserializes the JSON text from the <see cref="RunResult"/> into an object of type <typeparamref name="T"/>.
-        /// </summary>
-        /// <typeparam name="T">The type of the object to deserialize the JSON text into.</typeparam>
-        /// <param name="Result">The <see cref="RunResult"/> containing the JSON text to deserialize.</param>
-        /// <returns>An object of type <typeparamref name="T"/> deserialized from the JSON text.</returns>
-        /// <exception cref="ArgumentException">Thrown if the <see cref="RunResult.Text"/> is null or empty.</exception>
-        public static T ParseJson<T>(this RunResult Result)
-        {
-            string json = Result.Text;
-
-            if (string.IsNullOrWhiteSpace(json))
-                throw new ArgumentException("RunResult Text is null or empty");
-
-            return JsonSerializer.Deserialize<T>(json)!;
-        }
 
         /// <summary>
         /// Deserializes the JSON string into an object of the specified type.
@@ -63,7 +72,12 @@ namespace LlmTornado.Agents
             if (string.IsNullOrWhiteSpace(json))
                 throw new ArgumentException("JSON is null or empty");
 
-            return JsonSerializer.Deserialize<T>(json)!;
+            return JsonSerializer.Deserialize<T>(json, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+                AllowTrailingCommas = true,
+                UnmappedMemberHandling = JsonUnmappedMemberHandling.Skip
+            })!;
         }
 
 
@@ -86,7 +100,7 @@ namespace LlmTornado.Agents
             {
                 if (string.IsNullOrWhiteSpace(json))
                     throw new ArgumentException("JSON is null or empty");
-                result = JsonSerializer.Deserialize<T>(json);
+                result = JsonSerializer.Deserialize<T>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true, AllowTrailingCommas = true, UnmappedMemberHandling = JsonUnmappedMemberHandling.Skip });// 👈 This is the key});
                 return true;
             }
             catch (Exception)
@@ -96,35 +110,6 @@ namespace LlmTornado.Agents
             }
         }
 
-
-        /// <summary>
-        /// Attempts to parse the JSON text from the specified <see cref="RunResult"/> into an object of type
-        /// <typeparamref name="T"/>.
-        /// </summary>
-        /// <remarks>This method catches any exceptions that occur during deserialization and returns <see
-        /// langword="false"/> if an error occurs.</remarks>
-        /// <typeparam name="T">The type of the object to deserialize the JSON text into.</typeparam>
-        /// <param name="Result">The <see cref="RunResult"/> containing the JSON text to parse.</param>
-        /// <param name="result">When this method returns, contains the deserialized object of type <typeparamref name="T"/> if the parsing
-        /// is successful; otherwise, the default value for type <typeparamref name="T"/>.</param>
-        /// <returns><see langword="true"/> if the JSON text is successfully parsed; otherwise, <see langword="false"/>.</returns>
-        /// <exception cref="ArgumentException">Thrown if the JSON text in <paramref name="Result"/> is null or empty.</exception>
-        public static bool TryParseJson<T>(this RunResult Result, out T? result)
-        {
-            try
-            {
-                string json = Result.Text;
-                if (string.IsNullOrWhiteSpace(json))
-                    throw new ArgumentException("JSON is null or empty");
-                result = JsonSerializer.Deserialize<T>(json);
-                return true;
-            }
-            catch (Exception)
-            {
-                result = default;
-                return false;
-            }
-        }
         /// <summary>
         /// Maps a CLR type to its corresponding JSON type representation.
         /// </summary>
@@ -139,6 +124,9 @@ namespace LlmTornado.Agents
             if (type.IsArray) return "array";
             return "object"; // fallback for complex types
         }
+
+
+
     }
 
     /// <summary>
@@ -178,7 +166,7 @@ namespace LlmTornado.Agents
                     kvp => kvp.Key,
                     kvp => (object)kvp.Value
                 ),
-                required,
+                required = required,
                 additionalProperties = false
             };
 
@@ -222,15 +210,25 @@ namespace LlmTornado.Agents
             var properties = new Dictionary<string, object>();
             if (fromArray)
             {
-                properties.Add("type", json_util.MapClrTypeToJsonType(type));
-                var subProperties = new Dictionary<string, object>();
-                foreach (var prop in type.GetProperties())
+                var jsonType = json_util.MapClrTypeToJsonType(type);
+                properties.Add("type", jsonType);
+
+                if (jsonType == "object")
                 {
-                    subProperties[prop.Name] = GetPropertySchema(prop);
+                    var subProperties = new Dictionary<string, object>();
+                    foreach (var prop in type.GetProperties())
+                    {
+                        if (prop.PropertyType.Name == type.Name)
+                        {
+                            throw new ArgumentException($"Infinite Recursion detected please fix nesting on {prop.Name} in Type {type.Name}.");
+                        }
+                        subProperties[prop.Name] = GetPropertySchema(prop);
+                    }
+                    properties.Add("properties", subProperties);
+                    properties.Add("required", GetRequiredProperties(type));
+                    properties.Add("additionalProperties", false);
                 }
-                properties.Add("properties", subProperties);
-                properties.Add("required", GetRequiredProperties(type));
-                properties.Add("additionalProperties", false);
+
                 return properties;
             }
             foreach (var prop in type.GetProperties())
@@ -252,15 +250,15 @@ namespace LlmTornado.Agents
         private static object GetPropertySchema(PropertyInfo prop)
         {
             var props = new Dictionary<string, object>();
-            //var descriptions = prop.GetCustomAttributes<DescriptionAttribute>();
-            //if(descriptions.Count() > 0)
-            //{
-            //    props.Add("description", descriptions.First().Description);
-            //}
+            var descriptions = prop.GetCustomAttributes<DescriptionAttribute>();
+            if (descriptions.Count() > 0)
+            {
+                props.Add("description", descriptions.First().Description);
+            }
             if (prop.PropertyType == typeof(string)) props.Add("type", "string");
             else if (prop.PropertyType == typeof(bool)) props.Add("type", "boolean");
             else if (prop.PropertyType.IsNumeric()) props.Add("type", "number");
-            else if(prop.PropertyType == typeof(DateTime)) props.Add("type", "string"); // DateTime is often represented as a string in JSON
+            else if (prop.PropertyType == typeof(DateTime)) props.Add("type", "string"); // DateTime is often represented as a string in JSON
             else if (prop.PropertyType == typeof(Guid)) props.Add("type", "string"); // Guid is also often represented as a string in JSON
             else if (prop.PropertyType.IsEnum)
             {
@@ -309,8 +307,8 @@ namespace LlmTornado.Agents
             typeof(int),  typeof(double),  typeof(decimal),
             typeof(long), typeof(short),   typeof(sbyte),
             typeof(byte), typeof(ulong),   typeof(ushort),
-            typeof(uint), typeof(float), typeof(ushort), typeof(uint),
-            typeof(ulong), typeof(float)
+            typeof(uint), typeof(float), typeof(UInt16), typeof(UInt32),
+            typeof(UInt64), typeof(Single)
         };
 
         /// <summary>
@@ -324,5 +322,7 @@ namespace LlmTornado.Agents
         {
             return NumericTypes.Contains(Nullable.GetUnderlyingType(myType) ?? myType);
         }
+
+
     }
 }

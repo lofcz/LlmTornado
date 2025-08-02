@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\LlmTornado.Demo\LlmTornado.Demo.csproj" />
+    <ProjectReference Include="..\LlmTornado.Mcp\LlmTornado.Mcp.csproj" />
     <ProjectReference Include="..\LlmTornado\LlmTornado.csproj" />
   </ItemGroup>
 

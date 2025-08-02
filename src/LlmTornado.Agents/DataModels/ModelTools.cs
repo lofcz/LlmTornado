@@ -6,13 +6,13 @@ using System.Threading.Tasks;
 
 namespace LlmTornado.Agents
 {
-    public class AgentTool
+    public class TornadoAgentTool
     {
-        public Agent ToolAgent { get; set; }
+        public TornadoAgent ToolAgent { get; set; }
         //Need to abstract this
         public BaseTool Tool { get; set; }
 
-        public AgentTool(Agent agent, BaseTool tool)
+        public TornadoAgentTool(TornadoAgent agent, BaseTool tool)
         {
             ToolAgent = agent;
             Tool = tool;
@@ -50,25 +50,4 @@ namespace LlmTornado.Agents
             return new BaseTool(toolName, toolDescription, toolParameters);
         }
     }
-
-    [AttributeUsage(AttributeTargets.Method)]
-    public class ToolAttribute : Attribute
-    {
-        private string description;
-        private string[] in_parameters_description;
-
-        public ToolAttribute()
-        {
-
-        }
-
-        public string Description
-        {
-            get { return description; }
-            set { description = value; }
-        }
-
-        public string[] In_parameters_description { get => in_parameters_description; set => in_parameters_description = value; }
-    }
-
 }

@@ -1,15 +1,17 @@
 ﻿using LlmTornado.Chat.Models;
 using LlmTornado.Code;
+using NUnit.Framework;
 namespace LlmTornado.Agents
 {
     internal class LTBasicHelloWorldStreaming
     {
+        [Test]
         public async Task RunHelloWorldStreaming()
         {
-            LLMTornadoModelProvider client =
-              new(ChatModel.OpenAi.Gpt41.V41Mini, [new ProviderAuthentication(LLmProviders.OpenAi, Environment.GetEnvironmentVariable("OPENAI_API_KEY")!),], true);
-
-            Agent agent = new Agent(client, "Have fun");
+            TornadoAgent agent = new(
+                new TornadoApi([new ProviderAuthentication(LLmProviders.OpenAi, Environment.GetEnvironmentVariable("OPENAI_API_KEY")!),]),
+                ChatModel.OpenAi.Gpt41.V41Mini,
+                "Have fun");
 
             // Enhanced streaming callback to handle the new ModelStreamingEvents system
             void StreamingHandler(ModelStreamingEvents streamingEvent)
@@ -51,7 +53,7 @@ namespace LlmTornado.Agents
                 }
             }
 
-            RunResult result = await Runner.RunAsync(agent, "Hello Streaming World!", streaming: true, streamingCallback: StreamingHandler);
+            var result = await TornadoRunner.RunAsync(agent, "Hello Streaming World!", streaming: true, streamingCallback: StreamingHandler);
         }
     }
 }

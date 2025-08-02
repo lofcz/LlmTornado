@@ -1,4 +1,6 @@
-﻿using System.Reflection;
+﻿using NUnit.Framework.Interfaces;
+using System.ComponentModel;
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
 
@@ -6,21 +8,21 @@ namespace LlmTornado.Agents
 {
     public static class ToolUtility
     {
-        public static AgentTool AsTool(this Agent agent)
+        public static TornadoAgentTool AsTool(this TornadoAgent agent)
         {
-            return new AgentTool(agent, new BaseTool().CreateTool(
+            return new TornadoAgentTool(agent, new BaseTool().CreateTool(
                             toolName: agent.Id,
                             toolDescription: agent.Instructions,
                             toolParameters: BinaryData.FromBytes("""
                             {
                                 "type": "object",
                                 "properties": { "input" : {"type" : "string"}},
+                                "additionalProperties": false,
                                 "required": [ "input" ]
                             }
                             """u8.ToArray()))
                 );
         }
-
         /// <summary>
         /// Converts a delegate function into a <see cref="FunctionTool"/> object.
         /// </summary>
@@ -35,15 +37,15 @@ namespace LlmTornado.Agents
         {
             MethodInfo method = function.Method;
 
-            var toolAttrs = method.GetCustomAttributes<ToolAttribute>();
+            string toolDescription = method.Name;
 
-            if (toolAttrs.Count() == 0) throw new Exception("Function doesn't have Tool Attribute");
-
-            ToolAttribute toolAttr = toolAttrs.First();
+            if (method.IsDefined(typeof(DescriptionAttribute), false)) 
+            {
+                toolDescription = method.GetCustomAttributes<DescriptionAttribute>().First().Description;
+            }
 
             List<string> required_inputs = new List<string>();
 
-            int i = 0;
 
             var input_tool_map = new Dictionary<string, ParameterSchema>();
 
@@ -53,30 +55,37 @@ namespace LlmTornado.Agents
 
                 string typeName = param.ParameterType.IsEnum ? "string" : json_util.MapClrTypeToJsonType(param.ParameterType);
 
+                string paramDescription = param.Name;
+                if (param.IsDefined(typeof(DescriptionAttribute), inherit: false))
+                {
+                    paramDescription = param.GetCustomAttributes<DescriptionAttribute>().First().Description;
+                }
+
                 var schema = new ParameterSchema
                 {
                     Type = typeName,
-                    Description = toolAttr.In_parameters_description[i],
+                    Description = paramDescription,
                     Enum = param.ParameterType.IsEnum ? param.ParameterType.GetEnumNames() : null
                 };
 
                 input_tool_map[param.Name] = schema;
-
-                if (!param.HasDefaultValue)
-                {
-                    required_inputs.Add(param.Name);
-                }
-
-                i++;
+                required_inputs.Add(param.Name);
+                //if (!param.HasDefaultValue)
+                //{
+                //    required_inputs.Add(param.Name);
+                //}
             }
 
             string funcParamResult = JsonSchemaGenerator.BuildFunctionSchema(input_tool_map, required_inputs);
 
+            var strictSchema = required_inputs.Count == input_tool_map.Count;
+
             FunctionTool newTool = new FunctionTool(
                         toolName: method.Name,
-                        toolDescription: toolAttr.Description,
+                        toolDescription: toolDescription,
                         toolParameters: BinaryData.FromBytes(Encoding.UTF8.GetBytes(funcParamResult)),
-                        function: function
+                        function: function,
+                        strictSchema: true
                     );
 
             return newTool;

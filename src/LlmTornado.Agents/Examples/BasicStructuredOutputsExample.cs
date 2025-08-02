@@ -11,27 +11,25 @@ namespace LlmTornado.Agents
         [Test]
         public async Task RunBasicStructuredOutputExample()
         {
-            LLMTornadoModelProvider client =
-              new(ChatModel.OpenAi.Gpt41.V41Mini, [new ProviderAuthentication(LLmProviders.OpenAi, Environment.GetEnvironmentVariable("OPENAI_API_KEY")!),],true);
-
-            Agent agent = new Agent(
-                client,
+            TornadoAgent agent = new(
+                new TornadoApi([new ProviderAuthentication(LLmProviders.OpenAi, Environment.GetEnvironmentVariable("OPENAI_API_KEY")!),]),
+                ChatModel.OpenAi.Gpt41.V41Mini,
                 "Have fun",
                 _output_schema: typeof(math_reasoning));
 
-            RunResult result = await Runner.RunAsync(agent, "How can I solve 8x + 7 = -23?");
+            var result = await TornadoRunner.RunAsync(agent, "How can I solve 8x + 7 = -23?");
 
             //The easy way
             //Helper function to avoid doing the hard way
-            math_reasoning mathResult = result.ParseJson<math_reasoning>();
+            math_reasoning mathResult = result.Messages.Last().Content.ParseJson<math_reasoning>();
             Console.WriteLine(mathResult.ToString());
             //The hard way (I mean I'm not telling you what to do..)
             math_reasoning mathResult2 = new math_reasoning();
-            if (result.Response.OutputItems.LastOrDefault() is ModelMessageItem message)
+            if (result.Messages.Last().Content != null)
             {
-                Console.WriteLine($"[{message.Role}] {message?.Text}");
+                Console.WriteLine($"[{result.Messages.Last().Role}] {result.Messages.Last().Content}");
 
-                using JsonDocument structuredJson = JsonDocument.Parse(message?.Text);
+                using JsonDocument structuredJson = JsonDocument.Parse(result.Messages.Last().Content);
                 mathResult2.final_answer = structuredJson.RootElement.GetProperty("final_answer").GetString()!;
                 Console.WriteLine($"Final answer: {mathResult2.final_answer}");
                 Console.WriteLine("Reasoning steps:");

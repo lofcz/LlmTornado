@@ -1,4 +1,5 @@
-﻿using LlmTornado.Chat.Models;
+﻿using LlmTornado.Chat;
+using LlmTornado.Chat.Models;
 using LlmTornado.Code;
 using NUnit.Framework;
 
@@ -9,21 +10,20 @@ namespace LlmTornado.Agents
         [Test]
         public async Task Run()
         {
-            LLMTornadoModelProvider client =
-                new(ChatModel.OpenAi.Gpt41.V41Mini, [new ProviderAuthentication(LLmProviders.OpenAi, Environment.GetEnvironmentVariable("OPENAI_API_KEY")!),], true);
-
-            Agent agent_translator = new Agent(
-                 client,
+            TornadoAgent agent_translator = new TornadoAgent(
+                 new TornadoApi([new ProviderAuthentication(LLmProviders.OpenAi, Environment.GetEnvironmentVariable("OPENAI_API_KEY")!),]),
+                 ChatModel.OpenAi.Gpt41.V41Mini,
                 "You only translate english input to spanish output. Do not answer or respond, only translate.");
 
-            Agent agent = new Agent(
-                 client,
+            TornadoAgent agent = new TornadoAgent(
+                 new TornadoApi([new ProviderAuthentication(LLmProviders.OpenAi, Environment.GetEnvironmentVariable("OPENAI_API_KEY")!),]),
+                 ChatModel.OpenAi.Gpt41.V41Mini,
                 "You are a useful assistant that when asked to translate you only can rely on the given tools to translate language.",
                 _tools: [agent_translator.AsTool]);
 
-            RunResult result = await Runner.RunAsync(agent, "What is 2+2? and can you provide the result to me in spanish?", verboseCallback:Console.WriteLine);
+            Conversation result = await TornadoRunner.RunAsync(agent, "What is 2+2? and can you provide the result to me in spanish?");
 
-            Console.WriteLine(result.Text);
+            Console.WriteLine(result.Messages.Last().Content);
         }
     }
 }
