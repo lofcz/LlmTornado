@@ -351,3 +351,4 @@ src/LlmTornado/openai_openapi.yml
 /src/LlmTornado.Docs/website/docs/public/playground
 /src/LlmTornado.Docs/reference_intellisage
 /src/LlmTornado.Docs/wwwroot/dist
+src/LlmTornado.Docs/wwwroot/_framework/bmeta.json
