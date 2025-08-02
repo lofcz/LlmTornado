@@ -1,4 +1,8 @@
-﻿using NUnit.Framework.Interfaces;
+﻿using LlmTornado.Agents.DataModels;
+using LlmTornado.Code;
+using LlmTornado.Common;
+using LlmTornado.Infra;
+using LlmTornado.Threads;
 using System.ComponentModel;
 using System.Reflection;
 using System.Text;
@@ -10,85 +14,57 @@ namespace LlmTornado.Agents
     {
         public static TornadoAgentTool AsTool(this TornadoAgent agent)
         {
-            return new TornadoAgentTool(agent, new BaseTool().CreateTool(
-                            toolName: agent.Id,
-                            toolDescription: agent.Instructions,
-                            toolParameters: BinaryData.FromBytes("""
+            return new TornadoAgentTool(agent, new Tool(new ToolFunction(
+                            name: agent.Id,
+                            description: agent.Instructions,
+                            parameters: """
                             {
                                 "type": "object",
                                 "properties": { "input" : {"type" : "string"}},
                                 "additionalProperties": false,
                                 "required": [ "input" ]
                             }
-                            """u8.ToArray()))
-                );
+                            """)
+                ));
         }
-        /// <summary>
-        /// Converts a delegate function into a <see cref="FunctionTool"/> object.
-        /// </summary>
-        /// <remarks>The method extracts metadata from the function's parameters and attributes to
-        /// construct a <see cref="FunctionTool"/>.  It maps parameter types to JSON schema types and includes
-        /// descriptions from the <see cref="ToolAttribute"/>.</remarks>
-        /// <param name="function">The delegate function to convert. Must have a <see cref="ToolAttribute"/> applied.</param>
-        /// <returns>A <see cref="FunctionTool"/> representing the specified function, including its name, description, and
-        /// parameter schema.</returns>
-        /// <exception cref="Exception">Thrown if the function does not have a <see cref="ToolAttribute"/>.</exception>
-        public static FunctionTool ConvertFunctionToTool(this Delegate function)
+
+        public static Tool ConvertFunctionToTornadoTool(this Delegate function)
         {
             MethodInfo method = function.Method;
-
+            List<string> required_inputs = new List<string>();
             string toolDescription = method.Name;
 
-            if (method.IsDefined(typeof(DescriptionAttribute), false)) 
+            if (method.IsDefined(typeof(DescriptionAttribute), false))
             {
                 toolDescription = method.GetCustomAttributes<DescriptionAttribute>().First().Description;
             }
 
-            List<string> required_inputs = new List<string>();
+            var parameters = method.GetParameters();
+            ToolMetadata toolMetadata = new ToolMetadata();
 
-
-            var input_tool_map = new Dictionary<string, ParameterSchema>();
-
-            foreach (ParameterInfo param in method.GetParameters())
+            foreach (ParameterInfo param in parameters)
             {
                 if (param.Name == null) continue;
 
-                string typeName = param.ParameterType.IsEnum ? "string" : json_util.MapClrTypeToJsonType(param.ParameterType);
-
-                string paramDescription = param.Name;
-                if (param.IsDefined(typeof(DescriptionAttribute), inherit: false))
+                if (!param.HasDefaultValue)
                 {
-                    paramDescription = param.GetCustomAttributes<DescriptionAttribute>().First().Description;
+                    required_inputs.Add(param.Name);
                 }
 
-                var schema = new ParameterSchema
+                if (param.IsDefined(typeof(IgnoreParamAttribute), inherit: false))
                 {
-                    Type = typeName,
-                    Description = paramDescription,
-                    Enum = param.ParameterType.IsEnum ? param.ParameterType.GetEnumNames() : null
-                };
-
-                input_tool_map[param.Name] = schema;
-                required_inputs.Add(param.Name);
-                //if (!param.HasDefaultValue)
-                //{
-                //    required_inputs.Add(param.Name);
-                //}
+                    if(toolMetadata.Ignore == null) toolMetadata.Ignore = new List<string>();
+                    if(!toolMetadata.Ignore.Contains(param.Name))
+                    {
+                        toolMetadata.Ignore.Add(param.Name);
+                    }
+                        
+                }
             }
 
-            string funcParamResult = JsonSchemaGenerator.BuildFunctionSchema(input_tool_map, required_inputs);
+            var strictSchema = required_inputs.Count == parameters.Length;
 
-            var strictSchema = required_inputs.Count == input_tool_map.Count;
-
-            FunctionTool newTool = new FunctionTool(
-                        toolName: method.Name,
-                        toolDescription: toolDescription,
-                        toolParameters: BinaryData.FromBytes(Encoding.UTF8.GetBytes(funcParamResult)),
-                        function: function,
-                        strictSchema: true
-                    );
-
-            return newTool;
+            return new Tool(function, method.Name, toolDescription, toolMetadata, strictSchema);
         }
 
         /// <summary>

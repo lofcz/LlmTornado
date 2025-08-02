@@ -26,24 +26,26 @@ namespace LlmTornado.Agents
         {
             List<object> arguments = new();
 
-            if (!agent.tool_list.TryGetValue(call.Name, out FunctionTool? tool))
+            if (!agent.ToolList.TryGetValue(call.Name, out Common.Tool tool))
                 throw new Exception($"I don't have a tool called {call.Name}");
 
             //Need to check if function has required parameters and if so, parse them from the call.FunctionArguments
-            if (call.Arguments != null)
+            if (call.Arguments != null && tool.Delegate != null)
             {
-                arguments = tool.Function.ParseFunctionCallArgs(BinaryData.FromString(call.Arguments)) ?? new();
+                arguments = tool.Delegate?.ParseFunctionCallArgs(BinaryData.FromString(call.Arguments)) ?? new();
+
+                string? result = (string?)await CallFuncAsync(tool.Delegate, [.. arguments]);
+
+                return new FunctionResult(call, result);
             }
 
-            string? result = (string?)await CallFuncAsync(tool.Function, [.. arguments]);
-
-            return new FunctionResult(call,result);
+            return new FunctionResult(call, "Error No Delegate found");
         }
 
 
         public static async Task<FunctionResult> CallAgentToolAsync(TornadoAgent agent, FunctionCall call)
         {
-            if (!agent.agent_tools.TryGetValue(call.Name, out TornadoAgentTool? tool))
+            if (!agent.AgentTools.TryGetValue(call.Name, out TornadoAgentTool? tool))
                 throw new Exception($"I don't have a Agent tool called {call.Name}");
 
             TornadoAgent newAgent = tool.ToolAgent;
@@ -69,14 +71,14 @@ namespace LlmTornado.Agents
         {
             List<object> arguments = new();
 
-            if (!agent.mcp_tools.TryGetValue(call.Name, out MCPServer? server))
+            if (!agent.McpTools.TryGetValue(call.Name, out MCPServer? server))
                 throw new Exception($"I don't have a tool called {call.Name}");
 
             CallToolResult _result;
             //Need to check if function has required parameters and if so, parse them from the call.FunctionArguments
             if (call.Arguments != null)
             {
-                if (!json_util.IsValidJson(call.Arguments.ToString()))
+                if (!JsonUtility.IsValidJson(call.Arguments.ToString()))
                     throw new System.Text.Json.JsonException($"Function arguments for {call.Name} are not valid JSON");
 
                 var json = call.Arguments.ToString();
