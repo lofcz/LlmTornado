@@ -34,9 +34,11 @@ jobs:
         
     - name: Restore dependencies
       run: dotnet restore LlmTornado.sln
+      working-directory: ./src
 
     - name: Build projects for .NET Core
       run: dotnet build LlmTornado.sln --no-restore --configuration Release -p:GeneratePackageOnBuild=false -p:SkipViteBuild=true
+      working-directory: ./src
 
     - name: Update GitHub status check
       if: always()
