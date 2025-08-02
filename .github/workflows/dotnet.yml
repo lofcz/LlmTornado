@@ -25,26 +25,23 @@ jobs:
       with:
         dotnet-version: |
           8.0.x
-          10.0.100-preview.4.25258.110
+          10.0.100-preview.5.25277.114
 
     - name: Setup Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: '20'
+        node-version: '22'
         
     - name: Restore dependencies
       run: dotnet restore LlmTornado.sln
       working-directory: ./src
 
     - name: Build projects for .NET Core
-      run: dotnet build LlmTornado.sln --no-restore --framework net8.0 --configuration Release
+      run: dotnet build LlmTornado.sln --no-restore --framework net8.0 --configuration Release -p:GeneratePackageOnBuild=false
       working-directory: ./src
 
-    - name: Build LlmTornado.Docs
-      run: |
-        dotnet restore LlmTornado.sln
-        dotnet build ./src/LlmTornado.Docs/LlmTornado.Docs.csproj --no-restore --framework net10.0 --configuration Release
-      working-directory: ./src/LlmTornado.Docs
+    - name: Build LlmTornado.Docs (no npm)
+      run: dotnet build src/LlmTornado.Docs/LlmTornado.Docs.csproj --no-restore --framework net10.0 --configuration Release -p:RunNpmBuild=false
 
     - name: Update GitHub status check
       if: always()
@@ -74,7 +71,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '10.0.100-preview.4.25258.110'
+        dotnet-version: '10.0.100-preview.5.25277.114'
         
     - name: Restore dependencies for LlmTornado
       run: dotnet restore LlmTornado.sln
@@ -112,7 +109,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '10.0.100-preview.4.25258.110'
+        dotnet-version: '10.0.100-preview.5.25277.114'
         
     - name: Restore dependencies for LlmTornado
       run: dotnet restore LlmTornado.sln
