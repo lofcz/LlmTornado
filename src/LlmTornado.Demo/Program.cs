@@ -38,18 +38,18 @@ public class Program
     public static TornadoApi ConnectMulti(bool httpStrict = true)
     {
         TornadoApi tornadoApi = new TornadoApi([
-            new ProviderAuthentication(LLmProviders.OpenAi, Environment.GetEnvironmentVariable("OPENAI_API_KEY")),
-            //new ProviderAuthentication(LLmProviders.Anthropic, ApiKeys.Anthropic),
-            //new ProviderAuthentication(LLmProviders.Cohere, ApiKeys.Cohere),
-            //new ProviderAuthentication(LLmProviders.Google, ApiKeys.Google),
-            //new ProviderAuthentication(LLmProviders.Groq, ApiKeys.Groq),
-            //new ProviderAuthentication(LLmProviders.DeepSeek, ApiKeys.DeepSeek),
-            //new ProviderAuthentication(LLmProviders.Mistral, ApiKeys.Mistral),
-            //new ProviderAuthentication(LLmProviders.XAi, ApiKeys.XAi),
-            //new ProviderAuthentication(LLmProviders.Voyage, ApiKeys.Voyage),
-            //new ProviderAuthentication(LLmProviders.DeepInfra, ApiKeys.DeepInfra),
-            //new ProviderAuthentication(LLmProviders.OpenRouter, ApiKeys.OpenRouter),
-            //new ProviderAuthentication(LLmProviders.Perplexity, ApiKeys.Perplexity)
+            new ProviderAuthentication(LLmProviders.OpenAi, ApiKeys.OpenAi),
+            new ProviderAuthentication(LLmProviders.Anthropic, ApiKeys.Anthropic),
+            new ProviderAuthentication(LLmProviders.Cohere, ApiKeys.Cohere),
+            new ProviderAuthentication(LLmProviders.Google, ApiKeys.Google),
+            new ProviderAuthentication(LLmProviders.Groq, ApiKeys.Groq),
+            new ProviderAuthentication(LLmProviders.DeepSeek, ApiKeys.DeepSeek),
+            new ProviderAuthentication(LLmProviders.Mistral, ApiKeys.Mistral),
+            new ProviderAuthentication(LLmProviders.XAi, ApiKeys.XAi),
+            new ProviderAuthentication(LLmProviders.Voyage, ApiKeys.Voyage),
+            new ProviderAuthentication(LLmProviders.DeepInfra, ApiKeys.DeepInfra),
+            new ProviderAuthentication(LLmProviders.OpenRouter, ApiKeys.OpenRouter),
+            new ProviderAuthentication(LLmProviders.Perplexity, ApiKeys.Perplexity)
         ])
         {
             HttpStrict = httpStrict
@@ -83,22 +83,22 @@ public class Program
             return false;
         }
 
-        //string apiKeyFileLocation = Path.Join([projectDirectory, "apiKey.json"]);
-        //if (!File.Exists(apiKeyFileLocation))
-        //{
-        //    Console.WriteLine("Please copy and paste apiKeyPrototype.json file in the same folder, rename the copy as apiKey.json and replace the string inside with your API key");
-        //    return false;
-        //}
+        string apiKeyFileLocation = Path.Join([projectDirectory, "apiKey.json"]);
+        if (!File.Exists(apiKeyFileLocation))
+        {
+            Console.WriteLine("Please copy and paste apiKeyPrototype.json file in the same folder, rename the copy as apiKey.json and replace the string inside with your API key");
+            return false;
+        }
 
-        //string apiKey = await File.ReadAllTextAsync(apiKeyFileLocation);
+        string apiKey = await File.ReadAllTextAsync(apiKeyFileLocation);
 
-        //if (string.IsNullOrWhiteSpace(apiKey))
-        //{
-        //    Console.WriteLine("API key not set, please place your API key in apiKey.json file");
-        //    return false;
-        //}
+        if (string.IsNullOrWhiteSpace(apiKey))
+        {
+            Console.WriteLine("API key not set, please place your API key in apiKey.json file");
+            return false;
+        }
 
-        //ApiKeys = JsonConvert.DeserializeObject<Keys>(apiKey) ?? throw new Exception("Invalid content of apiKey.json");
+        ApiKeys = JsonConvert.DeserializeObject<Keys>(apiKey) ?? throw new Exception("Invalid content of apiKey.json");
         return true;
     }
 
