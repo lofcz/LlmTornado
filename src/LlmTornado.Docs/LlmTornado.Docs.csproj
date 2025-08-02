@@ -70,7 +70,7 @@
       <EmbeddedResource Remove="fork_blazor_workers\test\**" />
     </ItemGroup>
     
-    <Target Name="CreateBmetaJson" AfterTargets="AfterBuild;AfterPublish">
+    <Target Name="CreateBmetaJson" AfterTargets="AfterBuild;AfterPublish" Condition="'$(SkipViteBuild)' != 'true'">
         <PropertyGroup>
             <WwwRootPath Condition=" '$(WasmFinalAssetPublishPath)' != '' ">$(WasmFinalAssetPublishPath)</WwwRootPath>
             <WwwRootPath Condition=" '$(WasmFinalAssetPublishPath)' == '' ">$(OutDir)wwwroot\</WwwRootPath>
