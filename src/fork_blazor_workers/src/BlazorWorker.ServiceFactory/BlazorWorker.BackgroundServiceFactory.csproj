@@ -9,7 +9,7 @@
     <PackageTags>WebWorker Worker Process Threading Multithreading Blazor Isolation</PackageTags>
     <Authors>Tewr</Authors>
     <Product>BlazorWorker</Product>
-    <Configurations>Debug;Release;Nuget</Configurations>
+    <Configurations>Debug;Release</Configurations>
     <Version>5.0.5</Version>
     <AssemblyVersion>5.0.0</AssemblyVersion>
     <PackageIcon>icon.png</PackageIcon>
@@ -39,13 +39,6 @@
     </ProjectReference>
   </ItemGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Nuget|AnyCPU'">
-    <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);CopyProjectReferencesToPackage</TargetsForTfmSpecificBuildOutput>
-    
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    
-  </PropertyGroup>
-
   <PropertyGroup>
     <DocumentationFile>BlazorWorker.BackgroundServiceFactory.xml</DocumentationFile>
   </PropertyGroup>
@@ -53,12 +46,5 @@
   <PropertyGroup>
     <NoWarn>1701;1702;1591;CA1416</NoWarn>
   </PropertyGroup>
-
-  <Target Name="CopyProjectReferencesToPackage" DependsOnTargets="ResolveReferences">
-    <ItemGroup>
-      <BuildOutputInPackage Include="@(ReferenceCopyLocalPaths-&gt;WithMetadataValue('ReferenceSourceTarget', 'ProjectReference'))" />
-      <BuildOutputInPackage Include="..\BlazorWorker.WorkerBackgroundService\BlazorWorker.WorkerBackgroundService.xml" />
-    </ItemGroup>
-  </Target>
-
+  
 </Project>
