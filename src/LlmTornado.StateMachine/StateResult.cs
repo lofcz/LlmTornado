@@ -8,19 +8,19 @@ public class StateResult
     /// <summary>
     /// Gets or sets the unique identifier for the process.
     /// </summary>
-    public string ProcessID { get; set; }
+    public string ProcessId { get; set; }
     /// <summary>
     /// Result of the process.
     /// </summary>
-    public object _Result { get; set; } = new object();
+    public object BaseResult { get; set; } = new object();
 
     //public object Result { get; set; }
     public StateResult() { }
 
     public StateResult(string processID, object result)
     {
-        ProcessID = processID;
-        _Result = result;
+        ProcessId = processID;
+        BaseResult = result;
     }
     /// <summary>
     /// Retrieves the result of the current process as a <see cref="StateResult{T}"/>.
@@ -30,7 +30,7 @@ public class StateResult
     /// <typeparamref name="T"/>.</returns>
     public StateResult<T> GetResult<T>()
     {
-        return new StateResult<T>(ProcessID, (T)_Result);
+        return new StateResult<T>(ProcessId, (T)BaseResult);
     }
 }
 
@@ -43,10 +43,10 @@ public class StateResult<T> : StateResult
     /// <summary>
     /// Gets or sets the result of the operation.
     /// </summary>
-    public T Result { get => (T)_Result; set => _Result = value; }
+    public T Result { get => (T)BaseResult; set => BaseResult = value; }
     public StateResult(string process, T result)
     {
-        ProcessID = process;
+        ProcessId = process;
         Result = result!;
     }
 }

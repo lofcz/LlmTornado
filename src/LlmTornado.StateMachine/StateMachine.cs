@@ -46,8 +46,8 @@ public class StateMachine
     /// </summary>
     public event Action<StateProcess>? OnStateInvoked;
 
-    private static SemaphoreSlim semaphore = new SemaphoreSlim(1, 1);
-    private SemaphoreSlim threadLimitor;
+    private static SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
+    private SemaphoreSlim _threadLimitor;
 
     /// <summary>
     /// List of processes that will be run in the state machine this tick.
@@ -58,6 +58,7 @@ public class StateMachine
     /// Trigger to stop the state machine.
     /// </summary>
     public CancellationTokenSource StopTrigger = new CancellationTokenSource();
+    private bool _isFinished = false;
 
     /// <summary>
     /// You can use this to store runtime properties that you want to access later or in other states.
@@ -87,8 +88,7 @@ public class StateMachine
     /// <summary>
     /// Gets or sets a value indicating whether the process is complete.
     /// </summary>
-    public bool IsFinished { get; set; } = false;
-
+    public bool IsFinished { get => _isFinished;}
     /// <summary>
     /// Gets or sets the final result of the computation.
     /// </summary>
@@ -120,7 +120,7 @@ public class StateMachine
 
 
     public StateMachine() { 
-        threadLimitor = new SemaphoreSlim(MaxThreads, MaxThreads); 
+        _threadLimitor = new SemaphoreSlim(MaxThreads, MaxThreads); 
     }
 
     /// <summary>
@@ -128,7 +128,7 @@ public class StateMachine
     /// </summary>
     /// <remarks>Sets the <see cref="IsFinished"/> property to <see langword="true"/>, indicating that
     /// the operation is complete.</remarks>
-    public void Finish() { IsFinished = true; }
+    public void Finish() { _isFinished = true; }
 
     /// <summary>
     /// Used to stop the state machine and cancel any ongoing operations.
@@ -174,7 +174,7 @@ public class StateMachine
     private async Task ProcessTick()
     {
         //If there are no processes, return
-        if (ActiveProcesses.Count == 0) { IsFinished = true; return; }
+        if (ActiveProcesses.Count == 0) { _isFinished = true; return; }
 
         OnTick?.Invoke(); //Invoke the tick event  
         List<Task> Tasks = [];
@@ -183,7 +183,7 @@ public class StateMachine
 
         ActiveProcesses.ForEach(process => Tasks.Add(Task.Run(async () =>
         {
-            await threadLimitor.WaitAsync(); //Wait for a thread to be available
+            await _threadLimitor.WaitAsync(); //Wait for a thread to be available
             try
             {
                 VerboseLog?.Invoke($"Invoking state: {process.State.GetType().Name}");
@@ -192,7 +192,7 @@ public class StateMachine
             }
             finally
             {
-                threadLimitor.Release(); //Release the thread back to the pool
+                _threadLimitor.Release(); //Release the thread back to the pool
             }
 
         })));
@@ -215,7 +215,7 @@ public class StateMachine
     {
         if (process.State == null) throw new ArgumentNullException(nameof(process.State), "Run Start State cannot be null");
 
-        await semaphore.WaitAsync(); //Wait for the state machine to be available
+        await _semaphore.WaitAsync(); //Wait for the state machine to be available
         //Gain access to state machine
         try
         {
@@ -224,7 +224,7 @@ public class StateMachine
         }
         finally 
         { 
-            semaphore.Release(); 
+            _semaphore.Release(); 
         }
         VerboseLog?.Invoke($"Entering state: {process.State.GetType().Name}");
         //Internal lock on access to state
@@ -246,7 +246,7 @@ public class StateMachine
         ActiveProcesses.Clear();
         VerboseLog?.Invoke($"Initializing {newStateProcesses.Count} new state processes...");
         //If there are no new processes, return
-        if (newStateProcesses.Count == 0) { IsFinished = true; return; }
+        if (newStateProcesses.Count == 0) { _isFinished = true; return; }
 
         //Record Step
         if (RecordSteps) { Steps.Add(newStateProcesses); }
@@ -262,7 +262,7 @@ public class StateMachine
         Tasks.Clear();
             
         //This is to remove running the same state twice with two processes.. it gets input from _EnterState
-        ActiveProcesses = ActiveProcesses.DistinctBy(state => state.State.ID).ToList();
+        ActiveProcesses = ActiveProcesses.DistinctBy(state => state.State.Id).ToList();
 
         VerboseLog?.Invoke($"Initialization Complete.");
     }
@@ -341,7 +341,7 @@ public class StateMachine
     public void ResetRun()
     {
         VerboseLog?.Invoke("Resetting StateMachine");
-        IsFinished = false;
+        _isFinished = false;
         StopTrigger = new CancellationTokenSource(); //Reset the stop trigger
         ActiveProcesses.Clear();
     }
@@ -358,7 +358,7 @@ public class StateMachine
     public async Task<(int,List<object>)> Run(BaseState runStartState, object input, int index, BaseState ResultingState)
     {
         await Run(runStartState, input);
-        return (index, ResultingState._Output);
+        return (index, ResultingState.BaseOutput);
     }
 
     /// <summary>
@@ -439,7 +439,7 @@ public class StateMachine<TInput, TOutput> : StateMachine
     /// <summary>
     /// Result of the state machine run, containing a list of outputs of type <typeparamref name="TOutput"/>.
     /// </summary>
-    public List<TOutput>? Results => ResultState._Output.ConvertAll(item => (TOutput)item)!;
+    public List<TOutput>? Results => ResultState.BaseOutput.ConvertAll(item => (TOutput)item)!;
 
     /// <summary>
     /// Gets or sets the initial state of the system or process.

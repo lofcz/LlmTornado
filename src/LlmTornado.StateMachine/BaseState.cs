@@ -10,9 +10,9 @@ namespace LlmTornado.StateMachines;
 public abstract class BaseState
 {
     internal readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
-    private int maxThreads = 20;
+    private int _maxThreads = 20;
     public bool BeingReran = false;
-    private List<object> output = [];
+    private List<object> _output = [];
 
     /// <summary>
     /// Gets or sets the event that is triggered when a state is entered.
@@ -32,32 +32,32 @@ public abstract class BaseState
     /// <summary>
     /// State identifier.
     /// </summary>
-    public string ID { get; set; } = Guid.NewGuid().ToString();
+    public string Id { get; set; } = Guid.NewGuid().ToString();
 
     /// <summary>
     /// Gets a list of results extracted from the output results.
     /// </summary>
-    public List<object> _Output => _OutputResults.Select(output => output._Result).ToList();
+    public List<object> BaseOutput => BaseOutputResults.Select(output => output.BaseResult).ToList();
 
     /// <summary>
     /// Output results of the state, containing processed results from the state invocation.
     /// </summary>
-    public List<StateResult> _OutputResults { get; set; } = [];
+    public List<StateResult> BaseOutputResults { get; set; } = [];
 
     /// <summary>
     /// Gets or sets the list of input objects the state has to process this tick.
     /// </summary>
-    public List<object> _Input { get; set; } = [];
+    public List<object> BaseInput { get; set; } = [];
 
     /// <summary>
     /// Input processes that the state has to process this tick.
     /// </summary>
-    public List<StateProcess> _InputProcesses { get; set; } = [];
+    public List<StateProcess> BaseInputProcesses { get; set; } = [];
 
     /// <summary>
     /// Gets or sets the list of state transitions.
     /// </summary>
-    public List<StateTransition<object>> _Transitions { get; set; } = [];
+    public List<StateTransition<object>> BaseTransitions { get; set; } = [];
 
     /// <summary>
     /// Checks if the state has transitioned.

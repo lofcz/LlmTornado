@@ -23,6 +23,7 @@ public delegate TOutput ConversionMethod<in TInput, out TOutput>(TInput input);
 /// </summary>
 public class StateTransition
 {
+    internal object? converterMethodResult;
     /// <summary>
     /// Gets or sets the next state in the state transition process.
     /// </summary>
@@ -31,7 +32,7 @@ public class StateTransition
     /// <summary>
     /// Gets or sets the result of the converter method.
     /// </summary>
-    public object? _ConverterMethodResult { get; set; }
+    public object? ConverterMethodResult { get => converterMethodResult; set => converterMethodResult = value; }
 
     /// <summary>
     /// Represents the type of the state transition.
@@ -42,7 +43,7 @@ public class StateTransition
 /// <summary>
 /// State transition class that defines a transition with a method to invoke for evaluation.
 /// </summary>
-/// <typeparam name="T"></typeparam>
+/// <typeparam name="T"> T being the Type of Input for the next State</typeparam>
 public class StateTransition<T> : StateTransition
 {
     /// <summary>
@@ -53,38 +54,37 @@ public class StateTransition<T> : StateTransition
     public StateTransition(TransitionEvent<T> methodToInvoke, BaseState nextState)
     {
         type = "out";
+
         // Validate the next state input type against the type of T
-        if (nextState.GetInputType().IsAssignableTo(typeof(T)) || typeof(T).IsSubclassOf(nextState.GetInputType()))
-        {
-            NextState = nextState;
-            InvokeMethod = methodToInvoke;
-        }
-        else
+        if (!(nextState.GetInputType().IsAssignableTo(typeof(T)) || typeof(T).IsSubclassOf(nextState.GetInputType())))
         {
             throw new InvalidOperationException($"Next State with input type of {nextState.GetInputType()} requires Input type assignable to type of {typeof(T)}");
         }
 
+        NextState = nextState;
+        InvokeMethod = methodToInvoke;
+
     }
 
     /// <summary>
-    /// Evaluates the specified result using a dynamically invoked method.
+    /// Evaluates the specified value using a dynamically invoked method.
     /// </summary>
     /// <remarks>The method uses dynamic invocation to evaluate the result, which may have performance
     /// implications. Ensure that the invoked method is compatible with the expected input type.</remarks>
-    /// <param name="result">The result to be evaluated. Can be null.</param>
+    /// <param name="value">The value to be evaluated. Can be null.</param>
     /// <returns><see langword="true"/> if the dynamically invoked method returns a non-null and true value; otherwise, <see
     /// langword="false"/>.</returns>
-    public virtual bool Evaluate(T? result)
+    public virtual bool Evaluate(T? value)
     {
-        return (bool?)InvokeMethod.DynamicInvoke(result) ?? false;
+        return (bool?)InvokeMethod.DynamicInvoke(value) ?? false;
     }
 }
 
 /// <summary>
 /// State Transition class that defines a transition with a method to invoke and a conversion method to convert the input type to new output type.
 /// </summary>
-/// <typeparam name="TInput"></typeparam>
-/// <typeparam name="TOutput"></typeparam>
+/// <typeparam name="TInput"> TInput being the Output of the State you wish to convert</typeparam>
+/// <typeparam name="TOutput">TOutput being the type you wish to convert to and is input type of the next state</typeparam>
 public class StateTransition<TInput, TOutput> : StateTransition<TInput>
 {
     /// <summary>
@@ -100,42 +100,45 @@ public class StateTransition<TInput, TOutput> : StateTransition<TInput>
     {
         get
         {
-            if (ConverterMethodResult == null)
+            if (converterMethodResult == null)
             {
                 throw new InvalidOperationException("Converter method result is not set. Ensure the converter method has been invoked.");
             }
-            return (TOutput)_ConverterMethodResult;
+            return (TOutput)converterMethodResult;
         }
-        set => ConverterMethodResult = value;
     }
 
     public StateTransition(TransitionEvent<TInput> methodToInvoke, ConversionMethod<TInput, TOutput> converter, BaseState nextState)
     {
         // Validate the next state input type against the type of TOutput
-        if (nextState.GetInputType().IsAssignableTo(typeof(TOutput)) || typeof(TOutput).IsSubclassOf(nextState.GetInputType()))
-        {
-            type = "in_out";
-            ConverterMethod = converter;
-            NextState = nextState;
-            InvokeMethod = methodToInvoke;
-        }
-        else
+        if (!(nextState.GetInputType().IsAssignableTo(typeof(TOutput)) || typeof(TOutput).IsSubclassOf(nextState.GetInputType())))
         {
             throw new InvalidOperationException($"Next State with input type of {nextState.GetInputType()} requires Input type assignable to type of {typeof(TOutput)}");
         }
+        type = "in_out";
+        ConverterMethod = converter;
+        NextState = nextState;
+        InvokeMethod = methodToInvoke;
     }
 
-    public override bool Evaluate(TInput? result)
+    public override bool Evaluate(TInput? value)
     {
-        if (result == null)
+        try
         {
-            throw new ArgumentNullException(nameof(result), "Input cannot be null.");
+            if ((bool?)InvokeMethod.DynamicInvoke(value) ?? false)
+            {
+                converterMethodResult = ConverterMethod.Invoke(value);
+                return true;
+            }
         }
-            
-        if ((bool?)InvokeMethod.DynamicInvoke(result) ?? false)
+        catch (Exception ex)
         {
-            _ConverterMethodResult = ConverterMethod.Invoke(result);
-            return true;
+
+        }
+
+        if (converterMethodResult is null)
+        {
+            throw new ArgumentNullException(nameof(value), "Input cannot be null.");
         }
 
         return false;

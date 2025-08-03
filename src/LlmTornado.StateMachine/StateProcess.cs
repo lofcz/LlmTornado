@@ -19,7 +19,7 @@ public class StateProcess
     /// <summary>
     /// Gets or sets the unique identifier for the entity.
     /// </summary>
-    public string ID { get; set; } = Guid.NewGuid().ToString();
+    public string Id { get; set; } = Guid.NewGuid().ToString();
     /// <summary>
     /// Get the State for this process.
     /// </summary>
@@ -28,15 +28,15 @@ public class StateProcess
     /// <summary>
     /// Gets or sets the input object to process.
     /// </summary>
-    public object _Input { get; set; } = new object();
+    public object BaseInput { get; set; } = new object();
 
     //public object Result { get; set; }
     public StateProcess() { }
 
-    public StateProcess(BaseState state, object input, int maxReruns = 3)
+    public StateProcess(BaseState state, object inputValue, int maxReruns = 3)
     {
         State = state;
-        _Input = input;
+        BaseInput = inputValue;
         MaxReruns = maxReruns;
     }
 
@@ -58,7 +58,7 @@ public class StateProcess
     /// <returns>A <see cref="StateResult"/> containing the specified result object and the current state's identifier.</returns>
     public StateResult CreateStateResult(object result)
     {
-        return new StateResult(ID, result);
+        return new StateResult(Id, result);
     }
 
     /// <summary>
@@ -70,7 +70,7 @@ public class StateProcess
     /// name="T"/>.</returns>
     public StateProcess<T> GetProcess<T>()
     {
-        return new StateProcess<T>(State, (T)_Input, ID);
+        return new StateProcess<T>(State, (T)BaseInput, Id);
     }
 }
 
@@ -85,7 +85,7 @@ public class StateProcess<T> : StateProcess
     /// <summary>
     /// Gets or sets the input value of type <typeparamref name="T"/>.
     /// </summary>
-    public T Input { get => (T)_Input; set => _Input = value!; }
+    public T Input { get => (T)BaseInput; set => BaseInput = value!; }
 
     public StateProcess(BaseState state, T input, int maxReruns = 3) : base(state, input!, maxReruns)
     {
@@ -95,7 +95,7 @@ public class StateProcess<T> : StateProcess
     public StateProcess(BaseState state, T input, string id, int maxReruns = 3) : base(state, input!, maxReruns)
     {
         Input = input!;
-        ID = id;
+        Id = id;
     }
 
     /// <summary>
@@ -105,6 +105,6 @@ public class StateProcess<T> : StateProcess
     /// <returns>A <see cref="StateResult{T}"/> containing the specified result and the current state ID.</returns>
     public StateResult<T> CreateStateResult(T result)
     {
-        return new StateResult<T>(ID, result);
+        return new StateResult<T>(Id, result);
     }
 }

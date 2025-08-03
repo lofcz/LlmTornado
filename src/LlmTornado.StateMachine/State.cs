@@ -40,7 +40,7 @@ public abstract class BaseState<TInput, TOutput> : BaseState
     /// or respond to the invocation.</remarks>
     public new StateInvokeEvent<TInput>? OnStateInvoked { get; set; }
         
-    private List<StateResult<TOutput>> outputResults = [];
+    private List<StateResult<TOutput>> _outputResults = [];
 
     public override Type GetInputType() => typeof(TInput);
     public override Type GetOutputType() => typeof(TOutput);
@@ -64,7 +64,7 @@ public abstract class BaseState<TInput, TOutput> : BaseState
         set
         {
             field = value ?? [];
-            _InputProcesses = ConvertInputProcesses();
+            BaseInputProcesses = ConvertInputProcesses();
         }
     } = [];
 
@@ -89,11 +89,11 @@ public abstract class BaseState<TInput, TOutput> : BaseState
     /// </summary>
     public List<StateResult<TOutput>> OutputResults
     {
-        get => outputResults;
+        get => _outputResults;
         set
         {
-            outputResults = value ?? [];
-            _OutputResults = ConvertOutputResults();
+            _outputResults = value ?? [];
+            BaseOutputResults = ConvertOutputResults();
         }
     }
 
@@ -103,7 +103,7 @@ public abstract class BaseState<TInput, TOutput> : BaseState
     /// <returns>A list of <see cref="StateResult"/> objects, each representing a processed result from the output.</returns>
     private List<StateResult> ConvertOutputResults()
     {
-        return outputResults.Select(x => new StateResult(x.ProcessID, x._Result)).ToList();
+        return _outputResults.Select(x => new StateResult(x.ProcessId, x.BaseResult)).ToList();
     }
 
     /// <summary>
@@ -115,7 +115,7 @@ public abstract class BaseState<TInput, TOutput> : BaseState
     /// <param name="process">The state process to be added, which must contain a valid input of type <typeparamref name="TInput"/>.</param>
     private void AddInputProcess(StateProcess process)
     {
-        InputProcesses.Add(new StateProcess<TInput>(process.State, (TInput)process._Input!, process.ID));
+        InputProcesses.Add(new StateProcess<TInput>(process.State, (TInput)process.BaseInput!, process.Id));
     }
 
     /// <summary>
@@ -156,8 +156,8 @@ public abstract class BaseState<TInput, TOutput> : BaseState
         try
         {
             AddInputProcess(input);
-            await EnterState((TInput)input!._Input!);
-            OnStateEntered?.Invoke(new StateProcess<TInput>(input.State, (TInput)input._Input, input.ID));
+            await EnterState((TInput)input!.BaseInput!);
+            OnStateEntered?.Invoke(new StateProcess<TInput>(input.State, (TInput)input.BaseInput, input.Id));
         }
         finally
         {
@@ -264,7 +264,7 @@ public abstract class BaseState<TInput, TOutput> : BaseState
     private async Task<StateResult<TOutput>> InternalInvoke(StateProcess<TInput> input)
     {
         OnStateInvoked?.Invoke(input);
-        return new StateResult<TOutput>(input.ID, await Invoke(input.Input));
+        return new StateResult<TOutput>(input.Id, await Invoke(input.Input));
     }
 
     /// <summary>
@@ -306,7 +306,7 @@ public abstract class BaseState<TInput, TOutput> : BaseState
             if (transition != null)
             {
                 //Check if transition is conversion type or use the output.Result directly
-                object? ilResult = transition.type == "in_out" ? transition._ConverterMethodResult : result.Result;
+                object? ilResult = transition.type == "in_out" ? transition.ConverterMethodResult : result.Result;
 
                 newStateProcesses.Add(new StateProcess(transition.NextState, ilResult!));
             }
@@ -316,7 +316,7 @@ public abstract class BaseState<TInput, TOutput> : BaseState
                 if (!IsDeadEnd)
                 {    
                     //ReRun the process that failed
-                    StateProcess<TInput> failedProcess = InputProcesses.First(process => process.ID == result.ProcessID);
+                    StateProcess<TInput> failedProcess = InputProcesses.First(process => process.Id == result.ProcessId);
                     //Cap the amount of times a State can reattempt (Fixed at 3 right now)
                     if (failedProcess.CanReAttempt())
                     {
@@ -350,7 +350,7 @@ public abstract class BaseState<TInput, TOutput> : BaseState
                 if (transition.Evaluate(output.Result))
                 {
                     //Check if transition is conversion type or use the output.Result directly
-                    object? result = transition.type == "in_out" ? transition._ConverterMethodResult : output.Result;
+                    object? result = transition.type == "in_out" ? transition.ConverterMethodResult : output.Result;
 
                     newStateProcessesFromOutput.Add(new StateProcess(transition.NextState, result!));
                 }
@@ -359,7 +359,7 @@ public abstract class BaseState<TInput, TOutput> : BaseState
             //If process produces no transitions and not at a dead end rerun the process
             if (newStateProcessesFromOutput.Count == 0 && !IsDeadEnd)
             {
-                StateProcess failedProcess = InputProcesses.First(process => process.ID == output.ProcessID);
+                StateProcess failedProcess = InputProcesses.First(process => process.Id == output.ProcessId);
                 //rerun the process up to the max attempts
                 if (failedProcess.CanReAttempt()) newStateProcessesFromOutput.Add(failedProcess);
             }
