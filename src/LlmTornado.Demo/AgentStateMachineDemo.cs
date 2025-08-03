@@ -88,11 +88,10 @@ public class BasicLombdaAgent : ControllerAgent
         InputPreprocessor = RunStateMachine;
     }
 
-    public override void InitializeAgent()
+    public override TornadoAgent InitializeAgent()
     {
-
         string instructions = $"""You are a person assistant who will receive information preprocessed by a Agentic system to help answer the question. Use SYSTEM message from before the user input as tool output""";
-        ControlAgent = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41, instructions);
+        return new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41, instructions);
     }
 
     public async Task<string> RunStateMachine(string task)

@@ -31,7 +31,7 @@ public class TornadoAgent
     /// <summary>
     /// Gets or sets the options used to configure the response behavior of the request.
     /// </summary>
-    public ResponseRequest ResponseOptions { get; set; } = new ResponseRequest();
+    public ResponseRequest ResponseOptions { get; set; }
 
 
     /// <summary>
@@ -72,6 +72,9 @@ public class TornadoAgent
 
     public List<MCPServer> McpServers = [];
 
+    /// Agents that are handed off to be the controller 
+    /// </summary>
+    public List<AgentHandoff> HandoffAgents { get; set; } = [];
 
     public static TornadoAgent DummyAgent()
     {
@@ -94,7 +97,7 @@ public class TornadoAgent
     /// format its responses according to the specified schema.</param>
     /// <param name="tools">Optional. A list of <see cref="Delegate"/> instances representing tools or functions that the agent can use to
     /// perform specific tasks. If not provided, the agent will use its default tools.</param>
-    public TornadoAgent(TornadoApi client, ChatModel model, string instructions = "You are a helpful assistant", Type? outputSchema = null, List<Delegate>? tools = null)
+    public TornadoAgent(TornadoApi client, ChatModel model, string instructions = "You are a helpful assistant", Type? outputSchema = null, List<Delegate>? tools = null, AgentHandoff[]? handoffs = null)
     {
         Client = client;
         Instructions = instructions;
@@ -103,6 +106,7 @@ public class TornadoAgent
         Instructions = instructions;
         Model = model;
         Options.Model = model;
+        HandoffAgents = handoffs?.ToList() ?? [];
 
         if (OutputSchema != null)
         {

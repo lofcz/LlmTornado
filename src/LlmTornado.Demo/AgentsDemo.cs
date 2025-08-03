@@ -4,6 +4,7 @@ using LlmTornado.Chat.Models;
 using LlmTornado.Code;
 using System.ComponentModel;
 using LlmTornado.Agents.DataModels;
+using LlmTornado.Agents.AgentStates;
 
 namespace LlmTornado.Demo;
 
@@ -150,6 +151,47 @@ public class AgentsDemo : DemoBase
     {
         // Call the weather API here.
         return $"31 C";
+    }
+
+    [TornadoTest]
+    public static async Task HandoffTest()
+    {
+        BasicControllerAgent agent = new BasicControllerAgent();
+        // Example task to run through the state machine
+        string task = "What is the status of my technical support ticket?";
+        Console.WriteLine($"[User]: {task}");
+        Console.Write("[Agent]: ");
+        agent.ControllerStreamingEvent += (stream) =>
+        {
+            if (stream is ModelStreamingOutputTextDeltaEvent text)
+                Console.Write(text.DeltaText);
+            return ValueTask.CompletedTask;
+        };
+        // Run the state machine and aget the result
+        var result = await agent.AddToConversation(task, streaming: true);
+    }
+
+    public class BasicControllerAgent : ControllerAgent
+    {
+        public TornadoAgent TechnicalExpertAgent { get; set; }
+        public TornadoAgent BillingAgent { get; set; }
+
+        public BasicControllerAgent() : base("Basic"){ }
+           
+        public override TornadoAgent InitializeAgent()
+        {
+            TechnicalExpertAgent = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41Mini, "You are a technical expert for the Sales team.");
+            BillingAgent = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41Mini, "You are a billing expert for the Sales team.");
+        
+            string instructions = $"""You are General support for the Sales team""";
+
+            return new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41, instructions, 
+                handoffs: [
+                    new(TechnicalExpertAgent,"TechnicalExpert","Handoff If the customer ask a technical question"),
+                    new(TechnicalExpertAgent,"Billing","Handoff if the customer has a billing request")
+                    ]);
+        }
+
     }
 
 }

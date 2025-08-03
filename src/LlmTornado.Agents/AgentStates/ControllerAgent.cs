@@ -1,5 +1,6 @@
 ﻿using LlmTornado.Agents.DataModels;
 using LlmTornado.Chat;
+using LlmTornado.Chat.Models;
 using LlmTornado.Code;
 using LlmTornado.Images;
 using LlmTornado.StateMachines;
@@ -23,10 +24,16 @@ public abstract class ControllerAgent
     public string AgentId => _agentId;
 
     public List<ChatMessage> SharedModelItems = [];
+
+    /// <summary>
+    /// Current Agent in Control of the conversation.
+    /// </summary>
+    public TornadoAgent InitialAgent { get; set; }
+
     /// <summary>
     /// Agent used to manage the active conversation and report results of the state machines.
     /// </summary>
-    public TornadoAgent ControlAgent { get; set; }
+    public TornadoAgent CurrentAgent { get; set; }
     /// <summary>
     /// Used to handle The controlling state machine to process the input before it is sent to the model.
     /// </summary>
@@ -96,14 +103,17 @@ public abstract class ControllerAgent
     /// </summary>
     public CancellationTokenSource CancellationTokenSource { get; set; } = new CancellationTokenSource();
 
+
     public ControllerAgent(string agentName)
     {
         // Initialize the agent and set up the callbacks
-        InitializeAgent(); 
+        InitialAgent = InitializeAgent(); 
         _agentName = agentName;
         StreamingCallback += InvokeStreamingCallback;  //Route State Agents streaming callbacks to the agent's event handler
         VerboseCallback += InvokeVerboseCallback; //Route State Agents verbose callbacks to the agent's event handler  
-        ControlAgent.Options.CancellationToken = CancellationTokenSource.Token; // Set the cancellation token source for the Control Agent
+        CurrentAgent = InitialAgent; // Set the initial agent as the current agent
+        CurrentAgent.Options.CancellationToken = CancellationTokenSource.Token; // Set the cancellation token source for the Control Agent
+
     }
 
     /// <summary>
@@ -114,6 +124,53 @@ public abstract class ControllerAgent
     {
         StreamingCallback?.Invoke(message);
         return default; // Return a completed ValueTask
+    }
+
+    public async Task CheckForHandoff(List<ChatMessage> messages)
+    {
+        if(CurrentAgent.HandoffAgents.Count == 0)
+        {
+            return; // No handoff agents to process
+        }
+
+        string instructions = @$"
+I need you to decide if you need to handoff the conversation to another agent.
+If you do, please return the agent you want to handoff to and the reason for the handoff.
+If not just return CurrentAgent
+Out of the following Agents which agent should we Handoff the conversation too and why? 
+
+
+{{""NAME"": ""CurrentAgent"",""Instructions"":""{CurrentAgent.Instructions}""}}
+
+
+{string.Join("\n\n", CurrentAgent.HandoffAgents.Select(agent => $" {{\"NAME\": \"{agent.Name}\",\"Handoff Reason\":\"{agent.HandoffReason}\"}}"))}
+
+";
+        var handoffDecider = new TornadoAgent(CurrentAgent.Client, ChatModel.OpenAi.Gpt41.V41Nano, instructions);
+        handoffDecider.Options.ResponseFormat = AgentHandoff.CreateHandoffResponseFormat(CurrentAgent.HandoffAgents.ToArray());
+        handoffDecider.Options.CancellationToken = CancellationTokenSource.Token; // Set the cancellation token source for the Control Agent
+
+        string prompt = "Current Conversation:\n";
+
+        foreach(ChatMessage message in messages)
+        {
+            foreach(ChatMessagePart part in message.Parts ?? [])
+            {
+                if (part is not { Text: ""})
+                {
+                    prompt += $"{message.Role}: {part.Text}\n";
+                }
+            }
+        }
+
+        Conversation handoff = await TornadoRunner.RunAsync(handoffDecider, prompt,
+            verboseCallback: InvokeVerboseCallback, streaming: false, cancellationToken: CancellationTokenSource);
+
+        if (handoff.Messages.Count > 0 && handoff.Messages.Last().Content != null)
+        {
+            var selectedAgent = AgentHandoff.ParseHandoffResponse(handoff.Messages.Last().Content, out string? reasoning);
+            CurrentAgent = CurrentAgent.HandoffAgents.FirstOrDefault(agent => agent.Name.Equals(selectedAgent, StringComparison.OrdinalIgnoreCase))?.Agent ?? CurrentAgent; 
+        }
     }
 
     /// <summary>
@@ -198,7 +255,7 @@ public abstract class ControllerAgent
     /// </summary>
     /// <remarks>This method must be called before the agent can be used. It sets up necessary
     /// resources and configurations.</remarks>
-    public abstract void InitializeAgent();
+    public abstract TornadoAgent InitializeAgent();
 
     /// <summary>
     /// Adds a user input to the conversation and processes it through the control agent.
@@ -217,7 +274,7 @@ public abstract class ControllerAgent
     public async Task<string> AddToConversation(string userInput, ChatMessage message = null, bool streaming = true)
     {
         // Ensure that the ControlAgent is set before proceeding
-        if (ControlAgent == null)
+        if (CurrentAgent == null)
         {
             throw new InvalidOperationException("ControlAgent is not set. Please set ControlAgent before adding to conversation.");
         }
@@ -235,11 +292,23 @@ public abstract class ControllerAgent
             }
         }
 
+       
+        
+
         ChatMessage userMessage = new ChatMessage();
         //If userInput is not empty, create a new message item and add it to the conversation
         if (!string.IsNullOrEmpty(userInput))
         {
             userMessage = new ChatMessage(ChatMessageRoles.User, [new ChatMessagePart(userInput)]);
+            // Check for any handoff agents that need to be processed before adding the user input
+            if (CurrentResult == null)
+            {
+                await CheckForHandoff([userMessage]);
+            }
+            else
+            {
+                await CheckForHandoff([..CurrentResult.Messages, userMessage]);
+            }
 
             string inputMessage = userInput;
             // If an input preprocessor is set, run it on the user input
@@ -249,13 +318,13 @@ public abstract class ControllerAgent
                 if (message != null)
                 {
                     // If the message is a file, we need to describe it
-                    string originalInstructions = ControlAgent.Instructions;
-                    ControlAgent.Instructions = "I need you to take the input file and describe the file/image. Be the eyes for the next step who cannot see the image but needs context from within the file/image" +
+                    string originalInstructions = CurrentAgent.Instructions;
+                    CurrentAgent.Instructions = "I need you to take the input file and describe the file/image. Be the eyes for the next step who cannot see the image but needs context from within the file/image" +
                                                 "Be as descriptive as possible.";
-                    Conversation fileDescription = await RunAsync(ControlAgent, messages: [message], verboseCallback: InvokeVerboseCallback, cancellationToken: CancellationTokenSource);
+                    Conversation fileDescription = await RunAsync(CurrentAgent, messages: [message], verboseCallback: InvokeVerboseCallback, cancellationToken: CancellationTokenSource);
 
                     //Restore the original instructions
-                    ControlAgent.Instructions = originalInstructions;
+                    CurrentAgent.Instructions = originalInstructions;
                         
 
                     if (fileDescription.Messages.Count > 0)
@@ -280,13 +349,13 @@ public abstract class ControllerAgent
         if(CurrentResult != null)
         {
             //Run the ControlAgent with the current messages
-            CurrentResult = await RunAsync(ControlAgent, messages: [..CurrentResult.Messages], verboseCallback: HandleControllerVerboseEvent,
+            CurrentResult = await RunAsync(CurrentAgent, messages: [..CurrentResult.Messages], verboseCallback: HandleControllerVerboseEvent,
                 streaming: streaming, streamingCallback: HandleControllerStreamingEvent, cancellationToken: CancellationTokenSource, responseId: string.IsNullOrEmpty(MainThreadId) ? "" : MainThreadId);
         }
         else
         {
             //Run the ControlAgent with the current messages
-            CurrentResult = await RunAsync(ControlAgent, messages: [userMessage], verboseCallback: HandleControllerVerboseEvent,
+            CurrentResult = await RunAsync(CurrentAgent, messages: [userMessage], verboseCallback: HandleControllerVerboseEvent,
                 streaming: streaming, streamingCallback: HandleControllerStreamingEvent, cancellationToken: CancellationTokenSource, responseId: string.IsNullOrEmpty(MainThreadId) ? "" : MainThreadId);
         }
 

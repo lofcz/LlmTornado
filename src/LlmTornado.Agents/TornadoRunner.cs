@@ -51,7 +51,7 @@ public class TornadoRunner
         ToolPermissionRequest? toolPermissionRequest = null
     )
     {
-        Conversation chat = agent.Options != null ? agent.Client.Chat.CreateConversation(agent.Options) : agent.Client.Chat.CreateConversation(agent.Model);
+        Conversation chat = agent.Client.Chat.CreateConversation(agent.Options);
         
         if (agent.ResponseOptions != null)
         {
@@ -206,6 +206,7 @@ public class TornadoRunner
     /// <returns></returns>
     public static async Task<Conversation>? GetNewResponse(TornadoAgent agent, Conversation chat, bool Streaming = false, StreamingCallbacks? streamingCallback = null, RunnerVerboseCallbacks? verboseCallback = null, ToolPermissionRequest? toolPermissionRequest = null)
     {
+
         try
         {
             TornadoRequestContent serialized = chat.Serialize(new ChatRequestSerializeOptions { Pretty = true });
