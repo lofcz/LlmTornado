@@ -131,7 +131,25 @@ public class ChatRequestResponseFormats
             }
         };
     }
-    
+
+    /// <summary>
+    ///     Signals output should be structured JSON. The provided schema will always be followed.
+    /// </summary>
+    public static ChatRequestResponseFormats StructuredJson(string name, object schema, string description, bool? strict = true)
+    {
+        return new ChatRequestResponseFormats
+        {
+            Type = ChatRequestResponseFormatTypes.StructuredJson,
+            Schema = new ChatRequestResponseJsonSchema
+            {
+                Name = name,
+                Strict = strict,
+                Schema = schema,
+                Description = description
+            }
+        };
+    }
+
     /// <summary>
     ///     Signals output should be structured JSON. The provided schema will always be followed.
     /// </summary>

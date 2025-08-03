@@ -4,9 +4,7 @@ using LlmTornado.Chat.Models;
 using LlmTornado.Code;
 using LlmTornado.Common;
 using LlmTornado.Responses;
-using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
-using System;
 
 namespace LlmTornado.Agents;
 
@@ -92,9 +90,7 @@ public class TornadoAgent
 
         if (OutputSchema != null)
         {
-            ModelOutputFormat format = OutputSchema.CreateJsonSchemaFormatFromType(true);
-            dynamic? responseFormat = JsonConvert.DeserializeObject<dynamic>(format.JsonSchema.ToString());
-            Options.ResponseFormat = ChatRequestResponseFormats.StructuredJson(format.JsonSchemaFormatName, responseFormat);
+            Options.ResponseFormat = OutputSchema.CreateJsonSchemaFormatFromType(true);
         }
 
         //Setup tools and agent tools

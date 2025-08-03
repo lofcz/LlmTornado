@@ -1,10 +1,10 @@
-﻿using LlmTornado.Moderation;
+﻿using LlmTornado.Agents.DataModels;
+using LlmTornado.Chat;
 using System.ComponentModel;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using LlmTornado.Agents.DataModels;
 
 namespace LlmTornado.Agents;
 
@@ -35,17 +35,18 @@ internal static class JsonUtility
             return false;
         }
     }
-    
+
+
     /// <summary>
-    /// Creates a <see cref="ModelOutputFormat"/> instance representing the JSON schema of the specified type.
+    /// Creates a <see cref="ChatRequestResponseFormats"/> instance representing the JSON schema of the specified type.
     /// </summary>
     /// <remarks>If the specified type has a <see cref="DescriptionAttribute"/>, the first description
     /// found is included in the format description.</remarks>
     /// <param name="type">The type for which to generate the JSON schema.</param>
     /// <param name="jsonSchemaIsStrict">A boolean value indicating whether the generated JSON schema should be strict.  <see langword="true"/> if
     /// the schema should enforce strict validation; otherwise, <see langword="false"/>.</param>
-    /// <returns>A <see cref="ModelOutputFormat"/> containing the JSON schema of the specified type, encoded as binary data. Used for output formating</returns>
-    public static ModelOutputFormat CreateJsonSchemaFormatFromType(this Type type, bool jsonSchemaIsStrict = true)
+    /// <returns>A <see cref="ChatRequestResponseFormats"/> containing the JSON schema of the specified type, encoded as binary data. Used for output formating</returns>
+    public static ChatRequestResponseFormats CreateJsonSchemaFormatFromType(this Type type, bool jsonSchemaIsStrict = true)
     {
         string formatDescription = "";
         IEnumerable<DescriptionAttribute> descriptions = type.GetCustomAttributes<DescriptionAttribute>();
@@ -53,11 +54,14 @@ internal static class JsonUtility
         {
             formatDescription = descriptions.First().Description;
         }
-        return new ModelOutputFormat(
+
+        dynamic? responseFormat = Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(JsonSchemaGenerator.GenerateSchema(type));
+
+        return ChatRequestResponseFormats.StructuredJson(
             type.Name,
-            BinaryData.FromBytes(Encoding.UTF8.GetBytes(JsonSchemaGenerator.GenerateSchema(type))),
-            jsonSchemaIsStrict,
-            formatDescription
+            responseFormat,
+            formatDescription,
+            jsonSchemaIsStrict
         );
     }
     

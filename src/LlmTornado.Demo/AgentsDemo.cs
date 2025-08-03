@@ -123,7 +123,7 @@ public class AgentsDemo : DemoBase
         //The easy way
         //Helper function to avoid doing the hard way
         MathReasoning mathResult = result.Messages.Last().Content.JsonDecode<MathReasoning>();
-        Console.WriteLine(mathResult.ToString());
+        mathResult.ConsoleWrite();
     }
 
     [TornadoTest]

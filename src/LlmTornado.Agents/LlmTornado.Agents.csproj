@@ -7,9 +7,9 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\LlmTornado.Mcp\LlmTornado.Mcp.csproj"/>
-        <ProjectReference Include="..\LlmTornado.StateMachine\LlmTornado.StateMachines.csproj"/>
-        <ProjectReference Include="..\LlmTornado\LlmTornado.csproj"/>
+        <ProjectReference Include="..\LlmTornado.Mcp\LlmTornado.Mcp.csproj" />
+        <ProjectReference Include="..\LlmTornado.StateMachine\LlmTornado.StateMachines.csproj" />
+        <ProjectReference Include="..\LlmTornado\LlmTornado.csproj" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -18,10 +18,6 @@
 
     <ItemGroup Condition="$(TargetFramework.StartsWith('net4')) OR $(TargetFramework.StartsWith('netstandard'))">
     
-    </ItemGroup>
-
-    <ItemGroup>
-      <PackageReference Include="System.Memory.Data" Version="[8.0.1, )" />
     </ItemGroup>
 
     <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">

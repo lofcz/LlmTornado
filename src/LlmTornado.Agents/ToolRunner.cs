@@ -33,7 +33,7 @@ public static class ToolRunner
         //Need to check if function has required parameters and if so, parse them from the call.FunctionArguments
         if (call.Arguments != null && tool.Delegate != null)
         {
-            arguments = tool.Delegate?.ParseFunctionCallArgs(BinaryData.FromString(call.Arguments)) ?? [];
+            arguments = tool.Delegate?.ParseFunctionCallArgs(call.Arguments) ?? [];
 
             string? result = (string?)await CallFuncAsync(tool.Delegate, [.. arguments]);
 
