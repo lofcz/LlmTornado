@@ -1,9 +1,24 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <TargetFrameworks>net8.0;netstandard2.0</TargetFrameworks>
+    <LangVersion>preview</LangVersion>
   </PropertyGroup>
-
+  <PropertyGroup>
+    <DefineConstants Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">$(DefineConstants);MODERN</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4')) OR $(TargetFramework.StartsWith('netstandard'))">
+    <Reference Include="System.Net.Http" />
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="[8.0.0, )" />
+    <PackageReference Include="Polyfill" Version="[8.2.0, )">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+        <_Parameter1>LlmTornado.Agents</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
 </Project>

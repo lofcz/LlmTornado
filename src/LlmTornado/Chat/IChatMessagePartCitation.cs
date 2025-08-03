@@ -1,26 +1,25 @@
 using LlmTornado.Code;
 using Newtonsoft.Json;
 
-namespace LlmTornado.Chat
+namespace LlmTornado.Chat;
+
+/// <summary>
+/// Shared interface for message part citations.
+/// </summary>
+[JsonConverter(typeof(ChatMessagePartCitationJsonConverter))]
+public interface IChatMessagePartCitation
 {
     /// <summary>
-    /// Shared interface for message part citations.
+    /// Type of the citation.
     /// </summary>
-    [JsonConverter(typeof(ChatMessagePartCitationJsonConverter))]
-    public interface IChatMessagePartCitation
-    {
-        /// <summary>
-        /// Type of the citation.
-        /// </summary>
-        [JsonProperty("type")]
-        string Type { get; }
+    [JsonProperty("type")]
+    string Type { get; }
         
-        /// <summary>
-        /// Text of the citation
-        /// </summary>
-        [JsonIgnore]
-        public string Text { get; }
+    /// <summary>
+    /// Text of the citation
+    /// </summary>
+    [JsonIgnore]
+    public string Text { get; }
 
-        internal void Serialize(LLmProviders provider, JsonWriter writer);
-    }
-} 
+    internal void Serialize(LLmProviders provider, JsonWriter writer);
+}

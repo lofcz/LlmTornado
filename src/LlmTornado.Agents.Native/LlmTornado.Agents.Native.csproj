@@ -1,27 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+
     <PropertyGroup>
+        <LangVersion>preview</LangVersion>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <TargetFrameworks>net8.0;netstandard2.0</TargetFrameworks>
-        <LangVersion>preview</LangVersion>
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\LlmTornado.Mcp\LlmTornado.Mcp.csproj"/>
-        <ProjectReference Include="..\LlmTornado.StateMachine\LlmTornado.StateMachines.csproj"/>
-        <ProjectReference Include="..\LlmTornado\LlmTornado.csproj"/>
-    </ItemGroup>
-
-    <PropertyGroup>
-        <DefineConstants Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">$(DefineConstants);MODERN</DefineConstants>
-    </PropertyGroup>
-
-    <ItemGroup Condition="$(TargetFramework.StartsWith('net4')) OR $(TargetFramework.StartsWith('netstandard'))">
-    
+      <ProjectReference Include="..\LlmTornado.Agents\LlmTornado.Agents.csproj" />
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="System.Memory.Data" Version="[8.0.1, )" />
+      <PackageReference Include="System.Drawing.Common" Version="[8.0.18, )" />
     </ItemGroup>
 
     <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
@@ -36,4 +27,5 @@
     <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('OSX'))">
         <DefineConstants>MAC</DefineConstants>
     </PropertyGroup>
+    
 </Project>

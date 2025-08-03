@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.Serialization;
+using System.Threading.Tasks;
 #if MODERN
 using System.ComponentModel.DataAnnotations;
 #endif

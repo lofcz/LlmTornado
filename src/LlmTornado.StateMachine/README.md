@@ -1,6 +1,8 @@
-# Lombda.StateMachine
+# LlmTornado.StateMachines
 
-A powerful and flexible state machine library for .NET 8.0 that supports concurrent execution, complex state transitions, and type-safe operations. This library provides both generic and non-generic state machine implementations with extensive event handling and logging capabilities.
+A powerful and flexible state machine library for `.netstandard2.0` that supports concurrent execution, complex state transitions, and type-safe operations. This library provides both generic and non-generic state machine implementations with extensive event handling and logging capabilities.
+
+Core maintainer of this project: [Johnny2x2](https://github.com/Johnny2x2).
 
 ## Features
 
