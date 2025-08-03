@@ -1,7 +1,7 @@
 ﻿using ModelContextProtocol.Client;
 
 
-namespace LlmTornado.Agents.DataModels;
+namespace LlmTornado.Agents;
 
 public class MCPServer
 {

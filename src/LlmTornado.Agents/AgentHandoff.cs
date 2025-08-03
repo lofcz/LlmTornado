@@ -7,7 +7,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace LlmTornado.Agents.DataModels
+namespace LlmTornado.Agents
 {
     public class AgentHandoff
     {
