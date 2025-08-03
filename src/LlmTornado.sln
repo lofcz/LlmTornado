@@ -19,6 +19,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.Contrib", "LlmTo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.Toolkit", "LlmTornado.Toolkit\LlmTornado.Toolkit.csproj", "{53D4C9D4-7123-47E1-9603-564C5A230672}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.Docs", "LlmTornado.Docs\LlmTornado.Docs.csproj", "{A64DF195-6247-4EF3-9690-865CE7619D9F}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.Internal.OpenRouter", "LlmTornado.Internal.OpenRouter\LlmTornado.Internal.OpenRouter.csproj", "{C0B4FA4F-03AA-4372-AC82-6B55A2153B68}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.Mcp.Sample", "LlmTornado.Mcp.Sample\LlmTornado.Mcp.Sample.csproj", "{FB8AD280-CEBE-47D2-B583-11F66DD2B489}"
@@ -27,9 +29,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.Mcp.Sample.Serve
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.Mcp", "LlmTornado.Mcp\LlmTornado.Mcp.csproj", "{97A70CA7-1120-45FA-8DA1-4AF24F552F73}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.Agents", "LlmTornado.Agents\LlmTornado.Agents.csproj", "{97B956D9-EA77-44C9-B54A-142AA0A96301}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.OpenApiGenerator", "LlmTornado.OpenApiGenerator\LlmTornado.OpenApiGenerator.csproj", "{5AC477FB-5E5C-40A6-AEF4-EB0B172EFB8C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.StateMachines", "LlmTornado.StateMachine\LlmTornado.StateMachines.csproj", "{79E6E7AB-ED24-4DA7-86DE-F73C9548D28F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.SemanticKernel", "LlmTornado.SemanticKernel\LlmTornado.SemanticKernel.csproj", "{4A4395C4-FB29-4DDD-9A4C-B38C40394B59}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.Agents", "LlmTornado.Agents\LlmTornado.Agents.csproj", "{98DD4043-78B8-450B-A2BD-457F5699E8C5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.StateMachines", "LlmTornado.StateMachine\LlmTornado.StateMachines.csproj", "{DF07477E-4AF6-496E-9D21-749A40874728}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -57,6 +63,10 @@ Global
 		{53D4C9D4-7123-47E1-9603-564C5A230672}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{53D4C9D4-7123-47E1-9603-564C5A230672}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{53D4C9D4-7123-47E1-9603-564C5A230672}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A64DF195-6247-4EF3-9690-865CE7619D9F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A64DF195-6247-4EF3-9690-865CE7619D9F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A64DF195-6247-4EF3-9690-865CE7619D9F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A64DF195-6247-4EF3-9690-865CE7619D9F}.Release|Any CPU.Build.0 = Release|Any CPU
 		{C0B4FA4F-03AA-4372-AC82-6B55A2153B68}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{C0B4FA4F-03AA-4372-AC82-6B55A2153B68}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C0B4FA4F-03AA-4372-AC82-6B55A2153B68}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -73,14 +83,22 @@ Global
 		{97A70CA7-1120-45FA-8DA1-4AF24F552F73}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{97A70CA7-1120-45FA-8DA1-4AF24F552F73}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{97A70CA7-1120-45FA-8DA1-4AF24F552F73}.Release|Any CPU.Build.0 = Release|Any CPU
-		{97B956D9-EA77-44C9-B54A-142AA0A96301}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{97B956D9-EA77-44C9-B54A-142AA0A96301}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{97B956D9-EA77-44C9-B54A-142AA0A96301}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{97B956D9-EA77-44C9-B54A-142AA0A96301}.Release|Any CPU.Build.0 = Release|Any CPU
-		{79E6E7AB-ED24-4DA7-86DE-F73C9548D28F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{79E6E7AB-ED24-4DA7-86DE-F73C9548D28F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{79E6E7AB-ED24-4DA7-86DE-F73C9548D28F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{79E6E7AB-ED24-4DA7-86DE-F73C9548D28F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5AC477FB-5E5C-40A6-AEF4-EB0B172EFB8C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5AC477FB-5E5C-40A6-AEF4-EB0B172EFB8C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5AC477FB-5E5C-40A6-AEF4-EB0B172EFB8C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5AC477FB-5E5C-40A6-AEF4-EB0B172EFB8C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4A4395C4-FB29-4DDD-9A4C-B38C40394B59}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4A4395C4-FB29-4DDD-9A4C-B38C40394B59}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4A4395C4-FB29-4DDD-9A4C-B38C40394B59}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4A4395C4-FB29-4DDD-9A4C-B38C40394B59}.Release|Any CPU.Build.0 = Release|Any CPU
+		{98DD4043-78B8-450B-A2BD-457F5699E8C5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{98DD4043-78B8-450B-A2BD-457F5699E8C5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{98DD4043-78B8-450B-A2BD-457F5699E8C5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{98DD4043-78B8-450B-A2BD-457F5699E8C5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DF07477E-4AF6-496E-9D21-749A40874728}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DF07477E-4AF6-496E-9D21-749A40874728}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DF07477E-4AF6-496E-9D21-749A40874728}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DF07477E-4AF6-496E-9D21-749A40874728}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
