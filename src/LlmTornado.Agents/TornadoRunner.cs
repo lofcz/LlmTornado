@@ -152,12 +152,9 @@ public class TornadoRunner
 
         ChatMessage? lastResult = chat.Messages.Last();
 
-        if (lastResult != null) 
+        if (lastResult is { Role: ChatMessageRoles.Tool }) 
         {
-            if (lastResult.Role == ChatMessageRoles.Tool)
-            {
-                requiresAction = true;
-            }
+            requiresAction = true;
         }
 
         return requiresAction;
@@ -221,20 +218,17 @@ public class TornadoRunner
             {
                 return await HandleStreaming(agent, chat, streamingCallback);
             }
-            else
+
+            RestDataOrException<ChatRichResponse> response = await chat.GetResponseRichSafe(functions =>
             {
-
-                RestDataOrException<ChatRichResponse> response = await chat.GetResponseRichSafe(functions =>
+                foreach (FunctionCall fn in functions)
                 {
-                    foreach (FunctionCall fn in functions)
-                    {
-                        Task.Run(async () => fn.Result = await HandleToolCall(agent, fn, toolPermissionRequest)).Wait();
-                    }
-                    return Threading.ValueTaskCompleted;
-                });
+                    Task.Run(async () => fn.Result = await HandleToolCall(agent, fn, toolPermissionRequest)).Wait();
+                }
+                return Threading.ValueTaskCompleted;
+            });
 
-                return chat;
-            }
+            return chat;
         }
         catch (Exception ex)
         {
