@@ -52,13 +52,8 @@ public class TornadoRunner
     )
     {
         Conversation chat = agent.Client.Chat.CreateConversation(agent.Options);
-        
-        if (agent.ResponseOptions != null)
-        {
-            chat.RequestParameters.ResponseRequestParameters = agent.ResponseOptions;
-        }
-            
-        chat.AddSystemMessage(agent.Instructions);
+   
+        chat.AddSystemMessage(agent.Instructions); //Set the instructions for the agent
 
         if (cancellationToken != null)
         {
@@ -71,6 +66,7 @@ public class TornadoRunner
         {
             foreach (ChatMessage message in messages)
             {
+                if (message.Role == ChatMessageRoles.System) continue; //Skip system messages if any to avoid Instruction overlap
                 chat.AppendMessage(message);
             }
         }
@@ -91,19 +87,8 @@ public class TornadoRunner
         }
 
         //Check if the input triggers a guardrail to stop the agent from continuing
-        if (guardRail != null)
-        {
-            GuardRailFunctionOutput? guard_railResult = await (Task<GuardRailFunctionOutput>)guardRail.DynamicInvoke([input])!;
-            if (guard_railResult != null)
-            {
-                if (guard_railResult.TripwireTriggered) throw new GuardRailTriggerException($"Input Guardrail Stopped the agent from continuing because, {guard_railResult.OutputInfo}");
-            }
-            else
-            {
-                throw new Exception($"GuardRail Failed To Run");
-            }
-        }
-
+        CheckInputGuardrail(input, guardRail);
+        
         //Agent loop
         int currentTurn = 0;
         try
@@ -117,7 +102,7 @@ public class TornadoRunner
                 chat = await GetNewResponse(agent, chat, streaming, streamingCallback, verboseCallback, toolPermissionRequest) ?? chat;
 
                 currentTurn++;
-            } while (ProcessOutputItems(chat) && !singleTurn);
+            } while (ProcessOutputItems(chat.Messages.Last()) && !singleTurn);
         }
         catch (Exception ex)
         {
@@ -127,6 +112,18 @@ public class TornadoRunner
         //Add output guardrail eventually
 
         return chat;
+    }
+
+    private static void CheckInputGuardrail(string input, GuardRailFunction? guardRail)
+    {
+        if (guardRail != null)
+        {
+            GuardRailFunctionOutput? guard_railResult = (GuardRailFunctionOutput?)guardRail.DynamicInvoke([input]);
+            if (guard_railResult != null && guard_railResult.TripwireTriggered)
+            {
+                throw new GuardRailTriggerException($"Input Guardrail Stopped the agent from continuing because, {guard_railResult.OutputInfo}");
+            }
+        }
     }
 
     private static void CheckForCancellation(CancellationTokenSource? cancellationToken)
@@ -142,11 +139,9 @@ public class TornadoRunner
     /// </summary>
     /// <param name="chat"> Conversation to check last message for tool calls</param>
     /// <returns></returns>
-    private static bool ProcessOutputItems(Conversation chat)
+    private static bool ProcessOutputItems(ChatMessage lastResult)
     {
         bool requiresAction = false;
-
-        ChatMessage? lastResult = chat.Messages.Last();
 
         if (lastResult is { Role: ChatMessageRoles.Tool }) 
         {
@@ -184,17 +179,6 @@ public class TornadoRunner
         return agent.AgentTools.ContainsKey(toolCall.Name) ? await ToolRunner.CallAgentToolAsync(agent, toolCall) : await ToolRunner.CallFuncToolAsync(agent, toolCall);
     }
 
-    /// <summary>
-    /// Handle verbose responses from Running
-    /// </summary>
-    /// <param name="item"></param>
-    /// <param name="callback"></param>
-    /// <returns></returns>
-    private static async Task HandleVerboseCallback(ChatMessage item, RunnerVerboseCallbacks? callback = null)
-    {
-        //handle verbose responses
-    }
-
 
     /// <summary>
     /// Get response from the model or If Error delete last message in thread and retry (max agent loops will cap)
@@ -206,7 +190,6 @@ public class TornadoRunner
     /// <returns></returns>
     public static async Task<Conversation>? GetNewResponse(TornadoAgent agent, Conversation chat, bool Streaming = false, StreamingCallbacks? streamingCallback = null, RunnerVerboseCallbacks? verboseCallback = null, ToolPermissionRequest? toolPermissionRequest = null)
     {
-
         try
         {
             TornadoRequestContent serialized = chat.Serialize(new ChatRequestSerializeOptions { Pretty = true });
