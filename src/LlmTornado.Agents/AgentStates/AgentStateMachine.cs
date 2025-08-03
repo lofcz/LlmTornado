@@ -35,8 +35,8 @@ public abstract class AgentStateMachine<TInput, TOutput> : StateMachine<TInput, 
         {
             if(state.State is IAgentState agentState)
             {
-                ControlAgent.VerboseCallback += agentState.RunnerVerboseCallbacks;
-                ControlAgent.StreamingCallback += agentState.StreamingCallbacks;
+                agentState.SubscribeVerboseChannel(ControlAgent.VerboseCallback);
+                agentState.SubscribeStreamingChannel(ControlAgent.StreamingCallback);
             }
         };
 
@@ -45,8 +45,8 @@ public abstract class AgentStateMachine<TInput, TOutput> : StateMachine<TInput, 
         {
             if (state is IAgentState agentState)
             {
-                ControlAgent.VerboseCallback -= agentState.RunnerVerboseCallbacks;
-                ControlAgent.StreamingCallback -= agentState.StreamingCallbacks;
+                agentState.UnsubscribeVerboseChannel(ControlAgent.VerboseCallback);
+                agentState.UnsubscribeStreamingChannel(ControlAgent.StreamingCallback);
             }
         };
     }

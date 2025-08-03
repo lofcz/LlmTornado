@@ -11,9 +11,16 @@ public class AgentStateMachineDemo : DemoBase
     [TornadoTest]
     public static async Task BasicTestStreaming()
     {
+        ValueTask ReceiveStream(ModelStreamingEvents stream)
+        {
+            if (stream is ModelStreamingOutputTextDeltaEvent text)
+                Console.Write($"{text.DeltaText}");
+            return ValueTask.CompletedTask;
+        }
         // Create an instance of the BasicLombdaAgent
         BasicLombdaAgent agent = new BasicLombdaAgent();
-        agent.RootStreamingEvent += ReceiveStream; // Subscribe to the streaming event
+        agent.ControllerStreamingEvent += ReceiveStream; // Subscribe to the streaming event
+
         // Example task to run through the state machine
 
         string task = "What is the capital of France?";
@@ -44,9 +51,15 @@ public class AgentStateMachineDemo : DemoBase
     [TornadoTest]
     public static async Task BasicImageTestStreaming()
     {
+        ValueTask ReceiveStream(ModelStreamingEvents stream)
+        {
+            if (stream is ModelStreamingOutputTextDeltaEvent text)
+                Console.Write($"{text.DeltaText}");
+            return ValueTask.CompletedTask;
+        }
         // Create an instance of the BasicLombdaAgent
         BasicLombdaAgent agent = new BasicLombdaAgent();
-        agent.RootStreamingEvent += ReceiveStream; // Subscribe to the streaming event
+        agent.ControllerStreamingEvent += ReceiveStream; // Subscribe to the streaming event
         // Example task to run through the state machine
 
         string task = "What is in image?";
@@ -59,12 +72,7 @@ public class AgentStateMachineDemo : DemoBase
         Console.Write("\n");
     }
 
-    public static async Task<ValueTask> ReceiveStream(ModelStreamingEvents stream)
-    {
-        if(stream is ModelStreamingOutputTextDeltaEvent text)
-            Console.Write($"{text.DeltaText}");
-        return ValueTask.CompletedTask;
-    }
+
 }
 
 public class BasicLombdaAgent : ControllerAgent
@@ -164,7 +172,7 @@ class ReportingState : AgentState<string, ReportData>
 
     public override async Task<ReportData> Invoke(string input)
     {
-        return await BeginRunnerAsync<ReportData>(input);
+        return await BeginRunnerAsync<ReportData>(input, true);
     }
 }
 
@@ -203,7 +211,7 @@ class ResearchState : AgentState<WebSearchPlan, string>
 
     public async Task<string> RunResearchAgent(WebSearchItem item)
     {
-        return (await BeginRunnerAsync(InitializeStateAgent(), item.query)).Messages.Last().Content ?? "";
+        return (await BeginRunnerAsync(InitializeStateAgent(), item.query, true)).Messages.Last().Content ?? "";
     }
 }
 

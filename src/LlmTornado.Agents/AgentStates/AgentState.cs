@@ -10,14 +10,6 @@ namespace LlmTornado.Agents.AgentStates;
 public interface IAgentState
 {
     /// <summary>
-    /// Callbacks from the runner operations for verbose output.
-    /// </summary>
-    public RunnerVerboseCallbacks? RunnerVerboseCallbacks { get; set; }
-    /// <summary>
-    /// Call backs from the agent state for streaming channels
-    /// </summary>
-    public StreamingCallbacks? StreamingCallbacks { get; set; }
-    /// <summary>
     /// Control Agent of the state
     /// </summary>
     public TornadoAgent StateAgent { get; set; }
@@ -33,22 +25,27 @@ public interface IAgentState
     /// <remarks>This event is triggered during the execution of a streaming operation, passing a
     /// string parameter that contains the current status or data update. Subscribers can use this event to receive
     /// real-time updates.</remarks>
-    public event ModelStreamingEvent? RunningStreamingCallback;
+    public event StreamingCallbacks? RunningStreamingCallback;
 
     /// <summary>
     /// Gets or sets the <see cref="CancellationTokenSource"/> used to signal cancellation requests.
     /// </summary>
-    public CancellationTokenSource CancelTokenSource { get; set; }  
+    public CancellationTokenSource CancelTokenSource { get; set; }
+
+    public void SubscribeVerboseChannel(RunnerVerboseCallbacks? verboseChannel);
+    public void SubscribeStreamingChannel(StreamingCallbacks? streamingChannel);
+
+    public void UnsubscribeVerboseChannel(RunnerVerboseCallbacks? verboseChannel);
+    public void UnsubscribeStreamingChannel(StreamingCallbacks? streamingChannel);
 }
 
 public abstract class AgentState<TInput, TOutput> : BaseState<TInput, TOutput>, IAgentState
 {
-    public RunnerVerboseCallbacks? RunnerVerboseCallbacks { get; set; }
-    public StreamingCallbacks? StreamingCallbacks { get; set; }
     public TornadoAgent StateAgent { get; set; }
+
     public event Action<string>? RunningVerboseCallback;
 
-    public event ModelStreamingEvent? RunningStreamingCallback;
+    public event StreamingCallbacks? RunningStreamingCallback;
 
     public CancellationTokenSource CancelTokenSource { get; set; } = new CancellationTokenSource();
 
@@ -69,10 +66,6 @@ public abstract class AgentState<TInput, TOutput> : BaseState<TInput, TOutput>, 
         CurrentStateMachine = stateMachine;
         CurrentStateMachine.States.Add(this); //Keep States alive in the StateMachine
         StateAgent = InitializeStateAgent(); // Initialize the agent state, which sets up the agent and its properties
-
-        RunnerVerboseCallbacks += ReceiveVerbose; //Setup the Verbose channel to trigger the RunningVerboseCallback event
-        StreamingCallbacks += ReceiveStreaming; //Setup the Streaming channel to trigger the RunningStreamingCallback event
-
         StateAgent.Options.CancellationToken = CancelTokenSource.Token; // Set the cancellation token source for the agent client
     }
 
@@ -112,7 +105,7 @@ public abstract class AgentState<TInput, TOutput> : BaseState<TInput, TOutput>, 
     /// <returns>A task representing the asynchronous operation. The task result contains the processed text output.</returns>
     public async Task<Conversation> BeginRunnerAsync(TornadoAgent agent, string input, bool streaming = false)
     {
-        return (await RunAsync(agent, input, verboseCallback: RunnerVerboseCallbacks,streamingCallback:StreamingCallbacks ,streaming: streaming, cancellationToken: CancelTokenSource));
+        return (await RunAsync(agent, input, verboseCallback: ReceiveVerbose, streamingCallback: ReceiveStreaming, streaming: streaming, cancellationToken: CancelTokenSource));
     }
 
     /// <summary>
@@ -139,7 +132,7 @@ public abstract class AgentState<TInput, TOutput> : BaseState<TInput, TOutput>, 
     /// string. If the operation does not produce any output, an empty string is returned.</returns>
     public async Task<Conversation> BeginRunnerAsync(string input, bool streaming = false)
     {
-        return (await RunAsync(StateAgent, input, verboseCallback: RunnerVerboseCallbacks, streamingCallback: StreamingCallbacks, streaming: streaming, cancellationToken: CancelTokenSource));
+        return (await RunAsync(StateAgent, input, verboseCallback: ReceiveVerbose, streamingCallback: ReceiveStreaming, streaming: streaming, cancellationToken: CancelTokenSource));
     }
 
     /// <summary>
@@ -156,8 +149,8 @@ public abstract class AgentState<TInput, TOutput> : BaseState<TInput, TOutput>, 
         for (int attempt = 0; attempt <= maxRetries; attempt++)
         {
             Conversation result = await RunAsync(StateAgent, input,
-                verboseCallback: RunnerVerboseCallbacks,
-                streamingCallback: StreamingCallbacks,
+                verboseCallback: ReceiveVerbose, 
+                streamingCallback: ReceiveStreaming,
                 streaming: streaming,
                 cancellationToken: CancelTokenSource);
 
@@ -252,5 +245,25 @@ public abstract class AgentState<TInput, TOutput> : BaseState<TInput, TOutput>, 
             result = default;
             return false;
         }
+    }
+
+    public void SubscribeVerboseChannel(RunnerVerboseCallbacks? verboseChannel)
+    {
+        verboseChannel += ReceiveVerbose; // Register the verbose channel to receive updates
+    }
+
+    public void SubscribeStreamingChannel(StreamingCallbacks? streamingChannel)
+    {
+        streamingChannel += ReceiveStreaming; // Register the streaming channel to receive updates
+    }
+
+    public void UnsubscribeVerboseChannel(RunnerVerboseCallbacks? verboseChannel)
+    {
+        verboseChannel -= ReceiveVerbose; // Register the verbose channel to receive updates
+    }
+
+    public void UnsubscribeStreamingChannel(StreamingCallbacks? streamingChannel)
+    {
+        streamingChannel -= ReceiveStreaming; // Register the streaming channel to receive updates
     }
 }

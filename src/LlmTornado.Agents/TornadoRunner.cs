@@ -8,14 +8,14 @@ using LlmTornado.Responses.Events;
 namespace LlmTornado.Agents;
 
 public delegate void TornadoStreamingCallbacks(IResponseEvent streamingResult);
+public delegate ValueTask RunnerVerboseCallbacks(string runnerAction);
+public delegate ValueTask<bool> ToolPermissionRequest(string message);
 
 /// <summary>
 /// <c>Runner</c> to run the agent loop
 /// </summary>
 public class TornadoRunner
 {
-    public delegate ValueTask RunnerVerboseCallbacks(string runnerAction);
-    public delegate ValueTask<bool> ToolPermissionRequest(string message);
     /// <summary>
     /// Invoke the agent loop to begin async
     /// </summary>
@@ -51,7 +51,6 @@ public class TornadoRunner
         ToolPermissionRequest? toolPermissionRequest = null
     )
     {
-        
         Conversation chat = agent.Options != null ? agent.Client.Chat.CreateConversation(agent.Options) : agent.Client.Chat.CreateConversation(agent.Model);
         
         if (agent.ResponseOptions != null)
@@ -118,7 +117,7 @@ public class TornadoRunner
                 chat = await GetNewResponse(agent, chat, streaming, streamingCallback, verboseCallback, toolPermissionRequest) ?? chat;
 
                 currentTurn++;
-            } while (await ProcessOutputItems(agent, chat, verboseCallback) && !singleTurn);
+            } while (ProcessOutputItems(chat) && !singleTurn);
         }
         catch (Exception ex)
         {
@@ -139,15 +138,11 @@ public class TornadoRunner
     }
 
     /// <summary>
-    /// Add output to messages and handle function and tool calls
+    /// Check for tool calls in the last message of the conversation
     /// </summary>
-    /// <param name="agent"></param>
-    /// <param name="runResult"></param>
-    /// <param name="callback"></param>
-    /// <param name="computerUseCallback"></param>
-    /// <param name="toolPermissionRequest"
+    /// <param name="chat"> Conversation to check last message for tool calls</param>
     /// <returns></returns>
-    private static async Task<bool> ProcessOutputItems(TornadoAgent agent,  Conversation chat, RunnerVerboseCallbacks? callback)
+    private static bool ProcessOutputItems(Conversation chat)
     {
         bool requiresAction = false;
 
@@ -234,14 +229,13 @@ public class TornadoRunner
         catch (Exception ex)
         {
             verboseCallback?.Invoke(ex.ToString());
-            verboseCallback?.Invoke("Removing Last Message thread");
         }
 
         return null;
     }
 
 
-    public static async Task<Conversation> HandleStreaming(TornadoAgent agent, Conversation chat, StreamingCallbacks? streamingCallback = null, ToolPermissionRequest? toolPermissionRequest = null)
+    private static async Task<Conversation> HandleStreaming(TornadoAgent agent, Conversation chat, StreamingCallbacks? streamingCallback = null, ToolPermissionRequest? toolPermissionRequest = null)
     {
         //Create Open response
         await chat.StreamResponseRich(new ChatStreamEventHandler

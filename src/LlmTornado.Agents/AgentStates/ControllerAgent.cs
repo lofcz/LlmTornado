@@ -14,10 +14,6 @@ namespace LlmTornado.Agents.AgentStates;
 /// <returns>A task that represents the asynchronous operation. The task result contains the processed string.</returns>
 public delegate Task<string> InputProcessorDelegate(string input);
 
-public delegate string UserInputRequestDelegate(string prompt);
-
-public delegate Task<ValueTask> ModelStreamingEvent(ModelStreamingEvents streamEvent);
-
 public abstract class ControllerAgent
 {
     private readonly string _agentName;
@@ -48,7 +44,6 @@ public abstract class ControllerAgent
     /// </summary>
     public string MainThreadId { get; set; } = "";
 
-    public event UserInputRequestDelegate UserInputRequested;
     /// <summary>
     /// Occurs when Agent gets a new message to process.
     /// </summary>
@@ -59,30 +54,23 @@ public abstract class ControllerAgent
     /// <remarks>Subscribe to this event to perform actions after the execution process finishes.  The
     /// event handler will be invoked when the execution is complete.</remarks>
     public event Action? FinishedExecution;
-    /// <summary>
-    /// Verbose event for logging detailed information about the agent's StateMachine operations and status.
-    /// </summary>
-    public event Action<string>? verboseEvent;
-    /// <summary>
-    /// Streaming events from the Agents in the state machine system for logging purposes
-    /// </summary>
-    public event ModelStreamingEvent? streamingEvent;
+
     /// <summary>
     /// Occurs when a verbose message related to the Control Agent  is generated.
     /// </summary>
     /// <remarks>This event is triggered to provide detailed logging information about the Control Agent
     /// Subscribers can use this event to capture and process verbose messages for diagnostic or logging
     /// purposes.</remarks>
-    public event Action<string>? RootVerboseEvent;
+    public event Action<string>? ControllerVerboseEvent;
     /// <summary>
     /// Main streaming event for the Control Agent to handle streaming messages for the Control Agent conversation.
     /// </summary>
-    public event ModelStreamingEvent? RootStreamingEvent;
+    public event StreamingCallbacks? ControllerStreamingEvent;
     /// <summary>
     /// Occurs when a new state machine is added.
     /// </summary>
     /// <remarks>Subscribe to this event to perform actions when a state machine is added to the
-    /// collection. The event handler receives an argument of type <see cref="StateMachine.StateMachine"/>,
+    /// collection. The event handler receives an argument of type <see cref="StateMachine"/>,
     /// representing the added state machine.</remarks>
     public event Action<StateMachine>? StateMachineAdded;
     /// <summary>
@@ -99,21 +87,10 @@ public abstract class ControllerAgent
     public StreamingCallbacks? StreamingCallback;
 
     /// <summary>
-    /// Used to get logging information from the runner
+    /// Used to get logging information from the runner probably will eventually be used to send status updates to the Control Agent.
     /// </summary>
     public RunnerVerboseCallbacks? VerboseCallback;
-
-    /// <summary>
-    /// Represents the main callback for streaming operation used to trigger the event handler for the Control Agent.
-    /// </summary>
-    public StreamingCallbacks? MainStreamingCallback;
-
-    /// <summary>
-    /// Represents the main callback for verbose operation used to trigger the event handler for the Control Agent.
-    /// </summary>
-    public RunnerVerboseCallbacks? MainVerboseCallback;
         
-
     /// <summary>
     /// Master Cancellation token source for the Control Agent and the rest of the state machines.
     /// </summary>
@@ -124,10 +101,8 @@ public abstract class ControllerAgent
         // Initialize the agent and set up the callbacks
         InitializeAgent(); 
         _agentName = agentName;
-        StreamingCallback += RecieveStreamingCallbacks;  //Route State Agents streaming callbacks to the agent's event handler
-        VerboseCallback += RecieveVerboseCallbacks; //Route State Agents verbose callbacks to the agent's event handler  
-        MainStreamingCallback += RootStreamingCallback; //Setup the main streaming callback for the Control Agent
-        MainVerboseCallback += RootVerboseCallback; //Setup the main verbose callback for the Control Agent
+        StreamingCallback += InvokeStreamingCallback;  //Route State Agents streaming callbacks to the agent's event handler
+        VerboseCallback += InvokeVerboseCallback; //Route State Agents verbose callbacks to the agent's event handler  
         ControlAgent.Options.CancellationToken = CancellationTokenSource.Token; // Set the cancellation token source for the Control Agent
     }
 
@@ -135,9 +110,9 @@ public abstract class ControllerAgent
     /// Used to send streaming messages from the Control Agent
     /// </summary>
     /// <param name="message"></param>
-    private ValueTask RootStreamingCallback(ModelStreamingEvents message)
+    private ValueTask InvokeStreamingCallback(ModelStreamingEvents message)
     {
-        RootStreamingEvent?.Invoke(message);
+        StreamingCallback?.Invoke(message);
         return default; // Return a completed ValueTask
     }
 
@@ -145,9 +120,9 @@ public abstract class ControllerAgent
     /// Used to send verbose logging messages from the Control Agent
     /// </summary>
     /// <param name="message"></param>
-    private ValueTask RootVerboseCallback(string message)
+    private ValueTask InvokeVerboseCallback(string message)
     {
-        RootVerboseEvent?.Invoke(message);
+        VerboseCallback?.Invoke(message);
         return default; // Return a completed ValueTask
     }
     
@@ -159,9 +134,9 @@ public abstract class ControllerAgent
     /// to handle the message. Ensure that the <paramref name="message"/> is not null to avoid potential
     /// exceptions.</remarks>
     /// <param name="message">The message to be passed to the streaming event. Cannot be null.</param>
-    private ValueTask RecieveStreamingCallbacks(ModelStreamingEvents message)
+    private ValueTask HandleControllerStreamingEvent(ModelStreamingEvents message)
     {
-        streamingEvent?.Invoke(message);
+        ControllerStreamingEvent?.Invoke(message);
         return default; // Return a completed ValueTask
     }
 
@@ -171,9 +146,9 @@ public abstract class ControllerAgent
     /// <remarks>This method triggers the <c>verboseEvent</c> if it has any subscribers. Ensure that
     /// the event is properly subscribed to before calling this method.</remarks>
     /// <param name="message">The message to be passed to the event handlers. Cannot be null.</param>
-    private ValueTask RecieveVerboseCallbacks(string message)
+    private ValueTask HandleControllerVerboseEvent(string message)
     {
-        verboseEvent?.Invoke(message);
+        ControllerVerboseEvent?.Invoke(message);
         return default; // Return a completed ValueTask
     }
 
@@ -277,7 +252,7 @@ public abstract class ControllerAgent
                     string originalInstructions = ControlAgent.Instructions;
                     ControlAgent.Instructions = "I need you to take the input file and describe the file/image. Be the eyes for the next step who cannot see the image but needs context from within the file/image" +
                                                 "Be as descriptive as possible.";
-                    Conversation fileDescription = await RunAsync(ControlAgent, messages: [message], verboseCallback: MainVerboseCallback, cancellationToken: CancellationTokenSource);
+                    Conversation fileDescription = await RunAsync(ControlAgent, messages: [message], verboseCallback: InvokeVerboseCallback, cancellationToken: CancellationTokenSource);
 
                     //Restore the original instructions
                     ControlAgent.Instructions = originalInstructions;
@@ -305,14 +280,14 @@ public abstract class ControllerAgent
         if(CurrentResult != null)
         {
             //Run the ControlAgent with the current messages
-            CurrentResult = await RunAsync(ControlAgent, messages: [..CurrentResult.Messages], verboseCallback: MainVerboseCallback,
-                streaming: streaming, streamingCallback: MainStreamingCallback, cancellationToken: CancellationTokenSource, responseId: string.IsNullOrEmpty(MainThreadId) ? "" : MainThreadId);
+            CurrentResult = await RunAsync(ControlAgent, messages: [..CurrentResult.Messages], verboseCallback: HandleControllerVerboseEvent,
+                streaming: streaming, streamingCallback: HandleControllerStreamingEvent, cancellationToken: CancellationTokenSource, responseId: string.IsNullOrEmpty(MainThreadId) ? "" : MainThreadId);
         }
         else
         {
             //Run the ControlAgent with the current messages
-            CurrentResult = await RunAsync(ControlAgent, messages: [userMessage], verboseCallback: MainVerboseCallback,
-                streaming: streaming, streamingCallback: MainStreamingCallback, cancellationToken: CancellationTokenSource, responseId: string.IsNullOrEmpty(MainThreadId) ? "" : MainThreadId);
+            CurrentResult = await RunAsync(ControlAgent, messages: [userMessage], verboseCallback: HandleControllerVerboseEvent,
+                streaming: streaming, streamingCallback: HandleControllerStreamingEvent, cancellationToken: CancellationTokenSource, responseId: string.IsNullOrEmpty(MainThreadId) ? "" : MainThreadId);
         }
 
 

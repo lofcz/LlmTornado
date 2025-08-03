@@ -78,10 +78,26 @@ public class TornadoAgent
         TornadoApi client = new TornadoApi([new ProviderAuthentication(LLmProviders.OpenAi, Environment.GetEnvironmentVariable("OPENAI_API_KEY")!),]);
         return new TornadoAgent(client, "");
     }
-    public TornadoAgent(TornadoApi client, ChatModel model, string instructions = "", Type? outputSchema = null, List<Delegate>? tools = null)
+    /// <summary>
+    /// Initializes a new instance of the <see cref="TornadoAgent"/> class, which represents an AI agent capable of
+    /// interacting with a Tornado API client and executing tasks based on provided instructions, tools, and an optional
+    /// output schema.
+    /// </summary>
+    /// <remarks>This constructor sets up the agent with the specified configuration, including the AI model,
+    /// optional instructions, and tools. If an output schema is provided, the agent will configure its response format
+    /// accordingly. If tools are provided, they will be initialized for use by the agent.</remarks>
+    /// <param name="client">The <see cref="TornadoApi"/> client used to communicate with the Tornado API.</param>
+    /// <param name="model">The <see cref="ChatModel"/> that defines the AI model to be used by the agent.</param>
+    /// <param name="instructions">Optional. A string containing the initial instructions for the agent. If not provided or empty, defaults to "You
+    /// are a helpful assistant."</param>
+    /// <param name="outputSchema">Optional. A <see cref="Type"/> representing the schema of the expected output. If provided, the agent will
+    /// format its responses according to the specified schema.</param>
+    /// <param name="tools">Optional. A list of <see cref="Delegate"/> instances representing tools or functions that the agent can use to
+    /// perform specific tasks. If not provided, the agent will use its default tools.</param>
+    public TornadoAgent(TornadoApi client, ChatModel model, string instructions = "You are a helpful assistant", Type? outputSchema = null, List<Delegate>? tools = null)
     {
         Client = client;
-        Instructions = string.IsNullOrEmpty(instructions) ? "You are a helpful assistant" : instructions;
+        Instructions = instructions;
         OutputSchema = outputSchema;
         Tools = tools ?? Tools;
         Instructions = instructions;
