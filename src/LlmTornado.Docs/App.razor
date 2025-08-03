@@ -18,9 +18,5 @@
 </Router>
 
 @code {
-    protected override async Task OnInitializedAsync()
-    {
-        await base.OnInitializedAsync();
-        await Intellisense.Init(JS, NavigationManager, WorkerFactory, Http);
-    }
+    // Removed global Intellisense.Init; pages initialize on demand.
 }

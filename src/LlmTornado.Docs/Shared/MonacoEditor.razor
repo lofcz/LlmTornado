@@ -7,16 +7,33 @@
 
 @code {
     private ElementReference _iframe;
+    private bool _isInitialized = false;
 
     [Parameter]
     public string? Code { get; set; }
 
+    [Parameter]
+    public bool Initialized { get; set; }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
+        if (firstRender || (Initialized && !_isInitialized))
         {
-            // This just handles the initial handshake and code loading
+            _isInitialized = true;
+            // This handles the initial handshake and code loading
             await JSRuntime.InvokeVoidAsync("monacoEditor.init", _iframe, Code);
         }
+        
+        // If the code changes after initialization, update the editor
+        if (!firstRender && Initialized && Code != null)
+        {
+            await JSRuntime.InvokeVoidAsync("initializeMonacoEditor", Code);
+        }
+    }
+
+    protected override bool ShouldRender()
+    {
+        // Only re-render if the Initialized parameter changes
+        return base.ShouldRender() || (_isInitialized != Initialized);
     }
 }

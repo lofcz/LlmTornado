@@ -21,9 +21,9 @@ public class Program
         builder.Services.AddSingleton<ConsoleOutputService>();
         builder.Services.AddSingleton<IResourceResolver, ResourceResolver>();
         builder.Services.AddWorkerFactory();
+        builder.Services.AddSingleton<IIntellisenseStatus, IntellisenseStatus>();
+        builder.Services.AddSingleton<IAssemblyCache, AssemblyCache>();
 
-        await new RoslynProject("").Init(new HttpClient());
-        
         await builder.Build().RunAsync();
     }
 }

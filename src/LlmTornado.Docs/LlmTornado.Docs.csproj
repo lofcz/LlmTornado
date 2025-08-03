@@ -88,4 +88,9 @@
         <Exec Command="npm run build" WorkingDirectory="ClientApp" />
     </Target>
 
+    <!-- Define WEB_WORKERS for Release builds only -->
+    <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+        <DefineConstants>$(DefineConstants);WEB_WORKERS</DefineConstants>
+    </PropertyGroup>
+
 </Project>

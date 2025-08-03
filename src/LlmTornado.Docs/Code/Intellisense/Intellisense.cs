@@ -72,13 +72,17 @@ public class MonacoServiceWrapper {
             return Encoding.UTF8.GetBytes("{}");
         }
         
-       return Encoding.UTF8.GetBytes("{}");
+        return Encoding.UTF8.GetBytes("{}");
     }
 }
 
 public static class Intellisense
 {
-    public static bool UseWorker = true; // Toggle for debugging
+#if WEB_WORKERS
+    public static bool UseWorker = true;
+#else
+    public static bool UseWorker = true;
+#endif
     public static NavigationManager? NavigationManager {get;set;}
     public static IWorkerBackgroundService<MonacoService>? MonacoWorkerWrapper {get;set;}
     public static MonacoService? MainThreadMonacoService { get; set; }
@@ -93,12 +97,19 @@ public static class Intellisense
            Worker = await wf.CreateAsync();
            System.Console.WriteLine("Creating worker");
            MonacoWorkerWrapper = await Worker.CreateBackgroundServiceAsync<MonacoService>();
+           // Initialize worker-side MonacoService (constructor dependencies resolved in worker scope)
            await MonacoWorkerWrapper.RunAsync(a => a.Init(nm.BaseUri));
        }
        else
        {
            System.Console.WriteLine("Creating main-thread service");
-           MainThreadMonacoService = new MonacoService(httpClient);
+
+           // We cannot get DI from IWorkerFactory. Construct required singletons locally for the main-thread path.
+           // This path is used only when UseWorker == false (debug), so local construction is acceptable.
+           var cache = new AssemblyCache();
+           var status = new IntellisenseStatus();
+
+           MainThreadMonacoService = new MonacoService(httpClient, cache, status);
            await MainThreadMonacoService.Init(nm.BaseUri);
        }
        
