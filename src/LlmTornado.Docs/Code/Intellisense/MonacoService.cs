@@ -47,9 +47,8 @@ public class MonacoService
     #region Constructors
 
     // Primary DI ctor
-    public MonacoService(HttpClient httpClient, IAssemblyCache cache, IIntellisenseStatus status, IJSRuntime js)
+    public MonacoService(HttpClient httpClient, IAssemblyCache cache, IIntellisenseStatus status)
     {
-        this.js = js;
         _httpClient = httpClient;
         _cache = cache;
         _status = status;
@@ -95,10 +94,8 @@ $@"using System;
 
     internal record ResponsePayload(object? Payload, string? Type);
     
-    public async Task Init(string uri, IJSRuntime? js)
+    public async Task Init(string uri)
     {
-        this.js = js;
-        
         // Ensure minimal fields exist even if constructed via parameterless ctor
         _cache ??= new AssemblyCache();
         _status ??= new IntellisenseStatus();

@@ -98,7 +98,7 @@ public static class Intellisense
            System.Console.WriteLine("Creating worker");
            MonacoWorkerWrapper = await Worker.CreateBackgroundServiceAsync<MonacoService>();
            // Initialize worker-side MonacoService (constructor dependencies resolved in worker scope)
-           await MonacoWorkerWrapper.RunAsync(a => a.Init(nm.BaseUri, JS));
+           await MonacoWorkerWrapper.RunAsync(a => a.Init(nm.BaseUri));
        }
        else
        {
@@ -109,8 +109,8 @@ public static class Intellisense
            var cache = new AssemblyCache();
            var status = new IntellisenseStatus();
 
-           MainThreadMonacoService = new MonacoService(httpClient, cache, status, JS);
-           await MainThreadMonacoService.Init(nm.BaseUri, JS);
+           MainThreadMonacoService = new MonacoService(httpClient, cache, status);
+           await MainThreadMonacoService.Init(nm.BaseUri);
        }
        
        DotNetObjectReference<MonacoServiceWrapper> wrapperRef = DotNetObjectReference.Create(new MonacoServiceWrapper());
