@@ -49,6 +49,15 @@ public class AgentStateMachineDemo : DemoBase
     }
 
     [TornadoTest]
+    public static async Task DotGraphTest()
+    {
+        // Create an instance of the BasicLombdaAgent
+        BasicLombdaAgent agent = new BasicLombdaAgent();
+        // Example task to run through the state machine
+        Console.WriteLine(agent._stateMachine.ToDotGraph());
+    }
+
+    [TornadoTest]
     public static async Task BasicImageTestStreaming()
     {
         ValueTask ReceiveStream(ModelStreamingEvents stream)
