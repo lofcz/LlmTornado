@@ -2,7 +2,7 @@
 
 namespace LlmTornado.Agents.DataModels;
 
-public delegate void StreamingCallbacks(ModelStreamingEvents streamingResult);
+public delegate ValueTask StreamingCallbacks(ModelStreamingEvents streamingResult);
     
 public enum ModelStreamingStatus
 {

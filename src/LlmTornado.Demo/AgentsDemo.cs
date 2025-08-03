@@ -25,7 +25,7 @@ public class AgentsDemo : DemoBase
         TornadoAgent agent = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41Mini, "Have fun");
 
         // Enhanced streaming callback to handle the new ModelStreamingEvents system
-        void StreamingHandler(ModelStreamingEvents streamingEvent)
+        ValueTask StreamingHandler(ModelStreamingEvents streamingEvent)
         {
             switch (streamingEvent.EventType)
             {
@@ -38,6 +38,7 @@ public class AgentsDemo : DemoBase
                 default:
                     break;
             }
+            return ValueTask.CompletedTask;
         }
 
         var result = await TornadoRunner.RunAsync(agent, "Hello Streaming World!", streaming: true, streamingCallback: StreamingHandler);

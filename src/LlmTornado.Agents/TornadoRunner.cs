@@ -14,8 +14,8 @@ public delegate void TornadoStreamingCallbacks(IResponseEvent streamingResult);
 /// </summary>
 public class TornadoRunner
 {
-    public delegate void RunnerVerboseCallbacks(string runnerAction);
-    public delegate bool ToolPermissionRequest(string message);
+    public delegate ValueTask RunnerVerboseCallbacks(string runnerAction);
+    public delegate ValueTask<bool> ToolPermissionRequest(string message);
     /// <summary>
     /// Invoke the agent loop to begin async
     /// </summary>
@@ -51,6 +51,7 @@ public class TornadoRunner
         ToolPermissionRequest? toolPermissionRequest = null
     )
     {
+        
         Conversation chat = agent.Options != null ? agent.Client.Chat.CreateConversation(agent.Options) : agent.Client.Chat.CreateConversation(agent.Model);
         
         if (agent.ResponseOptions != null)
@@ -174,7 +175,7 @@ public class TornadoRunner
             if (toolPermissionRequest?.GetInvocationList().Length > 0 && agent.ToolPermissionRequired[toolCall.Name])
             {
                 //If tool permission is required, ask user for permission
-                permissionGranted = toolPermissionRequest.Invoke($"Do you want to allow the agent to use the tool: {toolCall.Name}?");
+                permissionGranted = toolPermissionRequest.Invoke($"Do you want to allow the agent to use the tool: {toolCall.Name}?").Result;
             }
         }
 
@@ -247,8 +248,6 @@ public class TornadoRunner
         {
             MessageTokenExHandler = (exText) =>
             {
-                
-                
                 //Call the streaming callback for text
                 return Threading.ValueTaskCompleted;
             },
@@ -260,7 +259,6 @@ public class TornadoRunner
             MessageTokenHandler = (text) =>
             {
                 streamingCallback?.Invoke(new ModelStreamingOutputTextDeltaEvent(1, 1, 1, text));
-                Console.Write(text);
                 return Threading.ValueTaskCompleted;
             },
             ReasoningTokenHandler = (reasoning) =>
@@ -275,9 +273,6 @@ public class TornadoRunner
             },
             MessagePartHandler = (part) =>
             {
-                if (part.Type == ChatMessageTypes.Text)
-                {
-                }
                 return Threading.ValueTaskCompleted;
             },
             FunctionCallHandler = (toolCall) =>

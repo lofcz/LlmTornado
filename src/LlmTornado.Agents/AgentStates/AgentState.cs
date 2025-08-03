@@ -90,9 +90,10 @@ public abstract class AgentState<TInput, TOutput> : BaseState<TInput, TOutput>, 
     /// passing the provided message for further handling. Ensure that the callback is assigned  before calling this
     /// method to avoid a null reference exception.</remarks>
     /// <param name="message">The verbose message to be processed. Cannot be null.</param>
-    public void ReceiveVerbose(string message)
+    public ValueTask ReceiveVerbose(string message)
     {
         RunningVerboseCallback?.Invoke(message);
+        return default;
     }
 
     /// <summary>
@@ -102,9 +103,10 @@ public abstract class AgentState<TInput, TOutput> : BaseState<TInput, TOutput>, 
     /// provided message. Ensure that <see cref="RunningStreamingCallback"/> is not null before calling this method
     /// to avoid a <see cref="NullReferenceException"/>.</remarks>
     /// <param name="message">The message received from the stream. Cannot be null.</param>
-    public void ReceiveStreaming(ModelStreamingEvents message)
+    public ValueTask ReceiveStreaming(ModelStreamingEvents message)
     {
         RunningStreamingCallback?.Invoke(message);
+        return default;
     }
 
     /// <summary>

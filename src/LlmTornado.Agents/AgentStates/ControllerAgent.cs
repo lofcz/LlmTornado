@@ -135,19 +135,22 @@ public abstract class ControllerAgent
     /// Used to send streaming messages from the Control Agent
     /// </summary>
     /// <param name="message"></param>
-    private void RootStreamingCallback(ModelStreamingEvents message)
+    private ValueTask RootStreamingCallback(ModelStreamingEvents message)
     {
         RootStreamingEvent?.Invoke(message);
+        return default; // Return a completed ValueTask
     }
 
     /// <summary>
     /// Used to send verbose logging messages from the Control Agent
     /// </summary>
     /// <param name="message"></param>
-    private void RootVerboseCallback(string message)
+    private ValueTask RootVerboseCallback(string message)
     {
         RootVerboseEvent?.Invoke(message);
+        return default; // Return a completed ValueTask
     }
+    
 
     /// <summary>
     /// Invokes the streaming event with the specified message.
@@ -156,9 +159,10 @@ public abstract class ControllerAgent
     /// to handle the message. Ensure that the <paramref name="message"/> is not null to avoid potential
     /// exceptions.</remarks>
     /// <param name="message">The message to be passed to the streaming event. Cannot be null.</param>
-    private void RecieveStreamingCallbacks(ModelStreamingEvents message)
+    private ValueTask RecieveStreamingCallbacks(ModelStreamingEvents message)
     {
         streamingEvent?.Invoke(message);
+        return default; // Return a completed ValueTask
     }
 
     /// <summary>
@@ -167,9 +171,10 @@ public abstract class ControllerAgent
     /// <remarks>This method triggers the <c>verboseEvent</c> if it has any subscribers. Ensure that
     /// the event is properly subscribed to before calling this method.</remarks>
     /// <param name="message">The message to be passed to the event handlers. Cannot be null.</param>
-    private void RecieveVerboseCallbacks(string message)
+    private ValueTask RecieveVerboseCallbacks(string message)
     {
         verboseEvent?.Invoke(message);
+        return default; // Return a completed ValueTask
     }
 
     /// <summary>
