@@ -27,7 +27,7 @@ public class AgentStateMachineDemo : DemoBase
         Console.WriteLine($"[User]: {task}");
         Console.Write("[Agent]: ");
         // Run the state machine and get the result
-        var result = await agent.AddToConversation(task, streaming: true);
+        string result = await agent.AddToConversation(task, streaming: true);
         // Output the result
         Console.Write("\n");
     }
@@ -43,7 +43,7 @@ public class AgentStateMachineDemo : DemoBase
         Console.WriteLine($"[User]: {task}");
         Console.Write("[Agent]: ");
         // Run the state machine and get the result
-        var result = await agent.AddToConversation(task, streaming: false);
+        string result = await agent.AddToConversation(task, streaming: false);
         // Output the result
         Console.Write(result);
     }
@@ -76,7 +76,7 @@ public class AgentStateMachineDemo : DemoBase
         Console.Write("[Agent]: ");
         // Run the state machine and get the result
         //Preprocessor cannot handle image input
-        var result = await agent.AddImageToConversation(task, $"{Directory.GetCurrentDirectory()}\\Static\\Images\\catBoi.jpg", streaming: true);
+        string result = await agent.AddImageToConversation(task, $"{Directory.GetCurrentDirectory()}\\Static\\Images\\catBoi.jpg", streaming: true);
         // Output the result
         Console.Write("\n");
     }
@@ -106,7 +106,7 @@ public class BasicLombdaAgent : ControllerAgent
     public async Task<string> RunStateMachine(string task)
     {
         //Return the final result
-        var result = (await _stateMachine.Run(task))[0].FinalReport ?? task;
+        string result = (await _stateMachine.Run(task))[0].FinalReport ?? task;
         return result.ToString() ?? task;
     }
 }

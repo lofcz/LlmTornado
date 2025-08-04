@@ -15,7 +15,7 @@ public class AgentsDemo : DemoBase
     {
         TornadoAgent agent = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41Mini, "You are a useful assistant.");
 
-        var result = await TornadoRunner.RunAsync(agent, "What is 2+2?");
+        Conversation result = await TornadoRunner.RunAsync(agent, "What is 2+2?");
 
         Console.WriteLine(result.Messages.Last().Content);
     }
@@ -42,7 +42,7 @@ public class AgentsDemo : DemoBase
             return ValueTask.CompletedTask;
         }
 
-        var result = await TornadoRunner.RunAsync(agent, "Hello Streaming World!", streaming: true, streamingCallback: StreamingHandler);
+        Conversation result = await TornadoRunner.RunAsync(agent, "Hello Streaming World!", streaming: true, streamingCallback: StreamingHandler);
     }
 
     [TornadoTest]
@@ -69,14 +69,13 @@ public class AgentsDemo : DemoBase
         public string Reasoning { get; set; }
         public bool IsMathRequest { get; set; }
     }
-
-
+    
     [TornadoTest]
     public static async Task<GuardRailFunctionOutput> MathGuardRail()
     {
         TornadoAgent mathGuardrail = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41Mini, "Check if the user is asking you a Math related question.", outputSchema: typeof(IsMath));
 
-        var result = await TornadoRunner.RunAsync(mathGuardrail, "What is the weather?", singleTurn: true);
+        Conversation result = await TornadoRunner.RunAsync(mathGuardrail, "What is the weather?", singleTurn: true);
 
         IsMath? isMath = result.Messages.Last().Content.JsonDecode<IsMath>();
 
@@ -119,7 +118,7 @@ public class AgentsDemo : DemoBase
     {
         TornadoAgent agent = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41Mini, "Have fun", outputSchema: typeof(MathReasoning));
 
-        var result = await TornadoRunner.RunAsync(agent, "How can I solve 8x + 7 = -23?");
+        Conversation result = await TornadoRunner.RunAsync(agent, "How can I solve 8x + 7 = -23?");
 
         //The easy way
         //Helper function to avoid doing the hard way
@@ -128,21 +127,24 @@ public class AgentsDemo : DemoBase
     }
 
     [TornadoTest]
-    public async Task RunBasicTornadoToolUse()
+    public static async Task RunBasicTornadoToolUse()
     {
-
         TornadoAgent agent = new TornadoAgent(Program.Connect(),
             ChatModel.OpenAi.Gpt41.V41Mini,
             "You are a useful assistant.",
             tools: [GetCurrentWeather],
             outputSchema: typeof(MathReasoning));
 
-        var result = await TornadoRunner.RunAsync(agent, "What is the weather in boston?");
+        Conversation result = await TornadoRunner.RunAsync(agent, "What is the weather in boston?");
 
         Console.WriteLine(result.Messages.Last().Content);
     }
 
-    public enum Unit { Celsius, Fahrenheit }
+    public enum Unit
+    {
+        Celsius, 
+        Fahrenheit
+    }
 
     [Description("Get the current weather in a given location")]
     public static string GetCurrentWeather(
@@ -168,7 +170,7 @@ public class AgentsDemo : DemoBase
             return ValueTask.CompletedTask;
         };
         // Run the state machine and aget the result
-        var result = await agent.AddToConversation(task, streaming: true);
+        string result = await agent.AddToConversation(task, streaming: true);
     }
 
     public class BasicControllerAgent : ControllerAgent
@@ -176,7 +178,7 @@ public class AgentsDemo : DemoBase
         public TornadoAgent TechnicalExpertAgent { get; set; }
         public TornadoAgent BillingAgent { get; set; }
 
-        public BasicControllerAgent() : base("Basic"){ }
+        public BasicControllerAgent() : base("Basic") { }
            
         public override TornadoAgent InitializeAgent()
         {
@@ -187,8 +189,8 @@ public class AgentsDemo : DemoBase
 
             return new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41, instructions, 
                 handoffs: [
-                    new(TechnicalExpertAgent,"TechnicalExpert","Handoff If the customer ask a technical question"),
-                    new(TechnicalExpertAgent,"Billing","Handoff if the customer has a billing request")
+                    new AgentHandoff(TechnicalExpertAgent,"TechnicalExpert","Handoff If the customer ask a technical question"),
+                    new AgentHandoff(TechnicalExpertAgent,"Billing","Handoff if the customer has a billing request")
                     ]);
         }
 

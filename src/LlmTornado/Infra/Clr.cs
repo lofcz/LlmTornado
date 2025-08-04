@@ -54,6 +54,11 @@ public class MethodInvocationResult
 
 internal static class Clr
 {
+    private static readonly JsonSerializer serializer = new JsonSerializer
+    {
+        ContractResolver = new SchemaNameContractResolver()
+    };
+
     private static object? DeserializePrimitive(JToken token, Type dataType)
     {
         if (dataType == typeof(Guid))
@@ -121,12 +126,12 @@ internal static class Clr
         }
 #endif
         
-        return token.ToObject(dataType);
+        return token.ToObject(dataType, serializer);
     }
 
     private static object? DeserializeObject(JToken token, Type dataType)
     {
-        return token.ToObject(dataType);
+        return token.ToObject(dataType, serializer);
     }
 
     private static ArrayList DeserializeNonGenericEnumerable(JToken token)
@@ -168,7 +173,7 @@ internal static class Clr
                         linearIndex /= lengths[dim];
                     }
 
-                    mdArray.SetValue(valuesArray[i].ToObject(elementType), indices);
+                    mdArray.SetValue(valuesArray[i].ToObject(elementType, serializer), indices);
                 }
 
                 return mdArray;
@@ -191,8 +196,8 @@ internal static class Clr
             {
                 if (item.TryGetValue("key", StringComparison.OrdinalIgnoreCase, out JToken? keyToken) && item.TryGetValue("value", StringComparison.OrdinalIgnoreCase, out JToken? valueToken))
                 {
-                    object? key = keyToken.ToObject(keyType);
-                    object? val = valueToken.ToObject(valueType);
+                    object? key = keyToken.ToObject(keyType, serializer);
+                    object? val = valueToken.ToObject(valueType, serializer);
                                     
                     if (key is not null)
                     {
@@ -271,7 +276,29 @@ internal static class Clr
         }
         
         ParameterInfo[] delegateParams = function.Method.GetParameters();
-        Dictionary<string, ToolParam> toolParamsMap = metadata.Tool.Params.ToDictionary(p => p.Name);
+        Dictionary<string, (string csName, ToolParam Param)> toolParamsMap = new Dictionary<string, (string csName, ToolParam Param)>(metadata.Tool.Params.Count);
+
+        foreach (ToolParam p in metadata.Tool.Params)
+        {
+            toolParamsMap.Add(p.Name, (string.Empty, p));
+        }
+
+        foreach (ParameterInfo delegateParam in delegateParams)
+        {
+            if (delegateParam.Name is null)
+            {
+                continue;
+            }
+
+            SchemaNameAttribute? schemaName = delegateParam.GetCustomAttribute<SchemaNameAttribute>();
+            string finalName = schemaName?.Name ?? delegateParam.Name;
+
+            if (toolParamsMap.TryGetValue(finalName, out (string csName, ToolParam Param) val))
+            {
+                val.csName = delegateParam.Name;
+                toolParamsMap[finalName] = val;
+            }
+        }
 
         foreach (ParameterInfo delegateParam in delegateParams)
         {
@@ -287,10 +314,13 @@ internal static class Clr
                 continue;
             }
 
-            if (toolParamsMap.TryGetValue(delegateParam.Name, out ToolParam? toolParam) && 
-                jObject.TryGetValue(toolParam.Name, StringComparison.OrdinalIgnoreCase, out JToken? token))
+            SchemaNameAttribute? schemaName = delegateParam.GetCustomAttribute<SchemaNameAttribute>();
+            string finalName = schemaName?.Name ?? delegateParam.Name;
+
+            if (toolParamsMap.TryGetValue(finalName, out (string csName, ToolParam Param) toolParam) && 
+                jObject.TryGetValue(toolParam.Param.Name, StringComparison.OrdinalIgnoreCase, out JToken? token))
             {
-                args.Add(Deserialize(token, toolParam.Type));
+                args.Add(Deserialize(token, toolParam.Param.Type));
             }
             else
             {
@@ -412,23 +442,23 @@ internal static class Clr
             case ToolParamSerializer.Atomic:
                 return DeserializePrimitive(token, dataType);
             case ToolParamSerializer.Any:
-                if (dataType == typeof(ExpandoObject))
-                {
-                    return token.ToObject<ExpandoObject>();
-                }
-                
-                return token.ToObject<object>();
-            case ToolParamSerializer.AnyOf:
-                if (paramType is ToolParamAnyOf anyOfParam)
-                {
-                    return DeserializeAnyOf(token, anyOfParam);
-                }
-
-                return null;
-            case ToolParamSerializer.Undefined:
-            default:
-                return token.ToObject(dataType);
+                        if (dataType == typeof(ExpandoObject))
+        {
+            return token.ToObject<ExpandoObject>();
         }
+        
+        return token.ToObject<object>();
+    case ToolParamSerializer.AnyOf:
+        if (paramType is ToolParamAnyOf anyOfParam)
+        {
+            return DeserializeAnyOf(token, anyOfParam);
+        }
+
+        return null;
+    case ToolParamSerializer.Undefined:
+    default:
+        return token.ToObject(dataType, serializer);
+}
     }
 
     private static object? DeserializeTuple(JToken token, ToolParamTuple tupleParam)
@@ -550,7 +580,7 @@ internal static class Clr
             throw new JsonException($"Received discriminator value '{typeName}' does not match any of the possible types for this 'anyOf' parameter.");
         }
 
-        return token.ToObject(targetType);
+        return token.ToObject(targetType, serializer);
     }
     
     /// <summary>
@@ -576,12 +606,12 @@ internal static class Clr
         {
             case JArray jArr:
             {
-                data = jArr.ToObject<T?>();
+                data = jArr.ToObject<T?>(serializer);
                 return true;
             }
             case JObject jObj:
             {
-                data = jObj.ToObject<T?>();
+                data = jObj.ToObject<T?>(serializer);
                 return true;
             }
             case string str:

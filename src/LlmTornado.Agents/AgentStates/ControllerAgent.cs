@@ -17,11 +17,9 @@ public delegate Task<string> InputProcessorDelegate(string input);
 
 public abstract class ControllerAgent
 {
-    private readonly string _agentName;
-    public string AgentName => _agentName;
+    public string AgentName { get; }
 
-    private string _agentId = Guid.NewGuid().ToString();
-    public string AgentId => _agentId;
+    public string AgentId { get; } = Guid.NewGuid().ToString();
 
     public List<ChatMessage> SharedModelItems = [];
 
@@ -49,12 +47,13 @@ public abstract class ControllerAgent
     /// <summary>
     /// Thread ID of the main conversation thread for the response API
     /// </summary>
-    public string MainThreadId { get; set; } = "";
+    public string MainThreadId { get; set; } = string.Empty;
 
     /// <summary>
     /// Occurs when Agent gets a new message to process.
     /// </summary>
     public event Action? StartingExecution;
+    
     /// <summary>
     /// Occurs when the execution process has completed.
     /// </summary>
@@ -69,10 +68,12 @@ public abstract class ControllerAgent
     /// Subscribers can use this event to capture and process verbose messages for diagnostic or logging
     /// purposes.</remarks>
     public event Action<string>? ControllerVerboseEvent;
+    
     /// <summary>
     /// Main streaming event for the Control Agent to handle streaming messages for the Control Agent conversation.
     /// </summary>
     public event StreamingCallbacks? ControllerStreamingEvent;
+    
     /// <summary>
     /// Occurs when a new state machine is added.
     /// </summary>
@@ -80,6 +81,7 @@ public abstract class ControllerAgent
     /// collection. The event handler receives an argument of type <see cref="StateMachine"/>,
     /// representing the added state machine.</remarks>
     public event Action<StateMachine>? StateMachineAdded;
+    
     /// <summary>
     /// Occurs when a state machine is removed from the collection.
     /// </summary>
@@ -102,18 +104,16 @@ public abstract class ControllerAgent
     /// Master Cancellation token source for the Control Agent and the rest of the state machines.
     /// </summary>
     public CancellationTokenSource CancellationTokenSource { get; set; } = new CancellationTokenSource();
-
-
+    
     public ControllerAgent(string agentName)
     {
         // Initialize the agent and set up the callbacks
         InitialAgent = InitializeAgent(); 
-        _agentName = agentName;
+        AgentName = agentName;
         StreamingCallback += InvokeStreamingCallback;  //Route State Agents streaming callbacks to the agent's event handler
         VerboseCallback += InvokeVerboseCallback; //Route State Agents verbose callbacks to the agent's event handler  
         CurrentAgent = InitialAgent; // Set the initial agent as the current agent
         CurrentAgent.Options.CancellationToken = CancellationTokenSource.Token; // Set the cancellation token source for the Control Agent
-
     }
 
     /// <summary>
@@ -146,9 +146,14 @@ Out of the following Agents which agent should we Handoff the conversation too a
 {string.Join("\n\n", CurrentAgent.HandoffAgents.Select(agent => $" {{\"NAME\": \"{agent.Name}\",\"Handoff Reason\":\"{agent.HandoffReason}\"}}"))}
 
 ";
-        TornadoAgent handoffDecider = new TornadoAgent(CurrentAgent.Client, ChatModel.OpenAi.Gpt41.V41Nano, instructions);
-        handoffDecider.Options.ResponseFormat = AgentHandoff.CreateHandoffResponseFormat(CurrentAgent.HandoffAgents.ToArray());
-        handoffDecider.Options.CancellationToken = CancellationTokenSource.Token; // Set the cancellation token source for the Control Agent
+        TornadoAgent handoffDecider = new TornadoAgent(CurrentAgent.Client, ChatModel.OpenAi.Gpt41.V41Nano, instructions)
+        {
+            Options =
+            {
+                ResponseFormat = AgentHandoff.CreateHandoffResponseFormat(CurrentAgent.HandoffAgents.ToArray()),
+                CancellationToken = CancellationTokenSource.Token // Set the cancellation token source for the Control Agent
+            }
+        };
 
         string prompt = "Current Conversation:\n";
 
@@ -163,7 +168,7 @@ Out of the following Agents which agent should we Handoff the conversation too a
             }
         }
 
-        Conversation handoff = await TornadoRunner.RunAsync(handoffDecider, prompt,
+        Conversation handoff = await RunAsync(handoffDecider, prompt,
             verboseCallback: InvokeVerboseCallback, streaming: false, cancellationToken: CancellationTokenSource);
 
         if (handoff.Messages.Count > 0 && handoff.Messages.Last().Content != null)
@@ -182,7 +187,6 @@ Out of the following Agents which agent should we Handoff the conversation too a
         VerboseCallback?.Invoke(message);
         return default; // Return a completed ValueTask
     }
-    
 
     /// <summary>
     /// Invokes the streaming event with the specified message.
@@ -271,7 +275,7 @@ Out of the following Agents which agent should we Handoff the conversation too a
     /// <returns>A <see cref="Task{String}"/> representing the asynchronous operation. The task result contains the processed
     /// conversation response text.</returns>
     /// <exception cref="InvalidOperationException">Thrown if the <c>ControlAgent</c> is not set before adding to the conversation.</exception>
-    public async Task<string> AddToConversation(string userInput, ChatMessage message = null, bool streaming = true)
+    public async Task<string> AddToConversation(string userInput, ChatMessage? message = null, bool streaming = true)
     {
         // Ensure that the ControlAgent is set before proceeding
         if (CurrentAgent == null)
@@ -291,9 +295,6 @@ Out of the following Agents which agent should we Handoff the conversation too a
                 CancellationTokenSource = new CancellationTokenSource();
             }
         }
-
-       
-        
 
         ChatMessage userMessage = new ChatMessage();
         //If userInput is not empty, create a new message item and add it to the conversation
@@ -337,7 +338,7 @@ Out of the following Agents which agent should we Handoff the conversation too a
                 string? preprocessedInput = await RunPreprocess(inputMessage);
                 preprocessedInput = "The following CONTEXT has been prepocessed by an Agent tasked to process the input[may or may not be relevent]. <PREPOCESSED RESULTS>" + preprocessedInput + "</PREPOCESSED RESULTS>";
                 // Create a system message with the preprocessed input
-                userMessage.Parts.Add(new ChatMessagePart(preprocessedInput));
+                userMessage.Parts?.Add(new ChatMessagePart(preprocessedInput));
             }
 
             if (message != null)
@@ -346,7 +347,8 @@ Out of the following Agents which agent should we Handoff the conversation too a
                 userMessage.Parts?.Add(message.Parts?.FirstOrDefault()!);
             }
         }
-        if(CurrentResult != null)
+        
+        if (CurrentResult != null)
         {
             //Run the ControlAgent with the current messages
             CurrentResult = await RunAsync(CurrentAgent, messages: [..CurrentResult.Messages], verboseCallback: HandleControllerVerboseEvent,
@@ -358,7 +360,6 @@ Out of the following Agents which agent should we Handoff the conversation too a
             CurrentResult = await RunAsync(CurrentAgent, messages: [userMessage], verboseCallback: HandleControllerVerboseEvent,
                 streaming: streaming, streamingCallback: HandleControllerStreamingEvent, cancellationToken: CancellationTokenSource, responseId: string.IsNullOrEmpty(MainThreadId) ? "" : MainThreadId);
         }
-
 
         if (CurrentResult.MostRecentApiResult != null)
         {
@@ -418,51 +419,53 @@ Out of the following Agents which agent should we Handoff the conversation too a
     /// <remarks>This method reads the specified file from disk and adds it to the conversation as an
     /// image file content. The user input is included as text content in the same message.</remarks>
     /// <param name="userInput">The text input provided by the user to accompany the file.</param>
-    /// <param name="fileId">The identifier of the file to be added to the conversation. This should be a valid path to the file on disk.</param>
+    /// <param name="filePath">The identifier of the file to be added to the conversation. This should be a valid path to the file on disk.</param>
     /// <param name="streaming">A boolean value indicating whether the operation should be performed in streaming mode. The default is <see
     /// langword="true"/>.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains a string that identifies the
     /// message added to the conversation.</returns>
-    public async Task<string> AddImageToConversation(string userInput, string fileId, bool streaming = true, string threadID = "")
+    public async Task<string> AddImageToConversation(string userInput, string filePath, bool streaming = true, string threadID = "")
     {
         if (!string.IsNullOrEmpty(threadID))
         {
             MainThreadId = threadID;
         }
+        
         //import image from disk
-        using (FileStream fileStream = new FileStream(fileId, FileMode.Open, FileAccess.Read))
-        {
-            byte[] data = new byte[fileStream.Length];
-            await fileStream.ReadAsync(data, 0, (int)fileStream.Length);
-            string base64EncodedData = Convert.ToBase64String(data.ToArray());
-            string dataurl = $"data:image/{Path.GetExtension(fileId).Replace(".", "")};base64,{base64EncodedData}";
+#if MODERN
+        await using FileStream fileStream = new FileStream(fileId, FileMode.Open, FileAccess.Read);
+#else 
+        using FileStream fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
+#endif
+        byte[] data = new byte[fileStream.Length];
+        _ = await fileStream.ReadAsync(data, 0, (int)fileStream.Length);
+        string base64EncodedData = Convert.ToBase64String(data.ToArray());
+        string dataurl = $"data:image/{Path.GetExtension(filePath).Replace(".", "")};base64,{base64EncodedData}";
 
+        ChatMessagePart imageContent = new ChatMessagePart(dataurl, ImageDetail.Auto);
+        ChatMessage fileItem = new ChatMessage(ChatMessageRoles.User, [imageContent]);
 
-            ChatMessagePart imageContent = new ChatMessagePart(dataurl, ImageDetail.Auto);
-            ChatMessage fileItem = new ChatMessage(ChatMessageRoles.User, [imageContent]);
-
-            return await AddToConversation(userInput, fileItem, streaming: streaming);
-        }
+        return await AddToConversation(userInput, fileItem, streaming: streaming);
     }
-
-
+    
     /// <summary>
     /// Adds a file to the conversation with the specified user input and file identifier.
     /// </summary>
     /// <remarks>This method reads the specified file from disk and adds it to the conversation as an
     /// image file content. The user input is included as text content in the same message.</remarks>
     /// <param name="userInput">The text input provided by the user to accompany the file.</param>
-    /// <param name="fileId">The identifier of the file to be added to the conversation. This should be a valid path to the file on disk.</param>
+    /// <param name="base64">Base64 encoded image.</param>
     /// <param name="streaming">A boolean value indicating whether the operation should be performed in streaming mode. The default is <see
     /// langword="true"/>.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains a string that identifies the
     /// message added to the conversation.</returns>
     public async Task<string> AddBase64ImageToConversation(string userInput, string base64, bool streaming = true, string threadID = "")
     {
-        if(!string.IsNullOrEmpty(threadID))
+        if (!string.IsNullOrEmpty(threadID))
         {
             MainThreadId = threadID;
         }
+        
         ChatMessagePart imageContent = new ChatMessagePart(base64, ImageDetail.Auto);
         ChatMessage fileItem = new ChatMessage(ChatMessageRoles.User, [imageContent]);
         return await AddToConversation(userInput, fileItem, streaming: streaming);
@@ -482,7 +485,6 @@ Out of the following Agents which agent should we Handoff the conversation too a
         MainThreadId = "";
         return await AddToConversation(userInput, streaming:streaming);
     }
-
 
     public async Task<string> StartNewConversation(string userInput, string base64, bool streaming = true)
     {
