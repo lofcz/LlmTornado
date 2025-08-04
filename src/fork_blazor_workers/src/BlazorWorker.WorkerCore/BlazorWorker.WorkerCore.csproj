@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <Configurations>Debug;Release;Nuget</Configurations>
-    <Version>5.0.5</Version>
+    <Version>5.0.6</Version>
     <AssemblyVersion>5.0.4.0</AssemblyVersion>
     <Authors>Tor Knutsson (Tewr)</Authors>
     <Company>Tor Knutsson (Tewr)</Company>

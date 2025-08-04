@@ -11,7 +11,7 @@
     <PackageTags>WebWorker Worker Process Threading Multithreading Blazor Isolation</PackageTags>
     <PackageId>Lofcz.Forks.BlazorWorker.Extensions.JSRuntime</PackageId>
     <Configurations>Debug;Release;Nuget</Configurations>
-    <Version>5.0.5</Version>
+    <Version>5.0.6</Version>
     <AssemblyVersion>4.1.3.0</AssemblyVersion>
     <DocumentationFile>BlazorWorker.Extensions.JSRuntime.xml</DocumentationFile>
     <PackageIcon>icon.png</PackageIcon>
