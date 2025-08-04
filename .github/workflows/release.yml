@@ -54,7 +54,7 @@ jobs:
         }
         
         # Check each project for changes and update versions
-        for proj in $(find ./src -name "*.csproj"); do
+        for proj in $(find ./src -name "*.csproj" ! -path "*LlmTornado.Docs*"); do
           PROJECT_NAME=$(basename "$proj")
           PROJECT_DIR=$(dirname "$proj")
           
@@ -142,7 +142,7 @@ jobs:
     # Build solution
     - name: Build
       if: env.SHOULD_RELEASE == 'true'
-      run: dotnet build LlmTornado.sln --configuration Release --no-restore
+      run: dotnet build LlmTornado.sln --configuration Release --no-restore -p:SkipViteBuild=true
       working-directory: ./src
       
     # Create NuGet packages
