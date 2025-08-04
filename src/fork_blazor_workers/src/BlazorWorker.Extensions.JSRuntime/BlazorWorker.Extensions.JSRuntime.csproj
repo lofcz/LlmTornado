@@ -17,6 +17,7 @@
     <PackageIcon>icon.png</PackageIcon>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <PackageReleaseNotes>Fix a bug related to .net instance callback from worker thread js</PackageReleaseNotes>
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
   
   <ItemGroup>

@@ -6,9 +6,9 @@
     <Version>5.0.6</Version>
     <AssemblyVersion>5.0.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageId>Lofcz.Forks.BlazorWorker.WorkerBackgroundService</PackageId>
     <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <PropertyGroup>

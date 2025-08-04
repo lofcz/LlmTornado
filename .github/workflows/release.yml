@@ -54,7 +54,7 @@ jobs:
         }
         
         # Check each project for changes and update versions
-        for proj in $(find ./src -name "*.csproj" ! -path "*LlmTornado.Docs*"); do
+        for proj in $(find ./src -name "*.csproj" ! -path "./src/LlmTornado.Docs/*" ! -path "./src/fork_blazor_workers/*"); do
           PROJECT_NAME=$(basename "$proj")
           PROJECT_DIR=$(dirname "$proj")
           
