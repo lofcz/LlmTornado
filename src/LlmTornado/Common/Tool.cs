@@ -604,7 +604,7 @@ public class Tool
         Delegate = function;
         Strict = strict;
         Metadata = metadata;
-        ToolName = name;
+        ToolName = NormalizeName(name);
     }
     
     /// <summary>
@@ -620,7 +620,7 @@ public class Tool
         Delegate = function;
         Strict = strict;
         Metadata = metadata;
-        ToolName = name;
+        ToolName = NormalizeName(name);
         ToolDescription = description;
     }
     
@@ -633,7 +633,7 @@ public class Tool
     /// <param name="strict">Whether strict JSON schema validation is enabled.</param>
     public Tool(List<ToolParam> pars, string name, string description, bool? strict = null)
     {
-        ToolName = name;
+        ToolName = NormalizeName(name);
         ToolDescription = description;
         Strict = strict;
         SchemaParams = pars;
@@ -647,7 +647,7 @@ public class Tool
     /// <param name="strict">Whether strict JSON schema validation is enabled.</param>
     public Tool(List<ToolParam> pars, string name, bool? strict = null)
     {
-        ToolName = name;
+        ToolName = NormalizeName(name);
         Strict = strict;
         SchemaParams = pars;
     }
@@ -776,6 +776,11 @@ public class Tool
     {
         return new Tool(function);
     }
+
+    internal static string NormalizeName(string name)
+    {
+        return name.Replace(" ", "_").Trim();
+    }
 }
 
 /// <summary>
@@ -879,7 +884,7 @@ public class ToolFunction
     /// <param name="description"></param>
     public ToolFunction(string name, string description)
     {
-        Name = name;
+        Name = Tool.NormalizeName(name);
         Description = description;
         Parameters = null;
     }
@@ -892,7 +897,7 @@ public class ToolFunction
     /// <param name="parameters">JSON serialized object, will be deserialized into <see cref="JObject" /> </param>
     public ToolFunction(string name, string description, string parameters)
     {
-        Name = name;
+        Name = Tool.NormalizeName(name);
         Description = description;
         Parameters = JObject.Parse(parameters);
     }
@@ -905,7 +910,7 @@ public class ToolFunction
     /// <param name="parameters"></param>
     public ToolFunction(string name, string description, JObject parameters)
     {
-        Name = name;
+        Name = Tool.NormalizeName(name);
         Description = description;
         Parameters = parameters;
         RawParameters = parameters;
@@ -919,7 +924,7 @@ public class ToolFunction
     /// <param name="parameters"></param>
     public ToolFunction(string name, string description, JsonElement parameters)
     {
-        Name = name;
+        Name = Tool.NormalizeName(name);
         Description = description;
         Parameters = JObject.Parse(parameters.ToString());
         RawParameters = parameters;
@@ -933,7 +938,7 @@ public class ToolFunction
     /// <param name="parameters">A JSON-serializable object</param>
     public ToolFunction(string name, string description, object parameters)
     {
-        Name = name;
+        Name = Tool.NormalizeName(name);
         Description = description;
         Parameters = JObject.FromObject(parameters, JsonSerializer.Create(serializerSettings));
     }

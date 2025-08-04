@@ -23,7 +23,7 @@ public class MCPServer
 
     public async Task<List<McpClientTool>> AsToolkit(MCPServer server)
     {
-        List<McpClientTool> result = new List<McpClientTool>();
+        List<McpClientTool> result = [];
 
         try
         {

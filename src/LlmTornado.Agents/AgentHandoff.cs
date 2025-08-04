@@ -30,7 +30,7 @@ namespace LlmTornado.Agents
             }
             List<string> agentNames = handoffs.Select(h => h.Name).ToList();
             agentNames.Add("CurrentAgent"); // Add the current agent as an option
-            var propSchema = new Dictionary<string, object>
+            Dictionary<string, object> propSchema = new Dictionary<string, object>
                     {
                         { "reason", new Dictionary<string, object>
                             {
@@ -47,7 +47,7 @@ namespace LlmTornado.Agents
                         }
                     };
             
-            string[] requiredProperties = { "reason", "agent" };
+            string[] requiredProperties = ["reason", "agent"];
             Dictionary<string, object> schema = new Dictionary<string, object>
             {
                 ["type"] = "object",

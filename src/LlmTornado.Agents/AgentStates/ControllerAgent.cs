@@ -146,7 +146,7 @@ Out of the following Agents which agent should we Handoff the conversation too a
 {string.Join("\n\n", CurrentAgent.HandoffAgents.Select(agent => $" {{\"NAME\": \"{agent.Name}\",\"Handoff Reason\":\"{agent.HandoffReason}\"}}"))}
 
 ";
-        var handoffDecider = new TornadoAgent(CurrentAgent.Client, ChatModel.OpenAi.Gpt41.V41Nano, instructions);
+        TornadoAgent handoffDecider = new TornadoAgent(CurrentAgent.Client, ChatModel.OpenAi.Gpt41.V41Nano, instructions);
         handoffDecider.Options.ResponseFormat = AgentHandoff.CreateHandoffResponseFormat(CurrentAgent.HandoffAgents.ToArray());
         handoffDecider.Options.CancellationToken = CancellationTokenSource.Token; // Set the cancellation token source for the Control Agent
 
@@ -168,7 +168,7 @@ Out of the following Agents which agent should we Handoff the conversation too a
 
         if (handoff.Messages.Count > 0 && handoff.Messages.Last().Content != null)
         {
-            var selectedAgent = AgentHandoff.ParseHandoffResponse(handoff.Messages.Last().Content, out string? reasoning);
+            string selectedAgent = AgentHandoff.ParseHandoffResponse(handoff.Messages.Last().Content, out string? reasoning);
             CurrentAgent = CurrentAgent.HandoffAgents.FirstOrDefault(agent => agent.Name.Equals(selectedAgent, StringComparison.OrdinalIgnoreCase))?.Agent ?? CurrentAgent; 
         }
     }

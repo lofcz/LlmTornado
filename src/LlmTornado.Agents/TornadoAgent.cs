@@ -1,13 +1,9 @@
 ﻿using LlmTornado.Agents.DataModels;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
-using LlmTornado.Code;
 using LlmTornado.Common;
 using LlmTornado.Responses;
-using Microsoft.Extensions.Options;
-using ModelContextProtocol.Server;
-using Newtonsoft.Json;
-using System;
+using ModelContextProtocol.Client;
 
 namespace LlmTornado.Agents;
 
@@ -34,8 +30,11 @@ public class TornadoAgent
     /// <summary>
     /// Gets or sets the options used to configure the response behavior of the request.
     /// </summary>
-    public ResponseRequest? ResponseOptions { get => Options.ResponseRequestParameters; set => Options.ResponseRequestParameters = value; }
-
+    public ResponseRequest? ResponseOptions
+    {
+        get => Options.ResponseRequestParameters; 
+        set => Options.ResponseRequestParameters = value;
+    }
 
     /// <summary>
     /// Instructions on how to process prompts
@@ -46,6 +45,7 @@ public class TornadoAgent
     /// Gets the unique identifier for this instance.
     /// </summary>
     public string Id { get; } = Guid.NewGuid().ToString();
+    
     /// <summary>
     /// Data Type to Format response output as
     /// </summary>
@@ -66,6 +66,7 @@ public class TornadoAgent
     /// Map of function tools to their methods
     /// </summary>
     public Dictionary<string, Tool> ToolList = new Dictionary<string, Tool>();
+    
     /// <summary>
     /// Map of agent tools to their agents
     /// </summary>
@@ -73,11 +74,12 @@ public class TornadoAgent
 
     public Dictionary<string, MCPServer> McpTools = new Dictionary<string, MCPServer>();
 
-    public List<MCPServer> McpServers = [];
+    public List<MCPServer> McpServers;
 
+    /// <summary>
     /// Agents that are handed off to be the controller 
     /// </summary>
-    public List<AgentHandoff> HandoffAgents { get; set; } = [];
+    public List<AgentHandoff> HandoffAgents { get; set; }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="TornadoAgent"/> class, which represents an AI agent capable of
@@ -95,14 +97,15 @@ public class TornadoAgent
     /// format its responses according to the specified schema.</param>
     /// <param name="tools">Optional. A list of <see cref="Delegate"/> instances representing tools or functions that the agent can use to
     /// perform specific tasks. If not provided, the agent will use its default tools.</param>
-    /// <param name="mcpServers">A list of <see cref="MCPServer"/> instances for MCP Server tools. If <see langword="null"/>, an
+    /// <param name="handoffs">Optional. A list of <see cref="AgentHandoff"/> instances representing possible hand-offs to other agents.</param>
+    /// <param name="mcpServers">A list of <see cref="MCPServer"/> instances for MCP Server tools.</param>
     public TornadoAgent(
         TornadoApi client, 
         ChatModel model, 
         string instructions = "You are a helpful assistant", 
         Type? outputSchema = null, 
         List<Delegate>? tools = null, 
-        AgentHandoff[]? handoffs = null,
+        List<AgentHandoff>? handoffs = null,
         List<MCPServer>? mcpServers = null)
     {
         Client = client;
@@ -112,7 +115,7 @@ public class TornadoAgent
         Instructions = string.IsNullOrEmpty(instructions)? "You are a helpful assistant" : instructions;
         Model = model;
         Options.Model = model;
-        McpServers = mcpServers != null ? mcpServers : new List<MCPServer>();
+        McpServers = mcpServers ?? [];
         HandoffAgents = handoffs?.ToList() ?? [];
 
         if (OutputSchema != null)
@@ -121,21 +124,21 @@ public class TornadoAgent
         }
 
         //Setup tools and agent tools
-        if (Tools.Count > 0)
+        if (Tools?.Count > 0)
         {
             SetupTools(Tools);
         }
     }
 
     /// <summary>
-    /// Setup the provided methods as tools
+    /// Set up the provided methods as tools
     /// </summary>
-    /// <param name="Tools"></param>
-    private void SetupTools(List<Delegate> Tools)
+    /// <param name="tools"></param>
+    private void SetupTools(List<Delegate> tools)
     {
         Options.Tools ??= [];
         
-        foreach (Delegate fun in Tools)
+        foreach (Delegate fun in tools)
         {
             //Convert Agent to tool
             if (fun.Method.Name.Equals("AsTool"))
@@ -151,30 +154,28 @@ public class TornadoAgent
             else
             {
                 //Convert Method to tool
-                Tool? tool = fun.ConvertFunctionToTornadoTool();
-                if (tool != null)
-                {
-                    ToolList.Add(tool.Delegate.Method.Name, tool);
-                    Options.Tools?.Add(tool);
-                }
+                Tool tool = fun.ConvertFunctionToTornadoTool();
+                
+                ToolList.Add(tool.Delegate.Method.Name, tool);
+                Options.Tools?.Add(tool);
             }
         }
 
-        foreach (var server in McpServers)
+        foreach (MCPServer server in McpServers)
         {
-            foreach (var tool in server.Tools)
+            foreach (McpClientTool tool in server.Tools)
             {
                 McpTools.Add(tool.Name, server);
+                
                 if (!ToolPermissionRequired.ContainsKey(tool.Name))
                 {
                     ToolPermissionRequired.Add(tool.Name, false); //Default all mcp tools to false
                 }
-                var mcpTool = new LlmTornado.Common.Tool(new ToolFunction(tool.Name, tool.Description, tool.JsonSchema));
+                
+                Tool mcpTool = new Tool(new ToolFunction(tool.Name, tool.Description, tool.JsonSchema));
                 ToolList.Add(tool.Name, mcpTool);
                 Options.Tools?.Add(mcpTool);
             }
         }
     }
-
-
 }

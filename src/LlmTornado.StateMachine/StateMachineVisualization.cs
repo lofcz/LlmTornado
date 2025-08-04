@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Text;
 
 namespace LlmTornado.StateMachines
@@ -15,8 +16,8 @@ namespace LlmTornado.StateMachines
         /// <returns>DOT format string suitable for Graphviz rendering</returns>
         public static string ToDotGraph(this StateMachine stateMachine, string graphName = "StateMachine")
         {
-            var dotBuilder = new StringBuilder();
-            var visitedStates = new HashSet<string>();
+            StringBuilder dotBuilder = new StringBuilder();
+            HashSet<string> visitedStates = [];
             
             dotBuilder.AppendLine($"digraph {SanitizeDotName(graphName)} {{");
             dotBuilder.AppendLine("    rankdir=LR;");
@@ -24,7 +25,7 @@ namespace LlmTornado.StateMachines
             dotBuilder.AppendLine();
             
             // Add states and transitions
-            foreach (var state in stateMachine.States)
+            foreach (BaseState? state in stateMachine.States)
             {
                 AddStateToDotGraph(dotBuilder, state, visitedStates);
             }
@@ -43,8 +44,8 @@ namespace LlmTornado.StateMachines
         /// <returns>DOT format string suitable for Graphviz rendering</returns>
         public static string ToDotGraph<TInput, TOutput>(this StateMachine<TInput, TOutput> stateMachine, string graphName = "StateMachine")
         {
-            var dotBuilder = new StringBuilder();
-            var visitedStates = new HashSet<string>();
+            StringBuilder dotBuilder = new StringBuilder();
+            HashSet<string> visitedStates = [];
             
             dotBuilder.AppendLine($"digraph {SanitizeDotName(graphName)} {{");
             dotBuilder.AppendLine("    rankdir=LR;");
@@ -54,20 +55,20 @@ namespace LlmTornado.StateMachines
             // Mark start and result states with special styling
             if (stateMachine.StartState != null)
             {
-                var startStateId = GetStateId(stateMachine.StartState);
+                string startStateId = GetStateId(stateMachine.StartState);
                 dotBuilder.AppendLine($"    {startStateId} [fillcolor=lightgreen, label=\"{GetStateLabel(stateMachine.StartState)}\\n(Start)\"];");
                 AddStateToDotGraph(dotBuilder, stateMachine.StartState, visitedStates);
             }
             
             if (stateMachine.ResultState != null && stateMachine.ResultState != stateMachine.StartState)
             {
-                var resultStateId = GetStateId(stateMachine.ResultState);
+                string resultStateId = GetStateId(stateMachine.ResultState);
                 dotBuilder.AppendLine($"    {resultStateId} [fillcolor=lightcoral, label=\"{GetStateLabel(stateMachine.ResultState)}\\n(Result)\"];");
                 AddStateToDotGraph(dotBuilder, stateMachine.ResultState, visitedStates);
             }
             
             // Add other states
-            foreach (var state in stateMachine.States)
+            foreach (BaseState? state in stateMachine.States)
             {
                 AddStateToDotGraph(dotBuilder, state, visitedStates);
             }
@@ -82,10 +83,10 @@ namespace LlmTornado.StateMachines
         /// <param name="stateMachine">The state machine to visualize</param>
         /// <param name="title">Optional title for the diagram</param>
         /// <returns>PlantUML state diagram string</returns>
-        public static string ToPlantUML(this StateMachine stateMachine, string title = "State Machine")
+        public static string ToPlantUml(this StateMachine stateMachine, string title = "State Machine")
         {
-            var plantUmlBuilder = new StringBuilder();
-            var visitedStates = new HashSet<string>();
+            StringBuilder plantUmlBuilder = new StringBuilder();
+            HashSet<string> visitedStates = [];
             
             plantUmlBuilder.AppendLine("@startuml");
             if (!string.IsNullOrEmpty(title))
@@ -95,9 +96,9 @@ namespace LlmTornado.StateMachines
             plantUmlBuilder.AppendLine();
             
             // Add states and transitions
-            foreach (var state in stateMachine.States)
+            foreach (BaseState state in stateMachine.States)
             {
-                AddStateToPlantUML(plantUmlBuilder, state, visitedStates);
+                AddStateToPlantUml(plantUmlBuilder, state, visitedStates);
             }
             
             plantUmlBuilder.AppendLine("@enduml");
@@ -112,10 +113,10 @@ namespace LlmTornado.StateMachines
         /// <param name="stateMachine">The state machine to visualize</param>
         /// <param name="title">Optional title for the diagram</param>
         /// <returns>PlantUML state diagram string</returns>
-        public static string ToPlantUML<TInput, TOutput>(this StateMachine<TInput, TOutput> stateMachine, string title = "State Machine")
+        public static string ToPlantUml<TInput, TOutput>(this StateMachine<TInput, TOutput> stateMachine, string title = "State Machine")
         {
-            var plantUmlBuilder = new StringBuilder();
-            var visitedStates = new HashSet<string>();
+            StringBuilder plantUmlBuilder = new StringBuilder();
+            HashSet<string> visitedStates = [];
             
             plantUmlBuilder.AppendLine("@startuml");
             if (!string.IsNullOrEmpty(title))
@@ -127,20 +128,20 @@ namespace LlmTornado.StateMachines
             // Mark start state
             if (stateMachine.StartState != null)
             {
-                plantUmlBuilder.AppendLine($"[*] --> {GetPlantUMLStateId(stateMachine.StartState)}");
-                AddStateToPlantUML(plantUmlBuilder, stateMachine.StartState, visitedStates);
+                plantUmlBuilder.AppendLine($"[*] --> {GetPlantUmlStateId(stateMachine.StartState)}");
+                AddStateToPlantUml(plantUmlBuilder, stateMachine.StartState, visitedStates);
             }
             
             // Add other states
-            foreach (var state in stateMachine.States)
+            foreach (BaseState? state in stateMachine.States)
             {
-                AddStateToPlantUML(plantUmlBuilder, state, visitedStates);
+                AddStateToPlantUml(plantUmlBuilder, state, visitedStates);
             }
             
             // Mark result state
             if (stateMachine.ResultState != null)
             {
-                plantUmlBuilder.AppendLine($"{GetPlantUMLStateId(stateMachine.ResultState)} --> [*]");
+                plantUmlBuilder.AppendLine($"{GetPlantUmlStateId(stateMachine.ResultState)} --> [*]");
             }
             
             plantUmlBuilder.AppendLine("@enduml");
@@ -149,22 +150,20 @@ namespace LlmTornado.StateMachines
 
         private static void AddStateToDotGraph(StringBuilder dotBuilder, BaseState state, HashSet<string> visitedStates)
         {
-            var stateId = GetStateId(state);
+            string stateId = GetStateId(state);
             
-            if (visitedStates.Contains(stateId))
+            if (!visitedStates.Add(stateId))
                 return;
-                
-            visitedStates.Add(stateId);
-            
+
             // Add state declaration if not already added
             if (!IsSpecialState(state))
             {
-                var fillColor = GetDotStateColor(state);
+                string fillColor = GetDotStateColor(state);
                 dotBuilder.AppendLine($"    {stateId} [fillcolor={fillColor}, label=\"{GetStateLabel(state)}\"];");
             }
             
             // Get transitions - try both the base class and derived class transition properties
-            IEnumerable<StateTransition> transitions = null;
+            IEnumerable<StateTransition>? transitions = null;
             
             // First try the base class property
             if (state.BaseTransitions != null && state.BaseTransitions.Any())
@@ -174,10 +173,10 @@ namespace LlmTornado.StateMachines
             else
             {
                 // Try to get transitions from the generic derived class using reflection
-                var transitionsProperty = state.GetType().GetProperty("Transitions");
+                PropertyInfo? transitionsProperty = state.GetType().GetProperty("Transitions");
                 if (transitionsProperty != null)
                 {
-                    var genericTransitions = transitionsProperty.GetValue(state);
+                    object? genericTransitions = transitionsProperty.GetValue(state);
                     if (genericTransitions is IEnumerable<StateTransition> enumerable)
                     {
                         transitions = enumerable;
@@ -187,10 +186,10 @@ namespace LlmTornado.StateMachines
             
             if (transitions != null)
             {
-                foreach (var transition in transitions)
+                foreach (StateTransition? transition in transitions)
                 {
-                    var nextStateId = GetStateId(transition.NextState);
-                    var transitionLabel = GetTransitionLabel(transition);
+                    string nextStateId = GetStateId(transition.NextState);
+                    string transitionLabel = GetTransitionLabel(transition);
                     
                     dotBuilder.AppendLine($"    {stateId} -> {nextStateId} [label=\"{transitionLabel}\"];");
                     
@@ -200,15 +199,13 @@ namespace LlmTornado.StateMachines
             }
         }
 
-        private static void AddStateToPlantUML(StringBuilder plantUmlBuilder, BaseState state, HashSet<string> visitedStates)
+        private static void AddStateToPlantUml(StringBuilder plantUmlBuilder, BaseState state, HashSet<string> visitedStates)
         {
-            var stateId = GetPlantUMLStateId(state);
+            string stateId = GetPlantUmlStateId(state);
             
-            if (visitedStates.Contains(stateId))
+            if (!visitedStates.Add(stateId))
                 return;
-                
-            visitedStates.Add(stateId);
-            
+
             // Add state note if it has special properties
             if (state.IsDeadEnd)
             {
@@ -216,7 +213,7 @@ namespace LlmTornado.StateMachines
             }
             
             // Get transitions - try both the base class and derived class transition properties
-            IEnumerable<StateTransition> transitions = null;
+            IEnumerable<StateTransition>? transitions = null;
             
             // First try the base class property
             if (state.BaseTransitions != null && state.BaseTransitions.Any())
@@ -226,10 +223,11 @@ namespace LlmTornado.StateMachines
             else
             {
                 // Try to get transitions from the generic derived class using reflection
-                var transitionsProperty = state.GetType().GetProperty("Transitions");
+                PropertyInfo? transitionsProperty = state.GetType().GetProperty("Transitions");
+                
                 if (transitionsProperty != null)
                 {
-                    var genericTransitions = transitionsProperty.GetValue(state);
+                    object? genericTransitions = transitionsProperty.GetValue(state);
                     if (genericTransitions is IEnumerable<StateTransition> enumerable)
                     {
                         transitions = enumerable;
@@ -239,10 +237,10 @@ namespace LlmTornado.StateMachines
             
             if (transitions != null)
             {
-                foreach (var transition in transitions)
+                foreach (StateTransition transition in transitions)
                 {
-                    var nextStateId = GetPlantUMLStateId(transition.NextState);
-                    var transitionLabel = GetTransitionLabel(transition);
+                    string nextStateId = GetPlantUmlStateId(transition.NextState);
+                    string transitionLabel = GetTransitionLabel(transition);
                     
                     if (!string.IsNullOrEmpty(transitionLabel))
                     {
@@ -254,7 +252,7 @@ namespace LlmTornado.StateMachines
                     }
                     
                     // Recursively add the next state
-                    AddStateToPlantUML(plantUmlBuilder, transition.NextState, visitedStates);
+                    AddStateToPlantUml(plantUmlBuilder, transition.NextState, visitedStates);
                 }
             }
         }
@@ -264,16 +262,16 @@ namespace LlmTornado.StateMachines
             return SanitizeDotName(state.GetType().Name);
         }
 
-        private static string GetPlantUMLStateId(BaseState state)
+        private static string GetPlantUmlStateId(BaseState state)
         {
-            return SanitizePlantUMLName(state.GetType().Name);
+            return SanitizePlantUmlName(state.GetType().Name);
         }
 
         private static string GetStateLabel(BaseState state)
         {
-            var typeName = state.GetType().Name;
-            var inputType = GetSimpleTypeName(state.GetInputType());
-            var outputType = GetSimpleTypeName(state.GetOutputType());
+            string typeName = state.GetType().Name;
+            string inputType = GetSimpleTypeName(state.GetInputType());
+            string outputType = GetSimpleTypeName(state.GetOutputType());
             
             return $"{typeName}\\n({SanitizeDotName(inputType)} → {SanitizeDotName(outputType)})";
         }
@@ -281,27 +279,25 @@ namespace LlmTornado.StateMachines
         private static string GetTransitionLabel(StateTransition transition)
         {
             // Try to determine transition type and provide meaningful label
-            switch (transition.type)
+            return transition.type switch
             {
-                case "out":
-                    return "condition";
-                case "in_out":
-                    return "convert";
-                default:
-                    return "";
-            }
+                "out" => "condition",
+                "in_out" => "convert",
+                _ => ""
+            };
         }
 
         private static string GetDotStateColor(BaseState state)
         {
             if (state.IsDeadEnd)
                 return "lightgray";
-            if (state is ExitState)
-                return "lightcoral";
-            if (state is DeadEnd)
-                return "lightgray";
             
-            return "lightblue";
+            return state switch
+            {
+                ExitState => "lightcoral",
+                DeadEnd => "lightgray",
+                _ => "lightblue"
+            };
         }
 
         private static bool IsSpecialState(BaseState state)
@@ -320,8 +316,8 @@ namespace LlmTornado.StateMachines
                 return "int";
             if (type.IsGenericType)
             {
-                var genericTypeName = type.Name.Split('`')[0];
-                var genericArgs = string.Join(", ", type.GetGenericArguments().Select(GetSimpleTypeName));
+                string genericTypeName = type.Name.Split('`')[0];
+                string genericArgs = string.Join(", ", type.GetGenericArguments().Select(GetSimpleTypeName));
                 return $"{genericTypeName}<{genericArgs}>";
             }
             
@@ -333,7 +329,7 @@ namespace LlmTornado.StateMachines
             return name.Replace("<", "_").Replace(">", "_").Replace(",", "_").Replace(" ", "_").Replace("-", "_");
         }
 
-        private static string SanitizePlantUMLName(string name)
+        private static string SanitizePlantUmlName(string name)
         {
             return name.Replace("<", "_").Replace(">", "_").Replace(",", "_").Replace(" ", "_").Replace("-", "_");
         }

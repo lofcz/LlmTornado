@@ -7,6 +7,7 @@ using ModelContextProtocol.Protocol;
 using Newtonsoft.Json;
 using System.Reflection;
 using System.Text.Json;
+using LlmTornado.Code;
 using LlmTornado.StateMachines;
 
 namespace LlmTornado.Agents;
@@ -71,7 +72,8 @@ public static class ToolRunner
         if (!agent.McpTools.TryGetValue(call.Name, out MCPServer? server))
             throw new Exception($"I don't have a tool called {call.Name}");
 
-        CallToolResult _result;
+        CallToolResult localResult;
+        
         //Need to check if function has required parameters and if so, parse them from the call.FunctionArguments
         if (call.Arguments != null)
         {
@@ -80,36 +82,38 @@ public static class ToolRunner
 
             string json = call.Arguments;
             Dictionary<string, object?>? dict = JsonConvert.DeserializeObject<Dictionary<string, object?>>(json);
-            _result = await server.McpClient!.CallToolAsync(call.Name, dict);
+            localResult = await server.McpClient!.CallToolAsync(call.Name, dict);
         }
         else
         {
-            _result = await server.McpClient!.CallToolAsync(call.Name);
+            localResult = await server.McpClient!.CallToolAsync(call.Name);
         }
 
-        if (_result is { } callToolResult)
+        if (localResult is not { } callToolResult)
         {
-            string result = string.Empty;
+            return new FunctionResult(call, "Error");
+        }
+        
+        string result = string.Empty;
 
-            if (callToolResult.Content.Count > 0)
-            {
-                ContentBlock firstBlock = callToolResult.Content[0];
-
-                result = firstBlock switch
-                {
-                    TextContentBlock textBlock => textBlock.Text,
-                    ImageContentBlock imageBlock => imageBlock.Data,
-                    AudioContentBlock audioBlock => audioBlock.Data,
-                    EmbeddedResourceBlock embeddedResourceBlock => embeddedResourceBlock.Resource.Uri,
-                    ResourceLinkBlock resourceLinkBlock => resourceLinkBlock.Uri,
-                    _ => result
-                };
-            }
+        if (callToolResult.Content.Count <= 0)
+        {
             return new FunctionResult(call, result);
         }
+            
+        ContentBlock firstBlock = callToolResult.Content[0];
 
+        result = firstBlock switch
+        {
+            TextContentBlock textBlock => textBlock.Text,
+            ImageContentBlock imageBlock => imageBlock.Data,
+            AudioContentBlock audioBlock => audioBlock.Data,
+            EmbeddedResourceBlock embeddedResourceBlock => embeddedResourceBlock.Resource.Uri,
+            ResourceLinkBlock resourceLinkBlock => resourceLinkBlock.Uri,
+            _ => result
+        };
 
-        return new FunctionResult(call, "Error");
+        return new FunctionResult(call, result);
     }
     
     /// <summary>
@@ -120,15 +124,20 @@ public static class ToolRunner
     /// <returns></returns>
     static async Task<object?> CallFuncAsync(Delegate function, object[] args)
     {
-        object? result;
+        object? result = null;
         MethodInfo method = function.Method;
+        
         if (AsyncHelpers.IsGenericTask(method.ReturnType, out Type taskResultType))
         {
             // Method is async, invoke and await
             Task? task = (Task?)function.DynamicInvoke(args);
-            await task.ConfigureAwait(false);
-            // Get the Result property from the Task
-            result = taskResultType.GetProperty("Result")?.GetValue(task);
+
+            if (task is not null)
+            {
+                await task.ConfigureAwait(false);
+                // Get the Result property from the Task
+                result = taskResultType.GetProperty("Result")?.GetValue(task);   
+            }
         }
         else
         {

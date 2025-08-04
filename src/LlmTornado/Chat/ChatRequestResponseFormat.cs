@@ -125,7 +125,7 @@ public class ChatRequestResponseFormats
             Type = ChatRequestResponseFormatTypes.StructuredJson,
             Schema = new ChatRequestResponseJsonSchema
             {
-                Name = name,
+                Name = Tool.NormalizeName(name),
                 Strict = strict,
                 Schema = schema
             }
@@ -142,7 +142,7 @@ public class ChatRequestResponseFormats
             Type = ChatRequestResponseFormatTypes.StructuredJson,
             Schema = new ChatRequestResponseJsonSchema
             {
-                Name = name,
+                Name = Tool.NormalizeName(name),
                 Strict = strict,
                 Schema = schema,
                 Description = description
@@ -183,7 +183,7 @@ public class ChatRequestResponseFormats
             {
                 Strict = strict,
                 SchemaParams = pars,
-                Name = name
+                Name = Tool.NormalizeName(name)
             }
         };
     }
@@ -204,7 +204,7 @@ public class ChatRequestResponseFormats
             {
                 Strict = strict,
                 SchemaParams = pars,
-                Name = name,
+                Name = Tool.NormalizeName(name),
                 Description = description
             }
         };
@@ -237,7 +237,7 @@ public class ChatRequestResponseFormats
             Type = ChatRequestResponseFormatTypes.StructuredJson,
             Schema = new ChatRequestResponseJsonSchema
             {
-                Name = name,
+                Name = Tool.NormalizeName(name),
                 Strict = strict,
                 Delegate = function
             }
@@ -254,7 +254,7 @@ public class ChatRequestResponseFormats
             Type = ChatRequestResponseFormatTypes.StructuredJson,
             Schema = new ChatRequestResponseJsonSchema
             {
-                Name = name,
+                Name = Tool.NormalizeName(name),
                 Strict = strict,
                 Delegate = function,
                 Description = description
@@ -290,7 +290,7 @@ public class ChatRequestResponseFormats
             Type = ChatRequestResponseFormatTypes.StructuredJson,
             Schema = new ChatRequestResponseJsonSchema
             {
-                Name = name,
+                Name = Tool.NormalizeName(name),
                 Strict = strict,
                 Delegate = function,
                 ToolMetadata = metadata
@@ -308,7 +308,7 @@ public class ChatRequestResponseFormats
             Type = ChatRequestResponseFormatTypes.StructuredJson,
             Schema = new ChatRequestResponseJsonSchema
             {
-                Name = name,
+                Name = Tool.NormalizeName(name),
                 Strict = strict,
                 Delegate = function,
                 ToolMetadata = metadata,
