@@ -27,7 +27,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '10.0.100-preview.4.25258.110'
+        dotnet-version: '10.0.100-preview.5.25277.114'
 
     # Setup NodeJS
     - name: Setup Node.js
