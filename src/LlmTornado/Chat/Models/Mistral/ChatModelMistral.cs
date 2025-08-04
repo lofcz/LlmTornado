@@ -26,7 +26,7 @@ public class ChatModelMistral: BaseVendorModelProvider
     /// <summary>
     /// All known chat models from Mistral.
     /// </summary>
-    public override List<IModel> AllModels { get; }
+    public override List<IModel> AllModels => ModelsAll;
 
     /// <summary>
     /// Checks whether the model is owned by the provider.
@@ -62,6 +62,6 @@ public class ChatModelMistral: BaseVendorModelProvider
     
     internal ChatModelMistral()
     {
-        AllModels = ModelsAll;
+        
     }
 }

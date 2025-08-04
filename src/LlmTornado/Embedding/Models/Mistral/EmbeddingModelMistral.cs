@@ -16,7 +16,7 @@ public class EmbeddingModelMistral : BaseVendorModelProvider
     /// <summary>
     /// All known embedding models from Mistral.
     /// </summary>
-    public override List<IModel> AllModels { get; }
+    public override List<IModel> AllModels => ModelsAll;
     
     /// <summary>
     /// Checks whether the model is owned by the provider.
@@ -50,6 +50,6 @@ public class EmbeddingModelMistral : BaseVendorModelProvider
     
     internal EmbeddingModelMistral()
     {
-        AllModels = ModelsAll;
+        
     }
 }

@@ -55,7 +55,7 @@ public class EmbeddingModelCohereGen3 : BaseVendorModelProvider
     /// <summary>
     /// All known embedding models from Cohere Gen 3.
     /// </summary>
-    public override List<IModel> AllModels { get; }
+    public override List<IModel> AllModels => ModelsAll;
     
     /// <summary>
     /// Checks whether the model is owned by the provider.
@@ -92,6 +92,6 @@ public class EmbeddingModelCohereGen3 : BaseVendorModelProvider
     
     internal EmbeddingModelCohereGen3()
     {
-        AllModels = ModelsAll;
+        
     }
 }

@@ -17,7 +17,7 @@ public class ChatModelPerplexity : BaseVendorModelProvider
     /// <summary>
     /// All known chat models from xAI.
     /// </summary>
-    public override List<IModel> AllModels { get; }
+    public override List<IModel> AllModels => ModelsAll;
 
     /// <summary>
     /// Checks whether the model is owned by the provider.
@@ -49,6 +49,6 @@ public class ChatModelPerplexity : BaseVendorModelProvider
 
     internal ChatModelPerplexity()
     {
-        AllModels = ModelsAll;
+        
     }
 }

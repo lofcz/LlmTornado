@@ -17,7 +17,7 @@ public class RerankModelVoyage : BaseVendorModelProvider
     /// <summary>
     /// All known rerank models from Voyage.
     /// </summary>
-    public override List<IModel> AllModels { get; }
+    public override List<IModel> AllModels => ModelsAll;
     
     /// <summary>
     /// Checks whether the model is owned by the provider.
@@ -47,6 +47,6 @@ public class RerankModelVoyage : BaseVendorModelProvider
     
     internal RerankModelVoyage()
     {
-        AllModels = ModelsAll;
+        
     }
 }

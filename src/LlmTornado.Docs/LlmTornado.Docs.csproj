@@ -14,6 +14,7 @@
         <TrimMode>none</TrimMode>
         <PublishTrimmed>false</PublishTrimmed>
         <WasmEnableWebcil>false</WasmEnableWebcil>
+        <IsPackable>false</IsPackable>
     </PropertyGroup>
 
     <ItemGroup>

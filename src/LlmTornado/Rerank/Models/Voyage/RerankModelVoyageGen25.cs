@@ -33,7 +33,7 @@ public class RerankModelVoyageGen25 : BaseVendorModelProvider
     /// <summary>
     /// All known embedding models.
     /// </summary>
-    public override List<IModel> AllModels { get; }
+    public override List<IModel> AllModels => ModelsAll;
     
     /// <summary>
     /// Checks whether the model is owned by the provider.
@@ -64,6 +64,6 @@ public class RerankModelVoyageGen25 : BaseVendorModelProvider
     
     internal RerankModelVoyageGen25()
     {
-        AllModels = ModelsAll;
+        
     }
 }

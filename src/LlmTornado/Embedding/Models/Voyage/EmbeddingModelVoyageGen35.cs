@@ -33,7 +33,7 @@ public class EmbeddingModelVoyageGen35 : BaseVendorModelProvider
     /// <summary>
     /// All known embedding models.
     /// </summary>
-    public override List<IModel> AllModels { get; }
+    public override List<IModel> AllModels => ModelsAll;
     
     /// <summary>
     /// Checks whether the model is owned by the provider.
@@ -68,6 +68,6 @@ public class EmbeddingModelVoyageGen35 : BaseVendorModelProvider
     
     internal EmbeddingModelVoyageGen35()
     {
-        AllModels = ModelsAll;
+        
     }
 }

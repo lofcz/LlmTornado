@@ -10,11 +10,11 @@
     <Authors>Tewr</Authors>
     <Product>BlazorWorker</Product>
     <Configurations>Debug;Release</Configurations>
-    <Version>5.0.5</Version>
+    <Version>5.0.6</Version>
     <AssemblyVersion>5.0.0</AssemblyVersion>
     <PackageIcon>icon.png</PackageIcon>
-    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>

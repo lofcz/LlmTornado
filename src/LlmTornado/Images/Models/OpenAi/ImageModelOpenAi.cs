@@ -22,7 +22,7 @@ public class ImageModelOpenAi : BaseVendorModelProvider
     /// <summary>
     /// All known image models from OpenAI.
     /// </summary>
-    public override List<IModel> AllModels { get; }
+    public override List<IModel> AllModels => ModelsAll;
     
     /// <summary>
     /// Checks whether the model is owned by the provider.
@@ -57,6 +57,6 @@ public class ImageModelOpenAi : BaseVendorModelProvider
     
     internal ImageModelOpenAi()
     {
-        AllModels = ModelsAll;
+        
     }
 }

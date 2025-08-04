@@ -36,7 +36,7 @@ public class ChatModelDeepInfra : BaseVendorModelProvider
     /// <summary>
     /// All known chat models from DeepInfra.
     /// </summary>
-    public override List<IModel> AllModels { get; }
+    public override List<IModel> AllModels => ModelsAll;
 
     /// <summary>
     /// Checks whether the model is owned by the provider.
@@ -71,6 +71,6 @@ public class ChatModelDeepInfra : BaseVendorModelProvider
     
     internal ChatModelDeepInfra()
     {
-        AllModels = ModelsAll;
+        
     }
 }

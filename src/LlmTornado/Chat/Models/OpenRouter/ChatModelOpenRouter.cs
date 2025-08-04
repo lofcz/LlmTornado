@@ -28,7 +28,7 @@ public class ChatModelOpenRouter : BaseVendorModelProvider
     /// <summary>
     /// All known chat models from Google.
     /// </summary>
-    public override List<IModel> AllModels { get; }
+    public override List<IModel> AllModels => ModelsAll;
 
     /// <summary>
     /// Checks whether the model is owned by the provider.
@@ -50,6 +50,6 @@ public class ChatModelOpenRouter : BaseVendorModelProvider
     
     internal ChatModelOpenRouter()
     {
-        AllModels = ModelsAll;
+        
     }
 }
