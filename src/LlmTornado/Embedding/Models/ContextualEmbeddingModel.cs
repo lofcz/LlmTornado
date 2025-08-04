@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using LlmTornado.Chat.Models;
 using LlmTornado.Code;
@@ -21,24 +23,22 @@ public class ContextualEmbeddingModel : ModelEmbeddingBase
     /// <summary>
     /// All known models keyed by name.
     /// </summary>
-    public static readonly Dictionary<string, IModel> AllModelsMap = [];
+    public static Dictionary<string, IModel> AllModelsMap => AllModelsMapLazy.Value;
 
     /// <summary>
     /// All known chat models.
     /// </summary>
-    public static readonly List<IModel> AllModels;
+    public static List<IModel> AllModels => AllModelsLazy.Value;
     
-    static ContextualEmbeddingModel()
+    private static readonly Lazy<Dictionary<string, IModel>> AllModelsMapLazy = new Lazy<Dictionary<string, IModel>>(() =>
     {
-        AllModels = [
-            ..Voyage.AllModels
-        ];
-        
-        AllModels.ForEach(x =>
-        {
-            AllModelsMap.TryAdd(x.Name, x);
-        });
-    }
+        return AllModels.ToDictionary(x => x.Name, x => x);
+    });
+    
+    private static readonly Lazy<List<IModel>> AllModelsLazy = new Lazy<List<IModel>>(() =>
+    [
+        ..Voyage.AllModels
+    ]);
     
     /// <summary>
     /// Represents a Model with the given name.

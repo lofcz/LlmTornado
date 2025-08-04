@@ -17,7 +17,7 @@ public class EmbeddingModelGoogle : BaseVendorModelProvider
     /// <summary>
     /// All known embedding models from Google.
     /// </summary>
-    public override List<IModel> AllModels { get; }
+    public override List<IModel> AllModels => ModelsAll;
     
     /// <summary>
     /// Checks whether the model is owned by the provider.
@@ -51,6 +51,6 @@ public class EmbeddingModelGoogle : BaseVendorModelProvider
     
     internal EmbeddingModelGoogle()
     {
-        AllModels = ModelsAll;
+        
     }
 }

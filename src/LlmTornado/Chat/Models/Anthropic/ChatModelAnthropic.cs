@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using LlmTornado.Code.Models;
+using LlmTornado.Models;
 
 namespace LlmTornado.Chat.Models;
 
@@ -27,11 +28,11 @@ public class ChatModelAnthropic : BaseVendorModelProvider
     /// Claude 4 models.
     /// </summary>
     public readonly ChatModelAnthropicClaude4 Claude4 = new ChatModelAnthropicClaude4();
-    
+
     /// <summary>
     /// All known chat models from Anthropic.
     /// </summary>
-    public override List<IModel> AllModels { get; }
+    public override List<IModel> AllModels => ModelsAll;
     
     /// <summary>
     /// Checks whether the model is owned by the provider.
@@ -68,6 +69,6 @@ public class ChatModelAnthropic : BaseVendorModelProvider
     
     internal ChatModelAnthropic()
     {
-        AllModels = ModelsAll;
+      
     }
 }

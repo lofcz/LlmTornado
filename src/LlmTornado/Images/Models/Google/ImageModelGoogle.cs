@@ -21,7 +21,7 @@ public class ImageModelGoogle : BaseVendorModelProvider
     /// <summary>
     /// All known image models from OpenAI.
     /// </summary>
-    public override List<IModel> AllModels { get; }
+    public override List<IModel> AllModels => ModelsAll;
     
     /// <summary>
     /// Checks whether the model is owned by the provider.
@@ -56,6 +56,6 @@ public class ImageModelGoogle : BaseVendorModelProvider
     
     internal ImageModelGoogle()
     {
-        AllModels = ModelsAll;
+        
     }
 }

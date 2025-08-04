@@ -16,7 +16,7 @@ public class AudioModelMistral : BaseVendorModelProvider
     /// <summary>
     /// All known audio models from Mistral.
     /// </summary>
-    public override List<IModel> AllModels { get; }
+    public override List<IModel> AllModels => ModelsAll;
     
     /// <summary>
     /// Checks whether the model is owned by the provider.
@@ -50,6 +50,6 @@ public class AudioModelMistral : BaseVendorModelProvider
     
     internal AudioModelMistral()
     {
-        AllModels = ModelsAll;
+        
     }
 }

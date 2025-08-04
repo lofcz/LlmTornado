@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
@@ -15,30 +17,27 @@ public class MultimodalEmbeddingModel : ModelEmbeddingBase
     /// <summary>
     /// Models from Voyage.
     /// </summary>
-    public static readonly EmbeddingModelVoyageMultimodal Voyage = new();
+    public static readonly EmbeddingModelVoyageMultimodal Voyage = new EmbeddingModelVoyageMultimodal();
     
     /// <summary>
     /// All known models keyed by name.
     /// </summary>
-    public static readonly Dictionary<string, IModel> AllModelsMap = [];
+    public static Dictionary<string, IModel> AllModelsMap => AllModelsMapLazy.Value;
 
     /// <summary>
-    /// All known multimodal embedding models.
+    /// All known chat models.
     /// </summary>
-    public static readonly List<IModel> AllModels;
+    public static List<IModel> AllModels => AllModelsLazy.Value;
     
-    static MultimodalEmbeddingModel()
+    private static readonly Lazy<Dictionary<string, IModel>> AllModelsMapLazy = new Lazy<Dictionary<string, IModel>>(() =>
     {
-        AllModels =
-        [
-            ..Voyage.AllModels
-        ];
-        
-        AllModels.ForEach(x =>
-        {
-            AllModelsMap.TryAdd(x.Name, x);
-        });
-    }
+        return AllModels.ToDictionary(x => x.Name, x => x);
+    });
+    
+    private static readonly Lazy<List<IModel>> AllModelsLazy = new Lazy<List<IModel>>(() =>
+    [
+        ..Voyage.AllModels
+    ]);
 
     /// <summary>
     /// Represents a Model with the given name.

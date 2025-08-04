@@ -27,7 +27,7 @@ public class EmbeddingModelCohere : BaseVendorModelProvider
     /// <summary>
     /// All known embedding models from Cohere.
     /// </summary>
-    public override List<IModel> AllModels { get; }
+    public override List<IModel> AllModels => ModelsAll;
     
     /// <summary>
     /// Checks whether the model is owned by the provider.
@@ -63,6 +63,6 @@ public class EmbeddingModelCohere : BaseVendorModelProvider
     
     internal EmbeddingModelCohere()
     {
-        AllModels = ModelsAll;
+        
     }
 }

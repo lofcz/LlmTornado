@@ -37,11 +37,11 @@ public class ChatModelGroq : BaseVendorModelProvider
     /// Models by Moonshot AI.
     /// </summary>
     public readonly ChatModelGroqMoonshotAi MoonshotAi = new ChatModelGroqMoonshotAi();
-    
+
     /// <summary>
     /// All known chat models hosted by Groq.
     /// </summary>
-    public override List<IModel> AllModels { get; }
+    public override List<IModel> AllModels => ModelsAll;
 
     /// <summary>
     /// Checks whether the model is owned by the provider.
@@ -80,6 +80,6 @@ public class ChatModelGroq : BaseVendorModelProvider
     
     internal ChatModelGroq()
     {
-        AllModels = ModelsAll;
+      
     }
 }

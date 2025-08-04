@@ -22,11 +22,11 @@ public class ChatModelXAi : BaseVendorModelProvider
     /// Grok 1 & 2 models.
     /// </summary>
     public readonly ChatModelXAiGrok Grok = new ChatModelXAiGrok();
-    
+
     /// <summary>
     /// All known chat models from xAI.
     /// </summary>
-    public override List<IModel> AllModels { get; }
+    public override List<IModel> AllModels => ModelsAll;
     
     /// <summary>
     /// Checks whether the model is owned by the provider.
@@ -62,6 +62,6 @@ public class ChatModelXAi : BaseVendorModelProvider
     
     internal ChatModelXAi()
     {
-        AllModels = ModelsAll;
+       
     }
 }

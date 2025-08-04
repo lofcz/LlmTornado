@@ -22,7 +22,7 @@ public class EmbeddingModelOpenAi : BaseVendorModelProvider
     /// <summary>
     /// All known embedding models from OpenAI.
     /// </summary>
-    public override List<IModel> AllModels { get; }
+    public override List<IModel> AllModels => ModelsAll;
 
     /// <summary>
     /// Checks whether the model is owned by the provider.
@@ -57,6 +57,6 @@ public class EmbeddingModelOpenAi : BaseVendorModelProvider
 
     internal EmbeddingModelOpenAi()
     {
-        AllModels = ModelsAll;
+        
     }
 }

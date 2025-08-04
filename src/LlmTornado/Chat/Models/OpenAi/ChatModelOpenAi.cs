@@ -44,11 +44,11 @@ public class ChatModelOpenAi : BaseVendorModelProvider
     /// </summary>
     [Obsolete("Will be removed in 3 months by OpenAI")]
     public readonly ChatModelOpenAiGpt45 Gpt45 = new ChatModelOpenAiGpt45();
-    
+
     /// <summary>
     /// All known chat models from OpenAI.
     /// </summary>
-    public override List<IModel> AllModels { get; }
+    public override List<IModel> AllModels => ModelsAll;
     
     /// <summary>
     /// Checks whether the model is owned by the provider.
@@ -115,6 +115,6 @@ public class ChatModelOpenAi : BaseVendorModelProvider
     
     internal ChatModelOpenAi()
     {
-        AllModels = ModelsAll;
+        
     }
 }

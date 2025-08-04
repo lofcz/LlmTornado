@@ -17,11 +17,11 @@ public class ChatModelCohere: BaseVendorModelProvider
     /// Aya models.
     /// </summary>
     public readonly ChatModelCohereAya Aya = new ChatModelCohereAya();
-    
+
     /// <summary>
     /// All known chat models from Cohere.
     /// </summary>
-    public override List<IModel> AllModels { get; }
+    public override List<IModel> AllModels => ModelsAll;
 
     /// <summary>
     /// Checks whether the model is owned by the provider.
@@ -56,6 +56,6 @@ public class ChatModelCohere: BaseVendorModelProvider
     
     internal ChatModelCohere()
     {
-        AllModels = ModelsAll;
+       
     }
 }

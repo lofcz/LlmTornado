@@ -23,7 +23,7 @@ public class EmbeddingModelVoyageMultimodalGen3 : BaseVendorModelProvider
     /// <summary>
     /// All owned models.
     /// </summary>
-    public override List<IModel> AllModels { get; }
+    public override List<IModel> AllModels => ModelsAll;
 
     /// <summary>
     /// Checks whether a model is owned.
@@ -53,6 +53,6 @@ public class EmbeddingModelVoyageMultimodalGen3 : BaseVendorModelProvider
     
     internal EmbeddingModelVoyageMultimodalGen3()
     {
-        AllModels = ModelsAll;
+        
     }
 }

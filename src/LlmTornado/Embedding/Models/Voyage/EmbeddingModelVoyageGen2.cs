@@ -53,7 +53,7 @@ public class EmbeddingModelVoyageGen2 : BaseVendorModelProvider
     /// <summary>
     /// All known embedding models from Voyage 2.
     /// </summary>
-    public override List<IModel> AllModels { get; }
+    public override List<IModel> AllModels => ModelsAll;
     
     /// <summary>
     /// Checks whether the model is owned by the provider.
@@ -90,6 +90,6 @@ public class EmbeddingModelVoyageGen2 : BaseVendorModelProvider
     
     internal EmbeddingModelVoyageGen2()
     {
-        AllModels = ModelsAll;
+        
     }
 }
