@@ -19,15 +19,25 @@ jobs:
     
     steps:
     # Checkout repository with full history
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
     
     # Setup .NET SDK
     - name: Setup .NET
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '10.0.100-preview.4.25258.110'
+
+    # Setup NodeJS
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+
+    - name: Install NPM dependencies for Docs project
+      run: npm ci
+      working-directory: ./src/LlmTornado.Docs
 
     # Check which projects changed and calculate their new versions
     - name: Check Changes and Calculate Versions
