@@ -1,4 +1,5 @@
-﻿using LlmTornado.Chat;
+﻿using LlmTornado.Agents.Orchestration;
+using LlmTornado.Chat;
 using LlmTornado.StateMachines;
 
 namespace LlmTornado.Agents.AgentStates;
@@ -8,7 +9,7 @@ public interface IAgentStateMachine
     /// <summary>
     /// Gets or sets the <see cref="ControllerAgent"/> responsible for controlling the system's operations.
     /// </summary>
-    public ControllerAgent ControlAgent { get; set; }
+    public StateMachineOrchestration Orchestractor { get; set; }
     /// <summary>
     /// Collection of <see cref="ModelItem"/> shared across the agent's state machine.
     /// </summary>
@@ -17,12 +18,12 @@ public interface IAgentStateMachine
 
 public abstract class AgentStateMachine<TInput, TOutput> : StateMachine<TInput, TOutput>, IAgentStateMachine
 {
-    public ControllerAgent ControlAgent { get; set; }
+    public StateMachineOrchestration Orchestractor { get; set; }
     public List<ChatMessage> SharedModelItems { get; set; } = [];
 
-    public AgentStateMachine(ControllerAgent agent) {
+    public AgentStateMachine(StateMachineOrchestration orchestractor) {
 
-        ControlAgent = agent;
+        Orchestractor = orchestractor;
         InitializeStates();
         OnBegin += AddToControl; //Add active state machine to the control agent when it begins execution
         //Add OnFinish and CancellationTriggered events to remove from control
@@ -35,8 +36,8 @@ public abstract class AgentStateMachine<TInput, TOutput> : StateMachine<TInput, 
         {
             if(state.State is IAgentState agentState)
             {
-                agentState.SubscribeVerboseChannel(ControlAgent.VerboseCallback);
-                agentState.SubscribeStreamingChannel(ControlAgent.StreamingCallback);
+                agentState.SubscribeVerboseChannel(Orchestractor.StateMachineVerboseBus);
+                agentState.SubscribeStreamingChannel(Orchestractor.StateMachineStreamingBus);
             }
         };
 
@@ -45,8 +46,8 @@ public abstract class AgentStateMachine<TInput, TOutput> : StateMachine<TInput, 
         {
             if (state is IAgentState agentState)
             {
-                agentState.UnsubscribeVerboseChannel(ControlAgent.VerboseCallback);
-                agentState.UnsubscribeStreamingChannel(ControlAgent.StreamingCallback);
+                agentState.UnsubscribeVerboseChannel(Orchestractor.StateMachineVerboseBus);
+                agentState.UnsubscribeStreamingChannel(Orchestractor.StateMachineStreamingBus);
             }
         };
     }
@@ -58,7 +59,7 @@ public abstract class AgentStateMachine<TInput, TOutput> : StateMachine<TInput, 
     /// the state machine's lifecycle.</remarks>
     private void AddToControl()
     {
-        ControlAgent.AddStateMachine(this);
+        Orchestractor.AddStateMachine(this);
     }
 
     /// <summary>
@@ -68,7 +69,7 @@ public abstract class AgentStateMachine<TInput, TOutput> : StateMachine<TInput, 
     /// is properly deregistered from the control agent.</remarks>
     private void RemoveFromControl()
     {
-        ControlAgent.RemoveStateMachine(this);
+        Orchestractor.RemoveStateMachine(this);
     }
 
     /// <summary>

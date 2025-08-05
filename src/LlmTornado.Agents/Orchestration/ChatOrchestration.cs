@@ -6,7 +6,7 @@ using LlmTornado.Images;
 using LlmTornado.StateMachines;
 using static LlmTornado.Agents.TornadoRunner;
 
-namespace LlmTornado.Agents.AgentStates;
+namespace LlmTornado.Agents.Orchestration;
 
 /// <summary>
 /// Represents a method that processes an input string asynchronously and returns a result string.
@@ -14,31 +14,22 @@ namespace LlmTornado.Agents.AgentStates;
 /// <param name="input">The input string to be processed. Cannot be null.</param>
 /// <returns>A task that represents the asynchronous operation. The task result contains the processed string.</returns>
 public delegate Task<string> InputProcessorDelegate(string input);
-[Obsolete("Replaced by Orchestration")]
-public abstract class ControllerAgent
+
+public class ChatOrchestration
 {
     public string AgentName { get; }
 
     public string AgentId { get; } = Guid.NewGuid().ToString();
 
-    public List<ChatMessage> SharedModelItems = [];
-
     /// <summary>
     /// Agent used to manage the active conversation and report results of the state machines.
     /// </summary>
     public TornadoAgent CurrentAgent { get; set; }
-    /// <summary>
-    /// Used to handle The controlling state machine to process the input before it is sent to the model.
-    /// </summary>
-    public InputProcessorDelegate? InputPreprocessor { get; set; } = null!;
-    /// <summary>
-    /// Active state machines that are currently running in the agent.
-    /// </summary>
-    public List<StateMachine> CurrentStateMachines { get; set; } = [];
+
     /// <summary>
     /// Latest result from the ControlAgent run. (holds messages buffer for Chat API, response API uses threadID)
     /// </summary>
-    public Conversation CurrentResult { get; set; } 
+    public Conversation CurrentResult { get; set; }
     /// <summary>
     /// Thread ID of the main conversation thread for the response API
     /// </summary>
@@ -48,7 +39,7 @@ public abstract class ControllerAgent
     /// Occurs when Agent gets a new message to process.
     /// </summary>
     public Action? OnExecutionStarted;
-    
+
     /// <summary>
     /// Occurs when the execution process has completed.
     /// </summary>
@@ -62,90 +53,26 @@ public abstract class ControllerAgent
     /// <remarks>This event is triggered to provide detailed logging information about the Control Agent
     /// Subscribers can use this event to capture and process verbose messages for diagnostic or logging
     /// purposes.</remarks>
-    public Action<string>? OnControllerVerboseEvent;
-    
+    public Action<string>? OnVerboseEvent;
+
     /// <summary>
     /// Main streaming event for the Control Agent to handle streaming messages for the Control Agent conversation.
     /// </summary>
-    public StreamingCallbacks? OnControllerStreamingEvent;
-    
-    /// <summary>
-    /// Occurs when a new state machine is added.
-    /// </summary>
-    /// <remarks>Subscribe to this event to perform actions when a state machine is added to the
-    /// collection. The event handler receives an argument of type <see cref="StateMachine"/>,
-    /// representing the added state machine.</remarks>
-    public Action<StateMachine>? OnStateMachineAdded;
-    
-    /// <summary>
-    /// Occurs when a state machine is removed from the collection.
-    /// </summary>
-    /// <remarks>This event is triggered whenever a state machine is removed, allowing subscribers to
-    /// perform any necessary cleanup or updates in response to the removal. Ensure that any event handlers attached
-    /// to this event are thread-safe, as the event may be raised from different threads.</remarks>
-    public Action<StateMachine>? OnStateMachineRemoved;
+    public StreamingCallbacks? OnStreamingEvent;
 
-    /// <summary>
-    /// Occurs when a state machine is removed from the collection.
-    /// </summary>
-    /// <remarks>This event is triggered whenever a state machine is removed, allowing subscribers to
-    /// perform any necessary cleanup or updates in response to the removal. Ensure that any event handlers attached
-    /// to this event are thread-safe, as the event may be raised from different threads.</remarks>
-    public Action<ModelStreamingEvents>? OnStateMachineStreamingEvent;
-
-    /// <summary>
-    /// Occurs when a state machine is removed from the collection.
-    /// </summary>
-    /// <remarks>This event is triggered whenever a state machine is removed, allowing subscribers to
-    /// perform any necessary cleanup or updates in response to the removal. Ensure that any event handlers attached
-    /// to this event are thread-safe, as the event may be raised from different threads.</remarks>
-    public Action<string>? OnStateMachineVerboseEvent;
-
-    /// <summary>
-    /// Used to handle streaming callbacks from the agent.
-    /// </summary>
-    public StreamingCallbacks? StateMachineStreamingBus;
-
-    /// <summary>
-    /// Used to get logging information from the runner probably will eventually be used to send status updates to the Control Agent.
-    /// </summary>
-    public RunnerVerboseCallbacks? StateMachineVerboseBus;
 
     /// <summary>
     /// Master Cancellation token source for the Control Agent and the rest of the state machines.
     /// </summary>
-    CancellationTokenSource cts = new CancellationTokenSource();
+    public CancellationTokenSource cts = new CancellationTokenSource();
 
-    public ControllerAgent(string agentName, TornadoAgent agent)
+    public ChatOrchestration(string agentName, TornadoAgent agent)
     {
         // Initialize the agent and set up the callbacks
         AgentName = agentName;
         CurrentAgent = agent; // Set the initial agent as the current agent
         CurrentAgent.Options.CancellationToken = cts.Token; // Set the cancellation token source for the Control Agent
-        StateMachineStreamingBus += InvokeStreamingCallback;  //Route State Agents streaming callbacks to the agent's event handler
-        StateMachineVerboseBus += InvokeVerboseCallback; //Route State Agents verbose callbacks to the agent's event handler  
-    }
 
-    /// <summary>
-    /// Used to send streaming messages from the Control Agent
-    /// </summary>
-    /// <param name="message"></param>
-    private ValueTask InvokeStreamingCallback(ModelStreamingEvents message)
-    {
-        StateMachineStreamingBus?.Invoke(message);
-        return default; // Return a completed ValueTask
-    }
-
-    
-
-    /// <summary>
-    /// Used to send verbose logging messages from the Control Agent
-    /// </summary>
-    /// <param name="message"></param>
-    private ValueTask InvokeVerboseCallback(string message)
-    {
-        StateMachineVerboseBus?.Invoke(message);
-        return default; // Return a completed ValueTask
     }
 
     /// <summary>
@@ -157,7 +84,7 @@ public abstract class ControllerAgent
     /// <param name="message">The message to be passed to the streaming event. Cannot be null.</param>
     private ValueTask HandleControllerStreamingEvent(ModelStreamingEvents message)
     {
-        OnControllerStreamingEvent?.Invoke(message);
+        OnStreamingEvent?.Invoke(message);
         return default; // Return a completed ValueTask
     }
 
@@ -169,34 +96,10 @@ public abstract class ControllerAgent
     /// <param name="message">The message to be passed to the event handlers. Cannot be null.</param>
     private ValueTask HandleControllerVerboseEvent(string message)
     {
-        OnControllerVerboseEvent?.Invoke(message);
+        OnVerboseEvent?.Invoke(message);
         return default; // Return a completed ValueTask
     }
 
-    /// <summary>
-    /// Adds a state machine to the current collection and triggers the StateMachineAdded event.
-    /// </summary>
-    /// <remarks>This method appends the specified state machine to the <c>CurrentStateMachines</c>
-    /// collection and invokes the <c>StateMachineAdded</c> event, passing the added state machine as an
-    /// argument.</remarks>
-    /// <param name="stateMachine">The state machine to add. Cannot be null.</param>
-    public void AddStateMachine(StateMachine stateMachine)
-    {
-        CurrentStateMachines.Add(stateMachine);
-        OnStateMachineAdded?.Invoke(stateMachine);
-    }
-
-    /// <summary>
-    /// Removes the specified state machine from the current collection and triggers the removal event.
-    /// </summary>
-    /// <remarks>This method removes the given state machine from the <c>CurrentStateMachines</c>
-    /// collection and  invokes the <c>StateMachineRemoved</c> event to notify subscribers of the removal.</remarks>
-    /// <param name="stateMachine">The state machine to be removed. Cannot be null.</param>
-    public void RemoveStateMachine(StateMachine stateMachine)
-    {
-        OnStateMachineRemoved?.Invoke(stateMachine); // Trigger the StateMachineRemoved event
-        CurrentStateMachines.Remove(stateMachine); // Remove the state machine from the collection
-    }
 
     /// <summary>
     /// Cancels the execution of all current state machines.
@@ -204,14 +107,9 @@ public abstract class ControllerAgent
     /// <remarks>This method signals a cancellation request to all state machines currently managed by
     /// this instance. It stops each state machine and cancels any ongoing operations. Ensure that the state
     /// machines can handle cancellation requests appropriately.</remarks>
-    public void CancelExecution()
+    public virtual void CancelExecution()
     {
         cts.Cancel(); // Signal cancellation to all state machines
-
-        foreach (StateMachine stateMachine in CurrentStateMachines)
-        {
-            stateMachine.Stop();
-        }
     }
 
     /// <summary>
@@ -248,62 +146,30 @@ public abstract class ControllerAgent
                 cts = new CancellationTokenSource();
             }
         }
+        List<ChatMessage> messages = new List<ChatMessage>();
 
-        ChatMessage userMessage = new ChatMessage();
-        //If userInput is not empty, create a new message item and add it to the conversation
-        if (!string.IsNullOrEmpty(userInput))
-        {
-            userMessage = new ChatMessage(ChatMessageRoles.User, [new ChatMessagePart(userInput)]);
-
-            string inputMessage = userInput;
-            // If an input preprocessor is set, run it on the user input
-            if (InputPreprocessor != null)
-            {
-                //Add in file content if provided
-                if (message != null)
-                {
-                    // If the message is a file, we need to describe it
-                    string originalInstructions = CurrentAgent.Instructions;
-                    CurrentAgent.Instructions = "I need you to take the input file and describe the file/image. Be the eyes for the next step who cannot see the image but needs context from within the file/image" +
-                                                "Be as descriptive as possible.";
-                    Conversation fileDescription = await RunAsync(CurrentAgent, messages: [message], verboseCallback: InvokeVerboseCallback, cancellationToken: cts.Token);
-
-                    //Restore the original instructions
-                    CurrentAgent.Instructions = originalInstructions;
-                        
-
-                    if (fileDescription.Messages.Count > 0)
-                    {
-                        // If a file description was generated, we use it to preprocess the input
-                        inputMessage = $"USER QUESTION: {userInput} \n\n With provided context for Included File: {fileDescription.Messages.Last().Content}";
-                    }
-                }
-
-                string? preprocessedInput = await RunPreprocess(inputMessage);
-                preprocessedInput = "The following CONTEXT has been prepocessed by an Agent tasked to process the input[may or may not be relevent]. <PREPOCESSED RESULTS>" + preprocessedInput + "</PREPOCESSED RESULTS>";
-                // Create a system message with the preprocessed input
-                userMessage.Parts?.Add(new ChatMessagePart(preprocessedInput));
-            }
-
-            if (message != null)
-            {
-                //Add file to the conversation
-                userMessage.Parts?.Add(message.Parts?.FirstOrDefault()!);
-            }
-        }
-        
         if (CurrentResult != null)
         {
-            //Run the ControlAgent with the current messages
-            CurrentResult = await RunAsync(CurrentAgent, messages: [..CurrentResult.Messages], verboseCallback: HandleControllerVerboseEvent,
-                streaming: streaming, streamingCallback: HandleControllerStreamingEvent, cancellationToken: cts.Token, responseId: string.IsNullOrEmpty(MainThreadId) ? "" : MainThreadId);
+            if (CurrentResult.Messages.Count > 0)
+            {
+                // If there are existing messages, append the new user message to the existing messages
+                messages.AddRange(CurrentResult.Messages);
+            }
         }
-        else
+
+        if (message != null)
         {
-            //Run the ControlAgent with the current messages
-            CurrentResult = await RunAsync(CurrentAgent, messages: [userMessage], verboseCallback: HandleControllerVerboseEvent,
-                streaming: streaming, streamingCallback: HandleControllerStreamingEvent, cancellationToken: cts.Token, responseId: string.IsNullOrEmpty(MainThreadId) ? "" : MainThreadId);
+            // If a message is provided, add it to the messages list
+            messages.Add(message);
         }
+        else if (!string.IsNullOrEmpty(userInput))
+        {
+            messages.Add(new ChatMessage(ChatMessageRoles.User, [new ChatMessagePart(userInput)]));
+        }
+
+        //Run the ControlAgent with the current messages
+        CurrentResult = await RunAsync(CurrentAgent, messages: messages, verboseCallback: HandleControllerVerboseEvent,
+            streaming: streaming, streamingCallback: HandleControllerStreamingEvent, cancellationToken: cts.Token, responseId: string.IsNullOrEmpty(MainThreadId) ? "" : MainThreadId);
 
         if (CurrentResult.MostRecentApiResult != null)
         {
@@ -316,32 +182,6 @@ public abstract class ControllerAgent
         return CurrentResult.Messages.Last().Content ?? "Error getting Response";
     }
 
-    /// <summary>
-    /// Executes the input preprocessing operation using the specified arguments.
-    /// </summary>
-    /// <remarks>This method invokes the <see cref="InputPreprocessor"/> delegate if it is set. The
-    /// delegate is expected to perform an asynchronous operation and return a result of type <see cref="string"/>.
-    /// If the delegate is not set, the method returns the original arguments.</remarks>
-    /// <param name="args">The arguments to be processed by the input preprocessor.</param>
-    /// <returns>A <see cref="Task{TResult}"/> representing the asynchronous operation. The task result contains the
-    /// processed string if the input preprocessor is set; otherwise, returns the original <paramref name="args"/>.</returns>
-    public async Task<string?> RunPreprocess(params object[]? args)
-    {
-        // Check if the InputPreprocessor delegate is set
-        if (InputPreprocessor == null)
-        {
-            return string.Join("\n",args ??["N/A"]);
-        }
-
-        //Invoke the InputPreprocessor delegate with the provided arguments
-        Task task = (Task)InputPreprocessor?.DynamicInvoke(args)!;
-
-        // Wait for the task to complete
-        await task.ConfigureAwait(false);
-
-        // Get the Result property from the Task
-        return (string?)InputPreprocessor?.Method.ReturnType.GetProperty("Result")?.GetValue(task);
-    }
 
     /// <summary>
     /// Adds a user's input to the conversation thread and returns the response.
@@ -374,11 +214,11 @@ public abstract class ControllerAgent
         {
             MainThreadId = threadID;
         }
-        
+
         //import image from disk
 #if MODERN
         await using FileStream fileStream = new FileStream(fileId, FileMode.Open, FileAccess.Read);
-#else 
+#else
         using FileStream fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
 #endif
         byte[] data = new byte[fileStream.Length];
@@ -387,11 +227,12 @@ public abstract class ControllerAgent
         string dataurl = $"data:image/{Path.GetExtension(filePath).Replace(".", "")};base64,{base64EncodedData}";
 
         ChatMessagePart imageContent = new ChatMessagePart(dataurl, ImageDetail.Auto);
-        ChatMessage fileItem = new ChatMessage(ChatMessageRoles.User, [imageContent]);
+        ChatMessagePart chatMessagePart = new ChatMessagePart(userInput);
+        ChatMessage message = new ChatMessage(ChatMessageRoles.User, [chatMessagePart, imageContent]);
 
-        return await AddToConversation(userInput, fileItem, streaming: streaming);
+        return await AddToConversation(userInput, message, streaming: streaming);
     }
-    
+
     /// <summary>
     /// Adds a file to the conversation with the specified user input and file identifier.
     /// </summary>
@@ -409,10 +250,11 @@ public abstract class ControllerAgent
         {
             MainThreadId = threadID;
         }
-        
+
         ChatMessagePart imageContent = new ChatMessagePart(base64, ImageDetail.Auto);
-        ChatMessage fileItem = new ChatMessage(ChatMessageRoles.User, [imageContent]);
-        return await AddToConversation(userInput, fileItem, streaming: streaming);
+        ChatMessagePart chatMessagePart = new ChatMessagePart(userInput);
+        ChatMessage message = new ChatMessage(ChatMessageRoles.User, [chatMessagePart, imageContent]);
+        return await AddToConversation(userInput, message, streaming: streaming);
     }
 
     /// <summary>
@@ -425,9 +267,9 @@ public abstract class ControllerAgent
     /// response to the user's input.</returns>
     public async Task<string> StartNewConversation(string userInput, bool streaming = true)
     {
-        CurrentResult.Clear(); 
+        CurrentResult.Clear();
         MainThreadId = "";
-        return await AddToConversation(userInput, streaming:streaming);
+        return await AddToConversation(userInput, streaming: streaming);
     }
 
     public async Task<string> StartNewConversation(string userInput, string base64, bool streaming = true)
@@ -435,7 +277,8 @@ public abstract class ControllerAgent
         CurrentResult.Clear();
         MainThreadId = "";
         ChatMessagePart imageContent = new ChatMessagePart(base64, ImageDetail.Auto);
-        ChatMessage fileItem = new ChatMessage(ChatMessageRoles.User, [imageContent]);
-        return await AddToConversation(userInput, fileItem, streaming: streaming);
+        ChatMessagePart chatMessagePart = new ChatMessagePart(userInput);
+        ChatMessage message = new ChatMessage(ChatMessageRoles.User, [chatMessagePart, imageContent]);
+        return await AddToConversation(userInput, message, streaming: streaming);
     }
 }

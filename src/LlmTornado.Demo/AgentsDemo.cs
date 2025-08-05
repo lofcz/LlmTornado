@@ -5,6 +5,7 @@ using LlmTornado.Code;
 using System.ComponentModel;
 using LlmTornado.Agents.DataModels;
 using LlmTornado.Agents.AgentStates;
+using LlmTornado.Agents.Orchestration;
 
 namespace LlmTornado.Demo;
 
@@ -158,42 +159,28 @@ public class AgentsDemo : DemoBase
     [TornadoTest]
     public static async Task HandoffTest()
     {
-        BasicControllerAgent agent = new BasicControllerAgent();
+        TornadoAgent TechnicalExpertAgent = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41Mini, "You are a technical expert for the Sales team.");
+        TornadoAgent BillingAgent = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41Mini, "You are a billing expert for the Sales team.");
+
+        TornadoAgent GeneralSupportAgent = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41, 
+            instructions: $"""You are General support for the Sales team""",
+            handoffs: [
+                new AgentHandoff(TechnicalExpertAgent,"TechnicalExpert","Handoff If the customer ask a technical question"),
+                new AgentHandoff(TechnicalExpertAgent,"Billing","Handoff if the customer has a billing request")
+                ]);
+
+        HandoffOrchestration handoffOrchestrator = new("SalesAgent", GeneralSupportAgent);
         // Example task to run through the state machine
         string task = "What is the status of my technical support ticket?";
         Console.WriteLine($"[User]: {task}");
         Console.Write("[Agent]: ");
-        agent.ControllerStreamingEvent += (stream) =>
+        handoffOrchestrator.OnStreamingEvent += (stream) =>
         {
             if (stream is ModelStreamingOutputTextDeltaEvent text)
                 Console.Write(text.DeltaText);
             return ValueTask.CompletedTask;
         };
         // Run the state machine and aget the result
-        string result = await agent.AddToConversation(task, streaming: true);
+        string result = await handoffOrchestrator.AddToConversation(task, streaming: true);
     }
-
-    public class BasicControllerAgent : ControllerAgent
-    {
-        public TornadoAgent TechnicalExpertAgent { get; set; }
-        public TornadoAgent BillingAgent { get; set; }
-
-        public BasicControllerAgent() : base("Basic") { }
-           
-        public override TornadoAgent InitializeAgent()
-        {
-            TechnicalExpertAgent = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41Mini, "You are a technical expert for the Sales team.");
-            BillingAgent = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41Mini, "You are a billing expert for the Sales team.");
-        
-            string instructions = $"""You are General support for the Sales team""";
-
-            return new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41, instructions, 
-                handoffs: [
-                    new AgentHandoff(TechnicalExpertAgent,"TechnicalExpert","Handoff If the customer ask a technical question"),
-                    new AgentHandoff(TechnicalExpertAgent,"Billing","Handoff if the customer has a billing request")
-                    ]);
-        }
-
-    }
-
 }

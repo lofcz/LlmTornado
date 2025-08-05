@@ -1,4 +1,5 @@
 ﻿using LlmTornado.Chat;
+using LlmTornado.Chat.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -30,6 +31,7 @@ namespace LlmTornado.Agents
             }
             List<string> agentNames = handoffs.Select(h => h.Name).ToList();
             agentNames.Add("CurrentAgent"); // Add the current agent as an option
+
             Dictionary<string, object> propSchema = new Dictionary<string, object>
                     {
                         { "reason", new Dictionary<string, object>
@@ -46,17 +48,26 @@ namespace LlmTornado.Agents
                             }
                         }
                     };
-            
+
             string[] requiredProperties = ["reason", "agent"];
-            Dictionary<string, object> schema = new Dictionary<string, object>
+            Dictionary<string, object> objectSchema = new Dictionary<string, object>
             {
                 ["type"] = "object",
-                ["properties"] = propSchema,
+                ["properties"] = new Dictionary<string, object> { { "agents", propSchema } }
                 ["required"] = requiredProperties,
                 ["additionalProperties"] = false
             };
 
-            string json = JsonSerializer.Serialize(schema, new JsonSerializerOptions
+            string[] requiredArrayProperties = ["agents"];
+            Dictionary<string, object> arraySchema = new Dictionary<string, object>
+            {
+                ["type"] = "array",
+                ["items"] = objectSchema,
+                ["required"] = requiredArrayProperties,
+                ["additionalProperties"] = false
+            };
+
+            string json = JsonSerializer.Serialize(arraySchema, new JsonSerializerOptions
             {
                 WriteIndented = true
             });
@@ -72,8 +83,9 @@ namespace LlmTornado.Agents
 
         }
 
-        public static string ParseHandoffResponse(string response, out string? reasoning)
+        public static List<string> ParseHandoffResponse(string response)
         {
+            List<string> selectedAgents = new();
             if (string.IsNullOrEmpty(response))
             {
                 throw new ArgumentException("Response cannot be null or empty", nameof(response));
@@ -81,21 +93,38 @@ namespace LlmTornado.Agents
             try
             {
                 using JsonDocument doc = JsonDocument.Parse(response);
-                if (doc.RootElement.TryGetProperty("reason", out JsonElement reasonElement) &&
-                    doc.RootElement.TryGetProperty("agent", out JsonElement agentElement))
+                if(doc.RootElement.TryGetProperty("agents", out JsonElement array))
                 {
-                    reasoning = reasonElement.GetString();
-                    return agentElement.GetString();
-                }
-                else
-                {
-                    throw new FormatException("Response does not contain required properties 'Reason' and 'Agent'.");
+                    List<JsonElement> agentArray = array.EnumerateArray().ToList();
+                    if(agentArray.Count == 0)
+                    {
+                        selectedAgents.Add("CurrentAgent"); // No agents specified, return current agent
+                        return selectedAgents;
+                    }
+                    
+                    foreach (var agent in agentArray)
+                    {
+                        if (agent.TryGetProperty("agent", out JsonElement agentNameElement))
+                        {
+                            string? agentName = agentNameElement.GetString();
+                            if (agentName is not null && !string.IsNullOrEmpty(agentName))
+                            {
+                                selectedAgents.Add(agentName);
+                            }
+                        }
+                        else
+                        {
+                            throw new FormatException("Response does not contain required properties 'Reason' and 'Agent'.");
+                        }
+                    }
                 }
             }
             catch (JsonException ex)
             {
                 throw new FormatException("Response is not in the expected JSON format.", ex);
             }
+
+            return selectedAgents;
         }
     }
 }

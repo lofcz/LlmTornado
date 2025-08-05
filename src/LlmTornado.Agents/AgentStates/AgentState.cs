@@ -105,7 +105,7 @@ public abstract class AgentState<TInput, TOutput> : BaseState<TInput, TOutput>, 
     /// <returns>A task representing the asynchronous operation. The task result contains the processed text output.</returns>
     public async Task<Conversation> BeginRunnerAsync(TornadoAgent agent, string input, bool streaming = false)
     {
-        return (await RunAsync(agent, input, verboseCallback: ReceiveVerbose, streamingCallback: ReceiveStreaming, streaming: streaming, cancellationToken: CancelTokenSource));
+        return (await RunAsync(agent, input, verboseCallback: ReceiveVerbose, streamingCallback: ReceiveStreaming, streaming: streaming, cancellationToken: CancelTokenSource.Token));
     }
 
     /// <summary>
@@ -132,7 +132,7 @@ public abstract class AgentState<TInput, TOutput> : BaseState<TInput, TOutput>, 
     /// string. If the operation does not produce any output, an empty string is returned.</returns>
     public async Task<Conversation> BeginRunnerAsync(string input, bool streaming = false)
     {
-        return (await RunAsync(StateAgent, input, verboseCallback: ReceiveVerbose, streamingCallback: ReceiveStreaming, streaming: streaming, cancellationToken: CancelTokenSource));
+        return (await RunAsync(StateAgent, input, verboseCallback: ReceiveVerbose, streamingCallback: ReceiveStreaming, streaming: streaming, cancellationToken: CancelTokenSource.Token));
     }
 
     /// <summary>
@@ -152,7 +152,7 @@ public abstract class AgentState<TInput, TOutput> : BaseState<TInput, TOutput>, 
                 verboseCallback: ReceiveVerbose, 
                 streamingCallback: ReceiveStreaming,
                 streaming: streaming,
-                cancellationToken: CancelTokenSource);
+                cancellationToken: CancelTokenSource.Token);
 
             // First try standard parsing
             if (result.Messages.Last().Content.TryParseJson<T>(out T? parsedResult))
@@ -204,7 +204,7 @@ public abstract class AgentState<TInput, TOutput> : BaseState<TInput, TOutput>, 
                                   $"Return ONLY the fixed JSON with no explanations or markdown:\n{cleaned}";
 
             Conversation repairResult = await RunAsync(StateAgent, repairPrompt,
-                cancellationToken: CancelTokenSource);
+                cancellationToken: CancelTokenSource.Token);
 
             // Clean the repair result
             string repairedJson = repairResult.Messages.Last().Content?.Trim() ?? "";

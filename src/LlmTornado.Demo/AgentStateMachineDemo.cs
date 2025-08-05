@@ -3,6 +3,7 @@ using LlmTornado.Agents.AgentStates;
 using LlmTornado.Chat.Models;
 using LlmTornado.StateMachines;
 using LlmTornado.Agents.DataModels;
+using LlmTornado.Agents.Orchestration;
 
 namespace LlmTornado.Demo;
 
@@ -19,7 +20,7 @@ public class AgentStateMachineDemo : DemoBase
         }
         // Create an instance of the BasicLombdaAgent
         BasicLombdaAgent agent = new BasicLombdaAgent();
-        agent.ControllerStreamingEvent += ReceiveStream; // Subscribe to the streaming event
+        agent.OnStreamingEvent += ReceiveStream; // Subscribe to the streaming event
 
         // Example task to run through the state machine
 
@@ -68,7 +69,7 @@ public class AgentStateMachineDemo : DemoBase
         }
         // Create an instance of the BasicLombdaAgent
         BasicLombdaAgent agent = new BasicLombdaAgent();
-        agent.ControllerStreamingEvent += ReceiveStream; // Subscribe to the streaming event
+        agent.OnStreamingEvent += ReceiveStream; // Subscribe to the streaming event
         // Example task to run through the state machine
 
         string task = "What is in image?";
@@ -84,23 +85,21 @@ public class AgentStateMachineDemo : DemoBase
 
 }
 
-public class BasicLombdaAgent : ControllerAgent
+public class BasicLombdaAgent : StateMachineOrchestration
 {
     /// <summary>
     /// Setup the input preprocessor to run the state machine
     /// </summary>
     public ResearchAgent _stateMachine { get; set; }
 
-    public BasicLombdaAgent() : base("basic")
+    public BasicLombdaAgent() : base("basic",
+        new TornadoAgent(Program.Connect(), 
+            ChatModel.OpenAi.Gpt41.V41, 
+            $"""You are a person assistant who will receive information preprocessed by a Agentic system to help answer the question. Use SYSTEM message from before the user input as tool output""")
+        )
     {             //Initialize the state machine
         _stateMachine = new ResearchAgent(this);
         InputPreprocessor = RunStateMachine;
-    }
-
-    public override TornadoAgent InitializeAgent()
-    {
-        string instructions = $"""You are a person assistant who will receive information preprocessed by a Agentic system to help answer the question. Use SYSTEM message from before the user input as tool output""";
-        return new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41, instructions);
     }
 
     public async Task<string> RunStateMachine(string task)
@@ -113,7 +112,7 @@ public class BasicLombdaAgent : ControllerAgent
 
 public class ResearchAgent : AgentStateMachine<string, ReportData>
 {
-    public ResearchAgent(ControllerAgent lombdaAgent) : base(lombdaAgent) { }
+    public ResearchAgent(StateMachineOrchestration lombdaAgent) : base(lombdaAgent) { }
 
     public override void InitializeStates()
     {

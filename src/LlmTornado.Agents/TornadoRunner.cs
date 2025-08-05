@@ -47,7 +47,7 @@ public class TornadoRunner
         bool streaming = false,
         StreamingCallbacks? streamingCallback = null,
         string responseId = "",
-        CancellationTokenSource? cancellationToken = null,
+        CancellationToken cancellationToken = default,
         ToolPermissionRequest? toolPermissionRequest = null
     )
     {
@@ -58,7 +58,7 @@ public class TornadoRunner
         if (cancellationToken != null)
         {
             //Set the cancellation token for the agent client
-            chat.RequestParameters.CancellationToken = cancellationToken.Token;
+            chat.RequestParameters.CancellationToken = cancellationToken;
         }
 
         //Setup the messages from previous runs or memory
@@ -126,9 +126,9 @@ public class TornadoRunner
         }
     }
 
-    private static void CheckForCancellation(CancellationTokenSource? cancellationToken)
+    private static void CheckForCancellation(CancellationToken cancellationToken)
     {
-        if (cancellationToken != null && cancellationToken.IsCancellationRequested)
+        if (cancellationToken.IsCancellationRequested)
         {
             throw new OperationCanceledException("Operation was cancelled by user.");
         }
