@@ -1,13 +1,20 @@
-﻿using LlmTornado.Agents.DataModels;
+﻿using LlmTornado.Agents.AgentStates;
+using LlmTornado.Agents.DataModels;
+using LlmTornado.Chat;
+using LlmTornado.Code;
+using LlmTornado.Images;
 using LlmTornado.StateMachines;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using static LlmTornado.Agents.TornadoRunner;
 
-namespace LlmTornado.Agents.Orchestration
-{
+namespace LlmTornado.Agents.Orchestration;
+
+    /// <summary>
+    /// Represents a method that processes an input string asynchronously and returns a result string.
+    /// </summary>
+    /// <param name="input">The input string to be processed. Cannot be null.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the processed string.</returns>
+    public delegate ValueTask<string> StateMachineRunner(string input);
+
     public class StateMachineOrchestration : ChatOrchestration
     {
         /// <summary>
@@ -55,17 +62,92 @@ namespace LlmTornado.Agents.Orchestration
         /// <summary>
         /// Used to handle The controlling state machine to process the input before it is sent to the model.
         /// </summary>
-        public InputProcessorDelegate? InputPreprocessor { get; set; } = null!;
+        private StateMachineRunner? StateMachineRunnerMethod { get; set; } 
         /// <summary>
         /// Active state machines that are currently running in the agent.
         /// </summary>
         public List<StateMachine> CurrentStateMachines { get; set; } = [];
+
+        /// <summary>
+        /// Active state machines that are currently running in the agent.
+        /// </summary>
+        public StateMachine RootStateMachine { get; set; }
 
 
         public StateMachineOrchestration(string agentName, TornadoAgent agent) : base(agentName, agent)
         {
             StateMachineStreamingBus += InvokeStreamingCallback;  //Route State Agents streaming callbacks to the agent's event handler
             StateMachineVerboseBus += InvokeVerboseCallback; //Route State Agents verbose callbacks to the agent's event handler  
+        }
+
+        public void SetStateMachineRunnerMethod(StateMachineRunner runnerMethod)
+        {
+            StateMachineRunnerMethod = runnerMethod;
+        }
+
+        internal override async Task<List<ChatMessagePart>?> OnInvokedAsync(string userInput, bool streaming = true, string? base64image = null)
+        {
+            // Ensure that the ControlAgent is set before proceeding
+            if (CurrentAgent == null)
+            {
+                throw new InvalidOperationException("ControlAgent is not set. Please set ControlAgent before adding to conversation.");
+            }
+
+            // Check if the cancellation token has been requested and reset it if necessary
+            if (cts.Token.IsCancellationRequested)
+            {
+                if (!Threading.TryResetCancellationTokenSource(cts))
+                {
+                    cts.Dispose();
+                    cts = new CancellationTokenSource();
+                }
+            }
+
+            ChatMessage userMessage = new ChatMessage();
+            //If userInput is not empty, create a new message item and add it to the conversation
+            if (!string.IsNullOrEmpty(userInput))
+            {
+                userMessage = new ChatMessage(ChatMessageRoles.User, [new ChatMessagePart(userInput)]);
+
+                string inputMessage = userInput;
+
+                if (base64image is not null)
+                {
+                    userMessage.Parts?.Add(new ChatMessagePart(base64image, ImageDetail.Auto));
+                }
+
+                // If an input preprocessor is set, run it on the user input
+                if (StateMachineRunnerMethod == null)
+                {
+                    throw new InvalidOperationException("StateMachineRunnerMethod is not set. Please set StateMachineRunnerMethod before invoking the orchestration.");
+                }
+
+                //Add in file content if provided
+                if (base64image is not null)
+                {
+                    // If the message is a file, we need to describe it
+                    string originalInstructions = CurrentAgent.Instructions;
+                    CurrentAgent.Instructions = "I need you to take the input file and describe the file/image. Be the eyes for the next step who cannot see the image but needs context from within the file/image" +
+                                                "Be as descriptive as possible.";
+                    Conversation fileDescription = await RunAsync(CurrentAgent, messages: [userMessage], verboseCallback: InvokeVerboseCallback, cancellationToken: cts.Token);
+
+                    //Restore the original instructions
+                    CurrentAgent.Instructions = originalInstructions;
+
+                    if (fileDescription.Messages.Count > 0)
+                    {
+                        // If a file description was generated, we use it to preprocess the input
+                        inputMessage = $"USER QUESTION: {userInput} \n\n With provided context for Included File: {fileDescription.Messages.Last().Content}";
+                    }
+                }
+
+                string? stateMachineResult = await RunStateMachine(inputMessage);
+                stateMachineResult = "The following CONTEXT has been prepocessed by an Agent tasked to process the input[may or may not be relevent]. <PREPOCESSED RESULTS>" + stateMachineResult + "</PREPOCESSED RESULTS>";
+                // Create a system message with the preprocessed input
+                return [new ChatMessagePart(stateMachineResult)];
+            }
+
+            return null; 
         }
 
         /// <summary>
@@ -134,28 +216,28 @@ namespace LlmTornado.Agents.Orchestration
         /// <summary>
         /// Executes the input preprocessing operation using the specified arguments.
         /// </summary>
-        /// <remarks>This method invokes the <see cref="InputPreprocessor"/> delegate if it is set. The
+        /// <remarks>This method invokes the <see cref="StateMachineRunnerMethod"/> delegate if it is set. The
         /// delegate is expected to perform an asynchronous operation and return a result of type <see cref="string"/>.
         /// If the delegate is not set, the method returns the original arguments.</remarks>
         /// <param name="args">The arguments to be processed by the input preprocessor.</param>
         /// <returns>A <see cref="Task{TResult}"/> representing the asynchronous operation. The task result contains the
         /// processed string if the input preprocessor is set; otherwise, returns the original <paramref name="args"/>.</returns>
-        public async Task<string?> RunPreprocess(params object[]? args)
+        public async Task<string?> RunStateMachine(params object[]? args)
         {
-            // Check if the InputPreprocessor delegate is set
-            if (InputPreprocessor == null)
+            // Check if the StateMachineRunnerMethod delegate is set
+            if (StateMachineRunnerMethod == null)
             {
                 return string.Join("\n", args ?? ["N/A"]);
             }
 
-            //Invoke the InputPreprocessor delegate with the provided arguments
-            Task task = (Task)InputPreprocessor?.DynamicInvoke(args)!;
+            //Invoke the StateMachineRunnerMethod delegate with the provided arguments
+            Task task = (Task)StateMachineRunnerMethod?.DynamicInvoke(args)!;
 
             // Wait for the task to complete
             await task.ConfigureAwait(false);
 
             // Get the Result property from the Task
-            return (string?)InputPreprocessor?.Method.ReturnType.GetProperty("Result")?.GetValue(task);
+            return (string?)StateMachineRunnerMethod?.Method.ReturnType.GetProperty("Result")?.GetValue(task);
         }
     }
-}
+

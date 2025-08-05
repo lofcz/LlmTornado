@@ -14,12 +14,12 @@ namespace LlmTornado.Agents
     {
         public TornadoAgent Agent { get; set; }
         public string Name { get; set; }
-        public string HandoffReason { get; set; } 
+        public string HandoffReason { get; set; }
 
-        public AgentHandoff(TornadoAgent agent, string name, string handoffReason)
+        public AgentHandoff(TornadoAgent agent, string name, string handoffReason, bool allowParallelInvoking = false)
         {
             Agent = agent ?? throw new ArgumentNullException(nameof(agent), "Agent cannot be null");
-            HandoffReason = string.IsNullOrEmpty(handoffReason)? throw new ArgumentNullException(nameof(agent), "handoff Reason cannot be empty") : handoffReason;
+            HandoffReason = string.IsNullOrEmpty(handoffReason) ? throw new ArgumentNullException(nameof(agent), "handoff Reason cannot be empty") : handoffReason;
             Name = string.IsNullOrEmpty(name) ? throw new ArgumentNullException(nameof(name), "Name cannot be empty") : name;
         }
 

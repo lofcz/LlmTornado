@@ -4,11 +4,13 @@ using LlmTornado.Chat.Models;
 using LlmTornado.StateMachines;
 using LlmTornado.Agents.DataModels;
 using LlmTornado.Agents.Orchestration;
+using LlmTornado.Chat;
 
 namespace LlmTornado.Demo;
 
 public class AgentStateMachineDemo : DemoBase
 {
+
     [TornadoTest]
     public static async Task BasicTestStreaming()
     {
@@ -19,7 +21,26 @@ public class AgentStateMachineDemo : DemoBase
             return ValueTask.CompletedTask;
         }
         // Create an instance of the BasicLombdaAgent
-        BasicLombdaAgent agent = new BasicLombdaAgent();
+        // Create an instance of the BasicLombdaAgent
+        StateMachineOrchestration agent = new StateMachineOrchestration(
+            agentName: "basic",
+            agent: new TornadoAgent(
+                client: Program.Connect(),
+                model: ChatModel.OpenAi.Gpt41.V41,
+                instructions: $"""You are a person assistant who will receive information preprocessed by a Agentic system to help answer the question. Use SYSTEM message from before the user input as tool output"""
+                )
+            );
+
+        ResearchAgent StateMachineResearchAgent = new ResearchAgent(agent);
+
+        async ValueTask<string> RunStateMachine(string task)
+        {
+            //Return the final result
+            string result = (await StateMachineResearchAgent.Run(task))[0].FinalReport ?? task;
+            return result.ToString() ?? task;
+        }
+
+        agent.SetStateMachineRunnerMethod(RunStateMachine);
         agent.OnStreamingEvent += ReceiveStream; // Subscribe to the streaming event
 
         // Example task to run through the state machine
@@ -28,7 +49,8 @@ public class AgentStateMachineDemo : DemoBase
         Console.WriteLine($"[User]: {task}");
         Console.Write("[Agent]: ");
         // Run the state machine and get the result
-        string result = await agent.AddToConversation(task, streaming: true);
+
+        string result = await agent.InvokeAsync(task, streaming: true);
         // Output the result
         Console.Write("\n");
     }
@@ -37,14 +59,36 @@ public class AgentStateMachineDemo : DemoBase
     public static async Task BasicTest()
     {
         // Create an instance of the BasicLombdaAgent
-        BasicLombdaAgent agent = new BasicLombdaAgent();
+        // Create an instance of the BasicLombdaAgent
+        StateMachineOrchestration agent = new StateMachineOrchestration(
+            agentName: "basic",
+            agent: new TornadoAgent(
+                client: Program.Connect(),
+                model: ChatModel.OpenAi.Gpt41.V41,
+                instructions: $"""You are a person assistant who will receive information preprocessed by a Agentic system to help answer the question. Use SYSTEM message from before the user input as tool output"""
+                )
+            );
+
+        ResearchAgent StateMachineResearchAgent = new ResearchAgent(agent);
+
+        async ValueTask<string> RunStateMachine(string task)
+        {
+            //Return the final result
+            string result = (await StateMachineResearchAgent.Run(task))[0].FinalReport ?? task;
+            return result.ToString() ?? task;
+        }
+
+        agent.SetStateMachineRunnerMethod(RunStateMachine);
+
         // Example task to run through the state machine
 
         string task = "What is the capital of France?";
         Console.WriteLine($"[User]: {task}");
         Console.Write("[Agent]: ");
         // Run the state machine and get the result
-        string result = await agent.AddToConversation(task, streaming: false);
+
+        string result = await agent.InvokeAsync(task, streaming: true);
+
         // Output the result
         Console.Write(result);
     }
@@ -53,9 +97,17 @@ public class AgentStateMachineDemo : DemoBase
     public static async Task DotGraphTest()
     {
         // Create an instance of the BasicLombdaAgent
-        BasicLombdaAgent agent = new BasicLombdaAgent();
+        ResearchAgent StateMachineResearchAgent = new ResearchAgent(new StateMachineOrchestration(
+            agentName: "basic",
+            agent: new TornadoAgent(
+                client: Program.Connect(),
+                model: ChatModel.OpenAi.Gpt41.V41,
+                instructions: $"""You are a person assistant who will receive information preprocessed by a Agentic system to help answer the question. Use SYSTEM message from before the user input as tool output"""
+                )
+            ));
+
         // Example task to run through the state machine
-        Console.WriteLine(agent._stateMachine.ToDotGraph());
+        Console.WriteLine(StateMachineResearchAgent.ToDotGraph());
     }
 
     [TornadoTest]
@@ -67,46 +119,41 @@ public class AgentStateMachineDemo : DemoBase
                 Console.Write($"{text.DeltaText}");
             return ValueTask.CompletedTask;
         }
+        
         // Create an instance of the BasicLombdaAgent
-        BasicLombdaAgent agent = new BasicLombdaAgent();
+        StateMachineOrchestration agent = new StateMachineOrchestration(
+            agentName:"basic",
+            agent: new TornadoAgent(
+                client: Program.Connect(),
+                model: ChatModel.OpenAi.Gpt41.V41,
+                instructions: $"""You are a person assistant who will receive information preprocessed by a Agentic system to help answer the question. Use SYSTEM message from before the user input as tool output"""
+                )
+            );
+
+        ResearchAgent StateMachineResearchAgent = new ResearchAgent(agent);
+
+        async ValueTask<string> RunStateMachine(string task)
+        {
+            //Return the final result
+            string result = (await StateMachineResearchAgent.Run(task))[0].FinalReport ?? task;
+            return result.ToString() ?? task;
+        }
+
+        agent.SetStateMachineRunnerMethod(RunStateMachine);
         agent.OnStreamingEvent += ReceiveStream; // Subscribe to the streaming event
         // Example task to run through the state machine
 
         string task = "What is in image?";
         Console.WriteLine($"[User]: {task}");
         Console.Write("[Agent]: ");
+
         // Run the state machine and get the result
         //Preprocessor cannot handle image input
-        string result = await agent.AddImageToConversation(task, $"{Directory.GetCurrentDirectory()}\\Static\\Images\\catBoi.jpg", streaming: true);
+        byte[] bytes = await File.ReadAllBytesAsync("Static/Images/catBoi.jpg");
+        string base64 = $"data:image/jpeg;base64,{Convert.ToBase64String(bytes)}";
+        string result = await agent.InvokeAsync(task, true, base64);
         // Output the result
         Console.Write("\n");
-    }
-
-
-}
-
-public class BasicLombdaAgent : StateMachineOrchestration
-{
-    /// <summary>
-    /// Setup the input preprocessor to run the state machine
-    /// </summary>
-    public ResearchAgent _stateMachine { get; set; }
-
-    public BasicLombdaAgent() : base("basic",
-        new TornadoAgent(Program.Connect(), 
-            ChatModel.OpenAi.Gpt41.V41, 
-            $"""You are a person assistant who will receive information preprocessed by a Agentic system to help answer the question. Use SYSTEM message from before the user input as tool output""")
-        )
-    {             //Initialize the state machine
-        _stateMachine = new ResearchAgent(this);
-        InputPreprocessor = RunStateMachine;
-    }
-
-    public async Task<string> RunStateMachine(string task)
-    {
-        //Return the final result
-        string result = (await _stateMachine.Run(task))[0].FinalReport ?? task;
-        return result.ToString() ?? task;
     }
 }
 

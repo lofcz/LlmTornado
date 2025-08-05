@@ -181,6 +181,6 @@ public class AgentsDemo : DemoBase
             return ValueTask.CompletedTask;
         };
         // Run the state machine and aget the result
-        string result = await handoffOrchestrator.AddToConversation(task, streaming: true);
+        string result = await handoffOrchestrator.InvokeAsync(task, streaming: true);
     }
 }

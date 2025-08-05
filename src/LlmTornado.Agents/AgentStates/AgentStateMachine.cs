@@ -7,7 +7,7 @@ namespace LlmTornado.Agents.AgentStates;
 public interface IAgentStateMachine
 {
     /// <summary>
-    /// Gets or sets the <see cref="ControllerAgent"/> responsible for controlling the system's operations.
+    /// Gets or sets the <see cref="StateMachineOrchestration"/> responsible for controlling the system's operations.
     /// </summary>
     public StateMachineOrchestration Orchestractor { get; set; }
     /// <summary>

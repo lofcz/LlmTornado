@@ -1,6 +1,7 @@
 ﻿using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Code;
+using LlmTornado.Images;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,13 +12,35 @@ namespace LlmTornado.Agents.Orchestration
 {
     public class HandoffOrchestration : ChatOrchestration
     {
-        public TornadoAgent CurrentAgent { get; set; }
-        public CancellationToken CancellationTokenSource { get; set; } = CancellationToken.None;
-        public Action<string>? VerboseCallback { get; set; }
-
         public HandoffOrchestration(string name, TornadoAgent currentAgent) : base(name, currentAgent)
         {
-            CurrentAgent = currentAgent ?? throw new ArgumentNullException(nameof(currentAgent), "Current Agent cannot be null");
+
+        }
+
+        internal override async Task<List<ChatMessagePart>?> OnInvokedAsync(string userInput, bool streaming = true, string? base64Image = null)
+        {
+            List<ChatMessage> messages = new List<ChatMessage>();
+
+            ChatMessage userMessage = new ChatMessage(ChatMessageRoles.User, [new ChatMessagePart(userInput)]);
+
+            string inputMessage = userInput;
+
+            if (base64Image is not null)
+            {
+                userMessage.Parts?.Add(new ChatMessagePart(base64Image, ImageDetail.Auto));
+            }
+
+            if (CurrentResult.Messages.Count > 0)
+            {
+                messages.AddRange(CurrentResult.Messages);
+            }
+
+            messages.Add(userMessage);
+
+            await CheckForHandoff(messages); //Check to just switch agents for now 
+
+            //Returns null for no extra messages
+            return await base.OnInvokedAsync(userInput, streaming, base64Image);
         }
 
         public async Task CheckForHandoff(List<ChatMessage> messages)
@@ -45,7 +68,7 @@ Out of the following Agents which agent should we Handoff the conversation too a
                 Options =
             {
                 ResponseFormat = AgentHandoff.CreateHandoffResponseFormat(CurrentAgent.HandoffAgents.ToArray()),
-                CancellationToken = CancellationTokenSource // Set the cancellation token source for the Control Agent
+                CancellationToken = cts.Token // Set the cancellation token source for the Control Agent
             }
             };
 
@@ -62,7 +85,7 @@ Out of the following Agents which agent should we Handoff the conversation too a
                 }
             }
 
-            Conversation handoff = await TornadoRunner.RunAsync(handoffDecider, prompt, streaming: false, cancellationToken: CancellationTokenSource);
+            Conversation handoff = await TornadoRunner.RunAsync(handoffDecider, prompt, streaming: false, cancellationToken: cts.Token);
 
             if (handoff.Messages.Count > 0 && handoff.Messages.Last().Content != null)
             {
