@@ -17,7 +17,7 @@ public interface IAgentState
     /// <summary>
     /// Verbose event callback for recieving verbose messages.
     /// </summary>
-    public event Action<string>? RunningVerboseCallback;
+    public Action<string>? RunningVerboseCallback { get; set; }
 
     /// <summary>
     /// Occurs when a streaming operation is running and provides updates.
@@ -25,7 +25,7 @@ public interface IAgentState
     /// <remarks>This event is triggered during the execution of a streaming operation, passing a
     /// string parameter that contains the current status or data update. Subscribers can use this event to receive
     /// real-time updates.</remarks>
-    public event StreamingCallbacks? RunningStreamingCallback;
+    public StreamingCallbacks? RunningStreamingCallback { get; set; }
 
     /// <summary>
     /// Gets or sets the <see cref="CancellationTokenSource"/> used to signal cancellation requests.
@@ -43,9 +43,9 @@ public abstract class AgentState<TInput, TOutput> : BaseState<TInput, TOutput>, 
 {
     public TornadoAgent StateAgent { get; set; }
 
-    public event Action<string>? RunningVerboseCallback;
+    public Action<string>? RunningVerboseCallback { get; set; }
 
-    public event StreamingCallbacks? RunningStreamingCallback;
+    public StreamingCallbacks? RunningStreamingCallback { get; set; }
 
     public CancellationTokenSource CancelTokenSource { get; set; } = new CancellationTokenSource();
 
@@ -161,11 +161,12 @@ public abstract class AgentState<TInput, TOutput> : BaseState<TInput, TOutput>, 
             }
 
             // Attempt JSON repair if standard parsing fails
-            string? repairedJson = await RepairJsonAsync(result.Messages.Last().Content, typeof(T));
-            if (repairedJson != null && TryParseJson(repairedJson, out parsedResult))
+            T? smartParsedResult = await JsonUtility.SmartParseJsonAsync<T>(StateAgent, result.Messages.Last().Content!);
+
+            if (smartParsedResult != null)
             {
                 RunningVerboseCallback?.Invoke($"JSON repaired and parsed successfully on attempt {attempt + 1}");
-                return parsedResult;
+                return smartParsedResult;
             }
 
             // If not the last attempt, try again with improved prompt
@@ -183,69 +184,7 @@ public abstract class AgentState<TInput, TOutput> : BaseState<TInput, TOutput>, 
         throw new InvalidOperationException($"Failed to parse the result into {typeof(T).Name} after {maxRetries + 1} attempts.");
     }
 
-    private async Task<string> RepairJsonAsync(string possibleJson, Type targetType)
-    {
-        try
-        {
-            // Basic cleanup - remove Markdown code fences and leading/trailing whitespace
-            string cleaned = possibleJson.Trim();
-            cleaned = Regex.Replace(cleaned, @"^```json\s*|```$", "", RegexOptions.Multiline);
-
-            // Check if it's valid JSON already
-            try
-            {
-                JsonDocument.Parse(cleaned);
-                return cleaned; // It's valid, return as is
-            }
-            catch (JsonException) { /* Continue with repair attempts */ }
-
-            // If basic cleaning didn't work, we can use the LLM itself to repair the JSON
-            string repairPrompt = $"Fix this invalid JSON to match the C# type {targetType.Name}. " +
-                                  $"Return ONLY the fixed JSON with no explanations or markdown:\n{cleaned}";
-
-            Conversation repairResult = await RunAsync(StateAgent, repairPrompt,
-                cancellationToken: CancelTokenSource.Token);
-
-            // Clean the repair result
-            string repairedJson = repairResult.Messages.Last().Content?.Trim() ?? "";
-            repairedJson = Regex.Replace(repairedJson, @"^```json\s*|```$", "", RegexOptions.Multiline);
-
-            // Validate the repaired JSON
-            try
-            {
-                JsonDocument.Parse(repairedJson);
-                return repairedJson;
-            }
-            catch (JsonException)
-            {
-                RunningVerboseCallback?.Invoke("JSON repair attempt failed");
-                return null;
-            }
-        }
-        catch (Exception ex)
-        {
-            RunningVerboseCallback?.Invoke($"Error during JSON repair: {ex.Message}");
-            return null;
-        }
-    }
-
-    private static bool TryParseJson<T>(string json, out T result)
-    {
-        try
-        {
-            result = JsonSerializer.Deserialize<T>(json, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true,
-                AllowTrailingCommas = true
-            });
-            return result != null;
-        }
-        catch
-        {
-            result = default;
-            return false;
-        }
-    }
+   
 
     public void SubscribeVerboseChannel(RunnerVerboseCallbacks? verboseChannel)
     {

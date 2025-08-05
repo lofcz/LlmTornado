@@ -1,10 +1,13 @@
 ﻿using LlmTornado.Agents.DataModels;
 using LlmTornado.Chat;
+using LlmTornado.Chat.Models;
+using LlmTornado.Common;
 using System.ComponentModel;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 
 namespace LlmTornado.Agents;
 
@@ -128,6 +131,86 @@ internal static class JsonUtility
         if (type.IsArray) return "array";
         return "object"; // fallback for complex types
     }
+
+    /// <summary>
+    /// Attempts to parse a JSON string into an object of type <typeparamref name="T"/>.  If the input is invalid JSON,
+    /// the method attempts to repair it using an external agent.
+    /// </summary>
+    /// <remarks>This method first attempts to parse the input JSON string directly. If the input is invalid
+    /// JSON,  it uses the provided <see cref="TornadoAgent"/> to attempt to repair the JSON and then retries parsing.
+    /// The method performs basic cleanup on the input string, such as removing Markdown code fences and trimming
+    /// whitespace.</remarks>
+    /// <typeparam name="T">The type to which the JSON string should be deserialized.</typeparam>
+    /// <param name="agent">An instance of <see cref="TornadoAgent"/> used to repair invalid JSON if the initial parsing fails. (Can be any agent will restore after use)</param>
+    /// <param name="possibleJson">A string that is expected to contain JSON data. The string may include extraneous formatting, such as Markdown
+    /// code fences.</param>
+    /// <returns>An object of type <typeparamref name="T"/> if the JSON is successfully parsed or repaired;  otherwise, <see
+    /// langword="null"/> if parsing and repair attempts fail.</returns>
+    public static async Task<T?> SmartParseJsonAsync<T>(TornadoAgent agent, string possibleJson)
+    {
+        string lastInstructions = agent.Instructions;
+        Type? type = agent.OutputSchema;
+        List<Tool> tools = agent.Options.Tools?.ToList() ?? [];
+        agent.OutputSchema = null; // Clear output schema for this operation to avoid conflicts
+        agent.Options.Tools = new List<Tool>(); // Clear tools for this operation to avoid conflicts
+        try
+        {
+            
+            // Basic cleanup - remove Markdown code fences and leading/trailing whitespace
+            string cleaned = possibleJson.Trim();
+            cleaned = Regex.Replace(cleaned, @"^```json\s*|```$", "", RegexOptions.Multiline);
+
+            // Check if it's valid JSON already
+            try
+            {
+                JsonDocument.Parse(cleaned);
+                return JsonSerializer.Deserialize<T>(cleaned, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true,
+                    AllowTrailingCommas = true
+                }) ?? throw new JsonException("Deserialized result is null");
+            }
+            catch (JsonException) { /* Continue with repair attempts */ }
+
+            // If basic cleaning didn't work, we can use the LLM itself to repair the JSON
+            string repairPrompt = $"Fix this invalid JSON to match the C# type {typeof(T).Name}. " +
+                                  $"Return ONLY the fixed JSON with no explanations or markdown:\n{cleaned}";
+
+            agent.Instructions = "You are a JSON repair agent. Your task is to fix invalid JSON strings to match the C# type provided. " +
+                                  "Return ONLY the fixed JSON with no explanations or markdown.";
+
+            Conversation repairResult = await TornadoRunner.RunAsync(agent, repairPrompt);
+            agent.Instructions = lastInstructions; // Restore original instructions
+            agent.OutputSchema = type; // Restore original output schema
+            agent.Options.Tools = tools; // Restore original tools
+            // Clean the repair result
+            string repairedJson = repairResult.Messages.Last().Content?.Trim() ?? "";
+            repairedJson = Regex.Replace(repairedJson, @"^```json\s*|```$", "", RegexOptions.Multiline);
+
+            // Validate the repaired JSON
+            try
+            {
+                JsonDocument.Parse(repairedJson);
+                return JsonSerializer.Deserialize<T>(cleaned, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true,
+                    AllowTrailingCommas = true
+                }) ?? default!;
+            }
+            catch (JsonException)
+            {
+                return default!;
+            }
+        }
+        catch (Exception ex)
+        {
+            agent.Instructions = lastInstructions; // Restore original instructions
+            agent.OutputSchema = type; // Restore original output schema
+            agent.Options.Tools = tools; // Restore original tools
+            return default!;
+        }
+    }
+
 }
 
 /// <summary>
