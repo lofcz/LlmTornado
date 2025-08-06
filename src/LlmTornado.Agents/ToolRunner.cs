@@ -129,18 +129,18 @@ public static class ToolRunner
         object? result = null;
         if (AsyncHelpers.IsGenericTask(returnType, out _))
         {
-            var task = (Task?)returnValue;
+            Task? task = (Task?)returnValue;
             if (task is not null)
             {
                 await task.ConfigureAwait(false);
                 // for Task<T> get Result off the runtime type (safer)
-                var resProp = task.GetType().GetProperty("Result");
+                PropertyInfo? resProp = task.GetType().GetProperty("Result");
                 result = resProp?.GetValue(task);
             }
         }
         else if (returnType == typeof(Task))
         {
-            var task = (Task?)returnValue;
+            Task? task = (Task?)returnValue;
             if (task is not null)
             {
                 await task.ConfigureAwait(false);
@@ -149,17 +149,17 @@ public static class ToolRunner
         else if (AsyncHelpers.IsGenericValueTask(returnType, out _))
         {
             // boxed ValueTask<T> -> call AsTask() via reflection -> await Task<T>
-            var asTask = returnType.GetMethod("AsTask")!;
-            var taskObj = (Task)asTask.Invoke(returnValue!, null)!;
+            MethodInfo asTask = returnType.GetMethod("AsTask")!;
+            Task taskObj = (Task)asTask.Invoke(returnValue!, null)!;
 
             await taskObj.ConfigureAwait(false);
-            var resProp = taskObj.GetType().GetProperty("Result");
+            PropertyInfo? resProp = taskObj.GetType().GetProperty("Result");
             result = resProp?.GetValue(taskObj);
         }
         else if (returnType == typeof(ValueTask))
         {
             // boxed ValueTask -> cast then await (or use AsTask())
-            var vt = (ValueTask)returnValue!;
+            ValueTask vt = (ValueTask)returnValue!;
             await vt.ConfigureAwait(false); // or: await vt.AsTask().ConfigureAwait(false);
             result = null;
         }
