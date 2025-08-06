@@ -8,6 +8,7 @@ using System.Net.Http.Headers;
 using System.Reflection;
 using System.Text;
 using LlmTornado.Chat;
+using LlmTornado.Chat.Vendors.Perplexity;
 using LlmTornado.Chat.Vendors.XAi;
 using LlmTornado.Code.Models;
 using LlmTornado.Code.Sse;
@@ -179,6 +180,7 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
         {
             LLmProviders.OpenAi => JsonConvert.DeserializeObject<T>(jsonData),
             LLmProviders.XAi => InboundMessageVariantProviderXAi<T>(jsonData, postData),
+            LLmProviders.Perplexity => InboundMessageVariantProviderPerplexity<T>(jsonData, postData),
             _ => JsonConvert.DeserializeObject<T>(jsonData)
         };
     }
@@ -188,6 +190,16 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
         if (typeof(T) == typeof(ChatResult))
         {
             return (T?)(object?)ChatResultVendorXAi.Deserialize(jsonData);
+        }
+        
+        return JsonConvert.DeserializeObject<T>(jsonData);
+    }
+    
+    static T? InboundMessageVariantProviderPerplexity<T>(string jsonData, string? postData)
+    {
+        if (typeof(T) == typeof(ChatResult))
+        {
+            return (T?)(object?)ChatResultVendorPerplexity.Deserialize(jsonData);
         }
         
         return JsonConvert.DeserializeObject<T>(jsonData);

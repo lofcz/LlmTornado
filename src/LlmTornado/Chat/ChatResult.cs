@@ -6,6 +6,7 @@ using LlmTornado.Vendor.Anthropic;
 using LlmTornado;
 using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Chat.Vendors.Cohere;
+using LlmTornado.Chat.Vendors.Perplexity;
 using LlmTornado.Responses;
 using LlmTornado.Vendor.Google;
 using Newtonsoft.Json;
@@ -17,6 +18,24 @@ namespace LlmTornado.Chat;
 /// </summary>
 public class ChatResult : ApiResultBase
 {
+	internal ChatResult(ChatResult basedOn)
+	{
+		Id = basedOn.Id;
+		Choices = basedOn.Choices;
+		Usage = basedOn.Usage;
+		ServiceTier = basedOn.ServiceTier;
+		SystemFingerprint = basedOn.SystemFingerprint;
+		RawResponse = basedOn.RawResponse;
+		VendorExtensions = basedOn.VendorExtensions;
+		StreamInternalKind = basedOn.StreamInternalKind;
+		InvocationResult = basedOn.InvocationResult;
+	}
+
+	public ChatResult()
+	{
+		
+	}
+	
 	/// <summary>
 	///     The identifier of the result, which may be used during troubleshooting
 	/// </summary>
@@ -235,7 +254,7 @@ public class ChatUsage : Usage
 	public int? CacheReadTokens { get; set; }
 	
 	/// <summary>
-	/// Native usage object returned by the vendor. Provided for Anthropic, Cohere, and Google.
+	/// Native usage object returned by the vendor. Provided for Anthropic, Cohere, Google, and Perplexity.
 	/// Use this to read details about the billed units for vendor-specific features.
 	/// </summary>
 	[JsonIgnore]
@@ -263,6 +282,15 @@ public class ChatUsage : Usage
 		TotalTokens = CompletionTokens + PromptTokens;
 		VendorUsageObject = usage;
 		Provider = LLmProviders.Anthropic;
+	}
+	
+	internal ChatUsage(VendorPerplexityUsage usage)
+	{
+		CompletionTokens = usage.CompletionTokens;
+		PromptTokens = usage.PromptTokens;
+		TotalTokens = usage.TotalTokens;
+		VendorUsageObject = usage;
+		Provider = LLmProviders.Perplexity;
 	}
 	
 	internal ChatUsage(VendorCohereUsage usage)
