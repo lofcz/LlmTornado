@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using LlmTornado.Code;
 using LlmTornado.Code.Models;
 
 namespace LlmTornado.Chat.Models.Mistral;
@@ -8,6 +9,9 @@ namespace LlmTornado.Chat.Models.Mistral;
 /// </summary>
 public class ChatModelMistral: BaseVendorModelProvider
 {
+    /// <inheritdoc cref="BaseVendorModelProvider.Provider"/>
+    public override LLmProviders Provider => LLmProviders.Mistral;
+    
     /// <summary>
     /// All Premier (closed-weights) models.
     /// </summary>

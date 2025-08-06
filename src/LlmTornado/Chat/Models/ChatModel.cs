@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
+using System.Linq;
 using LlmTornado.Chat.Models.DeepInfra;
 using LlmTornado.Chat.Models.DeepSeek;
 using LlmTornado.Chat.Models.Mistral;
@@ -138,22 +140,18 @@ public class ChatModel : ModelBase
 
         return preferred.Value;
     }
+
+    /// <summary>
+    /// All known chat model providers.
+    /// </summary>
+    public static readonly List<BaseVendorModelProvider> AllProviders =
+    [
+        OpenAi, Anthropic, Cohere, Google, Groq, DeepSeek, Mistral, XAi, Perplexity, DeepInfra, OpenRouter
+    ];
     
     static ChatModel()
     {
-        AllModels = [
-            ..OpenAi.AllModels,
-            ..Anthropic.AllModels,
-            ..Cohere.AllModels,
-            ..Google.AllModels,
-            ..Groq.AllModels,
-            ..DeepSeek.AllModels,
-            ..Mistral.AllModels,
-            ..XAi.AllModels,
-            ..Perplexity.AllModels,
-            ..DeepInfra.AllModels,
-            ..OpenRouter.AllModels
-        ];
+        AllModels = AllProviders.SelectMany(x => x.AllModels).ToList();
         
         AllModels.ForEach(x =>
         {
@@ -236,6 +234,58 @@ public class ChatModel : ModelBase
     }
 
     /// <summary>
+    /// Creates a copy of a model based on another model.
+    /// </summary>
+    /// <param name="basedOn"></param>
+    public ChatModel(ChatModel basedOn)
+    {
+        Copy(basedOn);
+    }
+    
+    
+    /// <summary>
+    /// Creates a copy of a model based on another model.
+    /// </summary>
+    /// <param name="basedOn"></param>
+    public ChatModel(IModel basedOn)
+    {
+        if (basedOn is ChatModel chatModel)
+        {
+            Copy(chatModel);
+            return;
+        }
+
+        Copy(basedOn);
+    }
+
+    internal void Copy(IModel basedOn)
+    {
+        Name = basedOn.Name;
+        Provider = basedOn.Provider;
+        ApiName = basedOn.ApiName;
+        Aliases = basedOn.Aliases;
+        OptimisticallyResolved = basedOn.OptimisticallyResolved;
+    }
+
+    internal void Copy(ChatModel basedOn)
+    {
+        Name = basedOn.Name;
+        Provider = basedOn.Provider;
+        ContextTokens = basedOn.ContextTokens;
+        ApiName = basedOn.ApiName;
+        Aliases = basedOn.Aliases;
+        EndpointCapabilities = basedOn.EndpointCapabilities;
+        ReasoningTokensMax = basedOn.ReasoningTokensMax;
+        ReasoningTokensMin = basedOn.ReasoningTokensMin;
+        ReasoningTokensSpecialValues = basedOn.ReasoningTokensSpecialValues;
+        CreatedUnixTime = basedOn.CreatedUnixTime;
+        Object = basedOn.Object;
+        OwnedBy = basedOn.OwnedBy;
+        Permission = basedOn.Permission;
+        OptimisticallyResolved = basedOn.OptimisticallyResolved;
+    }
+
+    /// <summary>
     /// Represents a generic model.
     /// </summary>
     public ChatModel()
@@ -265,6 +315,73 @@ public class ChatModel : ModelBase
 
         return null;
     }
+
+    private static readonly Lazy<FrozenDictionary<string, IModel>> modelsByName = new Lazy<FrozenDictionary<string, IModel>>(() =>
+    {
+        Dictionary<string, IModel> dict = new Dictionary<string, IModel>(AllModels?.Count ?? 0);
+
+        if (AllModels is not null)
+        {
+            foreach (IModel model in AllModels)
+            {
+                dict[model.Name] = model;
+            }   
+        }
+
+        return dict.ToFrozenDictionary();
+    });
+
+    internal static ChatModel? ResolveModel(LLmProviders provider, string modelName)
+    {
+        if (modelsByProviderName.Value.TryGetValue(provider, out ChatModelVendorMap map))
+        {
+            if (map.ModelsByName.TryGetValue(modelName, out IModel model))
+            {
+                return new ChatModel(model)
+                {
+                    Provider = provider,
+                    OptimisticallyResolved = true
+                };   
+            }
+        }
+
+        return null;
+    }
+    
+    private static readonly Lazy<Dictionary<LLmProviders, ChatModelVendorMap>> modelsByProviderName = new Lazy<Dictionary<LLmProviders, ChatModelVendorMap>>(() =>
+    {
+        Dictionary<LLmProviders, ChatModelVendorMap> map = new Dictionary<LLmProviders, ChatModelVendorMap>(AllProviders.Count);
+        
+        foreach (BaseVendorModelProvider provider in AllProviders)
+        {
+            Dictionary<string, IModel> dictByName = new Dictionary<string, IModel>(provider.AllModels.Count);
+
+            foreach (IModel model in provider.AllModels)
+            {
+                dictByName[model.Name] = model;
+
+                if (model.Aliases is not null)
+                {
+                    foreach (string alias in model.Aliases)
+                    {
+                        dictByName[alias] = model;
+                    }
+                }
+
+                if (model.ApiName is not null)
+                {
+                    dictByName[model.ApiName] = model;   
+                }
+            }
+
+            map[provider.Provider] = new ChatModelVendorMap
+            {
+                ModelsByName = dictByName.ToFrozenDictionary()
+            };
+        }
+
+        return map;
+    });
     
     /// <summary>
     /// Allows a string to be implicitly cast as an <see cref="Model" /> with that <see cref="IModel.Name" />
@@ -272,7 +389,22 @@ public class ChatModel : ModelBase
     /// <param name="name">The id/<see cref="IModel.Name" /> to use</param>
     public static implicit operator ChatModel(string? name)
     {
-        return new ChatModel(name ?? string.Empty, name is null ? LLmProviders.Unknown : GetProvider(name) ?? LLmProviders.Unknown);
+        LLmProviders provider = GetProvider(name) ?? LLmProviders.Unknown;
+        
+        if (name?.Length > 0)
+        {
+            ChatModel? resolved = ResolveModel(provider, name);
+
+            if (resolved is not null)
+            {
+                return resolved;
+            }
+        }
+        
+        return new ChatModel(name ?? string.Empty, name is null ? LLmProviders.Unknown : provider)
+        {
+            OptimisticallyResolved = true
+        };
     }
 }
 
@@ -287,4 +419,9 @@ internal class ChatModelJsonConverter : JsonConverter<ChatModel>
     {
         return existingValue;
     }
+}
+
+internal class ChatModelVendorMap
+{
+    public FrozenDictionary<string, IModel> ModelsByName { get; set; }
 }

@@ -1592,7 +1592,7 @@ public partial class ChatDemo : DemoBase
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.Anthropic.Claude3.Sonnet,
+            Model = ChatModel.Anthropic.Claude4.Sonnet250514,
             Tools = [
                 new Tool(new ToolFunction("get_weather", "gets the current weather", new
                 {
@@ -1658,7 +1658,7 @@ public partial class ChatDemo : DemoBase
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.Anthropic.Claude3.Sonnet,
+            Model = ChatModel.Anthropic.Claude4.Sonnet250514,
             Tools = [
                 new Tool(new ToolFunction("get_weather", "gets the current weather", new
                 {
@@ -1841,7 +1841,7 @@ public partial class ChatDemo : DemoBase
 
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.Anthropic.Claude3.Sonnet,
+            Model = ChatModel.Anthropic.Claude4.Sonnet250514,
             Tools = [
                 new Tool(new ToolFunction("get_weather", "gets the current weather", new
                 {
@@ -1901,7 +1901,7 @@ public partial class ChatDemo : DemoBase
 
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.Anthropic.Claude3.Sonnet,
+            Model = ChatModel.Anthropic.Claude4.Sonnet250514,
             Tools = [
                 new Tool(new ToolFunction("get_weather", "gets the current weather", new
                 {
@@ -1969,7 +1969,7 @@ public partial class ChatDemo : DemoBase
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.Anthropic.Claude3.Sonnet
+            Model = ChatModel.Anthropic.Claude4.Sonnet250514
         });
         chat.AppendSystemMessage("Pretend you are a dog. Sound authentic.");
         chat.AppendUserInput("Who are you?");

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using LlmTornado.Code;
 using LlmTornado.Code.Models;
 
 namespace LlmTornado.Chat.Models.XAi;
@@ -8,6 +9,9 @@ namespace LlmTornado.Chat.Models.XAi;
 /// </summary>
 public class ChatModelXAi : BaseVendorModelProvider
 {
+    /// <inheritdoc cref="BaseVendorModelProvider.Provider"/>
+    public override LLmProviders Provider => LLmProviders.XAi;
+    
     /// <summary>
     /// Grok 4 models.
     /// </summary>

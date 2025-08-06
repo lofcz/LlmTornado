@@ -936,13 +936,14 @@ public class Conversation
             Messages = messages,
             CancellationToken = token
         };
-
+        
         ChatResult? res;
         CapabilityEndpoints capabilityEndpoint = req.GetCapabilityEndpoint();
         
         if (capabilityEndpoint is CapabilityEndpoints.Responses && req.ResponseRequestParameters is not null)
         {
-            IEndpointProvider provider = responsesEndpoint.Api.GetProvider(req.Model ?? ChatModel.OpenAi.Gpt35.Turbo);
+            // avoid double-serializing, use provider resolved without regards to available API keys
+            IEndpointProvider provider = endpoint.Api.GetProvider(req.Model ?? ChatModel.OpenAi.Gpt35.Turbo);
             ResponseResult result = await responsesEndpoint.CreateResponse(ResponseHelpers.ToResponseRequest(provider, req.ResponseRequestParameters, req)).ConfigureAwait(false);
             res = ResponseHelpers.ToChatResult(result);
         }
@@ -1292,10 +1293,19 @@ public class Conversation
         ChatRequest req = new ChatRequest(this, RequestParameters)
         {
             Messages = messages,
-            CancellationToken = token
+            CancellationToken = token,
+            Stream = true
         };
+        
+        req.StreamOptions ??= ChatStreamOptions.KnownOptionsIncludeUsage;
+        
+        if (!req.StreamOptions.IncludeUsage)
+        {
+            req.StreamOptions = null;
+        }
 
-        IEndpointProvider provider = endpoint.Api.GetProvider(req.Model ?? ChatModel.OpenAi.Gpt35.Turbo);
+        TornadoRequestContentWithProvider serialized = ChatRequest.Serialize(endpoint.Api, req);
+        IEndpointProvider provider = serialized.Provider;
 
         req = eventsHandler?.MutateChatRequestHandler is not null
             ? await eventsHandler.MutateChatRequestHandler.Invoke(req)
@@ -1460,7 +1470,7 @@ public class Conversation
         }
         else
         {
-            await foreach (ChatResult res in endpoint.StreamChatEnumerable(req, eventsHandler).WithCancellation(token))
+            await foreach (ChatResult res in endpoint.StreamChatReal(serialized, req, eventsHandler).WithCancellation(token))
             {
                 bool solved = false;
 

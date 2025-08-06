@@ -9,6 +9,9 @@ namespace LlmTornado.Embedding.Models.Mistral;
 /// </summary>
 public class EmbeddingModelMistralPremier : BaseVendorModelProvider
 {
+    /// <inheritdoc cref="BaseVendorModelProvider.Provider"/>
+    public override LLmProviders Provider => LLmProviders.Mistral;
+    
     /// <summary>
     /// Our state-of-the-art semantic for extracting representation of code extracts
     /// </summary>

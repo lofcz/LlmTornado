@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using LlmTornado.Chat.Models.XAi;
+using LlmTornado.Code;
 using LlmTornado.Code.Models;
 
 namespace LlmTornado.Chat.Models.Perplexity;
@@ -9,6 +10,9 @@ namespace LlmTornado.Chat.Models.Perplexity;
 /// </summary>
 public class ChatModelPerplexity : BaseVendorModelProvider
 {
+    /// <inheritdoc cref="BaseVendorModelProvider.Provider"/>
+    public override LLmProviders Provider => LLmProviders.Perplexity;
+    
     /// <summary>
     /// Sonar models.
     /// </summary>

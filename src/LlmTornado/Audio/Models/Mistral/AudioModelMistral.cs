@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using LlmTornado.Code;
 using LlmTornado.Code.Models;
 
 namespace LlmTornado.Audio.Models.Mistral;
@@ -8,6 +9,9 @@ namespace LlmTornado.Audio.Models.Mistral;
 /// </summary>
 public class AudioModelMistral : BaseVendorModelProvider
 {
+    /// <inheritdoc cref="BaseVendorModelProvider.Provider"/>
+    public override LLmProviders Provider => LLmProviders.Mistral;
+    
     /// <summary>
     /// Free models.
     /// </summary>

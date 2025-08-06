@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using LlmTornado.Code;
 using LlmTornado.Code.Models;
 
 namespace LlmTornado.Chat.Models;
@@ -8,6 +9,9 @@ namespace LlmTornado.Chat.Models;
 /// </summary>
 public class ChatModelGroq : BaseVendorModelProvider
 {
+    /// <inheritdoc cref="BaseVendorModelProvider.Provider"/>
+    public override LLmProviders Provider => LLmProviders.Groq;
+    
     /// <summary>
     /// Models by Meta.
     /// </summary>

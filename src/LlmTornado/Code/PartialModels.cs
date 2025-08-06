@@ -1478,6 +1478,18 @@ internal interface IModelRequest
     internal IModel? RequestModel { get; }
 }
 
+internal class TornadoRequestContentWithProvider
+{
+    public IEndpointProvider Provider { get; set; }
+    public TornadoRequestContent Request { get; set; }
+
+    public TornadoRequestContentWithProvider(IEndpointProvider provider, TornadoRequestContent request)
+    {
+        Provider = provider;
+        Request = request;
+    }
+}
+
 /// <summary>
 ///  A Tornado HTTP request.
 /// </summary>

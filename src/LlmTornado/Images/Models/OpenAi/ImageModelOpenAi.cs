@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using LlmTornado.Chat.Models;
+using LlmTornado.Code;
 using LlmTornado.Code.Models;
 
 namespace LlmTornado.Images.Models.OpenAi;
@@ -9,6 +10,9 @@ namespace LlmTornado.Images.Models.OpenAi;
 /// </summary>
 public class ImageModelOpenAi : BaseVendorModelProvider
 {
+    /// <inheritdoc cref="BaseVendorModelProvider.Provider"/>
+    public override LLmProviders Provider => LLmProviders.OpenAi;
+    
     /// <summary>
     /// Dalle models.
     /// </summary>

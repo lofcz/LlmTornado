@@ -10,6 +10,9 @@ namespace LlmTornado.Rerank.Models.Voyage;
 /// </summary>
 public class RerankModelVoyageGen25 : BaseVendorModelProvider
 {
+    /// <inheritdoc cref="BaseVendorModelProvider.Provider"/>
+    public override LLmProviders Provider => LLmProviders.Voyage;
+    
     /// <summary>
     /// Rerank 2.5 model.
     /// </summary>

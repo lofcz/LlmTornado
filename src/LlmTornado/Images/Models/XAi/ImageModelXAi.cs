@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using LlmTornado.Code;
 using LlmTornado.Code.Models;
 
 namespace LlmTornado.Images.Models.XAi;
@@ -8,6 +9,9 @@ namespace LlmTornado.Images.Models.XAi;
 /// </summary>
 public class ImageModelXAi : BaseVendorModelProvider
 {
+    /// <inheritdoc cref="BaseVendorModelProvider.Provider"/>
+    public override LLmProviders Provider => LLmProviders.XAi;
+    
     /// <summary>
     /// Grok models.
     /// </summary>

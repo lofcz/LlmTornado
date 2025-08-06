@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using LlmTornado.Chat.Models;
+using LlmTornado.Code;
 using LlmTornado.Code.Models;
 
 namespace LlmTornado.Embedding.Models.OpenAi;
@@ -9,6 +10,9 @@ namespace LlmTornado.Embedding.Models.OpenAi;
 /// </summary>
 public class EmbeddingModelOpenAi : BaseVendorModelProvider
 {
+    /// <inheritdoc cref="BaseVendorModelProvider.Provider"/>
+    public override LLmProviders Provider => LLmProviders.OpenAi;
+    
     /// <summary>
     /// Generation 2 models (Ada).
     /// </summary>

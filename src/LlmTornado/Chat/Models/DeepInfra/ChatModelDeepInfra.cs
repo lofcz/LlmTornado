@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using LlmTornado.Code;
 using LlmTornado.Code.Models;
 
 namespace LlmTornado.Chat.Models.DeepInfra;
@@ -8,6 +9,9 @@ namespace LlmTornado.Chat.Models.DeepInfra;
 /// </summary>
 public class ChatModelDeepInfra : BaseVendorModelProvider
 {
+    /// <inheritdoc cref="BaseVendorModelProvider.Provider"/>
+    public override LLmProviders Provider => LLmProviders.DeepInfra;
+    
     /// <summary>
     /// Models from DeepSeek.
     /// </summary>

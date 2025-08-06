@@ -10,6 +10,9 @@ namespace LlmTornado.Embedding.Models.Voyage;
 /// </summary>
 public class EmbeddingModelVoyageContextualGen3 : BaseVendorModelProvider
 {
+    /// <inheritdoc cref="BaseVendorModelProvider.Provider"/>
+    public override LLmProviders Provider => LLmProviders.Voyage;
+    
     /// <summary>
     /// A novel contextualized chunk embedding model, where chunk embedding encodes not only the chunk’s own content, but also captures the contextual information from the full document.
     /// </summary>

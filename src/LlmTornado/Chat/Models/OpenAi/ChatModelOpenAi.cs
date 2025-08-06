@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using LlmTornado.Code;
 using LlmTornado.Code.Models;
 
 namespace LlmTornado.Chat.Models;
@@ -9,6 +10,9 @@ namespace LlmTornado.Chat.Models;
 /// </summary>
 public class ChatModelOpenAi : BaseVendorModelProvider
 {
+    /// <inheritdoc cref="BaseVendorModelProvider.Provider"/>
+    public override LLmProviders Provider => LLmProviders.OpenAi;
+    
     /// <summary>
     /// GPT 3.5 (Turbo) models.
     /// </summary>

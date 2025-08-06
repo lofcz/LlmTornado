@@ -657,6 +657,33 @@ public class ChatRequest : IModelRequest, ISerializableRequest
 		}
 	}
 
+	internal static TornadoRequestContentWithProvider Serialize(TornadoApi api, ChatRequest request, bool pretty = false)
+	{
+		ChatModel? modelToUse = request.Model;
+		IEndpointProvider provider = api.GetProvider(request.Model ?? ChatModel.OpenAi.Gpt35.Turbo);
+        
+		// the resolved model is potentially incorrect - optimistically resolved models pick the first provider by name, but multiple providers
+		// offer the same models, we need to correlate with the available API keys
+		if ((modelToUse?.OptimisticallyResolved ?? false) && provider.Api is not null)
+		{
+			if (provider.Api.Authentications.Count > 0 && !provider.Api.Authentications.TryGetValue(modelToUse.Provider, out _))
+			{
+				foreach (KeyValuePair<LLmProviders, ProviderAuthentication> auth in provider.Api.Authentications)
+				{
+					ChatModel? resolved = ChatModel.ResolveModel(auth.Key, modelToUse.Name);
+
+					if (resolved is not null)
+					{
+						modelToUse = resolved;
+						provider = provider.Api?.GetProvider(modelToUse.Provider) ?? provider;
+					}
+				}
+			}
+		}
+
+		return new TornadoRequestContentWithProvider(provider, request.Serialize(provider, GetCapabilityEndpoint(request), pretty));
+	}
+
 	private TornadoRequestContent Serialize(IEndpointProvider provider, CapabilityEndpoints capabilityEndpoint, bool pretty)
 	{
 		Preserialize(provider);
@@ -676,7 +703,7 @@ public class ChatRequest : IModelRequest, ISerializableRequest
 				break;
 			}
 		}
-
+		
 		if (provider.Provider is not LLmProviders.Groq)
 		{
 			outboundCopy.ReasoningFormat = null;

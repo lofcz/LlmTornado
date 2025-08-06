@@ -12,6 +12,9 @@ namespace LlmTornado.Embedding.Models.Cohere;
 /// </summary>
 public class EmbeddingModelCohereGen4 : BaseVendorModelProvider
 {
+    /// <inheritdoc cref="BaseVendorModelProvider.Provider"/>
+    public override LLmProviders Provider => LLmProviders.Cohere;
+    
     /// <summary>
     /// A model that allows for text and images to be classified or turned into embeddings.
     /// </summary>

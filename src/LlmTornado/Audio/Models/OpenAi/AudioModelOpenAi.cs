@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using LlmTornado.Code;
 using LlmTornado.Code.Models;
 
 namespace LlmTornado.Audio.Models.OpenAi;
@@ -8,6 +9,9 @@ namespace LlmTornado.Audio.Models.OpenAi;
 /// </summary>
 public class AudioModelOpenAi : BaseVendorModelProvider
 {
+    /// <inheritdoc cref="BaseVendorModelProvider.Provider"/>
+    public override LLmProviders Provider => LLmProviders.OpenAi;
+    
     /// <summary>
     /// Whisper models.
     /// </summary>
