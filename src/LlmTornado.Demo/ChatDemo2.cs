@@ -1013,6 +1013,12 @@ public partial class ChatDemo : DemoBase
         await BasicChat(ChatModel.Groq.OpenAi.GptOss120B);
     }
     
+    [TornadoTest]
+    public static async Task CohereAVision()
+    {
+        await BasicChat(ChatModel.Cohere.Command.AVision2507);
+    }
+    
     private static async Task BasicChat(ChatModel model)
     {
         Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
