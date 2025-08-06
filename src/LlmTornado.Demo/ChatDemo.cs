@@ -1416,7 +1416,7 @@ public partial class ChatDemo : DemoBase
         Console.WriteLine(str2);
     }
     
-    [TornadoTest]
+    [TornadoTest, Flaky("deprecated")]
     public static async Task Gpt45Preview()
     {
         Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest

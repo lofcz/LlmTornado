@@ -892,7 +892,7 @@ public partial class ChatDemo : DemoBase
     {
         Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.Google.GeminiPreview.Gemini25FlashPreview0417,
+            Model = ChatModel.Google.Gemini.Gemini25Flash,
             MaxTokens = 64
         });
         
