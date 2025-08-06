@@ -15,9 +15,12 @@ export default defineConfig({
       { text: 'Guide', link: '/getting-started' },
       { text: 'Playground', link: '/playground/', target: '_blank' },
       {
-        text: 'Guide',
+        text: 'Chat',
         items: [
-          { text: 'Getting Started', link: '/getting-started' }
+          { text: 'Getting Started', link: '/getting-started' },
+          { text: 'Chat Basics', link: '/chat/basics' },
+          { text: 'Chat Models', link: '/chat/models' },
+          { text: 'Function Calling', link: '/chat/functions' }
         ]
       }
     ]

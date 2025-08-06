@@ -1007,6 +1007,12 @@ public partial class ChatDemo : DemoBase
         await BasicChat(ChatModel.Google.GeminiPreview.Gemini25ProPreview0325);
     }
     
+    [TornadoTest]
+    public static async Task GptOss()
+    {
+        await BasicChat(ChatModel.Groq.OpenAi.GptOss120B);
+    }
+    
     private static async Task BasicChat(ChatModel model)
     {
         Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest

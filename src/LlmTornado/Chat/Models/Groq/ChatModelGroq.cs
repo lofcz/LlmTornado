@@ -37,6 +37,11 @@ public class ChatModelGroq : BaseVendorModelProvider
     /// Models by Moonshot AI.
     /// </summary>
     public readonly ChatModelGroqMoonshotAi MoonshotAi = new ChatModelGroqMoonshotAi();
+    
+    /// <summary>
+    /// Models by OpenAI.
+    /// </summary>
+    public readonly ChatModelGroqOpenAi OpenAi = new ChatModelGroqOpenAi();
 
     /// <summary>
     /// All known chat models hosted by Groq.
@@ -67,7 +72,8 @@ public class ChatModelGroq : BaseVendorModelProvider
         ..ChatModelGroqGroq.ModelsAll,
         ..ChatModelGroqMistral.ModelsAll,
         ..ChatModelGroqAlibaba.ModelsAll,
-        ..ChatModelGroqMoonshotAi.ModelsAll
+        ..ChatModelGroqMoonshotAi.ModelsAll,
+        ..ChatModelGroqOpenAi.ModelsAll
     ];
     
     static ChatModelGroq()
