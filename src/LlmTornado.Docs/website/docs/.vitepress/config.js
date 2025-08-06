@@ -5,6 +5,12 @@ export default defineConfig({
   title: "LlmTornado",
   description: "LlmTornado Documentation",
   appearance: 'force-dark',
+  markdown: {
+    theme: {
+      light: 'vitesse-light',
+      dark: 'dark-plus'
+    }
+  },
   themeConfig: {
     nav: [
       { text: 'Guide', link: '/getting-started' },

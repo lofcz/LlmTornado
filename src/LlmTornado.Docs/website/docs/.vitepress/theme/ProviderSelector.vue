@@ -1,5 +1,7 @@
 <template>
-  <div class="provider-selector">
+  <Suspense>
+    <template #default>
+      <div class="provider-selector">
     <div class="provider-tabs">
       <button 
         v-for="category in categories" 
@@ -53,32 +55,29 @@
       </div>
     </div>
 
-    <div class="code-snippet" v-if="selectedProvider">
+    <div class="code-snippet" v-if="selectedProvider" ref="codeSnippetRef">
       <div class="snippet-header">
         <h4>Connect to {{ selectedProviderName }}</h4>
-        <div class="snippet-actions">
-          <button @click="copyCode" class="copy-button" :class="{ copied: copied }">
-            {{ copied ? 'Copied!' : 'Copy' }}
-          </button>
-        </div>
+
       </div>
       
-      <div class="code-container">
-        <pre><code class="language-csharp" v-html="highlightedCode"></code></pre>
-      </div>
+      <div class="code-container" v-html="highlightedCode"></div>
 
       <div class="additional-info" v-if="getProviderInfo().additionalInfo">
         <div class="info-section" v-for="(info, index) in getProviderInfo().additionalInfo" :key="index">
           <h5>{{ info.title }}</h5>
-          <p>{{ info.content }}</p>
+          <p v-html="info.content"></p>
         </div>
       </div>
     </div>
-  </div>
+      </div>
+    </template>
+    <template #fallback>Loading...</template>
+  </Suspense>
 </template>
 
 <script>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { useData } from 'vitepress'
 import FreeTierBadge from './components/FreeTierBadge.vue'
 
@@ -91,7 +90,8 @@ export default {
     const { isDark } = useData()
     const selectedCategory = ref('cloud')
     const selectedProvider = ref(null)
-    const copied = ref(false)
+    const codeSnippetRef = ref(null)
+
 
     const categories = [
       { id: 'cloud', name: 'Cloud Providers', icon: '☁️' },
@@ -107,15 +107,15 @@ export default {
         type: 'cloud',
         category: 'cloud',
         icon: '🤖',
-        description: 'GPT-4, GPT-3.5, and other advanced models',
-        features: ['O Series', 'GPT-4', 'GPT-3.5', 'Multimodal'],
+        description: 'Advanced AI models including GPT-4o, O1, O3, and O4 series',
+        features: ['O4', 'O3', 'O1', 'GPT-4o', 'GPT-3.5'],
         code: `// Connect to OpenAI with API key
 var api = new TornadoApi("your-openai-api-key", LLmProviders.OpenAi);
 
 // Create conversation with streaming
 var conversation = api.Chat.CreateConversation(new ChatRequest
 {
-    Model = ChatModel.OpenAi.Gpt4o
+    Model = ChatModel.OpenAi.Gpt4.O
 });
 
 // Stream response to console
@@ -126,11 +126,11 @@ await foreach (var chunk in conversation.StreamResponse())
         additionalInfo: [
           {
             title: 'API Setup',
-            content: 'Get your API key from the OpenAI dashboard at platform.openai.com/api-keys'
+            content: 'Get your API key from the OpenAI dashboard at <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com/api-keys</a>'
           },
           {
             title: 'Pricing',
-            content: 'OpenAI offers pay-as-you-go pricing with different rates for each model'
+            content: 'View current pricing at <a href="https://openai.com/api/pricing/" target="_blank">openai.com/api/pricing/</a>'
           }
         ]
       },
@@ -515,32 +515,31 @@ await foreach (var chunk in conversation.StreamResponse())
       return providers.find(p => p.id === selectedProvider.value) || {}
     }
 
-    const highlightedCode = computed(() => {
-      const provider = getProviderInfo()
-      if (!provider.code) return ''
-      
-      // Simple syntax highlighting for C#
-      return provider.code
-        .replace(/(\/\/.*$)/gm, '<span class="comment">$1</span>')
-        .replace(/(var\s+\w+|new\s+TornadoApi|ChatModel\.|LLmProviders\.)/g, '<span class="keyword">$1</span>')
-        .replace(/(string|int|bool|ChatRequest)/g, '<span class="type">$1</span>')
-        .replace(/(Model\s*=)/g, '<span class="attribute">$1</span>')
-    })
+    const highlightedCode = ref('')
 
-    const copyCode = async () => {
-      const provider = getProviderInfo()
-      if (!provider.code) return
-      
-      try {
-        await navigator.clipboard.writeText(provider.code)
-        copied.value = true
-        setTimeout(() => {
-          copied.value = false
-        }, 2000)
-      } catch (err) {
-        console.error('Failed to copy code:', err)
-      }
+    const updateHighlighted = () => {
+      const snippetEl = typeof document !== 'undefined'
+        ? document.getElementById(`snippet-${selectedProvider.value}`)
+        : null
+      highlightedCode.value = snippetEl ? snippetEl.innerHTML : ''
     }
+
+    // update once on mount
+    if (typeof window !== 'undefined') {
+      setTimeout(updateHighlighted, 0)
+    }
+
+    watch(selectedProvider, () => {
+      updateHighlighted()
+      nextTick(() => {
+        if (codeSnippetRef.value) {
+          codeSnippetRef.value.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+          })
+        }
+      })
+    })
 
     // Auto-select first provider in category
     watch(selectedCategory, (newCategory) => {
@@ -553,13 +552,14 @@ await foreach (var chunk in conversation.StreamResponse())
     return {
       selectedCategory,
       selectedProvider,
-      copied,
+
       categories,
       filteredProviders,
       selectedProviderName,
       getProviderInfo,
       highlightedCode,
-      copyCode
+      codeSnippetRef
+
     }
   }
 }
@@ -773,6 +773,7 @@ await foreach (var chunk in conversation.StreamResponse())
 
 .code-container {
   position: relative;
+  margin: -16px 0;
 }
 
 pre {
@@ -842,6 +843,29 @@ code {
   
   .feature-tag {
     background: var(--vp-c-bg-mute);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .provider-tabs {
+    overflow-x: auto;
+    white-space: nowrap;
+    -ms-overflow-style: -ms-autohiding-scrollbar; /* IE 10+ */
+    scrollbar-width: thin; /* Firefox */
+  }
+
+  .provider-tabs::-webkit-scrollbar {
+    height: 4px; /* Safari and Chrome */
+  }
+
+  .provider-tabs::-webkit-scrollbar-thumb {
+    background: var(--vp-c-divider);
+    border-radius: 4px;
+  }
+
+  .tab-button {
+    padding: 0.75rem 1rem;
   }
 }
 
