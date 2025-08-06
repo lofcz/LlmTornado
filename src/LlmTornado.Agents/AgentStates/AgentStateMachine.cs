@@ -30,7 +30,7 @@ public abstract class AgentStateMachine<TInput, TOutput> : StateMachine<TInput, 
         {
             if (state is IAgentState agentState)
             {
-                agentState.CancelTokenSource.Cancel();
+                agentState.cts.Cancel();
             }
         }
     }

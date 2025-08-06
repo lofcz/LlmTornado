@@ -17,7 +17,7 @@ public interface IAgentState
     /// <summary>
     /// Verbose event callback for recieving verbose messages.
     /// </summary>
-    public Action<string>? RunningVerboseCallback { get; set; }
+    public Action<string>? OnVerboseEvent { get; }
 
     /// <summary>
     /// Occurs when a streaming operation is running and provides updates.
@@ -25,12 +25,12 @@ public interface IAgentState
     /// <remarks>This event is triggered during the execution of a streaming operation, passing a
     /// string parameter that contains the current status or data update. Subscribers can use this event to receive
     /// real-time updates.</remarks>
-    public StreamingCallbacks? RunningStreamingCallback { get; set; }
+    public Func<ModelStreamingEvents, ValueTask>? OnStreamingEvent { get; }
 
     /// <summary>
     /// Gets or sets the <see cref="CancellationTokenSource"/> used to signal cancellation requests.
     /// </summary>
-    public CancellationTokenSource CancelTokenSource { get; set; }
+    public CancellationTokenSource cts { get; set; }
 
     public void SubscribeVerboseChannel(RunnerVerboseCallbacks? verboseChannel);
     public void SubscribeStreamingChannel(StreamingCallbacks? streamingChannel);
@@ -43,11 +43,11 @@ public abstract class AgentState<TInput, TOutput> : BaseState<TInput, TOutput>, 
 {
     public TornadoAgent StateAgent { get; set; }
 
-    public Action<string>? RunningVerboseCallback { get; set; }
+    public Action<string>? OnVerboseEvent { get;}
 
-    public StreamingCallbacks? RunningStreamingCallback { get; set; }
+    public Func<ModelStreamingEvents, ValueTask>? OnStreamingEvent { get; }
 
-    public CancellationTokenSource CancelTokenSource { get; set; } = new CancellationTokenSource();
+    public CancellationTokenSource cts { get; set; } = new CancellationTokenSource();
 
     /// <summary>
     /// Initializes the state agent, preparing it for operation.
@@ -66,32 +66,32 @@ public abstract class AgentState<TInput, TOutput> : BaseState<TInput, TOutput>, 
         CurrentStateMachine = stateMachine;
         CurrentStateMachine.States.Add(this); //Keep States alive in the StateMachine
         StateAgent = InitializeStateAgent(); // Initialize the agent state, which sets up the agent and its properties
-        StateAgent.Options.CancellationToken = CancelTokenSource.Token; // Set the cancellation token source for the agent client
+        StateAgent.Options.CancellationToken = cts.Token; // Set the cancellation token source for the agent client
     }
 
     /// <summary>
     /// Invokes the callback to process a verbose message.
     /// </summary>
-    /// <remarks>This method triggers the <see cref="RunningVerboseCallback"/> delegate, if it is set,
+    /// <remarks>This method triggers the <see cref="OnVerboseEvent"/> delegate, if it is set,
     /// passing the provided message for further handling. Ensure that the callback is assigned  before calling this
     /// method to avoid a null reference exception.</remarks>
     /// <param name="message">The verbose message to be processed. Cannot be null.</param>
     public ValueTask ReceiveVerbose(string message)
     {
-        RunningVerboseCallback?.Invoke(message);
+        OnVerboseEvent?.Invoke(message);
         return default;
     }
 
     /// <summary>
     /// Processes a streaming message by invoking the associated callback.
     /// </summary>
-    /// <remarks>This method triggers the <see cref="RunningStreamingCallback"/> delegate with the
-    /// provided message. Ensure that <see cref="RunningStreamingCallback"/> is not null before calling this method
+    /// <remarks>This method triggers the <see cref="OnStreamingEvent"/> delegate with the
+    /// provided message. Ensure that <see cref="OnStreamingEvent"/> is not null before calling this method
     /// to avoid a <see cref="NullReferenceException"/>.</remarks>
     /// <param name="message">The message received from the stream. Cannot be null.</param>
     public ValueTask ReceiveStreaming(ModelStreamingEvents message)
     {
-        RunningStreamingCallback?.Invoke(message);
+        OnStreamingEvent?.Invoke(message);
         return default;
     }
 
@@ -105,21 +105,8 @@ public abstract class AgentState<TInput, TOutput> : BaseState<TInput, TOutput>, 
     /// <returns>A task representing the asynchronous operation. The task result contains the processed text output.</returns>
     public async Task<Conversation> BeginRunnerAsync(TornadoAgent agent, string input, bool streaming = false)
     {
-        return (await RunAsync(agent, input, verboseCallback: ReceiveVerbose, streamingCallback: ReceiveStreaming, streaming: streaming, cancellationToken: CancelTokenSource.Token));
+        return (await RunAsync(agent, input, verboseCallback: ReceiveVerbose, streamingCallback: ReceiveStreaming, streaming: streaming, cancellationToken: cts.Token));
     }
-
-    /// <summary>
-    /// Initiates an asynchronous operation to process the specified input using the given agent.
-    /// </summary>
-    /// <remarks>Use this automatically parse the output result, and processes with another agent other than the state Agent</remarks>
-    /// <param name="agent">The agent responsible for processing the input.</param>
-    /// <param name="input">The input data to be processed by the agent.</param>
-    /// <param name="streaming">A value indicating whether the operation should use streaming. Defaults to <see langword="false"/>.</param>
-    /// <returns>A task representing the asynchronous operation. The task result contains the processed text output.</returns>
-    //public async Task<T> BeginRunnerAsync<T>(Agent agent, string input, bool streaming = false)
-    //{
-    //    return (await Runner.RunAsync(agent, input, verboseCallback: RunnerVerboseCallbacks, streamingCallback: StreamingCallbacks, streaming: streaming, cancellationToken: CancelTokenSource)).ParseJson<T>();
-    //}
 
     /// <summary>
     /// Initiates an asynchronous operation to process the specified input and returns the result as a string.
@@ -132,7 +119,7 @@ public abstract class AgentState<TInput, TOutput> : BaseState<TInput, TOutput>, 
     /// string. If the operation does not produce any output, an empty string is returned.</returns>
     public async Task<Conversation> BeginRunnerAsync(string input, bool streaming = false)
     {
-        return (await RunAsync(StateAgent, input, verboseCallback: ReceiveVerbose, streamingCallback: ReceiveStreaming, streaming: streaming, cancellationToken: CancelTokenSource.Token));
+        return (await RunAsync(StateAgent, input, verboseCallback: ReceiveVerbose, streamingCallback: ReceiveStreaming, streaming: streaming, cancellationToken: cts.Token));
     }
 
     /// <summary>
@@ -152,7 +139,7 @@ public abstract class AgentState<TInput, TOutput> : BaseState<TInput, TOutput>, 
                 verboseCallback: ReceiveVerbose, 
                 streamingCallback: ReceiveStreaming,
                 streaming: streaming,
-                cancellationToken: CancelTokenSource.Token);
+                cancellationToken: cts.Token);
 
             // First try standard parsing
             if (result.Messages.Last().Content.TryParseJson<T>(out T? parsedResult))
@@ -165,7 +152,7 @@ public abstract class AgentState<TInput, TOutput> : BaseState<TInput, TOutput>, 
 
             if (smartParsedResult != null)
             {
-                RunningVerboseCallback?.Invoke($"JSON repaired and parsed successfully on attempt {attempt + 1}");
+                OnVerboseEvent?.Invoke($"JSON repaired and parsed successfully on attempt {attempt + 1}");
                 return smartParsedResult;
             }
 
@@ -176,7 +163,7 @@ public abstract class AgentState<TInput, TOutput> : BaseState<TInput, TOutput>, 
                                      "Please provide a properly formatted JSON response that matches this C# class structure. " +
                                      "Previous response: {result.Text}";
 
-                RunningVerboseCallback?.Invoke($"Retry attempt {attempt + 1}: Requesting properly formatted JSON");
+                OnVerboseEvent?.Invoke($"Retry attempt {attempt + 1}: Requesting properly formatted JSON");
                 input = retryPrompt;
             }
         }
