@@ -21,9 +21,9 @@ public abstract class AgentStateMachine<TInput, TOutput> : StateMachine<TInput, 
     public StateMachineOrchestration Orchestractor { get; set; }
     public List<ChatMessage> SharedModelItems { get; set; } = [];
 
-    public AgentStateMachine(StateMachineOrchestration orchestractor) {
+    public AgentStateMachine(StateMachineOrchestration orchestrator) {
 
-        Orchestractor = orchestractor;
+        Orchestractor = orchestrator;
         InitializeStates();
         OnBegin += AddToControl; //Add active state machine to the control agent when it begins execution
         //Add OnFinish and CancellationTriggered events to remove from control
