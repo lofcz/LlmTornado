@@ -1,14 +1,15 @@
 ﻿using LlmTornado.Agents.DataModels;
 using LlmTornado.Chat;
 using LlmTornado.ChatFunctions;
+using LlmTornado.Code;
 using LlmTornado.Common;
+using LlmTornado.StateMachines;
 using ModelContextProtocol.Client;
 using ModelContextProtocol.Protocol;
 using Newtonsoft.Json;
 using System.Reflection;
 using System.Text.Json;
-using LlmTornado.Code;
-using LlmTornado.StateMachines;
+using System.Threading.Tasks;
 
 namespace LlmTornado.Agents;
 
@@ -49,15 +50,13 @@ public static class ToolRunner
         if (!agent.AgentTools.TryGetValue(call.Name, out TornadoAgentTool? tool))
             throw new Exception($"I don't have a Agent tool called {call.Name}");
 
-        TornadoAgent newAgent = tool.ToolAgent;
-
         if (call.Arguments != null)
         {
             using JsonDocument argumentsJson = JsonDocument.Parse(call.Arguments);
 
             if (argumentsJson.RootElement.TryGetProperty("input", out JsonElement jValue))
             {
-                Conversation agentToolResult = await TornadoRunner.RunAsync(newAgent, jValue.GetString());
+                Conversation agentToolResult = await TornadoRunner.RunAsync(tool.ToolAgent, jValue.GetString());
                 return new FunctionResult(call, agentToolResult.MostRecentApiResult!.Choices?.Last().Message?.Content);
             }
 
@@ -93,24 +92,22 @@ public static class ToolRunner
         {
             return new FunctionResult(call, "Error");
         }
-        
-        string result = string.Empty;
 
         if (callToolResult.Content.Count <= 0)
         {
-            return new FunctionResult(call, result);
+            return new FunctionResult(call, string.Empty);
         }
             
         ContentBlock firstBlock = callToolResult.Content[0];
 
-        result = firstBlock switch
+        string result = firstBlock switch
         {
             TextContentBlock textBlock => textBlock.Text,
             ImageContentBlock imageBlock => imageBlock.Data,
             AudioContentBlock audioBlock => audioBlock.Data,
             EmbeddedResourceBlock embeddedResourceBlock => embeddedResourceBlock.Resource.Uri,
             ResourceLinkBlock resourceLinkBlock => resourceLinkBlock.Uri,
-            _ => result
+            _ => string.Empty
         };
 
         return new FunctionResult(call, result);
@@ -124,27 +121,50 @@ public static class ToolRunner
     /// <returns></returns>
     static async Task<object?> CallFuncAsync(Delegate function, object[] args)
     {
+        object? returnValue = function.DynamicInvoke(args);
+        Type returnType = function.Method.ReturnType;
         object? result = null;
-        MethodInfo method = function.Method;
-        
-        if (AsyncHelpers.IsGenericTask(method.ReturnType, out Type taskResultType))
+        if (AsyncHelpers.IsGenericTask(returnType, out _))
         {
-            // Method is async, invoke and await
-            Task? task = (Task?)function.DynamicInvoke(args);
-
+            var task = (Task?)returnValue;
             if (task is not null)
             {
                 await task.ConfigureAwait(false);
-                // Get the Result property from the Task
-                result = taskResultType.GetProperty("Result")?.GetValue(task);   
+                // for Task<T> get Result off the runtime type (safer)
+                var resProp = task.GetType().GetProperty("Result");
+                result = resProp?.GetValue(task);
             }
+        }
+        else if(returnType == typeof(Task))
+        {
+            var task = (Task?)returnValue;
+            if (task is not null)
+            {
+                await task.ConfigureAwait(false);
+            }
+        }
+        else if (AsyncHelpers.IsGenericValueTask(returnType, out _))
+        {
+            // boxed ValueTask<T> -> call AsTask() via reflection -> await Task<T>
+            var asTask = returnType.GetMethod("AsTask")!;
+            var taskObj = (Task)asTask.Invoke(returnValue!, null)!;
+
+            await taskObj.ConfigureAwait(false);
+            var resProp = taskObj.GetType().GetProperty("Result");
+            result = resProp?.GetValue(taskObj);
+        }
+        else if (returnType == typeof(ValueTask))
+        {
+            // boxed ValueTask -> cast then await (or use AsTask())
+            var vt = (ValueTask)returnValue!;
+            await vt.ConfigureAwait(false); // or: await vt.AsTask().ConfigureAwait(false);
+            result = null;
         }
         else
         {
-            // Method is synchronous
-            result = function.DynamicInvoke( args);
+            // synchronous
+            result = returnValue;
         }
-
-        return result ?? null;
+        return result;
     }
 }
