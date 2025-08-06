@@ -20,6 +20,9 @@ public class AgentStateMachineDemo : DemoBase
                 Console.Write($"{text.DeltaText}");
             return ValueTask.CompletedTask;
         }
+
+        ResearchAgent StateMachineResearchAgent = new ResearchAgent();
+
         // Create an instance of the BasicLombdaAgent
         // Create an instance of the BasicLombdaAgent
         StateMachineOrchestration agent = new StateMachineOrchestration(
@@ -28,19 +31,17 @@ public class AgentStateMachineDemo : DemoBase
                 client: Program.Connect(),
                 model: ChatModel.OpenAi.Gpt41.V41,
                 instructions: $"""You are a person assistant who will receive information preprocessed by a Agentic system to help answer the question. Use SYSTEM message from before the user input as tool output"""
-                )
+                ),
+            stateMachine: StateMachineResearchAgent,
+            runnerMethod: async (task) =>
+                {
+                    //Return the final result
+                    string result = (await StateMachineResearchAgent.Run(task))[0].FinalReport ?? task;
+                    return result.ToString() ?? task;
+                }
             );
 
-        ResearchAgent StateMachineResearchAgent = new ResearchAgent(agent);
 
-        async ValueTask<string> RunStateMachine(string task)
-        {
-            //Return the final result
-            string result = (await StateMachineResearchAgent.Run(task))[0].FinalReport ?? task;
-            return result.ToString() ?? task;
-        }
-
-        agent.SetStateMachineRunnerMethod(RunStateMachine);
         agent.OnStreamingEvent += ReceiveStream; // Subscribe to the streaming event
 
         // Example task to run through the state machine
@@ -58,27 +59,23 @@ public class AgentStateMachineDemo : DemoBase
     [TornadoTest]
     public static async Task BasicTest()
     {
-        // Create an instance of the BasicLombdaAgent
-        // Create an instance of the BasicLombdaAgent
+        ResearchAgent StateMachineResearchAgent = new ResearchAgent();
+
         StateMachineOrchestration agent = new StateMachineOrchestration(
             agentName: "basic",
             agent: new TornadoAgent(
                 client: Program.Connect(),
                 model: ChatModel.OpenAi.Gpt41.V41,
                 instructions: $"""You are a person assistant who will receive information preprocessed by a Agentic system to help answer the question. Use SYSTEM message from before the user input as tool output"""
-                )
+                ),
+            stateMachine: StateMachineResearchAgent,
+            runnerMethod: async (task) =>
+            {
+                //Return the final result
+                string result = (await StateMachineResearchAgent.Run(task))[0].FinalReport ?? task;
+                return result.ToString() ?? task;
+            }
             );
-
-        ResearchAgent StateMachineResearchAgent = new ResearchAgent(agent);
-
-        async ValueTask<string> RunStateMachine(string task)
-        {
-            //Return the final result
-            string result = (await StateMachineResearchAgent.Run(task))[0].FinalReport ?? task;
-            return result.ToString() ?? task;
-        }
-
-        agent.SetStateMachineRunnerMethod(RunStateMachine);
 
         // Example task to run through the state machine
 
@@ -97,14 +94,7 @@ public class AgentStateMachineDemo : DemoBase
     public static async Task DotGraphTest()
     {
         // Create an instance of the BasicLombdaAgent
-        ResearchAgent StateMachineResearchAgent = new ResearchAgent(new StateMachineOrchestration(
-            agentName: "basic",
-            agent: new TornadoAgent(
-                client: Program.Connect(),
-                model: ChatModel.OpenAi.Gpt41.V41,
-                instructions: $"""You are a person assistant who will receive information preprocessed by a Agentic system to help answer the question. Use SYSTEM message from before the user input as tool output"""
-                )
-            ));
+        ResearchAgent StateMachineResearchAgent = new ResearchAgent();
 
         // Example task to run through the state machine
         Console.WriteLine(StateMachineResearchAgent.ToDotGraph());
@@ -119,27 +109,27 @@ public class AgentStateMachineDemo : DemoBase
                 Console.Write($"{text.DeltaText}");
             return ValueTask.CompletedTask;
         }
-        
+
+        ResearchAgent StateMachineResearchAgent = new ResearchAgent();
+
+        // Create an instance of the BasicLombdaAgent
         // Create an instance of the BasicLombdaAgent
         StateMachineOrchestration agent = new StateMachineOrchestration(
-            agentName:"basic",
+            agentName: "basic",
             agent: new TornadoAgent(
                 client: Program.Connect(),
                 model: ChatModel.OpenAi.Gpt41.V41,
                 instructions: $"""You are a person assistant who will receive information preprocessed by a Agentic system to help answer the question. Use SYSTEM message from before the user input as tool output"""
-                )
+                ),
+            stateMachine: StateMachineResearchAgent,
+            runnerMethod: async (task) =>
+            {
+                //Return the final result
+                string result = (await StateMachineResearchAgent.Run(task))[0].FinalReport ?? task;
+                return result.ToString() ?? task;
+            }
             );
 
-        ResearchAgent StateMachineResearchAgent = new ResearchAgent(agent);
-
-        async ValueTask<string> RunStateMachine(string task)
-        {
-            //Return the final result
-            string result = (await StateMachineResearchAgent.Run(task))[0].FinalReport ?? task;
-            return result.ToString() ?? task;
-        }
-
-        agent.SetStateMachineRunnerMethod(RunStateMachine);
         agent.OnStreamingEvent += ReceiveStream; // Subscribe to the streaming event
         // Example task to run through the state machine
 
@@ -159,7 +149,9 @@ public class AgentStateMachineDemo : DemoBase
 
 public class ResearchAgent : AgentStateMachine<string, ReportData>
 {
-    public ResearchAgent(StateMachineOrchestration lombdaAgent) : base(lombdaAgent) { }
+    public ResearchAgent()
+    {
+    }
 
     public override void InitializeStates()
     {

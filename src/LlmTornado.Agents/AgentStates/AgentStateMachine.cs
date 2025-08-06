@@ -6,70 +6,15 @@ namespace LlmTornado.Agents.AgentStates;
 
 public interface IAgentStateMachine
 {
-    /// <summary>
-    /// Gets or sets the <see cref="StateMachineOrchestration"/> responsible for controlling the system's operations.
-    /// </summary>
-    public StateMachineOrchestration Orchestractor { get; set; }
-    /// <summary>
-    /// Collection of <see cref="ModelItem"/> shared across the agent's state machine.
-    /// </summary>
-    public List<ChatMessage> SharedModelItems { get; set; }
+
 }
 
 public abstract class AgentStateMachine<TInput, TOutput> : StateMachine<TInput, TOutput>, IAgentStateMachine
 {
-    public StateMachineOrchestration Orchestractor { get; set; }
-    public List<ChatMessage> SharedModelItems { get; set; } = [];
+    public AgentStateMachine() {
 
-    public AgentStateMachine(StateMachineOrchestration orchestrator) {
-
-        Orchestractor = orchestrator;
         InitializeStates();
-        OnBegin += AddToControl; //Add active state machine to the control agent when it begins execution
-        //Add OnFinish and CancellationTriggered events to remove from control
-        FinishedTriggered += RemoveFromControl; // Remove active state machine from the control agent when it finishes execution
-        CancellationTriggered += RemoveFromControl; // Remove active state machine from the control agent when cancellation is triggered
         CancellationTriggered += CancelTriggered; // Cancel all active states when cancellation is triggered
-
-        //Add new States Event Handlers for Verbose and Streaming Callbacks from State
-        OnStateEntered += (state) =>
-        {
-            if(state.State is IAgentState agentState)
-            {
-                agentState.SubscribeVerboseChannel(Orchestractor.StateMachineVerboseBus);
-                agentState.SubscribeStreamingChannel(Orchestractor.StateMachineStreamingBus);
-            }
-        };
-
-        //Remove Verbose and Streaming Callbacks from State when exited
-        OnStateExited += (state) =>
-        {
-            if (state is IAgentState agentState)
-            {
-                agentState.UnsubscribeVerboseChannel(Orchestractor.StateMachineVerboseBus);
-                agentState.UnsubscribeStreamingChannel(Orchestractor.StateMachineStreamingBus);
-            }
-        };
-    }
-
-    /// <summary>
-    /// Adds the current state machine to the control agent for management and debug.
-    /// </summary>
-    /// <remarks>This method registers the state machine with the control agent, enabling it to manage
-    /// the state machine's lifecycle.</remarks>
-    private void AddToControl()
-    {
-        Orchestractor.AddStateMachine(this);
-    }
-
-    /// <summary>
-    /// Removes the current state machine from the control agent.
-    /// </summary>
-    /// <remarks>This method should be called when the state machine is no longer needed to ensure it
-    /// is properly deregistered from the control agent.</remarks>
-    private void RemoveFromControl()
-    {
-        Orchestractor.RemoveStateMachine(this);
     }
 
     /// <summary>
