@@ -188,10 +188,28 @@ public class ResponseRequest
     public ResponseTruncationStrategies? Truncation { get; set; }
     
     /// <summary>
+    /// Used by OpenAI to cache responses for similar requests to optimize your cache hit rates. Replaces the user field.
+    /// </summary>
+    [JsonProperty("prompt_cache_key")]
+    public string? PromptCacheKey { get; set; }
+    
+    /// <summary>
+    /// A stable identifier used to help detect users of your application that may be violating OpenAI's usage policies. The IDs should be a string that uniquely identifies each user. We recommend hashing their username or email address, in order to avoid sending us any identifying information.
+    /// </summary>
+    [JsonProperty("safety_identifier")]
+    public string? SafetyIdentifier { get; set; }
+    
+    /// <summary>
     /// A stable identifier for your end-users. Used to boost cache hit rates by better bucketing similar requests and to help OpenAI detect and prevent abuse.
     /// </summary>
     [JsonProperty("user")]
     public string? User { get; set; }
+    
+    /// <summary>
+    /// Constrains the verbosity of the model's response. Only supported by GPT-5. Lower values will result in more concise responses, while higher values will result in more verbose responses. Currently supported values are low, medium, and high.
+    /// </summary>
+    [JsonProperty("verbosity")]
+    public ChatRequestVerbosities? Verbosity { get; set; }
 
     /// <summary>
     ///	Serializes the chat request into the request body, based on the conventions used by the LLM provider.

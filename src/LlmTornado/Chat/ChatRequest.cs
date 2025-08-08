@@ -105,6 +105,9 @@ public class ChatRequest : IModelRequest, ISerializableRequest
 		ResponseRequestParameters = basedOn.ResponseRequestParameters;
 		UseResponseEndpoint = basedOn.UseResponseEndpoint;
 		ReasoningFormat = basedOn.ReasoningFormat;
+		Verbosity = basedOn.Verbosity;
+		SafetyIdentifier = basedOn.SafetyIdentifier;
+		PromptCacheKey = basedOn.PromptCacheKey;
 	}
 
 	/// <summary>
@@ -247,6 +250,18 @@ public class ChatRequest : IModelRequest, ISerializableRequest
 	/// </summary>
 	[JsonProperty("logprobs")]
 	public bool? Logprobs { get; set; }
+	
+	/// <summary>
+	/// Used by OpenAI to cache responses for similar requests to optimize your cache hit rates. Replaces the user field.
+	/// </summary>
+	[JsonProperty("prompt_cache_key")]
+	public string? PromptCacheKey { get; set; }
+	
+	/// <summary>
+	/// A stable identifier used to help detect users of your application that may be violating OpenAI's usage policies. The IDs should be a string that uniquely identifies each user. We recommend hashing their username or email address, in order to avoid sending us any identifying information. 
+	/// </summary>
+	[JsonProperty("safety_identifier")]
+	public string? SafetyIdentifier { get; set; }
 	
 	/// <summary>
 	/// An integer between 0 and 20 specifying the number of most likely tokens to return at each token position, each with an associated log probability. logprobs must be set to true if this parameter is used.

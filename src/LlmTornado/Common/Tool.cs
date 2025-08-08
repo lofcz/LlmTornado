@@ -853,7 +853,7 @@ public class ToolCustom
     /// Optional description of the custom tool, used to provide more context.
     /// </summary>
     [JsonProperty("description")]
-    public string Description { get; set; }
+    public string? Description { get; set; }
     
     /// <summary>
     /// The input format for the custom tool. Default is unconstrained text.
