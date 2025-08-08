@@ -400,7 +400,11 @@ public abstract class EndpointBase
             }
 
             ErrorHttpCallResult error = new ErrorHttpCallResult(result.StatusCode, resultAsString, null);
-            Exception e = new Exception($"Http call failed. Code: {(int)result.StatusCode}, Message: {resultAsString}.");
+#if MODERN
+            HttpRequestException e = new HttpRequestException(httpRequestError: HttpRequestError.Unknown, message: resultAsString, statusCode: result.StatusCode);
+#else
+            HttpRequestException e = new HttpRequestException($"{resultAsString} (status code: {result.StatusCode})");
+#endif
             result.Dispose();
             
             if (Api.HttpStrict)
