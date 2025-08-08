@@ -794,22 +794,49 @@ public class Conversation
 
             AppendMessage(newMsg);
 
-            if (newMsg.ToolCalls is { Count: > 0 } && !OutboundToolChoice.OutboundToolChoiceConverter.KnownFunctionNames.Contains(newMsg.ToolCalls[0].FunctionCall.Name))
+            if (newMsg.ToolCalls is { Count: > 0 } && !OutboundToolChoice.OutboundToolChoiceConverter.KnownFunctionNames.Contains(newMsg.ToolCalls[0].FunctionCall?.Name ?? string.Empty))
             {
-                List<FunctionCall>? calls = newMsg.ToolCalls?.Select(x => new FunctionCall
-                {
-                    Name = x.FunctionCall.Name,
-                    Arguments = x.FunctionCall.Arguments,
-                    ToolCall = x,
-                    Tool = RequestParameters.Tools?.FirstOrDefault(y => string.Equals(y.Function?.Name, x.FunctionCall.Name)),
-                    Result = x.FunctionCall.Result,
-                    LastInvocationResult = x.FunctionCall.LastInvocationResult
-                }).ToList();
+                List<FunctionCall> calls = [];
+                List<CustomToolCall> customCalls = [];
 
-                if (calls?.Count > 0)
+                foreach (ToolCall call in newMsg.ToolCalls)
                 {
-                    ResolvedToolsCall result = new ResolvedToolsCall();
+                    if (call.FunctionCall is not null)
+                    {
+                        calls.Add(new FunctionCall
+                        {
+                            Name = call.FunctionCall!.Name,
+                            Arguments = call.FunctionCall.Arguments,
+                            ToolCall = call,
+                            Tool = RequestParameters.Tools?.FirstOrDefault(y => string.Equals(y.Function?.Name, call.FunctionCall.Name)),
+                            Result = call.FunctionCall.Result,
+                            LastInvocationResult = call.FunctionCall.LastInvocationResult
+                        });
+                    }
+                    else if (call.CustomCall is not null)
+                    {
+                        customCalls.Add(new CustomToolCall
+                        {
+                            Name = call.CustomCall.Name,
+                            Input = call.CustomCall.Input,
+                            ToolCall = call
+                        });
+                    }
+                }
 
+                ResolvedToolsCall result = new ResolvedToolsCall();
+
+                if (customCalls.Count > 0)
+                {
+                    blocks.AddRange(customCalls.Select(x => new ChatRichResponseBlock
+                    {
+                        Type = ChatRichResponseBlockTypes.CustomTool, 
+                        CustomToolCall = x
+                    }));
+                }
+
+                if (calls.Count > 0)
+                {
                     blocks.AddRange(calls.Select(x => new ChatRichResponseBlock
                     {
                         Type = ChatRichResponseBlockTypes.Function, 

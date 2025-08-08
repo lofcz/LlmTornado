@@ -255,6 +255,12 @@ public class ChatRequest : IModelRequest, ISerializableRequest
 	public int? TopLogprobs { get; set; }
 	
 	/// <summary>
+	/// Constrains the verbosity of the model's response. Only supported by GPT-5. Lower values will result in more concise responses, while higher values will result in more verbose responses. Currently supported values are low, medium, and high.
+	/// </summary>
+	[JsonProperty("verbosity")]
+	public ChatRequestVerbosities? Verbosity { get; set; }
+	
+	/// <summary>
 	/// This tool searches the web for relevant results to use in a response. Learn more about the web search tool.
 	/// </summary>
 	[JsonProperty("web_search_options")]

@@ -39,6 +39,51 @@ public partial class ChatDemo : DemoBase
     }
 
     [TornadoTest]
+    public static async Task CustomToolsGrammar()
+    {
+        string grammar = """
+                         start: expr
+                         
+                         expr: add_expr
+                         add_expr: mul_expr (SP* (ADD | SUB) SP* mul_expr)*
+                         mul_expr: unary_expr (SP* (MUL | DIV) SP* unary_expr)*
+                         unary_expr: (ADD | SUB) SP* unary_expr
+                                   | factor
+                         factor: INT
+                               | LPAR SP* expr SP* RPAR
+                         
+                         SP: " "
+                         ADD: "+"
+                         SUB: "-"
+                         MUL: "*"
+                         DIV: "/"
+                         LPAR: "("
+                         RPAR: ")"
+                         INT: /[0-9]+/
+                         """;
+
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = "gpt-5",
+            Tools = [
+                new Tool(new ToolCustom(ToolCustomFormat.Lark(grammar), "math_exp", "Creates valid mathematical expressions"))
+            ],
+            ToolChoice = OutboundToolChoice.Auto
+        });
+
+        chat.AppendUserInput("Use the math_exp tool to transform the following query: negative one multiplied by the result of forty-five divided by three minus eight divided by two, all divided by two");
+
+        TornadoRequestContent serialized = chat.Serialize(new ChatRequestSerializeOptions
+        {
+            Pretty = true
+        });
+
+        Console.WriteLine(serialized);
+        ChatRichResponse response = await chat.GetResponseRich();
+        Console.WriteLine(response);
+    }
+
+    [TornadoTest]
     public static async Task VllmKwargs()
     {
         Conversation chat = new TornadoApi(new Uri("http://localhost:8000")).Chat.CreateConversation(new ChatRequest

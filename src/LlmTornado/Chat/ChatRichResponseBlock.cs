@@ -42,7 +42,12 @@ public enum ChatRichResponseBlockTypes
     /// <summary>
     /// Reasoning block.
     /// </summary>
-    Reasoning
+    Reasoning,
+    
+    /// <summary>
+    /// Custom tool call, optionally paired with the response if the custom tool already resolved.
+    /// </summary>
+    CustomTool,
 }
 
 /// <summary>
@@ -136,6 +141,13 @@ public class ChatRichResponse
                     sb.AppendLine(x.FunctionCall?.GetArguments().ToJson(true));
                     break;
                 }
+                case ChatRichResponseBlockTypes.CustomTool:
+                {
+                    sb.AppendLine($"name: {x.CustomToolCall?.Name}");
+                    sb.AppendLine($"input:");
+                    sb.AppendLine(x.CustomToolCall?.Input);
+                    break;
+                }
                 case ChatRichResponseBlockTypes.Reasoning or ChatRichResponseBlockTypes.Message:
                 {
                     sb.AppendLine(x.Type is ChatRichResponseBlockTypes.Reasoning ? x.Reasoning?.Content : x.Message);
@@ -194,6 +206,11 @@ public class ChatRichResponseBlock
     /// If the <see cref="Type"/> is <see cref="ChatRichResponseBlockTypes.Function"/>, this is the function the tool requested calling.
     /// </summary>
     public FunctionCall? FunctionCall { get; set; }
+    
+    /// <summary>
+    /// If the <see cref="Type"/> is <see cref="ChatRichResponseBlockTypes.CustomTool"/>, this is the custom tool the tool requested calling.
+    /// </summary>
+    public CustomToolCall? CustomToolCall { get; set; }
     
     /// <summary>
     /// If the <see cref="Type"/> is <see cref="ChatRichResponseBlockTypes.Audio"/>, this is the audio.

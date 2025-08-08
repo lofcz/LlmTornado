@@ -23,17 +23,23 @@ public class ToolCall
     public string? Id { get; set; }
 
     /// <summary>
-    ///     The type of the tool. Currently, this should be always "function".
+    ///     The type of the tool. Currently, this should be always "function" or "custom".
     /// </summary>
     [JsonProperty("type")]
     public string Type { get; set; } = "function";
 
     /// <summary>
-    ///     The underlying function call.
+    ///     The underlying function call, if any.
     /// </summary>
     [JsonProperty("function")]
-    public FunctionCall FunctionCall { get; set; } = null!;
+    public FunctionCall? FunctionCall { get; set; }
 
+    /// <summary>
+    ///     The underlying custom tool call, if any.
+    /// </summary>
+    [JsonProperty("custom")]
+    public CustomToolCall? CustomCall { get; set; }
+    
     /// <summary>
     ///     Gets the json encoded function call, this is cached to avoid serializing the function over and over.
     /// </summary>
