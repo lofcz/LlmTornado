@@ -322,7 +322,7 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
                             {
                                 toolsMessage.ToolCallsDict.TryAdd(toolCall.Index?.ToString() ?? toolCall.Id ?? string.Empty, new ToolCallInboundAccumulator
                                 {
-                                    ArgumentsBuilder = new StringBuilder(toolCall.FunctionCall.Arguments),
+                                    ArgumentsBuilder = new StringBuilder(toolCall.FunctionCall is not null ? toolCall.FunctionCall.Arguments : toolCall.CustomCall?.Input),
                                     ToolCall = toolCall
                                 });
                             }   
@@ -383,14 +383,14 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
                                 // we can either encounter a new function or we get a new arguments token
                                 if (toolsMessage.ToolCallsDict.TryGetValue(key, out ToolCallInboundAccumulator? accu))
                                 {
-                                    accu.ArgumentsBuilder.Append(toolCall.FunctionCall.Arguments);
+                                    accu.ArgumentsBuilder.Append(toolCall.FunctionCall is not null ? toolCall.FunctionCall.Arguments : toolCall.CustomCall?.Input);
                                 }
                                 else
                                 {
                                     toolsMessage.ToolCalls.Add(toolCall);
                                     toolsMessage.ToolCallsDict.Add(key, new ToolCallInboundAccumulator
                                     {
-                                        ArgumentsBuilder = new StringBuilder(toolCall.FunctionCall.Arguments),
+                                        ArgumentsBuilder = new StringBuilder(toolCall.FunctionCall is not null ? toolCall.FunctionCall.Arguments : toolCall.CustomCall?.Input),
                                         ToolCall = toolCall
                                     });
                                 }
@@ -408,7 +408,14 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
         {
             foreach (KeyValuePair<string, ToolCallInboundAccumulator> tool in toolsMessage.ToolCallsDict)
             {
-                tool.Value.ToolCall.FunctionCall.Arguments = tool.Value.ArgumentsBuilder.ToString();
+                if (tool.Value.ToolCall.FunctionCall is not null)
+                {
+                    tool.Value.ToolCall.FunctionCall.Arguments = tool.Value.ArgumentsBuilder.ToString();   
+                }
+                else if (tool.Value.ToolCall.CustomCall is not null)
+                {
+                    tool.Value.ToolCall.CustomCall.Input = tool.Value.ArgumentsBuilder.ToString();   
+                }
             }
 
             if (toolsAccumulator.Choices is not null)

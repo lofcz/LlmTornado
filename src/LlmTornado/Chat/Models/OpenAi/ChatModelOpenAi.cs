@@ -107,7 +107,8 @@ public class ChatModelOpenAi : BaseVendorModelProvider
         //..ReasoningModelsAll,
         ..WebSearchCompatibleModelsAll,
         ..ChatModelOpenAiO3.ModelsAll,
-        ..ChatModelOpenAiO4.ModelsAll
+        ..ChatModelOpenAiO4.ModelsAll,
+        ..ChatModelOpenAiGpt5.ModelsAll
     ];
     
     static ChatModelOpenAi()

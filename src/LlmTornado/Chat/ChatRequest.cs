@@ -851,16 +851,32 @@ public class ChatRequest : IModelRequest, ISerializableRequest
 					                writer.WritePropertyName("type");
 					                writer.WriteValue(call.Type);
 
-					                writer.WritePropertyName("function");
-					                writer.WriteStartObject();
+					                if (call.FunctionCall is not null)
+					                {
+						                writer.WritePropertyName("function");
+						                writer.WriteStartObject();
+					       
+						                writer.WritePropertyName("name");
+						                writer.WriteValue(call.FunctionCall.Name);   
 
-					                writer.WritePropertyName("name");
-					                writer.WriteValue(call.FunctionCall.Name);
+						                writer.WritePropertyName("arguments");
+						                writer.WriteValue(call.FunctionCall.Arguments);   
+						                
+						                writer.WriteEndObject();
+					                }
+					                else if (call.CustomCall is not null)
+					                {
+						                writer.WritePropertyName("custom");
+						                writer.WriteStartObject();
+					       
+						                writer.WritePropertyName("name");
+						                writer.WriteValue(call.CustomCall.Name);   
 
-					                writer.WritePropertyName("arguments");
-					                writer.WriteValue(call.FunctionCall.Arguments);
-
-					                writer.WriteEndObject();
+						                writer.WritePropertyName("input");
+						                writer.WriteValue(call.CustomCall.Input);   
+						                
+						                writer.WriteEndObject();
+					                }
 
 					                writer.WriteEndObject();
 				                }

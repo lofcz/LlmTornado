@@ -34,6 +34,21 @@ public class CustomToolCall
     /// </summary>
     [JsonIgnore]
     public ToolCall? ToolCall { get; set; }
+    
+    /// <summary>
+    ///     Result of the call.
+    /// </summary>
+    [JsonIgnore]
+    public CustomToolCallResult? Result { get; set; }
+    
+    /// <summary>
+    /// Resolves the call.
+    /// </summary>
+    public CustomToolCall Resolve(object? result)
+    {
+        Result = new CustomToolCallResult(this, result);
+        return this;
+    }
 }
 
 /// <summary>

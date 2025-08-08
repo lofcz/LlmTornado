@@ -1092,6 +1092,12 @@ public class ToolMetadata
     }
 }
 
+internal class ParsedToolCalls
+{
+    public List<FunctionCall> FunctionCalls { get; set; }
+    public List<CustomToolCall> CustomToolCalls { get; set; }
+}
+
 public class ToolParamDefinition
 {
     public string Name { get; set; }

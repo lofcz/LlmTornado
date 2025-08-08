@@ -79,8 +79,71 @@ public partial class ChatDemo : DemoBase
         });
 
         Console.WriteLine(serialized);
-        ChatRichResponse response = await chat.GetResponseRich();
+        ChatRichResponse response = await chat.GetResponseRich(ToolCallsHandler.ContinueConversation);
         Console.WriteLine(response);
+    }
+    
+    
+    [TornadoTest]
+    public static async Task CustomToolsGrammarStreaming()
+    {
+        // note: gpt-5 doesn't respect the lark cfg deterministically! very sad
+        string grammar = """
+                         start: "weather?want_in:" CITY "+precision:" PREC
+                         
+                         CITY: /[^\s\+\:]+/
+                         PREC: "high" | "low"
+                         """;
+        
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = "gpt-5-mini",
+            Tools = [
+                new Tool(new ToolCustom(ToolCustomFormat.Lark(grammar), "get_weather", "Gets weather for a given city & precision"))
+            ],
+            ToolChoice = OutboundToolChoice.Auto,
+            MaxTokens = 300,
+            ReasoningEffort = ChatReasoningEfforts.Minimal
+        });
+        
+        chat.AppendUserInput("What is the weather like in Prague with high precision?");
+
+        bool anyCall = false;
+        
+        Console.WriteLine(chat.Serialize(true));
+        await StreamNext();
+
+        if (anyCall)
+        {
+            Console.WriteLine(chat.Serialize(true));
+            
+            await StreamNext();
+        }
+        
+        async Task StreamNext()
+        {
+            await chat.StreamResponseRich(new ChatStreamEventHandler
+            {
+                CustomToolCallHandler = (calls) =>
+                {
+                    foreach (CustomToolCall call in calls)
+                    {
+                        call.Resolve(new
+                        {
+                            result = "rainy, foggy"
+                        });
+                    }
+
+                    anyCall = true;
+                    return ValueTask.CompletedTask;
+                },
+                MessageTokenHandler = (token) =>
+                {
+                    Console.Write(token);
+                    return ValueTask.CompletedTask;
+                }
+            });
+        }
     }
 
     [TornadoTest]

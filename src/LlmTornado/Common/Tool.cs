@@ -35,6 +35,49 @@ public enum FunctionResultSetContentModes
     Serialize
 }
 
+public class CustomToolCallResult
+{
+    public CustomToolCallResult(CustomToolCall call, object? result)
+    {
+        Name = call.Name;
+        Content = SetContent(result);
+    }
+    
+    /// <summary>
+    ///     Name of the function used; passthrough.
+    /// </summary>
+    [JsonProperty("name", Required = Required.Always)]
+    public string Name { get; set; }
+
+    /// <summary>
+    /// Function output. This string contains JSON-encoded data unless received from an MCP tool.
+    /// </summary>
+    [JsonProperty("content", Required = Required.Always)]
+    public string Content { get; set; }
+    
+    /// <summary>
+    ///     A flag which, if implemented by the vendor, provides the model with information whether the tool invocation succeded
+    ///     or not.
+    /// </summary>
+    [JsonIgnore]
+    public bool? InvocationSucceeded { get; set; }
+    
+    [JsonIgnore]
+    public Type? ContentJsonType { get; set; }
+    
+    [JsonIgnore]
+    internal object? RawContent { get; set; }
+    
+    private string SetContent(object? content, FunctionResultSetContentModes mode = FunctionResultSetContentModes.Serialize)
+    {
+        ContentJsonType = content?.GetType();
+        RawContent = content;
+        return mode is FunctionResultSetContentModes.Passthrough ? 
+            content as string ?? content?.ToString() ?? "{}" : 
+            content is null ? "{}" : JsonConvert.SerializeObject(content);
+    }
+}
+
 /// <summary>
 ///     Represents a function call result
 /// </summary>
