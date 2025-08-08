@@ -187,6 +187,9 @@ public class ChatMessage
     internal FunctionCall? FunctionCall { get; set; }
     
     [JsonIgnore]
+    internal CustomToolCall? CustomToolCall { get; set; }
+    
+    [JsonIgnore]
     internal ChatRequest? Request { get; set; }
     
     /// <summary>

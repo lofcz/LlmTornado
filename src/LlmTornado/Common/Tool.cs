@@ -14,7 +14,9 @@ using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Infra;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
+using System.Runtime.Serialization;
 using JsonSerializer = Newtonsoft.Json.JsonSerializer;
 
 namespace LlmTornado.Common;
@@ -33,6 +35,49 @@ public enum FunctionResultSetContentModes
     /// Serializes the input using JSON serializer, unless the input is already a string.
     /// </summary>
     Serialize
+}
+
+public class CustomToolCallResult
+{
+    public CustomToolCallResult(CustomToolCall call, object? result)
+    {
+        Name = call.Name;
+        Content = SetContent(result);
+    }
+    
+    /// <summary>
+    ///     Name of the function used; passthrough.
+    /// </summary>
+    [JsonProperty("name", Required = Required.Always)]
+    public string Name { get; set; }
+
+    /// <summary>
+    /// Function output. This string contains JSON-encoded data unless received from an MCP tool.
+    /// </summary>
+    [JsonProperty("content", Required = Required.Always)]
+    public string Content { get; set; }
+    
+    /// <summary>
+    ///     A flag which, if implemented by the vendor, provides the model with information whether the tool invocation succeded
+    ///     or not.
+    /// </summary>
+    [JsonIgnore]
+    public bool? InvocationSucceeded { get; set; }
+    
+    [JsonIgnore]
+    public Type? ContentJsonType { get; set; }
+    
+    [JsonIgnore]
+    internal object? RawContent { get; set; }
+    
+    private string SetContent(object? content, FunctionResultSetContentModes mode = FunctionResultSetContentModes.Serialize)
+    {
+        ContentJsonType = content?.GetType();
+        RawContent = content;
+        return mode is FunctionResultSetContentModes.Passthrough ? 
+            content as string ?? content?.ToString() ?? "{}" : 
+            content is null ? "{}" : JsonConvert.SerializeObject(content);
+    }
 }
 
 /// <summary>
@@ -675,6 +720,15 @@ public class Tool
     }
 
     /// <summary>
+    /// Custom tool.
+    /// </summary>
+    public Tool(ToolCustom custom)
+    {
+        Custom = custom;
+        Type = "custom";
+    }
+    
+    /// <summary>
     ///     Creates a new tool of a given type.
     /// </summary>
     /// <param name="type"></param>
@@ -741,17 +795,23 @@ public class Tool
     }
 
     /// <summary>
-    ///     Type of the tool, should be always "function" for chat
+    ///     Type of the tool, should be always "function", or "custom" for chat
     /// </summary>
     [JsonProperty("type", Required = Required.Default)]
     public string Type { get; set; } = "function";
-
+    
     /// <summary>
-    ///     Function description
+    ///     Function.
     /// </summary>
-    [JsonProperty("function", Required = Required.Default)]
+    [JsonProperty("function")]
     public ToolFunction? Function { get; set; }
 
+    /// <summary>
+    ///     Custom tool.
+    /// </summary>
+    [JsonProperty("custom")]
+    public ToolCustom? Custom { get; set; }
+    
     /// <summary>
     ///     Whether the function should run in structured response mode or not.
     /// </summary>
@@ -784,6 +844,166 @@ public class Tool
     {
         return name.Replace(" ", "_").Trim();
     }
+}
+
+/// <summary>
+/// A custom tool that processes input using a specified format.
+/// </summary>
+public class ToolCustom
+{
+    /// <summary>
+    /// The name of the custom tool, used to identify it in tool calls.
+    /// </summary>
+    [JsonProperty("name")]
+    public string Name { get; set; }
+    
+    /// <summary>
+    /// Optional description of the custom tool, used to provide more context.
+    /// </summary>
+    [JsonProperty("description")]
+    public string? Description { get; set; }
+    
+    /// <summary>
+    /// The input format for the custom tool. Default is unconstrained text.
+    /// </summary>
+    [JsonProperty("format")]
+    public ToolCustomFormat Format { get; set; }
+
+    /// <summary>
+    /// Creates a custom tool from format and name.
+    /// </summary>
+    public ToolCustom(ToolCustomFormat format, string name)
+    {
+        Name = name;
+        Format = format;
+    }
+    
+    /// <summary>
+    /// Creates a custom tool from format, name, and description.
+    /// </summary>
+    public ToolCustom(ToolCustomFormat format, string name, string description)
+    {
+        Name = name;
+        Format = format;
+        Description = description;
+    }
+    
+    /// <summary>
+    /// An empty custom tool.
+    /// </summary>
+    public ToolCustom()
+    {
+
+    }
+}
+
+/// <summary>
+/// The input format for the custom tool. Default is unconstrained text.
+/// </summary>
+public class ToolCustomFormat
+{
+    /// <summary>
+    /// The input format for the custom tool. Default is unconstrained text.
+    /// </summary>
+    public const string TextType = "text";
+    
+    /// <summary>
+    ///  The input format for the custom tool. Default is unconstrained text.
+    /// </summary>
+    public const string GrammarType = "grammar";
+
+    /// <summary>
+    /// Type of the custom tool format. Either "text" or "grammar".
+    /// </summary>
+    [JsonProperty("type", Required = Required.Always)]
+    public string Type { get; set; } = TextType;
+
+    /// <summary>
+    /// Grammar format details. Required when <see cref="Type"/> is "grammar".
+    /// </summary>
+    [JsonProperty("grammar")]
+    public ToolCustomGrammar? CustomGrammar { get; set; }
+
+    /// <summary>
+    /// Create an unconstrained text format.
+    /// </summary>
+    public static ToolCustomFormat Text()
+    {
+        return new ToolCustomFormat
+        {
+            Type = TextType
+        };
+    }
+
+    /// <summary>
+    /// Create a grammar format.
+    /// </summary>
+    /// <param name="definition">The grammar definition.</param>
+    /// <param name="syntax">The syntax for the grammar definition.</param>
+    public static ToolCustomFormat Grammar(string definition, ToolCustomGrammarSyntaxes syntax)
+    {
+        return new ToolCustomFormat
+        {
+            Type = GrammarType,
+            CustomGrammar = new ToolCustomGrammar
+            {
+                Definition = definition,
+                Syntax = syntax
+            }
+        };
+    }
+
+    /// <summary>
+    /// Create a grammar format using the default syntax (lark).
+    /// </summary>
+    public static ToolCustomFormat Grammar(string definition)
+        => Grammar(definition, ToolCustomGrammarSyntaxes.Lark);
+
+    /// <summary>
+    /// Create a grammar format using regex syntax.
+    /// </summary>
+    public static ToolCustomFormat Regex(string definition)
+        => Grammar(definition, ToolCustomGrammarSyntaxes.Regex);
+
+    /// <summary>
+    /// Create a grammar format using lark syntax.
+    /// </summary>
+    public static ToolCustomFormat Lark(string definition)
+        => Grammar(definition, ToolCustomGrammarSyntaxes.Lark);
+}
+
+public class ToolCustomGrammar
+{
+    /// <summary>
+    /// Your chosen grammar.
+    /// </summary>
+    [JsonProperty("definition", Required = Required.Always)]
+    public string Definition { get; set; }
+
+    /// <summary>
+    /// The syntax of the grammar definition. One of "lark" or "regex".
+    /// </summary>
+    [JsonProperty("syntax", Required = Required.Always)]
+    public ToolCustomGrammarSyntaxes Syntax { get; set; }
+}
+
+/// <summary>
+/// Supported syntaxes for custom tool grammars.
+/// </summary>
+[JsonConverter(typeof(StringEnumConverter))]
+public enum ToolCustomGrammarSyntaxes
+{
+    /// <summary>
+    /// Lark grammar syntax.
+    /// </summary>
+    [EnumMember(Value = "lark")] 
+    Lark,
+
+    /// <summary>
+    /// Regular expression syntax.
+    /// </summary>
+    [EnumMember(Value = "regex")] 
+    Regex
 }
 
 /// <summary>

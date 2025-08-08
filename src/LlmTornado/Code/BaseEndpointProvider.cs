@@ -24,6 +24,10 @@ namespace LlmTornado.Code;
 public abstract class BaseEndpointProvider : IEndpointProviderExtended
 {
     public TornadoApi? Api { get; set; }
+    
+    /// <summary>
+    /// Associated provider.
+    /// </summary>
     public LLmProviders Provider { get; set; } = LLmProviders.Unknown;
     public JsonSchemaCapabilities JsonSchemaCapabilities { get; set; }
     

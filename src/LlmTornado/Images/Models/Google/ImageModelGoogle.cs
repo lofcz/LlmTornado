@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using LlmTornado.Code;
 using LlmTornado.Code.Models;
 
 namespace LlmTornado.Images.Models.Google;
@@ -8,6 +9,9 @@ namespace LlmTornado.Images.Models.Google;
 /// </summary>
 public class ImageModelGoogle : BaseVendorModelProvider
 {
+    /// <inheritdoc cref="BaseVendorModelProvider.Provider"/>
+    public override LLmProviders Provider => LLmProviders.Google;
+    
     /// <summary>
     /// Imagen models.
     /// </summary>

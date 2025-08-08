@@ -14,7 +14,7 @@ using LlmTornado.Code.Vendor;
 using LlmTornado.Common;
 using LlmTornado.Contrib;
 using LlmTornado.Files;
-
+using LlmTornado.Responses;
 using Newtonsoft.Json.Linq;
 
 namespace LlmTornado.Demo;
@@ -36,6 +36,159 @@ public partial class ChatDemo : DemoBase
 
         Console.WriteLine("OpenAI:");
         Console.WriteLine(str);
+    }
+
+    [TornadoTest]
+    public static async Task CustomToolsGrammar()
+    {
+        string grammar = """
+                         start: expr
+                         
+                         expr: add_expr
+                         add_expr: mul_expr (SP* (ADD | SUB) SP* mul_expr)*
+                         mul_expr: unary_expr (SP* (MUL | DIV) SP* unary_expr)*
+                         unary_expr: (ADD | SUB) SP* unary_expr
+                                   | factor
+                         factor: INT
+                               | LPAR SP* expr SP* RPAR
+                         
+                         SP: " "
+                         ADD: "+"
+                         SUB: "-"
+                         MUL: "*"
+                         DIV: "/"
+                         LPAR: "("
+                         RPAR: ")"
+                         INT: /[0-9]+/
+                         """;
+
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = "gpt-5",
+            Tools = [
+                new Tool(new ToolCustom(ToolCustomFormat.Lark(grammar), "math_exp", "Creates valid mathematical expressions"))
+            ],
+            ToolChoice = OutboundToolChoice.Auto
+        });
+
+        chat.AppendUserInput("Use the math_exp tool to transform the following query: negative one multiplied by the result of forty-five divided by three minus eight divided by two, all divided by two");
+
+        TornadoRequestContent serialized = chat.Serialize(new ChatRequestSerializeOptions
+        {
+            Pretty = true
+        });
+
+        Console.WriteLine(serialized);
+        ChatRichResponse response = await chat.GetResponseRich(ToolCallsHandler.ContinueConversation);
+        Console.WriteLine(response);
+    }
+    
+    [TornadoTest]
+    public static async Task CustomToolsGrammarResponses()
+    {
+        string grammar = """
+                         start: expr
+
+                         expr: add_expr
+                         add_expr: mul_expr (SP* (ADD | SUB) SP* mul_expr)*
+                         mul_expr: unary_expr (SP* (MUL | DIV) SP* unary_expr)*
+                         unary_expr: (ADD | SUB) SP* unary_expr
+                                   | factor
+                         factor: INT
+                               | LPAR SP* expr SP* RPAR
+
+                         SP: " "
+                         ADD: "+"
+                         SUB: "-"
+                         MUL: "*"
+                         DIV: "/"
+                         LPAR: "("
+                         RPAR: ")"
+                         INT: /[0-9]+/
+                         """;
+
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = "gpt-5",
+            Tools = [
+                new Tool(new ToolCustom(ToolCustomFormat.Lark(grammar), "math_exp", "Creates valid mathematical expressions"))
+            ],
+            ToolChoice = OutboundToolChoice.Auto,
+            ResponseRequestParameters = new ResponseRequest()
+        });
+
+        chat.AppendUserInput("Use the math_exp tool to transform the following query: negative one multiplied by the result of forty-five divided by three minus eight divided by two, all divided by two");
+
+        TornadoRequestContent serialized = chat.Serialize(new ChatRequestSerializeOptions
+        {
+            Pretty = true
+        });
+
+        Console.WriteLine(serialized);
+        ChatRichResponse response = await chat.GetResponseRich(ToolCallsHandler.ContinueConversation);
+        Console.WriteLine(response);
+    }
+    
+    [TornadoTest]
+    public static async Task CustomToolsGrammarStreaming()
+    {
+        // note: gpt-5 doesn't respect the lark cfg deterministically! very sad
+        string grammar = """
+                         start: "weather?want_in:" CITY "+precision:" PREC
+                         
+                         CITY: /[^\s\+\:]+/
+                         PREC: "high" | "low"
+                         """;
+        
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = "gpt-5-mini",
+            Tools = [
+                new Tool(new ToolCustom(ToolCustomFormat.Lark(grammar), "get_weather", "Orders some food for the user")) // purposefully misleading description
+            ],
+            ToolChoice = OutboundToolChoice.Auto,
+            MaxTokens = 300,
+            ReasoningEffort = ChatReasoningEfforts.Minimal
+        });
+        
+        chat.AppendUserInput("What is the weather like in Prague with high precision?");
+
+        bool anyCall = false;
+        
+        Console.WriteLine(chat.Serialize(true));
+        await StreamNext();
+
+        if (anyCall)
+        {
+            Console.WriteLine(chat.Serialize(true));
+            
+            await StreamNext();
+        }
+        
+        async Task StreamNext()
+        {
+            await chat.StreamResponseRich(new ChatStreamEventHandler
+            {
+                CustomToolCallHandler = (calls) =>
+                {
+                    foreach (CustomToolCall call in calls)
+                    {
+                        call.Resolve(new
+                        {
+                            result = "rainy, foggy"
+                        });
+                    }
+
+                    anyCall = true;
+                    return ValueTask.CompletedTask;
+                },
+                MessageTokenHandler = (token) =>
+                {
+                    Console.Write(token);
+                    return ValueTask.CompletedTask;
+                }
+            });
+        }
     }
 
     [TornadoTest]
@@ -892,7 +1045,7 @@ public partial class ChatDemo : DemoBase
     {
         Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.Google.GeminiPreview.Gemini25FlashPreview0417,
+            Model = ChatModel.Google.Gemini.Gemini25Flash,
             MaxTokens = 64
         });
         
@@ -1005,6 +1158,18 @@ public partial class ChatDemo : DemoBase
     public static async Task Gemini25Pro()
     {
         await BasicChat(ChatModel.Google.GeminiPreview.Gemini25ProPreview0325);
+    }
+    
+    [TornadoTest]
+    public static async Task GptOss()
+    {
+        await BasicChat(ChatModel.Groq.OpenAi.GptOss120B);
+    }
+    
+    [TornadoTest]
+    public static async Task CohereAVision()
+    {
+        await BasicChat(ChatModel.Cohere.Command.AVision2507);
     }
     
     private static async Task BasicChat(ChatModel model)

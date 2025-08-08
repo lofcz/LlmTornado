@@ -10,6 +10,9 @@ namespace LlmTornado.Embedding.Models.Voyage;
 /// </summary>
 public class EmbeddingModelVoyageGen2 : BaseVendorModelProvider
 {
+    /// <inheritdoc cref="BaseVendorModelProvider.Provider"/>
+    public override LLmProviders Provider => LLmProviders.Voyage;
+    
     /// <summary>
     /// Voyage AI’s most powerful generalist embedding model.
     /// </summary>

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using LlmTornado.Code;
 using LlmTornado.Code.Models;
 
 namespace LlmTornado.Rerank.Models.Voyage;
@@ -9,10 +10,13 @@ namespace LlmTornado.Rerank.Models.Voyage;
 /// </summary>
 public class RerankModelVoyage : BaseVendorModelProvider
 {
+    /// <inheritdoc cref="BaseVendorModelProvider.Provider"/>
+    public override LLmProviders Provider => LLmProviders.Voyage;
+    
     /// <summary>
     /// Voyage Rerank Gen 2.5 models.
     /// </summary>
-    public readonly RerankModelVoyageGen25 Gen25 = new();
+    public readonly RerankModelVoyageGen25 Gen25 = new RerankModelVoyageGen25();
     
     /// <summary>
     /// All known rerank models from Voyage.

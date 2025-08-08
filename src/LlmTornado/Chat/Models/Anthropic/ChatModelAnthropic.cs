@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using LlmTornado.Code;
 using LlmTornado.Code.Models;
 using LlmTornado.Models;
 
@@ -28,6 +29,14 @@ public class ChatModelAnthropic : BaseVendorModelProvider
     /// Claude 4 models.
     /// </summary>
     public readonly ChatModelAnthropicClaude4 Claude4 = new ChatModelAnthropicClaude4();
+    
+    /// <summary>
+    /// Claude 4.1 models.
+    /// </summary>
+    public readonly ChatModelAnthropicClaude41 Claude41 = new ChatModelAnthropicClaude41();
+    
+    /// <inheritdoc cref="BaseVendorModelProvider.Provider"/>
+    public override LLmProviders Provider => LLmProviders.Anthropic;
 
     /// <summary>
     /// All known chat models from Anthropic.
@@ -56,7 +65,8 @@ public class ChatModelAnthropic : BaseVendorModelProvider
         ..ChatModelAnthropicClaude3.ModelsAll,
         ..ChatModelAnthropicClaude35.ModelsAll,
         ..ChatModelAnthropicClaude37.ModelsAll,
-        ..ChatModelAnthropicClaude4.ModelsAll
+        ..ChatModelAnthropicClaude4.ModelsAll,
+        ..ChatModelAnthropicClaude41.ModelsAll
     ];
     
     static ChatModelAnthropic()

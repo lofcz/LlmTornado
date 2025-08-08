@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using LlmTornado.Code;
 using LlmTornado.Code.Models;
 
 namespace LlmTornado.Chat.Models;
@@ -8,6 +9,9 @@ namespace LlmTornado.Chat.Models;
 /// </summary>
 public class ChatModelGroq : BaseVendorModelProvider
 {
+    /// <inheritdoc cref="BaseVendorModelProvider.Provider"/>
+    public override LLmProviders Provider => LLmProviders.Groq;
+    
     /// <summary>
     /// Models by Meta.
     /// </summary>
@@ -37,6 +41,11 @@ public class ChatModelGroq : BaseVendorModelProvider
     /// Models by Moonshot AI.
     /// </summary>
     public readonly ChatModelGroqMoonshotAi MoonshotAi = new ChatModelGroqMoonshotAi();
+    
+    /// <summary>
+    /// Models by OpenAI.
+    /// </summary>
+    public readonly ChatModelGroqOpenAi OpenAi = new ChatModelGroqOpenAi();
 
     /// <summary>
     /// All known chat models hosted by Groq.
@@ -67,7 +76,8 @@ public class ChatModelGroq : BaseVendorModelProvider
         ..ChatModelGroqGroq.ModelsAll,
         ..ChatModelGroqMistral.ModelsAll,
         ..ChatModelGroqAlibaba.ModelsAll,
-        ..ChatModelGroqMoonshotAi.ModelsAll
+        ..ChatModelGroqMoonshotAi.ModelsAll,
+        ..ChatModelGroqOpenAi.ModelsAll
     ];
     
     static ChatModelGroq()

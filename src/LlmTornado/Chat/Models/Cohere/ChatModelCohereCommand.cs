@@ -10,6 +10,16 @@ namespace LlmTornado.Chat.Models;
 public class ChatModelCohereCommand : IVendorModelClassProvider
 {
     /// <summary>
+    /// Command A Vision is our first model capable of processing images, excelling in enterprise use cases such as analyzing charts, graphs, and diagrams, table understanding, OCR, document Q&A, and scene analysis. It officially supports English, Portuguese, Italian, French, German, and Spanish.
+    /// </summary>
+    public static readonly ChatModel ModelAVision2507 = new ChatModel("command-a-vision-07-2025", LLmProviders.Cohere, 128_000);
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelAVision2507"/>
+    /// </summary>
+    public readonly ChatModel AVision2507 = ModelAVision2507;
+    
+    /// <summary>
     /// Command A is Cohere’s most performant model to date, excelling at real world enterprise tasks including tool use, retrieval augmented generation (RAG), agents, and multilingual use cases. With 111B parameters and a context length of 256K, Command A boasts a considerable increase in inference-time efficiency — 150% higher throughput compared to its predecessor Command R+ 08-2024 — and only requires two GPUs (A100s / H100s) to run.
     /// </summary>
     public static readonly ChatModel ModelA0325 = new ChatModel("command-a-03-2025", LLmProviders.Cohere, 256_000);
@@ -123,7 +133,8 @@ public class ChatModelCohereCommand : IVendorModelClassProvider
         ModelLightNightly,
         ModelR7B,
         ModelR7BArabic2412,
-        ModelA0325
+        ModelA0325,
+        ModelAVision2507
     ];
 
     /// <summary>

@@ -559,6 +559,31 @@ public class ChatRequestPredictionPart
 }
 
 /// <summary>
+/// Constrains the verbosity of the model's response. Lower values will result in more concise responses, while higher values will result in more verbose responses.
+/// </summary>
+[JsonConverter(typeof(StringEnumConverter))]
+public enum ChatRequestVerbosities
+{
+    /// <summary>
+    /// Most concise responses.
+    /// </summary>
+    [EnumMember(Value = "low")]
+    Low,
+    
+    /// <summary>
+    /// Balanced responses.
+    /// </summary>
+    [EnumMember(Value = "medium")]
+    Medium,
+    
+    /// <summary>
+    /// Verbose responses.
+    /// </summary>
+    [EnumMember(Value = "high")]
+    High
+}
+
+/// <summary>
 /// Flex processing provides significantly lower costs for Chat Completions or Responses requests in exchange for slower response times and occasional resource unavailability. It is ideal for non-production or lower-priority tasks such as model evaluations, data enrichment, or asynchronous workloads.
 /// </summary>
 [JsonConverter(typeof(StringEnumConverter))]
@@ -680,7 +705,13 @@ public enum ChatReasoningEfforts
     ///     Enable reasoning. Supported only by Groq.
     /// </summary>
     [EnumMember(Value = "default")]
-    Default
+    Default,
+    
+    /// <summary>
+    ///     Minimal reasoning. Supported only by GPT-5.
+    /// </summary>
+    [EnumMember(Value = "minimal")]
+    Minimal
 }
 
 internal enum ChatResultStreamInternalKinds
@@ -1059,6 +1090,12 @@ public class ToolMetadata
     {
         
     }
+}
+
+internal class ParsedToolCalls
+{
+    public List<FunctionCall> FunctionCalls { get; set; }
+    public List<CustomToolCall> CustomToolCalls { get; set; }
 }
 
 public class ToolParamDefinition
@@ -1476,6 +1513,18 @@ public enum StreamRequestTypes
 internal interface IModelRequest
 {
     internal IModel? RequestModel { get; }
+}
+
+internal class TornadoRequestContentWithProvider
+{
+    public IEndpointProvider Provider { get; set; }
+    public TornadoRequestContent Request { get; set; }
+
+    public TornadoRequestContentWithProvider(IEndpointProvider provider, TornadoRequestContent request)
+    {
+        Provider = provider;
+        Request = request;
+    }
 }
 
 /// <summary>

@@ -8,6 +8,7 @@ using System.Net.Http.Headers;
 using System.Reflection;
 using System.Text;
 using LlmTornado.Chat;
+using LlmTornado.Chat.Vendors.Perplexity;
 using LlmTornado.Chat.Vendors.XAi;
 using LlmTornado.Code.Models;
 using LlmTornado.Code.Sse;
@@ -179,6 +180,7 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
         {
             LLmProviders.OpenAi => JsonConvert.DeserializeObject<T>(jsonData),
             LLmProviders.XAi => InboundMessageVariantProviderXAi<T>(jsonData, postData),
+            LLmProviders.Perplexity => InboundMessageVariantProviderPerplexity<T>(jsonData, postData),
             _ => JsonConvert.DeserializeObject<T>(jsonData)
         };
     }
@@ -188,6 +190,16 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
         if (typeof(T) == typeof(ChatResult))
         {
             return (T?)(object?)ChatResultVendorXAi.Deserialize(jsonData);
+        }
+        
+        return JsonConvert.DeserializeObject<T>(jsonData);
+    }
+    
+    static T? InboundMessageVariantProviderPerplexity<T>(string jsonData, string? postData)
+    {
+        if (typeof(T) == typeof(ChatResult))
+        {
+            return (T?)(object?)ChatResultVendorPerplexity.Deserialize(jsonData);
         }
         
         return JsonConvert.DeserializeObject<T>(jsonData);
@@ -310,7 +322,7 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
                             {
                                 toolsMessage.ToolCallsDict.TryAdd(toolCall.Index?.ToString() ?? toolCall.Id ?? string.Empty, new ToolCallInboundAccumulator
                                 {
-                                    ArgumentsBuilder = new StringBuilder(toolCall.FunctionCall.Arguments),
+                                    ArgumentsBuilder = new StringBuilder(toolCall.FunctionCall is not null ? toolCall.FunctionCall.Arguments : toolCall.CustomCall?.Input),
                                     ToolCall = toolCall
                                 });
                             }   
@@ -371,14 +383,14 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
                                 // we can either encounter a new function or we get a new arguments token
                                 if (toolsMessage.ToolCallsDict.TryGetValue(key, out ToolCallInboundAccumulator? accu))
                                 {
-                                    accu.ArgumentsBuilder.Append(toolCall.FunctionCall.Arguments);
+                                    accu.ArgumentsBuilder.Append(toolCall.FunctionCall is not null ? toolCall.FunctionCall.Arguments : toolCall.CustomCall?.Input);
                                 }
                                 else
                                 {
                                     toolsMessage.ToolCalls.Add(toolCall);
                                     toolsMessage.ToolCallsDict.Add(key, new ToolCallInboundAccumulator
                                     {
-                                        ArgumentsBuilder = new StringBuilder(toolCall.FunctionCall.Arguments),
+                                        ArgumentsBuilder = new StringBuilder(toolCall.FunctionCall is not null ? toolCall.FunctionCall.Arguments : toolCall.CustomCall?.Input),
                                         ToolCall = toolCall
                                     });
                                 }
@@ -396,7 +408,14 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
         {
             foreach (KeyValuePair<string, ToolCallInboundAccumulator> tool in toolsMessage.ToolCallsDict)
             {
-                tool.Value.ToolCall.FunctionCall.Arguments = tool.Value.ArgumentsBuilder.ToString();
+                if (tool.Value.ToolCall.FunctionCall is not null)
+                {
+                    tool.Value.ToolCall.FunctionCall.Arguments = tool.Value.ArgumentsBuilder.ToString();   
+                }
+                else if (tool.Value.ToolCall.CustomCall is not null)
+                {
+                    tool.Value.ToolCall.CustomCall.Input = tool.Value.ArgumentsBuilder.ToString();   
+                }
             }
 
             if (toolsAccumulator.Choices is not null)

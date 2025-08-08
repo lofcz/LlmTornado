@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using LlmTornado.Code;
 using LlmTornado.Code.Models;
 
 namespace LlmTornado.Chat.Models.OpenRouter;
@@ -8,6 +9,9 @@ namespace LlmTornado.Chat.Models.OpenRouter;
 /// </summary>
 public class ChatModelOpenRouter : BaseVendorModelProvider
 {
+    /// <inheritdoc cref="BaseVendorModelProvider.Provider"/>
+    public override LLmProviders Provider => LLmProviders.OpenRouter;
+    
     /// <summary>
     /// All models.
     /// </summary>

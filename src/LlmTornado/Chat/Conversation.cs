@@ -10,6 +10,7 @@ using LlmTornado.Code;
 using LlmTornado.Common;
 using LlmTornado.Code.Vendor;
 using LlmTornado.Files;
+using LlmTornado.Infra;
 using LlmTornado.Responses;
 using LlmTornado.Responses.Events;
 
@@ -768,6 +769,53 @@ public class Conversation
         return new RestDataOrException<ChatRichResponse>(response, httpResult);
     }
 
+    ParsedToolCalls ParseCalls(ChatMessage message)
+    {
+        List<FunctionCall> calls = [];
+        List<CustomToolCall> customCalls = [];
+
+        if (message.ToolCalls is null || message.ToolCalls.Count is 0)
+        {
+            return new ParsedToolCalls
+            {
+                CustomToolCalls = customCalls,
+                FunctionCalls = calls
+            };
+        }
+        
+        foreach (ToolCall call in message.ToolCalls)
+        {
+            if (call.FunctionCall is not null)
+            {
+                calls.Add(new FunctionCall
+                {
+                    Name = call.FunctionCall!.Name,
+                    Arguments = call.FunctionCall.Arguments,
+                    ToolCall = call,
+                    Tool = RequestParameters.Tools?.FirstOrDefault(y => string.Equals(y.Function?.Name, call.FunctionCall.Name)),
+                    Result = call.FunctionCall.Result,
+                    LastInvocationResult = call.FunctionCall.LastInvocationResult
+                });
+            }
+            else if (call.CustomCall is not null)
+            {
+                customCalls.Add(new CustomToolCall
+                {
+                    Name = call.CustomCall.Name,
+                    Input = call.CustomCall.Input,
+                    ToolCall = call,
+                    Result = call.CustomCall.Result
+                });
+            }
+        }
+
+        return new ParsedToolCalls
+        {
+            CustomToolCalls = customCalls,
+            FunctionCalls = calls
+        };
+    }
+
     private async Task<ChatRichResponse> HandleResponseRich(ChatRequest request, ChatResult? res, Func<List<FunctionCall>, ValueTask>? functionCallHandler, ToolCallsHandler? toolCallsHandler)
     {
         List<ChatRichResponseBlock> blocks = [];
@@ -794,23 +842,23 @@ public class Conversation
 
             AppendMessage(newMsg);
 
-            if (newMsg.ToolCalls is { Count: > 0 } && !OutboundToolChoice.OutboundToolChoiceConverter.KnownFunctionNames.Contains(newMsg.ToolCalls[0].FunctionCall.Name))
+            if (newMsg.ToolCalls is { Count: > 0 } && !OutboundToolChoice.OutboundToolChoiceConverter.KnownFunctionNames.Contains(newMsg.ToolCalls[0].FunctionCall?.Name ?? string.Empty))
             {
-                List<FunctionCall>? calls = newMsg.ToolCalls?.Select(x => new FunctionCall
-                {
-                    Name = x.FunctionCall.Name,
-                    Arguments = x.FunctionCall.Arguments,
-                    ToolCall = x,
-                    Tool = RequestParameters.Tools?.FirstOrDefault(y => string.Equals(y.Function?.Name, x.FunctionCall.Name)),
-                    Result = x.FunctionCall.Result,
-                    LastInvocationResult = x.FunctionCall.LastInvocationResult
-                }).ToList();
+                ParsedToolCalls parsedCalls = ParseCalls(newMsg);
+                ResolvedToolsCall result = new ResolvedToolsCall();
 
-                if (calls?.Count > 0)
+                if (parsedCalls.CustomToolCalls.Count > 0)
                 {
-                    ResolvedToolsCall result = new ResolvedToolsCall();
+                    blocks.AddRange(parsedCalls.CustomToolCalls.Select(x => new ChatRichResponseBlock
+                    {
+                        Type = ChatRichResponseBlockTypes.CustomTool, 
+                        CustomToolCall = x
+                    }));
+                }
 
-                    blocks.AddRange(calls.Select(x => new ChatRichResponseBlock
+                if (parsedCalls.FunctionCalls.Count > 0)
+                {
+                    blocks.AddRange(parsedCalls.FunctionCalls.Select(x => new ChatRichResponseBlock
                     {
                         Type = ChatRichResponseBlockTypes.Function, 
                         FunctionCall = x
@@ -822,10 +870,10 @@ public class Conversation
 
                         if (functionCallHandler is not null)
                         {
-                            await functionCallHandler.Invoke(calls);      
+                            await functionCallHandler.Invoke(parsedCalls.FunctionCalls);      
                         }
                     
-                        foreach (FunctionCall call in calls)
+                        foreach (FunctionCall call in parsedCalls.FunctionCalls)
                         {
                             ChatMessage fnResultMsg = new ChatMessage(ChatMessageRoles.Tool, call.Result?.Content ?? "The service returned no data.".ToJson(), Guid.NewGuid())
                             {
@@ -936,13 +984,14 @@ public class Conversation
             Messages = messages,
             CancellationToken = token
         };
-
+        
         ChatResult? res;
         CapabilityEndpoints capabilityEndpoint = req.GetCapabilityEndpoint();
         
         if (capabilityEndpoint is CapabilityEndpoints.Responses && req.ResponseRequestParameters is not null)
         {
-            IEndpointProvider provider = responsesEndpoint.Api.GetProvider(req.Model ?? ChatModel.OpenAi.Gpt35.Turbo);
+            // avoid double-serializing, use provider resolved without regards to available API keys
+            IEndpointProvider provider = endpoint.Api.GetProvider(req.Model ?? ChatModel.OpenAi.Gpt35.Turbo);
             ResponseResult result = await responsesEndpoint.CreateResponse(ResponseHelpers.ToResponseRequest(provider, req.ResponseRequestParameters, req)).ConfigureAwait(false);
             res = ResponseHelpers.ToChatResult(result);
         }
@@ -1292,10 +1341,19 @@ public class Conversation
         ChatRequest req = new ChatRequest(this, RequestParameters)
         {
             Messages = messages,
-            CancellationToken = token
+            CancellationToken = token,
+            Stream = true
         };
+        
+        req.StreamOptions ??= ChatStreamOptions.KnownOptionsIncludeUsage;
+        
+        if (!req.StreamOptions.IncludeUsage)
+        {
+            req.StreamOptions = null;
+        }
 
-        IEndpointProvider provider = endpoint.Api.GetProvider(req.Model ?? ChatModel.OpenAi.Gpt35.Turbo);
+        TornadoRequestContentWithProvider serialized = ChatRequest.Serialize(endpoint.Api, req);
+        IEndpointProvider provider = serialized.Provider;
 
         req = eventsHandler?.MutateChatRequestHandler is not null
             ? await eventsHandler.MutateChatRequestHandler.Invoke(req)
@@ -1360,33 +1418,20 @@ public class Conversation
                                 {
                                     object? structuredResult = null;
                                     
-                                    if (chatChoice.Message is not null)
+                                    if (chatChoice.Message is not null && (eventsHandler?.FunctionCallHandler is not null || eventsHandler?.ToolCallsHandler is not null))
                                     {
                                         structuredResult = await ChatEndpoint.HandleChatResult(req, chatChoice.Message, null).ConfigureAwait(false);   
-                                    }
-                                    
-                                    if (eventsHandler?.FunctionCallHandler is not null || eventsHandler?.ToolCallsHandler is not null)
-                                    {
+                                        ParsedToolCalls parsedCalls = ParseCalls(chatChoice.Message);
                                         ResolvedToolsCall result = new ResolvedToolsCall();
 
-                                        List<FunctionCall>? calls = chatChoice.Message?.ToolCalls?.Select(x => new FunctionCall
-                                        {
-                                            Name = x.FunctionCall.Name,
-                                            Arguments = x.FunctionCall.Arguments,
-                                            ToolCall = x,
-                                            Tool = RequestParameters.Tools?.FirstOrDefault(y => string.Equals(y.Function?.Name, x.FunctionCall.Name)),
-                                            Result = x.FunctionCall.Result,
-                                            LastInvocationResult = x.FunctionCall.LastInvocationResult
-                                        }).ToList();
-
-                                        if (calls?.Count > 0)
+                                        if (parsedCalls.FunctionCalls.Count > 0)
                                         {
                                             if (eventsHandler.FunctionCallHandler is not null)
                                             {
-                                                await eventsHandler.FunctionCallHandler.Invoke(calls);   
+                                                await eventsHandler.FunctionCallHandler.Invoke(parsedCalls.FunctionCalls);   
                                             }
                                         
-                                            foreach (FunctionCall call in calls)
+                                            foreach (FunctionCall call in parsedCalls.FunctionCalls)
                                             {
                                                 ChatMessage fnResultMsg = new ChatMessage(ChatMessageRoles.Tool,
                                                     call.Result?.Content ?? "The service returned no data.".ToJson(),
@@ -1460,7 +1505,7 @@ public class Conversation
         }
         else
         {
-            await foreach (ChatResult res in endpoint.StreamChatEnumerable(req, eventsHandler).WithCancellation(token))
+            await foreach (ChatResult res in endpoint.StreamChatReal(serialized, req, eventsHandler).WithCancellation(token))
             {
                 bool solved = false;
 
@@ -1572,27 +1617,26 @@ public class Conversation
                         if (delta.Role is ChatMessageRoles.Tool || delta.ToolCalls?.Count > 0)
                         {
                             delta.Role = ChatMessageRoles.Assistant;
-
-                            List<FunctionCall>? calls = delta.ToolCalls?.Select(x => new FunctionCall
-                            {
-                                Name = x.FunctionCall.Name,
-                                Arguments = x.FunctionCall.Arguments,
-                                ToolCall = x,
-                                Tool = RequestParameters.Tools?.FirstOrDefault(y => string.Equals(y.Function?.Name, x.FunctionCall.Name)),
-                                Result = x.FunctionCall.Result,
-                                LastInvocationResult = x.FunctionCall.LastInvocationResult
-                            }).ToList();
+                            ParsedToolCalls parsedCalls = ParseCalls(delta);
+                            ValueTask? fnTask = null, customTask = null;
                             
-                            if (eventsHandler.FunctionCallHandler is not null && calls?.Count > 0)
+                            if (eventsHandler.FunctionCallHandler is not null && parsedCalls.FunctionCalls.Count > 0)
                             {
-                                await eventsHandler.FunctionCallHandler.Invoke(calls);   
+                                fnTask = eventsHandler.FunctionCallHandler.Invoke(parsedCalls.FunctionCalls);   
                             }
+
+                            if (eventsHandler.CustomToolCallHandler is not null && parsedCalls.CustomToolCalls.Count > 0)
+                            {
+                                customTask = eventsHandler.CustomToolCallHandler.Invoke(parsedCalls.CustomToolCalls);
+                            }
+
+                            await Threading.WhenAll(fnTask, customTask);
                             
-                            if (eventsHandler.FunctionCallHandler is not null || eventsHandler.ToolCallsHandler is not null)
+                            if (eventsHandler.FunctionCallHandler is not null || eventsHandler.ToolCallsHandler is not null || eventsHandler.CustomToolCallHandler is not null)
                             {
                                 ResolvedToolsCall result = new ResolvedToolsCall();
 
-                                if (calls?.Count > 0)
+                                if (parsedCalls.FunctionCalls.Count > 0 || parsedCalls.CustomToolCalls.Count > 0)
                                 {
                                     if (MostRecentApiResult?.Choices?.Count > 0 &&
                                         MostRecentApiResult.Choices[0].FinishReason is ChatMessageFinishReasons
@@ -1615,7 +1659,7 @@ public class Conversation
                                     result.AssistantMessage = delta;
                                     AppendMessage(delta);
 
-                                    foreach (FunctionCall call in calls)
+                                    foreach (FunctionCall call in parsedCalls.FunctionCalls)
                                     {
                                         ChatMessage fnResultMsg = new ChatMessage(ChatMessageRoles.Tool,
                                             call.Result?.Content ?? "The service returned no data.".ToJson(),
@@ -1635,6 +1679,30 @@ public class Conversation
                                         {
                                             Call = call,
                                             Result = call.Result ?? new FunctionResult(call, null, null, false),
+                                            ToolMessage = fnResultMsg
+                                        });
+                                    }
+                                    
+                                    foreach (CustomToolCall call in parsedCalls.CustomToolCalls)
+                                    {
+                                        ChatMessage fnResultMsg = new ChatMessage(ChatMessageRoles.Tool,
+                                            call.Result?.Content ?? "The service returned no data.",
+                                            Guid.NewGuid())
+                                        {
+                                            Id = currentMsgId,
+                                            ToolCallId = call.ToolCall?.Id ?? call.Name,
+                                            ToolInvocationSucceeded = call.Result?.InvocationSucceeded ?? false,
+                                            ContentJsonType = call.Result?.ContentJsonType ?? typeof(string),
+                                            CustomToolCall = call
+                                        };
+
+                                        currentMsgId = Guid.NewGuid();
+                                        AppendMessage(fnResultMsg);
+
+                                        result.ToolResults.Add(new ResolvedToolCall
+                                        {
+                                            CustomCall = call,
+                                            CustomResult = call.Result ?? new CustomToolCallResult(call, null),
                                             ToolMessage = fnResultMsg
                                         });
                                     }

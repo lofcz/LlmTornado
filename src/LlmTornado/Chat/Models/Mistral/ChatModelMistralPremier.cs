@@ -40,14 +40,24 @@ public class ChatModelMistralPremier : IVendorModelClassProvider
     public readonly ChatModel MagistralMedium2506 = ModelMagistralMedium2506;
     
     /// <summary>
-    /// Our cutting-edge language model for coding with the second version released January 2025, Codestral specializes in low-latency, high-frequency tasks such as fill-in-the-middle (FIM), code correction and test generation.
+    /// Our cutting-edge language model for coding released end of July 2025, Codestral specializes in low-latency, high-frequency tasks such as fill-in-the-middle (FIM), code correction and test generation.
     /// </summary>
-    public static readonly ChatModel ModelCodestral = new ChatModel("codestral-2501", LLmProviders.Mistral, 256_000, [ "codestral-latest" ]);
+    public static readonly ChatModel ModelCodestral2508 = new ChatModel("codestral-2508", LLmProviders.Mistral, 256_000, [ "codestral-latest" ]);
     
     /// <summary>
-    /// <inheritdoc cref="ModelCodestral"/>
+    /// <inheritdoc cref="ModelCodestral2508"/>
     /// </summary>
-    public readonly ChatModel Codestral = ModelCodestral;
+    public readonly ChatModel Codestral2508 = ModelCodestral2508;
+    
+    /// <summary>
+    /// Our cutting-edge language model for coding with the second version released January 2025, Codestral specializes in low-latency, high-frequency tasks such as fill-in-the-middle (FIM), code correction and test generation.
+    /// </summary>
+    public static readonly ChatModel ModelCodestral2501 = new ChatModel("codestral-2501", LLmProviders.Mistral, 256_000);
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelCodestral2501"/>
+    /// </summary>
+    public readonly ChatModel Codestral2501 = ModelCodestral2501;
     
     /// <summary>
     /// Our top-tier reasoning model for high-complexity tasks with the lastest version released November 2024. 
@@ -122,7 +132,9 @@ public class ChatModelMistralPremier : IVendorModelClassProvider
         ModelMedium3,
         ModelMagistralMedium2506,
         ModelMagistralMedium2507,
-        ModelDevstralMedium2507
+        ModelDevstralMedium2507,
+        ModelCodestral2501,
+        ModelCodestral2508
     ];
 
     /// <summary>

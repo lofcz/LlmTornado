@@ -50,6 +50,11 @@ public interface IModel : IEquatable<IModel>
     /// Aliases of the model.
     /// </summary>
     public List<string>? Aliases { get; }
+    
+    /// <summary>
+    /// Tracks whether the model was resolved by name and needs to be resolved at the time <see cref="TornadoApi"/> becomes available.
+    /// </summary>
+    public bool OptimisticallyResolved { get; set; }
 }
 
 /// <summary>
@@ -57,6 +62,11 @@ public interface IModel : IEquatable<IModel>
 /// </summary>
 public abstract class BaseVendorModelProvider : IVendorModelProvider
 {
+    /// <summary>
+    /// Provider.
+    /// </summary>
+    public abstract LLmProviders Provider { get; }
+    
     /// <summary>
     /// All models owned by the provider.
     /// </summary>
@@ -103,7 +113,7 @@ public abstract class ModelBase : IModel
     [JsonIgnore]
     public string Name { get; 
         #if MODERN
-        init; 
+        internal set; 
         #else
         set;
         #endif
@@ -121,7 +131,7 @@ public abstract class ModelBase : IModel
     [JsonIgnore]
     public string? ApiName { get; 
 #if MODERN
-        init; 
+        internal set; 
 #else
         set;
 #endif
@@ -133,12 +143,16 @@ public abstract class ModelBase : IModel
     [JsonIgnore]
     public List<string>? Aliases { get; 
 #if MODERN
-        init; 
+        internal set; 
 #else
         set;
 #endif
     }
     
+    /// <inheritdoc cref="IModel.OptimisticallyResolved" />
+    [JsonIgnore]
+    public bool OptimisticallyResolved { get; set; }
+
     /// <summary>
     ///     The owner of this model.  Generally "openai" is a generic OpenAI model, or the organization if a custom or
     ///     fine-tuned model.
@@ -146,7 +160,7 @@ public abstract class ModelBase : IModel
     [JsonProperty("owned_by")]
     public string? OwnedBy { get; 
 #if MODERN
-        init; 
+        internal set; 
 #else
         set;
 #endif
@@ -158,7 +172,7 @@ public abstract class ModelBase : IModel
     [JsonProperty("object")]
     public string Object { get;
 #if MODERN
-        init; 
+        internal set; 
 #else
         set;
 #endif
@@ -182,7 +196,7 @@ public abstract class ModelBase : IModel
     [JsonProperty("created")]
     public long? CreatedUnixTime { get; 
 #if MODERN
-        init; 
+        internal set; 
 #else
         set;
 #endif
@@ -194,7 +208,7 @@ public abstract class ModelBase : IModel
     [JsonProperty("permission")]
     public List<Permissions>? Permission { get;
 #if MODERN
-        init; 
+        internal set; 
 #else
         set;
 #endif
@@ -208,7 +222,7 @@ public abstract class ModelBase : IModel
     [JsonIgnore]
     public int? ContextTokens { get;
 #if MODERN
-        init; 
+        internal set; 
 #else
         set;
 #endif

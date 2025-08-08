@@ -168,6 +168,9 @@ internal static class ResponseHelpers
             Prompt = request.Prompt,
             Reasoning = request.Reasoning,
             Stream = false,
+            Verbosity = request.Verbosity,
+            PromptCacheKey = request.PromptCacheKey,
+            SafetyIdentifier = request.SafetyIdentifier
         };
     }
 
@@ -290,32 +293,49 @@ internal static class ResponseHelpers
 
     public static Tool? ToChatTool(ResponseTool responseTool)
     {
-        if (responseTool.Type is "function" && responseTool is ResponseFunctionTool functionTool)
+        return responseTool.Type switch
         {
-            return new Tool
+            "function" when responseTool is ResponseFunctionTool functionTool => new Tool
             {
-                Strict = functionTool.Strict,
-                Function = new ToolFunction(functionTool.Name, functionTool.Description ?? string.Empty,
-                    functionTool.Parameters)
-            };
-        }
-
-        return null;
+                Strict = functionTool.Strict, 
+                Function = new ToolFunction(functionTool.Name, functionTool.Description ?? string.Empty, functionTool.Parameters)
+            },
+            "custom" when responseTool is ResponseCustomTool customTool => new Tool
+            {
+                Custom = new ToolCustom
+                {
+                    Name = customTool.Name, 
+                    Description = customTool.Description, 
+                    Format = customTool.Format ?? new ToolCustomFormat()
+                }
+            },
+            _ => null
+        };
     }
     
     public static ResponseTool? ToResponseTool(Tool tool)
     {
-        if (tool.Function?.Parameters != null)
+        if (tool.Function is not null)
         {
             return new ResponseFunctionTool
             {
                 Name = tool.ToolName ?? tool.Function.Name,
                 Description = tool.ToolDescription ?? tool.Function.Description,
-                Parameters = JObject.FromObject(tool.Function.Parameters),
+                Parameters = tool.Function.Parameters is null ? null : JObject.FromObject(tool.Function.Parameters),
                 Strict = tool.Strict,
                 Delegate = tool.Delegate,
                 DelegateMetadata = tool.DelegateMetadata,
                 Metadata = tool.Metadata
+            };
+        }
+        
+        if (tool.Custom is not null)
+        {
+            return new ResponseCustomTool
+            {
+                Name = tool.ToolName ?? tool.Custom.Name,
+                Description = tool.ToolDescription ?? tool.Custom.Description,
+                Format = tool.Custom.Format
             };
         }
 

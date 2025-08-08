@@ -14,12 +14,22 @@ public class ResolvedToolCall
     /// <summary>
     ///     The function called - its name and arguments.
     /// </summary>
-    public FunctionCall Call { get; set; }
+    public FunctionCall? Call { get; set; }
+    
+    /// <summary>
+    ///     The custom tool called - its name and input.
+    /// </summary>
+    public CustomToolCall? CustomCall { get; set; }
     
     /// <summary>
     ///     The result the function <see cref="Call"/> returned.
     /// </summary>
-    public FunctionResult Result { get; set; }
+    public FunctionResult? Result { get; set; }
+    
+    /// <summary>
+    ///     The result the function <see cref="CustomCall"/> returned.
+    /// </summary>
+    public CustomToolCallResult? CustomResult { get; set; }
     
     /// <summary>
     ///     The message with role <see cref="Tool"/>

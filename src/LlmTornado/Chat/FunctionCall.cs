@@ -13,7 +13,46 @@ using Newtonsoft.Json.Linq;
 namespace LlmTornado.ChatFunctions;
 
 /// <summary>
-///     An optional class to be used with models that support returning function calls.
+///     Result of tool call of type "custom".
+/// </summary>
+public class CustomToolCall
+{
+    /// <summary>
+    ///     The name of the custom tool.
+    /// </summary>
+    [JsonProperty("name")]
+    public string Name { get; set; } = null!;
+
+    /// <summary>
+    ///     Input of the custom call, "arguments".
+    /// </summary>
+    [JsonProperty("input")]
+    public string Input { get; set; } = null!;
+    
+    /// <summary>
+    ///     The full tool call object.
+    /// </summary>
+    [JsonIgnore]
+    public ToolCall? ToolCall { get; set; }
+    
+    /// <summary>
+    ///     Result of the call.
+    /// </summary>
+    [JsonIgnore]
+    public CustomToolCallResult? Result { get; set; }
+    
+    /// <summary>
+    /// Resolves the call.
+    /// </summary>
+    public CustomToolCall Resolve(object? result)
+    {
+        Result = new CustomToolCallResult(this, result);
+        return this;
+    }
+}
+
+/// <summary>
+///     Result of tool call of type "function".
 /// </summary>
 public class FunctionCall
 {

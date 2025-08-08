@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using LlmTornado.Chat.Models;
+using LlmTornado.Code;
 using LlmTornado.Code.Models;
 
 namespace LlmTornado.Embedding.Models.Google;
@@ -9,6 +10,9 @@ namespace LlmTornado.Embedding.Models.Google;
 /// </summary>
 public class EmbeddingModelGoogle : BaseVendorModelProvider
 {
+    /// <inheritdoc cref="BaseVendorModelProvider.Provider"/>
+    public override LLmProviders Provider => LLmProviders.Google;
+    
     /// <summary>
     /// Gemini models.
     /// </summary>

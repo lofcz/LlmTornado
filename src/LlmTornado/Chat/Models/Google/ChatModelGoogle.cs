@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using LlmTornado.Code;
 using LlmTornado.Code.Models;
 
 namespace LlmTornado.Chat.Models;
@@ -9,6 +10,9 @@ namespace LlmTornado.Chat.Models;
 /// </summary>
 public class ChatModelGoogle : BaseVendorModelProvider
 {
+    /// <inheritdoc cref="BaseVendorModelProvider.Provider"/>
+    public override LLmProviders Provider => LLmProviders.Google;
+    
     /// <summary>
     /// Gemini models.
     /// </summary>

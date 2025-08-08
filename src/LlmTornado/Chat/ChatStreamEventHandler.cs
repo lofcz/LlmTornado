@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Common;
 using LlmTornado.Threads;
@@ -57,6 +58,11 @@ public class ChatStreamEventHandler
     ///     If this field is empty once control is returned to the API, the tool call is considered to be failed with no data returned.
     /// </summary>
     public Func<List<FunctionCall>, ValueTask>? FunctionCallHandler { get; set; }
+    
+    /// <summary>
+    ///     Called when one or more custom tools are to be executed. Execute the tools and return the responses in <see cref="ChatFunctions.CustomToolCall.Result"/>.
+    /// </summary>
+    public Func<List<CustomToolCall>, ValueTask>? CustomToolCallHandler { get; set; }
     
     /// <summary>
     ///     If this handler isn't null, results from tool calls with delegates attached are automatically added to the conversation.

@@ -10,6 +10,9 @@ namespace LlmTornado.Embedding.Models.Voyage;
 /// </summary>
 public class EmbeddingModelVoyageMultimodalGen3 : BaseVendorModelProvider
 {
+    /// <inheritdoc cref="BaseVendorModelProvider.Provider"/>
+    public override LLmProviders Provider => LLmProviders.Voyage;
+    
     /// <summary>
     /// A multimodal model that can embed text, images, or an interleaving of both modalities.
     /// </summary>

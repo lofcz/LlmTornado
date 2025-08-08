@@ -92,6 +92,36 @@ public class ResponseFunctionTool : ResponseTool
 }
 
 /// <summary>
+/// A custom tool that processes input using a specified format.
+/// </summary>
+public class ResponseCustomTool : ResponseTool
+{
+    /// <summary>
+    /// The type of the custom tool. Always "custom".
+    /// </summary>
+    public override string Type => "custom";
+
+    /// <summary>
+    /// The name of the custom tool, used to identify it in tool calls.
+    /// </summary>
+    [JsonProperty("name", Required = Required.Always)]
+    public string Name { get; set; } = null!;
+
+    /// <summary>
+    /// Optional description of the custom tool, used to provide more context.
+    /// </summary>
+    [JsonProperty("description")]
+    public string? Description { get; set; }
+
+    /// <summary>
+    /// The input format for the custom tool. Default is unconstrained text.
+    /// Uses the same contract as regular tools: text or grammar.
+    /// </summary>
+    [JsonProperty("format")]
+    public ToolCustomFormat? Format { get; set; }
+}
+
+/// <summary>
 /// Represents a file search tool.
 /// </summary>
 public class ResponseFileSearchTool : ResponseTool
@@ -852,6 +882,37 @@ internal class ResponseToolConverter : JsonConverter
                     Parameters = (JObject)jo["parameters"]!,
                     Strict = (bool?)jo["strict"]
                 };
+            case "custom":
+                {
+                    ResponseCustomTool tool = new ResponseCustomTool
+                    {
+                        Name = (string)jo["name"]!,
+                        Description = (string?)jo["description"]
+                    };
+
+                    JToken? formatToken = jo["format"];
+                    if (formatToken != null && formatToken.Type != JTokenType.Null)
+                    {
+                        string? formatType = formatToken["type"]?.ToString();
+                        if (string.Equals(formatType, ToolCustomFormat.GrammarType, StringComparison.OrdinalIgnoreCase))
+                        {
+                            string? def = formatToken["definition"]?.ToString();
+                            string? syntaxStr = formatToken["syntax"]?.ToString();
+                            ToolCustomGrammarSyntaxes syntax = string.Equals(syntaxStr, "regex", StringComparison.OrdinalIgnoreCase)
+                                ? ToolCustomGrammarSyntaxes.Regex
+                                : ToolCustomGrammarSyntaxes.Lark;
+                            tool.Format = def is not null
+                                ? ToolCustomFormat.Grammar(def, syntax)
+                                : new ToolCustomFormat { Type = ToolCustomFormat.GrammarType };
+                        }
+                        else
+                        {
+                            tool.Format = ToolCustomFormat.Text();
+                        }
+                    }
+
+                    return tool;
+                }
             case "file_search":
                 return new ResponseFileSearchTool
                 {
@@ -953,6 +1014,35 @@ internal class ResponseToolConverter : JsonConverter
                 {
                     writer.WritePropertyName("strict");
                     writer.WriteValue(func.Strict);
+                }
+                break;
+            case ResponseCustomTool custom:
+                writer.WritePropertyName("type");
+                writer.WriteValue(custom.Type);
+                writer.WritePropertyName("name");
+                writer.WriteValue(custom.Name);
+                if (custom.Description != null)
+                {
+                    writer.WritePropertyName("description");
+                    writer.WriteValue(custom.Description);
+                }
+                if (custom.Format != null)
+                {
+                    writer.WritePropertyName("format");
+                    
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("type");
+                    writer.WriteValue(custom.Format.Type);
+                    
+                    if (string.Equals(custom.Format.Type, ToolCustomFormat.GrammarType, StringComparison.OrdinalIgnoreCase) && custom.Format.CustomGrammar is not null)
+                    {
+                        writer.WritePropertyName("definition");
+                        writer.WriteValue(custom.Format.CustomGrammar.Definition);
+                        writer.WritePropertyName("syntax");
+                        serializer.Serialize(writer, custom.Format.CustomGrammar.Syntax);
+                    }
+                    
+                    writer.WriteEndObject();
                 }
                 break;
             case ResponseFileSearchTool file:

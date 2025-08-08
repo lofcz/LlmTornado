@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using LlmTornado.Chat.Models;
+using LlmTornado.Code;
 using LlmTornado.Code.Models;
 
 namespace LlmTornado.Embedding.Models.Cohere;
@@ -9,6 +10,9 @@ namespace LlmTornado.Embedding.Models.Cohere;
 /// </summary>
 public class EmbeddingModelCohere : BaseVendorModelProvider
 {
+    /// <inheritdoc cref="BaseVendorModelProvider.Provider"/>
+    public override LLmProviders Provider => LLmProviders.Cohere;
+    
     /// <summary>
     /// Generation 2 models.
     /// </summary>

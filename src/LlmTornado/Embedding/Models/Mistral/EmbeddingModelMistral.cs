@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using LlmTornado.Code;
 using LlmTornado.Code.Models;
 
 namespace LlmTornado.Embedding.Models.Mistral;
@@ -8,6 +9,9 @@ namespace LlmTornado.Embedding.Models.Mistral;
 /// </summary>
 public class EmbeddingModelMistral : BaseVendorModelProvider
 {
+    /// <inheritdoc cref="BaseVendorModelProvider.Provider"/>
+    public override LLmProviders Provider => LLmProviders.Mistral;
+    
     /// <summary>
     /// Premier models.
     /// </summary>

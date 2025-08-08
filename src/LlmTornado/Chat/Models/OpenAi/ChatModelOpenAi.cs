@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using LlmTornado.Code;
 using LlmTornado.Code.Models;
 
 namespace LlmTornado.Chat.Models;
@@ -9,6 +10,9 @@ namespace LlmTornado.Chat.Models;
 /// </summary>
 public class ChatModelOpenAi : BaseVendorModelProvider
 {
+    /// <inheritdoc cref="BaseVendorModelProvider.Provider"/>
+    public override LLmProviders Provider => LLmProviders.OpenAi;
+    
     /// <summary>
     /// GPT 3.5 (Turbo) models.
     /// </summary>
@@ -20,9 +24,14 @@ public class ChatModelOpenAi : BaseVendorModelProvider
     public readonly ChatModelOpenAiGpt4 Gpt4 = new ChatModelOpenAiGpt4();
     
     /// <summary>
-    /// GPT-41 models.
+    /// GPT-4.1 models.
     /// </summary>
     public readonly ChatModelOpenAiGpt41 Gpt41 = new ChatModelOpenAiGpt41();
+    
+    /// <summary>
+    /// GPT-5 models.
+    /// </summary>
+    public readonly ChatModelOpenAiGpt5 Gpt5 = new ChatModelOpenAiGpt5();
     
     /// <summary>
     /// O3 models.
@@ -38,12 +47,6 @@ public class ChatModelOpenAi : BaseVendorModelProvider
     /// Codex models.
     /// </summary>
     public readonly ChatModelOpenAiCodex Codex = new ChatModelOpenAiCodex();
-
-    /// <summary>
-    /// GPT 4.5 models.
-    /// </summary>
-    [Obsolete("Will be removed in 3 months by OpenAI")]
-    public readonly ChatModelOpenAiGpt45 Gpt45 = new ChatModelOpenAiGpt45();
 
     /// <summary>
     /// All known chat models from OpenAI.
@@ -74,7 +77,7 @@ public class ChatModelOpenAi : BaseVendorModelProvider
         ..ChatModelOpenAiO3.ModelsAll,
         ..ChatModelOpenAiO4.ModelsAll,
         ..ChatModelOpenAiGpt41.ModelsAll,
-        ..ChatModelOpenAiGpt45.ModelsAll,
+        ..ChatModelOpenAiGpt5.ModelsAll,
         ..ChatModelOpenAiCodex.ModelsAll,
     ];
 
@@ -85,7 +88,8 @@ public class ChatModelOpenAi : BaseVendorModelProvider
     [
         ..ChatModelOpenAiGpt4.ReasoningModels,
         ..ChatModelOpenAiO3.ModelsAll,
-        ..ChatModelOpenAiO4.ModelsAll
+        ..ChatModelOpenAiO4.ModelsAll,
+        ..ChatModelOpenAiGpt5.ModelsAll
     ];
 
     /// <summary>
@@ -94,7 +98,8 @@ public class ChatModelOpenAi : BaseVendorModelProvider
     public static readonly List<IModel> WebSearchCompatibleModelsAll =
     [
         ChatModelOpenAiGpt4.ModelOSearchPreview,
-        ChatModelOpenAiGpt4.ModelOMiniSearchPreview
+        ChatModelOpenAiGpt4.ModelOMiniSearchPreview,
+        ..ChatModelOpenAiGpt5.ModelsAll,
     ];
 
     internal static readonly HashSet<IModel> TempIncompatibleModels =
@@ -102,7 +107,8 @@ public class ChatModelOpenAi : BaseVendorModelProvider
         //..ReasoningModelsAll,
         ..WebSearchCompatibleModelsAll,
         ..ChatModelOpenAiO3.ModelsAll,
-        ..ChatModelOpenAiO4.ModelsAll
+        ..ChatModelOpenAiO4.ModelsAll,
+        ..ChatModelOpenAiGpt5.ModelsAll
     ];
     
     static ChatModelOpenAi()

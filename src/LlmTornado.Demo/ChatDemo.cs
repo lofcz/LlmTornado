@@ -1417,19 +1417,32 @@ public partial class ChatDemo : DemoBase
     }
     
     [TornadoTest]
-    public static async Task Gpt45Preview()
+    public static async Task Gpt5()
     {
+        List<string> resolvedGames = [];
+        
         Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.OpenAi.Gpt45.Preview
+            Model = ChatModel.OpenAi.Gpt5.V5Mini,
+            ReasoningEffort = ChatReasoningEfforts.Minimal,
+            Tools = [
+                new Tool(async (List<string> popularGames) =>
+                {
+                    resolvedGames = popularGames;
+                }, "set_data")
+            ],
+            ToolChoice = "set_data",
+            Verbosity = ChatRequestVerbosities.Medium
         });
-        chat2.AppendSystemMessage("Pretend you are a dog. Sound authentic.");
-        chat2.AppendUserInput("Who are you?");
-       
-        string? str2 = await chat2.GetResponse();
+        
+        chat2.AppendUserInput("2+2=?");
 
+        ChatRichResponse response = await chat2.GetResponseRich();
+        
         Console.WriteLine("OpenAI:");
-        Console.WriteLine(str2);
+        Console.WriteLine(response);
+
+        Assert.That(resolvedGames.Count, Is.GreaterThan(0));
     }
     
     [TornadoTest]
@@ -1592,7 +1605,7 @@ public partial class ChatDemo : DemoBase
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.Anthropic.Claude3.Sonnet,
+            Model = ChatModel.Anthropic.Claude4.Sonnet250514,
             Tools = [
                 new Tool(new ToolFunction("get_weather", "gets the current weather", new
                 {
@@ -1658,7 +1671,7 @@ public partial class ChatDemo : DemoBase
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.Anthropic.Claude3.Sonnet,
+            Model = ChatModel.Anthropic.Claude4.Sonnet250514,
             Tools = [
                 new Tool(new ToolFunction("get_weather", "gets the current weather", new
                 {
@@ -1841,7 +1854,7 @@ public partial class ChatDemo : DemoBase
 
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.Anthropic.Claude3.Sonnet,
+            Model = ChatModel.Anthropic.Claude4.Sonnet250514,
             Tools = [
                 new Tool(new ToolFunction("get_weather", "gets the current weather", new
                 {
@@ -1901,7 +1914,7 @@ public partial class ChatDemo : DemoBase
 
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.Anthropic.Claude3.Sonnet,
+            Model = ChatModel.Anthropic.Claude4.Sonnet250514,
             Tools = [
                 new Tool(new ToolFunction("get_weather", "gets the current weather", new
                 {
@@ -1969,7 +1982,7 @@ public partial class ChatDemo : DemoBase
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.Anthropic.Claude3.Sonnet
+            Model = ChatModel.Anthropic.Claude4.Sonnet250514
         });
         chat.AppendSystemMessage("Pretend you are a dog. Sound authentic.");
         chat.AppendUserInput("Who are you?");

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using LlmTornado.Code;
 using LlmTornado.Code.Models;
 
 namespace LlmTornado.Embedding.Models.Voyage;
@@ -9,6 +10,9 @@ namespace LlmTornado.Embedding.Models.Voyage;
 /// </summary>
 public class EmbeddingModelVoyageMultimodal : BaseVendorModelProvider
 {
+    /// <inheritdoc cref="BaseVendorModelProvider.Provider"/>
+    public override LLmProviders Provider => LLmProviders.Voyage;
+    
     /// <summary>
     /// Voyage Multimodal Gen 3 models.
     /// </summary>

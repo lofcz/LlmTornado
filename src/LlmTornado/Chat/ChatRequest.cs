@@ -105,6 +105,9 @@ public class ChatRequest : IModelRequest, ISerializableRequest
 		ResponseRequestParameters = basedOn.ResponseRequestParameters;
 		UseResponseEndpoint = basedOn.UseResponseEndpoint;
 		ReasoningFormat = basedOn.ReasoningFormat;
+		Verbosity = basedOn.Verbosity;
+		SafetyIdentifier = basedOn.SafetyIdentifier;
+		PromptCacheKey = basedOn.PromptCacheKey;
 	}
 
 	/// <summary>
@@ -249,10 +252,28 @@ public class ChatRequest : IModelRequest, ISerializableRequest
 	public bool? Logprobs { get; set; }
 	
 	/// <summary>
+	/// Used by OpenAI to cache responses for similar requests to optimize your cache hit rates. Replaces the user field.
+	/// </summary>
+	[JsonProperty("prompt_cache_key")]
+	public string? PromptCacheKey { get; set; }
+	
+	/// <summary>
+	/// A stable identifier used to help detect users of your application that may be violating OpenAI's usage policies. The IDs should be a string that uniquely identifies each user. We recommend hashing their username or email address, in order to avoid sending us any identifying information. 
+	/// </summary>
+	[JsonProperty("safety_identifier")]
+	public string? SafetyIdentifier { get; set; }
+	
+	/// <summary>
 	/// An integer between 0 and 20 specifying the number of most likely tokens to return at each token position, each with an associated log probability. logprobs must be set to true if this parameter is used.
 	/// </summary>
 	[JsonProperty("top_logprobs")]
 	public int? TopLogprobs { get; set; }
+	
+	/// <summary>
+	/// Constrains the verbosity of the model's response. Only supported by GPT-5. Lower values will result in more concise responses, while higher values will result in more verbose responses. Currently supported values are low, medium, and high.
+	/// </summary>
+	[JsonProperty("verbosity")]
+	public ChatRequestVerbosities? Verbosity { get; set; }
 	
 	/// <summary>
 	/// This tool searches the web for relevant results to use in a response. Learn more about the web search tool.
@@ -657,6 +678,33 @@ public class ChatRequest : IModelRequest, ISerializableRequest
 		}
 	}
 
+	internal static TornadoRequestContentWithProvider Serialize(TornadoApi api, ChatRequest request, bool pretty = false)
+	{
+		ChatModel? modelToUse = request.Model;
+		IEndpointProvider provider = api.GetProvider(request.Model ?? ChatModel.OpenAi.Gpt35.Turbo);
+        
+		// the resolved model is potentially incorrect - optimistically resolved models pick the first provider by name, but multiple providers
+		// offer the same models, we need to correlate with the available API keys
+		if ((modelToUse?.OptimisticallyResolved ?? false) && provider.Api is not null)
+		{
+			if (provider.Api.Authentications.Count > 0 && !provider.Api.Authentications.TryGetValue(modelToUse.Provider, out _))
+			{
+				foreach (KeyValuePair<LLmProviders, ProviderAuthentication> auth in provider.Api.Authentications)
+				{
+					ChatModel? resolved = ChatModel.ResolveModel(auth.Key, modelToUse.Name);
+
+					if (resolved is not null)
+					{
+						modelToUse = resolved;
+						provider = provider.Api?.GetProvider(modelToUse.Provider) ?? provider;
+					}
+				}
+			}
+		}
+
+		return new TornadoRequestContentWithProvider(provider, request.Serialize(provider, GetCapabilityEndpoint(request), pretty));
+	}
+
 	private TornadoRequestContent Serialize(IEndpointProvider provider, CapabilityEndpoints capabilityEndpoint, bool pretty)
 	{
 		Preserialize(provider);
@@ -676,7 +724,7 @@ public class ChatRequest : IModelRequest, ISerializableRequest
 				break;
 			}
 		}
-
+		
 		if (provider.Provider is not LLmProviders.Groq)
 		{
 			outboundCopy.ReasoningFormat = null;
@@ -818,16 +866,32 @@ public class ChatRequest : IModelRequest, ISerializableRequest
 					                writer.WritePropertyName("type");
 					                writer.WriteValue(call.Type);
 
-					                writer.WritePropertyName("function");
-					                writer.WriteStartObject();
+					                if (call.FunctionCall is not null)
+					                {
+						                writer.WritePropertyName("function");
+						                writer.WriteStartObject();
+					       
+						                writer.WritePropertyName("name");
+						                writer.WriteValue(call.FunctionCall.Name);   
 
-					                writer.WritePropertyName("name");
-					                writer.WriteValue(call.FunctionCall.Name);
+						                writer.WritePropertyName("arguments");
+						                writer.WriteValue(call.FunctionCall.Arguments);   
+						                
+						                writer.WriteEndObject();
+					                }
+					                else if (call.CustomCall is not null)
+					                {
+						                writer.WritePropertyName("custom");
+						                writer.WriteStartObject();
+					       
+						                writer.WritePropertyName("name");
+						                writer.WriteValue(call.CustomCall.Name);   
 
-					                writer.WritePropertyName("arguments");
-					                writer.WriteValue(call.FunctionCall.Arguments);
-
-					                writer.WriteEndObject();
+						                writer.WritePropertyName("input");
+						                writer.WriteValue(call.CustomCall.Input);   
+						                
+						                writer.WriteEndObject();
+					                }
 
 					                writer.WriteEndObject();
 				                }

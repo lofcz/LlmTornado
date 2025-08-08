@@ -10,6 +10,9 @@ namespace LlmTornado.Embedding.Models.Voyage;
 /// </summary>
 public class EmbeddingModelVoyageGen3 : BaseVendorModelProvider
 {
+    /// <inheritdoc cref="BaseVendorModelProvider.Provider"/>
+    public override LLmProviders Provider => LLmProviders.Voyage;
+    
     /// <summary>
     /// The best general-purpose and multilingual retrieval quality.
     /// </summary>
