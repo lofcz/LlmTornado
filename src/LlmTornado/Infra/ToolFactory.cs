@@ -19,6 +19,7 @@ namespace LlmTornado.Infra;
 internal static class ToolFactory
 {
     public static readonly HashSet<ChatModel> ModelsSupportingStrictFunctions = [ 
+        ChatModel.OpenAi.Gpt5.V5, ChatModel.OpenAi.Gpt5.V5Mini, ChatModel.OpenAi.Gpt5.V5Nano,
         ChatModel.OpenAi.Gpt41.V41, ChatModel.OpenAi.Gpt41.V41Mini, ChatModel.OpenAi.Gpt41.V41Nano,
         ChatModel.OpenAi.Gpt4.O, ChatModel.OpenAi.Gpt4.O240806, ChatModel.OpenAi.Gpt4.O241120, ChatModel.OpenAi.Gpt4.O240513,
         ChatModel.Google.Gemini.Gemini15Flash, ChatModel.Google.Gemini.Gemini2Flash001, ChatModel.Google.Gemini.Gemini15Pro, ChatModel.Google.Gemini.Gemini15Pro002, ChatModel.Google.Gemini.Gemini15Pro001, ChatModel.Google.Gemini.Gemini15ProLatest,

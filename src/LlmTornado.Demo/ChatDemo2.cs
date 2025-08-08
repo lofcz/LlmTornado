@@ -129,14 +129,17 @@ public partial class ChatDemo : DemoBase
         Console.WriteLine(response);
     }
     
+    /// <summary>
+    /// Dedicated to EricGT who was a great help figuring this out!
+    /// </summary>
     [TornadoTest]
     public static async Task CustomToolsGrammarStreaming()
     {
         // note: gpt-5 doesn't respect the lark cfg deterministically! very sad
         string grammar = """
-                         start: "weather?want_in:" CITY "+precision:" PREC
+                         start: "weather?want_in+++:" PREC "-" CITY "qa!" "+precision:" PREC
                          
-                         CITY: /[^\s\+\:]+/
+                         CITY: "prague" | "paris"
                          PREC: "high" | "low"
                          """;
         
