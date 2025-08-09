@@ -1,10 +1,9 @@
-namespace LlmTornado.Docs.Webcil
+namespace LlmTornado.Docs.Webcil;
+
+internal static class WebcilSectionHeaderExtensions
 {
-    internal static class WebcilSectionHeaderExtensions
+    internal static uint GetCorrectedPointerToRawData(this Webcil.WebcilSectionHeader webcilSectionHeader, int offset)
     {
-        internal static uint GetCorrectedPointerToRawData(this Webcil.WebcilSectionHeader webcilSectionHeader, int offset)
-        {
-            return (uint) (webcilSectionHeader.PointerToRawData + offset);
-        }
+        return (uint) (webcilSectionHeader.PointerToRawData + offset);
     }
 }

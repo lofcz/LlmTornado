@@ -96,7 +96,7 @@ public class FunctionCall
     ///     Any arguments that need to be passed to the function. This needs to be in JSON format.
     /// </summary>
     [JsonProperty("arguments")]
-    public string Arguments { get; set; } = null!;
+    public string? Arguments { get; set; }
     
     /// <summary>
     ///     The result of the function. This is resolved by the API consumer.
