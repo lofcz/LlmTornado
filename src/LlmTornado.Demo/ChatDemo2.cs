@@ -135,26 +135,46 @@ public partial class ChatDemo : DemoBase
     [TornadoTest]
     public static async Task CustomToolsGrammarStreaming()
     {
-        // note: gpt-5 doesn't respect the lark cfg deterministically! very sad
         string grammar = """
-                         start: "weather?want_in+++:" PREC "-" CITY "qa!" "+precision:" PREC
+                         start: "<think>" "Ok, let's think about this:" "\n"think_content "</think>" address
                          
-                         CITY: "prague" | "paris"
-                         PREC: "high" | "low"
+                         think_content: think_char{0,500}
+                         think_char: SAFE_CHAR | SAFE_LT_SEQUENCE
+                         SAFE_LT_SEQUENCE: "<" ( NOT_SLASH_OR_T | "/" (NOT_T | "t" (NOT_H | "h" (NOT_I | "i" (NOT_N | "n" (NOT_K | "k" NOT_GT))))) | "t" (NOT_H | "h" (NOT_I | "i" (NOT_N | "n" (NOT_K | "k" NOT_GT)))) )
+                         
+                         SAFE_CHAR:      /[^<]/
+                         NOT_SLASH_OR_T: /[^\/t]/
+                         NOT_T:          /[^t]/
+                         NOT_H:          /[^h]/
+                         NOT_I:          /[^i]/
+                         NOT_N:          /[^n]/
+                         NOT_K:          /[^k]/
+                         NOT_GT:         /[^>]/
+                         
+                         address: %json {
+                             "type": "object",
+                             "properties": {
+                                 "street": { "type": "string" },
+                                 "city": { "type": "string" },
+                                 "zip": { "type": "number" }
+                            },
+                            "additionalProperties": false,
+                            "required": ["street", "city", "zip"]
+                         }
                          """;
         
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
             Model = "gpt-5-mini",
             Tools = [
-                new Tool(new ToolCustom(ToolCustomFormat.Lark(grammar), "get_weather", "Orders some food for the user")) // purposefully misleading description
+                new Tool(new ToolCustom(ToolCustomFormat.Lark(grammar), "get_address")) // purposefully misleading description
             ],
             ToolChoice = OutboundToolChoice.Auto,
             MaxTokens = 300,
             ReasoningEffort = ChatReasoningEfforts.Minimal
         });
         
-        chat.AppendUserInput("What is the weather like in Prague with high precision?");
+        chat.AppendUserInput("Can you translate 'V Podluží 7, Praha 4 Nusle' into get_address call?");
 
         bool anyCall = false;
         
