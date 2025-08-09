@@ -14,7 +14,7 @@ public abstract class AgentStateMachine<TInput, TOutput> : StateMachine<TInput, 
     public AgentStateMachine() {
 
         InitializeStates();
-        OnCancellationTriggered += CancelTriggered; // Cancel all active states when cancellation is triggered
+        OnStateMachineEvent += CancelTriggered; // Cancel all active states when cancellation is triggered
     }
 
     /// <summary>
@@ -24,15 +24,19 @@ public abstract class AgentStateMachine<TInput, TOutput> : StateMachine<TInput, 
     /// implement the <see cref="IAgentState"/> interface by invoking the <see
     /// cref="System.Threading.CancellationTokenSource.Cancel"/> method on their cancellation token
     /// source.</remarks>
-    private void CancelTriggered()
+    private void CancelTriggered(StateMachineEvent e)
     {
-        foreach (BaseState state in States)
+        if(e is OnCancelledStateMachineEvent)
         {
-            if (state is IAgentState agentState)
+            foreach (BaseState state in States)
             {
-                agentState.cts.Cancel();
+                if (state is IAgentState agentState)
+                {
+                    agentState.cts.Cancel();
+                }
             }
         }
+        
     }
 
     /// <summary>

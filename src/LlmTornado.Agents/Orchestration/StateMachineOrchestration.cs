@@ -92,9 +92,11 @@ namespace LlmTornado.Agents.Orchestration;
             StateMachineStreamingBus += InvokeStreamingCallback;  //Route State Agents streaming callbacks to the agent's event handler
             StateMachineVerboseBus += InvokeVerboseCallback; //Route State Agents verbose callbacks to the agent's event handler  
             RootStateMachine = stateMachine;
-            SetupRootStateMachine(RootStateMachine);
             StateMachineRunnerMethod = runnerMethod;
-        }
+            RootStateMachine.OnStateMachineEvent += HandleAgentState; //Subscribe to the state machine events to handle state changes
+            CurrentAgent = agent; //Set the current agent for the orchestration
+            cts = new CancellationTokenSource(); //Initialize the cancellation token source
+    }
 
         internal override async Task<List<ChatMessagePart>?> OnInvokedAsync(string userInput, bool streaming = true, string? base64image = null)
         {
@@ -194,43 +196,28 @@ namespace LlmTornado.Agents.Orchestration;
         {
             RunningStateMachines.Add(stateMachine);
             OnStateMachineAdded?.Invoke(stateMachine);
-
+            
             //Add new States Event Handlers for Verbose and Streaming Callbacks from State
-            stateMachine.OnStateEntered += SubscribeToAgentState;
-
-             //Remove Verbose and Streaming Callbacks from State when exited
-            stateMachine.OnStateExited += UnsubscribeToAgentState;
+            stateMachine.OnStateMachineEvent += HandleAgentState;
         }
 
-        /// <summary>
-        /// Registers the specified state machine as the root state machine and subscribes to its state entry and exit
-        /// events.
-        /// </summary>
-        /// <param name="stateMachine">The <see cref="StateMachine"/> instance to set up as the root state machine. Cannot be <c>null</c>.</param>
-        public void SetupRootStateMachine(StateMachine stateMachine)
+        private void HandleAgentState(StateMachineEvent e)
         {
-            //Add new States Event Handlers for Verbose and Streaming Callbacks from State
-            stateMachine.OnStateEntered += SubscribeToAgentState;
-
-            //Remove Verbose and Streaming Callbacks from State when exited
-            stateMachine.OnStateExited += UnsubscribeToAgentState;
-        }
-
-        private void SubscribeToAgentState(StateProcess state)
-        {
-            if (state.State is IAgentState agentState)
+            if(e is OnStateEnteredEvent stateEnteredEvent)
             {
-                agentState.SubscribeVerboseChannel(StateMachineVerboseBus);
-                agentState.SubscribeStreamingChannel(StateMachineStreamingBus);
+                if (stateEnteredEvent.StateProcess.State is IAgentState agentState)
+                {
+                    agentState.SubscribeVerboseChannel(StateMachineVerboseBus);
+                    agentState.SubscribeStreamingChannel(StateMachineStreamingBus);
+                }
             }
-        }
-
-        private void UnsubscribeToAgentState(BaseState state)
-        {
-            if (state is IAgentState agentState)
+            else if (e is OnStateExitedEvent Event)
             {
-                agentState.UnsubscribeVerboseChannel(StateMachineVerboseBus);
-                agentState.UnsubscribeStreamingChannel(StateMachineStreamingBus);
+                if (Event.State is IAgentState agentState)
+                {
+                    agentState.UnsubscribeVerboseChannel(StateMachineVerboseBus);
+                    agentState.UnsubscribeStreamingChannel(StateMachineStreamingBus);
+                }
             }
         }
 
@@ -246,10 +233,7 @@ namespace LlmTornado.Agents.Orchestration;
             RunningStateMachines.Remove(stateMachine); // Remove the state machine from the collection
 
             //Add new States Event Handlers for Verbose and Streaming Callbacks from State
-            stateMachine.OnStateEntered -= SubscribeToAgentState;
-
-            //Remove Verbose and Streaming Callbacks from State when exited
-            stateMachine.OnStateExited -= UnsubscribeToAgentState;
+            stateMachine.OnStateMachineEvent -= HandleAgentState;
         }
 
         /// <summary>
