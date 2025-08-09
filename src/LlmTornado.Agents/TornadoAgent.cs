@@ -20,7 +20,7 @@ public class TornadoAgent
     /// <summary>
     /// Gets or sets the chat model used for processing messages.
     /// </summary>
-    public ChatModel Model { get; set; } 
+    public ChatModel Model { get; set; }
 
     /// <summary>
     /// chat options for the run
@@ -32,7 +32,7 @@ public class TornadoAgent
     /// </summary>
     public ResponseRequest? ResponseOptions
     {
-        get => Options.ResponseRequestParameters; 
+        get => Options.ResponseRequestParameters;
         set => Options.ResponseRequestParameters = value;
     }
 
@@ -45,7 +45,7 @@ public class TornadoAgent
     /// Gets the unique identifier for this instance.
     /// </summary>
     public string Id { get; } = Guid.NewGuid().ToString();
-    
+
     /// <summary>
     /// Data Type to Format response output as
     /// </summary>
@@ -54,7 +54,7 @@ public class TornadoAgent
     /// <summary>
     /// Tools available to the agent
     /// </summary>
-    public List<Delegate>? Tools { get; set; } = [];
+    public List<Delegate>? Tools { get; set; } = new List<Delegate>();
 
     /// <summary>
     /// Gets or sets the permissions for tools, represented as a dictionary where the key is the tool name and the
@@ -66,7 +66,7 @@ public class TornadoAgent
     /// Map of function tools to their methods
     /// </summary>
     public Dictionary<string, Tool> ToolList = new Dictionary<string, Tool>();
-    
+
     /// <summary>
     /// Map of agent tools to their agents
     /// </summary>
@@ -99,24 +99,25 @@ public class TornadoAgent
     /// perform specific tasks. If not provided, the agent will use its default tools.</param>
     /// <param name="handoffs">Optional. A list of <see cref="AgentHandoff"/> instances representing possible hand-offs to other agents.</param>
     /// <param name="mcpServers">A list of <see cref="MCPServer"/> instances for MCP Server tools.</param>
+    /// <exception cref="ArgumentNullException">Thrown when client or model is null.</exception>
     public TornadoAgent(
-        TornadoApi client, 
-        ChatModel model, 
-        string instructions = "You are a helpful assistant", 
-        Type? outputSchema = null, 
-        List<Delegate>? tools = null, 
+        TornadoApi client,
+        ChatModel model,
+        string instructions = "You are a helpful assistant",
+        Type? outputSchema = null,
+        List<Delegate>? tools = null,
         List<AgentHandoff>? handoffs = null,
         List<MCPServer>? mcpServers = null)
     {
-        Client = client;
-        Instructions = instructions;
+        Client = client ?? throw new ArgumentNullException(nameof(client));
+        Model = model ?? throw new ArgumentNullException(nameof(model));
+
+        Instructions = string.IsNullOrEmpty(instructions) ? "You are a helpful assistant" : instructions;
         OutputSchema = outputSchema;
         Tools = tools ?? Tools;
-        Instructions = string.IsNullOrEmpty(instructions)? "You are a helpful assistant" : instructions;
-        Model = model;
         Options.Model = model;
-        McpServers = mcpServers ?? [];
-        HandoffAgents = handoffs?.ToList() ?? [];
+        McpServers = mcpServers ?? new List<MCPServer>();
+        HandoffAgents = handoffs?.ToList() ?? new List<AgentHandoff>();
 
         if (OutputSchema != null)
         {
@@ -134,47 +135,66 @@ public class TornadoAgent
     /// Set up the provided methods as tools
     /// </summary>
     /// <param name="tools"></param>
+    /// <exception cref="ArgumentNullException">Thrown when tools is null.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when tool setup fails.</exception>
     private void SetupTools(List<Delegate> tools)
     {
-        Options.Tools ??= [];
-        
+        if (tools == null)
+            throw new ArgumentNullException(nameof(tools));
+
+        Options.Tools ??= new List<Tool>();
+
         foreach (Delegate fun in tools)
         {
-            //Convert Agent to tool
-            if (fun.Method.Name.Equals("AsTool"))
+            try
             {
-                TornadoAgentTool? tool = (TornadoAgentTool?)fun.DynamicInvoke(); //Creates the Chat tool for the agents running as tools and adds them to global list
-                //Add agent tool to context list
-                if (tool != null)
+                //Convert Agent to tool
+                if (fun.Method.Name.Equals("AsTool"))
                 {
-                    AgentTools.Add(tool.ToolAgent.Id, tool);
-                    Options.Tools?.Add(tool.Tool);
+                    TornadoAgentTool? tool = (TornadoAgentTool?)fun.DynamicInvoke(); //Creates the Chat tool for the agents running as tools and adds them to global list
+                    //Add agent tool to context list
+                    if (tool != null)
+                    {
+                        AgentTools.Add(tool.ToolAgent.Id, tool);
+                        Options.Tools?.Add(tool.Tool);
+                    }
+                }
+                else
+                {
+                    //Convert Method to tool
+                    Tool tool = fun.ConvertFunctionToTornadoTool();
+
+                    ToolList.Add(tool.Delegate.Method.Name, tool);
+                    Options.Tools?.Add(tool);
                 }
             }
-            else
+            catch (Exception ex)
             {
-                //Convert Method to tool
-                Tool tool = fun.ConvertFunctionToTornadoTool();
-                
-                ToolList.Add(tool.Delegate.Method.Name, tool);
-                Options.Tools?.Add(tool);
+                throw new InvalidOperationException($"Failed to setup tool {fun.Method.Name}: {ex.Message}", ex);
             }
         }
 
         foreach (MCPServer server in McpServers)
         {
-            foreach (McpClientTool tool in server.Tools)
+            try
             {
-                McpTools.Add(tool.Name, server);
-                
-                if (!ToolPermissionRequired.ContainsKey(tool.Name))
+                foreach (McpClientTool tool in server.Tools)
                 {
-                    ToolPermissionRequired.Add(tool.Name, false); //Default all mcp tools to false
+                    McpTools.Add(tool.Name, server);
+
+                    if (!ToolPermissionRequired.ContainsKey(tool.Name))
+                    {
+                        ToolPermissionRequired.Add(tool.Name, false); //Default all mcp tools to false
+                    }
+
+                    Tool mcpTool = new Tool(new ToolFunction(tool.Name, tool.Description, tool.JsonSchema));
+                    ToolList.Add(tool.Name, mcpTool);
+                    Options.Tools?.Add(mcpTool);
                 }
-                
-                Tool mcpTool = new Tool(new ToolFunction(tool.Name, tool.Description, tool.JsonSchema));
-                ToolList.Add(tool.Name, mcpTool);
-                Options.Tools?.Add(mcpTool);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Failed to setup MCP server {server.ServerLabel}: {ex.Message}", ex);
             }
         }
     }

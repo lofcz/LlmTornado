@@ -11,7 +11,7 @@ public delegate void VerboseLogHandler(string message);
 /// processes. It supports concurrent execution of processes up to a specified maximum number of threads, and allows
 /// for graceful stopping and cancellation of operations. The state machine can be reset and reused for multiple
 /// runs.</remarks>
-public class StateMachine
+public class StateMachine : IDisposable
 {
     /// <summary>
     /// Occurs when the state machine beings.
@@ -46,13 +46,13 @@ public class StateMachine
     /// </summary>
     public event Action<StateProcess>? OnStateInvoked;
 
-    private static SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
+    private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
     private SemaphoreSlim _threadLimitor;
 
     /// <summary>
     /// List of processes that will be run in the state machine this tick.
     /// </summary>
-    public List<StateProcess> ActiveProcesses { get; private set; } = [];
+    public List<StateProcess> ActiveProcesses { get; private set; } = new List<StateProcess>();
 
     /// <summary>
     /// Trigger to stop the state machine.
@@ -88,7 +88,7 @@ public class StateMachine
     /// <summary>
     /// Gets or sets a value indicating whether the process is complete.
     /// </summary>
-    public bool IsFinished { get => _isFinished;}
+    public bool IsFinished { get => _isFinished; }
     /// <summary>
     /// Gets or sets the final result of the computation.
     /// </summary>
@@ -102,11 +102,7 @@ public class StateMachine
     /// <summary>
     /// Gets or sets the collection of states.
     /// </summary>
-    public List<BaseState> States
-    {
-        get;
-        set => field = value;
-    } = [];
+    public List<BaseState> States { get; set; } = new List<BaseState>();
 
     /// <summary>
     /// Gets or sets a value indicating whether the steps of the process should be recorded.
@@ -116,11 +112,35 @@ public class StateMachine
     /// <summary>
     /// Gets or sets the collection of steps, where each step is represented as a list of state processes.
     /// </summary>
-    public List<List<StateProcess>> Steps { get; set; } = [];
+    public List<List<StateProcess>> Steps { get; set; } = new List<List<StateProcess>>();
 
 
-    public StateMachine() { 
-        _threadLimitor = new SemaphoreSlim(MaxThreads, MaxThreads); 
+    public StateMachine()
+    {
+        _threadLimitor = new SemaphoreSlim(MaxThreads, MaxThreads);
+    }
+
+    /// <summary>
+    /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+    /// </summary>
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// Releases the unmanaged resources used by the StateMachine and optionally releases the managed resources.
+    /// </summary>
+    /// <param name="disposing">true to release both managed and unmanaged resources; false to release only unmanaged resources.</param>
+    protected virtual void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            StopTrigger?.Dispose();
+            _semaphore?.Dispose();
+            _threadLimitor?.Dispose();
+        }
     }
 
     /// <summary>
@@ -145,7 +165,7 @@ public class StateMachine
     private async Task ExitAllProcesses()
     {
         VerboseLog?.Invoke("Exiting all processes...");
-        List<Task> Tasks = [];
+        List<Task> Tasks = new List<Task>();
 
         //Exit all processes
         ActiveProcesses.ForEach(process => {
@@ -160,7 +180,7 @@ public class StateMachine
     {
         VerboseLog?.Invoke("Exiting State...");
         await process.State._ExitState();
-        OnStateExited?.Invoke(process.State);   
+        OnStateExited?.Invoke(process.State);
         VerboseLog?.Invoke("StateExited.");
     }
 
@@ -177,7 +197,7 @@ public class StateMachine
         if (ActiveProcesses.Count == 0) { _isFinished = true; return; }
 
         OnTick?.Invoke(); //Invoke the tick event  
-        List<Task> Tasks = [];
+        List<Task> Tasks = new List<Task>();
 
         VerboseLog?.Invoke($"Processing {ActiveProcesses.Count} active processes...");
 
@@ -211,9 +231,11 @@ public class StateMachine
     /// active processes. After initialization, it enters the state of the process.</remarks>
     /// <param name="process">The state process to initialize. This parameter cannot be null.</param>
     /// <returns></returns>
+    /// <exception cref="ArgumentNullException">Thrown when process or process.State is null.</exception>
     private async Task InitilizeProcess(StateProcess process)
     {
-        if (process.State == null) throw new ArgumentNullException(nameof(process.State), "Run Start State cannot be null");
+        if (process?.State == null)
+            throw new ArgumentNullException(nameof(process), "Process and its State cannot be null");
 
         await _semaphore.WaitAsync(); //Wait for the state machine to be available
         //Gain access to state machine
@@ -222,9 +244,9 @@ public class StateMachine
             process.State.CurrentStateMachine ??= this; //Set the current state machine if not already set
             ActiveProcesses.Add(process);
         }
-        finally 
-        { 
-            _semaphore.Release(); 
+        finally
+        {
+            _semaphore.Release();
         }
         VerboseLog?.Invoke($"Entering state: {process.State.GetType().Name}");
         //Internal lock on access to state
@@ -250,17 +272,17 @@ public class StateMachine
 
         //Record Step
         if (RecordSteps) { Steps.Add(newStateProcesses); }
-                
+
 
         //Initialize each new state process concurrently
-        List<Task> Tasks = [];
+        List<Task> Tasks = new List<Task>();
         foreach (StateProcess stateProcess in newStateProcesses)
         {
             Tasks.Add(Task.Run(async () => await InitilizeProcess(stateProcess)));
         }
         await Task.WhenAll(Tasks);
         Tasks.Clear();
-            
+
         //This is to remove running the same state twice with two processes.. it gets input from _EnterState
         ActiveProcesses = ActiveProcesses.DistinctBy(state => state.State.Id).ToList();
 
@@ -277,11 +299,11 @@ public class StateMachine
     private async Task<List<StateProcess>>? GetNewProcesses()
     {
         VerboseLog?.Invoke("Validating State conditions for transitions");
-        List<StateProcess> newStateProcesses = [];
+        List<StateProcess> newStateProcesses = new List<StateProcess>();
 
         ActiveProcesses.ForEach(process => {
             List<StateProcess>? newStates = process.State.CheckConditions();
-            VerboseLog?.Invoke($"State {process.State.GetType().Name} : produced new states:\n {string.Join("\n", newStates.Select(nproces=> nproces.State.GetType().Name))}");
+            VerboseLog?.Invoke($"State {process.State.GetType().Name} : produced new states:\n {string.Join("\n", newStates.Select(nproces => nproces.State.GetType().Name))}");
             List<StateProcess>? newProcesses = process.State.CheckConditions();
             if (newProcesses is not null)
             {
@@ -355,7 +377,7 @@ public class StateMachine
     /// <param name="index">An integer representing the index associated with the current execution context.</param>
     /// <param name="ResultingState">The state object that will hold the output after execution completes.</param>
     /// <returns>A tuple containing the index and a list of objects representing the output from the resulting state.</returns>
-    public async Task<(int,List<object>)> Run(BaseState runStartState, object input, int index, BaseState ResultingState)
+    public async Task<(int, List<object>)> Run(BaseState runStartState, object input, int index, BaseState ResultingState)
     {
         await Run(runStartState, input);
         return (index, ResultingState.BaseOutput);
@@ -370,14 +392,18 @@ public class StateMachine
     /// <param name="runStartState">The initial state from which the state machine execution begins. This parameter cannot be null.</param>
     /// <param name="input">An optional input object that can be used by the state machine during execution. This parameter can be null.</param>
     /// <returns>A task that represents the asynchronous operation of running the state machine.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when runStartState is null.</exception>
     public async Task Run(BaseState runStartState, object? input = null)
     {
+        if (runStartState == null)
+            throw new ArgumentNullException(nameof(runStartState), "Start state cannot be null");
+
         OnBegin?.Invoke(); //Invoke the begin event
 
         ResetRun(); //Reset the state machine before running
 
         //Initialize the process with the starting state and input
-        await InitilizeAllNewProcesses([new StateProcess(runStartState, input)]);
+        await InitilizeAllNewProcesses(new List<StateProcess> { new StateProcess(runStartState, input) });
 
         //Run the state machine until it is finished or cancelled
         while (true)
@@ -391,7 +417,7 @@ public class StateMachine
             if (await CheckIfCancelled()) break;
 
             //Create List of transitions to new states from conditional movement
-            List<StateProcess> newStateProcesses = await GetNewProcesses();
+            List<StateProcess>? newStateProcesses = await GetNewProcesses();
 
             //Exit the current Processes
             await ExitAllProcesses();
@@ -399,7 +425,7 @@ public class StateMachine
             //Add currentStateMachine to each item and only Enter State if it is new
             //Add The inputs for the next run to each states to process
             //Reset Active Processes Here
-            await InitilizeAllNewProcesses(newStateProcesses);
+            await InitilizeAllNewProcesses(newStateProcesses ?? new List<StateProcess>());
         }
     }
 }
@@ -414,7 +440,7 @@ public class StateMachine
 /// <typeparam name="TOutput">The type of output that the state machine produces.</typeparam>
 public class StateMachine<TInput, TOutput> : StateMachine
 {
-    public new Action<TOutput> OnFinish;
+    public Action<TOutput>? OnFinish;
     /// <summary>
     /// Provides a mechanism for comparing two <see cref="RunOutputCollection{TOutput}"/> objects based on their
     /// index values.
@@ -424,8 +450,13 @@ public class StateMachine<TInput, TOutput> : StateMachine
     /// equal.</remarks>
     class IndexSorter : IComparer<RunOutputCollection<TOutput?>>
     {
-        public int Compare(RunOutputCollection<TOutput?> x, RunOutputCollection<TOutput?> y)
+        public int Compare(RunOutputCollection<TOutput?>? x, RunOutputCollection<TOutput?>? y)
         {
+            if (x == null || y == null)
+            {
+                return 0;
+            }
+
             if (x.Index == 0 || y.Index == 0)
             {
                 return 0;
@@ -501,7 +532,7 @@ public class StateMachine<TInput, TOutput> : StateMachine
         }
 
         // Use a ConcurrentBag to collect results from multiple tasks
-        ConcurrentBag<RunOutputCollection<TOutput?>> oResults = [];
+        ConcurrentBag<RunOutputCollection<TOutput?>> oResults = new ConcurrentBag<RunOutputCollection<TOutput?>>();
 
         for (int i = 0; i < inputs.Length; i++)
         {
