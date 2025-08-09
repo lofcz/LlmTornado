@@ -2,7 +2,6 @@
 
 namespace LlmTornado.StateMachines;
 
-public delegate void VerboseLogHandler(string message);
 /// <summary>
 /// Represents a state machine that manages the execution of state processes with support for concurrency and
 /// cancellation. [SUGGEST USING StateMachine&lt;TInput, TOutput&gt;]
@@ -14,37 +13,9 @@ public delegate void VerboseLogHandler(string message);
 public class StateMachine : IDisposable
 {
     /// <summary>
-    /// Occurs when the state machine beings.
+    /// Triggers events related to the state machine, such as state transitions and errors.
     /// </summary>
-    /// <remarks>Subscribe to this event to perform actions at the start of an operation.  Ensure that
-    /// any event handlers are added before the operation begins to  guarantee they are invoked.</remarks>
-    public Action OnBegin;
-
-    /// <summary>
-    /// Occurs at each loop of the machine.
-    /// </summary>
-    /// <remarks>Subscribe to this event to execute custom logic at each timer tick. Ensure that the
-    /// event handler executes quickly to avoid delaying subsequent ticks.</remarks>
-    public Action OnTick;
-    /// <summary>
-    /// Gets or sets the handler for verbose logging events.
-    /// </summary>
-    public Action<string>? VerboseLog;
-
-    /// <summary>
-    /// Gets or sets the event that is triggered when a state is entered.
-    /// </summary>
-    public Action<StateProcess>? OnStateEntered;
-
-    /// <summary>
-    /// Gets or sets the event that is triggered when a state is exited.
-    /// </summary>
-    public Action<BaseState>? OnStateExited;
-
-    /// <summary>
-    /// Gets or sets the event that is triggered when a state is invoked.
-    /// </summary>
-    public Action<StateProcess>? OnStateInvoked;
+    public Action<StateMachineEvent>? OnStateMachineEvent { get; set; } 
 
     private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
     private SemaphoreSlim _threadLimitor;
@@ -70,21 +41,6 @@ public class StateMachine : IDisposable
     /// Gets the <see cref="CancellationToken"/> used to signal cancellation of the current operation.
     /// </summary>
     public CancellationToken CancelToken => StopTrigger.Token;
-
-    /// <summary>
-    /// Occurs when a cancellation is triggered.
-    /// </summary>
-    /// <remarks>Subscribe to this event to handle cancellation logic in your application.  This event
-    /// is typically raised when an operation needs to be cancelled,  allowing subscribers to perform necessary
-    /// cleanup or rollback actions.</remarks>
-    public Action? OnCancellationTriggered;
-
-    /// <summary>
-    /// Occurs when the finished action is triggered.
-    /// </summary>
-    /// <remarks>Subscribe to this event to execute custom logic when the finished action is
-    /// triggered.</remarks>
-    public Action? OnFinishedTriggered;
 
     /// <summary>
     /// Gets or sets a value indicating whether the process is complete.
@@ -165,7 +121,8 @@ public class StateMachine : IDisposable
     /// <returns></returns>
     private async Task ExitActiveProcesses()
     {
-        VerboseLog?.Invoke("Exiting all processes...");
+        OnStateMachineEvent?.Invoke(new OnVerboseStateMachineEvent("Exiting all processes...")); //Invoke the exit state machine event
+
         List<Task> Tasks = new List<Task>();
 
         //Exit all processes
@@ -176,15 +133,15 @@ public class StateMachine : IDisposable
         await Task.WhenAll(Tasks);
         Tasks.Clear();
 
-        VerboseLog?.Invoke("Finished Exiting all processes!");
+        OnStateMachineEvent?.Invoke(new OnVerboseStateMachineEvent("Finished Exiting all processes!"));
     }
 
     private async Task BeginExit(StateProcess process)
     {
-        VerboseLog?.Invoke("Exiting State...");
+        OnStateMachineEvent?.Invoke(new OnVerboseStateMachineEvent("Exiting State..."));
         await process.State._ExitState();
-        OnStateExited?.Invoke(process.State);
-        VerboseLog?.Invoke("StateExited.");
+        OnStateMachineEvent?.Invoke(new OnStateExitedEvent(process.State)); //Invoke the exit state machine event
+        OnStateMachineEvent?.Invoke(new OnVerboseStateMachineEvent("StateExited."));
     }
 
     /// <summary>
@@ -199,18 +156,17 @@ public class StateMachine : IDisposable
         //If there are no processes, return
         if (ActiveProcesses.Count == 0) { _isFinished = true; return; }
 
-        OnTick?.Invoke(); //Invoke the tick event  
+        OnStateMachineEvent?.Invoke(new OnTickStateMachineEvent()); //Invoke the tick state machine event
         List<Task> Tasks = new List<Task>();
-
-        VerboseLog?.Invoke($"Processing {ActiveProcesses.Count} active processes...");
+        OnStateMachineEvent?.Invoke(new OnVerboseStateMachineEvent($"Processing {ActiveProcesses.Count} active processes..."));
 
         ActiveProcesses.ForEach(process => Tasks.Add(Task.Run(async () =>
         {
             await _threadLimitor.WaitAsync(); //Wait for a thread to be available
             try
             {
-                VerboseLog?.Invoke($"Invoking state: {process.State.GetType().Name}");
-                OnStateInvoked?.Invoke(process.GetProcess<object>()); //Invoke the state invoked event
+                OnStateMachineEvent?.Invoke(new OnVerboseStateMachineEvent($"Invoking state: {process.State.GetType().Name}"));
+                OnStateMachineEvent?.Invoke(new OnStateEnteredEvent(process)); //Invoke the state entered event
                 await process.State._Invoke(); //Invoke the state process
             }
             finally
@@ -251,9 +207,9 @@ public class StateMachine : IDisposable
         {
             _semaphore.Release();
         }
-        VerboseLog?.Invoke($"Entering state: {process.State.GetType().Name}");
+        OnStateMachineEvent?.Invoke(new OnVerboseStateMachineEvent($"Entering state: {process.State.GetType().Name}"));
+        OnStateMachineEvent?.Invoke(new OnStateEnteredEvent(process));
         //Internal lock on access to state
-        OnStateEntered?.Invoke(process.GetProcess<object>()); //Invoke the state entered event
         await process.State._EnterState(process); //preset input
     }
 
@@ -269,17 +225,17 @@ public class StateMachine : IDisposable
     {
         //Clear all of the active processes
         ActiveProcesses.Clear();
-        VerboseLog?.Invoke($"Initializing {this.newStateProcesses.Count} new state processes...");
+        OnStateMachineEvent?.Invoke(new OnVerboseStateMachineEvent($"Initializing {newStateProcesses.Count} new state processes..."));
         //If there are no new processes, return
-        if (this.newStateProcesses.Count == 0) { _isFinished = true; return; }
+        if (newStateProcesses.Count == 0) { _isFinished = true; return; }
 
         //Record Step
-        if (RecordSteps) { Steps.Add(this.newStateProcesses); }
+        if (RecordSteps) { Steps.Add(newStateProcesses); }
 
 
         //Initialize each new state process concurrently
         List<Task> Tasks = new List<Task>();
-        foreach (StateProcess stateProcess in this.newStateProcesses)
+        foreach (StateProcess stateProcess in newStateProcesses)
         {
             Tasks.Add(Task.Run(async () => await InitilizeProcess(stateProcess)));
         }
@@ -289,7 +245,7 @@ public class StateMachine : IDisposable
         //This is to remove running the same state twice with two processes.. it gets input from _EnterState
         ActiveProcesses = ActiveProcesses.DistinctBy(state => state.State.Id).ToList();
 
-        VerboseLog?.Invoke($"Initialization Complete.");
+        OnStateMachineEvent?.Invoke(new OnVerboseStateMachineEvent($"Initialization Complete."));
     }
 
     /// <summary>
@@ -301,14 +257,14 @@ public class StateMachine : IDisposable
     /// conditions. The list will be empty if no new processes are found.</returns>
     private void GetNewProcesses()
     {
-        VerboseLog?.Invoke("Validating State conditions for transitions");
+        OnStateMachineEvent?.Invoke(new OnVerboseStateMachineEvent("Validating State conditions for transitions"));
 
-        this.newStateProcesses.Clear();
+        newStateProcesses.Clear();
         ActiveProcesses.ForEach(process => {
-            this.newStateProcesses.AddRange(process.State.CheckConditions() ?? new List<StateProcess>());
+            newStateProcesses.AddRange(process.State.CheckConditions() ?? new List<StateProcess>());
         });
 
-        VerboseLog?.Invoke("Finished Validations");
+        OnStateMachineEvent?.Invoke(new OnVerboseStateMachineEvent("Finished Validations"));
     }
 
     /// <summary>
@@ -323,8 +279,8 @@ public class StateMachine : IDisposable
         if (IsFinished)
         {
             await ExitActiveProcesses();
-            OnFinishedTriggered?.Invoke();
-            VerboseLog?.Invoke("State Machine Finished.");
+            OnStateMachineEvent?.Invoke(new OnFinishedStateMachineEvent()); //Invoke the finished state machine event
+            OnStateMachineEvent?.Invoke(new OnVerboseStateMachineEvent("State Machine Finished."));
             return true;
         }
         return false;
@@ -344,8 +300,8 @@ public class StateMachine : IDisposable
         {
             //what if invoking the state? How do we handle that?
             await ExitActiveProcesses();
-            VerboseLog?.Invoke("State Machine Cancelled.");
-            OnCancellationTriggered?.Invoke();
+            OnStateMachineEvent?.Invoke(new OnVerboseStateMachineEvent("State Machine Cancelled."));
+            OnStateMachineEvent?.Invoke(new OnCancelledStateMachineEvent()); //Invoke the cancelled state machine event
             return true;
         }
         return false;
@@ -359,11 +315,11 @@ public class StateMachine : IDisposable
     /// ensure  that the system is in a clean state.</remarks>
     public void ResetRun()
     {
-        this.VerboseLog?.Invoke("Resetting StateMachine");
-        this._isFinished = false;
-        this.StopTrigger = new CancellationTokenSource(); //Reset the stop trigger
-        this.ActiveProcesses.Clear();
-        this.newStateProcesses.Clear();
+        OnStateMachineEvent?.Invoke(new OnVerboseStateMachineEvent("Resetting StateMachine"));
+        _isFinished = false;
+        StopTrigger = new CancellationTokenSource(); //Reset the stop trigger
+        ActiveProcesses.Clear();
+        newStateProcesses.Clear();
     }
 
     /// <summary>
@@ -386,11 +342,11 @@ public class StateMachine : IDisposable
         if (runStartState == null)
             throw new ArgumentNullException(nameof(runStartState), "Start state cannot be null");
 
-        OnBegin?.Invoke(); //Invoke the begin event
+        OnStateMachineEvent?.Invoke(new OnBeginStateMachineEvent()); //Invoke the begin state machine event
 
         ResetRun(); //Reset the state machine before running
 
-        this.newStateProcesses.Add(new StateProcess(runStartState, input));
+        newStateProcesses.Add(new StateProcess(runStartState, input));
 
         //Initialize the process with the starting state and input
         await InitilizeAllNewProcesses();

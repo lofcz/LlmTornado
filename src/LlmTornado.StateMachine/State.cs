@@ -24,21 +24,21 @@ public abstract class BaseState<TInput, TOutput> : BaseState
     /// <remarks>This event is triggered whenever a new state is entered within the <see
     /// cref="StateProcess{TInput}"/>. Subscribers can use this event to perform actions or handle logic specific to
     /// the entry of a state.</remarks>
-    public new StateEnteredEvent<TInput>? OnStateEntered { get; set; }
+    public StateEnteredEvent<TInput>? OnStateEntered { get; set; }
 
     /// <summary>
     /// Occurs when a state has been exited.
     /// </summary>
     /// <remarks>This event is triggered whenever a state transition results in exiting a state. 
     /// Subscribers can use this event to perform cleanup or other actions when a state is exited.</remarks>
-    public new StateExitEvent? OnStateExited { get; set; }
+    public StateExitEvent? OnStateExited { get; set; }
 
     /// <summary>
     /// Occurs when a state is invoked within the state process.
     /// </summary>
     /// <remarks>This event is triggered each time a state is invoked, allowing subscribers to handle
     /// or respond to the invocation.</remarks>
-    public new StateInvokeEvent<TInput>? OnStateInvoked { get; set; }
+    public StateInvokeEvent<TInput>? OnStateInvoked { get; set; }
 
     private List<StateResult<TOutput>> _outputResults = new List<StateResult<TOutput>>();
 
@@ -124,6 +124,8 @@ public abstract class BaseState<TInput, TOutput> : BaseState
     /// Gets or sets the collection of state transitions.
     /// </summary>
     public List<StateTransition<TOutput>> Transitions { get; set; } = new List<StateTransition<TOutput>>();
+
+    public List<StateProcess> TransitionGeneratedStateProcesses { get; set; } = new List<StateProcess>();
 
     /// <summary>
     /// Internal _EnterState method to handle adding Input process async before entering state.
@@ -289,7 +291,7 @@ public abstract class BaseState<TInput, TOutput> : BaseState
     /// If a valid transition is not found and the process can be re-attempted, the original process is included.</returns>
     private List<StateProcess>? GetFirstValidStateTransitionForEachResult()
     {
-        List<StateProcess> newStateProcesses = new List<StateProcess>();
+        TransitionGeneratedStateProcesses.Clear();
         //Results Gathered from invoking
         OutputResults.ForEach(result =>
         {
@@ -302,7 +304,7 @@ public abstract class BaseState<TInput, TOutput> : BaseState
                 //Check if transition is conversion type or use the output.Result directly
                 object? ilResult = transition.type == "in_out" ? transition.ConverterMethodResult : result.Result;
 
-                newStateProcesses.Add(new StateProcess(transition.NextState, ilResult!));
+                TransitionGeneratedStateProcesses.Add(new StateProcess(transition.NextState, ilResult!));
             }
             else
             {
@@ -314,13 +316,13 @@ public abstract class BaseState<TInput, TOutput> : BaseState
                     //Cap the amount of times a State can reattempt (Fixed at 3 right now)
                     if (failedProcess.CanReAttempt())
                     {
-                        newStateProcesses.Add(failedProcess);
+                        TransitionGeneratedStateProcesses.Add(failedProcess);
                     }
                 }
             }
         });
 
-        return newStateProcesses;
+        return TransitionGeneratedStateProcesses;
     }
 
     /// <summary>
@@ -332,36 +334,40 @@ public abstract class BaseState<TInput, TOutput> : BaseState
     /// <returns>A list of <see cref="StateProcess"/> objects representing the valid state transitions.</returns>
     private List<StateProcess>? GetAllValidStateTransitions()
     {
-        List<StateProcess> newStateProcesses = new List<StateProcess>();
+        TransitionGeneratedStateProcesses.Clear();
         //Results Gathered from invoking
         OutputResults.ForEach((output) =>
         {
-            List<StateProcess> newStateProcessesFromOutput = new List<StateProcess>();
-
-            //If the transition evaluates to true for the output, add it to the new state processes
-            Transitions.ForEach(transition =>
-            {
-                if (transition.Evaluate(output.Result))
-                {
-                    //Check if transition is conversion type or use the output.Result directly
-                    object? result = transition.type == "in_out" ? transition.ConverterMethodResult : output.Result;
-
-                    newStateProcessesFromOutput.Add(new StateProcess(transition.NextState, result!));
-                }
-            });
-
-            //If process produces no transitions and not at a dead end rerun the process
-            if (newStateProcessesFromOutput.Count == 0 && !IsDeadEnd)
-            {
-                StateProcess failedProcess = InputProcesses.First(process => process.Id == output.ProcessId);
-                //rerun the process up to the max attempts
-                if (failedProcess.CanReAttempt()) newStateProcessesFromOutput.Add(failedProcess);
-            }
-
-            newStateProcesses.AddRange(newStateProcessesFromOutput);
+            TransitionGeneratedStateProcesses = ProcessStateResultTransitions(output, TransitionGeneratedStateProcesses);
         });
 
-        return newStateProcesses;
+        return TransitionGeneratedStateProcesses;
+    }
+
+
+    private List<StateProcess> ProcessStateResultTransitions(StateResult stateResult, List<StateProcess> stateProcessesFromOutput) {         //Check if the state result has a valid transition
+                                                                                                                                                  //If the transition evaluates to true for the output, add it to the new state processes
+        Transitions.ForEach(transition =>
+        {
+            TOutput output = (TOutput)stateResult.BaseResult;
+            if (transition.Evaluate(output))
+            {
+                //Check if transition is conversion type or use the output.Result directly
+                object? result = transition.type == "in_out" ? transition.ConverterMethodResult : output;
+
+                stateProcessesFromOutput.Add(new StateProcess(transition.NextState, result!));
+            }
+        });
+
+        //If process produces no transitions and not at a dead end rerun the process
+        if (stateProcessesFromOutput.Count == 0 && !IsDeadEnd)
+        {
+            StateProcess failedProcess = InputProcesses.First(process => process.Id == stateResult.ProcessId);
+            //rerun the process up to the max attempts
+            if (failedProcess.CanReAttempt()) stateProcessesFromOutput.Add(failedProcess);
+        }
+
+        return stateProcessesFromOutput;
     }
 
     public override List<StateProcess>? CheckConditions()
@@ -456,7 +462,6 @@ public class DeadEnd : BaseState<object, object>
     {
         IsDeadEnd = true;
         WasInvoked = true;
-        Transitioned = true;
     }
 
     public override Task<object> Invoke(object input)
