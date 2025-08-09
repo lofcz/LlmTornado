@@ -50,9 +50,12 @@ public interface IState
 public abstract class BaseState : IState
 {
     internal readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
-    private int _maxThreads = 20;
+
+    /// <summary>
+    /// Used to limit the number of times to rerun the state.
+    /// </summary>
     public bool BeingReran = false;
-    private List<object> _output = new List<object>();
+
 
     /// <summary>
     /// Gets or sets the event that is triggered when a state is entered.
