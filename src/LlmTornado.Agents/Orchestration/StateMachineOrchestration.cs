@@ -202,21 +202,21 @@ namespace LlmTornado.Agents.Orchestration;
             stateMachine.OnStateExited += UnsubscribeToAgentState;
         }
 
-    /// <summary>
-    /// Registers the specified state machine as the root state machine and subscribes to its state entry and exit
-    /// events.
-    /// </summary>
-    /// <param name="stateMachine">The <see cref="StateMachine"/> instance to set up as the root state machine. Cannot be <c>null</c>.</param>
-    public void SetupRootStateMachine(StateMachine stateMachine)
-    {
-        //Add new States Event Handlers for Verbose and Streaming Callbacks from State
-        stateMachine.OnStateEntered += SubscribeToAgentState;
+        /// <summary>
+        /// Registers the specified state machine as the root state machine and subscribes to its state entry and exit
+        /// events.
+        /// </summary>
+        /// <param name="stateMachine">The <see cref="StateMachine"/> instance to set up as the root state machine. Cannot be <c>null</c>.</param>
+        public void SetupRootStateMachine(StateMachine stateMachine)
+        {
+            //Add new States Event Handlers for Verbose and Streaming Callbacks from State
+            stateMachine.OnStateEntered += SubscribeToAgentState;
 
-        //Remove Verbose and Streaming Callbacks from State when exited
-        stateMachine.OnStateExited += UnsubscribeToAgentState;
-    }
+            //Remove Verbose and Streaming Callbacks from State when exited
+            stateMachine.OnStateExited += UnsubscribeToAgentState;
+        }
 
-    private void SubscribeToAgentState(StateProcess state)
+        private void SubscribeToAgentState(StateProcess state)
         {
             if (state.State is IAgentState agentState)
             {
@@ -294,5 +294,5 @@ namespace LlmTornado.Agents.Orchestration;
             // Get the Result property from the Task
             return (string?)StateMachineRunnerMethod?.Method.ReturnType.GetProperty("Result")?.GetValue(task);
         }
-    }
+}
 

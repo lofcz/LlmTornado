@@ -14,7 +14,7 @@ public abstract class AgentStateMachine<TInput, TOutput> : StateMachine<TInput, 
     public AgentStateMachine() {
 
         InitializeStates();
-        CancellationTriggered += CancelTriggered; // Cancel all active states when cancellation is triggered
+        OnCancellationTriggered += CancelTriggered; // Cancel all active states when cancellation is triggered
     }
 
     /// <summary>

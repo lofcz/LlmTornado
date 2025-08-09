@@ -1,14 +1,15 @@
 ﻿using LlmTornado.Agents.DataModels;
 using LlmTornado.Chat;
 using LlmTornado.ChatFunctions;
+using LlmTornado.Code;
 using LlmTornado.Common;
+using LlmTornado.StateMachines;
 using ModelContextProtocol.Client;
 using ModelContextProtocol.Protocol;
 using Newtonsoft.Json;
 using System.Reflection;
 using System.Text.Json;
-using LlmTornado.Code;
-using LlmTornado.StateMachines;
+using System.Threading.Tasks;
 
 namespace LlmTornado.Agents;
 
@@ -26,7 +27,7 @@ public static class ToolRunner
     /// <exception cref="Exception"></exception>
     public static async Task<FunctionResult> CallFuncToolAsync(TornadoAgent agent, FunctionCall call)
     {
-        List<object> arguments = [];
+        object[] arguments;
 
         if (!agent.ToolList.TryGetValue(call.Name, out Common.Tool tool))
             throw new Exception($"I don't have a tool called {call.Name}");
@@ -34,22 +35,21 @@ public static class ToolRunner
         //Need to check if function has required parameters and if so, parse them from the call.FunctionArguments
         if (call.Arguments != null && tool.Delegate != null)
         {
-            arguments = tool.Delegate?.ParseFunctionCallArgs(call.Arguments) ?? [];
+            List<object>? parsedArgs = tool.Delegate?.ParseFunctionCallArgs(call.Arguments);
+            arguments = parsedArgs?.ToArray() ?? new object[0];
 
-            string? result = (string?)await CallFuncAsync(tool.Delegate, [.. arguments]);
+            string? result = (string?)await CallFuncAsync(tool.Delegate, arguments);
 
             return new FunctionResult(call, result);
         }
 
         return new FunctionResult(call, "Error No Delegate found");
     }
-    
+
     public static async Task<FunctionResult> CallAgentToolAsync(TornadoAgent agent, FunctionCall call)
     {
         if (!agent.AgentTools.TryGetValue(call.Name, out TornadoAgentTool? tool))
             throw new Exception($"I don't have a Agent tool called {call.Name}");
-
-        TornadoAgent newAgent = tool.ToolAgent;
 
         if (call.Arguments != null)
         {
@@ -57,7 +57,7 @@ public static class ToolRunner
 
             if (argumentsJson.RootElement.TryGetProperty("input", out JsonElement jValue))
             {
-                Conversation agentToolResult = await TornadoRunner.RunAsync(newAgent, jValue.GetString());
+                Conversation agentToolResult = await TornadoRunner.RunAsync(tool.ToolAgent, jValue.GetString());
                 return new FunctionResult(call, agentToolResult.MostRecentApiResult!.Choices?.Last().Message?.Content);
             }
 
@@ -66,14 +66,14 @@ public static class ToolRunner
 
         return new FunctionResult(call, "Error");
     }
-    
+
     public static async Task<FunctionResult> CallMcpToolAsync(TornadoAgent agent, FunctionCall call)
     {
         if (!agent.McpTools.TryGetValue(call.Name, out MCPServer? server))
             throw new Exception($"I don't have a tool called {call.Name}");
 
         CallToolResult localResult;
-        
+
         //Need to check if function has required parameters and if so, parse them from the call.FunctionArguments
         if (call.Arguments != null)
         {
@@ -93,24 +93,22 @@ public static class ToolRunner
         {
             return new FunctionResult(call, "Error");
         }
-        
-        string result = string.Empty;
 
         if (callToolResult.Content.Count <= 0)
         {
-            return new FunctionResult(call, result);
+            return new FunctionResult(call, string.Empty);
         }
-            
+
         ContentBlock firstBlock = callToolResult.Content[0];
 
-        result = firstBlock switch
+        string result = firstBlock switch
         {
             TextContentBlock textBlock => textBlock.Text,
             ImageContentBlock imageBlock => imageBlock.Data,
             AudioContentBlock audioBlock => audioBlock.Data,
             EmbeddedResourceBlock embeddedResourceBlock => embeddedResourceBlock.Resource.Uri,
             ResourceLinkBlock resourceLinkBlock => resourceLinkBlock.Uri,
-            _ => result
+            _ => string.Empty
         };
 
         return new FunctionResult(call, result);

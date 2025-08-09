@@ -199,13 +199,12 @@ public class TornadoRunner
                 return await HandleStreaming(agent, chat, streamingCallback);
             }
 
-            RestDataOrException<ChatRichResponse> response = await chat.GetResponseRichSafe(functions =>
+            RestDataOrException<ChatRichResponse> response = await chat.GetResponseRichSafe(async functions =>
             {
                 foreach (FunctionCall fn in functions)
                 {
-                    Task.Run(async () => fn.Result = await HandleToolCall(agent, fn, toolPermissionRequest)).Wait();
+                    fn.Result = await HandleToolCall(agent, fn, toolPermissionRequest);
                 }
-                return Threading.ValueTaskCompleted;
             });
 
             return chat;

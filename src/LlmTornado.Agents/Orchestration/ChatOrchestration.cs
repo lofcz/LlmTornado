@@ -52,7 +52,7 @@ public class ChatOrchestration
     /// <summary>
     /// Main streaming event for the Control Agent to handle streaming messages for the Control Agent conversation.
     /// </summary>
-    public StreamingCallbacks? OnStreamingEvent;
+    public Func<ModelStreamingEvents, ValueTask>? OnStreamingEvent;
 
 
     /// <summary>
@@ -75,7 +75,7 @@ public class ChatOrchestration
     /// to handle the message. Ensure that the <paramref name="message"/> is not null to avoid potential
     /// exceptions.</remarks>
     /// <param name="message">The message to be passed to the streaming event. Cannot be null.</param>
-    private ValueTask HandleControllerStreamingEvent(ModelStreamingEvents message)
+    private ValueTask HandleStreamingEvent(ModelStreamingEvents message)
     {
         OnStreamingEvent?.Invoke(message);
         return default; // Return a completed ValueTask
@@ -87,7 +87,7 @@ public class ChatOrchestration
     /// <remarks>This method triggers the <c>verboseEvent</c> if it has any subscribers. Ensure that
     /// the event is properly subscribed to before calling this method.</remarks>
     /// <param name="message">The message to be passed to the event handlers. Cannot be null.</param>
-    private ValueTask HandleControllerVerboseEvent(string message)
+    private ValueTask HandleVerboseEvent(string message)
     {
         OnVerboseEvent?.Invoke(message);
         return default; // Return a completed ValueTask
@@ -126,11 +126,32 @@ public class ChatOrchestration
         cts.Cancel(); // Signal cancellation to all state machines
     }
 
+    /// <summary>
+    /// Handles the invocation of a chat operation with the specified user input and optional image data.
+    /// </summary>
+    /// <param name="userInput">The user's input message to process. Cannot be <see langword="null"/>.</param>
+    /// <param name="streaming"><see langword="true"/> to enable streaming of the response; otherwise, <see langword="false"/> to return the
+    /// complete response after processing.</param>
+    /// <param name="base64Image">An optional base64-encoded image to include with the user input. May be <see langword="null"/> if no image is
+    /// provided.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains a list of <see
+    /// cref="ChatMessagePart"/> objects representing the response, or <see langword="null"/> if no response is
+    /// generated.</returns>
     internal virtual async Task<List<ChatMessagePart>?> OnInvokedAsync(string userInput, bool streaming = true, string ? base64Image = null)
     {
         return null;
     }
 
+    /// <summary>
+    /// Sends a user message, with optional image data, to the conversation and returns the response asynchronously.
+    /// </summary>
+    /// <param name="userInput">The text input from the user to include in the message. Cannot be <see langword="null"/> or empty.</param>
+    /// <param name="streaming"><see langword="true"/> to enable streaming of the response as it is generated; <see langword="false"/> to
+    /// receive the complete response after processing.</param>
+    /// <param name="base64Image">An optional base64-encoded image string to include with the message. If <see langword="null"/> or empty, no
+    /// image is attached.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the response string from the
+    /// conversation.</returns>
     public async Task<string> InvokeAsync(string userInput, bool streaming = true, string? base64Image = null)
     {
         List<ChatMessagePart> parts = [new ChatMessagePart(userInput)];
@@ -162,7 +183,7 @@ public class ChatOrchestration
     /// <returns>A <see cref="Task{String}"/> representing the asynchronous operation. The task result contains the processed
     /// conversation response text.</returns>
     /// <exception cref="InvalidOperationException">Thrown if the <c>ControlAgent</c> is not set before adding to the conversation.</exception>
-    public async Task<string> AddToConversation(ChatMessage? message = null, bool streaming = true)
+    private async Task<string> AddToConversation(ChatMessage? message = null, bool streaming = true)
     {
         // Ensure that the ControlAgent is set before proceeding
         if (CurrentAgent == null)
@@ -200,8 +221,8 @@ public class ChatOrchestration
         }
 
         //Run the ControlAgent with the current messages
-        CurrentResult = await RunAsync(CurrentAgent, messages: messages, verboseCallback: HandleControllerVerboseEvent,
-            streaming: streaming, streamingCallback: HandleControllerStreamingEvent, cancellationToken: cts.Token, responseId: string.IsNullOrEmpty(MainThreadId) ? "" : MainThreadId);
+        CurrentResult = await RunAsync(CurrentAgent, messages: messages, verboseCallback: HandleVerboseEvent,
+            streaming: streaming, streamingCallback: HandleStreamingEvent, cancellationToken: cts.Token, responseId: string.IsNullOrEmpty(MainThreadId) ? "" : MainThreadId);
 
         if (CurrentResult.MostRecentApiResult != null)
         {
@@ -212,30 +233,5 @@ public class ChatOrchestration
         OnExecutionDone?.Invoke();
 
         return CurrentResult.Messages.Last().Content ?? "Error getting Response";
-    }
-
-
-    /// <summary>
-    /// Adds a file to the conversation with the specified user input and file identifier.
-    /// </summary>
-    /// <remarks>This method reads the specified file from disk and adds it to the conversation as an
-    /// image file content. The user input is included as text content in the same message.</remarks>
-    /// <param name="userInput">The text input provided by the user to accompany the file.</param>
-    /// <param name="base64">Base64 encoded image.</param>
-    /// <param name="streaming">A boolean value indicating whether the operation should be performed in streaming mode. The default is <see
-    /// langword="true"/>.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result contains a string that identifies the
-    /// message added to the conversation.</returns>
-    public async Task<string> AddBase64ImageToConversation(string userInput, string base64, bool streaming = true, string threadID = "")
-    {
-        if (!string.IsNullOrEmpty(threadID))
-        {
-            MainThreadId = threadID;
-        }
-
-        ChatMessagePart imageContent = new ChatMessagePart(base64, ImageDetail.Auto);
-        ChatMessagePart chatMessagePart = new ChatMessagePart(userInput);
-        ChatMessage message = new ChatMessage(ChatMessageRoles.User, [chatMessagePart, imageContent]);
-        return await AddToConversation(message, streaming: streaming);
     }
 }

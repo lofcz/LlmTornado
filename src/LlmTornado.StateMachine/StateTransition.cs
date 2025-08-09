@@ -96,7 +96,7 @@ public class StateTransition<TInput, TOutput> : StateTransition<TInput>
     /// <summary>
     /// Gets or sets the result of the converter method.
     /// </summary>
-    public TOutput ConverterMethodResult
+    public new TOutput ConverterMethodResult
     {
         get
         {

@@ -1,5 +1,45 @@
 namespace LlmTornado.StateMachines;
 
+public interface IState
+{
+    /// <summary>
+    /// Gets the identifier of the state.
+    /// </summary>
+    string Id { get; }
+    /// <summary>
+    /// Gets the type of input that this state can process.
+    /// </summary>
+    Type GetInputType();
+    /// <summary>
+    /// Gets the output type produced by this state.
+    /// </summary>
+    Type GetOutputType();
+
+    /// <summary>
+    /// Get the current StateMachine instance associated with this state.
+    /// </summary>
+    public StateMachine? CurrentStateMachine { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether parallel transitions are allowed.
+    /// </summary>
+    public bool AllowsParallelTransitions { get; set; } 
+    /// <summary>
+    /// Check if the state was invoked.
+    /// </summary>
+    public bool WasInvoked { get; set; }
+
+    /// <summary>
+    /// property to combine input into a single process to avoid running multiple threads for each input.
+    /// </summary>
+    public bool CombineInput { get; set; } 
+
+    /// <summary>
+    /// Used to set if this state is okay not to have transitions.
+    /// </summary>
+    public bool IsDeadEnd { get; set; } 
+}
+
 /// <summary>
 /// Represents the base class for defining a state within a state machine.
 /// </summary>
@@ -7,27 +47,30 @@ namespace LlmTornado.StateMachines;
 /// and output processing, and state invocation within a state machine. It includes properties and methods for
 /// handling state-specific logic, such as entering and exiting states, checking conditions, and managing
 /// transitions.</remarks>
-public abstract class BaseState
+public abstract class BaseState : IState
 {
     internal readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
-    private int _maxThreads = 20;
+
+    /// <summary>
+    /// Used to limit the number of times to rerun the state.
+    /// </summary>
     public bool BeingReran = false;
-    private List<object> _output = [];
+
 
     /// <summary>
     /// Gets or sets the event that is triggered when a state is entered.
     /// </summary>
-    public event StateEnteredEvent<object>? OnStateEntered;
+    public StateEnteredEvent<object>? OnStateEntered;
 
     /// <summary>
     /// Gets or sets the event that is triggered when a state is exited.
     /// </summary>
-    public event StateExitEvent? OnStateExited;
+    public StateExitEvent? OnStateExited;
 
     /// <summary>
     /// Gets or sets the event that is triggered when a state is invoked.
     /// </summary>
-    public event StateInvokeEvent<object>? OnStateInvoked;
+    public StateInvokeEvent<object>? OnStateInvoked;
 
     /// <summary>
     /// State identifier.
@@ -42,27 +85,22 @@ public abstract class BaseState
     /// <summary>
     /// Output results of the state, containing processed results from the state invocation.
     /// </summary>
-    public List<StateResult> BaseOutputResults { get; set; } = [];
+    public List<StateResult> BaseOutputResults { get; set; } = new List<StateResult>();
 
     /// <summary>
     /// Gets or sets the list of input objects the state has to process this tick.
     /// </summary>
-    public List<object> BaseInput { get; set; } = [];
+    public List<object> BaseInput { get; set; } = new List<object>();
 
     /// <summary>
     /// Input processes that the state has to process this tick.
     /// </summary>
-    public List<StateProcess> BaseInputProcesses { get; set; } = [];
+    public List<StateProcess> BaseInputProcesses { get; set; } = new List<StateProcess>();
 
     /// <summary>
     /// Gets or sets the list of state transitions.
     /// </summary>
-    public List<StateTransition<object>> BaseTransitions { get; set; } = [];
-
-    /// <summary>
-    /// Checks if the state has transitioned.
-    /// </summary>
-    public bool Transitioned { get; set; } = false;
+    public List<StateTransition<object>> BaseTransitions { get; set; } = new List<StateTransition<object>>();
 
     /// <summary>
     /// Gets or sets the current state machine instance.
