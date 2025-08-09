@@ -12,7 +12,7 @@ public abstract class BaseState
     internal readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
     private int _maxThreads = 20;
     public bool BeingReran = false;
-    private List<object> _output = [];
+    private List<object> _output = new List<object>();
 
     /// <summary>
     /// Gets or sets the event that is triggered when a state is entered.
@@ -42,22 +42,22 @@ public abstract class BaseState
     /// <summary>
     /// Output results of the state, containing processed results from the state invocation.
     /// </summary>
-    public List<StateResult> BaseOutputResults { get; set; } = [];
+    public List<StateResult> BaseOutputResults { get; set; } = new List<StateResult>();
 
     /// <summary>
     /// Gets or sets the list of input objects the state has to process this tick.
     /// </summary>
-    public List<object> BaseInput { get; set; } = [];
+    public List<object> BaseInput { get; set; } = new List<object>();
 
     /// <summary>
     /// Input processes that the state has to process this tick.
     /// </summary>
-    public List<StateProcess> BaseInputProcesses { get; set; } = [];
+    public List<StateProcess> BaseInputProcesses { get; set; } = new List<StateProcess>();
 
     /// <summary>
     /// Gets or sets the list of state transitions.
     /// </summary>
-    public List<StateTransition<object>> BaseTransitions { get; set; } = [];
+    public List<StateTransition<object>> BaseTransitions { get; set; } = new List<StateTransition<object>>();
 
     /// <summary>
     /// Checks if the state has transitioned.

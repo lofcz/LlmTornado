@@ -27,7 +27,7 @@ public static class ToolRunner
     /// <exception cref="Exception"></exception>
     public static async Task<FunctionResult> CallFuncToolAsync(TornadoAgent agent, FunctionCall call)
     {
-        List<object> arguments = [];
+        object[] arguments;
 
         if (!agent.ToolList.TryGetValue(call.Name, out Common.Tool tool))
             throw new Exception($"I don't have a tool called {call.Name}");
@@ -35,16 +35,17 @@ public static class ToolRunner
         //Need to check if function has required parameters and if so, parse them from the call.FunctionArguments
         if (call.Arguments != null && tool.Delegate != null)
         {
-            arguments = tool.Delegate?.ParseFunctionCallArgs(call.Arguments) ?? [];
+            List<object>? parsedArgs = tool.Delegate?.ParseFunctionCallArgs(call.Arguments);
+            arguments = parsedArgs?.ToArray() ?? new object[0];
 
-            string? result = (string?)await CallFuncAsync(tool.Delegate, [.. arguments]);
+            string? result = (string?)await CallFuncAsync(tool.Delegate, arguments);
 
             return new FunctionResult(call, result);
         }
 
         return new FunctionResult(call, "Error No Delegate found");
     }
-    
+
     public static async Task<FunctionResult> CallAgentToolAsync(TornadoAgent agent, FunctionCall call)
     {
         if (!agent.AgentTools.TryGetValue(call.Name, out TornadoAgentTool? tool))
@@ -65,14 +66,14 @@ public static class ToolRunner
 
         return new FunctionResult(call, "Error");
     }
-    
+
     public static async Task<FunctionResult> CallMcpToolAsync(TornadoAgent agent, FunctionCall call)
     {
         if (!agent.McpTools.TryGetValue(call.Name, out MCPServer? server))
             throw new Exception($"I don't have a tool called {call.Name}");
 
         CallToolResult localResult;
-        
+
         //Need to check if function has required parameters and if so, parse them from the call.FunctionArguments
         if (call.Arguments != null)
         {
@@ -97,7 +98,7 @@ public static class ToolRunner
         {
             return new FunctionResult(call, string.Empty);
         }
-            
+
         ContentBlock firstBlock = callToolResult.Content[0];
 
         string result = firstBlock switch
@@ -112,7 +113,7 @@ public static class ToolRunner
 
         return new FunctionResult(call, result);
     }
-    
+
     /// <summary>
     /// Handles the actual Method Invoke async/sync and returns the result
     /// </summary>
@@ -135,7 +136,7 @@ public static class ToolRunner
                 result = resProp?.GetValue(task);
             }
         }
-        else if(returnType == typeof(Task))
+        else if (returnType == typeof(Task))
         {
             Task? task = (Task?)returnValue;
             if (task is not null)

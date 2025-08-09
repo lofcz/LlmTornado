@@ -39,8 +39,8 @@ public abstract class BaseState<TInput, TOutput> : BaseState
     /// <remarks>This event is triggered each time a state is invoked, allowing subscribers to handle
     /// or respond to the invocation.</remarks>
     public new StateInvokeEvent<TInput>? OnStateInvoked { get; set; }
-        
-    private List<StateResult<TOutput>> _outputResults = [];
+
+    private List<StateResult<TOutput>> _outputResults = new List<StateResult<TOutput>>();
 
     public override Type GetInputType() => typeof(TInput);
     public override Type GetOutputType() => typeof(TOutput);
@@ -48,25 +48,27 @@ public abstract class BaseState<TInput, TOutput> : BaseState
     /// <summary>
     /// Gets the list of output results.
     /// </summary>
-    public List<TOutput> Output => OutputResults.Select(output=> output.Result).ToList();
+    public List<TOutput> Output => OutputResults.Select(output => output.Result).ToList();
 
     /// <summary>
     /// Gets the list of input items processed by the input processes.
     /// </summary>
     public List<TInput> Input => InputProcesses.Select(process => process.Input).ToList();
 
+    private List<StateProcess<TInput>> _inputProcesses = new List<StateProcess<TInput>>();
+
     /// <summary>
     /// Gets or sets the collection of input processes.
     /// </summary>
     public List<StateProcess<TInput>> InputProcesses
     {
-        get;
+        get => _inputProcesses;
         set
         {
-            field = value ?? [];
+            _inputProcesses = value ?? new List<StateProcess<TInput>>();
             BaseInputProcesses = ConvertInputProcesses();
         }
-    } = [];
+    }
 
     /// <summary>
     /// Converts the input processes into a list of <see cref="StateProcess"/> objects.
@@ -76,7 +78,7 @@ public abstract class BaseState<TInput, TOutput> : BaseState
     /// <returns>A list of <see cref="StateProcess"/> objects, each representing a converted input process.</returns>
     private List<StateProcess> ConvertInputProcesses()
     {
-        List<StateProcess> inputProcs = [];
+        List<StateProcess> inputProcs = new List<StateProcess>();
         foreach (StateProcess<TInput> process in InputProcesses)
         {
             inputProcs.Add(new StateProcess(process.State, (object)process.Input!));
@@ -92,7 +94,7 @@ public abstract class BaseState<TInput, TOutput> : BaseState
         get => _outputResults;
         set
         {
-            _outputResults = value ?? [];
+            _outputResults = value ?? new List<StateResult<TOutput>>();
             BaseOutputResults = ConvertOutputResults();
         }
     }
@@ -121,14 +123,14 @@ public abstract class BaseState<TInput, TOutput> : BaseState
     /// <summary>
     /// Gets or sets the collection of state transitions.
     /// </summary>
-    public List<StateTransition<TOutput>> Transitions { get; set; } = [];
+    public List<StateTransition<TOutput>> Transitions { get; set; } = new List<StateTransition<TOutput>>();
 
     /// <summary>
     /// Internal _EnterState method to handle adding Input process async before entering state.
     /// </summary>
     /// <param name="input"></param>
     /// <returns></returns>
-    public async Task _EnterState(StateProcess<TInput>? input) 
+    public async Task _EnterState(StateProcess<TInput>? input)
     {
         await _semaphore.WaitAsync();
         WasInvoked = false;
@@ -198,15 +200,15 @@ public abstract class BaseState<TInput, TOutput> : BaseState
     /// state-specific exit logic. The default implementation does nothing.</remarks>
     /// <returns></returns>
     public virtual async Task ExitState() { }
-    
+
     private async Task<List<StateResult<TOutput>>> InvokeCore()
     {
         if (InputProcesses.Count == 0)
             throw new InvalidOperationException($"Input Process is required on State {GetType()}");
 
         //Setup Invoke Task
-        List<Task> Tasks = [];
-        ConcurrentBag<StateResult<TOutput>> oResults = [];
+        List<Task> Tasks = new List<Task>();
+        ConcurrentBag<StateResult<TOutput>> oResults = new ConcurrentBag<StateResult<TOutput>>();
 
         if (CombineInput)
         {
@@ -243,18 +245,10 @@ public abstract class BaseState<TInput, TOutput> : BaseState
     /// <returns>A task representing the asynchronous operation, containing a list of <see cref="StateResult{TOutput}"/>
     /// objects that represent the results of processing each input.</returns>
     /// <exception cref="InvalidOperationException">Thrown if no input processes are defined for the state.</exception>
-#if MODERN
-    public override async Task<List<StateResult<TOutput>>> _Invoke()
-#else
     public override async Task _Invoke()
-#endif
     {
-#if MODERN
-        return await InvokeCore();
-#else
         await InvokeCore();
-#endif
-}
+    }
 
     /// <summary>
     /// StateResult Wrapper for Process and result
@@ -295,12 +289,12 @@ public abstract class BaseState<TInput, TOutput> : BaseState
     /// If a valid transition is not found and the process can be re-attempted, the original process is included.</returns>
     private List<StateProcess>? GetFirstValidStateTransitionForEachResult()
     {
-        List<StateProcess> newStateProcesses = [];
+        List<StateProcess> newStateProcesses = new List<StateProcess>();
         //Results Gathered from invoking
         OutputResults.ForEach(result =>
         {
             //Transitions are selected in order they are added
-            StateTransition?  transition = GetFirstValidStateTransition(result.Result);
+            StateTransition? transition = GetFirstValidStateTransition(result.Result);
 
             //If not transition is found, we can reattempt the process
             if (transition != null)
@@ -314,7 +308,7 @@ public abstract class BaseState<TInput, TOutput> : BaseState
             {
                 //If the state is a dead end, we do not reattempt the process
                 if (!IsDeadEnd)
-                {    
+                {
                     //ReRun the process that failed
                     StateProcess<TInput> failedProcess = InputProcesses.First(process => process.Id == result.ProcessId);
                     //Cap the amount of times a State can reattempt (Fixed at 3 right now)
@@ -338,11 +332,11 @@ public abstract class BaseState<TInput, TOutput> : BaseState
     /// <returns>A list of <see cref="StateProcess"/> objects representing the valid state transitions.</returns>
     private List<StateProcess>? GetAllValidStateTransitions()
     {
-        List<StateProcess> newStateProcesses = [];
+        List<StateProcess> newStateProcesses = new List<StateProcess>();
         //Results Gathered from invoking
         OutputResults.ForEach((output) =>
         {
-            List<StateProcess> newStateProcessesFromOutput = [];
+            List<StateProcess> newStateProcessesFromOutput = new List<StateProcess>();
 
             //If the transition evaluates to true for the output, add it to the new state processes
             Transitions.ForEach(transition =>
