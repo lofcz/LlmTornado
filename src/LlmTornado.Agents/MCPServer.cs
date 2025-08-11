@@ -18,10 +18,10 @@ public class MCPServer
         ServerLabel = serverLabel;
         ServerUrl = serverUrl;
         DisableTools = disableTools;
-        Task.Run(async () => Tools = await AsToolkit(this)).Wait();
+        Task.Run(async () => await AutoSetupToolsAsync()).Wait();
     }
 
-    private async Task<bool> TryGetMcpClient()
+    private async Task<bool> TryGetMcpClientAsync()
     {
         try
         {
@@ -62,7 +62,7 @@ public class MCPServer
     /// </summary>
     /// <param name="server">Server you wish to get tools from</param>
     /// <returns></returns>
-    public static async Task<IMcpClient>? TryGetMcpClient(string serverUrl, string serverLabel)
+    public static async Task<IMcpClient>? TryGetMcpClientAsync(string serverUrl, string serverLabel)
     {
         IMcpClient? mcpClient = null;
         try
@@ -99,32 +99,27 @@ public class MCPServer
         }
     }
 
-    public async Task<List<McpClientTool>> AsToolkit(MCPServer server)
+    private async Task AutoSetupToolsAsync()
     {
-        List<McpClientTool> result = new List<McpClientTool>();
-
-        if(!(await TryGetMcpClient()))
-        {
-            // If we cannot connect to the server, return an empty list
-            return result;
-        }
+        // If we cannot connect to the server, return an empty list
+        if (!(await TryGetMcpClientAsync())) return; 
 
         if (McpClient != null)
         {
             // If the server URL is an HTTP endpoint, we can use the MCP client factory directly
             IList<McpClientTool> tools = await McpClient.ListToolsAsync();
+
             foreach (McpClientTool tool in tools)
             {
-                if (server.DisableTools != null)
+                if (DisableTools != null)
                 {
-                    if (server.DisableTools.Contains(tool.Name)) continue; // Skip tools not in the allowed list
+                    if (DisableTools.Contains(tool.Name)) continue; // Skip tools not in the allowed list
                 }
-                result.Add(tool);
+
+                Tools.Add(tool);
                 mcp_tools.Add(tool.Name, tool);
             }
         }
-
-        return result;
     }
     
     public static (string command, string[] arguments) GetCommandAndArguments(string[] args)

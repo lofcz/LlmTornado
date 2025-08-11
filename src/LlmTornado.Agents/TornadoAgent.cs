@@ -195,10 +195,7 @@ public class TornadoAgent
         if (tool != null && server != null)
         {
             McpTools.Add(tool.Name, server);
-            Tool mcpTool = new Tool(new ToolFunction(tool.Name, tool.Description, tool.JsonSchema));
-            SetDefaultToolPermission(mcpTool);
-            ToolList.Add(tool.Name, mcpTool);
-            Options.Tools?.Add(mcpTool);
+            AddTornadoTool(new Tool(new ToolFunction(tool.Name, tool.Description, tool.JsonSchema)));
         }
     }
 
@@ -206,10 +203,8 @@ public class TornadoAgent
     {
         //Convert Method to tool
         Tool tool = methodAsTool.ConvertFunctionToTornadoTool();
-        if (tool.Delegate != null)
-        {
-            AddTornadoTool(tool);
-        }
+
+        if (tool.Delegate != null) AddTornadoTool(tool);
     }
 
     private void GetAgentTool(Delegate agentAsTool)
