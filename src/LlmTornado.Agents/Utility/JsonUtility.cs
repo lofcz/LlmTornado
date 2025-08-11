@@ -194,7 +194,8 @@ internal static class JsonUtility
                 return JsonSerializer.Deserialize<T>(cleaned, new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true,
-                    AllowTrailingCommas = true
+                    AllowTrailingCommas = true,
+                    UnmappedMemberHandling = JsonUnmappedMemberHandling.Skip
                 }) ?? default!;
             }
             catch (JsonException)
