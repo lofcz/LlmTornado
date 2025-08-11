@@ -4,6 +4,8 @@ using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Common;
 using LlmTornado.Responses.Events;
+using System;
+using System.Threading;
 
 namespace LlmTornado.Agents;
 
@@ -51,44 +53,27 @@ public class TornadoRunner
         ToolPermissionRequest? toolPermissionRequest = null
     )
     {
-        Conversation chat = agent.Client.Chat.CreateConversation(agent.Options);
-   
-        chat.AddSystemMessage(agent.Instructions); //Set the instructions for the agent
-
-        if (cancellationToken != null)
-        {
-            //Set the cancellation token for the agent client
-            chat.RequestParameters.CancellationToken = cancellationToken;
-        }
-
-        //Setup the messages from previous runs or memory
-        if (messages != null)
-        {
-            foreach (ChatMessage message in messages)
-            {
-                if (message.Role == ChatMessageRoles.System) continue; //Skip system messages if any to avoid Instruction overlap
-                chat.AppendMessage(message);
-            }
-        }
-
-        //Set response id
-        if (!string.IsNullOrEmpty(responseId))
-        {
-            if(chat.RequestParameters.ResponseRequestParameters != null)
-            {
-                chat.RequestParameters.ResponseRequestParameters!.PreviousResponseId = responseId;
-            }
-        }
-
-        //Add the latest message to the stream
-        if (!string.IsNullOrEmpty(input.Trim()))
-        {
-            chat.AppendUserInput(input);
-        }
+        Conversation chat = SetupConversation(agent, input, messages, responseId, cancellationToken);
 
         //Check if the input triggers a guardrail to stop the agent from continuing
         CheckInputGuardrail(input, guardRail);
-        
+
+        return await RunAgentLoop(chat,agent,singleTurn,maxTurns,verboseCallback,streaming,streamingCallback,responseId, cancellationToken,toolPermissionRequest);
+    }
+
+    private static async Task<Conversation> RunAgentLoop(
+        Conversation chat,
+        TornadoAgent agent,
+        bool singleTurn = false,
+        int maxTurns = 10,
+        RunnerVerboseCallbacks? verboseCallback = null,
+        bool streaming = false,
+        StreamingCallbacks? streamingCallback = null,
+        string responseId = "",
+        CancellationToken cancellationToken = default,
+        ToolPermissionRequest? toolPermissionRequest = null
+    )
+    {
         //Agent loop
         int currentTurn = 0;
         try
@@ -109,7 +94,42 @@ public class TornadoRunner
             verboseCallback?.Invoke($"Exception during agent run: {ex.Message}");
         }
 
-        //Add output guardrail eventually
+        return chat;
+    }
+
+    private static Conversation SetupConversation(TornadoAgent agent, string input, List<ChatMessage>? messages = null, string responseId = "", CancellationToken cancellationToken = default)
+    {
+        Conversation chat = agent.Client.Chat.CreateConversation(agent.Options);
+
+        chat.AddSystemMessage(agent.Instructions); //Set the instructions for the agent
+
+        //Set the cancellation token for the agent client
+        chat.RequestParameters.CancellationToken = cancellationToken;
+
+        //Setup the messages from previous runs or memory
+        chat = AddMessagesToConversation(chat, messages);
+
+        //Set response id
+        if (!string.IsNullOrEmpty(responseId) && chat.RequestParameters.ResponseRequestParameters != null)
+        {
+            chat.RequestParameters.ResponseRequestParameters!.PreviousResponseId = responseId;
+        }
+
+        //Add the latest message to the stream
+        if (!string.IsNullOrEmpty(input.Trim())) chat.AppendUserInput(input);
+
+        return chat;
+    }
+
+    private static Conversation AddMessagesToConversation(Conversation chat, List<ChatMessage>? messages = null)
+    {
+        if (messages == null) return chat;
+
+        foreach (ChatMessage message in messages)
+        {
+            if (message.Role == ChatMessageRoles.System) continue; //Skip system messages if any to avoid Instruction overlap
+            chat.AppendMessage(message);
+        }
 
         return chat;
     }
@@ -184,16 +204,14 @@ public class TornadoRunner
     /// Get response from the model or If Error delete last message in thread and retry (max agent loops will cap)
     /// </summary>
     /// <param name="agent"></param>
-    /// <param name="messages"></param>
+    /// <param name="chat"> Current Conversation</param>
     /// <param name="Streaming"></param>
     /// <param name="streamingCallback"></param>
     /// <returns></returns>
-    public static async Task<Conversation>? GetNewResponse(TornadoAgent agent, Conversation chat, bool Streaming = false, StreamingCallbacks? streamingCallback = null, RunnerVerboseCallbacks? verboseCallback = null, ToolPermissionRequest? toolPermissionRequest = null)
+    private static async Task<Conversation>? GetNewResponse(TornadoAgent agent, Conversation chat, bool Streaming = false, StreamingCallbacks? streamingCallback = null, RunnerVerboseCallbacks? verboseCallback = null, ToolPermissionRequest? toolPermissionRequest = null)
     {
         try
         {
-            TornadoRequestContent serialized = chat.Serialize(new ChatRequestSerializeOptions { Pretty = true });
-
             if (Streaming && streamingCallback != null)
             {
                 return await HandleStreaming(agent, chat, streamingCallback);
@@ -226,11 +244,6 @@ public class TornadoRunner
             MessageTokenExHandler = (exText) =>
             {
                 //Call the streaming callback for text
-                return Threading.ValueTaskCompleted;
-            },
-            ImageTokenHandler = (image) =>
-            {
-                //Call the streaming callback for image
                 return Threading.ValueTaskCompleted;
             },
             MessageTokenHandler = (text) =>
