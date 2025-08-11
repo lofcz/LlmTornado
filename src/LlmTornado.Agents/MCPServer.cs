@@ -7,33 +7,31 @@ public class MCPServer
 {
     public string ServerLabel { get; set; }
     public string ServerUrl { get; set; }
-    public string[]? AllowedTools { get; set; }
+    public string[]? DisableTools { get; set; }
     public List<McpClientTool> Tools { get; set; } = [];
 
     public Dictionary<string, McpClientTool> mcp_tools = new Dictionary<string, McpClientTool>();
     public IMcpClient? McpClient { get; set; }
 
-    public MCPServer( string serverLabel, string serverUrl,  string[] allowedTools = null)
+    public MCPServer( string serverLabel, string serverUrl,  string[]? disableTools = null)
     {
         ServerLabel = serverLabel;
         ServerUrl = serverUrl;
-        AllowedTools = allowedTools;
+        DisableTools = disableTools;
         Task.Run(async () => Tools = await AsToolkit(this)).Wait();
     }
 
-    public async Task<List<McpClientTool>> AsToolkit(MCPServer server)
+    private async Task<bool> TryGetMcpClient()
     {
-        List<McpClientTool> result = [];
-
         try
         {
-            if (!server.ServerUrl.StartsWith("http"))
+            if (!this.ServerUrl.StartsWith("http"))
             {
-                (string command, string[] arguments) = GetCommandAndArguments([server.ServerUrl]);
+                (string command, string[] arguments) = GetCommandAndArguments([this.ServerUrl]);
                 // Create MCP client to connect to the server
                 McpClient = await McpClientFactory.CreateAsync(new StdioClientTransport(new StdioClientTransportOptions
                 {
-                    Name = server.ServerLabel,
+                    Name = this.ServerLabel,
                     Command = command,
                     Arguments = arguments,
                 }));
@@ -42,18 +40,72 @@ public class MCPServer
             {
                 SseClientTransport sseClientTransport = new SseClientTransport(new SseClientTransportOptions
                 {
-                    Name = server.ServerLabel,
-                    Endpoint = new Uri(server.ServerUrl)
+                    Name = this.ServerLabel,
+                    Endpoint = new Uri(this.ServerUrl)
                 });
                 McpClient = await McpClientFactory.CreateAsync(sseClientTransport);
             }
 
             // Ping the server to ensure it's reachable
             await McpClient.PingAsync();
-                
+
+            return true;
         }
         catch (Exception ex)
         {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Helper method to attempt to create and return an MCP client for the given server.
+    /// </summary>
+    /// <param name="server">Server you wish to get tools from</param>
+    /// <returns></returns>
+    public static async Task<IMcpClient>? TryGetMcpClient(string serverUrl, string serverLabel)
+    {
+        IMcpClient? mcpClient = null;
+        try
+        {
+            if (!serverUrl.StartsWith("http"))
+            {
+                (string command, string[] arguments) = GetCommandAndArguments([serverUrl]);
+                // Create MCP client to connect to the server
+                mcpClient = await McpClientFactory.CreateAsync(new StdioClientTransport(new StdioClientTransportOptions
+                {
+                    Name = serverLabel,
+                    Command = command,
+                    Arguments = arguments,
+                }));
+            }
+            else
+            {
+                SseClientTransport sseClientTransport = new SseClientTransport(new SseClientTransportOptions
+                {
+                    Name = serverLabel,
+                    Endpoint = new Uri(serverUrl)
+                });
+                mcpClient = await McpClientFactory.CreateAsync(sseClientTransport);
+            }
+
+            // Ping the server to ensure it's reachable
+            await mcpClient.PingAsync();
+
+            return mcpClient;
+        }
+        catch (Exception ex)
+        {
+            return mcpClient;
+        }
+    }
+
+    public async Task<List<McpClientTool>> AsToolkit(MCPServer server)
+    {
+        List<McpClientTool> result = new List<McpClientTool>();
+
+        if(!(await TryGetMcpClient()))
+        {
+            // If we cannot connect to the server, return an empty list
             return result;
         }
 
@@ -63,10 +115,9 @@ public class MCPServer
             IList<McpClientTool> tools = await McpClient.ListToolsAsync();
             foreach (McpClientTool tool in tools)
             {
-                if (server.AllowedTools != null)
+                if (server.DisableTools != null)
                 {
-                    if (!server.AllowedTools.Contains(tool.Name))
-                        continue; // Skip tools not in the allowed list
+                    if (server.DisableTools.Contains(tool.Name)) continue; // Skip tools not in the allowed list
                 }
                 result.Add(tool);
                 mcp_tools.Add(tool.Name, tool);
@@ -76,7 +127,7 @@ public class MCPServer
         return result;
     }
     
-    public (string command, string[] arguments) GetCommandAndArguments(string[] args)
+    public static (string command, string[] arguments) GetCommandAndArguments(string[] args)
     {
         return args switch
         {
