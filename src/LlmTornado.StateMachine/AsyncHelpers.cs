@@ -1,4 +1,6 @@
-﻿namespace LlmTornado.StateMachines;
+﻿using System.Reflection;
+
+namespace LlmTornado.StateMachines;
 
 internal static class AsyncHelpers
 {
@@ -37,5 +39,35 @@ internal static class AsyncHelpers
 
         taskResultType = null;
         return false;
+    }
+
+    public static async Task<object?> InvokeValueTaskFuncAsync(Delegate function, object[] args)
+    {
+        object? returnValue = function.DynamicInvoke(args);
+        Type returnType = function.Method.ReturnType;
+        object? result = null;
+        if (IsGenericValueTask(returnType, out _))
+        {
+            // boxed ValueTask<T> -> call AsTask() via reflection -> await Task<T>
+            MethodInfo asTask = returnType.GetMethod("AsTask")!;
+            Task taskObj = (Task)asTask.Invoke(returnValue!, null)!;
+
+            await taskObj.ConfigureAwait(false);
+            PropertyInfo? resProp = taskObj.GetType().GetProperty("Result");
+            result = resProp?.GetValue(taskObj);
+        }
+        else if (returnType == typeof(ValueTask))
+        {
+            // boxed ValueTask -> cast then await (or use AsTask())
+            ValueTask vt = (ValueTask)returnValue!;
+            await vt.ConfigureAwait(false); // or: await vt.AsTask().ConfigureAwait(false);
+            result = null;
+        }
+        else
+        {
+            // synchronous
+            result = returnValue;
+        }
+        return result;
     }
 }
