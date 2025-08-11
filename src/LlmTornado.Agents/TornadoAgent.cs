@@ -4,6 +4,7 @@ using LlmTornado.Chat.Models;
 using LlmTornado.Common;
 using LlmTornado.Responses;
 using ModelContextProtocol.Client;
+using System;
 
 namespace LlmTornado.Agents;
 
@@ -125,10 +126,7 @@ public class TornadoAgent
         }
 
         //Setup tools and agent tools
-        if (Tools?.Count > 0)
-        {
-            SetupTools(Tools);
-        }
+        AutoSetupTools(Tools);
     }
 
     /// <summary>
@@ -137,64 +135,116 @@ public class TornadoAgent
     /// <param name="tools"></param>
     /// <exception cref="ArgumentNullException">Thrown when tools is null.</exception>
     /// <exception cref="InvalidOperationException">Thrown when tool setup fails.</exception>
-    private void SetupTools(List<Delegate> tools)
+    private void AutoSetupTools(List<Delegate>? tools)
     {
-        if (tools == null)
-            throw new ArgumentNullException(nameof(tools));
+        if (tools == null || Tools?.Count == 0) return;
 
         Options.Tools ??= new List<Tool>();
 
         foreach (Delegate fun in tools)
         {
-            try
+            //Convert Agent to tool
+            if (fun.Method.Name.Equals("AsTool"))
             {
-                //Convert Agent to tool
-                if (fun.Method.Name.Equals("AsTool"))
-                {
-                    TornadoAgentTool? tool = (TornadoAgentTool?)fun.DynamicInvoke(); //Creates the Chat tool for the agents running as tools and adds them to global list
-                    //Add agent tool to context list
-                    if (tool != null)
-                    {
-                        AgentTools.Add(tool.ToolAgent.Id, tool);
-                        Options.Tools?.Add(tool.Tool);
-                    }
-                }
-                else
-                {
-                    //Convert Method to tool
-                    Tool tool = fun.ConvertFunctionToTornadoTool();
-
-                    ToolList.Add(tool.Delegate.Method.Name, tool);
-                    Options.Tools?.Add(tool);
-                }
+                GetAgentTool(fun);
             }
-            catch (Exception ex)
+            else
             {
-                throw new InvalidOperationException($"Failed to setup tool {fun.Method.Name}: {ex.Message}", ex);
+                GetTornadoTool(fun);
             }
         }
 
+        GetMcpTools();
+    }
+
+    /// <summary>
+    /// Use this to properly add a Tornado tool to both the agent's Options tool list and the global agent tools list.
+    /// </summary>
+    /// <param name="tool"></param>
+    public void AddTornadoTool(Tool tool)
+    {
+        if (tool.Delegate != null)
+        {
+            SetDefaultToolPermission(tool);
+            ToolList.Add(tool.Delegate.Method.Name, tool);
+            Options.Tools?.Add(tool);
+        }
+    }
+
+    /// <summary>
+    /// Use this to Properly add an agent tool to both the agent's Options tool list and the global agent tools list.
+    /// </summary>
+    /// <param name="tool"></param>
+    public void AddAgentTool(TornadoAgentTool tool)
+    {
+        if (tool != null)
+        {
+            SetDefaultToolPermission(tool.Tool);
+            AgentTools.Add(tool.ToolAgent.Id, tool);
+            Options.Tools?.Add(tool.Tool);
+        }
+    }
+
+    /// <summary>
+    ///  Adds a Model Context Protocol (MCP) tool to the agent's tool list.
+    /// </summary>
+    /// <param name="tool">MCP client tool</param>
+    /// <param name="server">MCP Server where tool lives</param>
+    public void AddMcpTool(McpClientTool tool, MCPServer server)
+    {
+        if (tool != null && server != null)
+        {
+            McpTools.Add(tool.Name, server);
+            Tool mcpTool = new Tool(new ToolFunction(tool.Name, tool.Description, tool.JsonSchema));
+            SetDefaultToolPermission(mcpTool);
+            ToolList.Add(tool.Name, mcpTool);
+            Options.Tools?.Add(mcpTool);
+        }
+    }
+
+    private void GetTornadoTool(Delegate methodAsTool)
+    {
+        //Convert Method to tool
+        Tool tool = methodAsTool.ConvertFunctionToTornadoTool();
+        if (tool.Delegate != null)
+        {
+            AddTornadoTool(tool);
+        }
+    }
+
+    private void GetAgentTool(Delegate agentAsTool)
+    {
+        //Creates the Chat tool for the agents running as tools and adds them to global list
+        TornadoAgentTool? tool = (TornadoAgentTool?)agentAsTool.DynamicInvoke(); 
+        
+        if (tool != null)
+        {
+            AddAgentTool(tool);
+        }
+    }
+
+    private void SetDefaultToolPermission(Tool tool)
+    {
+        if (tool.ToolName == null) return;
+        if (!ToolPermissionRequired.ContainsKey(tool.ToolName))
+        {
+            ToolPermissionRequired.Add(tool.ToolName, false); //Default all tools to false
+        }
+    }
+
+    private void GetMcpTools()
+    {
         foreach (MCPServer server in McpServers)
         {
             try
             {
-                foreach (McpClientTool tool in server.Tools)
-                {
-                    McpTools.Add(tool.Name, server);
-
-                    if (!ToolPermissionRequired.ContainsKey(tool.Name))
-                    {
-                        ToolPermissionRequired.Add(tool.Name, false); //Default all mcp tools to false
-                    }
-
-                    Tool mcpTool = new Tool(new ToolFunction(tool.Name, tool.Description, tool.JsonSchema));
-                    ToolList.Add(tool.Name, mcpTool);
-                    Options.Tools?.Add(mcpTool);
-                }
+                server.Tools.ForEach(tool => AddMcpTool(tool, server));
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to setup MCP server {server.ServerLabel}: {ex.Message}", ex);
+                //throw new InvalidOperationException($"Failed to setup MCP server {server.ServerLabel}: {ex.Message}", ex);
+                Console.WriteLine($"Failed to setup MCP server {server.ServerLabel}: {ex.Message}");
+                continue; // Skip this server and continue with others
             }
         }
     }
