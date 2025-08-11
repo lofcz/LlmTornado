@@ -4,12 +4,13 @@ using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Common;
 using LlmTornado.Responses.Events;
+using LlmTornado.StateMachines;
 using System;
+using System.Reflection;
 using System.Threading;
 
 namespace LlmTornado.Agents;
 
-public delegate void TornadoStreamingCallbacks(IResponseEvent streamingResult);
 public delegate ValueTask RunnerVerboseCallbacks(string runnerAction);
 public delegate ValueTask<bool> ToolPermissionRequest(string message);
 
@@ -56,7 +57,7 @@ public class TornadoRunner
         Conversation chat = SetupConversation(agent, input, messages, responseId, cancellationToken);
 
         //Check if the input triggers a guardrail to stop the agent from continuing
-        CheckInputGuardrail(input, guardRail);
+        await CheckInputGuardrail(input, guardRail);
 
         return await RunAgentLoop(chat,agent,singleTurn,maxTurns,verboseCallback,streaming,streamingCallback,responseId, cancellationToken,toolPermissionRequest);
     }
@@ -134,16 +135,47 @@ public class TornadoRunner
         return chat;
     }
 
-    private static void CheckInputGuardrail(string input, GuardRailFunction? guardRail)
+    private static async Task CheckInputGuardrail(string input, GuardRailFunction? guardRail)
     {
         if (guardRail != null)
         {
-            GuardRailFunctionOutput? guard_railResult = (GuardRailFunctionOutput?)guardRail.DynamicInvoke([input]);
+            GuardRailFunctionOutput? guard_railResult = (GuardRailFunctionOutput?)(await CallFuncAsync(guardRail, [input]));
+
             if (guard_railResult != null && guard_railResult.TripwireTriggered)
             {
                 throw new GuardRailTriggerException($"Input Guardrail Stopped the agent from continuing because, {guard_railResult.OutputInfo}");
             }
         }
+    }
+
+    static async Task<object?> CallFuncAsync(Delegate function, object[] args)
+    {
+        object? returnValue = function.DynamicInvoke(args);
+        Type returnType = function.Method.ReturnType;
+        object? result = null;
+        if (AsyncHelpers.IsGenericValueTask(returnType, out _))
+        {
+            // boxed ValueTask<T> -> call AsTask() via reflection -> await Task<T>
+            MethodInfo asTask = returnType.GetMethod("AsTask")!;
+            Task taskObj = (Task)asTask.Invoke(returnValue!, null)!;
+
+            await taskObj.ConfigureAwait(false);
+            PropertyInfo? resProp = taskObj.GetType().GetProperty("Result");
+            result = resProp?.GetValue(taskObj);
+        }
+        else if (returnType == typeof(ValueTask))
+        {
+            // boxed ValueTask -> cast then await (or use AsTask())
+            ValueTask vt = (ValueTask)returnValue!;
+            await vt.ConfigureAwait(false); // or: await vt.AsTask().ConfigureAwait(false);
+            result = null;
+        }
+        else
+        {
+            // synchronous
+            result = returnValue;
+        }
+        return result;
     }
 
     private static void CheckForCancellation(CancellationToken cancellationToken)
@@ -208,7 +240,7 @@ public class TornadoRunner
     /// <param name="Streaming"></param>
     /// <param name="streamingCallback"></param>
     /// <returns></returns>
-    private static async Task<Conversation>? GetNewResponse(TornadoAgent agent, Conversation chat, bool Streaming = false, StreamingCallbacks? streamingCallback = null, RunnerVerboseCallbacks? verboseCallback = null, ToolPermissionRequest? toolPermissionRequest = null)
+    private static async Task<Conversation> GetNewResponse(TornadoAgent agent, Conversation chat, bool Streaming = false, StreamingCallbacks? streamingCallback = null, RunnerVerboseCallbacks? verboseCallback = null, ToolPermissionRequest? toolPermissionRequest = null)
     {
         try
         {
@@ -224,15 +256,13 @@ public class TornadoRunner
                     fn.Result = await HandleToolCall(agent, fn, toolPermissionRequest);
                 }
             });
-
-            return chat;
         }
         catch (Exception ex)
         {
             verboseCallback?.Invoke(ex.ToString());
         }
 
-        return null;
+        return chat;
     }
 
 

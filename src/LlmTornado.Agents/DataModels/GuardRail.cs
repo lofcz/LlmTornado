@@ -5,7 +5,7 @@
 /// </summary>
 /// <param name="input"></param>
 /// <returns></returns>
-public delegate Task<GuardRailFunctionOutput> GuardRailFunction(string? input = "");
+public delegate ValueTask<GuardRailFunctionOutput> GuardRailFunction(string? input = "");
 
 /// <summary>
 /// Used to check the input or output of a message to see if it meets certain criteria.
