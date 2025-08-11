@@ -78,7 +78,7 @@ public static class ToolUtility
     /// <exception cref="JsonException">Thrown if a required parameter is not found in the JSON arguments, or if an invalid value is provided for an
     /// enum parameter.</exception>
     /// <exception cref="NotImplementedException"></exception>
-    public static List<object> ParseFunctionCallArgs(this Delegate function, string functionCallArguments)
+    public static object[] ParseFunctionCallArgs(this Delegate function, string functionCallArguments)
     {
         MethodInfo method = function.Method;
         List<object> arguments = [];
@@ -142,6 +142,6 @@ public static class ToolUtility
             }
         }
 
-        return arguments;
+        return arguments.ToArray();
     }
 }
