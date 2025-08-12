@@ -181,14 +181,14 @@ public class AgentsDemo : DemoBase
     [TornadoTest]
     public static async Task HandoffTest()
     {
-        TornadoAgent TechnicalExpertAgent = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41Mini, "You are a technical expert for the Sales team.");
-        TornadoAgent BillingAgent = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41Mini, "You are a billing expert for the Sales team.");
+        TornadoAgent TechnicalExpertAgent = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41Mini, "You are a technical expert for the Sales team.",description: "Handoff If the customer ask a technical question");
+        TornadoAgent BillingAgent = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41Mini, "You are a billing expert for the Sales team.",description: "Handoff if the customer has a billing request");
 
         TornadoAgent GeneralSupportAgent = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41, 
             instructions: $"""You are General support for the Sales team""",
             handoffs: [
-                new AgentHandoff(TechnicalExpertAgent,"TechnicalExpert","Handoff If the customer ask a technical question"),
-                new AgentHandoff(TechnicalExpertAgent,"Billing","Handoff if the customer has a billing request")
+                TechnicalExpertAgent,
+                TechnicalExpertAgent
                 ]);
 
         HandoffOrchestration handoffOrchestrator = new("SalesAgent", GeneralSupportAgent);
