@@ -24,10 +24,7 @@ public interface IState
     /// Gets or sets a value indicating whether parallel transitions are allowed.
     /// </summary>
     public bool AllowsParallelTransitions { get; set; } 
-    /// <summary>
-    /// Check if the state was invoked.
-    /// </summary>
-    public bool WasInvoked { get; set; }
+
 
     /// <summary>
     /// property to combine input into a single process to avoid running multiple threads for each input.
@@ -49,7 +46,6 @@ public interface IState
 /// transitions.</remarks>
 public abstract class BaseState : IState
 {
-    internal readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
 
     /// <summary>
     /// Used to limit the number of times to rerun the state.
@@ -80,27 +76,27 @@ public abstract class BaseState : IState
     /// <summary>
     /// Gets a list of results extracted from the output results.
     /// </summary>
-    public List<object> BaseOutput => BaseOutputResults.Select(output => output.BaseResult).ToList();
+    internal List<object> BaseOutput => BaseOutputResults.Select(output => output.ResultObject).ToList();
 
     /// <summary>
     /// Output results of the state, containing processed results from the state invocation.
     /// </summary>
-    public List<StateResult> BaseOutputResults { get; set; } = new List<StateResult>();
+    internal List<StateResult> BaseOutputResults { get; set; } = new List<StateResult>();
 
     /// <summary>
     /// Gets or sets the list of input objects the state has to process this tick.
     /// </summary>
-    public List<object> BaseInput { get; set; } = new List<object>();
+    internal List<object> BaseInput { get; set; } = new List<object>();
 
     /// <summary>
     /// Input processes that the state has to process this tick.
     /// </summary>
-    public List<StateProcess> BaseInputProcesses { get; set; } = new List<StateProcess>();
+    internal List<StateProcess> BaseInputProcesses { get; set; } = new List<StateProcess>();
 
     /// <summary>
     /// Gets or sets the list of state transitions.
     /// </summary>
-    public List<StateTransition<object>> BaseTransitions { get; set; } = new List<StateTransition<object>>();
+    internal List<StateTransition<object>> BaseTransitions { get; set; } = new List<StateTransition<object>>();
 
     /// <summary>
     /// Gets or sets the current state machine instance.
@@ -111,7 +107,7 @@ public abstract class BaseState : IState
     /// </summary>
     /// <returns></returns>
     /// 
-    public abstract Task _Invoke();
+    internal abstract Task _Invoke();
 
     /// <summary>
     /// Adds state Process to the required state.
@@ -121,7 +117,7 @@ public abstract class BaseState : IState
     /// <param name="input">The input that influences the state transition. Can be null if no specific input is required for the
     /// transition.</param>
     /// <returns></returns>
-    public abstract Task _EnterState(StateProcess? input);
+    internal abstract Task _EnterState(StateProcess? input);
 
     /// <summary>
     /// Transitions the current state to an exit state asynchronously.
@@ -129,7 +125,7 @@ public abstract class BaseState : IState
     /// <remarks>This method should be implemented to handle any necessary cleanup or finalization
     /// tasks when exiting a state. It is called as part of the state transition process.</remarks>
     /// <returns>A task that represents the asynchronous operation of exiting the state.</returns>
-    public abstract Task _ExitState();
+    internal abstract Task _ExitState();
 
     /// <summary>
     /// Retrieves the type of input that this state can process.
@@ -146,10 +142,7 @@ public abstract class BaseState : IState
     /// Gets or sets a value indicating whether parallel transitions are allowed.
     /// </summary>
     public bool AllowsParallelTransitions { get; set; } = false;
-    /// <summary>
-    /// Check if the state was invoked.
-    /// </summary>
-    public bool WasInvoked { get; set; } = false;
+
 
     /// <summary>
     /// property to combine input into a single process to avoid running multiple threads for each input.
@@ -166,5 +159,5 @@ public abstract class BaseState : IState
     /// </summary>
     /// <returns>A list of <see cref="StateProcess"/> objects that satisfy the defined conditions.  The list will be empty if
     /// no conditions are met.</returns>
-    public abstract List<StateProcess>? CheckConditions();
+    internal abstract List<StateProcess>? CheckConditions();
 }

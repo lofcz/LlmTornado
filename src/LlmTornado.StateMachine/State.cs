@@ -105,7 +105,7 @@ public abstract class BaseState<TInput, TOutput> : BaseState
     /// <returns>A list of <see cref="StateResult"/> objects, each representing a processed result from the output.</returns>
     private List<StateResult> ConvertOutputResults()
     {
-        return _outputResults.Select(x => new StateResult(x.ProcessId, x.BaseResult)).ToList();
+        return _outputResults.Select(x => new StateResult(x.ProcessId, x.ResultObject)).ToList();
     }
 
     /// <summary>
@@ -125,6 +125,9 @@ public abstract class BaseState<TInput, TOutput> : BaseState
     /// </summary>
     public List<StateTransition<TOutput>> Transitions { get; set; } = new List<StateTransition<TOutput>>();
 
+    /// <summary>
+    /// Latest Processes that are generated from the last transitions of state processes.
+    /// </summary>
     public List<StateProcess> TransitionGeneratedStateProcesses { get; set; } = new List<StateProcess>();
 
     /// <summary>
@@ -134,18 +137,9 @@ public abstract class BaseState<TInput, TOutput> : BaseState
     /// <returns></returns>
     public async Task _EnterState(StateProcess<TInput>? input)
     {
-        await _semaphore.WaitAsync();
-        WasInvoked = false;
-        try
-        {
-            AddInputProcess(input);
-            await EnterState(input!.Input);
-            OnStateEntered?.Invoke(input);
-        }
-        finally
-        {
-            _semaphore.Release();
-        }
+        AddInputProcess(input);
+        await EnterState(input!.Input);
+        OnStateEntered?.Invoke(input);
     }
 
     /// <summary>
@@ -153,39 +147,22 @@ public abstract class BaseState<TInput, TOutput> : BaseState
     /// </summary>
     /// <param name="input"></param>
     /// <returns></returns>
-    public override async Task _EnterState(StateProcess? input)
+    internal override async Task _EnterState(StateProcess? input)
     {
-        await _semaphore.WaitAsync();
-        WasInvoked = false;
-        try
-        {
-            AddInputProcess(input);
-            await EnterState((TInput)input!.BaseInput!);
-            OnStateEntered?.Invoke(new StateProcess<TInput>(input.State, (TInput)input.BaseInput, input.Id));
-        }
-        finally
-        {
-            _semaphore.Release();
-        }
+        AddInputProcess(input);
+        await EnterState((TInput)input!.BaseInput!);
+        OnStateEntered?.Invoke(new StateProcess<TInput>(input.State, (TInput)input.BaseInput, input.Id));
     }
 
     /// <summary>
     /// Exits after the state has been invoked and processes are cleared.
     /// </summary>
     /// <returns></returns>
-    public override async Task _ExitState()
+    internal override async Task _ExitState()
     {
-        await _semaphore.WaitAsync();
-        try
-        {
-            InputProcesses.Clear();
-            await ExitState();
-            OnStateExited?.Invoke(this);
-        }
-        finally
-        {
-            _semaphore.Release();
-        }
+        InputProcesses.Clear();
+        await ExitState();
+        OnStateExited?.Invoke(this);
     }
 
     /// <summary>
@@ -227,7 +204,6 @@ public abstract class BaseState<TInput, TOutput> : BaseState
         // Wait for collection
         await Task.WhenAll(Tasks);
         Tasks.Clear();
-        WasInvoked = true;
 
         OutputResults = oResults.ToList();
 
@@ -247,7 +223,7 @@ public abstract class BaseState<TInput, TOutput> : BaseState
     /// <returns>A task representing the asynchronous operation, containing a list of <see cref="StateResult{TOutput}"/>
     /// objects that represent the results of processing each input.</returns>
     /// <exception cref="InvalidOperationException">Thrown if no input processes are defined for the state.</exception>
-    public override async Task _Invoke()
+    internal override async Task _Invoke()
     {
         await InvokeCore();
     }
@@ -349,7 +325,7 @@ public abstract class BaseState<TInput, TOutput> : BaseState
                                                                                                                                                   //If the transition evaluates to true for the output, add it to the new state processes
         Transitions.ForEach(transition =>
         {
-            TOutput output = (TOutput)stateResult.BaseResult;
+            TOutput output = (TOutput)stateResult.ResultObject;
             if (transition.Evaluate(output))
             {
                 //Check if transition is conversion type or use the output.Result directly
@@ -370,7 +346,7 @@ public abstract class BaseState<TInput, TOutput> : BaseState
         return stateProcessesFromOutput;
     }
 
-    public override List<StateProcess>? CheckConditions()
+    internal override List<StateProcess>? CheckConditions()
     {
         return AllowsParallelTransitions ? GetAllValidStateTransitions() : GetFirstValidStateTransitionForEachResult();
     }
@@ -446,11 +422,6 @@ public class ExitState : BaseState<object, object>
         CurrentStateMachine?.Finish();
         return Task.FromResult(input); //Forced to use BaseState<object, object> because of the Task not returning in order
     }
-
-    public override List<StateProcess>? CheckConditions()
-    {
-        return null; // Terminal state
-    }
 }
 
 /// <summary>
@@ -461,16 +432,10 @@ public class DeadEnd : BaseState<object, object>
     public DeadEnd()
     {
         IsDeadEnd = true;
-        WasInvoked = true;
     }
 
     public override Task<object> Invoke(object input)
     {
         return Task.FromResult(input); //Forced to use BaseState<object, object> because of the Task not returning in order
-    }
-
-    public override List<StateProcess>? CheckConditions()
-    {
-        return null; // Dead end state
     }
 }

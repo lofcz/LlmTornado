@@ -12,7 +12,7 @@ public class StateResult
     /// <summary>
     /// Result of the process.
     /// </summary>
-    public object BaseResult { get; set; } = new object();
+    public object ResultObject { get; private set; } = new object();
 
     //public object Result { get; set; }
     public StateResult() { }
@@ -20,8 +20,14 @@ public class StateResult
     public StateResult(string processID, object result)
     {
         ProcessId = processID;
-        BaseResult = result;
+        ResultObject = result;
     }
+
+    internal void SetBaseResult(object? result)
+    {
+        ResultObject = result;
+    }
+
     /// <summary>
     /// Retrieves the result of the current process as a <see cref="StateResult{T}"/>.
     /// </summary>
@@ -30,7 +36,7 @@ public class StateResult
     /// <typeparamref name="T"/>.</returns>
     public StateResult<T> GetResult<T>()
     {
-        return new StateResult<T>(ProcessId, (T)BaseResult);
+        return new StateResult<T>(ProcessId, (T)ResultObject);
     }
 }
 
@@ -41,12 +47,12 @@ public class StateResult
 public class StateResult<T> : StateResult
 {
     /// <summary>
-    /// Gets or sets the result of the operation.
+    /// Gets the result of the operation.
     /// </summary>
-    public T Result { get => (T)BaseResult; set => BaseResult = value; }
+    public T Result { get => (T)ResultObject; }
     public StateResult(string process, T result)
     {
         ProcessId = process;
-        Result = result!;
+        SetBaseResult(result);
     }
 }

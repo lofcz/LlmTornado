@@ -23,21 +23,25 @@ public delegate TOutput ConversionMethod<in TInput, out TOutput>(TInput input);
 /// </summary>
 public class StateTransition
 {
-    internal object? converterMethodResult;
     /// <summary>
     /// Gets or sets the next state in the state transition process.
     /// </summary>
-    public BaseState NextState { get; set; }
+    public BaseState NextState { get; private set; }
 
     /// <summary>
     /// Gets or sets the result of the converter method.
     /// </summary>
-    public object? ConverterMethodResult { get => converterMethodResult; set => converterMethodResult = value; }
+    internal object? ConverterMethodResult { get; set; }
 
     /// <summary>
     /// Represents the type of the state transition.
     /// </summary>
     public string type = "base";
+    public StateTransition() { }
+    public StateTransition(BaseState nextState)
+    {
+        NextState = nextState ?? throw new ArgumentNullException(nameof(nextState), "Next state cannot be null.");
+    }
 }
 
 /// <summary>
@@ -50,8 +54,10 @@ public class StateTransition<T> : StateTransition
     /// Gets or sets the method to be invoked to determine if it can transition.
     /// </summary>
     public TransitionEvent<T> InvokeMethod { get; set; }
-    public StateTransition() { }
-    public StateTransition(TransitionEvent<T> methodToInvoke, BaseState nextState)
+
+    public StateTransition(BaseState nextState):base(nextState) { }
+
+    public StateTransition(TransitionEvent<T> methodToInvoke, BaseState nextState) : base(nextState)
     {
         type = "out";
 
@@ -61,7 +67,6 @@ public class StateTransition<T> : StateTransition
             throw new InvalidOperationException($"Next State with input type of {nextState.GetInputType()} requires Input type assignable to type of {typeof(T)}");
         }
 
-        NextState = nextState;
         InvokeMethod = methodToInvoke;
 
     }
@@ -74,7 +79,7 @@ public class StateTransition<T> : StateTransition
     /// <param name="value">The value to be evaluated. Can be null.</param>
     /// <returns><see langword="true"/> if the dynamically invoked method returns a non-null and true value; otherwise, <see
     /// langword="false"/>.</returns>
-    public virtual bool Evaluate(T? value)
+    internal virtual bool Evaluate(T? value)
     {
         return (bool?)InvokeMethod.DynamicInvoke(value) ?? false;
     }
@@ -96,19 +101,19 @@ public class StateTransition<TInput, TOutput> : StateTransition<TInput>
     /// <summary>
     /// Gets or sets the result of the converter method.
     /// </summary>
-    public new TOutput ConverterMethodResult
+    public TOutput ConverterResult
     {
         get
         {
-            if (converterMethodResult == null)
+            if (ConverterMethodResult == null)
             {
                 throw new InvalidOperationException("Converter method result is not set. Ensure the converter method has been invoked.");
             }
-            return (TOutput)converterMethodResult;
+            return (TOutput)ConverterMethodResult;
         }
     }
 
-    public StateTransition(TransitionEvent<TInput> methodToInvoke, ConversionMethod<TInput, TOutput> converter, BaseState nextState)
+    public StateTransition(TransitionEvent<TInput> methodToInvoke, ConversionMethod<TInput, TOutput> converter, BaseState nextState) : base(nextState)
     {
         // Validate the next state input type against the type of TOutput
         if (!(nextState.GetInputType().IsAssignableTo(typeof(TOutput)) || typeof(TOutput).IsSubclassOf(nextState.GetInputType())))
@@ -117,17 +122,16 @@ public class StateTransition<TInput, TOutput> : StateTransition<TInput>
         }
         type = "in_out";
         ConverterMethod = converter;
-        NextState = nextState;
         InvokeMethod = methodToInvoke;
     }
 
-    public override bool Evaluate(TInput? value)
+    internal override bool Evaluate(TInput? value)
     {
         try
         {
             if ((bool?)InvokeMethod.DynamicInvoke(value) ?? false)
             {
-                converterMethodResult = ConverterMethod.Invoke(value);
+                ConverterMethodResult = ConverterMethod.Invoke(value);
                 return true;
             }
         }
@@ -136,7 +140,7 @@ public class StateTransition<TInput, TOutput> : StateTransition<TInput>
 
         }
 
-        if (converterMethodResult is null)
+        if (ConverterMethodResult is null)
         {
             throw new ArgumentNullException(nameof(value), "Input cannot be null.");
         }

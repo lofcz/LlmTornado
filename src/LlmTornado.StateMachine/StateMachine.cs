@@ -17,9 +17,6 @@ public class StateMachine
     /// </summary>
     public Action<StateMachineEvent>? OnStateMachineEvent { get; set; } 
 
-    private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
-    private SemaphoreSlim _threadLimitor;
-
     /// <summary>
     /// List of processes that will be run in the state machine this tick.
     /// </summary>
@@ -30,6 +27,7 @@ public class StateMachine
     /// Trigger to stop the state machine.
     /// </summary>
     public CancellationTokenSource StopTrigger = new CancellationTokenSource();
+
     private bool _isFinished = false;
 
     /// <summary>
@@ -46,15 +44,11 @@ public class StateMachine
     /// Gets or sets a value indicating whether the process is complete.
     /// </summary>
     public bool IsFinished { get => _isFinished; }
+
     /// <summary>
     /// Gets or sets the final result of the computation.
     /// </summary>
     public object? BaseFinalResult { get; set; }
-
-    /// <summary>
-    /// Gets or sets the maximum number of threads that can be used by the application.
-    /// </summary>
-    public int MaxThreads { get; set; } = 20;
 
     /// <summary>
     /// Gets or sets the collection of states.
@@ -74,7 +68,7 @@ public class StateMachine
 
     public StateMachine()
     {
-        _threadLimitor = new SemaphoreSlim(MaxThreads, MaxThreads);
+
     }
 
     /// <summary>
@@ -139,17 +133,9 @@ public class StateMachine
 
         ActiveProcesses.ForEach(process => Tasks.Add(Task.Run(async () =>
         {
-            await _threadLimitor.WaitAsync(); //Wait for a thread to be available
-            try
-            {
-                OnStateMachineEvent?.Invoke(new OnVerboseStateMachineEvent($"Invoking state: {process.State.GetType().Name}"));
-                OnStateMachineEvent?.Invoke(new OnStateEnteredEvent(process)); //Invoke the state entered event
-                await process.State._Invoke(); //Invoke the state process
-            }
-            finally
-            {
-                _threadLimitor.Release(); //Release the thread back to the pool
-            }
+            OnStateMachineEvent?.Invoke(new OnVerboseStateMachineEvent($"Invoking state: {process.State.GetType().Name}"));
+            OnStateMachineEvent?.Invoke(new OnStateEnteredEvent(process)); //Invoke the state entered event
+            await process.State._Invoke(); //Invoke the state process
 
         })));
 
@@ -173,17 +159,10 @@ public class StateMachine
         if (process?.State == null)
             throw new ArgumentNullException(nameof(process), "Process and its State cannot be null");
 
-        await _semaphore.WaitAsync(); //Wait for the state machine to be available
         //Gain access to state machine
-        try
-        {
-            process.State.CurrentStateMachine ??= this; //Set the current state machine if not already set
-            ActiveProcesses.Add(process);
-        }
-        finally
-        {
-            _semaphore.Release();
-        }
+        process.State.CurrentStateMachine ??= this; //Set the current state machine if not already set
+        ActiveProcesses.Add(process);
+
         OnStateMachineEvent?.Invoke(new OnVerboseStateMachineEvent($"Entering state: {process.State.GetType().Name}"));
         OnStateMachineEvent?.Invoke(new OnStateEnteredEvent(process));
         //Internal lock on access to state
@@ -290,7 +269,7 @@ public class StateMachine
     /// <remarks>This method sets the <see cref="IsFinished"/> flag to <see langword="false"/>, resets
     /// the stop trigger,  and clears the list of active processes. It should be called before starting a new run to
     /// ensure  that the system is in a clean state.</remarks>
-    public void ResetRun()
+    private void ResetRun()
     {
         OnStateMachineEvent?.Invoke(new OnVerboseStateMachineEvent("Resetting StateMachine"));
         _isFinished = false;
@@ -308,7 +287,7 @@ public class StateMachine
     /// <param name="index">An integer representing the index associated with the current execution context.</param>
     /// <param name="ResultingState">The state object that will hold the output after execution completes.</param>
     /// <returns>A tuple containing the index and a list of objects representing the output from the resulting state.</returns>
-    public async Task<(int, List<object>)> Run(BaseState runStartState, object input, int index, BaseState ResultingState)
+    internal async Task<(int, List<object>)> Run(BaseState runStartState, object input, int index, BaseState ResultingState)
     {
         await Run(runStartState, input);
         return (index, ResultingState.BaseOutput);
@@ -374,7 +353,6 @@ public class StateMachine
 /// <typeparam name="TOutput">The type of output that the state machine produces.</typeparam>
 public class StateMachine<TInput, TOutput> : StateMachine
 {
-    public Action<TOutput>? OnFinish;
     /// <summary>
     /// Provides a mechanism for comparing two <see cref="RunOutputCollection{TOutput}"/> objects based on their
     /// index values.
@@ -409,11 +387,11 @@ public class StateMachine<TInput, TOutput> : StateMachine
     /// <summary>
     /// Gets or sets the initial state of the system or process.
     /// </summary>
-    public BaseState StartState { get; set; }
+    public BaseState StartState { get; private set; }
     /// <summary>
     /// Gets or sets the result state of the operation.
     /// </summary>
-    public BaseState ResultState { get; set; }
+    public BaseState ResultState { get; private set; }
 
     public StateMachine() { }
 
@@ -470,7 +448,7 @@ public class StateMachine<TInput, TOutput> : StateMachine
 
         for (int i = 0; i < inputs.Length; i++)
         {
-            (int, List<object>) runResult = await base.Run(StartState, inputs[i], i + 1, ResultState);
+            (int, List<object>) runResult = await Run(StartState, inputs[i], i + 1, ResultState);
             oResults.Add(new RunOutputCollection<TOutput?>(runResult.Item1, runResult.Item2.ConvertAll(item => (TOutput)item)!));
         }
 
