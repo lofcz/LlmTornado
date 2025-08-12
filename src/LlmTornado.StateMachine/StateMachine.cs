@@ -10,7 +10,7 @@ namespace LlmTornado.StateMachines;
 /// processes. It supports concurrent execution of processes up to a specified maximum number of threads, and allows
 /// for graceful stopping and cancellation of operations. The state machine can be reset and reused for multiple
 /// runs.</remarks>
-public class StateMachine : IDisposable
+public class StateMachine
 {
     /// <summary>
     /// Triggers events related to the state machine, such as state transitions and errors.
@@ -75,29 +75,6 @@ public class StateMachine : IDisposable
     public StateMachine()
     {
         _threadLimitor = new SemaphoreSlim(MaxThreads, MaxThreads);
-    }
-
-    /// <summary>
-    /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-    /// </summary>
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-    /// <summary>
-    /// Releases the unmanaged resources used by the StateMachine and optionally releases the managed resources.
-    /// </summary>
-    /// <param name="disposing">true to release both managed and unmanaged resources; false to release only unmanaged resources.</param>
-    protected virtual void Dispose(bool disposing)
-    {
-        if (disposing)
-        {
-            StopTrigger?.Dispose();
-            _semaphore?.Dispose();
-            _threadLimitor?.Dispose();
-        }
     }
 
     /// <summary>
