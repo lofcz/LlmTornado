@@ -10,6 +10,11 @@ namespace LlmTornado.Agents;
 
 public static class ToolUtility
 {
+    /// <summary>
+    /// Setup TornadoAgent as a tool.
+    /// </summary>
+    /// <param name="agent"></param>
+    /// <returns></returns>
     public static TornadoAgentTool AsTool(this TornadoAgent agent)
     {
         return new TornadoAgentTool(agent, new Tool(new ToolFunction(
@@ -26,6 +31,11 @@ public static class ToolUtility
         ));
     }
 
+    /// <summary>
+    /// Converts a delegate function to a Tornado Tool.
+    /// </summary>
+    /// <param name="function"></param>
+    /// <returns></returns>
     public static Tool ConvertFunctionToTornadoTool(this Delegate function)
     {
         MethodInfo method = function.Method;

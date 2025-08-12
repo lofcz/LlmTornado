@@ -60,7 +60,7 @@ Out of the following Agents which agent should we Handoff the conversation too a
 {{""NAME"": ""CurrentAgent"",""Instructions"":""{CurrentAgent.Instructions}""}}
 
 
-{string.Join("\n\n", CurrentAgent.HandoffAgents.Select(agent => $" {{\"NAME\": \"{agent.Name}\",\"Handoff Reason\":\"{agent.HandoffReason}\"}}"))}
+{string.Join("\n\n", CurrentAgent.HandoffAgents.Select(handoff => $" {{\"NAME\": \"{handoff.Id}\",\"Handoff Reason\":\"{handoff.Description}\"}}"))}
 
 ";
             TornadoAgent handoffDecider = new TornadoAgent(CurrentAgent.Client, ChatModel.OpenAi.Gpt41.V41Nano, instructions)
@@ -95,7 +95,7 @@ Out of the following Agents which agent should we Handoff the conversation too a
                     if (response is not null)
                     {
                         List<string> selectedAgents = AgentHandoff.ParseHandoffResponse(response);
-                        CurrentAgent = CurrentAgent.HandoffAgents.FirstOrDefault(agent => agent.Name.Equals(selectedAgents[0], StringComparison.OrdinalIgnoreCase))?.Agent ?? CurrentAgent;
+                        CurrentAgent = CurrentAgent.HandoffAgents.FirstOrDefault(agent => agent.Id.Equals(selectedAgents[0], StringComparison.OrdinalIgnoreCase)) ?? CurrentAgent;
                     }
                 }
             }

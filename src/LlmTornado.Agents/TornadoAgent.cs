@@ -43,6 +43,11 @@ public class TornadoAgent
     public string Instructions { get; set; }
 
     /// <summary>
+    /// Description of the agent's purpose or functionality for Orchestration purposes.
+    /// </summary>
+    public string Description { get; set; }
+
+    /// <summary>
     /// Gets the unique identifier for this instance.
     /// </summary>
     public string Id { get; } = Guid.NewGuid().ToString();
@@ -80,7 +85,7 @@ public class TornadoAgent
     /// <summary>
     /// Agents that are handed off to be the controller 
     /// </summary>
-    public List<AgentHandoff> HandoffAgents { get; set; }
+    public List<TornadoAgent> HandoffAgents { get; set; }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="TornadoAgent"/> class, which represents an AI agent capable of
@@ -105,9 +110,10 @@ public class TornadoAgent
         TornadoApi client,
         ChatModel model,
         string instructions = "You are a helpful assistant",
+        string? description = "",
         Type? outputSchema = null,
         List<Delegate>? tools = null,
-        List<AgentHandoff>? handoffs = null,
+        List<TornadoAgent>? handoffs = null,
         List<MCPServer>? mcpServers = null)
     {
         Client = client ?? throw new ArgumentNullException(nameof(client));
@@ -118,7 +124,8 @@ public class TornadoAgent
         Tools = tools ?? Tools;
         Options.Model = model;
         McpServers = mcpServers ?? new List<MCPServer>();
-        HandoffAgents = handoffs?.ToList() ?? new List<AgentHandoff>();
+        HandoffAgents = handoffs?.ToList() ?? new List<TornadoAgent>();
+        Description = description ?? "No description provided";
 
         if (OutputSchema != null)
         {

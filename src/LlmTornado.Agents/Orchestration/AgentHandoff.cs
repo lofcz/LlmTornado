@@ -12,26 +12,41 @@ namespace LlmTornado.Agents
 {
     public class AgentHandoff
     {
-        public TornadoAgent Agent { get; set; }
-        public string Name { get; set; }
-        public string HandoffReason { get; set; }
-
-        public AgentHandoff(TornadoAgent agent, string name, string handoffReason, bool allowParallelInvoking = false)
+        public static ChatRequestResponseFormats CreateHandoffResponseFormat(TornadoAgent[] handoffs)
         {
-            Agent = agent ?? throw new ArgumentNullException(nameof(agent), "Agent cannot be null");
-            HandoffReason = string.IsNullOrEmpty(handoffReason) ? throw new ArgumentNullException(nameof(agent), "handoff Reason cannot be empty") : handoffReason;
-            Name = string.IsNullOrEmpty(name) ? throw new ArgumentNullException(nameof(name), "Name cannot be empty") : name;
-        }
+            if (handoffs == null || handoffs.Length == 0) throw new ArgumentException("Handoffs cannot be null or empty", nameof(handoffs));
 
-        public static ChatRequestResponseFormats CreateHandoffResponseFormat(AgentHandoff[] handoffs)
-        {
-            if (handoffs == null || handoffs.Length == 0)
-            {
-                throw new ArgumentException("Handoffs cannot be null or empty", nameof(handoffs));
-            }
-            List<string> agentNames = handoffs.Select(h => h.Name).ToList();
+            List<string> agentNames = handoffs.Select(h => h.Id).ToList();
             agentNames.Add("CurrentAgent"); // Add the current agent as an option
 
+            dynamic? responseFormat = ConvertObjectDictionaryToDynamic(CreateHandoffObjectSchemaFormat(agentNames.ToArray()));
+
+            if (responseFormat == null)
+            {
+                throw new InvalidOperationException("Failed to convert handoff object schema to dynamic format.");
+            }
+
+            return ChatRequestResponseFormats.StructuredJson(
+                "handoff",
+                responseFormat,
+                "I need you to decide if you need to handoff the conversation to another agent.",
+                true
+            );
+
+        }
+
+        private static dynamic? ConvertObjectDictionaryToDynamic(Dictionary<string, object> dict)
+        {
+            string json = JsonSerializer.Serialize(dict, new JsonSerializerOptions
+            {
+                WriteIndented = true
+            });
+
+            return Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(json);
+        }
+
+        private static Dictionary<string, object> CreateHandoffObjectSchemaFormat(string[] agentNames)
+        {
             Dictionary<string, object> propSchema = new Dictionary<string, object>
                     {
                         { "reason", new Dictionary<string, object>
@@ -44,7 +59,7 @@ namespace LlmTornado.Agents
                             {
                                 { "type", "string" },
                                 { "description", "The Agent to select" },
-                                { "enum",  agentNames.ToArray() }
+                                { "enum",  agentNames }
                             }
                         }
                     };
@@ -59,28 +74,14 @@ namespace LlmTornado.Agents
             };
 
             string[] requiredArrayProperties = ["agents"];
-            Dictionary<string, object> arraySchema = new Dictionary<string, object>
+
+            return new Dictionary<string, object>
             {
                 ["type"] = "array",
                 ["items"] = objectSchema,
                 ["required"] = requiredArrayProperties,
                 ["additionalProperties"] = false
             };
-
-            string json = JsonSerializer.Serialize(arraySchema, new JsonSerializerOptions
-            {
-                WriteIndented = true
-            });
-
-            dynamic? responseFormat = Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(json);
-
-            return ChatRequestResponseFormats.StructuredJson(
-                "handoff",
-                responseFormat,
-                "I need you to decide if you need to handoff the conversation to another agent.",
-                true
-            );
-
         }
 
         public static List<string> ParseHandoffResponse(string response)
