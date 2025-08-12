@@ -5,8 +5,8 @@ namespace LlmTornado.Agents;
 
 public class MCPServer
 {
-    public string ServerLabel { get; set; }
-    public string ServerUrl { get; set; }
+    public string ServerLabel { get; private set; }
+    public string ServerUrl { get; private set; }
     public string[]? DisableTools { get; set; }
     public List<McpClientTool> Tools { get; set; } = [];
 
@@ -122,7 +122,7 @@ public class MCPServer
         }
     }
     
-    public static (string command, string[] arguments) GetCommandAndArguments(string[] args)
+    internal static (string command, string[] arguments) GetCommandAndArguments(string[] args)
     {
         return args switch
         {

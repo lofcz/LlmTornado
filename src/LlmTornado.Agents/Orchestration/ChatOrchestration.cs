@@ -60,6 +60,11 @@ public class ChatOrchestration
     /// </summary>
     public CancellationTokenSource cts = new CancellationTokenSource();
 
+    /// <summary>
+    /// Chat Orchestration to create processes flows with AI agents
+    /// </summary>
+    /// <param name="agentName"></param>
+    /// <param name="agent"></param>
     public ChatOrchestration(string agentName, TornadoAgent agent)
     {
         // Initialize the agent and set up the callbacks
