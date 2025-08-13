@@ -11,8 +11,14 @@ namespace LlmTornado.Agents.Orchestration;
 
 public class ChatOrchestration
 {
+    /// <summary>
+    /// Name of the Agent defined by this orchestration.
+    /// </summary>
     public string AgentName { get; }
 
+    /// <summary>
+    /// ID instance of the orchestration , used as a unique identifier for the agent in the API.
+    /// </summary>
     public string AgentId { get; } = Guid.NewGuid().ToString();
 
     /// <summary>
@@ -107,17 +113,9 @@ public class ChatOrchestration
     public virtual void Clear()
     {
         // Clear the current result and reset the main thread ID
-        CurrentResult.Clear();
+        CurrentResult = null;
         MainThreadId = string.Empty;
-        // Reset the cancellation token source
-        if (cts.IsCancellationRequested)
-        {
-            if (!Threading.TryResetCancellationTokenSource(cts))
-            {
-                cts.Dispose();
-                cts = new CancellationTokenSource();
-            }
-        }
+        ResetCancellationTokenSource();
     }
 
     /// <summary>
@@ -132,7 +130,7 @@ public class ChatOrchestration
     }
 
     /// <summary>
-    /// Handles the invocation of a chat operation with the specified user input and optional image data.
+    /// Used to customize the behavior of the orchestration when invoked for custom Orchestration methods to extend the Orchestration library.
     /// </summary>
     /// <param name="userInput">The user's input message to process. Cannot be <see langword="null"/>.</param>
     /// <param name="streaming"><see langword="true"/> to enable streaming of the response; otherwise, <see langword="false"/> to return the
@@ -144,7 +142,7 @@ public class ChatOrchestration
     /// generated.</returns>
     internal virtual async Task<List<ChatMessagePart>?> OnInvokedAsync(string userInput, bool streaming = true, string ? base64Image = null)
     {
-        return null;
+        throw new NotImplementedException();
     }
 
     /// <summary>
@@ -159,6 +157,23 @@ public class ChatOrchestration
     /// conversation.</returns>
     public async Task<string> InvokeAsync(string userInput, bool streaming = true, string? base64Image = null)
     {
+        // Invoke the StartingExecution event to signal the beginning of the execution process
+        OnExecutionStarted?.Invoke();
+
+       ChatMessage? inputMessage = await CreateInputMessage(userInput, streaming, base64Image)!;
+
+        //Run the ControlAgent with the current messages
+        await InvokeConversation(CurrentAgent, messages: new List<ChatMessage>() { inputMessage },
+            verboseCallback: HandleVerboseEvent, streaming: streaming,
+            streamingCallback: HandleStreamingEvent, cancellationToken: cts.Token);
+
+        OnExecutionDone?.Invoke();
+
+        return CurrentResult.Messages.Last().Content ?? "Error getting Response";
+    }
+
+    private async Task<ChatMessage>? CreateInputMessage(string userInput, bool streaming = true, string? base64Image = null)
+    {
         List<ChatMessagePart> parts = [new ChatMessagePart(userInput)];
 
         if (base64Image is not null && !string.IsNullOrEmpty(base64Image))
@@ -170,37 +185,13 @@ public class ChatOrchestration
 
         parts.AddRange(processParts);
 
-        ChatMessage inputMessage = new ChatMessage(ChatMessageRoles.User, parts);
-        return await AddToConversation(inputMessage, streaming);
+        return new ChatMessage(ChatMessageRoles.User, parts);
     }
 
-    /// <summary>
-    /// Adds a user input to the conversation and processes it through the control agent.
-    /// </summary>
-    /// <remarks>This method processes the user input by optionally preprocessing it and then running
-    /// it through the control agent. If a message is provided, it is assumed to be an image or file and is added
-    /// directly to the conversation.</remarks>
-    /// <param name="userInput">The text input provided by the user to be added to the conversation.</param>
-    /// <param name="message">An optional <see cref="ModelItem"/> representing a message to be added. If null, a new message is created
-    /// from the user input.</param>
-    /// <param name="streaming">A boolean value indicating whether the response should be streamed. <see langword="true"/> to enable
-    /// streaming; otherwise, <see langword="false"/>.</param>
-    /// <returns>A <see cref="Task{String}"/> representing the asynchronous operation. The task result contains the processed
-    /// conversation response text.</returns>
-    /// <exception cref="InvalidOperationException">Thrown if the <c>ControlAgent</c> is not set before adding to the conversation.</exception>
-    private async Task<string> AddToConversation(ChatMessage? message = null, bool streaming = true)
+    private void ResetCancellationTokenSource()
     {
-        // Ensure that the ControlAgent is set before proceeding
-        if (CurrentAgent == null)
-        {
-            throw new InvalidOperationException("ControlAgent is not set. Please set ControlAgent before adding to conversation.");
-        }
-
-        // Invoke the StartingExecution event to signal the beginning of the execution process
-        OnExecutionStarted?.Invoke();
-
-        // Check if the cancellation token has been requested and reset it if necessary
-        if (cts.Token.IsCancellationRequested)
+        // Reset the cancellation token source if it has been canceled
+        if (cts.IsCancellationRequested)
         {
             if (!Threading.TryResetCancellationTokenSource(cts))
             {
@@ -208,35 +199,29 @@ public class ChatOrchestration
                 cts = new CancellationTokenSource();
             }
         }
-        List<ChatMessage> messages = new List<ChatMessage>();
+    }
 
-        if (CurrentResult != null)
+
+    private async Task InvokeConversation(TornadoAgent agent, List<ChatMessage>? messages = null, 
+        Func<string, ValueTask>? verboseCallback = null, bool streaming = true, 
+        Func<ModelStreamingEvents, ValueTask>? streamingCallback = null, 
+        CancellationToken cancellationToken = default, string responseId = "")
+    {
+        // Ensure that the ControlAgent is set before proceeding
+        if (CurrentAgent == null)
         {
-            if (CurrentResult.Messages.Count > 0)
-            {
-                // If there are existing messages, append the new user message to the existing messages
-                messages.AddRange(CurrentResult.Messages);
-            }
+            throw new InvalidOperationException("ControlAgent is not set. Please set ControlAgent before adding to conversation.");
         }
 
-        if (message != null)
-        {
-            // If a message is provided, add it to the messages list
-            messages.Add(message);
-        }
+        ResetCancellationTokenSource();
 
         //Run the ControlAgent with the current messages
-        CurrentResult = await RunAsync(CurrentAgent, messages: messages, verboseCallback: HandleVerboseEvent,
+        CurrentResult = await RunAsync(CurrentAgent, conversation: CurrentResult, messages: messages, verboseCallback: HandleVerboseEvent,
             streaming: streaming, streamingCallback: HandleStreamingEvent, cancellationToken: cts.Token, responseId: string.IsNullOrEmpty(MainThreadId) ? "" : MainThreadId);
 
         if (CurrentResult.MostRecentApiResult != null)
         {
             MainThreadId = CurrentResult.MostRecentApiResult.RequestId ?? MainThreadId;
         }
-
-        //Trigger the FinishedExecution event to signal the end of the execution process
-        OnExecutionDone?.Invoke();
-
-        return CurrentResult.Messages.Last().Content ?? "Error getting Response";
     }
 }
