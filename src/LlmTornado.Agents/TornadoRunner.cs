@@ -265,17 +265,16 @@ public class TornadoRunner
             {
                 return Threading.ValueTaskCompleted;
             },
-            FunctionCallHandler = (toolCall) =>
+            FunctionCallHandler = async (toolCall) =>
             {
                 foreach (FunctionCall call in toolCall)
                 {
                     //Add the tool call to the response output
                     foreach (FunctionCall fn in toolCall)
                     {
-                        Task.Run(async () => fn.Result = await HandleToolCall(agent, fn, toolPermissionRequest)).Wait();
+                        fn.Result = await HandleToolCall(agent, fn, toolPermissionRequest);
                     }
                 }
-                return Threading.ValueTaskCompleted;
             },
             MessageTypeResolvedHandler = (messageType) =>
             {
