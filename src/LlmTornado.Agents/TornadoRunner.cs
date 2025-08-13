@@ -24,6 +24,7 @@ public class TornadoRunner
     /// </summary>
     /// <param name="agent">Agent to Run</param>
     /// <param name="input">Message to the Agent</param>
+    /// <param name="conversation">Conversation to use, if null a new conversation will be created</param>
     /// <param name="guardRail">Input Guardrail To perform</param>
     /// <param name="singleTurn">Set loop to not loop</param>
     /// <param name="maxTurns">Max loops to perform</param>
@@ -41,6 +42,7 @@ public class TornadoRunner
     public static async Task<Conversation> RunAsync(
         TornadoAgent agent,
         string input = "",
+        Conversation? conversation = null,
         GuardRailFunction? guardRail = null,
         bool singleTurn = false,
         int maxTurns = 10,
@@ -54,12 +56,12 @@ public class TornadoRunner
         ToolPermissionRequest? toolPermissionRequest = null
     )
     {
-        Conversation chat = SetupConversation(agent, input, messages, responseId, cancellationToken);
+        conversation ??= SetupConversation(agent, input, messages, responseId, cancellationToken);
 
         //Check if the input triggers a guardrail to stop the agent from continuing
         await CheckInputGuardrail(input, guardRail);
 
-        return await RunAgentLoop(chat,agent,singleTurn,maxTurns,verboseCallback,streaming,streamingCallback,responseId, cancellationToken,toolPermissionRequest);
+        return await RunAgentLoop(conversation, agent, singleTurn, maxTurns, verboseCallback, streaming, streamingCallback, responseId, cancellationToken, toolPermissionRequest);
     }
 
     private static async Task<Conversation> RunAgentLoop(
@@ -100,7 +102,7 @@ public class TornadoRunner
 
     private static Conversation SetupConversation(TornadoAgent agent, string input, List<ChatMessage>? messages = null, string responseId = "", CancellationToken cancellationToken = default)
     {
-        Conversation chat = agent.Client.Chat.CreateConversation(agent.Options);
+        Conversation chat = agent.Client.Chat.CreateConversation(agent.Options); 
 
         chat.AddSystemMessage(agent.Instructions); //Set the instructions for the agent
 
