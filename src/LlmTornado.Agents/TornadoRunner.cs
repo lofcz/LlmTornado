@@ -3,11 +3,7 @@ using LlmTornado.Chat;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Common;
-using LlmTornado.Responses.Events;
 using LlmTornado.StateMachines;
-using System;
-using System.Reflection;
-using System.Threading;
 
 namespace LlmTornado.Agents;
 
@@ -87,10 +83,11 @@ public class TornadoRunner
 
                 if (currentTurn >= maxTurns) throw new Exception("Max Turns Reached");
 
+                currentTurn++;
+
                 chat = await GetNewResponse(agent, chat, streaming, streamingCallback, verboseCallback, toolPermissionRequest) ?? chat;
 
-                currentTurn++;
-            } while (ProcessOutputItems(chat.Messages.Last()) && !singleTurn);
+            } while (GotToolCall(chat) && !singleTurn);
         }
         catch (Exception ex)
         {
@@ -163,16 +160,9 @@ public class TornadoRunner
     /// </summary>
     /// <param name="chat"> Conversation to check last message for tool calls</param>
     /// <returns></returns>
-    private static bool ProcessOutputItems(ChatMessage lastResult)
+    private static bool GotToolCall(Conversation chat)
     {
-        bool requiresAction = false;
-
-        if (lastResult is { Role: ChatMessageRoles.Tool }) 
-        {
-            requiresAction = true;
-        }
-
-        return requiresAction;
+        return chat.Messages.Last() is { Role: ChatMessageRoles.Tool };
     }
 
     /// <summary>
