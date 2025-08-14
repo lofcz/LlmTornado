@@ -57,4 +57,45 @@ public class InfraDemo2 : DemoBase
 
         int z = 0;
     }
+    
+    class Cls1
+    {
+        [SchemaName("operating_systems_should_include_temple_os")]
+        public List<string> List1 { get; set; }
+    }
+    
+    [TornadoTest]
+    public static async Task TornadoFunctionSchemaName()
+    {
+        Conversation conversation = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.OpenAi.Gpt41.V41,
+            Tools =
+            [
+                new Tool((
+                    [SchemaName("name_of_temple_os_creator")] string str1,
+                    Cls1 cls1,
+                    ToolArguments args) =>
+                {
+                    Assert.That(str1.ToLowerInvariant().Contains("davis"), Is.True);
+                    Assert.That(cls1.List1.Any(x => x.ToLowerInvariant().Contains("temple")), Is.True);
+                    return "";
+                })
+            ],
+            ToolChoice = OutboundToolChoice.Required
+        });
+
+        conversation.AddUserMessage("Fill the provided JSON structure with mock data");
+
+        TornadoRequestContent serialized = conversation.Serialize(new ChatRequestSerializeOptions
+        {
+            Pretty = true
+        });
+
+        Console.Write(serialized);
+
+        ChatRichResponse data = await conversation.GetResponseRich();
+
+        int z = 0;
+    }
 }

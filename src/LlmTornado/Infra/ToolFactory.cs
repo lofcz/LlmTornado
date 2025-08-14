@@ -73,9 +73,11 @@ internal static class ToolFactory
     public static DelegateMetadata CreateFromMethod(Delegate del, ToolMetadata? metadata, IEndpointProvider provider)
     {
         ParameterInfo[] pars = del.Method.GetParameters();
+        SchemaNameAttribute? schemaName = del.Method.GetCustomAttribute<SchemaNameAttribute>();
+
         ToolDefinition function = new ToolDefinition
         {
-            Name = "output",
+            Name = schemaName?.Name ?? del.Method.Name,
             Params = []
         };
 
@@ -334,7 +336,8 @@ internal static class ToolFactory
             propType.Required = baseType.IsValueType && !isNullableValueType;
 #endif
             
-            parent.Properties.Add(new ToolParam(property.Name, propType));
+            SchemaNameAttribute? schemaName = property.GetCustomAttribute<SchemaNameAttribute>();
+            parent.Properties.Add(new ToolParam(schemaName?.Name ?? property.Name, propType));
         }
     }
 
@@ -396,16 +399,19 @@ internal static class ToolFactory
         bool isNullable = isNullableValueType;
 #endif
 
+        SchemaNameAttribute? schemaName = par.GetCustomAttribute<SchemaNameAttribute>();
+        string finalName = schemaName?.Name ?? par.Name;
+
         if (nullableAttribute is not null || isNullable)
         {
-            pars.Add(new ToolParam(par.Name, new ToolParamNullable(baseParam)
+            pars.Add(new ToolParam(finalName, new ToolParamNullable(baseParam)
             {
                 Serializer = ToolParamSerializer.Nullable
             }));
         }
         else
         {
-            pars.Add(new ToolParam(par.Name, baseParam));
+            pars.Add(new ToolParam(finalName, baseParam));
         }
     }
 
