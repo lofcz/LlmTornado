@@ -250,4 +250,22 @@ public class TornadoAgent
             }
         }
     }
+
+
+
+    public async Task<Conversation> RunAsync(
+        string input, 
+        Conversation? conversation = null, 
+        GuardRailFunction? guardRailFunction = null,
+        RunnerVerboseCallbacks? runnerVerboseCallbacks = null, 
+        CancellationToken cancellationToken = default,
+        bool streaming = false, 
+        StreamingCallbacks? streamingCallback = null, 
+        int maxTurns = 10, 
+        string responseId = "",
+        ToolPermissionRequest? toolPermissionRequest = null)
+    {
+        return await TornadoRunner.RunAsync(this, input: input, conversation: conversation, guardRail:guardRailFunction,verboseCallback: runnerVerboseCallbacks, cancellationToken: cancellationToken, streaming: streaming,
+            streamingCallback: streamingCallback, maxTurns: maxTurns, responseId: responseId, toolPermissionRequest:toolPermissionRequest);
+    }
 }
