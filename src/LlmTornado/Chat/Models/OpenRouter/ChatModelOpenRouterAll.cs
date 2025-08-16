@@ -3023,16 +3023,6 @@ public class ChatModelOpenRouterAll : IVendorModelClassProvider
     public readonly ChatModel Wizardlm28x22b = ModelWizardlm28x22b;
 
     /// <summary>
-    /// z-ai/glm-4-32b
-    /// </summary>
-    public static readonly ChatModel ModelGlm432b = new ChatModel("z-ai/glm-4-32b", "z-ai/glm-4-32b", LLmProviders.OpenRouter, 128000);
-
-    /// <summary>
-    /// <inheritdoc cref="ModelGlm432b"/>
-    /// </summary>
-    public readonly ChatModel Glm432b = ModelGlm432b;
-
-    /// <summary>
     /// z-ai/glm-4.5
     /// </summary>
     public static readonly ChatModel ModelGlm45 = new ChatModel("z-ai/glm-4.5", "z-ai/glm-4.5", LLmProviders.OpenRouter, 131072);
