@@ -4,13 +4,14 @@ using LlmTornado.Chat.Models;
 using LlmTornado.Code;
 using LlmTornado.Images;
 using LlmTornado.StateMachines;
+using System.Collections.Concurrent;
 using static LlmTornado.Agents.TornadoRunner;
-
+using LlmTornado.Agents.Runtime;
 namespace LlmTornado.Agents.Orchestration;
-
 
 public class ChatOrchestration
 {
+    public ProcessRuntime Runtime { get; } 
     /// <summary>
     /// Name of the Agent defined by this orchestration.
     /// </summary>
@@ -21,15 +22,6 @@ public class ChatOrchestration
     /// </summary>
     public string AgentId { get; } = Guid.NewGuid().ToString();
 
-    /// <summary>
-    /// Agent used to manage the active conversation and report results of the state machines.
-    /// </summary>
-    public TornadoAgent CurrentAgent { get; set; }
-
-    /// <summary>
-    /// Latest result from the ControlAgent run. (holds messages buffer for Chat API, response API uses threadID)
-    /// </summary>
-    public Conversation CurrentResult { get; set; }
     /// <summary>
     /// Thread ID of the main conversation thread for the response API
     /// </summary>
@@ -66,17 +58,40 @@ public class ChatOrchestration
     /// </summary>
     public CancellationTokenSource cts = new CancellationTokenSource();
 
+
+    /// <summary>
+    /// Selectable Agents for the orchestration.
+    /// </summary>
+    public List<TornadoAgent> Agents { get; set; } = new List<TornadoAgent>();
+
+    /// <summary>
+    /// Agents selected for the next invokation of the orchestration.
+    /// </summary>
+    public List<TornadoAgent> SelectedAgents { get; set; } = new List<TornadoAgent>();
+
+    /// <summary>
+    /// Object to store the last results from the selected agents.
+    /// </summary>
+    private ConcurrentBag<ChatMessage> LatestAggregatedResults { get; set; } = new ConcurrentBag<ChatMessage>();
+
+    /// <summary>
+    /// History of the chat conversation.
+    /// </summary>
+    public ConcurrentStack<ChatMessage> ChatHistory { get; private set; } = new ConcurrentStack<ChatMessage>();
+
+
+    private int _currentAgentIndex = 0;
+
     /// <summary>
     /// Chat Orchestration to create processes flows with AI agents
     /// </summary>
     /// <param name="agentName"></param>
     /// <param name="agent"></param>
-    public ChatOrchestration(string agentName, TornadoAgent agent)
+    public ChatOrchestration(string agentName)
     {
         // Initialize the agent and set up the callbacks
         AgentName = agentName;
-        CurrentAgent = agent; // Set the initial agent as the current agent
-        CurrentAgent.Options.CancellationToken = cts.Token; // Set the cancellation token source for the Control Agent
+        //Agents.AddRange(agents ?? Array.Empty<TornadoAgent>()); // Set the initial agent as the current agent
     }
 
     /// <summary>
@@ -113,7 +128,8 @@ public class ChatOrchestration
     public virtual void Clear()
     {
         // Clear the current result and reset the main thread ID
-        CurrentResult = null;
+        LatestAggregatedResults = new ConcurrentBag<ChatMessage>();
+        ChatHistory = new ConcurrentStack<ChatMessage>();
         MainThreadId = string.Empty;
         ResetCancellationTokenSource();
     }
@@ -129,20 +145,14 @@ public class ChatOrchestration
         cts.Cancel(); // Signal cancellation to all state machines
     }
 
-    /// <summary>
-    /// Used to customize the behavior of the orchestration when invoked for custom Orchestration methods to extend the Orchestration library.
-    /// </summary>
-    /// <param name="userInput">The user's input message to process. Cannot be <see langword="null"/>.</param>
-    /// <param name="streaming"><see langword="true"/> to enable streaming of the response; otherwise, <see langword="false"/> to return the
-    /// complete response after processing.</param>
-    /// <param name="base64Image">An optional base64-encoded image to include with the user input. May be <see langword="null"/> if no image is
-    /// provided.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result contains a list of <see
-    /// cref="ChatMessagePart"/> objects representing the response, or <see langword="null"/> if no response is
-    /// generated.</returns>
-    internal virtual async Task<List<ChatMessagePart>?> OnInvokedAsync(string userInput, bool streaming = true, string ? base64Image = null)
+    protected virtual ValueTask<TornadoAgent[]>? SelectAgents()
     {
-        throw new NotImplementedException();
+        if (Agents.Count == 0)
+            return null;
+        // Override this method in derived classes to provide custom agent selection logic
+        SelectedAgents = new List<TornadoAgent>([Agents[_currentAgentIndex]]);
+        _currentAgentIndex = _currentAgentIndex >= Agents.Count ? 0 : _currentAgentIndex + 1;
+        return null;
     }
 
     /// <summary>
@@ -160,19 +170,22 @@ public class ChatOrchestration
         // Invoke the StartingExecution event to signal the beginning of the execution process
         OnExecutionStarted?.Invoke();
 
-       ChatMessage? inputMessage = await CreateInputMessage(userInput, streaming, base64Image)!;
+        ChatMessage? inputMessage = await CreateInputMessage(userInput, streaming, base64Image)!;
+
+        SelectedAgents.Clear();
+        SelectedAgents.AddRange(SelectAgents().Value.Result ?? Array.Empty<TornadoAgent>());
 
         //Run the ControlAgent with the current messages
-        await InvokeConversation(CurrentAgent, messages: new List<ChatMessage>() { inputMessage },
+        await InvokeConversation(messages: new List<ChatMessage>() { inputMessage },
             verboseCallback: HandleVerboseEvent, streaming: streaming,
             streamingCallback: HandleStreamingEvent, cancellationToken: cts.Token);
 
         OnExecutionDone?.Invoke();
 
-        return CurrentResult.Messages.Last().Content ?? "Error getting Response";
+        return ChatHistory.Last().Content ?? "Error getting Response";
     }
 
-    private async Task<ChatMessage>? CreateInputMessage(string userInput, bool streaming = true, string? base64Image = null)
+    protected async virtual Task<ChatMessage>? CreateInputMessage(string userInput, bool streaming = true, string? base64Image = null)
     {
         List<ChatMessagePart> parts = [new ChatMessagePart(userInput)];
 
@@ -180,10 +193,6 @@ public class ChatOrchestration
         {
             parts.Add(new ChatMessagePart(base64Image, ImageDetail.Auto));
         }
-
-        List<ChatMessagePart> processParts = await OnInvokedAsync(userInput, streaming, base64Image) ?? [];
-
-        parts.AddRange(processParts);
 
         return new ChatMessage(ChatMessageRoles.User, parts);
     }
@@ -201,27 +210,35 @@ public class ChatOrchestration
         }
     }
 
-
-    private async Task InvokeConversation(TornadoAgent agent, List<ChatMessage>? messages = null, 
-        Func<string, ValueTask>? verboseCallback = null, bool streaming = true, 
-        Func<ModelStreamingEvents, ValueTask>? streamingCallback = null, 
+    private async Task InvokeConversation(
+        List<ChatMessage>? messages = null,
+        RunnerVerboseCallbacks? verboseCallback = null,
+        bool streaming = true, StreamingCallbacks? streamingCallback = null,
         CancellationToken cancellationToken = default, string responseId = "")
     {
         // Ensure that the ControlAgent is set before proceeding
-        if (CurrentAgent == null)
+        if (SelectedAgents.Count < 1)
         {
-            throw new InvalidOperationException("ControlAgent is not set. Please set ControlAgent before adding to conversation.");
+            throw new InvalidOperationException("Selected Agents is not set. Please set Selected Agents before adding to conversation.");
         }
 
         ResetCancellationTokenSource();
 
-        //Run the ControlAgent with the current messages
-        CurrentResult = await RunAsync(CurrentAgent, conversation: CurrentResult, messages: messages, verboseCallback: HandleVerboseEvent,
-            streaming: streaming, streamingCallback: HandleStreamingEvent, cancellationToken: cts.Token, responseId: string.IsNullOrEmpty(MainThreadId) ? "" : MainThreadId);
-
-        if (CurrentResult.MostRecentApiResult != null)
+        //Add User message to the chat history
+        foreach (ChatMessage message in messages ?? [])
         {
-            MainThreadId = CurrentResult.MostRecentApiResult.RequestId ?? MainThreadId;
+            ChatHistory.Push(message);
         }
+
+        // With this code to "clear" the ConcurrentBag by creating a new instance:
+        LatestAggregatedResults = new ConcurrentBag<ChatMessage>();
+
+        await Runtime.InvokeStep();
+
+        // Add assistant message to the chat history with the aggregated results
+        ChatHistory.Push(new ChatMessage(ChatMessageRoles.Assistant, LatestAggregatedResults.SelectMany(part => part.Parts))
+        {
+            Tokens = LatestAggregatedResults.Sum(part => part.Tokens)
+        });
     }
 }

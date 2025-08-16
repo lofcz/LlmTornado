@@ -254,8 +254,8 @@ public class TornadoAgent
 
 
     public async Task<Conversation> RunAsync(
-        string input, 
-        Conversation? conversation = null, 
+        string input = "", 
+        List<ChatMessage>? messages = null, 
         GuardRailFunction? guardRailFunction = null,
         RunnerVerboseCallbacks? runnerVerboseCallbacks = null, 
         CancellationToken cancellationToken = default,
@@ -263,9 +263,11 @@ public class TornadoAgent
         StreamingCallbacks? streamingCallback = null, 
         int maxTurns = 10, 
         string responseId = "",
-        ToolPermissionRequest? toolPermissionRequest = null)
+        ToolPermissionRequest? toolPermissionRequest = null, Func<ChatMessage,ValueTask>? OnComplete = null)
     {
-        return await TornadoRunner.RunAsync(this, input: input, conversation: conversation, guardRail:guardRailFunction,verboseCallback: runnerVerboseCallbacks, cancellationToken: cancellationToken, streaming: streaming,
-            streamingCallback: streamingCallback, maxTurns: maxTurns, responseId: responseId, toolPermissionRequest:toolPermissionRequest);
+        Conversation conversation = await TornadoRunner.RunAsync(this, input: input, messages: messages, guardRail: guardRailFunction, verboseCallback: runnerVerboseCallbacks, cancellationToken: cancellationToken, streaming: streaming,
+            streamingCallback: streamingCallback, maxTurns: maxTurns, responseId: responseId, toolPermissionRequest: toolPermissionRequest);
+        OnComplete?.Invoke(conversation.Messages.Last());
+        return conversation;
     }
 }

@@ -147,7 +147,7 @@ public class AgentStateMachineDemo : DemoBase
     }
 }
 
-public class ResearchAgent : AgentStateMachine<string, ReportData>
+public class ResearchAgent : AgentRuntime<string, ReportData>
 {
     public ResearchAgent()
     {

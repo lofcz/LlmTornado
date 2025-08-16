@@ -30,9 +30,9 @@ namespace LlmTornado.Agents.Orchestration
                 userMessage.Parts?.Add(new ChatMessagePart(base64Image, ImageDetail.Auto));
             }
 
-            if (CurrentResult.Messages.Count > 0)
+            if (ChatHistory.Messages.Count > 0)
             {
-                messages.AddRange(CurrentResult.Messages);
+                messages.AddRange(ChatHistory.Messages);
             }
 
             messages.Add(userMessage);
