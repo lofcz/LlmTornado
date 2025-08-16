@@ -727,14 +727,14 @@ public class Tool
     }
     
     /// <summary>
-    ///     Creates a new tool of a given type.
+    ///     Creates a new tool of a given type. Use for built-in tools.
     /// </summary>
     /// <param name="type"></param>
     public Tool(string type)
     {
         Type = type;
     }
-
+    
     /// <summary>
     /// Empty tool.
     /// </summary>
@@ -944,7 +944,7 @@ public class ToolCustomFormat
             }
         };
     }
-
+    
     /// <summary>
     /// Create a grammar format using the default syntax (lark).
     /// </summary>
