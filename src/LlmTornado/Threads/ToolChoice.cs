@@ -126,7 +126,6 @@ public enum ToolChoiceType
 
 internal class ToolChoiceConverter : JsonConverter<ToolChoice>
 {
-
     private static readonly FrozenDictionary<string, ToolChoiceType> ToolChoiceTypesMap = new Dictionary<string, ToolChoiceType>
     {
         {"none", ToolChoiceType.None},

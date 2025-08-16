@@ -10,6 +10,16 @@ namespace LlmTornado.Chat.Models.Mistral;
 public class ChatModelMistralPremier : IVendorModelClassProvider
 {
     /// <summary>
+    /// Mistral Medium 3.1 - our frontier-class multimodal model released August 2025.
+    /// </summary>
+    public static readonly ChatModel ModelMistralMedium2508 = new ChatModel("mistral-medium-2508", LLmProviders.Mistral, 128_000);
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelMistralMedium2508"/>
+    /// </summary>
+    public readonly ChatModel MistralMedium2508 = ModelMistralMedium2508;
+    
+    /// <summary>
     /// An enterprise grade text model, that excels at using tools to explore codebases, editing multiple files and power software engineering agents.
     /// </summary>
     public static readonly ChatModel ModelDevstralMedium2507 = new ChatModel("devstral-medium-2507", LLmProviders.Mistral, 128_000);
@@ -134,7 +144,8 @@ public class ChatModelMistralPremier : IVendorModelClassProvider
         ModelMagistralMedium2507,
         ModelDevstralMedium2507,
         ModelCodestral2501,
-        ModelCodestral2508
+        ModelCodestral2508,
+        ModelMistralMedium2508
     ];
 
     /// <summary>
