@@ -35,8 +35,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.SemanticKernel",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.Agents", "LlmTornado.Agents\LlmTornado.Agents.csproj", "{98DD4043-78B8-450B-A2BD-457F5699E8C5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.StateMachines", "LlmTornado.StateMachine\LlmTornado.StateMachines.csproj", "{DF07477E-4AF6-496E-9D21-749A40874728}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.Agents.Native", "LlmTornado.Agents.Native\LlmTornado.Agents.Native.csproj", "{BA23150F-8360-4F37-BB60-D5D784ECD30E}"
 EndProject
 Global
@@ -97,10 +95,6 @@ Global
 		{98DD4043-78B8-450B-A2BD-457F5699E8C5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{98DD4043-78B8-450B-A2BD-457F5699E8C5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{98DD4043-78B8-450B-A2BD-457F5699E8C5}.Release|Any CPU.Build.0 = Release|Any CPU
-		{DF07477E-4AF6-496E-9D21-749A40874728}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{DF07477E-4AF6-496E-9D21-749A40874728}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{DF07477E-4AF6-496E-9D21-749A40874728}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{DF07477E-4AF6-496E-9D21-749A40874728}.Release|Any CPU.Build.0 = Release|Any CPU
 		{BA23150F-8360-4F37-BB60-D5D784ECD30E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{BA23150F-8360-4F37-BB60-D5D784ECD30E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BA23150F-8360-4F37-BB60-D5D784ECD30E}.Release|Any CPU.ActiveCfg = Release|Any CPU

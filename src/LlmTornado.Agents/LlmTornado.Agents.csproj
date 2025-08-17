@@ -8,7 +8,6 @@
 
     <ItemGroup>
         <ProjectReference Include="..\LlmTornado.Mcp\LlmTornado.Mcp.csproj" />
-        <ProjectReference Include="..\LlmTornado.StateMachine\LlmTornado.StateMachines.csproj" />
         <ProjectReference Include="..\LlmTornado\LlmTornado.csproj" />
     </ItemGroup>
 
