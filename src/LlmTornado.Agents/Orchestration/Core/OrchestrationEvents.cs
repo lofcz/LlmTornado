@@ -4,12 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace LlmTornado.Agents.Runtime
+namespace LlmTornado.Agents.Orchestration.Core
 {
     /// <summary>
     /// Base interface for events in the state machine.
     /// </summary>
-    public interface IRuntimeEvent
+    public interface IOrchestrationEvent
     {
         string Type { get; set; }
     }
@@ -17,7 +17,7 @@ namespace LlmTornado.Agents.Runtime
     /// <summary>
     /// Base class for events in the state machine.
     /// </summary>
-    public class RuntimeEvent : IRuntimeEvent
+    public class OrchestrationEvent : IOrchestrationEvent
     {
         /// <summary>
         /// References the type of event being triggered.
@@ -29,9 +29,9 @@ namespace LlmTornado.Agents.Runtime
     /// <summary>
     /// Triggered when the runtime begins processing.
     /// </summary>
-    public class OnBeginRuntimeEvent : RuntimeEvent
+    public class OnBeginOrchestrationEvent : OrchestrationEvent
     {
-        public OnBeginRuntimeEvent()
+        public OnBeginOrchestrationEvent()
         {
             Type = "begin";
         }
@@ -40,9 +40,9 @@ namespace LlmTornado.Agents.Runtime
     /// <summary>
     /// Triggered when the runtime finishes processing.
     /// </summary>
-    public class OnFinishedRuntimeEvent : RuntimeEvent
+    public class OnFinishedOrchestrationEvent : OrchestrationEvent
     {
-        public OnFinishedRuntimeEvent()
+        public OnFinishedOrchestrationEvent()
         {
             Type = "finished";
         }
@@ -51,9 +51,9 @@ namespace LlmTornado.Agents.Runtime
     /// <summary>
     /// Triggered when the runtime is cancelled by user.
     /// </summary>
-    public class OnCancelledRuntimeEvent : RuntimeEvent
+    public class OnCancelledOrchestrationEvent : OrchestrationEvent
     {
-        public OnCancelledRuntimeEvent()
+        public OnCancelledOrchestrationEvent()
         {
             Type = "canceled";
         }
@@ -62,7 +62,7 @@ namespace LlmTornado.Agents.Runtime
     /// <summary>
     /// Triggered when an error occurs in the runtime.
     /// </summary>
-    public class OnRuntimeErrorEvent : RuntimeEvent
+    public class OnErrorOrchestrationEvent : OrchestrationEvent
     {
         /// <summary>
         /// Exception that occurred during the runtime's operation.
@@ -72,7 +72,7 @@ namespace LlmTornado.Agents.Runtime
         /// Event triggered when an error occurs in the runtime.
         /// </summary>
         /// <param name="exception">Exception that was thrown</param>
-        public OnRuntimeErrorEvent(Exception? exception = null)
+        public OnErrorOrchestrationEvent(Exception? exception = null)
         {
             Type = "error";
             Exception = exception;
@@ -82,10 +82,10 @@ namespace LlmTornado.Agents.Runtime
     /// <summary>
     /// Triggered on each tick of the runtime.
     /// </summary>
-    public class OnTickRuntimeEvent : RuntimeEvent
+    public class OnTickOrchestrationEvent : OrchestrationEvent
     {
 
-        public OnTickRuntimeEvent()
+        public OnTickOrchestrationEvent()
         {
             Type = "tick";
 
@@ -95,13 +95,13 @@ namespace LlmTornado.Agents.Runtime
     /// <summary>
     /// Verbose event for logging detailed information about the runtime's operations.
     /// </summary>
-    public class OnVerboseRuntimeEvent : RuntimeEvent
+    public class OnVerboseOrchestrationEvent : OrchestrationEvent
     {
         /// <summary>
         /// Verbose message to log.
         /// </summary>
         public string? Message { get; set; }
-        public OnVerboseRuntimeEvent(string? message)
+        public OnVerboseOrchestrationEvent(string? message)
         {
             Type = "verbose";
             Message = message;
@@ -112,13 +112,13 @@ namespace LlmTornado.Agents.Runtime
     /// <summary>
     /// Triggered when a state is entered.
     /// </summary>
-    public class OnRunnableStartedEvent : RuntimeEvent
+    public class OnStartedRunnableEvent : OrchestrationEvent
     {
         /// <summary>
         /// Process that is being ran.
         /// </summary>
         public RunnableProcess RunnableProcess { get; set; }
-        public OnRunnableStartedEvent(RunnableProcess process)
+        public OnStartedRunnableEvent(RunnableProcess process)
         {
             Type = "started";
             RunnableProcess = process;
@@ -129,32 +129,32 @@ namespace LlmTornado.Agents.Runtime
     /// <summary>
     /// Triggered when a state is exited.
     /// </summary>
-    public class OnRunnableFinishedEvent : RuntimeEvent
+    public class OnFinishedRunnableEvent : OrchestrationEvent
     {
         /// <summary>
         /// State that is being exited.
         /// </summary>
-        public BaseRunner State { get; set; }
-        public OnRunnableFinishedEvent(BaseRunner state)
+        public OrchestrationRunnableBase Runnable { get; set; }
+        public OnFinishedRunnableEvent(OrchestrationRunnableBase state)
         {
             Type = "exited";
-            State = state;
+            Runnable = state;
         }
     }
 
     /// <summary>
     /// Triggered when a state is invoked.
     /// </summary>
-    public class OnStateInvokedEvent : RuntimeEvent
+    public class OnInvokedRunnableEvent : OrchestrationEvent
     {
         /// <summary>
         /// Process that is being invoked.
         /// </summary>
-        public RunnableProcess StateProcess { get; set; }
-        public OnStateInvokedEvent(RunnableProcess process)
+        public RunnableProcess RunnableProcess { get; set; }
+        public OnInvokedRunnableEvent(RunnableProcess process)
         {
             Type = "invoked";
-            StateProcess = process;
+            RunnableProcess = process;
         }
     }
 

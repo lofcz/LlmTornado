@@ -1,4 +1,4 @@
-﻿namespace LlmTornado.Agents.Runtime;
+﻿namespace LlmTornado.Agents.Orchestration.Core;
 
 /// <summary>
 /// Represents a process that manages the execution state and input for a state-based operation.
@@ -23,7 +23,7 @@ public class RunnableProcess
     /// <summary>
     /// Get the State for this process.
     /// </summary>
-    public BaseRunner Runner { get; set; }
+    public OrchestrationRunnableBase Runner { get; set; }
 
     /// <summary>
     /// Gets or sets the input object to process.
@@ -33,7 +33,7 @@ public class RunnableProcess
     //public object Result { get; set; }
     public RunnableProcess() { }
 
-    public RunnableProcess(BaseRunner runner , object inputValue, int maxReruns = 3)
+    public RunnableProcess(OrchestrationRunnableBase runner , object inputValue, int maxReruns = 3)
     {
         Runner = runner;
         BaseInput = inputValue;
@@ -56,7 +56,7 @@ public class RunnableProcess
     /// </summary>
     /// <param name="result">The result object to be encapsulated within the <see cref="StateResult"/>.</param>
     /// <returns>A <see cref="RunnerResult/> containing the specified result object and the current state's identifier.</returns>
-    public RunnerResult CreateRuntimeResult(object result)
+    public RunnerResult CreateRunnerResult(object result)
     {
         return new RunnerResult(Id, result);
     }
@@ -75,7 +75,7 @@ public class RunnableProcess
 
     public void Cancel()
     {
-        Runner.
+        Runner.cts.Cancel();
     }
 }
 
@@ -92,12 +92,12 @@ public class RunnableProcess<T> : RunnableProcess
     /// </summary>
     public T Input { get => (T)BaseInput; set => BaseInput = value!; }
 
-    public RunnableProcess(BaseRunner runnable, T input, int maxReruns = 3) : base(runnable, input!, maxReruns)
+    public RunnableProcess(OrchestrationRunnableBase runnable, T input, int maxReruns = 3) : base(runnable, input!, maxReruns)
     {
         Input = input!;
     }
 
-    public RunnableProcess(BaseRunner runnable, T input, string id, int maxReruns = 3) : base(runnable, input!, maxReruns)
+    public RunnableProcess(OrchestrationRunnableBase runnable, T input, string id, int maxReruns = 3) : base(runnable, input!, maxReruns)
     {
         Input = input!;
         Id = id;
@@ -106,10 +106,10 @@ public class RunnableProcess<T> : RunnableProcess
     /// <summary>
     /// Creates a new <see cref="StateResult{T}"/> instance with the specified result.
     /// </summary>
-    /// <param name="result">The result value to be encapsulated within the <see cref="RuntimeResult{T}"/>.</param>
-    /// <returns>A <see cref="RuntimeResult{T}"/> containing the specified result and the current state ID.</returns>
-    public RuntimeResult<T> CreateRuntimeResult(T result)
+    /// <param name="result">The result value to be encapsulated within the <see cref="RunnableResult{T}"/>.</param>
+    /// <returns>A <see cref="RunnableResult{T}"/> containing the specified result and the current state ID.</returns>
+    public RunnableResult<T> CreateRunnerResult(T result)
     {
-        return new RuntimeResult<T>(Id, result);
+        return new RunnableResult<T>(Id, result);
     }
 }

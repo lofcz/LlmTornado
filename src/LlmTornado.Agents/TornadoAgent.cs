@@ -36,6 +36,10 @@ public class TornadoAgent
         get => Options.ResponseRequestParameters;
         set => Options.ResponseRequestParameters = value;
     }
+    /// <summary>
+    /// Name of the agent
+    /// </summary>
+    public string Name { get; set; }
 
     /// <summary>
     /// Instructions on how to process prompts
@@ -109,6 +113,7 @@ public class TornadoAgent
     public TornadoAgent(
         TornadoApi client,
         ChatModel model,
+        string name = "Assistant",
         string instructions = "You are a helpful assistant",
         string? description = "",
         Type? outputSchema = null,
@@ -255,19 +260,21 @@ public class TornadoAgent
 
     public async Task<Conversation> RunAsync(
         string input = "", 
+        Conversation? conversation = null,
         List<ChatMessage>? messages = null, 
-        GuardRailFunction? guardRailFunction = null,
+        GuardRailFunction? inputGuardRailFunction = null,
         RunnerVerboseCallbacks? runnerVerboseCallbacks = null, 
         CancellationToken cancellationToken = default,
         bool streaming = false, 
         StreamingCallbacks? streamingCallback = null, 
         int maxTurns = 10, 
         string responseId = "",
-        ToolPermissionRequest? toolPermissionRequest = null, Func<ChatMessage,ValueTask>? OnComplete = null)
+        ToolPermissionRequest? toolPermissionRequest = null, 
+        Func<Conversation, ValueTask>? OnComplete = null)
     {
-        Conversation conversation = await TornadoRunner.RunAsync(this, input: input, messages: messages, guardRail: guardRailFunction, verboseCallback: runnerVerboseCallbacks, cancellationToken: cancellationToken, streaming: streaming,
+        Conversation _conversation = await TornadoRunner.RunAsync(this, input: input, messages: messages, conversation:conversation,guardRail: inputGuardRailFunction, verboseCallback: runnerVerboseCallbacks, cancellationToken: cancellationToken, streaming: streaming,
             streamingCallback: streamingCallback, maxTurns: maxTurns, responseId: responseId, toolPermissionRequest: toolPermissionRequest);
-        OnComplete?.Invoke(conversation.Messages.Last());
-        return conversation;
+        OnComplete?.Invoke(_conversation);
+        return _conversation;
     }
 }

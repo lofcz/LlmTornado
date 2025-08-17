@@ -1,6 +1,6 @@
-namespace LlmTornado.Agents.Runtime;
+namespace LlmTornado.Agents.Orchestration.Core;
 
-public interface IRunner
+public interface IOrchestrationRunner
 {
     /// <summary>
     /// Gets the identifier of the state.
@@ -10,17 +10,17 @@ public interface IRunner
     /// <summary>
     /// Get the current StateMachine instance associated with this state.
     /// </summary>
-    public ProcessRuntime? ActiveRuntime { get; set; }
+    public Orchestration? Orchestrator { get; set; }
 }
 
 /// <summary>
 /// Represents the base class for defining a state within a state machine.
 /// </summary>
-/// <remarks>The <see cref="BaseRunner"/> class provides a framework for managing state transitions, input
+/// <remarks>The <see cref="OrchestrationRunnableBase"/> class provides a framework for managing state transitions, input
 /// and output processing, and state invocation within a state machine. It includes properties and methods for
 /// handling state-specific logic, such as entering and exiting states, checking conditions, and managing
 /// transitions.</remarks>
-public abstract class BaseRunner : IRunner
+public abstract class OrchestrationRunnableBase : IOrchestrationRunner
 {
 
     /// <summary>
@@ -56,10 +56,10 @@ public abstract class BaseRunner : IRunner
     /// <summary>
     /// Gets or sets the list of routes.
     /// </summary>
-    internal List<RuntimeAdvancer<object>> BaseAdvancers { get; set; } = new List<RuntimeAdvancer<object>>();
+    internal List<OrchestrationAdvancer<object>> BaseAdvancers { get; set; } = new List<OrchestrationAdvancer<object>>();
 
     
-    public ProcessRuntime? ActiveRuntime { get; set; }
+    public Orchestration? Orchestrator { get; set; }
 
 
     /// <summary>
@@ -72,7 +72,7 @@ public abstract class BaseRunner : IRunner
     /// </summary>
     /// <returns></returns>
     /// 
-    internal abstract Task _Invoke();
+    internal abstract ValueTask _Invoke();
 
     /// <summary>
     /// Adds state Process to the required state.
@@ -82,7 +82,7 @@ public abstract class BaseRunner : IRunner
     /// <param name="input">The input that influences the state transition. Can be null if no specific input is required for the
     /// transition.</param>
     /// <returns></returns>
-    internal abstract Task _InitializeRunnable(RunnableProcess? input);
+    internal abstract ValueTask _InitializeRunnable(RunnableProcess? input);
 
     /// <summary>
     /// Transitions the current state to an exit state asynchronously.
@@ -90,7 +90,7 @@ public abstract class BaseRunner : IRunner
     /// <remarks>This method should be implemented to handle any necessary cleanup or finalization
     /// tasks when exiting a state. It is called as part of the state transition process.</remarks>
     /// <returns>A task that represents the asynchronous operation of exiting the state.</returns>
-    internal abstract Task _CleanupRunnable();
+    internal abstract ValueTask _CleanupRunnable();
 
     /// <summary>
     /// Retrieves the type of input that this state can process.
