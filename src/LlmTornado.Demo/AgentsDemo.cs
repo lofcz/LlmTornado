@@ -4,8 +4,8 @@ using LlmTornado.Chat.Models;
 using LlmTornado.Code;
 using System.ComponentModel;
 using LlmTornado.Agents.DataModels;
-using LlmTornado.Agents.AgentStates;
 using LlmTornado.Agents.Orchestration;
+using LlmTornado.Agents.Orchestration.Core;
 
 namespace LlmTornado.Demo;
 
@@ -16,7 +16,7 @@ public class AgentsDemo : DemoBase
     {
         TornadoAgent agent = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41Mini, "You are a useful assistant.");
 
-        Conversation result = await TornadoRunner.RunAsync(agent, "What is 2+2?");
+        Conversation result = await agent.RunAsync("What is 2+2?");
 
         Console.WriteLine(result.Messages.Last().Content);
     }
@@ -43,7 +43,7 @@ public class AgentsDemo : DemoBase
             return ValueTask.CompletedTask;
         }
 
-        Conversation result = await TornadoRunner.RunAsync(agent, "Hello Streaming World!", streaming: true, streamingCallback: StreamingHandler);
+        Conversation result = await agent.RunAsync("Hello Streaming World!", streaming: true, streamingCallback: StreamingHandler);
     }
 
     [TornadoTest]
@@ -60,7 +60,7 @@ public class AgentsDemo : DemoBase
             "You are a useful assistant that when asked to translate you only can rely on the given tools to translate language.",
             tools: [agentTranslator.AsTool]);
 
-        Conversation result = await TornadoRunner.RunAsync(agent, "What is 2+2? and can you provide the result to me in spanish?");
+        Conversation result = await agent.RunAsync("What is 2+2? and can you provide the result to me in spanish?");
 
         Console.WriteLine(result.Messages.Last().Content);
     }
@@ -181,8 +181,8 @@ public class AgentsDemo : DemoBase
     [TornadoTest]
     public static async Task HandoffTest()
     {
-        TornadoAgent TechnicalExpertAgent = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41Mini, "You are a technical expert for the Sales team.",description: "Handoff If the customer ask a technical question");
-        TornadoAgent BillingAgent = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41Mini, "You are a billing expert for the Sales team.",description: "Handoff if the customer has a billing request");
+        TornadoAgent TechnicalExpertAgent = new TornadoAgent(Program.Connect(),ChatModel.OpenAi.Gpt41.V41Mini, name: "GeneralSupport", "You are a technical expert for the Sales team.",  description: "Handoff If the customer ask a technical question");
+        TornadoAgent BillingAgent = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41Mini, name: "BillingExpert", "You are a billing expert for the Sales team.",description: "Handoff if the customer has a billing request");
 
         TornadoAgent GeneralSupportAgent = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41, 
             instructions: $"""You are General support for the Sales team""",
@@ -191,18 +191,15 @@ public class AgentsDemo : DemoBase
                 TechnicalExpertAgent
                 ]);
 
-        HandoffOrchestration handoffOrchestrator = new("SalesAgent", GeneralSupportAgent);
+        HandoffOrchestration handoffOrchestrator = new(GeneralSupportAgent);
         // Example task to run through the state machine
         string task = "What is the status of my technical support ticket?";
         Console.WriteLine($"[User]: {task}");
         Console.Write("[Agent]: ");
-        handoffOrchestrator.OnStreamingEvent += (stream) =>
-        {
-            if (stream is ModelStreamingOutputTextDeltaEvent text)
-                Console.Write(text.DeltaText);
-            return ValueTask.CompletedTask;
-        };
+        
         // Run the state machine and aget the result
-        string result = await handoffOrchestrator.InvokeAsync(task, streaming: true);
+        await handoffOrchestrator.Invoke(task);
+
+        Console.Write(handoffOrchestrator.Results.LastOrDefault().Parts.LastOrDefault().Text ?? "No response from agent");
     }
 }

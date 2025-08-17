@@ -15,6 +15,10 @@ namespace LlmTornado.Agents.Orchestration.Core;
 public class Orchestration
 {
     /// <summary>
+    /// Gets or sets the initial state of the system or process.
+    /// </summary>
+    public OrchestrationRunnableBase InitialRunnable { get; protected set; }
+    /// <summary>
     /// Triggers events related to the state machine, such as state transitions and errors.
     /// </summary>
     public Action<OrchestrationEvent>? OnOrchestrationEvent { get; set; } 
@@ -287,6 +291,17 @@ public class Orchestration
     }
 
 
+    /// <summary>
+    /// Sets the initial state for the entry point of the state machine.
+    /// </summary>
+    /// <param name="initialRunnable">The initial state to be set. Must have an input type assignable to <typeparamref name="TInput"/>.</param>
+    /// <exception cref="InvalidCastException">Thrown if the input type of <paramref name="initialRunnable"/> is not assignable to <typeparamref
+    /// name="TInput"/>.</exception>
+    public virtual void SetEntryRunnable(OrchestrationRunnableBase initialRunnable)
+    {
+        InitialRunnable = initialRunnable;
+    }
+
     public virtual async Task Initialize(OrchestrationRunnableBase initialRunner, object? input = null)
     {
         if (initialRunner == null)
@@ -302,7 +317,13 @@ public class Orchestration
         OnOrchestrationEvent?.Invoke(new OnVerboseOrchestrationEvent("Initilization Completed!")); //Invoke the begin state machine event
     }
 
-    public async Task RunToCompletion()
+    public async Task Invoke(object? input = null)
+    {
+        await Initialize(InitialRunnable, input);
+        await RunToCompletion();
+    }
+
+    private async Task RunToCompletion()
     {
         if(!isInitialized)
         {
@@ -317,7 +338,7 @@ public class Orchestration
         }
     }
 
-    public async Task InvokeStep()
+    private async Task InvokeStep()
     {
         if(!isInitialized)
         {
@@ -405,10 +426,7 @@ public class Orchestration<TInput, TOutput> : Orchestration
     /// </summary>
     public List<TOutput>? Results => RunnableWithResult.BaseOutput.ConvertAll(item => (TOutput)item)!;
 
-    /// <summary>
-    /// Gets or sets the initial state of the system or process.
-    /// </summary>
-    public OrchestrationRunnableBase InitialRunnable { get; private set; }
+
     /// <summary>
     /// Gets or sets the result state of the operation.
     /// </summary>
@@ -447,7 +465,7 @@ public class Orchestration<TInput, TOutput> : Orchestration
     /// <param name="initialRunnable">The initial state to be set. Must have an input type assignable to <typeparamref name="TInput"/>.</param>
     /// <exception cref="InvalidCastException">Thrown if the input type of <paramref name="initialRunnable"/> is not assignable to <typeparamref
     /// name="TInput"/>.</exception>
-    public void SetEntryRunnable(OrchestrationRunnableBase initialRunnable)
+    public override void SetEntryRunnable(OrchestrationRunnableBase initialRunnable)
     {
         if (!typeof(TInput).IsAssignableFrom(initialRunnable.GetInputType()))
         {

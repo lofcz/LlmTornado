@@ -97,7 +97,7 @@ public class ChatRuntime
     private ValueTask HandleStreamingEvent(ModelStreamingEvents message)
     {
         OnStreamingEvent?.Invoke(message);
-        return default; // Return a completed ValueTask
+        return Threading.ValueTaskCompleted;
     }
 
 
@@ -137,7 +137,7 @@ public class ChatRuntime
     /// image is attached.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains the response string from the
     /// conversation.</returns>
-    public async Task<string> InvokeAsync(ChatMessage message, bool streaming = true)
+    public async Task<string> InvokeAsync(ChatMessage message)
     {
         // Invoke the StartingExecution event to signal the beginning of the execution process
         OnExecutionStarted?.Invoke();
@@ -175,8 +175,7 @@ public class ChatRuntime
     private async ValueTask<ChatMessage> InternalOnInvokeAgentsAsync(ChatMessage message)
     {
         ResetCancellationTokenSource();
-        await Orchestrator.Initialize(message);
-        await Orchestrator.RunToCompletion();
+        
 
         return Orchestrator.Results.LastOrDefault() ?? new ChatMessage();
     }
