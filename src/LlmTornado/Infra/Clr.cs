@@ -305,10 +305,16 @@ internal static class Clr
             if (invocationResult is Task task)
             {
                 await task.ConfigureAwait(false);
+                Type taskType = task.GetType();
                 
                 if (task.GetType().IsGenericType)
                 {
-                    result = (task as dynamic).Result; 
+                    PropertyInfo? resultProperty = taskType.GetProperty("Result");
+            
+                    if (resultProperty is not null)
+                    {
+                        result = resultProperty.GetValue(task);
+                    }
                 }
             }
             else if (invocationResult is not null)

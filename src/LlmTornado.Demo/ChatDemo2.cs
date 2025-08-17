@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Net.Http.Headers;
 using LibVLCSharp.Shared;
@@ -322,13 +323,57 @@ public partial class ChatDemo : DemoBase
             }
         }
     }
+
+    [TornadoTest]
+    public static async Task MockWebSearch()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Google.Gemini.Gemini25Pro,
+            Tools = [
+                new Tool(async (
+                    [Description("The query to search for")] string query, 
+                    ToolArguments args) =>
+                {
+                    // use Tavily, or whatever
+                    return new
+                    {
+                        results = new List<string>
+                        {
+                            """
+                            2025-08-14, Version 24.6.0 (Current), @RafaelGSS
+
+                            Notable Changes
+                            [471fe712b3] - (SEMVER-MINOR) cli: add NODE_USE_SYSTEM_CA=1 (Joyee Cheung) #59276
+                            [38aedfbf73] - (SEMVER-MINOR) crypto: support ML-DSA KeyObject, sign, and verify (Filip Skokan) #59259
+                            [201304537e] - (SEMVER-MINOR) zlib: add dictionary support to zstdCompress and zstdDecompress (lluisemper) #59240
+                            [e79c93a5d0] - (SEMVER-MINOR) http: add server.keepAliveTimeoutBuffer option (Haram Jeong) #59243
+                            [c144d69efc] - lib: docs deprecate _http_* (Sebastian Beltran) #59293
+                            [aeb4de55a7] - (SEMVER-MINOR) fs: port SonicBoom module to fs module as Utf8Stream (James M Snell) #58897
+                            """
+                        }
+                    };
+                }, "search_internet", "Searches the internet")
+            ]
+        });
+        
+        chat.AddSystemMessage("You are an assistant. Search internet when appropriate to answer queries. Reply curtly.");
+        chat.AddUserMessage("What is the latest NodeJS version?");
+
+        // run the first conversation round, here we naively suppose the model will use search_internet
+        // ToolCallsHandler.ContinueConversation <-- passing this in results in the result of the tool call being added to the conversation
+        Console.WriteLine(await chat.GetResponseRich(ToolCallsHandler.ContinueConversation));
+        
+        // run round two, the model will use the result of the internet search to inform the user about what it found
+        Console.WriteLine(await chat.GetResponseRich(ToolCallsHandler.ContinueConversation));
+    }
     
     [TornadoTest]
     public static async Task GrokLiveSearchStreaming()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.XAi.Grok3.V3,
+            Model = ChatModel.XAi.Grok4.V4,
             VendorExtensions = new ChatRequestVendorExtensions
             {
                 XAi = new ChatRequestVendorXAiExtensions
