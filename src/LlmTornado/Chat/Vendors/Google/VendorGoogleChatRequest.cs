@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
 using LlmTornado.Chat.Models;
+using LlmTornado.Chat.Vendors.Cohere;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Common;
@@ -317,6 +318,55 @@ internal class VendorGoogleChatRequestMessagePart
                     {
                         FileUri = part.FileLinkData.FileUri,
                         MimeType = part.FileLinkData.MimeType
+                    };
+                }
+                
+                break;
+            }
+            case ChatMessageTypes.Reasoning:
+            {
+                if (part.Reasoning is not null)
+                {
+                    Text = part.Reasoning.Content;
+                    Thought = true;
+                    ThoughtSignature = part.Reasoning.Signature;
+                }
+                
+                break;
+            }
+            case ChatMessageTypes.ExecutableCode:
+            {
+                if (part.ExecutableCode is not null)
+                {
+                    ExecutableCode = new VendorGoogleChatRequest.VendorGoogleChatRequestMessagePartExecutableCode
+                    {
+                        Code = part.ExecutableCode.Code,
+                        Language = part.ExecutableCode.Language switch
+                        {
+                            ChatMessagePartExecutableCodeLanguage.Unknown => VendorGoogleChatRequest.VendorGoogleChatRequestMessagePartExecutableCodeLanguage.Unspecified,
+                            ChatMessagePartExecutableCodeLanguage.Python => VendorGoogleChatRequest.VendorGoogleChatRequestMessagePartExecutableCodeLanguage.Python,
+                            _ => VendorGoogleChatRequest.VendorGoogleChatRequestMessagePartExecutableCodeLanguage.Unspecified
+                        }
+                    };
+                }
+                
+                break;
+            }
+            case ChatMessageTypes.CodeExecutionResult:
+            {
+                if (part.CodeExecutionResult is not null)
+                {
+                    CodeExecutionResult = new VendorGoogleChatRequest.VendorGoogleChatRequestMessagePartCodeExecutionResult
+                    {
+                        Output = part.CodeExecutionResult.Output,
+                        Outcome = part.CodeExecutionResult.Outcome switch
+                        {
+                            ChatMessagePartCodeExecutionResultOutcomes.Unknown => VendorGoogleChatRequest.VendorGoogleChatRequestMessagePartCodeExecutionResultOutcome.Unspecified,
+                            ChatMessagePartCodeExecutionResultOutcomes.Timeout => VendorGoogleChatRequest.VendorGoogleChatRequestMessagePartCodeExecutionResultOutcome.DeadlineExceeded,
+                            ChatMessagePartCodeExecutionResultOutcomes.Failed => VendorGoogleChatRequest.VendorGoogleChatRequestMessagePartCodeExecutionResultOutcome.Failed,
+                            ChatMessagePartCodeExecutionResultOutcomes.Ok => VendorGoogleChatRequest.VendorGoogleChatRequestMessagePartCodeExecutionResultOutcome.Ok,
+                            _ => VendorGoogleChatRequest.VendorGoogleChatRequestMessagePartCodeExecutionResultOutcome.Unspecified
+                        }
                     };
                 }
                 
@@ -682,7 +732,7 @@ internal class VendorGoogleChatRequest
             }
         }
 
-        public ChatMessage ToChatMessage(VendorGoogleChatRequest? request, ChatRequest? chatRequest)
+        public ChatMessage ToChatMessage(VendorGoogleChatRequest? request, ChatRequest? chatRequest, VendorGoogleChatResult.VendorGoogleChatResultMessage nativeResult)
         {
             ChatMessage msg = new ChatMessage
             {
@@ -740,6 +790,32 @@ internal class VendorGoogleChatRequest
             if (!contentSolved)
             {
                 msg.Content = sb.ToString();   
+            }
+
+            if (nativeResult.GroundingMetadata?.GroundingSupports.Count > 0)
+            {
+                ChatMessagePart? lastPart = msg.Parts.LastOrDefault(x => x.Type is ChatMessageTypes.Text) ?? msg.Parts.LastOrDefault();
+ 
+                if (lastPart is not null)
+                {
+                    lastPart.Citations ??= [];
+
+                    foreach (VendorGoogleChatResultGroundingSupport nativeCitation in nativeResult.GroundingMetadata.GroundingSupports)
+                    {
+                        List<VendorGoogleChatResultGroundingChunk> matchingSources = nativeResult.GroundingMetadata.GroundingChunks.Where((x, i) => nativeCitation.GroundingChunkIndices.Contains(i)).ToList();
+                        
+                        lastPart.Citations.Add(new ChatMessagePartCitationWebGrounding
+                        {
+                            Sources = matchingSources.Select(x => new ChatMessagePartCitationWebGroundingSource
+                            {
+                                Url = x.Web.Uri,
+                                Title = x.Web.Title
+                            }).ToList(),
+                            CitedText = nativeCitation.Segment.Text,
+                            NativeObject = nativeCitation
+                        });
+                    }
+                }
             }
             
             msg.Role = Role is "user" ? ChatMessageRoles.User : ChatMessageRoles.Assistant;

@@ -118,7 +118,7 @@ internal class VendorGoogleChatResult : VendorChatResult
 
         foreach (VendorGoogleChatResultMessage candidate in Candidates)
         {
-            ChatMessage msg = requestObject is ChatRequest cr ? candidate.Content.ToChatMessage(request, cr) : candidate.Content.ToChatMessage(request, null);
+            ChatMessage msg = requestObject is ChatRequest cr ? candidate.Content.ToChatMessage(request, cr, candidate) : candidate.Content.ToChatMessage(request, null, candidate);
             
             result.Choices.Add(new ChatChoice
             {

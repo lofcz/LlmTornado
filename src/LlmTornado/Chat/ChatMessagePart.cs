@@ -377,6 +377,49 @@ public class ChatMessagePart
     {
         return new ChatMessagePart(uri, type);
     }
+
+    /// <summary>
+    /// Preview of the message part.
+    /// </summary>
+    public override string ToString()
+    {
+        if (Text is not null)
+        {
+            return Text;
+        }
+
+        if (ExecutableCode is not null)
+        {
+            return $"code to run:\n{ExecutableCode.Code.Trim()}\nlanguage:\n{ExecutableCode.Language}";
+        }
+
+        if (CodeExecutionResult is not null)
+        {
+            return $"code execution result:\n{CodeExecutionResult.Output?.Trim()}outcome:\n{CodeExecutionResult.Outcome}";
+        }
+
+        if (Image is not null)
+        {
+            return $"image:\n{Image.Url}";
+        }
+
+        if (Audio is not null)
+        {
+            return $"audio:\n{Audio.Url}";
+        }
+
+        if (Reasoning is not null)
+        {
+            return $"reasoning:\n{Reasoning.Content}";
+        }
+
+        if (Video is not null)
+        {
+            return $"video:\n{Video.Url}";
+        }
+
+        return $"type:\n{Type}";
+    }
 }
 
 /// <summary>

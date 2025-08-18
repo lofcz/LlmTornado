@@ -341,6 +341,58 @@ public partial class ChatDemo : DemoBase
         ChatRichResponse response = await chat.GetResponseRich();
         Console.WriteLine(response);
     }
+    
+    [TornadoTest]
+    public static async Task GoogleUrlContext()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Google.Gemini.Gemini25Pro,
+            VendorExtensions = new ChatRequestVendorExtensions(new ChatRequestVendorGoogleExtensions
+            {
+                UrlContext = ChatRequestVendorGoogleUrlContext.Inst
+            })
+        });
+        
+        chat.AddUserMessage("Summarize what this repository is doing: https://github.com/lofcz/LlmTornado");
+
+        ChatRichResponse response = await chat.GetResponseRich();
+        Console.WriteLine(response);
+    }
+    
+    [TornadoTest]
+    public static async Task GoogleCodeExecutionStreaming()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Google.Gemini.Gemini25Pro,
+            VendorExtensions = new ChatRequestVendorExtensions(new ChatRequestVendorGoogleExtensions
+            {
+                CodeExecution = ChatRequestVendorGoogleCodeExecution.Inst
+            })
+        });
+        
+        chat.AddUserMessage("Evaluate 2+2 using Python.");
+
+        await chat.StreamResponseRich(new ChatStreamEventHandler
+        {
+            MessageTokenHandler = (token) =>
+            {
+                Console.Write(token);
+                return ValueTask.CompletedTask;
+            },
+            MessagePartHandler = (part) =>
+            {
+                if (part.Type is ChatMessageTypes.Text)
+                {
+                    return ValueTask.CompletedTask;
+                }
+                
+                Console.WriteLine(part);
+                return ValueTask.CompletedTask;
+            }
+        });
+    }
 
     [TornadoTest]
     public static async Task MockWebSearch()
