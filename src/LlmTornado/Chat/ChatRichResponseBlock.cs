@@ -48,6 +48,16 @@ public enum ChatRichResponseBlockTypes
     /// Custom tool call, optionally paired with the response if the custom tool already resolved.
     /// </summary>
     CustomTool,
+    
+    /// <summary>
+    /// Executable code block.
+    /// </summary>
+    ExecutableCode,
+    
+    /// <summary>
+    /// Code execution result block.
+    /// </summary>
+    CodeExecutionResult
 }
 
 /// <summary>
@@ -171,6 +181,18 @@ public class ChatRichResponse
                     sb.AppendLine($"mime: {x.ChatImage?.MimeType}");
                     break;
                 }
+                case ChatRichResponseBlockTypes.ExecutableCode:
+                {
+                    sb.AppendLine($"code to run: {x.ExecutableCode?.Code}");
+                    sb.AppendLine($"language: {x.ExecutableCode?.Language}");
+                    break;
+                }
+                case ChatRichResponseBlockTypes.CodeExecutionResult:
+                {
+                    sb.AppendLine($"result: {x.CodeExecutionResult?.Output?.Trim()}");
+                    sb.AppendLine($"outcome: {x.CodeExecutionResult?.Outcome}");
+                    break;
+                }
                 default:
                 {
                     break;
@@ -223,6 +245,18 @@ public class ChatRichResponseBlock
     public ChatMessageReasoningData? Reasoning { get; set; }
 
     /// <summary>
+    /// Executable code, if the part is <see cref="ChatRichResponseBlockTypes.ExecutableCode"/>
+    /// </summary>
+    [JsonIgnore]
+    public ChatMessagePartExecutableCode? ExecutableCode { get; set; }
+    
+    /// <summary>
+    /// Code execution result, if the part is <see cref="ChatRichResponseBlockTypes.CodeExecutionResult"/>
+    /// </summary>
+    [JsonIgnore]
+    public ChatMessagePartCodeExecutionResult? CodeExecutionResult { get; set; }
+    
+    /// <summary>
     /// Citations associated with the block, if any.
     /// </summary>
     [JsonIgnore]
@@ -266,6 +300,8 @@ public class ChatRichResponseBlock
             ChatMessageTypes.Image => ChatRichResponseBlockTypes.Image,
             ChatMessageTypes.Audio => ChatRichResponseBlockTypes.Audio,
             ChatMessageTypes.Reasoning => ChatRichResponseBlockTypes.Reasoning,
+            ChatMessageTypes.CodeExecutionResult => ChatRichResponseBlockTypes.CodeExecutionResult,
+            ChatMessageTypes.ExecutableCode => ChatRichResponseBlockTypes.ExecutableCode,
             _ => ChatRichResponseBlockTypes.Unknown
         };
 
@@ -300,6 +336,16 @@ public class ChatRichResponseBlock
                     };   
                 }
                 
+                break;
+            }
+            case ChatMessageTypes.ExecutableCode:
+            {
+                ExecutableCode = part.ExecutableCode;
+                break;
+            }
+            case ChatMessageTypes.CodeExecutionResult:
+            {
+                CodeExecutionResult = part.CodeExecutionResult;
                 break;
             }
         }

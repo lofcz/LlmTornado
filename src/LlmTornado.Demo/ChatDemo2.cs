@@ -325,6 +325,24 @@ public partial class ChatDemo : DemoBase
     }
 
     [TornadoTest]
+    public static async Task GoogleCodeExecution()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Google.Gemini.Gemini25Pro,
+            VendorExtensions = new ChatRequestVendorExtensions(new ChatRequestVendorGoogleExtensions
+            {
+                CodeExecution = ChatRequestVendorGoogleCodeExecution.Inst
+            })
+        });
+        
+        chat.AddUserMessage("Evaluate 2+2 using Python.");
+
+        ChatRichResponse response = await chat.GetResponseRich();
+        Console.WriteLine(response);
+    }
+
+    [TornadoTest]
     public static async Task MockWebSearch()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest

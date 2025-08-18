@@ -8,6 +8,8 @@ using LlmTornado.Code;
 using LlmTornado.Vendor.Anthropic;
 using LlmTornado.Vendor.Google;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using System.Runtime.Serialization;
 
 namespace LlmTornado.Chat.Vendors.Cohere;
 
@@ -15,6 +17,9 @@ internal class VendorGoogleChatResult : VendorChatResult
 {
     internal class VendorGoogleChatResultMessage
     {
+        /// <summary>
+        /// Generated content returned from the model.
+        /// </summary>
         [JsonProperty("content")]
         public VendorGoogleChatRequest.VendorGoogleChatRequestMessage Content { get; set; }
         
@@ -35,11 +40,49 @@ internal class VendorGoogleChatResult : VendorChatResult
         [JsonProperty("finishReason")]
         public string? FinishReason { get; set; }
         
-        [JsonProperty("index")]
-        public int Index { get; set; }
-        
         [JsonProperty("safetyRatings")]
         public List<VendorGoogleChatRequest.VendorGoogleChatRequestSafetySetting>? SafetyRatings { get; set; }
+        
+        [JsonProperty("citationMetadata")]
+        public VendorGoogleChatResultCitationMetadata? CitationMetadata { get; set; }
+        
+        [JsonProperty("tokenCount")]
+        public int TokenCount { get; set; }
+        
+        /// <summary>
+        /// Attribution information for sources that contributed to a grounded answer.
+        /// This field is populated for GenerateAnswer calls.
+        /// </summary>
+        [JsonProperty("groundingAttributions")]
+        public List<VendorGoogleChatResultGroundingAttributions>? GroundingAttributions { get; set; }
+        
+        /// <summary>
+        /// Grounding metadata for the candidate.
+        /// This field is populated for GenerateContent calls.
+        /// </summary>
+        [JsonProperty("groundingMetadata")]
+        public VendorGoogleChatResultGroundingMetadata? GroundingMetadata { get; set; }
+        
+        /// <summary>
+        /// Average log probability score of the candidate.
+        /// </summary>
+        [JsonProperty("avgLogprobs")]
+        public double? AvgLogprobs { get; set; }
+        
+        /// <summary>
+        /// Log-likelihood scores for the response tokens and top tokens
+        /// </summary>
+        [JsonProperty("logprobsResult")]
+        public VendorGoogleChatResultLogprobsResult? LogprobsResult { get; set; }
+        
+        /// <summary>
+        /// Metadata related to url context retrieval tool.
+        /// </summary>
+        [JsonProperty("urlContextMetadata")]
+        public VendorGoogleChatResultUrlContextMetadata? UrlContextMetadata { get; set; }
+                
+        [JsonProperty("index")]
+        public int Index { get; set; }
     }
     
     [JsonProperty("candidates")] 
@@ -50,6 +93,12 @@ internal class VendorGoogleChatResult : VendorChatResult
     
     [JsonProperty("promptFeedback")]
     public VendorGooglePromptFeedback? PromptFeedback { get; set; }
+    
+    [JsonProperty("modelVersion")]
+    public string? ModelVersion { get; set; }
+    
+    [JsonProperty("responseId")]
+    public string? ResponseId { get; set; }
     
     public override ChatResult ToChatResult(string? postData, object? requestObject)
     {
@@ -81,4 +130,394 @@ internal class VendorGoogleChatResult : VendorChatResult
         
         return result;
     }
+}
+
+/// <summary>
+/// Metadata related to url context retrieval tool.
+/// </summary>
+internal class VendorGoogleChatResultUrlContextMetadata
+{
+    /// <summary>
+    /// List of url context.
+    /// </summary>
+    [JsonProperty("urlMetadata")]
+    public List<VendorGoogleChatResultUrlMetadata> UrlMetadata { get; set; } = [];
+}
+
+/// <summary>
+/// Context of a single url retrieval.
+/// </summary>
+internal class VendorGoogleChatResultUrlMetadata
+{
+    /// <summary>
+    /// Retrieved url by the tool.
+    /// </summary>
+    [JsonProperty("retrievedUrl")]
+    public string RetrievedUrl { get; set; }
+
+    /// <summary>
+    /// Status of the url retrieval.
+    /// </summary>
+    [JsonProperty("urlRetrievalStatus")]
+    public VendorGoogleChatResultUrlRetrievalStatus UrlRetrievalStatus { get; set; }
+}
+
+/// <summary>
+/// Status of the url retrieval.
+/// </summary>
+[JsonConverter(typeof(StringEnumConverter))]
+internal enum VendorGoogleChatResultUrlRetrievalStatus
+{
+    /// <summary>
+    /// Default value. This value is unused.
+    /// </summary>
+    [EnumMember(Value = "URL_RETRIEVAL_STATUS_UNSPECIFIED")]
+    Unspecified,
+    
+    /// <summary>
+    /// Url retrieval is successful.
+    /// </summary>
+    [EnumMember(Value = "URL_RETRIEVAL_STATUS_SUCCESS")]
+    Success,
+    
+    /// <summary>
+    /// Url retrieval is failed due to error.
+    /// </summary>
+    [EnumMember(Value = "URL_RETRIEVAL_STATUS_ERROR")]
+    Error,
+    
+    /// <summary>
+    /// Url retrieval is failed because the content is behind paywall.
+    /// </summary>
+    [EnumMember(Value = "URL_RETRIEVAL_STATUS_PAYWALL")]
+    Paywall,
+    
+    /// <summary>
+    /// Url retrieval is failed because the content is unsafe.
+    /// </summary>
+    [EnumMember(Value = "URL_RETRIEVAL_STATUS_UNSAFE")]
+    Unsafe
+}
+
+/// <summary>
+/// Log-likelihood scores for the response tokens and top tokens
+/// </summary>
+internal class VendorGoogleChatResultLogprobsResult
+{
+    /// <summary>
+    /// Length = total number of decoding steps.
+    /// </summary>
+    [JsonProperty("topCandidates")]
+    public List<VendorGoogleChatResultTopCandidates> TopCandidates { get; set; } = [];
+
+    /// <summary>
+    /// Length = total number of decoding steps. The chosen candidates may or may not be in topCandidates.
+    /// </summary>
+    [JsonProperty("chosenCandidates")]
+    public List<VendorGoogleChatResultCandidate> ChosenCandidates { get; set; } = [];
+}
+
+/// <summary>
+/// Candidates with top log probabilities at each decoding step.
+/// </summary>
+internal class VendorGoogleChatResultTopCandidates
+{
+    /// <summary>
+    /// Sorted by log probability in descending order.
+    /// </summary>
+    [JsonProperty("candidates")]
+    public List<VendorGoogleChatResultCandidate> Candidates { get; set; } = [];
+}
+
+/// <summary>
+/// Candidate for the logprobs token and score.
+/// </summary>
+internal class VendorGoogleChatResultCandidate
+{
+    /// <summary>
+    /// The candidate’s token string value.
+    /// </summary>
+    [JsonProperty("token")]
+    public string Token { get; set; }
+
+    /// <summary>
+    /// The candidate’s token id value.
+    /// </summary>
+    [JsonProperty("tokenId")]
+    public int TokenId { get; set; }
+
+    /// <summary>
+    /// The candidate's log probability.
+    /// </summary>
+    [JsonProperty("logProbability")]
+    public double LogProbability { get; set; }
+}
+
+/// <summary>
+/// Grounding metadata for the candidate.
+/// </summary>
+internal class VendorGoogleChatResultGroundingMetadata
+{
+    /// <summary>
+    /// List of supporting references retrieved from specified grounding source.
+    /// </summary>
+    [JsonProperty("groundingChunks")]
+    public List<VendorGoogleChatResultGroundingChunk> GroundingChunks { get; set; } = [];
+
+    /// <summary>
+    /// List of grounding support.
+    /// </summary>
+    [JsonProperty("groundingSupports")]
+    public List<VendorGoogleChatResultGroundingSupport> GroundingSupports { get; set; } = [];
+
+    /// <summary>
+    /// Web search queries for the following-up web search.
+    /// </summary>
+    [JsonProperty("webSearchQueries")]
+    public List<string> WebSearchQueries { get; set; } = [];
+
+    /// <summary>
+    /// Optional. Google search entry for the following-up web searches.
+    /// </summary>
+    [JsonProperty("searchEntryPoint")]
+    public VendorGoogleChatResultSearchEntryPoint? SearchEntryPoint { get; set; }
+
+    /// <summary>
+    /// Metadata related to retrieval in the grounding flow.
+    /// </summary>
+    [JsonProperty("retrievalMetadata")]
+    public VendorGoogleChatResultRetrievalMetadata RetrievalMetadata { get; set; }
+}
+
+/// <summary>
+/// Grounding chunk.
+/// </summary>
+internal class VendorGoogleChatResultGroundingChunk
+{
+    /// <summary>
+    /// Grounding chunk from the web.
+    /// </summary>
+    [JsonProperty("web")]
+    public VendorGoogleChatResultWeb Web { get; set; }
+}
+
+/// <summary>
+/// Chunk from the web.
+/// </summary>
+internal class VendorGoogleChatResultWeb
+{
+    /// <summary>
+    /// URI reference of the chunk.
+    /// </summary>
+    [JsonProperty("uri")]
+    public string Uri { get; set; }
+
+    /// <summary>
+    /// Title of the chunk.
+    /// </summary>
+    [JsonProperty("title")]
+    public string Title { get; set; }
+}
+
+/// <summary>
+/// Grounding support.
+/// </summary>
+internal class VendorGoogleChatResultGroundingSupport
+{
+    /// <summary>
+    /// A list of indices (into 'grounding_chunk') specifying the citations associated with the claim. For instance [1,3,4] means that grounding_chunk[1], grounding_chunk[3], grounding_chunk[4] are the retrieved content attributed to the claim.
+    /// </summary>
+    [JsonProperty("groundingChunkIndices")]
+    public List<int> GroundingChunkIndices { get; set; } = [];
+
+    /// <summary>
+    /// Confidence score of the support references. Ranges from 0 to 1. 1 is the most confident. This list must have the same size as the groundingChunkIndices.
+    /// </summary>
+    [JsonProperty("confidenceScores")]
+    public List<double> ConfidenceScores { get; set; } = [];
+
+    /// <summary>
+    /// Segment of the content this support belongs to.
+    /// </summary>
+    [JsonProperty("segment")]
+    public VendorGoogleChatResultSegment Segment { get; set; }
+}
+
+/// <summary>
+/// Segment of the content.
+/// </summary>
+internal class VendorGoogleChatResultSegment
+{
+    /// <summary>
+    /// Output only. The index of a Part object within its parent Content object.
+    /// </summary>
+    [JsonProperty("partIndex")]
+    public int PartIndex { get; set; }
+
+    /// <summary>
+    /// Output only. Start index in the given Part, measured in bytes. Offset from the start of the Part, inclusive, starting at zero.
+    /// </summary>
+    [JsonProperty("startIndex")]
+    public int StartIndex { get; set; }
+
+    /// <summary>
+    /// Output only. End index in the given Part, measured in bytes. Offset from the start of the Part, exclusive, starting at zero.
+    /// </summary>
+    [JsonProperty("endIndex")]
+    public int EndIndex { get; set; }
+
+    /// <summary>
+    /// Output only. The text corresponding to the segment from the response.
+    /// </summary>
+    [JsonProperty("text")]
+    public string Text { get; set; }
+}
+
+/// <summary>
+/// Google search entry point.
+/// </summary>
+internal class VendorGoogleChatResultSearchEntryPoint
+{
+    /// <summary>
+    /// Optional. Web content snippet that can be embedded in a web page or an app webview.
+    /// </summary>
+    [JsonProperty("renderedContent")]
+    public string RenderedContent { get; set; }
+
+    /// <summary>
+    /// Optional. Base64 encoded JSON representing array of <search term, search url> tuple.
+    /// A base64-encoded string.
+    /// </summary>
+    [JsonProperty("sdkBlob")]
+    public string SdkBlob { get; set; }
+}
+
+/// <summary>
+/// Metadata related to retrieval in the grounding flow.
+/// </summary>
+internal class VendorGoogleChatResultRetrievalMetadata
+{
+    /// <summary>
+    /// Optional. Score indicating how likely information from google search could help answer the prompt. The score is in the range [0, 1], where 0 is the least likely and 1 is the most likely. This score is only populated when google search grounding and dynamic retrieval is enabled. It will be compared to the threshold to determine whether to trigger google search.
+    /// </summary>
+    [JsonProperty("googleSearchDynamicRetrievalScore")]
+    public double GoogleSearchDynamicRetrievalScore { get; set; }
+}
+
+/// <summary>
+/// Attribution information for sources that contributed to a grounded answer.
+/// This field is populated for GenerateAnswer calls.
+/// </summary>
+internal class VendorGoogleChatResultGroundingAttributions
+{
+    /// <summary>
+    /// Identifier for the source contributing to this attribution.
+    /// </summary>
+    [JsonProperty("sourceId")]
+    public VendorGoogleChatResultAttributionSourceId SourceId { get; set; }
+
+    /// <summary>
+    /// Grounding source content that makes up this attribution.
+    /// </summary>
+    [JsonProperty("content")]
+    public VendorGoogleChatRequest.VendorGoogleChatRequestMessage Content { get; set; }
+}
+
+/// <summary>
+/// Identifier for the source contributing to this attribution.
+/// </summary>
+internal class VendorGoogleChatResultAttributionSourceId
+{
+    /// <summary>
+    /// Identifier for an inline passage.
+    /// </summary>
+    [JsonProperty("groundingPassage")]
+    public VendorGoogleChatResultGroundingPassageId GroundingPassage { get; set; }
+
+    /// <summary>
+    /// Identifier for a Chunk fetched via Semantic Retriever.
+    /// </summary>
+    [JsonProperty("semanticRetrieverChunk")]
+    public VendorGoogleChatResultSemanticRetrieverChunk SemanticRetrieverChunk { get; set; }
+}
+
+/// <summary>
+/// Identifier for a part within a GroundingPassage.
+/// </summary>
+internal class VendorGoogleChatResultGroundingPassageId
+{
+    /// <summary>
+    /// Output only. ID of the passage matching the GenerateAnswerRequest's GroundingPassage.id.
+    /// </summary>
+    [JsonProperty("passageId")]
+    public string PassageId { get; set; }
+
+    /// <summary>
+    /// Output only. Index of the part within the GenerateAnswerRequest's GroundingPassage.content.
+    /// </summary>
+    [JsonProperty("partIndex")]
+    public int PartIndex { get; set; }
+}
+
+/// <summary>
+/// Identifier for a Chunk retrieved via Semantic Retriever specified in the GenerateAnswerRequest using SemanticRetrieverConfig.
+/// </summary>
+internal class VendorGoogleChatResultSemanticRetrieverChunk
+{
+    /// <summary>
+    /// Output only. Name of the source matching the request's SemanticRetrieverConfig.source. Example: corpora/123 or corpora/123/documents/abc
+    /// </summary>
+    [JsonProperty("source")]
+    public string Source { get; set; }
+
+    /// <summary>
+    /// Output only. Name of the Chunk containing the attributed text. Example: corpora/123/documents/abc/chunks/xyz
+    /// </summary>
+    [JsonProperty("chunk")]
+    public string Chunk { get; set; }
+}
+
+/// <summary>
+/// Citation information for model-generated candidate.
+/// This field may be populated with recitation information for any text included in the content. These are passages that are "recited" from copyrighted material in the foundational LLM's training data.
+/// </summary>
+internal class VendorGoogleChatResultCitationMetadata
+{
+    /// <summary>
+    /// Citations to sources for a specific response.
+    /// </summary>
+    [JsonProperty("citationSources")]
+    public List<VendorGoogleChatResultCitationSource> CitationSources { get; set; } = [];
+}
+
+/// <summary>
+/// A citation to a source for a portion of a specific response.
+/// </summary>
+internal class VendorGoogleChatResultCitationSource
+{
+    /// <summary>
+    /// Optional. Start of segment of the response that is attributed to this source.
+    /// Index indicates the start of the segment, measured in bytes.
+    /// </summary>
+    [JsonProperty("startIndex")]
+    public int? StartIndex { get; set; }
+    
+    /// <summary>
+    /// Optional. End of the attributed segment, exclusive.
+    /// </summary>
+    [JsonProperty("endIndex")]
+    public int? EndIndex { get; set; }
+    
+    /// <summary>
+    /// Optional. URI that is attributed as a source for a portion of the text.
+    /// </summary>
+    [JsonProperty("uri")]
+    public string? Uri { get; set; }
+    
+    /// <summary>
+    /// Optional. License for the GitHub project that is attributed as a source for segment.
+    /// License info is required for code citations.
+    /// </summary>
+    [JsonProperty("license")]
+    public string? License { get; set; }
 }

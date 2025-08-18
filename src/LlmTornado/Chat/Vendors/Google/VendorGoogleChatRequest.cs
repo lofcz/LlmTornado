@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Text;
 using LlmTornado.Chat.Models;
 using LlmTornado.ChatFunctions;
@@ -219,25 +220,44 @@ internal class VendorGoogleChatRequestThinkingConfig
 
 internal class VendorGoogleChatRequestMessagePart
 {
-    [JsonProperty("thought", NullValueHandling = NullValueHandling.Ignore)]
+    /// <summary>
+    /// Indicates if the part is thought from the model.
+    /// </summary>
+    [JsonProperty("thought")]
     public bool? Thought { get; set; }
+    
+    /// <summary>
+    /// An opaque signature for the thought so it can be reused in subsequent requests. A base64-encoded string.
+    /// </summary>
+    [JsonProperty("thoughtSignature")]
+    public string? ThoughtSignature { get; set; }
 
-    [JsonProperty("text", NullValueHandling = NullValueHandling.Ignore)]
+    /// <summary>
+    /// Inline text.
+    /// </summary>
+    [JsonProperty("text")]
     public string? Text { get; set; }
     
-    [JsonProperty("inlineData", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonProperty("inlineData")]
     public VendorGoogleChatRequest.VendorGoogleChatRequestMessagePartInlineData? InlineData { get; set; }
     
-    [JsonProperty("functionCall", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonProperty("functionCall")]
     public VendorGoogleChatRequest.VendorGoogleChatRequestMessagePartFunctionCall? FunctionCall { get; set; }
     
-    [JsonProperty("functionResponse", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonProperty("functionResponse")]
     public VendorGoogleChatRequest.VendorGoogleChatRequestMessagePartFunctionResponse? FunctionResponse { get; set; }
 
-    [JsonProperty("fileData", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonProperty("fileData")]
     public VendorGoogleChatRequest.VendorGoogleChatRequestMessagePartFileData? FileData { get; set; }
     
-    // todo: map executableCode, codeExecutionResult, videoMetadata; https://ai.google.dev/api/caching#Part
+    [JsonProperty("executableCode")]
+    public VendorGoogleChatRequest.VendorGoogleChatRequestMessagePartExecutableCode? ExecutableCode { get; set; }
+    
+    [JsonProperty("codeExecutionResult")]
+    public VendorGoogleChatRequest.VendorGoogleChatRequestMessagePartCodeExecutionResult? CodeExecutionResult { get; set; }
+    
+    [JsonProperty("videoMetadata")]
+    public VendorGoogleChatRequest.VendorGoogleChatRequestMetadataVideo? VideoMetadata { get; set; }
     
     public VendorGoogleChatRequestMessagePart()
     {
@@ -308,8 +328,40 @@ internal class VendorGoogleChatRequestMessagePart
     public ChatMessagePart ToMessagePart(StringBuilder sb)
     {
         ChatMessagePart part = new ChatMessagePart();
-        
-        if (Text is not null)
+
+        if (ExecutableCode is not null)
+        {
+            part.Type = ChatMessageTypes.ExecutableCode;
+            part.ExecutableCode = new ChatMessagePartExecutableCode
+            {
+                Code = ExecutableCode.Code,
+                Language = ExecutableCode.Language switch
+                {
+                    VendorGoogleChatRequest.VendorGoogleChatRequestMessagePartExecutableCodeLanguage.Unspecified => ChatMessagePartExecutableCodeLanguage.Unknown,
+                    VendorGoogleChatRequest.VendorGoogleChatRequestMessagePartExecutableCodeLanguage.Python => ChatMessagePartExecutableCodeLanguage.Python,
+                    _ => ChatMessagePartExecutableCodeLanguage.Unknown
+                },
+                NativeObject = ExecutableCode
+            };
+        }
+        else if (CodeExecutionResult is not null)
+        {
+            part.Type = ChatMessageTypes.CodeExecutionResult;
+            part.CodeExecutionResult = new ChatMessagePartCodeExecutionResult
+            {
+                Outcome = CodeExecutionResult.Outcome switch
+                {
+                    VendorGoogleChatRequest.VendorGoogleChatRequestMessagePartCodeExecutionResultOutcome.Unspecified => ChatMessagePartCodeExecutionResultOutcomes.Unknown,
+                    VendorGoogleChatRequest.VendorGoogleChatRequestMessagePartCodeExecutionResultOutcome.Ok => ChatMessagePartCodeExecutionResultOutcomes.Ok,
+                    VendorGoogleChatRequest.VendorGoogleChatRequestMessagePartCodeExecutionResultOutcome.Failed => ChatMessagePartCodeExecutionResultOutcomes.Failed,
+                    VendorGoogleChatRequest.VendorGoogleChatRequestMessagePartCodeExecutionResultOutcome.DeadlineExceeded => ChatMessagePartCodeExecutionResultOutcomes.Timeout,
+                    _ => ChatMessagePartCodeExecutionResultOutcomes.Unknown
+                },
+                Output = CodeExecutionResult.Output,
+                NativeObject = CodeExecutionResult
+            };
+        }
+        else if (Text is not null)
         {
             part.Type = ChatMessageTypes.Text;
             part.Text = Text;
@@ -338,7 +390,8 @@ internal class VendorGoogleChatRequestMessagePart
             part.Reasoning = new ChatMessageReasoningData
             {
                 Provider = LLmProviders.Google,
-                Content = Text
+                Content = Text,
+                Signature = ThoughtSignature
             };
         }
 
@@ -404,6 +457,150 @@ internal class VendorGoogleChatRequest
         public object Response { get; set; }
     }
 
+    /// <summary>
+    /// Video metadata. The metadata should only be specified while the video data is presented in inlineData or fileData.
+    /// </summary>
+    internal class VendorGoogleChatRequestMetadataVideo
+    {
+        /// <summary>
+        /// Optional. The start offset of the video.
+        /// A duration in seconds with up to nine fractional digits, ending with 's'. Example: "3.5s".
+        /// </summary>
+        [JsonProperty("startOffset")]
+        [JsonConverter(typeof(VendorGoogleChatRequestDurationConverter))]
+        public TimeSpan? StartOffset { get; set; }
+
+        /// <summary>
+        /// Optional. The end offset of the video.
+        /// A duration in seconds with up to nine fractional digits, ending with 's'. Example: "3.5s".
+        /// </summary>
+        [JsonProperty("endOffset")]
+        [JsonConverter(typeof(VendorGoogleChatRequestDurationConverter))]
+        public TimeSpan? EndOffset { get; set; }
+
+        /// <summary>
+        /// Optional. The frame rate of the video sent to the model. If not specified, the default value will be 1.0. The fps range is (0.0, 24.0].
+        /// </summary>
+        [JsonProperty("fps")]
+        public double? Fps { get; set; }
+    }
+
+    internal class VendorGoogleChatRequestDurationConverter : JsonConverter<TimeSpan?>
+    {
+        public override void WriteJson(JsonWriter writer, TimeSpan? value, JsonSerializer serializer)
+        {
+            if (value.HasValue)
+            {
+                writer.WriteValue($"{value.Value.TotalSeconds}s");
+            }
+            else
+            {
+                writer.WriteNull();
+            }
+        }
+
+        public override TimeSpan? ReadJson(JsonReader reader, Type objectType, TimeSpan? existingValue, bool hasExistingValue, JsonSerializer serializer)
+        {
+            if (reader.TokenType == JsonToken.String)
+            {
+                string? s = (string?)reader.Value;
+                
+                if (s is not null && s.EndsWith('s'))
+                {
+                    if (double.TryParse(s[..^1], out double seconds))
+                    {
+                        return TimeSpan.FromSeconds(seconds);
+                    }
+                }
+            }
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Result of executing the ExecutableCode.
+    /// </summary>
+    internal class VendorGoogleChatRequestMessagePartCodeExecutionResult
+    {
+        /// <summary>
+        /// Required. Outcome of the code execution.
+        /// </summary>
+        [JsonProperty("outcome")]
+        public VendorGoogleChatRequestMessagePartCodeExecutionResultOutcome Outcome { get; set; }
+
+        /// <summary>
+        /// Optional. Contains stdout when code execution is successful, stderr or other description otherwise.
+        /// </summary>
+        [JsonProperty("output")]
+        public string? Output { get; set; }
+    }
+
+    /// <summary>
+    /// Enumeration of possible outcomes of the code execution.
+    /// </summary>
+    internal enum VendorGoogleChatRequestMessagePartCodeExecutionResultOutcome
+    {
+        /// <summary>
+        /// Unspecified status. This value should not be used.
+        /// </summary>
+        [EnumMember(Value = "OUTCOME_UNSPECIFIED")]
+        Unspecified,
+        
+        /// <summary>
+        /// Code execution completed successfully.
+        /// </summary>
+        [EnumMember(Value = "OUTCOME_OK")]
+        Ok,
+        
+        /// <summary>
+        /// Code execution finished but with a failure. stderr should contain the reason.
+        /// </summary>
+        [EnumMember(Value = "OUTCOME_FAILED")]
+        Failed,
+        
+        /// <summary>
+        /// Code execution ran for too long, and was cancelled. There may or may not be a partial output present.
+        /// </summary>
+        [EnumMember(Value = "OUTCOME_DEADLINE_EXCEEDED")]
+        DeadlineExceeded
+    }
+
+    /// <summary>
+    /// Code generated by the model that is meant to be executed.
+    /// </summary>
+    internal class VendorGoogleChatRequestMessagePartExecutableCode
+    {
+        /// <summary>
+        /// Required. Programming language of the code.
+        /// </summary>
+        [JsonProperty("language")]
+        public VendorGoogleChatRequestMessagePartExecutableCodeLanguage Language { get; set; }
+
+        /// <summary>
+        /// Required. The code to be executed.
+        /// </summary>
+        [JsonProperty("code")]
+        public string Code { get; set; }
+    }
+
+    /// <summary>
+    /// Supported programming languages for the generated code.
+    /// </summary>
+    internal enum VendorGoogleChatRequestMessagePartExecutableCodeLanguage
+    {
+        /// <summary>
+        /// Unspecified language. This value should not be used.
+        /// </summary>
+        [EnumMember(Value = "LANGUAGE_UNSPECIFIED")]
+        Unspecified,
+        
+        /// <summary>
+        /// Python >= 3.10, with numpy and simpy available.
+        /// </summary>
+        [EnumMember(Value = "PYTHON")]
+        Python
+    }
+
     internal class VendorGoogleChatRequestMessagePartFileData
     {
         [JsonProperty("mimeType")]
@@ -439,8 +636,8 @@ internal class VendorGoogleChatRequest
                     {
                         FunctionCall = new VendorGoogleChatRequestMessagePartFunctionCall
                         {
-                            Name = call.FunctionCall.Name,
-                            Args = call.FunctionCall.GetArguments()
+                            Name = call.FunctionCall?.Name ?? string.Empty,
+                            Args = call.FunctionCall?.GetArguments() ?? []
                         }
                     });
                 }
@@ -549,7 +746,7 @@ internal class VendorGoogleChatRequest
             return msg;
         }
     }
-
+    
     internal class VendorGoogleChatRequestSafetySetting
     {
         /// <summary>
@@ -627,9 +824,21 @@ internal class VendorGoogleChatRequest
 
     internal class VendorGoogleChatTool
     {
-        [JsonProperty("function_declarations")] 
+        [JsonProperty("functionDeclarations")] 
         public List<VendorGoogleChatToolFunctionDeclaration> FunctionDeclarations { get; set; } = [];
 
+        [JsonProperty("googleSearchRetrieval")]
+        public ChatRequestVendorGoogleSearchRetrieval? GoogleSearchRetrieval { get; set; }
+        
+        [JsonProperty("codeExecution")]
+        public ChatRequestVendorGoogleCodeExecution? CodeExecution { get; set; }
+        
+        [JsonProperty("googleSearch")]
+        public ChatRequestVendorGoogleSearch? GoogleSearch { get; set; }
+        
+        [JsonProperty("urlContext")]
+        public ChatRequestVendorGoogleUrlContext? UrlContext { get; set; }
+        
         public VendorGoogleChatTool()
         {
             
@@ -931,6 +1140,38 @@ internal class VendorGoogleChatRequest
 
         if (request.VendorExtensions?.Google is not null)
         {
+            VendorGoogleChatTool? builtInTool = null;
+            
+            if (request.VendorExtensions.Google.CodeExecution is not null)
+            {
+                builtInTool ??= new VendorGoogleChatTool();
+                builtInTool.CodeExecution = request.VendorExtensions.Google.CodeExecution;
+            }
+            
+            if (request.VendorExtensions.Google.GoogleSearchRetrieval is not null)
+            {
+                builtInTool ??= new VendorGoogleChatTool();
+                builtInTool.GoogleSearchRetrieval = request.VendorExtensions.Google.GoogleSearchRetrieval;
+            }
+            
+            if (request.VendorExtensions.Google.GoogleSearch is not null)
+            {
+                builtInTool ??= new VendorGoogleChatTool();
+                builtInTool.GoogleSearch = request.VendorExtensions.Google.GoogleSearch;
+            }
+            
+            if (request.VendorExtensions.Google.UrlContext is not null)
+            {
+                builtInTool ??= new VendorGoogleChatTool();
+                builtInTool.UrlContext = request.VendorExtensions.Google.UrlContext;
+            }
+
+            if (builtInTool is not null)
+            {
+                Tools ??= [];
+                Tools.Add(builtInTool);
+            }
+            
             if (request.VendorExtensions.Google.CachedContent is not null)
             {
                 CachedContent = request.VendorExtensions.Google.CachedContent;

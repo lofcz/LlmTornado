@@ -50,5 +50,15 @@ public enum ChatMessageTypes
     /// <summary>
     /// Message part is a video fragment.
     /// </summary>
-    Video
+    Video,
+    
+    /// <summary>
+    /// Message part is an executable code fragment.
+    /// </summary>
+    ExecutableCode,
+    
+    /// <summary>
+    /// Message part is result of a code execution.
+    /// </summary>
+    CodeExecutionResult
 }
