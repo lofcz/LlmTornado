@@ -115,7 +115,6 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
 
     private async ValueTask<RunnableResult<TOutput>> InternalInvoke(RunnableProcess<TInput> input)
     {
-        //OnRuntimeInvoked?.Invoke(input);
         return new RunnableResult<TOutput>(input.Id, await Invoke(input.Input));
     }
 

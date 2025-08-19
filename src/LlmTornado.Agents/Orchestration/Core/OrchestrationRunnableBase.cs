@@ -22,7 +22,6 @@ public interface IOrchestrationRunner
 /// transitions.</remarks>
 public abstract class OrchestrationRunnableBase : IOrchestrationRunner
 {
-
     /// <summary>
     /// Used to limit the number of times to rerun the state.
     /// </summary>
@@ -39,15 +38,14 @@ public abstract class OrchestrationRunnableBase : IOrchestrationRunner
     internal List<object> BaseOutput => BaseOutputResults.Select(output => output.ResultObject).ToList();
 
     /// <summary>
-    /// Output results of the state, containing processed results from the state invocation.
-    /// </summary>
-    internal List<RunnerResult> BaseOutputResults { get; set; } = new List<RunnerResult>();
-
-    /// <summary>
     /// Gets or sets the list of input objects the state has to process this tick.
     /// </summary>
     internal List<object> BaseInput { get; set; } = new List<object>();
 
+    /// <summary>
+    /// Output results of the state, containing processed results from the state invocation.
+    /// </summary>
+    internal List<RunnerResult> BaseOutputResults { get; set; } = new List<RunnerResult>();
     /// <summary>
     /// Input processes that the state has to process this tick.
     /// </summary>

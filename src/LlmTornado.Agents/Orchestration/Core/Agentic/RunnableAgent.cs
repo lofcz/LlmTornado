@@ -72,8 +72,6 @@ public class RunnableAgent : OrchestrationRunnable<ChatMessage, ChatMessage>, IA
         return Conversation.Messages.Last();
     }
 
-
-
     /// <summary>
     /// Initiates an asynchronous operation to process the specified input and returns the result as a string.
     /// </summary>
@@ -147,7 +145,7 @@ public class RunnableAgent : OrchestrationRunnable<ChatMessage, ChatMessage>, IA
     internal ValueTask ReceiveStreaming(ModelStreamingEvents message)
     {
         OnStreamingEvent?.Invoke(message);
-        return default;
+        return Threading.ValueTaskCompleted;
     }
 
     public void SubscribeStreamingChannel(StreamingCallbacks? streamingChannel)

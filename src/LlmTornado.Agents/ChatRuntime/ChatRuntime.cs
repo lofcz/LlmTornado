@@ -176,6 +176,7 @@ public class ChatRuntime
     {
         ResetCancellationTokenSource();
         
+        await Orchestrator.Invoke(message);
 
         return Orchestrator.Results.LastOrDefault() ?? new ChatMessage();
     }

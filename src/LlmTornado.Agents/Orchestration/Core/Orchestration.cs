@@ -71,7 +71,7 @@ public class Orchestration
     /// </summary>
     public List<List<RunnableProcess>> RunSteps { get; set; } = new List<List<RunnableProcess>>();
 
-    private bool isInitialized = false;
+    private bool _isInitialized = false;
 
     public Orchestration()
     {
@@ -102,12 +102,9 @@ public class Orchestration
         OnOrchestrationEvent?.Invoke(new OnVerboseOrchestrationEvent("Exiting all runnables...")); //Invoke the exit state machine event
 
         List<Task> Tasks = new List<Task>();
-
-        //Exit all runnables
         CurrentRunnableProcesses.ForEach(process => {
             Tasks.Add(Task.Run(async () => await BeginExit(process)));
         });
-
         await Task.WhenAll(Tasks);
         Tasks.Clear();
 
@@ -132,12 +129,12 @@ public class Orchestration
     private async Task ProcessTick()
     {
         //If there are no processes, return
-        if (CurrentRunnableProcesses.Count == 0) { _isCompleted = true; return; }
+        if (CurrentRunnableProcesses.Count == 0) { HasCompletedSuccessfully(); return; }
 
-        OnOrchestrationEvent?.Invoke(new OnTickOrchestrationEvent()); //Invoke the tick state machine event
-        List<Task> Tasks = new List<Task>();
         OnOrchestrationEvent?.Invoke(new OnVerboseOrchestrationEvent($"Processing {CurrentRunnableProcesses.Count} active processes..."));
-
+        OnOrchestrationEvent?.Invoke(new OnTickOrchestrationEvent()); //Invoke the tick state machine event
+        
+        List<Task> Tasks = new List<Task>();
         CurrentRunnableProcesses.ForEach(process => Tasks.Add(Task.Run(async () =>
         {
             OnOrchestrationEvent?.Invoke(new OnVerboseOrchestrationEvent($"Invoking state: {process.Runner.GetType().Name}"));
@@ -175,7 +172,7 @@ public class Orchestration
         //Internal lock on access to state
         await process.Runner._InitializeRunnable(process); //preset input
 
-        isInitialized = true; //Set the initialized flag to true after the process is initialized
+        _isInitialized = true; //Set the initialized flag to true after the process is initialized
     }
 
     /// <summary>
@@ -190,12 +187,12 @@ public class Orchestration
         //Clear all of the active processes
         CurrentRunnableProcesses.Clear();
         OnOrchestrationEvent?.Invoke(new OnVerboseOrchestrationEvent($"Initializing {newRunnableProcesses.Count} new state processes..."));
+
         //If there are no new processes, return
-        if (newRunnableProcesses.Count == 0) { _isCompleted = true; return; }
+        if (newRunnableProcesses.Count == 0) { HasCompletedSuccessfully(); return; }
 
         //Record Step
         if (RecordSteps) { RunSteps.Add(newRunnableProcesses); }
-
 
         //Initialize each new state process concurrently
         List<Task> Tasks = new List<Task>();
@@ -247,8 +244,8 @@ public class Orchestration
         if (IsCompleted)
         {
             await ExitActiveRunnables();
-            OnOrchestrationEvent?.Invoke(new OnFinishedOrchestrationEvent()); //Invoke the finished state machine event
             OnOrchestrationEvent?.Invoke(new OnVerboseOrchestrationEvent("Runtime Machine Finished."));
+            OnOrchestrationEvent?.Invoke(new OnFinishedOrchestrationEvent()); //Invoke the finished state machine event
             return true;
         }
         return false;
@@ -325,7 +322,7 @@ public class Orchestration
 
     private async Task RunToCompletion()
     {
-        if(!isInitialized)
+        if(!_isInitialized)
         {
             throw new InvalidOperationException("Runtime has not been initialized. Call InitializeRuntime() before running to completion.");
         }
@@ -340,7 +337,7 @@ public class Orchestration
 
     private async Task InvokeStep()
     {
-        if(!isInitialized)
+        if(!_isInitialized)
         {
             throw new InvalidOperationException("Runtime has not been initialized. Call InitializeRuntime() before invoking steps.");
         }
@@ -349,15 +346,10 @@ public class Orchestration
         await ProcessTick();
 
         //stop the state machine if needed & exit all states
-        if(await CheckIfCompleted())
-        {
-            return;
-        }   
+        if(await CheckIfCompleted()) return;
 
-        if(await CheckIfCancelled())
-        {
-            return;
-        }
+
+        if(await CheckIfCancelled()) return;
 
         //Create List of transitions to new states from conditional movement
         GetNewProcesses();
@@ -495,22 +487,3 @@ public class Orchestration<TInput, TOutput> : Orchestration
 
 }
 
-/// <summary>
-/// Represents a collection of output results from a run, along with an index indicating the position of the input array.
-/// </summary>
-/// <remarks>This class is used to store and manage the results of a run operation, providing both the
-/// results and the index of the run. It can be used to track multiple runs and their respective outputs.</remarks>
-/// <typeparam name="TOutput">The type of the output results contained in the collection.</typeparam>
-public class RunnableOutputCollection<TOutput>
-{
-    public int Index { get; set; } = 0;
-    public List<TOutput> Results { get; set; }
-
-    public RunnableOutputCollection() { }
-
-    public RunnableOutputCollection(int index, List<TOutput> results)
-    {
-        Index = index;
-        Results = results;
-    }
-}

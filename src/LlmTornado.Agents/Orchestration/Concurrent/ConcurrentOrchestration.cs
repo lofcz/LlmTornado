@@ -49,7 +49,7 @@ internal class ConcurrentOrchestration : AgentOrchestration
         }
 
         RunnablePassthru passThru = new RunnablePassthru() { AllowsParallelAdvances = true };
-        ConcurrentRunnerResultCollector collector = new ConcurrentRunnerResultCollector() { IsDeadEnd = true };
+        ConcurrentRunnerResultCollector collector = new ConcurrentRunnerResultCollector() { IsDeadEnd = true, CombineInput = true };
 
         SetEntryRunnable(passThru);
         SetRunnableWithResult(collector);
