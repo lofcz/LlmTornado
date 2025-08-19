@@ -193,16 +193,6 @@ public class ChatModelOpenRouterAll : IVendorModelClassProvider
     public readonly ChatModel Claude37Sonnet = ModelClaude37Sonnet;
 
     /// <summary>
-    /// anthropic/claude-3.7-sonnet:beta
-    /// </summary>
-    public static readonly ChatModel ModelClaude37SonnetBeta = new ChatModel("anthropic/claude-3.7-sonnet:beta", "anthropic/claude-3.7-sonnet:beta", LLmProviders.OpenRouter, 200000);
-
-    /// <summary>
-    /// <inheritdoc cref="ModelClaude37SonnetBeta"/>
-    /// </summary>
-    public readonly ChatModel Claude37SonnetBeta = ModelClaude37SonnetBeta;
-
-    /// <summary>
     /// anthropic/claude-3.7-sonnet:thinking
     /// </summary>
     public static readonly ChatModel ModelClaude37SonnetThinking = new ChatModel("anthropic/claude-3.7-sonnet:thinking", "anthropic/claude-3.7-sonnet:thinking", LLmProviders.OpenRouter, 200000);
@@ -341,6 +331,16 @@ public class ChatModelOpenRouterAll : IVendorModelClassProvider
     /// <inheritdoc cref="ModelErnie45Vl28bA3b"/>
     /// </summary>
     public readonly ChatModel Ernie45Vl28bA3b = ModelErnie45Vl28bA3b;
+
+    /// <summary>
+    /// baidu/ernie-4.5-vl-424b-a47b
+    /// </summary>
+    public static readonly ChatModel ModelErnie45Vl424bA47b = new ChatModel("baidu/ernie-4.5-vl-424b-a47b", "baidu/ernie-4.5-vl-424b-a47b", LLmProviders.OpenRouter, 123000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelErnie45Vl424bA47b"/>
+    /// </summary>
+    public readonly ChatModel Ernie45Vl424bA47b = ModelErnie45Vl424bA47b;
 
     /// <summary>
     /// bytedance/ui-tars-1.5-7b
@@ -865,7 +865,7 @@ public class ChatModelOpenRouterAll : IVendorModelClassProvider
     /// <summary>
     /// google/gemma-3-12b-it:free
     /// </summary>
-    public static readonly ChatModel ModelGemma312bItFree = new ChatModel("google/gemma-3-12b-it:free", "google/gemma-3-12b-it:free", LLmProviders.OpenRouter, 96000);
+    public static readonly ChatModel ModelGemma312bItFree = new ChatModel("google/gemma-3-12b-it:free", "google/gemma-3-12b-it:free", LLmProviders.OpenRouter, 32768);
 
     /// <summary>
     /// <inheritdoc cref="ModelGemma312bItFree"/>
@@ -1645,7 +1645,7 @@ public class ChatModelOpenRouterAll : IVendorModelClassProvider
     /// <summary>
     /// mistralai/mistral-small-3.2-24b-instruct
     /// </summary>
-    public static readonly ChatModel ModelMistralSmall3224bInstruct = new ChatModel("mistralai/mistral-small-3.2-24b-instruct", "mistralai/mistral-small-3.2-24b-instruct", LLmProviders.OpenRouter, 131072);
+    public static readonly ChatModel ModelMistralSmall3224bInstruct = new ChatModel("mistralai/mistral-small-3.2-24b-instruct", "mistralai/mistral-small-3.2-24b-instruct", LLmProviders.OpenRouter, 128000);
 
     /// <summary>
     /// <inheritdoc cref="ModelMistralSmall3224bInstruct"/>
@@ -2113,6 +2113,16 @@ public class ChatModelOpenRouterAll : IVendorModelClassProvider
     public readonly ChatModel Gpt4oExtended = ModelGpt4oExtended;
 
     /// <summary>
+    /// openai/gpt-4o-audio-preview
+    /// </summary>
+    public static readonly ChatModel ModelGpt4oAudioPreview = new ChatModel("openai/gpt-4o-audio-preview", "openai/gpt-4o-audio-preview", LLmProviders.OpenRouter, 128000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelGpt4oAudioPreview"/>
+    /// </summary>
+    public readonly ChatModel Gpt4oAudioPreview = ModelGpt4oAudioPreview;
+
+    /// <summary>
     /// openai/gpt-4o-search-preview
     /// </summary>
     public static readonly ChatModel ModelGpt4oSearchPreview = new ChatModel("openai/gpt-4o-search-preview", "openai/gpt-4o-search-preview", LLmProviders.OpenRouter, 128000);
@@ -2195,7 +2205,7 @@ public class ChatModelOpenRouterAll : IVendorModelClassProvider
     /// <summary>
     /// openai/gpt-oss-120b
     /// </summary>
-    public static readonly ChatModel ModelGptOss120b = new ChatModel("openai/gpt-oss-120b", "openai/gpt-oss-120b", LLmProviders.OpenRouter, 131072);
+    public static readonly ChatModel ModelGptOss120b = new ChatModel("openai/gpt-oss-120b", "openai/gpt-oss-120b", LLmProviders.OpenRouter, 131000);
 
     /// <summary>
     /// <inheritdoc cref="ModelGptOss120b"/>
@@ -2205,7 +2215,7 @@ public class ChatModelOpenRouterAll : IVendorModelClassProvider
     /// <summary>
     /// openai/gpt-oss-20b
     /// </summary>
-    public static readonly ChatModel ModelGptOss20b = new ChatModel("openai/gpt-oss-20b", "openai/gpt-oss-20b", LLmProviders.OpenRouter, 131072);
+    public static readonly ChatModel ModelGptOss20b = new ChatModel("openai/gpt-oss-20b", "openai/gpt-oss-20b", LLmProviders.OpenRouter, 131000);
 
     /// <summary>
     /// <inheritdoc cref="ModelGptOss20b"/>
@@ -2863,16 +2873,6 @@ public class ChatModelOpenRouterAll : IVendorModelClassProvider
     public readonly ChatModel Router = ModelRouter;
 
     /// <summary>
-    /// thudm/glm-4-32b
-    /// </summary>
-    public static readonly ChatModel ModelGlm432b = new ChatModel("thudm/glm-4-32b", "thudm/glm-4-32b", LLmProviders.OpenRouter, 32000);
-
-    /// <summary>
-    /// <inheritdoc cref="ModelGlm432b"/>
-    /// </summary>
-    public readonly ChatModel Glm432b = ModelGlm432b;
-
-    /// <summary>
     /// thudm/glm-4.1v-9b-thinking
     /// </summary>
     public static readonly ChatModel ModelGlm41v9bThinking = new ChatModel("thudm/glm-4.1v-9b-thinking", "thudm/glm-4.1v-9b-thinking", LLmProviders.OpenRouter, 65536);
@@ -3023,6 +3023,16 @@ public class ChatModelOpenRouterAll : IVendorModelClassProvider
     public readonly ChatModel Wizardlm28x22b = ModelWizardlm28x22b;
 
     /// <summary>
+    /// z-ai/glm-4-32b
+    /// </summary>
+    public static readonly ChatModel ModelGlm432b = new ChatModel("z-ai/glm-4-32b", "z-ai/glm-4-32b", LLmProviders.OpenRouter, 128000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelGlm432b"/>
+    /// </summary>
+    public readonly ChatModel Glm432b = ModelGlm432b;
+
+    /// <summary>
     /// z-ai/glm-4.5
     /// </summary>
     public static readonly ChatModel ModelGlm45 = new ChatModel("z-ai/glm-4.5", "z-ai/glm-4.5", LLmProviders.OpenRouter, 131072);
@@ -3165,7 +3175,6 @@ public class ChatModelOpenRouterAll : IVendorModelClassProvider
         ModelClaude35Sonnet,
         ModelClaude35Sonnet20240620,
         ModelClaude37Sonnet,
-        ModelClaude37SonnetBeta,
         ModelClaude37SonnetThinking,
         ModelClaudeOpus4,
         ModelClaudeOpus41,
@@ -3180,6 +3189,7 @@ public class ChatModelOpenRouterAll : IVendorModelClassProvider
         ModelErnie4521bA3b,
         ModelErnie45300bA47b,
         ModelErnie45Vl28bA3b,
+        ModelErnie45Vl424bA47b,
         ModelUiTars157b,
         ModelCommand,
         ModelCommandA,
@@ -3357,6 +3367,7 @@ public class ChatModelOpenRouterAll : IVendorModelClassProvider
         ModelGpt4o20240806,
         ModelGpt4o20241120,
         ModelGpt4oExtended,
+        ModelGpt4oAudioPreview,
         ModelGpt4oSearchPreview,
         ModelGpt4oMini,
         ModelGpt4oMini20240718,
