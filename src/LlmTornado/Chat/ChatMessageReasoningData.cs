@@ -13,7 +13,7 @@ public class ChatMessageReasoningData
     public string? Content { get; set; }
     
     /// <summary>
-    /// Crypto token used to verify COT hasn't been tampered with. Used only by Anthropic.
+    /// Crypto token used to verify COT hasn't been tampered with. Used only by Anthropic and Google.
     /// </summary>
     public string? Signature { get; set; }
 
