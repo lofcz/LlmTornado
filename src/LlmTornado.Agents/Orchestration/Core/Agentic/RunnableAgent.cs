@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static LlmTornado.Agents.TornadoRunner;
 
 namespace LlmTornado.Agents.Orchestration.Core;
 
@@ -28,6 +27,8 @@ public interface IAgentRunnable
     /// string parameter that contains the current status or data update. Subscribers can use this event to receive
     /// real-time updates.</remarks>
     public Func<ModelStreamingEvents, ValueTask>? OnStreamingEvent { get; }
+
+    public ValueTask<ChatMessage> Invoke(ChatMessage input);
 
     /// <summary>
     /// Gets or sets the <see cref="CancellationTokenSource"/> used to signal cancellation requests.
@@ -62,11 +63,11 @@ public class RunnableAgent : OrchestrationRunnable<ChatMessage, ChatMessage>, IA
 
         if(Conversation != null)
         {
-            Conversation = await RunAsync(Agent, conversation: Conversation, messages: [input], streamingCallback: ReceiveStreaming, streaming: IsStreaming, cancellationToken: cts.Token);
+            Conversation = await Agent.RunAsync(overrideConversationWith: Conversation, appendMessages: [input], streamingCallback: ReceiveStreaming, streaming: IsStreaming, cancellationToken: cts.Token);
         }
         else
         {
-            Conversation = await RunAsync(Agent, messages: [input], streamingCallback: ReceiveStreaming, streaming: IsStreaming, cancellationToken: cts.Token);
+            Conversation = await Agent.RunAsync(appendMessages: [input], streamingCallback: ReceiveStreaming, streaming: IsStreaming, cancellationToken: cts.Token);
         }
 
         return Conversation.Messages.Last();
@@ -83,7 +84,7 @@ public class RunnableAgent : OrchestrationRunnable<ChatMessage, ChatMessage>, IA
     /// string. If the operation does not produce any output, an empty string is returned.</returns>
     public async Task<Conversation> BeginRunnerAsync(ChatMessage message, bool streaming = false)
     {
-        return (await RunAsync(Agent, messages: [message], streamingCallback: ReceiveStreaming, streaming: streaming, cancellationToken: cts.Token));
+        return (await Agent.RunAsync(appendMessages: [message], streamingCallback: ReceiveStreaming, streaming: streaming, cancellationToken: cts.Token));
     }
 
     /// <summary>
@@ -99,7 +100,7 @@ public class RunnableAgent : OrchestrationRunnable<ChatMessage, ChatMessage>, IA
     {
         for (int attempt = 0; attempt <= maxRetries; attempt++)
         {
-            Conversation result = await RunAsync(Agent, messages: [message],
+            Conversation result = await Agent.RunAsync(appendMessages: [message],
                 streamingCallback: ReceiveStreaming,
                 streaming: streaming,
                 cancellationToken: cts.Token);

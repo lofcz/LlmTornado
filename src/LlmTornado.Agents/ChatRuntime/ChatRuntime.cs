@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 
 namespace LlmTornado.Agents.ChatRuntime;
 
+
 public class ChatRuntime
 {
     /// <summary>
@@ -60,7 +61,7 @@ public class ChatRuntime
     /// </summary>
     public ConcurrentStack<ChatMessage> ChatHistory { get; private set; } = new ConcurrentStack<ChatMessage>();
 
-    public AgentOrchestration Orchestrator { get; set; }
+    public IAgentOrchestrator AgentOrchestrator { get; set; }
 
 
     /// <summary>
@@ -68,17 +69,17 @@ public class ChatRuntime
     /// </summary>
     /// <param name="agentName"></param>
     /// <param name="orchestrator"></param>
-    public ChatRuntime(string agentName, AgentOrchestration orchestrator)
+    public ChatRuntime(string agentName, IAgentOrchestrator orchestrator)
     {
         // Initialize the agent and set up the callbacks
         AgentName = agentName;
-        Orchestrator = orchestrator;
+        AgentOrchestrator = orchestrator;
         SetupCallbacks();
     }
 
     private void SetupCallbacks()
     {
-        foreach(var runnable in Orchestrator.Runnables.Values)
+        foreach(var runnable in AgentOrchestrator.Runnables.Values)
         {
             if(runnable is RunnableAgent agentRunnable)
             {
@@ -124,7 +125,7 @@ public class ChatRuntime
     public virtual void CancelExecution()
     {
         cts.Cancel(); // Signal cancellation to all state machines
-        Orchestrator.CancelRuntime();
+        AgentOrchestrator.Cancel();
     }
 
     /// <summary>
@@ -167,17 +168,20 @@ public class ChatRuntime
     {
         ChatHistory.Push(message);
 
-        ChatMessage response =  await InternalOnInvokeAgentsAsync(message);
+        List<ChatMessage> response =  await InternalOnInvokeAgentsAsync(message);
 
-        ChatHistory.Push(response);
+        foreach (var msg in response)
+        {
+            ChatHistory.Push(msg);
+        }  
     }
 
-    private async ValueTask<ChatMessage> InternalOnInvokeAgentsAsync(ChatMessage message)
+    private async ValueTask<List<ChatMessage>> InternalOnInvokeAgentsAsync(ChatMessage message)
     {
         ResetCancellationTokenSource();
         
-        await Orchestrator.Invoke(message);
+        await AgentOrchestrator.InvokeAsync(message);
 
-        return Orchestrator.Results.LastOrDefault() ?? new ChatMessage();
+        return AgentOrchestrator.GetMessages();
     }
 }

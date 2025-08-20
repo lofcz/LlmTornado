@@ -1,9 +1,16 @@
-﻿using System.Collections.Concurrent;
+﻿using LlmTornado.Chat;
+using System.Collections.Concurrent;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 
 namespace LlmTornado.Agents.Orchestration.Core;
 
+public interface IOrchestrator
+{
+    public Dictionary<string, OrchestrationRunnableBase> Runnables { get; set; }
+    public Task InvokeAsync(object? input);
+    public void Cancel();
+}
 /// <summary>
 /// Represents a state machine that manages the execution of state processes with support for concurrency and
 /// cancellation. [SUGGEST USING RuntimeMachine&lt;TInput, TOutput&gt;]
@@ -12,7 +19,7 @@ namespace LlmTornado.Agents.Orchestration.Core;
 /// processes. It supports concurrent execution of processes up to a specified maximum number of threads, and allows
 /// for graceful stopping and cancellation of operations. The state machine can be reset and reused for multiple
 /// runs.</remarks>
-public class Orchestration
+public class Orchestration : IOrchestrator
 {
     /// <summary>
     /// Gets or sets the initial state of the system or process.
@@ -54,7 +61,7 @@ public class Orchestration
     /// <summary>
     /// Gets or sets the final result of the computation.
     /// </summary>
-    public object? BaseFinalResult { get; set; }
+    public List<object>? BaseFinalResult { get; set; }
 
     /// <summary>
     /// Gets or sets the collection of states.
@@ -88,7 +95,7 @@ public class Orchestration
     /// <summary>
     /// Used to stop the state machine and cancel any ongoing operations.
     /// </summary>
-    public void CancelRuntime() => StopTrigger.Cancel();
+    public void Cancel() => StopTrigger.Cancel();
 
     /// <summary>
     /// Asynchronously exits all active runnables.
@@ -139,7 +146,7 @@ public class Orchestration
         {
             OnOrchestrationEvent?.Invoke(new OnVerboseOrchestrationEvent($"Invoking state: {process.Runner.GetType().Name}"));
             OnOrchestrationEvent?.Invoke(new OnStartedRunnableEvent(process)); //Invoke the state entered event
-            await process.Runner._Invoke(); //Invoke the state process
+            await process.Runner.Invoke(); //Invoke the state process
 
         })));
 
@@ -314,7 +321,7 @@ public class Orchestration
         OnOrchestrationEvent?.Invoke(new OnVerboseOrchestrationEvent("Initilization Completed!")); //Invoke the begin state machine event
     }
 
-    public async Task Invoke(object? input = null)
+    public async Task InvokeAsync(object? input = null)
     {
         await Initialize(InitialRunnable, input);
         await RunToCompletion();
@@ -375,6 +382,34 @@ public class Orchestration
     {
         Runnables.Clear();
     }
+
+    public virtual List<object>? GetResults()
+    {
+        return this.BaseFinalResult;
+    }
+
+    public virtual bool TryGetResults<T>(out List<T> value)
+    {
+        try
+        {
+            if (BaseFinalResult is List<T> result)
+            {
+                value = result;
+                return true;
+            }
+            else
+            {
+                value = default!;
+                return false;
+            }
+        }
+        catch (Exception ex)
+        {
+            value = default!;
+            OnOrchestrationEvent?.Invoke(new OnErrorOrchestrationEvent(ex));
+            return false;
+        }
+    }
 }
 
 /// <summary>
@@ -418,7 +453,10 @@ public class Orchestration<TInput, TOutput> : Orchestration
     /// </summary>
     public List<TOutput>? Results => RunnableWithResult.BaseOutput.ConvertAll(item => (TOutput)item)!;
 
-
+    public override List<object>? GetResults()
+    {
+        return Results?.ConvertAll(item => (object?)item)!;
+    }
     /// <summary>
     /// Gets or sets the result state of the operation.
     /// </summary>
@@ -485,5 +523,24 @@ public class Orchestration<TInput, TOutput> : Orchestration
         RunnableWithResult = finalRunnable;
     }
 
+    public override bool TryGetResults<T>(out List<T> value)
+    {
+        if(typeof(T) == typeof(TOutput))
+        {
+            if (BaseFinalResult is List<T> result)
+            {
+                value = result;
+                return true;
+            }
+            else
+            {
+                value = default!;
+                return false;
+            }
+        }
+
+        value = default!;
+        return false;
+    }
 }
 

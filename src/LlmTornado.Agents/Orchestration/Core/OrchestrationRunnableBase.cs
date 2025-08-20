@@ -1,6 +1,6 @@
 namespace LlmTornado.Agents.Orchestration.Core;
 
-public interface IOrchestrationRunner
+public interface IOrchestrationBaseRunnable
 {
     /// <summary>
     /// Gets the identifier of the state.
@@ -20,7 +20,7 @@ public interface IOrchestrationRunner
 /// and output processing, and state invocation within a state machine. It includes properties and methods for
 /// handling state-specific logic, such as entering and exiting states, checking conditions, and managing
 /// transitions.</remarks>
-public abstract class OrchestrationRunnableBase : IOrchestrationRunner
+public abstract class OrchestrationRunnableBase : IOrchestrationBaseRunnable
 {
     /// <summary>
     /// Used to limit the number of times to rerun the state.
@@ -70,7 +70,7 @@ public abstract class OrchestrationRunnableBase : IOrchestrationRunner
     /// </summary>
     /// <returns></returns>
     /// 
-    internal abstract ValueTask _Invoke();
+    internal abstract ValueTask Invoke();
 
     /// <summary>
     /// Adds state Process to the required state.

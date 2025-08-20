@@ -14,7 +14,10 @@ internal class SequentialOrchestration : AgentOrchestration
     {
         SetupRunnableAgents(agents);
     }
-
+    public override List<ChatMessage> GetMessages()
+    {
+        return this.Results!;
+    }
     public void SetupRunnableAgents(TornadoAgent[] _agents)
     {
         List<RunnableAgent> runnableAgents = new List<RunnableAgent>();

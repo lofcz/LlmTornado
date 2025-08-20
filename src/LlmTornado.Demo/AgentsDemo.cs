@@ -198,7 +198,7 @@ public class AgentsDemo : DemoBase
         Console.Write("[Agent]: ");
         
         // Run the state machine and aget the result
-        await handoffOrchestrator.Invoke(task);
+        await handoffOrchestrator.InvokeAsync(task);
 
         Console.Write(handoffOrchestrator.Results.LastOrDefault().Parts.LastOrDefault().Text ?? "No response from agent");
     }

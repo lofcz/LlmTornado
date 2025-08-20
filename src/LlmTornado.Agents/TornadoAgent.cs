@@ -92,6 +92,11 @@ public class TornadoAgent
     public List<TornadoAgent> HandoffAgents { get; set; }
 
     /// <summary>
+    /// Current conversation state for the agent, used to track the context of interactions.
+    /// </summary>
+    public Conversation Conversation { get; set; } 
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="TornadoAgent"/> class, which represents an AI agent capable of
     /// interacting with a Tornado API client and executing tasks based on provided instructions, tools, and an optional
     /// output schema.
@@ -257,24 +262,44 @@ public class TornadoAgent
     }
 
 
+    public void ClearConversation()
+    {
+        Conversation.Clear();
+    }
 
     public async Task<Conversation> RunAsync(
         string input = "", 
-        Conversation? conversation = null,
-        List<ChatMessage>? messages = null, 
+        Conversation? overrideConversationWith= null,
+        List<ChatMessage>? appendMessages = null, 
         GuardRailFunction? inputGuardRailFunction = null,
-        RunnerVerboseCallbacks? runnerVerboseCallbacks = null, 
-        CancellationToken cancellationToken = default,
+        RunnerVerboseCallbacks? verboseCallback = null, 
         bool streaming = false, 
         StreamingCallbacks? streamingCallback = null, 
         int maxTurns = 10, 
         string responseId = "",
         ToolPermissionRequest? toolPermissionRequest = null, 
-        Func<Conversation, ValueTask>? OnComplete = null)
+        Func<Conversation, ValueTask>? OnComplete = null, 
+        CancellationToken cancellationToken = default)
     {
-        Conversation _conversation = await TornadoRunner.RunAsync(this, input: input, messages: messages, conversation:conversation,guardRail: inputGuardRailFunction, verboseCallback: runnerVerboseCallbacks, cancellationToken: cancellationToken, streaming: streaming,
-            streamingCallback: streamingCallback, maxTurns: maxTurns, responseId: responseId, toolPermissionRequest: toolPermissionRequest);
-        OnComplete?.Invoke(_conversation);
-        return _conversation;
+        if(overrideConversationWith != null) // if user adds conversation use it
+        {
+            Conversation = await TornadoRunner.RunAsync(this, input: input, messages: appendMessages, conversation: overrideConversationWith, guardRail: inputGuardRailFunction, verboseCallback: verboseCallback, cancellationToken: cancellationToken, streaming: streaming,
+               streamingCallback: streamingCallback, maxTurns: maxTurns, responseId: responseId, toolPermissionRequest: toolPermissionRequest);
+        }
+        else
+        {
+            if (Conversation == null) // If conversation has not started
+            {
+                Conversation = await TornadoRunner.RunAsync(this, input: input, messages: appendMessages, conversation: overrideConversationWith, guardRail: inputGuardRailFunction, verboseCallback: verboseCallback, cancellationToken: cancellationToken, streaming: streaming,
+                streamingCallback: streamingCallback, maxTurns: maxTurns, responseId: responseId, toolPermissionRequest: toolPermissionRequest);
+            }
+            else // If conversation has started and no conversation is provided
+            {
+                Conversation = await TornadoRunner.RunAsync(this, input: input, messages: appendMessages, conversation: Conversation, guardRail: inputGuardRailFunction, verboseCallback: verboseCallback, cancellationToken: cancellationToken, streaming: streaming,
+                streamingCallback: streamingCallback, maxTurns: maxTurns, responseId: responseId, toolPermissionRequest: toolPermissionRequest);
+            }
+        }
+        OnComplete?.Invoke(Conversation);
+        return Conversation;
     }
 }

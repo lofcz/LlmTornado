@@ -108,7 +108,7 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
         return OutputResults;
     }
 
-    internal override async ValueTask _Invoke()
+    internal override async ValueTask Invoke()
     {
         await InvokeCore();
     }

@@ -8,6 +8,11 @@ namespace LlmTornado.Agents.Orchestration;
 
 public class HandoffOrchestration : AgentOrchestration
 {
+    public override List<ChatMessage> GetMessages()
+    {
+        return this.Results!;
+    }
+
     public HandoffOrchestration(TornadoAgent agent)
     {
         OrchestrationRunnableBase handoffRunnable = new HandoffRunnable(agent);
@@ -34,11 +39,11 @@ public class HandoffRunnable : RunnableAgent
         if(Conversation != null)
         {
             Conversation.AppendMessage(input);
-            Conversation = await CurrentAgent.RunAsync(conversation: Conversation, streaming: IsStreaming, streamingCallback: (sEvent) => { OnStreamingEvent?.Invoke(sEvent); return Threading.ValueTaskCompleted; });
+            Conversation = await CurrentAgent.RunAsync(overrideConversationWith: Conversation, streaming: IsStreaming, streamingCallback: (sEvent) => { OnStreamingEvent?.Invoke(sEvent); return Threading.ValueTaskCompleted; });
         }
         else
         {
-            Conversation = await CurrentAgent.RunAsync(messages: [input]);
+            Conversation = await CurrentAgent.RunAsync(appendMessages: [input]);
         }
 
         Orchestrator.HasCompletedSuccessfully();

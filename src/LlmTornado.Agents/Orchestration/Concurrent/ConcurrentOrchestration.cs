@@ -69,5 +69,8 @@ internal class ConcurrentOrchestration : AgentOrchestration
         AddRunnable("collector", collector);
     }
 
-    
+    public override List<ChatMessage> GetMessages()
+    {
+        return this.Results!;
+    }
 }
