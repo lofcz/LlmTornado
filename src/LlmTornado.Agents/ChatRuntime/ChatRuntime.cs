@@ -18,14 +18,9 @@ namespace LlmTornado.Agents.ChatRuntime;
 public class ChatRuntime
 {
     /// <summary>
-    /// Name of the Agent defined by this orchestration.
-    /// </summary>
-    public string AgentName { get; }
-
-    /// <summary>
     /// ID instance of the orchestration , used as a unique identifier for the agent in the API.
     /// </summary>
-    public string AgentId { get; } = Guid.NewGuid().ToString();
+    public string Id { get; } = Guid.NewGuid().ToString();
 
     /// <summary>
     /// Thread ID of the main conversation thread for the response API
@@ -61,32 +56,20 @@ public class ChatRuntime
     /// </summary>
     public ConcurrentStack<ChatMessage> ChatHistory { get; private set; } = new ConcurrentStack<ChatMessage>();
 
-    public IAgentOrchestrator AgentOrchestrator { get; set; }
+    public IRuntimeConfiguration RuntimeConfiguration { get; set; }
 
 
     /// <summary>
     /// Chat Orchestration to create processes flows with AI agents
     /// </summary>
     /// <param name="agentName"></param>
-    /// <param name="orchestrator"></param>
-    public ChatRuntime(string agentName, IAgentOrchestrator orchestrator)
+    /// <param name="configuration"></param>
+    public ChatRuntime(IRuntimeConfiguration configuration)
     {
-        // Initialize the agent and set up the callbacks
-        AgentName = agentName;
-        AgentOrchestrator = orchestrator;
-        SetupCallbacks();
+        RuntimeConfiguration = configuration;
+        RuntimeConfiguration.cts = cts; 
     }
 
-    private void SetupCallbacks()
-    {
-        foreach(var runnable in AgentOrchestrator.Runnables.Values)
-        {
-            if(runnable is RunnableAgent agentRunnable)
-            {
-                agentRunnable.SubscribeStreamingChannel(HandleStreamingEvent);
-            }
-        }
-    }
 
     /// <summary>
     /// Invokes the streaming event with the specified message.
@@ -122,10 +105,9 @@ public class ChatRuntime
     /// <remarks>This method signals a cancellation request to all state machines currently managed by
     /// this instance. It stops each state machine and cancels any ongoing operations. Ensure that the state
     /// machines can handle cancellation requests appropriately.</remarks>
-    public virtual void CancelExecution()
+    public void CancelExecution()
     {
         cts.Cancel(); // Signal cancellation to all state machines
-        AgentOrchestrator.Cancel();
     }
 
     /// <summary>
@@ -180,8 +162,8 @@ public class ChatRuntime
     {
         ResetCancellationTokenSource();
         
-        await AgentOrchestrator.InvokeAsync(message);
+        await RuntimeConfiguration.AddToChatAsync(message);
 
-        return AgentOrchestrator.GetMessages();
+        return RuntimeConfiguration.GetMessages();
     }
 }

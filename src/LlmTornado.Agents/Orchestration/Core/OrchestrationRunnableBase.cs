@@ -106,16 +106,15 @@ public abstract class OrchestrationRunnableBase : IOrchestrationBaseRunnable
     /// </summary>
     public bool AllowsParallelAdvances { get; set; } = false;
 
-
     /// <summary>
     /// property to combine input into a single process to avoid running multiple threads for each input.
     /// </summary>
-    public bool CombineInput { get; set; } = false;
+    public bool SingleInvokeForInput { get; set; } = false;
 
     /// <summary>
     /// Used to set if this state is okay not to have transitions.
     /// </summary>
-    public bool IsDeadEnd { get; set; } = false;
+    public bool AllowDeadEnd { get; set; } = false;
 
     /// <summary>
     /// Evaluates and returns a list of runtime processes that meet specific conditions.

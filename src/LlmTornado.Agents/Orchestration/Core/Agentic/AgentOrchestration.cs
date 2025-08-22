@@ -1,4 +1,5 @@
-﻿using LlmTornado.Agents.Orchestration.Core;
+﻿using LlmTornado.Agents.ChatRuntime;
+using LlmTornado.Agents.Orchestration.Core;
 using LlmTornado.Chat;
 using System;
 using System.Collections.Generic;
@@ -8,15 +9,23 @@ using System.Threading.Tasks;
 
 namespace LlmTornado.Agents.Orchestration;
 
-public interface IAgentOrchestrator: IOrchestrator
+public class AgentOrchestration : Core.Orchestration<ChatMessage, ChatMessage>, IRuntimeConfiguration
 {
-    public  List<ChatMessage> GetMessages();
-}
+    public CancellationTokenSource cts { get ; set; }
+    public List<ChatMessage> MessageHistory { get; set; } = new List<ChatMessage>();
+    public virtual ValueTask<ChatMessage> AddToChatAsync(ChatMessage message, CancellationToken cancellationToken = default)
+    {
+        MessageHistory.Add(message);
+        return new ValueTask<ChatMessage>(message);
+    }
 
-public class AgentOrchestration : Core.Orchestration<ChatMessage, ChatMessage>, IAgentOrchestrator
-{
+    public virtual void ClearMessages()
+    {
+        MessageHistory.Clear();
+    }
+
     public virtual List<ChatMessage> GetMessages()
     {
-        return new List<ChatMessage>();
+        return MessageHistory;
     }
 }

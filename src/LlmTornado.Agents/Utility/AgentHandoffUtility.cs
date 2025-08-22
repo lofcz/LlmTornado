@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace LlmTornado.Agents
 {
-    public class AgentHandoff
+    public class AgentHandoffUtility
     {
         public static ChatRequestResponseFormats CreateHandoffResponseFormat(TornadoAgent[] handoffs)
         {

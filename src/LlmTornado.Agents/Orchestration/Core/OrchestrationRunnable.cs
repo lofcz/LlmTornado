@@ -87,7 +87,7 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
         List<Task> Tasks = new List<Task>();
         ConcurrentBag<RunnableResult<TOutput>> oResults = new ConcurrentBag<RunnableResult<TOutput>>();
 
-        if (CombineInput)
+        if (SingleInvokeForInput)
         {
             //Invoke Should handle the Input as a whole (Single Thread can handle processing all the inputs)
             Tasks.Add(Task.Run(async () => oResults.Add(await InternalInvoke(InputProcesses[0]))));
@@ -120,11 +120,6 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
 
     public abstract ValueTask<TOutput> Invoke(TInput input);
 
-    private OrchestrationAdvancer? GetFirstValidAdvancement(TOutput output)
-    {
-        return Advances?.DefaultIfEmpty(null)?.FirstOrDefault(transition => transition?.CanAdvance(output) ?? false) ?? null;
-    }
-
     private List<RunnableProcess>? GetFirstValidAdvancementForEachResult()
     {
         LatestAdvancements.Clear();
@@ -132,7 +127,7 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
         OutputResults.ForEach(result =>
         {
             //Transitions are selected in order they are added
-            OrchestrationAdvancer? advancement = GetFirstValidAdvancement(result.Result);
+            OrchestrationAdvancer? advancement = Advances?.FirstOrDefault(transition => transition?.CanAdvance(result.Result) ?? false) ?? null;
 
             //If not transition is found, we can reattempt the process
             if (advancement != null)
@@ -145,7 +140,7 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
             else
             {
                 //If the state is a dead end, we do not reattempt the process
-                if (!IsDeadEnd)
+                if (!AllowDeadEnd)
                 {
                     //ReRun the process that failed
                     RunnableProcess<TInput> failedProcess = InputProcesses.First(process => process.Id == result.ProcessId);
@@ -189,7 +184,7 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
         });
 
         //If process produces no transitions and not at a dead end rerun the process
-        if (stateProcessesFromOutput.Count == 0 && !IsDeadEnd)
+        if (stateProcessesFromOutput.Count == 0 && !AllowDeadEnd)
         {
             RunnableProcess failedProcess = InputProcesses.First(process => process.Id == stateResult.ProcessId);
             //rerun the process up to the max attempts

@@ -5,12 +5,6 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace LlmTornado.Agents.Orchestration.Core;
 
-public interface IOrchestrator
-{
-    public Dictionary<string, OrchestrationRunnableBase> Runnables { get; set; }
-    public Task InvokeAsync(object? input);
-    public void Cancel();
-}
 /// <summary>
 /// Represents a state machine that manages the execution of state processes with support for concurrency and
 /// cancellation. [SUGGEST USING RuntimeMachine&lt;TInput, TOutput&gt;]
@@ -19,7 +13,7 @@ public interface IOrchestrator
 /// processes. It supports concurrent execution of processes up to a specified maximum number of threads, and allows
 /// for graceful stopping and cancellation of operations. The state machine can be reset and reused for multiple
 /// runs.</remarks>
-public class Orchestration : IOrchestrator
+public class Orchestration
 {
     /// <summary>
     /// Gets or sets the initial state of the system or process.

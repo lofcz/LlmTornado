@@ -176,30 +176,5 @@ public class AgentsDemo : DemoBase
     {
         // Call the weather API here.
         return $"31 C";
-    }
-
-    [TornadoTest]
-    public static async Task HandoffTest()
-    {
-        TornadoAgent TechnicalExpertAgent = new TornadoAgent(Program.Connect(),ChatModel.OpenAi.Gpt41.V41Mini, name: "GeneralSupport", "You are a technical expert for the Sales team.",  description: "Handoff If the customer ask a technical question");
-        TornadoAgent BillingAgent = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41Mini, name: "BillingExpert", "You are a billing expert for the Sales team.",description: "Handoff if the customer has a billing request");
-
-        TornadoAgent GeneralSupportAgent = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41, 
-            instructions: $"""You are General support for the Sales team""",
-            handoffs: [
-                TechnicalExpertAgent,
-                TechnicalExpertAgent
-                ]);
-
-        HandoffOrchestration handoffOrchestrator = new(GeneralSupportAgent);
-        // Example task to run through the state machine
-        string task = "What is the status of my technical support ticket?";
-        Console.WriteLine($"[User]: {task}");
-        Console.Write("[Agent]: ");
-        
-        // Run the state machine and aget the result
-        await handoffOrchestrator.InvokeAsync(task);
-
-        Console.Write(handoffOrchestrator.Results.LastOrDefault().Parts.LastOrDefault().Text ?? "No response from agent");
-    }
+    } 
 }

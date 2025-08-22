@@ -112,7 +112,7 @@ public class TornadoAgent
     /// format its responses according to the specified schema.</param>
     /// <param name="tools">Optional. A list of <see cref="Delegate"/> instances representing tools or functions that the agent can use to
     /// perform specific tasks. If not provided, the agent will use its default tools.</param>
-    /// <param name="handoffs">Optional. A list of <see cref="AgentHandoff"/> instances representing possible hand-offs to other agents.</param>
+    /// <param name="handoffs">Optional. A list of <see cref="AgentHandoffUtility"/> instances representing possible hand-offs to other agents.</param>
     /// <param name="mcpServers">A list of <see cref="MCPServer"/> instances for MCP Server tools.</param>
     /// <exception cref="ArgumentNullException">Thrown when client or model is null.</exception>
     public TornadoAgent(
