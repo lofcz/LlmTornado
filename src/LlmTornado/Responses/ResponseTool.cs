@@ -334,13 +334,31 @@ public class ResponseMcpTool : ResponseTool
     /// A label for this MCP server, used to identify it in tool calls.
     /// </summary>
     [JsonProperty("server_label")]
-    public string ServerLabel { get; set; }
+    public string? ServerLabel { get; set; }
 
     /// <summary>
-    /// The URL for the MCP server.
+    /// The URL for the MCP server. One of server_url or connector_id must be provided.
     /// </summary>
     [JsonProperty("server_url")]
-    public string ServerUrl { get; set; }
+    public string? ServerUrl { get; set; }
+
+    /// <summary>
+    /// The connector to use. One of server_url or connector_id must be provided.
+    /// </summary>
+    [JsonProperty("connector_id")]
+    public McpConnectors? Connector { get; set; }
+    
+    /// <summary>
+    /// Optional description of the MCP server, used to provide more context.
+    /// </summary>
+    [JsonProperty("server_description")]
+    public string? ServerDescription { get; set; }
+    
+    /// <summary>
+    /// An OAuth access token that can be used with a remote MCP server, either with a custom MCP server URL or a service connector.
+    /// </summary>
+    [JsonProperty("authorization")]
+    public string? Authorization { get; set; }
 
     /// <summary>
     /// List of allowed tool names or a filter object.
@@ -361,6 +379,61 @@ public class ResponseMcpTool : ResponseTool
     /// </summary>
     [JsonProperty("require_approval")]
     public ResponseMcpRequireApproval? RequireApproval { get; set; }
+}
+
+/// <summary>
+/// Known MCP connectors.
+/// </summary>
+[JsonConverter(typeof(StringEnumConverter))]
+public enum McpConnectors
+{
+    /// <summary>
+    /// Dropbox connector.
+    /// </summary>
+    [EnumMember(Value = "connector_dropbox")]
+    Dropbox,
+    
+    /// <summary>
+    /// Gmail connector.
+    /// </summary>
+    [EnumMember(Value = "connector_gmail")]
+    Gmail,
+    
+    /// <summary>
+    /// Google Calendar connector.
+    /// </summary>
+    [EnumMember(Value = "connector_googlecalendar")]
+    GoogleCalendar,
+    
+    /// <summary>
+    /// Google Drive connector.
+    /// </summary>
+    [EnumMember(Value = "connector_googledrive")]
+    GoogleDrive,
+    
+    /// <summary>
+    /// Microsoft Teams connector.
+    /// </summary>
+    [EnumMember(Value = "connector_microsoftteams")]
+    MicrosoftTeams,
+    
+    /// <summary>
+    /// Outlook Calendar connector.
+    /// </summary>
+    [EnumMember(Value = "connector_outlookcalendar")]
+    OutlookCalendar,
+    
+    /// <summary>
+    /// Outlook Email connector.
+    /// </summary>
+    [EnumMember(Value = "connector_outlookemail")]
+    OutlookEmail,
+    
+    /// <summary>
+    /// SharePoint connector.
+    /// </summary>
+    [EnumMember(Value = "connector_sharepoint")]
+    SharePoint
 }
 
 /// <summary>
@@ -967,11 +1040,14 @@ internal class ResponseToolConverter : JsonConverter
 
                 return new ResponseMcpTool
                 {
-                    ServerLabel = (string?)jo["server_label"]!,
-                    ServerUrl = (string?)jo["server_url"]!,
+                    ServerLabel = (string?)jo["server_label"],
+                    ServerUrl = (string?)jo["server_url"],
                     AllowedTools = jo["allowed_tools"]?.Type == JTokenType.Null ? null : jo["allowed_tools"]?.ToObject<ResponseMcpAllowedTools>(serializer),
                     Headers = headersObject,
-                    RequireApproval = jo["require_approval"]?.ToObject<ResponseMcpRequireApproval>(serializer)
+                    RequireApproval = jo["require_approval"]?.ToObject<ResponseMcpRequireApproval>(serializer),
+                    Connector = jo["connector_id"]?.ToObject<McpConnectors?>(serializer),
+                    ServerDescription = (string?)jo["server_description"],
+                    Authorization = (string?)jo["authorization"]
                 };
             case "computer_use_preview":
             case "computer_use":
@@ -1154,6 +1230,25 @@ internal class ResponseToolConverter : JsonConverter
                     writer.WritePropertyName("server_url");
                     writer.WriteValue(mcp.ServerUrl);
                 }
+
+                if (mcp.Connector is not null)
+                {
+                    writer.WritePropertyName("connector_id");
+                    serializer.Serialize(writer, mcp.Connector);
+                }
+
+                if (mcp.ServerDescription is not null)
+                {
+                    writer.WritePropertyName("server_description");
+                    writer.WriteValue(mcp.ServerDescription);
+                }
+
+                if (mcp.Authorization is not null)
+                {
+                    writer.WritePropertyName("authorization");
+                    writer.WriteValue(mcp.Authorization);
+                }
+                
                 if (mcp.AllowedTools != null)
                 {
                     writer.WritePropertyName("allowed_tools");
