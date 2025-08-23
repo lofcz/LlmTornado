@@ -6,13 +6,40 @@ using System.Collections.Generic;
 
 namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
 {
+    public class HandoffAgent : TornadoAgent
+    {
+        public string Description { get; set; } = "";
+        public List<HandoffAgent> HandoffAgents { get; set; } = new List<HandoffAgent>();
+        public HandoffAgent(
+            TornadoApi client,
+            string description,
+            ChatModel model,
+            string name = "Handoff Agent",
+            string instructions = "You are a helpful assistant",
+            Type? outputSchema = null,
+            List<Delegate>? tools = null,
+            List<MCPServer>? mcpServers = null,
+            List<HandoffAgent>? handoffs = null) : base(client, model, name, instructions, outputSchema, tools, mcpServers)
+        {
+            HandoffAgents = handoffs ?? new List<HandoffAgent>();
+            Description = description;
+        }
+
+        public HandoffAgent(
+            TornadoAgent cloneAgent,
+            List<HandoffAgent>? handoffs = null) : base(cloneAgent.Client, cloneAgent.Model, cloneAgent.Name, cloneAgent.Instructions, cloneAgent.OutputSchema, cloneAgent.Tools, cloneAgent.McpServers)
+        {
+            HandoffAgents = handoffs ?? new List<HandoffAgent>();
+        }
+    }
+
     internal class HandoffRuntimeConfiguration : IRuntimeConfiguration
     {
         public CancellationTokenSource cts { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
         public List<ChatMessage> Conversation { get; set; } = new List<ChatMessage>();
-        public TornadoAgent CurrentAgent { get; set; }
+        public HandoffAgent CurrentAgent { get; set; }
 
-        public HandoffRuntimeConfiguration(TornadoAgent initialAgent)
+        public HandoffRuntimeConfiguration(HandoffAgent initialAgent)
         {
             CurrentAgent = initialAgent;
         }
@@ -22,10 +49,10 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
             this.Conversation.Add(message);
 
             ConcurrentBag<ChatMessage> bag = new ConcurrentBag<ChatMessage>(GetMessages());
-            List < TornadoAgent > handoffAgents = await SelectCurrentAgent(message);
+            List <HandoffAgent> handoffAgents = await SelectCurrentAgent(message);
             List<Task> agentTask = new List<Task>();
 
-            foreach (TornadoAgent agent in handoffAgents)
+            foreach (HandoffAgent agent in handoffAgents)
             {
                 agentTask.Add(Task.Run(async () => { 
                     Conversation conv = await agent.RunAsync(appendMessages: [message], cancellationToken: cancellationToken);
@@ -57,7 +84,7 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
             return Conversation;
         }
 
-        public async Task<List<TornadoAgent>> SelectCurrentAgent(ChatMessage? inputMessage)
+        public async Task<List<HandoffAgent>> SelectCurrentAgent(ChatMessage? inputMessage)
         {
             string instructions = @$"
 I need you to decide if you need to handoff the conversation to another agent.
@@ -107,7 +134,7 @@ Out of the following Agents which agent should we Handoff the conversation too a
 
             Conversation handoff = await TornadoRunner.RunAsync(handoffDecider, prompt, cancellationToken: cts.Token);
 
-            List<TornadoAgent> handoffAgents = new List<TornadoAgent>();
+            List<HandoffAgent> handoffAgents = new List<HandoffAgent>();
             if (handoff.Messages.Count > 0 && handoff.Messages.Last().Content != null)
             {
                 if (handoff.Messages.Last() is { Role: ChatMessageRoles.Assistant })
@@ -118,7 +145,7 @@ Out of the following Agents which agent should we Handoff the conversation too a
                         List<string> selectedAgents = AgentHandoffUtility.ParseHandoffResponse(response);
                         foreach(string agent in selectedAgents)
                         {
-                            TornadoAgent? handoffAgent = CurrentAgent.HandoffAgents.FirstOrDefault(a => a.Id == agent);
+                            HandoffAgent? handoffAgent = CurrentAgent.HandoffAgents.FirstOrDefault(a => a.Id == agent);
                             if (handoffAgent != null)
                             {
                                 handoffAgents.Add(handoffAgent);

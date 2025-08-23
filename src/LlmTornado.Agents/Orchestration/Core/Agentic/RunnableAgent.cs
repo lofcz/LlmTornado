@@ -63,7 +63,8 @@ public class RunnableAgent : OrchestrationRunnable<ChatMessage, ChatMessage>, IA
 
         if(Conversation != null)
         {
-            Conversation = await Agent.RunAsync(overrideConversationWith: Conversation, appendMessages: [input], streamingCallback: ReceiveStreaming, streaming: IsStreaming, cancellationToken: cts.Token);
+            Conversation.AppendMessage(input);
+            Conversation = await Agent.RunAsync(appendMessages: Conversation.Messages.ToList(), streamingCallback: ReceiveStreaming, streaming: IsStreaming, cancellationToken: cts.Token);
         }
         else
         {

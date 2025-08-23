@@ -47,11 +47,6 @@ public class TornadoAgent
     public string Instructions { get; set; }
 
     /// <summary>
-    /// Description of the agent's purpose or functionality for Orchestration purposes.
-    /// </summary>
-    public string Description { get; set; }
-
-    /// <summary>
     /// Gets the unique identifier for this instance.
     /// </summary>
     public string Id { get; } = Guid.NewGuid().ToString();
@@ -86,10 +81,6 @@ public class TornadoAgent
 
     public List<MCPServer> McpServers;
 
-    /// <summary>
-    /// Agents that are handed off to be the controller 
-    /// </summary>
-    public List<TornadoAgent> HandoffAgents { get; set; }
 
     /// <summary>
     /// Current conversation state for the agent, used to track the context of interactions.
@@ -120,10 +111,8 @@ public class TornadoAgent
         ChatModel model,
         string name = "Assistant",
         string instructions = "You are a helpful assistant",
-        string? description = "",
         Type? outputSchema = null,
         List<Delegate>? tools = null,
-        List<TornadoAgent>? handoffs = null,
         List<MCPServer>? mcpServers = null)
     {
         Client = client ?? throw new ArgumentNullException(nameof(client));
@@ -134,8 +123,6 @@ public class TornadoAgent
         Tools = tools ?? Tools;
         Options.Model = model;
         McpServers = mcpServers ?? new List<MCPServer>();
-        HandoffAgents = handoffs?.ToList() ?? new List<TornadoAgent>();
-        Description = description ?? "No description provided";
 
         if (OutputSchema != null)
         {
@@ -269,7 +256,6 @@ public class TornadoAgent
 
     public async Task<Conversation> RunAsync(
         string input = "", 
-        Conversation? overrideConversationWith= null,
         List<ChatMessage>? appendMessages = null, 
         GuardRailFunction? inputGuardRailFunction = null,
         RunnerVerboseCallbacks? verboseCallback = null, 
@@ -281,25 +267,11 @@ public class TornadoAgent
         Func<Conversation, ValueTask>? OnComplete = null, 
         CancellationToken cancellationToken = default)
     {
-        if(overrideConversationWith != null) // if user adds conversation use it
-        {
-            Conversation = await TornadoRunner.RunAsync(this, input: input, messages: appendMessages, conversation: overrideConversationWith, guardRail: inputGuardRailFunction, verboseCallback: verboseCallback, cancellationToken: cancellationToken, streaming: streaming,
-               streamingCallback: streamingCallback, maxTurns: maxTurns, responseId: responseId, toolPermissionRequest: toolPermissionRequest);
-        }
-        else
-        {
-            if (Conversation == null) // If conversation has not started
-            {
-                Conversation = await TornadoRunner.RunAsync(this, input: input, messages: appendMessages, conversation: overrideConversationWith, guardRail: inputGuardRailFunction, verboseCallback: verboseCallback, cancellationToken: cancellationToken, streaming: streaming,
-                streamingCallback: streamingCallback, maxTurns: maxTurns, responseId: responseId, toolPermissionRequest: toolPermissionRequest);
-            }
-            else // If conversation has started and no conversation is provided
-            {
-                Conversation = await TornadoRunner.RunAsync(this, input: input, messages: appendMessages, conversation: Conversation, guardRail: inputGuardRailFunction, verboseCallback: verboseCallback, cancellationToken: cancellationToken, streaming: streaming,
-                streamingCallback: streamingCallback, maxTurns: maxTurns, responseId: responseId, toolPermissionRequest: toolPermissionRequest);
-            }
-        }
+        Conversation = await TornadoRunner.RunAsync(this, input: input, messages: appendMessages, guardRail: inputGuardRailFunction, verboseCallback: verboseCallback, cancellationToken: cancellationToken, streaming: streaming,
+                 streamingCallback: streamingCallback, maxTurns: maxTurns, responseId: responseId, toolPermissionRequest: toolPermissionRequest);
+
         OnComplete?.Invoke(Conversation);
+
         return Conversation;
     }
 }

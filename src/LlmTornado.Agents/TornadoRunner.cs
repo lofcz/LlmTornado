@@ -37,7 +37,6 @@ public class TornadoRunner
     public static async Task<Conversation> RunAsync(
         TornadoAgent agent,
         string input = "",
-        Conversation? conversation = null,
         GuardRailFunction? guardRail = null,
         bool singleTurn = false,
         int maxTurns = 10,
@@ -51,7 +50,7 @@ public class TornadoRunner
         ToolPermissionRequest? toolPermissionRequest = null
     )
     {
-        conversation ??= SetupConversation(agent, input, messages, responseId, cancellationToken);
+        Conversation conversation = SetupConversation(agent, input, messages, responseId, cancellationToken);
 
         //Check if the input triggers a guardrail to stop the agent from continuing
         await CheckInputGuardrail(input, guardRail);

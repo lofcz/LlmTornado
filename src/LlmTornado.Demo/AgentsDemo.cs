@@ -4,8 +4,6 @@ using LlmTornado.Chat.Models;
 using LlmTornado.Code;
 using System.ComponentModel;
 using LlmTornado.Agents.DataModels;
-using LlmTornado.Agents.Orchestration;
-using LlmTornado.Agents.Orchestration.Core;
 
 namespace LlmTornado.Demo;
 
@@ -119,7 +117,7 @@ public class AgentsDemo : DemoBase
     {
         TornadoAgent agent = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41Mini, "Have fun", outputSchema: typeof(MathReasoning));
 
-        Conversation result = await TornadoRunner.RunAsync(agent, "How can I solve 8x + 7 = -23?");
+        Conversation result = await agent.RunAsync("How can I solve 8x + 7 = -23?");
 
         //The easy way
         //Helper function to avoid doing the hard way
@@ -136,7 +134,7 @@ public class AgentsDemo : DemoBase
             tools: [GetCurrentWeather],
             outputSchema: typeof(MathReasoning));
 
-        Conversation result = await TornadoRunner.RunAsync(agent, "What is the weather in boston?");
+        Conversation result = await agent.RunAsync("What is the weather in boston?");
 
         Console.WriteLine(result.Messages.Last().Content);
     }
