@@ -1,6 +1,5 @@
 ﻿using LlmTornado.Agents.DataModels;
-using LlmTornado.Agents.Orchestration;
-using LlmTornado.Agents.Orchestration.Core;
+using LlmTornado.Agents.ChatRuntime.Orchestration;
 using LlmTornado.Chat;
 using LlmTornado.Code;
 using LlmTornado.Images;
@@ -14,7 +13,9 @@ using System.Threading.Tasks;
 
 namespace LlmTornado.Agents.ChatRuntime;
 
-
+/// <summary>
+/// Get an active chat runtime to manage conversations with AI agents, including orchestration and tool usage.
+/// </summary>
 public class ChatRuntime
 {
     /// <summary>
@@ -33,11 +34,9 @@ public class ChatRuntime
     /// </summary>
     public CancellationTokenSource cts = new CancellationTokenSource();
 
-    ///// <summary>
-    ///// History of the chat conversation.
-    ///// </summary>
-    //public ConcurrentStack<ChatMessage> ChatHistory { get; private set; } = new ConcurrentStack<ChatMessage>();
-
+    /// <summary>
+    /// Gets or sets the runtime configuration for the application.
+    /// </summary>
     public IRuntimeConfiguration RuntimeConfiguration { get; set; }
 
     /// <summary>
@@ -83,11 +82,7 @@ public class ChatRuntime
     /// <summary>
     /// Sends a user message, with optional image data, to the conversation and returns the response asynchronously.
     /// </summary>
-    /// <param name="userInput">The text input from the user to include in the message. Cannot be <see langword="null"/> or empty.</param>
-    /// <param name="streaming"><see langword="true"/> to enable streaming of the response as it is generated; <see langword="false"/> to
-    /// receive the complete response after processing.</param>
-    /// <param name="base64Image">An optional base64-encoded image string to include with the message. If <see langword="null"/> or empty, no
-    /// image is attached.</param>
+    /// <param name="message">The user message to send to the conversation.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains the response string from the
     /// conversation.</returns>
     public async Task<ChatMessage> InvokeAsync(ChatMessage message)
@@ -104,6 +99,9 @@ public class ChatRuntime
         return RuntimeConfiguration.GetMessages().Last();
     }
 
+    /// <summary>
+    /// Resets the cancellation token source if it has been canceled.
+    /// </summary>
     private void ResetCancellationTokenSource()
     {
         // Reset the cancellation token source if it has been canceled

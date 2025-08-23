@@ -4,13 +4,16 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace LlmTornado.Agents.Orchestration.Core
+namespace LlmTornado.Agents.ChatRuntime.Orchestration
 {
     /// <summary>
     /// Base interface for events in the state machine.
     /// </summary>
     public interface IOrchestrationEvent
     {
+        /// <summary>
+        /// Type of event being triggered by orchestration.
+        /// </summary>
         string Type { get; set; }
     }
 

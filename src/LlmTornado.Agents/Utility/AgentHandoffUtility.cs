@@ -13,6 +13,13 @@ namespace LlmTornado.Agents
 {
     public class AgentHandoffUtility
     {
+        /// <summary>
+        /// Creates a response format for handing off to another agent.
+        /// </summary>
+        /// <param name="handoffs">Agents to add to enum list of selectable agents</param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="InvalidOperationException"></exception>
         public static ChatRequestResponseFormats CreateHandoffResponseFormat(TornadoAgent[] handoffs)
         {
             if (handoffs == null || handoffs.Length == 0) throw new ArgumentException("Handoffs cannot be null or empty", nameof(handoffs));

@@ -1,4 +1,4 @@
-﻿using LlmTornado.Agents.Orchestration.Core;
+﻿using LlmTornado.Agents.ChatRuntime.Orchestration;
 using LlmTornado.Chat;
 using System;
 using System.Collections.Generic;
@@ -22,10 +22,6 @@ public enum ChatRuntimeEventTypes
     /// Event raised when the runtime encounters an error during processing.
     /// </summary>
     Error,
-    /// <summary>
-    /// Event raised to provide intermediate updates during processing.
-    /// </summary>
-    Update,
     /// <summary>
     /// Event raised when the runtime is cancelled.
     /// </summary>
@@ -58,11 +54,17 @@ public enum ChatRuntimeEventTypes
     Unknown,
 }
 
+/// <summary>
+/// Base class for all events related to the Chat Runtime.
+/// </summary>
 public class ChatRuntimeEvents : EventArgs
 {
     public ChatRuntimeEventTypes EventType { get; set; } = ChatRuntimeEventTypes.Unknown;
 }
 
+/// <summary>
+/// Get Runtime Started Event
+/// </summary>
 public class  ChatRuntimeStartedEvent : ChatRuntimeEvents
 {
     public ChatRuntimeStartedEvent()
@@ -71,6 +73,9 @@ public class  ChatRuntimeStartedEvent : ChatRuntimeEvents
     }
 }
 
+/// <summary>
+/// Get Runtime Completed Event
+/// </summary>
 public class ChatRuntimeCompletedEvent : ChatRuntimeEvents
 {
     public ChatRuntimeCompletedEvent()
@@ -78,6 +83,12 @@ public class ChatRuntimeCompletedEvent : ChatRuntimeEvents
         EventType = ChatRuntimeEventTypes.Completed;
     }
 }
+
+/// <summary>
+/// Represents an event that occurs when a runtime error is encountered in the chat system.
+/// </summary>
+/// <remarks>This event is triggered when an exception is thrown during the operation of the chat runtime. It
+/// provides details about the exception that caused the error.</remarks>
 public class ChatRuntimeErrorEvent : ChatRuntimeEvents
 {
     public Exception Exception { get; set; }
@@ -87,16 +98,10 @@ public class ChatRuntimeErrorEvent : ChatRuntimeEvents
         EventType = ChatRuntimeEventTypes.Error;
     }
 }
-public class ChatRuntimeUpdateEvent : ChatRuntimeEvents
-{
-    public string UpdateMessage { get; set; }
-    public ChatRuntimeUpdateEvent(string message)
-    {
-        UpdateMessage = message;
-        EventType = ChatRuntimeEventTypes.Update;
-    }
-}
 
+/// <summary>
+/// Get Runtime Cancelled Events
+/// </summary>
 public class ChatRuntimeCancelledEvent : ChatRuntimeEvents
 {
     public ChatRuntimeCancelledEvent()
@@ -105,9 +110,19 @@ public class ChatRuntimeCancelledEvent : ChatRuntimeEvents
     }
 }
 
+/// <summary>
+/// Get Runtime Invoked Events
+/// </summary>
 public class ChatRuntimeInvokedEvent : ChatRuntimeEvents
 {
+    /// <summary>
+    /// Message that was requested to be processed.
+    /// </summary>
     public ChatMessage Message { get; set; }
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="message">Message that was requested to be processed.</param>
     public ChatRuntimeInvokedEvent(ChatMessage message)
     {
         Message = message;
@@ -115,10 +130,15 @@ public class ChatRuntimeInvokedEvent : ChatRuntimeEvents
     }
 }
 
+/// <summary>
+/// Get Model Streaming Events
+/// </summary>
 public class  ChatRuntimeStreamingEvent : ChatRuntimeEvents
 {
     public ModelStreamingEvents ModelStreamingEventData { get; set; }
-
+    /// <summary>
+    /// </summary>
+    /// <param name="modelEvent">Model Streaming Event</param>
     public ChatRuntimeStreamingEvent(ModelStreamingEvents modelEvent)
     {
         ModelStreamingEventData = modelEvent;
@@ -126,9 +146,20 @@ public class  ChatRuntimeStreamingEvent : ChatRuntimeEvents
     }   
 }
 
+/// <summary>
+/// Represents an event related to orchestration within the chat runtime system.
+/// </summary>
+/// <remarks>This class encapsulates data specific to orchestration events and is used to handle and process such
+/// events within the chat runtime environment. The <see cref="OrchestrationEventData"/> property contains the details
+/// of the orchestration event.</remarks>
 public class ChatRuntimeOrchestrationEvent : ChatRuntimeEvents
 {
     public OrchestrationEvent OrchestrationEventData { get; set; }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ChatRuntimeOrchestrationEvent"/> class.
+    /// </summary>
+    /// <param name="orchestrationEvent">Orchestration Event</param>
     public ChatRuntimeOrchestrationEvent(OrchestrationEvent orchestrationEvent)
     {
         OrchestrationEventData = orchestrationEvent;
@@ -136,9 +167,16 @@ public class ChatRuntimeOrchestrationEvent : ChatRuntimeEvents
     }
 }
 
+/// <summary>
+/// Get Agent Runner Events
+/// </summary>
 public class  ChatRuntimeAgentRunnerEvents : ChatRuntimeEvents
 {
     public AgentRunnerEvents AgentRunnerEvent { get; set; }
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="agentRunnerEvent">Agent Runner Event</param>
     public ChatRuntimeAgentRunnerEvents(AgentRunnerEvents agentRunnerEvent)
     {
         AgentRunnerEvent = agentRunnerEvent;

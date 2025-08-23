@@ -1,4 +1,4 @@
-﻿namespace LlmTornado.Agents.Orchestration.Core;
+﻿namespace LlmTornado.Agents.ChatRuntime.Orchestration;
 
 /// <summary>
 /// Delegate for a transition event that takes an input of type T and returns a boolean indicating whether the transition should occur.

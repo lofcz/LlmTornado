@@ -11,7 +11,9 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
 {
     public class SequentialRuntimeAgent : RuntimeAgent
     {
-
+        /// <summary>
+        /// Instructions to be added before each message for the sequential agent.
+        /// </summary>
         public string SequentialInstructions = """
             You are part of a sequential chain of agents. You will receive a message, 
             and you must respond to it as best as you can. Once you have responded, 
@@ -44,15 +46,29 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
         }
     }
 
+    /// <summary>
+    /// Runtime configuration for managing a sequence of agents that process messages one after the other.
+    /// </summary>
     public class SequentialRuntimeConfiguration : IRuntimeConfiguration
     {
-        public CancellationTokenSource cts { get; set; } = new CancellationTokenSource();
-        public Conversation? Conversation { get; set; }
-        
-        public List<SequentialRuntimeAgent> Agents { get; set; } = new List<SequentialRuntimeAgent>();
-        public bool Streaming { get; set; }
         public Func<ChatRuntimeEvents, ValueTask>? OnRuntimeEvent { get; set; }
 
+        public CancellationTokenSource cts { get; set; } = new CancellationTokenSource();
+
+        /// <summary>
+        /// Current conversation state being managed by the sequential agents.
+        /// </summary>
+        public Conversation? Conversation { get; set; }
+
+        /// <summary>
+        /// List of agents that will process messages sequentially.
+        /// </summary>
+        public List<SequentialRuntimeAgent> Agents { get; set; } = new List<SequentialRuntimeAgent>();
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SequentialRuntimeConfiguration"/> class with the specified agents.
+        /// </summary>
+        /// <param name="agents">Agents to run in order</param>
         public SequentialRuntimeConfiguration(SequentialRuntimeAgent[] agents)
         {
             Agents = agents.ToList();
@@ -68,7 +84,7 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
                     Conversation = await agent.RunAsync(
                         appendMessages: [new ChatMessage(Code.ChatMessageRoles.User, agent.SequentialInstructions), message], 
                         streaming:agent.Streaming, 
-                        runnerCallback:(sEvent) =>
+                        onAgentRunnerEvent:(sEvent) =>
                         {
                             OnRuntimeEvent?.Invoke(new ChatRuntimeAgentRunnerEvents(sEvent));
                             return Threading.ValueTaskCompleted;
@@ -90,7 +106,7 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
                     Conversation = await agent.RunAsync(
                         appendMessages: Conversation.Messages.ToList(), 
                         streaming: agent.Streaming,
-                        runnerCallback: (sEvent) =>
+                        onAgentRunnerEvent: (sEvent) =>
                         {
                             OnRuntimeEvent?.Invoke(new ChatRuntimeAgentRunnerEvents(sEvent));
                             return Threading.ValueTaskCompleted;

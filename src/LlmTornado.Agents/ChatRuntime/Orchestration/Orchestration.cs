@@ -3,7 +3,7 @@ using System.Collections.Concurrent;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 
-namespace LlmTornado.Agents.Orchestration.Core;
+namespace LlmTornado.Agents.ChatRuntime.Orchestration;
 
 /// <summary>
 /// Represents a state machine that manages the execution of state processes with support for concurrency and
@@ -312,6 +312,11 @@ public class Orchestration
         OnOrchestrationEvent?.Invoke(new OnVerboseOrchestrationEvent("Initilization Completed!")); //Invoke the begin state machine event
     }
 
+    /// <summary>
+    /// Invokes the state machine asynchronously, starting from the initial state and processing the provided input.
+    /// </summary>
+    /// <param name="input"> Input result for the Orchestration</param>
+    /// <returns></returns>
     public async Task InvokeAsync(object? input = null)
     {
         await Initialize(input);
@@ -359,26 +364,21 @@ public class Orchestration
         await InitilizeAllNewProcesses();
     }
 
-    public void AddRunnable(string name, OrchestrationRunnableBase runnable)
-    {
-        Runnables.Add(name, runnable);
-    }
-
-    public void RemoveRunnable(string name)
-    {
-        Runnables.Remove(name);
-    }
-
-    public void ClearRunnables()
-    {
-        Runnables.Clear();
-    }
-
+    /// <summary>
+    /// Gets the final results of the state machine run as a list of objects.
+    /// </summary>
+    /// <returns></returns>
     public virtual List<object>? GetResults()
     {
         return this.BaseFinalResult;
     }
 
+    /// <summary>
+    /// try to get the results of the state machine run as a list of type <typeparamref name="T"/>.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="value"></param>
+    /// <returns></returns>
     public virtual bool TryGetResults<T>(out List<T> value)
     {
         try
@@ -439,6 +439,12 @@ public class Orchestration<TInput, TOutput> : Orchestration
         }
     }
 
+    /// <summary>
+    /// Executes the asynchronous operation, initializing with the specified input and running to completion.
+    /// </summary>
+    /// <param name="input">The input parameter used to initialize the operation. Can be <see langword="null"/> or the default value of
+    /// <typeparamref name="TInput"/>.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     public async Task InvokeAsync(TInput? input = default)
     {
         await Initialize(input);
@@ -450,6 +456,13 @@ public class Orchestration<TInput, TOutput> : Orchestration
     /// </summary>
     public List<TOutput>? Results => RunnableWithResult.BaseOutput.ConvertAll(item => (TOutput)item)!;
 
+    /// <summary>
+    /// Retrieves the results as a list of objects.
+    /// </summary>
+    /// <remarks>This method converts the items in the <c>Results</c> collection to a list of objects. If
+    /// <c>Results</c> is <see langword="null"/>, the method returns <see langword="null"/>.</remarks>
+    /// <returns>A list of objects converted from the <c>Results</c> collection, or <see langword="null"/> if <c>Results</c> is
+    /// <see langword="null"/>.</returns>
     public override List<object>? GetResults()
     {
         return Results?.ConvertAll(item => (object?)item)!;

@@ -64,7 +64,7 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
             Conversation synthesizedResult =  await finalAgent.RunAsync(
                 appendMessages: this.Conversation, 
                 streaming:Streaming, 
-                runnerCallback: (sEvent) => { OnRuntimeEvent?.Invoke(new ChatRuntimeAgentRunnerEvents(sEvent)); return Threading.ValueTaskCompleted; }, 
+                onAgentRunnerEvent: (sEvent) => { OnRuntimeEvent?.Invoke(new ChatRuntimeAgentRunnerEvents(sEvent)); return Threading.ValueTaskCompleted; }, 
                 cancellationToken: cancellationToken);
 
             return synthesizedResult.Messages.Last();

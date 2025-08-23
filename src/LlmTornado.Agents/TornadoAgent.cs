@@ -85,7 +85,7 @@ public class TornadoAgent
     /// <summary>
     /// Current conversation state for the agent, used to track the context of interactions.
     /// </summary>
-    public Conversation Conversation { get; set; } 
+    public Conversation Conversation { get; set; }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="TornadoAgent"/> class, which represents an AI agent capable of
@@ -99,11 +99,11 @@ public class TornadoAgent
     /// <param name="model">The <see cref="ChatModel"/> that defines the AI model to be used by the agent.</param>
     /// <param name="instructions">Optional. A string containing the initial instructions for the agent. If not provided or empty, defaults to "You
     /// are a helpful assistant."</param>
+    /// <param name="name">Optional. A string representing the name of the agent. Defaults to "Assistant" if not provided.</param>
     /// <param name="outputSchema">Optional. A <see cref="Type"/> representing the schema of the expected output. If provided, the agent will
     /// format its responses according to the specified schema.</param>
     /// <param name="tools">Optional. A list of <see cref="Delegate"/> instances representing tools or functions that the agent can use to
     /// perform specific tasks. If not provided, the agent will use its default tools.</param>
-    /// <param name="handoffs">Optional. A list of <see cref="AgentHandoffUtility"/> instances representing possible hand-offs to other agents.</param>
     /// <param name="mcpServers">A list of <see cref="MCPServer"/> instances for MCP Server tools.</param>
     /// <exception cref="ArgumentNullException">Thrown when client or model is null.</exception>
     public TornadoAgent(
@@ -248,28 +248,46 @@ public class TornadoAgent
         }
     }
 
-
+    /// <summary>
+    /// Use this to clear the current conversation history on the agent.
+    /// </summary>
     public void ClearConversation()
     {
         Conversation.Clear();
     }
 
+    /// <summary>
+    /// Executes the conversation flow asynchronously, processing the input and managing interactions with the agent.
+    /// </summary>
+    /// <remarks>This method orchestrates the conversation flow by invoking the underlying runner with the
+    /// provided parameters. It supports optional streaming, guardrail validation, and event handling for advanced
+    /// scenarios.</remarks>
+    /// <param name="input">The initial input message to start the conversation. Defaults to an empty string if not provided.</param>
+    /// <param name="appendMessages">A list of additional chat messages to append to the conversation context. Can be <see langword="null"/>.</param>
+    /// <param name="inputGuardRailFunction">An optional guardrail function to validate or modify the input before processing. Can be <see langword="null"/>.</param>
+    /// <param name="streaming">A value indicating whether the response should be streamed. <see langword="true"/> to enable streaming;
+    /// otherwise, <see langword="false"/>.</param>
+    /// <param name="onAgentRunnerEvent">An optional callback function to handle agent runner events during execution. Can be <see langword="null"/>.</param>
+    /// <param name="maxTurns">The maximum number of turns allowed in the conversation. Must be a positive integer. Defaults to 10.</param>
+    /// <param name="responseId">An optional identifier for the response, used for response API chat. Defaults to an empty string.</param>
+    /// <param name="toolPermissionHandle">An optional callback function to handle tool permission requests. Returns a <see langword="true"/> or <see
+    /// langword="false"/> value indicating whether the tool is permitted. Can be <see langword="null"/>.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation requests. Defaults to <see cref="CancellationToken.None"/>.</param>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation. The task result contains the updated <see
+    /// cref="Conversation"/> object after processing.</returns>
     public async Task<Conversation> RunAsync(
         string input = "", 
         List<ChatMessage>? appendMessages = null, 
         GuardRailFunction? inputGuardRailFunction = null,
         bool streaming = false,
-        Func<AgentRunnerEvents, ValueTask>? runnerCallback = null, 
+        Func<AgentRunnerEvents, ValueTask>? onAgentRunnerEvent = null, 
         int maxTurns = 10, 
         string responseId = "",
-        ToolPermissionRequest? toolPermissionRequest = null, 
-        Func<Conversation, ValueTask>? OnComplete = null, 
+        Func<string, ValueTask<bool>>? toolPermissionHandle = null, 
         CancellationToken cancellationToken = default)
     {
         Conversation = await TornadoRunner.RunAsync(this, input: input, messages: appendMessages, guardRail: inputGuardRailFunction, cancellationToken: cancellationToken, streaming: streaming,
-                 runnerCallback: runnerCallback, maxTurns: maxTurns, responseId: responseId, toolPermissionRequest: toolPermissionRequest);
-
-        OnComplete?.Invoke(Conversation);
+                 runnerCallback: onAgentRunnerEvent, maxTurns: maxTurns, responseId: responseId, toolPermissionHandle: toolPermissionHandle);
 
         return Conversation;
     }

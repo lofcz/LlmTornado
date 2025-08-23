@@ -1,4 +1,4 @@
-namespace LlmTornado.Agents.Orchestration.Core;
+namespace LlmTornado.Agents.ChatRuntime.Orchestration;
 
 public interface IOrchestrationBaseRunnable
 {
@@ -123,6 +123,9 @@ public abstract class OrchestrationRunnableBase : IOrchestrationBaseRunnable
     /// no conditions are met.</returns>
     internal abstract List<RunnableProcess>? CanAdvance();
 
+    /// <summary>
+    /// Cancels the execution of the current state and any associated operations.
+    /// </summary>
     public void Cancel()
     {
         cts.Cancel();

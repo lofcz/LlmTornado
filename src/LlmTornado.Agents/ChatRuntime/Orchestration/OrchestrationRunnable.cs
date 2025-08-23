@@ -1,6 +1,6 @@
 ﻿using System.Collections.Concurrent;
 
-namespace LlmTornado.Agents.Orchestration.Core;
+namespace LlmTornado.Agents.ChatRuntime.Orchestration;
 
 public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunnableBase
 {
@@ -8,12 +8,21 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
     public override Type GetInputType() => typeof(TInput);
     public override Type GetOutputType() => typeof(TOutput);
 
+    /// <summary>
+    /// Output results from the invocation of the runnable.
+    /// </summary>
     public List<TOutput> Output => OutputResults.Select(output => output.Result).ToList();
 
+    /// <summary>
+    /// Input values for the runnable processes.
+    /// </summary>
     public List<TInput> Input => InputProcesses.Select(process => process.Input).ToList();
 
     private List<RunnableProcess<TInput>> _inputProcesses = new List<RunnableProcess<TInput>>();
 
+    /// <summary>
+    /// Input processes to be executed by the runnable.
+    /// </summary>
     public List<RunnableProcess<TInput>> InputProcesses
     {
         get => _inputProcesses;
@@ -34,6 +43,9 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
         return inputProcs;
     }
 
+    /// <summary>
+    /// Output results from the invocation of the runnable.
+    /// </summary>
     public List<RunnerResult<TOutput>> OutputResults
     {
         get => _outputResults;
@@ -55,10 +67,14 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
         InputProcesses.Add(new RunnableProcess<TInput>(process.Runner, (TInput)process.BaseInput!, process.Id));
     }
 
-
+    /// <summary>
+    /// List of advancements (transitions) from this runnable to the next runnables.
+    /// </summary>
     public List<OrchestrationAdvancer<TOutput>> Advances { get; set; } = new List<OrchestrationAdvancer<TOutput>>();
 
-
+    /// <summary>
+    /// Latest advancements determined after invocation.
+    /// </summary>
     public List<RunnableProcess> LatestAdvancements { get; set; } = new List<RunnableProcess>();
 
     internal override async ValueTask _InitializeRunnable(RunnableProcess? input)
@@ -74,8 +90,17 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
         await CleanupRunnable();
     }
 
+    /// <summary>
+    /// Setup any resources needed for the runnable to operate.
+    /// </summary>
+    /// <param name="input"></param>
+    /// <returns></returns>
     public virtual ValueTask InitializeRunnable(TInput? input) { return Threading.ValueTaskCompleted; }
 
+    /// <summary>
+    /// Cleanup any resources used by the runnable.
+    /// </summary>
+    /// <returns></returns>
     public virtual ValueTask CleanupRunnable() { return Threading.ValueTaskCompleted; }
 
     private async ValueTask<List<RunnerResult<TOutput>>> InvokeCore()
@@ -118,6 +143,12 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
         return new RunnerResult<TOutput>(input.Id, await Invoke(input.Input));
     }
 
+    /// <summary>
+    /// Processes the specified input and returns the corresponding output asynchronously.
+    /// </summary>
+    /// <param name="input">The input data to be processed. Cannot be null.</param>
+    /// <returns>A <see cref="ValueTask{TOutput}"/> representing the asynchronous operation.  The result contains the processed
+    /// output of type <typeparamref name="TOutput"/>.</returns>
     public abstract ValueTask<TOutput> Invoke(TInput input);
 
     private List<RunnableProcess>? GetFirstValidAdvancementForEachResult()
@@ -199,25 +230,45 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
         return AllowsParallelAdvances ? GetAllValidAdvancements() : GetFirstValidAdvancementForEachResult();
     }
 
-    public void AddAdvancer(OrchestrationRunnableBase nextRunable)
+    /// <summary>
+    /// Adds a simple advancer that always advances to the specified next runnable.
+    /// </summary>
+    /// <param name="nextRunnable"></param>
+    public void AddAdvancer(OrchestrationRunnableBase nextRunnable)
     {
-        Advances.Add(new OrchestrationAdvancer<TOutput>(_ => true, nextRunable));
+        Advances.Add(new OrchestrationAdvancer<TOutput>(_ => true, nextRunnable));
     }
 
-
-    public void AddAdvancer(AdvancementRequirement<TOutput> methodToInvoke, OrchestrationRunnableBase nextRuntime)
+    /// <summary>
+    /// Adds an advancer with a specified method to invoke for determining advancement to the next runnable.
+    /// </summary>
+    /// <param name="methodToInvoke">Condition required to make advancement</param>
+    /// <param name="nextRunnable">Next Runnable to advance too</param>
+    public void AddAdvancer(AdvancementRequirement<TOutput> methodToInvoke, OrchestrationRunnableBase nextRunnable)
     {
-        Advances.Add(new OrchestrationAdvancer<TOutput>(methodToInvoke, nextRuntime));
+        Advances.Add(new OrchestrationAdvancer<TOutput>(methodToInvoke, nextRunnable));
     }
 
-
-    public void AddAdvancer<T>(AdvancementRequirement<TOutput> methodToInvoke, AdvancementResultConverter<TOutput, T> conversionMethod, OrchestrationRunnableBase nextRuntime)
+    /// <summary>
+    /// Adds an advancer with a specified method to invoke for determining advancement to the next runnable, along with a conversion method to convert the output type to the input type of the next runnable.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="methodToInvoke">Condition required to make advancement</param>
+    /// <param name="conversionMethod">Method to convert the output type to the input type of the next runnable</param>
+    /// <param name="nextRunnable">Next Runnable to advance too</param>
+    public void AddAdvancer<T>(AdvancementRequirement<TOutput> methodToInvoke, AdvancementResultConverter<TOutput, T> conversionMethod, OrchestrationRunnableBase nextRunnable)
     {
-        OrchestrationAdvancer<TOutput, T> transition = new OrchestrationAdvancer<TOutput, T>(methodToInvoke, conversionMethod, nextRuntime);
+        OrchestrationAdvancer<TOutput, T> transition = new OrchestrationAdvancer<TOutput, T>(methodToInvoke, conversionMethod, nextRunnable);
         Advances.Add(transition);
     }
 
-
+    /// <summary>
+    /// Add an advancer that always advances to the specified next runnable, along with a conversion method to convert the output type to the input type of the next runnable.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="conversionMethod">Conversion method for the output result to the next runnable</param>
+    /// <param name="nextRunnable"></param>
+    /// <param name="methodToInvoke"> Optional Method to check for invocation</param>
     public void AddAdvancer<T>(AdvancementResultConverter<TOutput, T> conversionMethod, OrchestrationRunnableBase nextRunnable, AdvancementRequirement<TOutput>? methodToInvoke = null)
     {
         if (methodToInvoke != null)

@@ -13,6 +13,19 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
         public string Description { get; set; } = "";
         public List<HandoffAgent> HandoffAgents { get; set; } = new List<HandoffAgent>();
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="HandoffAgent"/> class.
+        /// </summary>
+        /// <param name="client">TornadoAPI client</param>
+        /// <param name="description">Description of the agent</param>
+        /// <param name="model">Chat model to use</param>
+        /// <param name="name">Name of the agent</param>
+        /// <param name="instructions">Instructions for the agent</param>
+        /// <param name="outputSchema">Output schema for the agent</param>
+        /// <param name="tools">List of tools the agent can use</param>
+        /// <param name="mcpServers">List of MCP servers to use</param>
+        /// <param name="handoffs">List of handoff agents</param>
+        /// <param name="streaming">Whether the agent supports streaming</param>
         public HandoffAgent(
             TornadoApi client,
             string description,
@@ -29,6 +42,14 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
             Description = description;
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="HandoffAgent"/> class with the specified parameters.
+        /// </summary>
+        /// <param name="cloneAgent">The <see cref="TornadoAgent"/> instance to clone, providing the base configuration for the new agent.</param>
+        /// <param name="streaming">A value indicating whether the agent operates in streaming mode. Defaults to <see langword="false"/>.</param>
+        /// <param name="handoffs">An optional list of <see cref="HandoffAgent"/> instances to associate with this agent. If not provided, an
+        /// empty list is used.</param>
+        /// <param name="description">An optional description of the agent. Defaults to an empty string.</param>
         public HandoffAgent(
             TornadoAgent cloneAgent,
             bool streaming = false,
@@ -41,17 +62,27 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
     }
 
     /// <summary>
-    /// In progress little effort has been made to make this work. Just setting up the preliminary structure.
+    /// Handoff runtime configuration for managing conversations with multiple agents and handing off between them as needed.
     /// </summary>
     public class HandoffRuntimeConfiguration : IRuntimeConfiguration
     {
         public CancellationTokenSource cts { get; set; }
-        public Conversation Conversation { get; set; }
-        public HandoffAgent CurrentAgent { get; set; }
-        public bool Streaming { get; set; }
-
         public Func<ChatRuntimeEvents, ValueTask>? OnRuntimeEvent { get; set; }
 
+        /// <summary>
+        /// Current conversation being managed by the runtime configuration.
+        /// </summary>
+        public Conversation Conversation { get; set; }
+
+        /// <summary>
+        /// Current agent handling the conversation.
+        /// </summary>
+        public HandoffAgent CurrentAgent { get; set; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="HandoffRuntimeConfiguration"/> class.
+        /// </summary>
+        /// <param name="initialAgent">Initial Agent to start the loop with</param>
         public HandoffRuntimeConfiguration(HandoffAgent initialAgent)
         {
             CurrentAgent = initialAgent;
@@ -66,7 +97,7 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
                 Conversation = await CurrentAgent.RunAsync(
                appendMessages: [message],
                streaming: CurrentAgent.Streaming,
-               runnerCallback: (sEvent) => { OnRuntimeEvent?.Invoke(new ChatRuntimeAgentRunnerEvents(sEvent)); return Threading.ValueTaskCompleted; },
+               onAgentRunnerEvent: (sEvent) => { OnRuntimeEvent?.Invoke(new ChatRuntimeAgentRunnerEvents(sEvent)); return Threading.ValueTaskCompleted; },
                cancellationToken: cancellationToken);
             }
             else
@@ -74,7 +105,7 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
                 Conversation = await CurrentAgent.RunAsync(
                appendMessages: Conversation.Messages.ToList(),
                streaming: CurrentAgent.Streaming,
-               runnerCallback: (sEvent) => { OnRuntimeEvent?.Invoke(new ChatRuntimeAgentRunnerEvents(sEvent)); return Threading.ValueTaskCompleted; },
+               onAgentRunnerEvent: (sEvent) => { OnRuntimeEvent?.Invoke(new ChatRuntimeAgentRunnerEvents(sEvent)); return Threading.ValueTaskCompleted; },
                cancellationToken: cancellationToken);
             }
 
@@ -96,9 +127,9 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
             return Conversation.Messages.LastOrDefault() ?? new ChatMessage(ChatMessageRoles.System, "No messages in conversation");
         }
 
-        public async Task SelectCurrentAgent(ChatMessage? inputMessage)
+        private string GenerateHandoffInstructions()
         {
-            string instructions = @$"
+            return @$"
 I need you to decide if you need to handoff the conversation to another agent.
 If you do, please return the agent you want to handoff to and the reason for the handoff.
 If not just return CurrentAgent
@@ -111,17 +142,25 @@ Out of the following Agents which agent should we Handoff the conversation too a
 {string.Join("\n\n", CurrentAgent.HandoffAgents.Select(handoff => $" {{\"NAME\": \"{handoff.Id}\",\"Handoff Reason\":\"{handoff.Description}\"}}"))}
 
 ";
+        }
+
+        private TornadoAgent CreateHandoffDecider()
+        {
+            string instructions = GenerateHandoffInstructions();
             TornadoAgent handoffDecider = new TornadoAgent(CurrentAgent.Client, ChatModel.OpenAi.Gpt41.V41, instructions: instructions)
             {
                 Options =
-        {
+            {
             ResponseFormat = AgentHandoffUtility.CreateHandoffResponseFormat(CurrentAgent.HandoffAgents.ToArray()),
             CancellationToken = cts.Token // Set the cancellation token source for the Control Agent
-        }
+            }
             };
+            return handoffDecider;
+        }
 
+        private string GenerateHandoffPrompt(ChatMessage? inputMessage)
+        {
             string prompt = "Current Conversation:\n";
-
             if (Conversation != null)
             {
                 foreach (ChatMessage message in Conversation.Messages)
@@ -135,12 +174,16 @@ Out of the following Agents which agent should we Handoff the conversation too a
                     }
                 }
             }
+            prompt += "\nBased on the conversation, decide if you need to handoff to another agent. If so, which one and why?\n";
 
-            if(inputMessage != null)
+            if (inputMessage != null)
                 prompt += $"{inputMessage.Role}: {inputMessage.Content}\n";
 
-            Conversation handoff = await handoffDecider.RunAsync(prompt, cancellationToken: cts.Token);
+            return prompt;
+        }
 
+        private List<HandoffAgent> CheckHandoffDeciderResult(Conversation handoff)
+        {
             List<HandoffAgent> handoffAgents = new List<HandoffAgent>();
             if (handoff.Messages.Count > 0 && handoff.Messages.Last().Content != null)
             {
@@ -150,7 +193,7 @@ Out of the following Agents which agent should we Handoff the conversation too a
                     if (response is not null)
                     {
                         List<string> selectedAgents = AgentHandoffUtility.ParseHandoffResponse(response);
-                        foreach(string agent in selectedAgents)
+                        foreach (string agent in selectedAgents)
                         {
                             HandoffAgent? handoffAgent = CurrentAgent.HandoffAgents.FirstOrDefault(a => a.Id == agent);
                             if (handoffAgent != null)
@@ -161,6 +204,18 @@ Out of the following Agents which agent should we Handoff the conversation too a
                     }
                 }
             }
+            return handoffAgents;
+        }
+
+        private async Task SelectCurrentAgent(ChatMessage? inputMessage)
+        {
+            TornadoAgent handoffDecider = CreateHandoffDecider();
+
+            string prompt = GenerateHandoffPrompt(inputMessage);
+
+            Conversation handoffResult = await handoffDecider.RunAsync(prompt, cancellationToken: cts.Token);
+
+            List<HandoffAgent> handoffAgents = CheckHandoffDeciderResult(handoffResult);
 
             CurrentAgent = handoffAgents.FirstOrDefault() ?? CurrentAgent;
         }

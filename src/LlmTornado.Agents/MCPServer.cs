@@ -1,18 +1,40 @@
-﻿using ModelContextProtocol.Client;
+﻿using LlmTornado.Common;
+using ModelContextProtocol.Client;
+using ModelContextProtocol.Protocol;
 
 
 namespace LlmTornado.Agents;
 
+/// <summary>
+/// MCP Server Class for managing connections to MCP server and their tools.
+/// </summary>
 public class MCPServer
 {
+    /// <summary>
+    /// Gets the label associated with the server.
+    /// </summary>
     public string ServerLabel { get; private set; }
+    /// <summary>
+    /// Get the URL of the MCP server.
+    /// </summary>
     public string ServerUrl { get; private set; }
+    /// <summary>
+    /// Select tools to disable from the server.
+    /// </summary>
     public string[]? DisableTools { get; set; }
+    /// <summary>
+    /// Tools available from the MCP server.
+    /// </summary>
     public List<McpClientTool> Tools { get; set; } = [];
 
-    public Dictionary<string, McpClientTool> mcp_tools = new Dictionary<string, McpClientTool>();
     public IMcpClient? McpClient { get; set; }
 
+    /// <summary>
+    /// Setup the MCP server connection and auto-load tools.
+    /// </summary>
+    /// <param name="serverLabel"> Label of the MCP Server</param>
+    /// <param name="serverUrl">URL of the MCP Server</param>
+    /// <param name="disableTools">List of tools to not use</param>
     public MCPServer( string serverLabel, string serverUrl,  string[]? disableTools = null)
     {
         ServerLabel = serverLabel;
@@ -60,8 +82,9 @@ public class MCPServer
     /// <summary>
     /// Helper method to attempt to create and return an MCP client for the given server.
     /// </summary>
-    /// <param name="server">Server you wish to get tools from</param>
-    /// <returns></returns>
+    /// <param name="serverUrl">Server you wish to get tools from</param>
+    /// <param name="serverLabel">Label of the server</param>
+    /// <returns>Returns the required IMcpClient type for the following MCP server (SSE vs Stdio).</returns>
     public static async Task<IMcpClient>? TryGetMcpClientAsync(string serverUrl, string serverLabel)
     {
         IMcpClient? mcpClient = null;
@@ -117,11 +140,16 @@ public class MCPServer
                 }
 
                 Tools.Add(tool);
-                mcp_tools.Add(tool.Name, tool);
             }
         }
     }
-    
+
+    public McpClientTool? GetToolByName(string toolName)
+    {
+        return Tools.DefaultIfEmpty(null).FirstOrDefault(t => t.Name.Equals(toolName, StringComparison.OrdinalIgnoreCase));
+
+    }
+
     internal static (string command, string[] arguments) GetCommandAndArguments(string[] args)
     {
         return args switch

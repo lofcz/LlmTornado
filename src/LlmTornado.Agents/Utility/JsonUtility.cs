@@ -228,6 +228,13 @@ public static class JsonUtility
         }
     }
 
+    /// <summary>
+    /// Use an agent to attempt to parse or repair a JSON string into an object of type <typeparamref name="T"/>.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="possibleJson"></param>
+    /// <param name="agent"></param>
+    /// <returns></returns>
     public static async Task<T?> SmartParseJsonAsync<T>(this string possibleJson, TornadoAgent agent)
     {
         return await SmartParseJsonAsync<T>(agent, possibleJson);

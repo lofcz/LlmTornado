@@ -1,4 +1,4 @@
-﻿namespace LlmTornado.Agents.Orchestration.Core;
+﻿namespace LlmTornado.Agents.ChatRuntime.Orchestration;
 
 /// <summary>
 /// Result from a state machine process.
@@ -17,9 +17,14 @@ public class RunnerResult
     //public object Result { get; set; }
     public RunnerResult() { }
 
-    public RunnerResult(string processID, object result)
+    /// <summary>
+    /// Initializes a new instance of the <see cref="RunnerResult"/> class.
+    /// </summary>
+    /// <param name="processId">The unique identifier for the process.</param>
+    /// <param name="result">The result of the process.</param>
+    public RunnerResult(string processId, object result)
     {
-        ProcessId = processID;
+        ProcessId = processId;
         ResultObject = result;
     }
 
@@ -50,9 +55,15 @@ public class RunnerResult<T> : RunnerResult
     /// Gets the result of the operation.
     /// </summary>
     public T Result { get => (T)ResultObject; }
-    public RunnerResult(string process, T result)
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="RunnerResult{T}"/> class.
+    /// </summary>
+    /// <param name="processId">The unique identifier for the process.</param>
+    /// <param name="result">The result of the process.</param>
+    public RunnerResult(string processId, T result)
     {
-        ProcessId = process;
+        ProcessId = processId;
         SetBaseResult(result);
     }
 }

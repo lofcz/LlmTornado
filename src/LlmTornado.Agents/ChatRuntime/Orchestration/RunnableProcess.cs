@@ -1,4 +1,4 @@
-﻿namespace LlmTornado.Agents.Orchestration.Core;
+﻿namespace LlmTornado.Agents.ChatRuntime.Orchestration;
 
 /// <summary>
 /// Represents a process that manages the execution state and input for a state-based operation.
@@ -33,6 +33,12 @@ public class RunnableProcess
     //public object Result { get; set; }
     public RunnableProcess() { }
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="runner">Runnable instance associated with this process</param>
+    /// <param name="inputValue">Input value for the process</param>
+    /// <param name="maxReruns">Maximum number of reruns allowed</param>
     public RunnableProcess(OrchestrationRunnableBase runner , object inputValue, int maxReruns = 3)
     {
         Runner = runner;
@@ -72,11 +78,6 @@ public class RunnableProcess
     {
         return new RunnableProcess<T>(Runner, (T)BaseInput, Id);
     }
-
-    public void Cancel()
-    {
-        Runner.cts.Cancel();
-    }
 }
 
 /// <summary>
@@ -92,11 +93,26 @@ public class RunnableProcess<T> : RunnableProcess
     /// </summary>
     public T Input { get => (T)BaseInput; set => BaseInput = value!; }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="RunnableProcess{T}"/> class with the specified runnable, input, and
+    /// maximum rerun count.
+    /// </summary>
+    /// <param name="runnable">The orchestration runnable that defines the process logic to be executed.</param>
+    /// <param name="input">The input data of type <typeparamref name="T"/> required by the process. Cannot be <see langword="null"/>.</param>
+    /// <param name="maxReruns">The maximum number of times the process can be rerun in case of failure. Defaults to 3.</param>
     public RunnableProcess(OrchestrationRunnableBase runnable, T input, int maxReruns = 3) : base(runnable, input!, maxReruns)
     {
         Input = input!;
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="RunnableProcess{T}"/> class with the specified runnable, input,
+    /// identifier, and maximum rerun count.
+    /// </summary>
+    /// <param name="runnable">The orchestration runnable that defines the process logic to be executed.</param>
+    /// <param name="input">The input data of type <typeparamref name="T"/> required by the process. Cannot be <see langword="null"/>.</param>
+    /// <param name="id">A unique identifier for the process. Cannot be <see langword="null"/> or empty.</param>
+    /// <param name="maxReruns">The maximum number of times the process can be rerun in case of failure. Defaults to 3.</param>
     public RunnableProcess(OrchestrationRunnableBase runnable, T input, string id, int maxReruns = 3) : base(runnable, input!, maxReruns)
     {
         Input = input!;

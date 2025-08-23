@@ -1,8 +1,8 @@
 ﻿using LlmTornado.Agents;
 using LlmTornado.Agents.ChatRuntime;
-using LlmTornado.Agents.ChatRuntime.RuntimeConfigurations.OrchestrationRuntimeConfiguration;
+using LlmTornado.Agents.ChatRuntime.RuntimeConfigurations;
 using LlmTornado.Agents.DataModels;
-using LlmTornado.Agents.Orchestration.Core;
+using LlmTornado.Agents.ChatRuntime.Orchestration;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Responses;
@@ -83,7 +83,7 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
 
         public class PlannerRunnable : OrchestrationRunnable<ChatMessage, WebSearchPlan>
         {
-            OrchestrationAgent Agent;
+            RuntimeAgent Agent;
 
             public PlannerRunnable()
             {
@@ -92,7 +92,7 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
                     to perform to best answer the query. Output between 5 and 10 terms to query for. 
                     """;
 
-                Agent = new OrchestrationAgent(
+                Agent = new RuntimeAgent(
                     client: Program.Connect(),
                     model: ChatModel.OpenAi.Gpt5.V5Mini,
                     name: "Research Agent",
@@ -165,7 +165,7 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
                     essence and ignore any fluff. Do not include any additional commentary other than the summary itself.
                     """;
 
-                OrchestrationAgent Agent = new OrchestrationAgent(
+                RuntimeAgent Agent = new RuntimeAgent(
                     client: Program.Connect(),
                     model: ChatModel.OpenAi.Gpt5.V5Mini,
                     name: "Research Agent",
@@ -183,7 +183,7 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
 
         public class ReportingRunnable : OrchestrationRunnable<string, ReportData>
         {
-            OrchestrationAgent Agent;
+            RuntimeAgent Agent;
 
             public Action<AgentRunnerEvents>? OnAgentRunnerEvent { get; set; }
 
@@ -199,7 +199,7 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
                     The final output should be in markdown format, and it should be lengthy and detailed. Aim for 5-10 pages of content, at least 1000 words.
                     """;
 
-                Agent = new OrchestrationAgent(
+                Agent = new RuntimeAgent(
                     client: Program.Connect(),
                     model: ChatModel.OpenAi.Gpt5.V5,
                     name: "Report Agent",
@@ -213,7 +213,7 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
                 Conversation conv = await Agent.RunAsync(
                     appendMessages: new List<ChatMessage> { new ChatMessage(Code.ChatMessageRoles.User, research) }, 
                     streaming: Agent.Streaming, 
-                    runnerCallback: (sEvent) =>
+                    onAgentRunnerEvent: (sEvent) =>
                     {
                         OnAgentRunnerEvent?.Invoke(sEvent);
                         return ValueTask.CompletedTask;

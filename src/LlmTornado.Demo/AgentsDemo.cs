@@ -44,7 +44,7 @@ public class AgentsDemo : DemoBase
             return ValueTask.CompletedTask;
         }
 
-        Conversation result = await agent.RunAsync("Hello Streaming World!", streaming: true, runnerCallback: StreamingHandler);
+        Conversation result = await agent.RunAsync("Hello Streaming World!", streaming: true, onAgentRunnerEvent: StreamingHandler);
     }
 
     [TornadoTest]
