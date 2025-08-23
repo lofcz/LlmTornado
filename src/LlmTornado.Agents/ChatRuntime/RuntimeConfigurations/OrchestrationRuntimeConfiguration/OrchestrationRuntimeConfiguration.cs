@@ -28,11 +28,14 @@ public class OrchestrationAgent : RuntimeAgent
 public class OrchestrationRuntimeConfiguration : AgentOrchestration, IRuntimeConfiguration
 {
     public CancellationTokenSource cts { get; set; } = new CancellationTokenSource();
-    public Func<ModelStreamingEvents, ValueTask>? OnRuntimeEvent { get; }
+    public Func<ChatRuntimeEvents, ValueTask>? OnRuntimeEvent { get; set; }
 
     public OrchestrationRuntimeConfiguration()
     {
-
+        OnOrchestrationEvent += (e) =>
+        {
+            OnRuntimeEvent?.Invoke(new ChatRuntimeOrchestrationEvent(e));
+        };
     }
 
     public virtual async ValueTask<ChatMessage> AddToChatAsync(ChatMessage message, CancellationToken cancellationToken = default)

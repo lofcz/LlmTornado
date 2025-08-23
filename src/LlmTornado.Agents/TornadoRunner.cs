@@ -6,7 +6,6 @@ using LlmTornado.Common;
 
 namespace LlmTornado.Agents;
 
-public delegate ValueTask RunnerVerboseCallbacks(string runnerAction);
 public delegate ValueTask<bool> ToolPermissionRequest(string message);
 
 /// <summary>
@@ -41,21 +40,20 @@ public class TornadoRunner
         bool singleTurn = false,
         int maxTurns = 10,
         List<ChatMessage>? messages = null,
-        //ComputerActionCallbacks? computerUseCallback = null,
-        RunnerVerboseCallbacks? verboseCallback = null,
+        Func<AgentRunnerEvents, ValueTask>? runnerCallback = null,
         bool streaming = false,
-        StreamingCallbacks? streamingCallback = null,
         string responseId = "",
         CancellationToken cancellationToken = default,
         ToolPermissionRequest? toolPermissionRequest = null
     )
     {
+        runnerCallback?.Invoke(new AgentRunnerStartedEvent());
         Conversation conversation = SetupConversation(agent, input, messages, responseId, cancellationToken);
 
         //Check if the input triggers a guardrail to stop the agent from continuing
         await CheckInputGuardrail(input, guardRail);
 
-        return await RunAgentLoop(conversation, agent, singleTurn, maxTurns, verboseCallback, streaming, streamingCallback, responseId, cancellationToken, toolPermissionRequest);
+        return await RunAgentLoop(conversation, agent, singleTurn, maxTurns, runnerCallback, streaming, responseId, cancellationToken, toolPermissionRequest);
     }
 
     private static async Task<Conversation> RunAgentLoop(
@@ -63,9 +61,8 @@ public class TornadoRunner
         TornadoAgent agent,
         bool singleTurn = false,
         int maxTurns = 10,
-        RunnerVerboseCallbacks? verboseCallback = null,
+        Func<AgentRunnerEvents, ValueTask>? runnerCallback = null,
         bool streaming = false,
-        StreamingCallbacks? streamingCallback = null,
         string responseId = "",
         CancellationToken cancellationToken = default,
         ToolPermissionRequest? toolPermissionRequest = null
@@ -77,21 +74,22 @@ public class TornadoRunner
         {
             do
             {
-                CheckForCancellation(cancellationToken);
+                CheckForCancellation(runnerCallback, cancellationToken);
 
-                if (currentTurn >= maxTurns) throw new Exception("Max Turns Reached");
+                CheckForMaxTurns(currentTurn, maxTurns, runnerCallback);
 
                 currentTurn++;
 
-                chat = await GetNewResponse(agent, chat, streaming, streamingCallback, verboseCallback, toolPermissionRequest) ?? chat;
+                chat = await GetNewResponse(agent, chat, streaming, runnerCallback, toolPermissionRequest) ?? chat;
 
             } while (GotToolCall(chat) && !singleTurn);
         }
         catch (Exception ex)
         {
-            verboseCallback?.Invoke($"Exception during agent run: {ex.Message}");
+            runnerCallback?.Invoke(new AgentRunnerErrorEvent(ex.Message, ex));
         }
 
+        runnerCallback?.Invoke(new AgentRunnerCompletedEvent());
         return chat;
     }
 
@@ -145,11 +143,25 @@ public class TornadoRunner
         }
     }
 
-    private static void CheckForCancellation(CancellationToken cancellationToken)
+    private static void CheckForCancellation(Func<AgentRunnerEvents, ValueTask>? runnerCallback = null, CancellationToken cancellationToken = default)
     {
         if (cancellationToken.IsCancellationRequested)
         {
-            throw new OperationCanceledException("Operation was cancelled by user.");
+            runnerCallback?.Invoke(new AgentRunnerCancelledEvent());
+            OperationCanceledException ex = new OperationCanceledException("Operation was cancelled by user.");
+            runnerCallback?.Invoke(new AgentRunnerErrorEvent(ex.Message, ex));
+            throw ex;
+        }
+    }
+
+    private static void CheckForMaxTurns(int currentTurn, int maxTurns, Func<AgentRunnerEvents, ValueTask>? runnerCallback = null)
+    {
+        if (currentTurn >= maxTurns)
+        {
+            Exception error = new Exception("Max Turns Reached");
+            runnerCallback?.Invoke(new AgentRunnerMaxTurnsReachedEvent());
+            runnerCallback?.Invoke(new AgentRunnerErrorEvent(error.Message, error));
+            throw error;
         }
     }
 
@@ -172,6 +184,8 @@ public class TornadoRunner
     private static async Task<FunctionResult> HandleToolCall(TornadoAgent agent, FunctionCall toolCall, ToolPermissionRequest? toolPermissionRequest = null)
     {
         bool permissionGranted = true;
+        FunctionResult functionResult = new FunctionResult(toolCall, "No Result", FunctionResultSetContentModes.Passthrough);
+
         if (toolPermissionRequest != null)
         {
             if (toolPermissionRequest?.GetInvocationList().Length > 0 && agent.ToolPermissionRequired[toolCall.Name])
@@ -184,11 +198,16 @@ public class TornadoRunner
         if (!permissionGranted)
         {
             //If permission is not granted, remove the tool call from the request
-            return new FunctionResult(toolCall, "Tool Permission was not granted by user", FunctionResultSetContentModes.Passthrough);
+            functionResult = new FunctionResult(toolCall, "Tool Permission was not granted by user", FunctionResultSetContentModes.Passthrough);
         }
 
-        if (agent.McpTools.ContainsKey(toolCall.Name)) return await ToolRunner.CallMcpToolAsync(agent, toolCall);
-        return agent.AgentTools.ContainsKey(toolCall.Name) ? await ToolRunner.CallAgentToolAsync(agent, toolCall) : await ToolRunner.CallFuncToolAsync(agent, toolCall);
+        if (agent.McpTools.ContainsKey(toolCall.Name)) { functionResult = await ToolRunner.CallMcpToolAsync(agent, toolCall); }
+        else 
+        {
+            functionResult = agent.AgentTools.ContainsKey(toolCall.Name)?await ToolRunner.CallAgentToolAsync(agent, toolCall) : await ToolRunner.CallFuncToolAsync(agent, toolCall);
+        }
+
+        return functionResult;
     }
 
 
@@ -200,33 +219,35 @@ public class TornadoRunner
     /// <param name="Streaming"></param>
     /// <param name="streamingCallback"></param>
     /// <returns></returns>
-    private static async Task<Conversation> GetNewResponse(TornadoAgent agent, Conversation chat, bool Streaming = false, StreamingCallbacks? streamingCallback = null, RunnerVerboseCallbacks? verboseCallback = null, ToolPermissionRequest? toolPermissionRequest = null)
+    private static async Task<Conversation> GetNewResponse(TornadoAgent agent, Conversation chat, bool Streaming = false, Func<AgentRunnerEvents, ValueTask>? runnerCallback = null, ToolPermissionRequest? toolPermissionRequest = null)
     {
         try
         {
-            if (Streaming && streamingCallback != null)
+            if (Streaming && runnerCallback != null)
             {
-                return await HandleStreaming(agent, chat, streamingCallback);
+                return await HandleStreaming(agent, chat, runnerCallback);
             }
 
             RestDataOrException<ChatRichResponse> response = await chat.GetResponseRichSafe(async functions =>
             {
                 foreach (FunctionCall fn in functions)
                 {
+                    runnerCallback?.Invoke(new AgentRunnerToolInvokedEvent(fn));
                     fn.Result = await HandleToolCall(agent, fn, toolPermissionRequest);
+                    runnerCallback?.Invoke(new AgentRunnerToolCompletedEvent(fn));
                 }
             });
         }
         catch (Exception ex)
         {
-            verboseCallback?.Invoke(ex.ToString());
+            runnerCallback?.Invoke(new AgentRunnerErrorEvent(ex.Message,ex));
         }
 
         return chat;
     }
 
 
-    private static async Task<Conversation> HandleStreaming(TornadoAgent agent, Conversation chat, StreamingCallbacks? streamingCallback = null, ToolPermissionRequest? toolPermissionRequest = null)
+    private static async Task<Conversation> HandleStreaming(TornadoAgent agent, Conversation chat, Func<AgentRunnerEvents, ValueTask>? runnerCallback = null, ToolPermissionRequest? toolPermissionRequest = null)
     {
         //Create Open response
         await chat.StreamResponseRich(new ChatStreamEventHandler
@@ -238,7 +259,7 @@ public class TornadoRunner
             },
             MessageTokenHandler = (text) =>
             {
-                streamingCallback?.Invoke(new ModelStreamingOutputTextDeltaEvent(1, 1, 1, text));
+                runnerCallback?.Invoke(new AgentRunnerStreamingEvent(new ModelStreamingOutputTextDeltaEvent(1, 1, 1, text)));
                 return Threading.ValueTaskCompleted;
             },
             ReasoningTokenHandler = (reasoning) =>
@@ -248,7 +269,7 @@ public class TornadoRunner
             BlockFinishedHandler = (message) =>
             {
                 //Call the streaming callback for completion
-                streamingCallback?.Invoke(new ModelStreamingCompletedEvent(1, message.Id.ToString()));
+                runnerCallback?.Invoke(new AgentRunnerStreamingEvent(new ModelStreamingCompletedEvent(1, message.Id.ToString())));
                 return Threading.ValueTaskCompleted;
             },
             MessagePartHandler = (part) =>
@@ -262,7 +283,9 @@ public class TornadoRunner
                     //Add the tool call to the response output
                     foreach (FunctionCall fn in toolCall)
                     {
+                        runnerCallback?.Invoke(new AgentRunnerToolInvokedEvent(fn));
                         fn.Result = await HandleToolCall(agent, fn, toolPermissionRequest);
+                        runnerCallback?.Invoke(new AgentRunnerToolCompletedEvent(fn));
                     }
                 }
             },
@@ -272,7 +295,7 @@ public class TornadoRunner
             },
             MutateChatRequestHandler = (request) =>
             {
-                streamingCallback?.Invoke(new ModelStreamingCreatedEvent(1));
+                runnerCallback?.Invoke(new AgentRunnerStreamingEvent(new ModelStreamingCreatedEvent(1)));
                 //Mutate the request if needed
                 return Threading.FromResult(request);
             },

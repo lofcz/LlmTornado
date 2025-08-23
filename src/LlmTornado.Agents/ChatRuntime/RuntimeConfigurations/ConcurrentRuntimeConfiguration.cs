@@ -17,7 +17,7 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
         public List<TornadoAgent> Agents { get; set; } = new List<TornadoAgent>();
         public bool Streaming { get; set; } = false;
 
-        public Func<ModelStreamingEvents, ValueTask>? OnRuntimeEvent { get; }
+        public Func<ChatRuntimeEvents, ValueTask>? OnRuntimeEvent { get; set; }
         public string ResultProcessingInstructions { get; set; }
 
         public ConcurrentRuntimeConfiguration(TornadoAgent[] agents, string resultProcessingInstructions)
@@ -64,7 +64,7 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
             Conversation synthesizedResult =  await finalAgent.RunAsync(
                 appendMessages: this.Conversation, 
                 streaming:Streaming, 
-                streamingCallback: (sEvent) => { OnRuntimeEvent?.Invoke(sEvent); return Threading.ValueTaskCompleted; }, 
+                runnerCallback: (sEvent) => { OnRuntimeEvent?.Invoke(new ChatRuntimeAgentRunnerEvents(sEvent)); return Threading.ValueTaskCompleted; }, 
                 cancellationToken: cancellationToken);
 
             return synthesizedResult.Messages.Last();

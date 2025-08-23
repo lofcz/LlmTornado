@@ -14,7 +14,7 @@ public interface IRuntimeConfiguration
 
     public CancellationTokenSource cts { get; set; }
 
-    public Func<ModelStreamingEvents, ValueTask>? OnRuntimeEvent { get; }
+    public Func<ChatRuntimeEvents, ValueTask>? OnRuntimeEvent { get; set; }
 
     public List<ChatMessage> GetMessages();
 

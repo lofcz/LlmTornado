@@ -50,7 +50,7 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
         public HandoffAgent CurrentAgent { get; set; }
         public bool Streaming { get; set; }
 
-        public Func<ModelStreamingEvents, ValueTask>? OnRuntimeEvent { get; }
+        public Func<ChatRuntimeEvents, ValueTask>? OnRuntimeEvent { get; set; }
 
         public HandoffRuntimeConfiguration(HandoffAgent initialAgent)
         {
@@ -66,7 +66,7 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
                 Conversation = await CurrentAgent.RunAsync(
                appendMessages: [message],
                streaming: CurrentAgent.Streaming,
-               streamingCallback: (sEvent) => { OnRuntimeEvent?.Invoke(sEvent); return Threading.ValueTaskCompleted; },
+               runnerCallback: (sEvent) => { OnRuntimeEvent?.Invoke(new ChatRuntimeAgentRunnerEvents(sEvent)); return Threading.ValueTaskCompleted; },
                cancellationToken: cancellationToken);
             }
             else
@@ -74,7 +74,7 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
                 Conversation = await CurrentAgent.RunAsync(
                appendMessages: Conversation.Messages.ToList(),
                streaming: CurrentAgent.Streaming,
-               streamingCallback: (sEvent) => { OnRuntimeEvent?.Invoke(sEvent); return Threading.ValueTaskCompleted; },
+               runnerCallback: (sEvent) => { OnRuntimeEvent?.Invoke(new ChatRuntimeAgentRunnerEvents(sEvent)); return Threading.ValueTaskCompleted; },
                cancellationToken: cancellationToken);
             }
 

@@ -258,17 +258,16 @@ public class TornadoAgent
         string input = "", 
         List<ChatMessage>? appendMessages = null, 
         GuardRailFunction? inputGuardRailFunction = null,
-        RunnerVerboseCallbacks? verboseCallback = null, 
-        bool streaming = false, 
-        StreamingCallbacks? streamingCallback = null, 
+        bool streaming = false,
+        Func<AgentRunnerEvents, ValueTask>? runnerCallback = null, 
         int maxTurns = 10, 
         string responseId = "",
         ToolPermissionRequest? toolPermissionRequest = null, 
         Func<Conversation, ValueTask>? OnComplete = null, 
         CancellationToken cancellationToken = default)
     {
-        Conversation = await TornadoRunner.RunAsync(this, input: input, messages: appendMessages, guardRail: inputGuardRailFunction, verboseCallback: verboseCallback, cancellationToken: cancellationToken, streaming: streaming,
-                 streamingCallback: streamingCallback, maxTurns: maxTurns, responseId: responseId, toolPermissionRequest: toolPermissionRequest);
+        Conversation = await TornadoRunner.RunAsync(this, input: input, messages: appendMessages, guardRail: inputGuardRailFunction, cancellationToken: cancellationToken, streaming: streaming,
+                 runnerCallback: runnerCallback, maxTurns: maxTurns, responseId: responseId, toolPermissionRequest: toolPermissionRequest);
 
         OnComplete?.Invoke(Conversation);
 

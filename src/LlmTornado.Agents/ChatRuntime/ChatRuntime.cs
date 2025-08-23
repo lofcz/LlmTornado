@@ -23,26 +23,9 @@ public class ChatRuntime
     public string Id { get; } = Guid.NewGuid().ToString();
 
     /// <summary>
-    /// Thread ID of the main conversation thread for the response API
-    /// </summary>
-    //public string MainThreadId { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Occurs when Agent gets a new message to process.
-    /// </summary>
-    public Action? OnExecutionStarted;
-
-    /// <summary>
-    /// Occurs when the execution process has completed.
-    /// </summary>
-    /// <remarks>Subscribe to this event to perform actions after the execution process finishes.  The
-    /// event handler will be invoked when the execution is complete.</remarks>
-    public Action? OnExecutionDone;
-
-    /// <summary>
     /// Main streaming event for the Control Agent to handle streaming messages for the Control Agent conversation.
     /// </summary>
-    public Func<ModelStreamingEvents, ValueTask>? OnStreamingEvent;
+    public Func<ChatRuntimeEvents, ValueTask>? OnRuntimeEvent;
 
 
     /// <summary>
@@ -66,20 +49,7 @@ public class ChatRuntime
     {
         RuntimeConfiguration = configuration;
         RuntimeConfiguration.cts = cts; 
-    }
-
-
-    /// <summary>
-    /// Invokes the streaming event with the specified message.
-    /// </summary>
-    /// <remarks>This method triggers the <see cref="streamingEvent"/> delegate, allowing subscribers
-    /// to handle the message. Ensure that the <paramref name="message"/> is not null to avoid potential
-    /// exceptions.</remarks>
-    /// <param name="message">The message to be passed to the streaming event. Cannot be null.</param>
-    private ValueTask HandleStreamingEvent(ModelStreamingEvents message)
-    {
-        OnStreamingEvent?.Invoke(message);
-        return Threading.ValueTaskCompleted;
+        OnRuntimeEvent = configuration.OnRuntimeEvent;
     }
 
 
@@ -107,6 +77,7 @@ public class ChatRuntime
     public void CancelExecution()
     {
         cts.Cancel(); // Signal cancellation to all state machines
+        OnRuntimeEvent?.Invoke(new ChatRuntimeCancelledEvent());
     }
 
     /// <summary>
@@ -122,13 +93,13 @@ public class ChatRuntime
     public async Task<ChatMessage> InvokeAsync(ChatMessage message)
     {
         // Invoke the StartingExecution event to signal the beginning of the execution process
-        OnExecutionStarted?.Invoke();
-
+        OnRuntimeEvent?.Invoke(new ChatRuntimeStartedEvent());
+        
         ResetCancellationTokenSource();
 
         await RuntimeConfiguration.AddToChatAsync(message);
 
-        OnExecutionDone?.Invoke();
+        OnRuntimeEvent?.Invoke(new ChatRuntimeCompletedEvent());
 
         return RuntimeConfiguration.GetMessages().Last();
     }

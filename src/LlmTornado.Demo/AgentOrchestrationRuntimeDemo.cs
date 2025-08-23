@@ -1,6 +1,7 @@
 ﻿using LlmTornado.Agents;
 using LlmTornado.Agents.ChatRuntime;
 using LlmTornado.Agents.ChatRuntime.RuntimeConfigurations.OrchestrationRuntimeConfiguration;
+using LlmTornado.Agents.DataModels;
 using LlmTornado.Agents.Orchestration.Core;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
@@ -27,6 +28,29 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
         Console.WriteLine(report.Parts.Last().Text);
     }
 
+    [TornadoTest]
+    public static async Task BasicOrchestrationRuntimeStreamingDemo()
+    {
+        ResearchAgentConfiguration RuntimeConfiguration = new ResearchAgentConfiguration();
+
+        ChatRuntime runtime = new ChatRuntime(RuntimeConfiguration);
+
+        RuntimeConfiguration.OnRuntimeEvent += (e) =>
+        {
+            if (e is ChatRuntimeStreamingEvent streamEvent)
+            {
+                if (streamEvent.ModelStreamingEventData.EventType == ModelStreamingEventType.OutputTextDelta)
+                {
+                    Console.Write((streamEvent.ModelStreamingEventData as ModelStreamingOutputTextDeltaEvent)?.DeltaText);
+                }
+            }
+
+            return ValueTask.CompletedTask;
+        };
+
+        ChatMessage report = await runtime.InvokeAsync(new ChatMessage(Code.ChatMessageRoles.User, "Write a report about the benefits of using AI agents."));
+    }
+
     public class ResearchAgentConfiguration : OrchestrationRuntimeConfiguration
     {
         PlannerRunnable planner;
@@ -50,6 +74,11 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
             //Configure the Orchestration entry and exit points
             SetEntryRunnable(planner);
             SetRunnableWithResult(exit);
+
+            reporter.OnAgentRunnerEvent += (sEvent) =>
+            {
+                this.OnRuntimeEvent?.Invoke(new ChatRuntimeAgentRunnerEvents(sEvent));
+            };
         }
 
         public class PlannerRunnable : OrchestrationRunnable<ChatMessage, WebSearchPlan>
@@ -73,10 +102,7 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
 
             public override async ValueTask<WebSearchPlan> Invoke(ChatMessage input)
             {
-                Conversation conv = await Agent.RunAsync(appendMessages: new List<ChatMessage> { input }, streaming: Agent.Streaming, streamingCallback: (sEvent) =>
-                {
-                    return ValueTask.CompletedTask;
-                });
+                Conversation conv = await Agent.RunAsync(appendMessages: new List<ChatMessage> { input });
 
                 WebSearchPlan? plan = await conv.Messages.Last().Content?.SmartParseJsonAsync<WebSearchPlan>(Agent);
 
@@ -159,6 +185,8 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
         {
             OrchestrationAgent Agent;
 
+            public Action<AgentRunnerEvents>? OnAgentRunnerEvent { get; set; }
+
             public ReportingRunnable() 
             {
                 string instructions = """
@@ -176,7 +204,8 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
                     model: ChatModel.OpenAi.Gpt5.V5,
                     name: "Report Agent",
                     instructions: instructions,
-                    outputSchema:typeof(ReportData));
+                    outputSchema:typeof(ReportData),
+                    streaming:true);
             }
 
             public override async ValueTask<ReportData> Invoke(string research)
@@ -184,8 +213,9 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
                 Conversation conv = await Agent.RunAsync(
                     appendMessages: new List<ChatMessage> { new ChatMessage(Code.ChatMessageRoles.User, research) }, 
                     streaming: Agent.Streaming, 
-                    streamingCallback: (sEvent) =>
+                    runnerCallback: (sEvent) =>
                 {
+                    OnAgentRunnerEvent?.Invoke(sEvent);
                     return ValueTask.CompletedTask;
                 });
 

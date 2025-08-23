@@ -21,7 +21,7 @@ public interface IAgentRunnable
     /// <remarks>This event is triggered during the execution of a streaming operation, passing a
     /// string parameter that contains the current status or data update. Subscribers can use this event to receive
     /// real-time updates.</remarks>
-    public Func<ModelStreamingEvents, ValueTask>? OnStreamingEvent { get; }
+    public Func<AgentRunnerEvents, ValueTask>? OnStreamingEvent { get; }
 
     public ValueTask<ChatMessage> Invoke(ChatMessage input);
 
@@ -30,8 +30,6 @@ public interface IAgentRunnable
     /// </summary>
     public CancellationTokenSource cts { get; set; }
 
-    public void SubscribeStreamingChannel(StreamingCallbacks? streamingChannel);
-    public void UnsubscribeStreamingChannel(StreamingCallbacks? streamingChannel);
 }
 
 public class RunnableAgent : OrchestrationRunnable<ChatMessage, ChatMessage>, IAgentRunnable
@@ -39,7 +37,7 @@ public class RunnableAgent : OrchestrationRunnable<ChatMessage, ChatMessage>, IA
     public TornadoAgent Agent { get; set; }
     public Action<string>? OnVerboseEvent { get; }
 
-    public Func<ModelStreamingEvents, ValueTask>? OnStreamingEvent { get; }
+    public Func<AgentRunnerEvents, ValueTask>? OnStreamingEvent { get; }
 
     public CancellationTokenSource cts { get; set; } = new CancellationTokenSource();
 
@@ -59,11 +57,11 @@ public class RunnableAgent : OrchestrationRunnable<ChatMessage, ChatMessage>, IA
         if(Conversation != null)
         {
             Conversation.AppendMessage(input);
-            Conversation = await Agent.RunAsync(appendMessages: Conversation.Messages.ToList(), streamingCallback: ReceiveStreaming, streaming: IsStreaming, cancellationToken: cts.Token);
+            Conversation = await Agent.RunAsync(appendMessages: Conversation.Messages.ToList(), runnerCallback: ReceiveStreaming, streaming: IsStreaming, cancellationToken: cts.Token);
         }
         else
         {
-            Conversation = await Agent.RunAsync(appendMessages: [input], streamingCallback: ReceiveStreaming, streaming: IsStreaming, cancellationToken: cts.Token);
+            Conversation = await Agent.RunAsync(appendMessages: [input], runnerCallback: ReceiveStreaming, streaming: IsStreaming, cancellationToken: cts.Token);
         }
 
         return Conversation.Messages.Last();
@@ -80,7 +78,7 @@ public class RunnableAgent : OrchestrationRunnable<ChatMessage, ChatMessage>, IA
     /// string. If the operation does not produce any output, an empty string is returned.</returns>
     public async Task<Conversation> BeginRunnerAsync(ChatMessage message, bool streaming = false)
     {
-        return (await Agent.RunAsync(appendMessages: [message], streamingCallback: ReceiveStreaming, streaming: streaming, cancellationToken: cts.Token));
+        return (await Agent.RunAsync(appendMessages: [message], runnerCallback: ReceiveStreaming, streaming: streaming, cancellationToken: cts.Token));
     }
 
     /// <summary>
@@ -97,7 +95,7 @@ public class RunnableAgent : OrchestrationRunnable<ChatMessage, ChatMessage>, IA
         for (int attempt = 0; attempt <= maxRetries; attempt++)
         {
             Conversation result = await Agent.RunAsync(appendMessages: [message],
-                streamingCallback: ReceiveStreaming,
+                runnerCallback: ReceiveStreaming,
                 streaming: streaming,
                 cancellationToken: cts.Token);
 
@@ -139,20 +137,9 @@ public class RunnableAgent : OrchestrationRunnable<ChatMessage, ChatMessage>, IA
     /// provided message. Ensure that <see cref="OnStreamingEvent"/> is not null before calling this method
     /// to avoid a <see cref="NullReferenceException"/>.</remarks>
     /// <param name="message">The message received from the stream. Cannot be null.</param>
-    internal ValueTask ReceiveStreaming(ModelStreamingEvents message)
+    internal ValueTask ReceiveStreaming(AgentRunnerEvents message)
     {
         OnStreamingEvent?.Invoke(message);
         return Threading.ValueTaskCompleted;
-    }
-
-    public void SubscribeStreamingChannel(StreamingCallbacks? streamingChannel)
-    {
-        streamingChannel += ReceiveStreaming; // Register the streaming channel to receive updates
-    }
-
-
-    public void UnsubscribeStreamingChannel(StreamingCallbacks? streamingChannel)
-    {
-        streamingChannel -= ReceiveStreaming; // Register the streaming channel to receive updates
     }
 }

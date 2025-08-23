@@ -51,7 +51,7 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
         
         public List<SequentialRuntimeAgent> Agents { get; set; } = new List<SequentialRuntimeAgent>();
         public bool Streaming { get; set; }
-        public Func<ModelStreamingEvents, ValueTask>? OnRuntimeEvent { get; }
+        public Func<ChatRuntimeEvents, ValueTask>? OnRuntimeEvent { get; set; }
 
         public SequentialRuntimeConfiguration(SequentialRuntimeAgent[] agents)
         {
@@ -68,9 +68,9 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
                     Conversation = await agent.RunAsync(
                         appendMessages: [new ChatMessage(Code.ChatMessageRoles.User, agent.SequentialInstructions), message], 
                         streaming:agent.Streaming, 
-                        streamingCallback:(sEvent) =>
+                        runnerCallback:(sEvent) =>
                         {
-                            OnRuntimeEvent?.Invoke(sEvent);
+                            OnRuntimeEvent?.Invoke(new ChatRuntimeAgentRunnerEvents(sEvent));
                             return Threading.ValueTaskCompleted;
                         }, 
                         cancellationToken: cancellationToken
@@ -90,9 +90,9 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
                     Conversation = await agent.RunAsync(
                         appendMessages: Conversation.Messages.ToList(), 
                         streaming: agent.Streaming,
-                        streamingCallback: (sEvent) =>
+                        runnerCallback: (sEvent) =>
                         {
-                            OnRuntimeEvent?.Invoke(sEvent);
+                            OnRuntimeEvent?.Invoke(new ChatRuntimeAgentRunnerEvents(sEvent));
                             return Threading.ValueTaskCompleted;
                         }, 
                         cancellationToken: cancellationToken

@@ -25,14 +25,17 @@ public class AgentsDemo : DemoBase
         TornadoAgent agent = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41Mini, "Have fun");
 
         // Enhanced streaming callback to handle the new ModelStreamingEvents system
-        ValueTask StreamingHandler(ModelStreamingEvents streamingEvent)
+        ValueTask StreamingHandler(AgentRunnerEvents streamingEvent)
         {
             switch (streamingEvent.EventType)
             {
-                case ModelStreamingEventType.OutputTextDelta:
-                    if (streamingEvent is ModelStreamingOutputTextDeltaEvent deltaEvent)
+                case AgentRunnerEventTypes.Streaming:
+                    if(streamingEvent is AgentRunnerStreamingEvent outputEvent)
                     {
-                        Console.Write(deltaEvent.DeltaText); // Write the text delta directly
+                        if (outputEvent.ModelStreamingEvent is ModelStreamingOutputTextDeltaEvent deltaEvent)
+                        {
+                            Console.Write(deltaEvent.DeltaText); // Write the text delta directly
+                        }
                     }
                     break;
                 default:
@@ -41,7 +44,7 @@ public class AgentsDemo : DemoBase
             return ValueTask.CompletedTask;
         }
 
-        Conversation result = await agent.RunAsync("Hello Streaming World!", streaming: true, streamingCallback: StreamingHandler);
+        Conversation result = await agent.RunAsync("Hello Streaming World!", streaming: true, runnerCallback: StreamingHandler);
     }
 
     [TornadoTest]
