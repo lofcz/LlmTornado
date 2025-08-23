@@ -1,4 +1,5 @@
-﻿using LlmTornado.Chat;
+﻿using LlmTornado.Agents.DataModels;
+using LlmTornado.Chat;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,7 +14,11 @@ public interface IRuntimeConfiguration
 
     public CancellationTokenSource cts { get; set; }
 
+    public Func<ModelStreamingEvents, ValueTask>? OnRuntimeEvent { get; }
+
     public List<ChatMessage> GetMessages();
+
+    public ChatMessage GetLastMessage();
 
     public void ClearMessages();
 }

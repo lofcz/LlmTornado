@@ -4,7 +4,7 @@ namespace LlmTornado.Agents.Orchestration.Core;
 
 public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunnableBase
 {
-    private List<RunnableResult<TOutput>> _outputResults = new List<RunnableResult<TOutput>>();
+    private List<RunnerResult<TOutput>> _outputResults = new List<RunnerResult<TOutput>>();
     public override Type GetInputType() => typeof(TInput);
     public override Type GetOutputType() => typeof(TOutput);
 
@@ -34,12 +34,12 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
         return inputProcs;
     }
 
-    public List<RunnableResult<TOutput>> OutputResults
+    public List<RunnerResult<TOutput>> OutputResults
     {
         get => _outputResults;
         set
         {
-            _outputResults = value ?? new List<RunnableResult<TOutput>>();
+            _outputResults = value ?? new List<RunnerResult<TOutput>>();
             BaseOutputResults = ConvertOutputResults();
         }
     }
@@ -78,14 +78,14 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
 
     public virtual ValueTask CleanupRunnable() { return Threading.ValueTaskCompleted; }
 
-    private async ValueTask<List<RunnableResult<TOutput>>> InvokeCore()
+    private async ValueTask<List<RunnerResult<TOutput>>> InvokeCore()
     {
         if (InputProcesses.Count == 0)
             throw new InvalidOperationException($"Input Process is required on Runnable {GetType()}");
 
         //Setup Invoke Task
         List<Task> Tasks = new List<Task>();
-        ConcurrentBag<RunnableResult<TOutput>> oResults = new ConcurrentBag<RunnableResult<TOutput>>();
+        ConcurrentBag<RunnerResult<TOutput>> oResults = new ConcurrentBag<RunnerResult<TOutput>>();
 
         if (SingleInvokeForInput)
         {
@@ -113,9 +113,9 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
         await InvokeCore();
     }
 
-    private async ValueTask<RunnableResult<TOutput>> InternalInvoke(RunnableProcess<TInput> input)
+    private async ValueTask<RunnerResult<TOutput>> InternalInvoke(RunnableProcess<TInput> input)
     {
-        return new RunnableResult<TOutput>(input.Id, await Invoke(input.Input));
+        return new RunnerResult<TOutput>(input.Id, await Invoke(input.Input));
     }
 
     public abstract ValueTask<TOutput> Invoke(TInput input);

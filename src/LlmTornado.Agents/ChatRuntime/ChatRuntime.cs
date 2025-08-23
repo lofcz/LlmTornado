@@ -25,7 +25,7 @@ public class ChatRuntime
     /// <summary>
     /// Thread ID of the main conversation thread for the response API
     /// </summary>
-    public string MainThreadId { get; set; } = string.Empty;
+    //public string MainThreadId { get; set; } = string.Empty;
 
     /// <summary>
     /// Occurs when Agent gets a new message to process.
@@ -50,14 +50,12 @@ public class ChatRuntime
     /// </summary>
     public CancellationTokenSource cts = new CancellationTokenSource();
 
-
-    /// <summary>
-    /// History of the chat conversation.
-    /// </summary>
-    public ConcurrentStack<ChatMessage> ChatHistory { get; private set; } = new ConcurrentStack<ChatMessage>();
+    ///// <summary>
+    ///// History of the chat conversation.
+    ///// </summary>
+    //public ConcurrentStack<ChatMessage> ChatHistory { get; private set; } = new ConcurrentStack<ChatMessage>();
 
     public IRuntimeConfiguration RuntimeConfiguration { get; set; }
-
 
     /// <summary>
     /// Chat Orchestration to create processes flows with AI agents
@@ -94,9 +92,10 @@ public class ChatRuntime
     public virtual void Clear()
     {
         // Clear the current result and reset the main thread ID
-        ChatHistory = new ConcurrentStack<ChatMessage>();
-        MainThreadId = string.Empty;
+        // ChatHistory = new ConcurrentStack<ChatMessage>();
+        // MainThreadId = string.Empty;
         ResetCancellationTokenSource();
+        RuntimeConfiguration.ClearMessages();
     }
 
     /// <summary>
@@ -120,17 +119,18 @@ public class ChatRuntime
     /// image is attached.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains the response string from the
     /// conversation.</returns>
-    public async Task<string> InvokeAsync(ChatMessage message)
+    public async Task<ChatMessage> InvokeAsync(ChatMessage message)
     {
         // Invoke the StartingExecution event to signal the beginning of the execution process
         OnExecutionStarted?.Invoke();
 
-        //Run the ControlAgent with the current messages
-        await InvokeConversation(message);
+        ResetCancellationTokenSource();
+
+        await RuntimeConfiguration.AddToChatAsync(message);
 
         OnExecutionDone?.Invoke();
 
-        return ChatHistory.Last().Content ?? "Error getting Response";
+        return RuntimeConfiguration.GetMessages().Last();
     }
 
     private void ResetCancellationTokenSource()
@@ -144,26 +144,5 @@ public class ChatRuntime
                 cts = new CancellationTokenSource();
             }
         }
-    }
-
-    private async Task InvokeConversation(ChatMessage message)
-    {
-        ChatHistory.Push(message);
-
-        List<ChatMessage> response =  await InternalOnInvokeAgentsAsync(message);
-
-        foreach (var msg in response)
-        {
-            ChatHistory.Push(msg);
-        }  
-    }
-
-    private async ValueTask<List<ChatMessage>> InternalOnInvokeAgentsAsync(ChatMessage message)
-    {
-        ResetCancellationTokenSource();
-        
-        await RuntimeConfiguration.AddToChatAsync(message);
-
-        return RuntimeConfiguration.GetMessages();
     }
 }

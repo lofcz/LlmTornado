@@ -55,9 +55,39 @@ public class AgentRuntimeDemo : DemoBase
 
         ChatRuntime runtime = new ChatRuntime(sequentialRuntimeConfiguration);
 
-        string report = await runtime.InvokeAsync(new ChatMessage(Code.ChatMessageRoles.User, "Write a report about the benefits of using AI agents."));
+        ChatMessage report = await runtime.InvokeAsync(new ChatMessage(Code.ChatMessageRoles.User, "Write a report about the benefits of using AI agents."));
 
-        Console.WriteLine(report);
+        Console.WriteLine(report.Content);
+    }
+
+
+    [TornadoTest]
+    public static async Task BasicHandoffRuntimeDemo()
+    {
+        HandoffAgent translatorAgent = new HandoffAgent(
+            client: Program.Connect(),
+            name: "SpanishAgent",
+            model: ChatModel.OpenAi.Gpt41.V41Mini,
+            instructions: "You are a useful assistant. Please only respond in spanish",
+            description: "Use this Agent for spanish speaking response");
+
+        HandoffAgent usefulAgent = new HandoffAgent(
+             client: Program.Connect(),
+             name: "EnglishAgent",
+             model: ChatModel.OpenAi.Gpt41.V41Mini,
+             instructions: "You are a useful assistant. Please only respond in english",
+             description: "Use this Agent for english speaking response",
+             handoffs: [translatorAgent]);
+
+        translatorAgent.HandoffAgents = [usefulAgent];
+
+        HandoffRuntimeConfiguration runtimeConfiguration = new HandoffRuntimeConfiguration(usefulAgent);
+
+        ChatRuntime runtime = new ChatRuntime(runtimeConfiguration);
+
+        ChatMessage report = await runtime.InvokeAsync(new ChatMessage(Code.ChatMessageRoles.User, "¿cuanto es 2+2?"));
+        
+        Console.WriteLine(report.Content);
     }
 }
 

@@ -300,14 +300,11 @@ public class Orchestration
         InitialRunnable = initialRunnable;
     }
 
-    public virtual async Task Initialize(OrchestrationRunnableBase initialRunner, object? input = null)
+    internal virtual async Task Initialize(object? input = null)
     {
-        if (initialRunner == null)
-            throw new ArgumentNullException(nameof(initialRunner), "Start state cannot be null");
-
         ResetRun(); //Reset the state machine before running
 
-        newRunnableProcesses.Add(new RunnableProcess(initialRunner, input));
+        newRunnableProcesses.Add(new RunnableProcess(InitialRunnable, input));
 
         //Initialize the process with the starting state and input
         await InitilizeAllNewProcesses();
@@ -317,11 +314,11 @@ public class Orchestration
 
     public async Task InvokeAsync(object? input = null)
     {
-        await Initialize(InitialRunnable, input);
+        await Initialize(input);
         await RunToCompletion();
     }
 
-    private async Task RunToCompletion()
+    internal async Task RunToCompletion()
     {
         if(!_isInitialized)
         {
@@ -442,6 +439,12 @@ public class Orchestration<TInput, TOutput> : Orchestration
         }
     }
 
+    public async Task InvokeAsync(TInput? input = default)
+    {
+        await Initialize(input);
+        await RunToCompletion();
+    }
+
     /// <summary>
     /// Result of the state machine run, containing a list of outputs of type <typeparamref name="TOutput"/>.
     /// </summary>
@@ -451,6 +454,7 @@ public class Orchestration<TInput, TOutput> : Orchestration
     {
         return Results?.ConvertAll(item => (object?)item)!;
     }
+
     /// <summary>
     /// Gets or sets the result state of the operation.
     /// </summary>
@@ -466,7 +470,7 @@ public class Orchestration<TInput, TOutput> : Orchestration
     /// Each result corresponds to an output from the state machine, and may be null if no output is produced for a
     /// particular state transition.</returns>
     /// <exception cref="InvalidOperationException">Thrown if the start state or result state is not set before execution.</exception>
-    public async Task Initialize( object? input = null)
+    private async Task Initialize(TInput? input = default)
     {
         //Input validation before running the state machine
         if (InitialRunnable == null)
@@ -479,7 +483,7 @@ public class Orchestration<TInput, TOutput> : Orchestration
             throw new InvalidOperationException("Need to Set a Result Runtime for the Resulting RuntimeMachine");
         }
 
-        await base.Initialize(InitialRunnable, input);
+        await base.Initialize(input);
     }
 
 

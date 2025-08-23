@@ -106,10 +106,10 @@ public class RunnableProcess<T> : RunnableProcess
     /// <summary>
     /// Creates a new <see cref="StateResult{T}"/> instance with the specified result.
     /// </summary>
-    /// <param name="result">The result value to be encapsulated within the <see cref="RunnableResult{T}"/>.</param>
-    /// <returns>A <see cref="RunnableResult{T}"/> containing the specified result and the current state ID.</returns>
-    public RunnableResult<T> CreateRunnerResult(T result)
+    /// <param name="result">The result value to be encapsulated within the <see cref="RunnerResult{T}"/>.</param>
+    /// <returns>A <see cref="RunnerResult{T}"/> containing the specified result and the current state ID.</returns>
+    public RunnerResult<T> CreateRunnerResult(T result)
     {
-        return new RunnableResult<T>(Id, result);
+        return new RunnerResult<T>(Id, result);
     }
 }

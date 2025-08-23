@@ -11,7 +11,7 @@ using System.Text.RegularExpressions;
 
 namespace LlmTornado.Agents;
 
-internal static class JsonUtility
+public static class JsonUtility
 {
     /// <summary>
     /// Determines whether the specified string is a valid JSON format.
@@ -79,6 +79,14 @@ internal static class JsonUtility
     {
         if (string.IsNullOrWhiteSpace(json))
             throw new ArgumentException("JSON is null or empty");
+
+        if( !IsValidJson(json))
+            throw new JsonException("Invalid JSON format");
+
+        if(json.TryParseJson<T>( out T? result))
+        {
+            return result!;
+        }
 
         return JsonSerializer.Deserialize<T>(json, new JsonSerializerOptions
         {
@@ -148,6 +156,14 @@ internal static class JsonUtility
     /// langword="null"/> if parsing and repair attempts fail.</returns>
     public static async Task<T?> SmartParseJsonAsync<T>(TornadoAgent agent, string possibleJson)
     {
+        if (string.IsNullOrWhiteSpace(possibleJson))
+            throw new ArgumentException("JSON is null or empty");
+
+        if (possibleJson.TryParseJson<T>(out T? result))
+        {
+            return result!;
+        }
+
         string lastInstructions = agent.Instructions;
         Type? type = agent.OutputSchema;
         List<Tool> tools = agent.Options.Tools?.ToList() ?? [];
@@ -211,6 +227,12 @@ internal static class JsonUtility
             return default!;
         }
     }
+
+    public static async Task<T?> SmartParseJsonAsync<T>(this string possibleJson, TornadoAgent agent)
+    {
+        return await SmartParseJsonAsync<T>(agent, possibleJson);
+    }
+
 
 }
 

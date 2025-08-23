@@ -16,11 +16,6 @@ public interface IAgentRunnable
     public TornadoAgent Agent { get; set; }
 
     /// <summary>
-    /// Verbose event callback for recieving verbose messages.
-    /// </summary>
-    public Action<string>? OnVerboseEvent { get; }
-
-    /// <summary>
     /// Occurs when a streaming operation is running and provides updates.
     /// </summary>
     /// <remarks>This event is triggered during the execution of a streaming operation, passing a

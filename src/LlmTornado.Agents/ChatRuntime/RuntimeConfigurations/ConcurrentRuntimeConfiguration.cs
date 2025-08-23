@@ -1,4 +1,5 @@
-﻿using LlmTornado.Chat;
+﻿using LlmTornado.Agents.DataModels;
+using LlmTornado.Chat;
 using LlmTornado.Code;
 using System;
 using System.Collections.Concurrent;
@@ -11,13 +12,18 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
 {
     public class ConcurrentRuntimeConfiguration : IRuntimeConfiguration
     {
-        public CancellationTokenSource cts { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public CancellationTokenSource cts { get; set; }
         public List<ChatMessage> Conversation { get; set; } = new List<ChatMessage>();
-        public List<TornadoAgent> Agents { get; set; } = new List<TornadoAgent>();  
+        public List<TornadoAgent> Agents { get; set; } = new List<TornadoAgent>();
+        public bool Streaming { get; set; } = false;
 
-        public ConcurrentRuntimeConfiguration(TornadoAgent[] agents)
+        public Func<ModelStreamingEvents, ValueTask>? OnRuntimeEvent { get; }
+        public string ResultProcessingInstructions { get; set; }
+
+        public ConcurrentRuntimeConfiguration(TornadoAgent[] agents, string resultProcessingInstructions)
         {
             Agents.AddRange(agents);
+            ResultProcessingInstructions = resultProcessingInstructions;
         }
 
         public async ValueTask<ChatMessage> AddToChatAsync(ChatMessage message, CancellationToken cancellationToken = default)
@@ -46,7 +52,22 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
 
             this.Conversation.Add(resultMessage);
 
-            return resultMessage;
+            TornadoAgent finalAgent = new TornadoAgent(
+                client: Agents.First().Client,
+                name: "Result Synthesizer",
+                model: Agents.First().Model,
+                instructions: ResultProcessingInstructions
+            );
+
+            this.Conversation.Add(new ChatMessage(ChatMessageRoles.User, ResultProcessingInstructions));
+
+            Conversation synthesizedResult =  await finalAgent.RunAsync(
+                appendMessages: this.Conversation, 
+                streaming:Streaming, 
+                streamingCallback: (sEvent) => { OnRuntimeEvent?.Invoke(sEvent); return Threading.ValueTaskCompleted; }, 
+                cancellationToken: cancellationToken);
+
+            return synthesizedResult.Messages.Last();
         }
 
         public void ClearMessages()
@@ -59,5 +80,9 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
             return Conversation;
         }
 
+        public ChatMessage GetLastMessage()
+        {
+            return Conversation.LastOrDefault() ?? new ChatMessage(ChatMessageRoles.System, "No messages yet.");
+        }
     }
 }

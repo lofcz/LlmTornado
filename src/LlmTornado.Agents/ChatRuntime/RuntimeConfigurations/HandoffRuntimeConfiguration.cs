@@ -1,4 +1,5 @@
-﻿using LlmTornado.Chat;
+﻿using LlmTornado.Agents.DataModels;
+using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Code;
 using System.Collections.Concurrent;
@@ -6,10 +7,11 @@ using System.Collections.Generic;
 
 namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
 {
-    public class HandoffAgent : TornadoAgent
+    public class HandoffAgent : RuntimeAgent
     {
         public string Description { get; set; } = "";
         public List<HandoffAgent> HandoffAgents { get; set; } = new List<HandoffAgent>();
+
         public HandoffAgent(
             TornadoApi client,
             string description,
@@ -19,7 +21,8 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
             Type? outputSchema = null,
             List<Delegate>? tools = null,
             List<MCPServer>? mcpServers = null,
-            List<HandoffAgent>? handoffs = null) : base(client, model, name, instructions, outputSchema, tools, mcpServers)
+            List<HandoffAgent>? handoffs = null,
+            bool streaming = false) : base(client, model, name, instructions, outputSchema, tools, mcpServers, streaming)
         {
             HandoffAgents = handoffs ?? new List<HandoffAgent>();
             Description = description;
@@ -27,24 +30,33 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
 
         public HandoffAgent(
             TornadoAgent cloneAgent,
-            List<HandoffAgent>? handoffs = null) : base(cloneAgent.Client, cloneAgent.Model, cloneAgent.Name, cloneAgent.Instructions, cloneAgent.OutputSchema, cloneAgent.Tools, cloneAgent.McpServers)
+            bool streaming = false,
+            List<HandoffAgent>? handoffs = null,
+            string description = "") : base(cloneAgent.Client, cloneAgent.Model, cloneAgent.Name, cloneAgent.Instructions, cloneAgent.OutputSchema, cloneAgent.Tools, cloneAgent.McpServers, streaming)
         {
             HandoffAgents = handoffs ?? new List<HandoffAgent>();
+            Description = description;
         }
     }
 
-    internal class HandoffRuntimeConfiguration : IRuntimeConfiguration
+    /// <summary>
+    /// In progress little effort has been made to make this work. Just setting up the preliminary structure.
+    /// </summary>
+    public class HandoffRuntimeConfiguration : IRuntimeConfiguration
     {
-        public CancellationTokenSource cts { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public CancellationTokenSource cts { get; set; }
         public List<ChatMessage> Conversation { get; set; } = new List<ChatMessage>();
         public HandoffAgent CurrentAgent { get; set; }
+        public bool Streaming { get; set; }
+
+        public Func<ModelStreamingEvents, ValueTask>? OnRuntimeEvent { get; }
 
         public HandoffRuntimeConfiguration(HandoffAgent initialAgent)
         {
             CurrentAgent = initialAgent;
         }
 
-        public async ValueTask<ChatMessage> AddToChatAsync(ChatMessage message, CancellationToken cancellationToken = default)
+        public async ValueTask<ChatMessage> AddToChatAsync(ChatMessage message,  CancellationToken cancellationToken = default)
         {
             this.Conversation.Add(message);
 
@@ -54,8 +66,14 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
 
             foreach (HandoffAgent agent in handoffAgents)
             {
-                agentTask.Add(Task.Run(async () => { 
-                    Conversation conv = await agent.RunAsync(appendMessages: [message], cancellationToken: cancellationToken);
+                agentTask.Add(Task.Run(async () => {
+
+                    Conversation conv = await agent.RunAsync(
+                        appendMessages: [message],
+                        streaming: agent.Streaming,
+                        streamingCallback: (sEvent) => { OnRuntimeEvent?.Invoke(sEvent); return Threading.ValueTaskCompleted; },
+                        cancellationToken: cancellationToken);
+
                     if(conv.Messages.Count > 0)
                     {
                         bag.Add(conv.Messages.LastOrDefault()!);
@@ -82,6 +100,11 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
         public List<ChatMessage> GetMessages()
         {
             return Conversation;
+        }
+
+        public ChatMessage GetLastMessage()
+        {
+            return Conversation.LastOrDefault() ?? new ChatMessage(ChatMessageRoles.System, "No messages in conversation");
         }
 
         public async Task<List<HandoffAgent>> SelectCurrentAgent(ChatMessage? inputMessage)

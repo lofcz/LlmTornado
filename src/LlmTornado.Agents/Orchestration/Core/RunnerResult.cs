@@ -34,9 +34,9 @@ public class RunnerResult
     /// <typeparam name="T">The type of the result expected from the process.</typeparam>
     /// <returns>A <see cref="StateResult{T}"/> containing the process ID and the result cast to the specified type
     /// <typeparamref name="T"/>.</returns>
-    public RunnableResult<T> GetResult<T>()
+    public RunnerResult<T> GetResult<T>()
     {
-        return new RunnableResult<T>(ProcessId, (T)ResultObject);
+        return new RunnerResult<T>(ProcessId, (T)ResultObject);
     }
 }
 
@@ -44,13 +44,13 @@ public class RunnerResult
 /// Represents the result of a process, including the process identifier and a typed result value.
 /// </summary>
 /// <typeparam name="T">The type of the result value.</typeparam>
-public class RunnableResult<T> : RunnerResult
+public class RunnerResult<T> : RunnerResult
 {
     /// <summary>
     /// Gets the result of the operation.
     /// </summary>
     public T Result { get => (T)ResultObject; }
-    public RunnableResult(string process, T result)
+    public RunnerResult(string process, T result)
     {
         ProcessId = process;
         SetBaseResult(result);
