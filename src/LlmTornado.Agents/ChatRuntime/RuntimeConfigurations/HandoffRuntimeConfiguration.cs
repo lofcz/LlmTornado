@@ -4,6 +4,7 @@ using LlmTornado.Chat.Models;
 using LlmTornado.Code;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
 {
@@ -45,7 +46,7 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
     public class HandoffRuntimeConfiguration : IRuntimeConfiguration
     {
         public CancellationTokenSource cts { get; set; }
-        public List<ChatMessage> Conversation { get; set; } = new List<ChatMessage>();
+        public Conversation Conversation { get; set; }
         public HandoffAgent CurrentAgent { get; set; }
         public bool Streaming { get; set; }
 
@@ -58,38 +59,26 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
 
         public async ValueTask<ChatMessage> AddToChatAsync(ChatMessage message,  CancellationToken cancellationToken = default)
         {
-            this.Conversation.Add(message);
+            await SelectCurrentAgent(message);
 
-            ConcurrentBag<ChatMessage> bag = new ConcurrentBag<ChatMessage>(GetMessages());
-            List <HandoffAgent> handoffAgents = await SelectCurrentAgent(message);
-            List<Task> agentTask = new List<Task>();
-
-            foreach (HandoffAgent agent in handoffAgents)
+            if(Conversation == null)
             {
-                agentTask.Add(Task.Run(async () => {
-
-                    Conversation conv = await agent.RunAsync(
-                        appendMessages: [message],
-                        streaming: agent.Streaming,
-                        streamingCallback: (sEvent) => { OnRuntimeEvent?.Invoke(sEvent); return Threading.ValueTaskCompleted; },
-                        cancellationToken: cancellationToken);
-
-                    if(conv.Messages.Count > 0)
-                    {
-                        bag.Add(conv.Messages.LastOrDefault()!);
-                    }     
-                }));
+                Conversation = await CurrentAgent.RunAsync(
+               appendMessages: [message],
+               streaming: CurrentAgent.Streaming,
+               streamingCallback: (sEvent) => { OnRuntimeEvent?.Invoke(sEvent); return Threading.ValueTaskCompleted; },
+               cancellationToken: cancellationToken);
+            }
+            else
+            {
+                Conversation = await CurrentAgent.RunAsync(
+               appendMessages: Conversation.Messages.ToList(),
+               streaming: CurrentAgent.Streaming,
+               streamingCallback: (sEvent) => { OnRuntimeEvent?.Invoke(sEvent); return Threading.ValueTaskCompleted; },
+               cancellationToken: cancellationToken);
             }
 
-            await Task.WhenAll(agentTask);
-
-            ChatMessage resultMessage = new ChatMessage(ChatMessageRoles.Assistant);
-            resultMessage.Parts = new List<ChatMessagePart>();
-            resultMessage.Parts.AddRange(bag.SelectMany(m => m.Parts ?? []));
-
-            this.Conversation.Add(resultMessage);
-
-            return resultMessage;
+            return GetLastMessage();
         }
 
         public void ClearMessages()
@@ -99,15 +88,15 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
 
         public List<ChatMessage> GetMessages()
         {
-            return Conversation;
+            return Conversation.Messages.ToList();
         }
 
         public ChatMessage GetLastMessage()
         {
-            return Conversation.LastOrDefault() ?? new ChatMessage(ChatMessageRoles.System, "No messages in conversation");
+            return Conversation.Messages.LastOrDefault() ?? new ChatMessage(ChatMessageRoles.System, "No messages in conversation");
         }
 
-        public async Task<List<HandoffAgent>> SelectCurrentAgent(ChatMessage? inputMessage)
+        public async Task SelectCurrentAgent(ChatMessage? inputMessage)
         {
             string instructions = @$"
 I need you to decide if you need to handoff the conversation to another agent.
@@ -122,7 +111,7 @@ Out of the following Agents which agent should we Handoff the conversation too a
 {string.Join("\n\n", CurrentAgent.HandoffAgents.Select(handoff => $" {{\"NAME\": \"{handoff.Id}\",\"Handoff Reason\":\"{handoff.Description}\"}}"))}
 
 ";
-            TornadoAgent handoffDecider = new TornadoAgent(CurrentAgent.Client, ChatModel.OpenAi.Gpt41.V41, instructions)
+            TornadoAgent handoffDecider = new TornadoAgent(CurrentAgent.Client, ChatModel.OpenAi.Gpt41.V41, instructions: instructions)
             {
                 Options =
         {
@@ -135,7 +124,7 @@ Out of the following Agents which agent should we Handoff the conversation too a
 
             if (Conversation != null)
             {
-                foreach (ChatMessage message in Conversation)
+                foreach (ChatMessage message in Conversation.Messages)
                 {
                     foreach (ChatMessagePart part in message.Parts ?? [])
                     {
@@ -147,15 +136,10 @@ Out of the following Agents which agent should we Handoff the conversation too a
                 }
             }
 
-            foreach (ChatMessagePart part in inputMessage.Parts ?? [])
-            {
-                if (part is not { Text: "" })
-                {
-                    prompt += $"{inputMessage.Role}: {part.Text}\n";
-                }
-            }
+            if(inputMessage != null)
+                prompt += $"{inputMessage.Role}: {inputMessage.Content}\n";
 
-            Conversation handoff = await TornadoRunner.RunAsync(handoffDecider, prompt, cancellationToken: cts.Token);
+            Conversation handoff = await handoffDecider.RunAsync(prompt, cancellationToken: cts.Token);
 
             List<HandoffAgent> handoffAgents = new List<HandoffAgent>();
             if (handoff.Messages.Count > 0 && handoff.Messages.Last().Content != null)
@@ -179,8 +163,6 @@ Out of the following Agents which agent should we Handoff the conversation too a
             }
 
             CurrentAgent = handoffAgents.FirstOrDefault() ?? CurrentAgent;
-
-            return handoffAgents;
         }
     }
 }

@@ -32,18 +32,24 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
         PlannerRunnable planner;
         ResearchRunnable researcher;
         ReportingRunnable reporter;
+        ExitRunnable exit;
 
         public ResearchAgentConfiguration() 
         {
+            //Create the Runnables
             planner = new PlannerRunnable();
             researcher = new ResearchRunnable();
-            reporter = new ReportingRunnable() { AllowDeadEnd = true };
+            reporter = new ReportingRunnable();
+            exit = new ExitRunnable() { AllowDeadEnd = true }; //Set deadend to disable reattempts and finish the execution
 
+            //Setup the orchestration flow
             planner.AddAdvancer((plan) => plan.items.Length > 0, researcher);
             researcher.AddAdvancer((research) => !string.IsNullOrEmpty(research), reporter);
+            reporter.AddAdvancer((report) => !string.IsNullOrEmpty(report.FinalReport), exit);
 
+            //Configure the Orchestration entry and exit points
             SetEntryRunnable(planner);
-            SetRunnableWithResult(reporter);
+            SetRunnableWithResult(exit);
         }
 
         public class PlannerRunnable : OrchestrationRunnable<ChatMessage, WebSearchPlan>
@@ -149,7 +155,7 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
             }
         }
 
-        public class ReportingRunnable : OrchestrationRunnable<string, ChatMessage>
+        public class ReportingRunnable : OrchestrationRunnable<string, ReportData>
         {
             OrchestrationAgent Agent;
 
@@ -173,7 +179,7 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
                     outputSchema:typeof(ReportData));
             }
 
-            public override async ValueTask<ChatMessage> Invoke(string research)
+            public override async ValueTask<ReportData> Invoke(string research)
             {
                 Conversation conv = await Agent.RunAsync(
                     appendMessages: new List<ChatMessage> { new ChatMessage(Code.ChatMessageRoles.User, research) }, 
@@ -190,7 +196,15 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
                     throw new Exception("No report generated");
                 }
 
-                return new ChatMessage(Code.ChatMessageRoles.Assistant, report?.ToString() ?? "Error Generating Report");
+                return report.Value;
+            }
+        }
+
+        public class ExitRunnable : OrchestrationRunnable<ReportData, ChatMessage> { 
+            public override ValueTask<ChatMessage> Invoke(ReportData input)
+            {
+                this.Orchestrator?.HasCompletedSuccessfully(); //Signal the orchestration has completed successfully
+                return ValueTask.FromResult(new ChatMessage(Code.ChatMessageRoles.Assistant, input.ToString()));
             }
         }
 

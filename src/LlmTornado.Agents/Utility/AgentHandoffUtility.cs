@@ -8,6 +8,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
+
 namespace LlmTornado.Agents
 {
     public class AgentHandoffUtility
@@ -47,39 +48,45 @@ namespace LlmTornado.Agents
 
         private static Dictionary<string, object> CreateHandoffObjectSchemaFormat(string[] agentNames)
         {
-            Dictionary<string, object> propSchema = new Dictionary<string, object>
-                    {
-                        { "reason", new Dictionary<string, object>
-                            {
-                                { "type", "string" },
-                                { "description", "Reason for the handoff" }
-                            }
-                        },
-                        { "agent", new Dictionary<string, object>
-                            {
-                                { "type", "string" },
-                                { "description", "The Agent to select" },
-                                { "enum",  agentNames }
-                            }
-                        }
-                    };
 
             string[] requiredProperties = ["reason", "agent"];
-            Dictionary<string, object> objectSchema = new Dictionary<string, object>
+            string[] arrayPropertiesRequired = ["Agents"];
+
+            Dictionary<string, object> arraySchema = new Dictionary<string, object>
             {
-                ["type"] = "object",
-                ["properties"] = new Dictionary<string, object> { { "agents", propSchema } }
-                ["required"] = requiredProperties,
-                ["additionalProperties"] = false
+                ["type"] = "array",
+                ["items"] = new Dictionary<string, object>
+                {
+                    ["type"] = "object",
+                    ["properties"] = new Dictionary<string, object>
+                    {
+                        ["reason"] = new Dictionary<string, object>
+                        {
+                            ["type"] = "string",
+                            ["description"] = "Reason for the handoff"
+                        },
+                        ["agent"] = new Dictionary<string, object>
+                        {
+                            ["type"] = "string",
+                            ["description"] = "The Agent to select",
+                            ["enum"] = agentNames
+                        }
+                    },
+                    ["required"] = requiredProperties,
+                    ["additionalProperties"] = false
+                }
             };
 
-            string[] requiredArrayProperties = ["agents"];
+            Dictionary<string, object> handoffSchema = new Dictionary<string, object>
+            {
+                ["Agents"] = arraySchema,
+            };
 
             return new Dictionary<string, object>
             {
-                ["type"] = "array",
-                ["items"] = objectSchema,
-                ["required"] = requiredArrayProperties,
+                ["type"] = "object",
+                ["properties"] = handoffSchema,
+                ["required"] = arrayPropertiesRequired,
                 ["additionalProperties"] = false
             };
         }
