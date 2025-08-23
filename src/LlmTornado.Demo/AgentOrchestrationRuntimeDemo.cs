@@ -214,10 +214,10 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
                     appendMessages: new List<ChatMessage> { new ChatMessage(Code.ChatMessageRoles.User, research) }, 
                     streaming: Agent.Streaming, 
                     runnerCallback: (sEvent) =>
-                {
-                    OnAgentRunnerEvent?.Invoke(sEvent);
-                    return ValueTask.CompletedTask;
-                });
+                    {
+                        OnAgentRunnerEvent?.Invoke(sEvent);
+                        return ValueTask.CompletedTask;
+                    });
 
                 ReportData? report = await conv.Messages.Last().Content?.SmartParseJsonAsync<ReportData>(Agent)!;
 

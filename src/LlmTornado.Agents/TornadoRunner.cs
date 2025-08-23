@@ -270,6 +270,7 @@ public class TornadoRunner
             {
                 //Call the streaming callback for completion
                 runnerCallback?.Invoke(new AgentRunnerStreamingEvent(new ModelStreamingCompletedEvent(1, message.Id.ToString())));
+                chat.AppendMessage(message);
                 return Threading.ValueTaskCompleted;
             },
             MessagePartHandler = (part) =>
