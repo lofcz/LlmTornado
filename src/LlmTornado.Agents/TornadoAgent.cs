@@ -131,6 +131,7 @@ public class TornadoAgent
 
         //Setup tools and agent tools
         AutoSetupTools(Tools);
+        GetMcpTools();
     }
 
     /// <summary>
@@ -157,8 +158,6 @@ public class TornadoAgent
                 GetTornadoTool(fun);
             }
         }
-
-        GetMcpTools();
     }
 
     /// <summary>
@@ -198,8 +197,10 @@ public class TornadoAgent
     {
         if (tool != null && server != null)
         {
+            Tool tornadoMcpTool = new Tool(new ToolFunction(tool.Name, tool.Description, tool.JsonSchema));
             McpTools.Add(tool.Name, server);
-            AddTornadoTool(new Tool(new ToolFunction(tool.Name, tool.Description, tool.JsonSchema)));
+            ToolList.Add(tool.Name, tornadoMcpTool);
+            Options.Tools?.Add(tornadoMcpTool);
         }
     }
 
@@ -233,6 +234,8 @@ public class TornadoAgent
 
     private void GetMcpTools()
     {
+        Options.Tools ??= new List<Tool>();
+
         foreach (MCPServer server in McpServers)
         {
             try
