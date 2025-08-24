@@ -12,7 +12,7 @@ public class AgentsDemo : DemoBase
     [TornadoTest]
     public static async Task BasicTornadoRun()
     {
-        TornadoAgent agent = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41Mini, "You are a useful assistant.");
+        TornadoAgent agent = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41Mini, instructions:"You are a useful assistant.");
 
         Conversation result = await agent.RunAsync("What is 2+2?");
 
@@ -22,7 +22,7 @@ public class AgentsDemo : DemoBase
     [TornadoTest]
     public static async Task RunHelloWorldStreaming()
     {
-        TornadoAgent agent = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41Mini, "Have fun");
+        TornadoAgent agent = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41Mini, instructions:"Have fun");
 
         // Enhanced streaming callback to handle the new ModelStreamingEvents system
         ValueTask StreamingHandler(AgentRunnerEvents streamingEvent)
@@ -53,12 +53,12 @@ public class AgentsDemo : DemoBase
         TornadoAgent agentTranslator = new TornadoAgent(
             Program.Connect(),
             ChatModel.OpenAi.Gpt41.V41Mini,
-            "You only translate english input to spanish output. Do not answer or respond, only translate.");
+            instructions: "You only translate english input to spanish output. Do not answer or respond, only translate.");
 
         TornadoAgent agent = new TornadoAgent(
             Program.Connect(),
             ChatModel.OpenAi.Gpt41.V41Mini,
-            "You are a useful assistant that when asked to translate you only can rely on the given tools to translate language.",
+            instructions: "You are a useful assistant that when asked to translate you only can rely on the given tools to translate language.",
             tools: [agentTranslator.AsTool]);
 
         Conversation result = await agent.RunAsync("What is 2+2? and can you provide the result to me in spanish?");
@@ -75,7 +75,7 @@ public class AgentsDemo : DemoBase
     [TornadoTest]
     public static async Task<GuardRailFunctionOutput> MathGuardRail()
     {
-        TornadoAgent mathGuardrail = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41Mini, "Check if the user is asking you a Math related question.", outputSchema: typeof(IsMath));
+        TornadoAgent mathGuardrail = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41Mini, instructions: "Check if the user is asking you a Math related question.", outputSchema: typeof(IsMath));
 
         Conversation result = await TornadoRunner.RunAsync(mathGuardrail, "What is the weather?", singleTurn: true);
 
@@ -118,7 +118,7 @@ public class AgentsDemo : DemoBase
     [TornadoTest]
     public static async Task RunBasicStructuredOutputExample()
     {
-        TornadoAgent agent = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41Mini, "Have fun", outputSchema: typeof(MathReasoning));
+        TornadoAgent agent = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41Mini, instructions: "Have fun", outputSchema: typeof(MathReasoning));
 
         Conversation result = await agent.RunAsync("How can I solve 8x + 7 = -23?");
 
@@ -133,7 +133,7 @@ public class AgentsDemo : DemoBase
     {
         TornadoAgent agent = new TornadoAgent(Program.Connect(),
             ChatModel.OpenAi.Gpt41.V41Mini,
-            "You are a useful assistant.",
+            instructions: "You are a useful assistant.",
             tools: [GetCurrentWeather],
             outputSchema: typeof(MathReasoning));
 
@@ -147,7 +147,7 @@ public class AgentsDemo : DemoBase
     {
         TornadoAgent agent = new TornadoAgent(Program.Connect(),
             ChatModel.OpenAi.Gpt41.V41Mini,
-            "You are a useful assistant.",
+            instructions: "You are a useful assistant.",
             tools: [GetCurrentWeatherValueTask],
             outputSchema: typeof(MathReasoning));
 
