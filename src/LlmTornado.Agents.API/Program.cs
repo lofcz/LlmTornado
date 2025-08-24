@@ -11,7 +11,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new() { Title = "LlmTornado Agents API", Version = "v1" });
-    c.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "LlmTornado.Agents.API.xml"), true);
+    // Note: XML comments file generation can be enabled in project properties if needed
 });
 
 // Add SignalR for streaming events
