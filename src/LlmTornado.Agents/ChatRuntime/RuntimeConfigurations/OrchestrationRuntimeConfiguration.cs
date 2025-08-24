@@ -22,6 +22,10 @@ public class OrchestrationRuntimeConfiguration : AgentOrchestration, IRuntimeCon
     {
         
     }
+    public virtual void OnRuntimeInitialized()
+    {
+
+    }
 
     public virtual async ValueTask<ChatMessage> AddToChatAsync(ChatMessage message, CancellationToken cancellationToken = default)
     {

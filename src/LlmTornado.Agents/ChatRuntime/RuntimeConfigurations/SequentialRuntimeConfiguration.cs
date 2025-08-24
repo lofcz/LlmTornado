@@ -74,7 +74,10 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
         {
             Agents = agents.ToList();
         }
+        public void OnRuntimeInitialized()
+        {
 
+        }
         public async ValueTask<ChatMessage> AddToChatAsync(ChatMessage message, CancellationToken cancellationToken = default)
         {
             bool isFirstAgent = true;

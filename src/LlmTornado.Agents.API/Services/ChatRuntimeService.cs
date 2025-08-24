@@ -52,6 +52,10 @@ public class ChatRuntimeService : IChatRuntimeService
             var configuration = new ResearchAgentConfiguration(new TornadoApi( Environment.GetEnvironmentVariable("OPENAI_API_KEY"), LLmProviders.OpenAi));
             var runtime = new ChatRuntime.ChatRuntime(configuration);
 
+            // CRITICAL FIX: Ensure the configuration gets the runtime reference 
+            // This is needed so that event handlers in the configuration can access Runtime.Id
+            configuration.Runtime = runtime;
+
             // Bridge runtime events to SignalR
             runtime.OnRuntimeEvent += async evt =>
             {
@@ -77,6 +81,10 @@ public class ChatRuntimeService : IChatRuntimeService
                     _logger.LogError(ex, "Failed broadcasting runtime event {Type} for {RuntimeId}", evt.EventType, runtime.Id);
                 }
             };
+
+            // CRITICAL FIX: Ensure the configuration's OnRuntimeEvent is connected to the runtime's OnRuntimeEvent
+            // This creates the proper event flow: Configuration -> Runtime -> SignalR/External handlers
+            configuration.OnRuntimeEvent = runtime.OnRuntimeEvent;
 
             _runtimes.TryAdd(runtime.Id, runtime);
             _logger.LogInformation("Created ChatRuntime with ID: {RuntimeId}", runtime.Id);
@@ -195,4 +203,9 @@ public class SimpleChatRuntimeConfiguration : IRuntimeConfiguration
     public void ClearMessages() => _messages.Clear();
     public List<ChatMessage> GetMessages() => new(_messages);
     public ChatMessage GetLastMessage() => _messages.LastOrDefault() ?? new ChatMessage(ChatMessageRoles.System, "No messages");
+
+    public void OnRuntimeInitialized()
+    {
+        
+    }
 }

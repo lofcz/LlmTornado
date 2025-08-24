@@ -159,7 +159,7 @@ public class ChatRuntimeController : ControllerBase
                     {
                         if (orchestrationEvent.OrchestrationEventData is OrchestrationEvent arEvent)
                         {
-                            Console.WriteLine($"[STREAMING DEBUG] Streaming Event: Type='{arEvent.Type}'");
+                            Console.WriteLine($"[STREAMING DEBUG] Orchestration Event: Type='{arEvent.Type}'");
                         }
                     }
                 }
@@ -169,23 +169,45 @@ public class ChatRuntimeController : ControllerBase
                 }
             }
 
-            runtime.OnRuntimeEvent = StreamHandler;
+            // CRITICAL FIX: Set the OnRuntimeEvent BEFORE creating the message and invoking
+            // This ensures that the event handler is wired up properly to the runtime configuration
+            var existingHandler = runtime.OnRuntimeEvent;
+            runtime.OnRuntimeEvent = async (evt) =>
+            {
+                // Call existing handler first (from ChatRuntimeService)
+                if (existingHandler != null)
+                {
+                    await existingHandler(evt);
+                }
+                // Then call our streaming handler
+                await StreamHandler(evt);
+            };
+
+            // Also ensure the runtime configuration has the event handler
+            if (runtime.RuntimeConfiguration != null)
+            {
+                runtime.RuntimeConfiguration.OnRuntimeEvent = runtime.OnRuntimeEvent;
+            }
 
             ChatMessage message = new ChatMessage(
                 request.Role == "user" ? ChatMessageRoles.User : ChatMessageRoles.Assistant,
                 request.Content);
 
-            // Invoke runtime; streaming deltas will be delivered via SignalR events already wired in the service.
+            // Invoke runtime; streaming deltas will be delivered via the event handlers we just set up
             ChatMessage final = await _runtimeService.SendMessageAsync(runtimeId, message);
         }
         catch (ArgumentException ex)
         {
+            Response.StatusCode = 404;
+            await Response.WriteAsync($"Runtime not found: {ex.Message}");
             return;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to stream message to runtime {RuntimeId}", runtimeId);
-             Console.WriteLine($"[STREAMING DEBUG] Agent error: {ex.Message}");
+            Console.WriteLine($"[STREAMING DEBUG] Agent error: {ex.Message}");
+            Response.StatusCode = 500;
+            await Response.WriteAsync($"Internal error: {ex.Message}");
             return;
         }
     }

@@ -48,4 +48,10 @@ public interface IRuntimeConfiguration
     /// Clears all messages from the conversation.
     /// </summary>
     public void ClearMessages();
+
+
+    /// <summary>
+    /// Clears all messages from the conversation.
+    /// </summary>
+    public void OnRuntimeInitialized();
 }

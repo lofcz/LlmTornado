@@ -85,5 +85,10 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
         {
             return Conversation.LastOrDefault() ?? new ChatMessage(ChatMessageRoles.System, "No messages yet.");
         }
+
+        public void OnRuntimeInitialized()
+        {
+            
+        }
     }
 }

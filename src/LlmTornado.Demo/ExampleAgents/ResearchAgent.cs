@@ -36,16 +36,27 @@ public class ResearchAgentConfiguration : OrchestrationRuntimeConfiguration
 
         //Configure the Orchestration entry and exit points
         SetEntryRunnable(planner);
-        SetRunnableWithResult(exit);
+        SetRunnableWithResult(exit);  
+    }
+
+    public override void OnRuntimeInitialized()
+    {
+        base.OnRuntimeInitialized();
+        planner.Orchestrator = this;
+        researcher.Orchestrator = this;
+        reporter.Orchestrator = this;
+        exit.Orchestrator = this;
 
         OnOrchestrationEvent += (e) =>
         {
-            this.OnRuntimeEvent?.Invoke(new ChatRuntimeOrchestrationEvent(e, Runtime.Id));
+            // Forward orchestration events to runtime
+            this.OnRuntimeEvent?.Invoke(new ChatRuntimeOrchestrationEvent(e, Runtime?.Id ?? string.Empty));
         };
 
         reporter.OnAgentRunnerEvent += (sEvent) =>
         {
-            this.OnRuntimeEvent?.Invoke(new ChatRuntimeAgentRunnerEvents(sEvent, Runtime.Id));
+            // Forward agent runner events (including streaming) to runtime
+            this.OnRuntimeEvent?.Invoke(new ChatRuntimeAgentRunnerEvents(sEvent, Runtime?.Id ?? string.Empty));
         };
     }
 
