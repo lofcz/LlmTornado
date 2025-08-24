@@ -25,16 +25,16 @@ public class AgentsDemo : DemoBase
         TornadoAgent agent = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41Mini, instructions:"Have fun");
 
         // Enhanced streaming callback to handle the new ModelStreamingEvents system
-        ValueTask StreamingHandler(AgentRunnerEvents streamingEvent)
+        ValueTask runEventHandler(AgentRunnerEvents runEvent)
         {
-            switch (streamingEvent.EventType)
+            switch (runEvent.EventType)
             {
                 case AgentRunnerEventTypes.Streaming:
-                    if(streamingEvent is AgentRunnerStreamingEvent outputEvent)
+                    if (runEvent is AgentRunnerStreamingEvent streamingEvent)
                     {
-                        if (outputEvent.ModelStreamingEvent is ModelStreamingOutputTextDeltaEvent deltaEvent)
+                        if (streamingEvent.ModelStreamingEvent is ModelStreamingOutputTextDeltaEvent deltaTextEvent)
                         {
-                            Console.Write(deltaEvent.DeltaText); // Write the text delta directly
+                            Console.Write(deltaTextEvent.DeltaText); // Write the text delta directly
                         }
                     }
                     break;
@@ -44,7 +44,7 @@ public class AgentsDemo : DemoBase
             return ValueTask.CompletedTask;
         }
 
-        Conversation result = await agent.RunAsync("Hello Streaming World!", streaming: true, onAgentRunnerEvent: StreamingHandler);
+        Conversation result = await agent.RunAsync("Hello Streaming World!", streaming: true, onAgentRunnerEvent: runEventHandler);
     }
 
     [TornadoTest]
@@ -72,16 +72,29 @@ public class AgentsDemo : DemoBase
         public bool IsMathRequest { get; set; }
     }
     
-    [TornadoTest]
-    public static async Task<GuardRailFunctionOutput> MathGuardRail()
+    public static async ValueTask<GuardRailFunctionOutput> MathGuardRail(string? input = "")
     {
         TornadoAgent mathGuardrail = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41Mini, instructions: "Check if the user is asking you a Math related question.", outputSchema: typeof(IsMath));
 
-        Conversation result = await TornadoRunner.RunAsync(mathGuardrail, "What is the weather?", singleTurn: true);
+        Conversation result = await TornadoRunner.RunAsync(mathGuardrail, input);
 
         IsMath? isMath = result.Messages.Last().Content.JsonDecode<IsMath>();
 
         return new GuardRailFunctionOutput(isMath?.Reasoning ?? "", !isMath?.IsMathRequest ?? false);
+    }
+
+
+    [TornadoTest]
+    public static async Task BasicGuardRailExample()
+    {
+        TornadoAgent agent= new TornadoAgent(
+            Program.Connect(),
+            ChatModel.OpenAi.Gpt41.V41Mini,
+            instructions: "You are a useful agent");
+
+        Conversation result = await agent.RunAsync("What is the weather?", inputGuardRailFunction: MathGuardRail);
+
+        Console.WriteLine(result.Messages.Last().Content);
     }
 
     [Description("Explain the solution steps to a math problem")]
@@ -122,9 +135,8 @@ public class AgentsDemo : DemoBase
 
         Conversation result = await agent.RunAsync("How can I solve 8x + 7 = -23?");
 
-        //The easy way
-        //Helper function to avoid doing the hard way
         MathReasoning mathResult = result.Messages.Last().Content.JsonDecode<MathReasoning>();
+
         mathResult.ConsoleWrite();
     }
 
@@ -143,10 +155,30 @@ public class AgentsDemo : DemoBase
     }
 
     [TornadoTest]
+    public static async Task RunMCPToolExample()
+    {
+        string serverPath = Path.GetFullPath(Path.Join("..", "..", "..", "..", "LlmTornado.Mcp.Sample.Server"));
+
+        var mcpServer = new MCPServer("weather-tool", serverPath);
+
+        TornadoAgent agent = new TornadoAgent(
+            Program.Connect(),
+            model: ChatModel.OpenAi.Gpt41.V41Mini,
+            instructions: "You are a useful assistant.",
+            mcpServers: [mcpServer]
+                );
+
+        Conversation result = await agent.RunAsync("What is the weather in boston?");
+
+        Console.WriteLine(result.Messages.Last().Content);
+    }
+
+    [TornadoTest]
     public static async Task RunBasicTornadoAgentToolValueTaskUse()
     {
-        TornadoAgent agent = new TornadoAgent(Program.Connect(),
-            ChatModel.OpenAi.Gpt41.V41Mini,
+        TornadoAgent agent = new TornadoAgent(
+            Program.Connect(),
+            model:ChatModel.OpenAi.Gpt41.V41Mini,
             instructions: "You are a useful assistant.",
             tools: [GetCurrentWeatherValueTask],
             outputSchema: typeof(MathReasoning));

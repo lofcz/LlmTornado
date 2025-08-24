@@ -209,6 +209,11 @@ Out of the following Agents which agent should we Handoff the conversation too a
 
         private async Task SelectCurrentAgent(ChatMessage? inputMessage)
         {
+            if(CurrentAgent.HandoffAgents.Count == 0)
+            {
+                return; // No handoff agents available, skip selection
+            }
+
             TornadoAgent handoffDecider = CreateHandoffDecider();
 
             string prompt = GenerateHandoffPrompt(inputMessage);
@@ -217,7 +222,15 @@ Out of the following Agents which agent should we Handoff the conversation too a
 
             List<HandoffAgent> handoffAgents = CheckHandoffDeciderResult(handoffResult);
 
-            CurrentAgent = handoffAgents.FirstOrDefault() ?? CurrentAgent;
+            HandoffAgent? lastAgent = CurrentAgent;
+
+            CurrentAgent = handoffAgents.FirstOrDefault() ?? lastAgent;
+
+            //If new agent selected, run the handoff selector again
+            if (lastAgent.Id != CurrentAgent.Id)
+            {
+                await SelectCurrentAgent(inputMessage);
+            }
         }
     }
 }
