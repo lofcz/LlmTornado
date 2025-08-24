@@ -12,6 +12,7 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
 {
     public class ConcurrentRuntimeConfiguration : IRuntimeConfiguration
     {
+        public ChatRuntime Runtime { get; set; }
         public CancellationTokenSource cts { get; set; }
         public List<ChatMessage> Conversation { get; set; } = new List<ChatMessage>();
         public List<TornadoAgent> Agents { get; set; } = new List<TornadoAgent>();
@@ -64,7 +65,7 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
             Conversation synthesizedResult =  await finalAgent.RunAsync(
                 appendMessages: this.Conversation, 
                 streaming:Streaming, 
-                onAgentRunnerEvent: (sEvent) => { OnRuntimeEvent?.Invoke(new ChatRuntimeAgentRunnerEvents(sEvent)); return Threading.ValueTaskCompleted; }, 
+                onAgentRunnerEvent: (sEvent) => { OnRuntimeEvent?.Invoke(new ChatRuntimeAgentRunnerEvents(sEvent, Runtime.Id)); return Threading.ValueTaskCompleted; }, 
                 cancellationToken: cancellationToken);
 
             return synthesizedResult.Messages.Last();

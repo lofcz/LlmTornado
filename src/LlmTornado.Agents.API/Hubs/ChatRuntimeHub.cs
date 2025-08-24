@@ -26,8 +26,7 @@ public class ChatRuntimeHub : Hub
     public async Task SubscribeToRuntime(string runtimeId)
     {
         await Groups.AddToGroupAsync(Context.ConnectionId, $"runtime-{runtimeId}");
-        _logger.LogInformation("Client {ConnectionId} subscribed to runtime {RuntimeId}", 
-            Context.ConnectionId, runtimeId);
+        _logger.LogInformation("Client {ConnectionId} subscribed to runtime {RuntimeId}", Context.ConnectionId, runtimeId);
     }
 
     /// <summary>
@@ -37,8 +36,7 @@ public class ChatRuntimeHub : Hub
     public async Task UnsubscribeFromRuntime(string runtimeId)
     {
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"runtime-{runtimeId}");
-        _logger.LogInformation("Client {ConnectionId} unsubscribed from runtime {RuntimeId}", 
-            Context.ConnectionId, runtimeId);
+        _logger.LogInformation("Client {ConnectionId} unsubscribed from runtime {RuntimeId}", Context.ConnectionId, runtimeId);
     }
 
     /// <summary>
@@ -81,6 +79,7 @@ public class SignalRStreamingEventService : IStreamingEventService
     {
         try
         {
+            // Set SSE headers
             await _hubContext.Clients.Group($"runtime-{runtimeId}")
                 .SendAsync("ReceiveStreamingEvent", eventResponse);
             

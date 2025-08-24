@@ -48,7 +48,8 @@ public class ChatRuntime
     {
         RuntimeConfiguration = configuration;
         RuntimeConfiguration.cts = cts;
-        configuration.OnRuntimeEvent += (evt) => { OnRuntimeEvent?.Invoke(evt); return Threading.ValueTaskCompleted; };
+        RuntimeConfiguration.Runtime = this;
+        OnRuntimeEvent = configuration.OnRuntimeEvent;
     }
 
 
@@ -76,7 +77,7 @@ public class ChatRuntime
     public void CancelExecution()
     {
         cts.Cancel(); // Signal cancellation to all state machines
-        OnRuntimeEvent?.Invoke(new ChatRuntimeCancelledEvent());
+        OnRuntimeEvent?.Invoke(new ChatRuntimeCancelledEvent(this.Id));
     }
 
     /// <summary>
@@ -88,13 +89,13 @@ public class ChatRuntime
     public async Task<ChatMessage> InvokeAsync(ChatMessage message)
     {
         // Invoke the StartingExecution event to signal the beginning of the execution process
-        OnRuntimeEvent?.Invoke(new ChatRuntimeStartedEvent());
+        OnRuntimeEvent?.Invoke(new ChatRuntimeStartedEvent(this.Id));
         
         ResetCancellationTokenSource();
 
         await RuntimeConfiguration.AddToChatAsync(message);
 
-        OnRuntimeEvent?.Invoke(new ChatRuntimeCompletedEvent());
+        OnRuntimeEvent?.Invoke(new ChatRuntimeCompletedEvent(this.Id));
 
         return RuntimeConfiguration.GetMessages().Last();
     }

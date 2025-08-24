@@ -66,6 +66,7 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
     /// </summary>
     public class HandoffRuntimeConfiguration : IRuntimeConfiguration
     {
+        public ChatRuntime Runtime { get; set; }
         public CancellationTokenSource cts { get; set; }
         public Func<ChatRuntimeEvents, ValueTask>? OnRuntimeEvent { get; set; }
 
@@ -97,7 +98,7 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
                 Conversation = await CurrentAgent.RunAsync(
                appendMessages: [message],
                streaming: CurrentAgent.Streaming,
-               onAgentRunnerEvent: (sEvent) => { OnRuntimeEvent?.Invoke(new ChatRuntimeAgentRunnerEvents(sEvent)); return Threading.ValueTaskCompleted; },
+               onAgentRunnerEvent: (sEvent) => { OnRuntimeEvent?.Invoke(new ChatRuntimeAgentRunnerEvents(sEvent, Runtime.Id)); return Threading.ValueTaskCompleted; },
                cancellationToken: cancellationToken);
             }
             else
@@ -105,7 +106,7 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
                 Conversation = await CurrentAgent.RunAsync(
                appendMessages: Conversation.Messages.ToList(),
                streaming: CurrentAgent.Streaming,
-               onAgentRunnerEvent: (sEvent) => { OnRuntimeEvent?.Invoke(new ChatRuntimeAgentRunnerEvents(sEvent)); return Threading.ValueTaskCompleted; },
+               onAgentRunnerEvent: (sEvent) => { OnRuntimeEvent?.Invoke(new ChatRuntimeAgentRunnerEvents(sEvent, Runtime.Id)); return Threading.ValueTaskCompleted; },
                cancellationToken: cancellationToken);
             }
 

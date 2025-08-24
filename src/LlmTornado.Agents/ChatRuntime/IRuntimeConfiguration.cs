@@ -13,6 +13,7 @@ namespace LlmTornado.Agents.ChatRuntime;
 /// </summary>
 public interface IRuntimeConfiguration
 {
+    public ChatRuntime Runtime { get; set; }
     /// <summary>
     /// Add new message to the chat conversation.
     /// </summary>

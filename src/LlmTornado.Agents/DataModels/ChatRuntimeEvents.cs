@@ -59,7 +59,16 @@ public enum ChatRuntimeEventTypes
 /// </summary>
 public class ChatRuntimeEvents : EventArgs
 {
+    /// <summary>
+    /// Runtime ID that generated the event
+    /// </summary>
+    public string RuntimeId { get; set; } = string.Empty;
     public ChatRuntimeEventTypes EventType { get; set; } = ChatRuntimeEventTypes.Unknown;
+
+    public ChatRuntimeEvents(string runtimeId)
+    {
+        RuntimeId = runtimeId;
+    }   
 }
 
 /// <summary>
@@ -67,7 +76,7 @@ public class ChatRuntimeEvents : EventArgs
 /// </summary>
 public class  ChatRuntimeStartedEvent : ChatRuntimeEvents
 {
-    public ChatRuntimeStartedEvent()
+    public ChatRuntimeStartedEvent(string runtimeId) : base(runtimeId)
     {
         EventType = ChatRuntimeEventTypes.Started;
     }
@@ -78,7 +87,7 @@ public class  ChatRuntimeStartedEvent : ChatRuntimeEvents
 /// </summary>
 public class ChatRuntimeCompletedEvent : ChatRuntimeEvents
 {
-    public ChatRuntimeCompletedEvent()
+    public ChatRuntimeCompletedEvent(string runtimeId) : base(runtimeId)
     {
         EventType = ChatRuntimeEventTypes.Completed;
     }
@@ -92,7 +101,7 @@ public class ChatRuntimeCompletedEvent : ChatRuntimeEvents
 public class ChatRuntimeErrorEvent : ChatRuntimeEvents
 {
     public Exception Exception { get; set; }
-    public ChatRuntimeErrorEvent(Exception ex)
+    public ChatRuntimeErrorEvent(Exception ex, string runtimeId) : base(runtimeId)
     {
         Exception = ex;
         EventType = ChatRuntimeEventTypes.Error;
@@ -104,7 +113,7 @@ public class ChatRuntimeErrorEvent : ChatRuntimeEvents
 /// </summary>
 public class ChatRuntimeCancelledEvent : ChatRuntimeEvents
 {
-    public ChatRuntimeCancelledEvent()
+    public ChatRuntimeCancelledEvent(string runtimeId) : base(runtimeId)
     {
         EventType = ChatRuntimeEventTypes.Cancelled;
     }
@@ -123,7 +132,7 @@ public class ChatRuntimeInvokedEvent : ChatRuntimeEvents
     /// 
     /// </summary>
     /// <param name="message">Message that was requested to be processed.</param>
-    public ChatRuntimeInvokedEvent(ChatMessage message)
+    public ChatRuntimeInvokedEvent(ChatMessage message, string runtimeId) : base(runtimeId)
     {
         Message = message;
         EventType = ChatRuntimeEventTypes.Invoked;
@@ -160,7 +169,7 @@ public class ChatRuntimeOrchestrationEvent : ChatRuntimeEvents
     /// Initializes a new instance of the <see cref="ChatRuntimeOrchestrationEvent"/> class.
     /// </summary>
     /// <param name="orchestrationEvent">Orchestration Event</param>
-    public ChatRuntimeOrchestrationEvent(OrchestrationEvent orchestrationEvent)
+    public ChatRuntimeOrchestrationEvent(OrchestrationEvent orchestrationEvent, string runtimeId) : base(runtimeId)
     {
         OrchestrationEventData = orchestrationEvent;
         EventType = ChatRuntimeEventTypes.Orchestration;
@@ -177,7 +186,7 @@ public class  ChatRuntimeAgentRunnerEvents : ChatRuntimeEvents
     /// 
     /// </summary>
     /// <param name="agentRunnerEvent">Agent Runner Event</param>
-    public ChatRuntimeAgentRunnerEvents(AgentRunnerEvents agentRunnerEvent)
+    public ChatRuntimeAgentRunnerEvents(AgentRunnerEvents agentRunnerEvent, string runtimeId) : base(runtimeId)
     {
         AgentRunnerEvent = agentRunnerEvent;
         EventType = ChatRuntimeEventTypes.AgentRunner;

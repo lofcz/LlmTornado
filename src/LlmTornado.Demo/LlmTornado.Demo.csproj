@@ -15,7 +15,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <None Update="Static\**" CopyToOutputDirectory="PreserveNewest"/>
+        <None Update="Static\**" CopyToOutputDirectory="PreserveNewest" />
         <None Update="Static\Files\sample.pdf">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>

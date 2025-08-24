@@ -1,11 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
 using LlmTornado.Agents.API.Models;
 using LlmTornado.Agents.API.Services;
-using LlmTornado.Agents.API.Hubs;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Code;
 using LlmTornado.Agents.DataModels;
+using LlmTornado.Agents.ChatRuntime.Orchestration;
 
 namespace LlmTornado.Agents.API.Controllers;
 
@@ -17,16 +17,13 @@ namespace LlmTornado.Agents.API.Controllers;
 public class ChatRuntimeController : ControllerBase
 {
     private readonly IChatRuntimeService _runtimeService;
-    private readonly IStreamingEventService _streamingEventService;
     private readonly ILogger<ChatRuntimeController> _logger;
 
     public ChatRuntimeController(
         IChatRuntimeService runtimeService,
-        IStreamingEventService streamingEventService,
         ILogger<ChatRuntimeController> logger)
     {
         _runtimeService = runtimeService;
-        _streamingEventService = streamingEventService;
         _logger = logger;
     }
 
@@ -40,20 +37,13 @@ public class ChatRuntimeController : ControllerBase
     {
         try
         {
-            var runtimeId = await _runtimeService.CreateRuntimeAsync(
+            string runtimeId = await _runtimeService.CreateRuntimeAsync(
                 request.ConfigurationType,
                 request.AgentName,
                 request.Instructions,
                 request.EnableStreaming);
 
-            var response = new CreateChatRuntimeResponse
-            {
-                RuntimeId = runtimeId,
-                Status = "created"
-            };
-
-            _logger.LogInformation("Created runtime {RuntimeId} for agent {AgentName}", runtimeId, request.AgentName);
-            return Ok(response);
+            return Ok(new CreateChatRuntimeResponse { RuntimeId = runtimeId, Status = "created" });
         }
         catch (Exception ex)
         {
@@ -63,63 +53,32 @@ public class ChatRuntimeController : ControllerBase
     }
 
     /// <summary>
-    /// Sends a message to a specific ChatRuntime
+    /// Non-streaming message endpoint. Returns only the final assistant response.
     /// </summary>
-    /// <param name="runtimeId">Runtime identifier</param>
-    /// <param name="request">Message request</param>
-    /// <returns>Message response</returns>
-    [HttpPost("{runtimeId}/message")]
+    [HttpPost("{runtimeId}/message")] // legacy non-streaming path
     public async Task<ActionResult<SendMessageResponse>> SendMessage(string runtimeId, [FromBody] SendMessageRequest request)
     {
         try
         {
             var runtime = _runtimeService.GetRuntime(runtimeId);
-            if (runtime == null)
+            if (runtime is null)
             {
                 return NotFound(new { error = $"Runtime {runtimeId} not found" });
             }
 
-            // Create a chat message from the request
-            var message = new ChatMessage(
+            ChatMessage message = new ChatMessage(
                 request.Role == "user" ? ChatMessageRoles.User : ChatMessageRoles.Assistant,
                 request.Content);
 
-            // Send streaming event for message received
-            if (request.EnableStreaming ?? true)
-            {
-                await _streamingEventService.BroadcastEventAsync(runtimeId, new StreamingEventResponse
-                {
-                    EventType = "MessageReceived",
-                    SequenceNumber = 1,
-                    Data = new { content = request.Content, role = request.Role },
-                    RuntimeId = runtimeId
-                });
-            }
+            ChatMessage responseMessage = await _runtimeService.SendMessageAsync(runtimeId, message);
 
-            // Send the message to the runtime
-            var responseMessage = await _runtimeService.SendMessageAsync(runtimeId, message);
-
-            // Send streaming event for response
-            if (request.EnableStreaming ?? true)
-            {
-                await _streamingEventService.BroadcastEventAsync(runtimeId, new StreamingEventResponse
-                {
-                    EventType = "MessageResponse",
-                    SequenceNumber = 2,
-                    Data = new { content = responseMessage.Content, role = responseMessage.Role },
-                    RuntimeId = runtimeId
-                });
-            }
-
-            var response = new SendMessageResponse
+            return Ok(new SendMessageResponse
             {
                 Content = responseMessage.Content ?? string.Empty,
                 Role = responseMessage.Role?.ToString() ?? "assistant",
                 RequestId = Guid.NewGuid().ToString(),
-                IsStreamed = request.EnableStreaming ?? true
-            };
-
-            return Ok(response);
+                IsStreamed = false
+            });
         }
         catch (ArgumentException ex)
         {
@@ -133,6 +92,181 @@ public class ChatRuntimeController : ControllerBase
     }
 
     /// <summary>
+    /// Streaming message endpoint. Clients should subscribe to SignalR hub /hub/chatruntime and group runtime-{runtimeId}.
+    /// This endpoint triggers processing and returns acknowledgement plus (optionally) final response when available.
+    /// </summary>
+    [HttpPost("{runtimeId}/stream")] // streaming path
+    public async Task StreamMessage(string runtimeId, [FromBody] SendMessageRequest request)
+    {
+        try
+        {
+            var runtime = _runtimeService.GetRuntime(runtimeId);
+            if (runtime is null)
+            {
+                Response.StatusCode = 404;
+                await Response.WriteAsync("Agent not found");
+                return;
+            }
+
+            Response.Headers.Append("Content-Type", "text/event-stream");
+            Response.Headers.Append("Cache-Control", "no-cache");
+            Response.Headers.Append("Connection", "keep-alive");
+            Response.Headers.Append("Access-Control-Allow-Origin", "*");
+            Response.Headers.Append("X-Accel-Buffering", "no"); // Disable nginx buffering
+
+            // Disable response buffering for real-time streaming
+            var feature = HttpContext.Features.Get<Microsoft.AspNetCore.Http.Features.IHttpResponseBodyFeature>();
+            if (feature != null)
+            {
+                feature.DisableBuffering();
+            }
+
+            // Use a thread-safe queue for streaming messages
+            var messageQueue = new System.Collections.Concurrent.ConcurrentQueue<ModelStreamingEvents>();
+            var streamingComplete = false;
+            var streamingError = false;
+            var errorMessage = "";
+            var eventsReceived = 0;
+
+            // Enhanced streaming handler to handle different event types
+            async ValueTask StreamHandler(ChatRuntimeEvents runnerEvent)
+            {
+                try
+                {
+                    eventsReceived++;
+                    Console.WriteLine($"[STREAMING DEBUG] Event #{eventsReceived}: Type='{runnerEvent.EventType}''");
+                    if(runnerEvent is ChatRuntimeAgentRunnerEvents rEvent)
+                    {
+                        if (rEvent.AgentRunnerEvent is AgentRunnerStreamingEvent arEvent)
+                        {
+                            var streamingEvent = arEvent.ModelStreamingEvent;
+                            Console.WriteLine($"[STREAMING DEBUG] Streaming Event: Type='{streamingEvent.EventType}'");
+                            if (streamingEvent.EventType == ModelStreamingEventType.Completed)
+                            {
+                                streamingComplete = true;
+                            }
+                            else if (streamingEvent.EventType == ModelStreamingEventType.Error && streamingEvent is ModelStreamingErrorEvent errorEvent)
+                            {
+                                streamingError = true;
+                                errorMessage = errorEvent.ErrorMessage ?? "Unknown error";
+                            }
+                            // Queue the event for async processing
+                            //messageQueue.Enqueue(streamingEvent);
+                            await ProcessStreamingEvent(streamingEvent);
+                        }
+                    }
+                    else if (runnerEvent is ChatRuntimeOrchestrationEvent orchestrationEvent)
+                    {
+                        if (orchestrationEvent.OrchestrationEventData is OrchestrationEvent arEvent)
+                        {
+                            Console.WriteLine($"[STREAMING DEBUG] Streaming Event: Type='{arEvent.Type}'");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[STREAMING DEBUG] Error queuing streaming event: {ex.Message}");
+                }
+            }
+
+            runtime.OnRuntimeEvent = StreamHandler;
+
+            ChatMessage message = new ChatMessage(
+                request.Role == "user" ? ChatMessageRoles.User : ChatMessageRoles.Assistant,
+                request.Content);
+
+            // Invoke runtime; streaming deltas will be delivered via SignalR events already wired in the service.
+            ChatMessage final = await _runtimeService.SendMessageAsync(runtimeId, message);
+        }
+        catch (ArgumentException ex)
+        {
+            return;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to stream message to runtime {RuntimeId}", runtimeId);
+             Console.WriteLine($"[STREAMING DEBUG] Agent error: {ex.Message}");
+            return;
+        }
+    }
+    // Helper method to process different streaming event types
+    async Task ProcessStreamingEvent(ModelStreamingEvents streamingEvent)
+    {
+        switch (streamingEvent.EventType)
+        {
+            case ModelStreamingEventType.Created:
+                await Response.WriteAsync($"event: created\n");
+                await Response.WriteAsync($"data: {{\"sequenceId\": {streamingEvent.SequenceId}, \"responseId\": \"{streamingEvent.ResponseId}\"}}\n\n");
+                break;
+
+            case ModelStreamingEventType.OutputTextDelta:
+                if (streamingEvent is ModelStreamingOutputTextDeltaEvent deltaEvent)
+                {
+                    await Response.WriteAsync($"event: delta\n");
+                    await Response.WriteAsync($"data: {{\n");
+                    await Response.WriteAsync($"data: \"sequenceId\": {deltaEvent.SequenceId},\n");
+                    await Response.WriteAsync($"data: \"outputIndex\": {deltaEvent.OutputIndex},\n");
+                    await Response.WriteAsync($"data: \"contentIndex\": {deltaEvent.ContentPartIndex},\n");
+                    await Response.WriteAsync($"data: \"text\": \"{EscapeJsonString(deltaEvent.DeltaText ?? "")}\",\n");
+                    await Response.WriteAsync($"data: \"itemId\": \"{deltaEvent.ItemId ?? ""}\"\n");
+                    await Response.WriteAsync($"data: }}\n\n");
+                    Console.WriteLine($"[STREAMING DEBUG] Sent delta: '{deltaEvent.DeltaText}'");
+                }
+                break;
+
+            case ModelStreamingEventType.Completed:
+                await Response.WriteAsync($"event: stream_complete\n");
+                await Response.WriteAsync($"data: {{\"sequenceId\": {streamingEvent.SequenceId}, \"responseId\": \"{streamingEvent.ResponseId}\"}}\n\n");
+                break;
+
+            case ModelStreamingEventType.Error:
+                if (streamingEvent is ModelStreamingErrorEvent errorEvent)
+                {
+                    await Response.WriteAsync($"event: stream_error\n");
+                    await Response.WriteAsync($"data: {{\n");
+                    await Response.WriteAsync($"data: \"sequenceId\": {errorEvent.SequenceId},\n");
+                    await Response.WriteAsync($"data: \"error\": \"{EscapeJsonString(errorEvent.ErrorMessage ?? "")}\",\n");
+                    await Response.WriteAsync($"data: \"code\": \"{EscapeJsonString(errorEvent.ErrorCode ?? "")}\"\n");
+                    await Response.WriteAsync($"data: }}\n\n");
+                }
+                break;
+
+            case ModelStreamingEventType.ReasoningPartAdded:
+                if (streamingEvent is ModelStreamingReasoningPartAddedEvent reasoningEvent)
+                {
+                    await Response.WriteAsync($"event: reasoning\n");
+                    await Response.WriteAsync($"data: {{\n");
+                    await Response.WriteAsync($"data: \"sequenceId\": {reasoningEvent.SequenceId},\n");
+                    await Response.WriteAsync($"data: \"outputIndex\": {reasoningEvent.OutputIndex},\n");
+                    await Response.WriteAsync($"data: \"text\": \"{EscapeJsonString(reasoningEvent.DeltaText ?? "")}\",\n");
+                    await Response.WriteAsync($"data: \"itemId\": \"{reasoningEvent.ItemId}\"\n");
+                    await Response.WriteAsync($"data: }}\n\n");
+                }
+                break;
+
+            default:
+                // For any other event types, send a generic event
+                await Response.WriteAsync($"event: {streamingEvent.EventType.ToString().ToLowerInvariant()}\n");
+                await Response.WriteAsync($"data: {{\"sequenceId\": {streamingEvent.SequenceId}, \"status\": \"{streamingEvent.Status}\"}}\n\n");
+                break;
+        }
+
+        await Response.Body.FlushAsync();
+    }
+
+    private static string EscapeJsonString(string s)
+    {
+        if (string.IsNullOrEmpty(s))
+            return string.Empty;
+
+        return s.Replace("\\", "\\\\")
+            .Replace("\"", "\\\"")
+            .Replace("\n", "\\n")
+            .Replace("\r", "\\r")
+            .Replace("\t", "\\t");
+    }
+
+    /// <summary>
     /// Gets the status of a specific ChatRuntime
     /// </summary>
     /// <param name="runtimeId">Runtime identifier</param>
@@ -143,20 +277,18 @@ public class ChatRuntimeController : ControllerBase
         try
         {
             var runtime = _runtimeService.GetRuntime(runtimeId);
-            if (runtime == null)
+            if (runtime is null)
             {
                 return NotFound(new { error = $"Runtime {runtimeId} not found" });
             }
 
-            var response = new RuntimeStatusResponse
+            return Ok(new RuntimeStatusResponse
             {
                 RuntimeId = runtimeId,
                 Status = "active",
-                StreamingEnabled = true,
+                StreamingEnabled = true, // runtime config may expose this later
                 MessageCount = runtime.RuntimeConfiguration.GetMessages().Count
-            };
-
-            return Ok(response);
+            });
         }
         catch (Exception ex)
         {
@@ -174,8 +306,7 @@ public class ChatRuntimeController : ControllerBase
     {
         try
         {
-            var runtimeIds = _runtimeService.GetActiveRuntimeIds();
-            return Ok(runtimeIds);
+            return Ok(_runtimeService.GetActiveRuntimeIds());
         }
         catch (Exception ex)
         {
@@ -194,12 +325,10 @@ public class ChatRuntimeController : ControllerBase
     {
         try
         {
-            var success = _runtimeService.RemoveRuntime(runtimeId);
-            if (!success)
+            if (!_runtimeService.RemoveRuntime(runtimeId))
             {
                 return NotFound(new { error = $"Runtime {runtimeId} not found" });
             }
-
             return NoContent();
         }
         catch (Exception ex)
@@ -220,22 +349,11 @@ public class ChatRuntimeController : ControllerBase
         try
         {
             var runtime = _runtimeService.GetRuntime(runtimeId);
-            if (runtime == null)
+            if (runtime is null)
             {
                 return NotFound(new { error = $"Runtime {runtimeId} not found" });
             }
-
             runtime.CancelExecution();
-            
-            // Send cancellation event
-            _streamingEventService.BroadcastEventAsync(runtimeId, new StreamingEventResponse
-            {
-                EventType = "RuntimeCancelled",
-                SequenceNumber = 0,
-                Data = new { message = "Runtime execution cancelled" },
-                RuntimeId = runtimeId
-            });
-
             return Ok(new { message = "Runtime execution cancelled" });
         }
         catch (Exception ex)

@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\LlmTornado.Agents\LlmTornado.Agents.csproj" />
+    <ProjectReference Include="..\LlmTornado.Demo\LlmTornado.Demo.csproj" />
   </ItemGroup>
 
 </Project>

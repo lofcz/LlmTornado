@@ -1,9 +1,13 @@
+using LlmTornado.Agents.API.Hubs; // added for IStreamingEventService
 using LlmTornado.Agents.ChatRuntime;
 using LlmTornado.Agents.DataModels;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Code;
+using LlmTornado.Demo.ExampleAgents;
+using Microsoft.AspNetCore.SignalR;
 using System.Collections.Concurrent;
+using static LlmTornado.Demo.AgentOrchestrationRuntimeDemo;
 
 namespace LlmTornado.Agents.API.Services;
 
@@ -12,30 +16,13 @@ namespace LlmTornado.Agents.API.Services;
 /// </summary>
 public interface IChatRuntimeService
 {
-    /// <summary>
-    /// Creates a new ChatRuntime instance
-    /// </summary>
     Task<string> CreateRuntimeAsync(string configurationType, string agentName, string instructions, bool enableStreaming);
-    
-    /// <summary>
-    /// Gets a ChatRuntime instance by ID
-    /// </summary>
     ChatRuntime.ChatRuntime? GetRuntime(string runtimeId);
-    
-    /// <summary>
-    /// Removes a ChatRuntime instance
-    /// </summary>
     bool RemoveRuntime(string runtimeId);
-    
-    /// <summary>
-    /// Gets all active runtime IDs
-    /// </summary>
     IEnumerable<string> GetActiveRuntimeIds();
-    
-    /// <summary>
-    /// Sends a message to a specific runtime
-    /// </summary>
     Task<ChatMessage> SendMessageAsync(string runtimeId, ChatMessage message);
+
+
 }
 
 /// <summary>
@@ -45,27 +32,54 @@ public class ChatRuntimeService : IChatRuntimeService
 {
     private readonly ConcurrentDictionary<string, ChatRuntime.ChatRuntime> _runtimes = new();
     private readonly ILogger<ChatRuntimeService> _logger;
+    private readonly IStreamingEventService _streamingEvents;
+    private readonly ConcurrentDictionary<string, int> _sequence = new();
+    private readonly IHubContext<ChatRuntimeHub> _hubContext;
 
-    public ChatRuntimeService(ILogger<ChatRuntimeService> logger)
+    public ChatRuntimeService(ILogger<ChatRuntimeService> logger, IStreamingEventService streamingEvents)
     {
         _logger = logger;
+        _streamingEvents = streamingEvents;
     }
+
+    private int NextSeq(string runtimeId) => _sequence.AddOrUpdate(runtimeId, 1, (_, v) => v + 1);
 
     /// <inheritdoc/>
     public async Task<string> CreateRuntimeAsync(string configurationType, string agentName, string instructions, bool enableStreaming)
     {
         try
         {
-            // Create a basic configuration for now
-            // In a real implementation, you'd have different configuration types
-            var configuration = new SimpleChatRuntimeConfiguration(agentName, instructions, enableStreaming);
-            
+            var configuration = new ResearchAgentConfiguration(new TornadoApi( Environment.GetEnvironmentVariable("OPENAI_API_KEY"), LLmProviders.OpenAi));
             var runtime = new ChatRuntime.ChatRuntime(configuration);
-            
+
+            // Bridge runtime events to SignalR
+            runtime.OnRuntimeEvent += async evt =>
+            {
+                try
+                {
+                    await _streamingEvents.BroadcastEventAsync(runtime.Id, new Agents.API.Models.StreamingEventResponse
+                    {
+                        RuntimeId = runtime.Id,
+                        EventType = evt.EventType.ToString(),
+                        SequenceNumber = NextSeq(runtime.Id),
+                        Data = evt switch
+                        {
+                            ChatRuntimeOrchestrationEvent oe => new {content = oe.EventType},
+                            ChatRuntimeAgentRunnerEvents se => new { content = se.AgentRunnerEvent},
+                            ChatRuntimeInvokedEvent ie => new { role = ie.Message.Role?.ToString(), content = ie.Message.Content },
+                            ChatRuntimeErrorEvent ee => new { error = ee.Exception.Message },
+                            _ => null
+                        }
+                    });
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed broadcasting runtime event {Type} for {RuntimeId}", evt.EventType, runtime.Id);
+                }
+            };
+
             _runtimes.TryAdd(runtime.Id, runtime);
-            
             _logger.LogInformation("Created ChatRuntime with ID: {RuntimeId}", runtime.Id);
-            
             return runtime.Id;
         }
         catch (Exception ex)
@@ -103,27 +117,23 @@ public class ChatRuntimeService : IChatRuntimeService
     }
 
     /// <inheritdoc/>
-    public IEnumerable<string> GetActiveRuntimeIds()
-    {
-        return _runtimes.Keys;
-    }
+    public IEnumerable<string> GetActiveRuntimeIds() => _runtimes.Keys;
 
     /// <inheritdoc/>
     public async Task<ChatMessage> SendMessageAsync(string runtimeId, ChatMessage message)
     {
-        var runtime = GetRuntime(runtimeId);
-        if (runtime == null)
-        {
-            throw new ArgumentException($"Runtime with ID {runtimeId} not found");
-        }
+        var runtime = GetRuntime(runtimeId) ?? throw new ArgumentException($"Runtime with ID {runtimeId} not found");
 
         try
         {
-            var response = await runtime.RuntimeConfiguration.AddToChatAsync(message);
+            // Emit invoked event early
+            runtime.OnRuntimeEvent?.Invoke(new ChatRuntimeInvokedEvent(message, runtime.Id));
+            var response = await runtime.InvokeAsync(message);
             return response;
         }
         catch (Exception ex)
         {
+            runtime.OnRuntimeEvent?.Invoke(new ChatRuntimeErrorEvent(ex, runtime.Id));
             _logger.LogError(ex, "Failed to send message to runtime {RuntimeId}", runtimeId);
             throw;
         }
@@ -149,33 +159,40 @@ public class SimpleChatRuntimeConfiguration : IRuntimeConfiguration
     }
 
     public CancellationTokenSource cts { get; set; }
-
     public Func<ChatRuntimeEvents, ValueTask>? OnRuntimeEvent { get; set; }
+    public ChatRuntime.ChatRuntime Runtime { get; set; }
 
     public async ValueTask<ChatMessage> AddToChatAsync(ChatMessage message, CancellationToken cancellationToken = default)
     {
         _messages.Add(message);
-        
-        // For now, just echo back a simple response
-        // In a real implementation, this would integrate with the actual agent
-        var response = new ChatMessage(ChatMessageRoles.Assistant, $"Echo: {message.Content}");
+
+        // Simulate model generation with optional streaming
+        var fullResponseText = $"Echo: {message.Content}";
+        var response = new ChatMessage(ChatMessageRoles.Assistant, string.Empty);
         _messages.Add(response);
-        
+
+        if (_enableStreaming && OnRuntimeEvent != null)
+        {
+            // naive chunking
+            int chunk = Math.Max(4, fullResponseText.Length / 10);
+            for (int i = 0; i < fullResponseText.Length; i += chunk)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var part = fullResponseText.Substring(i, Math.Min(chunk, fullResponseText.Length - i));
+                response.Content += part;
+                await OnRuntimeEvent(new ChatRuntimeAgentRunnerEvents(new AgentRunnerStreamingEvent(new ModelStreamingOutputTextDeltaEvent(1,1,1,part)), Runtime.Id));
+                await Task.Yield();
+            }
+        }
+        else
+        {
+            response.Content = fullResponseText;
+        }
+
         return response;
     }
 
-    public void ClearMessages()
-    {
-        _messages.Clear();
-    }
-
-    public List<ChatMessage> GetMessages()
-    {
-        return new List<ChatMessage>(_messages);
-    }
-
-    public ChatMessage GetLastMessage()
-    {
-        return _messages.LastOrDefault() ?? new ChatMessage(ChatMessageRoles.System, "No messages");
-    }
+    public void ClearMessages() => _messages.Clear();
+    public List<ChatMessage> GetMessages() => new(_messages);
+    public ChatMessage GetLastMessage() => _messages.LastOrDefault() ?? new ChatMessage(ChatMessageRoles.System, "No messages");
 }

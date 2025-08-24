@@ -1,5 +1,6 @@
-using LlmTornado.Agents.API.Services;
 using LlmTornado.Agents.API.Hubs;
+using LlmTornado.Agents.API.Services;
+using Microsoft.AspNetCore.ResponseCompression;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,6 +18,13 @@ builder.Services.AddSwaggerGen(c =>
 // Add SignalR for streaming events
 builder.Services.AddSignalR();
 
+// Add response compression for SSE
+builder.Services.AddResponseCompression(opts =>
+{
+    opts.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
+        new[] { "text/event-stream" });
+});
+
 // Add CORS to allow web clients to connect
 builder.Services.AddCors(options =>
 {
@@ -31,7 +39,8 @@ builder.Services.AddCors(options =>
 
 // Register application services
 builder.Services.AddSingleton<IChatRuntimeService, ChatRuntimeService>();
-builder.Services.AddScoped<IStreamingEventService, SignalRStreamingEventService>();
+// Streaming event service must be singleton because ChatRuntimeService (singleton) depends on it
+builder.Services.AddSingleton<IStreamingEventService, SignalRStreamingEventService>();
 
 // Add logging
 builder.Services.AddLogging();
@@ -42,14 +51,11 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "LlmTornado Agents API v1");
-        c.RoutePrefix = string.Empty; // Serve Swagger UI at the app's root
-    });
+    app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
+app.UseResponseCompression();
 
 // Enable CORS
 app.UseCors("AllowAll");
@@ -62,4 +68,5 @@ app.MapControllers();
 // Map SignalR hub
 app.MapHub<ChatRuntimeHub>("/hub/chatruntime");
 
-app.Run();
+await app.RunAsync();
+

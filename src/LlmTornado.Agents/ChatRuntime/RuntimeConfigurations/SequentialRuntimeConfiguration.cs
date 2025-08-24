@@ -51,6 +51,7 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
     /// </summary>
     public class SequentialRuntimeConfiguration : IRuntimeConfiguration
     {
+        public ChatRuntime Runtime { get; set; }
         public Func<ChatRuntimeEvents, ValueTask>? OnRuntimeEvent { get; set; }
 
         public CancellationTokenSource cts { get; set; } = new CancellationTokenSource();
@@ -86,7 +87,7 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
                         streaming:agent.Streaming, 
                         onAgentRunnerEvent:(sEvent) =>
                         {
-                            OnRuntimeEvent?.Invoke(new ChatRuntimeAgentRunnerEvents(sEvent));
+                            OnRuntimeEvent?.Invoke(new ChatRuntimeAgentRunnerEvents(sEvent, Runtime.Id));
                             return Threading.ValueTaskCompleted;
                         }, 
                         cancellationToken: cancellationToken
@@ -108,7 +109,7 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
                         streaming: agent.Streaming,
                         onAgentRunnerEvent: (sEvent) =>
                         {
-                            OnRuntimeEvent?.Invoke(new ChatRuntimeAgentRunnerEvents(sEvent));
+                            OnRuntimeEvent?.Invoke(new ChatRuntimeAgentRunnerEvents(sEvent, Runtime.Id));
                             return Threading.ValueTaskCompleted;
                         }, 
                         cancellationToken: cancellationToken
