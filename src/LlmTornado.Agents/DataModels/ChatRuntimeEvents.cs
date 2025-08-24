@@ -36,7 +36,7 @@ public enum ChatRuntimeEventTypes
     /// <summary>
     /// Represents a Agent streaming event
     /// </summary>
-    Streaming,
+    //Streaming,
 
     /// <summary>
     /// Represents an orchestration event
@@ -130,21 +130,21 @@ public class ChatRuntimeInvokedEvent : ChatRuntimeEvents
     }
 }
 
-/// <summary>
-/// Get Model Streaming Events
-/// </summary>
-public class  ChatRuntimeStreamingEvent : ChatRuntimeEvents
-{
-    public ModelStreamingEvents ModelStreamingEventData { get; set; }
-    /// <summary>
-    /// </summary>
-    /// <param name="modelEvent">Model Streaming Event</param>
-    public ChatRuntimeStreamingEvent(ModelStreamingEvents modelEvent)
-    {
-        ModelStreamingEventData = modelEvent;
-        EventType = ChatRuntimeEventTypes.Streaming;
-    }   
-}
+///// <summary>
+///// Get Model Streaming Events
+///// </summary>
+//public class  ChatRuntimeStreamingEvent : ChatRuntimeEvents
+//{
+//    public ModelStreamingEvents ModelStreamingEventData { get; set; }
+//    /// <summary>
+//    /// </summary>
+//    /// <param name="modelEvent">Model Streaming Event</param>
+//    public ChatRuntimeStreamingEvent(ModelStreamingEvents modelEvent)
+//    {
+//        ModelStreamingEventData = modelEvent;
+//        EventType = ChatRuntimeEventTypes.Streaming;
+//    }   
+//}
 
 /// <summary>
 /// Represents an event related to orchestration within the chat runtime system.

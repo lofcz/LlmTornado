@@ -35,17 +35,22 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
 
         ChatRuntime runtime = new ChatRuntime(RuntimeConfiguration);
 
-        RuntimeConfiguration.OnRuntimeEvent += (e) =>
+        RuntimeConfiguration.OnRuntimeEvent = async (evt) =>
         {
-            if (e is ChatRuntimeStreamingEvent streamEvent)
+            if (evt.EventType == ChatRuntimeEventTypes.AgentRunner)
             {
-                if (streamEvent.ModelStreamingEventData.EventType == ModelStreamingEventType.OutputTextDelta)
+                if (evt is ChatRuntimeAgentRunnerEvents runnerEvt)
                 {
-                    Console.Write((streamEvent.ModelStreamingEventData as ModelStreamingOutputTextDeltaEvent)?.DeltaText);
+                    if (runnerEvt.AgentRunnerEvent is AgentRunnerStreamingEvent streamEvt)
+                    {
+                        if (streamEvt.ModelStreamingEvent is ModelStreamingOutputTextDeltaEvent deltaTextEvent)
+                        {
+                            Console.Write(deltaTextEvent.DeltaText);
+                        }
+                    }
                 }
             }
-
-            return ValueTask.CompletedTask;
+            await ValueTask.CompletedTask;
         };
 
         ChatMessage report = await runtime.InvokeAsync(new ChatMessage(Code.ChatMessageRoles.User, "Write a report about the benefits of using AI agents."));

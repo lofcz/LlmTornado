@@ -1,6 +1,7 @@
 ﻿using LlmTornado.Agents;
 using LlmTornado.Agents.ChatRuntime;
 using LlmTornado.Agents.ChatRuntime.RuntimeConfigurations;
+using LlmTornado.Agents.DataModels;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Responses;
@@ -88,6 +89,43 @@ public class AgentRuntimeDemo : DemoBase
         ChatMessage report = await runtime.InvokeAsync(new ChatMessage(Code.ChatMessageRoles.User, "¿cuanto es 2+2?"));
         
         Console.WriteLine(report.Content);
+    }
+
+    [TornadoTest]
+    public static async Task BasicRuntimeStreamingDemo()
+    {
+        HandoffAgent translatorAgent = new HandoffAgent(
+            client: Program.Connect(),
+            name: "SpanishAgent",
+            model: ChatModel.OpenAi.Gpt41.V41Mini,
+            instructions: "You are a useful assistant. Please only respond in spanish",
+            description: "Use this Agent for spanish speaking response",
+            streaming:true);
+
+        HandoffRuntimeConfiguration runtimeConfiguration = new HandoffRuntimeConfiguration(translatorAgent);
+
+        ChatRuntime runtime = new ChatRuntime(runtimeConfiguration);
+
+        runtime.OnRuntimeEvent = async (evt) =>
+        {
+            if (evt.EventType == ChatRuntimeEventTypes.AgentRunner)
+            {
+                if(evt is ChatRuntimeAgentRunnerEvents runnerEvt)
+                {
+                    if (runnerEvt.AgentRunnerEvent is AgentRunnerStreamingEvent streamEvt)
+                    {
+                        if (streamEvt.ModelStreamingEvent is ModelStreamingOutputTextDeltaEvent deltaTextEvent)
+                        {
+                            Console.Write(deltaTextEvent.DeltaText);
+                        }
+                    }
+                }
+            }
+            await ValueTask.CompletedTask;
+        };
+        Console.WriteLine("[User]:¿cuanto es 2+2?");
+        Console.Write("[Assistant]: ");
+        ChatMessage report = await runtime.InvokeAsync(new ChatMessage(Code.ChatMessageRoles.User, "¿cuanto es 2+2?"));
     }
 }
 
