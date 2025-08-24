@@ -99,7 +99,7 @@ public class ResearchAgentConfiguration : OrchestrationRuntimeConfiguration
     public class ResearchRunnable : OrchestrationRunnable<WebSearchPlan, string>
     {
         public int MaxDegreeOfParallelism { get; set; } = 4;
-        public int MaxItemsToProcess { get; set; } = 10;
+        public int MaxItemsToProcess { get; set; } = 3;
         TornadoApi Client { get; set; }
         public ResearchRunnable(TornadoApi client) { Client = client; }
 

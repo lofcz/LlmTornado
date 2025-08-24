@@ -1,11 +1,12 @@
-using Microsoft.AspNetCore.Mvc;
 using LlmTornado.Agents.API.Models;
 using LlmTornado.Agents.API.Services;
+using LlmTornado.Agents.ChatRuntime.Orchestration;
+using LlmTornado.Agents.DataModels;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Code;
-using LlmTornado.Agents.DataModels;
-using LlmTornado.Agents.ChatRuntime.Orchestration;
+using Microsoft.AspNetCore.Mvc;
+using System.Text;
 
 namespace LlmTornado.Agents.API.Controllers;
 
@@ -134,13 +135,11 @@ public class ChatRuntimeController : ControllerBase
                 try
                 {
                     eventsReceived++;
-                    Console.WriteLine($"[STREAMING DEBUG] Event #{eventsReceived}: Type='{runnerEvent.EventType}''");
                     if(runnerEvent is ChatRuntimeAgentRunnerEvents rEvent)
                     {
                         if (rEvent.AgentRunnerEvent is AgentRunnerStreamingEvent arEvent)
                         {
                             var streamingEvent = arEvent.ModelStreamingEvent;
-                            Console.WriteLine($"[STREAMING DEBUG] Streaming Event: Type='{streamingEvent.EventType}'");
                             if (streamingEvent.EventType == ModelStreamingEventType.Completed)
                             {
                                 streamingComplete = true;
@@ -150,6 +149,7 @@ public class ChatRuntimeController : ControllerBase
                                 streamingError = true;
                                 errorMessage = errorEvent.ErrorMessage ?? "Unknown error";
                             }
+
                             // Queue the event for async processing
                             //messageQueue.Enqueue(streamingEvent);
                             await ProcessStreamingEvent(streamingEvent);
@@ -159,7 +159,7 @@ public class ChatRuntimeController : ControllerBase
                     {
                         if (orchestrationEvent.OrchestrationEventData is OrchestrationEvent arEvent)
                         {
-                            Console.WriteLine($"[STREAMING DEBUG] Orchestration Event: Type='{arEvent.Type}'");
+                            Console.WriteLine($"[ORCHESTRATION DEBUG] Orchestration Event: Type='{arEvent.Type}'");
                         }
                     }
                 }
@@ -211,6 +211,7 @@ public class ChatRuntimeController : ControllerBase
             return;
         }
     }
+
     // Helper method to process different streaming event types
     async Task ProcessStreamingEvent(ModelStreamingEvents streamingEvent)
     {
@@ -218,21 +219,15 @@ public class ChatRuntimeController : ControllerBase
         {
             case ModelStreamingEventType.Created:
                 await Response.WriteAsync($"event: created\n");
-                await Response.WriteAsync($"data: {{\"sequenceId\": {streamingEvent.SequenceId}, \"responseId\": \"{streamingEvent.ResponseId}\"}}\n\n");
                 break;
-
             case ModelStreamingEventType.OutputTextDelta:
                 if (streamingEvent is ModelStreamingOutputTextDeltaEvent deltaEvent)
                 {
-                    await Response.WriteAsync($"event: delta\n");
+                    Console.Write(deltaEvent.DeltaText);
+                    await Response.WriteAsync($"event: delta_text\n");
                     await Response.WriteAsync($"data: {{\n");
-                    await Response.WriteAsync($"data: \"sequenceId\": {deltaEvent.SequenceId},\n");
-                    await Response.WriteAsync($"data: \"outputIndex\": {deltaEvent.OutputIndex},\n");
-                    await Response.WriteAsync($"data: \"contentIndex\": {deltaEvent.ContentPartIndex},\n");
-                    await Response.WriteAsync($"data: \"text\": \"{EscapeJsonString(deltaEvent.DeltaText ?? "")}\",\n");
-                    await Response.WriteAsync($"data: \"itemId\": \"{deltaEvent.ItemId ?? ""}\"\n");
+                    await Response.WriteAsync($"data: \"Text\": \"{EscapeJsonString(deltaEvent.DeltaText ?? "")}\"\n");
                     await Response.WriteAsync($"data: }}\n\n");
-                    Console.WriteLine($"[STREAMING DEBUG] Sent delta: '{deltaEvent.DeltaText}'");
                 }
                 break;
 

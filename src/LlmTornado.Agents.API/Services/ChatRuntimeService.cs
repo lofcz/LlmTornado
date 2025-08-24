@@ -1,4 +1,3 @@
-using LlmTornado.Agents.API.Hubs; // added for IStreamingEventService
 using LlmTornado.Agents.ChatRuntime;
 using LlmTornado.Agents.DataModels;
 using LlmTornado.Chat;
@@ -32,17 +31,12 @@ public class ChatRuntimeService : IChatRuntimeService
 {
     private readonly ConcurrentDictionary<string, ChatRuntime.ChatRuntime> _runtimes = new();
     private readonly ILogger<ChatRuntimeService> _logger;
-    private readonly IStreamingEventService _streamingEvents;
     private readonly ConcurrentDictionary<string, int> _sequence = new();
-    private readonly IHubContext<ChatRuntimeHub> _hubContext;
 
-    public ChatRuntimeService(ILogger<ChatRuntimeService> logger, IStreamingEventService streamingEvents)
+    public ChatRuntimeService(ILogger<ChatRuntimeService> logger)
     {
         _logger = logger;
-        _streamingEvents = streamingEvents;
     }
-
-    private int NextSeq(string runtimeId) => _sequence.AddOrUpdate(runtimeId, 1, (_, v) => v + 1);
 
     /// <inheritdoc/>
     public async Task<string> CreateRuntimeAsync(string configurationType, string agentName, string instructions, bool enableStreaming)
@@ -55,32 +49,6 @@ public class ChatRuntimeService : IChatRuntimeService
             // CRITICAL FIX: Ensure the configuration gets the runtime reference 
             // This is needed so that event handlers in the configuration can access Runtime.Id
             configuration.Runtime = runtime;
-
-            // Bridge runtime events to SignalR
-            runtime.OnRuntimeEvent += async evt =>
-            {
-                try
-                {
-                    await _streamingEvents.BroadcastEventAsync(runtime.Id, new Agents.API.Models.StreamingEventResponse
-                    {
-                        RuntimeId = runtime.Id,
-                        EventType = evt.EventType.ToString(),
-                        SequenceNumber = NextSeq(runtime.Id),
-                        Data = evt switch
-                        {
-                            ChatRuntimeOrchestrationEvent oe => new {content = oe.EventType},
-                            ChatRuntimeAgentRunnerEvents se => new { content = se.AgentRunnerEvent},
-                            ChatRuntimeInvokedEvent ie => new { role = ie.Message.Role?.ToString(), content = ie.Message.Content },
-                            ChatRuntimeErrorEvent ee => new { error = ee.Exception.Message },
-                            _ => null
-                        }
-                    });
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Failed broadcasting runtime event {Type} for {RuntimeId}", evt.EventType, runtime.Id);
-                }
-            };
 
             // CRITICAL FIX: Ensure the configuration's OnRuntimeEvent is connected to the runtime's OnRuntimeEvent
             // This creates the proper event flow: Configuration -> Runtime -> SignalR/External handlers

@@ -123,6 +123,7 @@ public class AgentRuntimeDemo : DemoBase
             }
             await ValueTask.CompletedTask;
         };
+
         Console.WriteLine("[User]:¿cuanto es 2+2?");
         Console.Write("[Assistant]: ");
         ChatMessage report = await runtime.InvokeAsync(new ChatMessage(Code.ChatMessageRoles.User, "¿cuanto es 2+2?"));

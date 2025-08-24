@@ -49,7 +49,8 @@ public class ChatRuntime
         RuntimeConfiguration = configuration;
         RuntimeConfiguration.cts = cts;
         RuntimeConfiguration.Runtime = this;
-        OnRuntimeEvent = configuration.OnRuntimeEvent;
+        RuntimeConfiguration.OnRuntimeEvent = (rEvent) => { OnRuntimeEvent?.Invoke(rEvent); return Threading.ValueTaskCompleted; };
+        RuntimeConfiguration.OnRuntimeInitialized();
     }
 
 

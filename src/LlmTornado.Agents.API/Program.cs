@@ -1,4 +1,3 @@
-using LlmTornado.Agents.API.Hubs;
 using LlmTornado.Agents.API.Services;
 using Microsoft.AspNetCore.ResponseCompression;
 
@@ -39,8 +38,7 @@ builder.Services.AddCors(options =>
 
 // Register application services
 builder.Services.AddSingleton<IChatRuntimeService, ChatRuntimeService>();
-// Streaming event service must be singleton because ChatRuntimeService (singleton) depends on it
-builder.Services.AddSingleton<IStreamingEventService, SignalRStreamingEventService>();
+
 
 // Add logging
 builder.Services.AddLogging();
@@ -65,8 +63,6 @@ app.UseAuthorization();
 // Map controllers
 app.MapControllers();
 
-// Map SignalR hub
-app.MapHub<ChatRuntimeHub>("/hub/chatruntime");
 
 await app.RunAsync();
 
