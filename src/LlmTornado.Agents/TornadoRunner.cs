@@ -12,8 +12,6 @@ namespace LlmTornado.Agents;
 /// </summary>
 public class TornadoRunner
 {
-
-
     /// <summary>
     /// Invoke the agent loop to begin async
     /// </summary>
@@ -177,7 +175,6 @@ public class TornadoRunner
         return chat;
     }
 
-    //[consideration] Maybe this makes sense here but feels off
     private static Conversation AddMessagesToConversation(Conversation chat, List<ChatMessage>? messages = null)
     {
         if (messages == null) return chat;

@@ -30,11 +30,6 @@ public class ChatRuntime
 
 
     /// <summary>
-    /// Master Cancellation token source for the Control Agent and the rest of the state machines.
-    /// </summary>
-    public CancellationTokenSource cts = new CancellationTokenSource();
-
-    /// <summary>
     /// Gets or sets the runtime configuration for the application.
     /// </summary>
     public IRuntimeConfiguration RuntimeConfiguration { get; set; }
@@ -47,7 +42,6 @@ public class ChatRuntime
     public ChatRuntime(IRuntimeConfiguration configuration)
     {
         RuntimeConfiguration = configuration;
-        RuntimeConfiguration.cts = cts;
         RuntimeConfiguration.Runtime = this;
         RuntimeConfiguration.OnRuntimeEvent = (rEvent) => { OnRuntimeEvent?.Invoke(rEvent); return Threading.ValueTaskCompleted; };
         RuntimeConfiguration.OnRuntimeInitialized();
@@ -62,10 +56,6 @@ public class ChatRuntime
     /// canceled.</remarks>
     public virtual void Clear()
     {
-        // Clear the current result and reset the main thread ID
-        // ChatHistory = new ConcurrentStack<ChatMessage>();
-        // MainThreadId = string.Empty;
-        ResetCancellationTokenSource();
         RuntimeConfiguration.ClearMessages();
     }
 
@@ -77,7 +67,7 @@ public class ChatRuntime
     /// machines can handle cancellation requests appropriately.</remarks>
     public void CancelExecution()
     {
-        cts.Cancel(); // Signal cancellation to all state machines
+        RuntimeConfiguration.CancelRuntime();
         OnRuntimeEvent?.Invoke(new ChatRuntimeCancelledEvent(this.Id));
     }
 
@@ -91,29 +81,11 @@ public class ChatRuntime
     {
         // Invoke the StartingExecution event to signal the beginning of the execution process
         OnRuntimeEvent?.Invoke(new ChatRuntimeStartedEvent(this.Id));
-        
-        ResetCancellationTokenSource();
 
         await RuntimeConfiguration.AddToChatAsync(message);
 
         OnRuntimeEvent?.Invoke(new ChatRuntimeCompletedEvent(this.Id));
 
         return RuntimeConfiguration.GetMessages().Last();
-    }
-
-    /// <summary>
-    /// Resets the cancellation token source if it has been canceled.
-    /// </summary>
-    private void ResetCancellationTokenSource()
-    {
-        // Reset the cancellation token source if it has been canceled
-        if (cts.IsCancellationRequested)
-        {
-            if (!Threading.TryResetCancellationTokenSource(cts))
-            {
-                cts.Dispose();
-                cts = new CancellationTokenSource();
-            }
-        }
     }
 }

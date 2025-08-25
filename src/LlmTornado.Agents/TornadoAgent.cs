@@ -193,7 +193,9 @@ public class TornadoAgent
     {
         if (tool != null && server != null)
         {
+
             Tool tornadoMcpTool = new Tool(new ToolFunction(tool.Name, tool.Description, tool.JsonSchema));
+            SetDefaultToolPermission(tornadoMcpTool);
             McpTools.Add(tool.Name, server);
             ToolList.Add(tool.Name, tornadoMcpTool);
             Options.Tools?.Add(tornadoMcpTool);

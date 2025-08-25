@@ -240,5 +240,10 @@ Out of the following Agents which agent should we Handoff the conversation too a
                 await SelectCurrentAgent(inputMessage);
             }
         }
+
+        public void CancelRuntime()
+        {
+            cts.Cancel();
+        }
     }
 }

@@ -23,11 +23,6 @@ public interface IRuntimeConfiguration
     public ValueTask<ChatMessage> AddToChatAsync(ChatMessage message, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Cancellation token source for the entire runtime configuration.
-    /// </summary>
-    public CancellationTokenSource cts { get; set; }
-
-    /// <summary>
     /// Runtime event handler for runtime events.
     /// </summary>
     public Func<ChatRuntimeEvents, ValueTask>? OnRuntimeEvent { get; set; }
@@ -54,4 +49,9 @@ public interface IRuntimeConfiguration
     /// Clears all messages from the conversation.
     /// </summary>
     public void OnRuntimeInitialized();
+
+    /// <summary>
+    /// Trigger Cancellation of the runtime.
+    /// </summary>
+    public void CancelRuntime();
 }

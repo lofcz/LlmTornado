@@ -90,5 +90,10 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
         {
             
         }
+
+        public void CancelRuntime()
+        {
+           cts.Cancel();
+        }
     }
 }
