@@ -168,4 +168,9 @@ public class SimpleChatRuntimeConfiguration : IRuntimeConfiguration
     {
         
     }
+
+    public void CancelRuntime()
+    {
+        throw new NotImplementedException();
+    }
 }
