@@ -13,6 +13,7 @@ Design agents with clear, focused purposes:
 var translatorAgent = new TornadoAgent(
     client,
     model,
+    name,
     "You translate English text to Spanish. Return only the translation."
 );
 
@@ -33,6 +34,7 @@ Write detailed, unambiguous instructions:
 var codeReviewAgent = new TornadoAgent(
     client,
     model,
+    name,
     """
     You are a senior software engineer performing code reviews.
     
@@ -68,6 +70,7 @@ Choose models based on task complexity and requirements:
 var simpleAgent = new TornadoAgent(
     client,
     ChatModel.OpenAi.Gpt41.V41Mini,  // Fast and cost-effective
+    "SimpleQAAgent",
     "You answer basic questions about our product."
 );
 
@@ -75,6 +78,7 @@ var simpleAgent = new TornadoAgent(
 var complexAgent = new TornadoAgent(
     client,
     ChatModel.OpenAi.Gpt41.V41,  // More capable but slower/expensive
+    "BusinessStrategist",
     "You analyze complex business scenarios and provide strategic recommendations."
 );
 
@@ -82,6 +86,7 @@ var complexAgent = new TornadoAgent(
 var codeAgent = new TornadoAgent(
     client,
     ChatModel.OpenAi.Gpt41.V41,  // Good for code tasks
+    "CodeAssistant",
     "You write and review code in multiple programming languages."
 );
 ```
@@ -432,271 +437,6 @@ public class CircuitBreakerAgent
 }
 ```
 
-## Performance Optimization
-
-### Connection and Resource Management
-
-Reuse agents and manage resources efficiently:
-
-```csharp
-public class AgentPool : IDisposable
-{
-    private readonly ConcurrentQueue<TornadoAgent> _agents = new();
-    private readonly Func<TornadoAgent> _agentFactory;
-    private readonly int _maxSize;
-    
-    public AgentPool(Func<TornadoAgent> agentFactory, int maxSize = 10)
-    {
-        _agentFactory = agentFactory;
-        _maxSize = maxSize;
-        
-        // Pre-populate pool
-        for (int i = 0; i < maxSize; i++)
-        {
-            _agents.Enqueue(_agentFactory());
-        }
-    }
-    
-    public async Task<T> ExecuteAsync<T>(Func<TornadoAgent, Task<T>> operation)
-    {
-        if (!_agents.TryDequeue(out var agent))
-        {
-            agent = _agentFactory();
-        }
-        
-        try
-        {
-            return await operation(agent);
-        }
-        finally
-        {
-            // Return to pool if not full
-            if (_agents.Count < _maxSize)
-            {
-                _agents.Enqueue(agent);
-            }
-        }
-    }
-    
-    public void Dispose()
-    {
-        while (_agents.TryDequeue(out var agent))
-        {
-            // Dispose agents if they implement IDisposable
-            if (agent is IDisposable disposable)
-            {
-                disposable.Dispose();
-            }
-        }
-    }
-}
-```
-
-### Caching Strategies
-
-Implement appropriate caching for repeated operations:
-
-```csharp
-public class CachedAgentService
-{
-    private readonly TornadoAgent _agent;
-    private readonly MemoryCache _cache;
-    private readonly TimeSpan _defaultExpiry;
-    
-    public CachedAgentService(TornadoAgent agent, TimeSpan defaultExpiry = default)
-    {
-        _agent = agent;
-        _defaultExpiry = defaultExpiry == default ? TimeSpan.FromMinutes(10) : defaultExpiry;
-        _cache = new MemoryCache(new MemoryCacheOptions
-        {
-            SizeLimit = 1000  // Limit cache size
-        });
-    }
-    
-    public async Task<string> RunAsync(string input, TimeSpan? customExpiry = null)
-    {
-        var key = ComputeHash(input);
-        
-        if (_cache.TryGetValue(key, out string cachedResult))
-        {
-            return cachedResult;
-        }
-        
-        var result = await _agent.RunAsync(input);
-        var response = result.Messages.Last().Content;
-        
-        var options = new MemoryCacheEntryOptions
-        {
-            AbsoluteExpirationRelativeToNow = customExpiry ?? _defaultExpiry,
-            Size = 1  // Each entry counts as 1 toward the size limit
-        };
-        
-        _cache.Set(key, response, options);
-        return response;
-    }
-    
-    private string ComputeHash(string input)
-    {
-        using var sha256 = SHA256.Create();
-        var hash = sha256.ComputeHash(Encoding.UTF8.GetBytes(input));
-        return Convert.ToBase64String(hash);
-    }
-}
-```
-
-### Parallel Processing
-
-Use parallel processing for independent operations:
-
-```csharp
-public class ParallelAgentProcessor
-{
-    private readonly TornadoAgent[] _agents;
-    
-    public ParallelAgentProcessor(int agentCount, Func<TornadoAgent> agentFactory)
-    {
-        _agents = Enumerable.Range(0, agentCount)
-            .Select(_ => agentFactory())
-            .ToArray();
-    }
-    
-    public async Task<string[]> ProcessBatchAsync(string[] inputs)
-    {
-        var semaphore = new SemaphoreSlim(_agents.Length);
-        
-        var tasks = inputs.Select(async (input, index) =>
-        {
-            await semaphore.WaitAsync();
-            try
-            {
-                var agent = _agents[index % _agents.Length];
-                var result = await agent.RunAsync(input);
-                return result.Messages.Last().Content;
-            }
-            finally
-            {
-                semaphore.Release();
-            }
-        });
-        
-        return await Task.WhenAll(tasks);
-    }
-}
-```
-
-## Security Best Practices
-
-### Input Validation and Sanitization
-
-Always validate and sanitize inputs:
-
-```csharp
-public class SecureAgentWrapper
-{
-    private readonly TornadoAgent _agent;
-    private readonly HashSet<string> _blockedPatterns;
-    
-    public SecureAgentWrapper(TornadoAgent agent)
-    {
-        _agent = agent;
-        _blockedPatterns = new HashSet<string>
-        {
-            "eval(",
-            "exec(",
-            "system(",
-            "<script",
-            "javascript:",
-            "data:text/html"
-        };
-    }
-    
-    public async Task<Conversation> RunAsync(string input)
-    {
-        // Validate input
-        ValidateInput(input);
-        
-        // Sanitize input
-        var sanitizedInput = SanitizeInput(input);
-        
-        return await _agent.RunAsync(sanitizedInput);
-    }
-    
-    private void ValidateInput(string input)
-    {
-        if (string.IsNullOrWhiteSpace(input))
-        {
-            throw new ArgumentException("Input cannot be empty");
-        }
-        
-        if (input.Length > 10000)
-        {
-            throw new ArgumentException("Input too long");
-        }
-        
-        foreach (var pattern in _blockedPatterns)
-        {
-            if (input.Contains(pattern, StringComparison.OrdinalIgnoreCase))
-            {
-                throw new ArgumentException($"Input contains blocked pattern: {pattern}");
-            }
-        }
-    }
-    
-    private string SanitizeInput(string input)
-    {
-        // Remove potentially harmful characters
-        return Regex.Replace(input, @"[<>""']", "");
-    }
-}
-```
-
-### Secure Configuration Management
-
-Store sensitive configuration securely:
-
-```csharp
-public class SecureAgentFactory
-{
-    private readonly IConfiguration _configuration;
-    private readonly ISecretManager _secretManager;
-    
-    public SecureAgentFactory(IConfiguration configuration, ISecretManager secretManager)
-    {
-        _configuration = configuration;
-        _secretManager = secretManager;
-    }
-    
-    public async Task<TornadoAgent> CreateAgentAsync(string agentType)
-    {
-        // Get API key from secure storage
-        var apiKey = await _secretManager.GetSecretAsync("OPENAI_API_KEY");
-        
-        if (string.IsNullOrEmpty(apiKey))
-        {
-            throw new InvalidOperationException("API key not found in secure storage");
-        }
-        
-        var client = new TornadoApi(apiKey);
-        
-        // Get agent configuration
-        var agentConfig = _configuration.GetSection($"Agents:{agentType}");
-        var instructions = agentConfig["Instructions"] ?? "You are a helpful assistant";
-        var modelName = agentConfig["Model"] ?? "gpt-4o-mini";
-        
-        return new TornadoAgent(client, GetModel(modelName), instructions);
-    }
-    
-    private ChatModel GetModel(string modelName)
-    {
-        return modelName.ToLower() switch
-        {
-            "gpt-4o-mini" => ChatModel.OpenAi.Gpt41.V41Mini,
-            "gpt-4o" => ChatModel.OpenAi.Gpt41.V41,
-            _ => throw new ArgumentException($"Unknown model: {modelName}")
-        };
-    }
-}
-```
 
 ## Monitoring and Observability
 
@@ -771,150 +511,3 @@ public class ObservableAgent
     }
 }
 ```
-
-### Health Checks
-
-Implement health checks for your agents:
-
-```csharp
-public class AgentHealthCheck : IHealthCheck
-{
-    private readonly TornadoAgent _agent;
-    
-    public AgentHealthCheck(TornadoAgent agent)
-    {
-        _agent = agent;
-    }
-    
-    public async Task<HealthCheckResult> CheckHealthAsync(
-        HealthCheckContext context,
-        CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-            using var combinedCts = CancellationTokenSource.CreateLinkedTokenSource(
-                cancellationToken, timeoutCts.Token);
-            
-            // Simple health check query
-            var result = await _agent.RunAsync("Hello");
-            
-            if (result?.Messages?.LastOrDefault()?.Content != null)
-            {
-                return HealthCheckResult.Healthy("Agent is responding normally");
-            }
-            
-            return HealthCheckResult.Degraded("Agent response was empty");
-        }
-        catch (OperationCanceledException)
-        {
-            return HealthCheckResult.Unhealthy("Agent health check timed out");
-        }
-        catch (Exception ex)
-        {
-            return HealthCheckResult.Unhealthy($"Agent health check failed: {ex.Message}");
-        }
-    }
-}
-```
-
-## Testing Strategies
-
-### Unit Testing with Mocks
-
-Create testable agent wrappers:
-
-```csharp
-public interface IAgentService
-{
-    Task<string> ProcessAsync(string input);
-}
-
-public class AgentService : IAgentService
-{
-    private readonly TornadoAgent _agent;
-    
-    public AgentService(TornadoAgent agent)
-    {
-        _agent = agent;
-    }
-    
-    public async Task<string> ProcessAsync(string input)
-    {
-        var result = await _agent.RunAsync(input);
-        return result.Messages.Last().Content;
-    }
-}
-
-// Test with mock
-[Test]
-public async Task TestAgentService()
-{
-    var mockService = new Mock<IAgentService>();
-    mockService.Setup(s => s.ProcessAsync("test input"))
-           .ReturnsAsync("test response");
-    
-    var result = await mockService.Object.ProcessAsync("test input");
-    
-    Assert.AreEqual("test response", result);
-}
-```
-
-### Integration Testing
-
-Test complete workflows:
-
-```csharp
-[TestClass]
-public class AgentIntegrationTests
-{
-    private TornadoAgent _agent;
-    
-    [TestInitialize]
-    public void Setup()
-    {
-        var apiKey = Environment.GetEnvironmentVariable("TEST_API_KEY");
-        if (string.IsNullOrEmpty(apiKey))
-        {
-            Assert.Inconclusive("TEST_API_KEY environment variable not set");
-        }
-        
-        var client = new TornadoApi(apiKey);
-        _agent = new TornadoAgent(client, ChatModel.OpenAi.Gpt41.V41Mini, "You are a test assistant");
-    }
-    
-    [TestMethod]
-    public async Task TestBasicFunctionality()
-    {
-        var result = await _agent.RunAsync("What is 2+2?");
-        
-        Assert.IsNotNull(result);
-        Assert.IsNotNull(result.Messages);
-        Assert.IsTrue(result.Messages.Count > 0);
-        
-        var response = result.Messages.Last().Content;
-        Assert.IsTrue(response.Contains("4"));
-    }
-    
-    [TestMethod]
-    public async Task TestWithTools()
-    {
-        [Description("Add two numbers")]
-        static int Add(int a, int b) => a + b;
-        
-        var agentWithTools = new TornadoAgent(
-            _agent.Client,
-            _agent.Model,
-            "You can perform mathematical operations",
-            tools: [Add]
-        );
-        
-        var result = await agentWithTools.RunAsync("What is 5 plus 7?");
-        var response = result.Messages.Last().Content;
-        
-        Assert.IsTrue(response.Contains("12"));
-    }
-}
-```
-
-By following these best practices, you'll build more reliable, maintainable, and performant applications with LlmTornado.Agents. Remember to adapt these patterns to your specific use case and requirements.

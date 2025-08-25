@@ -36,7 +36,7 @@ Executes an agent with basic input.
 
 **Example:**
 ```csharp
-var agent = new TornadoAgent(client, model, "You are helpful");
+var agent = new TornadoAgent(client, model,"Assistant", "You are helpful");
 var result = await TornadoRunner.RunAsync(agent, "Hello world");
 ```
 
@@ -276,6 +276,7 @@ async ValueTask<GuardRailFunctionOutput> TopicValidator(string input = "")
     var validatorAgent = new TornadoAgent(
         client,
         ChatModel.OpenAi.Gpt41.V41Mini,
+        "Assistant",
         "Determine if input is appropriate for a family-friendly assistant"
     );
     

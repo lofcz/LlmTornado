@@ -53,17 +53,7 @@ public class SendMessageRequest
     /// <summary>
     /// The message content to send
     /// </summary>
-    public string Content { get; set; } = string.Empty;
-    
-    /// <summary>
-    /// Optional message role (defaults to "user")
-    /// </summary>
-    public string Role { get; set; } = "user";
-    
-    /// <summary>
-    /// Whether to enable streaming for this message
-    /// </summary>
-    public bool? EnableStreaming { get; set; }
+    public string Content { get; set; } = string.Empty; 
 }
 
 /// <summary>

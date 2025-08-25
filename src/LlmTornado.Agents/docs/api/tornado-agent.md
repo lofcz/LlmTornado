@@ -24,6 +24,7 @@ The `TornadoAgent` class encapsulates AI agent behavior, tool integration, and c
 public TornadoAgent(
     TornadoApi client, 
     ChatModel model, 
+    string name,
     string instructions = "", 
     Type? outputSchema = null, 
     List<Delegate>? tools = null,
@@ -33,6 +34,7 @@ public TornadoAgent(
 **Parameters:**
 - `client` (`TornadoApi`): The API client for LLM communication
 - `model` (`ChatModel`): The chat model to use (e.g., `ChatModel.OpenAi.Gpt41.V41Mini`)
+- `name` (`string`): Name identifier for the agent
 - `instructions` (`string`, optional): Instructions defining agent behavior
 - `outputSchema` (`Type?`, optional): Type for structured output validation
 - `tools` (`List<Delegate>?`, optional): List of tool methods the agent can use
@@ -43,26 +45,12 @@ public TornadoAgent(
 var agent = new TornadoAgent(
     client: apiClient,
     model: ChatModel.OpenAi.Gpt41.V41Mini,
+    name: "Assistant",
     instructions: "You are a helpful assistant",
     outputSchema: typeof(MyOutputType),
     tools: [MyToolMethod],
     mcpServers: [mcpServer]
 );
-```
-
-### Dummy Agent Constructor
-
-```csharp
-public static TornadoAgent DummyAgent()
-```
-
-Creates a dummy agent for testing purposes with default OpenAI configuration.
-
-**Returns:** A `TornadoAgent` instance configured with basic settings.
-
-**Example:**
-```csharp
-var dummyAgent = TornadoAgent.DummyAgent();
 ```
 
 ## Properties
@@ -186,7 +174,10 @@ async ValueTask HandleEvents(AgentRunnerEvents eventData)
 {
     if (eventData is AgentRunnerStreamingEvent streamEvent)
     {
-        Console.Write(streamEvent.ModelStreamingEvent.DeltaText);
+        if (streamingEvent.ModelStreamingEvent is ModelStreamingOutputTextDeltaEvent deltaTextEvent)
+        {
+            Console.Write(deltaTextEvent.DeltaText); // Write the text delta directly
+        }
     }
     return ValueTask.CompletedTask;
 }
@@ -209,32 +200,15 @@ Converts the agent into a tool that can be used by other agents.
 
 **Example:**
 ```csharp
-var translatorAgent = new TornadoAgent(client, model, "You translate English to Spanish");
+var translatorAgent = new TornadoAgent(client, model, "Assistant", "You translate English to Spanish");
 var mainAgent = new TornadoAgent(
     client, 
     model, 
+    name,
     "You are a helpful assistant",
     tools: [translatorAgent.AsTool]
 );
 ```
-
-### Utility Methods
-
-#### SetupTools (Private)
-```csharp
-private void SetupTools(List<Delegate> tools)
-```
-
-Internal method that configures delegate tools for the agent.
-
-## Static Methods
-
-### DummyAgent
-```csharp
-public static TornadoAgent DummyAgent()
-```
-
-Creates a test agent with default configuration.
 
 ## Usage Patterns
 
@@ -248,6 +222,7 @@ var client = new TornadoApi("your-api-key");
 var agent = new TornadoAgent(
     client,
     ChatModel.OpenAi.Gpt41.V41Mini,
+    "Assistant",
     "You are a helpful assistant"
 );
 
@@ -268,6 +243,7 @@ public static string GetWeather(string location)
 var agent = new TornadoAgent(
     client,
     ChatModel.OpenAi.Gpt41.V41Mini,
+    "Assistant",
     "You are a weather assistant",
     tools: [GetWeather]
 );
@@ -293,6 +269,7 @@ public struct WeatherInfo
 var agent = new TornadoAgent(
     client,
     ChatModel.OpenAi.Gpt41.V41Mini,
+    "Assistant",
     "Provide weather information",
     outputSchema: typeof(WeatherInfo)
 );
@@ -309,6 +286,7 @@ var mcpServer = new MCPServer("file-ops", "/path/to/mcp-server");
 var agent = new TornadoAgent(
     client,
     ChatModel.OpenAi.Gpt41.V41Mini,
+    "Assistant",
     "You can read and write files",
     mcpServers: [mcpServer]
 );

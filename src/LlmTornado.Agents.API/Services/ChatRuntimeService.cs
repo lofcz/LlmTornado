@@ -46,14 +46,6 @@ public class ChatRuntimeService : IChatRuntimeService
             var configuration = new ResearchAgentConfiguration(new TornadoApi( Environment.GetEnvironmentVariable("OPENAI_API_KEY"), LLmProviders.OpenAi));
             var runtime = new ChatRuntime.ChatRuntime(configuration);
 
-            // CRITICAL FIX: Ensure the configuration gets the runtime reference 
-            // This is needed so that event handlers in the configuration can access Runtime.Id
-            configuration.Runtime = runtime;
-
-            // CRITICAL FIX: Ensure the configuration's OnRuntimeEvent is connected to the runtime's OnRuntimeEvent
-            // This creates the proper event flow: Configuration -> Runtime -> SignalR/External handlers
-            configuration.OnRuntimeEvent = runtime.OnRuntimeEvent;
-
             _runtimes.TryAdd(runtime.Id, runtime);
             _logger.LogInformation("Created ChatRuntime with ID: {RuntimeId}", runtime.Id);
             return runtime.Id;

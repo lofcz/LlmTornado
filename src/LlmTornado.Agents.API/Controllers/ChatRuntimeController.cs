@@ -68,9 +68,7 @@ public partial class ChatRuntimeController : ControllerBase
                 return NotFound(new { error = $"Runtime {runtimeId} not found" });
             }
 
-            ChatMessage message = new ChatMessage(
-                request.Role == "user" ? ChatMessageRoles.User : ChatMessageRoles.Assistant,
-                request.Content);
+            ChatMessage message = new ChatMessage(ChatMessageRoles.User,request.Content);
 
             ChatMessage responseMessage = await _runtimeService.SendMessageAsync(runtimeId, message);
 

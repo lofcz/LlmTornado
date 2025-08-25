@@ -40,16 +40,16 @@ ValueTask HandleRuntimeEvents(ChatRuntimeEvents runtimeEvent)
 {
     switch (runtimeEvent.EventType)
     {
-        case ChatRuntimeEventTypes.AgentStarted:
-            Console.WriteLine($"Agent started: {runtimeEvent.AgentName}");
+        case ChatRuntimeEventTypes.Started:
+            Console.WriteLine($"Agent started");
             break;
-        case ChatRuntimeEventTypes.AgentCompleted:
-            Console.WriteLine($"Agent completed: {runtimeEvent.AgentName}");
+        case ChatRuntimeEventTypes.Completed:
+            Console.WriteLine($"Agent completed");
             break;
-        case ChatRuntimeEventTypes.StreamingOutput:
-            if (runtimeEvent is ChatRuntimeStreamingEvent streamEvent)
+        case ChatRuntimeEventTypes.AgentRunner:
+            if (runtimeEvent is ChatRuntimeAgentRunnerEvents  runnerEvent)
             {
-                Console.Write(streamEvent.Content);
+                Console.Write(runnerEvent.EventType);
             }
             break;
     }

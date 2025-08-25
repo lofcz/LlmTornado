@@ -33,10 +33,6 @@ public enum ChatRuntimeEventTypes
     /// Ensure that any event handlers attached to this event are thread-safe if the event may be raised from multiple
     /// threads.</remarks>
     Invoked,
-    /// <summary>
-    /// Represents a Agent streaming event
-    /// </summary>
-    //Streaming,
 
     /// <summary>
     /// Represents an orchestration event

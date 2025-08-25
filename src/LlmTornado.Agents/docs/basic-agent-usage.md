@@ -35,6 +35,7 @@ string instructions = """
 TornadoAgent agent = new TornadoAgent(
     client,
     ChatModel.OpenAi.Gpt41.V41Mini,
+    "Assistant",
     instructions
 );
 ```
@@ -108,13 +109,13 @@ Choose the right model for your use case:
 
 ```csharp
 // Fast and cost-effective for simple tasks
-var quickAgent = new TornadoAgent(client, ChatModel.OpenAi.Gpt41.V41Mini, instructions);
+var quickAgent = new TornadoAgent(client, ChatModel.OpenAi.Gpt41.V41Mini, "Assistant1", instructions);
 
 // More capable for complex reasoning
-var smartAgent = new TornadoAgent(client, ChatModel.OpenAi.Gpt41.V41, instructions);
+var smartAgent = new TornadoAgent(client, ChatModel.OpenAi.Gpt41.V41, "Assistant2",instructions);
 
 // Anthropic models for different use cases
-var claudeAgent = new TornadoAgent(client, ChatModel.Anthropic.Claude3.Sonnet, instructions);
+var claudeAgent = new TornadoAgent(client, ChatModel.Anthropic.Claude3.Sonnet, "Assistant3",instructions);
 ```
 
 ### Response Options
@@ -139,6 +140,7 @@ Create agents specialized for specific tasks:
 TornadoAgent codeReviewer = new TornadoAgent(
     client,
     ChatModel.OpenAi.Gpt41.V41Mini,
+    "CodeReviewer",
     """
     You are a senior software engineer performing code reviews.
     Focus on:
@@ -154,6 +156,7 @@ TornadoAgent codeReviewer = new TornadoAgent(
 TornadoAgent writer = new TornadoAgent(
     client,
     ChatModel.OpenAi.Gpt41.V41,
+    "Writer",
     """
     You are a creative writing assistant. Help users:
     - Develop compelling characters and plots
@@ -173,6 +176,7 @@ Handle complex interactions across multiple exchanges:
 TornadoAgent tutor = new TornadoAgent(
     client,
     ChatModel.OpenAi.Gpt41.V41Mini,
+    "Assistant",
     """
     You are a patient math tutor. Guide students through problems step-by-step.
     Ask questions to check understanding and provide hints rather than direct answers.
@@ -234,59 +238,7 @@ async Task<Conversation> RunWithRetry(TornadoAgent agent, string input, int maxR
 }
 ```
 
-## Agent Lifecycle
 
-### Creating Dummy Agents
-
-For testing or development purposes:
-
-```csharp
-// Create a dummy agent (useful for testing)
-TornadoAgent dummyAgent = TornadoAgent.DummyAgent();
-```
-
-### Agent Cleanup
-
-Agents handle resource cleanup automatically, but you can explicitly manage resources:
-
-```csharp
-// Agents implement IDisposable pattern if needed
-using var agent = new TornadoAgent(client, model, instructions);
-var result = await agent.RunAsync("Hello");
-// Automatically disposed at end of using block
-```
-
-## Performance Tips
-
-### Efficient Agent Usage
-
-```csharp
-// Reuse agents for multiple conversations
-TornadoAgent agent = new TornadoAgent(client, model, instructions);
-
-// Multiple conversations with the same agent
-var result1 = await agent.RunAsync("First question");
-var result2 = await agent.RunAsync("Follow-up question");
-var result3 = await agent.RunAsync("Another question");
-
-// Rather than creating new agents each time
-```
-
-### Memory Management
-
-```csharp
-// Clear conversation history if it gets too long
-if (agent.Conversation.Messages.Count > 50)
-{
-    // Keep only recent messages
-    var recentMessages = agent.Conversation.Messages.TakeLast(10).ToList();
-    agent.Conversation = agent.Client.Chat.CreateConversation();
-    foreach (var message in recentMessages)
-    {
-        agent.Conversation.AppendMessage(message);
-    }
-}
-```
 
 ## Next Steps
 
