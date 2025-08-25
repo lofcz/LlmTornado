@@ -56,32 +56,6 @@ public class PlanningRunnable : OrchestrationRunnable<string, WebSearchPlan>
 }
 ```
 
-### Advancers for State Transitions
-
-Advancers control when and how to transition between states:
-
-```csharp
-public class PlanningAdvancer : OrchestrationAdvancer<WebSearchPlan, string>
-{
-    public override bool ShouldAdvance(WebSearchPlan output)
-    {
-        // Only advance if we have search items to process
-        return output.SearchItems?.Count > 0;
-    }
-
-    public override string ConvertOutput(WebSearchPlan output)
-    {
-        // Convert search plan to string for next runnable
-        return JsonConvert.SerializeObject(output);
-    }
-
-    public override OrchestrationRunnableBase GetNextRunnable(WebSearchPlan output)
-    {
-        return new ResearchRunnable();
-    }
-}
-```
-
 ## Complete Orchestration Example
 
 ### Research Report Orchestration
@@ -191,21 +165,6 @@ public class ReportingState : OrchestrationRunnable<string, ReportData>
     }
 }
 
-// Advancers
-public class PlanningAdvancer : OrchestrationAdvancer<WebSearchPlan, WebSearchPlan>
-{
-    public override bool ShouldAdvance(WebSearchPlan output) => true;
-    public override WebSearchPlan ConvertOutput(WebSearchPlan output) => output;
-    public override OrchestrationRunnableBase GetNextRunnable(WebSearchPlan output) => new ResearchState();
-}
-
-public class ResearchAdvancer : OrchestrationAdvancer<string, string>
-{
-    public override bool ShouldAdvance(string output) => !string.IsNullOrEmpty(output);
-    public override string ConvertOutput(string output) => output;
-    public override OrchestrationRunnableBase GetNextRunnable(string output) => new ReportingState();
-}
-
 // Complete Orchestration
 public class ResearchOrchestration : Orchestration<string, ReportData>
 {
@@ -213,17 +172,14 @@ public class ResearchOrchestration : Orchestration<string, ReportData>
     {
         // Set up the state machine
         var planningState = new PlanningState();
-        var planningAdvancer = new PlanningAdvancer();
-        planningState.SetAdvancer(planningAdvancer);
-
         var researchState = new ResearchState();
-        var researchAdvancer = new ResearchAdvancer();
-        researchState.SetAdvancer(researchAdvancer);
+        var reportingState = new ReportingState() {AllowDeadEnd = true};
 
-        var reportingState = new ReportingState();
-        // No advancer needed for final state
+        planningState.AddAdvancer(researchState);
+        researchState.AddAdvancer(reportingState);
 
         InitialRunnable = planningState;
+        RunnableWithResult = reportingState;
     }
 }
 
@@ -248,124 +204,6 @@ The orchestration invoke process follows this detailed flow:
 5. **Transition Check** - Check if advancement is needed
 6. **State Transition** - Move to next state if applicable
 7. **Completion Check** - Determine if workflow is complete
-
-## Advanced Orchestration Patterns
-
-### Conditional Branching
-
-Create workflows with conditional paths:
-
-```csharp
-public class ConditionalAdvancer : OrchestrationAdvancer<AnalysisResult, ProcessingInput>
-{
-    public override bool ShouldAdvance(AnalysisResult output)
-    {
-        return output.RequiresProcessing;
-    }
-
-    public override OrchestrationRunnableBase GetNextRunnable(AnalysisResult output)
-    {
-        return output.ProcessingType switch
-        {
-            "data" => new DataProcessingState(),
-            "text" => new TextProcessingState(),
-            "image" => new ImageProcessingState(),
-            _ => new DefaultProcessingState()
-        };
-    }
-
-    public override ProcessingInput ConvertOutput(AnalysisResult output)
-    {
-        return new ProcessingInput
-        {
-            Data = output.Data,
-            ProcessingType = output.ProcessingType,
-            Parameters = output.ProcessingParameters
-        };
-    }
-}
-```
-
-### Parallel Processing
-
-Handle parallel execution within orchestration:
-
-```csharp
-public class ParallelProcessingState : OrchestrationRunnable<DataInput, ProcessedData>
-{
-    public override async Task<ProcessedData> Invoke(DataInput input)
-    {
-        // Create agents for parallel processing
-        var dataAgent = new TornadoAgent(client, model, "Process data elements");
-        var validationAgent = new TornadoAgent(client, model, "Validate processing results");
-
-        // Process data items in parallel
-        var processingTasks = input.DataItems.Select(async item =>
-        {
-            var result = await TornadoRunner.RunAsync(dataAgent, $"Process: {item}");
-            return result.Messages.Last().Content;
-        });
-
-        var processedItems = await Task.WhenAll(processingTasks);
-
-        // Validate results
-        var validationResult = await TornadoRunner.RunAsync(validationAgent, 
-            $"Validate these processed items: {string.Join(", ", processedItems)}");
-
-        return new ProcessedData
-        {
-            ProcessedItems = processedItems.ToList(),
-            ValidationResult = validationResult.Messages.Last().Content,
-            ProcessedAt = DateTime.UtcNow
-        };
-    }
-}
-```
-
-### Error Handling and Recovery
-
-Implement robust error handling:
-
-```csharp
-public class ResilientRunnable : OrchestrationRunnable<InputData, OutputData>
-{
-    private readonly int _maxRetries = 3;
-    private readonly TimeSpan _retryDelay = TimeSpan.FromSeconds(2);
-
-    public override async Task<OutputData> Invoke(InputData input)
-    {
-        for (int attempt = 1; attempt <= _maxRetries; attempt++)
-        {
-            try
-            {
-                var agent = new TornadoAgent(client, model, "Process with error handling");
-                var result = await TornadoRunner.RunAsync(agent, input.Content);
-                
-                return new OutputData
-                {
-                    Content = result.Messages.Last().Content,
-                    Success = true,
-                    Attempt = attempt
-                };
-            }
-            catch (Exception ex) when (attempt < _maxRetries)
-            {
-                // Log error and wait before retry
-                Console.WriteLine($"Attempt {attempt} failed: {ex.Message}");
-                await Task.Delay(_retryDelay);
-            }
-        }
-
-        // Final attempt failed
-        return new OutputData
-        {
-            Content = "Processing failed after maximum retries",
-            Success = false,
-            Attempt = _maxRetries
-        };
-    }
-}
-```
 
 ### Dynamic State Creation
 
@@ -544,11 +382,6 @@ Error: Orchestration never completes
 ```
 Solution: Ensure advancement conditions eventually become false.
 
-**Memory Leaks**
-```
-Error: Memory usage grows over time
-```
-Solution: Clear runtime properties and dispose resources properly.
 
 ## Next Steps
 
