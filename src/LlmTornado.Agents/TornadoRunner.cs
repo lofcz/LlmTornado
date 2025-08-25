@@ -1,5 +1,6 @@
 ﻿using LlmTornado.Agents.DataModels;
 using LlmTornado.Chat;
+using LlmTornado.Chat.Models;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Common;
@@ -11,6 +12,8 @@ namespace LlmTornado.Agents;
 /// </summary>
 public class TornadoRunner
 {
+
+
     /// <summary>
     /// Invoke the agent loop to begin async
     /// </summary>
@@ -19,7 +22,7 @@ public class TornadoRunner
     /// <param name="guardRail">Input Guardrail To perform</param>
     /// <param name="singleTurn">Set loop to not loop</param>
     /// <param name="maxTurns">Max loops to perform</param>
-    /// <param name="messages"> Input messages to add to response</param>
+    /// <param name="messagesToAppend"> Input messages to add to response</param>
     /// <param name="streaming">Enable streaming</param>
     /// <param name="runnerCallback">delegate to send event information </param>
     /// <param name="responseId">Previous Response ID from response API</param>
@@ -35,7 +38,7 @@ public class TornadoRunner
         GuardRailFunction? guardRail = null,
         bool singleTurn = false,
         int maxTurns = 10,
-        List<ChatMessage>? messages = null,
+        List<ChatMessage>? messagesToAppend = null,
         Func<AgentRunnerEvents, ValueTask>? runnerCallback = null,
         bool streaming = false,
         string responseId = "",
@@ -43,11 +46,52 @@ public class TornadoRunner
         CancellationToken cancellationToken = default
     )
     {
-        Conversation conversation = SetupConversation(agent, input, messages, responseId, cancellationToken);
+        Conversation conversation = SetupConversation(agent, input, messagesToAppend, responseId, cancellationToken);
         //Check if the input triggers a guardrail to stop the agent from continuing
         await CheckInputGuardrail(input, guardRail);
 
         return await RunAgentLoop(conversation, agent, singleTurn, maxTurns, runnerCallback, streaming, responseId, cancellationToken, toolPermissionHandle);
+    }
+
+    /// <summary>
+    /// Invoke the agent loop to begin async
+    /// </summary>
+    /// <param name="api">Client with api key</param>
+    /// <param name="model">Model to use</param> 
+    /// <param name="input">Message to the Agent</param>
+    /// <param name="guardRail">Input Guardrail To perform</param>
+    /// <param name="singleTurn">Set loop to not loop</param>
+    /// <param name="maxTurns">Max loops to perform</param>
+    /// <param name="messageHistory"> Input messages to add to response</param>
+    /// <param name="streaming">Enable streaming</param>
+    /// <param name="runnerCallback">delegate to send event information </param>
+    /// <param name="responseId">Previous Response ID from response API</param>
+    /// <param name="cancellationToken">Cancellation token to cancel the run</param>
+    /// <param name="toolPermissionHandle">Delegate to request tool permission from user</param>
+    /// <returns>Result of the run</returns>
+    /// <exception cref="GuardRailTriggerException">Triggers when Guardrail detects bad input</exception>
+    /// <exception cref="Exception"> Max Turns Reached or Error</exception>
+    /// <exception cref="OperationCanceledException"></exception>
+    public static async Task<Conversation> RunAsync(
+        TornadoApi api,
+        ChatModel model,
+        ChatRequest options,
+        string input = "",
+        string instructions = "You are a useful assistant",
+        GuardRailFunction? guardRail = null,
+        bool singleTurn = false,
+        int maxTurns = 10,
+        List<ChatMessage>? messagesToAppend = null,
+        Func<AgentRunnerEvents, ValueTask>? runnerCallback = null,
+        bool streaming = false,
+        string responseId = "",
+        Func<string, ValueTask<bool>>? toolPermissionHandle = null,
+        CancellationToken cancellationToken = default
+    )
+    {
+        TornadoAgent agent = new TornadoAgent(api, model, instructions) { Options = options };
+
+        return await RunAsync(agent, input, guardRail, singleTurn, maxTurns, messagesToAppend, runnerCallback, streaming, responseId, toolPermissionHandle, cancellationToken);
     }
 
     /// <summary>
@@ -227,7 +271,12 @@ public class TornadoRunner
     /// <param name="runnerCallback">Callback events</param>
     /// <param name="toolPermissionRequest">Request Tool permissino</param>
     /// <returns></returns>
-    private static async Task<Conversation> GetNewResponse(TornadoAgent agent, Conversation chat, bool Streaming = false, Func<AgentRunnerEvents, ValueTask>? runnerCallback = null, Func<string, ValueTask<bool>>? toolPermissionRequest = null)
+    private static async Task<Conversation> GetNewResponse(
+        TornadoAgent agent, 
+        Conversation chat, 
+        bool Streaming = false, 
+        Func<AgentRunnerEvents, ValueTask>? runnerCallback = null, 
+        Func<string, ValueTask<bool>>? toolPermissionRequest = null)
     {
         try
         {

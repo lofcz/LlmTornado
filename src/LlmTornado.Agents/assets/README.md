@@ -291,4 +291,6 @@ Console.WriteLine(report.Content);
 * [ ] Ability to see which states take longest and cost the most
 * [ ] More comprehensive examples in the repo
 * [ ] Observability as a whole
-* [ ] Api for Runtime
+* [x] Api for Runtime
+* [ ] Finish adding Streaming Events in runner
+* [ ] Need to add in Computer tool events on the output 

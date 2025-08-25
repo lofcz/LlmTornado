@@ -134,6 +134,17 @@ public class TornadoAgent
         GetMcpTools();
     }
 
+
+    public Conversation GetConversation()
+    {
+        if(Conversation == null)
+        {
+            Conversation = Client.Chat.CreateConversation(Options);
+        }
+
+        return Conversation;
+    }
+
     /// <summary>
     /// Set up the provided methods as tools
     /// </summary>
@@ -289,7 +300,7 @@ public class TornadoAgent
         Func<string, ValueTask<bool>>? toolPermissionHandle = null, 
         CancellationToken cancellationToken = default)
     {
-        Conversation = await TornadoRunner.RunAsync(this, input: input, messages: appendMessages, guardRail: inputGuardRailFunction, cancellationToken: cancellationToken, streaming: streaming,
+        Conversation = await TornadoRunner.RunAsync(this, input: input, messagesToAppend: appendMessages, guardRail: inputGuardRailFunction, cancellationToken: cancellationToken, streaming: streaming,
                  runnerCallback: onAgentRunnerEvent, maxTurns: maxTurns, responseId: responseId, toolPermissionHandle: toolPermissionHandle);
 
         return Conversation;
