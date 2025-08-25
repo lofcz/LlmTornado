@@ -83,11 +83,6 @@ public class TornadoAgent
 
 
     /// <summary>
-    /// Current conversation state for the agent, used to track the context of interactions.
-    /// </summary>
-    public Conversation Conversation { get; set; }
-
-    /// <summary>
     /// Initializes a new instance of the <see cref="TornadoAgent"/> class, which represents an AI agent capable of
     /// interacting with a Tornado API client and executing tasks based on provided instructions, tools, and an optional
     /// output schema.
@@ -123,6 +118,7 @@ public class TornadoAgent
         Tools = tools ?? Tools;
         Options.Model = model;
         McpServers = mcpServers ?? new List<MCPServer>();
+        Name = string.IsNullOrEmpty(name) ? "Assistant" : name;
 
         if (OutputSchema != null)
         {
@@ -132,17 +128,6 @@ public class TornadoAgent
         //Setup tools and agent tools
         AutoSetupTools(Tools);
         GetMcpTools();
-    }
-
-
-    public Conversation GetConversation()
-    {
-        if(Conversation == null)
-        {
-            Conversation = Client.Chat.CreateConversation(Options);
-        }
-
-        return Conversation;
     }
 
     /// <summary>
@@ -263,14 +248,6 @@ public class TornadoAgent
     }
 
     /// <summary>
-    /// Use this to clear the current conversation history on the agent.
-    /// </summary>
-    public void ClearConversation()
-    {
-        Conversation.Clear();
-    }
-
-    /// <summary>
     /// Executes the conversation flow asynchronously, processing the input and managing interactions with the agent.
     /// </summary>
     /// <remarks>This method orchestrates the conversation flow by invoking the underlying runner with the
@@ -300,9 +277,7 @@ public class TornadoAgent
         Func<string, ValueTask<bool>>? toolPermissionHandle = null, 
         CancellationToken cancellationToken = default)
     {
-        Conversation = await TornadoRunner.RunAsync(this, input: input, messagesToAppend: appendMessages, guardRail: inputGuardRailFunction, cancellationToken: cancellationToken, streaming: streaming,
+        return await TornadoRunner.RunAsync(this, input: input, messagesToAppend: appendMessages, guardRail: inputGuardRailFunction, cancellationToken: cancellationToken, streaming: streaming,
                  runnerCallback: onAgentRunnerEvent, maxTurns: maxTurns, responseId: responseId, toolPermissionHandle: toolPermissionHandle);
-
-        return Conversation;
     }
 }

@@ -54,7 +54,7 @@ public class TornadoRunner
     }
 
     /// <summary>
-    /// Invoke the agent loop to begin async
+    /// Invoke the agent loop to begin async without a agent defined
     /// </summary>
     /// <param name="api">Client with api key</param>
     /// <param name="model">Model to use</param> 
@@ -62,7 +62,7 @@ public class TornadoRunner
     /// <param name="guardRail">Input Guardrail To perform</param>
     /// <param name="singleTurn">Set loop to not loop</param>
     /// <param name="maxTurns">Max loops to perform</param>
-    /// <param name="messageHistory"> Input messages to add to response</param>
+    /// <param name="messagesToAppend"> Input messages to add to response</param>
     /// <param name="streaming">Enable streaming</param>
     /// <param name="runnerCallback">delegate to send event information </param>
     /// <param name="responseId">Previous Response ID from response API</param>
@@ -145,9 +145,17 @@ public class TornadoRunner
         return chat;
     }
 
+    // [consideration] Feeling very off about using setup here or maintaining the conversation within the agent class
+    // Depends if we want to keep the agent stateless or not
+    /// <param name="agent"></param>
+    /// <param name="input"></param>
+    /// <param name="messages"></param>
+    /// <param name="responseId"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
     private static Conversation SetupConversation(TornadoAgent agent, string input, List<ChatMessage>? messages = null, string responseId = "", CancellationToken cancellationToken = default)
     {
-        Conversation chat = agent.Client.Chat.CreateConversation(agent.Options); 
+        Conversation chat = agent.Client.Chat.CreateConversation(agent.Options);
 
         chat.AddSystemMessage(agent.Instructions); //Set the instructions for the agent
 
@@ -169,6 +177,7 @@ public class TornadoRunner
         return chat;
     }
 
+    //[consideration] Maybe this makes sense here but feels off
     private static Conversation AddMessagesToConversation(Conversation chat, List<ChatMessage>? messages = null)
     {
         if (messages == null) return chat;
@@ -290,7 +299,7 @@ public class TornadoRunner
                 foreach (FunctionCall fn in functions)
                 {
                     runnerCallback?.Invoke(new AgentRunnerToolInvokedEvent(fn));
-                    fn.Result = await HandleToolCall(agent, fn, toolPermissionRequest);
+                    fn.Result = await HandleToolCall(agent, fn, toolPermissionRequest); //[consideration]I could go parallel here but not sure if its worth the complexity
                     runnerCallback?.Invoke(new AgentRunnerToolCompletedEvent(fn));
                 }
             });
@@ -303,7 +312,7 @@ public class TornadoRunner
         return chat;
     }
 
-
+    //[consideration] Need to massively improve this to handle all the streaming events
     private static async Task<Conversation> HandleStreaming(TornadoAgent agent, Conversation chat, Func<AgentRunnerEvents, ValueTask>? runnerCallback = null, Func<string, ValueTask<bool>>? toolPermissionRequest = null)
     {
         //Create Open response
@@ -342,7 +351,7 @@ public class TornadoRunner
                     foreach (FunctionCall fn in toolCall)
                     {
                         runnerCallback?.Invoke(new AgentRunnerToolInvokedEvent(fn));
-                        fn.Result = await HandleToolCall(agent, fn, toolPermissionRequest);
+                        fn.Result = await HandleToolCall(agent, fn, toolPermissionRequest); //I could go parallel here but not sure if its worth the complexity
                         runnerCallback?.Invoke(new AgentRunnerToolCompletedEvent(fn));
                     }
                 }
