@@ -8,6 +8,13 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
     public override Type GetInputType() => typeof(TInput);
     public override Type GetOutputType() => typeof(TOutput);
 
+    public OrchestrationRunnable(Orchestration orchestrator, string runnableName = "") 
+    {
+        runnableName = string.IsNullOrWhiteSpace(runnableName) ? this.GetType().Name : runnableName;
+        Orchestrator = orchestrator;
+        Orchestrator?.Runnables.Add(runnableName, this);
+    }
+
     /// <summary>
     /// Output results from the invocation of the runnable.
     /// </summary>

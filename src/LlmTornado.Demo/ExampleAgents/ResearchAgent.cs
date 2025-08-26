@@ -24,10 +24,10 @@ public class ResearchAgentConfiguration : OrchestrationRuntimeConfiguration
     public ResearchAgentConfiguration(TornadoApi client)
     {
         //Create the Runnables
-        planner = new PlannerRunnable(client);
-        researcher = new ResearchRunnable(client);
-        reporter = new ReportingRunnable(client);
-        exit = new ExitRunnable() { AllowDeadEnd = true }; //Set deadend to disable reattempts and finish the execution
+        planner = new PlannerRunnable(client, this);
+        researcher = new ResearchRunnable(client, this);
+        reporter = new ReportingRunnable(client, this);
+        exit = new ExitRunnable(this) { AllowDeadEnd = true }; //Set deadend to disable reattempts and finish the execution
 
         //Setup the orchestration flow
         planner.AddAdvancer((plan) => plan.items.Length > 0, researcher);
@@ -64,7 +64,7 @@ public class ResearchAgentConfiguration : OrchestrationRuntimeConfiguration
     {
         RuntimeAgent Agent;
 
-        public PlannerRunnable(TornadoApi client)
+        public PlannerRunnable(TornadoApi client, Orchestration orchestrator) : base(orchestrator)
         {
             string instructions = """
                 You are a helpful research assistant. Given a query, come up with a set of web searches, 
@@ -101,7 +101,7 @@ public class ResearchAgentConfiguration : OrchestrationRuntimeConfiguration
         public int MaxDegreeOfParallelism { get; set; } = 4;
         public int MaxItemsToProcess { get; set; } = 3;
         TornadoApi Client { get; set; }
-        public ResearchRunnable(TornadoApi client) { Client = client; }
+        public ResearchRunnable(TornadoApi client, Orchestration orchestrator):base(orchestrator) { Client = client; }
 
         public override async ValueTask<string> Invoke(WebSearchPlan plan)
         {
@@ -166,7 +166,7 @@ public class ResearchAgentConfiguration : OrchestrationRuntimeConfiguration
 
         public Action<AgentRunnerEvents>? OnAgentRunnerEvent { get; set; }
 
-        public ReportingRunnable(TornadoApi client)
+        public ReportingRunnable(TornadoApi client, Orchestration orchestrator) : base(orchestrator)
         {
             string instructions = """
                 You are a senior researcher tasked with writing a cohesive report for a research query.
@@ -211,6 +211,10 @@ public class ResearchAgentConfiguration : OrchestrationRuntimeConfiguration
 
     public class ExitRunnable : OrchestrationRunnable<ReportData, ChatMessage>
     {
+        public ExitRunnable(Orchestration orchestrator, string runnableName = "") : base(orchestrator, runnableName)
+        {
+        }
+
         public override ValueTask<ChatMessage> Invoke(ReportData input)
         {
             this.Orchestrator?.HasCompletedSuccessfully(); //Signal the orchestration has completed successfully

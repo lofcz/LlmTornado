@@ -3,6 +3,7 @@ using LlmTornado.Agents.ChatRuntime;
 using LlmTornado.Agents.ChatRuntime.Orchestration;
 using LlmTornado.Agents.ChatRuntime.RuntimeConfigurations;
 using LlmTornado.Agents.DataModels;
+using LlmTornado.Agents.Utility;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Demo.ExampleAgents;
@@ -86,40 +87,55 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
         Console.WriteLine(report.Content);
     }
 
+    [TornadoTest]
+    public static async Task CodingAgentDotVisualizationDemo()
+    {
+        CodingAgentConfiguration RuntimeConfiguration = new CodingAgentConfiguration();
+        Console.WriteLine(OrchestrationVisualization.ToDotGraph<ChatMessage,ChatMessage>(RuntimeConfiguration, "CodingAgentOrchestration"));
+    }
+
     public class CodingAgentConfiguration : OrchestrationRuntimeConfiguration
     {
         public static string ProjectBuildPath = Directory.GetCurrentDirectory();
         public static string ProjectName = "ConsoleDemo_" + Guid.NewGuid().ToString().Substring(0,6);
 
-        CodingAgentRunnable codeState = new CodingAgentRunnable();//Program a solution
-        ProjectBuilderRunnable buildState = new ProjectBuilderRunnable(); //Execute a solution 
-        CodeReviewRunnable reviewState = new CodeReviewRunnable();//How to fix the code
-        ProjectSummaryRunnable summaryState = new ProjectSummaryRunnable() { AllowDeadEnd = true }; //Summarize the code
+        CodingAgentRunnable _codeState;
+        ProjectBuilderRunnable _buildState;
+        CodeReviewRunnable _reviewState;
+        ProjectSummaryRunnable _summaryState;
 
         public CodingAgentConfiguration()
         {
             FileIOUtility.SafeWorkingDirectory = Path.Combine(ProjectBuildPath, ProjectName);
-            
-            CreateNewProject(ProjectName);
 
-            Console.WriteLine($"Created new project at {FileIOUtility.SafeWorkingDirectory}");
+            _codeState = new CodingAgentRunnable(this);//Program a solution
+            _buildState = new ProjectBuilderRunnable(this); //Execute a solution 
+            _reviewState = new CodeReviewRunnable(this);//How to fix the code
+            _summaryState = new ProjectSummaryRunnable(this) { AllowDeadEnd = true }; //Summarize the code
+
             SetupOrchestration();
         }
 
+        public override void OnRuntimeInitialized()
+        {
+            CreateNewProject(ProjectName);
+
+            Console.WriteLine($"Created new project at {FileIOUtility.SafeWorkingDirectory}");
+        }
 
         private void SetupOrchestration()
         {
             //Setup the orchestration flow
-            codeState.AddAdvancer(CheckIfCodeGenerated, buildState);
+            _codeState.AddAdvancer(CheckIfCodeGenerated, _buildState);
 
-            buildState.AddAdvancer(CheckIfProgramFailed, reviewState);
-            buildState.AddAdvancer(CheckIfProgramWorked, summaryState);
+            _buildState.AddAdvancer(CheckIfProgramFailed, _reviewState);
+            _buildState.AddAdvancer(CheckIfProgramWorked, _summaryState);
 
-            reviewState.AddAdvancer(codeState); //Loop back to coding agent to fix issues
+            _reviewState.AddAdvancer(_codeState); //Loop back to coding agent to fix issues
 
             //Configure the Orchestration entry and exit points
-            SetEntryRunnable(codeState);
-            SetRunnableWithResult(summaryState);
+            SetEntryRunnable(_codeState);
+            SetRunnableWithResult(_summaryState);
         }
 
         public bool CheckIfCodeGenerated(ProgramResultOutput result)
@@ -151,6 +167,10 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
 
         class ProjectSummaryRunnable : OrchestrationRunnable<CodeBuildInfoOutput, ChatMessage>
         {
+            public ProjectSummaryRunnable(Orchestration orchestrator) : base(orchestrator)
+            {
+            }
+
             public override ValueTask<ChatMessage> Invoke(CodeBuildInfoOutput input)
             {
                 StringBuilder stringBuilder = new StringBuilder();
@@ -163,6 +183,10 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
 
         class ProjectBuilderRunnable : OrchestrationRunnable<ProgramResultOutput, CodeBuildInfoOutput>
         {
+            public ProjectBuilderRunnable(Orchestration orchestrator) : base(orchestrator)
+            {
+            }
+
             public override ValueTask<CodeBuildInfoOutput> Invoke(ProgramResultOutput programResult)
             {
                 //Need a file path to a solution you don't care about or has git control
@@ -190,7 +214,7 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
         {
             RuntimeAgent Agent;
 
-            public CodeReviewRunnable()
+            public CodeReviewRunnable(Orchestration orchestrator) : base(orchestrator)
             {
                 string instructions = """
                     You are an expert programmer for c#. Given the generated C# project errors help the coding agent by finding all the files with errors 
@@ -233,7 +257,7 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
         {
             RuntimeAgent Agent;
 
-            public CodingAgentRunnable()
+            public CodingAgentRunnable(Orchestration orchestrator) : base(orchestrator)
             {
                 string instructions = """
                     You are an expert C# programmer. Your task is to write detailed and working code for the following function based on the context provided.

@@ -161,13 +161,6 @@ public static class OrchestrationVisualization
 
         visitedStates.Add(stateId);
 
-        // Add state declaration if not already added
-        if (!IsSpecialState(state))
-        {
-            var fillColor = GetDotStateColor(state);
-            dotBuilder.AppendLine($"    {stateId} [fillcolor={fillColor}, label=\"{GetStateLabel(state)}\"];");
-        }
-
         // Get transitions - try both the base class and derived class transition properties
         IEnumerable<OrchestrationAdvancer> transitions = null;
 
@@ -179,7 +172,7 @@ public static class OrchestrationVisualization
         else
         {
             // Try to get transitions from the generic derived class using reflection
-            var transitionsProperty = state.GetType().GetProperty("Transitions");
+            var transitionsProperty = state.GetType().GetProperty("Advances");
             if (transitionsProperty != null)
             {
                 var genericTransitions = transitionsProperty.GetValue(state);
@@ -231,7 +224,7 @@ public static class OrchestrationVisualization
         else
         {
             // Try to get transitions from the generic derived class using reflection
-            var transitionsProperty = state.GetType().GetProperty("Transitions");
+            var transitionsProperty = state.GetType().GetProperty("Advances");
             if (transitionsProperty != null)
             {
                 var genericTransitions = transitionsProperty.GetValue(state);
@@ -305,11 +298,6 @@ public static class OrchestrationVisualization
         return "lightblue";
     }
 
-    private static bool IsSpecialState(OrchestrationRunnableBase state)
-    {
-        // Check if this state has already been styled as start or result state
-        return false; // This is handled in the main method
-    }
 
     private static string GetSimpleTypeName(Type type)
     {

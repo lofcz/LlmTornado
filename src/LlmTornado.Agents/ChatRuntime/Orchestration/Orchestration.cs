@@ -57,6 +57,7 @@ public class Orchestration
     /// </summary>
     public List<object>? BaseFinalResult { get; set; }
 
+    // [consideration] I actually don't have this set anywhere.. I need this to have all the states but states are internally linked to each other.
     /// <summary>
     /// Gets or sets the collection of states.
     /// </summary>
