@@ -12,102 +12,151 @@
 
 <link href="css/chat.css" rel="stylesheet" />
 
-<div class="chat-container">
-    <div class="chat-header">
-        <h2>🌪️ LlmTornado Chat</h2>
-        <div class="chat-controls">
-            <button class="btn btn-outline-secondary" @onclick="ClearChat" disabled="@isConnecting">
-                🗑️ Clear
-            </button>
-            <button class="btn @(isConnected ? "btn-success" : "btn-secondary")" disabled>
-                @(isConnected ? "🟢 Connected" : "🔴 Disconnected")
-            </button>
+<div class="chat-layout">
+    <!-- Main Chat Area -->
+    <div class="chat-main @(showLogPanel ? "with-log-panel" : "full-width")">
+        <div class="chat-container">
+            <div class="chat-header">
+                <h2>🌪️ LlmTornado Chat</h2>
+                <div class="chat-controls">
+                    <button class="btn btn-outline-secondary" @onclick="ToggleLogPanel">
+                        @if (showLogPanel)
+                        {
+                            <span>🔒 Hide Logs</span>
+                        }
+                        else
+                        {
+                            <span>📋 Show Logs</span>
+                        }
+                    </button>
+                    <button class="btn btn-outline-secondary" @onclick="ClearChat" disabled="@isConnecting">
+                        🗑️ Clear
+                    </button>
+                    <button class="btn @(isConnected ? "btn-success" : "btn-secondary")" disabled>
+                        @(isConnected ? "🟢 Connected" : "🔴 Disconnected")
+                    </button>
+                </div>
+            </div>
+
+            <div class="chat-messages" id="chat-messages">
+                @foreach (var message in messages)
+                {
+                    <div class="message @message.CssClass" key="@message.Id">
+                        <div class="message-header">
+                            <span class="message-role">@message.Role</span>
+                            <span class="message-timestamp">@message.Timestamp.ToString("HH:mm:ss")</span>
+                        </div>
+                        <div class="message-content">
+                            @if (message.IsMarkdown)
+                            {
+                                @((MarkupString)MarkdownHelper.ToHtml(message.Content))
+                            }
+                            else if (message.IsHtml)
+                            {
+                                @((MarkupString)message.Content)
+                            }
+                            else
+                            {
+                                <pre style="white-space: pre-wrap; font-family: inherit; margin: 0;">@message.Content</pre>
+                            }
+                        </div>
+                    </div>
+                }
+
+                @if (isConnecting)
+                {
+                    <div class="message assistant">
+                        <div class="message-header">
+                            <span class="message-role">Assistant</span>
+                            <span class="message-timestamp">@DateTime.Now.ToString("HH:mm:ss")</span>
+                        </div>
+                        <div class="message-content">
+                            <div class="typing-indicator">
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                            </div>
+                            <span class="thinking-text">Thinking...</span>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="chat-input-container">
+                <div class="input-group">
+                    <textarea @bind="currentMessage" 
+                              @onkeydown="HandleKeyDown" 
+                              class="form-control chat-input" 
+                              placeholder="Type your message here... (Markdown supported)" 
+                              disabled="@isConnecting"
+                              rows="1"
+                              style="resize: vertical; min-height: 38px;"></textarea>
+                    <button @onclick="SendMessage" 
+                            class="btn btn-primary" 
+                            disabled="@(isConnecting || string.IsNullOrWhiteSpace(currentMessage))">
+                        @if (isConnecting)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                        }
+                        Send
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="chat-messages" id="chat-messages">
-        @foreach (var message in messages)
-        {
-            <div class="message @message.CssClass" key="@message.Id">
-                <div class="message-header">
-                    <span class="message-role">@message.Role</span>
-                    <span class="message-timestamp">@message.Timestamp.ToString("HH:mm:ss")</span>
+    <!-- Log Panel -->
+    <div class="log-panel @(showLogPanel ? "show" : "hide")">
+        <div class="log-header">
+            <h4>📋 Event Logs</h4>
+            <div class="log-controls">
+                <button class="btn btn-sm btn-outline-light" @onclick="ClearLogs">Clear Logs</button>
+                <button class="btn btn-sm btn-outline-light" @onclick="ToggleLogPanel">✕</button>
+            </div>
+        </div>
+        
+        <div class="log-content" id="log-content">
+            @if (!logEvents.Any())
+            {
+                <div class="log-empty">
+                    <p>No events logged yet. Events will appear here when the assistant processes your messages.</p>
                 </div>
-                <div class="message-content">
-                    @if (message.IsMarkdown)
-                    {
-                        @((MarkupString)MarkdownHelper.ToHtml(message.Content))
-                    }
-                    else if (message.IsHtml)
-                    {
-                        @((MarkupString)message.Content)
-                    }
-                    else
-                    {
-                        <pre style="white-space: pre-wrap; font-family: inherit; margin: 0;">@message.Content</pre>
-                    }
-                </div>
-                @if (message.Events.Any())
+            }
+            else
+            {
+                @foreach (var logEvent in logEvents)
                 {
-                    <div class="message-events">
-                        @foreach (var evt in message.Events)
-                        {
-                            <div class="event-item @evt.CssClass">
-                                <span class="event-type">@evt.Type</span>
-                                <span class="event-content">@evt.Description</span>
-                            </div>
-                        }
+                    <div class="log-entry @logEvent.CssClass" key="@logEvent.Id">
+                        <div class="log-entry-header">
+                            <span class="log-entry-type">@logEvent.Type</span>
+                            <span class="log-entry-timestamp">@logEvent.Timestamp.ToString("HH:mm:ss.fff")</span>
+                        </div>
+                        <div class="log-entry-content">
+                            @if (!string.IsNullOrEmpty(logEvent.Details))
+                            {
+                                <div class="log-entry-details">@logEvent.Details</div>
+                            }
+                            @if (!string.IsNullOrEmpty(logEvent.Data))
+                            {
+                                <div class="log-entry-data">
+                                    <pre>@logEvent.Data</pre>
+                                </div>
+                            }
+                        </div>
                     </div>
                 }
-            </div>
-        }
-
-        @if (isConnecting)
-        {
-            <div class="message assistant">
-                <div class="message-header">
-                    <span class="message-role">Assistant</span>
-                    <span class="message-timestamp">@DateTime.Now.ToString("HH:mm:ss")</span>
-                </div>
-                <div class="message-content">
-                    <div class="typing-indicator">
-                        <span></span>
-                        <span></span>
-                        <span></span>
-                    </div>
-                    <span class="thinking-text">Thinking...</span>
-                </div>
-            </div>
-        }
-    </div>
-
-    <div class="chat-input-container">
-        <div class="input-group">
-            <textarea @bind="currentMessage" 
-                      @onkeydown="HandleKeyDown" 
-                      class="form-control chat-input" 
-                      placeholder="Type your message here... (Markdown supported)" 
-                      disabled="@isConnecting"
-                      rows="1"
-                      style="resize: vertical; min-height: 38px;"></textarea>
-            <button @onclick="SendMessage" 
-                    class="btn btn-primary" 
-                    disabled="@(isConnecting || string.IsNullOrWhiteSpace(currentMessage))">
-                @if (isConnecting)
-                {
-                    <span class="spinner-border spinner-border-sm me-2"></span>
-                }
-                Send
-            </button>
+            }
         </div>
     </div>
 </div>
 
 @code {
     private List<ChatMessage> messages = new();
+    private List<LogEvent> logEvents = new();
     private string currentMessage = "";
     private bool isConnecting = false;
     private bool isConnected = false;
+    private bool showLogPanel = false;
     private string? runtimeId;
     private HttpClient? httpClient;
     private string apiBaseUrl = "";
@@ -152,12 +201,14 @@
                 if (isConnected)
                 {
                     await AddSystemMessage($"Connected to runtime: {runtimeId}");
+                    await AddLogEvent("Runtime", "Connected", $"Runtime ID: {runtimeId}", "");
                 }
             }
         }
         catch (Exception ex)
         {
             await AddSystemMessage($"Failed to connect: {ex.Message}");
+            await AddLogEvent("Runtime", "Connection Failed", ex.Message, "");
         }
     }
 
@@ -170,6 +221,7 @@
         currentMessage = "";
         
         await AddUserMessage(userMessage);
+        await AddLogEvent("Message", "User Input", $"Message sent: {userMessage.Length} characters", "");
         
         isConnecting = true;
         StateHasChanged();
@@ -181,6 +233,7 @@
         catch (Exception ex)
         {
             await AddSystemMessage($"Error: {ex.Message}");
+            await AddLogEvent("Error", "Stream Error", ex.Message, "");
         }
         finally
         {
@@ -201,6 +254,7 @@
         };
         
         messages.Add(assistantMessage);
+        await AddLogEvent("Stream", "Started", "Streaming response initiated", "");
         StateHasChanged();
 
         try
@@ -219,6 +273,7 @@
         catch (Exception ex)
         {
             assistantMessage.Content = $"Stream error: {ex.Message}";
+            await AddLogEvent("Stream", "Error", ex.Message, "");
             StateHasChanged();
         }
     }
@@ -247,12 +302,7 @@
                         var toolEvent = JsonSerializer.Deserialize<ToolEvent>(data, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
                         if (toolEvent != null)
                         {
-                            lastMessage.Events.Add(new ChatEvent
-                            {
-                                Type = "Tool Call",
-                                Description = $"Calling {toolEvent.ToolName}",
-                                CssClass = "tool-call"
-                            });
+                            _ = AddLogEvent("Tool", "Invoked", $"Tool: {toolEvent.ToolName}", JsonSerializer.Serialize(toolEvent, new JsonSerializerOptions { WriteIndented = true }));
                         }
                         break;
 
@@ -260,12 +310,7 @@
                         var reasoningEvent = JsonSerializer.Deserialize<ReasoningEvent>(data, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
                         if (reasoningEvent != null)
                         {
-                            lastMessage.Events.Add(new ChatEvent
-                            {
-                                Type = "Reasoning",
-                                Description = reasoningEvent.Text ?? "Thinking...",
-                                CssClass = "reasoning"
-                            });
+                            _ = AddLogEvent("Reasoning", "Part Added", reasoningEvent.Text ?? "Thinking...", "");
                         }
                         break;
 
@@ -275,16 +320,12 @@
                         {
                             lastMessage.IsMarkdown = true;
                         }
+                        _ = AddLogEvent("Stream", "Complete", "Response streaming completed", "");
                         break;
 
                     default:
-                        // Handle other event types
-                        lastMessage.Events.Add(new ChatEvent
-                        {
-                            Type = eventType.Replace("_", " ").ToTitleCase(),
-                            Description = data,
-                            CssClass = "progress"
-                        });
+                        // Log all other event types
+                        _ = AddLogEvent("Event", eventType.Replace("_", " ").ToTitleCase(), "Event received", data);
                         break;
                 }
 
@@ -293,6 +334,7 @@
             catch (Exception ex)
             {
                 Console.WriteLine($"Error processing stream event: {ex.Message}");
+                _ = AddLogEvent("Error", "Event Processing", ex.Message, eventType + ": " + data);
             }
         });
     }
@@ -308,6 +350,7 @@
                 lastMessage.Content += $"\n\n❌ Stream error: {error}";
                 StateHasChanged();
             }
+            _ = AddLogEvent("Stream", "Error", error, "");
         });
     }
 
@@ -317,8 +360,61 @@
         await InvokeAsync(() =>
         {
             isConnecting = false;
+            _ = AddLogEvent("Stream", "Session Complete", "Streaming session finished", "");
             StateHasChanged();
         });
+    }
+
+    private async Task ToggleLogPanel()
+    {
+        showLogPanel = !showLogPanel;
+        StateHasChanged();
+        
+        if (hasRendered)
+        {
+            await Task.Delay(300); // Wait for CSS transition
+            await ScrollToBottom();
+            await ScrollLogToBottom();
+        }
+    }
+
+    private async Task ClearLogs()
+    {
+        logEvents.Clear();
+        StateHasChanged();
+    }
+
+    private async Task AddLogEvent(string type, string subType, string details, string data)
+    {
+        logEvents.Add(new LogEvent
+        {
+            Id = Guid.NewGuid().ToString(),
+            Type = $"{type} - {subType}",
+            Details = details,
+            Data = data,
+            Timestamp = DateTime.Now,
+            CssClass = GetLogEventCssClass(type.ToLower())
+        });
+        
+        StateHasChanged();
+        if (hasRendered && showLogPanel)
+        {
+            await ScrollLogToBottom();
+        }
+    }
+
+    private string GetLogEventCssClass(string type)
+    {
+        return type.ToLower() switch
+        {
+            "tool" => "log-tool",
+            "reasoning" => "log-reasoning", 
+            "stream" => "log-stream",
+            "error" => "log-error",
+            "runtime" => "log-runtime",
+            "message" => "log-message",
+            _ => "log-default"
+        };
     }
 
     private async Task HandleKeyDown(KeyboardEventArgs e)
@@ -388,6 +484,15 @@
         }
     }
 
+    private async Task ScrollLogToBottom()
+    {
+        if (hasRendered)
+        {
+            await Task.Delay(100);
+            await JSRuntime.InvokeVoidAsync("scrollToBottom", "log-content");
+        }
+    }
+
     public void Dispose()
     {
         httpClient?.Dispose();
@@ -402,13 +507,15 @@
         public string CssClass { get; set; } = "";
         public bool IsHtml { get; set; } = false;
         public bool IsMarkdown { get; set; } = false;
-        public List<ChatEvent> Events { get; set; } = new();
     }
 
-    private class ChatEvent
+    private class LogEvent
     {
+        public string Id { get; set; } = "";
         public string Type { get; set; } = "";
-        public string Description { get; set; } = "";
+        public string Details { get; set; } = "";
+        public string Data { get; set; } = "";
+        public DateTime Timestamp { get; set; }
         public string CssClass { get; set; } = "";
     }
 
@@ -433,4 +540,4 @@
     {
         public string? Text { get; set; }
     }
-}}
+}
