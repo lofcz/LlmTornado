@@ -1,7 +1,8 @@
-﻿using LlmTornado.Agents.DataModels;
-using LlmTornado.Agents.ChatRuntime.Orchestration;
+﻿using LlmTornado.Agents.ChatRuntime.Orchestration;
+using LlmTornado.Agents.DataModels;
 using LlmTornado.Chat;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,12 +13,12 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations;
 /// <summary>
 /// Used to create StateMachine like orchestrations for chat runtimes.
 /// </summary>
-public class OrchestrationRuntimeConfiguration : AgentOrchestration, IRuntimeConfiguration
+public class OrchestrationRuntimeConfiguration : Orchestration<ChatMessage, ChatMessage>, IRuntimeConfiguration
 {
     public ChatRuntime Runtime { get; set; }
     public CancellationTokenSource cts { get; set; } = new CancellationTokenSource();
     public Func<ChatRuntimeEvents, ValueTask>? OnRuntimeEvent { get; set; }
-
+    public ConcurrentStack<ChatMessage> MessageHistory { get; set; } = new ConcurrentStack<ChatMessage>();
     public OrchestrationRuntimeConfiguration()
     {
         

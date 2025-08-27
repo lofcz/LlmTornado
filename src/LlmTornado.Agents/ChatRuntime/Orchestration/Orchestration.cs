@@ -415,32 +415,6 @@ public class Orchestration
 public class Orchestration<TInput, TOutput> : Orchestration
 {
     /// <summary>
-    /// Provides a mechanism for comparing two <see cref="RunnableOutputCollection{TOutput}"/> objects based on their
-    /// index values.
-    /// </summary>
-    /// <remarks>This comparer is used to sort or order <see cref="RunnableOutputCollection{TOutput}"/>
-    /// instances by their index. If either collection has an index of zero, the collections are considered
-    /// equal.</remarks>
-    class IndexSorter : IComparer<RunnableOutputCollection<TOutput?>>
-    {
-        public int Compare(RunnableOutputCollection<TOutput?>? x, RunnableOutputCollection<TOutput?>? y)
-        {
-            if (x == null || y == null)
-            {
-                return 0;
-            }
-
-            if (x.Index == 0 || y.Index == 0)
-            {
-                return 0;
-            }
-
-            // CompareTo() method
-            return x.Index.CompareTo(y.Index);
-        }
-    }
-
-    /// <summary>
     /// Executes the asynchronous operation, initializing with the specified input and running to completion.
     /// </summary>
     /// <param name="input">The input parameter used to initialize the operation. Can be <see langword="null"/> or the default value of
