@@ -30,6 +30,16 @@ public class RunnableProcess
     /// </summary>
     public object BaseInput { get; set; } = new object();
 
+    public object BaseResult { get; set; } = new object();
+
+    /// <summary>
+    /// Time Execution process has Started
+    /// </summary>
+    public DateTime? StartTime { get; set; }
+
+    public TimeSpan RunnerExecutionTime { get; set; }
+
+
     //public object Result { get; set; }
     public RunnableProcess() { }
 
@@ -44,6 +54,16 @@ public class RunnableProcess
         Runner = runner;
         BaseInput = inputValue;
         MaxReruns = maxReruns;
+    }
+
+    /// <summary>
+    /// Get the execution time of the runner process.
+    /// </summary>
+    /// <param name="startTime"></param>
+    /// <param name="endTime"></param>
+    public void SetExecutionTime(DateTime startTime, DateTime endTime)
+    {
+        RunnerExecutionTime = endTime - startTime;
     }
 
     /// <summary>
@@ -93,6 +113,7 @@ public class RunnableProcess<T> : RunnableProcess
     /// </summary>
     public T Input { get => (T)BaseInput; set => BaseInput = value!; }
 
+
     /// <summary>
     /// Initializes a new instance of the <see cref="RunnableProcess{T}"/> class with the specified runnable, input, and
     /// maximum rerun count.
@@ -118,14 +139,47 @@ public class RunnableProcess<T> : RunnableProcess
         Input = input!;
         Id = id;
     }
+}
+
+
+/// <summary>
+/// Represents a process that operates on a specific state with a generic input type.
+/// </summary>
+/// <remarks>This class extends the <see cref="StateProcess"/> to handle operations with a specific input
+/// type. It provides functionality to create state results with the specified type.</remarks>
+/// <typeparam name="T">The type of the input and result associated with the state process.</typeparam>
+public class RunnableProcess<TInput, TOutput> : RunnableProcess
+{
+    /// <summary>
+    /// Gets or sets the input value of type <typeparamref name="T"/>.
+    /// </summary>
+    public TInput Input { get => (TInput)BaseInput; set => BaseInput = value!; }
+
+    public TOutput Result { get => (TOutput)BaseResult; set => BaseResult = value!; }
 
     /// <summary>
-    /// Creates a new <see cref="StateResult{T}"/> instance with the specified result.
+    /// Initializes a new instance of the <see cref="RunnableProcess{T}"/> class with the specified runnable, input, and
+    /// maximum rerun count.
     /// </summary>
-    /// <param name="result">The result value to be encapsulated within the <see cref="RunnerResult{T}"/>.</param>
-    /// <returns>A <see cref="RunnerResult{T}"/> containing the specified result and the current state ID.</returns>
-    public RunnerResult<T> CreateRunnerResult(T result)
+    /// <param name="runnable">The orchestration runnable that defines the process logic to be executed.</param>
+    /// <param name="input">The input data of type <typeparamref name="T"/> required by the process. Cannot be <see langword="null"/>.</param>
+    /// <param name="maxReruns">The maximum number of times the process can be rerun in case of failure. Defaults to 3.</param>
+    public RunnableProcess(OrchestrationRunnableBase runnable, TInput input, int maxReruns = 3) : base(runnable, input!, maxReruns)
     {
-        return new RunnerResult<T>(Id, result);
+        Input = input!;
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="RunnableProcess{T}"/> class with the specified runnable, input,
+    /// identifier, and maximum rerun count.
+    /// </summary>
+    /// <param name="runnable">The orchestration runnable that defines the process logic to be executed.</param>
+    /// <param name="input">The input data of type <typeparamref name="T"/> required by the process. Cannot be <see langword="null"/>.</param>
+    /// <param name="id">A unique identifier for the process. Cannot be <see langword="null"/> or empty.</param>
+    /// <param name="maxReruns">The maximum number of times the process can be rerun in case of failure. Defaults to 3.</param>
+    public RunnableProcess(OrchestrationRunnableBase runnable, TInput input, string id, int maxReruns = 3) : base(runnable, input!, maxReruns)
+    {
+        Input = input!;
+        Id = id;
     }
 }

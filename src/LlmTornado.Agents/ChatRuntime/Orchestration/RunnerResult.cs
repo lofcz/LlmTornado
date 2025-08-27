@@ -56,6 +56,7 @@ public class RunnerResult<T> : RunnerResult
     /// </summary>
     public T Result { get => (T)ResultObject; }
 
+
     /// <summary>
     /// Initializes a new instance of the <see cref="RunnerResult{T}"/> class.
     /// </summary>
@@ -66,4 +67,5 @@ public class RunnerResult<T> : RunnerResult
         ProcessId = processId;
         SetBaseResult(result);
     }
+
 }

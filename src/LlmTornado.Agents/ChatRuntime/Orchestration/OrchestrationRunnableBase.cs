@@ -117,6 +117,30 @@ public abstract class OrchestrationRunnableBase : IOrchestrationBaseRunnable
     public bool AllowDeadEnd { get; set; } = false;
 
     /// <summary>
+    /// Time for Execution to compelte
+    /// </summary>
+    public TimeSpan ExecutionTimeSpan => GetExecutionTime();
+
+    /// <summary>
+    /// Time Execution has Started
+    /// </summary>
+    public DateTime? StartTime {  get; set; }
+
+    /// <summary>
+    /// Time Execution has finished
+    /// </summary>
+    public DateTime? EndTime { get; set; }
+
+    /// <summary>
+    /// Get the execution Time Span
+    /// </summary>
+    /// <returns></returns>
+    public TimeSpan GetExecutionTime()
+    {
+        return (StartTime is not null && EndTime is not null)?  EndTime.Value - StartTime.Value : TimeSpan.Zero;
+    }
+
+    /// <summary>
     /// Evaluates and returns a list of runtime processes that meet specific conditions.
     /// </summary>
     /// <returns>A list of <see cref="RunnableProcess"/> objects that satisfy the defined conditions.  The list will be empty if

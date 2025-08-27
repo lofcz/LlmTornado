@@ -18,60 +18,41 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
     /// <summary>
     /// Output results from the invocation of the runnable.
     /// </summary>
-    public List<TOutput> Output => OutputResults.Select(output => output.Result).ToList();
+    public List<TOutput> Output => Processes.Select(process => process.Result).ToList();
 
     /// <summary>
     /// Input values for the runnable processes.
     /// </summary>
-    public List<TInput> Input => InputProcesses.Select(process => process.Input).ToList();
+    public List<TInput> Input => Processes.Select(process => process.Input).ToList();
 
-    private List<RunnableProcess<TInput>> _inputProcesses = new List<RunnableProcess<TInput>>();
+    private List<RunnableProcess<TInput, TOutput>> _processes = new List<RunnableProcess<TInput, TOutput>>();
 
     /// <summary>
     /// Input processes to be executed by the runnable.
     /// </summary>
-    public List<RunnableProcess<TInput>> InputProcesses
+    public List<RunnableProcess<TInput, TOutput>> Processes
     {
-        get => _inputProcesses;
+        get => _processes;
         set
         {
-            _inputProcesses = value ?? new List<RunnableProcess<TInput>>();
-            BaseInputProcesses = ConvertInputProcesses();
+            _processes = value ?? new List<RunnableProcess<TInput, TOutput>>();
+            BaseInputProcesses = RebaseProcesses();
         }
     }
 
-    private List<RunnableProcess> ConvertInputProcesses()
+    private List<RunnableProcess> RebaseProcesses()
     {
         List<RunnableProcess> inputProcs = new List<RunnableProcess>();
-        foreach (RunnableProcess<TInput> process in InputProcesses)
+        foreach (RunnableProcess<TInput, TOutput> process in Processes)
         {
             inputProcs.Add(new RunnableProcess(process.Runner, (object)process.Input!));
         }
         return inputProcs;
     }
 
-    /// <summary>
-    /// Output results from the invocation of the runnable.
-    /// </summary>
-    public List<RunnerResult<TOutput>> OutputResults
-    {
-        get => _outputResults;
-        set
-        {
-            _outputResults = value ?? new List<RunnerResult<TOutput>>();
-            BaseOutputResults = ConvertOutputResults();
-        }
-    }
-
-
-    private List<RunnerResult> ConvertOutputResults()
-    {
-        return _outputResults.Select(x => new RunnerResult(x.ProcessId, x.ResultObject)).ToList();
-    }
-
     private void AddInputProcess(RunnableProcess process)
     {
-        InputProcesses.Add(new RunnableProcess<TInput>(process.Runner, (TInput)process.BaseInput!, process.Id));
+        Processes.Add(new RunnableProcess<TInput, TOutput>(process.Runner, (TInput)process.BaseInput!, process.Id));
     }
 
     /// <summary>
@@ -93,7 +74,7 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
 
     internal override async ValueTask _CleanupRunnable()
     {
-        InputProcesses.Clear();
+        Processes.Clear();
         await CleanupRunnable();
     }
 
@@ -110,45 +91,49 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
     /// <returns></returns>
     public virtual ValueTask CleanupRunnable() { return Threading.ValueTaskCompleted; }
 
-    private async ValueTask<List<RunnerResult<TOutput>>> InvokeCore()
-    {
-        if (InputProcesses.Count == 0)
-            throw new InvalidOperationException($"Input Process is required on Runnable {GetType()}");
-
-        //Setup Invoke Task
-        List<Task> Tasks = new List<Task>();
-        ConcurrentBag<RunnerResult<TOutput>> oResults = new ConcurrentBag<RunnerResult<TOutput>>();
-
-        if (SingleInvokeForInput)
-        {
-            //Invoke Should handle the Input as a whole (Single Thread can handle processing all the inputs)
-            Tasks.Add(Task.Run(async () => oResults.Add(await InternalInvoke(InputProcesses[0]))));
-        }
-        else
-        {
-            //Default option to process each input in as its own item
-            //(This process is resource bound by the single state instance)
-            InputProcesses.ForEach(process => Tasks.Add(Task.Run(async () => oResults.Add(await InternalInvoke(process)))));
-        }
-
-        // Wait for collection
-        await Task.WhenAll(Tasks);
-        Tasks.Clear();
-
-        OutputResults = oResults.ToList();
-
-        return OutputResults;
-    }
-
+    /// <summary>
+    /// Main Invoke to start the execution
+    /// </summary>
+    /// <returns></returns>
     internal override async ValueTask Invoke()
     {
         await InvokeCore();
     }
 
-    private async ValueTask<RunnerResult<TOutput>> InternalInvoke(RunnableProcess<TInput> input)
+    private async ValueTask InvokeCore()
     {
-        return new RunnerResult<TOutput>(input.Id, await Invoke(input.Input));
+        if (Processes.Count == 0)
+            throw new InvalidOperationException($"Input Process is required on Runnable {GetType()}");
+
+
+        if (SingleInvokeForInput)
+        {
+            //Invoke Should handle the Input as a whole (Single Thread can handle processing all the inputs)
+            await InternalInvoke(Processes[0]);
+        }
+        else
+        {
+            //Default option to process each input in as its own item
+            //(This process is resource bound by the single state instance)
+            //Setup Invoke Task
+            List<Task> Tasks = new List<Task>();
+
+            Processes.ForEach(process => Tasks.Add(Task.Run(async () => await InternalInvoke(process))));
+
+            // Wait for collection
+            await Task.WhenAll(Tasks);
+            Tasks.Clear();
+        }
     }
+
+    private async ValueTask<RunnableProcess<TInput, TOutput>> InternalInvoke(RunnableProcess<TInput, TOutput> input)
+    {
+        input.StartTime = DateTime.Now;
+        input.Result = await Invoke(input.Input);
+        input.SetExecutionTime(input.StartTime.Value, DateTime.Now);
+        return input;
+    }
+
 
     /// <summary>
     /// Processes the specified input and returns the corresponding output asynchronously.
@@ -162,18 +147,18 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
     {
         LatestAdvancements.Clear();
         //Results Gathered from invoking
-        OutputResults.ForEach(result =>
+        Processes.ForEach(process =>
         {
             //Transitions are selected in order they are added
-            OrchestrationAdvancer? advancement = Advances?.FirstOrDefault(transition => transition?.CanAdvance(result.Result) ?? false) ?? null;
+            OrchestrationAdvancer? advancement = Advances?.FirstOrDefault(transition => transition?.CanAdvance(process.Result) ?? false) ?? null;
 
             //If not transition is found, we can reattempt the process
             if (advancement != null)
             {
                 //Check if transition is conversion type or use the output.Result directly
-                object? ilResult = advancement.type == "in_out" ? advancement.ConverterMethodResult : result.Result;
+                object? nextResult = advancement.type == "in_out" ? advancement.ConverterMethodResult : process.Result;
 
-                LatestAdvancements.Add(new RunnableProcess(advancement.NextRunnable, ilResult!));
+                LatestAdvancements.Add(new RunnableProcess(advancement.NextRunnable, nextResult!));
             }
             else
             {
@@ -181,11 +166,10 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
                 if (!AllowDeadEnd)
                 {
                     //ReRun the process that failed
-                    RunnableProcess<TInput> failedProcess = InputProcesses.First(process => process.Id == result.ProcessId);
                     //Cap the amount of times a Runtime can reattempt (Fixed at 3 right now)
-                    if (failedProcess.CanReAttempt())
+                    if (process.CanReAttempt())
                     {
-                        LatestAdvancements.Add(failedProcess);
+                        LatestAdvancements.Add(process);
                     }
                 }
             }
@@ -198,35 +182,33 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
     {
         LatestAdvancements.Clear();
         //Results Gathered from invoking
-        OutputResults.ForEach((result) =>
+        Processes.ForEach((process) =>
         {
-            LatestAdvancements.AddRange(CheckResultForAdvancements(result));
+            LatestAdvancements.AddRange(CheckResultForAdvancements(process));
         });
 
         return LatestAdvancements;
     }
 
 
-    private List<RunnableProcess> CheckResultForAdvancements(RunnerResult stateResult) {         //Check if the state result has a valid transition
+    private List<RunnableProcess> CheckResultForAdvancements(RunnableProcess<TInput,TOutput> process) {         //Check if the state result has a valid transition
         List<RunnableProcess> stateProcessesFromOutput = new List<RunnableProcess>();                                                                                                                                         //If the transition evaluates to true for the output, add it to the new state processes
         Advances.ForEach(advancer =>
         {
-            TOutput output = (TOutput)stateResult.ResultObject;
-            if (advancer.CanAdvance(output))
+            if (advancer.CanAdvance(process.Result))
             {
                 //Check if transition is conversion type or use the output.Result directly
-                object? result = advancer.type == "in_out" ? advancer.ConverterMethodResult : output;
+                object? nextResult = advancer.type == "in_out" ? advancer.ConverterMethodResult : process;
 
-                stateProcessesFromOutput.Add(new RunnableProcess(advancer.NextRunnable, result!));
+                stateProcessesFromOutput.Add(new RunnableProcess(advancer.NextRunnable, nextResult!));
             }
         });
 
         //If process produces no transitions and not at a dead end rerun the process
         if (stateProcessesFromOutput.Count == 0 && !AllowDeadEnd)
         {
-            RunnableProcess failedProcess = InputProcesses.First(process => process.Id == stateResult.ProcessId);
             //rerun the process up to the max attempts
-            if (failedProcess.CanReAttempt()) stateProcessesFromOutput.Add(failedProcess);
+            if (process.CanReAttempt()) stateProcessesFromOutput.Add(process);
         }
 
         return stateProcessesFromOutput;
