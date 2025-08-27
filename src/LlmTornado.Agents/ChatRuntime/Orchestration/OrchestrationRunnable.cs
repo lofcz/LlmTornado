@@ -4,7 +4,6 @@ namespace LlmTornado.Agents.ChatRuntime.Orchestration;
 
 public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunnableBase
 {
-    private List<RunnerResult<TOutput>> _outputResults = new List<RunnerResult<TOutput>>();
     public override Type GetInputType() => typeof(TInput);
     public override Type GetOutputType() => typeof(TOutput);
 
@@ -36,7 +35,7 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
         set
         {
             _processes = value ?? new List<RunnableProcess<TInput, TOutput>>();
-            BaseInputProcesses = RebaseProcesses();
+            BaseProcesses = RebaseProcesses();
         }
     }
 

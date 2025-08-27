@@ -77,15 +77,6 @@ public class RunnableProcess
         return rerunAttempts < MaxReruns;
     }
 
-    /// <summary>
-    /// Creates a new <see cref="RunnerResult"/> instance associated with the current state.
-    /// </summary>
-    /// <param name="result">The result object to be encapsulated within the <see cref="StateResult"/>.</param>
-    /// <returns>A <see cref="RunnerResult/> containing the specified result object and the current state's identifier.</returns>
-    public RunnerResult CreateRunnerResult(object result)
-    {
-        return new RunnerResult(Id, result);
-    }
 
     /// <summary>
     /// Retrieves a new instance of <see cref="StateProcess{T}"/> initialized with the current state and input.

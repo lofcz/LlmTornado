@@ -35,21 +35,18 @@ public abstract class OrchestrationRunnableBase : IOrchestrationBaseRunnable
     /// <summary>
     /// Gets a list of results extracted from the output results.
     /// </summary>
-    internal List<object> BaseOutput => BaseOutputResults.Select(output => output.ResultObject).ToList();
+    internal List<object> BaseOutput => BaseProcesses.Select(output => output.BaseResult).ToList();
 
     /// <summary>
     /// Gets or sets the list of input objects the state has to process this tick.
     /// </summary>
-    internal List<object> BaseInput { get; set; } = new List<object>();
+    internal List<object> BaseInput  => BaseProcesses.Select(input => input.BaseInput).ToList();
 
-    /// <summary>
-    /// Output results of the state, containing processed results from the state invocation.
-    /// </summary>
-    internal List<RunnerResult> BaseOutputResults { get; set; } = new List<RunnerResult>();
+
     /// <summary>
     /// Input processes that the state has to process this tick.
     /// </summary>
-    internal List<RunnableProcess> BaseInputProcesses { get; set; } = new List<RunnableProcess>();
+    internal List<RunnableProcess> BaseProcesses { get; set; } = new List<RunnableProcess>();
 
     /// <summary>
     /// Gets or sets the list of routes.
