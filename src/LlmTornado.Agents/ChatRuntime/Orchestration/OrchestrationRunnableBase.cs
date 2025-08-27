@@ -1,18 +1,5 @@
 namespace LlmTornado.Agents.ChatRuntime.Orchestration;
 
-public interface IOrchestrationBaseRunnable
-{
-    /// <summary>
-    /// Gets the identifier of the state.
-    /// </summary>
-    string Id { get; }
-
-    /// <summary>
-    /// Get the current StateMachine instance associated with this state.
-    /// </summary>
-    public Orchestration? Orchestrator { get; set; }
-}
-
 /// <summary>
 /// Represents the base class for defining a state within a state machine.
 /// </summary>
@@ -20,7 +7,7 @@ public interface IOrchestrationBaseRunnable
 /// and output processing, and state invocation within a state machine. It includes properties and methods for
 /// handling state-specific logic, such as entering and exiting states, checking conditions, and managing
 /// transitions.</remarks>
-public abstract class OrchestrationRunnableBase : IOrchestrationBaseRunnable
+public abstract class OrchestrationRunnableBase 
 {
     /// <summary>
     /// Used to limit the number of times to rerun the state.
