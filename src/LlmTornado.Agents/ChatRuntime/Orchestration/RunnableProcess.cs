@@ -37,7 +37,15 @@ public class RunnableProcess
     /// </summary>
     public DateTime? StartTime { get; set; }
 
-    public TimeSpan RunnerExecutionTime { get; set; }
+    /// <summary>
+    /// Execution process time.
+    /// </summary>
+    public TimeSpan RunnableExecutionTime { get; set; }
+
+    /// <summary>
+    /// Token usage for this process
+    /// </summary>
+    public int TokenUsage { get; set; } = 0;
 
 
     //public object Result { get; set; }
@@ -63,7 +71,7 @@ public class RunnableProcess
     /// <param name="endTime"></param>
     public void SetExecutionTime(DateTime startTime, DateTime endTime)
     {
-        RunnerExecutionTime = endTime - startTime;
+        RunnableExecutionTime = endTime - startTime;
     }
 
     /// <summary>

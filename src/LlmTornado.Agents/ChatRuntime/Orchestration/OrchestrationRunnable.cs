@@ -35,21 +35,20 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
         set
         {
             _processes = value ?? new List<RunnableProcess<TInput, TOutput>>();
-            BaseProcesses = RebaseProcesses();
+            UpdateBaseProcesses();
         }
     }
 
-    private List<RunnableProcess> RebaseProcesses()
+    private void UpdateBaseProcesses()
     {
-        List<RunnableProcess> inputProcs = new List<RunnableProcess>();
+        BaseProcesses.Clear();
         foreach (RunnableProcess<TInput, TOutput> process in Processes)
         {
-            inputProcs.Add(new RunnableProcess(process.Runner, (object)process.Input!));
+            BaseProcesses.Add(new RunnableProcess(process.Runner, (object)process.Input!));
         }
-        return inputProcs;
     }
 
-    private void AddInputProcess(RunnableProcess process)
+    private void RegisterProcess(RunnableProcess process)
     {
         Processes.Add(new RunnableProcess<TInput, TOutput>(process.Runner, (TInput)process.BaseInput!, process.Id));
     }
@@ -66,7 +65,7 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
 
     internal override async ValueTask _InitializeRunnable(RunnableProcess? input)
     {
-        AddInputProcess(input);
+        RegisterProcess(input);
         await InitializeRunnable((TInput)input!.BaseInput!);
     }
 
@@ -102,7 +101,7 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
     private async ValueTask InvokeCore()
     {
         if (Processes.Count == 0)
-            throw new InvalidOperationException($"Input Process is required on Runnable {GetType()}");
+            throw new InvalidOperationException($"Process is required on Runnable {GetType()}");
 
 
         if (SingleInvokeForInput)

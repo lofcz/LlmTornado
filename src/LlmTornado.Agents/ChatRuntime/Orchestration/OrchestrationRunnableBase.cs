@@ -138,4 +138,31 @@ public abstract class OrchestrationRunnableBase
     {
         cts.Cancel();
     }
+
+
+    public void UpdateProcessTokenUsage(string processId, int tokenUsage)
+    {
+        RunnableProcess? process = BaseProcesses.FirstOrDefault(p => p.Id == processId);
+        if (process != null)
+        {
+            process.TokenUsage += tokenUsage;
+        }
+    }
+
+    public void ClearProcessTokenUsage(string processId)
+    {
+        RunnableProcess? process = BaseProcesses.FirstOrDefault(p => p.Id == processId);
+        if (process != null)
+        {
+            process.TokenUsage = 0;
+        }
+    }
+
+    public void ClearAllProcessTokenUsage()
+    {
+        foreach (var process in BaseProcesses)
+        {
+            process.TokenUsage = 0;
+        }
+    }
 }
