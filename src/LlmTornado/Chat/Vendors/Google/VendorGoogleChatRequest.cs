@@ -954,7 +954,7 @@ internal class VendorGoogleChatRequest
         [JsonProperty("functionCallingConfig")]
         public VendorGoogleChatToolConfigFunctionConfig? FunctionConfig { get; set; }
 
-        public static readonly VendorGoogleChatToolConfig Default = new VendorGoogleChatToolConfig
+        public static VendorGoogleChatToolConfig Default => new VendorGoogleChatToolConfig
         {
             FunctionConfig = new VendorGoogleChatToolConfigFunctionConfig
             {
