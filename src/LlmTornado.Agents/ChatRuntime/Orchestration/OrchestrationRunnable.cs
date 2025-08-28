@@ -1,4 +1,6 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
+using System.Diagnostics;
 
 namespace LlmTornado.Agents.ChatRuntime.Orchestration;
 
@@ -26,6 +28,18 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
 
     private List<RunnableProcess<TInput, TOutput>> _processes = new List<RunnableProcess<TInput, TOutput>>();
 
+    public List<TornadoAgent> RegisteredAgents { get; private set; } = new List<TornadoAgent>();
+
+    public void RegisterAgent(TornadoAgent agent)
+    {
+        RegisteredAgents.Add(agent);
+    }
+
+    public void UnregisterAgent(TornadoAgent agent)
+    {
+        RegisteredAgents.Remove(agent);
+    }
+
     /// <summary>
     /// Input processes to be executed by the runnable.
     /// </summary>
@@ -48,10 +62,7 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
         }
     }
 
-    private void RegisterProcess(RunnableProcess process)
-    {
-        Processes.Add(new RunnableProcess<TInput, TOutput>(process.Runner, (TInput)process.BaseInput!, process.Id));
-    }
+
 
     /// <summary>
     /// List of advancements (transitions) from this runnable to the next runnables.
@@ -63,16 +74,17 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
     /// </summary>
     public List<RunnableProcess> LatestAdvancements { get; set; } = new List<RunnableProcess>();
 
-    internal override async ValueTask _InitializeRunnable(RunnableProcess? input)
+    internal override async ValueTask _InitializeRunnable(RunnableProcess? process)
     {
-        RegisterProcess(input);
-        await InitializeRunnable((TInput)input!.BaseInput!);
+        Processes.Add(new RunnableProcess<TInput, TOutput>(process.Runner, (TInput)process.BaseInput!, process.Id));
+        await InitializeRunnable((TInput)process!.BaseInput!);
     }
 
 
     internal override async ValueTask _CleanupRunnable()
     {
         Processes.Clear();
+        RegisteredAgents.Clear();
         await CleanupRunnable();
     }
 
@@ -103,32 +115,35 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
         if (Processes.Count == 0)
             throw new InvalidOperationException($"Process is required on Runnable {GetType()}");
 
-
-        if (SingleInvokeForInput)
+        if (SingleInvokeForProcesses)
         {
             //Invoke Should handle the Input as a whole (Single Thread can handle processing all the inputs)
             await InternalInvoke(Processes[0]);
         }
         else
         {
-            //Default option to process each input in as its own item
-            //(This process is resource bound by the single state instance)
-            //Setup Invoke Task
-            List<Task> Tasks = new List<Task>();
-
-            Processes.ForEach(process => Tasks.Add(Task.Run(async () => await InternalInvoke(process))));
-
-            // Wait for collection
-            await Task.WhenAll(Tasks);
-            Tasks.Clear();
+            if (IsThreadSafe)
+            {
+                List<Task> Tasks = new List<Task>();
+                Processes.ForEach(process => Tasks.Add(Task.Run(async () => await InternalInvoke(process))));
+                await Task.WhenAll(Tasks);
+                Tasks.Clear();
+            }
+            else
+            {
+                foreach (var process in Processes)
+                {
+                    await InternalInvoke(process);
+                }
+            }
         }
     }
 
     private async ValueTask<RunnableProcess<TInput, TOutput>> InternalInvoke(RunnableProcess<TInput, TOutput> input)
     {
-        input.StartTime = DateTime.Now;
+        input.SetupProcess(RegisteredAgents);
         input.Result = await Invoke(input.Input);
-        input.SetExecutionTime(input.StartTime.Value, DateTime.Now);
+        input.FinalizeProcess();
         return input;
     }
 

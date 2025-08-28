@@ -1,3 +1,5 @@
+using LlmTornado.Agents.DataModels;
+
 namespace LlmTornado.Agents.ChatRuntime.Orchestration;
 
 /// <summary>
@@ -33,7 +35,7 @@ public abstract class OrchestrationRunnableBase
     /// <summary>
     /// Input processes that the state has to process this tick.
     /// </summary>
-    internal List<RunnableProcess> BaseProcesses { get; set; } = new List<RunnableProcess>();
+    public List<RunnableProcess> BaseProcesses { get; set; } = new List<RunnableProcess>();
 
     /// <summary>
     /// Gets or sets the list of routes.
@@ -93,12 +95,17 @@ public abstract class OrchestrationRunnableBase
     /// <summary>
     /// property to combine input into a single process to avoid running multiple threads for each input.
     /// </summary>
-    public bool SingleInvokeForInput { get; set; } = false;
+    public bool SingleInvokeForProcesses { get; set; } = false;
 
     /// <summary>
     /// Used to set if this state is okay not to have transitions.
     /// </summary>
     public bool AllowDeadEnd { get; set; } = false;
+
+    /// <summary>
+    /// Whether this state is thread safe to run in parallel.
+    /// </summary>
+    public bool IsThreadSafe { get; set; } = false;  
 
     /// <summary>
     /// Time for Execution to compelte
@@ -139,15 +146,7 @@ public abstract class OrchestrationRunnableBase
         cts.Cancel();
     }
 
-
-    public void UpdateProcessTokenUsage(string processId, int tokenUsage)
-    {
-        RunnableProcess? process = BaseProcesses.FirstOrDefault(p => p.Id == processId);
-        if (process != null)
-        {
-            process.TokenUsage += tokenUsage;
-        }
-    }
+   
 
     public void ClearProcessTokenUsage(string processId)
     {

@@ -1,4 +1,9 @@
-﻿namespace LlmTornado.Agents.ChatRuntime.Orchestration;
+﻿using LlmTornado.Agents.DataModels;
+using LlmTornado.Moderation;
+using System.Diagnostics;
+using System.Threading.Tasks;
+
+namespace LlmTornado.Agents.ChatRuntime.Orchestration;
 
 /// <summary>
 /// Represents a process that manages the execution state and input for a state-based operation.
@@ -51,6 +56,63 @@ public class RunnableProcess
     //public object Result { get; set; }
     public RunnableProcess() { }
 
+    public List<TornadoAgent> RegisteredAgents { get; set; } = new List<TornadoAgent>();
+
+    internal void RegisterAgent(TornadoAgent agent)
+    {
+        RegisterAgentMetrics(agent);
+    }
+
+    internal void UnregisterAgents()
+    {
+        UnregisterAgentsMetrics();
+    }
+
+    public void SetupProcess(List<TornadoAgent>? registeredAgents = null)
+    {
+        if (registeredAgents != null)
+        {
+            foreach (TornadoAgent agent in registeredAgents)
+            {
+                RegisterAgent(agent);
+            }   
+        }
+
+        RunnableExecutionTime = TimeSpan.Zero;
+        StartTime = DateTime.Now;
+    }
+
+    public void FinalizeProcess()
+    {
+        RunnableExecutionTime = DateTime.Now - StartTime!.Value;
+        UnregisterAgents();
+    }
+
+    private void RegisterAgentMetrics(TornadoAgent agent)
+    {
+        RegisteredAgents.Add(agent);
+
+        agent.OnAgentRunnerEvent = (agentEvent) =>
+        {
+            if (agentEvent is AgentRunnerUsageReceivedEvent usageEvent)
+            {
+                TokenUsage += usageEvent.TokenUsageAmount;
+            }
+
+            return Threading.ValueTaskCompleted;
+        };
+
+    }
+
+    private void UnregisterAgentsMetrics()
+    {
+        foreach (var agent in RegisteredAgents)
+        {
+            agent.OnAgentRunnerEvent = null;
+        }
+        RegisteredAgents.Clear();
+    }
+
     /// <summary>
     /// 
     /// </summary>
@@ -64,15 +126,6 @@ public class RunnableProcess
         MaxReruns = maxReruns;
     }
 
-    /// <summary>
-    /// Get the execution time of the runner process.
-    /// </summary>
-    /// <param name="startTime"></param>
-    /// <param name="endTime"></param>
-    public void SetExecutionTime(DateTime startTime, DateTime endTime)
-    {
-        RunnableExecutionTime = endTime - startTime;
-    }
 
     /// <summary>
     /// Determines whether another attempt can be made based on the current number of rerun attempts.

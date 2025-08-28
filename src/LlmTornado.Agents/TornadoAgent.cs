@@ -77,10 +77,17 @@ public class TornadoAgent
     /// </summary>
     public Dictionary<string, TornadoAgentTool> AgentTools = new Dictionary<string, TornadoAgentTool>();
 
+    /// <summary>
+    /// MCP tols mapped to their servers
+    /// </summary>
     public Dictionary<string, MCPServer> McpTools = new Dictionary<string, MCPServer>();
 
     public List<MCPServer> McpServers;
 
+    /// <summary>
+    /// Get agent runner events
+    /// </summary>
+    public Func<AgentRunnerEvents, ValueTask>? OnAgentRunnerEvent { private get; set; }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="TornadoAgent"/> class, which represents an AI agent capable of
@@ -279,6 +286,7 @@ public class TornadoAgent
         Func<string, ValueTask<bool>>? toolPermissionHandle = null, 
         CancellationToken cancellationToken = default)
     {
+        onAgentRunnerEvent += OnAgentRunnerEvent;
         return await TornadoRunner.RunAsync(this, input: input, messagesToAppend: appendMessages, guardRail: inputGuardRailFunction, cancellationToken: cancellationToken, streaming: streaming,
                  runnerCallback: onAgentRunnerEvent, maxTurns: maxTurns, responseId: responseId, toolPermissionHandle: toolPermissionHandle);
     }

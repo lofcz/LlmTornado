@@ -19,7 +19,8 @@ public enum AgentRunnerEventTypes
     ToolCompleted,
     Streaming,
     MaxTurnsReached,
-    GuardRailTriggered
+    GuardRailTriggered,
+    UsageReceived
 }
 
 /// <summary>
@@ -221,6 +222,21 @@ public class  AgentRunnerMaxTurnsReachedEvent : AgentRunnerEvents
     {
         EventType = AgentRunnerEventTypes.MaxTurnsReached;
         Timestamp = DateTime.UtcNow;
+    }
+}
+
+
+/// <summary>
+/// Used when the agent runner reaches the maximum number of turns allowed.
+/// </summary>
+public class AgentRunnerUsageReceivedEvent : AgentRunnerEvents
+{
+    public int TokenUsageAmount { get; private set; }
+    public AgentRunnerUsageReceivedEvent(int usageAmount)
+    {
+        EventType = AgentRunnerEventTypes.UsageReceived;
+        Timestamp = DateTime.UtcNow;
+        TokenUsageAmount = usageAmount;
     }
 }
 

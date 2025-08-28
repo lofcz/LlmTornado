@@ -77,6 +77,8 @@ public class ResearchAgentConfiguration : OrchestrationRuntimeConfiguration
                 name: "Research Agent",
                 outputSchema: typeof(WebSearchPlan),
                 instructions: instructions);
+
+            RegisterAgent(Agent);
         }
 
         public override async ValueTask<WebSearchPlan> Invoke(ChatMessage input)
@@ -112,7 +114,7 @@ public class ResearchAgentConfiguration : OrchestrationRuntimeConfiguration
         {
             SemaphoreSlim semaphore = new SemaphoreSlim(MaxDegreeOfParallelism);
 
-            List<Task<RunnerResult<string>>> researchTasks =
+            List<Task<string>> researchTasks =
                 plan.items
                     .Take(MaxItemsToProcess)
                     .Select(item => Task.Run(async () =>
@@ -131,10 +133,10 @@ public class ResearchAgentConfiguration : OrchestrationRuntimeConfiguration
 
             var researchResults = await Task.WhenAll(researchTasks);
 
-            return string.Join("[RESEARCH RESULT]\n\n\n", researchResults.ToList().Select(result => result.Result));
+            return string.Join("[RESEARCH RESULT]\n\n\n", researchResults.ToList().Select(result => result));
         }
 
-        private async ValueTask<RunnerResult<string>> RunResearchAgent(WebSearchItem item)
+        private async ValueTask<string> RunResearchAgent(WebSearchItem item)
         {
             string instructions = """
                 You are a research assistant. Given a search term, you search the web for that term and
@@ -152,11 +154,13 @@ public class ResearchAgentConfiguration : OrchestrationRuntimeConfiguration
 
             Agent.ResponseOptions = new ResponseRequest() { Tools = [new ResponseWebSearchTool()] };
 
+            RegisterAgent(Agent);
+
             ChatMessage userMessage = new ChatMessage(Code.ChatMessageRoles.User, item.query);
 
             Conversation conv = await Agent.RunAsync(appendMessages: new List<ChatMessage> { userMessage });
 
-            return new RunnerResult<string>(item.query, conv.Messages.Last().Content ?? string.Empty);
+            return conv.Messages.Last().Content ?? string.Empty;
         }
     }
 

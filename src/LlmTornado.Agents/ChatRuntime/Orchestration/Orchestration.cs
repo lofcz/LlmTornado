@@ -115,10 +115,10 @@ public class Orchestration
 
     private async Task BeginExit(RunnableProcess process)
     {
-        OnOrchestrationEvent?.Invoke(new OnVerboseOrchestrationEvent("Exiting Runtime..."));
+        OnOrchestrationEvent?.Invoke(new OnVerboseOrchestrationEvent("Exiting  ..."));
         await process.Runner._CleanupRunnable();
         OnOrchestrationEvent?.Invoke(new OnFinishedRunnableEvent(process.Runner)); //Invoke the exit state machine event
-        OnOrchestrationEvent?.Invoke(new OnVerboseOrchestrationEvent("RuntimeExited."));
+        OnOrchestrationEvent?.Invoke(new OnVerboseOrchestrationEvent("Orchestration Exited."));
     }
 
     /// <summary>
@@ -148,6 +148,9 @@ public class Orchestration
         //Wait for collection
         await Task.WhenAll(Tasks);
         Tasks.Clear();
+
+        //Record Step
+        if (RecordSteps) { RunSteps.Add(CurrentRunnableProcesses); }
     }
 
     /// <summary>
@@ -186,31 +189,31 @@ public class Orchestration
     /// <returns></returns>
     private async Task InitilizeAllNewProcesses()
     {
+        
+
         //Clear all of the active processes
-        CurrentRunnableProcesses.Clear();
+        CurrentRunnableProcesses?.Clear();
+
         OnOrchestrationEvent?.Invoke(new OnVerboseOrchestrationEvent($"Initializing {newRunnableProcesses.Count} new state processes..."));
 
         //If there are no new processes, return
         if (newRunnableProcesses.Count == 0) { HasCompletedSuccessfully(); return; }
 
-        //Record Step
-        if (RecordSteps) { RunSteps.Add(newRunnableProcesses); }
-
         //Initialize each new state process concurrently
         List<Task> Tasks = new List<Task>();
-        foreach (RunnableProcess stateProcess in newRunnableProcesses)
+        foreach (RunnableProcess process in newRunnableProcesses)
         {
-            Tasks.Add(Task.Run(async () => await InitilizeProcess(stateProcess)));
+            Tasks.Add(Task.Run(async () => await InitilizeProcess(process)));
         }
         await Task.WhenAll(Tasks);
         Tasks.Clear();
 
         //This is to remove running the same state twice with two processes.. it gets input from _EnterRuntime
         // Replace the DistinctBy line with this GroupBy approach which is compatible with .NET Standard 2.0
-        CurrentRunnableProcesses = CurrentRunnableProcesses
+        CurrentRunnableProcesses = CurrentRunnableProcesses?
             .GroupBy(state => state.Runner.Id)
             .Select(g => g.First())
-            .ToList();
+            .ToList()!;
 
         OnOrchestrationEvent?.Invoke(new OnVerboseOrchestrationEvent($"Initialization Complete."));
     }

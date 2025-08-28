@@ -224,7 +224,9 @@ public partial class ChatRuntimeController
                 {
                     await Response.WriteAsync($"event: orchestration_finished_runnable\n");
                     await Response.WriteAsync($"data: {{\n");
-                    await Response.WriteAsync($"data: \"runnableId\": \"{EscapeJsonString(finishedEvent.Runnable?.Id ?? "")}\"\n");
+                    await Response.WriteAsync($"data: \"processId\": \"{EscapeJsonString(finishedEvent.Runnable?.Id ?? "")}\",\n");
+                    await Response.WriteAsync($"data: \"TokensUsed\": \"{EscapeJsonString(finishedEvent.Runnable?.BaseProcesses.Sum(process=>process.TokenUsage).ToString() ?? "")}\",\n");
+                    await Response.WriteAsync($"data: \"InvokeTime\": \"{EscapeJsonString(finishedEvent.Runnable?.BaseProcesses.Sum(process => process.RunnableExecutionTime.TotalSeconds).ToString() ?? "")}\"\n");
                     await Response.WriteAsync($"data: }}\n\n");
                 }
                 break;
