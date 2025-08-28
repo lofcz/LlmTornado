@@ -663,7 +663,7 @@ internal class VendorGoogleChatRequest
     internal class VendorGoogleChatRequestMessage
     {
         [JsonProperty("parts")]
-        public List<VendorGoogleChatRequestMessagePart> Parts { get; set; } = [];
+        public List<VendorGoogleChatRequestMessagePart>? Parts { get; set; } = [];
         
         /// <summary>
         /// The producer of the content. Must be either 'user' or 'model'.
@@ -686,7 +686,7 @@ internal class VendorGoogleChatRequest
                     {
                         FunctionCall = new VendorGoogleChatRequestMessagePartFunctionCall
                         {
-                            Name = call.FunctionCall?.Name ?? string.Empty,
+                            Name = call.FunctionCall?.Name ?? call.Id ?? string.Empty,
                             Args = call.FunctionCall?.GetArguments() ?? []
                         }
                     });

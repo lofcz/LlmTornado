@@ -10,6 +10,7 @@ using LlmTornado.Caching;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Vendors.Cohere;
 using LlmTornado.Chat.Vendors.Google;
+using LlmTornado.ChatFunctions;
 using LlmTornado.Code.Models;
 using LlmTornado.Embedding;
 using LlmTornado.Files;
@@ -90,6 +91,26 @@ public class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
         }
     }
 
+    private static readonly HashSet<string> BadFinishReasons =
+    [
+        "FINISH_REASON_UNSPECIFIED",
+        "STOP",
+        "MAX_TOKENS",
+        "SAFETY",
+        "RECITATION",
+        "OTHER",
+        "BLOCKLIST",
+        "PROHIBITED_CONTENT",
+        "SPII",
+        "MALFORMED_FUNCTION_CALL",
+        "MODEL_ARMOR",
+        "IMAGE_SAFETY",
+        "IMAGE_PROHIBITED_CONTENT",
+        "IMAGE_RECITATION",
+        "IMAGE_OTHER",
+        "UNEXPECTED_TOOL_CALL"
+    ];
+
     public override async IAsyncEnumerable<ChatResult?> InboundStream(StreamReader reader, ChatRequest request, ChatStreamEventHandler? eventHandler)
     {
         ChatMessage? plaintextAccu = null;
@@ -101,13 +122,8 @@ public class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
 #else
         using JsonTextReader jsonReader = new JsonTextReader(reader);
 #endif
-        JsonSerializer serializer = new JsonSerializer();
-
-        // use for debugging to inspect the raw data:
-        // string data = await reader.ReadToEndAsync();
-        
         // whenever using json schema, the response is received as a series of plaintext events
-        bool isBufferingTool = request.VendorExtensions?.Google?.ResponseSchema is not null || (request.Tools?.Any(x => x.Strict ?? false) ?? false);
+        bool isBufferingTool = request.VendorExtensions?.Google?.ResponseSchema is not null || request.ToolChoice?.Mode is OutboundToolChoiceModes.Required or OutboundToolChoiceModes.ToolFunction;
         
         if (await jsonReader.ReadAsync(request.CancellationToken) && jsonReader.TokenType is JsonToken.StartArray)
         {
@@ -130,20 +146,23 @@ public class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
                     {
                         foreach (VendorGoogleChatResult.VendorGoogleChatResultMessage candidate in obj.Candidates)
                         {
-                            foreach (VendorGoogleChatRequestMessagePart part in candidate.Content.Parts)
+                            if (candidate.Content.Parts is not null)
                             {
-                                if (part.Text is not null)
+                                foreach (VendorGoogleChatRequestMessagePart part in candidate.Content.Parts)
                                 {
-                                    plaintextAccu ??= new ChatMessage();
-                                    plaintextAccu.ContentBuilder ??= new StringBuilder();
-                                    plaintextAccu.ContentBuilder.Append(part.Text);
-                                }
+                                    if (part.Text is not null)
+                                    {
+                                        plaintextAccu ??= new ChatMessage();
+                                        plaintextAccu.ContentBuilder ??= new StringBuilder();
+                                        plaintextAccu.ContentBuilder.Append(part.Text);
+                                    }
+                                }   
                             }
                         }
                         
                         ChatResult chatResult = obj.ToChatResult(null, request);
                         usage = chatResult.Usage;
-
+                        
                         string? strFinishReason = obj.Candidates.FirstOrDefault()?.FinishReason;
 
                         if (strFinishReason is not null)
