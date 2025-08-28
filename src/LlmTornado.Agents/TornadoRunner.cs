@@ -300,6 +300,17 @@ public class TornadoRunner
                     runnerCallback?.Invoke(new AgentRunnerToolCompletedEvent(fn));
                 }
             });
+
+            if(response.Exception != null)
+            {
+                runnerCallback?.Invoke(new AgentRunnerErrorEvent(response.Exception.Message, response.Exception));
+                return chat;
+            }
+
+            if (response != null && response.Exception == null)
+            {
+                runnerCallback?.Invoke(new AgentRunnerUsageReceivedEvent(response.Data.Usage.TotalTokens));
+            }
         }
         catch (Exception ex)
         {
@@ -370,6 +381,7 @@ public class TornadoRunner
             },
             OnUsageReceived = (usage) =>
             {
+                runnerCallback?.Invoke(new AgentRunnerUsageReceivedEvent(usage.TotalTokens));
                 return Threading.ValueTaskCompleted;
             }
         });

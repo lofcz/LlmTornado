@@ -189,8 +189,6 @@ public class Orchestration
     /// <returns></returns>
     private async Task InitilizeAllNewProcesses()
     {
-        
-
         //Clear all of the active processes
         CurrentRunnableProcesses?.Clear();
 
