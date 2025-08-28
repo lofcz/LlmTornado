@@ -30,12 +30,20 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
 
     public List<TornadoAgent> RegisteredAgents { get; private set; } = new List<TornadoAgent>();
 
-    public void RegisterAgent(TornadoAgent agent)
+    /// <summary>
+    /// Start metric tracking for all registered agents.
+    /// </summary>
+    /// <param name="agent"></param>
+    public void RegisterAgentMetrics(TornadoAgent agent)
     {
         RegisteredAgents.Add(agent);
     }
 
-    public void UnregisterAgent(TornadoAgent agent)
+    /// <summary>
+    /// Used for manual removal of agents from the metric tracking.
+    /// </summary>
+    /// <param name="agent"></param>
+    public void UnregisterAgentMetrics(TornadoAgent agent)
     {
         RegisteredAgents.Remove(agent);
     }

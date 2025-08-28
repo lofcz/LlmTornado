@@ -78,7 +78,7 @@ public class ResearchAgentConfiguration : OrchestrationRuntimeConfiguration
                 outputSchema: typeof(WebSearchPlan),
                 instructions: instructions);
 
-            RegisterAgent(Agent);
+            RegisterAgentMetrics(Agent);
         }
 
         public override async ValueTask<WebSearchPlan> Invoke(ChatMessage input)
@@ -154,7 +154,7 @@ public class ResearchAgentConfiguration : OrchestrationRuntimeConfiguration
 
             Agent.ResponseOptions = new ResponseRequest() { Tools = [new ResponseWebSearchTool()] };
 
-            RegisterAgent(Agent);
+            RegisterAgentMetrics(Agent);
 
             ChatMessage userMessage = new ChatMessage(Code.ChatMessageRoles.User, item.query);
 
@@ -189,6 +189,8 @@ public class ResearchAgentConfiguration : OrchestrationRuntimeConfiguration
                 instructions: instructions,
                 outputSchema: typeof(ReportData),
                 streaming: true);
+
+            RegisterAgentMetrics(Agent);
         }
 
         public override async ValueTask<ReportData> Invoke(string research)
