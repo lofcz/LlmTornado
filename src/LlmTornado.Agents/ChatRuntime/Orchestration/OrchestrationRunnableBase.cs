@@ -11,6 +11,7 @@ namespace LlmTornado.Agents.ChatRuntime.Orchestration;
 /// transitions.</remarks>
 public abstract class OrchestrationRunnableBase 
 {
+    public string RunnableName { get; set; } = "Runnable";
     /// <summary>
     /// Used to limit the number of times to rerun the state.
     /// </summary>

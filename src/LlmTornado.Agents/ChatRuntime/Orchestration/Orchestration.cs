@@ -71,7 +71,9 @@ public class Orchestration
     /// <summary>
     /// Gets or sets the collection of steps, where each step is represented as a list of runnable processes.
     /// </summary>
-    public List<List<RunnableProcess>> RunSteps { get; set; } = new List<List<RunnableProcess>>();
+    public ConcurrentDictionary<int, List<RunnerRecord>> RunSteps { get; set; } = new ConcurrentDictionary<int, List<RunnerRecord>>();
+
+    private int _stepCounter = 0;
 
     private bool _isInitialized = false;
 
@@ -92,6 +94,20 @@ public class Orchestration
     /// </summary>
     public void Cancel() => StopTrigger.Cancel();
 
+    /// <summary>
+    /// Add a record of the current step in the orchestration process.
+    /// </summary>
+    /// <param name="record"></param>
+    public void AddRecordStep(RunnerRecord record)
+    {
+        if (!RecordSteps) return;
+
+        RunSteps.AddOrUpdate(_stepCounter, new List<RunnerRecord>() { record }, (key, existingList) =>
+        {
+            existingList.Add(record);
+            return existingList;
+        });
+    }
     /// <summary>
     /// Asynchronously exits all active runnables.
     /// </summary>
@@ -133,6 +149,8 @@ public class Orchestration
         //If there are no processes, return
         if (CurrentRunnableProcesses.Count == 0) { HasCompletedSuccessfully(); return; }
 
+        _stepCounter++;
+
         OnOrchestrationEvent?.Invoke(new OnVerboseOrchestrationEvent($"Processing {CurrentRunnableProcesses.Count} active processes..."));
         OnOrchestrationEvent?.Invoke(new OnTickOrchestrationEvent()); //Invoke the tick state machine event
         
@@ -140,7 +158,7 @@ public class Orchestration
         CurrentRunnableProcesses.ForEach(process => Tasks.Add(Task.Run(async () =>
         {
             OnOrchestrationEvent?.Invoke(new OnVerboseOrchestrationEvent($"Invoking state: {process.Runner.GetType().Name}"));
-            OnOrchestrationEvent?.Invoke(new OnStartedRunnableEvent(process)); //Invoke the state entered event
+            OnOrchestrationEvent?.Invoke(new OnStartedRunnableEvent(process.Runner)); //Invoke the state entered event
             await process.Runner.Invoke(); //Invoke the state process
 
         })));
@@ -148,9 +166,6 @@ public class Orchestration
         //Wait for collection
         await Task.WhenAll(Tasks);
         Tasks.Clear();
-
-        //Record Step
-        if (RecordSteps) { RunSteps.Add(CurrentRunnableProcesses); }
     }
 
     /// <summary>
@@ -173,7 +188,7 @@ public class Orchestration
         CurrentRunnableProcesses.Add(process);
 
         OnOrchestrationEvent?.Invoke(new OnVerboseOrchestrationEvent($"Entering state: {process.Runner.GetType().Name}"));
-        OnOrchestrationEvent?.Invoke(new OnStartedRunnableEvent(process));
+        OnOrchestrationEvent?.Invoke(new OnStartedRunnableEvent(process.Runner));
         //Internal lock on access to state
         await process.Runner._InitializeRunnable(process); //preset input
 
@@ -285,6 +300,7 @@ public class Orchestration
     {
         OnOrchestrationEvent?.Invoke(new OnVerboseOrchestrationEvent("Resetting RuntimeMachine"));
         _isCompleted = false;
+        _stepCounter = 0;
         StopTrigger = new CancellationTokenSource(); //Reset the stop trigger
         CurrentRunnableProcesses.Clear();
         newRunnableProcesses.Clear();
@@ -364,6 +380,16 @@ public class Orchestration
 
         //Reset Active Processes Here
         await InitilizeAllNewProcesses();
+    }
+
+    internal void OnStartingRunnableProcess(RunnableProcess process)
+    {
+        OnOrchestrationEvent?.Invoke(new OnStartedRunnableProcessEvent(process));
+    }
+
+    internal void OnFinishedRunnableProcess(RunnableProcess process)
+    {
+        OnOrchestrationEvent?.Invoke(new OnFinishedRunnableProcessEvent(process));
     }
 
     /// <summary>

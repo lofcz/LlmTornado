@@ -120,14 +120,46 @@ namespace LlmTornado.Agents.ChatRuntime.Orchestration
         /// <summary>
         /// Process that is being ran.
         /// </summary>
-        public RunnableProcess RunnableProcess { get; set; }
-        public OnStartedRunnableEvent(RunnableProcess process)
+        public OrchestrationRunnableBase RunnableBase { get; set; }
+        public OnStartedRunnableEvent(OrchestrationRunnableBase runnableBase)
         {
             Type = "started";
-            RunnableProcess = process;
-
+            RunnableBase = runnableBase;
         }
     }
+
+    /// <summary>
+    /// Triggered when a state is entered.
+    /// </summary>
+    public class OnStartedRunnableProcessEvent : OrchestrationEvent
+    {
+        /// <summary>
+        /// Process that is being ran.
+        /// </summary>
+        public RunnableProcess RunnableProcess { get; set; }
+        public OnStartedRunnableProcessEvent(RunnableProcess process)
+        {
+            Type = "process started";
+            RunnableProcess = process;
+        }
+    }
+
+    /// <summary>
+    /// Triggered when a state is entered.
+    /// </summary>
+    public class OnFinishedRunnableProcessEvent : OrchestrationEvent
+    {
+        /// <summary>
+        /// Process that is being ran.
+        /// </summary>
+        public RunnableProcess RunnableProcess { get; set; }
+        public OnFinishedRunnableProcessEvent(RunnableProcess process)
+        {
+            Type = "process finished";
+            RunnableProcess = process;
+        }
+    }
+
 
     /// <summary>
     /// Triggered when a state is exited.

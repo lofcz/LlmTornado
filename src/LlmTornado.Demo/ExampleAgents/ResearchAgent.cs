@@ -9,6 +9,7 @@ using LlmTornado.Responses;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -23,6 +24,7 @@ public class ResearchAgentConfiguration : OrchestrationRuntimeConfiguration
 
     public ResearchAgentConfiguration(TornadoApi client)
     {
+        RecordSteps = true;
         //Create the Runnables
         planner = new PlannerRunnable(client, this);
         researcher = new ResearchRunnable(client, this);
@@ -32,7 +34,7 @@ public class ResearchAgentConfiguration : OrchestrationRuntimeConfiguration
         //Setup the orchestration flow
         planner.AddAdvancer((plan) => plan.items.Length > 0, researcher);
         researcher.AddAdvancer((research) => !string.IsNullOrEmpty(research), reporter);
-        reporter.AddAdvancer((report) => !string.IsNullOrEmpty(report.FinalReport), exit);
+        reporter.AddAdvancer((reporter) => !string.IsNullOrEmpty(reporter.FinalReport), exit);
 
         //Configure the Orchestration entry and exit points
         SetEntryRunnable(planner);
@@ -42,16 +44,11 @@ public class ResearchAgentConfiguration : OrchestrationRuntimeConfiguration
     public override void OnRuntimeInitialized()
     {
         base.OnRuntimeInitialized();
+
         planner.Orchestrator = this;
         researcher.Orchestrator = this;
         reporter.Orchestrator = this;
         exit.Orchestrator = this;
-
-        OnOrchestrationEvent += (e) =>
-        {
-            // Forward orchestration events to runtime
-            this.OnRuntimeEvent?.Invoke(new ChatRuntimeOrchestrationEvent(e, Runtime?.Id ?? string.Empty));
-        };
 
         reporter.OnAgentRunnerEvent += (sEvent) =>
         {
@@ -77,13 +74,13 @@ public class ResearchAgentConfiguration : OrchestrationRuntimeConfiguration
                 name: "Research Agent",
                 outputSchema: typeof(WebSearchPlan),
                 instructions: instructions);
-
-            RegisterAgentMetrics(Agent);
         }
 
-        public override async ValueTask<WebSearchPlan> Invoke(ChatMessage input)
+        public override async ValueTask<WebSearchPlan> Invoke(RunnableProcess<ChatMessage, WebSearchPlan> process)
         {
-            Conversation conv = await Agent.RunAsync(appendMessages: new List<ChatMessage> { input });
+            process.RegisterAgent(agent: Agent);
+
+            Conversation conv = await Agent.RunAsync(appendMessages: new List<ChatMessage> { process.Input });
 
             WebSearchPlan? plan = await conv.Messages.Last().Content?.SmartParseJsonAsync<WebSearchPlan>(Agent);
 
@@ -105,24 +102,20 @@ public class ResearchAgentConfiguration : OrchestrationRuntimeConfiguration
         TornadoApi Client { get; set; }
         public ResearchRunnable(TornadoApi client, Orchestration orchestrator):base(orchestrator) { Client = client; }
 
-        public override async ValueTask<string> Invoke(WebSearchPlan plan)
+        public override async ValueTask<string> Invoke(RunnableProcess<WebSearchPlan, string> process)
         {
-            return await InvokeThreadedAsync(plan);
-        }
 
-        public async Task<string> InvokeThreadedAsync(WebSearchPlan plan)
-        {
             SemaphoreSlim semaphore = new SemaphoreSlim(MaxDegreeOfParallelism);
 
             List<Task<string>> researchTasks =
-                plan.items
+                process.Input.items
                     .Take(MaxItemsToProcess)
                     .Select(item => Task.Run(async () =>
                     {
                         await semaphore.WaitAsync();
                         try
                         {
-                            return await RunResearchAgent(item);
+                            return await RunResearchAgent(item,process);
                         }
                         finally
                         {
@@ -136,7 +129,8 @@ public class ResearchAgentConfiguration : OrchestrationRuntimeConfiguration
             return string.Join("[RESEARCH RESULT]\n\n\n", researchResults.ToList().Select(result => result));
         }
 
-        private async ValueTask<string> RunResearchAgent(WebSearchItem item)
+
+        private async ValueTask<string> RunResearchAgent(WebSearchItem item, RunnableProcess<WebSearchPlan, string> process)
         {
             string instructions = """
                 You are a research assistant. Given a search term, you search the web for that term and
@@ -154,7 +148,7 @@ public class ResearchAgentConfiguration : OrchestrationRuntimeConfiguration
 
             Agent.ResponseOptions = new ResponseRequest() { Tools = [new ResponseWebSearchTool()] };
 
-            RegisterAgentMetrics(Agent);
+            process.RegisterAgent(Agent);
 
             ChatMessage userMessage = new ChatMessage(Code.ChatMessageRoles.User, item.query);
 
@@ -162,6 +156,7 @@ public class ResearchAgentConfiguration : OrchestrationRuntimeConfiguration
 
             return conv.Messages.Last().Content ?? string.Empty;
         }
+
     }
 
     public class ReportingRunnable : OrchestrationRunnable<string, ReportData>
@@ -190,13 +185,15 @@ public class ResearchAgentConfiguration : OrchestrationRuntimeConfiguration
                 outputSchema: typeof(ReportData),
                 streaming: true);
 
-            RegisterAgentMetrics(Agent);
+            
         }
 
-        public override async ValueTask<ReportData> Invoke(string research)
+        public override async ValueTask<ReportData> Invoke(RunnableProcess<string, ReportData> research)
         {
+            research.RegisterAgent(agent: Agent);
+
             Conversation conv = await Agent.RunAsync(
-                appendMessages: new List<ChatMessage> { new ChatMessage(Code.ChatMessageRoles.User, research) },
+                appendMessages: new List<ChatMessage> { new ChatMessage(Code.ChatMessageRoles.User, research.Input) },
                 streaming: Agent.Streaming,
                 onAgentRunnerEvent: (sEvent) =>
                 {
@@ -221,10 +218,10 @@ public class ResearchAgentConfiguration : OrchestrationRuntimeConfiguration
         {
         }
 
-        public override ValueTask<ChatMessage> Invoke(ReportData input)
+        public override async ValueTask<ChatMessage> Invoke(RunnableProcess<ReportData, ChatMessage> process)
         {
             this.Orchestrator?.HasCompletedSuccessfully(); //Signal the orchestration has completed successfully
-            return ValueTask.FromResult(new ChatMessage(Code.ChatMessageRoles.Assistant, input.ToString()));
+            return new ChatMessage(Code.ChatMessageRoles.Assistant, process.Input.ToString());
         }
     }
 

@@ -171,11 +171,11 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
             {
             }
 
-            public override ValueTask<ChatMessage> Invoke(CodeBuildInfoOutput input)
+            public override ValueTask<ChatMessage> Invoke(RunnableProcess<CodeBuildInfoOutput, ChatMessage> input)
             {
                 StringBuilder stringBuilder = new StringBuilder();
                 stringBuilder.AppendLine("The project was built successfully! Here are the results:");
-                stringBuilder.AppendLine($"Build Completed: {input.BuildInfo.BuildResult.BuildCompleted}");
+                stringBuilder.AppendLine($"Build Completed: {input.Input.BuildInfo.BuildResult.BuildCompleted}");
                 this.Orchestrator?.HasCompletedSuccessfully(); //Signal the orchestration has completed successfully
                 return ValueTask.FromResult(new ChatMessage(Code.ChatMessageRoles.Assistant, stringBuilder.ToString()));
             }
@@ -187,7 +187,7 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
             {
             }
 
-            public override ValueTask<CodeBuildInfoOutput> Invoke(ProgramResultOutput programResult)
+            public override ValueTask<CodeBuildInfoOutput> Invoke(RunnableProcess<ProgramResultOutput, CodeBuildInfoOutput> programResult)
             {
                 //Need a file path to a solution you don't care about or has git control
                 if (!Directory.Exists(FileIOUtility.SafeWorkingDirectory))
@@ -196,7 +196,7 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
                 }
 
                 //Write over files in project
-                foreach (CodeItem script in programResult.Result.items)
+                foreach (CodeItem script in programResult.Input.Result.items)
                 {
                     FileIOUtility.WriteFile(script.filePath, script.code);
                 }
@@ -206,7 +206,7 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
                 CodeBuildInfo codeInfo = BuildAndRunProject(FileIOUtility.SafeWorkingDirectory, "netcoreapp3.1");
 
                 //Report the results of the build
-                return ValueTask.FromResult(new CodeBuildInfoOutput(codeInfo, programResult));
+                return ValueTask.FromResult(new CodeBuildInfoOutput(codeInfo, programResult.Input));
             }
         }
 
@@ -232,20 +232,21 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
                     instructions: instructions);
             }
         
-            public override async ValueTask<ChatMessage> Invoke(CodeBuildInfoOutput codeBuildInfo)
+            public override async ValueTask<ChatMessage> Invoke(RunnableProcess<CodeBuildInfoOutput, ChatMessage>  codeBuildInfo)
             {
+                codeBuildInfo.RegisterAgent(Agent);
                 string updatedInstructions = $"""
                     You are an expert programmer for c#. Given the generated C# project errors help the coding agent by finding all the files with errors 
                     and suggestions on how to fix them.
 
                     Original Program Request was: 
 
-                    {codeBuildInfo.ProgramResult.ProgramRequest}
+                    {codeBuildInfo.Input.ProgramResult.ProgramRequest}
                     """;
 
                 Agent.Instructions = updatedInstructions;
 
-                Conversation result = await Agent.RunAsync($"Errors Generated {codeBuildInfo.BuildInfo.BuildResult.Error}");
+                Conversation result = await Agent.RunAsync($"Errors Generated {codeBuildInfo.Input.BuildInfo.BuildResult.Error}");
 
                 CodeReview review = result.Messages.Last().Content.ParseJson<CodeReview>();
 
@@ -272,8 +273,9 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
                     instructions: instructions);
             }
 
-            public override async ValueTask<ProgramResultOutput> Invoke(ChatMessage input)
+            public override async ValueTask<ProgramResultOutput> Invoke(RunnableProcess<ChatMessage, ProgramResultOutput> input)
             {
+                input.RegisterAgent(Agent);
                 string prompt = @"You are an expert C# programmer. Your task is to write detailed and working code for the following function based on the context provided. 
                     The C# Console Program will be Built and executed later from a .exe and will use the input args to get the function to work.
                     Make sure Program code is the main entry to utilize .net8.0 args structure when executing exe
@@ -281,11 +283,11 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
                     Overall context:
                     {0}";
 
-                Conversation result = await Agent.RunAsync(string.Format(prompt, input.Content), appendMessages: [input]);
+                Conversation result = await Agent.RunAsync(string.Format(prompt, input.Input.Content), appendMessages: [input.Input]);
 
                 ProgramResult program = result.Messages.Last().Content.ParseJson<ProgramResult>();
 
-                return new ProgramResultOutput(program, input.Content);
+                return new ProgramResultOutput(program, input.Input.Content);
             }
 
         }

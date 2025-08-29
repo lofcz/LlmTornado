@@ -6,16 +6,7 @@ namespace LlmTornado.Agents.ChatRuntime.Orchestration;
 
 public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunnableBase
 {
-    public override Type GetInputType() => typeof(TInput);
-    public override Type GetOutputType() => typeof(TOutput);
-
-    public OrchestrationRunnable(Orchestration orchestrator, string runnableName = "") 
-    {
-        runnableName = string.IsNullOrWhiteSpace(runnableName) ? this.GetType().Name : runnableName;
-        Orchestrator = orchestrator;
-        Orchestrator?.Runnables.Add(runnableName, this);
-    }
-
+    #region Properties
     /// <summary>
     /// Output results from the invocation of the runnable.
     /// </summary>
@@ -28,26 +19,6 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
 
     private List<RunnableProcess<TInput, TOutput>> _processes = new List<RunnableProcess<TInput, TOutput>>();
 
-    public List<TornadoAgent> RegisteredAgents { get; private set; } = new List<TornadoAgent>();
-
-    /// <summary>
-    /// Start metric tracking for all registered agents.
-    /// </summary>
-    /// <param name="agent"></param>
-    public void RegisterAgentMetrics(TornadoAgent agent)
-    {
-        RegisteredAgents.Add(agent);
-    }
-
-    /// <summary>
-    /// Used for manual removal of agents from the metric tracking.
-    /// </summary>
-    /// <param name="agent"></param>
-    public void UnregisterAgentMetrics(TornadoAgent agent)
-    {
-        RegisteredAgents.Remove(agent);
-    }
-
     /// <summary>
     /// Input processes to be executed by the runnable.
     /// </summary>
@@ -57,20 +28,13 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
         set
         {
             _processes = value ?? new List<RunnableProcess<TInput, TOutput>>();
-            UpdateBaseProcesses();
+            BaseProcesses.Clear();
+            foreach (RunnableProcess<TInput, TOutput> process in Processes)
+            {
+                BaseProcesses.Add(new RunnableProcess(process.Runner, (object)process.Input!));
+            }
         }
     }
-
-    private void UpdateBaseProcesses()
-    {
-        BaseProcesses.Clear();
-        foreach (RunnableProcess<TInput, TOutput> process in Processes)
-        {
-            BaseProcesses.Add(new RunnableProcess(process.Runner, (object)process.Input!));
-        }
-    }
-
-
 
     /// <summary>
     /// List of advancements (transitions) from this runnable to the next runnables.
@@ -82,32 +46,30 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
     /// </summary>
     public List<RunnableProcess> LatestAdvancements { get; set; } = new List<RunnableProcess>();
 
+    public override Type GetInputType() => typeof(TInput);
+    public override Type GetOutputType() => typeof(TOutput);
+    #endregion
+
+
+    public OrchestrationRunnable(Orchestration orchestrator, string runnableName = "") 
+    {
+        RunnableName = string.IsNullOrWhiteSpace(runnableName) ? this.GetType().Name : runnableName;
+        Orchestrator = orchestrator;
+        Orchestrator?.Runnables.Add(RunnableName, this);
+    }
+
+    #region Abstract Class Overrides
+    /// <summary>
+    /// Starting the state
+    /// </summary>
+    /// <param name="process"></param>
+    /// <returns></returns>
     internal override async ValueTask _InitializeRunnable(RunnableProcess? process)
     {
-        Processes.Add(new RunnableProcess<TInput, TOutput>(process.Runner, (TInput)process.BaseInput!, process.Id));
-        await InitializeRunnable((TInput)process!.BaseInput!);
+        RunnableProcess<TInput, TOutput> newProcess = new RunnableProcess<TInput, TOutput>(process.Runner, (TInput)process.BaseInput!, process.Id);
+        Processes.Add(newProcess);
+        await InitializeRunnable(newProcess);
     }
-
-
-    internal override async ValueTask _CleanupRunnable()
-    {
-        Processes.Clear();
-        RegisteredAgents.Clear();
-        await CleanupRunnable();
-    }
-
-    /// <summary>
-    /// Setup any resources needed for the runnable to operate.
-    /// </summary>
-    /// <param name="input"></param>
-    /// <returns></returns>
-    public virtual ValueTask InitializeRunnable(TInput? input) { return Threading.ValueTaskCompleted; }
-
-    /// <summary>
-    /// Cleanup any resources used by the runnable.
-    /// </summary>
-    /// <returns></returns>
-    public virtual ValueTask CleanupRunnable() { return Threading.ValueTaskCompleted; }
 
     /// <summary>
     /// Main Invoke to start the execution
@@ -117,6 +79,14 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
     {
         await InvokeCore();
     }
+
+    internal override async ValueTask _CleanupRunnable()
+    {
+        Processes.Clear();
+        await CleanupRunnable();
+    }
+
+    #endregion
 
     private async ValueTask InvokeCore()
     {
@@ -149,12 +119,28 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
 
     private async ValueTask<RunnableProcess<TInput, TOutput>> InternalInvoke(RunnableProcess<TInput, TOutput> input)
     {
-        input.SetupProcess(RegisteredAgents);
-        input.Result = await Invoke(input.Input);
+        Orchestrator?.OnStartingRunnableProcess(input);
+        input.SetupProcess();
+        input.Result = await Invoke(input);
         input.FinalizeProcess();
+        Orchestrator?.OnFinishedRunnableProcess(input);
+        List<RunnableProcess>? advancements = CheckResultForAdvancementsRecords(input);
+        List<AdvancementRecord> advancementRecords = new List<AdvancementRecord>();
+        foreach (var advancement in advancements)
+        {
+            advancementRecords.Add(new AdvancementRecord(input.Runner.RunnableName, advancement.Runner.RunnableName, input.Result!));
+        }
+        Orchestrator?.AddRecordStep(new RunnerRecord(input.Id, RunnableName, input.TokenUsage, input.StartTime.Value, input.RunnableExecutionTime, input: input.Input, transitions: advancementRecords.ToArray()));
         return input;
     }
 
+    #region Runnable User Configurables
+    /// <summary>
+    /// Setup any resources needed for the runnable to operate.
+    /// </summary>
+    /// <param name="input"></param>
+    /// <returns></returns>
+    public virtual ValueTask InitializeRunnable(RunnableProcess<TInput, TOutput> process) { return Threading.ValueTaskCompleted; }
 
     /// <summary>
     /// Processes the specified input and returns the corresponding output asynchronously.
@@ -162,8 +148,17 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
     /// <param name="input">The input data to be processed. Cannot be null.</param>
     /// <returns>A <see cref="ValueTask{TOutput}"/> representing the asynchronous operation.  The result contains the processed
     /// output of type <typeparamref name="TOutput"/>.</returns>
-    public abstract ValueTask<TOutput> Invoke(TInput input);
+    public abstract ValueTask<TOutput> Invoke(RunnableProcess<TInput, TOutput> input);
 
+    /// <summary>
+    /// Cleanup any resources used by the runnable.
+    /// </summary>
+    /// <returns></returns>
+    public virtual ValueTask CleanupRunnable() { return Threading.ValueTaskCompleted; }
+
+    #endregion
+
+    #region Advancement Logic
     private List<RunnableProcess>? GetFirstValidAdvancementForEachResult()
     {
         LatestAdvancements.Clear();
@@ -211,6 +206,29 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
         return LatestAdvancements;
     }
 
+    private List<RunnableProcess> CheckResultForAdvancementsRecords(RunnableProcess<TInput, TOutput> process)
+    {         //Check if the state result has a valid transition
+        List<RunnableProcess> stateProcessesFromOutput = new List<RunnableProcess>();                                                                                                                                         //If the transition evaluates to true for the output, add it to the new state processes
+        Advances.ForEach(advancer =>
+        {
+            if (advancer.CanAdvance(process.Result))
+            {
+                //Check if transition is conversion type or use the output.Result directly
+                object? nextResult = advancer.type == "in_out" ? advancer.ConverterMethodResult : process;
+
+                stateProcessesFromOutput.Add(new RunnableProcess(advancer.NextRunnable, nextResult!));
+            }
+        });
+
+        //If process produces no transitions and not at a dead end rerun the process
+        if (stateProcessesFromOutput.Count == 0 && !AllowDeadEnd)
+        {
+            //rerun the process up to the max attempts
+            if (process.CanReAttempt()) stateProcessesFromOutput.Add(process);
+        }
+
+        return stateProcessesFromOutput;
+    }
 
     private List<RunnableProcess> CheckResultForAdvancements(RunnableProcess<TInput,TOutput> process) {         //Check if the state result has a valid transition
         List<RunnableProcess> stateProcessesFromOutput = new List<RunnableProcess>();                                                                                                                                         //If the transition evaluates to true for the output, add it to the new state processes
@@ -292,5 +310,5 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
             Advances.Add(transition);
         }
     }
-
+    #endregion
 }

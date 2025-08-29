@@ -19,14 +19,21 @@ public class OrchestrationRuntimeConfiguration : Orchestration<ChatMessage, Chat
     public CancellationTokenSource cts { get; set; } = new CancellationTokenSource();
     public Func<ChatRuntimeEvents, ValueTask>? OnRuntimeEvent { get; set; }
     public ConcurrentStack<ChatMessage> MessageHistory { get; set; } = new ConcurrentStack<ChatMessage>();
+
     public OrchestrationRuntimeConfiguration()
     {
         
     }
+
     public virtual void OnRuntimeInitialized()
     {
-
+        OnOrchestrationEvent += (e) =>
+        {
+            // Forward orchestration events to runtime
+            this.OnRuntimeEvent?.Invoke(new ChatRuntimeOrchestrationEvent(e, Runtime?.Id ?? string.Empty));
+        };
     }
+
     public void CancelRuntime()
     {
         cts.Cancel();

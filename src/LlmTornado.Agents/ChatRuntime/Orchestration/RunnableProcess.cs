@@ -58,7 +58,7 @@ public class RunnableProcess
 
     public List<TornadoAgent> RegisteredAgents { get; set; } = new List<TornadoAgent>();
 
-    internal void RegisterAgent(TornadoAgent agent)
+    public void RegisterAgent(TornadoAgent agent)
     {
         RegisterAgentMetrics(agent);
     }
@@ -68,16 +68,8 @@ public class RunnableProcess
         UnregisterAgentsMetrics();
     }
 
-    public void SetupProcess(List<TornadoAgent>? registeredAgents = null)
+    public void SetupProcess()
     {
-        if (registeredAgents != null)
-        {
-            foreach (TornadoAgent agent in registeredAgents)
-            {
-                RegisterAgent(agent);
-            }   
-        }
-
         RunnableExecutionTime = TimeSpan.Zero;
         StartTime = DateTime.Now;
     }
@@ -101,7 +93,6 @@ public class RunnableProcess
 
             return Threading.ValueTaskCompleted;
         };
-
     }
 
     private void UnregisterAgentsMetrics()
@@ -200,12 +191,8 @@ public class RunnableProcess<T> : RunnableProcess
 /// <remarks>This class extends the <see cref="StateProcess"/> to handle operations with a specific input
 /// type. It provides functionality to create state results with the specified type.</remarks>
 /// <typeparam name="T">The type of the input and result associated with the state process.</typeparam>
-public class RunnableProcess<TInput, TOutput> : RunnableProcess
+public class RunnableProcess<TInput, TOutput> : RunnableProcess<TInput>
 {
-    /// <summary>
-    /// Gets or sets the input value of type <typeparamref name="T"/>.
-    /// </summary>
-    public TInput Input { get => (TInput)BaseInput; set => BaseInput = value!; }
 
     public TOutput Result { get => (TOutput)BaseResult; set => BaseResult = value!; }
 
@@ -218,7 +205,6 @@ public class RunnableProcess<TInput, TOutput> : RunnableProcess
     /// <param name="maxReruns">The maximum number of times the process can be rerun in case of failure. Defaults to 3.</param>
     public RunnableProcess(OrchestrationRunnableBase runnable, TInput input, int maxReruns = 3) : base(runnable, input!, maxReruns)
     {
-        Input = input!;
     }
 
     /// <summary>
@@ -229,9 +215,7 @@ public class RunnableProcess<TInput, TOutput> : RunnableProcess
     /// <param name="input">The input data of type <typeparamref name="T"/> required by the process. Cannot be <see langword="null"/>.</param>
     /// <param name="id">A unique identifier for the process. Cannot be <see langword="null"/> or empty.</param>
     /// <param name="maxReruns">The maximum number of times the process can be rerun in case of failure. Defaults to 3.</param>
-    public RunnableProcess(OrchestrationRunnableBase runnable, TInput input, string id, int maxReruns = 3) : base(runnable, input!, maxReruns)
+    public RunnableProcess(OrchestrationRunnableBase runnable, TInput input, string id, int maxReruns = 3) : base(runnable, input!, id, maxReruns)
     {
-        Input = input!;
-        Id = id;
     }
 }
