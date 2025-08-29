@@ -7,6 +7,7 @@ using LlmTornado.Agents.Utility;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Demo.ExampleAgents;
+using LlmTornado.Demo.ExampleAgents.ResearchAgent;
 using LlmTornado.Responses;
 using System;
 using System.Collections.Generic;

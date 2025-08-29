@@ -12,8 +12,61 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
+using static LlmTornado.Demo.ExampleAgents.ResearchAgent.ResearchAgentConfiguration;
 
-namespace LlmTornado.Demo.ExampleAgents;
+namespace LlmTornado.Demo.ExampleAgents.ResearchAgent;
+
+#region Data Models
+public struct WebSearchPlan
+{
+    public WebSearchItem[] items { get; set; }
+    public WebSearchPlan(WebSearchItem[] items)
+    {
+        this.items = items;
+    }
+}
+
+public struct WebSearchItem
+{
+    public string reason { get; set; }
+    public string query { get; set; }
+
+    public WebSearchItem(string reason, string query)
+    {
+        this.reason = reason;
+        this.query = query;
+    }
+}
+
+public struct ReportData
+{
+    public string ShortSummary { get; set; }
+    public string FinalReport { get; set; }
+    public string[] FollowUpQuestions { get; set; }
+    public ReportData(string shortSummary, string finalReport, string[] followUpQuestions)
+    {
+        this.ShortSummary = shortSummary;
+        this.FinalReport = finalReport;
+        this.FollowUpQuestions = followUpQuestions;
+    }
+
+    public override string ToString()
+    {
+        return $@"
+Summary: 
+{ShortSummary}
+
+Final Report: 
+{FinalReport}
+
+
+Follow Up Questions: 
+{string.Join("\n", FollowUpQuestions)}
+";
+    }
+}
+
+#endregion
 
 public class ResearchAgentConfiguration : OrchestrationRuntimeConfiguration
 {
@@ -45,94 +98,91 @@ public class ResearchAgentConfiguration : OrchestrationRuntimeConfiguration
     {
         base.OnRuntimeInitialized();
 
-        planner.Orchestrator = this;
-        researcher.Orchestrator = this;
-        reporter.Orchestrator = this;
-        exit.Orchestrator = this;
-
         reporter.OnAgentRunnerEvent += (sEvent) =>
         {
             // Forward agent runner events (including streaming) to runtime
             this.OnRuntimeEvent?.Invoke(new ChatRuntimeAgentRunnerEvents(sEvent, Runtime?.Id ?? string.Empty));
         };
     }
+}
 
-    public class PlannerRunnable : OrchestrationRunnable<ChatMessage, WebSearchPlan>
+
+public class PlannerRunnable : OrchestrationRunnable<ChatMessage, WebSearchPlan>
+{
+    RuntimeAgent Agent;
+
+    public PlannerRunnable(TornadoApi client, Orchestration orchestrator) : base(orchestrator)
     {
-        RuntimeAgent Agent;
-
-        public PlannerRunnable(TornadoApi client, Orchestration orchestrator) : base(orchestrator)
-        {
-            string instructions = """
+        string instructions = """
                 You are a helpful research assistant. Given a query, come up with a set of web searches, 
                 to perform to best answer the query. Output between 5 and 10 terms to query for. 
                 """;
 
-            Agent = new RuntimeAgent(
-                client: client,
-                model: ChatModel.OpenAi.Gpt5.V5Mini,
-                name: "Research Agent",
-                outputSchema: typeof(WebSearchPlan),
-                instructions: instructions);
-        }
-
-        public override async ValueTask<WebSearchPlan> Invoke(RunnableProcess<ChatMessage, WebSearchPlan> process)
-        {
-            process.RegisterAgent(agent: Agent);
-
-            Conversation conv = await Agent.RunAsync(appendMessages: new List<ChatMessage> { process.Input });
-
-            WebSearchPlan? plan = await conv.Messages.Last().Content?.SmartParseJsonAsync<WebSearchPlan>(Agent);
-
-            if (plan is null || plan?.items is null || plan?.items.Length == 0)
-            {
-                return new WebSearchPlan([]);
-            }
-            else
-            {
-                return plan.Value;
-            }
-        }
+        Agent = new RuntimeAgent(
+            client: client,
+            model: ChatModel.OpenAi.Gpt5.V5Mini,
+            name: "Research Agent",
+            outputSchema: typeof(WebSearchPlan),
+            instructions: instructions);
     }
 
-    public class ResearchRunnable : OrchestrationRunnable<WebSearchPlan, string>
+    public override async ValueTask<WebSearchPlan> Invoke(RunnableProcess<ChatMessage, WebSearchPlan> process)
     {
-        public int MaxDegreeOfParallelism { get; set; } = 4;
-        public int MaxItemsToProcess { get; set; } = 3;
-        TornadoApi Client { get; set; }
-        public ResearchRunnable(TornadoApi client, Orchestration orchestrator):base(orchestrator) { Client = client; }
+        process.RegisterAgent(agent: Agent);
 
-        public override async ValueTask<string> Invoke(RunnableProcess<WebSearchPlan, string> process)
+        Conversation conv = await Agent.RunAsync(appendMessages: new List<ChatMessage> { process.Input });
+
+        WebSearchPlan? plan = await conv.Messages.Last().Content?.SmartParseJsonAsync<WebSearchPlan>(Agent);
+
+        if (plan is null || plan?.items is null || plan?.items.Length == 0)
         {
-
-            SemaphoreSlim semaphore = new SemaphoreSlim(MaxDegreeOfParallelism);
-
-            List<Task<string>> researchTasks =
-                process.Input.items
-                    .Take(MaxItemsToProcess)
-                    .Select(item => Task.Run(async () =>
-                    {
-                        await semaphore.WaitAsync();
-                        try
-                        {
-                            return await RunResearchAgent(item,process);
-                        }
-                        finally
-                        {
-                            semaphore.Release();
-                        }
-                    }))
-                    .ToList();
-
-            var researchResults = await Task.WhenAll(researchTasks);
-
-            return string.Join("[RESEARCH RESULT]\n\n\n", researchResults.ToList().Select(result => result));
+            return new WebSearchPlan([]);
         }
-
-
-        private async ValueTask<string> RunResearchAgent(WebSearchItem item, RunnableProcess<WebSearchPlan, string> process)
+        else
         {
-            string instructions = """
+            return plan.Value;
+        }
+    }
+}
+
+public class ResearchRunnable : OrchestrationRunnable<WebSearchPlan, string>
+{
+    public int MaxDegreeOfParallelism { get; set; } = 4;
+    public int MaxItemsToProcess { get; set; } = 3;
+    TornadoApi Client { get; set; }
+    public ResearchRunnable(TornadoApi client, Orchestration orchestrator) : base(orchestrator) { Client = client; }
+
+    public override async ValueTask<string> Invoke(RunnableProcess<WebSearchPlan, string> process)
+    {
+
+        SemaphoreSlim semaphore = new SemaphoreSlim(MaxDegreeOfParallelism);
+
+        List<Task<string>> researchTasks =
+            process.Input.items
+                .Take(MaxItemsToProcess)
+                .Select(item => Task.Run(async () =>
+                {
+                    await semaphore.WaitAsync();
+                    try
+                    {
+                        return await RunResearchAgent(item, process);
+                    }
+                    finally
+                    {
+                        semaphore.Release();
+                    }
+                }))
+                .ToList();
+
+        var researchResults = await Task.WhenAll(researchTasks);
+
+        return string.Join("[RESEARCH RESULT]\n\n\n", researchResults.ToList().Select(result => result));
+    }
+
+
+    private async ValueTask<string> RunResearchAgent(WebSearchItem item, RunnableProcess<WebSearchPlan, string> process)
+    {
+        string instructions = """
                 You are a research assistant. Given a search term, you search the web for that term and
                 produce a concise summary of the results. The summary must be 2-3 paragraphs and less than 300 
                 words. Capture the main points. Write succinctly, no need to have complete sentences or good
@@ -140,34 +190,34 @@ public class ResearchAgentConfiguration : OrchestrationRuntimeConfiguration
                 essence and ignore any fluff. Do not include any additional commentary other than the summary itself.
                 """;
 
-            RuntimeAgent Agent = new RuntimeAgent(
-                client: Client,
-                model: ChatModel.OpenAi.Gpt5.V5Mini,
-                name: "Research Agent",
-                instructions: instructions);
+        RuntimeAgent Agent = new RuntimeAgent(
+            client: Client,
+            model: ChatModel.OpenAi.Gpt5.V5Mini,
+            name: "Research Agent",
+            instructions: instructions);
 
-            Agent.ResponseOptions = new ResponseRequest() { Tools = [new ResponseWebSearchTool()] };
+        Agent.ResponseOptions = new ResponseRequest() { Tools = [new ResponseWebSearchTool()] };
 
-            process.RegisterAgent(Agent);
+        process.RegisterAgent(Agent);
 
-            ChatMessage userMessage = new ChatMessage(Code.ChatMessageRoles.User, item.query);
+        ChatMessage userMessage = new ChatMessage(Code.ChatMessageRoles.User, item.query);
 
-            Conversation conv = await Agent.RunAsync(appendMessages: new List<ChatMessage> { userMessage });
+        Conversation conv = await Agent.RunAsync(appendMessages: new List<ChatMessage> { userMessage });
 
-            return conv.Messages.Last().Content ?? string.Empty;
-        }
-
+        return conv.Messages.Last().Content ?? string.Empty;
     }
 
-    public class ReportingRunnable : OrchestrationRunnable<string, ReportData>
+}
+
+public class ReportingRunnable : OrchestrationRunnable<string, ReportData>
+{
+    RuntimeAgent Agent;
+
+    public Action<AgentRunnerEvents>? OnAgentRunnerEvent { get; set; }
+
+    public ReportingRunnable(TornadoApi client, Orchestration orchestrator) : base(orchestrator)
     {
-        RuntimeAgent Agent;
-
-        public Action<AgentRunnerEvents>? OnAgentRunnerEvent { get; set; }
-
-        public ReportingRunnable(TornadoApi client, Orchestration orchestrator) : base(orchestrator)
-        {
-            string instructions = """
+        string instructions = """
                 You are a senior researcher tasked with writing a cohesive report for a research query.
                 you will be provided with the original query, and some initial research done by a research assistant.
 
@@ -177,100 +227,50 @@ public class ResearchAgentConfiguration : OrchestrationRuntimeConfiguration
                 The final output should be in markdown format, and it should be lengthy and detailed. Aim for 5-10 pages of content, at least 1000 words.
                 """;
 
-            Agent = new RuntimeAgent(
-                client: client,
-                model: ChatModel.OpenAi.Gpt5.V5,
-                name: "Report Agent",
-                instructions: instructions,
-                outputSchema: typeof(ReportData),
-                streaming: true);
+        Agent = new RuntimeAgent(
+            client: client,
+            model: ChatModel.OpenAi.Gpt5.V5,
+            name: "Report Agent",
+            instructions: instructions,
+            outputSchema: typeof(ReportData),
+            streaming: true);
 
-            
-        }
 
-        public override async ValueTask<ReportData> Invoke(RunnableProcess<string, ReportData> research)
-        {
-            research.RegisterAgent(agent: Agent);
+    }
 
-            Conversation conv = await Agent.RunAsync(
-                appendMessages: new List<ChatMessage> { new ChatMessage(Code.ChatMessageRoles.User, research.Input) },
-                streaming: Agent.Streaming,
-                onAgentRunnerEvent: (sEvent) =>
-                {
-                    OnAgentRunnerEvent?.Invoke(sEvent);
-                    return ValueTask.CompletedTask;
-                });
+    public override async ValueTask<ReportData> Invoke(RunnableProcess<string, ReportData> research)
+    {
+        research.RegisterAgent(agent: Agent);
 
-            ReportData? report = await conv.Messages.Last().Content?.SmartParseJsonAsync<ReportData>(Agent)!;
-
-            if (report is null || string.IsNullOrWhiteSpace(report?.FinalReport))
+        Conversation conv = await Agent.RunAsync(
+            appendMessages: new List<ChatMessage> { new ChatMessage(Code.ChatMessageRoles.User, research.Input) },
+            streaming: Agent.Streaming,
+            onAgentRunnerEvent: (sEvent) =>
             {
-                throw new Exception("No report generated");
-            }
+                OnAgentRunnerEvent?.Invoke(sEvent);
+                return ValueTask.CompletedTask;
+            });
 
-            return report.Value;
+        ReportData? report = await conv.Messages.Last().Content?.SmartParseJsonAsync<ReportData>(Agent)!;
+
+        if (report is null || string.IsNullOrWhiteSpace(report?.FinalReport))
+        {
+            throw new Exception("No report generated");
         }
+
+        return report.Value;
+    }
+}
+
+public class ExitRunnable : OrchestrationRunnable<ReportData, ChatMessage>
+{
+    public ExitRunnable(Orchestration orchestrator, string runnableName = "") : base(orchestrator, runnableName)
+    {
     }
 
-    public class ExitRunnable : OrchestrationRunnable<ReportData, ChatMessage>
+    public override async ValueTask<ChatMessage> Invoke(RunnableProcess<ReportData, ChatMessage> process)
     {
-        public ExitRunnable(Orchestration orchestrator, string runnableName = "") : base(orchestrator, runnableName)
-        {
-        }
-
-        public override async ValueTask<ChatMessage> Invoke(RunnableProcess<ReportData, ChatMessage> process)
-        {
-            this.Orchestrator?.HasCompletedSuccessfully(); //Signal the orchestration has completed successfully
-            return new ChatMessage(Code.ChatMessageRoles.Assistant, process.Input.ToString());
-        }
-    }
-
-    public struct WebSearchPlan
-    {
-        public WebSearchItem[] items { get; set; }
-        public WebSearchPlan(WebSearchItem[] items)
-        {
-            this.items = items;
-        }
-    }
-
-    public struct WebSearchItem
-    {
-        public string reason { get; set; }
-        public string query { get; set; }
-
-        public WebSearchItem(string reason, string query)
-        {
-            this.reason = reason;
-            this.query = query;
-        }
-    }
-
-    public struct ReportData
-    {
-        public string ShortSummary { get; set; }
-        public string FinalReport { get; set; }
-        public string[] FollowUpQuestions { get; set; }
-        public ReportData(string shortSummary, string finalReport, string[] followUpQuestions)
-        {
-            this.ShortSummary = shortSummary;
-            this.FinalReport = finalReport;
-            this.FollowUpQuestions = followUpQuestions;
-        }
-
-        public override string ToString()
-        {
-            return $@"
-Summary: 
-{ShortSummary}
-
-Final Report: 
-{FinalReport}
-
-
-Follow Up Questions: 
-{string.Join("\n", FollowUpQuestions)}
-";
-        }
+        this.Orchestrator?.HasCompletedSuccessfully(); //Signal the orchestration has completed successfully
+        return new ChatMessage(Code.ChatMessageRoles.Assistant, process.Input.ToString());
     }
 }

@@ -139,7 +139,7 @@ namespace LlmTornado.Agents.ChatRuntime.Orchestration
         public RunnableProcess RunnableProcess { get; set; }
         public OnStartedRunnableProcessEvent(RunnableProcess process)
         {
-            Type = "process started";
+            Type = "startedProcess ";
             RunnableProcess = process;
         }
     }
@@ -155,7 +155,7 @@ namespace LlmTornado.Agents.ChatRuntime.Orchestration
         public RunnableProcess RunnableProcess { get; set; }
         public OnFinishedRunnableProcessEvent(RunnableProcess process)
         {
-            Type = "process finished";
+            Type = "finishedProcess";
             RunnableProcess = process;
         }
     }

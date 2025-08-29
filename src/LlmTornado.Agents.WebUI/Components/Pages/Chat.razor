@@ -12,28 +12,70 @@
 
 <link href="css/chat.css" rel="stylesheet" />
 
-<div class="chat-layout">
+<div class="chat-layout @(isDarkMode ? "dark-theme" : "light-theme")">
     <!-- Main Chat Area -->
     <div class="chat-main @(showLogPanel ? "with-log-panel" : "full-width")">
         <div class="chat-container">
             <div class="chat-header">
-                <h2>🌪️ LlmTornado Chat</h2>
+                <div class="header-left">
+                    <div class="brand">
+                        <span class="brand-icon">🌪️</span>
+                        <h2>LlmTornado Chat</h2>
+                    </div>
+                    <div class="connection-status">
+                        <div class="status-indicator @(isConnected ? "connected" : "disconnected")"></div>
+                        <span class="status-text">@(isConnected ? "Connected" : "Disconnected")</span>
+                    </div>
+                </div>
                 <div class="chat-controls">
-                    <button class="btn btn-outline-secondary" @onclick="ToggleLogPanel">
-                        @if (showLogPanel)
+                    <button class="btn btn-icon" @onclick="ToggleTheme" title="Toggle dark/light mode">
+                        @if (isDarkMode)
                         {
-                            <span>🔒 Hide Logs</span>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="5"></circle>
+                                <line x1="12" y1="1" x2="12" y2="3"></line>
+                                <line x1="12" y1="21" x2="12" y2="23"></line>
+                                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                                <line x1="1" y1="12" x2="3" y2="12"></line>
+                                <line x1="21" y1="12" x2="23" y2="12"></line>
+                                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                            </svg>
                         }
                         else
                         {
-                            <span>📋 Show Logs</span>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                            </svg>
                         }
                     </button>
-                    <button class="btn btn-outline-secondary" @onclick="ClearChat" disabled="@isConnecting">
-                        🗑️ Clear
+                    <button class="btn btn-secondary" @onclick="ToggleLogPanel">
+                        @if (showLogPanel)
+                        {
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M18 6L6 18M6 6l12 12"></path>
+                            </svg>
+                            <span>Hide Logs</span>
+                        }
+                        else
+                        {
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14,2 14,8 20,8"></polyline>
+                                <line x1="16" y1="13" x2="8" y2="13"></line>
+                                <line x1="16" y1="17" x2="8" y2="17"></line>
+                                <polyline points="10,9 9,9 8,9"></polyline>
+                            </svg>
+                            <span>Show Logs</span>
+                        }
                     </button>
-                    <button class="btn @(isConnected ? "btn-success" : "btn-secondary")" disabled>
-                        @(isConnected ? "🟢 Connected" : "🔴 Disconnected")
+                    <button class="btn btn-secondary" @onclick="ClearChat" disabled="@isConnecting">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3,6 5,6 21,6"></polyline>
+                            <path d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6m3,0V4a2,2,0,0,1,2-2h4a2,2,0,0,1,2,2V6"></path>
+                        </svg>
+                        <span>Clear</span>
                     </button>
                 </div>
             </div>
@@ -43,8 +85,10 @@
                 {
                     <div class="message @message.CssClass" key="@message.Id">
                         <div class="message-header">
-                            <span class="message-role">@message.Role</span>
-                            <span class="message-timestamp">@message.Timestamp.ToString("HH:mm:ss")</span>
+                            <div class="message-meta">
+                                <span class="message-role">@message.Role</span>
+                                <span class="message-timestamp">@message.Timestamp.ToString("HH:mm:ss")</span>
+                            </div>
                         </div>
                         <div class="message-content">
                             @if (message.IsMarkdown)
@@ -57,7 +101,7 @@
                             }
                             else
                             {
-                                <pre style="white-space: pre-wrap; font-family: inherit; margin: 0;">@message.Content</pre>
+                                <div class="message-text">@message.Content</div>
                             }
                         </div>
                     </div>
@@ -67,38 +111,47 @@
                 {
                     <div class="message assistant">
                         <div class="message-header">
-                            <span class="message-role">Assistant</span>
-                            <span class="message-timestamp">@DateTime.Now.ToString("HH:mm:ss")</span>
+                            <div class="message-meta">
+                                <span class="message-role">Assistant</span>
+                                <span class="message-timestamp">@DateTime.Now.ToString("HH:mm:ss")</span>
+                            </div>
                         </div>
                         <div class="message-content">
-                            <div class="typing-indicator">
-                                <span></span>
-                                <span></span>
-                                <span></span>
+                            <div class="typing-container">
+                                <div class="typing-indicator">
+                                    <span></span>
+                                    <span></span>
+                                    <span></span>
+                                </div>
+                                <span class="thinking-text">Thinking...</span>
                             </div>
-                            <span class="thinking-text">Thinking...</span>
                         </div>
                     </div>
                 }
             </div>
 
             <div class="chat-input-container">
-                <div class="input-group">
+                <div class="input-wrapper">
                     <textarea @bind="currentMessage" 
                               @onkeydown="HandleKeyDown" 
-                              class="form-control chat-input" 
+                              class="chat-input" 
                               placeholder="Type your message here... (Markdown supported)" 
                               disabled="@isConnecting"
-                              rows="1"
-                              style="resize: vertical; min-height: 38px;"></textarea>
+                              rows="1"></textarea>
                     <button @onclick="SendMessage" 
-                            class="btn btn-primary" 
+                            class="send-button" 
                             disabled="@(isConnecting || string.IsNullOrWhiteSpace(currentMessage))">
                         @if (isConnecting)
                         {
-                            <span class="spinner-border spinner-border-sm me-2"></span>
+                            <div class="spinner"></div>
                         }
-                        Send
+                        else
+                        {
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="22" y1="2" x2="11" y2="13"></line>
+                                <polygon points="22,2 15,22 11,13 2,9 22,2"></polygon>
+                            </svg>
+                        }
                     </button>
                 </div>
             </div>
@@ -108,10 +161,23 @@
     <!-- Log Panel -->
     <div class="log-panel @(showLogPanel ? "show" : "hide")">
         <div class="log-header">
-            <h4>📋 Event Logs</h4>
+            <div class="log-title">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14,2 14,8 20,8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10,9 9,9 8,9"></polyline>
+                </svg>
+                <h4>Event Logs</h4>
+            </div>
             <div class="log-controls">
-                <button class="btn btn-sm btn-outline-light" @onclick="ClearLogs">Clear Logs</button>
-                <button class="btn btn-sm btn-outline-light" @onclick="ToggleLogPanel">✕</button>
+                <button class="btn btn-sm" @onclick="ClearLogs">Clear</button>
+                <button class="btn btn-sm btn-icon" @onclick="ToggleLogPanel">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 6L6 18M6 6l12 12"></path>
+                    </svg>
+                </button>
             </div>
         </div>
         
@@ -119,7 +185,12 @@
             @if (!logEvents.Any())
             {
                 <div class="log-empty">
-                    <p>No events logged yet. Events will appear here when the assistant processes your messages.</p>
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14,2 14,8 20,8"></polyline>
+                    </svg>
+                    <p>No events logged yet</p>
+                    <span>Events will appear here when the assistant processes your messages.</span>
                 </div>
             }
             else
@@ -157,6 +228,7 @@
     private bool isConnecting = false;
     private bool isConnected = false;
     private bool showLogPanel = false;
+    private bool isDarkMode = true; // Default to dark mode
     private string? runtimeId;
     private HttpClient? httpClient;
     private string apiBaseUrl = "";
@@ -174,7 +246,38 @@
         if (firstRender)
         {
             hasRendered = true;
+            await LoadThemePreference();
             await CreateChatRuntime();
+        }
+    }
+
+    private async Task LoadThemePreference()
+    {
+        try
+        {
+            var savedTheme = await JSRuntime.InvokeAsync<string>("getTheme");
+            isDarkMode = savedTheme == "dark";
+            StateHasChanged();
+        }
+        catch
+        {
+            // Default to dark mode if localStorage is not available
+            isDarkMode = true;
+        }
+    }
+
+    private async Task ToggleTheme()
+    {
+        isDarkMode = !isDarkMode;
+        StateHasChanged();
+        
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("setTheme", isDarkMode ? "dark" : "light");
+        }
+        catch
+        {
+            // Ignore localStorage errors
         }
     }
 
@@ -350,7 +453,6 @@
                 lastMessage.Content += $"\n\n❌ Stream error: {error}";
                 StateHasChanged();
             }
-            _ = AddLogEvent("Stream", "Error", error, "");
         });
     }
 
@@ -480,7 +582,7 @@
         if (hasRendered)
         {
             await Task.Delay(100);
-            await JSRuntime.InvokeVoidAsync("scrollToBottom", "chat-messages");
+            await JSRuntime.InvokeVoidAsync("smoothScrollTo", "chat-messages", "bottom");
         }
     }
 
@@ -489,7 +591,7 @@
         if (hasRendered)
         {
             await Task.Delay(100);
-            await JSRuntime.InvokeVoidAsync("scrollToBottom", "log-content");
+            await JSRuntime.InvokeVoidAsync("smoothScrollTo", "log-content", "bottom");
         }
     }
 

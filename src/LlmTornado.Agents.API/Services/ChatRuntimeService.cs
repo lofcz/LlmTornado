@@ -4,6 +4,7 @@ using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Code;
 using LlmTornado.Demo.ExampleAgents;
+using LlmTornado.Demo.ExampleAgents.ResearchAgent;
 using Microsoft.AspNetCore.SignalR;
 using System.Collections.Concurrent;
 using static LlmTornado.Demo.AgentOrchestrationRuntimeDemo;

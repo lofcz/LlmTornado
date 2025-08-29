@@ -9,6 +9,17 @@
     <link rel="stylesheet" href="LlmTornado.Chat.Web.styles.css" />
     <link rel="icon" type="image/png" href="favicon.png" />
     <HeadOutlet />
+    
+    <!-- Preload theme to prevent flash -->
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('llmtornado-theme');
+            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const theme = savedTheme || (prefersDark ? 'dark' : 'light');
+            document.documentElement.setAttribute('data-theme', theme);
+            document.documentElement.className = theme + '-theme';
+        })();
+    </script>
 </head>
 
 <body>

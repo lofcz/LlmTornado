@@ -213,8 +213,8 @@ public partial class ChatRuntimeController
                 {
                     await Response.WriteAsync($"event: orchestration_started_runnable\n");
                     await Response.WriteAsync($"data: {{\n");
-                    await Response.WriteAsync($"data: \"processId\": \"{EscapeJsonString(startedEvent.RunnableProcess?.Id ?? "")}\",\n");
-                    await Response.WriteAsync($"data: \"runnerId\": \"{EscapeJsonString(startedEvent.RunnableProcess?.Runner?.Id ?? "")}\"\n");
+                    await Response.WriteAsync($"data: \"runnerId\": \"{EscapeJsonString(startedEvent.RunnableBase?.Id ?? "")}\",\n");
+                    await Response.WriteAsync($"data: \"runnerName\": \"{EscapeJsonString(startedEvent.RunnableBase.RunnableName ?? "")}\"\n");
                     await Response.WriteAsync($"data: }}\n\n");
                 }
                 break;
@@ -230,7 +230,30 @@ public partial class ChatRuntimeController
                     await Response.WriteAsync($"data: }}\n\n");
                 }
                 break;
-                
+            case "startedProcess":
+                if (orchestrationEvent is OnStartedRunnableProcessEvent startedProcessEvent)
+                {
+                    await Response.WriteAsync($"event: orchestration_started_runnable_process\n");
+                    await Response.WriteAsync($"data: {{\n");
+                    await Response.WriteAsync($"data: \"processId\": \"{EscapeJsonString(startedProcessEvent.RunnableProcess.Id ?? "")}\",\n");
+                    await Response.WriteAsync($"data: \"runnerName\": \"{EscapeJsonString(startedProcessEvent.RunnableProcess.Runner.RunnableName ?? "")}\"\n");
+                    await Response.WriteAsync($"data: }}\n\n");
+                }
+                break;
+
+            case "exitedProcess":
+                if (orchestrationEvent is OnFinishedRunnableProcessEvent finishedProcessEvent)
+                {
+                    await Response.WriteAsync($"event: orchestration_finished_runnable_process\n");
+                    await Response.WriteAsync($"data: {{\n");
+                    await Response.WriteAsync($"data: \"processId\": \"{EscapeJsonString(finishedProcessEvent.RunnableProcess.Id ?? "")}\",\n");
+                    await Response.WriteAsync($"data: \"runnerName\": \"{EscapeJsonString(finishedProcessEvent.RunnableProcess.Runner.RunnableName ?? "")}\",\n");
+                    await Response.WriteAsync($"data: \"TokensUsed\": \"{EscapeJsonString(finishedProcessEvent.RunnableProcess.TokenUsage.ToString() ?? "")}\",\n");
+                    await Response.WriteAsync($"data: \"InvokeTime\": \"{EscapeJsonString(finishedProcessEvent.RunnableProcess.RunnableExecutionTime.TotalSeconds.ToString() ?? "")}\"\n");
+                    await Response.WriteAsync($"data: }}\n\n");
+                }
+                break;
+
             case "invoked":
                 if (orchestrationEvent is OnInvokedRunnableEvent invokedEvent)
                 {
