@@ -4,6 +4,7 @@ using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Code;
 using LlmTornado.Demo.ExampleAgents;
+using LlmTornado.Demo.ExampleAgents.MagenticOneAgent;
 using LlmTornado.Demo.ExampleAgents.ResearchAgent;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
@@ -17,12 +18,13 @@ namespace LlmTornado.Agents.API.Services;
 /// </summary>
 public interface IChatRuntimeService
 {
-    Task<string> CreateRuntimeAsync(string configurationType, string agentName, string instructions, bool enableStreaming);
+    Task<string> CreateRuntimeAsync(string configurationType);
     ChatRuntime.ChatRuntime? GetRuntime(string runtimeId);
     bool RemoveRuntime(string runtimeId);
     IEnumerable<string> GetActiveRuntimeIds();
     Task<ChatMessage> SendMessageAsync(string runtimeId, ChatMessage message);
 
+    public string[] GetRuntimeTypes();
 
 }
 
@@ -40,6 +42,7 @@ public class ChatRuntimeService : IChatRuntimeService
     {
         _logger = logger;
         RegisterRuntimeConfiguration<ResearchAgentConfiguration>();
+        RegisterRuntimeConfiguration<MagenticOneConfiguration>();   
     }
 
     public void RegisterRuntimeConfiguration<T>() where T : IRuntimeConfiguration
@@ -48,8 +51,13 @@ public class ChatRuntimeService : IChatRuntimeService
         _logger.LogInformation("Registered runtime configuration: {TypeName}", typeof(T).Name);
     }
 
+    public string[] GetRuntimeTypes()
+    {
+        return _configurations.Keys.ToArray();
+    }
+
     /// <inheritdoc/>
-    public async Task<string> CreateRuntimeAsync(string configurationType, string agentName, string instructions, bool enableStreaming)
+    public async Task<string> CreateRuntimeAsync(string configurationType)
     {
         try
         {

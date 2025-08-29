@@ -75,15 +75,16 @@ public class ResearchAgentConfiguration : OrchestrationRuntimeConfiguration
     ResearchRunnable researcher;
     ReportingRunnable reporter;
     ExitRunnable exit;
+    public TornadoApi Client { get; set; }
 
     public ResearchAgentConfiguration()
     {
-        TornadoApi client = new TornadoApi(Environment.GetEnvironmentVariable("OPENAI_API_KEY"), LLmProviders.OpenAi);
+        Client = new TornadoApi(Environment.GetEnvironmentVariable("OPENAI_API_KEY"), LLmProviders.OpenAi);
         RecordSteps = true;
         //Create the Runnables
-        planner = new PlannerRunnable(client, this);
-        researcher = new ResearchRunnable(client, this);
-        reporter = new ReportingRunnable(client, this);
+        planner = new PlannerRunnable(Client, this);
+        researcher = new ResearchRunnable(Client, this);
+        reporter = new ReportingRunnable(Client, this);
         exit = new ExitRunnable(this) { AllowDeadEnd = true }; //Set deadend to disable reattempts and finish the execution
 
         //Setup the orchestration flow
@@ -93,7 +94,27 @@ public class ResearchAgentConfiguration : OrchestrationRuntimeConfiguration
 
         //Configure the Orchestration entry and exit points
         SetEntryRunnable(planner);
-        SetRunnableWithResult(exit);  
+        SetRunnableWithResult(exit); 
+    }
+
+    public ResearchAgentConfiguration(TornadoApi? client = null)
+    {
+        Client = client ?? new TornadoApi(Environment.GetEnvironmentVariable("OPENAI_API_KEY"), LLmProviders.OpenAi);
+        RecordSteps = true;
+        //Create the Runnables
+        planner = new PlannerRunnable(Client, this);
+        researcher = new ResearchRunnable(Client, this);
+        reporter = new ReportingRunnable(Client, this);
+        exit = new ExitRunnable(this) { AllowDeadEnd = true }; //Set deadend to disable reattempts and finish the execution
+
+        //Setup the orchestration flow
+        planner.AddAdvancer((plan) => plan.items.Length > 0, researcher);
+        researcher.AddAdvancer((research) => !string.IsNullOrEmpty(research), reporter);
+        reporter.AddAdvancer((reporter) => !string.IsNullOrEmpty(reporter.FinalReport), exit);
+
+        //Configure the Orchestration entry and exit points
+        SetEntryRunnable(planner);
+        SetRunnableWithResult(exit);
     }
 
     public override void OnRuntimeInitialized()

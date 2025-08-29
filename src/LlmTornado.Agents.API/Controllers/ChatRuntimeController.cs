@@ -40,10 +40,7 @@ public partial class ChatRuntimeController : ControllerBase
         try
         {
             string runtimeId = await _runtimeService.CreateRuntimeAsync(
-                request.ConfigurationType,
-                request.AgentName,
-                request.Instructions,
-                request.EnableStreaming);
+                request.ConfigurationType);
 
             return Ok(new CreateChatRuntimeResponse { RuntimeId = runtimeId, Status = "created" });
         }
@@ -133,6 +130,27 @@ public partial class ChatRuntimeController : ControllerBase
         {
             _logger.LogError(ex, "Failed to get runtime status for {RuntimeId}", runtimeId);
             return StatusCode(500, new { error = "Failed to get runtime status", details = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Gets available runtime configuration types
+    /// </summary>
+    /// <returns>Available runtime configuration types</returns>
+    [HttpGet("configurations")]
+    public ActionResult<CreateConfigurationsResponse> GetRuntimeConfigurations()
+    {
+        try
+        {
+            return Ok(new CreateConfigurationsResponse
+            {
+                Configurations = _runtimeService.GetRuntimeTypes()
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get runtime configurations");
+            return StatusCode(500, new { error = "Failed to get runtime configurations", details = ex.Message });
         }
     }
 

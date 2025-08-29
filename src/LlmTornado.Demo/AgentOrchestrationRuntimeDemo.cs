@@ -42,8 +42,8 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
     [TornadoTest]
     public static async Task BasicOrchestrationRuntimeStreamingDemo()
     {
-        ResearchAgentConfiguration RuntimeConfiguration = new ResearchAgentConfiguration(Program.Connect());
-
+        ResearchAgentConfiguration RuntimeConfiguration = new ResearchAgentConfiguration();
+        
         ChatRuntime runtime = new ChatRuntime(RuntimeConfiguration);
 
         RuntimeConfiguration.OnRuntimeEvent = async (evt) =>

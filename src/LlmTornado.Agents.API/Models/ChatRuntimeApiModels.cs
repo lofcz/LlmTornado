@@ -12,21 +12,6 @@ public class CreateChatRuntimeRequest
     /// Configuration type for the runtime (e.g., "simple", "orchestrated")
     /// </summary>
     public string ConfigurationType { get; set; } = "simple";
-    
-    /// <summary>
-    /// Agent name identifier
-    /// </summary>
-    public string AgentName { get; set; } = "DefaultAgent";
-    
-    /// <summary>
-    /// Initial instructions for the agent
-    /// </summary>
-    public string Instructions { get; set; } = "You are a helpful assistant";
-    
-    /// <summary>
-    /// Whether to enable streaming for this runtime
-    /// </summary>
-    public bool EnableStreaming { get; set; } = true;
 }
 
 /// <summary>
@@ -43,6 +28,18 @@ public class CreateChatRuntimeResponse
     /// Status of the runtime creation
     /// </summary>
     public string Status { get; set; } = "created";
+}
+
+/// <summary>
+/// Response model for chat runtime creation
+/// </summary>
+public class CreateConfigurationsResponse
+{
+    /// <summary>
+    /// Unique identifier for the created runtime
+    /// </summary>
+    public string[] Configurations { get; set; } = Array.Empty<string>();
+
 }
 
 /// <summary>
