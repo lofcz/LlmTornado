@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>LlmTornado.Chat.Web</RootNamespace>
     <AssemblyName>LlmTornado.Chat.Web</AssemblyName>
+    <UserSecretsId>52ff29fa-8754-4a31-a779-b8b152680433</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>

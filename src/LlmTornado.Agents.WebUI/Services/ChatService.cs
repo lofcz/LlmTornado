@@ -22,18 +22,82 @@ public class ChatService : IDisposable
     }
 
     /// <summary>
-    /// Creates a new chat runtime
+    /// Gets available runtime configuration types
     /// </summary>
-    public async Task<CreateRuntimeResponse?> CreateChatRuntimeAsync()
+    public async Task<string[]> GetRuntimeConfigurationsAsync()
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync("api/chatruntime/configurations");
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadAsStringAsync();
+                var configurationsResponse = JsonSerializer.Deserialize<GetConfigurationsResponse>(result, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                return configurationsResponse?.Configurations ?? Array.Empty<string>();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to get runtime configurations: {ex.Message}");
+        }
+        return Array.Empty<string>();
+    }
+
+    /// <summary>
+    /// Gets list of active runtime instances
+    /// </summary>
+    public async Task<RuntimeInfo[]> GetActiveRuntimesAsync()
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync("api/chatruntime/list");
+            if (response.IsSuccessStatusCode)
+            {
+                var runtimeIds = await response.Content.ReadFromJsonAsync<string[]>();
+                var runtimeInfos = new List<RuntimeInfo>();
+                
+                if (runtimeIds != null)
+                {
+                    foreach (var runtimeId in runtimeIds)
+                    {
+                        var statusResponse = await _httpClient.GetAsync($"api/chatruntime/{runtimeId}/status");
+                        if (statusResponse.IsSuccessStatusCode)
+                        {
+                            var status = await statusResponse.Content.ReadFromJsonAsync<RuntimeStatusResponse>();
+                            if (status != null)
+                            {
+                                runtimeInfos.Add(new RuntimeInfo
+                                {
+                                    RuntimeId = runtimeId,
+                                    Status = status.Status,
+                                    MessageCount = status.MessageCount,
+                                    DisplayName = $"{runtimeId[..8]}... ({status.MessageCount} msgs)"
+                                });
+                            }
+                        }
+                    }
+                }
+                
+                return runtimeInfos.ToArray();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to get active runtimes: {ex.Message}");
+        }
+        return Array.Empty<RuntimeInfo>();
+    }
+
+    /// <summary>
+    /// Creates a new chat runtime with specified configuration type
+    /// </summary>
+    public async Task<CreateRuntimeResponse?> CreateChatRuntimeAsync(string configurationType = "simple")
     {
         try
         {
             var request = new
             {
-                configurationType = "simple",
-                agentName = "LlmTornadoChat",
-                instructions = "You are a helpful AI assistant. Be concise but informative. You can use markdown formatting in your responses.",
-                enableStreaming = true
+                configurationType = configurationType
             };
 
             var response = await _httpClient.PostAsJsonAsync("api/chatruntime/create", request);
@@ -46,6 +110,43 @@ public class ChatService : IDisposable
         catch (Exception ex)
         {
             Console.WriteLine($"Failed to create chat runtime: {ex.Message}");
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Removes/deletes a specific runtime
+    /// </summary>
+    public async Task<bool> RemoveRuntimeAsync(string runtimeId)
+    {
+        try
+        {
+            var response = await _httpClient.DeleteAsync($"api/chatruntime/{runtimeId}");
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to remove runtime: {ex.Message}");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Gets status information for a specific runtime
+    /// </summary>
+    public async Task<RuntimeStatusResponse?> GetRuntimeStatusAsync(string runtimeId)
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync($"api/chatruntime/{runtimeId}/status");
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<RuntimeStatusResponse>();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to get runtime status: {ex.Message}");
         }
         return null;
     }

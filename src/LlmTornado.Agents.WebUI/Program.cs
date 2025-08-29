@@ -12,8 +12,9 @@ internal class Program
         builder.Services.AddRazorComponents()
             .AddInteractiveServerComponents();
 
-        // Register chat service
+        // Register chat services
         builder.Services.AddScoped<ChatService>();
+        builder.Services.AddScoped<FileUploadService>();
         builder.Services.AddHttpClient();
 
         var app = builder.Build();

@@ -38,6 +38,38 @@ public class CreateRuntimeResponse
 }
 
 /// <summary>
+/// Response from runtime configurations API
+/// </summary>
+public class GetConfigurationsResponse
+{
+    public string[] Configurations { get; set; } = Array.Empty<string>();
+}
+
+/// <summary>
+/// Runtime status information
+/// </summary>
+public class RuntimeStatusResponse
+{
+    public string RuntimeId { get; set; } = "";
+    public string Status { get; set; } = "";
+    public bool StreamingEnabled { get; set; }
+    public int MessageCount { get; set; }
+}
+
+/// <summary>
+/// Information about an active runtime
+/// </summary>
+public class RuntimeInfo
+{
+    public string RuntimeId { get; set; } = "";
+    public string Status { get; set; } = "";
+    public int MessageCount { get; set; }
+    public string DisplayName { get; set; } = "";
+    public string ConfigurationType { get; set; } = "";
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
+}
+
+/// <summary>
 /// Event data for text delta streaming
 /// </summary>
 public class TextDeltaEvent

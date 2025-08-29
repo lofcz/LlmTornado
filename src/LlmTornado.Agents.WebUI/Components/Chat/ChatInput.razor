@@ -1,32 +1,75 @@
 @using Microsoft.AspNetCore.Components.Web
+@using LlmTornado.Chat.Web.Services
+@inject FileUploadService FileUploadService
 
 <div class="chat-input-container">
     <div class="input-wrapper">
-        <textarea @bind="CurrentMessage" 
-                  @onkeydown="HandleKeyDown" 
-                  class="chat-input" 
-                  placeholder="Type your message here... (Markdown supported)" 
-                  disabled="@IsDisabled"
-                  rows="1"></textarea>
-        <button @onclick="SendCurrentMessage" 
-                class="send-button" 
-                disabled="@(IsDisabled || string.IsNullOrWhiteSpace(CurrentMessage))">
-            @if (IsDisabled)
-            {
-                <div class="spinner"></div>
-            }
-            else
-            {
+        @if (!string.IsNullOrEmpty(SelectedFileBase64))
+        {
+            <div class="file-preview">
+                <div class="file-info">
+                    @if (FileInformation.IsImage)
+                    {
+                        <div class="file-thumbnail">
+                            <img src="@SelectedFileBase64" alt="Selected file" style="max-width: 50px; max-height: 50px; border-radius: 4px;" />
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="file-icon">
+                            @GetFileIcon(FileInformation.MimeType)
+                        </div>
+                    }
+                    <div class="file-details">
+                        <span class="file-type">@FileInformation.MimeType</span>
+                        <span class="file-size">@FileInformation.FormattedSize</span>
+                    </div>
+                </div>
+                <button class="file-remove-btn" @onclick="RemoveFile" type="button" title="Remove file">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 6L6 18M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+        }
+        
+        <div class="input-row">
+            <button class="file-upload-btn" @onclick="SelectFile" type="button" disabled="@IsDisabled" title="Attach file">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="22" y1="2" x2="11" y2="13"></line>
-                    <polygon points="22,2 15,22 11,13 2,9 22,2"></polygon>
+                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.64 16.2a2 2 0 0 1-2.83-2.83l8.49-8.49"></path>
                 </svg>
-            }
-        </button>
+            </button>
+            
+            <textarea @bind="CurrentMessage" 
+                      @onkeydown="HandleKeyDown" 
+                      class="chat-input" 
+                      placeholder="Type your message here... (Markdown supported)" 
+                      disabled="@IsDisabled"
+                      rows="1"></textarea>
+            
+            <button @onclick="SendCurrentMessage" 
+                    class="send-button" 
+                    disabled="@(IsDisabled || (string.IsNullOrWhiteSpace(CurrentMessage) && string.IsNullOrEmpty(SelectedFileBase64)))">
+                @if (IsDisabled)
+                {
+                    <div class="spinner"></div>
+                }
+                else
+                {
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22,2 15,22 11,13 2,9 22,2"></polygon>
+                    </svg>
+                }
+            </button>
+        </div>
     </div>
 </div>
 
 @code {
+    private string SelectedFileBase64 = "";
+    private LlmTornado.Chat.Web.Services.FileInfo FileInformation = new();
+
     /// <summary>
     /// Current message text
     /// </summary>
@@ -40,7 +83,7 @@
     /// <summary>
     /// Callback for when message should be sent
     /// </summary>
-    [Parameter] public EventCallback<string> OnSendMessage { get; set; }
+    [Parameter] public EventCallback<(string message, string? base64File)> OnSendMessage { get; set; }
 
     /// <summary>
     /// Callback for when current message changes
@@ -52,17 +95,84 @@
     /// </summary>
     private async Task HandleKeyDown(KeyboardEventArgs e)
     {
-        if (e.Key == "Enter" && !e.ShiftKey && !IsDisabled && !string.IsNullOrWhiteSpace(CurrentMessage))
+        if (e.Key == "Enter" && !e.ShiftKey && !IsDisabled && 
+            (!string.IsNullOrWhiteSpace(CurrentMessage) || !string.IsNullOrEmpty(SelectedFileBase64)))
         {
             await SendCurrentMessage();
         }
     }
 
     /// <summary>
-    /// Sends the current message
+    /// Sends the current message with optional file attachment
     /// </summary>
     private async Task SendCurrentMessage()
     {
-        await OnSendMessage.InvokeAsync(CurrentMessage);
+        await OnSendMessage.InvokeAsync((CurrentMessage, string.IsNullOrEmpty(SelectedFileBase64) ? null : SelectedFileBase64));
+        
+        // Clear the input after sending
+        CurrentMessage = "";
+        SelectedFileBase64 = "";
+        FileInformation = new();
+        await CurrentMessageChanged.InvokeAsync(CurrentMessage);
+    }
+
+    /// <summary>
+    /// Opens file dialog to select a file
+    /// </summary>
+    private async Task SelectFile()
+    {
+        try
+        {
+            // Allow common file types - images, PDFs, documents, audio
+            var acceptTypes = "image/*,.pdf,.doc,.docx,.txt,.md,.json,.csv,.mp3,.wav,.ogg";
+            var result = await FileUploadService.SelectAndConvertFileAsync(acceptTypes);
+            
+            if (!string.IsNullOrEmpty(result))
+            {
+                SelectedFileBase64 = result;
+                FileInformation = FileUploadService.GetFileInfo(result);
+                
+                if (!FileInformation.IsValid)
+                {
+                    SelectedFileBase64 = "";
+                    FileInformation = new();
+                    // Could add a toast notification here for invalid file
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"File selection error: {ex.Message}");
+            SelectedFileBase64 = "";
+            FileInformation = new();
+        }
+        
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Removes the selected file
+    /// </summary>
+    private void RemoveFile()
+    {
+        SelectedFileBase64 = "";
+        FileInformation = new();
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Gets the appropriate icon for the file type
+    /// </summary>
+    private string GetFileIcon(string mimeType)
+    {
+        return mimeType switch
+        {
+            "application/pdf" => "??",
+            var type when type.StartsWith("image/") => "???",
+            var type when type.StartsWith("audio/") => "??",
+            var type when type.StartsWith("video/") => "??",
+            var type when type.Contains("document") || type.Contains("text") => "??",
+            _ => "??"
+        };
     }
 }

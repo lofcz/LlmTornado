@@ -1,6 +1,6 @@
 @using LlmTornado.Chat.Web.Models
 
-<div class="chat-header">
+<div class="header-top">
     <div class="header-left">
         <div class="brand">
             <span class="brand-icon">???</span>
@@ -8,7 +8,7 @@
         </div>
         <div class="connection-status">
             <div class="status-indicator @(IsConnected ? "connected" : "disconnected")"></div>
-            <span class="status-text">@(IsConnected ? "Connected" : "Disconnected")</span>
+            <span class="status-text">@GetConnectionStatusText()</span>
         </div>
     </div>
     <div class="chat-controls">
@@ -64,6 +64,17 @@
     </div>
 </div>
 
+<RuntimeManagement AvailableConfigurations="AvailableConfigurations"
+                  ActiveRuntimes="ActiveRuntimes"
+                  SelectedConfiguration="SelectedConfiguration"
+                  SelectedConfigurationChanged="SelectedConfigurationChanged"
+                  SelectedRuntimeId="SelectedRuntimeId"
+                  SelectedRuntimeIdChanged="SelectedRuntimeIdChanged"
+                  IsCreatingRuntime="IsCreatingRuntime"
+                  OnCreateRuntime="OnCreateRuntime"
+                  OnRemoveRuntime="OnRemoveRuntime"
+                  OnRefreshRuntimes="OnRefreshRuntimes" />
+
 @code {
     /// <summary>
     /// Whether the chat is connected to the runtime
@@ -76,6 +87,11 @@
     [Parameter] public bool IsConnecting { get; set; }
 
     /// <summary>
+    /// Whether a runtime is being created
+    /// </summary>
+    [Parameter] public bool IsCreatingRuntime { get; set; }
+
+    /// <summary>
     /// Whether dark mode is enabled
     /// </summary>
     [Parameter] public bool IsDarkMode { get; set; }
@@ -84,6 +100,28 @@
     /// Whether the log panel is visible
     /// </summary>
     [Parameter] public bool ShowLogPanel { get; set; }
+
+    /// <summary>
+    /// Available runtime configurations
+    /// </summary>
+    [Parameter] public string[] AvailableConfigurations { get; set; } = Array.Empty<string>();
+
+    /// <summary>
+    /// Active runtime instances
+    /// </summary>
+    [Parameter] public RuntimeInfo[] ActiveRuntimes { get; set; } = Array.Empty<RuntimeInfo>();
+
+    /// <summary>
+    /// Currently selected configuration - two-way binding
+    /// </summary>
+    [Parameter] public string SelectedConfiguration { get; set; } = "";
+    [Parameter] public EventCallback<string> SelectedConfigurationChanged { get; set; }
+
+    /// <summary>
+    /// Currently selected runtime ID - two-way binding
+    /// </summary>
+    [Parameter] public string SelectedRuntimeId { get; set; } = "";
+    [Parameter] public EventCallback<string> SelectedRuntimeIdChanged { get; set; }
 
     /// <summary>
     /// Callback for when theme toggle is clicked
@@ -99,4 +137,30 @@
     /// Callback for when clear chat is clicked
     /// </summary>
     [Parameter] public EventCallback OnClearChat { get; set; }
+
+    /// <summary>
+    /// Callback for creating a new runtime
+    /// </summary>
+    [Parameter] public EventCallback<string> OnCreateRuntime { get; set; }
+
+    /// <summary>
+    /// Callback for removing a runtime
+    /// </summary>
+    [Parameter] public EventCallback<string> OnRemoveRuntime { get; set; }
+
+    /// <summary>
+    /// Callback for refreshing runtime list
+    /// </summary>
+    [Parameter] public EventCallback OnRefreshRuntimes { get; set; }
+
+    /// <summary>
+    /// Gets the connection status text
+    /// </summary>
+    private string GetConnectionStatusText()
+    {
+        if (IsCreatingRuntime) return "Creating Runtime...";
+        if (IsConnecting) return "Processing...";
+        if (IsConnected) return "Connected";
+        return "Disconnected";
+    }
 }

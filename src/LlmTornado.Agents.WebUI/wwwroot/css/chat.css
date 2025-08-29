@@ -193,12 +193,18 @@ body:has(.chat-layout) {
     padding: var(--spacing-lg);
     border-bottom: 1px solid var(--border);
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
+    gap: var(--spacing-md);
     backdrop-filter: blur(10px);
     position: relative;
     z-index: 10;
     flex-shrink: 0;
+}
+
+.header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .header-left {
@@ -261,6 +267,83 @@ body:has(.chat-layout) {
     display: flex;
     gap: var(--spacing-sm);
     align-items: center;
+}
+
+/* ==========================
+   RUNTIME CONFIGURATION SELECTOR
+   ========================== */
+
+.configuration-selector {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.config-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.select-wrapper {
+    position: relative;
+    display: inline-block;
+    min-width: 200px;
+}
+
+.config-select {
+    width: 100%;
+    padding: var(--spacing-sm) calc(var(--spacing-lg) + 16px) var(--spacing-sm) var(--spacing-sm);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+}
+
+.config-select:hover:not(:disabled) {
+    border-color: var(--border-hover);
+    background: var(--surface-hover);
+}
+
+.config-select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.config-select:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: var(--bg-tertiary);
+}
+
+.select-arrow {
+    position: absolute;
+    right: var(--spacing-sm);
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: var(--text-tertiary);
+    transition: color var(--transition-fast);
+}
+
+.select-wrapper:hover .select-arrow {
+    color: var(--text-secondary);
+}
+
+.config-description {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+    margin-top: var(--spacing-xs);
 }
 
 /* ==========================
@@ -365,9 +448,6 @@ body:has(.chat-layout) {
 }
 
 .input-wrapper {
-    display: flex;
-    gap: var(--spacing-sm);
-    align-items: flex-end;
     background: var(--bg-secondary);
     border: 1px solid var(--border);
     border-radius: var(--radius-xl);
@@ -378,6 +458,12 @@ body:has(.chat-layout) {
 .input-wrapper:focus-within {
     border-color: var(--primary);
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.input-row {
+    display: flex;
+    gap: var(--spacing-sm);
+    align-items: flex-end;
 }
 
 .chat-input {
@@ -396,6 +482,37 @@ body:has(.chat-layout) {
 
 .chat-input::placeholder {
     color: var(--text-muted);
+}
+
+.file-upload-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 50%;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    flex-shrink: 0;
+}
+
+.file-upload-btn:hover:not(:disabled) {
+    background: var(--surface-hover);
+    color: var(--text-primary);
+    transform: scale(1.05);
+}
+
+.file-upload-btn:active:not(:disabled) {
+    transform: scale(0.95);
+}
+
+.file-upload-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
 }
 
 .send-button {
@@ -426,6 +543,131 @@ body:has(.chat-layout) {
     opacity: 0.6;
     cursor: not-allowed;
     transform: none;
+}
+
+/* ==========================
+   FILE UPLOAD COMPONENTS
+   ========================== */
+
+.file-preview {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-sm);
+    margin-bottom: var(--spacing-sm);
+    animation: fadeInUp 0.2s ease;
+}
+
+.file-info {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    flex: 1;
+}
+
+.file-thumbnail {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    background: var(--surface);
+    border: 1px solid var(--border);
+}
+
+.file-thumbnail img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: cover;
+}
+
+.file-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    font-size: 1.5rem;
+}
+
+.file-details {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.file-type {
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.file-size {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-family: var(--font-family-mono);
+}
+
+.file-remove-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border: none;
+    border-radius: 50%;
+    background: var(--error);
+    color: white;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    flex-shrink: 0;
+}
+
+.file-remove-btn:hover {
+    background: var(--error-hover);
+    transform: scale(1.1);
+}
+
+.file-remove-btn:active {
+    transform: scale(0.9);
+}
+
+/* File attachment indicator in messages */
+.message-file-attachment {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-sm);
+    margin-bottom: var(--spacing-sm);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.message-file-attachment .file-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 1rem;
+}
+
+.message-file-attachment .file-details {
+    gap: 2px;
+}
+
+.message-file-attachment .file-type {
+    font-size: 0.75rem;
+}
+
+.message-file-attachment .file-size {
+    font-size: 0.625rem;
 }
 
 /* ==========================
@@ -909,6 +1151,37 @@ body:has(.chat-layout) {
         font-size: 0.75rem;
         padding: var(--spacing-xs) var(--spacing-sm);
     }
+
+    .file-preview {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-sm);
+    }
+
+    .file-info {
+        width: 100%;
+    }
+
+    .chat-header {
+        flex-direction: column;
+        gap: var(--spacing-sm);
+    }
+
+    .header-top {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-sm);
+        width: 100%;
+    }
+
+    .configuration-selector {
+        width: 100%;
+    }
+
+    .select-wrapper {
+        min-width: auto;
+        width: 100%;
+    }
 }
 
 @media (max-width: 480px) {
@@ -930,6 +1203,26 @@ body:has(.chat-layout) {
     
     .connection-status {
         font-size: 0.75rem;
+    }
+
+    .input-row {
+        flex-wrap: wrap;
+    }
+
+    .file-upload-btn {
+        width: 32px;
+        height: 32px;
+    }
+
+    .send-button {
+        width: 32px;
+        height: 32px;
+    }
+
+    .file-icon,
+    .file-thumbnail {
+        width: 40px;
+        height: 40px;
     }
 }
 
@@ -1008,6 +1301,16 @@ body:has(.chat-layout) {
     outline: none;
 }
 
+.file-upload-btn:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+.config-select:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
 /* ==========================
    ACCESSIBILITY
    ========================== */
@@ -1048,5 +1351,10 @@ body:has(.chat-layout) {
         box-shadow: none;
         border: 1px solid #ccc;
         margin-bottom: 1rem;
+    }
+
+    .file-preview,
+    .file-upload-btn {
+        display: none;
     }
 }
