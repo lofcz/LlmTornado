@@ -6,6 +6,7 @@ using LlmTornado.Agents.DataModels;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Code;
+using LlmTornado.Demo.ExampleAgents.CSCodingAgent;
 using LlmTornado.Responses;
 using System;
 using System.Collections.Generic;
@@ -560,49 +561,6 @@ public class FileSurferRunnable : OrchestrationRunnable<TaskPlan, AgentExecution
             "",
             "",
             new[] { "FileSurfer: Handled file operations and document management" }
-        );
-    }
-}
-
-public class CoderRunnable : OrchestrationRunnable<TaskPlan, AgentExecutionResults>
-{
-    RuntimeAgent Agent;
-
-    public CoderRunnable(TornadoApi client, Orchestration orchestrator) : base(orchestrator)
-    {
-        Agent = new RuntimeAgent(
-            client: client,
-            model: ChatModel.OpenAi.Gpt5.V5Mini,
-            name: "Coder Agent",
-            tools: [MagenticOneTools.ExecuteCodeTool],
-            instructions: "You are a programming specialist. Write, review, and execute code in various languages to complete the given task.");
-    }
-
-    public override async ValueTask<AgentExecutionResults> Invoke(RunnableProcess<TaskPlan, AgentExecutionResults> process)
-    {
-        process.RegisterAgent(agent: Agent);
-
-        string codePrompt = $"""
-            Original Task: {process.Input.OriginalTask}
-            
-            Execution Plan: {process.Input.ExecutionPlan}
-            
-            As the Coder agent, write, review, or execute code as needed for this task. Provide comprehensive programming solutions that will be used by the Orchestrator to create the final deliverable.
-            """;
-
-        Conversation conv = await Agent.RunAsync(appendMessages: new List<ChatMessage> { 
-            new ChatMessage(Code.ChatMessageRoles.User, codePrompt) 
-        });
-
-        string codeResults = conv.Messages.Last().Content ?? "";
-
-        return new AgentExecutionResults(
-            process.Input.OriginalTask,
-            "",
-            "",
-            codeResults,
-            "",
-            new[] { "Coder: Provided programming and coding solutions" }
         );
     }
 }
