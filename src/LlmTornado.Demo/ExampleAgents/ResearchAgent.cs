@@ -5,6 +5,7 @@ using LlmTornado.Agents.ChatRuntime.RuntimeConfigurations;
 using LlmTornado.Agents.DataModels;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
+using LlmTornado.Code;
 using LlmTornado.Responses;
 using System;
 using System.Collections.Generic;
@@ -75,8 +76,9 @@ public class ResearchAgentConfiguration : OrchestrationRuntimeConfiguration
     ReportingRunnable reporter;
     ExitRunnable exit;
 
-    public ResearchAgentConfiguration(TornadoApi client)
+    public ResearchAgentConfiguration()
     {
+        TornadoApi client = new TornadoApi(Environment.GetEnvironmentVariable("OPENAI_API_KEY"), LLmProviders.OpenAi);
         RecordSteps = true;
         //Create the Runnables
         planner = new PlannerRunnable(client, this);

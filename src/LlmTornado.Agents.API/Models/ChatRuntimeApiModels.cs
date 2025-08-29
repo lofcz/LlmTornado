@@ -53,7 +53,9 @@ public class SendMessageRequest
     /// <summary>
     /// The message content to send
     /// </summary>
-    public string Content { get; set; } = string.Empty; 
+    public string Content { get; set; } = string.Empty;
+
+    public string? Base64File { get; set; }
 }
 
 /// <summary>

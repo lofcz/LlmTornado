@@ -63,12 +63,25 @@ public partial class ChatRuntimeController : ControllerBase
         try
         {
             var runtime = _runtimeService.GetRuntime(runtimeId);
+
             if (runtime is null)
             {
                 return NotFound(new { error = $"Runtime {runtimeId} not found" });
             }
 
-            ChatMessage message = new ChatMessage(ChatMessageRoles.User,request.Content);
+            ChatMessage message = new ChatMessage(ChatMessageRoles.User);
+
+            if(message.Parts is null)
+            {
+                message.Parts = new List<ChatMessagePart>();
+            }
+
+            message.Parts.Add(new ChatMessagePart(request.Content));
+
+            if(request.Base64File is not null)
+            {
+                message.Parts.Add(new ChatMessagePart(request.Base64File,Images.ImageDetail.Auto));
+            }
 
             ChatMessage responseMessage = await _runtimeService.SendMessageAsync(runtimeId, message);
 

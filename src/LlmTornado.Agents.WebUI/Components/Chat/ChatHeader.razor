@@ -1,0 +1,102 @@
+@using LlmTornado.Chat.Web.Models
+
+<div class="chat-header">
+    <div class="header-left">
+        <div class="brand">
+            <span class="brand-icon">???</span>
+            <h2>LlmTornado Chat</h2>
+        </div>
+        <div class="connection-status">
+            <div class="status-indicator @(IsConnected ? "connected" : "disconnected")"></div>
+            <span class="status-text">@(IsConnected ? "Connected" : "Disconnected")</span>
+        </div>
+    </div>
+    <div class="chat-controls">
+        <button class="btn btn-icon" @onclick="OnToggleTheme" title="Toggle dark/light mode">
+            @if (IsDarkMode)
+            {
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="5"></circle>
+                    <line x1="12" y1="1" x2="12" y2="3"></line>
+                    <line x1="12" y1="21" x2="12" y2="23"></line>
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                    <line x1="1" y1="12" x2="3" y2="12"></line>
+                    <line x1="21" y1="12" x2="23" y2="12"></line>
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                </svg>
+            }
+            else
+            {
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                </svg>
+            }
+        </button>
+        <button class="btn btn-secondary" @onclick="OnToggleLogPanel">
+            @if (ShowLogPanel)
+            {
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 6L6 18M6 6l12 12"></path>
+                </svg>
+                <span>Hide Logs</span>
+            }
+            else
+            {
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14,2 14,8 20,8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10,9 9,9 8,9"></polyline>
+                </svg>
+                <span>Show Logs</span>
+            }
+        </button>
+        <button class="btn btn-secondary" @onclick="OnClearChat" disabled="@IsConnecting">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3,6 5,6 21,6"></polyline>
+                <path d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6m3,0V4a2,2,0,0,1,2-2h4a2,2,0,0,1,2,2V6"></path>
+            </svg>
+            <span>Clear</span>
+        </button>
+    </div>
+</div>
+
+@code {
+    /// <summary>
+    /// Whether the chat is connected to the runtime
+    /// </summary>
+    [Parameter] public bool IsConnected { get; set; }
+
+    /// <summary>
+    /// Whether the chat is currently connecting/processing
+    /// </summary>
+    [Parameter] public bool IsConnecting { get; set; }
+
+    /// <summary>
+    /// Whether dark mode is enabled
+    /// </summary>
+    [Parameter] public bool IsDarkMode { get; set; }
+
+    /// <summary>
+    /// Whether the log panel is visible
+    /// </summary>
+    [Parameter] public bool ShowLogPanel { get; set; }
+
+    /// <summary>
+    /// Callback for when theme toggle is clicked
+    /// </summary>
+    [Parameter] public EventCallback OnToggleTheme { get; set; }
+
+    /// <summary>
+    /// Callback for when log panel toggle is clicked
+    /// </summary>
+    [Parameter] public EventCallback OnToggleLogPanel { get; set; }
+
+    /// <summary>
+    /// Callback for when clear chat is clicked
+    /// </summary>
+    [Parameter] public EventCallback OnClearChat { get; set; }
+}

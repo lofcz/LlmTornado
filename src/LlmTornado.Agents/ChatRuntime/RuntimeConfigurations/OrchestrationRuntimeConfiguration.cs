@@ -38,6 +38,7 @@ public class OrchestrationRuntimeConfiguration : Orchestration<ChatMessage, Chat
     {
         cts.Cancel();
     }
+
     public virtual async ValueTask<ChatMessage> AddToChatAsync(ChatMessage message, CancellationToken cancellationToken = default)
     {
         MessageHistory.Push(message);

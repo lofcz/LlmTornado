@@ -1,0 +1,68 @@
+@using Microsoft.AspNetCore.Components.Web
+
+<div class="chat-input-container">
+    <div class="input-wrapper">
+        <textarea @bind="CurrentMessage" 
+                  @onkeydown="HandleKeyDown" 
+                  class="chat-input" 
+                  placeholder="Type your message here... (Markdown supported)" 
+                  disabled="@IsDisabled"
+                  rows="1"></textarea>
+        <button @onclick="SendCurrentMessage" 
+                class="send-button" 
+                disabled="@(IsDisabled || string.IsNullOrWhiteSpace(CurrentMessage))">
+            @if (IsDisabled)
+            {
+                <div class="spinner"></div>
+            }
+            else
+            {
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22,2 15,22 11,13 2,9 22,2"></polygon>
+                </svg>
+            }
+        </button>
+    </div>
+</div>
+
+@code {
+    /// <summary>
+    /// Current message text
+    /// </summary>
+    [Parameter] public string CurrentMessage { get; set; } = "";
+
+    /// <summary>
+    /// Whether the input is disabled (e.g., during message sending)
+    /// </summary>
+    [Parameter] public bool IsDisabled { get; set; }
+
+    /// <summary>
+    /// Callback for when message should be sent
+    /// </summary>
+    [Parameter] public EventCallback<string> OnSendMessage { get; set; }
+
+    /// <summary>
+    /// Callback for when current message changes
+    /// </summary>
+    [Parameter] public EventCallback<string> CurrentMessageChanged { get; set; }
+
+    /// <summary>
+    /// Handles keyboard events (Enter to send)
+    /// </summary>
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !e.ShiftKey && !IsDisabled && !string.IsNullOrWhiteSpace(CurrentMessage))
+        {
+            await SendCurrentMessage();
+        }
+    }
+
+    /// <summary>
+    /// Sends the current message
+    /// </summary>
+    private async Task SendCurrentMessage()
+    {
+        await OnSendMessage.InvokeAsync(CurrentMessage);
+    }
+}

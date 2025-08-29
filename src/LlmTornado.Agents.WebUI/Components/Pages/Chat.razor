@@ -3,9 +3,9 @@
 @layout ChatLayout
 @using Microsoft.AspNetCore.Components.Web
 @using System.Text.Json
-@using LlmTornado.Chat.Web.Helpers
+@using Models = LlmTornado.Chat.Web.Models
+@inject ChatService ChatService
 @inject IJSRuntime JSRuntime
-@inject IConfiguration Configuration
 @implements IDisposable
 @rendermode InteractiveServer
 
@@ -17,230 +17,42 @@
     <!-- Main Chat Area -->
     <div class="chat-main @(showLogPanel ? "with-log-panel" : "full-width")">
         <div class="chat-container">
-            <div class="chat-header">
-                <div class="header-left">
-                    <div class="brand">
-                        <span class="brand-icon">🌪️</span>
-                        <h2>LlmTornado Chat</h2>
-                    </div>
-                    <div class="connection-status">
-                        <div class="status-indicator @(isConnected ? "connected" : "disconnected")"></div>
-                        <span class="status-text">@(isConnected ? "Connected" : "Disconnected")</span>
-                    </div>
-                </div>
-                <div class="chat-controls">
-                    <button class="btn btn-icon" @onclick="ToggleTheme" title="Toggle dark/light mode">
-                        @if (isDarkMode)
-                        {
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="12" r="5"></circle>
-                                <line x1="12" y1="1" x2="12" y2="3"></line>
-                                <line x1="12" y1="21" x2="12" y2="23"></line>
-                                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                                <line x1="1" y1="12" x2="3" y2="12"></line>
-                                <line x1="21" y1="12" x2="23" y2="12"></line>
-                                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-                            </svg>
-                        }
-                        else
-                        {
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-                            </svg>
-                        }
-                    </button>
-                    <button class="btn btn-secondary" @onclick="ToggleLogPanel">
-                        @if (showLogPanel)
-                        {
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M18 6L6 18M6 6l12 12"></path>
-                            </svg>
-                            <span>Hide Logs</span>
-                        }
-                        else
-                        {
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                                <polyline points="14,2 14,8 20,8"></polyline>
-                                <line x1="16" y1="13" x2="8" y2="13"></line>
-                                <line x1="16" y1="17" x2="8" y2="17"></line>
-                                <polyline points="10,9 9,9 8,9"></polyline>
-                            </svg>
-                            <span>Show Logs</span>
-                        }
-                    </button>
-                    <button class="btn btn-secondary" @onclick="ClearChat" disabled="@isConnecting">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="3,6 5,6 21,6"></polyline>
-                            <path d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6m3,0V4a2,2,0,0,1,2-2h4a2,2,0,0,1,2,2V6"></path>
-                        </svg>
-                        <span>Clear</span>
-                    </button>
-                </div>
-            </div>
+            <ChatHeader IsConnected="isConnected" 
+                       IsConnecting="isConnecting"
+                       IsDarkMode="isDarkMode" 
+                       ShowLogPanel="showLogPanel"
+                       OnToggleTheme="ToggleTheme"
+                       OnToggleLogPanel="ToggleLogPanel"
+                       OnClearChat="ClearChat" />
 
-            <div class="chat-messages" id="chat-messages">
-                @foreach (var message in messages)
-                {
-                    <div class="message @message.CssClass" key="@message.Id">
-                        <div class="message-header">
-                            <div class="message-meta">
-                                <span class="message-role">@message.Role</span>
-                                <span class="message-timestamp">@message.Timestamp.ToString("HH:mm:ss")</span>
-                            </div>
-                        </div>
-                        <div class="message-content">
-                            @if (message.IsMarkdown)
-                            {
-                                @((MarkupString)MarkdownHelper.ToHtml(message.Content))
-                            }
-                            else if (message.IsHtml)
-                            {
-                                @((MarkupString)message.Content)
-                            }
-                            else
-                            {
-                                <div class="message-text">@message.Content</div>
-                            }
-                        </div>
-                    </div>
-                }
+            <ChatMessageList Messages="messages" 
+                           ShowTypingIndicator="isConnecting" />
 
-                @if (isConnecting)
-                {
-                    <div class="message assistant">
-                        <div class="message-header">
-                            <div class="message-meta">
-                                <span class="message-role">Assistant</span>
-                                <span class="message-timestamp">@DateTime.Now.ToString("HH:mm:ss")</span>
-                            </div>
-                        </div>
-                        <div class="message-content">
-                            <div class="typing-container">
-                                <div class="typing-indicator">
-                                    <span></span>
-                                    <span></span>
-                                    <span></span>
-                                </div>
-                                <span class="thinking-text">Thinking...</span>
-                            </div>
-                        </div>
-                    </div>
-                }
-            </div>
-
-            <div class="chat-input-container">
-                <div class="input-wrapper">
-                    <textarea @bind="currentMessage" 
-                              @onkeydown="HandleKeyDown" 
-                              class="chat-input" 
-                              placeholder="Type your message here... (Markdown supported)" 
-                              disabled="@isConnecting"
-                              rows="1"></textarea>
-                    <button @onclick="SendMessage" 
-                            class="send-button" 
-                            disabled="@(isConnecting || string.IsNullOrWhiteSpace(currentMessage))">
-                        @if (isConnecting)
-                        {
-                            <div class="spinner"></div>
-                        }
-                        else
-                        {
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <line x1="22" y1="2" x2="11" y2="13"></line>
-                                <polygon points="22,2 15,22 11,13 2,9 22,2"></polygon>
-                            </svg>
-                        }
-                    </button>
-                </div>
-            </div>
+            <ChatInput CurrentMessage="currentMessage" 
+                      CurrentMessageChanged="OnCurrentMessageChanged"
+                      IsDisabled="isConnecting"
+                      OnSendMessage="SendMessage" />
         </div>
     </div>
 
     <!-- Log Panel -->
-    <div class="log-panel @(showLogPanel ? "show" : "hide")">
-        <div class="log-header">
-            <div class="log-title">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                    <polyline points="14,2 14,8 20,8"></polyline>
-                    <line x1="16" y1="13" x2="8" y2="13"></line>
-                    <line x1="16" y1="17" x2="8" y2="17"></line>
-                    <polyline points="10,9 9,9 8,9"></polyline>
-                </svg>
-                <h4>Event Logs</h4>
-            </div>
-            <div class="log-controls">
-                <button class="btn btn-sm" @onclick="ClearLogs">Clear</button>
-                <button class="btn btn-sm btn-icon" @onclick="ToggleLogPanel">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M18 6L6 18M6 6l12 12"></path>
-                    </svg>
-                </button>
-            </div>
-        </div>
-        
-        <div class="log-content" id="log-content">
-            @if (!logEvents.Any())
-            {
-                <div class="log-empty">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                        <polyline points="14,2 14,8 20,8"></polyline>
-                    </svg>
-                    <p>No events logged yet</p>
-                    <span>Events will appear here when the assistant processes your messages.</span>
-                </div>
-            }
-            else
-            {
-                @foreach (var logEvent in logEvents)
-                {
-                    <div class="log-entry @logEvent.CssClass" key="@logEvent.Id">
-                        <div class="log-entry-header">
-                            <span class="log-entry-type">@logEvent.Type</span>
-                            <span class="log-entry-timestamp">@logEvent.Timestamp.ToString("HH:mm:ss.fff")</span>
-                        </div>
-                        <div class="log-entry-content">
-                            @if (!string.IsNullOrEmpty(logEvent.Details))
-                            {
-                                <div class="log-entry-details">@logEvent.Details</div>
-                            }
-                            @if (!string.IsNullOrEmpty(logEvent.Data))
-                            {
-                                <div class="log-entry-data">
-                                    <pre>@logEvent.Data</pre>
-                                </div>
-                            }
-                        </div>
-                    </div>
-                }
-            }
-        </div>
-    </div>
+    <LogPanel IsVisible="showLogPanel" 
+             LogEvents="logEvents"
+             OnClearLogs="ClearLogs"
+             OnTogglePanel="ToggleLogPanel" />
 </div>
 
 @code {
-    private List<ChatMessage> messages = new();
-    private List<LogEvent> logEvents = new();
+    // State variables
+    private List<Models.ChatMessage> messages = new();
+    private List<Models.LogEvent> logEvents = new();
     private string currentMessage = "";
     private bool isConnecting = false;
     private bool isConnected = false;
     private bool showLogPanel = false;
-    private bool isDarkMode = true; // Default to dark mode
+    private bool isDarkMode = true;
     private string? runtimeId;
-    private HttpClient? httpClient;
-    private string apiBaseUrl = "";
     private bool hasRendered = false;
-
-    protected override async Task OnInitializedAsync()
-    {
-        apiBaseUrl = Configuration["ChatApi:BaseUrl"] ?? "https://localhost:7242";
-        httpClient = new HttpClient();
-        httpClient.BaseAddress = new Uri(apiBaseUrl);
-    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -252,54 +64,30 @@
         }
     }
 
+    #region Theme Management
     private async Task LoadThemePreference()
     {
-        try
-        {
-            var savedTheme = await JSRuntime.InvokeAsync<string>("getTheme");
-            isDarkMode = savedTheme == "dark";
-            StateHasChanged();
-        }
-        catch
-        {
-            // Default to dark mode if localStorage is not available
-            isDarkMode = true;
-        }
+        isDarkMode = await ChatService.LoadThemePreferenceAsync();
+        StateHasChanged();
     }
 
     private async Task ToggleTheme()
     {
         isDarkMode = !isDarkMode;
+        await ChatService.SaveThemePreferenceAsync(isDarkMode);
         StateHasChanged();
-        
-        try
-        {
-            await JSRuntime.InvokeVoidAsync("setTheme", isDarkMode ? "dark" : "light");
-        }
-        catch
-        {
-            // Ignore localStorage errors
-        }
     }
+    #endregion
 
+    #region Runtime Management
     private async Task CreateChatRuntime()
     {
         try
         {
-            var request = new
+            var response = await ChatService.CreateChatRuntimeAsync();
+            if (response != null)
             {
-                configurationType = "simple",
-                agentName = "LlmTornadoChat",
-                instructions = "You are a helpful AI assistant. Be concise but informative. You can use markdown formatting in your responses.",
-                enableStreaming = true
-            };
-
-            var response = await httpClient!.PostAsJsonAsync("api/chatruntime/create", request);
-            if (response.IsSuccessStatusCode)
-            {
-                var result = await response.Content.ReadAsStringAsync();
-                var createResponse = JsonSerializer.Deserialize<CreateRuntimeResponse>(result, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                runtimeId = createResponse?.RuntimeId;
+                runtimeId = response.RuntimeId;
                 isConnected = !string.IsNullOrEmpty(runtimeId);
 
                 if (isConnected)
@@ -315,24 +103,29 @@
             await AddLogEvent("Runtime", "Connection Failed", ex.Message, "");
         }
     }
+    #endregion
 
-    private async Task SendMessage()
+    #region Message Handling
+    private async Task OnCurrentMessageChanged(string value)
     {
-        if (string.IsNullOrWhiteSpace(currentMessage) || isConnecting || string.IsNullOrEmpty(runtimeId))
+        currentMessage = value;
+    }
+
+    private async Task SendMessage(string message)
+    {
+        if (string.IsNullOrWhiteSpace(message) || isConnecting || string.IsNullOrEmpty(runtimeId))
             return;
 
-        var userMessage = currentMessage;
         currentMessage = "";
-        
-        await AddUserMessage(userMessage);
-        await AddLogEvent("Message", "User Input", $"Message sent: {userMessage.Length} characters", "");
+        await AddUserMessage(message);
+        await AddLogEvent("Message", "User Input", $"Message sent: {message.Length} characters", "");
         
         isConnecting = true;
         StateHasChanged();
 
         try
         {
-            await StreamMessage(userMessage);
+            await StreamMessage(message);
         }
         catch (Exception ex)
         {
@@ -348,7 +141,7 @@
 
     private async Task StreamMessage(string message)
     {
-        var assistantMessage = new ChatMessage
+        var assistantMessage = new Models.ChatMessage
         {
             Id = Guid.NewGuid().ToString(),
             Role = "Assistant",
@@ -363,15 +156,9 @@
 
         try
         {
-            var request = new { content = message };
-            
-            // Use EventSource for SSE streaming
-            if (hasRendered)
+            if (hasRendered && !string.IsNullOrEmpty(runtimeId))
             {
-                await JSRuntime.InvokeVoidAsync("startEventSource", 
-                    $"{apiBaseUrl}/api/chatruntime/{runtimeId}/stream",
-                    JsonSerializer.Serialize(request),
-                    DotNetObjectReference.Create(this));
+                await ChatService.StreamMessageAsync(runtimeId, message, DotNetObjectReference.Create(this));
             }
         }
         catch (Exception ex)
@@ -382,6 +169,114 @@
         }
     }
 
+    private async Task AddUserMessage(string content)
+    {
+        var message = new Models.ChatMessage
+        {
+            Id = Guid.NewGuid().ToString(),
+            Role = "You",
+            Content = content,
+            Timestamp = DateTime.Now,
+            CssClass = "user"
+        };
+
+        // Check if user message contains markdown
+        if (MarkdownHelper.ContainsMarkdown(content))
+        {
+            message.IsMarkdown = true;
+        }
+
+        messages.Add(message);
+        StateHasChanged();
+        
+        if (hasRendered)
+        {
+            await ChatService.ScrollToBottomAsync();
+        }
+    }
+
+    private async Task AddSystemMessage(string content)
+    {
+        messages.Add(new Models.ChatMessage
+        {
+            Id = Guid.NewGuid().ToString(),
+            Role = "System",
+            Content = content,
+            Timestamp = DateTime.Now,
+            CssClass = "system"
+        });
+        
+        StateHasChanged();
+        if (hasRendered)
+        {
+            await ChatService.ScrollToBottomAsync();
+        }
+    }
+    #endregion
+
+    #region Panel Management
+    private async Task ToggleLogPanel()
+    {
+        showLogPanel = !showLogPanel;
+        StateHasChanged();
+        
+        if (hasRendered)
+        {
+            await Task.Delay(300); // Wait for CSS transition
+            await ChatService.ScrollToBottomAsync();
+            await ChatService.ScrollLogToBottomAsync();
+        }
+    }
+
+    private async Task ClearChat()
+    {
+        messages.Clear();
+        StateHasChanged();
+    }
+
+    private async Task ClearLogs()
+    {
+        logEvents.Clear();
+        StateHasChanged();
+    }
+    #endregion
+
+    #region Logging
+    private async Task AddLogEvent(string type, string subType, string details, string data)
+    {
+        logEvents.Add(new Models.LogEvent
+        {
+            Id = Guid.NewGuid().ToString(),
+            Type = $"{type} - {subType}",
+            Details = details,
+            Data = data,
+            Timestamp = DateTime.Now,
+            CssClass = GetLogEventCssClass(type.ToLower())
+        });
+        
+        StateHasChanged();
+        if (hasRendered && showLogPanel)
+        {
+            await ChatService.ScrollLogToBottomAsync();
+        }
+    }
+
+    private string GetLogEventCssClass(string type)
+    {
+        return type.ToLower() switch
+        {
+            "tool" => "log-tool",
+            "reasoning" => "log-reasoning", 
+            "stream" => "log-stream",
+            "error" => "log-error",
+            "runtime" => "log-runtime",
+            "message" => "log-message",
+            _ => "log-default"
+        };
+    }
+    #endregion
+
+    #region Streaming Event Handlers
     [JSInvokable]
     public async Task OnStreamEvent(string eventType, string data)
     {
@@ -395,7 +290,7 @@
                 switch (eventType)
                 {
                     case "output_text_delta":
-                        var deltaData = JsonSerializer.Deserialize<TextDeltaEvent>(data, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                        var deltaData = JsonSerializer.Deserialize<Models.TextDeltaEvent>(data, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
                         if (deltaData?.Text != null)
                         {
                             lastMessage.Content += deltaData.Text;
@@ -403,7 +298,7 @@
                         break;
 
                     case "tool_invoked":
-                        var toolEvent = JsonSerializer.Deserialize<ToolEvent>(data, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                        var toolEvent = JsonSerializer.Deserialize<Models.ToolEvent>(data, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
                         if (toolEvent != null)
                         {
                             _ = AddLogEvent("Tool", "Invoked", $"Tool: {toolEvent.ToolName}", JsonSerializer.Serialize(toolEvent, new JsonSerializerOptions { WriteIndented = true }));
@@ -411,7 +306,7 @@
                         break;
 
                     case "reasoning_part_added":
-                        var reasoningEvent = JsonSerializer.Deserialize<ReasoningEvent>(data, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                        var reasoningEvent = JsonSerializer.Deserialize<Models.ReasoningEvent>(data, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
                         if (reasoningEvent != null)
                         {
                             _ = AddLogEvent("Reasoning", "Part Added", reasoningEvent.Text ?? "Thinking...", "");
@@ -451,7 +346,7 @@
             var lastMessage = messages.LastOrDefault(m => m.CssClass == "assistant");
             if (lastMessage != null)
             {
-                lastMessage.Content += $"\n\n❌ Stream error: {error}";
+                lastMessage.Content += $"\n\n? Stream error: {error}";
                 StateHasChanged();
             }
         });
@@ -467,180 +362,10 @@
             StateHasChanged();
         });
     }
-
-    private async Task ToggleLogPanel()
-    {
-        showLogPanel = !showLogPanel;
-        StateHasChanged();
-        
-        if (hasRendered)
-        {
-            await Task.Delay(300); // Wait for CSS transition
-            await ScrollToBottom();
-            await ScrollLogToBottom();
-        }
-    }
-
-    private async Task ClearLogs()
-    {
-        logEvents.Clear();
-        StateHasChanged();
-    }
-
-    private async Task AddLogEvent(string type, string subType, string details, string data)
-    {
-        logEvents.Add(new LogEvent
-        {
-            Id = Guid.NewGuid().ToString(),
-            Type = $"{type} - {subType}",
-            Details = details,
-            Data = data,
-            Timestamp = DateTime.Now,
-            CssClass = GetLogEventCssClass(type.ToLower())
-        });
-        
-        StateHasChanged();
-        if (hasRendered && showLogPanel)
-        {
-            await ScrollLogToBottom();
-        }
-    }
-
-    private string GetLogEventCssClass(string type)
-    {
-        return type.ToLower() switch
-        {
-            "tool" => "log-tool",
-            "reasoning" => "log-reasoning", 
-            "stream" => "log-stream",
-            "error" => "log-error",
-            "runtime" => "log-runtime",
-            "message" => "log-message",
-            _ => "log-default"
-        };
-    }
-
-    private async Task HandleKeyDown(KeyboardEventArgs e)
-    {
-        if (e.Key == "Enter" && !e.ShiftKey)
-        {
-            await SendMessage();
-        }
-    }
-
-    private async Task AddUserMessage(string content)
-    {
-        var message = new ChatMessage
-        {
-            Id = Guid.NewGuid().ToString(),
-            Role = "You",
-            Content = content,
-            Timestamp = DateTime.Now,
-            CssClass = "user"
-        };
-
-        // Check if user message contains markdown
-        if (MarkdownHelper.ContainsMarkdown(content))
-        {
-            message.IsMarkdown = true;
-        }
-
-        messages.Add(message);
-        
-        StateHasChanged();
-        if (hasRendered)
-        {
-            await ScrollToBottom();
-        }
-    }
-
-    private async Task AddSystemMessage(string content)
-    {
-        messages.Add(new ChatMessage
-        {
-            Id = Guid.NewGuid().ToString(),
-            Role = "System",
-            Content = content,
-            Timestamp = DateTime.Now,
-            CssClass = "system"
-        });
-        
-        StateHasChanged();
-        if (hasRendered)
-        {
-            await ScrollToBottom();
-        }
-    }
-
-    private async Task ClearChat()
-    {
-        messages.Clear();
-        StateHasChanged();
-    }
-
-    private async Task ScrollToBottom()
-    {
-        if (hasRendered)
-        {
-            await Task.Delay(100);
-            await JSRuntime.InvokeVoidAsync("smoothScrollTo", "chat-messages", "bottom");
-        }
-    }
-
-    private async Task ScrollLogToBottom()
-    {
-        if (hasRendered)
-        {
-            await Task.Delay(100);
-            await JSRuntime.InvokeVoidAsync("smoothScrollTo", "log-content", "bottom");
-        }
-    }
+    #endregion
 
     public void Dispose()
     {
-        httpClient?.Dispose();
+        ChatService?.Dispose();
     }
-
-    private class ChatMessage
-    {
-        public string Id { get; set; } = "";
-        public string Role { get; set; } = "";
-        public string Content { get; set; } = "";
-        public DateTime Timestamp { get; set; }
-        public string CssClass { get; set; } = "";
-        public bool IsHtml { get; set; } = false;
-        public bool IsMarkdown { get; set; } = false;
-    }
-
-    private class LogEvent
-    {
-        public string Id { get; set; } = "";
-        public string Type { get; set; } = "";
-        public string Details { get; set; } = "";
-        public string Data { get; set; } = "";
-        public DateTime Timestamp { get; set; }
-        public string CssClass { get; set; } = "";
-    }
-
-    private class CreateRuntimeResponse
-    {
-        public string? RuntimeId { get; set; }
-        public string? Status { get; set; }
-    }
-
-    private class TextDeltaEvent
-    {
-        public string? Text { get; set; }
-    }
-
-    private class ToolEvent
-    {
-        public string? ToolName { get; set; }
-        public string? Parameters { get; set; }
-    }
-
-    private class ReasoningEvent
-    {
-        public string? Text { get; set; }
-    }
-}}
+}

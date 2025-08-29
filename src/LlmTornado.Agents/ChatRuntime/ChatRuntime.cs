@@ -41,6 +41,8 @@ public class ChatRuntime
     /// <param name="configuration"></param>
     public ChatRuntime(IRuntimeConfiguration configuration)
     {
+        if(configuration == null)
+            throw new ArgumentNullException(nameof(configuration), "Configuration cannot be null.");    
         RuntimeConfiguration = configuration;
         RuntimeConfiguration.Runtime = this;
         RuntimeConfiguration.OnRuntimeEvent = (rEvent) => { OnRuntimeEvent?.Invoke(rEvent); return Threading.ValueTaskCompleted; };

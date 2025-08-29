@@ -6,6 +6,7 @@ using LlmTornado.Code;
 using LlmTornado.Demo.ExampleAgents;
 using LlmTornado.Demo.ExampleAgents.ResearchAgent;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Configuration;
 using System.Collections.Concurrent;
 using static LlmTornado.Demo.AgentOrchestrationRuntimeDemo;
 
@@ -33,10 +34,18 @@ public class ChatRuntimeService : IChatRuntimeService
     private readonly ConcurrentDictionary<string, ChatRuntime.ChatRuntime> _runtimes = new();
     private readonly ILogger<ChatRuntimeService> _logger;
     private readonly ConcurrentDictionary<string, int> _sequence = new();
+    private ConcurrentDictionary<string, IRuntimeConfiguration> _configurations = new();
 
     public ChatRuntimeService(ILogger<ChatRuntimeService> logger)
     {
         _logger = logger;
+        RegisterRuntimeConfiguration<ResearchAgentConfiguration>();
+    }
+
+    public void RegisterRuntimeConfiguration<T>() where T : IRuntimeConfiguration
+    {
+        _configurations.AddOrUpdate(typeof(T).Name, Activator.CreateInstance<T>(), (key, oldValue) => Activator.CreateInstance<T>());
+        _logger.LogInformation("Registered runtime configuration: {TypeName}", typeof(T).Name);
     }
 
     /// <inheritdoc/>
@@ -44,11 +53,11 @@ public class ChatRuntimeService : IChatRuntimeService
     {
         try
         {
-            var configuration = new ResearchAgentConfiguration(new TornadoApi( Environment.GetEnvironmentVariable("OPENAI_API_KEY"), LLmProviders.OpenAi));
-            var runtime = new ChatRuntime.ChatRuntime(configuration);
+            IRuntimeConfiguration? configuration = Activator.CreateInstance(_configurations[configurationType].GetType()) as IRuntimeConfiguration;
+            var runtime = new ChatRuntime.ChatRuntime(configuration!);
 
             _runtimes.TryAdd(runtime.Id, runtime);
-            _logger.LogInformation("Created ChatRuntime with ID: {RuntimeId}", runtime.Id);
+            _logger.LogInformation("Created {configurationType} ChatRuntime with ID: {RuntimeId}", configurationType, runtime.Id);
             return runtime.Id;
         }
         catch (Exception ex)
@@ -106,72 +115,5 @@ public class ChatRuntimeService : IChatRuntimeService
             _logger.LogError(ex, "Failed to send message to runtime {RuntimeId}", runtimeId);
             throw;
         }
-    }
-}
-
-/// <summary>
-/// Simple implementation of IRuntimeConfiguration for basic chat functionality
-/// </summary>
-public class SimpleChatRuntimeConfiguration : IRuntimeConfiguration
-{
-    private readonly List<ChatMessage> _messages = new();
-    private readonly string _agentName;
-    private readonly string _instructions;
-    private readonly bool _enableStreaming;
-
-    public SimpleChatRuntimeConfiguration(string agentName, string instructions, bool enableStreaming)
-    {
-        _agentName = agentName;
-        _instructions = instructions;
-        _enableStreaming = enableStreaming;
-        cts = new CancellationTokenSource();
-    }
-
-    public CancellationTokenSource cts { get; set; }
-    public Func<ChatRuntimeEvents, ValueTask>? OnRuntimeEvent { get; set; }
-    public ChatRuntime.ChatRuntime Runtime { get; set; }
-
-    public async ValueTask<ChatMessage> AddToChatAsync(ChatMessage message, CancellationToken cancellationToken = default)
-    {
-        _messages.Add(message);
-
-        // Simulate model generation with optional streaming
-        var fullResponseText = $"Echo: {message.Content}";
-        var response = new ChatMessage(ChatMessageRoles.Assistant, string.Empty);
-        _messages.Add(response);
-
-        if (_enableStreaming && OnRuntimeEvent != null)
-        {
-            // naive chunking
-            int chunk = Math.Max(4, fullResponseText.Length / 10);
-            for (int i = 0; i < fullResponseText.Length; i += chunk)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                var part = fullResponseText.Substring(i, Math.Min(chunk, fullResponseText.Length - i));
-                response.Content += part;
-                await OnRuntimeEvent(new ChatRuntimeAgentRunnerEvents(new AgentRunnerStreamingEvent(new ModelStreamingOutputTextDeltaEvent(1,1,1,part)), Runtime.Id));
-                await Task.Yield();
-            }
-        }
-        else
-        {
-            response.Content = fullResponseText;
-        }
-
-        return response;
-    }
-
-    public void ClearMessages() => _messages.Clear();
-    public List<ChatMessage> GetMessages() => new(_messages);
-    public ChatMessage GetLastMessage() => _messages.LastOrDefault() ?? new ChatMessage(ChatMessageRoles.System, "No messages");
-
-    public void OnRuntimeInitialized()
-    {
-        
-    }
-
-    public void CancelRuntime()
-    {
-        throw new NotImplementedException();
     }
 }

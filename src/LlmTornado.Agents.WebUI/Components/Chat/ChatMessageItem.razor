@@ -1,0 +1,32 @@
+@using LlmTornado.Chat.Web.Models
+@using LlmTornado.Chat.Web.Helpers
+
+<div class="message @Message.CssClass" key="@Message.Id">
+    <div class="message-header">
+        <div class="message-meta">
+            <span class="message-role">@Message.Role</span>
+            <span class="message-timestamp">@Message.Timestamp.ToString("HH:mm:ss")</span>
+        </div>
+    </div>
+    <div class="message-content">
+        @if (Message.IsMarkdown)
+        {
+            @((MarkupString)MarkdownHelper.ToHtml(Message.Content))
+        }
+        else if (Message.IsHtml)
+        {
+            @((MarkupString)Message.Content)
+        }
+        else
+        {
+            <div class="message-text">@Message.Content</div>
+        }
+    </div>
+</div>
+
+@code {
+    /// <summary>
+    /// The chat message to display
+    /// </summary>
+    [Parameter, EditorRequired] public ChatMessage Message { get; set; } = null!;
+}
