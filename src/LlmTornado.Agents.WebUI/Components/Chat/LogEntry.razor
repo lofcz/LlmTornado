@@ -1,0 +1,27 @@
+@using LlmTornado.Chat.Web.Models
+
+<div class="log-entry @LogEvent.CssClass" key="@LogEvent.Id">
+    <div class="log-entry-header">
+        <span class="log-entry-type">@LogEvent.Type</span>
+        <span class="log-entry-timestamp">@LogEvent.Timestamp.ToString("HH:mm:ss.fff")</span>
+    </div>
+    <div class="log-entry-content">
+        @if (!string.IsNullOrEmpty(LogEvent.Details))
+        {
+            <div class="log-entry-details">@LogEvent.Details</div>
+        }
+        @if (!string.IsNullOrEmpty(LogEvent.Data))
+        {
+            <div class="log-entry-data">
+                <pre>@LogEvent.Data</pre>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    /// <summary>
+    /// The log event to display
+    /// </summary>
+    [Parameter, EditorRequired] public LogEvent LogEvent { get; set; } = null!;
+}

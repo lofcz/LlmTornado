@@ -10,6 +10,7 @@ using LlmTornado.Code;
 using LlmTornado.Common;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using static LlmTornado.Chat.ChatMessagePartCitationWebSearchResultLocation;
 
 namespace LlmTornado.Chat.Vendors.Google;
 

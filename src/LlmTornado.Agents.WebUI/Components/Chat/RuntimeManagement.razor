@@ -1,0 +1,221 @@
+@using LlmTornado.Chat.Web.Models
+
+<div class="runtime-management">
+    <!-- Configuration Selection Section -->
+    <div class="configuration-section">
+        <label class="section-label">Agent Configuration:</label>
+        <div class="config-controls">
+            <div class="select-wrapper">
+                <select @bind="SelectedConfiguration" disabled="@IsCreatingRuntime" class="config-select">
+                    @if (AvailableConfigurations.Any())
+                    {
+                        @foreach (var config in AvailableConfigurations)
+                        {
+                            <option value="@config">@FormatConfigurationName(config)</option>
+                        }
+                    }
+                    else
+                    {
+                        <option value="">Loading configurations...</option>
+                    }
+                </select>
+                <div class="select-arrow">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6,9 12,15 18,9"></polyline>
+                    </svg>
+                </div>
+            </div>
+            
+            <button class="btn btn-primary create-runtime-btn" 
+                    @onclick="CreateNewRuntime" 
+                    disabled="@(IsCreatingRuntime || string.IsNullOrEmpty(SelectedConfiguration))">
+                @if (IsCreatingRuntime)
+                {
+                    <div class="spinner"></div>
+                    <span>Creating...</span>
+                }
+                else
+                {
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="16"></line>
+                        <line x1="8" y1="12" x2="16" y2="12"></line>
+                    </svg>
+                    <span>Create Runtime</span>
+                }
+            </button>
+        </div>
+        
+        @if (!string.IsNullOrEmpty(ConfigurationDescription))
+        {
+            <div class="config-description">
+                @ConfigurationDescription
+            </div>
+        }
+    </div>
+
+    <!-- Active Runtimes Section -->
+    @if (ActiveRuntimes.Any())
+    {
+        <div class="runtime-section">
+            <label class="section-label">Active Runtimes:</label>
+            <div class="runtime-controls">
+                <div class="select-wrapper">
+                    <select @bind="SelectedRuntimeId" class="runtime-select">
+                        <option value="">Select a runtime...</option>
+                        @foreach (var runtime in ActiveRuntimes)
+                        {
+                            <option value="@runtime.RuntimeId">@runtime.DisplayName</option>
+                        }
+                    </select>
+                    <div class="select-arrow">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6,9 12,15 18,9"></polyline>
+                        </svg>
+                    </div>
+                </div>
+                
+                @if (!string.IsNullOrEmpty(SelectedRuntimeId))
+                {
+                    <button class="btn btn-danger btn-sm remove-runtime-btn" 
+                            @onclick="RemoveSelectedRuntime" 
+                            title="Remove this runtime">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3,6 5,6 21,6"></polyline>
+                            <path d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6m3,0V4a2,2,0,0,1,2-2h4a2,2,0,0,1,2,2V6"></path>
+                        </svg>
+                    </button>
+                    
+                    <button class="btn btn-secondary btn-sm refresh-runtime-btn" 
+                            @onclick="RefreshRuntimes" 
+                            title="Refresh runtime list">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="23,4 23,10 17,10"></polyline>
+                            <polyline points="1,20 1,14 7,14"></polyline>
+                            <path d="M20.49,9A9,9,0,0,0,5.64,5.64L1,10"></path>
+                            <path d="M3.51,15A9,9,0,0,0,18.36,18.36L23,14"></path>
+                        </svg>
+                    </button>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    /// <summary>
+    /// Available runtime configurations
+    /// </summary>
+    [Parameter, EditorRequired] public string[] AvailableConfigurations { get; set; } = Array.Empty<string>();
+
+    /// <summary>
+    /// Active runtime instances
+    /// </summary>
+    [Parameter, EditorRequired] public RuntimeInfo[] ActiveRuntimes { get; set; } = Array.Empty<RuntimeInfo>();
+
+    /// <summary>
+    /// Currently selected configuration - two-way binding
+    /// </summary>
+    [Parameter] public string SelectedConfiguration { get; set; } = "";
+    [Parameter] public EventCallback<string> SelectedConfigurationChanged { get; set; }
+
+    /// <summary>
+    /// Currently selected runtime ID - two-way binding
+    /// </summary>
+    [Parameter] public string SelectedRuntimeId { get; set; } = "";
+    [Parameter] public EventCallback<string> SelectedRuntimeIdChanged { get; set; }
+
+    /// <summary>
+    /// Whether a runtime is currently being created
+    /// </summary>
+    [Parameter] public bool IsCreatingRuntime { get; set; }
+
+    /// <summary>
+    /// Callback for creating a new runtime
+    /// </summary>
+    [Parameter] public EventCallback<string> OnCreateRuntime { get; set; }
+
+    /// <summary>
+    /// Callback for removing a runtime
+    /// </summary>
+    [Parameter] public EventCallback<string> OnRemoveRuntime { get; set; }
+
+    /// <summary>
+    /// Callback for refreshing runtime list
+    /// </summary>
+    [Parameter] public EventCallback OnRefreshRuntimes { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        // Set default configuration if none selected and configurations are available
+        if (string.IsNullOrEmpty(SelectedConfiguration) && AvailableConfigurations.Any())
+        {
+            SelectedConfiguration = AvailableConfigurations.First();
+            // Notify parent of the change
+            _ = SelectedConfigurationChanged.InvokeAsync(SelectedConfiguration);
+        }
+    }
+
+    /// <summary>
+    /// Creates a new runtime with the selected configuration
+    /// </summary>
+    private async Task CreateNewRuntime()
+    {
+        if (!string.IsNullOrEmpty(SelectedConfiguration))
+        {
+            await OnCreateRuntime.InvokeAsync(SelectedConfiguration);
+        }
+    }
+
+    /// <summary>
+    /// Removes the currently selected runtime
+    /// </summary>
+    private async Task RemoveSelectedRuntime()
+    {
+        if (!string.IsNullOrEmpty(SelectedRuntimeId))
+        {
+            await OnRemoveRuntime.InvokeAsync(SelectedRuntimeId);
+        }
+    }
+
+    /// <summary>
+    /// Refreshes the list of active runtimes
+    /// </summary>
+    private async Task RefreshRuntimes()
+    {
+        await OnRefreshRuntimes.InvokeAsync();
+    }
+
+    /// <summary>
+    /// Format configuration name for display - Using text instead of emojis to avoid corruption
+    /// </summary>
+    private string FormatConfigurationName(string configName)
+    {
+        return configName switch
+        {
+            "ResearchAgentConfiguration" => "[Research] Research Agent",
+            "MagenticOneConfiguration" => "[Magentic] Magentic One",
+            "simple" => "[Simple] Simple Agent",
+            "sequential" => "[Sequential] Sequential Workflow", 
+            "handoff" => "[Handoff] Agent Handoff",
+            "orchestration" => "[Orchestration] Complex Orchestration",
+            "basic" => "[Basic] Basic Runtime",
+            _ => $"[Config] {configName.Replace("Configuration", "")}"
+        };
+    }
+
+    /// <summary>
+    /// Get description for the selected configuration
+    /// </summary>
+    private string ConfigurationDescription => SelectedConfiguration switch
+    {
+        "ResearchAgentConfiguration" => "Advanced research agent with web search and analysis capabilities",
+        "MagenticOneConfiguration" => "Multi-agent orchestration system for complex task coordination",
+        "simple" => "Single agent for straightforward conversations and tasks",
+        "sequential" => "Multiple agents working in sequence for complex workflows",
+        "handoff" => "Agents that can hand off conversations to specialized agents",
+        "orchestration" => "Advanced state machine-based agent orchestration",
+        "basic" => "Basic runtime configuration for simple interactions",
+        _ => $"Runtime configuration: {SelectedConfiguration?.Replace("Configuration", "")}"
+    };
+}
