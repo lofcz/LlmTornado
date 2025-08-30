@@ -22,21 +22,68 @@ public abstract class OrchestrationRunnableBase
     /// </summary>
     public string Id { get; set; } = Guid.NewGuid().ToString();
 
-    /// <summary>
-    /// Gets a list of results extracted from the output results.
-    /// </summary>
-    internal List<object> BaseOutput => BaseProcesses.Select(output => output.BaseResult).ToList();
-
-    /// <summary>
-    /// Gets or sets the list of input objects the state has to process this tick.
-    /// </summary>
-    internal List<object> BaseInput  => BaseProcesses.Select(input => input.BaseInput).ToList();
-
 
     /// <summary>
     /// Input processes that the state has to process this tick.
     /// </summary>
-    public List<RunnableProcess> BaseProcesses { get; set; } = new List<RunnableProcess>();
+    private List<RunnableProcess> _baseProcesses { get; set; } = new List<RunnableProcess>();
+
+    internal object[] GetBaseResults()
+    {
+        return _baseProcesses.Where(p=>p.BaseResult is not null).Select(p => p.BaseResult!).ToArray();
+    }
+
+    internal List<RunnableProcess> GetRunnableProcesses()
+    {
+        return _baseProcesses;
+    }
+
+    internal List<RunnableProcess<TInput, TOutput>> GetBaseRunnableProcesses<TInput,TOutput>()
+    {
+        return _baseProcesses.Select(process=>process.ReturnProcess<TInput,TOutput>()).ToList();
+    }
+
+    internal void AddBaseRunnableProcess(RunnableProcess process)
+    {
+        _baseProcesses.Add(process);
+    }
+
+    internal void AddBaseRunnableProcess<TInput, TOutput>(RunnableProcess<TInput, TOutput> process)
+    {
+        _baseProcesses.Add(process);
+    }
+
+    internal void UpdateBaseRunnableProcess(string id, object result)
+    {
+        var existingProcess = _baseProcesses.FirstOrDefault(p => p.Id == id);
+        if (existingProcess != null)
+        {
+            existingProcess.BaseResult = result;
+        }
+    }
+
+    internal void UpdateBaseRunnableProcess(string id, RunnableProcess process)
+    {
+        var existingProcess = _baseProcesses.FirstOrDefault(p => p.Id == id);
+        if (existingProcess != null)
+        {
+            existingProcess.BaseResult = process.BaseResult;
+            existingProcess.TokenUsage = process.TokenUsage;
+            existingProcess.RunnableExecutionTime = process.RunnableExecutionTime;
+            existingProcess.StartTime = process.StartTime;
+        }
+    }
+
+    public void OverrideBaseRunnableProcess(string id, RunnableProcess process)
+    {
+        var existingProcess = _baseProcesses.FirstOrDefault(p => p.Id == id);
+        if (existingProcess != null)
+        {
+            _baseProcesses.Remove(existingProcess);
+            process.Id = id;
+            _baseProcesses.Add(process);
+        }
+    }
 
     /// <summary>
     /// Gets or sets the list of routes.
@@ -151,7 +198,7 @@ public abstract class OrchestrationRunnableBase
 
     public void ClearProcessTokenUsage(string processId)
     {
-        RunnableProcess? process = BaseProcesses.FirstOrDefault(p => p.Id == processId);
+        RunnableProcess? process = _baseProcesses.FirstOrDefault(p => p.Id == processId);
         if (process != null)
         {
             process.TokenUsage = 0;
@@ -160,7 +207,7 @@ public abstract class OrchestrationRunnableBase
 
     public void ClearAllProcessTokenUsage()
     {
-        foreach (var process in BaseProcesses)
+        foreach (var process in _baseProcesses)
         {
             process.TokenUsage = 0;
         }

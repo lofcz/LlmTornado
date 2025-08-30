@@ -45,7 +45,9 @@ public class OrchestrationRuntimeConfiguration : Orchestration<ChatMessage, Chat
 
         await InvokeAsync(message);
 
-        return Results?.Last() ?? new ChatMessage(Code.ChatMessageRoles.Assistant, "Some sort of error");
+        MessageHistory.Push(Results?.Last() ?? new ChatMessage(Code.ChatMessageRoles.Assistant, "Some sort of error"));
+
+        return GetLastMessage();
     }
 
     public virtual void ClearMessages()

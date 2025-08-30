@@ -1,5 +1,7 @@
 ﻿using LlmTornado.Agents.DataModels;
 using LlmTornado.Moderation;
+using LlmTornado.Threads;
+using ModelContextProtocol.Protocol;
 using System.Diagnostics;
 using System.Threading.Tasks;
 
@@ -20,7 +22,7 @@ public class RunnableProcess
     /// <summary>
     /// Current rerun attempts for this process.
     /// </summary>
-    private int rerunAttempts { get; set; } = 0;
+    public int RerunAttempts { get; private set; } = 0;
     /// <summary>
     /// Gets or sets the unique identifier for the entity.
     /// </summary>
@@ -35,7 +37,7 @@ public class RunnableProcess
     /// </summary>
     public object BaseInput { get; set; } = new object();
 
-    public object BaseResult { get; set; } = new object();
+    public object? BaseResult { get; set; } 
 
     /// <summary>
     /// Time Execution process has Started
@@ -117,6 +119,30 @@ public class RunnableProcess
         MaxReruns = maxReruns;
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="runner">Runnable instance associated with this process</param>
+    /// <param name="inputValue">Input value for the process</param>
+    /// <param name="maxReruns">Maximum number of reruns allowed</param>
+    public RunnableProcess(OrchestrationRunnableBase runner, object inputValue, string id, int maxReruns = 3)
+    {
+        Runner = runner;
+        BaseInput = inputValue;
+        MaxReruns = maxReruns;
+        Id = id;
+    }
+
+    public RunnableProcess(OrchestrationRunnableBase runner, object inputValue, object? resultValue, string id, int maxReruns = 3, int? runsAttempted = null)
+    {
+        Runner = runner;
+        BaseInput = inputValue;
+        BaseResult = resultValue;
+        MaxReruns = maxReruns;
+        Id = id;
+        RerunAttempts = runsAttempted ?? RerunAttempts;
+    }
+
 
     /// <summary>
     /// Determines whether another attempt can be made based on the current number of rerun attempts.
@@ -125,10 +151,9 @@ public class RunnableProcess
     /// <see langword="false"/>.</returns>
     public bool CanReAttempt()
     {
-        rerunAttempts++;
-        return rerunAttempts < MaxReruns;
+        RerunAttempts++;
+        return RerunAttempts < MaxReruns;
     }
-
 
     /// <summary>
     /// Retrieves a new instance of <see cref="StateProcess{T}"/> initialized with the current state and input.
@@ -137,11 +162,16 @@ public class RunnableProcess
     /// <typeparam name="T">The type of the input used to initialize the process.</typeparam>
     /// <returns>A <see cref="StateProcess{T}"/> object initialized with the current state and input of type <typeparamref
     /// name="T"/>.</returns>
-    public RunnableProcess<T> GetProcess<T>()
+    public RunnableProcess<TInput, TOutput> ReturnProcess<TInput, TOutput>()
     {
-        return new RunnableProcess<T>(Runner, (T)BaseInput, Id);
+        if(BaseResult is null)
+        {
+            return new RunnableProcess<TInput, TOutput>(Runner, (TInput)BaseInput, Id, MaxReruns);
+        }
+        return new RunnableProcess<TInput, TOutput>(Runner, (TInput)BaseInput, (TOutput?)BaseResult, Id, MaxReruns);
     }
 }
+
 
 /// <summary>
 /// Represents a process that operates on a specific state with a generic input type.
@@ -149,52 +179,13 @@ public class RunnableProcess
 /// <remarks>This class extends the <see cref="StateProcess"/> to handle operations with a specific input
 /// type. It provides functionality to create state results with the specified type.</remarks>
 /// <typeparam name="T">The type of the input and result associated with the state process.</typeparam>
-public class RunnableProcess<T> : RunnableProcess
+public class RunnableProcess<TInput, TOutput> : RunnableProcess
 {
     /// <summary>
     /// Gets or sets the input value of type <typeparamref name="T"/>.
     /// </summary>
-    public T Input { get => (T)BaseInput; set => BaseInput = value!; }
-
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="RunnableProcess{T}"/> class with the specified runnable, input, and
-    /// maximum rerun count.
-    /// </summary>
-    /// <param name="runnable">The orchestration runnable that defines the process logic to be executed.</param>
-    /// <param name="input">The input data of type <typeparamref name="T"/> required by the process. Cannot be <see langword="null"/>.</param>
-    /// <param name="maxReruns">The maximum number of times the process can be rerun in case of failure. Defaults to 3.</param>
-    public RunnableProcess(OrchestrationRunnableBase runnable, T input, int maxReruns = 3) : base(runnable, input!, maxReruns)
-    {
-        Input = input!;
-    }
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="RunnableProcess{T}"/> class with the specified runnable, input,
-    /// identifier, and maximum rerun count.
-    /// </summary>
-    /// <param name="runnable">The orchestration runnable that defines the process logic to be executed.</param>
-    /// <param name="input">The input data of type <typeparamref name="T"/> required by the process. Cannot be <see langword="null"/>.</param>
-    /// <param name="id">A unique identifier for the process. Cannot be <see langword="null"/> or empty.</param>
-    /// <param name="maxReruns">The maximum number of times the process can be rerun in case of failure. Defaults to 3.</param>
-    public RunnableProcess(OrchestrationRunnableBase runnable, T input, string id, int maxReruns = 3) : base(runnable, input!, maxReruns)
-    {
-        Input = input!;
-        Id = id;
-    }
-}
-
-
-/// <summary>
-/// Represents a process that operates on a specific state with a generic input type.
-/// </summary>
-/// <remarks>This class extends the <see cref="StateProcess"/> to handle operations with a specific input
-/// type. It provides functionality to create state results with the specified type.</remarks>
-/// <typeparam name="T">The type of the input and result associated with the state process.</typeparam>
-public class RunnableProcess<TInput, TOutput> : RunnableProcess<TInput>
-{
-
-    public TOutput Result { get => (TOutput)BaseResult; set => BaseResult = value!; }
+    public TInput Input { get => (TInput)BaseInput; set => BaseInput = value!; }
+    public TOutput? Result { get => (TOutput?)BaseResult; set => BaseResult = value!; }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="RunnableProcess{T}"/> class with the specified runnable, input, and
@@ -202,20 +193,22 @@ public class RunnableProcess<TInput, TOutput> : RunnableProcess<TInput>
     /// </summary>
     /// <param name="runnable">The orchestration runnable that defines the process logic to be executed.</param>
     /// <param name="input">The input data of type <typeparamref name="T"/> required by the process. Cannot be <see langword="null"/>.</param>
-    /// <param name="maxReruns">The maximum number of times the process can be rerun in case of failure. Defaults to 3.</param>
-    public RunnableProcess(OrchestrationRunnableBase runnable, TInput input, int maxReruns = 3) : base(runnable, input!, maxReruns)
-    {
-    }
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="RunnableProcess{T}"/> class with the specified runnable, input,
-    /// identifier, and maximum rerun count.
-    /// </summary>
-    /// <param name="runnable">The orchestration runnable that defines the process logic to be executed.</param>
-    /// <param name="input">The input data of type <typeparamref name="T"/> required by the process. Cannot be <see langword="null"/>.</param>
-    /// <param name="id">A unique identifier for the process. Cannot be <see langword="null"/> or empty.</param>
     /// <param name="maxReruns">The maximum number of times the process can be rerun in case of failure. Defaults to 3.</param>
     public RunnableProcess(OrchestrationRunnableBase runnable, TInput input, string id, int maxReruns = 3) : base(runnable, input!, id, maxReruns)
     {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="RunnableProcess{T}"/> class with the specified runnable, input,
+    /// identifier, and maximum rerun count.
+    /// </summary>
+    /// <param name="runnable">The orchestration runnable that defines the process logic to be executed.</param>
+    /// <param name="input">The input data of type <typeparamref name="TInput"/> required by the process. Cannot be <see langword="null"/>.</param>
+    /// <param name="result">The output data type <typeparamref name="TOutput"/> required by the process. Cannot be <see langword="null"/></param>
+    /// <param name="id">A unique identifier for the process. Cannot be <see langword="null"/> or empty.</param>
+    /// <param name="maxReruns">The maximum number of times the process can be rerun in case of failure. Defaults to 3.</param>
+    public RunnableProcess(OrchestrationRunnableBase runnable, TInput input, TOutput? result, string id, int maxReruns = 3, int? rerunCount = null) : base(runnable, input!, result, id, maxReruns, rerunCount)
+    {
+        Result = result;
     }
 }

@@ -454,9 +454,9 @@ public class Orchestration<TInput, TOutput> : Orchestration
     }
 
     /// <summary>
-    /// Result of the state machine run, containing a list of outputs of type <typeparamref name="TOutput"/>.
+    /// Result of the state machine run, containing a Array of outputs of type <typeparamref name="TOutput"/>.
     /// </summary>
-    public List<TOutput>? Results => RunnableWithResult.BaseOutput.ConvertAll(item => (TOutput)item)!;
+    public TOutput[]? Results => RunnableWithResult.GetBaseResults().ToList().Select(result=> (TOutput)result).ToArray();
 
     /// <summary>
     /// Retrieves the results as a list of objects.
@@ -467,7 +467,7 @@ public class Orchestration<TInput, TOutput> : Orchestration
     /// <see langword="null"/>.</returns>
     public override List<object>? GetResults()
     {
-        return Results?.ConvertAll(item => (object?)item)!;
+        return RunnableWithResult.GetBaseResults().ToList()!;
     }
 
     /// <summary>

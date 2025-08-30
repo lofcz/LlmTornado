@@ -17,23 +17,17 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
     /// </summary>
     public List<TInput> Input => Processes.Select(process => process.Input).ToList();
 
-    private List<RunnableProcess<TInput, TOutput>> _processes = new List<RunnableProcess<TInput, TOutput>>();
-
     /// <summary>
     /// Input processes to be executed by the runnable.
     /// </summary>
     public List<RunnableProcess<TInput, TOutput>> Processes
     {
-        get => _processes;
-        set
-        {
-            _processes = value ?? new List<RunnableProcess<TInput, TOutput>>();
-            BaseProcesses.Clear();
-            foreach (RunnableProcess<TInput, TOutput> process in Processes)
-            {
-                BaseProcesses.Add(new RunnableProcess(process.Runner, (object)process.Input!));
-            }
-        }
+        get => GetBaseRunnableProcesses<TInput, TOutput>();
+    }
+
+    public void AddProcess(RunnableProcess<TInput, TOutput> process)
+    {
+        AddBaseRunnableProcess(process);
     }
 
     /// <summary>
@@ -66,8 +60,9 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
     /// <returns></returns>
     internal override async ValueTask _InitializeRunnable(RunnableProcess? process)
     {
-        RunnableProcess<TInput, TOutput> newProcess = new RunnableProcess<TInput, TOutput>(process.Runner, (TInput)process.BaseInput!, process.Id);
-        Processes.Add(newProcess);
+        Processes.Clear();
+        RunnableProcess<TInput, TOutput> newProcess = process.ReturnProcess<TInput, TOutput>();
+        AddProcess(newProcess);
         await InitializeRunnable(newProcess);
     }
 
@@ -82,7 +77,6 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
 
     internal override async ValueTask _CleanupRunnable()
     {
-        Processes.Clear();
         await CleanupRunnable();
     }
 
@@ -123,6 +117,7 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
         input.SetupProcess();
         input.Result = await Invoke(input);
         input.FinalizeProcess();
+        UpdateBaseRunnableProcess(input.Id, input);
         Orchestrator?.OnFinishedRunnableProcess(input);
         List<RunnableProcess>? advancements = CheckResultForAdvancementsRecords(input);
         List<AdvancementRecord> advancementRecords = new List<AdvancementRecord>();

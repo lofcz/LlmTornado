@@ -10,6 +10,7 @@ using LlmTornado.Demo.ExampleAgents;
 using LlmTornado.Demo.ExampleAgents.CSCodingAgent;
 using LlmTornado.Demo.ExampleAgents.MagenticOneAgent;
 using LlmTornado.Demo.ExampleAgents.ResearchAgent;
+using LlmTornado.Demo.ExampleAgents.SimpleAgent;
 using LlmTornado.Responses;
 using System;
 using System.Collections.Generic;
@@ -95,10 +96,12 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
     }
 
     [TornadoTest]
-    public static async Task BasicOrchestrationRuntimeStreamingDemo()
+    public static async Task BasicOrchestrationRuntimeResearchStreamingDemo()
     {
         ResearchAgentConfiguration RuntimeConfiguration = new ResearchAgentConfiguration();
         
+        RuntimeConfiguration.RecordSteps = true;
+
         ChatRuntime runtime = new ChatRuntime(RuntimeConfiguration);
 
         RuntimeConfiguration.OnRuntimeEvent = async (evt) =>
@@ -120,9 +123,60 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
         };
 
         ChatMessage report = await runtime.InvokeAsync(new ChatMessage(Code.ChatMessageRoles.User, "Write a report about the benefits of using AI agents."));
+
+        RunnerRecordVisualizationUtility.SaveRunnerRecordDotGraphToFileAsync(RuntimeConfiguration.RunSteps, "ResearchAgentRecord.dot", "ResearchAgentRecord");
     }
 
-   
+    [TornadoTest]
+    public static async Task BasicOrchestrationRuntimeStreamingDemo()
+    {
+        SimpleAgentConfiguration RuntimeConfiguration = new SimpleAgentConfiguration(Program.Connect(), true);
+
+        ChatRuntime runtime = new ChatRuntime(RuntimeConfiguration);
+
+        RuntimeConfiguration.OnRuntimeEvent = async (evt) =>
+        {
+            if (evt.EventType == ChatRuntimeEventTypes.AgentRunner)
+            {
+                if (evt is ChatRuntimeAgentRunnerEvents runnerEvt)
+                {
+                    if (runnerEvt.AgentRunnerEvent is AgentRunnerStreamingEvent streamEvt)
+                    {
+                        if (streamEvt.ModelStreamingEvent is ModelStreamingOutputTextDeltaEvent deltaTextEvent)
+                        {
+                            Console.Write(deltaTextEvent.DeltaText);
+                        }
+                    }
+                }
+            }
+            await ValueTask.CompletedTask;
+        };
+        Console.WriteLine("[Assistant]: Hello?");
+        Console.Write("[User]: ");
+        string topic = Console.ReadLine();
+        Console.Write("[Assistant]: ");
+        ChatMessage report = await runtime.InvokeAsync(new ChatMessage(Code.ChatMessageRoles.User, topic));
+
+        RunnerRecordVisualizationUtility.SaveRunnerRecordDotGraphToFileAsync(RuntimeConfiguration.RunSteps, "ResearchAgentRecord.dot", "ResearchAgentRecord");
+    }
+
+    [TornadoTest]
+    public static async Task BasicOrchestrationRuntimeDemo()
+    {
+        SimpleAgentConfiguration RuntimeConfiguration = new SimpleAgentConfiguration(Program.Connect());
+
+        ChatRuntime runtime = new ChatRuntime(RuntimeConfiguration);
+
+        Console.WriteLine("[Assistant]: What do you want to research?");
+        Console.Write("[User]: ");
+        string topic = Console.ReadLine();
+        ChatMessage result = await runtime.InvokeAsync(new ChatMessage(Code.ChatMessageRoles.User, topic));
+
+        RunnerRecordVisualizationUtility.SaveRunnerRecordDotGraphToFileAsync(RuntimeConfiguration.RunSteps, "ResearchAgentRecord.dot", "ResearchAgentRecord");
+
+        Console.WriteLine(result.Content);
+    }
+
     #endregion
 
 

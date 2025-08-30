@@ -132,7 +132,7 @@ public class TornadoAgent
         Options.Model = model;
         McpServers = mcpServers ?? new List<MCPServer>();
         Name = string.IsNullOrEmpty(name) ? "Assistant" : name;
-
+        Streaming = streaming;
         if (OutputSchema != null)
         {
             Options.ResponseFormat = OutputSchema.CreateJsonSchemaFormatFromType(true);

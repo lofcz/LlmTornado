@@ -84,10 +84,10 @@ public class ChatRuntime
         // Invoke the StartingExecution event to signal the beginning of the execution process
         OnRuntimeEvent?.Invoke(new ChatRuntimeStartedEvent(this.Id));
 
-        await RuntimeConfiguration.AddToChatAsync(message);
+        ChatMessage response = await RuntimeConfiguration.AddToChatAsync(message);
 
         OnRuntimeEvent?.Invoke(new ChatRuntimeCompletedEvent(this.Id));
 
-        return RuntimeConfiguration.GetMessages().Last();
+        return response;
     }
 }
