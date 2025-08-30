@@ -60,7 +60,7 @@ public static class RunnerRecordVisualizationUtility
             var stateName = stateMetric.Key;
             var metrics = stateMetric.Value;
             var nodeId = SanitizeDotName(stateName);
-            
+
             var label = $"{stateName}\\n" +
                        $"Tokens: {metrics.totalTokens}\\n" +
                        $"Time: {metrics.totalTime.TotalMilliseconds:F1}ms\\n" +
@@ -143,7 +143,7 @@ public static class RunnerRecordVisualizationUtility
         {
             var stateName = SanitizePlantUMLName(stateMetric.Key);
             var metrics = stateMetric.Value;
-            
+
             plantUmlBuilder.AppendLine($"state {stateName} {{");
             plantUmlBuilder.AppendLine($"  {stateName} : Tokens: {metrics.totalTokens}");
             plantUmlBuilder.AppendLine($"  {stateName} : Time: {metrics.totalTime.TotalMilliseconds:F1}ms");
@@ -159,7 +159,7 @@ public static class RunnerRecordVisualizationUtility
         // Add transitions
         var addedTransitions = new HashSet<string>();
         string? firstStateName = null;
-        
+
         foreach (var step in runSteps.OrderBy(kvp => kvp.Key))
         {
             foreach (var record in step.Value)
@@ -204,7 +204,7 @@ public static class RunnerRecordVisualizationUtility
 
         foreach (var endState in allStates)
         {
-            if(!sourceStates.Contains(endState.Key) || !targetStates.Contains(endState.Key))
+            if (!sourceStates.Contains(endState.Key) || !targetStates.Contains(endState.Key))
                 plantUmlBuilder.AppendLine($"{endState} --> [*]");
         }
 
@@ -313,7 +313,7 @@ public static class RunnerRecordVisualizationUtility
     {
         if (string.IsNullOrEmpty(name))
             return "UnknownState";
-        
+
         return name.Replace("<", "_").Replace(">", "_").Replace(",", "_")
                   .Replace(" ", "_").Replace("-", "_").Replace(".", "_")
                   .Replace("(", "_").Replace(")", "_").Replace("[", "_")
@@ -324,7 +324,7 @@ public static class RunnerRecordVisualizationUtility
     {
         if (string.IsNullOrEmpty(name))
             return "UnknownState";
-        
+
         return name.Replace("<", "_").Replace(">", "_").Replace(",", "_")
                   .Replace(" ", "_").Replace("-", "_").Replace(".", "_")
                   .Replace("(", "_").Replace(")", "_").Replace("[", "_")
