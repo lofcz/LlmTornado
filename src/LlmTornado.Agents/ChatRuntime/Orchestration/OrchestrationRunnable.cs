@@ -33,7 +33,21 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
     /// <summary>
     /// List of advancements (transitions) from this runnable to the next runnables.
     /// </summary>
-    public List<OrchestrationAdvancer<TOutput>> Advances { get; set; } = new List<OrchestrationAdvancer<TOutput>>();
+    public OrchestrationAdvancer<TOutput>[] Advances => GetAdvances();
+
+    public OrchestrationAdvancer<TOutput>[] GetAdvances()
+    {
+        return BaseAdvancers.Select(advancer => {
+            AdvancementRequirement<TOutput> advancementRequirement = (TOutput input) => advancer.InvokeMethod(input);
+            return new OrchestrationAdvancer<TOutput>(advancementRequirement, advancer.NextRunnable);
+        }).ToArray();
+    }
+
+    public void AddAdvancer(OrchestrationAdvancer<TOutput> advancer)
+    {
+        AdvancementRequirement<object> advancementRequirement = (object input) => advancer.InvokeMethod((TOutput)input);
+        BaseAdvancers.Add(new OrchestrationAdvancer<object>(advancementRequirement, advancer.NextRunnable));
+    }
 
     /// <summary>
     /// Latest advancements determined after invocation.
@@ -204,7 +218,7 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
     private List<RunnableProcess> CheckResultForAdvancementsRecords(RunnableProcess<TInput, TOutput> process)
     {         //Check if the state result has a valid transition
         List<RunnableProcess> stateProcessesFromOutput = new List<RunnableProcess>();                                                                                                                                         //If the transition evaluates to true for the output, add it to the new state processes
-        Advances.ForEach(advancer =>
+        Advances.ToList().ForEach(advancer =>
         {
             if (advancer.CanAdvance(process.Result))
             {
@@ -227,7 +241,7 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
 
     private List<RunnableProcess> CheckResultForAdvancements(RunnableProcess<TInput,TOutput> process) {         //Check if the state result has a valid transition
         List<RunnableProcess> stateProcessesFromOutput = new List<RunnableProcess>();                                                                                                                                         //If the transition evaluates to true for the output, add it to the new state processes
-        Advances.ForEach(advancer =>
+        Advances.ToList().ForEach(advancer =>
         {
             if (advancer.CanAdvance(process.Result))
             {
@@ -259,7 +273,7 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
     /// <param name="nextRunnable"></param>
     public void AddAdvancer(OrchestrationRunnableBase nextRunnable)
     {
-        Advances.Add(new OrchestrationAdvancer<TOutput>(_ => true, nextRunnable));
+        AddAdvancer(new OrchestrationAdvancer<TOutput>(_ => true, nextRunnable));
     }
 
     /// <summary>
@@ -269,7 +283,7 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
     /// <param name="nextRunnable">Next Runnable to advance too</param>
     public void AddAdvancer(AdvancementRequirement<TOutput> methodToInvoke, OrchestrationRunnableBase nextRunnable)
     {
-        Advances.Add(new OrchestrationAdvancer<TOutput>(methodToInvoke, nextRunnable));
+        AddAdvancer(new OrchestrationAdvancer<TOutput>(methodToInvoke, nextRunnable));
     }
 
     /// <summary>
@@ -282,7 +296,7 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
     public void AddAdvancer<T>(AdvancementRequirement<TOutput> methodToInvoke, AdvancementResultConverter<TOutput, T> conversionMethod, OrchestrationRunnableBase nextRunnable)
     {
         OrchestrationAdvancer<TOutput, T> transition = new OrchestrationAdvancer<TOutput, T>(methodToInvoke, conversionMethod, nextRunnable);
-        Advances.Add(transition);
+        AddAdvancer(transition);
     }
 
     /// <summary>
@@ -297,12 +311,12 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
         if (methodToInvoke != null)
         {
             OrchestrationAdvancer<TOutput, T> transition = new OrchestrationAdvancer<TOutput, T>(methodToInvoke, conversionMethod, nextRunnable);
-            Advances.Add(transition);
+            AddAdvancer(transition);
         }
         else
         {
             OrchestrationAdvancer<TOutput, T> transition = new OrchestrationAdvancer<TOutput, T>(_ => true, conversionMethod, nextRunnable);
-            Advances.Add(transition);
+            AddAdvancer(transition);
         }
     }
     #endregion
