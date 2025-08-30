@@ -38,7 +38,7 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
     public OrchestrationAdvancer<TOutput>[] GetAdvances()
     {
         return BaseAdvancers.Select(advancer => {
-            AdvancementRequirement<TOutput> advancementRequirement = (TOutput input) => advancer.InvokeMethod(input);
+            AdvancementRequirement<TOutput> advancementRequirement = (TOutput input) => (bool)advancer.InvokeMethod.DynamicInvoke(input)!;
             return new OrchestrationAdvancer<TOutput>(advancementRequirement, advancer.NextRunnable);
         }).ToArray();
     }

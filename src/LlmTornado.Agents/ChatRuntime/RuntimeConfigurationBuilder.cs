@@ -40,15 +40,59 @@ public class OrchestrationBuilder
         Configuration.SetRunnableWithResult(outputRunnable);
         return this;
     }
-
-    public OrchestrationBuilder AddAdvancer<TInput, TOutput>(OrchestrationRunnableBase fromRunnable, OrchestrationRunnableBase toRunnable)
+    
+    public OrchestrationBuilder AddAdvancer<TOutput>(OrchestrationRunnableBase fromRunnable, OrchestrationRunnableBase toRunnable)
     {
         if(!Configuration.Runnables.ContainsKey(fromRunnable.RunnableName))
             Configuration.Runnables.Add(fromRunnable.RunnableName, fromRunnable);
         if (!Configuration.Runnables.ContainsKey(toRunnable.RunnableName))
             Configuration.Runnables.Add(toRunnable.RunnableName, toRunnable);
+        fromRunnable.AddAdvancer(new OrchestrationAdvancer<TOutput>(_ => true, toRunnable));
         return this;
     }
+
+    public OrchestrationBuilder AddAdvancer<TOutput>(OrchestrationRunnableBase fromRunnable, AdvancementRequirement<TOutput> condition, OrchestrationRunnableBase toRunnable)
+    {
+        if (!Configuration.Runnables.ContainsKey(fromRunnable.RunnableName))
+            Configuration.Runnables.Add(fromRunnable.RunnableName, fromRunnable);
+        if (!Configuration.Runnables.ContainsKey(toRunnable.RunnableName))
+            Configuration.Runnables.Add(toRunnable.RunnableName, toRunnable);
+        fromRunnable.AddAdvancer(new OrchestrationAdvancer<TOutput>(condition, toRunnable));
+        return this;
+    }
+
+    public OrchestrationBuilder AddAdvancer<TValue, TOutput>(OrchestrationRunnableBase fromRunnable, AdvancementRequirement<TValue> condition, AdvancementResultConverter<TValue, TOutput> converter, OrchestrationRunnableBase toRunnable)
+    {
+        if (!Configuration.Runnables.ContainsKey(fromRunnable.RunnableName))
+            Configuration.Runnables.Add(fromRunnable.RunnableName, fromRunnable);
+        if (!Configuration.Runnables.ContainsKey(toRunnable.RunnableName))
+            Configuration.Runnables.Add(toRunnable.RunnableName, toRunnable);
+        fromRunnable.AddAdvancer(new OrchestrationAdvancer<TValue, TOutput>(condition, converter, toRunnable));
+        return this;
+    }
+
+    public OrchestrationBuilder AddAdvancer<TValue, TOutput>(OrchestrationRunnableBase fromRunnable, AdvancementResultConverter<TValue, TOutput> converter, OrchestrationRunnableBase toRunnable, AdvancementRequirement<TValue>? condition = null)
+    {
+        if (!Configuration.Runnables.ContainsKey(fromRunnable.RunnableName))
+            Configuration.Runnables.Add(fromRunnable.RunnableName, fromRunnable);
+        if (!Configuration.Runnables.ContainsKey(toRunnable.RunnableName))
+            Configuration.Runnables.Add(toRunnable.RunnableName, toRunnable);
+        condition ??= _ => true;
+        fromRunnable.AddAdvancer(new OrchestrationAdvancer<TValue, TOutput>(condition, converter, toRunnable));
+        return this;
+    }
+
+    public OrchestrationBuilder AddAdvancers<TValue, TOutput>(OrchestrationRunnableBase fromRunnable, AdvancementResultConverter<TValue, TOutput> converter, OrchestrationRunnableBase toRunnable, AdvancementRequirement<TValue>? condition = null)
+    {
+        if (!Configuration.Runnables.ContainsKey(fromRunnable.RunnableName))
+            Configuration.Runnables.Add(fromRunnable.RunnableName, fromRunnable);
+        if (!Configuration.Runnables.ContainsKey(toRunnable.RunnableName))
+            Configuration.Runnables.Add(toRunnable.RunnableName, toRunnable);
+        condition ??= _ => true;
+        fromRunnable.AddAdvancer(new OrchestrationAdvancer<TValue, TOutput>(condition, converter, toRunnable));
+        return this;
+    }
+
 
     public OrchestrationRuntimeConfiguration Build()
     {

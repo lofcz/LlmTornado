@@ -29,6 +29,17 @@ public class OrchestrationAdvancer
     public OrchestrationRunnableBase NextRunnable { get; private set; }
 
     /// <summary>
+    /// Gets or sets the method to be invoked to determine if it can transition.
+    /// </summary>
+    public Delegate InvokeMethod { get; set; }
+
+    /// <summary>
+    /// Gets or sets the method used to convert an input of type <typeparamref name="TInput"/>          to an output
+    /// of type <typeparamref name="TOutput"/>.
+    /// </summary>
+    public Delegate ConverterMethod { get; set; }
+
+    /// <summary>
     /// Gets or sets the result of the converter method.
     /// </summary>
     internal object? ConverterMethodResult { get; set; }
@@ -42,6 +53,35 @@ public class OrchestrationAdvancer
     {
         NextRunnable = runnable ?? throw new ArgumentNullException(nameof(runnable), "Next runner cannot be null.");
     }
+
+    public OrchestrationAdvancer(Delegate methodToInvoke, OrchestrationRunnableBase nextRunnable) 
+    {
+        type = "out";
+
+        // Validate the next state input type against the type of T
+        if (!typeof(object).IsAssignableFrom(nextRunnable.GetInputType()))
+        {
+            throw new InvalidOperationException($"Next State with input type of {nextRunnable.GetInputType()} requires Input type assignable to type of {typeof(object)}");
+        }
+
+        InvokeMethod = methodToInvoke;
+
+    }
+
+    public OrchestrationAdvancer(Delegate methodToInvoke, Delegate converter, OrchestrationRunnableBase nextRunnable)
+    {
+        type = "out";
+
+        // Validate the next state input type against the type of T
+        if (!typeof(object).IsAssignableFrom(nextRunnable.GetInputType()))
+        {
+            throw new InvalidOperationException($"Next State with input type of {nextRunnable.GetInputType()} requires Input type assignable to type of {typeof(object)}");
+        }
+
+        InvokeMethod = methodToInvoke;
+        ConverterMethod = converter;
+
+    }
 }
 
 /// <summary>
@@ -50,11 +90,6 @@ public class OrchestrationAdvancer
 /// <typeparam name="T"> T being the Type of Input for the next State</typeparam>
 public class OrchestrationAdvancer<T> : OrchestrationAdvancer
 {
-    /// <summary>
-    /// Gets or sets the method to be invoked to determine if it can transition.
-    /// </summary>
-    public AdvancementRequirement<T> InvokeMethod { get; set; }
-
     public OrchestrationAdvancer(OrchestrationRunnableBase nextRunnable):base(nextRunnable) { }
 
     public OrchestrationAdvancer(AdvancementRequirement<T> methodToInvoke, OrchestrationRunnableBase nextRunnable) : base(nextRunnable)
@@ -93,12 +128,6 @@ public class OrchestrationAdvancer<T> : OrchestrationAdvancer
 public class OrchestrationAdvancer<TInput, TOutput> : OrchestrationAdvancer<TInput>
 {
     /// <summary>
-    /// Gets or sets the method used to convert an input of type <typeparamref name="TInput"/>          to an output
-    /// of type <typeparamref name="TOutput"/>.
-    /// </summary>
-    public AdvancementResultConverter<TInput, TOutput> ConverterMethod { get; set; }
-
-    /// <summary>
     /// Gets or sets the result of the converter method.
     /// </summary>
     public TOutput ConverterResult
@@ -131,7 +160,7 @@ public class OrchestrationAdvancer<TInput, TOutput> : OrchestrationAdvancer<TInp
         {
             if ((bool?)InvokeMethod.DynamicInvoke(value) ?? false)
             {
-                ConverterMethodResult = ConverterMethod.Invoke(value);
+                ConverterMethodResult = ConverterMethod.DynamicInvoke(value);
                 return true;
             }
         }
