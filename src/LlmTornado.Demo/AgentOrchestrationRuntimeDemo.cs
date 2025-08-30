@@ -86,7 +86,24 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
         ResearchAgentConfiguration RuntimeConfiguration = new ResearchAgentConfiguration(Program.Connect());
 
         ChatRuntime runtime = new ChatRuntime(RuntimeConfiguration);
-
+        RuntimeConfiguration.OnRuntimeEvent = async (evt) =>
+        {
+            Console.WriteLine($"Event: {evt.EventType}");
+            if (evt.EventType == ChatRuntimeEventTypes.AgentRunner)
+            {
+                if (evt is ChatRuntimeAgentRunnerEvents runnerEvt)
+                {
+                    if (runnerEvt.AgentRunnerEvent is AgentRunnerStreamingEvent streamEvt)
+                    {
+                        if (streamEvt.ModelStreamingEvent is ModelStreamingOutputTextDeltaEvent deltaTextEvent)
+                        {
+                            Console.Write(deltaTextEvent.DeltaText);
+                        }
+                    }
+                }
+            }
+            await ValueTask.CompletedTask;
+        };
         Console.WriteLine("[Assistant]: What do you want to research?");
         Console.Write("[User]: ");
         string topic = Console.ReadLine();
@@ -121,8 +138,11 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
             }
             await ValueTask.CompletedTask;
         };
-
-        ChatMessage report = await runtime.InvokeAsync(new ChatMessage(Code.ChatMessageRoles.User, "Write a report about the benefits of using AI agents."));
+        Console.WriteLine("[Assistant]: What do you want to research?");
+        Console.Write("[User]: ");
+        string topic = Console.ReadLine();
+        Console.Write("[Assistant]: ");
+        ChatMessage report = await runtime.InvokeAsync(new ChatMessage(Code.ChatMessageRoles.User, topic));
 
         RunnerRecordVisualizationUtility.SaveRunnerRecordDotGraphToFileAsync(RuntimeConfiguration.RunSteps.ToDictionary(), "ResearchAgentRecord.dot", "ResearchAgentRecord");
     }

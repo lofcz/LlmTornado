@@ -75,6 +75,8 @@ public class ResearchAgentConfiguration : OrchestrationRuntimeConfiguration
     ResearchRunnable researcher;
     ReportingRunnable reporter;
     ExitRunnable exit;
+    public int MaxDepth { get; set; } = 3;
+    public int MinWordCount { get; set; } = 250;
     public TornadoApi Client { get; set; }
 
     public ResearchAgentConfiguration()
@@ -82,9 +84,9 @@ public class ResearchAgentConfiguration : OrchestrationRuntimeConfiguration
         Client = new TornadoApi(Environment.GetEnvironmentVariable("OPENAI_API_KEY"), LLmProviders.OpenAi);
         RecordSteps = true;
         //Create the Runnables
-        planner = new PlannerRunnable(Client, this);
-        researcher = new ResearchRunnable(Client, this);
-        reporter = new ReportingRunnable(Client, this);
+        planner = new PlannerRunnable(Client, this, MaxDepth);
+        researcher = new ResearchRunnable(Client, this, MaxDepth);
+        reporter = new ReportingRunnable(Client, this, MinWordCount);
         exit = new ExitRunnable(this) { AllowDeadEnd = true }; //Set deadend to disable reattempts and finish the execution
 
         //Setup the orchestration flow
@@ -102,9 +104,9 @@ public class ResearchAgentConfiguration : OrchestrationRuntimeConfiguration
         Client = client ?? new TornadoApi(Environment.GetEnvironmentVariable("OPENAI_API_KEY"), LLmProviders.OpenAi);
         RecordSteps = true;
         //Create the Runnables
-        planner = new PlannerRunnable(Client, this);
-        researcher = new ResearchRunnable(Client, this);
-        reporter = new ReportingRunnable(Client, this);
+        planner = new PlannerRunnable(Client, this, MaxDepth);
+        researcher = new ResearchRunnable(Client, this, MaxDepth);
+        reporter = new ReportingRunnable(Client, this, MinWordCount);
         exit = new ExitRunnable(this) { AllowDeadEnd = true }; //Set deadend to disable reattempts and finish the execution
 
         //Setup the orchestration flow
@@ -133,12 +135,13 @@ public class ResearchAgentConfiguration : OrchestrationRuntimeConfiguration
 public class PlannerRunnable : OrchestrationRunnable<ChatMessage, WebSearchPlan>
 {
     TornadoAgent Agent;
-
-    public PlannerRunnable(TornadoApi client, Orchestration orchestrator) : base(orchestrator)
+    private int _maxItemsToPlan = 10;
+    public PlannerRunnable(TornadoApi client, Orchestration orchestrator, int maxItemsToPlan) : base(orchestrator)
     {
-        string instructions = """
+        _maxItemsToPlan = maxItemsToPlan;
+        string instructions = $"""
                 You are a helpful research assistant. Given a query, come up with a set of web searches, 
-                to perform to best answer the query. Output between 5 and 10 terms to query for. 
+                to perform to best answer the query. Output between 1 and {_maxItemsToPlan} terms to query for. 
                 """;
 
         Agent = new TornadoAgent(
@@ -173,7 +176,7 @@ public class ResearchRunnable : OrchestrationRunnable<WebSearchPlan, string>
     public int MaxDegreeOfParallelism { get; set; } = 4;
     public int MaxItemsToProcess { get; set; } = 3;
     TornadoApi Client { get; set; }
-    public ResearchRunnable(TornadoApi client, Orchestration orchestrator) : base(orchestrator) { Client = client; }
+    public ResearchRunnable(TornadoApi client, Orchestration orchestrator, int maxItemsToProcess = 3) : base(orchestrator) { Client = client; MaxItemsToProcess = maxItemsToProcess; }
 
     public override async ValueTask<string> Invoke(RunnableProcess<WebSearchPlan, string> process)
     {
@@ -237,17 +240,17 @@ public class ReportingRunnable : OrchestrationRunnable<string, ReportData>
     TornadoAgent Agent;
 
     public Action<AgentRunnerEvents>? OnAgentRunnerEvent { get; set; }
-
-    public ReportingRunnable(TornadoApi client, Orchestration orchestrator) : base(orchestrator)
+    private int _minWordCount { get; set; } = 200;
+    public ReportingRunnable(TornadoApi client, Orchestration orchestrator, int minWordCount) : base(orchestrator)
     {
-        string instructions = """
+        string instructions = $"""
                 You are a senior researcher tasked with writing a cohesive report for a research query.
                 you will be provided with the original query, and some initial research done by a research assistant.
 
                 you should first come up with an outline for the report that describes the structure and flow of the report. 
                 Then, generate the report and return that as your final output.
 
-                The final output should be in markdown format, and it should be lengthy and detailed. Aim for 5-10 pages of content, at least 1000 words.
+                The final output should be in markdown format, and it should be lengthy and detailed. Aim for 1-2 pages of content, at least {_minWordCount} words.
                 """;
 
         Agent = new TornadoAgent(
@@ -258,7 +261,7 @@ public class ReportingRunnable : OrchestrationRunnable<string, ReportData>
             outputSchema: typeof(ReportData),
             streaming: true);
 
-
+        _minWordCount = minWordCount;
     }
 
     public override async ValueTask<ReportData> Invoke(RunnableProcess<string, ReportData> research)

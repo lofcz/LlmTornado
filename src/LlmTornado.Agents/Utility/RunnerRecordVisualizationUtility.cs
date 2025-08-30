@@ -73,7 +73,8 @@ public static class RunnerRecordVisualizationUtility
                        $"Time: {metrics.totalTime.TotalMilliseconds:F1}ms ({timePercentage:F1}%)\\n" +
                        $"Executions: {metrics.stepCount}";
 
-            var fillColor = GetNodeColor(metrics.totalTokens, metrics.totalTime);
+
+            var fillColor = GetNodeColor((timePercentage+tokenPercentage)/200.0);
             dotBuilder.AppendLine($"    {nodeId} [label=\"{label}\", fillcolor=\"{fillColor}\"];");
         }
 
@@ -320,15 +321,17 @@ public static class RunnerRecordVisualizationUtility
         return summary.ToString();
     }
 
-    private static string GetNodeColor(int tokens, TimeSpan executionTime)
+    private static string GetNodeColor(double overheadPercent)
     {
-        // Color coding based on resource usage
-        if (tokens > 1000 || executionTime.TotalMilliseconds > 5000)
-            return "lightcoral"; // High usage - red
-        else if (tokens > 500 || executionTime.TotalMilliseconds > 2000)
-            return "lightyellow"; // Medium usage - yellow
-        else
-            return "lightgreen"; // Low usage - green
+        if(overheadPercent > 1)
+        {
+            overheadPercent = 1.0;
+        }
+        if(overheadPercent < 0)
+        {
+            overheadPercent = 0.0;
+        }
+        return $"lightcoral;{overheadPercent}:lightgreen";
     }
 
     private static string SanitizeDotName(string name)
