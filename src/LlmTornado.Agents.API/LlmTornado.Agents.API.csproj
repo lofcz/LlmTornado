@@ -19,4 +19,8 @@
     <ProjectReference Include="..\LlmTornado.Demo\LlmTornado.Demo.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="scripts\" />
+  </ItemGroup>
+
 </Project>

@@ -124,7 +124,7 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
 
         ChatMessage report = await runtime.InvokeAsync(new ChatMessage(Code.ChatMessageRoles.User, "Write a report about the benefits of using AI agents."));
 
-        RunnerRecordVisualizationUtility.SaveRunnerRecordDotGraphToFileAsync(RuntimeConfiguration.RunSteps, "ResearchAgentRecord.dot", "ResearchAgentRecord");
+        RunnerRecordVisualizationUtility.SaveRunnerRecordDotGraphToFileAsync(RuntimeConfiguration.RunSteps.ToDictionary(), "ResearchAgentRecord.dot", "ResearchAgentRecord");
     }
 
     [TornadoTest]
@@ -157,7 +157,7 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
         Console.Write("[Assistant]: ");
         ChatMessage report = await runtime.InvokeAsync(new ChatMessage(Code.ChatMessageRoles.User, topic));
 
-        RunnerRecordVisualizationUtility.SaveRunnerRecordDotGraphToFileAsync(RuntimeConfiguration.RunSteps, "ResearchAgentRecord.dot", "ResearchAgentRecord");
+        RunnerRecordVisualizationUtility.SaveRunnerRecordDotGraphToFileAsync(RuntimeConfiguration.RunSteps.ToDictionary(), "ResearchAgentRecord.dot", "ResearchAgentRecord");
     }
 
     [TornadoTest]
@@ -172,7 +172,7 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
         string topic = Console.ReadLine();
         ChatMessage result = await runtime.InvokeAsync(new ChatMessage(Code.ChatMessageRoles.User, topic));
 
-        RunnerRecordVisualizationUtility.SaveRunnerRecordDotGraphToFileAsync(RuntimeConfiguration.RunSteps, "ResearchAgentRecord.dot", "ResearchAgentRecord");
+        RunnerRecordVisualizationUtility.SaveRunnerRecordDotGraphToFileAsync(RuntimeConfiguration.RunSteps.ToDictionary(), "ResearchAgentRecord.dot", "ResearchAgentRecord");
 
         Console.WriteLine(result.Content);
     }

@@ -20,7 +20,7 @@ public static class RunnerRecordVisualizationUtility
     /// <param name="runSteps">The orchestration run steps containing runner records</param>
     /// <param name="graphName">Optional name for the graph (default: "RunnerRecords")</param>
     /// <returns>DOT format string suitable for Graphviz rendering</returns>
-    public static string ToRunnerRecordDotGraph(this ConcurrentDictionary<int, List<RunnerRecord>> runSteps, string graphName = "RunnerRecords")
+    public static string ToRunnerRecordDotGraph(this Dictionary<int, List<RunnerRecord>> runSteps, string graphName = "RunnerRecords")
     {
         var dotBuilder = new StringBuilder();
         var visitedStates = new HashSet<string>();
@@ -54,16 +54,23 @@ public static class RunnerRecordVisualizationUtility
             }
         }
 
-        // Add nodes with metrics
+        // Calculate totals for percentage calculations
+        var totalTokensAll = stateMetrics.Values.Sum(m => m.totalTokens);
+        var totalTimeAll = TimeSpan.FromMilliseconds(stateMetrics.Values.Sum(m => m.totalTime.TotalMilliseconds));
+
+        // Add nodes with metrics including percentages
         foreach (var stateMetric in stateMetrics)
         {
             var stateName = stateMetric.Key;
             var metrics = stateMetric.Value;
             var nodeId = SanitizeDotName(stateName);
 
+            var tokenPercentage = totalTokensAll > 0 ? (double)metrics.totalTokens / totalTokensAll * 100 : 0;
+            var timePercentage = totalTimeAll.TotalMilliseconds > 0 ? metrics.totalTime.TotalMilliseconds / totalTimeAll.TotalMilliseconds * 100 : 0;
+
             var label = $"{stateName}\\n" +
-                       $"Tokens: {metrics.totalTokens}\\n" +
-                       $"Time: {metrics.totalTime.TotalMilliseconds:F1}ms\\n" +
+                       $"Tokens: {metrics.totalTokens} ({tokenPercentage:F1}%)\\n" +
+                       $"Time: {metrics.totalTime.TotalMilliseconds:F1}ms ({timePercentage:F1}%)\\n" +
                        $"Executions: {metrics.stepCount}";
 
             var fillColor = GetNodeColor(metrics.totalTokens, metrics.totalTime);
@@ -104,7 +111,7 @@ public static class RunnerRecordVisualizationUtility
     /// <param name="runSteps">The orchestration run steps containing runner records</param>
     /// <param name="title">Optional title for the diagram</param>
     /// <returns>PlantUML sequence diagram string</returns>
-    public static string ToRunnerRecordPlantUML(this ConcurrentDictionary<int, List<RunnerRecord>> runSteps, string title = "Runner Records Flow")
+    public static string ToRunnerRecordPlantUML(this Dictionary<int, List<RunnerRecord>> runSteps, string title = "Runner Records Flow")
     {
         var plantUmlBuilder = new StringBuilder();
         var stateMetrics = new Dictionary<string, (int totalTokens, TimeSpan totalTime, int stepCount)>();
@@ -138,15 +145,22 @@ public static class RunnerRecordVisualizationUtility
             }
         }
 
-        // Define states with their metrics
+        // Calculate totals for percentage calculations
+        var totalTokensAll = stateMetrics.Values.Sum(m => m.totalTokens);
+        var totalTimeAll = TimeSpan.FromMilliseconds(stateMetrics.Values.Sum(m => m.totalTime.TotalMilliseconds));
+
+        // Define states with their metrics including percentages
         foreach (var stateMetric in stateMetrics)
         {
             var stateName = SanitizePlantUMLName(stateMetric.Key);
             var metrics = stateMetric.Value;
 
+            var tokenPercentage = totalTokensAll > 0 ? (double)metrics.totalTokens / totalTokensAll * 100 : 0;
+            var timePercentage = totalTimeAll.TotalMilliseconds > 0 ? metrics.totalTime.TotalMilliseconds / totalTimeAll.TotalMilliseconds * 100 : 0;
+
             plantUmlBuilder.AppendLine($"state {stateName} {{");
-            plantUmlBuilder.AppendLine($"  {stateName} : Tokens: {metrics.totalTokens}");
-            plantUmlBuilder.AppendLine($"  {stateName} : Time: {metrics.totalTime.TotalMilliseconds:F1}ms");
+            plantUmlBuilder.AppendLine($"  {stateName} : Tokens: {metrics.totalTokens} ({tokenPercentage:F1}%)");
+            plantUmlBuilder.AppendLine($"  {stateName} : Time: {metrics.totalTime.TotalMilliseconds:F1}ms ({timePercentage:F1}%)");
             plantUmlBuilder.AppendLine($"  {stateName} : Executions: {metrics.stepCount}");
             plantUmlBuilder.AppendLine("}");
         }
@@ -219,7 +233,7 @@ public static class RunnerRecordVisualizationUtility
     /// <param name="filePath">Path where to save the .dot file</param>
     /// <param name="graphName">Optional name for the graph</param>
     /// <returns>Task representing the async file write operation</returns>
-    public static void SaveRunnerRecordDotGraphToFileAsync(this ConcurrentDictionary<int, List<RunnerRecord>> runSteps, string filePath, string graphName = "RunnerRecords")
+    public static void SaveRunnerRecordDotGraphToFileAsync(this Dictionary<int, List<RunnerRecord>> runSteps, string filePath, string graphName = "RunnerRecords")
     {
         var dotContent = runSteps.ToRunnerRecordDotGraph(graphName);
         File.WriteAllText(filePath, dotContent);
@@ -232,7 +246,7 @@ public static class RunnerRecordVisualizationUtility
     /// <param name="filePath">Path where to save the .puml file</param>
     /// <param name="title">Optional title for the diagram</param>
     /// <returns>Task representing the async file write operation</returns>
-    public static void SaveRunnerRecordPlantUMLToFileAsync(this ConcurrentDictionary<int, List<RunnerRecord>> runSteps, string filePath, string title = "Runner Records Flow")
+    public static void SaveRunnerRecordPlantUMLToFileAsync(this Dictionary<int, List<RunnerRecord>> runSteps, string filePath, string title = "Runner Records Flow")
     {
         var plantUMLContent = runSteps.ToRunnerRecordPlantUML(title);
         File.WriteAllText(filePath, plantUMLContent);
@@ -243,7 +257,7 @@ public static class RunnerRecordVisualizationUtility
     /// </summary>
     /// <param name="runSteps">The orchestration run steps containing runner records</param>
     /// <returns>String containing summary information</returns>
-    public static string GetRunnerRecordSummary(this ConcurrentDictionary<int, List<RunnerRecord>> runSteps)
+    public static string GetRunnerRecordSummary(this Dictionary<int, List<RunnerRecord>> runSteps)
     {
         var summary = new StringBuilder();
         var stateMetrics = new Dictionary<string, (int totalTokens, TimeSpan totalTime, int stepCount)>();
@@ -272,12 +286,16 @@ public static class RunnerRecordVisualizationUtility
             }
         }
 
+        // Calculate totals for percentage calculations
+        var totalTokensAll = stateMetrics.Values.Sum(m => m.totalTokens);
+        var totalTimeAll = TimeSpan.FromMilliseconds(stateMetrics.Values.Sum(m => m.totalTime.TotalMilliseconds));
+
         summary.AppendLine("Runner Record Execution Summary");
         summary.AppendLine("==============================");
         summary.AppendLine($"Total Steps: {totalSteps}");
         summary.AppendLine($"Unique States: {stateMetrics.Count}");
-        summary.AppendLine($"Total Tokens Used: {stateMetrics.Values.Sum(m => m.totalTokens)}");
-        summary.AppendLine($"Total Execution Time: {TimeSpan.FromMilliseconds(stateMetrics.Values.Sum(m => m.totalTime.TotalMilliseconds)):g}");
+        summary.AppendLine($"Total Tokens Used: {totalTokensAll}");
+        summary.AppendLine($"Total Execution Time: {totalTimeAll:g}");
         summary.AppendLine();
 
         summary.AppendLine("State Details:");
@@ -286,10 +304,14 @@ public static class RunnerRecordVisualizationUtility
         {
             var stateName = stateMetric.Key;
             var metrics = stateMetric.Value;
+
+            var tokenPercentage = totalTokensAll > 0 ? (double)metrics.totalTokens / totalTokensAll * 100 : 0;
+            var timePercentage = totalTimeAll.TotalMilliseconds > 0 ? metrics.totalTime.TotalMilliseconds / totalTimeAll.TotalMilliseconds * 100 : 0;
+
             summary.AppendLine($"{stateName}:");
             summary.AppendLine($"  Executions: {metrics.stepCount}");
-            summary.AppendLine($"  Total Tokens: {metrics.totalTokens}");
-            summary.AppendLine($"  Total Time: {metrics.totalTime.TotalMilliseconds:F1}ms");
+            summary.AppendLine($"  Total Tokens: {metrics.totalTokens} ({tokenPercentage:F1}% of total)");
+            summary.AppendLine($"  Total Time: {metrics.totalTime.TotalMilliseconds:F1}ms ({timePercentage:F1}% of total)");
             summary.AppendLine($"  Avg Tokens/Execution: {(double)metrics.totalTokens / metrics.stepCount:F1}");
             summary.AppendLine($"  Avg Time/Execution: {metrics.totalTime.TotalMilliseconds / metrics.stepCount:F1}ms");
             summary.AppendLine();
