@@ -318,7 +318,7 @@ public class CodingAgentConfiguration : OrchestrationRuntimeConfiguration
 
     class CodeReviewRunnable : OrchestrationRunnable<CodeBuildInfoOutput, ChatMessage>
     {
-        RuntimeAgent Agent;
+        TornadoAgent Agent;
 
         public CodeReviewRunnable(TornadoApi client, Orchestration orchestrator) : base(orchestrator)
         {
@@ -329,7 +329,7 @@ public class CodingAgentConfiguration : OrchestrationRuntimeConfiguration
                 Original Program Request was: 
                 """;
 
-            Agent = new RuntimeAgent(
+            Agent = new TornadoAgent(
                 client: client,
                 model: ChatModel.OpenAi.Gpt5.V5Mini,
                 name: "Research Agent",
@@ -362,7 +362,7 @@ public class CodingAgentConfiguration : OrchestrationRuntimeConfiguration
 
     class CodingAgentRunnable : OrchestrationRunnable<ChatMessage, ProgramResultOutput>
     {
-        RuntimeAgent Agent;
+        TornadoAgent Agent;
 
         public CodingAgentRunnable(TornadoApi client, Orchestration orchestrator) : base(orchestrator)
         {
@@ -370,7 +370,7 @@ public class CodingAgentConfiguration : OrchestrationRuntimeConfiguration
                 You are an expert C# programmer. Your task is to write detailed and working code for the following function based on the context provided.
                 """;
 
-            Agent = new RuntimeAgent(
+            Agent = new TornadoAgent(
                 client:client,
                 model: ChatModel.OpenAi.Gpt5.V5Mini,
                 name: "Research Agent",

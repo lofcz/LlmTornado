@@ -8,7 +8,7 @@ using System.Linq;
 
 namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
 {
-    public class HandoffAgent : RuntimeAgent
+    public class HandoffAgent : TornadoAgent
     {
         public string Description { get; set; } = "";
         public List<HandoffAgent> HandoffAgents { get; set; } = new List<HandoffAgent>();

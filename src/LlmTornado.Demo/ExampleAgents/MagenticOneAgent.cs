@@ -422,7 +422,7 @@ public class MagenticOneConfiguration : OrchestrationRuntimeConfiguration
 
 public class PlanningRunnable : OrchestrationRunnable<ChatMessage, TaskPlan>
 {
-    RuntimeAgent Agent;
+    TornadoAgent Agent;
 
     public PlanningRunnable(TornadoApi client, Orchestration orchestrator) : base(orchestrator)
     {
@@ -441,7 +441,7 @@ public class PlanningRunnable : OrchestrationRunnable<ChatMessage, TaskPlan>
                 3. Step-by-step descriptions of what each agent should do
                 """;
 
-        Agent = new RuntimeAgent(
+        Agent = new TornadoAgent(
             client: client,
             model: ChatModel.OpenAi.Gpt5.V5Mini,
             name: "Planning Agent",
@@ -481,11 +481,11 @@ public class PlanningRunnable : OrchestrationRunnable<ChatMessage, TaskPlan>
 
 public class WebSurferRunnable : OrchestrationRunnable<TaskPlan, AgentExecutionResults>
 {
-    RuntimeAgent Agent;
+    TornadoAgent Agent;
 
     public WebSurferRunnable(TornadoApi client, Orchestration orchestrator) : base(orchestrator)
     {
-        Agent = new RuntimeAgent(
+        Agent = new TornadoAgent(
             client: client,
             model: ChatModel.OpenAi.Gpt5.V5Mini,
             name: "WebSurfer Agent",
@@ -524,11 +524,11 @@ public class WebSurferRunnable : OrchestrationRunnable<TaskPlan, AgentExecutionR
 
 public class FileSurferRunnable : OrchestrationRunnable<TaskPlan, AgentExecutionResults>
 {
-    RuntimeAgent Agent;
+    TornadoAgent Agent;
 
     public FileSurferRunnable(TornadoApi client, Orchestration orchestrator) : base(orchestrator)
     {
-        Agent = new RuntimeAgent(
+        Agent = new TornadoAgent(
             client: client,
             model: ChatModel.OpenAi.Gpt5.V5Mini,
             name: "FileSurfer Agent",
@@ -567,11 +567,11 @@ public class FileSurferRunnable : OrchestrationRunnable<TaskPlan, AgentExecution
 
 public class TerminalRunnable : OrchestrationRunnable<TaskPlan, AgentExecutionResults>
 {
-    RuntimeAgent Agent;
+    TornadoAgent Agent;
 
     public TerminalRunnable(TornadoApi client, Orchestration orchestrator) : base(orchestrator)
     {
-        Agent = new RuntimeAgent(
+        Agent = new TornadoAgent(
             client: client,
             model: ChatModel.OpenAi.Gpt5.V5Mini,
             name: "Terminal Agent",
@@ -611,7 +611,7 @@ public class TerminalRunnable : OrchestrationRunnable<TaskPlan, AgentExecutionRe
 
 public class OrchestratorRunnable : OrchestrationRunnable<AgentExecutionResults, MagenticOneResult>
 {
-    RuntimeAgent Agent;
+    TornadoAgent Agent;
     
     public OrchestratorRunnable(TornadoApi client, Orchestration orchestrator) : base(orchestrator)
     {
@@ -621,7 +621,7 @@ public class OrchestratorRunnable : OrchestrationRunnable<AgentExecutionResults,
                 You will receive results from specialized agents and need to combine them into a coherent final result for the user.
                 """;
 
-        Agent = new RuntimeAgent(
+        Agent = new TornadoAgent(
             client: client,
             model: ChatModel.OpenAi.Gpt5.V5Mini,
             name: "Orchestrator Agent",
@@ -694,7 +694,7 @@ public class OrchestratorRunnable : OrchestrationRunnable<AgentExecutionResults,
 // Direct orchestration runnable for tasks that don't need specialized agents  
 public class DirectOrchestratorRunnable : OrchestrationRunnable<TaskPlan, MagenticOneResult>
 {
-    RuntimeAgent Agent;
+    TornadoAgent Agent;
     
     public DirectOrchestratorRunnable(TornadoApi client, Orchestration orchestrator) : base(orchestrator)
     {
@@ -702,7 +702,7 @@ public class DirectOrchestratorRunnable : OrchestrationRunnable<TaskPlan, Magent
                 You are the Direct Orchestrator Agent in a Magentic-One multi-agent system. Your role is to handle tasks directly when no specialized agents are needed.
                 """;
 
-        Agent = new RuntimeAgent(
+        Agent = new TornadoAgent(
             client: client,
             model: ChatModel.OpenAi.Gpt5.V5Mini,
             name: "Direct Orchestrator Agent",

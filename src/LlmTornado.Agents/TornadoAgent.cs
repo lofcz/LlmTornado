@@ -90,6 +90,11 @@ public class TornadoAgent
     public Func<AgentRunnerEvents, ValueTask>? OnAgentRunnerEvent { private get; set; }
 
     /// <summary>
+    /// Should the agent response be streamed.
+    /// </summary>
+    public bool Streaming { get; set; } = false;
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="TornadoAgent"/> class, which represents an AI agent capable of
     /// interacting with a Tornado API client and executing tasks based on provided instructions, tools, and an optional
     /// output schema.
@@ -115,7 +120,8 @@ public class TornadoAgent
         string instructions = "You are a helpful assistant",
         Type? outputSchema = null,
         List<Delegate>? tools = null,
-        List<MCPServer>? mcpServers = null)
+        List<MCPServer>? mcpServers = null,
+        bool streaming = false)
     {
         Client = client ?? throw new ArgumentNullException(nameof(client));
         Model = model ?? throw new ArgumentNullException(nameof(model));
@@ -279,7 +285,7 @@ public class TornadoAgent
         string input = "", 
         List<ChatMessage>? appendMessages = null, 
         GuardRailFunction? inputGuardRailFunction = null,
-        bool streaming = false,
+        bool? streaming = null,
         Func<AgentRunnerEvents, ValueTask>? onAgentRunnerEvent = null, 
         int maxTurns = 10, 
         string responseId = "",
@@ -287,7 +293,7 @@ public class TornadoAgent
         CancellationToken cancellationToken = default)
     {
         onAgentRunnerEvent += OnAgentRunnerEvent;
-        return await TornadoRunner.RunAsync(this, input: input, messagesToAppend: appendMessages, guardRail: inputGuardRailFunction, cancellationToken: cancellationToken, streaming: streaming,
+        return await TornadoRunner.RunAsync(this, input: input, messagesToAppend: appendMessages, guardRail: inputGuardRailFunction, cancellationToken: cancellationToken, streaming: streaming ?? Streaming,
                  runnerCallback: onAgentRunnerEvent, maxTurns: maxTurns, responseId: responseId, toolPermissionHandle: toolPermissionHandle);
     }
 }

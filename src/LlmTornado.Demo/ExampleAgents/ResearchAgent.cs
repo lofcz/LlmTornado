@@ -132,7 +132,7 @@ public class ResearchAgentConfiguration : OrchestrationRuntimeConfiguration
 
 public class PlannerRunnable : OrchestrationRunnable<ChatMessage, WebSearchPlan>
 {
-    RuntimeAgent Agent;
+    TornadoAgent Agent;
 
     public PlannerRunnable(TornadoApi client, Orchestration orchestrator) : base(orchestrator)
     {
@@ -141,7 +141,7 @@ public class PlannerRunnable : OrchestrationRunnable<ChatMessage, WebSearchPlan>
                 to perform to best answer the query. Output between 5 and 10 terms to query for. 
                 """;
 
-        Agent = new RuntimeAgent(
+        Agent = new TornadoAgent(
             client: client,
             model: ChatModel.OpenAi.Gpt5.V5Mini,
             name: "Research Agent",
@@ -213,7 +213,7 @@ public class ResearchRunnable : OrchestrationRunnable<WebSearchPlan, string>
                 essence and ignore any fluff. Do not include any additional commentary other than the summary itself.
                 """;
 
-        RuntimeAgent Agent = new RuntimeAgent(
+        TornadoAgent Agent = new TornadoAgent(
             client: Client,
             model: ChatModel.OpenAi.Gpt5.V5Mini,
             name: "Research Agent",
@@ -234,7 +234,7 @@ public class ResearchRunnable : OrchestrationRunnable<WebSearchPlan, string>
 
 public class ReportingRunnable : OrchestrationRunnable<string, ReportData>
 {
-    RuntimeAgent Agent;
+    TornadoAgent Agent;
 
     public Action<AgentRunnerEvents>? OnAgentRunnerEvent { get; set; }
 
@@ -250,7 +250,7 @@ public class ReportingRunnable : OrchestrationRunnable<string, ReportData>
                 The final output should be in markdown format, and it should be lengthy and detailed. Aim for 5-10 pages of content, at least 1000 words.
                 """;
 
-        Agent = new RuntimeAgent(
+        Agent = new TornadoAgent(
             client: client,
             model: ChatModel.OpenAi.Gpt5.V5,
             name: "Report Agent",

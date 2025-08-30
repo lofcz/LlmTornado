@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
 {
-    public class SequentialRuntimeAgent : RuntimeAgent
+    public class SequentialRuntimeAgent : TornadoAgent
     {
         /// <summary>
         /// Instructions to be added before each message for the sequential agent.
