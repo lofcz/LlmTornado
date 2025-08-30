@@ -28,62 +28,6 @@ public abstract class OrchestrationRunnableBase
     /// </summary>
     private List<RunnableProcess> _baseProcesses { get; set; } = new List<RunnableProcess>();
 
-    internal object[] GetBaseResults()
-    {
-        return _baseProcesses.Where(p=>p.BaseResult is not null).Select(p => p.BaseResult!).ToArray();
-    }
-
-    internal List<RunnableProcess> GetRunnableProcesses()
-    {
-        return _baseProcesses;
-    }
-
-    internal List<RunnableProcess<TInput, TOutput>> GetBaseRunnableProcesses<TInput,TOutput>()
-    {
-        return _baseProcesses.Select(process=>process.ReturnProcess<TInput,TOutput>()).ToList();
-    }
-
-    internal void AddBaseRunnableProcess(RunnableProcess process)
-    {
-        _baseProcesses.Add(process);
-    }
-
-    internal void AddBaseRunnableProcess<TInput, TOutput>(RunnableProcess<TInput, TOutput> process)
-    {
-        _baseProcesses.Add(process);
-    }
-
-    internal void UpdateBaseRunnableProcess(string id, object result)
-    {
-        var existingProcess = _baseProcesses.FirstOrDefault(p => p.Id == id);
-        if (existingProcess != null)
-        {
-            existingProcess.BaseResult = result;
-        }
-    }
-
-    internal void UpdateBaseRunnableProcess(string id, RunnableProcess process)
-    {
-        var existingProcess = _baseProcesses.FirstOrDefault(p => p.Id == id);
-        if (existingProcess != null)
-        {
-            existingProcess.BaseResult = process.BaseResult;
-            existingProcess.TokenUsage = process.TokenUsage;
-            existingProcess.RunnableExecutionTime = process.RunnableExecutionTime;
-            existingProcess.StartTime = process.StartTime;
-        }
-    }
-
-    public void OverrideBaseRunnableProcess(string id, RunnableProcess process)
-    {
-        var existingProcess = _baseProcesses.FirstOrDefault(p => p.Id == id);
-        if (existingProcess != null)
-        {
-            _baseProcesses.Remove(existingProcess);
-            process.Id = id;
-            _baseProcesses.Add(process);
-        }
-    }
 
     /// <summary>
     /// Gets or sets the list of routes.
@@ -155,29 +99,6 @@ public abstract class OrchestrationRunnableBase
     /// </summary>
     public bool IsThreadSafe { get; set; } = false;  
 
-    /// <summary>
-    /// Time for Execution to compelte
-    /// </summary>
-    public TimeSpan ExecutionTimeSpan => GetExecutionTime();
-
-    /// <summary>
-    /// Time Execution has Started
-    /// </summary>
-    public DateTime? StartTime {  get; set; }
-
-    /// <summary>
-    /// Time Execution has finished
-    /// </summary>
-    public DateTime? EndTime { get; set; }
-
-    /// <summary>
-    /// Get the execution Time Span
-    /// </summary>
-    /// <returns></returns>
-    public TimeSpan GetExecutionTime()
-    {
-        return (StartTime is not null && EndTime is not null)?  EndTime.Value - StartTime.Value : TimeSpan.Zero;
-    }
 
     /// <summary>
     /// Evaluates and returns a list of runtime processes that meet specific conditions.
@@ -194,9 +115,65 @@ public abstract class OrchestrationRunnableBase
         cts.Cancel();
     }
 
-   
 
-    public void ClearProcessTokenUsage(string processId)
+    internal object[] GetBaseResults()
+    {
+        return _baseProcesses.Where(p => p.BaseResult is not null).Select(p => p.BaseResult!).ToArray();
+    }
+
+    internal List<RunnableProcess> GetRunnableProcesses()
+    {
+        return _baseProcesses;
+    }
+
+    internal List<RunnableProcess<TInput, TOutput>> GetBaseRunnableProcesses<TInput, TOutput>()
+    {
+        return _baseProcesses.Select(process => process.ReturnProcess<TInput, TOutput>()).ToList();
+    }
+
+    internal void AddBaseRunnableProcess(RunnableProcess process)
+    {
+        _baseProcesses.Add(process);
+    }
+
+    internal void AddBaseRunnableProcess<TInput, TOutput>(RunnableProcess<TInput, TOutput> process)
+    {
+        _baseProcesses.Add(process);
+    }
+
+    internal void UpdateBaseRunnableProcess(string id, object result)
+    {
+        var existingProcess = _baseProcesses.FirstOrDefault(p => p.Id == id);
+        if (existingProcess != null)
+        {
+            existingProcess.BaseResult = result;
+        }
+    }
+
+    internal void UpdateBaseRunnableProcess(string id, RunnableProcess process)
+    {
+        var existingProcess = _baseProcesses.FirstOrDefault(p => p.Id == id);
+        if (existingProcess != null)
+        {
+            existingProcess.BaseResult = process.BaseResult;
+            existingProcess.TokenUsage = process.TokenUsage;
+            existingProcess.RunnableExecutionTime = process.RunnableExecutionTime;
+            existingProcess.StartTime = process.StartTime;
+        }
+    }
+
+    internal void OverrideBaseRunnableProcess(string id, RunnableProcess process)
+    {
+        var existingProcess = _baseProcesses.FirstOrDefault(p => p.Id == id);
+        if (existingProcess != null)
+        {
+            _baseProcesses.Remove(existingProcess);
+            process.Id = id;
+            _baseProcesses.Add(process);
+        }
+    }
+
+    internal void ClearProcessTokenUsage(string processId)
     {
         RunnableProcess? process = _baseProcesses.FirstOrDefault(p => p.Id == processId);
         if (process != null)
@@ -205,7 +182,7 @@ public abstract class OrchestrationRunnableBase
         }
     }
 
-    public void ClearAllProcessTokenUsage()
+    internal void ClearAllProcessTokenUsage()
     {
         foreach (var process in _baseProcesses)
         {
