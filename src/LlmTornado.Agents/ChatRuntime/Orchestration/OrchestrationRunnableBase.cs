@@ -115,6 +115,11 @@ public abstract class OrchestrationRunnableBase
         cts.Cancel();
     }
 
+    internal void AddAdvancer<TOutput>(OrchestrationAdvancer<TOutput> advancer)
+    {
+        AdvancementRequirement<object> advancementRequirement = (object input) => advancer.InvokeMethod((TOutput)input);
+        BaseAdvancers.Add(new OrchestrationAdvancer<object>(advancementRequirement, advancer.NextRunnable));
+    }
 
     internal object[] GetBaseResults()
     {

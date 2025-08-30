@@ -43,11 +43,6 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
         }).ToArray();
     }
 
-    public void AddAdvancer(OrchestrationAdvancer<TOutput> advancer)
-    {
-        AdvancementRequirement<object> advancementRequirement = (object input) => advancer.InvokeMethod((TOutput)input);
-        BaseAdvancers.Add(new OrchestrationAdvancer<object>(advancementRequirement, advancer.NextRunnable));
-    }
 
     /// <summary>
     /// Latest advancements determined after invocation.
@@ -265,6 +260,11 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
     internal override List<RunnableProcess>? CanAdvance()
     {
         return AllowsParallelAdvances ? GetAllValidAdvancements() : GetFirstValidAdvancementForEachResult();
+    }
+
+    private void AddAdvancer(OrchestrationAdvancer<TOutput> advancer)
+    {
+        AddAdvancer<TOutput>(advancer);
     }
 
     /// <summary>
