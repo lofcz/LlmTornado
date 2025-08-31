@@ -13,6 +13,11 @@ public class ChatModelXAi : BaseVendorModelProvider
     public override LLmProviders Provider => LLmProviders.XAi;
     
     /// <summary>
+    /// Grok Code models.
+    /// </summary>
+    public readonly ChatModelXAiGrokCode GrokCode = new ChatModelXAiGrokCode();
+    
+    /// <summary>
     /// Grok 4 models.
     /// </summary>
     public readonly ChatModelXAiGrok4 Grok4 = new ChatModelXAiGrok4();
@@ -53,7 +58,8 @@ public class ChatModelXAi : BaseVendorModelProvider
     public static readonly List<IModel> ModelsAll = [
         ..ChatModelXAiGrok.ModelsAll,
         ..ChatModelXAiGrok3.ModelsAll,
-        ..ChatModelXAiGrok4.ModelsAll
+        ..ChatModelXAiGrok4.ModelsAll,
+        ..ChatModelXAiGrokCode.ModelsAll
     ];
     
     static ChatModelXAi()
