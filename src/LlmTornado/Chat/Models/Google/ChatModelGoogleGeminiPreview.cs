@@ -11,6 +11,16 @@ namespace LlmTornado.Chat.Models;
 public class ChatModelGoogleGeminiPreview : IVendorModelClassProvider
 {
     /// <summary>
+    /// Gemini 2.5 Flash Image Preview is our latest, fastest, and most efficient natively multimodal model that lets you generate and edit images conversationally.
+    /// </summary>
+    public static readonly ChatModel ModelGemini25FlashImagePreview = new ChatModel("gemini-2.5-flash-image-preview", LLmProviders.Google, 32_768);
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelGemini25FlashImagePreview"/>
+    /// </summary>
+    public readonly ChatModel Gemini25FlashImagePreview = ModelGemini25FlashImagePreview;
+    
+    /// <summary>
     /// A Gemini 2.5 Flash model optimized for cost efficiency and low latency.
     /// </summary>
     public static readonly ChatModel ModelGemini25FlashLitePreview0617 = new ChatModel("gemini-2.5-flash-lite-preview-06-17", LLmProviders.Google, 1_000_000) 
@@ -118,7 +128,8 @@ public class ChatModelGoogleGeminiPreview : IVendorModelClassProvider
         ModelGemini2FlashPreviewImageGeneration,
         ModelGemini25FlashPreviewTts,
         ModelGemini25ProPreviewTts,
-        ModelGemini25FlashLitePreview0617
+        ModelGemini25FlashLitePreview0617,
+        ModelGemini25FlashImagePreview
     ];
 
     /// <summary>

@@ -294,11 +294,79 @@ public class Conversation
     }
     
     /// <summary>
+    /// Adds a <see cref="ChatMessage" /> to the chat history.
+    /// </summary>
+    public Conversation AddMessage(ChatMessage message)
+    {
+        return AppendMessage(message);
+    }
+    
+    /// <summary>
+    /// Adds messages to the chat history.
+    /// </summary>
+    // ReSharper disable once ParameterHidesMember
+    public Conversation AddMessage(IEnumerable<ChatMessage> messages)
+    {
+        this.messages.AddRange(messages);
+        return this;
+    }
+    
+    /// <summary>
+    /// Adds messages to the chat history.
+    /// </summary>
+    // ReSharper disable once ParameterHidesMember
+    public Conversation AddMessage(List<ChatMessage> messages)
+    {
+        this.messages.AddRange(messages);
+        return this;
+    }
+    
+    /// <summary>
     /// <inheritdoc cref="AppendUserInput(string)"/>
     /// </summary>
     public Conversation AddUserMessage(string content)
     {
         return AppendUserInput(content);
+    }
+
+    /// <summary>
+    /// Replaces the current system prompt in the conversation, or prepends system prompt as the first message.
+    /// </summary>
+    public Conversation SetSystemMessage(string prompt)
+    {
+        messages.RemoveAll(x => x.Role is ChatMessageRoles.System);
+        PrependSystemMessage(prompt);
+        return this;
+    }
+    
+    /// <summary>
+    /// Replaces the current system prompt in the conversation, or prepends system prompt as the first message.
+    /// </summary>
+    public Conversation SetSystemMessage(string prompt, Guid id)
+    {
+        messages.RemoveAll(x => x.Role is ChatMessageRoles.System);
+        PrependSystemMessage(prompt, id);
+        return this;
+    }
+    
+    /// <summary>
+    /// Replaces the current system prompt in the conversation, or prepends system prompt as the first message.
+    /// </summary>
+    public Conversation SetSystemMessage(IEnumerable<ChatMessagePart> parts)
+    {
+        messages.RemoveAll(x => x.Role is ChatMessageRoles.System);
+        PrependSystemMessage(parts);
+        return this;
+    }
+    
+    /// <summary>
+    /// Replaces the current system prompt in the conversation, or prepends system prompt as the first message.
+    /// </summary>
+    public Conversation SetSystemMessage(IEnumerable<ChatMessagePart> parts, Guid id)
+    {
+        messages.RemoveAll(x => x.Role is ChatMessageRoles.System);
+        PrependSystemMessage(parts, id);
+        return this;
     }
 
     /// <summary>
@@ -500,6 +568,16 @@ public class Conversation
     {
         return AppendMessage(new ChatMessage(ChatMessageRoles.System, content, id), 0);
     }
+    
+    /// <summary>
+    ///     Creates and appends a <see cref="ChatMessage" /> to the chat history with the Role of
+    ///     <see cref="ChatMessageRoles.System" />.  The system message helps set the behavior of the assistant.
+    /// </summary>
+    /// <param name="content">text content that helps set the behavior of the assistant</param>
+    public Conversation PrependSystemMessage(string content)
+    {
+        return AppendMessage(new ChatMessage(ChatMessageRoles.System, content), 0);
+    }
 
     /// <summary>
     ///     Creates and appends a <see cref="ChatMessage" /> to the chat history with the Role of
@@ -510,6 +588,16 @@ public class Conversation
     public Conversation PrependSystemMessage(IEnumerable<ChatMessagePart> parts, Guid id)
     {
         return AppendMessage(new ChatMessage(ChatMessageRoles.System, parts, id), 0);
+    }
+    
+    /// <summary>
+    ///     Creates and appends a <see cref="ChatMessage" /> to the chat history with the Role of
+    ///     <see cref="ChatMessageRoles.System" />.  The system message helps set the behavior of the assistant.
+    /// </summary>
+    /// <param name="parts">Parts of the message which helps set the behavior of the assistant</param>
+    public Conversation PrependSystemMessage(IEnumerable<ChatMessagePart> parts)
+    {
+        return AppendMessage(new ChatMessage(ChatMessageRoles.System, parts), 0);
     }
 
     /// <summary>
@@ -569,11 +657,13 @@ public class Conversation
     /// </summary>
     /// <param name="functionName">The name of the function for which the content has been generated as the result</param>
     /// <param name="content">The text content (usually JSON)</param>
-    public Conversation AddToolMessage(string functionName, string content)
+    /// <param name="invocationSucceeded">Whether the invocation succeeded, can be null</param>
+    public Conversation AddToolMessage(string functionName, string content, bool? invocationSucceeded = null)
     {
         return AppendMessage(new ChatMessage(ChatMessageRoles.Tool, content)
         {
-            Name = functionName
+            ToolCallId = functionName,
+            ToolInvocationSucceeded = invocationSucceeded
         });
     }
 
@@ -594,7 +684,102 @@ public class Conversation
     /// </summary>
     public Conversation AddAssistantMessage(string content, Guid id)
     {
-        return AppendExampleChatbotOutput(content);
+        return AppendMessage(new ChatMessage(ChatMessageRoles.Assistant, content, id));
+    }
+    
+    /// <summary>
+    /// <inheritdoc cref="AppendExampleChatbotOutput(string, Guid)"/>
+    /// </summary>
+    public Conversation AddAssistantMessage(string content, List<ToolCall> calls)
+    {
+        return AppendMessage(new ChatMessage(ChatMessageRoles.Assistant, content)
+        {
+            ToolCalls = calls
+        });
+    }
+    
+    /// <summary>
+    /// <inheritdoc cref="AppendExampleChatbotOutput(string, Guid)"/>
+    /// </summary>
+    public Conversation AddAssistantMessage(string content, List<ToolCall> calls, Guid id)
+    {
+        return AppendMessage(new ChatMessage(ChatMessageRoles.Assistant, content, id)
+        {
+            ToolCalls = calls
+        });
+    }
+    
+    /// <summary>
+    /// <inheritdoc cref="AppendExampleChatbotOutput(string, Guid)"/>
+    /// </summary>
+    public Conversation AddAssistantMessage(List<ToolCall> calls)
+    {
+        return AppendMessage(new ChatMessage(ChatMessageRoles.Assistant)
+        {
+            ToolCalls = calls
+        });
+    }
+    
+    /// <summary>
+    /// <inheritdoc cref="AppendExampleChatbotOutput(string, Guid)"/>
+    /// </summary>
+    public Conversation AddAssistantMessage(List<ToolCall> calls, Guid id)
+    {
+        return AppendMessage(new ChatMessage(ChatMessageRoles.Assistant)
+        {
+            Id = id,
+            ToolCalls = calls
+        });
+    }
+    
+    /// <summary>
+    /// <inheritdoc cref="AppendExampleChatbotOutput(string, Guid)"/>
+    /// </summary>
+    public Conversation AddAssistantMessage(List<ChatMessagePart> parts)
+    {
+        return AppendMessage(new ChatMessage(ChatMessageRoles.Assistant)
+        {
+            Parts = parts
+        });
+    }
+    
+    /// <summary>
+    /// <inheritdoc cref="AppendExampleChatbotOutput(string, Guid)"/>
+    /// </summary>
+    public Conversation AddAssistantMessage(List<ChatMessagePart> parts, List<ToolCall> toolCalls, bool? invocationSucceeded = null)
+    {
+        return AppendMessage(new ChatMessage(ChatMessageRoles.Assistant)
+        {
+            Parts = parts,
+            ToolCalls = toolCalls,
+            ToolInvocationSucceeded = invocationSucceeded
+        });
+    }
+    
+    /// <summary>
+    /// <inheritdoc cref="AppendExampleChatbotOutput(string, Guid)"/>
+    /// </summary>
+    public Conversation AddAssistantMessage(List<ChatMessagePart> parts, List<ToolCall> toolCalls, Guid id, bool? invocationSucceeded = null)
+    {
+        return AppendMessage(new ChatMessage(ChatMessageRoles.Assistant)
+        {
+            Id = id,
+            Parts = parts,
+            ToolCalls = toolCalls,
+            ToolInvocationSucceeded = invocationSucceeded
+        });
+    }
+    
+    /// <summary>
+    /// <inheritdoc cref="AppendExampleChatbotOutput(string, Guid)"/>
+    /// </summary>
+    public Conversation AddAssistantMessage(List<ChatMessagePart> parts, Guid id)
+    {
+        return AppendMessage(new ChatMessage(ChatMessageRoles.Assistant)
+        {
+            Id = id,
+            Parts = parts
+        });
     }
 
     /// <summary>

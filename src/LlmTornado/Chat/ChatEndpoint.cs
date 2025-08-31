@@ -41,14 +41,20 @@ public class ChatEndpoint : EndpointBase
     };
 
     /// <summary>
-    ///     Creates an ongoing chat which can easily encapsulate the conversation.  This is the simplest way to use the Chat
-    ///     endpoint.
+    ///     Creates an ongoing chat which can easily encapsulate the conversation.
     /// </summary>
-    /// <param name="defaultChatRequestArgs">The request to send to the API.</param>
+    /// <param name="requestPrototype">The request to send to the API. This prototype can contain initial messages. The messages from the prototype are shallow copied to the conversation.</param>
     /// <returns>A <see cref="Conversation" /> which encapsulates a back and forth chat between a user and an assistant.</returns>
-    public Conversation CreateConversation(ChatRequest? defaultChatRequestArgs = null)
+    public Conversation CreateConversation(ChatRequest? requestPrototype = null)
     {
-        return new Conversation(this, defaultChatRequestArgs: defaultChatRequestArgs ?? DefaultChatRequestArgs);
+        Conversation convo = new Conversation(this, defaultChatRequestArgs: requestPrototype ?? DefaultChatRequestArgs);
+
+        if (requestPrototype?.Messages is not null)
+        {
+            convo.AddMessage(requestPrototype.Messages.ToList());
+        }
+
+        return convo;
     }
     
     /// <summary>

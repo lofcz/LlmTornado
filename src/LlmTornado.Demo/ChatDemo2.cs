@@ -267,6 +267,33 @@ public partial class ChatDemo : DemoBase
     }
     
     [TornadoTest]
+    [Flaky("expensive")]
+    public static async Task Gemini25FlashImagePreview()
+    {
+        Conversation conversion = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Google.GeminiPreview.Gemini25FlashImagePreview,
+            Modalities = [ChatModelModalities.Text, ChatModelModalities.Image],
+            Messages =
+            [
+                new ChatMessage(ChatMessageRoles.User, "Generate an image of a plant")
+            ]
+        });
+        
+        ChatRichResponse response = await conversion.GetResponseRich();
+        ChatRichResponseBlock? generated = response.Blocks.FirstOrDefault(x => x.ChatImage is not null);
+
+        await DisplayImage(generated.ChatImage.Url);
+
+        conversion.AddUserMessage("Now place this plant on a t-shirt");
+        
+        response = await conversion.GetResponseRich();
+        generated = response.Blocks.FirstOrDefault(x => x.ChatImage is not null);
+
+        await DisplayImage(generated.ChatImage.Url);
+    }
+    
+    [TornadoTest]
     public static async Task Grok2()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
