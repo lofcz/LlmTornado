@@ -14,7 +14,9 @@ class Program
         models = models?.OrderBy(x => x.Name, StringComparer.Ordinal).ToList();
         
         StringBuilder sb = new StringBuilder();
-
+        HashSet<string> usedIdents = [];
+        List<RetrievedModel> skip = [];
+        
         AppendLine("// This code was generated with LlmTornado.Internal.OpenRouter");
         AppendLine("// do not edit manually");
         AppendLine();
@@ -35,6 +37,12 @@ class Program
         foreach (RetrievedModel model in models)
         {
             string identifier = Normalize(model.Id);
+
+            if (!usedIdents.Add(identifier))
+            {
+                skip.Add(model);
+                continue;
+            } 
             
             AppendLine($"/// <summary>", 1);
             AppendLine($"/// {model.Id}", 1);
@@ -65,6 +73,11 @@ class Program
         
         foreach (RetrievedModel model in models)
         {
+            if (skip.Contains(model))
+            {
+                continue;
+            }
+            
             string identifier = Normalize(model.Id);
             AppendLine($"Model{identifier},", 2);
         }
