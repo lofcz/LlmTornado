@@ -23,6 +23,21 @@ namespace LlmTornado.Demo;
 public partial class ChatDemo : DemoBase
 {
     [TornadoTest]
+    public static async Task CohereTranslate()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Cohere.Command.ATranslate2508
+        });
+        
+        chat.AppendUserInput("Translate everything that follows into English: Singulární rozklad (zkratkou SVD podle anglického názvu Singular Value Decomposition) matice je rozklad komplexní nebo reálné matice \nM\n{\\displaystyle \\mathbf {M} } na maticový součin \nU\nΣ\nV\n∗\n{\\displaystyle \\mathbf {U\\Sigma V^{*}} }. Přitom \nU\n{\\displaystyle \\mathbf {U} } je reálná nebo komplexní unitární matice o rozměrech \nm\n×\nm\n{\\displaystyle m\\times m}, \nV\n{\\displaystyle \\mathbf {V} } je reálná nebo komplexní unitární matice \nn\n×\nn\n{\\displaystyle n\\times n} a \nΣ\n{\\displaystyle \\mathbf {\\Sigma } } je matice \nm\n×\nn\n{\\displaystyle m\\times n} nulová až na případná nezáporná čísla na hlavní diagonále; čísla na její hlavní diagonále se označují jako singulární hodnoty matice \nM\n{\\displaystyle \\mathbf {M} }. Hvězdička označuje konjugovanou matici, tedy transponovanou matici komplexně sdružených prvků. Požadujeme-li, jak je obvyklé, aby singulární hodnoty byly seřazeny sestupně, je matice \nΣ\n{\\displaystyle \\mathbf {\\Sigma } } určena jednoznačně, naopak matice \nU\n{\\displaystyle \\mathbf {U} } a \nV\n{\\displaystyle \\mathbf {V} } jednoznačné být nemusejí. Singulární rozklad vždy existuje a používá se k řadě teoretických i praktických účelů.");
+        string? str = await chat.GetResponse();
+
+        Console.WriteLine("Cohere:");
+        Console.WriteLine(str);
+    }
+    
+    [TornadoTest]
     public static async Task ProviderCustomServerApiKey()
     {
         TornadoApi tornadoApi = new TornadoApi(new Uri("https://api.openai.com"), Program.ApiKeys.OpenAi);

@@ -10,6 +10,26 @@ namespace LlmTornado.Chat.Models;
 public class ChatModelCohereCommand : IVendorModelClassProvider
 {
     /// <summary>
+    /// Command A Translate is Cohere’s state of the art machine translation model, excelling at a variety of translation tasks on 23 languages: English, French, Spanish, Italian, German, Portuguese, Japanese, Korean, Chinese, Arabic, Russian, Polish, Turkish, Vietnamese, Dutch, Czech, Indonesian, Ukrainian, Romanian, Greek, Hindi, Hebrew, Persian.
+    /// </summary>
+    public static readonly ChatModel ModelATranslate2508 = new ChatModel("command-a-translate-08-2025", LLmProviders.Cohere, 8_000);
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelATranslate2508"/>
+    /// </summary>
+    public readonly ChatModel ATranslate2508 = ModelATranslate2508;
+    
+    /// <summary>
+    /// A hybrid reasoning model designed to excel at complex agentic tasks, in English and 22 other languages. With 111 billion parameters and a 256K context length, this model brings advanced reasoning capabilities.
+    /// </summary>
+    public static readonly ChatModel ModelAReasoning2508 = new ChatModel("command-a-reasoning-08-2025", LLmProviders.Cohere, 256_000);
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelAReasoning2508"/>
+    /// </summary>
+    public readonly ChatModel AReasoning2508 = ModelAReasoning2508;
+    
+    /// <summary>
     /// Command A Vision is our first model capable of processing images, excelling in enterprise use cases such as analyzing charts, graphs, and diagrams, table understanding, OCR, document Q&A, and scene analysis. It officially supports English, Portuguese, Italian, French, German, and Spanish.
     /// </summary>
     public static readonly ChatModel ModelAVision2507 = new ChatModel("command-a-vision-07-2025", LLmProviders.Cohere, 128_000);
@@ -134,7 +154,9 @@ public class ChatModelCohereCommand : IVendorModelClassProvider
         ModelR7B,
         ModelR7BArabic2412,
         ModelA0325,
-        ModelAVision2507
+        ModelAVision2507,
+        ModelAReasoning2508,
+        ModelATranslate2508
     ];
 
     /// <summary>
