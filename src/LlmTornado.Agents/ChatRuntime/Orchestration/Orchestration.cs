@@ -1,4 +1,5 @@
-﻿using LlmTornado.Chat;
+﻿using LlmTornado.Agents.DataModels;
+using LlmTornado.Chat;
 using LlmTornado.Code;
 using System.Collections.Concurrent;
 using System.Reflection;

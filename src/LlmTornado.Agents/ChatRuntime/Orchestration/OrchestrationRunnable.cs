@@ -56,7 +56,7 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
 
     public OrchestrationRunnable(Orchestration orchestrator, string runnableName = "") 
     {
-        RunnableName = string.IsNullOrWhiteSpace(runnableName) ? this.GetType().Name : runnableName;
+        RunnableName = string.IsNullOrWhiteSpace(runnableName) ? this.GetType().Name + "_" + Guid.NewGuid().ToString().Substring(0,4) : runnableName;
         Orchestrator = orchestrator;
         Orchestrator?.Runnables.Add(RunnableName, this);
     }

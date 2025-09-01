@@ -154,6 +154,9 @@ public static class OrchestrationVisualization
 
     private static void AddStateToDotGraph(StringBuilder dotBuilder, OrchestrationRunnableBase state, HashSet<string> visitedStates)
     {
+        if(state == null)
+            return;
+
         var stateId = GetStateId(state);
 
         if (visitedStates.Contains(stateId))
@@ -285,6 +288,8 @@ public static class OrchestrationVisualization
 
     private static string GetStateId(OrchestrationRunnableBase state)
     {
+        if (state == null)
+            return "Dead End";
         return SanitizeDotName(state.GetType().Name);
     }
 

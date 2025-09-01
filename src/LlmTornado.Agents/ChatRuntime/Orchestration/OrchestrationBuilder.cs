@@ -2,6 +2,9 @@
 using LlmTornado.Agents.ChatRuntime.RuntimeConfigurations;
 using LlmTornado.Agents.DataModels;
 using LlmTornado.Agents.Utility;
+using Newtonsoft.Json.Linq;
+using System.Runtime.CompilerServices;
+using System.Security.Cryptography.X509Certificates;
 
 namespace LlmTornado.Agents.ChatRuntime;
 
@@ -136,6 +139,42 @@ public class OrchestrationBuilder
         return this;
     }
 
+
+    public OrchestrationBuilder AddCombinationalAdvancement<TValue>(
+        OrchestrationRunnableBase[] fromRunnables, 
+        AdvancementRequirement<TValue> condition, 
+        OrchestrationRunnableBase toRunnable, 
+        int? requiredInputToAdvance = null, 
+        string combinationRunnableName = "")
+    {
+        requiredInputToAdvance ??= fromRunnables.Length;
+        if (!Configuration.Runnables.ContainsKey(toRunnable.RunnableName))
+            Configuration.Runnables.Add(toRunnable.RunnableName, toRunnable);
+
+        CombinationalWaiterRunnable<TValue> combinationalWaiter = new CombinationalWaiterRunnable<TValue>(
+            Configuration,
+            combinationRunnableName,
+            requiredInputToAdvance.Value)
+            {    
+                SingleInvokeForProcesses = true 
+            };
+
+        if (!Configuration.Runnables.ContainsKey(combinationalWaiter.RunnableName))
+            Configuration.Runnables.Add(combinationalWaiter.RunnableName, combinationalWaiter); 
+
+        foreach (var fromRunnable in fromRunnables)
+        {
+            if (!Configuration.Runnables.ContainsKey(fromRunnable.RunnableName))
+                Configuration.Runnables.Add(fromRunnable.RunnableName, fromRunnable);
+            fromRunnable.AddAdvancer(new OrchestrationAdvancer<TValue>(condition, combinationalWaiter));
+        }
+        
+        combinationalWaiter.AddAdvancer(_ => true, toRunnable);
+
+        return this;
+    }
+
+
     public OrchestrationBuilder AddExitPath<TOutput>(OrchestrationRunnableBase fromRunnable, AdvancementRequirement<TOutput> condition)
     {
         ExitRunnable<TOutput> toRunnable = new ExitRunnable<TOutput>(Configuration, "Tornado_Exit");
@@ -148,18 +187,49 @@ public class OrchestrationBuilder
         return this;
     }
 
-    public void CreateDotGraphVisualization(string filePath, string graphName = "OrchestrationGraph")
+    public OrchestrationBuilder CreateDotGraphVisualization(string filePath, string graphName = "OrchestrationGraph")
     {
         OrchestrationVisualization.SaveDotGraphToFile(Configuration, filePath, graphName);
+        return this;
     }
 
-    public void CreatePlantUmlVisualization(string filePath, string graphName = "OrchestrationGraph")
+    public OrchestrationBuilder CreatePlantUmlVisualization(string filePath, string graphName = "OrchestrationGraph")
     {
         OrchestrationVisualization.SavePlantUMLToFile(Configuration, filePath, graphName);
+        return this;
     }
 
     public OrchestrationRuntimeConfiguration Build()
     {
         return Configuration;
+    }
+}
+public class CombinationalResult<TValue>
+{
+    public TValue Value { get; set; }
+    public int InputCount { get; set; } = 0;
+    public int RequiredInputCount { get; set; } = 1;
+
+    public CombinationalResult(TValue value)
+    {
+        Value = value;
+        InputCount = 0;
+    }
+}
+
+public class CombinationalWaiterRunnable<TValue> : OrchestrationRunnable<TValue, CombinationalResult<TValue>>
+{
+
+    public int RequiredInputCount { get; set; } = 0;
+    public CombinationalWaiterRunnable(OrchestrationRuntimeConfiguration configuration, string? runnableName = "", int requiredInputCount = 1)
+        : base(configuration, runnableName)
+    {
+        RequiredInputCount = requiredInputCount;
+    }
+
+    public override ValueTask<CombinationalResult<TValue>> Invoke(RunnableProcess<TValue, CombinationalResult<TValue>> input)
+    {
+        CombinationalResult<TValue> current = new CombinationalResult<TValue>(input.Input) { InputCount = Input.Count, RequiredInputCount = this.RequiredInputCount };
+        return new ValueTask<CombinationalResult<TValue>>(current);
     }
 }

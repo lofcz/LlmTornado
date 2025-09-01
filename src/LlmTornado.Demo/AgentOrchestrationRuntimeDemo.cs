@@ -7,6 +7,7 @@ using LlmTornado.Agents.Utility;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Demo.ExampleAgents;
+using LlmTornado.Demo.ExampleAgents.ChatBot;
 using LlmTornado.Demo.ExampleAgents.CSCodingAgent;
 using LlmTornado.Demo.ExampleAgents.MagenticOneAgent;
 using LlmTornado.Demo.ExampleAgents.ResearchAgent;
@@ -146,6 +147,43 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
 
         RunnerRecordVisualizationUtility.SaveRunnerRecordDotGraphToFileAsync(RuntimeConfiguration.RunSteps.ToDictionary(), "ResearchAgentRecord.dot", "ResearchAgentRecord");
     }
+    [TornadoTest]
+    public static async Task BasicOrchestrationRuntimeChatbotStreamingDemo()
+    {
+        ChatbotAgent chatbotConfig = new ChatbotAgent(Program.Connect(), true);
+
+        ChatRuntime runtime = new ChatRuntime(chatbotConfig.Configuration);
+
+        chatbotConfig.Configuration.OnRuntimeEvent = async (evt) =>
+        {
+            if (evt.EventType == ChatRuntimeEventTypes.AgentRunner)
+            {
+                if (evt is ChatRuntimeAgentRunnerEvents runnerEvt)
+                {
+                    if (runnerEvt.AgentRunnerEvent is AgentRunnerStreamingEvent streamEvt)
+                    {
+                        if (streamEvt.ModelStreamingEvent is ModelStreamingOutputTextDeltaEvent deltaTextEvent)
+                        {
+                            Console.Write(deltaTextEvent.DeltaText);
+                        }
+                    }
+                }
+            }
+            await ValueTask.CompletedTask;
+        };
+
+        Console.WriteLine("[Assistant]: Hello?");
+        string topic = "";
+        while (topic != "exit")
+        {
+            Console.Write("[User]: ");
+            topic = Console.ReadLine();
+            if (topic == "exit") break;
+            Console.Write("[Assistant]: ");
+            ChatMessage report = await runtime.InvokeAsync(new ChatMessage(Code.ChatMessageRoles.User, topic));
+        }
+    }
+    
 
     [TornadoTest]
     public static async Task BasicOrchestrationRuntimeStreamingDemo()
