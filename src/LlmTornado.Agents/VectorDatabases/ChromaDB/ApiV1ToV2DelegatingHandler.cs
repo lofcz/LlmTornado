@@ -1,4 +1,5 @@
 ﻿using LlmTornado.Agents.VectorDatabases.ChromaDB;
+using LlmTornado.Agents.VectorDatabases.ChromaDB.Common;
 using System;
 using System.Collections.Generic;
 using System.Linq;

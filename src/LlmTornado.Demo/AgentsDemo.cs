@@ -9,6 +9,7 @@ using LlmTornado.Embedding.Models;
 using LlmTornado.Agents.VectorDatabases.ChromaDB;
 using LlmTornado.Agents.VectorDatabases.ChromaDB.Client;
 using LlmTornado.Agents.VectorDatabases.Intergrations;
+using LlmTornado.Agents.Utility;
 
 
 namespace LlmTornado.Demo;
@@ -16,13 +17,56 @@ namespace LlmTornado.Demo;
 public class AgentsDemo : DemoBase
 {
     [TornadoTest]
-    public static async Task BasicTornadoRun()
+    public static async Task BasicTornadoAgentRun()
     {
         TornadoAgent agent = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41Mini, instructions:"You are a useful assistant.");
 
         Conversation result = await agent.RunAsync("What is 2+2?");
 
         Console.WriteLine(result.Messages.Last().Content);
+    }
+
+
+    [TornadoTest]
+    public static async Task TornadoAgentSaveConversation()
+    {
+        TornadoAgent agent = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41Mini, instructions: "You are a useful assistant.", streaming:true);
+        // Enhanced streaming callback to handle the new ModelStreamingEvents system
+        ValueTask runEventHandler(AgentRunnerEvents runEvent)
+        {
+            switch (runEvent.EventType)
+            {
+                case AgentRunnerEventTypes.Streaming:
+                    if (runEvent is AgentRunnerStreamingEvent streamingEvent)
+                    {
+                        if (streamingEvent.ModelStreamingEvent is ModelStreamingOutputTextDeltaEvent deltaTextEvent)
+                        {
+                            Console.Write(deltaTextEvent.DeltaText); // Write the text delta directly
+                        }
+                    }
+                    break;
+                default:
+                    break;
+            }
+            return ValueTask.CompletedTask;
+        }
+        Console.WriteLine("[User]: My Name is john");
+        Console.Write("[Agent]: ");
+        Conversation result = await agent.RunAsync("My Name is john", onAgentRunnerEvent: runEventHandler);
+        Console.Write("\n");
+        Console.WriteLine("[User]: Can you help me with my homework?");
+        Console.Write("[Agent]: ");
+        result = await agent.RunAsync("Can you help me with my homework?", appendMessages: result.Messages.ToList(), onAgentRunnerEvent: runEventHandler);
+        Console.Write("\n");
+        Console.WriteLine("Saving conversation to conversation.json");
+        result.SaveConversation("conversation.json");
+        result.Clear();
+        Console.WriteLine("Loading Saved conversation");
+        await result.LoadConversationAsync("conversation.json");
+        Console.WriteLine("Conversation loaded, resuming conversation");
+        Console.WriteLine("[User]: What is my name?");
+        Console.Write("[Agent]: ");
+        result = await agent.RunAsync("What is my name?", appendMessages: result.Messages.ToList(), onAgentRunnerEvent: runEventHandler);
     }
 
     [TornadoTest]
