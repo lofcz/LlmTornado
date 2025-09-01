@@ -1,4 +1,5 @@
 ﻿using LlmTornado.Chat;
+using LlmTornado.Code;
 using System.Collections.Concurrent;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
@@ -81,6 +82,7 @@ public class Orchestration
     {
 
     }
+
 
     /// <summary>
     /// Marks the current operation as finished.
@@ -523,17 +525,17 @@ public class Orchestration<TInput, TOutput> : Orchestration
     /// </summary>
     /// <remarks>This method updates the current output state, ensuring type compatibility with the
     /// expected output type.</remarks>
-    /// <param name="finalRunnable">The state to be set as the output. Must have an output type assignable to <typeparamref name="TOutput"/>.</param>
-    /// <exception cref="InvalidCastException">Thrown if the output type of <paramref name="finalRunnable"/> is not assignable to <typeparamref
+    /// <param name="outputRunnable">The state to be set as the output. Must have an output type assignable to <typeparamref name="TOutput"/>.</param>
+    /// <exception cref="InvalidCastException">Thrown if the output type of <paramref name="outputRunnable"/> is not assignable to <typeparamref
     /// name="TOutput"/>.</exception>
-    public void SetRunnableWithResult(OrchestrationRunnableBase finalRunnable)
+    public void SetRunnableWithResult(OrchestrationRunnableBase outputRunnable)
     {
-        if (!typeof(TOutput).IsAssignableFrom(finalRunnable.GetOutputType()))
+        if (!typeof(TOutput).IsAssignableFrom(outputRunnable.GetOutputType()))
         {
-            throw new InvalidCastException($"Output Runtime {finalRunnable.ToString()} with Output type of {finalRunnable.GetOutputType()} Requires Cast of Output Type to {typeof(TOutput)}");
+            throw new InvalidCastException($"Output Runtime {outputRunnable.ToString()} with Output type of {outputRunnable.GetOutputType()} Requires Cast of Output Type to {typeof(TOutput)}");
         }
 
-        RunnableWithResult = finalRunnable;
+        RunnableWithResult = outputRunnable;
     }
 
     public override bool TryGetResults<T>(out List<T> value)

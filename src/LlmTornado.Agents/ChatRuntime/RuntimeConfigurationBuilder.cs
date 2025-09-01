@@ -1,12 +1,6 @@
 ﻿using LlmTornado.Agents.ChatRuntime.Orchestration;
 using LlmTornado.Agents.ChatRuntime.RuntimeConfigurations;
 using LlmTornado.Agents.DataModels;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace LlmTornado.Agents.ChatRuntime;
 
@@ -47,7 +41,32 @@ public class OrchestrationBuilder
             Configuration.Runnables.Add(fromRunnable.RunnableName, fromRunnable);
         if (!Configuration.Runnables.ContainsKey(toRunnable.RunnableName))
             Configuration.Runnables.Add(toRunnable.RunnableName, toRunnable);
+
         fromRunnable.AddAdvancer(new OrchestrationAdvancer<TOutput>(_ => true, toRunnable));
+        return this;
+    }
+
+    public OrchestrationBuilder AddDeadEndAdvancer<TOutput>(OrchestrationRunnableBase fromRunnable, OrchestrationRunnableBase toRunnable)
+    {
+        if (!Configuration.Runnables.ContainsKey(fromRunnable.RunnableName))
+            Configuration.Runnables.Add(fromRunnable.RunnableName, fromRunnable);
+        if (!Configuration.Runnables.ContainsKey(toRunnable.RunnableName))
+            Configuration.Runnables.Add(toRunnable.RunnableName, toRunnable);
+
+        fromRunnable.AddAdvancer(new OrchestrationAdvancer<TOutput>(_ => true, toRunnable));
+        toRunnable.AllowDeadEnd = true;
+        return this;
+    }
+
+    public OrchestrationBuilder AddDeadEndAdvancer<TValue, TOutput>(OrchestrationRunnableBase fromRunnable, AdvancementRequirement<TValue> condition, AdvancementResultConverter<TValue, TOutput> converter, OrchestrationRunnableBase toRunnable)
+    {
+        if (!Configuration.Runnables.ContainsKey(fromRunnable.RunnableName))
+            Configuration.Runnables.Add(fromRunnable.RunnableName, fromRunnable);
+        if (!Configuration.Runnables.ContainsKey(toRunnable.RunnableName))
+            Configuration.Runnables.Add(toRunnable.RunnableName, toRunnable);
+
+        fromRunnable.AddAdvancer(new OrchestrationAdvancer<TValue, TOutput>(condition, converter, toRunnable));
+        toRunnable.AllowDeadEnd = true;
         return this;
     }
 
@@ -57,6 +76,7 @@ public class OrchestrationBuilder
             Configuration.Runnables.Add(fromRunnable.RunnableName, fromRunnable);
         if (!Configuration.Runnables.ContainsKey(toRunnable.RunnableName))
             Configuration.Runnables.Add(toRunnable.RunnableName, toRunnable);
+
         fromRunnable.AddAdvancer(new OrchestrationAdvancer<TOutput>(condition, toRunnable));
         return this;
     }
@@ -67,6 +87,7 @@ public class OrchestrationBuilder
             Configuration.Runnables.Add(fromRunnable.RunnableName, fromRunnable);
         if (!Configuration.Runnables.ContainsKey(toRunnable.RunnableName))
             Configuration.Runnables.Add(toRunnable.RunnableName, toRunnable);
+
         fromRunnable.AddAdvancer(new OrchestrationAdvancer<TValue, TOutput>(condition, converter, toRunnable));
         return this;
     }
@@ -77,22 +98,54 @@ public class OrchestrationBuilder
             Configuration.Runnables.Add(fromRunnable.RunnableName, fromRunnable);
         if (!Configuration.Runnables.ContainsKey(toRunnable.RunnableName))
             Configuration.Runnables.Add(toRunnable.RunnableName, toRunnable);
+
         condition ??= _ => true;
         fromRunnable.AddAdvancer(new OrchestrationAdvancer<TValue, TOutput>(condition, converter, toRunnable));
         return this;
     }
 
-    public OrchestrationBuilder AddAdvancers<TValue, TOutput>(OrchestrationRunnableBase fromRunnable, AdvancementResultConverter<TValue, TOutput> converter, OrchestrationRunnableBase toRunnable, AdvancementRequirement<TValue>? condition = null)
+    public OrchestrationBuilder AddAdvancers(OrchestrationRunnableBase fromRunnable, params OrchestrationAdvancer[] advancers)
     {
+        if (!Configuration.Runnables.ContainsKey(fromRunnable.RunnableName))
+            Configuration.Runnables.Add(fromRunnable.RunnableName, fromRunnable);
+
+        foreach(var advancer in advancers)
+        {
+            if (!Configuration.Runnables.ContainsKey(advancer.NextRunnable.RunnableName))
+                Configuration.Runnables.Add(advancer.NextRunnable.RunnableName, advancer.NextRunnable);
+            fromRunnable.AddAdvancer(advancer);
+        }
+        
+        return this;
+    }
+
+    public OrchestrationBuilder AddParallelAdvancement(OrchestrationRunnableBase fromRunnable, params OrchestrationAdvancer[] advancers)
+    {
+        if (!Configuration.Runnables.ContainsKey(fromRunnable.RunnableName))
+            Configuration.Runnables.Add(fromRunnable.RunnableName, fromRunnable);
+
+        foreach (var advancer in advancers)
+        {
+            if (!Configuration.Runnables.ContainsKey(advancer.NextRunnable.RunnableName))
+                Configuration.Runnables.Add(advancer.NextRunnable.RunnableName, advancer.NextRunnable);
+            fromRunnable.AddAdvancer(advancer);
+        }
+
+        fromRunnable.AllowsParallelAdvances = true;
+        return this;
+    }
+
+    public OrchestrationBuilder AddExitPath<TOutput>(OrchestrationRunnableBase fromRunnable, AdvancementRequirement<TOutput> condition)
+    {
+        ExitRunnable<TOutput> toRunnable = new ExitRunnable<TOutput>(Configuration, "Tornado_Exit");
         if (!Configuration.Runnables.ContainsKey(fromRunnable.RunnableName))
             Configuration.Runnables.Add(fromRunnable.RunnableName, fromRunnable);
         if (!Configuration.Runnables.ContainsKey(toRunnable.RunnableName))
             Configuration.Runnables.Add(toRunnable.RunnableName, toRunnable);
-        condition ??= _ => true;
-        fromRunnable.AddAdvancer(new OrchestrationAdvancer<TValue, TOutput>(condition, converter, toRunnable));
+
+        fromRunnable.AddAdvancer(new OrchestrationAdvancer<TOutput>(condition, toRunnable));
         return this;
     }
-
 
     public OrchestrationRuntimeConfiguration Build()
     {

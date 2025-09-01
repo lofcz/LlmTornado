@@ -2,6 +2,7 @@
 using LlmTornado.Agents.ChatRuntime;
 using LlmTornado.Agents.ChatRuntime.Orchestration;
 using LlmTornado.Agents.ChatRuntime.RuntimeConfigurations;
+using LlmTornado.Agents.DataModels;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Demo.ExampleAgents.MagenticOneAgent;
@@ -242,6 +243,37 @@ public class CodingAgentConfiguration : OrchestrationRuntimeConfiguration
         //Configure the Orchestration entry and exit points
         SetEntryRunnable(_codeState);
         SetRunnableWithResult(_summaryState);
+    }
+
+    public OrchestrationRuntimeConfiguration CreateWithBuilder()
+    {
+        return new OrchestrationBuilder()
+            .SetEntryRunnable(_codeState)
+            .WithOnRuntimeEvent(async (evt) =>
+            {
+                if (evt.EventType == ChatRuntimeEventTypes.AgentRunner)
+                {
+                    if (evt is ChatRuntimeAgentRunnerEvents runnerEvt)
+                    {
+                        if (runnerEvt.AgentRunnerEvent is AgentRunnerStreamingEvent streamEvt)
+                        {
+                            if (streamEvt.ModelStreamingEvent is ModelStreamingOutputTextDeltaEvent deltaTextEvent)
+                            {
+                                Console.Write(deltaTextEvent.DeltaText);
+                            }
+                        }
+                    }
+                }
+                await ValueTask.CompletedTask;
+            })
+            .AddAdvancer<ProgramResultOutput>(_codeState, CheckIfCodeGenerated, _buildState)
+            .AddAdvancers(_buildState, 
+                new OrchestrationAdvancer<CodeBuildInfoOutput>(CheckIfProgramFailed, _reviewState),
+                new OrchestrationAdvancer<CodeBuildInfoOutput>(CheckIfProgramWorked, _summaryState)
+            )
+            .AddAdvancer<ChatMessage>(_reviewState, _codeState)
+            .SetOutputRunnable(_summaryState)
+            .Build();
     }
 
     public bool CheckIfCodeGenerated(ProgramResultOutput result)
