@@ -8,6 +8,7 @@ using LlmTornado.Embedding;
 using LlmTornado.Embedding.Models;
 using LlmTornado.Agents.VectorDatabases.ChromaDB;
 using LlmTornado.Agents.VectorDatabases.ChromaDB.Client;
+using LlmTornado.Agents.VectorDatabases.Intergrations;
 
 
 namespace LlmTornado.Demo;
@@ -33,18 +34,9 @@ public class AgentsDemo : DemoBase
         Dictionary<string, object> metaData = new Dictionary<string, object>();
         metaData.Add("FunctionName", "Function 1");
 
-        //Setup Chroma Collection
-        var handler = new ApiV1ToV2DelegatingHandler
-        {
-            InnerHandler = new HttpClientHandler()
-        };
-
         string ChromaDbURI = "http://localhost:8001/api/v2/";
-        var configOptions = new ChromaConfigurationOptions(uri: ChromaDbURI);
-        using var httpClient = new HttpClient(handler);
-        var chromaClient = new ChromaClient(configOptions, httpClient);
-        var collection = await chromaClient.GetOrCreateCollection("testCollection");
-        var chromaCollection = new ChromaCollectionClient(collection, configOptions, httpClient);
+        TornadoChromaDB chromaDB = new TornadoChromaDB(ChromaDbURI);
+        await chromaDB.InitializeCollection("functions");
 
         //Embed the function description and add to DB
         TornadoApi tornadoApi = Program.Connect();
@@ -60,21 +52,18 @@ public class AgentsDemo : DemoBase
 
         await Task.WhenAll(tasks);
 
-        await chromaCollection.Add([Guid.NewGuid().ToString()], embeddings: [new(dataInput)], metadatas: [metaData], documents: [embeddingDescription]);
+        //Add document to DB
+        VectorDocument vectorDocument = new VectorDocument(Guid.NewGuid().ToString(), embeddingDescription, metaData, dataInput);
+
+        await chromaDB.AddDocumentsAsync([vectorDocument]);
 
         //Query DB for relevant functions
-        var queryData = await chromaCollection.Query([new(dataQuery)], include: ChromaQueryInclude.Metadatas | ChromaQueryInclude.Distances | ChromaQueryInclude.Documents);
+        var queryData = await chromaDB.QueryByEmbeddingAsync(dataQuery, topK: 5);
 
-        List<string> closeFunctions = new List<string>();
         foreach (var item in queryData)
         {
-            foreach (var entry in item)
-            {
-                closeFunctions.Add($"Function Name: {entry.Metadata?["FunctionName"]} \n Description: {entry.Document}\n\n");
-            }
+            Console.WriteLine($"Function Name: {item.Metadata?["FunctionName"]} \n Description: {item.Content}\n\n");
         }
-
-        Console.WriteLine(string.Join(',', closeFunctions));
     }
 
     [TornadoTest]
