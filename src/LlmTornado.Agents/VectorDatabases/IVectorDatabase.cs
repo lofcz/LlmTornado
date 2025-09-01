@@ -54,7 +54,7 @@ public class VectorDocument
     /// <summary>
     /// Metadata associated with the document.
     /// </summary>
-    public Dictionary<string, string>? Metadata { get; set; }
+    public Dictionary<string, object>? Metadata { get; set; }
     /// <summary>
     /// Vector embedding representing the document in vector space.
     /// </summary>
@@ -66,8 +66,8 @@ public class VectorDocument
     /// <summary>
     /// Queried relevance score for the document.
     /// </summary>
-    public int? Score { get; set; } // Optional relevance score for query results
-    public VectorDocument(string id, string content, Dictionary<string, string>? metadata = null, float[]? embedding = null, int? score = null)
+    public float? Score { get; set; } // Optional relevance score for query results
+    public VectorDocument(string id, string content, Dictionary<string, object>? metadata = null, float[]? embedding = null, float? score = null)
     {
         Id = id;
         Content = content;

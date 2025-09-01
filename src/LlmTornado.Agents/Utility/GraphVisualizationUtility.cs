@@ -257,6 +257,32 @@ public static class OrchestrationVisualization
         }
     }
 
+    /// <summary>
+    /// Saves the DOT graph to a file
+    /// </summary>
+    /// <param name="runSteps">The orchestration run steps containing runner records</param>
+    /// <param name="filePath">Path where to save the .dot file</param>
+    /// <param name="graphName">Optional name for the graph</param>
+    /// <returns>Task representing the async file write operation</returns>
+    public static void SaveDotGraphToFile<TInput, TOutput>(this Orchestration<TInput, TOutput> orchestration, string filePath, string graphName = "DotGraph")
+    {
+        var dotContent = orchestration.ToDotGraph();
+        File.WriteAllText(filePath, dotContent);
+    }
+
+    /// <summary>
+    /// Saves the PlantUML diagram to a file
+    /// </summary>
+    /// <param name="runSteps">The orchestration run steps containing runner records</param>
+    /// <param name="filePath">Path where to save the .puml file</param>
+    /// <param name="title">Optional title for the diagram</param>
+    /// <returns>Task representing the async file write operation</returns>
+    public static void SavePlantUMLToFile<TInput, TOutput>(this Orchestration<TInput, TOutput> orchestration, string filePath, string title = "PlantFlow")
+    {
+        var plantUMLContent = orchestration.ToPlantUML();
+        File.WriteAllText(filePath, plantUMLContent);
+    }
+
     private static string GetStateId(OrchestrationRunnableBase state)
     {
         return SanitizeDotName(state.GetType().Name);

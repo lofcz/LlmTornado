@@ -290,10 +290,20 @@ public class TornadoAgent
         int maxTurns = 10, 
         string responseId = "",
         Func<string, ValueTask<bool>>? toolPermissionHandle = null, 
+        bool singleTurn = false,
         CancellationToken cancellationToken = default)
     {
         onAgentRunnerEvent += OnAgentRunnerEvent;
-        return await TornadoRunner.RunAsync(this, input: input, messagesToAppend: appendMessages, guardRail: inputGuardRailFunction, cancellationToken: cancellationToken, streaming: streaming ?? Streaming,
-                 runnerCallback: onAgentRunnerEvent, maxTurns: maxTurns, responseId: responseId, toolPermissionHandle: toolPermissionHandle);
+        return await TornadoRunner.RunAsync(this, 
+            input: input, 
+            messagesToAppend: appendMessages, 
+            guardRail: inputGuardRailFunction, 
+            singleTurn: singleTurn,
+            cancellationToken: cancellationToken, 
+            streaming: streaming ?? Streaming,
+            runnerCallback: onAgentRunnerEvent, 
+            maxTurns: maxTurns, 
+            responseId: responseId, 
+            toolPermissionHandle: toolPermissionHandle);
     }
 }

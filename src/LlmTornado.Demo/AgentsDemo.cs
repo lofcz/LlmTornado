@@ -4,6 +4,11 @@ using LlmTornado.Chat.Models;
 using LlmTornado.Code;
 using System.ComponentModel;
 using LlmTornado.Agents.DataModels;
+using LlmTornado.Embedding;
+using LlmTornado.Embedding.Models;
+using LlmTornado.Agents.VectorDatabases.ChromaDB;
+using LlmTornado.Agents.VectorDatabases.ChromaDB.Client;
+
 
 namespace LlmTornado.Demo;
 
@@ -17,6 +22,59 @@ public class AgentsDemo : DemoBase
         Conversation result = await agent.RunAsync("What is 2+2?");
 
         Console.WriteLine(result.Messages.Last().Content);
+    }
+
+    [TornadoTest]
+    public static async Task TestChromaDB()
+    {
+        string query = "Function to add two numbers in python";
+        string embeddingDescription = "A function that adds two numbers together in python";
+
+        Dictionary<string, object> metaData = new Dictionary<string, object>();
+        metaData.Add("FunctionName", "Function 1");
+
+        //Setup Chroma Collection
+        var handler = new ApiV1ToV2DelegatingHandler
+        {
+            InnerHandler = new HttpClientHandler()
+        };
+
+        string ChromaDbURI = "http://localhost:8001/api/v2/";
+        var configOptions = new ChromaConfigurationOptions(uri: ChromaDbURI);
+        using var httpClient = new HttpClient(handler);
+        var chromaClient = new ChromaClient(configOptions, httpClient);
+        var collection = await chromaClient.GetOrCreateCollection("testCollection");
+        var chromaCollection = new ChromaCollectionClient(collection, configOptions, httpClient);
+
+        //Embed the function description and add to DB
+        TornadoApi tornadoApi = Program.Connect();
+        List<Task> tasks = new List<Task>();
+
+        EmbeddingResult? embInputResult;
+        EmbeddingResult? embQueryResult;
+        float[]? dataInput = [];
+        float[]? dataQuery = [];
+
+        tasks.Add(Task.Run(async () => { embInputResult = await tornadoApi.Embeddings.CreateEmbedding(EmbeddingModel.OpenAi.Gen3.Small, embeddingDescription); dataInput = embInputResult?.Data.FirstOrDefault()?.Embedding; }));
+        tasks.Add(Task.Run(async () => { embQueryResult = await tornadoApi.Embeddings.CreateEmbedding(EmbeddingModel.OpenAi.Gen3.Small, query); dataQuery = embQueryResult?.Data.FirstOrDefault()?.Embedding; }));
+
+        await Task.WhenAll(tasks);
+
+        await chromaCollection.Add([Guid.NewGuid().ToString()], embeddings: [new(dataInput)], metadatas: [metaData], documents: [embeddingDescription]);
+
+        //Query DB for relevant functions
+        var queryData = await chromaCollection.Query([new(dataQuery)], include: ChromaQueryInclude.Metadatas | ChromaQueryInclude.Distances | ChromaQueryInclude.Documents);
+
+        List<string> closeFunctions = new List<string>();
+        foreach (var item in queryData)
+        {
+            foreach (var entry in item)
+            {
+                closeFunctions.Add($"Function Name: {entry.Metadata?["FunctionName"]} \n Description: {entry.Document}\n\n");
+            }
+        }
+
+        Console.WriteLine(string.Join(',', closeFunctions));
     }
 
     [TornadoTest]

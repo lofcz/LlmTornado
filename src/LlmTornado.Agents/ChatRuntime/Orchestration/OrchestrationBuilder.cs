@@ -1,6 +1,7 @@
 ﻿using LlmTornado.Agents.ChatRuntime.Orchestration;
 using LlmTornado.Agents.ChatRuntime.RuntimeConfigurations;
 using LlmTornado.Agents.DataModels;
+using LlmTornado.Agents.Utility;
 
 namespace LlmTornado.Agents.ChatRuntime;
 
@@ -145,6 +146,16 @@ public class OrchestrationBuilder
 
         fromRunnable.AddAdvancer(new OrchestrationAdvancer<TOutput>(condition, toRunnable));
         return this;
+    }
+
+    public void CreateDotGraphVisualization(string filePath, string graphName = "OrchestrationGraph")
+    {
+        OrchestrationVisualization.SaveDotGraphToFile(Configuration, filePath, graphName);
+    }
+
+    public void CreatePlantUmlVisualization(string filePath, string graphName = "OrchestrationGraph")
+    {
+        OrchestrationVisualization.SavePlantUMLToFile(Configuration, filePath, graphName);
     }
 
     public OrchestrationRuntimeConfiguration Build()
