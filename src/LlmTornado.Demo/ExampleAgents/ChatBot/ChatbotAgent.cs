@@ -3,10 +3,9 @@ using LlmTornado.Agents.ChatRuntime;
 using LlmTornado.Agents.ChatRuntime.Orchestration;
 using LlmTornado.Agents.ChatRuntime.RuntimeConfigurations;
 using LlmTornado.Agents.DataModels;
-using LlmTornado.Agents.VectorDatabases.Intergrations;
+using LlmTornado.VectorDatabases.Intergrations;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
-using LlmTornado.Demo.ExampleAgents.CSCodingAgent;
 using LlmTornado.Embedding;
 using LlmTornado.Embedding.Models;
 using LlmTornado.Moderation;
@@ -18,6 +17,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using LlmTornado.VectorDatabases;
 
 namespace LlmTornado.Demo.ExampleAgents.ChatBot;
 

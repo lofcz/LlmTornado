@@ -11,6 +11,7 @@
         <ProjectReference Include="..\LlmTornado.Contrib\LlmTornado.Contrib.csproj" />
         <ProjectReference Include="..\LlmTornado.Toolkit\LlmTornado.Toolkit.csproj" />
         <ProjectReference Include="..\LlmTornado.Agents\LlmTornado.Agents.csproj" />
+        <ProjectReference Include="..\LlmTornado.VectorDatabases.ChromaDB\LlmTornado.VectorDatabases.ChromaDB.csproj" />
         <ProjectReference Include="..\LlmTornado\LlmTornado.csproj" />
     </ItemGroup>
 

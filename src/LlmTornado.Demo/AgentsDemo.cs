@@ -4,13 +4,7 @@ using LlmTornado.Chat.Models;
 using LlmTornado.Code;
 using System.ComponentModel;
 using LlmTornado.Agents.DataModels;
-using LlmTornado.Embedding;
-using LlmTornado.Embedding.Models;
-using LlmTornado.Agents.VectorDatabases.ChromaDB;
-using LlmTornado.Agents.VectorDatabases.ChromaDB.Client;
-using LlmTornado.Agents.VectorDatabases.Intergrations;
 using LlmTornado.Agents.Utility;
-
 
 namespace LlmTornado.Demo;
 
@@ -69,47 +63,7 @@ public class AgentsDemo : DemoBase
         result = await agent.RunAsync("What is my name?", appendMessages: result.Messages.ToList(), onAgentRunnerEvent: runEventHandler);
     }
 
-    [TornadoTest]
-    public static async Task TestChromaDB()
-    {
-        string query = "Function to add two numbers in python";
-        string embeddingDescription = "A function that adds two numbers together in python";
-
-        Dictionary<string, object> metaData = new Dictionary<string, object>();
-        metaData.Add("FunctionName", "Function 1");
-
-        string ChromaDbURI = "http://localhost:8001/api/v2/";
-        TornadoChromaDB chromaDB = new TornadoChromaDB(ChromaDbURI);
-        await chromaDB.InitializeCollection("functions");
-
-        //Embed the function description and add to DB
-        TornadoApi tornadoApi = Program.Connect();
-        List<Task> tasks = new List<Task>();
-
-        EmbeddingResult? embInputResult;
-        EmbeddingResult? embQueryResult;
-        float[]? dataInput = [];
-        float[]? dataQuery = [];
-
-        tasks.Add(Task.Run(async () => { embInputResult = await tornadoApi.Embeddings.CreateEmbedding(EmbeddingModel.OpenAi.Gen3.Small, embeddingDescription); dataInput = embInputResult?.Data.FirstOrDefault()?.Embedding; }));
-        tasks.Add(Task.Run(async () => { embQueryResult = await tornadoApi.Embeddings.CreateEmbedding(EmbeddingModel.OpenAi.Gen3.Small, query); dataQuery = embQueryResult?.Data.FirstOrDefault()?.Embedding; }));
-
-        await Task.WhenAll(tasks);
-
-        //Add document to DB
-        VectorDocument vectorDocument = new VectorDocument(Guid.NewGuid().ToString(), embeddingDescription, metaData, dataInput);
-
-        await chromaDB.AddDocumentsAsync([vectorDocument]);
-
-        //Query DB for relevant functions
-        var queryData = await chromaDB.QueryByEmbeddingAsync(dataQuery, topK: 5);
-
-        foreach (var item in queryData)
-        {
-            Console.WriteLine($"Function Name: {item.Metadata?["FunctionName"]} \n Description: {item.Content}\n\n");
-        }
-    }
-
+    
     [TornadoTest]
     public static async Task RunHelloWorldStreaming()
     {
