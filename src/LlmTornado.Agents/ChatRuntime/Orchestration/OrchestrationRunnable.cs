@@ -37,10 +37,21 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
 
     public OrchestrationAdvancer<TOutput>[] GetAdvances()
     {
-        return BaseAdvancers.Select(advancer => {
-            AdvancementRequirement<TOutput> advancementRequirement = (TOutput input) => (bool)advancer.InvokeMethod.DynamicInvoke(input)!;
-            return new OrchestrationAdvancer<TOutput>(advancementRequirement, advancer.NextRunnable);
-        }).ToArray();
+        List<OrchestrationAdvancer<TOutput>> advancers = new List<OrchestrationAdvancer<TOutput>>();
+        
+        BaseAdvancers.ForEach(advancer => {
+            if (advancer.NextRunnable is not null)
+            {
+                AdvancementRequirement<TOutput> advancementRequirement = (TOutput input) => (bool)advancer.InvokeMethod.DynamicInvoke(input)!;
+                OrchestrationAdvancer<TOutput> advancement = new OrchestrationAdvancer<TOutput>(advancementRequirement, advancer.NextRunnable);
+                advancers.Add(advancement);
+            }
+        });
+
+        if (!AllowDeadEnd && advancers.Count == 0)
+            throw new InvalidOperationException($"Runnable {RunnableName} must have at least one advancement defined or set AllowDeadEnd to true.");
+
+        return advancers.ToArray();
     }
 
 
@@ -167,9 +178,8 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
     {
         LatestAdvancements.Clear();
         //Results Gathered from invoking
-        Processes.ForEach(process =>
+        foreach (var process in Processes)
         {
-            //Transitions are selected in order they are added
             OrchestrationAdvancer? advancement = Advances?.FirstOrDefault(transition => transition?.CanAdvance(process.Result) ?? false) ?? null;
 
             //If not transition is found, we can reattempt the process
@@ -193,7 +203,12 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
                     }
                 }
             }
-        });
+
+            if (SingleInvokeForProcesses)
+            {
+                break;
+            }
+        }
 
         return LatestAdvancements;
     }
@@ -218,7 +233,7 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
             if (advancer.CanAdvance(process.Result))
             {
                 //Check if transition is conversion type or use the output.Result directly
-                object? nextResult = advancer.type == "in_out" ? advancer.ConverterMethodResult : process;
+                object? nextResult = advancer.type == "in_out" ? advancer.ConverterMethodResult : process.Result;
 
                 stateProcessesFromOutput.Add(new RunnableProcess(advancer.NextRunnable, nextResult!));
             }
@@ -241,7 +256,7 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
             if (advancer.CanAdvance(process.Result))
             {
                 //Check if transition is conversion type or use the output.Result directly
-                object? nextResult = advancer.type == "in_out" ? advancer.ConverterMethodResult : process;
+                object? nextResult = advancer.type == "in_out" ? advancer.ConverterMethodResult : process.Result;
 
                 stateProcessesFromOutput.Add(new RunnableProcess(advancer.NextRunnable, nextResult!));
             }

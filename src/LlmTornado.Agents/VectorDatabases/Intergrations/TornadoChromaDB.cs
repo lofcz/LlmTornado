@@ -39,6 +39,10 @@ namespace LlmTornado.Agents.VectorDatabases.Intergrations
 
         public async Task InitializeCollection(string collectionName)
         {
+            if (collectionName.Equals(CollectionName))
+            {
+                return;
+            }
             CollectionName = collectionName;
             ChromaCollection = await ChromaClient.GetOrCreateCollection(collectionName);
             CollectionClient = new ChromaCollectionClient(ChromaCollection, _configOptions, _httpClient);

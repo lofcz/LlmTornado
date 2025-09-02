@@ -48,7 +48,6 @@ public class OrchestrationAdvancer
     /// Represents the type of the state transition.
     /// </summary>
     public string type = "base";
-    public OrchestrationAdvancer() { }
     public OrchestrationAdvancer(OrchestrationRunnableBase runnable)
     {
         NextRunnable = runnable ?? throw new ArgumentNullException(nameof(runnable), "Next runner cannot be null.");
@@ -65,7 +64,7 @@ public class OrchestrationAdvancer
         }
 
         InvokeMethod = methodToInvoke;
-
+        NextRunnable = nextRunnable ?? throw new ArgumentNullException(nameof(nextRunnable), "Next runner cannot be null.");
     }
 
     public OrchestrationAdvancer(Delegate methodToInvoke, Delegate converter, OrchestrationRunnableBase nextRunnable)
@@ -80,7 +79,7 @@ public class OrchestrationAdvancer
 
         InvokeMethod = methodToInvoke;
         ConverterMethod = converter;
-
+        NextRunnable = nextRunnable ?? throw new ArgumentNullException(nameof(nextRunnable), "Next runner cannot be null.");
     }
 }
 
@@ -90,7 +89,18 @@ public class OrchestrationAdvancer
 /// <typeparam name="T"> T being the Type of Input for the next State</typeparam>
 public class OrchestrationAdvancer<T> : OrchestrationAdvancer
 {
-    public OrchestrationAdvancer(OrchestrationRunnableBase nextRunnable):base(nextRunnable) { }
+    public OrchestrationAdvancer(OrchestrationRunnableBase nextRunnable):base(nextRunnable) 
+    {
+        type = "out";
+
+        // Validate the next state input type against the type of T
+        if (!typeof(T).IsAssignableFrom(nextRunnable.GetInputType()))
+        {
+            throw new InvalidOperationException($"{NextRunnable.RunnableName} with input type of {nextRunnable.GetInputType()} requires Input type assignable to type of {typeof(T)}");
+        }
+
+        InvokeMethod = new AdvancementRequirement<T>((T input) => true);
+    }
 
     public OrchestrationAdvancer(AdvancementRequirement<T> methodToInvoke, OrchestrationRunnableBase nextRunnable) : base(nextRunnable)
     {
@@ -103,7 +113,6 @@ public class OrchestrationAdvancer<T> : OrchestrationAdvancer
         }
 
         InvokeMethod = methodToInvoke;
-
     }
 
     /// <summary>

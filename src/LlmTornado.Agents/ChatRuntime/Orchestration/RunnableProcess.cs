@@ -166,8 +166,17 @@ public class RunnableProcess
     {
         if(BaseResult is null)
         {
-            return new RunnableProcess<TInput, TOutput>(Runner, (TInput)BaseInput, Id, MaxReruns);
+            try
+            {
+                TInput convertedResult = (TInput)BaseInput;
+                return new RunnableProcess<TInput, TOutput>(Runner, convertedResult, Id, MaxReruns);
+            }
+            catch (InvalidCastException)
+            {
+                throw new InvalidCastException($"Cannot cast BaseInput of type {BaseInput.GetType()} to {typeof(TInput)}");
+            }
         }
+
         return new RunnableProcess<TInput, TOutput>(Runner, (TInput)BaseInput, (TOutput?)BaseResult, Id, MaxReruns);
     }
 }

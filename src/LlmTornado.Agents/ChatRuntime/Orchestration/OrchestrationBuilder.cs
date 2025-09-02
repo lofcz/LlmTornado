@@ -21,6 +21,12 @@ public class OrchestrationBuilder
         return this;
     }
 
+    public OrchestrationBuilder WithRuntimeProperty(string key, object value)
+    {
+        Configuration.RuntimeProperties[key] = value;
+        return this;
+    }
+
     public OrchestrationBuilder WithCancellationTokenSource(CancellationTokenSource cts)
     {
         Configuration.cts = cts;
@@ -154,10 +160,7 @@ public class OrchestrationBuilder
         CombinationalWaiterRunnable<TValue> combinationalWaiter = new CombinationalWaiterRunnable<TValue>(
             Configuration,
             combinationRunnableName,
-            requiredInputToAdvance.Value)
-            {    
-                SingleInvokeForProcesses = true 
-            };
+            requiredInputToAdvance.Value);
 
         if (!Configuration.Runnables.ContainsKey(combinationalWaiter.RunnableName))
             Configuration.Runnables.Add(combinationalWaiter.RunnableName, combinationalWaiter); 
@@ -206,30 +209,30 @@ public class OrchestrationBuilder
 }
 public class CombinationalResult<TValue>
 {
-    public TValue Value { get; set; }
+    public List<TValue> Values { get; set; }
     public int InputCount { get; set; } = 0;
     public int RequiredInputCount { get; set; } = 1;
 
-    public CombinationalResult(TValue value)
+    public CombinationalResult(List<TValue> values)
     {
-        Value = value;
+        Values = values;
         InputCount = 0;
     }
 }
 
 public class CombinationalWaiterRunnable<TValue> : OrchestrationRunnable<TValue, CombinationalResult<TValue>>
 {
-
     public int RequiredInputCount { get; set; } = 0;
     public CombinationalWaiterRunnable(OrchestrationRuntimeConfiguration configuration, string? runnableName = "", int requiredInputCount = 1)
         : base(configuration, runnableName)
     {
+        SingleInvokeForProcesses = true;
         RequiredInputCount = requiredInputCount;
     }
 
     public override ValueTask<CombinationalResult<TValue>> Invoke(RunnableProcess<TValue, CombinationalResult<TValue>> input)
     {
-        CombinationalResult<TValue> current = new CombinationalResult<TValue>(input.Input) { InputCount = Input.Count, RequiredInputCount = this.RequiredInputCount };
+        CombinationalResult<TValue> current = new CombinationalResult<TValue>(Input) { InputCount = Input.Count, RequiredInputCount = this.RequiredInputCount };
         return new ValueTask<CombinationalResult<TValue>>(current);
     }
 }

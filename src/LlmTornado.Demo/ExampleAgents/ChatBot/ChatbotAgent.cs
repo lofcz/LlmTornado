@@ -43,13 +43,14 @@ public class ChatbotAgent
         Configuration = new OrchestrationBuilder()
             .SetEntryRunnable(inputModerator)
             .SetOutputRunnable(RunnableAgent)
+            .WithRuntimeProperty("LatestUserMessage", "")
             .AddParallelAdvancement(inputModerator,
-                 new OrchestrationAdvancer<string>(webSearchRunnable),
-                 new OrchestrationAdvancer<string>(vectorSearchRunnable))
+                 new OrchestrationAdvancer<ChatMessage>(webSearchRunnable),
+                 new OrchestrationAdvancer<ChatMessage>(vectorSearchRunnable))
             .AddCombinationalAdvancement<string>(
-                fromRunnables:[webSearchRunnable, vectorSearchRunnable], 
+                fromRunnables: [webSearchRunnable, vectorSearchRunnable],
                 condition: _ => true,
-                toRunnable: RunnableAgent, 
+                toRunnable: RunnableAgent,
                 requiredInputToAdvance: 1,
                 combinationRunnableName: "CombinationalContextWaiter")
             .AddParallelAdvancement(RunnableAgent, 
@@ -58,7 +59,7 @@ public class ChatbotAgent
             .AddExitPath<ChatMessage>(exitPathRunnable, _ => true)
             .CreateDotGraphVisualization("ChatBotAgent.dot")
             .Build();
-
+           Console.WriteLine("ChatBotAgent Orchestration Created");
     }
 }
 
@@ -127,7 +128,7 @@ public class AgentRunnable : OrchestrationRunnable<CombinationalResult<string>, 
     {
         process.RegisterAgent(Agent);
 
-        Conversation conv = await Agent.RunAsync(appendMessages: new List<ChatMessage> { new ChatMessage(Code.ChatMessageRoles.User, process.Input.Value) },
+        Conversation conv = await Agent.RunAsync(appendMessages: new List<ChatMessage> { new ChatMessage(Code.ChatMessageRoles.User, string.Join('\n',process.Input.Values)) },
             streaming: Agent.Streaming,
             onAgentRunnerEvent: (sEvent) =>
             {
@@ -204,25 +205,56 @@ public class VectorSaveRunnable : OrchestrationRunnable<ChatMessage, ValueTask>
     public override async ValueTask<ValueTask> Invoke(RunnableProcess<ChatMessage, ValueTask> process)
     {
         process.RegisterAgent(Agent);
+        List<VectorDocument> docs = new List<VectorDocument>();
 
         Conversation conv = await Agent.RunAsync(appendMessages: new List<ChatMessage> { process.Input });
 
-        VectorDocument doc = new VectorDocument(Guid.NewGuid().ToString(),  process.Input.Content ?? "", new Dictionary<string, object>
-            {
-                { "source", $"{process.Input}" },
-                { "timestamp", DateTime.UtcNow.ToString("o") }
-            });
+        if(string.IsNullOrEmpty(process.Input.Content))
+        {
+            return ValueTask.CompletedTask;
+        }
 
-        await SaveDocument(doc);    
+        EmbeddingResult? embeddingResult = await Client.Embeddings.CreateEmbedding(EmbeddingModel.OpenAi.Gen3.Small, process.Input.Content);
+
+        VectorDocument ResultDoc = new VectorDocument(
+            Guid.NewGuid().ToString(), 
+            process.Input.Content ?? "", 
+            new Dictionary<string, object>
+            {
+                { "source", $"{process.Input.Id}" },
+                { "timestamp", DateTime.UtcNow.ToString("o") }
+            },
+            embedding: embeddingResult.Data.FirstOrDefault()?.Embedding
+            );
+
+        docs.Add(ResultDoc);
+
+        string latestUserMessage = Orchestrator?.RuntimeProperties.TryGetValue("LatestUserMessage", out var val) == true ? val?.ToString() ?? "" : "";
+        if (string.IsNullOrEmpty(latestUserMessage))
+        {
+            EmbeddingResult? userMessageEmbedding = await Client.Embeddings.CreateEmbedding(EmbeddingModel.OpenAi.Gen3.Small, latestUserMessage);
+
+            VectorDocument InputDoc = new VectorDocument(Guid.NewGuid().ToString(), latestUserMessage, new Dictionary<string, object>
+            {
+                { "source", $"{process.Input.Id}" },
+                { "timestamp", DateTime.UtcNow.ToString("o") }
+            },
+            embedding: userMessageEmbedding?.Data.FirstOrDefault()?.Embedding
+            );
+
+            docs.Add(InputDoc);
+        }
+
+        await SaveDocument(docs.ToArray());
         return ValueTask.CompletedTask;
     }
 
 
-    private async Task SaveDocument(VectorDocument doc)
+    private async Task SaveDocument(VectorDocument[] docs)
     {
         TornadoChromaDB chromaDB = new TornadoChromaDB(uri: ChromaDbURI);
-        await chromaDB.InitializeCollection("ChatBotV1");
-        await chromaDB.AddDocumentsAsync(new VectorDocument[] { doc });
+        await chromaDB.InitializeCollection("ChatBotV2");
+        await chromaDB.AddDocumentsAsync(docs);
     }
 }
 
@@ -275,11 +307,10 @@ Please provide 2-3 search queries based off the user's input. for quering the ve
     private async Task<VectorDocument[]> QueryDB(string[] queries)
     {
         TornadoChromaDB chromaDB = new TornadoChromaDB(uri: ChromaDbURI);
-        await chromaDB.InitializeCollection("ChatBotV1");
+        await chromaDB.InitializeCollection("ChatBotV2");
         List<VectorDocument> results = new List<VectorDocument>();
         foreach (var query in queries)
         {
-
             EmbeddingResult? embeddingResult = await Client.Embeddings.CreateEmbedding(EmbeddingModel.OpenAi.Gen3.Small, queries);
             var queryEmbedding = await chromaDB.QueryByEmbeddingAsync(embeddingResult?.Data.FirstOrDefault()?.Embedding, topK: 3);
             results.AddRange(queryEmbedding);
