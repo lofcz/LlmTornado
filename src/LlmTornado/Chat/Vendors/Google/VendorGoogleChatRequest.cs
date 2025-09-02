@@ -752,7 +752,7 @@ internal class VendorGoogleChatRequest
                 }
                 else
                 {
-                    if (request?.GenerationConfig?.ResponseMimeType is "application/json")
+                    if (x.Thought is not true && request?.GenerationConfig?.ResponseMimeType is "application/json")
                     {
                         string? fnName = chatRequest?.ResponseFormat?.Schema?.Name ?? request.ToolConfig?.FunctionConfig?.AllowedFunctionNames?.FirstOrDefault();
 
