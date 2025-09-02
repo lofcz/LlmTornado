@@ -44,6 +44,14 @@ public class VectorDocument
         Embedding = embedding;
         Score = score;
     }
+
+    public override string ToString()
+    {
+        string metadataStr = Metadata != null
+            ? "{" + string.Join(", ", Metadata.Select(kv => $"{kv.Key}: {kv.Value}")) + "}"
+            : "null";
+        return $"VectorDocument(Id={Id},\n Content={Content},\n Metadata={metadataStr},\n Score={Score}\n)";
+    }
 }
 
 public interface IVectorDatabase

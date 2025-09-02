@@ -261,8 +261,6 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
         CodingAgentConfiguration RuntimeConfiguration = new CodingAgentConfiguration();
         Console.WriteLine(OrchestrationVisualization.ToDotGraph<ChatMessage,ChatMessage>(RuntimeConfiguration, "CodingAgentOrchestration"));
     }
-
-   
 }
 
 

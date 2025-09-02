@@ -159,7 +159,6 @@ namespace LlmTornado.VectorDatabases.Intergrations
             ThrowIfCollectionNotInitialized();
             await CollectionClient.Update(
                 documents.Select(d => d.Id).ToList(),
-                embeddings: documents.Select(d => new ReadOnlyMemory<float>(d.Embedding ?? Array.Empty<float>())).ToList(),
                 metadatas: documents.Select(d => d.Metadata ?? new Dictionary<string, object>()).ToList(),
                 documents: documents.Select(d => d.Content ?? "").ToList()
                 );
