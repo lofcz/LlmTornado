@@ -13,6 +13,10 @@
 
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="System.Text.Json" Version="9.0.8" />
+  </ItemGroup>
+
   <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
     <DefineConstants>WINDOWS</DefineConstants>
   </PropertyGroup>

@@ -1,18 +1,24 @@
-﻿using LlmTornado.DataModels;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using LlmTornado.Embedding;
-using LlmTornado.Embedding.Models;
-using LlmTornado.VectorDatabases.ChromaDB;
+﻿using LlmTornado.VectorDatabases.ChromaDB;
 using LlmTornado.VectorDatabases.ChromaDB.Client;
 using LlmTornado.VectorDatabases.ChromaDB.Client.Models;
 
 
 namespace LlmTornado.VectorDatabases.Intergrations
 {
+    public class TornadoChromaWhere : ChromaWhereOperator
+    {
+        public TornadoWhereOperator TornadoWhereOperator { get; set; }
+        public TornadoChromaWhere(TornadoWhereOperator where) : base("na")
+        {
+            TornadoWhereOperator = where;
+        }
+
+        internal override Dictionary<string, object> ToWhere()
+        {
+            return TornadoWhereOperator.ToWhere();
+        }
+    }
+
     public class TornadoChromaDB : IVectorDatabase
     {
         public ChromaClient ChromaClient { get; set; }
@@ -116,16 +122,20 @@ namespace LlmTornado.VectorDatabases.Intergrations
             return docs.Select(d => new VectorDocument(d.Id, d.Document ?? "", d.Metadata, d.Embeddings?.ToArray() ?? Array.Empty<float>())).ToArray();
         }
 
-        public VectorDocument[] QueryByEmbedding(float[] embedding, List<MetadataFilter>? filters = null, int topK = 5, bool includeScore = false)
+        public VectorDocument[] QueryByEmbedding(float[] embedding, TornadoWhereOperator where = null, int topK = 5, bool includeScore = false)
         {
-            return Task.Run(async () => await QueryByEmbeddingAsync(embedding, filters , topK, includeScore)).Result;
+            return Task.Run(async () => await QueryByEmbeddingAsync(embedding, where, topK, includeScore)).Result;
         }
 
-        public async Task<VectorDocument[]> QueryByEmbeddingAsync(float[] embedding, List<MetadataFilter>? filters = null, int topK = 5, bool includeScore = false)
+        public async Task<VectorDocument[]> QueryByEmbeddingAsync(float[] embedding, TornadoWhereOperator where = null, int topK = 5, bool includeScore = false)
         {
             ThrowIfCollectionNotInitialized();
             List<VectorDocument> results = new List<VectorDocument>();
-            var queryData = await CollectionClient.Query([new(embedding)], include: ChromaQueryInclude.Metadatas | ChromaQueryInclude.Distances | ChromaQueryInclude.Documents);
+            TornadoChromaWhere tornadoChromaWhere = new TornadoChromaWhere(where);
+            var queryData = await CollectionClient.Query(
+                [new(embedding)], 
+                where: tornadoChromaWhere,
+                include: ChromaQueryInclude.Metadatas | ChromaQueryInclude.Distances | ChromaQueryInclude.Documents);
 
             foreach (var item in queryData)
             {
@@ -137,17 +147,6 @@ namespace LlmTornado.VectorDatabases.Intergrations
             }
 
             return results.ToArray();
-        }
-
-        public VectorDocument[] QueryByText(string text, List<MetadataFilter>? filters = null, int topK = 5, bool includeScore = false)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<VectorDocument[]> QueryByTextAsync(string text, List<MetadataFilter>? filters = null, int topK = 5, bool includeScore = false)
-        {
-            ThrowIfCollectionNotInitialized();
-            throw new NotImplementedException();
         }
 
         public void UpdateDocuments(VectorDocument[] documents)
@@ -181,5 +180,7 @@ namespace LlmTornado.VectorDatabases.Intergrations
                 documents: documents.Select(d => d.Content ?? "").ToList()
                 );
         }
+
+        public string GetCollectionName() => CollectionName;
     }
 }

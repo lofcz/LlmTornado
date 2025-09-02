@@ -6,37 +6,6 @@ using System.Threading.Tasks;
 
 namespace LlmTornado.VectorDatabases;
 
-public enum FilterOperator
-{
-    Equals,
-    NotEquals,
-    In,
-    NotIn,
-    GreaterThan,
-    LessThan,
-    GreaterThanOrEqual,
-    LessThanOrEqual
-}
-
-/// <summary>
-/// Used to filter vector search results based on metadata fields.
-/// </summary>
-public class MetadataFilter
-{
-    /// <summary>
-    /// Which metadata field to filter on.
-    /// </summary>
-    public string Field { get; set; } = string.Empty;
-    /// <summary>
-    /// Which operator to use for filtering.
-    /// </summary>
-    public FilterOperator Operator { get; set; }
-    /// <summary>
-    /// Values to filter against.
-    /// </summary>
-    public List<string> Values { get; set; } = new();
-}
-
 /// <summary>
 /// Vector document with content, metadata, and embedding.
 /// Used to represent documents stored in or retrieved from a vector database.
@@ -79,6 +48,7 @@ public class VectorDocument
 
 public interface IVectorDatabase
 {
+    public string GetCollectionName();
     /// <summary>
     /// Add Documents to the vector database.
     /// </summary>
@@ -154,46 +124,20 @@ public interface IVectorDatabase
     /// Query the vector database using an embedding vector to find the most similar documents.
     /// </summary>
     /// <param name="embedding">The embedding vector to query against.</param>
-    /// <param name="filters"> Used to filter the metadata</param>
+    /// <param name="where"> Used to filter the metadata</param>
     /// <param name="topK">How many results to report back</param>
     /// <param name="includeScore">A value indicating whether to include the similarity score in the returned results.</param>
     /// <returns>An array of <see cref="VectorDocument"/> objects representing the most similar documents.</returns>
-    public VectorDocument[] QueryByEmbedding(float[] embedding, List<MetadataFilter>? filters = null, int topK = 5, bool includeScore = false);
+    public VectorDocument[] QueryByEmbedding(float[] embedding, TornadoWhereOperator? where = null, int topK = 5, bool includeScore = false);
     /// <summary>
     /// Queries the vector database using the provided embedding and retrieves the most relevant documents.
     /// </summary>
     /// <param name="embedding">The embedding vector to query against the database. Must not be null or empty.</param>
-    /// <param name="filters">An optional list of metadata filters to refine the query results. If null, no filtering is applied.</param>
+    /// <param name="where">An optional list of metadata filters to refine the query results. If null, no filtering is applied.</param>
     /// <param name="topK">The maximum number of top results to return. Must be greater than zero.</param>
     /// <param name="includeScore">A value indicating whether to include the similarity score in the returned results.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains an array of <see
     /// cref="VectorDocument"/> objects  representing the most relevant documents. The array will be empty if no
     /// matching documents are found.</returns>
-    public Task<VectorDocument[]> QueryByEmbeddingAsync(float[] embedding, List<MetadataFilter>? filters = null, int topK = 5, bool includeScore = false);
-    /// <summary>
-    /// Queries the vector document store using the specified text and returns the most relevant documents.
-    /// </summary>
-    /// <param name="text">The input text used to query the document store. Cannot be null or empty.</param>
-    /// <param name="filters">An optional list of metadata filters to refine the query results. If null, no filtering is applied.</param>
-    /// <param name="topK">The maximum number of top results to return. Must be a positive integer. Defaults to 5.</param>
-    /// <param name="includeScore">A value indicating whether to include relevance scores in the returned results. Defaults to <see
-    /// langword="false"/>.</param>
-    /// <returns>An array of <see cref="VectorDocument"/> objects representing the most relevant documents.  The array will
-    /// contain at most <paramref name="topK"/> elements. If no documents match the query, the array will be empty.</returns>
-    public VectorDocument[] QueryByText(string text,List<MetadataFilter>? filters = null, int topK = 5, bool includeScore = false);
-    /// <summary>
-    /// Queries the vector database using the specified text and retrieves the most relevant documents.
-    /// </summary>
-    /// <remarks>This method performs a similarity search in the vector database based on the provided text.
-    /// The optional <paramref name="filters"/> can be used to narrow down the results based on specific metadata
-    /// criteria.</remarks>
-    /// <param name="text">The input text to query against the vector database. Cannot be null or empty.</param>
-    /// <param name="filters">An optional list of metadata filters to refine the query results. If null, no filtering is applied.</param>
-    /// <param name="topK">The maximum number of top results to return. Must be a positive integer. Defaults to 5.</param>
-    /// <param name="includeScore">A value indicating whether to include relevance scores in the returned documents. Defaults to <see
-    /// langword="false"/>.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result contains an array of <see
-    /// cref="VectorDocument"/> objects representing the most relevant documents. The array will be empty if no matching
-    /// documents are found.</returns>
-    public Task<VectorDocument[]> QueryByTextAsync(string text, List<MetadataFilter>? filters = null, int topK = 5, bool includeScore = false);
+    public Task<VectorDocument[]> QueryByEmbeddingAsync(float[] embedding, TornadoWhereOperator? where = null, int topK = 5, bool includeScore = false);
 }
