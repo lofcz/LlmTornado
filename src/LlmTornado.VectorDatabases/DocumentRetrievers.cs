@@ -34,7 +34,11 @@ namespace LlmTornado.VectorDatabases
             }
         }
 
-        public async Task CreateParentChildCollection(string Text, int parentSize, int parentOverlap, int chunkSize, int overlapSize, IDocumentEmbeddingProvider embeddingProvider)
+        public async Task CreateParentChildCollection(string Text, 
+            int parentSize, int parentOverlap, int chunkSize, int overlapSize, 
+            IDocumentEmbeddingProvider embeddingProvider, 
+            Dictionary<string,object>? additionalStaticParentMetadata = null,
+            Dictionary<string, object>? additionalStaticChildMetadata = null)
         {
             List<VectorDocument> chunkedDocuments = new List<VectorDocument>();
             List<Document> parentDocs = new List<Document>();
@@ -42,17 +46,21 @@ namespace LlmTornado.VectorDatabases
             
             for (int i = 0; i < parents.Count; i++)
             {
-                Document parent = new Document(Guid.NewGuid().ToString(), parents[i], null);
-                parentDocs.Add(parent);
                 List<string> chunks = TextTransformers.RecursiveCharacterTextSplitter(parents[i], chunkSize, overlapSize);
+                Dictionary<string, object>? parentMetadata = additionalStaticParentMetadata;
+
+                Document parent = new Document(Guid.NewGuid().ToString(), parents[i], parentMetadata);
+
+                parentDocs.Add(parent);
+                
                 for( int j = 0; j < chunks.Count; j++)
                 {
                     float[] embeddings = await embeddingProvider.Invoke(chunks[j]);
-                    var chunkMetadata = new Dictionary<string, object>()
-                    {
-                        { "parent_id", parent.Id },
-                        { "chunk_index", j }
-                    };
+
+                    Dictionary<string, object> chunkMetadata = additionalStaticChildMetadata is not null ? new Dictionary<string, object>(additionalStaticChildMetadata) : new Dictionary<string, object>();
+                    chunkMetadata.Add("timestamp", DateTime.UtcNow.ToString("o"));
+                    chunkMetadata.Add("parent_id", parent.Id);
+                    chunkMetadata.Add("chunk_index", j);
 
                     chunkedDocuments.Add(new VectorDocument(Guid.NewGuid().ToString(), chunks[j], chunkMetadata, embeddings)); 
                 }

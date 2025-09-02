@@ -152,9 +152,9 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
     {
         ChatbotAgent chatbotConfig = new ChatbotAgent(Program.Connect(), true);
 
-        ChatRuntime runtime = new ChatRuntime(chatbotConfig.Configuration);
+        ChatRuntime runtime = new ChatRuntime(chatbotConfig);
 
-        chatbotConfig.Configuration.OnRuntimeEvent = async (evt) =>
+        chatbotConfig.OnRuntimeEvent = async (evt) =>
         {
             if (evt.EventType == ChatRuntimeEventTypes.AgentRunner)
             {
@@ -172,7 +172,7 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
             await ValueTask.CompletedTask;
         };
 
-        Console.WriteLine("[Assistant]: Hello?");
+        Console.WriteLine("[Assistant]: Hello");
         string topic = "";
         while (topic != "exit")
         {
@@ -181,6 +181,7 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
             if (topic == "exit") break;
             Console.Write("[Assistant]: ");
             ChatMessage report = await runtime.InvokeAsync(new ChatMessage(Code.ChatMessageRoles.User, topic));
+            Console.WriteLine();
         }
     }
     

@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -17,6 +19,11 @@ namespace LlmTornado.VectorDatabases
             Id = id;
             Content = content;
             Metadata = metadata ?? new Dictionary<string, object>();
+        }
+
+        public static implicit operator VectorDocument(Document doc)
+        {
+            return new VectorDocument(doc.Id, doc.Content, doc.Metadata, null);
         }
     }
 
@@ -40,8 +47,8 @@ namespace LlmTornado.VectorDatabases
 
     public class MemoryDocumentStore : IDocumentStore
     {
-        private Dictionary<string, Dictionary<string, Document>> _documents = new Dictionary<string, Dictionary<string, Document>>();
-        private Dictionary<string, Document> _currentCollection => _documents[_collectionName];
+        private ConcurrentDictionary<string, ConcurrentDictionary<string, Document>> _collections = new ConcurrentDictionary<string, ConcurrentDictionary<string, Document>>();
+        private ConcurrentDictionary<string, Document> _currentCollection => _collections[_collectionName];
 
         private string _collectionName = "default_collection";
 
@@ -50,27 +57,26 @@ namespace LlmTornado.VectorDatabases
         public MemoryDocumentStore(string collectionName)
         {
             _collectionName = collectionName;
-            if (!_documents.ContainsKey(collectionName))
+            if (!_collections.ContainsKey(collectionName))
             {
-                _documents[collectionName] = new Dictionary<string, Document>();
+                _collections[collectionName] = new ConcurrentDictionary<string, Document>();
             }
         }
 
         public ValueTask SetOrCreateCollection(string collectionName)
         {
             _collectionName = collectionName;
-            if (!_documents.ContainsKey(collectionName))
+            if (!_collections.TryGetValue(collectionName, out var col))
             {
-                _documents[collectionName] = new Dictionary<string, Document>();
+                _collections[collectionName] = new ConcurrentDictionary<string, Document>();
             }
             return Threading.ValueTaskCompleted;
         }
 
         public void DeleteDocument(string id)
         {
-            if (_currentCollection.ContainsKey(id))
+            if (_currentCollection.TryRemove(id, out _))
             {
-                _currentCollection.Remove(id);
                 return;
             }
 
@@ -87,9 +93,9 @@ namespace LlmTornado.VectorDatabases
             var documents = new List<Document>();
             foreach (var docId in id)
             {
-                if (_currentCollection.ContainsKey(docId))
+                if (_currentCollection.TryGetValue(docId, out var doc))
                 {
-                    documents.Add(_currentCollection[docId]);
+                    documents.Add(doc);
                 }
                 else
                     throw new KeyNotFoundException($"Document with id {docId} not found.");
@@ -99,18 +105,14 @@ namespace LlmTornado.VectorDatabases
 
         public void SetDocument(Document document)
         {
-            _currentCollection[document.Id] = document;
+            _currentCollection.AddOrUpdate(document.Id, document, (key, oldValue) => document);
         }
 
         public void UpdateDocument(Document document)
         {
-            if (_currentCollection.ContainsKey(document.Id))
+            if (!_currentCollection.TryUpdate(document.Id, document, _currentCollection[document.Id]))
             {
-                _currentCollection[document.Id] = document;
-            }
-            else
-            {
-                throw new KeyNotFoundException($"Document with id {document.Id} not found.");
+                throw new KeyNotFoundException($"Document with id {document.Id} not found or currently in use");
             }
         }
 

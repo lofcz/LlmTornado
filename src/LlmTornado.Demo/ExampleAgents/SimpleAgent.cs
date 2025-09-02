@@ -127,6 +127,7 @@ public class AgentRunnable : OrchestrationRunnable<ChatMessage, string>
     TornadoAgent Agent;
     public Action<AgentRunnerEvents>? OnAgentRunnerEvent { get; set; }
 
+
     public AgentRunnable(TornadoApi client, Orchestration orchestrator, bool streaming = false) : base(orchestrator)
     {
         string instructions = @"You are a research agent. You will be provided with a question to research.";

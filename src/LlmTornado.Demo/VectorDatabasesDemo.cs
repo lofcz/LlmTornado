@@ -81,14 +81,15 @@ public class VectorDatabasesDemo
         string ChromaDbURI = "http://localhost:8001/api/v2/";
         TornadoChromaDB chromaDB = new TornadoChromaDB(ChromaDbURI);
         TornadoEmbeddingProvider tornadoEmbeddingProvider = new TornadoEmbeddingProvider(Program.Connect(), EmbeddingModel.OpenAi.Gen3.Small);
-        await chromaDB.InitializeCollection("ParentCollection");
+        string collectionName = $"ParentChildCollection_{Guid.NewGuid().ToString().Substring(0,4)}";
+        await chromaDB.InitializeCollection(collectionName);
 
-        MemoryDocumentStore memoryDocumentStore = new MemoryDocumentStore("ParentCollection");
+        MemoryDocumentStore memoryDocumentStore = new MemoryDocumentStore(collectionName);
         ParentChildDocumentRetriever pcdRetriever = new ParentChildDocumentRetriever(chromaDB, memoryDocumentStore);
 
         string text = File.ReadAllText("Static/Files/pride_and_prejudice.txt");
 
-        await pcdRetriever.CreateParentChildCollection(text, 1000, 200, 300, 50, tornadoEmbeddingProvider);
+        await pcdRetriever.CreateParentChildCollection(text, 2000, 200, 1000, 100, tornadoEmbeddingProvider);
 
         string query = "that a single man in possession of a good fortune";
         var queryEmb = await tornadoEmbeddingProvider.Invoke(query);
@@ -97,7 +98,8 @@ public class VectorDatabasesDemo
 
         foreach(var doc in result)
         {
-            Console.WriteLine($"Content: {doc.Content}\n");
+            var vectorDoc = (VectorDocument)doc;
+            Console.WriteLine($"Content: {vectorDoc.Content}\n");
         }
     }
 

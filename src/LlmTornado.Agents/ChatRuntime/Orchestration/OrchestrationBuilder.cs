@@ -23,7 +23,7 @@ public class OrchestrationBuilder
 
     public OrchestrationBuilder WithRuntimeProperty(string key, object value)
     {
-        Configuration.RuntimeProperties[key] = value;
+        Configuration.RuntimeProperties.AddOrUpdate(key, value, (_, _) => value);
         return this;
     }
 
@@ -36,12 +36,14 @@ public class OrchestrationBuilder
     public OrchestrationBuilder SetEntryRunnable(OrchestrationRunnableBase entryRunnable)
     {
         Configuration.SetEntryRunnable(entryRunnable);
+        entryRunnable.Orchestrator = Configuration;
         return this;
     }
 
     public OrchestrationBuilder SetOutputRunnable(OrchestrationRunnableBase outputRunnable)
     {
         Configuration.SetRunnableWithResult(outputRunnable);
+        outputRunnable.Orchestrator = Configuration;
         return this;
     }
     
@@ -49,9 +51,12 @@ public class OrchestrationBuilder
     {
         if(!Configuration.Runnables.ContainsKey(fromRunnable.RunnableName))
             Configuration.Runnables.Add(fromRunnable.RunnableName, fromRunnable);
+            
         if (!Configuration.Runnables.ContainsKey(toRunnable.RunnableName))
             Configuration.Runnables.Add(toRunnable.RunnableName, toRunnable);
 
+        fromRunnable.Orchestrator = Configuration;
+        toRunnable.Orchestrator = Configuration;
         fromRunnable.AddAdvancer(new OrchestrationAdvancer<TOutput>(_ => true, toRunnable));
         return this;
     }
@@ -63,6 +68,8 @@ public class OrchestrationBuilder
         if (!Configuration.Runnables.ContainsKey(toRunnable.RunnableName))
             Configuration.Runnables.Add(toRunnable.RunnableName, toRunnable);
 
+        fromRunnable.Orchestrator = Configuration;
+        toRunnable.Orchestrator = Configuration;
         fromRunnable.AddAdvancer(new OrchestrationAdvancer<TOutput>(_ => true, toRunnable));
         toRunnable.AllowDeadEnd = true;
         return this;
@@ -75,6 +82,8 @@ public class OrchestrationBuilder
         if (!Configuration.Runnables.ContainsKey(toRunnable.RunnableName))
             Configuration.Runnables.Add(toRunnable.RunnableName, toRunnable);
 
+        fromRunnable.Orchestrator = Configuration;
+        toRunnable.Orchestrator = Configuration;
         fromRunnable.AddAdvancer(new OrchestrationAdvancer<TValue, TOutput>(condition, converter, toRunnable));
         toRunnable.AllowDeadEnd = true;
         return this;
@@ -87,6 +96,8 @@ public class OrchestrationBuilder
         if (!Configuration.Runnables.ContainsKey(toRunnable.RunnableName))
             Configuration.Runnables.Add(toRunnable.RunnableName, toRunnable);
 
+        fromRunnable.Orchestrator = Configuration;
+        toRunnable.Orchestrator = Configuration;
         fromRunnable.AddAdvancer(new OrchestrationAdvancer<TOutput>(condition, toRunnable));
         return this;
     }
@@ -98,6 +109,8 @@ public class OrchestrationBuilder
         if (!Configuration.Runnables.ContainsKey(toRunnable.RunnableName))
             Configuration.Runnables.Add(toRunnable.RunnableName, toRunnable);
 
+        fromRunnable.Orchestrator = Configuration;
+        toRunnable.Orchestrator = Configuration;
         fromRunnable.AddAdvancer(new OrchestrationAdvancer<TValue, TOutput>(condition, converter, toRunnable));
         return this;
     }
@@ -109,6 +122,8 @@ public class OrchestrationBuilder
         if (!Configuration.Runnables.ContainsKey(toRunnable.RunnableName))
             Configuration.Runnables.Add(toRunnable.RunnableName, toRunnable);
 
+        fromRunnable.Orchestrator = Configuration;
+        toRunnable.Orchestrator = Configuration;
         condition ??= _ => true;
         fromRunnable.AddAdvancer(new OrchestrationAdvancer<TValue, TOutput>(condition, converter, toRunnable));
         return this;
@@ -123,9 +138,11 @@ public class OrchestrationBuilder
         {
             if (!Configuration.Runnables.ContainsKey(advancer.NextRunnable.RunnableName))
                 Configuration.Runnables.Add(advancer.NextRunnable.RunnableName, advancer.NextRunnable);
+            advancer.NextRunnable.Orchestrator = Configuration;
             fromRunnable.AddAdvancer(advancer);
         }
         
+        fromRunnable.Orchestrator = Configuration;
         return this;
     }
 
@@ -133,11 +150,12 @@ public class OrchestrationBuilder
     {
         if (!Configuration.Runnables.ContainsKey(fromRunnable.RunnableName))
             Configuration.Runnables.Add(fromRunnable.RunnableName, fromRunnable);
-
+        fromRunnable.Orchestrator = Configuration;
         foreach (var advancer in advancers)
         {
             if (!Configuration.Runnables.ContainsKey(advancer.NextRunnable.RunnableName))
                 Configuration.Runnables.Add(advancer.NextRunnable.RunnableName, advancer.NextRunnable);
+            advancer.NextRunnable.Orchestrator = Configuration;
             fromRunnable.AddAdvancer(advancer);
         }
 
@@ -169,9 +187,11 @@ public class OrchestrationBuilder
         {
             if (!Configuration.Runnables.ContainsKey(fromRunnable.RunnableName))
                 Configuration.Runnables.Add(fromRunnable.RunnableName, fromRunnable);
+            fromRunnable.Orchestrator = Configuration;
             fromRunnable.AddAdvancer(new OrchestrationAdvancer<TValue>(condition, combinationalWaiter));
         }
         
+        toRunnable.Orchestrator = Configuration;
         combinationalWaiter.AddAdvancer(_ => true, toRunnable);
 
         return this;
@@ -186,6 +206,8 @@ public class OrchestrationBuilder
         if (!Configuration.Runnables.ContainsKey(toRunnable.RunnableName))
             Configuration.Runnables.Add(toRunnable.RunnableName, toRunnable);
 
+        fromRunnable.Orchestrator = Configuration;
+        toRunnable.Orchestrator = Configuration;
         fromRunnable.AddAdvancer(new OrchestrationAdvancer<TOutput>(condition, toRunnable));
         return this;
     }

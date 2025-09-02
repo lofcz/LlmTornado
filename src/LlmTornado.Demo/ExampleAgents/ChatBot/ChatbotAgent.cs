@@ -3,34 +3,30 @@ using LlmTornado.Agents.ChatRuntime;
 using LlmTornado.Agents.ChatRuntime.Orchestration;
 using LlmTornado.Agents.ChatRuntime.RuntimeConfigurations;
 using LlmTornado.Agents.DataModels;
-using LlmTornado.VectorDatabases.Intergrations;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Embedding;
 using LlmTornado.Embedding.Models;
 using LlmTornado.Moderation;
 using LlmTornado.Responses;
-using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using LlmTornado.VectorDatabases;
+using LlmTornado.VectorDatabases.Intergrations;
+using Microsoft.Extensions.Configuration;
+using System.Runtime.CompilerServices;
+using static LlmTornado.Demo.VectorDatabasesDemo;
 
 namespace LlmTornado.Demo.ExampleAgents.ChatBot;
 
-public class ChatbotAgent 
+public class ChatbotAgent : OrchestrationRuntimeConfiguration
 {
     public OrchestrationRuntimeConfiguration Configuration { get; set; } = new OrchestrationRuntimeConfiguration();
-
     AgentRunnable RunnableAgent { get; set; }
     ModeratorRunnable inputModerator { get; set; }
     VectorSearchRunnable vectorSearchRunnable { get; set; }
     WebSearchRunnable webSearchRunnable { get; set; }   
     VectorSaveRunnable vectorSaveRunnable { get; set; }
     ExitPathRunnable exitPathRunnable { get; set; }
+
     public ChatbotAgent(TornadoApi client, bool streaming = false)
     {
         RunnableAgent = new AgentRunnable(client, Configuration, streaming);
@@ -44,6 +40,7 @@ public class ChatbotAgent
             .SetEntryRunnable(inputModerator)
             .SetOutputRunnable(RunnableAgent)
             .WithRuntimeProperty("LatestUserMessage", "")
+            .WithRuntimeProperty("MemoryCollectionName", "AgentV3")
             .AddParallelAdvancement(inputModerator,
                  new OrchestrationAdvancer<ChatMessage>(webSearchRunnable),
                  new OrchestrationAdvancer<ChatMessage>(vectorSearchRunnable))
@@ -60,6 +57,20 @@ public class ChatbotAgent
             .CreateDotGraphVisualization("ChatBotAgent.dot")
             .Build();
     }
+
+    public override void OnRuntimeInitialized()
+    {
+        base.OnRuntimeInitialized();
+        Configuration.Runtime = this.Runtime;
+        this.Runtime.RuntimeConfiguration = Configuration;
+        Configuration.OnRuntimeInitialized();
+        RunnableAgent.OnAgentRunnerEvent += (sEvent) =>
+        {
+            // Forward agent runner events (including streaming) to runtime
+            this.OnRuntimeEvent?.Invoke(new ChatRuntimeAgentRunnerEvents(sEvent, Runtime?.Id ?? string.Empty));
+        };
+    }
+
 }
 
 public class ModeratorRunnable : OrchestrationRunnable<ChatMessage, ChatMessage>
@@ -120,7 +131,7 @@ public class AgentRunnable : OrchestrationRunnable<CombinationalResult<string>, 
 
         Agent.ResponseOptions = new ResponseRequest() { Tools = [new ResponseWebSearchTool()] };
     }
-
+    
     public override async ValueTask<ChatMessage> Invoke(RunnableProcess<CombinationalResult<string>, ChatMessage> process)
     {
         process.RegisterAgent(Agent);
@@ -186,6 +197,8 @@ public class VectorSaveRunnable : OrchestrationRunnable<ChatMessage, ValueTask>
 
     string ChromaDbURI = "http://localhost:8000/api/v2/";
 
+    string collectionName = "ChatBotV2";
+
     public VectorSaveRunnable(TornadoApi client, Orchestration orchestrator, string chromaUri = "http://localhost:8000/api/v2/") : base(orchestrator)
     {
         AllowDeadEnd = true;
@@ -202,56 +215,63 @@ public class VectorSaveRunnable : OrchestrationRunnable<ChatMessage, ValueTask>
     public override async ValueTask<ValueTask> Invoke(RunnableProcess<ChatMessage, ValueTask> process)
     {
         process.RegisterAgent(Agent);
-        List<VectorDocument> docs = new List<VectorDocument>();
 
-        Conversation conv = await Agent.RunAsync(appendMessages: new List<ChatMessage> { process.Input });
+        Orchestrator.RuntimeProperties.TryGetValue("MemoryCollectionName", out var colName);
 
-        if(string.IsNullOrEmpty(process.Input.Content))
+        if (colName != null && !string.IsNullOrEmpty(colName.ToString()))
         {
-            return ValueTask.CompletedTask;
+            collectionName = colName.ToString() ?? collectionName;
         }
 
-        EmbeddingResult? embeddingResult = await Client.Embeddings.CreateEmbedding(EmbeddingModel.OpenAi.Gen3.Small, process.Input.Content);
-
-        VectorDocument ResultDoc = new VectorDocument(
-            Guid.NewGuid().ToString(), 
-            process.Input.Content ?? "", 
-            new Dictionary<string, object>
-            {
-                { "source", $"{process.Input.Id}" },
-                { "timestamp", DateTime.UtcNow.ToString("o") }
-            },
-            embedding: embeddingResult.Data.FirstOrDefault()?.Embedding
-            );
-
-        docs.Add(ResultDoc);
-
-        string latestUserMessage = Orchestrator?.RuntimeProperties.TryGetValue("LatestUserMessage", out var val) == true ? val?.ToString() ?? "" : "";
-        if (string.IsNullOrEmpty(latestUserMessage))
+        List<Task> tasks = new List<Task>();
+        //Saves the latest user message to the vector database along with the ResponseID of the assistant's response.
+       
+        tasks.Add(Task.Run(async () =>
         {
-            EmbeddingResult? userMessageEmbedding = await Client.Embeddings.CreateEmbedding(EmbeddingModel.OpenAi.Gen3.Small, latestUserMessage);
+            string latestUserMessage = Orchestrator?.RuntimeProperties.TryGetValue("LatestUserMessage", out var val) == true ? val?.ToString() ?? "" : "";
+            if (!string.IsNullOrEmpty(latestUserMessage))
+                await SaveDocument(latestUserMessage, additionalStaticParentMetadata: new Dictionary<string, object>()
+                {
+                    {"Role","User" },
+                    {"ResponseId", process.Input.Id },
+                    {"Timestamp", DateTime.UtcNow }
+                });
+        }));
+        
+        tasks.Add(Task.Run(async () =>
+        {
+            //Creates a summary of the assistant's response to be saved.
+            Conversation conv = await Agent.RunAsync(appendMessages: new List<ChatMessage> { process.Input });
 
-            VectorDocument InputDoc = new VectorDocument(Guid.NewGuid().ToString(), latestUserMessage, new Dictionary<string, object>
+            if (!string.IsNullOrEmpty(process.Input.Content))
             {
-                { "source", $"{process.Input.Id}" },
-                { "timestamp", DateTime.UtcNow.ToString("o") }
-            },
-            embedding: userMessageEmbedding?.Data.FirstOrDefault()?.Embedding
-            );
+                await SaveDocument(process.Input.Content, additionalStaticParentMetadata: new Dictionary<string, object>()
+                {
+                    { "Role","Assistant" },
+                    { "ResponseId", process.Input.Id },
+                    { "Timestamp", DateTime.UtcNow }
+                });
+            }  
+        }));
+        
+        await Task.WhenAll(tasks);
 
-            docs.Add(InputDoc);
-        }
-
-        await SaveDocument(docs.ToArray());
         return ValueTask.CompletedTask;
     }
 
 
-    private async Task SaveDocument(VectorDocument[] docs)
+    private async Task SaveDocument(string text, Dictionary<string, object>? additionalStaticParentMetadata = null, Dictionary<string, object>? additionalStaticChildMetadata = null)
     {
-        TornadoChromaDB chromaDB = new TornadoChromaDB(uri: ChromaDbURI);
-        await chromaDB.InitializeCollection("ChatBotV2");
-        await chromaDB.AddDocumentsAsync(docs);
+        TornadoChromaDB chromaDB = new TornadoChromaDB(ChromaDbURI);
+        await chromaDB.InitializeCollection(collectionName);
+
+        TornadoEmbeddingProvider tornadoEmbeddingProvider = new TornadoEmbeddingProvider(Program.Connect(), EmbeddingModel.OpenAi.Gen3.Small);
+        
+        MemoryDocumentStore memoryDocumentStore = new MemoryDocumentStore(collectionName);
+
+        ParentChildDocumentRetriever pcdRetriever = new ParentChildDocumentRetriever(chromaDB, memoryDocumentStore);
+
+        await pcdRetriever.CreateParentChildCollection(text, 2000, 250, 500, 125, tornadoEmbeddingProvider);
     }
 }
 
@@ -261,6 +281,7 @@ public class VectorSearchRunnable : OrchestrationRunnable<ChatMessage, string>
     TornadoApi Client { get; set; }
 
     string ChromaDbURI = "http://localhost:8000/api/v2/";
+    string collectionName = "ChatBotV2";
 
     public VectorSearchRunnable(TornadoApi client, Orchestration orchestrator, string chromaUri = "http://localhost:8000/api/v2/") : base(orchestrator)
     {
@@ -280,20 +301,22 @@ Please provide 2-3 search queries based off the user's input. for quering the ve
     {
         process.RegisterAgent(Agent);
 
+        Orchestrator.RuntimeProperties.TryGetValue("MemoryCollectionName", out var colName);
+
+        if (colName != null && !string.IsNullOrEmpty(colName.ToString()))
+        {
+            collectionName = colName.ToString() ?? collectionName;
+        }
+
         Conversation conv = await Agent.RunAsync(appendMessages: new List<ChatMessage> { process.Input });
+
         SearchQueries? result = conv.Messages.Last().Content.ParseJson<SearchQueries>();
+
         VectorDocument[] docs = await QueryDB(result?.Queries ?? Array.Empty<string>());
+
         string combinedContents = string.Join(", ", docs.Select(doc => doc.Content ?? ""));
 
-        Agent.Instructions = $@"You are a friendly chatbot. Use the following pieces of context to answer the question at the end." +
-            $"\nIf you don't know the answer, just say that you don't know, don't try to make up an answer." +
-            $"\nContext: {combinedContents}" +
-            $"\nQuestion: {process.Input.Content}" +
-            $"\nAnswer:";
-
-        Agent.OutputSchema = null; // Reset output schema to allow free form answers
-        conv = await Agent.RunAsync(combinedContents);
-        return conv.Messages.Last().Content;
+        return combinedContents;
     }
 
     private struct SearchQueries
@@ -303,15 +326,25 @@ Please provide 2-3 search queries based off the user's input. for quering the ve
 
     private async Task<VectorDocument[]> QueryDB(string[] queries)
     {
-        TornadoChromaDB chromaDB = new TornadoChromaDB(uri: ChromaDbURI);
-        await chromaDB.InitializeCollection("ChatBotV2");
+        TornadoChromaDB chromaDB = new TornadoChromaDB(ChromaDbURI);
+        TornadoEmbeddingProvider tornadoEmbeddingProvider = new TornadoEmbeddingProvider(Program.Connect(), EmbeddingModel.OpenAi.Gen3.Small);
+
+        await chromaDB.InitializeCollection(collectionName);
+
+        MemoryDocumentStore memoryDocumentStore = new MemoryDocumentStore(collectionName);
+        ParentChildDocumentRetriever pcdRetriever = new ParentChildDocumentRetriever(chromaDB, memoryDocumentStore);
+
         List<VectorDocument> results = new List<VectorDocument>();
+
         foreach (var query in queries)
         {
-            EmbeddingResult? embeddingResult = await Client.Embeddings.CreateEmbedding(EmbeddingModel.OpenAi.Gen3.Small, queries);
-            var queryEmbedding = await chromaDB.QueryByEmbeddingAsync(embeddingResult?.Data.FirstOrDefault()?.Embedding, topK: 3);
-            results.AddRange(queryEmbedding);
+            var queryEmb = await tornadoEmbeddingProvider.Invoke(query);
+
+            var result = await pcdRetriever.SearchAsync(queryEmb, topK:3);
+
+            results.AddRange(result.Cast<VectorDocument>());
         }
+
         return results.ToArray();
     }
 }
