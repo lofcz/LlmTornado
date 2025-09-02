@@ -7,7 +7,7 @@ namespace LlmTornado.VectorDatabases.Intergrations
 {
     public class TornadoChromaWhere : ChromaWhereOperator
     {
-        public TornadoWhereOperator TornadoWhereOperator { get; set; }
+        public TornadoWhereOperator? TornadoWhereOperator { get; set; }
         public TornadoChromaWhere(TornadoWhereOperator where) : base("na")
         {
             TornadoWhereOperator = where;
@@ -15,7 +15,7 @@ namespace LlmTornado.VectorDatabases.Intergrations
 
         internal override Dictionary<string, object> ToWhere()
         {
-            return TornadoWhereOperator.ToWhere();
+            return TornadoWhereOperator?.ToWhere() ?? null;
         }
     }
 

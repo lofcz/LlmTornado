@@ -59,11 +59,8 @@ public class ChatbotAgent
             .AddExitPath<ChatMessage>(exitPathRunnable, _ => true)
             .CreateDotGraphVisualization("ChatBotAgent.dot")
             .Build();
-           Console.WriteLine("ChatBotAgent Orchestration Created");
     }
 }
-
-
 
 public class ModeratorRunnable : OrchestrationRunnable<ChatMessage, ChatMessage>
 {

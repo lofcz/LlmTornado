@@ -40,7 +40,7 @@ namespace LlmTornado.VectorDatabases
             List<Document> parentDocs = new List<Document>();
             List<string> parents = TextTransformers.RecursiveCharacterTextSplitter(Text, parentSize, parentOverlap);
             
-            for (int i = 0; i < parentDocs.Count; i++)
+            for (int i = 0; i < parents.Count; i++)
             {
                 Document parent = new Document(Guid.NewGuid().ToString(), parents[i], null);
                 parentDocs.Add(parent);
@@ -64,7 +64,6 @@ namespace LlmTornado.VectorDatabases
             {
                 _docStore.SetDocument(doc);
             }
-
         }
 
         public IEnumerable<Document> Search(float[] queryEmbedding, TornadoWhereOperator? where = null, int topK = 5, bool includeSource = false)
@@ -78,7 +77,7 @@ namespace LlmTornado.VectorDatabases
         {
             List<VectorDocument> vectorDocuments = (await _vectorStore.QueryByEmbeddingAsync(queryEmbedding, where, topK)).ToList();
 
-            return _docStore.GetDocuments(vectorDocuments.Select(d => d.Id).ToArray());
+            return _docStore.GetDocuments(vectorDocuments.Where(d => d.Metadata.ContainsKey("parent_id")).Select(d => d.Metadata["parent_id"].ToString()).ToArray());
         }
     }
 }
