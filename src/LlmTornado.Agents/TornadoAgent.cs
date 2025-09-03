@@ -121,7 +121,8 @@ public class TornadoAgent
         Type? outputSchema = null,
         List<Delegate>? tools = null,
         List<MCPServer>? mcpServers = null,
-        bool streaming = false)
+        bool streaming = false,
+        Dictionary<string, bool>? toolPermissionRequired = null)
     {
         Client = client ?? throw new ArgumentNullException(nameof(client));
         Model = model ?? throw new ArgumentNullException(nameof(model));
@@ -133,6 +134,8 @@ public class TornadoAgent
         McpServers = mcpServers ?? new List<MCPServer>();
         Name = string.IsNullOrEmpty(name) ? "Assistant" : name;
         Streaming = streaming;
+        ToolPermissionRequired = toolPermissionRequired ?? new Dictionary<string, bool>();
+
         if (OutputSchema != null)
         {
             Options.ResponseFormat = OutputSchema.CreateJsonSchemaFormatFromType(true);

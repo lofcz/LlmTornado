@@ -5,6 +5,7 @@ using LlmTornado.Code;
 using System.ComponentModel;
 using LlmTornado.Agents.DataModels;
 using LlmTornado.Agents.Utility;
+using System.Security.Cryptography.X509Certificates;
 
 namespace LlmTornado.Demo;
 
@@ -254,5 +255,54 @@ public class AgentsDemo : DemoBase
     {
         // Call the weather API here.
         return $"31 C";
-    } 
+    }
+
+
+    [TornadoTest]
+    public static async Task AgentToolApprovalDemo()
+    {
+        TornadoAgent agent = new TornadoAgent(
+            Program.Connect(), 
+            ChatModel.OpenAi.Gpt41.V41Mini, 
+            instructions: "You are a useful assistant.",
+            tools: [GetCurrentWeather],
+            streaming: true,
+            toolPermissionRequired:new Dictionary<string, bool>()
+                {
+                    { "GetCurrentWeather", true }
+                }
+            );
+
+        ValueTask runEventHandler(AgentRunnerEvents runEvent)
+        {
+            switch (runEvent.EventType)
+            {
+                case AgentRunnerEventTypes.Streaming:
+                    if (runEvent is AgentRunnerStreamingEvent streamingEvent)
+                    {
+                        if (streamingEvent.ModelStreamingEvent is ModelStreamingOutputTextDeltaEvent deltaTextEvent)
+                        {
+                            Console.Write(deltaTextEvent.DeltaText); // Write the text delta directly
+                        }
+                    }
+                    break;
+                default:
+                    break;
+            }
+            return ValueTask.CompletedTask;
+        }
+
+        ValueTask<bool> toolApprovalHandler(string toolRequest)
+        {
+            Console.WriteLine(toolRequest);
+            Console.WriteLine("Do you approve? (y/n)");
+            string? input = Console.ReadLine();
+            return ValueTask.FromResult(input?.ToLower().StartsWith('y') ?? false);
+        }
+        Console.WriteLine("[User]: What is the weather in boston?");
+        Console.Write("[Agent]: ");
+        Conversation result = await agent.RunAsync("What is the weather in boston?", onAgentRunnerEvent:runEventHandler,toolPermissionHandle: toolApprovalHandler);
+
+        Console.WriteLine(result.Messages.Last().Content);
+    }
 }

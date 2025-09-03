@@ -245,7 +245,7 @@ public class TornadoRunner
 
         if (toolPermissionHandle != null)
         {
-            if (toolPermissionHandle?.GetInvocationList().Length > 0 && agent.ToolPermissionRequired[toolCall.Name])
+            if (agent.ToolPermissionRequired[toolCall.Name])
             {
                 //If tool permission is required, ask user for permission
                 permissionGranted = toolPermissionHandle.Invoke($"Do you want to allow the agent to use the tool: {toolCall.Name}?").Result;
@@ -257,11 +257,13 @@ public class TornadoRunner
             //If permission is not granted, remove the tool call from the request
             functionResult = new FunctionResult(toolCall, "Tool Permission was not granted by user", FunctionResultSetContentModes.Passthrough);
         }
-
-        if (agent.McpTools.ContainsKey(toolCall.Name)) { functionResult = await ToolRunner.CallMcpToolAsync(agent, toolCall); }
-        else 
+        else
         {
-            functionResult = agent.AgentTools.ContainsKey(toolCall.Name)?await ToolRunner.CallAgentToolAsync(agent, toolCall) : await ToolRunner.CallFuncToolAsync(agent, toolCall);
+            if (agent.McpTools.ContainsKey(toolCall.Name)) { functionResult = await ToolRunner.CallMcpToolAsync(agent, toolCall); }
+            else
+            {
+                functionResult = agent.AgentTools.ContainsKey(toolCall.Name) ? await ToolRunner.CallAgentToolAsync(agent, toolCall) : await ToolRunner.CallFuncToolAsync(agent, toolCall);
+            }
         }
 
         return functionResult;
@@ -288,7 +290,7 @@ public class TornadoRunner
         {
             if (Streaming && runnerCallback != null)
             {
-                return await HandleStreaming(agent, chat, runnerCallback);
+                return await HandleStreaming(agent, chat, runnerCallback, toolPermissionRequest);
             }
 
             RestDataOrException<ChatRichResponse> response = await chat.GetResponseRichSafe(async functions =>
