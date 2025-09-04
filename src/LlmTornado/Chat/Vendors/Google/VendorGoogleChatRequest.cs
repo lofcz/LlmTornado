@@ -1009,9 +1009,20 @@ internal class VendorGoogleChatRequest
         VendorGoogleChatRequestGenerationConfig? localConfig = null;
         bool anyStrictTool = false;
         
+        // serialize all user-defined tools into one "tool" with multiple "functionDeclarations" as responses are better this way
+        VendorGoogleChatTool toolWrapper = new VendorGoogleChatTool();
+        
         foreach (Tool tool in tools)
         {
-            localTools.Add(new VendorGoogleChatTool(tool));
+            if (tool.Function is not null)
+            {
+                toolWrapper.FunctionDeclarations.Add(new VendorGoogleChatToolFunctionDeclaration(tool.Function));   
+            }
+        }
+
+        if (toolWrapper.FunctionDeclarations.Count > 0)
+        {
+            localTools.Add(toolWrapper);   
         }
         
         if (outboundToolChoice is not null)

@@ -459,7 +459,7 @@ public class InfraDemo : DemoBase
 
         ChatRichResponse data = await conversation.GetResponseRich(ToolCallsHandler.ContinueConversation);
 
-        conversation.StreamResponseRich(new ChatStreamEventHandler
+        await conversation.StreamResponseRich(new ChatStreamEventHandler
         {
             FunctionCallHandler = (calls) =>
             {

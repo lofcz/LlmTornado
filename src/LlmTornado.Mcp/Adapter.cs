@@ -41,35 +41,16 @@ public static class McpExtensions
                     if (fillContent && callToolResult.Content.Count > 0)
                     {
                         ContentBlock firstBlock = callToolResult.Content[0];
-            
-                        switch (firstBlock)
+
+                        result = firstBlock switch
                         {
-                            case TextContentBlock textBlock:
-                            {
-                                result = textBlock.Text;
-                                break;
-                            }
-                            case ImageContentBlock imageBlock:
-                            {
-                                result = imageBlock.Data;
-                                break;
-                            }
-                            case AudioContentBlock audioBlock:
-                            {
-                                result = audioBlock.Data;
-                                break;
-                            }
-                            case EmbeddedResourceBlock embeddedResourceBlock:
-                            {
-                                result = embeddedResourceBlock.Resource.Uri;
-                                break;
-                            }
-                            case ResourceLinkBlock resourceLinkBlock:
-                            {
-                                result = resourceLinkBlock.Uri;
-                                break;
-                            }
-                        }
+                            TextContentBlock textBlock => textBlock.Text,
+                            ImageContentBlock imageBlock => imageBlock.Data,
+                            AudioContentBlock audioBlock => audioBlock.Data,
+                            EmbeddedResourceBlock embeddedResourceBlock => embeddedResourceBlock.Resource.Uri,
+                            ResourceLinkBlock resourceLinkBlock => resourceLinkBlock.Uri,
+                            _ => result
+                        };
                     }
 
                     McpContent mcpContent = new McpContent
