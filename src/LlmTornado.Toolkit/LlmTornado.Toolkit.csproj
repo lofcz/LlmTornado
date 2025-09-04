@@ -12,7 +12,7 @@
         <RepositoryType>git</RepositoryType>
         <PackageTags>llmtornado</PackageTags>
         <PackageIcon>nuget_logo.jpg</PackageIcon>
-        <Version>1.2.28</Version>
+        <Version>1.2.29</Version>
     </PropertyGroup>
 
     <ItemGroup>
