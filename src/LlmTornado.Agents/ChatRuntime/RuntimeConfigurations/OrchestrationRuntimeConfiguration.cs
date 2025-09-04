@@ -1,6 +1,8 @@
 ﻿using LlmTornado.Agents.ChatRuntime.Orchestration;
 using LlmTornado.Agents.DataModels;
+using LlmTornado.Agents.Utility;
 using LlmTornado.Chat;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -19,6 +21,7 @@ public class OrchestrationRuntimeConfiguration : Orchestration<ChatMessage, Chat
     public CancellationTokenSource cts { get; set; } = new CancellationTokenSource();
     public Func<ChatRuntimeEvents, ValueTask>? OnRuntimeEvent { get; set; }
     public ConcurrentStack<ChatMessage> MessageHistory { get; set; } = new ConcurrentStack<ChatMessage>();
+    public string? MessageHistoryFileLocation { get; set; }
 
     public OrchestrationRuntimeConfiguration()
     {
@@ -32,6 +35,19 @@ public class OrchestrationRuntimeConfiguration : Orchestration<ChatMessage, Chat
             // Forward orchestration events to runtime
             this.OnRuntimeEvent?.Invoke(new ChatRuntimeOrchestrationEvent(e, Runtime?.Id ?? string.Empty));
         };
+
+        if(MessageHistoryFileLocation != null)
+        {
+            List<ChatMessage> history = new List<ChatMessage>();
+            if (File.Exists(MessageHistoryFileLocation))
+            {
+                history.LoadConversation(MessageHistoryFileLocation);
+                foreach (var msg in history)
+                    MessageHistory.Push(msg);
+            }
+
+        }
+            
     }
 
     public void CancelRuntime()

@@ -2,6 +2,7 @@
 using LlmTornado.Agents.ChatRuntime.RuntimeConfigurations;
 using LlmTornado.Agents.DataModels;
 using LlmTornado.Agents.Utility;
+using LlmTornado.Chat;
 using Newtonsoft.Json.Linq;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography.X509Certificates;
@@ -18,6 +19,13 @@ public class OrchestrationBuilder
     public OrchestrationBuilder WithOnRuntimeEvent(Func<ChatRuntimeEvents, ValueTask> onRuntimeEvent)
     {
         Configuration.OnRuntimeEvent = onRuntimeEvent;
+        return this;
+    }
+
+    public OrchestrationBuilder WithChatMemory(string memoryFilePath)
+    {
+        Configuration.MessageHistoryFileLocation = memoryFilePath;
+        
         return this;
     }
 

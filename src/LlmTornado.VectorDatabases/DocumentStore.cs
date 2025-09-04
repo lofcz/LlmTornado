@@ -25,6 +25,11 @@ namespace LlmTornado.VectorDatabases
         {
             return new VectorDocument(doc.Id, doc.Content, doc.Metadata, null);
         }
+
+        public static implicit operator Document(VectorDocument vdoc)
+        {
+            return new Document(vdoc.Id, vdoc.Content, vdoc.Metadata);
+        }
     }
 
     public interface IDocumentStore
@@ -152,7 +157,16 @@ namespace LlmTornado.VectorDatabases
         public LocalDocumentStore(string storePath, string collectionName)
         {
             StorePath = storePath;
+            SetCollection(collectionName);
+        }
+
+        public void SetCollection(string collectionName)
+        {
             CollectionName = collectionName;
+            if (!Directory.Exists(_collectionFilePath))
+            {
+                Directory.CreateDirectory(_collectionFilePath);
+            }
         }
 
         public void DeleteDocument(string id)
@@ -211,27 +225,27 @@ namespace LlmTornado.VectorDatabases
 
         public Task SetDocumentAsync(Document document)
         {
-            throw new NotImplementedException();
+            SetDocument(document); return Task.CompletedTask;
         }
 
         public Task<IEnumerable<Document>> GetDocumentsAsync(string[] id)
         {
-            throw new NotImplementedException();
+            return Task.FromResult(GetDocuments(id));
         }
 
         public Task UpdateDocumentAsync(Document document)
         {
-            throw new NotImplementedException();
+            return Task.Run(() => UpdateDocument(document));
         }
 
         public Task DeleteDocumentAsync(string id)
         {
-            throw new NotImplementedException();
+            return Task.Run(() => DeleteDocument(id));
         }
 
         public Task<IEnumerable<Document>> GetAllDocumentsAsync()
         {
-            throw new NotImplementedException();
+            return Task.FromResult(GetAllDocuments());
         }
 
         public string GetCollectionName() => CollectionName;

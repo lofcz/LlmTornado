@@ -44,8 +44,9 @@ public class ChatbotAgent : OrchestrationRuntimeConfiguration
             .SetEntryRunnable(inputModerator)
             .SetOutputRunnable(RunnableAgent)
             .WithRuntimeProperty("LatestUserMessage", "")
-            .WithRuntimeProperty("MemoryCollectionName", "AgentV4")
-            .WithRuntimeProperty("EntitiesCollectionName", "AgentEntitiesV4")
+            .WithRuntimeProperty("MemoryCollectionName", "AgentV6")
+            .WithRuntimeProperty("EntitiesCollectionName", "AgentEntitiesV6")
+            .WithChatMemory("AgentV6.json")
             .AddParallelAdvancement(inputModerator,
                  new OrchestrationAdvancer<ChatMessage>(webSearchRunnable),
                  new OrchestrationAdvancer<ChatMessage>(vectorSearchRunnable),
@@ -125,9 +126,15 @@ public class AgentRunnable : OrchestrationRunnable<CombinationalResult<string>, 
     TornadoAgent Agent;
     public Action<AgentRunnerEvents>? OnAgentRunnerEvent { get; set; }
 
-    public AgentRunnable(TornadoApi client, Orchestration orchestrator, bool streaming = false) : base(orchestrator)
+    OrchestrationRuntimeConfiguration _runtimeConfiguration;
+
+    Conversation _conv;
+
+    bool _firstRun = true;
+
+    public AgentRunnable(TornadoApi client, OrchestrationRuntimeConfiguration orchestrator, bool streaming = false) : base(orchestrator)
     {
-        string instructions = @"You are a friendly chatbot.";
+        string instructions = @"You are a friendly chatbot. Given the following context and users prompt generate a response to the user that is helpful and informative.";
 
         Agent = new TornadoAgent(
             client: client,
@@ -135,15 +142,21 @@ public class AgentRunnable : OrchestrationRunnable<CombinationalResult<string>, 
             name: "Assistant",
             instructions: instructions,
             streaming: streaming);
-
-        Agent.ResponseOptions = new ResponseRequest() { Tools = [new ResponseWebSearchTool()] };
+        _conv = Agent.Client.Chat.CreateConversation(Agent.Options);
+        _runtimeConfiguration = orchestrator;
     }
     
     public override async ValueTask<ChatMessage> Invoke(RunnableProcess<CombinationalResult<string>, ChatMessage> process)
     {
+        if (_firstRun)
+        {
+           //Add the chat history here
+        }
+        
         process.RegisterAgent(Agent);
-
-        Conversation conv = await Agent.RunAsync(appendMessages: new List<ChatMessage> { new ChatMessage(Code.ChatMessageRoles.User, string.Join('\n',process.Input.Values)) },
+        _conv.AppendMessage(new ChatMessage(Code.ChatMessageRoles.User, string.Join('\n', process.Input.Values)));
+        _conv = await Agent.RunAsync(
+            appendMessages: _conv.Messages.ToList(),
             streaming: Agent.Streaming,
             onAgentRunnerEvent: (sEvent) =>
             {
@@ -151,7 +164,7 @@ public class AgentRunnable : OrchestrationRunnable<CombinationalResult<string>, 
                 return ValueTask.CompletedTask;
             });
 
-        return conv.Messages.Last();
+        return _conv.Messages.Last();
     }
 }
 
@@ -161,7 +174,7 @@ public class WebSearchRunnable : OrchestrationRunnable<ChatMessage, string>
 
     public WebSearchRunnable(TornadoApi client, Orchestration orchestrator) : base(orchestrator)
     {
-        string instructions = @"You are a websearcher for additional context to the conversation. Please search the web on the provided topic and provide a summary of the results.";
+        string instructions = @"You are a websearcher for additional context to the conversation. Please search the web on the provided topic and provide a summary of the results. If nothing is relevant for the conversation just say so.";
 
         Agent = new TornadoAgent(
             client: client,
@@ -178,7 +191,7 @@ public class WebSearchRunnable : OrchestrationRunnable<ChatMessage, string>
 
         Conversation conv = await Agent.RunAsync(appendMessages: new List<ChatMessage> { process.Input });
 
-        return conv.Messages.LastOrDefault()?.Content;
+        return "WEB SEARCH CONTEXT: " +  conv.Messages.LastOrDefault()?.Content;
     }
 }
 public class ExitPathRunnable : OrchestrationRunnable<ChatMessage, ChatMessage>
@@ -281,6 +294,18 @@ public class VectorSaveRunnable : OrchestrationRunnable<ChatMessage, ValueTask>
         await pcdRetriever.CreateParentChildCollection(text, 2000, 250, 500, 125, tornadoEmbeddingProvider);
     }
 }
+public class ChatPassthruRunnable : OrchestrationRunnable<ChatMessage, string>
+{
+    public ChatPassthruRunnable(Orchestration orchestrator) : base(orchestrator)
+    {
+    }
+
+    public override ValueTask<string> Invoke(RunnableProcess<ChatMessage, string> process)
+    {
+        Orchestrator.RuntimeProperties.TryUpdate("LatestUserMessage", process.Input.Content ?? "", Orchestrator.RuntimeProperties["LatestUserMessage"]?.ToString() ?? "");
+        return new ValueTask<string>("USERS ORIGINAL MESSAGE: " + process.Input.Content);
+    }
+}
 
 public class VectorSearchRunnable : OrchestrationRunnable<ChatMessage, string>
 {
@@ -323,7 +348,7 @@ Please provide 2-3 search queries based off the user's input. for quering the ve
 
         string combinedContents = string.Join(", ", docs.Select(doc => doc.Content ?? ""));
 
-        return combinedContents;
+        return "VECTOR DB CONTEXT: " + combinedContents ;
     }
 
     private struct SearchQueries
@@ -349,7 +374,11 @@ Please provide 2-3 search queries based off the user's input. for quering the ve
 
             var result = await pcdRetriever.SearchAsync(queryEmb, topK:3);
 
-            results.AddRange(result.Cast<VectorDocument>());
+            foreach (var doc in result)
+            {
+                results.Add((VectorDocument)doc);
+            }
+            
         }
 
         return results.ToArray();
@@ -478,13 +507,7 @@ public class VectorEntitySaveRunnable : OrchestrationRunnable<ChatMessage, strin
             if (entities.DetectedEntities.Length == 0)
                 return "ENTITIES: {}";
 
-            Agent.Instructions = $@"
-Given the following detected entities: 
-{string.Join("\n", entities.DetectedEntities.Select(e => e.ToString()))}
 
-Make sure for each entity to check if it already exists in the vector database:
-{string.Join("\n\n", similarEntities.Select(e => e.ToString()))}
-";
 
             List<VectorDocument> newEntities = new List<VectorDocument>();
             List<VectorDocument> knownEntities = new List<VectorDocument>();
@@ -492,9 +515,10 @@ Make sure for each entity to check if it already exists in the vector database:
             foreach (var entity in entities.DetectedEntities)
             {
                 VectorDocument existingDoc = similarEntities.FirstOrDefault(ety => ety.Metadata["EntityName"].ToString() == entity.EntityName);
-                existingDoc.Embedding = await tornadoEmbeddingProvider.Invoke(existingDoc.Content ?? "");
+                
                 if (existingDoc != null)
                 {
+                    existingDoc.Embedding = await tornadoEmbeddingProvider.Invoke(existingDoc.Content ?? "");
                     knownEntities.Add(UpdateFromEntity(existingDoc, entity));
                     await UpdateDocuments(new[] { UpdateFromEntity(existingDoc, entity) });
                     continue;

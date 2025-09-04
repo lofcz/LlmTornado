@@ -103,4 +103,16 @@ public class VectorDatabasesDemo
         }
     }
 
+
+    [TornadoTest]
+    public static async Task TestCasting()
+    {
+        VectorDocument vectorDocument = new VectorDocument("1", "This is a test document", new Dictionary<string, object> { { "Author", "John Doe" } }, new float[] { 0.1f, 0.2f, 0.3f });
+        Document doc = (Document)vectorDocument;
+
+        VectorDocument vectorDocument2 = (VectorDocument)doc;
+        Console.WriteLine($"VectorDocument2 Id: {vectorDocument2.Id}, Content: {vectorDocument2.Content}, Author: {vectorDocument2.Metadata["Author"]}");
+
+    }
+
 }
