@@ -49,7 +49,7 @@ public static class JsonUtility
     /// <param name="jsonSchemaIsStrict">A boolean value indicating whether the generated JSON schema should be strict.  <see langword="true"/> if
     /// the schema should enforce strict validation; otherwise, <see langword="false"/>.</param>
     /// <returns>A <see cref="ChatRequestResponseFormats"/> containing the JSON schema of the specified type, encoded as binary data. Used for output formating</returns>
-    public static ChatRequestResponseFormats CreateJsonSchemaFormatFromType(this Type type, bool jsonSchemaIsStrict = true)
+    public static ChatRequestResponseFormats CreateJsonSchemaFormatFromType(this Type type, bool jsonSchemaIsStrict)
     {
         string formatDescription = "";
         IEnumerable<DescriptionAttribute> descriptions = type.GetCustomAttributes<DescriptionAttribute>();
@@ -58,7 +58,7 @@ public static class JsonUtility
             formatDescription = descriptions.First().Description;
         }
 
-        dynamic? responseFormat = Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(JsonSchemaGenerator.GenerateSchema(type, true));
+        dynamic? responseFormat = Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(JsonSchemaGenerator.GenerateSchema(type, out bool strictSchema));
 
 
         return ChatRequestResponseFormats.StructuredJson(
@@ -82,7 +82,6 @@ public static class JsonUtility
     {
         string formatDescription = "";
         //Send this down the line to track if schema is strict or not
-        bool jsonSchemaIsStrict = true;
 
         IEnumerable<DescriptionAttribute> descriptions = type.GetCustomAttributes<DescriptionAttribute>();
         if (descriptions.Any())
@@ -90,7 +89,7 @@ public static class JsonUtility
             formatDescription = descriptions.First().Description;
         }
 
-        dynamic? responseFormat = Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(JsonSchemaGenerator.GenerateSchema(type, jsonSchemaIsStrict));
+        dynamic? responseFormat = Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(JsonSchemaGenerator.GenerateSchema(type, out bool jsonSchemaIsStrict));
 
         return ChatRequestResponseFormats.StructuredJson(
             type.Name,
@@ -325,13 +324,14 @@ public static class JsonSchemaGenerator
     /// fields.  Additional properties are not allowed in the schema.</remarks>
     /// <param name="type">The type for which to generate the JSON schema. Must not be <see langword="null"/>.</param>
     /// <returns>A JSON string representing the schema of the specified type, formatted with indentation for readability.</returns>
-    public static string GenerateSchema(Type type, bool isStrict)
+    public static string GenerateSchema(Type type, out bool isStrict, bool lastIsStrict = true)
     {
+        isStrict = lastIsStrict;
         Dictionary<string, object> schema = new Dictionary<string, object>
         {
             ["type"] = "object",
-            ["properties"] = GetPropertiesSchema(type, isStrict),
-            ["required"] = GetRequiredProperties(type, isStrict),
+            ["properties"] = GetPropertiesSchema(type, out isStrict, lastIsStrict: isStrict),
+            ["required"] = GetRequiredProperties(type, out isStrict, isStrict),
             ["additionalProperties"] = false
         };
 
@@ -350,9 +350,10 @@ public static class JsonSchemaGenerator
     /// "additionalProperties" are included.</param>
     /// <returns>A dictionary representing the schema of the properties of the specified type. If <paramref
     /// name="fromArray"/> is <see langword="true"/>, the dictionary includes additional schema elements.</returns>
-    private static Dictionary<string, object> GetPropertiesSchema(Type type, bool isStrict, bool fromArray = false)
+    private static Dictionary<string, object> GetPropertiesSchema(Type type, out bool isStrict, bool fromArray = false, bool lastIsStrict = true)
     {
         Dictionary<string, object> properties = new Dictionary<string, object>();
+        isStrict = lastIsStrict;
         if (fromArray)
         {
             string jsonType = JsonUtility.MapClrTypeToJsonType(type);
@@ -367,10 +368,10 @@ public static class JsonSchemaGenerator
                     {
                         throw new ArgumentException($"Infinite Recursion detected please fix nesting on {prop.Name} in Type {type.Name}.");
                     }
-                    subProperties[prop.Name] = GetPropertySchema(prop, isStrict);
+                    subProperties[prop.Name] = GetPropertySchema(prop, out isStrict, isStrict);
                 }
                 properties.Add("properties", subProperties);
-                properties.Add("required", GetRequiredProperties(type, isStrict));
+                properties.Add("required", GetRequiredProperties(type, out isStrict, isStrict));
                 properties.Add("additionalProperties", false);
             }
 
@@ -378,7 +379,7 @@ public static class JsonSchemaGenerator
         }
         foreach (PropertyInfo prop in type.GetProperties())
         {
-            properties[prop.Name] = GetPropertySchema(prop, isStrict);
+            properties[prop.Name] = GetPropertySchema(prop, out isStrict, isStrict);
         }
         return properties;
     }
@@ -392,9 +393,10 @@ public static class JsonSchemaGenerator
     /// <param name="prop">The <see cref="PropertyInfo"/> object representing the property for which the schema is generated.</param>
     /// <returns>A dictionary containing the schema details of the property, including type, description, and nested
     /// properties if applicable.</returns>
-    private static object GetPropertySchema(PropertyInfo prop, bool isStrict)
+    private static object GetPropertySchema(PropertyInfo prop, out bool isStrict, bool lastIsStrict = true)
     {
         Dictionary<string, object> props = new Dictionary<string, object>();
+        isStrict = lastIsStrict;
         IEnumerable<DescriptionAttribute> descriptions = prop.GetCustomAttributes<DescriptionAttribute>();
         if (descriptions.Any())
         {
@@ -414,7 +416,7 @@ public static class JsonSchemaGenerator
         {
             props.Add("type", "array");
             Type? itemType = prop.PropertyType.GetElementType();
-            props.Add("items", GetPropertiesSchema(itemType, true));
+            props.Add("items", GetPropertiesSchema(itemType, out isStrict, fromArray: true, isStrict));
         }
         else
         {
@@ -422,8 +424,8 @@ public static class JsonSchemaGenerator
             props = new Dictionary<string, object>
             {
                 ["type"] = "object",
-                ["properties"] = GetPropertiesSchema(prop.PropertyType, isStrict),
-                ["required"] = GetRequiredProperties(prop.PropertyType, isStrict),
+                ["properties"] = GetPropertiesSchema(prop.PropertyType, out isStrict, isStrict),
+                ["required"] = GetRequiredProperties(prop.PropertyType, out isStrict, isStrict),
                 ["additionalProperties"] = false
             };
         }
@@ -436,15 +438,16 @@ public static class JsonSchemaGenerator
     /// </summary>
     /// <param name="type">The type whose property names are to be retrieved. Cannot be <see langword="null"/>.</param>
     /// <returns>A list of strings containing the names of all properties defined on the specified type.</returns>
-    private static List<string> GetRequiredProperties(Type type, bool isStrict)
+    private static List<string> GetRequiredProperties(Type type, out bool isStrict, bool lastIsStrict = true)
     {
         List<string> requiredProperties = new List<string>();
+        isStrict = lastIsStrict;
 
         PropertyInfo[] propertyInfos = type.GetProperties();
 
         foreach (PropertyInfo propertyInfo in propertyInfos)
         {
-            if(!IsNullableReferenceType(propertyInfo))
+            if(!HasJsonNullablePropertyAttribute(propertyInfo))
             {
                 requiredProperties.Add(propertyInfo.Name);
             }
@@ -462,35 +465,12 @@ public static class JsonSchemaGenerator
         return requiredProperties;
     }
 
-    public static bool IsNullableReferenceType(PropertyInfo propertyInfo)
+    public static bool HasJsonNullablePropertyAttribute(PropertyInfo propertyInfo)
     {
-        var nullableAttrType = GetNullableAttributeType(Assembly.GetExecutingAssembly());
-        if (nullableAttrType == null)
-        {
-            return false;
-        }
-
-        var nullableAttr = propertyInfo.GetCustomAttributes(nullableAttrType, false).FirstOrDefault();
-
-        if (nullableAttr != null)
-        {
-            // Attribute constructor takes an array of bytes.
-            byte[]? constructorArguments = nullableAttr.GetType().GetField("NullableFlags")?.GetValue(nullableAttr) as byte[];
-
-            // A value of 2 indicates a nullable reference type.
-            if (constructorArguments != null && constructorArguments.Length > 0)
-            {
-                return constructorArguments[0] == 2;
-            }
-        }
-
-        return false;
+        var nullableAttr = propertyInfo.GetCustomAttribute<Newtonsoft.Json.JsonPropertyAttribute>();
+        return nullableAttr != null && nullableAttr.Required == Newtonsoft.Json.Required.AllowNull;
     }
 
-    private static Type? GetNullableAttributeType(Assembly assembly)
-    {
-        return assembly.GetType("System.Runtime.CompilerServices.NullableAttribute");
-    }
 
     /// <summary>
     /// Represents a collection of numeric types recognized by the system.

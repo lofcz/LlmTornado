@@ -11,6 +11,7 @@ using LlmTornado.Moderation;
 using LlmTornado.Responses;
 using LlmTornado.VectorDatabases;
 using LlmTornado.VectorDatabases.Intergrations;
+using Newtonsoft.Json;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
@@ -382,11 +383,12 @@ public struct Entity
     public string Context { get; set; }
 
     [Description("Type of Entity, Person, Place, Thing, Organization, Event, Concept, Other")]
-    [JsonConverter(typeof(JsonStringEnumConverter))]
+    [System.Text.Json.Serialization.JsonConverter(typeof(JsonStringEnumConverter))]
     public EntityTypes EntityType { get; set; }
 
+    [JsonProperty(NullValueHandling = NullValueHandling.Ignore, Required = Required.AllowNull)]
     [Description("Unique Properties that can be assigned to this entity for additional context")]
-    public KeyValue[] Properties { get; set; }
+    public KeyValue[]? Properties { get; set; }
 
     [Description("Entity Name who owns this Entity or N/A if unknown")]
     public string EntityOwner { get; set; }
@@ -400,6 +402,7 @@ public struct Entity
 [Description("List of all entities detected in the user's message")]
 public struct Entities
 {
+    [JsonProperty(NullValueHandling = NullValueHandling.Ignore, Required = Required.AllowNull)]
     public Entity[]? DetectedEntities { get; set; }
 }
 
@@ -408,6 +411,8 @@ public struct SortedEntities
 {
     [Description("Entities that need to be updated with new information")]
     public Entity[]? EntitiesToUpdate { get; set; }
+
+    [JsonProperty(NullValueHandling = NullValueHandling.Ignore, Required = Required.AllowNull)]
     [Description("New Entities that do not exist in the vector database")]
     public Entity[]? NewEntities { get; set; }
 }
