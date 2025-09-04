@@ -58,7 +58,8 @@ public static class JsonUtility
             formatDescription = descriptions.First().Description;
         }
 
-        dynamic? responseFormat = Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(JsonSchemaGenerator.GenerateSchema(type));
+        dynamic? responseFormat = Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(JsonSchemaGenerator.GenerateSchema(type, true));
+
 
         return ChatRequestResponseFormats.StructuredJson(
             type.Name,
@@ -67,7 +68,38 @@ public static class JsonUtility
             jsonSchemaIsStrict
         );
     }
-    
+
+    /// <summary>
+    /// Creates a <see cref="ChatRequestResponseFormats"/> instance representing the JSON schema of the specified type.
+    /// </summary>
+    /// <remarks>If the specified type has a <see cref="DescriptionAttribute"/>, the first description
+    /// found is included in the format description.</remarks>
+    /// <param name="type">The type for which to generate the JSON schema.</param>
+    /// <param name="jsonSchemaIsStrict">A boolean value indicating whether the generated JSON schema should be strict.  <see langword="true"/> if
+    /// the schema should enforce strict validation; otherwise, <see langword="false"/>.</param>
+    /// <returns>A <see cref="ChatRequestResponseFormats"/> containing the JSON schema of the specified type, encoded as binary data. Used for output formating</returns>
+    public static ChatRequestResponseFormats CreateJsonSchemaFormatFromType(this Type type)
+    {
+        string formatDescription = "";
+        //Send this down the line to track if schema is strict or not
+        bool jsonSchemaIsStrict = true;
+
+        IEnumerable<DescriptionAttribute> descriptions = type.GetCustomAttributes<DescriptionAttribute>();
+        if (descriptions.Any())
+        {
+            formatDescription = descriptions.First().Description;
+        }
+
+        dynamic? responseFormat = Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(JsonSchemaGenerator.GenerateSchema(type, jsonSchemaIsStrict));
+
+        return ChatRequestResponseFormats.StructuredJson(
+            type.Name,
+            responseFormat,
+            formatDescription,
+            jsonSchemaIsStrict
+        );
+    }
+
     /// <summary>
     /// Deserializes the JSON string into an object of the specified type.
     /// </summary>
@@ -167,7 +199,7 @@ public static class JsonUtility
         string lastInstructions = agent.Instructions;
         Type? type = agent.OutputSchema;
         List<Tool> tools = agent.Options.Tools?.ToList() ?? [];
-        agent.OutputSchema = null; // Clear output schema for this operation to avoid conflicts
+        agent.UpdateOutputSchema(null); // Clear output schema for this operation to avoid conflicts
         agent.Options.Tools = new List<Tool>(); // Clear tools for this operation to avoid conflicts
         try
         {
@@ -197,7 +229,7 @@ public static class JsonUtility
 
             Conversation repairResult = await TornadoRunner.RunAsync(agent, repairPrompt);
             agent.Instructions = lastInstructions; // Restore original instructions
-            agent.OutputSchema = type; // Restore original output schema
+            agent.UpdateOutputSchema(type); // Restore original output schema
             agent.Options.Tools = tools; // Restore original tools
             // Clean the repair result
             string repairedJson = repairResult.Messages.Last().Content?.Trim() ?? "";
@@ -222,7 +254,7 @@ public static class JsonUtility
         catch (Exception ex)
         {
             agent.Instructions = lastInstructions; // Restore original instructions
-            agent.OutputSchema = type; // Restore original output schema
+            agent.UpdateOutputSchema(type); // Restore original output schema
             agent.Options.Tools = tools; // Restore original tools
             return default!;
         }
@@ -293,13 +325,13 @@ public static class JsonSchemaGenerator
     /// fields.  Additional properties are not allowed in the schema.</remarks>
     /// <param name="type">The type for which to generate the JSON schema. Must not be <see langword="null"/>.</param>
     /// <returns>A JSON string representing the schema of the specified type, formatted with indentation for readability.</returns>
-    public static string GenerateSchema(Type type)
+    public static string GenerateSchema(Type type, bool isStrict)
     {
         Dictionary<string, object> schema = new Dictionary<string, object>
         {
             ["type"] = "object",
-            ["properties"] = GetPropertiesSchema(type),
-            ["required"] = GetRequiredProperties(type),
+            ["properties"] = GetPropertiesSchema(type, isStrict),
+            ["required"] = GetRequiredProperties(type, isStrict),
             ["additionalProperties"] = false
         };
 
@@ -318,7 +350,7 @@ public static class JsonSchemaGenerator
     /// "additionalProperties" are included.</param>
     /// <returns>A dictionary representing the schema of the properties of the specified type. If <paramref
     /// name="fromArray"/> is <see langword="true"/>, the dictionary includes additional schema elements.</returns>
-    private static Dictionary<string, object> GetPropertiesSchema(Type type, bool fromArray = false)
+    private static Dictionary<string, object> GetPropertiesSchema(Type type, bool isStrict, bool fromArray = false)
     {
         Dictionary<string, object> properties = new Dictionary<string, object>();
         if (fromArray)
@@ -335,10 +367,10 @@ public static class JsonSchemaGenerator
                     {
                         throw new ArgumentException($"Infinite Recursion detected please fix nesting on {prop.Name} in Type {type.Name}.");
                     }
-                    subProperties[prop.Name] = GetPropertySchema(prop);
+                    subProperties[prop.Name] = GetPropertySchema(prop, isStrict);
                 }
                 properties.Add("properties", subProperties);
-                properties.Add("required", GetRequiredProperties(type));
+                properties.Add("required", GetRequiredProperties(type, isStrict));
                 properties.Add("additionalProperties", false);
             }
 
@@ -346,7 +378,7 @@ public static class JsonSchemaGenerator
         }
         foreach (PropertyInfo prop in type.GetProperties())
         {
-            properties[prop.Name] = GetPropertySchema(prop);
+            properties[prop.Name] = GetPropertySchema(prop, isStrict);
         }
         return properties;
     }
@@ -360,7 +392,7 @@ public static class JsonSchemaGenerator
     /// <param name="prop">The <see cref="PropertyInfo"/> object representing the property for which the schema is generated.</param>
     /// <returns>A dictionary containing the schema details of the property, including type, description, and nested
     /// properties if applicable.</returns>
-    private static object GetPropertySchema(PropertyInfo prop)
+    private static object GetPropertySchema(PropertyInfo prop, bool isStrict)
     {
         Dictionary<string, object> props = new Dictionary<string, object>();
         IEnumerable<DescriptionAttribute> descriptions = prop.GetCustomAttributes<DescriptionAttribute>();
@@ -390,8 +422,8 @@ public static class JsonSchemaGenerator
             props = new Dictionary<string, object>
             {
                 ["type"] = "object",
-                ["properties"] = GetPropertiesSchema(prop.PropertyType),
-                ["required"] = GetRequiredProperties(prop.PropertyType),
+                ["properties"] = GetPropertiesSchema(prop.PropertyType, isStrict),
+                ["required"] = GetRequiredProperties(prop.PropertyType, isStrict),
                 ["additionalProperties"] = false
             };
         }
@@ -404,9 +436,60 @@ public static class JsonSchemaGenerator
     /// </summary>
     /// <param name="type">The type whose property names are to be retrieved. Cannot be <see langword="null"/>.</param>
     /// <returns>A list of strings containing the names of all properties defined on the specified type.</returns>
-    private static List<string> GetRequiredProperties(Type type)
+    private static List<string> GetRequiredProperties(Type type, bool isStrict)
     {
-        return type.GetProperties().Select(p => p.Name).ToList();
+        List<string> requiredProperties = new List<string>();
+
+        PropertyInfo[] propertyInfos = type.GetProperties();
+
+        foreach (PropertyInfo propertyInfo in propertyInfos)
+        {
+            if(!IsNullableReferenceType(propertyInfo))
+            {
+                requiredProperties.Add(propertyInfo.Name);
+            }
+            else
+            {
+                isStrict = false;
+            }
+
+            if (propertyInfo.PropertyType.Name == type.Name)
+            {
+                throw new ArgumentException($"Infinite Recursion detected please fix nesting on {propertyInfo.Name} in Type {type.Name}.");
+            }
+        }
+
+        return requiredProperties;
+    }
+
+    public static bool IsNullableReferenceType(PropertyInfo propertyInfo)
+    {
+        var nullableAttrType = GetNullableAttributeType(Assembly.GetExecutingAssembly());
+        if (nullableAttrType == null)
+        {
+            return false;
+        }
+
+        var nullableAttr = propertyInfo.GetCustomAttributes(nullableAttrType, false).FirstOrDefault();
+
+        if (nullableAttr != null)
+        {
+            // Attribute constructor takes an array of bytes.
+            byte[]? constructorArguments = nullableAttr.GetType().GetField("NullableFlags")?.GetValue(nullableAttr) as byte[];
+
+            // A value of 2 indicates a nullable reference type.
+            if (constructorArguments != null && constructorArguments.Length > 0)
+            {
+                return constructorArguments[0] == 2;
+            }
+        }
+
+        return false;
+    }
+
+    private static Type? GetNullableAttributeType(Assembly assembly)
+    {
+        return assembly.GetType("System.Runtime.CompilerServices.NullableAttribute");
     }
 
     /// <summary>

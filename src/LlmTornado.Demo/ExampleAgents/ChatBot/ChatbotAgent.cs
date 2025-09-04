@@ -11,9 +11,9 @@ using LlmTornado.Moderation;
 using LlmTornado.Responses;
 using LlmTornado.VectorDatabases;
 using LlmTornado.VectorDatabases.Intergrations;
-using Microsoft.Extensions.Configuration;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Text.Json.Serialization;
 using static LlmTornado.Demo.ExampleAgents.ChatBot.VectorEntitySaveRunnable;
 using static LlmTornado.Demo.VectorDatabasesDemo;
 
@@ -43,14 +43,14 @@ public class ChatbotAgent : OrchestrationRuntimeConfiguration
             .SetEntryRunnable(inputModerator)
             .SetOutputRunnable(RunnableAgent)
             .WithRuntimeProperty("LatestUserMessage", "")
-            .WithRuntimeProperty("MemoryCollectionName", "AgentV3")
-            .WithRuntimeProperty("EntitiesCollectionName", "AgentEntitiesV3")
+            .WithRuntimeProperty("MemoryCollectionName", "AgentV4")
+            .WithRuntimeProperty("EntitiesCollectionName", "AgentEntitiesV4")
             .AddParallelAdvancement(inputModerator,
                  new OrchestrationAdvancer<ChatMessage>(webSearchRunnable),
                  new OrchestrationAdvancer<ChatMessage>(vectorSearchRunnable),
                  new OrchestrationAdvancer<ChatMessage>(vectorEntitySaveRunnable))
             .AddCombinationalAdvancement<string>(
-                fromRunnables: [webSearchRunnable, vectorSearchRunnable],
+                fromRunnables: [webSearchRunnable, vectorSearchRunnable, vectorEntitySaveRunnable],
                 condition: _ => true,
                 toRunnable: RunnableAgent,
                 requiredInputToAdvance: 1,
@@ -382,6 +382,7 @@ public struct Entity
     public string Context { get; set; }
 
     [Description("Type of Entity, Person, Place, Thing, Organization, Event, Concept, Other")]
+    [JsonConverter(typeof(JsonStringEnumConverter))]
     public EntityTypes EntityType { get; set; }
 
     [Description("Unique Properties that can be assigned to this entity for additional context")]
@@ -399,37 +400,37 @@ public struct Entity
 [Description("List of all entities detected in the user's message")]
 public struct Entities
 {
-    public Entity[] DetectedEntities { get; set; }
+    public Entity[]? DetectedEntities { get; set; }
 }
 
 [Description("List of all entities detected in the user's message")]
 public struct SortedEntities
 {
     [Description("Entities that need to be updated with new information")]
-    public Entity[] EntitiesToUpdate { get; set; }
+    public Entity[]? EntitiesToUpdate { get; set; }
     [Description("New Entities that do not exist in the vector database")]
-    public Entity[] NewEntities { get; set; }
+    public Entity[]? NewEntities { get; set; }
 }
 
-public class VectorEntitySaveRunnable : OrchestrationRunnable<ChatMessage, ValueTask>
+public class VectorEntitySaveRunnable : OrchestrationRunnable<ChatMessage, string>
 {
     TornadoAgent Agent { get; set; }
     TornadoApi Client { get; set; }
 
-    string ChromaDbURI = "http://localhost:8000/api/v2/";
+    string ChromaDbURI = "http://localhost:8001/api/v2/";
 
     string collectionName = "ChatBotEntitiesV3";
 
     TornadoChromaDB chromaDB { get; set; }
 
 
-    public VectorEntitySaveRunnable(TornadoApi client, Orchestration orchestrator, string chromaUri = "http://localhost:8000/api/v2/") : base(orchestrator)
+    public VectorEntitySaveRunnable(TornadoApi client, Orchestration orchestrator, string chromaUri = "http://localhost:8001/api/v2/") : base(orchestrator)
     {
         AllowDeadEnd = true;
         string instructions = @"You are an expert Entity Identifier. Your job is to detect all the entities in the user's message and extract their context for saving";
-        chromaDB = new TornadoChromaDB(ChromaDbURI);
         Client = client;
         ChromaDbURI = chromaUri;
+        chromaDB = new TornadoChromaDB(ChromaDbURI);
         Agent = new TornadoAgent(
             client: Client,
             model: ChatModel.OpenAi.Gpt5.V5Mini,
@@ -438,7 +439,7 @@ public class VectorEntitySaveRunnable : OrchestrationRunnable<ChatMessage, Value
             instructions: instructions);
     }
 
-    public override async ValueTask<ValueTask> Invoke(RunnableProcess<ChatMessage, ValueTask> process)
+    public override async ValueTask<string> Invoke(RunnableProcess<ChatMessage, string> process)
     {
         process.RegisterAgent(Agent);
         TornadoEmbeddingProvider tornadoEmbeddingProvider = new TornadoEmbeddingProvider(Program.Connect(), EmbeddingModel.OpenAi.Gen3.Small);
@@ -457,18 +458,20 @@ public class VectorEntitySaveRunnable : OrchestrationRunnable<ChatMessage, Value
 
         if (!string.IsNullOrEmpty(process.Input.Content))
         {
-            Entities entities = await conv.Messages.Last().Content.SmartParseJsonAsync<Entities>(Agent);
+            Entities entities = conv.Messages.Last().Content.ParseJson<Entities>();
 
             List<VectorDocument> similarEntities = new List<VectorDocument>();
             foreach (var entity in entities.DetectedEntities)
             {
+                
                 float[] embedding = await tornadoEmbeddingProvider.Invoke(entity.ToString());
+                
                 VectorDocument[] existingEntities = await QueryEntities(embedding);
                 similarEntities.AddRange(existingEntities);
             }
 
             if (entities.DetectedEntities.Length == 0)
-                return ValueTask.CompletedTask;
+                return "ENTITIES: {}";
 
             Agent.Instructions = $@"
 Given the following detected entities: 
@@ -477,33 +480,37 @@ Given the following detected entities:
 Make sure for each entity to check if it already exists in the vector database:
 {string.Join("\n\n", similarEntities.Select(e => e.ToString()))}
 ";
-            Agent.OutputSchema = typeof(SortedEntities);
-
-            conv = await Agent.RunAsync(appendMessages: new List<ChatMessage> { process.Input });
-
-            SortedEntities sortedEntities = await conv.Messages.Last().Content.SmartParseJsonAsync<SortedEntities>(Agent);  
 
             List<VectorDocument> newEntities = new List<VectorDocument>();
-            
-            foreach (var entity in sortedEntities.NewEntities)
-            {
-                newEntities.Add(CreateFromEntity(entity));
-            }
-            
-            await SaveDocument(newEntities.ToArray());
+            List<VectorDocument> knownEntities = new List<VectorDocument>();
 
-            foreach (var entity in sortedEntities.EntitiesToUpdate)
+            foreach (var entity in entities.DetectedEntities)
             {
                 VectorDocument existingDoc = similarEntities.FirstOrDefault(ety => ety.Metadata["EntityName"].ToString() == entity.EntityName);
+                existingDoc.Embedding = await tornadoEmbeddingProvider.Invoke(existingDoc.Content ?? "");
                 if (existingDoc != null)
                 {
+                    knownEntities.Add(UpdateFromEntity(existingDoc, entity));
                     await UpdateDocuments(new[] { UpdateFromEntity(existingDoc, entity) });
+                    continue;
                 }
+                newEntities.Add(CreateFromEntity(entity));
             }
-            
+
+            foreach (var doc in newEntities)
+            {
+                float[] embedding = await tornadoEmbeddingProvider.Invoke(doc.Content ?? "");
+                doc.Embedding = embedding;
+            }
+
+            await SaveDocuments(newEntities.ToArray());
+
+            string resultResult = "KNOWN ENTITIES: " + string.Join("\n\n", knownEntities.Select(entity => entity.ToString()));
+
+            return resultResult;
         }
 
-        return ValueTask.CompletedTask;
+        return "ENTITIES: {}";
     }
 
     private async Task<VectorDocument[]> QueryEntities(float[] embedding)
@@ -556,7 +563,7 @@ Make sure for each entity to check if it already exists in the vector database:
             metadata: metadata,
             embedding: data);
     }
-    private async Task SaveDocument(VectorDocument[] entities)
+    private async Task SaveDocuments(VectorDocument[] entities)
     {
         await chromaDB.AddDocumentsAsync(entities);
     }

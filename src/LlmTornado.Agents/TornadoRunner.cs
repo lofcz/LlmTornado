@@ -340,17 +340,18 @@ public class TornadoRunner
             },
             ReasoningTokenHandler = (reasoning) =>
             {
+                runnerCallback?.Invoke(new AgentRunnerStreamingEvent(new ModelStreamingReasoningPartAddedEvent(1, 1, 1, reasoning.Content)));
                 return Threading.ValueTaskCompleted;
             },
             BlockFinishedHandler = (message) =>
             {
                 //Call the streaming callback for completion
-                runnerCallback?.Invoke(new AgentRunnerStreamingEvent(new ModelStreamingCompletedEvent(1, message.Id.ToString())));
                 chat.AppendMessage(message);
                 return Threading.ValueTaskCompleted;
             },
             MessagePartHandler = (part) =>
             {
+                //Need to handle other modalities here like images/audio don't have classes for them yet
                 return Threading.ValueTaskCompleted;
             },
             FunctionCallHandler = async (toolCall) =>
@@ -378,7 +379,7 @@ public class TornadoRunner
             },
             HttpExceptionHandler = (exception) =>
             {
-                //Handle any exceptions that occur during streaming
+                runnerCallback?.Invoke(new AgentRunnerErrorEvent(exception.Exception.Message, exception.Exception));
                 return Threading.ValueTaskCompleted;
             },
             OnUsageReceived = (usage) =>
@@ -387,7 +388,9 @@ public class TornadoRunner
                 return Threading.ValueTaskCompleted;
             }
         });
-           
+
+        runnerCallback?.Invoke(new AgentRunnerStreamingEvent(new ModelStreamingCompletedEvent(1)));
+
         return chat;
     }
 }

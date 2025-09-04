@@ -54,7 +54,7 @@ public class TornadoAgent
     /// <summary>
     /// Data Type to Format response output as
     /// </summary>
-    public Type? OutputSchema { get; set; }
+    public Type? OutputSchema { get; private set; }
 
     /// <summary>
     /// Tools available to the agent
@@ -93,6 +93,7 @@ public class TornadoAgent
     /// Should the agent response be streamed.
     /// </summary>
     public bool Streaming { get; set; } = false;
+
 
     /// <summary>
     /// Initializes a new instance of the <see cref="TornadoAgent"/> class, which represents an AI agent capable of
@@ -138,12 +139,30 @@ public class TornadoAgent
 
         if (OutputSchema != null)
         {
-            Options.ResponseFormat = OutputSchema.CreateJsonSchemaFormatFromType(true);
+            Options.ResponseFormat = OutputSchema.CreateJsonSchemaFormatFromType();
         }
 
         //Setup tools and agent tools
         AutoSetupTools(Tools);
         GetMcpTools();
+    }
+
+    /// <summary>
+    /// Update the output schema and response format
+    /// </summary>
+    /// <param name="newSchema"></param>
+    public void UpdateOutputSchema(Type? newSchema, bool setStrict = true)
+    {
+        if (newSchema != null && newSchema != OutputSchema)
+        {
+            OutputSchema = newSchema;
+            Options.ResponseFormat = OutputSchema.CreateJsonSchemaFormatFromType(setStrict);
+        }
+        else
+        {
+            OutputSchema = null;
+            Options.ResponseFormat = null;
+        }
     }
 
     /// <summary>
