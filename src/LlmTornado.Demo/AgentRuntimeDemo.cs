@@ -106,7 +106,7 @@ public class AgentRuntimeDemo : DemoBase
 
         ChatRuntime runtime = new ChatRuntime(runtimeConfiguration);
 
-        runtime.OnRuntimeEvent = async (evt) =>
+        runtime.RuntimeConfiguration.OnRuntimeEvent += async (evt) =>
         {
             if (evt.EventType == ChatRuntimeEventTypes.AgentRunner)
             {

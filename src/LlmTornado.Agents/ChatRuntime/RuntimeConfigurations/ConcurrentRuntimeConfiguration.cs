@@ -29,6 +29,7 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
 
         public async ValueTask<ChatMessage> AddToChatAsync(ChatMessage message, CancellationToken cancellationToken = default)
         {
+            OnRuntimeEvent?.Invoke(new ChatRuntimeStartedEvent(Runtime.Id));
             this.Conversation.Add(message);
 
             ConcurrentBag<ChatMessage> bag = new ConcurrentBag<ChatMessage>(GetMessages());
@@ -68,6 +69,8 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
                 onAgentRunnerEvent: (sEvent) => { OnRuntimeEvent?.Invoke(new ChatRuntimeAgentRunnerEvents(sEvent, Runtime.Id)); return Threading.ValueTaskCompleted; }, 
                 cancellationToken: cancellationToken);
 
+            OnRuntimeEvent?.Invoke(new ChatRuntimeCompletedEvent(Runtime.Id));
+
             return synthesizedResult.Messages.Last();
         }
 
@@ -94,6 +97,7 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
         public void CancelRuntime()
         {
            cts.Cancel();
+           OnRuntimeEvent?.Invoke(new ChatRuntimeCancelledEvent(Runtime.Id));
         }
     }
 }

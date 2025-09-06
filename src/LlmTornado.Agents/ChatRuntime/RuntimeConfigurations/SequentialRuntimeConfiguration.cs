@@ -83,9 +83,12 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
         public void CancelRuntime()
         {
             cts.Cancel();
+            OnRuntimeEvent?.Invoke(new ChatRuntimeCancelledEvent(Runtime.Id));
         }
+
         public async ValueTask<ChatMessage> AddToChatAsync(ChatMessage message, CancellationToken cancellationToken = default)
         {
+            OnRuntimeEvent?.Invoke(new ChatRuntimeStartedEvent(Runtime.Id));
             bool isFirstAgent = true;
             foreach (var agent in Agents)
             {
@@ -125,7 +128,7 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
                         );
                 }
             }
-            
+            OnRuntimeEvent?.Invoke(new ChatRuntimeCompletedEvent(Runtime.Id));
             return Conversation?.Messages.LastOrDefault() ?? new ChatMessage();
         }
 

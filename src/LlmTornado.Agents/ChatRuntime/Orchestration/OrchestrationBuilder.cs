@@ -16,6 +16,13 @@ public class OrchestrationBuilder
     {
         Configuration = new OrchestrationRuntimeConfiguration();
     }
+
+    public OrchestrationBuilder WithRuntimeInitializer(Func<OrchestrationRuntimeConfiguration, ValueTask> customInitializer)
+    {
+        Configuration.CustomInitialization = customInitializer;
+        return this;
+    }
+
     public OrchestrationBuilder WithOnRuntimeEvent(Func<ChatRuntimeEvents, ValueTask> onRuntimeEvent)
     {
         Configuration.OnRuntimeEvent = onRuntimeEvent;

@@ -113,13 +113,13 @@ public class ChatRuntimeService : IChatRuntimeService
         try
         {
             // Emit invoked event early
-            runtime.OnRuntimeEvent?.Invoke(new ChatRuntimeInvokedEvent(message, runtime.Id));
+            runtime.RuntimeConfiguration.OnRuntimeEvent?.Invoke(new ChatRuntimeInvokedEvent(message, runtime.Id));
             var response = await runtime.InvokeAsync(message);
             return response;
         }
         catch (Exception ex)
         {
-            runtime.OnRuntimeEvent?.Invoke(new ChatRuntimeErrorEvent(ex, runtime.Id));
+            runtime.RuntimeConfiguration.OnRuntimeEvent?.Invoke(new ChatRuntimeErrorEvent(ex, runtime.Id));
             _logger.LogError(ex, "Failed to send message to runtime {RuntimeId}", runtimeId);
             throw;
         }

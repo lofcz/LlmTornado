@@ -151,10 +151,10 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
     public static async Task BasicOrchestrationRuntimeChatbotStreamingDemo()
     {
         RuntimeChatBotAgentConfiguration chatbotConfig = new RuntimeChatBotAgentConfiguration(Program.Connect(), true);
+        OrchestrationRuntimeConfiguration config = chatbotConfig.BuildSimpleAgent();
+        ChatRuntime runtime = new ChatRuntime(config);
 
-        ChatRuntime runtime = new ChatRuntime(chatbotConfig);
-
-        chatbotConfig.OnRuntimeEvent += async (evt) =>
+        runtime.RuntimeConfiguration.OnRuntimeEvent += async (evt) =>
         {
             if (evt.EventType == ChatRuntimeEventTypes.AgentRunner)
             {

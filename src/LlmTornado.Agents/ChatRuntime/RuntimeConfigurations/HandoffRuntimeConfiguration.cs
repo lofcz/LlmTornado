@@ -96,6 +96,7 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
 
         public async ValueTask<ChatMessage> AddToChatAsync(ChatMessage message,  CancellationToken cancellationToken = default)
         {
+            OnRuntimeEvent?.Invoke(new ChatRuntimeStartedEvent(Runtime.Id));
             await SelectCurrentAgent(message);
 
             if(Conversation == null)
@@ -116,7 +117,7 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
                    OnRuntimeEvent?.Invoke(new ChatRuntimeAgentRunnerEvents(sEvent, Runtime.Id)); return Threading.ValueTaskCompleted; },
                cancellationToken: cancellationToken);
             }
-
+            OnRuntimeEvent?.Invoke(new ChatRuntimeCompletedEvent(Runtime.Id));
             return GetLastMessage();
         }
 
@@ -244,6 +245,7 @@ Out of the following Agents which agent should we Handoff the conversation too a
         public void CancelRuntime()
         {
             cts.Cancel();
+            OnRuntimeEvent?.Invoke(new ChatRuntimeCancelledEvent(Runtime.Id));
         }
     }
 }

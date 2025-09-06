@@ -24,12 +24,6 @@ public class ChatRuntime
     public string Id { get; } = Guid.NewGuid().ToString();
 
     /// <summary>
-    /// Main streaming event for the Control Agent to handle streaming messages for the Control Agent conversation.
-    /// </summary>
-    public Func<ChatRuntimeEvents, ValueTask>? OnRuntimeEvent;
-
-
-    /// <summary>
     /// Gets or sets the runtime configuration for the application.
     /// </summary>
     public IRuntimeConfiguration RuntimeConfiguration { get; set; }
@@ -45,10 +39,8 @@ public class ChatRuntime
             throw new ArgumentNullException(nameof(configuration), "Configuration cannot be null.");    
         RuntimeConfiguration = configuration;
         RuntimeConfiguration.Runtime = this;
-        RuntimeConfiguration.OnRuntimeEvent = (rEvent) => { OnRuntimeEvent?.Invoke(rEvent); return Threading.ValueTaskCompleted; };
         RuntimeConfiguration.OnRuntimeInitialized();
     }
-
 
     /// <summary>
     /// Clears the messages, resets the main thread ID, and reinitializes the cancellation token source.
@@ -70,7 +62,6 @@ public class ChatRuntime
     public void CancelExecution()
     {
         RuntimeConfiguration.CancelRuntime();
-        OnRuntimeEvent?.Invoke(new ChatRuntimeCancelledEvent(this.Id));
     }
 
     /// <summary>
@@ -81,13 +72,6 @@ public class ChatRuntime
     /// conversation.</returns>
     public async Task<ChatMessage> InvokeAsync(ChatMessage message)
     {
-        // Invoke the StartingExecution event to signal the beginning of the execution process
-        OnRuntimeEvent?.Invoke(new ChatRuntimeStartedEvent(this.Id));
-
-        ChatMessage response = await RuntimeConfiguration.AddToChatAsync(message);
-
-        OnRuntimeEvent?.Invoke(new ChatRuntimeCompletedEvent(this.Id));
-
-        return response;
+        return await RuntimeConfiguration.AddToChatAsync(message); 
     }
 }

@@ -22,6 +22,7 @@ public class OrchestrationRuntimeConfiguration : Orchestration<ChatMessage, Chat
     public Func<ChatRuntimeEvents, ValueTask>? OnRuntimeEvent { get; set; }
     public PersistedConversation MessageHistory { get; set; } 
     public string? MessageHistoryFileLocation { get; set; }
+    public Func<OrchestrationRuntimeConfiguration, ValueTask>? CustomInitialization { get; set; }
 
     public OrchestrationRuntimeConfiguration()
     {
@@ -44,15 +45,21 @@ public class OrchestrationRuntimeConfiguration : Orchestration<ChatMessage, Chat
         };
 
         LoadMessageHistory();
+
+        CustomInitialization?.Invoke(this).GetAwaiter().GetResult();
     }
 
     public void CancelRuntime()
     {
         cts.Cancel();
+        OnRuntimeEvent?.Invoke(new ChatRuntimeCancelledEvent(Runtime.Id));
     }
 
     public virtual async ValueTask<ChatMessage> AddToChatAsync(ChatMessage message, CancellationToken cancellationToken = default)
     {
+        // Invoke the StartingExecution event to signal the beginning of the execution process
+        OnRuntimeEvent?.Invoke(new ChatRuntimeStartedEvent(Runtime.Id));
+
         MessageHistory.AppendMessage(message);
 
         await InvokeAsync(message);
@@ -60,6 +67,8 @@ public class OrchestrationRuntimeConfiguration : Orchestration<ChatMessage, Chat
         MessageHistory.AppendMessage(Results?.Last() ?? new ChatMessage(Code.ChatMessageRoles.Assistant, "Some sort of error"));
 
         MessageHistory.SaveChanges();
+
+        OnRuntimeEvent?.Invoke(new ChatRuntimeCompletedEvent(Runtime.Id));
 
         return GetLastMessage();
     }

@@ -76,7 +76,9 @@ public class PersistedConversation
     {
         lock (lockObject)
         {
-            return _messages.ToList();
+            List<ChatMessage> msgs = _messages.ToList();
+            msgs.Reverse();
+            return msgs;
         }
     }
 

@@ -59,7 +59,7 @@ public partial class ChatRuntimeController
                 }
             }
 
-            runtime.OnRuntimeEvent = async (evt) => await StreamHandler(evt);
+            runtime.RuntimeConfiguration.OnRuntimeEvent = async (evt) => await StreamHandler(evt);
 
             ChatMessage message = new ChatMessage(ChatMessageRoles.User);
 
