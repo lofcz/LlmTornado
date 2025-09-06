@@ -2386,3 +2386,13 @@ public class RequestSerializeOptions
     /// </summary>
     public bool Pretty { get; set; }
 }
+
+public class SchemaIgnoreAttribute : Attribute
+{
+    /// <summary>
+    /// Indicates that the property should be ignored during serialization.
+    /// </summary>
+    public SchemaIgnoreAttribute()
+    {
+    }
+}
