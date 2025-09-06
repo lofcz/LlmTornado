@@ -35,7 +35,6 @@ public class OrchestrationRuntimeConfiguration : Orchestration<ChatMessage, Chat
             MessageHistory = new PersistedConversation(MessageHistoryFileLocation);
     }
 
-    //NOT CORRECT YET
     public virtual void OnRuntimeInitialized()
     {
         OnOrchestrationEvent += (e) =>

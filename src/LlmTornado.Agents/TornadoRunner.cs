@@ -346,7 +346,6 @@ public class TornadoRunner
             BlockFinishedHandler = (message) =>
             {
                 //Call the streaming callback for completion
-                chat.AppendMessage(message);
                 return Threading.ValueTaskCompleted;
             },
             MessagePartHandler = (part) =>

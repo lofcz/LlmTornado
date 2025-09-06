@@ -36,7 +36,7 @@ public class PersistedConversation
     public List<ChatMessage> Messages => GetMessages();
     private ConcurrentStack<ChatMessage> _messages { get; set; } = new ConcurrentStack<ChatMessage>();
 
-    private ConcurrentStack<ChatMessage> _unsavedMessages = new ConcurrentStack<ChatMessage> ();
+    private ConcurrentQueue<ChatMessage> _unsavedMessages = new ConcurrentQueue<ChatMessage>();
     public bool ContinuousSaving { get; set; } = false;
     public string ConversationPath { get; set; }
     public PersistedConversation(string conversationPath = "", bool continuousSave = false)
@@ -68,7 +68,7 @@ public class PersistedConversation
         lock (lockObject)
         {
             _messages.Clear();
-            _unsavedMessages.Clear();
+            _unsavedMessages = new ConcurrentQueue<ChatMessage>();
         }
     }
 
@@ -87,7 +87,7 @@ public class PersistedConversation
         lock (lockObject)
         {
             _messages.Push(message);
-            _unsavedMessages.Push(message);
+            _unsavedMessages.Enqueue(message);
             if (ContinuousSaving) SaveChanges();
         }
     }
@@ -100,8 +100,7 @@ public class PersistedConversation
             return;
         }
             
-        AppendConversationJsonl(_unsavedMessages.ToList());
-        _unsavedMessages.Clear();
+        UpdateConversationFile();
     }
 
     public void DeleteConversation()
@@ -120,7 +119,7 @@ public class PersistedConversation
             }
 
             _messages.Clear();
-            _unsavedMessages.Clear();
+            _unsavedMessages = new ConcurrentQueue<ChatMessage>();
         }
     }
 
@@ -139,34 +138,11 @@ public class PersistedConversation
     }
 
     /// <summary>
-    /// Saves conversation to a JSONL file (JSON Lines) - one message per line for efficient appending
-    /// </summary>
-    /// <param name="messages">Messages to save</param>
-    /// <param name="filePath">File path</param>
-    private void SaveConversationJsonl(List<ChatMessage> messages)
-    {
-        if (string.IsNullOrEmpty(ConversationPath))
-        {
-            Console.WriteLine("Warning: ConversationPath is not set. Cannot save conversation.");
-            return;
-        }
-
-        using var writer = new StreamWriter(ConversationPath, false); // overwrite
-        foreach (var message in messages)
-        {
-            var dto = ConversationIOUtility.ConvertChatMessageToPersisted(message);
-
-            string json = JsonConvert.SerializeObject(dto);
-            writer.WriteLine(json);
-        }
-    }
-
-    /// <summary>
     /// Appends messages to a JSONL file without rewriting existing content
     /// </summary>
     /// <param name="messages">Messages to append</param>
     /// <param name="filePath">File path</param>
-    private void AppendConversationJsonl(List<ChatMessage> messages)
+    private void UpdateConversationFile()
     {
         if (string.IsNullOrEmpty(ConversationPath))
         {
@@ -174,21 +150,22 @@ public class PersistedConversation
             return;
         }
 
-        // Check if file exists and create if it doesn't
-        if (!File.Exists(ConversationPath))
+        bool append = File.Exists(ConversationPath);
+
+        using var writer = new StreamWriter(ConversationPath, append); // append mode
+
+        lock (lockObject)
         {
-            SaveConversationJsonl(messages);
-            return;
-        }
+            if (_unsavedMessages.IsEmpty)
+                return;
 
-        using var writer = new StreamWriter(ConversationPath, true); // append mode
+            while (_unsavedMessages.TryDequeue(out var msg))
+            {
+                var dto = ConversationIOUtility.ConvertChatMessageToPersisted(msg);
 
-        foreach (var message in messages)
-        {
-            var dto = ConversationIOUtility.ConvertChatMessageToPersisted(message);
-
-            string json = JsonConvert.SerializeObject(dto);
-            writer.WriteLine(json);
+                string json = JsonConvert.SerializeObject(dto);
+                writer.WriteLine(json);
+            }
         }
 
     }
