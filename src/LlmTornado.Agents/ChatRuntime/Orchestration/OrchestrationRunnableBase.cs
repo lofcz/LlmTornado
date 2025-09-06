@@ -26,7 +26,9 @@ public abstract class OrchestrationRunnableBase
     /// <summary>
     /// Input processes that the state has to process this tick.
     /// </summary>
-    public List<RunnableProcess> BaseProcesses { get; set; } = new List<RunnableProcess>();
+    public List<RunnableProcess> BaseProcesses => _processDictionary.Values.ToList();
+
+    private Dictionary<string, RunnableProcess> _processDictionary = new Dictionary<string, RunnableProcess>();
 
 
     ///// <summary>
@@ -150,18 +152,17 @@ public abstract class OrchestrationRunnableBase
 
     internal void AddBaseRunnableProcess(RunnableProcess process)
     {
-        BaseProcesses.Add(process);
+        _processDictionary[process.Id] = process;
     }
 
     internal void AddBaseRunnableProcess<TInput, TOutput>(RunnableProcess<TInput, TOutput> process)
     {
-        BaseProcesses.Add(process);
+        _processDictionary[process.Id] = process;
     }
 
     internal void UpdateBaseRunnableProcess(string id, object result)
     {
-        var existingProcess = BaseProcesses.FirstOrDefault(p => p.Id == id);
-        if (existingProcess != null)
+        if (_processDictionary.TryGetValue(id, out var existingProcess))
         {
             existingProcess.BaseResult = result;
         }
@@ -169,8 +170,7 @@ public abstract class OrchestrationRunnableBase
 
     internal void UpdateBaseRunnableProcess(string id, RunnableProcess process)
     {
-        var existingProcess = BaseProcesses.FirstOrDefault(p => p.Id == id);
-        if (existingProcess != null)
+        if (_processDictionary.TryGetValue(id, out var existingProcess))
         {
             existingProcess.BaseResult = process.BaseResult;
             existingProcess.TokenUsage = process.TokenUsage;
@@ -184,16 +184,19 @@ public abstract class OrchestrationRunnableBase
         var existingProcess = BaseProcesses.FirstOrDefault(p => p.Id == id);
         if (existingProcess != null)
         {
-            BaseProcesses.Remove(existingProcess);
+            _processDictionary.Remove(existingProcess.Id);
             process.Id = id;
-            BaseProcesses.Add(process);
+            _processDictionary[process.Id] = process;
         }
+    }
+    internal void ClearAllProcesses()
+    {
+        _processDictionary.Clear();
     }
 
     internal void ClearProcessTokenUsage(string processId)
     {
-        RunnableProcess? process = BaseProcesses.FirstOrDefault(p => p.Id == processId);
-        if (process != null)
+        if (_processDictionary.TryGetValue(processId, out var process))
         {
             process.TokenUsage = 0;
         }
@@ -201,7 +204,7 @@ public abstract class OrchestrationRunnableBase
 
     internal void ClearAllProcessTokenUsage()
     {
-        foreach (var process in BaseProcesses)
+        foreach (var process in _processDictionary.Values)
         {
             process.TokenUsage = 0;
         }

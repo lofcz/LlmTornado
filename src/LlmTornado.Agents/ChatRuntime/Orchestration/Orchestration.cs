@@ -29,7 +29,7 @@ public class Orchestration
     /// <summary>
     /// List of processes that will be run in the state machine this tick.
     /// </summary>
-    public List<RunnableProcess> CurrentRunnableProcesses { get; private set; } = new List<RunnableProcess>();
+    internal List<RunnableProcess> CurrentRunnableProcesses { get; private set; } = new List<RunnableProcess>();
 
     private List<RunnableProcess> newRunnableProcesses = new List<RunnableProcess>();
     /// <summary>
@@ -194,8 +194,6 @@ public class Orchestration
         OnOrchestrationEvent?.Invoke(new OnStartedRunnableEvent(process.Runner));
         //Internal lock on access to state
         await process.Runner._InitializeRunnable(process); //preset input
-
-        _isInitialized = true; //Set the initialized flag to true after the process is initialized
     }
 
     /// <summary>
@@ -231,7 +229,7 @@ public class Orchestration
             .Select(g => g.First())
             .ToList()!;
 
-        OnOrchestrationEvent?.Invoke(new OnVerboseOrchestrationEvent($"Initialization Complete."));
+        _isInitialized = true; //Set the initialized flag to true after the process is initialized
     }
 
     /// <summary>
@@ -304,11 +302,17 @@ public class Orchestration
         OnOrchestrationEvent?.Invoke(new OnVerboseOrchestrationEvent("Resetting RuntimeMachine"));
         _isCompleted = false;
         _stepCounter = 0;
+        _isInitialized = false;
         StopTrigger = new CancellationTokenSource(); //Reset the stop trigger
-        CurrentRunnableProcesses.Clear();
-        newRunnableProcesses.Clear();
+        ClearOutProcesses();
     }
 
+    private void ClearOutProcesses()
+    {
+        CurrentRunnableProcesses.Clear();
+        newRunnableProcesses.Clear();
+        //Runnable processes are cleared out on the _initializer of the runnable
+    }
 
     /// <summary>
     /// Sets the initial state for the entry point of the state machine.

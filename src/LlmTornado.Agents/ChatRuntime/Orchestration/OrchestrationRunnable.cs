@@ -80,7 +80,7 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
     /// <returns></returns>
     internal override async ValueTask _InitializeRunnable(RunnableProcess? process)
     {
-        Processes.Clear();
+        ClearAllProcesses();
         RunnableProcess<TInput, TOutput> newProcess = process.ReturnProcess<TInput, TOutput>();
         AddProcess(newProcess);
         await InitializeRunnable(newProcess);

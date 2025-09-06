@@ -169,7 +169,17 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
                     }
                 }
             }
-            await ValueTask.CompletedTask;
+            else if (evt.EventType == ChatRuntimeEventTypes.Orchestration)
+            {
+                if (evt is ChatRuntimeOrchestrationEvent orchestrationEvt)
+                {
+                    if (orchestrationEvt.OrchestrationEventData is OnVerboseOrchestrationEvent verbose)
+                    {
+                        Console.WriteLine(verbose.Message);
+                    }
+                }
+            }
+                await ValueTask.CompletedTask;
         };
 
         Console.WriteLine("[Assistant]: Hello");

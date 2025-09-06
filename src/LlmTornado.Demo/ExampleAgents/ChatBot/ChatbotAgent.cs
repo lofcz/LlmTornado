@@ -132,7 +132,16 @@ public class ModeratorRunnable : OrchestrationRunnable<ChatMessage, ChatMessage>
     public override async ValueTask<ChatMessage> Invoke(RunnableProcess<ChatMessage, ChatMessage> input)
     {
         await ThrowOnModeratedInput(input.Input, Client);
-        Orchestrator?.RuntimeProperties.TryAdd("LatestUserMessage", input.Input.Content ?? "");
+
+        try
+        {
+            Orchestrator?.RuntimeProperties.AddOrUpdate("LatestUserMessage", (newValue) => input.Input.Content ?? "", (key, Value) => input.Input.Content ?? "");
+        }
+        catch(Exception e) {
+            Console.WriteLine(e.Message);
+            throw;
+        }
+
         return input.Input;
     }
 
