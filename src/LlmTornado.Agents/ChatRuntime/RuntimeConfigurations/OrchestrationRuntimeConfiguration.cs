@@ -20,7 +20,7 @@ public class OrchestrationRuntimeConfiguration : Orchestration<ChatMessage, Chat
     public ChatRuntime Runtime { get; set; }
     public CancellationTokenSource cts { get; set; } = new CancellationTokenSource();
     public Func<ChatRuntimeEvents, ValueTask>? OnRuntimeEvent { get; set; }
-    public PersistedConversation MessageHistory { get; set; } 
+    private PersistedConversation _messageHistory { get;  set; } 
     public string? MessageHistoryFileLocation { get; set; }
     public Func<OrchestrationRuntimeConfiguration, ValueTask>? CustomInitialization { get; set; }
 
@@ -32,7 +32,7 @@ public class OrchestrationRuntimeConfiguration : Orchestration<ChatMessage, Chat
     private void LoadMessageHistory()
     {
         if(MessageHistoryFileLocation != null)
-            MessageHistory = new PersistedConversation(MessageHistoryFileLocation);
+            _messageHistory = new PersistedConversation(MessageHistoryFileLocation);
     }
 
     public virtual void OnRuntimeInitialized()
@@ -59,13 +59,13 @@ public class OrchestrationRuntimeConfiguration : Orchestration<ChatMessage, Chat
         // Invoke the StartingExecution event to signal the beginning of the execution process
         OnRuntimeEvent?.Invoke(new ChatRuntimeStartedEvent(Runtime.Id));
 
-        MessageHistory.AppendMessage(message);
+        _messageHistory.AppendMessage(message);
 
         await InvokeAsync(message);
 
-        MessageHistory.AppendMessage(Results?.Last() ?? new ChatMessage(Code.ChatMessageRoles.Assistant, "Some sort of error"));
+        _messageHistory.AppendMessage(Results?.Last() ?? new ChatMessage(Code.ChatMessageRoles.Assistant, "Some sort of error"));
 
-        MessageHistory.SaveChanges();
+        _messageHistory.SaveChanges();
 
         OnRuntimeEvent?.Invoke(new ChatRuntimeCompletedEvent(Runtime.Id));
 
@@ -74,16 +74,16 @@ public class OrchestrationRuntimeConfiguration : Orchestration<ChatMessage, Chat
 
     public virtual void ClearMessages()
     {
-        MessageHistory.Clear();
+        _messageHistory.Clear();
     }
 
     public virtual List<ChatMessage> GetMessages()
     {
-        return MessageHistory.Messages;
+        return _messageHistory.Messages;
     }
 
     public virtual ChatMessage GetLastMessage()
     {
-        return MessageHistory.Messages.Last();
+        return _messageHistory.Messages.Last();
     }
 }

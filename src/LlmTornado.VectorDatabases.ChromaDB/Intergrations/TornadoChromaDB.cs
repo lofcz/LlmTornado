@@ -1,6 +1,7 @@
 ﻿using LlmTornado.VectorDatabases.ChromaDB;
 using LlmTornado.VectorDatabases.ChromaDB.Client;
 using LlmTornado.VectorDatabases.ChromaDB.Client.Models;
+using System.Collections;
 
 
 namespace LlmTornado.VectorDatabases.Intergrations
@@ -41,6 +42,21 @@ namespace LlmTornado.VectorDatabases.Intergrations
             _configOptions = new ChromaConfigurationOptions(uri: uri);
             _httpClient = new HttpClient(handler);
             ChromaClient = new ChromaClient(_configOptions, _httpClient);
+            Task.Run(async () => await TestChromaConnection()).Wait();
+        }
+
+        private async Task TestChromaConnection()
+        {
+            try
+            {
+                string testCollectionName = $"test_collection_{Guid.NewGuid().ToString().Substring(0, 4)}";
+                await InitializeCollection(testCollectionName);
+                await DeleteCollectionAsync(testCollectionName);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"ChromaDB instance not reachable at {_configOptions.Uri}", ex);
+            }
         }
 
         public async Task InitializeCollection(string collectionName)

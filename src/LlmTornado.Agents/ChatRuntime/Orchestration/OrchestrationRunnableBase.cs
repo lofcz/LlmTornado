@@ -11,6 +11,8 @@ namespace LlmTornado.Agents.ChatRuntime.Orchestration;
 /// transitions.</remarks>
 public abstract class OrchestrationRunnableBase 
 {
+    internal List<object> baseResults { get; set; } = new List<object>();
+
     public string RunnableName { get; set; } = "Runnable";
     /// <summary>
     /// Used to limit the number of times to rerun the state.
@@ -26,17 +28,13 @@ public abstract class OrchestrationRunnableBase
     /// <summary>
     /// Input processes that the state has to process this tick.
     /// </summary>
-    public List<RunnableProcess> BaseProcesses => _processDictionary.Values.ToList();
+    public List<RunnableProcess> BaseProcesses { get; set; } = new List<RunnableProcess>();
 
-    private Dictionary<string, RunnableProcess> _processDictionary = new Dictionary<string, RunnableProcess>();
-
-
-    ///// <summary>
-    ///// Not used.
-    ///// </summary>
+    /// <summary>
+    /// List of transitions that can be made from this state.
+    /// </summary>
     public List<OrchestrationAdvancer> BaseAdvancers { get; set; } = new List<OrchestrationAdvancer>();
 
-    
     public Orchestration? Orchestrator { get; set; }
 
 
@@ -137,7 +135,7 @@ public abstract class OrchestrationRunnableBase
 
     internal object[] GetBaseResults()
     {
-        return BaseProcesses.Where(p => p.BaseResult is not null).Select(p => p.BaseResult!).ToArray();
+        return baseResults.ToArray();
     }
 
     internal List<RunnableProcess> GetRunnableProcesses()
@@ -145,68 +143,43 @@ public abstract class OrchestrationRunnableBase
         return BaseProcesses;
     }
 
-    internal List<RunnableProcess<TInput, TOutput>> GetBaseRunnableProcesses<TInput, TOutput>()
-    {
-        return BaseProcesses.Select(process => process.ReturnProcess<TInput, TOutput>()).ToList();
-    }
+    internal List<RunnableProcess<TInput, TOutput>> GetBaseRunnableProcesses<TInput, TOutput>() => BaseProcesses.Select(process => process.CloneProcess<TInput, TOutput>()).ToList();
+
 
     internal void AddBaseRunnableProcess(RunnableProcess process)
     {
-        _processDictionary[process.Id] = process;
+       BaseProcesses.Add(process);
     }
 
     internal void AddBaseRunnableProcess<TInput, TOutput>(RunnableProcess<TInput, TOutput> process)
     {
-        _processDictionary[process.Id] = process;
+        BaseProcesses.Add(process);
     }
 
-    internal void UpdateBaseRunnableProcess(string id, object result)
+    internal void UpdateBaseRunnableProcess(string id, RunnableProcess result)
     {
-        if (_processDictionary.TryGetValue(id, out var existingProcess))
+       for (int i = 0; i < BaseProcesses.Count; i++)
         {
-            existingProcess.BaseResult = result;
+            if (BaseProcesses[i].Id == id)
+            {
+                BaseProcesses[i] = RunnableProcess.CloneProcess(result);
+                break;
+            }
         }
     }
 
-    internal void UpdateBaseRunnableProcess(string id, RunnableProcess process)
-    {
-        if (_processDictionary.TryGetValue(id, out var existingProcess))
-        {
-            existingProcess.BaseResult = process.BaseResult;
-            existingProcess.TokenUsage = process.TokenUsage;
-            existingProcess.RunnableExecutionTime = process.RunnableExecutionTime;
-            existingProcess.StartTime = process.StartTime;
-        }
-    }
-
-    internal void OverrideBaseRunnableProcess(string id, RunnableProcess process)
-    {
-        var existingProcess = BaseProcesses.FirstOrDefault(p => p.Id == id);
-        if (existingProcess != null)
-        {
-            _processDictionary.Remove(existingProcess.Id);
-            process.Id = id;
-            _processDictionary[process.Id] = process;
-        }
-    }
     internal void ClearAllProcesses()
     {
-        _processDictionary.Clear();
+        BaseProcesses.Clear();
     }
 
-    internal void ClearProcessTokenUsage(string processId)
+    internal void ClearResults()
     {
-        if (_processDictionary.TryGetValue(processId, out var process))
-        {
-            process.TokenUsage = 0;
-        }
+        baseResults.Clear();
     }
 
-    internal void ClearAllProcessTokenUsage()
+    internal void UpdateBaseResults(object[] results)
     {
-        foreach (var process in _processDictionary.Values)
-        {
-            process.TokenUsage = 0;
-        }
+        baseResults.AddRange(results);
     }
 }

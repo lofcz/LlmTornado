@@ -29,7 +29,7 @@ public static class JsonUtility
         try
         {
             // Attempt to parse the JSON string
-            JsonDocument.Parse(jsonString);
+            JsonDocument.Parse(jsonString, new JsonDocumentOptions { AllowTrailingCommas= true});
             return true;
         }
         catch (JsonException)
@@ -108,13 +108,36 @@ public static class JsonUtility
     /// <exception cref="ArgumentException">Thrown if <paramref name="json"/> is null or empty.</exception>
     public static T ParseJson<T>(this string? json)
     {
-        if (string.IsNullOrWhiteSpace(json))
+        string workingJson = json!;
+        if (string.IsNullOrWhiteSpace(workingJson))
             throw new ArgumentException("JSON is null or empty");
 
-        if( !IsValidJson(json))
-            throw new JsonException("Invalid JSON format");
-
-        if(json.TryParseJson<T>( out T? result))
+        //Check if valid JSON first
+        if (!IsValidJson(workingJson))
+        {
+            //Check if there is a duplicate JSON object in the string and try to repair it
+            workingJson = CheckAndRepairIfAIGeneratedDuplicateJson(workingJson);
+            if (!IsValidJson(workingJson))
+            {
+                try
+                {
+                    //Try it anyways
+                    return JsonSerializer.Deserialize<T>(json, new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true,
+                        AllowTrailingCommas = true,
+                        UnmappedMemberHandling = JsonUnmappedMemberHandling.Skip,
+                        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+                    })!;
+                }
+                catch (JsonException)
+                {
+                    throw;
+                }
+            }
+        }
+            
+        if(workingJson.TryParseJson<T>(out T? result))
         {
             return result!;
         }
@@ -126,7 +149,21 @@ public static class JsonUtility
             UnmappedMemberHandling = JsonUnmappedMemberHandling.Skip
         })!;
     }
-    
+
+    public static string CheckAndRepairIfAIGeneratedDuplicateJson(string json)
+    {
+        // Regular expression to match JSON objects
+        string pattern = @"\{(?:[^{}]|(?<open>\{)|(?<-open>\}))*\}(?(open)(?!))";
+        MatchCollection matches = Regex.Matches(json, pattern);
+        if (matches.Count > 1)
+        {
+            // If multiple JSON objects are found, return the last one
+            return matches[matches.Count - 1].Value;
+        }
+        // If only one or no JSON object is found, return the original string
+        return json;
+    }
+
     /// <summary>
     /// Attempts to parse the specified JSON string into an object of type <typeparamref name="T"/>.
     /// </summary>

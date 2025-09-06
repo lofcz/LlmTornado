@@ -2,7 +2,9 @@
 using LlmTornado.Moderation;
 using LlmTornado.Threads;
 using ModelContextProtocol.Protocol;
+using System;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace LlmTornado.Agents.ChatRuntime.Orchestration;
@@ -59,6 +61,8 @@ public class RunnableProcess
     public RunnableProcess() { }
 
     public List<TornadoAgent> RegisteredAgents { get; set; } = new List<TornadoAgent>();
+
+    public bool HadError { get; set; } = false;
 
     public void RegisterAgent(TornadoAgent agent)
     {
@@ -155,29 +159,44 @@ public class RunnableProcess
         return RerunAttempts < MaxReruns;
     }
 
-    /// <summary>
-    /// Retrieves a new instance of <see cref="StateProcess{T}"/> initialized with the current state and input.
-    /// </summary>
-    /// <remarks>Used for Rerun generation</remarks>
-    /// <typeparam name="T">The type of the input used to initialize the process.</typeparam>
-    /// <returns>A <see cref="StateProcess{T}"/> object initialized with the current state and input of type <typeparamref
-    /// name="T"/>.</returns>
-    public RunnableProcess<TInput, TOutput> ReturnProcess<TInput, TOutput>()
+    public static RunnableProcess CloneProcess(RunnableProcess process, string id = "")
     {
-        if(BaseResult is null)
+        var clone = process.CloneProcess<object, object>(id);
+        return clone;
+    }
+
+    public RunnableProcess<TInput, TOutput> CloneProcess<TInput, TOutput>(string id = "")
+    {
+        RunnableProcess<TInput, TOutput> clone;
+        string newId = string.IsNullOrWhiteSpace(id) ? Id : id;
+
+        if (BaseResult is null)
         {
             try
             {
                 TInput convertedResult = (TInput)BaseInput;
-                return new RunnableProcess<TInput, TOutput>(Runner, convertedResult, Id, MaxReruns);
+                clone =  new RunnableProcess<TInput, TOutput>(Runner, convertedResult, newId, MaxReruns);
             }
             catch (InvalidCastException)
             {
                 throw new InvalidCastException($"Cannot cast BaseInput of type {BaseInput.GetType()} to {typeof(TInput)}");
             }
         }
+        else
+        {
+            clone = new RunnableProcess<TInput, TOutput>(Runner, (TInput)BaseInput, (TOutput?)BaseResult, newId, MaxReruns);
+        }
 
-        return new RunnableProcess<TInput, TOutput>(Runner, (TInput)BaseInput, (TOutput?)BaseResult, Id, MaxReruns);
+        clone.MemberwiseClone();
+        clone.Id = newId;
+        clone.RerunAttempts = RerunAttempts;
+        clone.TokenUsage = TokenUsage;
+        clone.StartTime = StartTime;
+        clone.RunnableExecutionTime = RunnableExecutionTime;
+        clone.MaxReruns = MaxReruns;
+        clone.RegisteredAgents = RegisteredAgents;
+
+        return clone;
     }
 }
 

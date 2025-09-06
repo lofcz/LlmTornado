@@ -148,10 +148,10 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
         RunnerRecordVisualizationUtility.SaveRunnerRecordDotGraphToFileAsync(RuntimeConfiguration.RunSteps.ToDictionary(), "ResearchAgentRecord.dot", "ResearchAgentRecord");
     }
     [TornadoTest]
-    public static async Task BasicOrchestrationRuntimeChatbotStreamingDemo()
+    public static async Task SimpleChatbotDemo()
     {
-        RuntimeChatBotAgentConfiguration chatbotConfig = new RuntimeChatBotAgentConfiguration(Program.Connect(), true);
-        OrchestrationRuntimeConfiguration config = chatbotConfig.BuildSimpleAgent();
+        ChatBotAgent chatbotConfig = new ChatBotAgent();
+        OrchestrationRuntimeConfiguration config = chatbotConfig.BuildSimpleAgent(Program.Connect(), true);
         ChatRuntime runtime = new ChatRuntime(config);
 
         runtime.RuntimeConfiguration.OnRuntimeEvent += async (evt) =>
@@ -194,7 +194,59 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
             Console.WriteLine();
         }
     }
-    
+
+    [TornadoTest]
+    public static async Task ComplexChatbotDemo()
+    {
+        ChatBotAgent chatbotConfig = new ChatBotAgent();
+        OrchestrationRuntimeConfiguration config = chatbotConfig.BuildComplexAgent(Program.Connect(), true, chromaUri:"http://localhost:8000/api/v2/");
+        ChatRuntime runtime = new ChatRuntime(config);
+
+        runtime.RuntimeConfiguration.OnRuntimeEvent += async (evt) =>
+        {
+            if (evt.EventType == ChatRuntimeEventTypes.AgentRunner)
+            {
+                if (evt is ChatRuntimeAgentRunnerEvents runnerEvt)
+                {
+                    if (runnerEvt.AgentRunnerEvent is AgentRunnerStreamingEvent streamEvt)
+                    {
+                        if (streamEvt.ModelStreamingEvent is ModelStreamingOutputTextDeltaEvent deltaTextEvent)
+                        {
+                            Console.Write(deltaTextEvent.DeltaText);
+                        }
+                    }
+                }
+            }
+            //Hide debug info for cleaner chat
+            //else if (evt.EventType == ChatRuntimeEventTypes.Orchestration)
+            //{
+            //    if (evt is ChatRuntimeOrchestrationEvent orchestrationEvt)
+            //    {
+            //        if (orchestrationEvt.OrchestrationEventData is OnVerboseOrchestrationEvent verbose)
+            //        {
+            //            Console.WriteLine(verbose.Message);
+            //        }
+            //    }
+            //}
+
+            await ValueTask.CompletedTask;
+        };
+
+        Console.WriteLine("[Assistant]: Hello");
+        string topic = "";
+        int loopCount = 0;
+        while (topic != "exit")
+        {
+            Console.Write("[User]: ");
+            topic = Console.ReadLine();
+            if (topic == "exit") break;
+            Console.Write("[Assistant]: ");
+            ChatMessage report = await runtime.InvokeAsync(new ChatMessage(Code.ChatMessageRoles.User, topic));
+            Console.WriteLine();
+            RunnerRecordVisualizationUtility.SaveRunnerRecordDotGraphToFileAsync(config.RunSteps.ToDictionary(), $"ResearchAgentRecord{loopCount}.dot", "ResearchAgentRecord");
+            loopCount++;
+        }  
+    }
 
     [TornadoTest]
     public static async Task BasicOrchestrationRuntimeStreamingDemo()

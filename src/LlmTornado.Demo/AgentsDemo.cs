@@ -66,7 +66,25 @@ public class AgentsDemo : DemoBase
         result = await agent.RunAsync("What is my name?", appendMessages: result.Messages.ToList(), onAgentRunnerEvent: runEventHandler);
     }
 
-    
+    [TornadoTest]
+    public static async Task TestJsonParsing()
+    {
+        string duplicateJson = """
+        {
+            "name": "John",
+            "age": 30,
+            "city": "New York"
+        }
+        {
+            "name": "John",
+            "age": 30,
+            "city": "New York"
+        }
+        """;
+
+        JsonUtility.CheckAndRepairIfAIGeneratedDuplicateJson(duplicateJson);
+    }
+
     [TornadoTest]
     public static async Task RunHelloWorldStreaming()
     {

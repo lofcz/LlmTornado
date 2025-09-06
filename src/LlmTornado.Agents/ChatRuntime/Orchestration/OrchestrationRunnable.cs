@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace LlmTornado.Agents.ChatRuntime.Orchestration;
 
@@ -10,7 +11,7 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
     /// <summary>
     /// Output results from the invocation of the runnable.
     /// </summary>
-    public List<TOutput> Output => Processes.Select(process => process.Result).ToList();
+    public List<TOutput> Output => baseResults.Select((result) => (TOutput)result).ToList();
 
     /// <summary>
     /// Input values for the runnable processes.
@@ -58,7 +59,7 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
     /// <summary>
     /// Latest advancements determined after invocation.
     /// </summary>
-    public List<RunnableProcess> LatestAdvancements { get; set; } = new List<RunnableProcess>();
+    public List<RunnableProcess> RunnableNextProcesses { get; set; } = new List<RunnableProcess>();
 
     public override Type GetInputType() => typeof(TInput);
     public override Type GetOutputType() => typeof(TOutput);
@@ -80,10 +81,10 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
     /// <returns></returns>
     internal override async ValueTask _InitializeRunnable(RunnableProcess? process)
     {
-        ClearAllProcesses();
-        RunnableProcess<TInput, TOutput> newProcess = process.ReturnProcess<TInput, TOutput>();
-        AddProcess(newProcess);
-        await InitializeRunnable(newProcess);
+        ClearResults();
+        RunnableProcess<TInput, TOutput> newProcess = process.CloneProcess<TInput, TOutput>(); //Convert to the typed version
+        AddProcess(newProcess); //update the base process list
+        await InitializeRunnable(newProcess); 
     }
 
     /// <summary>
@@ -110,41 +111,64 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
         if (SingleInvokeForProcesses)
         {
             //Invoke Should handle the Input as a whole (Single Thread can handle processing all the inputs)
+            //Will return a single output that can be processed for advancements
             await InternalInvoke(Processes[0]);
         }
         else
         {
-            if (IsThreadSafe)
+            foreach (var process in Processes)
             {
-                List<Task> Tasks = new List<Task>();
-                Processes.ForEach(process => Tasks.Add(Task.Run(async () => await InternalInvoke(process))));
-                await Task.WhenAll(Tasks);
-                Tasks.Clear();
+                await InternalInvoke(process);
             }
-            else
-            {
-                foreach (var process in Processes)
-                {
-                    await InternalInvoke(process);
-                }
-            }
+
+            //Removing untill i can test thread safety
+            //if (IsThreadSafe)
+            //{
+            //    //Parallel method input list [1,2,3,4] each input is processed in parallel and returns 4 results
+            //    List<Task> Tasks = new List<Task>();
+            //    Processes.ForEach(process => Tasks.Add(Task.Run(async () => await InternalInvoke(process))));
+            //    await Task.WhenAll(Tasks);
+            //    Tasks.Clear();
+            //}
+            //else
+            //{
+            //    //Standard method input list [1,2,3,4] each input is processed in order and returns 4 results
+            //    foreach (var process in Processes)
+            //    {
+            //        await InternalInvoke(process);
+            //    }
+            //}
         }
     }
 
     private async ValueTask<RunnableProcess<TInput, TOutput>> InternalInvoke(RunnableProcess<TInput, TOutput> input)
     {
         Orchestrator?.OnStartingRunnableProcess(input);
+
         input.SetupProcess();
-        input.Result = await Invoke(input);
+
+        try
+        {
+            input.Result = await Invoke(input);
+        }
+        catch(Exception ex)
+        {
+            input.HadError = true;
+        }
+
         input.FinalizeProcess();
         UpdateBaseRunnableProcess(input.Id, input);
+
         Orchestrator?.OnFinishedRunnableProcess(input);
+
         List<RunnableProcess>? advancements = CheckResultForAdvancementsRecords(input);
         List<AdvancementRecord> advancementRecords = new List<AdvancementRecord>();
+
         foreach (var advancement in advancements)
         {
             advancementRecords.Add(new AdvancementRecord(input.Runner.RunnableName, advancement.Runner.RunnableName, input.Result!));
         }
+
         Orchestrator?.AddRecordStep(new RunnerRecord(input.Id, RunnableName, input.TokenUsage, input.StartTime.Value, input.RunnableExecutionTime, input: input.Input, transitions: advancementRecords.ToArray()));
         return input;
     }
@@ -169,14 +193,30 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
     /// Cleanup any resources used by the runnable.
     /// </summary>
     /// <returns></returns>
-    public virtual ValueTask CleanupRunnable() { return Threading.ValueTaskCompleted; }
+    public virtual ValueTask CleanupRunnable() 
+    {
+        UpdateBaseResults(Processes.Select(process => (object)process.Result).ToArray() ?? Array.Empty<object>());
+        ClearAllProcesses(); //Clear out any existing processes before adding the new one
+        return Threading.ValueTaskCompleted; 
+    }
 
     #endregion
 
     #region Advancement Logic
-    private List<RunnableProcess>? GetFirstValidAdvancementForEachResult()
+    private List<RunnableProcess>? GetAdvancements()
     {
-        LatestAdvancements.Clear();
+        RunnableNextProcesses.Clear();
+        
+        if(SingleInvokeForProcesses)
+            GetFirstValidAdvancement();
+        else
+            GetFirstValidAdvancementForEachResult();
+
+        return RunnableNextProcesses;
+    }
+
+    private void GetFirstValidAdvancementForEachResult()
+    {
         //Results Gathered from invoking
         foreach (var process in Processes)
         {
@@ -188,41 +228,62 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
                 //Check if transition is conversion type or use the output.Result directly
                 object? nextResult = advancement.type == "in_out" ? advancement.ConverterMethodResult : process.Result;
 
-                LatestAdvancements.Add(new RunnableProcess(advancement.NextRunnable, nextResult!));
+                RunnableNextProcesses.Add(new RunnableProcess(advancement.NextRunnable, nextResult!));
             }
             else
             {
-                //If the state is a dead end, we do not reattempt the process
-                if (!AllowDeadEnd)
-                {
-                    //ReRun the process that failed
-                    //Cap the amount of times a Runtime can reattempt (Fixed at 3 right now)
-                    if (process.CanReAttempt())
-                    {
-                        LatestAdvancements.Add(process);
-                    }
-                }
-            }
-
-            if (SingleInvokeForProcesses)
-            {
-                break;
+                CheckForReattempt(process);
             }
         }
-
-        return LatestAdvancements;
     }
 
-    private List<RunnableProcess>? GetAllValidAdvancements()
+    
+
+    private void GetFirstValidAdvancement()
     {
-        LatestAdvancements.Clear();
+        //Results Gathered from invoking
+        foreach (var process in Processes)
+        {
+            OrchestrationAdvancer? advancement = Advances?.FirstOrDefault(transition => transition?.CanAdvance(process.Result) ?? false) ?? null;
+
+            //If not transition is found, we can reattempt the process
+            if (advancement != null)
+            {
+                //Check if transition is conversion type or use the output.Result directly
+                object? nextResult = advancement.type == "in_out" ? advancement.ConverterMethodResult : process.Result;
+
+                RunnableNextProcesses.Add(new RunnableProcess(advancement.NextRunnable, nextResult!));
+            }
+            else
+            {
+                CheckForReattempt(process);
+            }
+        }
+    }
+
+    private void CheckForReattempt(RunnableProcess<TInput, TOutput> process)
+    {
+        if (!AllowDeadEnd)
+        {
+            //ReRun the process that failed
+            //Cap the amount of times a Runtime can reattempt (Fixed at 3 right now)
+            if (process.CanReAttempt())
+            {
+                RunnableNextProcesses.Add(process);
+            }
+        }
+    }
+
+    private List<RunnableProcess>? GetParallelAdvancements()
+    {
+        RunnableNextProcesses.Clear();
         //Results Gathered from invoking
         Processes.ForEach((process) =>
         {
-            LatestAdvancements.AddRange(CheckResultForAdvancements(process));
+            RunnableNextProcesses.AddRange(CheckResultForAdvancements(process));
         });
 
-        return LatestAdvancements;
+        return RunnableNextProcesses;
     }
 
     private List<RunnableProcess> CheckResultForAdvancementsRecords(RunnableProcess<TInput, TOutput> process)
@@ -274,7 +335,7 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
 
     internal override List<RunnableProcess>? CanAdvance()
     {
-        return AllowsParallelAdvances ? GetAllValidAdvancements() : GetFirstValidAdvancementForEachResult();
+        return AllowsParallelAdvances ? GetParallelAdvancements() : GetAdvancements();
     }
 
     private void AddAdvancer(OrchestrationAdvancer<TOutput> advancer)

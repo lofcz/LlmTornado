@@ -22,6 +22,11 @@ public class OrchestrationBuilder
         Configuration.CustomInitialization = customInitializer;
         return this;
     }
+    public OrchestrationBuilder WithDataRecording()
+    {
+        Configuration.RecordSteps = true;
+        return this;
+    }
 
     public OrchestrationBuilder WithOnRuntimeEvent(Func<ChatRuntimeEvents, ValueTask> onRuntimeEvent)
     {
@@ -207,7 +212,11 @@ public class OrchestrationBuilder
         }
         
         toRunnable.Orchestrator = Configuration;
-        combinationalWaiter.AddAdvancer(_ => true, toRunnable);
+        combinationalWaiter.AddAdvancer((req) => { 
+            if(req is null) return false;
+            return req.InputCount >= req.RequiredInputCount; 
+        }, 
+        toRunnable);
 
         return this;
     }
