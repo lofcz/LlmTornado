@@ -54,10 +54,12 @@ public class AgentsDemo : DemoBase
         result = await agent.RunAsync("Can you help me with my homework?", appendMessages: result.Messages.ToList(), onAgentRunnerEvent: runEventHandler);
         Console.Write("\n");
         Console.WriteLine("Saving conversation to conversation.json");
-        result.SaveConversation("conversation.json");
+        result.Messages.ToList().SaveConversation("conversation.json");
         result.Clear();
         Console.WriteLine("Loading Saved conversation");
-        await result.LoadConversationAsync("conversation.json");
+        List<ChatMessage> chatMessages = new List<ChatMessage>();
+        await chatMessages.LoadMessagesAsync("conversation.json");
+        result.LoadConversation(chatMessages);
         Console.WriteLine("Conversation loaded, resuming conversation");
         Console.WriteLine("[User]: What is my name?");
         Console.Write("[Agent]: ");

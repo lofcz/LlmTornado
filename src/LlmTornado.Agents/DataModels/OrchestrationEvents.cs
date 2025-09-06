@@ -26,8 +26,19 @@ public class OrchestrationEvent : IOrchestrationEvent
     /// <summary>
     /// References the type of event being triggered.
     /// </summary>
-    public string Type { get; set; } = "RuntimeEvent";
+    public string Type { get; set; } = "OrchestrationEvent";
 
+}
+
+
+public class OnInitializedOrchestrationEvent : OrchestrationEvent
+{
+    public Orchestration Orchestration { get; set; }
+    public OnInitializedOrchestrationEvent(Orchestration orchestration)
+    {
+        Type = "initialized";
+        Orchestration = orchestration;
+    }
 }
 
 /// <summary>
@@ -140,7 +151,7 @@ public class OnStartedRunnableProcessEvent : OrchestrationEvent
     public RunnableProcess RunnableProcess { get; set; }
     public OnStartedRunnableProcessEvent(RunnableProcess process)
     {
-        Type = "startedProcess ";
+        Type = "startedProcess";
         RunnableProcess = process;
     }
 }

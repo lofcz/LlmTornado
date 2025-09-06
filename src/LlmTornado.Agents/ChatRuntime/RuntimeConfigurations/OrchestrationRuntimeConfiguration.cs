@@ -20,14 +20,21 @@ public class OrchestrationRuntimeConfiguration : Orchestration<ChatMessage, Chat
     public ChatRuntime Runtime { get; set; }
     public CancellationTokenSource cts { get; set; } = new CancellationTokenSource();
     public Func<ChatRuntimeEvents, ValueTask>? OnRuntimeEvent { get; set; }
-    public ConcurrentStack<ChatMessage> MessageHistory { get; set; } = new ConcurrentStack<ChatMessage>();
+    public PersistedConversation MessageHistory { get; set; } 
     public string? MessageHistoryFileLocation { get; set; }
 
     public OrchestrationRuntimeConfiguration()
     {
-        
+
     }
 
+    private void LoadMessageHistory()
+    {
+        if(MessageHistoryFileLocation != null)
+            MessageHistory = new PersistedConversation(MessageHistoryFileLocation);
+    }
+
+    //NOT CORRECT YET
     public virtual void OnRuntimeInitialized()
     {
         OnOrchestrationEvent += (e) =>
@@ -36,18 +43,7 @@ public class OrchestrationRuntimeConfiguration : Orchestration<ChatMessage, Chat
             this.OnRuntimeEvent?.Invoke(new ChatRuntimeOrchestrationEvent(e, Runtime?.Id ?? string.Empty));
         };
 
-        if(MessageHistoryFileLocation != null)
-        {
-            List<ChatMessage> history = new List<ChatMessage>();
-            if (File.Exists(MessageHistoryFileLocation))
-            {
-                history.LoadConversation(MessageHistoryFileLocation);
-                foreach (var msg in history)
-                    MessageHistory.Push(msg);
-            }
-
-        }
-            
+        LoadMessageHistory();
     }
 
     public void CancelRuntime()
@@ -57,11 +53,13 @@ public class OrchestrationRuntimeConfiguration : Orchestration<ChatMessage, Chat
 
     public virtual async ValueTask<ChatMessage> AddToChatAsync(ChatMessage message, CancellationToken cancellationToken = default)
     {
-        MessageHistory.Push(message);
+        MessageHistory.AppendMessage(message);
 
         await InvokeAsync(message);
 
-        MessageHistory.Push(Results?.Last() ?? new ChatMessage(Code.ChatMessageRoles.Assistant, "Some sort of error"));
+        MessageHistory.AppendMessage(Results?.Last() ?? new ChatMessage(Code.ChatMessageRoles.Assistant, "Some sort of error"));
+
+        MessageHistory.SaveChanges();
 
         return GetLastMessage();
     }
@@ -73,11 +71,11 @@ public class OrchestrationRuntimeConfiguration : Orchestration<ChatMessage, Chat
 
     public virtual List<ChatMessage> GetMessages()
     {
-        return MessageHistory.ToList();
+        return MessageHistory.Messages;
     }
 
     public virtual ChatMessage GetLastMessage()
     {
-        return MessageHistory.TryPeek(out var lastMessage) ? lastMessage : new ChatMessage();
+        return MessageHistory.Messages.Last();
     }
 }

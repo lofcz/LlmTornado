@@ -10,6 +10,7 @@ namespace LlmTornado.Agents.DataModels;
 
 public enum ChatRuntimeEventTypes
 {
+    Initialized,
     /// <summary>
     /// Event raised when the runtime starts processing.
     /// </summary>
@@ -66,7 +67,13 @@ public class ChatRuntimeEvents : EventArgs
         RuntimeId = runtimeId;
     }   
 }
-
+public class ChatRuntimeInitializedEvent : ChatRuntimeEvents
+{
+    public ChatRuntimeInitializedEvent(string runtimeId) : base(runtimeId)
+    {
+        EventType = ChatRuntimeEventTypes.Initialized;
+    }
+}
 /// <summary>
 /// Get Runtime Started Event
 /// </summary>

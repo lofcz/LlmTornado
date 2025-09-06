@@ -7,10 +7,12 @@ using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Embedding;
 using LlmTornado.Embedding.Models;
+using LlmTornado.Infra;
 using LlmTornado.Moderation;
 using LlmTornado.Responses;
 using LlmTornado.VectorDatabases;
 using LlmTornado.VectorDatabases.Intergrations;
+using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
@@ -20,65 +22,108 @@ using static LlmTornado.Demo.VectorDatabasesDemo;
 
 namespace LlmTornado.Demo.ExampleAgents.ChatBot;
 
-public class ChatbotAgent : OrchestrationRuntimeConfiguration
+public class RuntimeChatBotAgentConfiguration : OrchestrationRuntimeConfiguration
 {
-    public OrchestrationRuntimeConfiguration Configuration { get; set; } = new OrchestrationRuntimeConfiguration();
+    SimpleAgentRunnable simpleAgentRunnable { get; set; }
     AgentRunnable RunnableAgent { get; set; }
     ModeratorRunnable inputModerator { get; set; }
     VectorSearchRunnable vectorSearchRunnable { get; set; }
-    WebSearchRunnable webSearchRunnable { get; set; }   
+    WebSearchRunnable webSearchRunnable { get; set; }
     VectorSaveRunnable vectorSaveRunnable { get; set; }
     ExitPathRunnable exitPathRunnable { get; set; }
     VectorEntitySaveRunnable vectorEntitySaveRunnable { get; set; }
-    public ChatbotAgent(TornadoApi client, bool streaming = false)
+    public RuntimeChatBotAgentConfiguration(TornadoApi client, bool streaming = false)
     {
-        RunnableAgent = new AgentRunnable(client, Configuration, streaming);
-        inputModerator = new ModeratorRunnable(client, Configuration);
-        vectorSearchRunnable = new VectorSearchRunnable(client, Configuration, "http://localhost:8001/api/v2/");
-        webSearchRunnable = new WebSearchRunnable(client, Configuration);
-        vectorSaveRunnable = new VectorSaveRunnable(client, Configuration, "http://localhost:8001/api/v2/");
-        exitPathRunnable = new ExitPathRunnable(Configuration);
-        vectorEntitySaveRunnable = new VectorEntitySaveRunnable(client, Configuration, "http://localhost:8001/api/v2/");
+        RunnableAgent = new AgentRunnable(client, this, streaming);
+        inputModerator = new ModeratorRunnable(client, this);
+        vectorSearchRunnable = new VectorSearchRunnable(client, this, "http://localhost:8001/api/v2/");
+        webSearchRunnable = new WebSearchRunnable(client, this);
+        vectorSaveRunnable = new VectorSaveRunnable(client, this, "http://localhost:8001/api/v2/");
+        exitPathRunnable = new ExitPathRunnable(this);
+        vectorEntitySaveRunnable = new VectorEntitySaveRunnable(client, this, "http://localhost:8001/api/v2/");
+        simpleAgentRunnable = new SimpleAgentRunnable(client, this  , streaming);
 
-        Configuration = new OrchestrationBuilder()
-            .SetEntryRunnable(inputModerator)
-            .SetOutputRunnable(RunnableAgent)
-            .WithRuntimeProperty("LatestUserMessage", "")
-            .WithRuntimeProperty("MemoryCollectionName", "AgentV6")
-            .WithRuntimeProperty("EntitiesCollectionName", "AgentEntitiesV6")
-            .WithChatMemory("AgentV6.json")
-            .AddParallelAdvancement(inputModerator,
-                 new OrchestrationAdvancer<ChatMessage>(webSearchRunnable),
-                 new OrchestrationAdvancer<ChatMessage>(vectorSearchRunnable),
-                 new OrchestrationAdvancer<ChatMessage>(vectorEntitySaveRunnable))
-            .AddCombinationalAdvancement<string>(
-                fromRunnables: [webSearchRunnable, vectorSearchRunnable, vectorEntitySaveRunnable],
-                condition: _ => true,
-                toRunnable: RunnableAgent,
-                requiredInputToAdvance: 1,
-                combinationRunnableName: "CombinationalContextWaiter")
-            .AddParallelAdvancement(RunnableAgent, 
-                new OrchestrationAdvancer<ChatMessage>(vectorSaveRunnable),
-                new OrchestrationAdvancer<ChatMessage>(exitPathRunnable))
-            .AddExitPath<ChatMessage>(exitPathRunnable, _ => true)
-            .CreateDotGraphVisualization("ChatBotAgent.dot")
-            .Build();
+        //BuildComplexAgent();
+        
+    }
+    public void CloneFrom(OrchestrationRuntimeConfiguration config)
+    {
+        this.Runtime = config.Runtime;
+        this.MessageHistory = config.MessageHistory;
+        this.MessageHistoryFileLocation = config.MessageHistoryFileLocation;
+        this.OnRuntimeEvent = config.OnRuntimeEvent;
+        this.Runnables = config.Runnables;
     }
 
+    public void BuildSimpleAgent()
+    {
+        CloneFrom(new OrchestrationBuilder()
+           .SetEntryRunnable(inputModerator)
+           .SetOutputRunnable(simpleAgentRunnable)
+           .WithRuntimeProperty("LatestUserMessage", "")
+           .WithChatMemory("SimpleAgentV6.json")
+           .AddAdvancer<ChatMessage>(inputModerator, simpleAgentRunnable)
+           .AddAdvancer<ChatMessage>(simpleAgentRunnable, exitPathRunnable)
+           .AddExitPath<ChatMessage>(exitPathRunnable, _ => true)
+           .CreateDotGraphVisualization("SimpleChatBotAgent.dot")
+           .Build()
+           );
+    }
+
+    public void BuildComplexAgent()
+    {
+        CloneFrom(new OrchestrationBuilder()
+           .SetEntryRunnable(inputModerator)
+           .SetOutputRunnable(RunnableAgent)
+           .WithRuntimeProperty("LatestUserMessage", "")
+           .WithRuntimeProperty("MemoryCollectionName", "AgentV6")
+           .WithRuntimeProperty("EntitiesCollectionName", "AgentEntitiesV6")
+           .WithChatMemory("AgentV6.json")
+           .AddParallelAdvancement(inputModerator,
+                new OrchestrationAdvancer<ChatMessage>(webSearchRunnable),
+                new OrchestrationAdvancer<ChatMessage>(vectorSearchRunnable),
+                new OrchestrationAdvancer<ChatMessage>(vectorEntitySaveRunnable))
+           .AddCombinationalAdvancement<string>(
+               fromRunnables: [webSearchRunnable, vectorSearchRunnable, vectorEntitySaveRunnable],
+               condition: _ => true,
+               toRunnable: RunnableAgent,
+               requiredInputToAdvance: 1,
+               combinationRunnableName: "CombinationalContextWaiter")
+           .AddParallelAdvancement(RunnableAgent,
+               new OrchestrationAdvancer<ChatMessage>(vectorSaveRunnable),
+               new OrchestrationAdvancer<ChatMessage>(exitPathRunnable))
+           .AddExitPath<ChatMessage>(exitPathRunnable, _ => true)
+           .CreateDotGraphVisualization("ChatBotAgent.dot")
+           .Build()
+           );
+    }
+
+    //Event system not working correctly
     public override void OnRuntimeInitialized()
     {
+        BuildSimpleAgent();
+
         base.OnRuntimeInitialized();
-        Configuration.Runtime = this.Runtime;
-        this.Runtime.RuntimeConfiguration = Configuration;
-        Configuration.OnRuntimeInitialized();
+
         RunnableAgent.OnAgentRunnerEvent += (sEvent) =>
+        {
+            // Forward agent runner events (including streaming) to runtime
+            this.OnRuntimeEvent?.Invoke(new ChatRuntimeAgentRunnerEvents(sEvent, Runtime?.Id ?? string.Empty));
+        };
+
+        simpleAgentRunnable.OnAgentRunnerEvent += (sEvent) =>
         {
             // Forward agent runner events (including streaming) to runtime
             this.OnRuntimeEvent?.Invoke(new ChatRuntimeAgentRunnerEvents(sEvent, Runtime?.Id ?? string.Empty));
         };
     }
 
+    public void OnRuntimeInitialized(ChatRuntime runtime)
+    {
+        OnRuntimeInitialized();
+    }
 }
+
 
 public class ModeratorRunnable : OrchestrationRunnable<ChatMessage, ChatMessage>
 {
@@ -121,7 +166,7 @@ public class ModeratorRunnable : OrchestrationRunnable<ChatMessage, ChatMessage>
     }
 }
 
-public class AgentRunnable : OrchestrationRunnable<CombinationalResult<string>, ChatMessage>
+public class AgentRunnable : OrchestrationRunnable<CombinationalResult<ChatMessage>, ChatMessage>
 {
     TornadoAgent Agent;
     public Action<AgentRunnerEvents>? OnAgentRunnerEvent { get; set; }
@@ -129,8 +174,6 @@ public class AgentRunnable : OrchestrationRunnable<CombinationalResult<string>, 
     OrchestrationRuntimeConfiguration _runtimeConfiguration;
 
     Conversation _conv;
-
-    bool _firstRun = true;
 
     public AgentRunnable(TornadoApi client, OrchestrationRuntimeConfiguration orchestrator, bool streaming = false) : base(orchestrator)
     {
@@ -144,17 +187,83 @@ public class AgentRunnable : OrchestrationRunnable<CombinationalResult<string>, 
             streaming: streaming);
         _conv = Agent.Client.Chat.CreateConversation(Agent.Options);
         _runtimeConfiguration = orchestrator;
+        _runtimeConfiguration.OnOrchestrationEvent += OnOrchestrationInitialized;
     }
-    
-    public override async ValueTask<ChatMessage> Invoke(RunnableProcess<CombinationalResult<string>, ChatMessage> process)
+
+    //Check to add mesage history on first run
+    private void OnOrchestrationInitialized(OrchestrationEvent oEvent)
     {
-        if (_firstRun)
+        if(_conv.Messages.Count > 0) { return; }
+        if (oEvent is OnInitializedOrchestrationEvent initEvent)
         {
-           //Add the chat history here
+            foreach (var msg in _runtimeConfiguration.MessageHistory.Messages)
+            {
+                _conv.AppendMessage(msg);
+            }
         }
-        
+    }
+
+    public override async ValueTask<ChatMessage> Invoke(RunnableProcess<CombinationalResult<ChatMessage>, ChatMessage> process)
+    {
         process.RegisterAgent(Agent);
-        _conv.AppendMessage(new ChatMessage(Code.ChatMessageRoles.User, string.Join('\n', process.Input.Values)));
+        foreach(var msg in process.Input.Values) { _conv.AppendMessage(msg); }
+        _conv.AppendMessage(new ChatMessage(Code.ChatMessageRoles.User, $"Use the previous {process.Input.Values.Count} messages as context to your next response. Respond Naturally to the users request avoiding conversation about the internal system."));
+
+        _conv = await Agent.RunAsync(
+            appendMessages: _conv.Messages.ToList(),
+            streaming: Agent.Streaming,
+            onAgentRunnerEvent: (sEvent) =>
+            {
+                OnAgentRunnerEvent?.Invoke(sEvent);
+                return ValueTask.CompletedTask;
+            });
+
+        return _conv.Messages.Last();
+    }
+}
+
+public class SimpleAgentRunnable : OrchestrationRunnable<ChatMessage, ChatMessage>
+{
+    TornadoAgent Agent;
+    public Action<AgentRunnerEvents>? OnAgentRunnerEvent { get; set; }
+
+    OrchestrationRuntimeConfiguration _runtimeConfiguration;
+
+    Conversation _conv;
+
+    bool firstRun = true;
+
+    public SimpleAgentRunnable(TornadoApi client, OrchestrationRuntimeConfiguration orchestrator, bool streaming = false) : base(orchestrator)
+    {
+        string instructions = @"You are a friendly chatbot. Given the following context and users prompt generate a response to the user that is helpful and informative.";
+
+        Agent = new TornadoAgent(
+            client: client,
+            model: ChatModel.OpenAi.Gpt5.V5Mini,
+            name: "Assistant",
+            instructions: instructions,
+            streaming: streaming);
+        _conv = Agent.Client.Chat.CreateConversation(Agent.Options);
+        _runtimeConfiguration = orchestrator;
+    }
+
+
+
+    public override async ValueTask<ChatMessage> Invoke(RunnableProcess<ChatMessage, ChatMessage> process)
+    {
+        if (firstRun)
+        {
+            foreach(var msg in _runtimeConfiguration.MessageHistory.Messages)
+            {
+                _conv.AppendMessage(msg);
+            }
+            firstRun = false;
+        }
+
+        process.RegisterAgent(Agent);
+
+        _conv.AppendMessage(process.Input);
+
         _conv = await Agent.RunAsync(
             appendMessages: _conv.Messages.ToList(),
             streaming: Agent.Streaming,

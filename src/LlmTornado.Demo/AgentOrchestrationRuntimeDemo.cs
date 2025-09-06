@@ -150,11 +150,11 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
     [TornadoTest]
     public static async Task BasicOrchestrationRuntimeChatbotStreamingDemo()
     {
-        ChatbotAgent chatbotConfig = new ChatbotAgent(Program.Connect(), true);
+        RuntimeChatBotAgentConfiguration chatbotConfig = new RuntimeChatBotAgentConfiguration(Program.Connect(), true);
 
         ChatRuntime runtime = new ChatRuntime(chatbotConfig);
 
-        chatbotConfig.OnRuntimeEvent = async (evt) =>
+        chatbotConfig.OnRuntimeEvent += async (evt) =>
         {
             if (evt.EventType == ChatRuntimeEventTypes.AgentRunner)
             {
