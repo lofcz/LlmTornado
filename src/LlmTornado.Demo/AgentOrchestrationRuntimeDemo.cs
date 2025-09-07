@@ -151,7 +151,7 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
     public static async Task SimpleChatbotDemo()
     {
         ChatBotAgent chatbotConfig = new ChatBotAgent();
-        OrchestrationRuntimeConfiguration config = chatbotConfig.BuildSimpleAgent(Program.Connect(), true);
+        OrchestrationRuntimeConfiguration config = chatbotConfig.BuildSimpleAgent(Program.Connect(), streaming: true, conversationFile: "Conversation1.json");
         ChatRuntime runtime = new ChatRuntime(config);
 
         runtime.RuntimeConfiguration.OnRuntimeEvent += async (evt) =>
@@ -199,7 +199,14 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
     public static async Task ComplexChatbotDemo()
     {
         ChatBotAgent chatbotConfig = new ChatBotAgent();
-        OrchestrationRuntimeConfiguration config = chatbotConfig.BuildComplexAgent(Program.Connect(), true, chromaUri:"http://localhost:8001/api/v2/");
+
+        OrchestrationRuntimeConfiguration config = chatbotConfig.BuildComplexAgent(
+            client: Program.Connect(),
+            streaming: true, 
+            chromaUri:"http://localhost:8001/api/v2/", 
+            conversationFile: "Conversation1.json",
+            withLongtermMemoryID: "AgentV10");
+
         ChatRuntime runtime = new ChatRuntime(config);
 
         runtime.RuntimeConfiguration.OnRuntimeEvent += async (evt) =>
