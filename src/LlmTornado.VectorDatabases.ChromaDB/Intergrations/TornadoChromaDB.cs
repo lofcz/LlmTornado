@@ -150,6 +150,7 @@ namespace LlmTornado.VectorDatabases.Intergrations
             TornadoChromaWhere tornadoChromaWhere = new TornadoChromaWhere(where);
             var queryData = await CollectionClient.Query(
                 [new(embedding)], 
+                nResults: topK,
                 where: tornadoChromaWhere,
                 include: ChromaQueryInclude.Metadatas | ChromaQueryInclude.Distances | ChromaQueryInclude.Documents);
 

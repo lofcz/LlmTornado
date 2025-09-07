@@ -12,8 +12,9 @@ using LlmTornado.Moderation;
 using LlmTornado.Responses;
 using LlmTornado.VectorDatabases;
 using LlmTornado.VectorDatabases.Intergrations;
-using Microsoft.Extensions.Configuration;
+
 using Newtonsoft.Json;
+using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -25,7 +26,7 @@ namespace LlmTornado.Demo.ExampleAgents.ChatBot;
 
 public class ChatBotAgent
 {
-    public OrchestrationRuntimeConfiguration BuildSimpleAgent(TornadoApi client, bool streaming = false)
+    public OrchestrationRuntimeConfiguration BuildSimpleAgent(TornadoApi client, bool streaming = false, string conversationFile = "SimpleAgent.json")
     {
         OrchestrationBuilder builder = new OrchestrationBuilder();
 
@@ -48,7 +49,7 @@ public class ChatBotAgent
                return ValueTask.CompletedTask;
            })
            .WithRuntimeProperty("LatestUserMessage", "")
-           .WithChatMemory("SimpleAgent.json")
+           .WithChatMemory(conversationFile)
            .AddAdvancer<ChatMessage>(inputModerator, simpleAgentRunnable)
            .AddAdvancer<ChatMessage>(simpleAgentRunnable, exitPathRunnable)
            .AddExitPath<ChatMessage>(exitPathRunnable, _ => true)
@@ -57,7 +58,7 @@ public class ChatBotAgent
         return builder.Build();
     }
 
-    public OrchestrationRuntimeConfiguration BuildComplexAgent(TornadoApi client, bool streaming = false, string chromaUri = "http://localhost:8001/api/v2/")
+    public OrchestrationRuntimeConfiguration BuildComplexAgent(TornadoApi client, bool streaming = false, string chromaUri = "http://localhost:8001/api/v2/",string conversationFile = "AgentV10.json", string withLongtermMemoryID = "AgentV10")
     {
         OrchestrationBuilder builder = new OrchestrationBuilder();
 
@@ -81,9 +82,9 @@ public class ChatBotAgent
                 return ValueTask.CompletedTask;
             })
             .WithRuntimeProperty("LatestUserMessage", "")
-            .WithRuntimeProperty("MemoryCollectionName", "AgentV9")
-            .WithRuntimeProperty("EntitiesCollectionName", "AgentEntitiesV9")
-            .WithChatMemory("AgentV9.json")
+            .WithRuntimeProperty("MemoryCollectionName", $"{withLongtermMemoryID}")
+            .WithRuntimeProperty("EntitiesCollectionName", $"{withLongtermMemoryID}Entities")
+            .WithChatMemory(conversationFile)
             .WithDataRecording()
             .AddParallelAdvancement(inputModerator,
                 new OrchestrationAdvancer<ChatMessage>(webSearchRunnable),
@@ -533,23 +534,21 @@ public struct SortedEntities
 public class VectorEntitySaveRunnable : OrchestrationRunnable<ChatMessage, string>
 {
     TornadoAgent Agent { get; set; }
+
     TornadoApi Client { get; set; }
 
     string ChromaDbURI = "http://localhost:8001/api/v2/";
 
     string collectionName = "ChatBotEntitiesV3";
-
-    TornadoChromaDB chromaDB { get; set; }
-
-    TornadoEmbeddingProvider tornadoEmbeddingProvider;
-
+    ConcurrentBag<VectorDocument> newEntities = new ConcurrentBag<VectorDocument>();
+    ConcurrentBag<VectorDocument> knownEntities = new ConcurrentBag<VectorDocument>();
     public VectorEntitySaveRunnable(TornadoApi client, Orchestration orchestrator, string chromaUri = "http://localhost:8001/api/v2/") : base(orchestrator)
     {
         AllowDeadEnd = true;
         string instructions = @"You are an expert Entity Identifier. Your job is to detect all the entities in the user's message and extract their context for saving";
         Client = client;
         ChromaDbURI = chromaUri;
-        chromaDB = new TornadoChromaDB(ChromaDbURI);
+        
         Agent = new TornadoAgent(
             client: Client,
             model: ChatModel.OpenAi.Gpt5.V5Mini,
@@ -560,8 +559,6 @@ public class VectorEntitySaveRunnable : OrchestrationRunnable<ChatMessage, strin
 
     public override async ValueTask InitializeRunnable()
     {
-        tornadoEmbeddingProvider = new TornadoEmbeddingProvider(Program.Connect(), EmbeddingModel.OpenAi.Gen3.Small);
-
         Orchestrator.RuntimeProperties.TryGetValue("EntitiesCollectionName", out var colName);
 
         if (colName != null && !string.IsNullOrEmpty(colName.ToString()))
@@ -569,7 +566,8 @@ public class VectorEntitySaveRunnable : OrchestrationRunnable<ChatMessage, strin
             collectionName = colName.ToString() ?? collectionName;
         }
 
-        await chromaDB.InitializeCollection(collectionName);
+        newEntities = new ConcurrentBag<VectorDocument>();
+        knownEntities = new ConcurrentBag<VectorDocument>();
     }
 
     public override async ValueTask<string> Invoke(RunnableProcess<ChatMessage, string> process)
@@ -582,60 +580,68 @@ public class VectorEntitySaveRunnable : OrchestrationRunnable<ChatMessage, strin
         if (string.IsNullOrEmpty(process.Input.Content)) return "ENTITIES: {}";
 
         Entities entities = conv.Messages.Last().Content.ParseJson<Entities>();
+
         if(entities.DetectedEntities == null) return "ENTITIES: {}";
 
-        List<VectorDocument> similarEntities = new List<VectorDocument>(await GetSimilarEntities(entities, tornadoEmbeddingProvider));
-
-        List<VectorDocument> newEntities = new List<VectorDocument>();
-        List<VectorDocument> knownEntities = new List<VectorDocument>();
-
-        foreach (var entity in entities.DetectedEntities)
-        {
-            VectorDocument existingDoc = similarEntities.FirstOrDefault(ety => ety.Metadata["EntityName"].ToString() == entity.EntityName);
-                
-            if (existingDoc != null)
-            {
-                existingDoc.Embedding = await tornadoEmbeddingProvider.Invoke(existingDoc.Content ?? "");
-                existingDoc = UpdateFromEntity(existingDoc, entity);
-                knownEntities.Add(existingDoc);
-                
-                continue;
-            }
-            newEntities.Add(CreateFromEntity(entity));
-        }
+        RunKnownEntityDetector(entities);
 
         string response = "ENTITIES: " + string.Join("\n\n", knownEntities.Select(entity => entity.ToString()));
 
-        BackgroundTaskUpdateKnownEntities(knownEntities.ToArray());
-        BackgroundTaskSaveNewEntities(newEntities.ToArray());
+        BackgroundTaskUpdateKnownEntities(knownEntities.ToArray(), ChromaDbURI, collectionName);
+        BackgroundTaskSaveNewEntities(newEntities.ToArray(), ChromaDbURI, collectionName);
 
         return response;
     }
 
-    private async Task<VectorDocument[]> GetSimilarEntities(Entities entities, TornadoEmbeddingProvider tornadoEmbeddingProvider)
+    private void RunKnownEntityDetector(Entities entities)
     {
-        List<VectorDocument> similarEntities = new List<VectorDocument>();
-        if (entities.DetectedEntities == null) return Array.Empty<VectorDocument>();
-        foreach (var entity in entities.DetectedEntities)
+        if(entities.DetectedEntities == null) return;
+        Parallel.ForEach(entities.DetectedEntities, async (entity) =>
         {
-            float[] embedding = await tornadoEmbeddingProvider.Invoke(entity.ToString());
-
-            VectorDocument[] existingEntities = await QueryEntities(embedding);
-            similarEntities.AddRange(existingEntities);
-        }
-        return similarEntities.ToArray();
+            List<VectorDocument> similarEntities = new List<VectorDocument>(await GetSimilarEntities(entity, ChromaDbURI, collectionName));
+            VectorDocument existingDoc = similarEntities.FirstOrDefault(ety => ety.Metadata["EntityName"].ToString() == entity.EntityName);
+            if (existingDoc != null)
+            {
+                TornadoEmbeddingProvider tornadoEmbeddingProvider = new TornadoEmbeddingProvider(Program.Connect(), EmbeddingModel.OpenAi.Gen3.Small);
+                existingDoc.Embedding = tornadoEmbeddingProvider.Invoke(existingDoc.Content ?? "").GetAwaiter().GetResult();
+                existingDoc = UpdateFromEntity(existingDoc, entity);
+                knownEntities.Add(existingDoc);
+                return;
+            }
+            newEntities.Add(CreateFromEntity(entity));
+        });
     }
 
-    private void BackgroundTaskUpdateKnownEntities(VectorDocument[] docs)
+    private async Task<VectorDocument[]> GetSimilarEntities(Entity entity, string uri, string collectionName)
     {
-        _ = Task.Run(async () => await UpdateDocuments(docs));
+        TornadoEmbeddingProvider tornadoEmbeddingProvider = new TornadoEmbeddingProvider(Program.Connect(), EmbeddingModel.OpenAi.Gen3.Small);
+        TornadoChromaDB chromaDB = new TornadoChromaDB(uri);
+       
+
+        await chromaDB.InitializeCollection(collectionName);
+        float[] embedding = await tornadoEmbeddingProvider.Invoke(entity.ToString());
+        return await chromaDB.QueryByEmbeddingAsync(embedding, topK: 5);
     }
 
-    private void BackgroundTaskSaveNewEntities(VectorDocument[] newEntities)
+    private void BackgroundTaskUpdateKnownEntities(VectorDocument[] docs, string uri, string collectionName)
     {
         _ = Task.Run(async () =>
         {
             TornadoEmbeddingProvider tornadoEmbeddingProvider = new TornadoEmbeddingProvider(Program.Connect(), EmbeddingModel.OpenAi.Gen3.Small);
+            TornadoChromaDB chromaDB = new TornadoChromaDB(uri);
+            await chromaDB.InitializeCollection(collectionName);
+            await chromaDB.UpdateDocumentsAsync(docs.ToArray());
+        });
+    }
+
+    private void BackgroundTaskSaveNewEntities(VectorDocument[] newEntities, string uri, string collectionName)
+    {
+        _ = Task.Run(async () =>
+        {
+            TornadoEmbeddingProvider tornadoEmbeddingProvider = new TornadoEmbeddingProvider(Program.Connect(), EmbeddingModel.OpenAi.Gen3.Small);
+            TornadoChromaDB chromaDB = new TornadoChromaDB(uri);
+
+            await chromaDB.InitializeCollection(collectionName);
 
             foreach (var doc in newEntities)
             {
@@ -643,13 +649,8 @@ public class VectorEntitySaveRunnable : OrchestrationRunnable<ChatMessage, strin
                 doc.Embedding = embedding;
             }
 
-            await SaveDocuments(newEntities.ToArray());
+            await chromaDB.AddDocumentsAsync(newEntities.ToArray());
         });
-    }
-
-    private async Task<VectorDocument[]> QueryEntities(float[] embedding)
-    {
-        return await chromaDB.QueryByEmbeddingAsync(embedding, topK: 5);
     }
 
     private VectorDocument CreateFromEntity(Entity entity, float[]? data = null)
@@ -700,13 +701,4 @@ public class VectorEntitySaveRunnable : OrchestrationRunnable<ChatMessage, strin
             embedding: data);
     }
 
-    private async Task SaveDocuments(VectorDocument[] entities)
-    {
-        await chromaDB.AddDocumentsAsync(entities);
-    }
-
-    private async Task UpdateDocuments(VectorDocument[] entities)
-    {
-        await chromaDB.UpdateDocumentsAsync(entities);
-    }
 }

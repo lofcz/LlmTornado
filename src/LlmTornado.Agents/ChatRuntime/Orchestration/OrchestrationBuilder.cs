@@ -36,6 +36,12 @@ public class OrchestrationBuilder
 
     public OrchestrationBuilder WithChatMemory(string memoryFilePath)
     {
+
+        if (Path.GetExtension(memoryFilePath).ToLower() != ".json")
+        {
+            throw new ArgumentException("Conversation file must be a .json file");
+        }
+
         Configuration.MessageHistoryFileLocation = memoryFilePath;
         
         return this;
