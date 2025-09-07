@@ -15,6 +15,7 @@ using LlmTornado.VectorDatabases.Intergrations;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 using static LlmTornado.Demo.ExampleAgents.ChatBot.VectorEntitySaveRunnable;
@@ -305,8 +306,12 @@ public class VectorSaveRunnable : OrchestrationRunnable<ChatMessage, ValueTask>
 
     public override async ValueTask<ValueTask> Invoke(RunnableProcess<ChatMessage, ValueTask> process)
     {
-        process.RegisterAgent(Agent);
+        _ = Task.Run(() => BackgroundTaskSaveVectorDocs(process.Input));
+        return ValueTask.CompletedTask;
+    }
 
+    private async Task BackgroundTaskSaveVectorDocs(ChatMessage message)
+    {
         Orchestrator.RuntimeProperties.TryGetValue("MemoryCollectionName", out var colName);
 
         if (colName != null && !string.IsNullOrEmpty(colName.ToString()))
@@ -314,42 +319,45 @@ public class VectorSaveRunnable : OrchestrationRunnable<ChatMessage, ValueTask>
             collectionName = colName.ToString() ?? collectionName;
         }
 
-        List<Task> tasks = new List<Task>();
-        //Saves the latest user message to the vector database along with the ResponseID of the assistant's response.
-       
-        tasks.Add(Task.Run(async () =>
-        {
-            string latestUserMessage = Orchestrator?.RuntimeProperties.TryGetValue("LatestUserMessage", out var val) == true ? val?.ToString() ?? "" : "";
-            if (!string.IsNullOrEmpty(latestUserMessage))
-                await SaveDocument(latestUserMessage, additionalStaticParentMetadata: new Dictionary<string, object>()
-                {
-                    {"Role","User" },
-                    {"ResponseId", process.Input.Id },
-                    {"Timestamp", DateTime.UtcNow }
-                });
-        }));
-        
-        tasks.Add(Task.Run(async () =>
-        {
-            //Creates a summary of the assistant's response to be saved.
-            Conversation conv = await Agent.RunAsync(appendMessages: new List<ChatMessage> { process.Input });
+        string messageId = message.Id.ToString() ?? Guid.NewGuid().ToString();
 
-            if (!string.IsNullOrEmpty(process.Input.Content))
-            {
-                await SaveDocument(process.Input.Content, additionalStaticParentMetadata: new Dictionary<string, object>()
-                {
-                    { "Role","Assistant" },
-                    { "ResponseId", process.Input.Id },
-                    { "Timestamp", DateTime.UtcNow }
-                });
-            }  
-        }));
-        
-        await Task.WhenAll(tasks);
+        _ = Task.Run(async () =>
+        {
+            await SaveLastUserMessage(messageId);
+        });
 
-        return ValueTask.CompletedTask;
+        _ = Task.Run(async () =>
+        {
+            await SaveLastAssistantMessage(message);
+        });
     }
 
+    private async Task SaveLastAssistantMessage(ChatMessage message)
+    {
+        //Creates a summary of the assistant's response to be saved.
+        Conversation conv = await Agent.RunAsync(appendMessages: new List<ChatMessage> { message });
+        if (!string.IsNullOrEmpty(message.Content))
+        {
+            await SaveDocument(message.Content, additionalStaticParentMetadata: new Dictionary<string, object>()
+                {
+                    { "Role","Assistant" },
+                    { "ResponseId", message.Id },
+                    { "Timestamp", DateTime.UtcNow }
+                });
+        }
+    }
+
+    private async Task SaveLastUserMessage(string messageId)
+    {
+        string latestUserMessage = Orchestrator?.RuntimeProperties.TryGetValue("LatestUserMessage", out var val) == true ? val?.ToString() ?? "" : "";
+        if (!string.IsNullOrEmpty(latestUserMessage))
+            await SaveDocument(latestUserMessage, additionalStaticParentMetadata: new Dictionary<string, object>()
+                {
+                    {"Role","User" },
+                    {"ResponseId", messageId },
+                    {"Timestamp", DateTime.UtcNow }
+                });
+    }
 
     private async Task SaveDocument(string text, Dictionary<string, object>? additionalStaticParentMetadata = null, Dictionary<string, object>? additionalStaticChildMetadata = null)
     {
@@ -533,6 +541,7 @@ public class VectorEntitySaveRunnable : OrchestrationRunnable<ChatMessage, strin
 
     TornadoChromaDB chromaDB { get; set; }
 
+    TornadoEmbeddingProvider tornadoEmbeddingProvider;
 
     public VectorEntitySaveRunnable(TornadoApi client, Orchestration orchestrator, string chromaUri = "http://localhost:8001/api/v2/") : base(orchestrator)
     {
@@ -549,10 +558,9 @@ public class VectorEntitySaveRunnable : OrchestrationRunnable<ChatMessage, strin
             instructions: instructions);
     }
 
-    public override async ValueTask<string> Invoke(RunnableProcess<ChatMessage, string> process)
+    public override async ValueTask InitializeRunnable()
     {
-        process.RegisterAgent(Agent);
-        TornadoEmbeddingProvider tornadoEmbeddingProvider = new TornadoEmbeddingProvider(Program.Connect(), EmbeddingModel.OpenAi.Gen3.Small);
+        tornadoEmbeddingProvider = new TornadoEmbeddingProvider(Program.Connect(), EmbeddingModel.OpenAi.Gen3.Small);
 
         Orchestrator.RuntimeProperties.TryGetValue("EntitiesCollectionName", out var colName);
 
@@ -562,45 +570,72 @@ public class VectorEntitySaveRunnable : OrchestrationRunnable<ChatMessage, strin
         }
 
         await chromaDB.InitializeCollection(collectionName);
+    }
 
-        //Creates a summary of the assistant's response to be saved.
+    public override async ValueTask<string> Invoke(RunnableProcess<ChatMessage, string> process)
+    {
+        process.RegisterAgent(Agent);
+        
+        //Gather list of entities from user input
         Conversation conv = await Agent.RunAsync(appendMessages: new List<ChatMessage> { process.Input });
 
-        if (!string.IsNullOrEmpty(process.Input.Content))
+        if (string.IsNullOrEmpty(process.Input.Content)) return "ENTITIES: {}";
+
+        Entities entities = conv.Messages.Last().Content.ParseJson<Entities>();
+        if(entities.DetectedEntities == null) return "ENTITIES: {}";
+
+        List<VectorDocument> similarEntities = new List<VectorDocument>(await GetSimilarEntities(entities, tornadoEmbeddingProvider));
+
+        List<VectorDocument> newEntities = new List<VectorDocument>();
+        List<VectorDocument> knownEntities = new List<VectorDocument>();
+
+        foreach (var entity in entities.DetectedEntities)
         {
-            Entities entities = conv.Messages.Last().Content.ParseJson<Entities>();
-
-            List<VectorDocument> similarEntities = new List<VectorDocument>();
-            foreach (var entity in entities.DetectedEntities)
+            VectorDocument existingDoc = similarEntities.FirstOrDefault(ety => ety.Metadata["EntityName"].ToString() == entity.EntityName);
+                
+            if (existingDoc != null)
             {
+                existingDoc.Embedding = await tornadoEmbeddingProvider.Invoke(existingDoc.Content ?? "");
+                existingDoc = UpdateFromEntity(existingDoc, entity);
+                knownEntities.Add(existingDoc);
                 
-                float[] embedding = await tornadoEmbeddingProvider.Invoke(entity.ToString());
-                
-                VectorDocument[] existingEntities = await QueryEntities(embedding);
-                similarEntities.AddRange(existingEntities);
+                continue;
             }
+            newEntities.Add(CreateFromEntity(entity));
+        }
 
-            if (entities.DetectedEntities.Length == 0)
-                return "ENTITIES: {}";
+        string response = "ENTITIES: " + string.Join("\n\n", knownEntities.Select(entity => entity.ToString()));
 
+        BackgroundTaskUpdateKnownEntities(knownEntities.ToArray());
+        BackgroundTaskSaveNewEntities(newEntities.ToArray());
 
+        return response;
+    }
 
-            List<VectorDocument> newEntities = new List<VectorDocument>();
-            List<VectorDocument> knownEntities = new List<VectorDocument>();
+    private async Task<VectorDocument[]> GetSimilarEntities(Entities entities, TornadoEmbeddingProvider tornadoEmbeddingProvider)
+    {
+        List<VectorDocument> similarEntities = new List<VectorDocument>();
+        if (entities.DetectedEntities == null) return Array.Empty<VectorDocument>();
+        foreach (var entity in entities.DetectedEntities)
+        {
+            float[] embedding = await tornadoEmbeddingProvider.Invoke(entity.ToString());
 
-            foreach (var entity in entities.DetectedEntities)
-            {
-                VectorDocument existingDoc = similarEntities.FirstOrDefault(ety => ety.Metadata["EntityName"].ToString() == entity.EntityName);
-                
-                if (existingDoc != null)
-                {
-                    existingDoc.Embedding = await tornadoEmbeddingProvider.Invoke(existingDoc.Content ?? "");
-                    knownEntities.Add(UpdateFromEntity(existingDoc, entity));
-                    await UpdateDocuments(new[] { UpdateFromEntity(existingDoc, entity) });
-                    continue;
-                }
-                newEntities.Add(CreateFromEntity(entity));
-            }
+            VectorDocument[] existingEntities = await QueryEntities(embedding);
+            similarEntities.AddRange(existingEntities);
+        }
+        return similarEntities.ToArray();
+    }
+
+    private void BackgroundTaskUpdateKnownEntities(VectorDocument[] docs)
+    {
+        _ = Task.Run(async () => await UpdateDocuments(docs));
+    }
+
+    private void BackgroundTaskSaveNewEntities(VectorDocument[] newEntities)
+    {
+        _ = Task.Run(async () =>
+        {
+            TornadoEmbeddingProvider tornadoEmbeddingProvider = new TornadoEmbeddingProvider(Program.Connect(), EmbeddingModel.OpenAi.Gen3.Small);
 
             foreach (var doc in newEntities)
             {
@@ -609,19 +644,14 @@ public class VectorEntitySaveRunnable : OrchestrationRunnable<ChatMessage, strin
             }
 
             await SaveDocuments(newEntities.ToArray());
-
-            string resultResult = "ENTITIES: " + string.Join("\n\n", knownEntities.Select(entity => entity.ToString()));
-
-            return resultResult;
-        }
-
-        return "ENTITIES: {}";
+        });
     }
 
     private async Task<VectorDocument[]> QueryEntities(float[] embedding)
     {
         return await chromaDB.QueryByEmbeddingAsync(embedding, topK: 5);
     }
+
     private VectorDocument CreateFromEntity(Entity entity, float[]? data = null)
     {
         Dictionary<string, object> metadata = new Dictionary<string, object>();
@@ -644,6 +674,7 @@ public class VectorEntitySaveRunnable : OrchestrationRunnable<ChatMessage, strin
             metadata: metadata,
             embedding: data);
     }
+
     private VectorDocument UpdateFromEntity(VectorDocument docToUpdate, Entity entity, float[]? data = null)
     {
         Dictionary<string, object> metadata = docToUpdate.Metadata ?? new Dictionary<string, object>();
@@ -668,6 +699,7 @@ public class VectorEntitySaveRunnable : OrchestrationRunnable<ChatMessage, strin
             metadata: metadata,
             embedding: data);
     }
+
     private async Task SaveDocuments(VectorDocument[] entities)
     {
         await chromaDB.AddDocumentsAsync(entities);

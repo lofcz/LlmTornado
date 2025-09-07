@@ -199,7 +199,7 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
     public static async Task ComplexChatbotDemo()
     {
         ChatBotAgent chatbotConfig = new ChatBotAgent();
-        OrchestrationRuntimeConfiguration config = chatbotConfig.BuildComplexAgent(Program.Connect(), true, chromaUri:"http://localhost:8000/api/v2/");
+        OrchestrationRuntimeConfiguration config = chatbotConfig.BuildComplexAgent(Program.Connect(), true, chromaUri:"http://localhost:8001/api/v2/");
         ChatRuntime runtime = new ChatRuntime(config);
 
         runtime.RuntimeConfiguration.OnRuntimeEvent += async (evt) =>

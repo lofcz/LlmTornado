@@ -113,24 +113,6 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
             {
                 await InternalInvoke(process);
             }
-
-            //Removing untill i can test thread safety
-            //if (IsThreadSafe)
-            //{
-            //    //Parallel method input list [1,2,3,4] each input is processed in parallel and returns 4 results
-            //    List<Task> Tasks = new List<Task>();
-            //    Processes.ForEach(process => Tasks.Add(Task.Run(async () => await InternalInvoke(process))));
-            //    await Task.WhenAll(Tasks);
-            //    Tasks.Clear();
-            //}
-            //else
-            //{
-            //    //Standard method input list [1,2,3,4] each input is processed in order and returns 4 results
-            //    foreach (var process in Processes)
-            //    {
-            //        await InternalInvoke(process);
-            //    }
-            //}
         }
     }
 

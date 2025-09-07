@@ -96,15 +96,6 @@ public abstract class OrchestrationRunnableBase
     /// </summary>
     public bool AllowDeadEnd { get; set; } = false;
 
-    /// <summary>
-    /// Whether this state is thread safe to run in parallel. [not is used yet]
-    /// </summary>
-    public bool IsThreadSafe { get; set; } = false;
-
-    /// <summary>
-    /// Set to run this state as a background task. [not is used yet]
-    /// </summary>
-    public bool IsBackgroundTask { get; set; } = false;
 
     /// <summary>
     /// Evaluates and returns a list of runtime processes that meet specific conditions.
