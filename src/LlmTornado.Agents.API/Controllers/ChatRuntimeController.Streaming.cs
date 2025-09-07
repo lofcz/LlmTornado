@@ -5,16 +5,18 @@ using LlmTornado.Agents.DataModels;
 using LlmTornado.Chat;
 using LlmTornado.Code;
 using Microsoft.AspNetCore.Mvc;
+using System.Collections.Concurrent;
 
 namespace LlmTornado.Agents.API.Controllers;
 
 public partial class ChatRuntimeController
 {
+    private readonly object _lockObj = new object();
     private bool _streamingComplete = false;
     private bool _streamingError = false;
     private string _errorMessage = "";
     private int _eventsReceived = 0;
-
+    ConcurrentQueue<ChatRuntimeEvents> eventQueue = new ConcurrentQueue<ChatRuntimeEvents>();
     /// <summary>
     /// Streaming message endpoint. Clients should subscribe to SignalR hub /hub/chatruntime and group runtime-{runtimeId}.
     /// This endpoint triggers processing and returns acknowledgement plus (optionally) final response when available.
@@ -24,6 +26,7 @@ public partial class ChatRuntimeController
     {
         try
         {
+            
             var runtime = _runtimeService.GetRuntime(runtimeId);
             if (runtime is null)
             {
@@ -51,7 +54,7 @@ public partial class ChatRuntimeController
                 try
                 {
                     _eventsReceived++;
-                    await ProcessRuntimeEvents(runnerEvent);
+                    QueueRuntimeEvents(runnerEvent);
                 }
                 catch (Exception ex)
                 {
@@ -68,12 +71,28 @@ public partial class ChatRuntimeController
                 message.Parts = new List<ChatMessagePart>();
             }
 
-            message.Parts.Add(new ChatMessagePart(request.Content));
-
             if (request.Base64File is not null)
             {
-                message.Parts.Add(new ChatMessagePart(request.Base64File, Images.ImageDetail.Auto));
+                if (request.Base64File.Contains("jpeg") || request.Base64File.Contains("jpg") || request.Base64File.Contains("png") || request.Base64File.Contains("png"))
+                {
+                    message.Parts.Add(new ChatMessagePart(request.Base64File, Images.ImageDetail.Auto));
+                }  
+                else if (request.Base64File.Contains("mpeg"))
+                {
+                    message.Parts.Add(new ChatMessagePart(request.Base64File, ChatAudioFormats.Mp3));
+                }
+
+                else if (request.Base64File.Contains("wav")) 
+                {
+                    message.Parts.Add(new ChatMessagePart(request.Base64File, ChatAudioFormats.Wav));
+                }
+                else
+                {
+                    message.Parts.Add(new ChatMessagePart(documentPathOrBase64: request.Base64File, DocumentLinkTypes.Base64));
+                }
             }
+
+            message.Parts.Add(new ChatMessagePart(request.Content));
 
             // Invoke runtime; streaming deltas will be delivered via the event handlers we just set up
             ChatMessage final = await _runtimeService.SendMessageAsync(runtimeId, message);
@@ -91,6 +110,18 @@ public partial class ChatRuntimeController
             Response.StatusCode = 500;
             await Response.WriteAsync($"Internal error: {ex.Message}");
             return;
+        }
+    }
+
+    private void QueueRuntimeEvents(ChatRuntimeEvents runtimeEvent)
+    {
+        eventQueue.Enqueue(runtimeEvent);
+        while(eventQueue.TryDequeue(out var evt))
+        {
+            lock (_lockObj)
+            {
+                Task.Run(async () => await ProcessRuntimeEvents(evt));
+            }
         }
     }
 

@@ -154,11 +154,11 @@ public class ChatService : IDisposable
     /// <summary>
     /// Starts streaming a message using EventSource
     /// </summary>
-    public async Task StreamMessageAsync<T>(string runtimeId, string message, DotNetObjectReference<T> componentRef) where T : class
+    public async Task StreamMessageAsync<T>(string runtimeId, string message, string? base64, DotNetObjectReference<T> componentRef) where T : class
     {
         try
         {
-            var request = new { content = message };
+            var request = new { content = message, Base64File = base64 };
             await _jsRuntime.InvokeVoidAsync("startEventSource", 
                 $"{_apiBaseUrl}/api/chatruntime/{runtimeId}/stream",
                 JsonSerializer.Serialize(request),

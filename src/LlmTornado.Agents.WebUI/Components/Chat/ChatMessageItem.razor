@@ -58,30 +58,30 @@
     /// <summary>
     /// Gets file information from a Base64 data string
     /// </summary>
-    private LlmTornado.Chat.Web.Services.FileInfo GetFileInfoFromBase64(string base64Data)
+    private LlmTornado.Chat.Web.Models.FileInfo GetFileInfoFromBase64(string base64Data)
     {
         if (string.IsNullOrEmpty(base64Data) || !base64Data.StartsWith("data:"))
         {
-            return new LlmTornado.Chat.Web.Services.FileInfo { IsValid = false };
+            return new LlmTornado.Chat.Web.Models.FileInfo { IsValid = false };
         }
 
         try
         {
             var parts = base64Data.Split(";");
-            if (parts.Length < 2) return new LlmTornado.Chat.Web.Services.FileInfo { IsValid = false };
+            if (parts.Length < 2) return new LlmTornado.Chat.Web.Models.FileInfo { IsValid = false };
 
             var mimeType = parts[0].Substring(5); // Remove "data:" prefix
             var base64Part = parts[1];
             
             if (!base64Part.StartsWith("base64,"))
             {
-                return new LlmTornado.Chat.Web.Services.FileInfo { IsValid = false };
+                return new LlmTornado.Chat.Web.Models.FileInfo { IsValid = false };
             }
 
             var base64String = base64Part.Substring(7); // Remove "base64," prefix
             var sizeInBytes = (base64String.Length * 3) / 4; // Approximate size
 
-            return new LlmTornado.Chat.Web.Services.FileInfo
+            return new LlmTornado.Chat.Web.Models.FileInfo
             {
                 IsValid = true,
                 MimeType = mimeType,
@@ -91,7 +91,7 @@
         }
         catch
         {
-            return new LlmTornado.Chat.Web.Services.FileInfo { IsValid = false };
+            return new LlmTornado.Chat.Web.Models.FileInfo { IsValid = false };
         }
     }
 

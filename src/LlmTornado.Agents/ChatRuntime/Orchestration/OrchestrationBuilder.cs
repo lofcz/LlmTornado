@@ -12,9 +12,10 @@ namespace LlmTornado.Agents.ChatRuntime;
 public class OrchestrationBuilder
 {
     public OrchestrationRuntimeConfiguration Configuration { get; private set; }
-    public OrchestrationBuilder()
+
+    public OrchestrationBuilder(OrchestrationRuntimeConfiguration config)
     {
-        Configuration = new OrchestrationRuntimeConfiguration();
+        Configuration = config;
     }
 
     public OrchestrationBuilder WithRuntimeInitializer(Func<OrchestrationRuntimeConfiguration, ValueTask> customInitializer)

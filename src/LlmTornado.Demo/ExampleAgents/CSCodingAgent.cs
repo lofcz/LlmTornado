@@ -247,7 +247,7 @@ public class CodingAgentConfiguration : OrchestrationRuntimeConfiguration
 
     public OrchestrationRuntimeConfiguration CreateWithBuilder()
     {
-        return new OrchestrationBuilder()
+        return new OrchestrationBuilder(this)
             .SetEntryRunnable(_codeState)
             .WithOnRuntimeEvent(async (evt) =>
             {

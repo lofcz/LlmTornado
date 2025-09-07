@@ -4,6 +4,7 @@ using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Code;
 using LlmTornado.Demo.ExampleAgents;
+using LlmTornado.Demo.ExampleAgents.ChatBot;
 using LlmTornado.Demo.ExampleAgents.MagenticOneAgent;
 using LlmTornado.Demo.ExampleAgents.ResearchAgent;
 using Microsoft.AspNetCore.SignalR;
@@ -42,7 +43,7 @@ public class ChatRuntimeService : IChatRuntimeService
     {
         _logger = logger;
         RegisterRuntimeConfiguration<ResearchAgentConfiguration>();
-        RegisterRuntimeConfiguration<MagenticOneConfiguration>();   
+        RegisterRuntimeConfiguration<ChatBotAgent>();   
     }
 
     public void RegisterRuntimeConfiguration<T>() where T : IRuntimeConfiguration

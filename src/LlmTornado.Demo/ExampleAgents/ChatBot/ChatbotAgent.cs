@@ -5,6 +5,7 @@ using LlmTornado.Agents.ChatRuntime.RuntimeConfigurations;
 using LlmTornado.Agents.DataModels;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
+using LlmTornado.Code;
 using LlmTornado.Embedding;
 using LlmTornado.Embedding.Models;
 using LlmTornado.Infra;
@@ -24,19 +25,24 @@ using static LlmTornado.Demo.VectorDatabasesDemo;
 
 namespace LlmTornado.Demo.ExampleAgents.ChatBot;
 
-public class ChatBotAgent
+public class ChatBotAgent : OrchestrationRuntimeConfiguration
 {
+    public ChatBotAgent()
+    {
+        TornadoApi client = new TornadoApi(LLmProviders.OpenAi, Environment.GetEnvironmentVariable("OPENAI_API_KEY"));
+
+        BuildComplexAgent(client, true, "http://localhost:8001/api/v2/", "AgentV10.json", "AgentV10");
+    }
+
     public OrchestrationRuntimeConfiguration BuildSimpleAgent(TornadoApi client, bool streaming = false, string conversationFile = "SimpleAgent.json")
     {
-        OrchestrationBuilder builder = new OrchestrationBuilder();
+        ModeratorRunnable inputModerator = new ModeratorRunnable(client, this);
 
-        ModeratorRunnable inputModerator = new ModeratorRunnable(client, builder.Configuration);
+        SimpleAgentRunnable simpleAgentRunnable = new SimpleAgentRunnable(client, this, streaming);
 
-        SimpleAgentRunnable simpleAgentRunnable = new SimpleAgentRunnable(client, builder.Configuration, streaming);
+        ExitPathRunnable exitPathRunnable = new ExitPathRunnable(this);
 
-        ExitPathRunnable exitPathRunnable = new ExitPathRunnable(builder.Configuration);
-
-        builder
+        return new OrchestrationBuilder(this)
            .SetEntryRunnable(inputModerator)
            .SetOutputRunnable(simpleAgentRunnable)
            .WithRuntimeInitializer((config) =>
@@ -53,24 +59,22 @@ public class ChatBotAgent
            .AddAdvancer<ChatMessage>(inputModerator, simpleAgentRunnable)
            .AddAdvancer<ChatMessage>(simpleAgentRunnable, exitPathRunnable)
            .AddExitPath<ChatMessage>(exitPathRunnable, _ => true)
-           .CreateDotGraphVisualization("SimpleChatBotAgent.dot");
-
-        return builder.Build();
+           .CreateDotGraphVisualization("SimpleChatBotAgent.dot").Build();
     }
 
     public OrchestrationRuntimeConfiguration BuildComplexAgent(TornadoApi client, bool streaming = false, string chromaUri = "http://localhost:8001/api/v2/",string conversationFile = "AgentV10.json", string withLongtermMemoryID = "AgentV10")
     {
-        OrchestrationBuilder builder = new OrchestrationBuilder();
+        AgentRunnable RunnableAgent = new AgentRunnable(client, this, streaming);
+        ModeratorRunnable inputModerator = new ModeratorRunnable(client, this);
+        VectorSearchRunnable vectorSearchRunnable = new VectorSearchRunnable(client, this, chromaUri);
+        WebSearchRunnable webSearchRunnable = new WebSearchRunnable(client, this);
+        VectorSaveRunnable vectorSaveRunnable = new VectorSaveRunnable(client, this, chromaUri);
+        ExitPathRunnable exitPathRunnable = new ExitPathRunnable(this);
+        VectorEntitySaveRunnable vectorEntitySaveRunnable = new VectorEntitySaveRunnable(client, this, chromaUri);
+        ChatPassthruRunnable chatPassthruRunnable = new ChatPassthruRunnable(this);
 
-        AgentRunnable RunnableAgent = new AgentRunnable(client, builder.Configuration, streaming);
-        ModeratorRunnable inputModerator = new ModeratorRunnable(client, builder.Configuration);
-        VectorSearchRunnable vectorSearchRunnable = new VectorSearchRunnable(client, builder.Configuration, chromaUri);
-        WebSearchRunnable webSearchRunnable = new WebSearchRunnable(client, builder.Configuration);
-        VectorSaveRunnable vectorSaveRunnable = new VectorSaveRunnable(client, builder.Configuration, chromaUri);
-        ExitPathRunnable exitPathRunnable = new ExitPathRunnable(builder.Configuration);
-        VectorEntitySaveRunnable vectorEntitySaveRunnable = new VectorEntitySaveRunnable(client, builder.Configuration, chromaUri);
-        ChatPassthruRunnable chatPassthruRunnable = new ChatPassthruRunnable(builder.Configuration);
-        builder.SetEntryRunnable(inputModerator)
+        return new OrchestrationBuilder(this)
+            .SetEntryRunnable(inputModerator)
             .SetOutputRunnable(RunnableAgent)
             .WithRuntimeInitializer((config) =>
             {
@@ -101,9 +105,8 @@ public class ChatBotAgent
                 new OrchestrationAdvancer<ChatMessage>(vectorSaveRunnable),
                 new OrchestrationAdvancer<ChatMessage>(exitPathRunnable))
             .AddExitPath<ChatMessage>(exitPathRunnable, _ => true)
-            .CreateDotGraphVisualization("ChatBotAgent.dot");
-
-        return builder.Build();
+            .CreateDotGraphVisualization("ChatBotAgent.dot")
+            .Build();
     }
 }
 

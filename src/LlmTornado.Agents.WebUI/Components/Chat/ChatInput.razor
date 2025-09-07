@@ -1,6 +1,5 @@
 @using Microsoft.AspNetCore.Components.Web
 @using LlmTornado.Chat.Web.Services
-@inject FileUploadService FileUploadService
 
 <div class="chat-input-container">
     <div class="input-wrapper">
@@ -34,11 +33,11 @@
         }
         
         <div class="input-row">
-            <button class="file-upload-btn" @onclick="SelectFile" type="button" disabled="@IsDisabled" title="Attach file">
+            <InputFile OnChange="HandleFileSelected">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.64 16.2a2 2 0 0 1-2.83-2.83l8.49-8.49"></path>
                 </svg>
-            </button>
+            </InputFile>
             
             <textarea @bind="CurrentMessage" 
                       @onkeydown="HandleKeyDown" 
@@ -68,7 +67,7 @@
 
 @code {
     private string SelectedFileBase64 = "";
-    private LlmTornado.Chat.Web.Services.FileInfo FileInformation = new();
+    private LlmTornado.Chat.Web.Models.FileInfo FileInformation = new();
 
     /// <summary>
     /// Current message text
@@ -116,37 +115,38 @@
         await CurrentMessageChanged.InvokeAsync(CurrentMessage);
     }
 
-    /// <summary>
-    /// Opens file dialog to select a file
-    /// </summary>
-    private async Task SelectFile()
+    private string[] AcceptedMimeTypes = new[]
     {
-        try
+        "image/jpeg", "image/png", "application/pdf", "application/msword", 
+        "text/plain", "text/markdown", "application/json", "text/csv",
+        "audio/mpeg", "audio/wav", "audio/ogg"
+	};
+
+    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        foreach (var file in e.GetMultipleFiles(1)) 
         {
-            // Allow common file types - images, PDFs, documents, audio
-            var acceptTypes = "image/*,.pdf,.doc,.docx,.txt,.md,.json,.csv,.mp3,.wav,.ogg";
-            var result = await FileUploadService.SelectAndConvertFileAsync(acceptTypes);
-            
-            if (!string.IsNullOrEmpty(result))
+            if(file.ContentType == null || !AcceptedMimeTypes.Contains(file.ContentType))
             {
-                SelectedFileBase64 = result;
-                FileInformation = FileUploadService.GetFileInfo(result);
-                
-                if (!FileInformation.IsValid)
-                {
-                    SelectedFileBase64 = "";
-                    FileInformation = new();
-                    // Could add a toast notification here for invalid file
-                }
-            }
+                // Invalid file type
+                SelectedFileBase64 = "";
+                FileInformation = new();
+                // Could add a toast notification here for invalid file type
+                continue;
+			}
+            // Access file properties like file.Name, file.Size, file.ContentType
+            // Read the file content into a stream or byte array
+            using var stream = file.OpenReadStream(maxAllowedSize: 50 * 1024 * 1024);// Limit file size, e.g., 50 MB
+
+			// Convert stream to Base64
+			using var memoryStream = new MemoryStream();
+			await stream.CopyToAsync(memoryStream);
+			var fileBytes = memoryStream.ToArray();
+			SelectedFileBase64 = $"data:{file.ContentType};base64,{Convert.ToBase64String(fileBytes)}";
+            FileInformation = FileInformation.GetFileInfo(SelectedFileBase64);
+            // Process the stream, e.g., save to server, read content, etc.
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"File selection error: {ex.Message}");
-            SelectedFileBase64 = "";
-            FileInformation = new();
-        }
-        
+
         StateHasChanged();
     }
 

@@ -313,8 +313,7 @@
         var logDetails = $"Message sent: {data.message.Length} characters";
         if (!string.IsNullOrEmpty(data.base64File))
         {
-            var fileInfo = GetFileInfoFromBase64(data.base64File);
-            logDetails += $", File: {fileInfo.MimeType} ({fileInfo.FormattedSize})";
+            logDetails += $", File: with file";
         }
         await AddLogEvent("Message", "User Input", logDetails, "");
         
@@ -359,13 +358,8 @@
                 // For now, we'll send the message with file info in the content
                 // In a real implementation, you'd want to modify the API to handle file attachments
                 var messageContent = message;
-                if (!string.IsNullOrEmpty(base64File))
-                {
-                    var fileInfo = GetFileInfoFromBase64(base64File);
-                    messageContent += $"\n\n[File attached: {fileInfo.MimeType}, {fileInfo.FormattedSize}]";
-                }
                 
-                await ChatService.StreamMessageAsync(selectedRuntimeId, messageContent, DotNetObjectReference.Create(this));
+                await ChatService.StreamMessageAsync(selectedRuntimeId, messageContent, base64File, DotNetObjectReference.Create(this));
             }
         }
         catch (Exception ex)
@@ -418,46 +412,6 @@
         if (hasRendered)
         {
             await ChatService.ScrollToBottomAsync();
-        }
-    }
-
-    /// <summary>
-    /// Gets file information from a Base64 data string
-    /// </summary>
-    private LlmTornado.Chat.Web.Services.FileInfo GetFileInfoFromBase64(string base64Data)
-    {
-        if (string.IsNullOrEmpty(base64Data) || !base64Data.StartsWith("data:"))
-        {
-            return new LlmTornado.Chat.Web.Services.FileInfo { IsValid = false };
-        }
-
-        try
-        {
-            var parts = base64Data.Split(';');
-            if (parts.Length < 2) return new LlmTornado.Chat.Web.Services.FileInfo { IsValid = false };
-
-            var mimeType = parts[0].Substring(5); // Remove "data:" prefix
-            var base64Part = parts[1];
-            
-            if (!base64Part.StartsWith("base64,"))
-            {
-                return new LlmTornado.Chat.Web.Services.FileInfo { IsValid = false };
-            }
-
-            var base64String = base64Part.Substring(7); // Remove "base64," prefix
-            var sizeInBytes = (base64String.Length * 3) / 4; // Approximate size
-
-            return new LlmTornado.Chat.Web.Services.FileInfo
-            {
-                IsValid = true,
-                MimeType = mimeType,
-                SizeInBytes = sizeInBytes,
-                Base64Data = base64String
-            };
-        }
-        catch
-        {
-            return new LlmTornado.Chat.Web.Services.FileInfo { IsValid = false };
         }
     }
     #endregion
