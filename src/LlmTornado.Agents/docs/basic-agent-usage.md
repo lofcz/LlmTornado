@@ -51,20 +51,6 @@ string response = result.Messages.Last().Content;
 Console.WriteLine(response);
 ```
 
-### Conversation Context
-
-Agents maintain conversation history automatically:
-
-```csharp
-// First message
-var result1 = await agent.RunAsync("My name is Alice");
-Console.WriteLine(result1.Messages.Last().Content); // "Nice to meet you, Alice!"
-
-// Follow-up message (agent remembers context)
-var result2 = await agent.RunAsync("What's my name?");
-Console.WriteLine(result2.Messages.Last().Content); // "Your name is Alice."
-```
-
 ### Streaming Responses
 
 Get real-time responses as the agent generates them:

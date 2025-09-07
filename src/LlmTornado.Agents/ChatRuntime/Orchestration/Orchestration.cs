@@ -1,7 +1,9 @@
 ﻿using LlmTornado.Agents.DataModels;
 using LlmTornado.Chat;
 using LlmTornado.Code;
+using System;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 
@@ -15,7 +17,7 @@ namespace LlmTornado.Agents.ChatRuntime.Orchestration;
 /// processes. It supports concurrent execution of processes up to a specified maximum number of threads, and allows
 /// for graceful stopping and cancellation of operations. The state machine can be reset and reused for multiple
 /// runs.</remarks>
-public class Orchestration
+public abstract class Orchestration
 {
     /// <summary>
     /// Gets or sets the initial state of the system or process.
@@ -29,14 +31,21 @@ public class Orchestration
     /// <summary>
     /// List of processes that will be run in the state machine this tick.
     /// </summary>
-    internal List<RunnableProcess> CurrentRunnableProcesses { get; private set; } = new List<RunnableProcess>();
+    internal List<OrchestrationRunnableBase> CurrentRunnablesWithProcesses { get; private set; } = new List<OrchestrationRunnableBase>();
 
+    /// <summary>
+    /// Need this to collect new processes while the current ones can be exiting
+    /// </summary>
     private List<RunnableProcess> newRunnableProcesses = new List<RunnableProcess>();
+
     /// <summary>
     /// Trigger to stop the state machine.
     /// </summary>
     public CancellationTokenSource StopTrigger = new CancellationTokenSource();
 
+    /// <summary>
+    /// Signals whether the process has completed.
+    /// </summary>
     private bool _isCompleted = false;
 
     /// <summary>
@@ -54,10 +63,6 @@ public class Orchestration
     /// </summary>
     public bool IsCompleted { get => _isCompleted; }
 
-    /// <summary>
-    /// Gets or sets the final result of the computation.
-    /// </summary>
-    public List<object>? BaseFinalResult { get; set; }
 
     // [consideration] I actually don't have this set anywhere.. I need this to have all the states but states are internally linked to each other.
     /// <summary>
@@ -118,12 +123,10 @@ public class Orchestration
     /// runnables to complete their exit operations.  It runs the exit operations concurrently to improve
     /// performance.</remarks>
     /// <returns></returns>
-    private async Task ExitActiveRunnables()
+    private async Task ExitCurrentRunnableProcesses()
     {
-        OnOrchestrationEvent?.Invoke(new OnVerboseOrchestrationEvent("Exiting all runnables...")); //Invoke the exit state machine event
-
         List<Task> Tasks = new List<Task>();
-        CurrentRunnableProcesses.ForEach(process => {
+        CurrentRunnablesWithProcesses.ForEach(process => {
             Tasks.Add(Task.Run(async () => await BeginExit(process)));
         });
         await Task.WhenAll(Tasks);
@@ -132,12 +135,10 @@ public class Orchestration
         OnOrchestrationEvent?.Invoke(new OnVerboseOrchestrationEvent("Finished Exiting all runnables!"));
     }
 
-    private async Task BeginExit(RunnableProcess process)
+    private async Task BeginExit(OrchestrationRunnableBase runnable)
     {
-        OnOrchestrationEvent?.Invoke(new OnVerboseOrchestrationEvent("Exiting  ..."));
-        await process.Runner._CleanupRunnable();
-        OnOrchestrationEvent?.Invoke(new OnFinishedRunnableEvent(process.Runner)); //Invoke the exit state machine event
-        OnOrchestrationEvent?.Invoke(new OnVerboseOrchestrationEvent("Orchestration Exited."));
+        await runnable._CleanupRunnable();
+        OnOrchestrationEvent?.Invoke(new OnFinishedRunnableEvent(runnable)); //Invoke the exit state machine event
     }
 
     /// <summary>
@@ -150,19 +151,17 @@ public class Orchestration
     private async Task ProcessTick()
     {
         //If there are no processes, return
-        if (CurrentRunnableProcesses.Count == 0) { HasCompletedSuccessfully(); return; }
+        if (CurrentRunnablesWithProcesses.Count == 0) { HasCompletedSuccessfully(); return; }
 
         _stepCounter++;
 
-        OnOrchestrationEvent?.Invoke(new OnVerboseOrchestrationEvent($"Processing {CurrentRunnableProcesses.Count} active processes..."));
         OnOrchestrationEvent?.Invoke(new OnTickOrchestrationEvent()); //Invoke the tick state machine event
         
         List<Task> Tasks = new List<Task>();
-        CurrentRunnableProcesses.ForEach(process => Tasks.Add(Task.Run(async () =>
+        CurrentRunnablesWithProcesses.ForEach(process => Tasks.Add(Task.Run(async () =>
         {
-            OnOrchestrationEvent?.Invoke(new OnVerboseOrchestrationEvent($"Invoking state: {process.Runner.GetType().Name}"));
-            OnOrchestrationEvent?.Invoke(new OnStartedRunnableEvent(process.Runner)); //Invoke the state entered event
-            await process.Runner.Invoke(); //Invoke the state process
+            OnOrchestrationEvent?.Invoke(new OnStartedRunnableEvent(process)); //Invoke the state entered event
+            await process.Invoke(); //Invoke the state process
 
         })));
 
@@ -181,20 +180,24 @@ public class Orchestration
     /// <param name="process">The state process to initialize. This parameter cannot be null.</param>
     /// <returns></returns>
     /// <exception cref="ArgumentNullException">Thrown when process or process.Runnable is null.</exception>
-    private async Task InitilizeProcess(RunnableProcess process)
+    private void AddProcessToRunnable(RunnableProcess process)
     {
         if (process?.Runner == null)
             throw new ArgumentNullException(nameof(process), "Process and its Runtime cannot be null");
 
-        //Gain access to state machine
-        process.Runner.Orchestrator ??= this; //Set the current state machine if not already set
-        CurrentRunnableProcesses.Add(process);
-
-        OnOrchestrationEvent?.Invoke(new OnVerboseOrchestrationEvent($"Entering state: {process.Runner.GetType().Name}"));
-        OnOrchestrationEvent?.Invoke(new OnStartedRunnableEvent(process.Runner));
-        //Internal lock on access to state
-        await process.Runner._InitializeRunnable(process); //preset input
+        process.Runner.AddRunnableProcess(process); //preset input
     }
+
+    private async Task InitializeRunnable(OrchestrationRunnableBase runnable)
+    {
+        //Gain access to state machine
+        runnable.Orchestrator ??= this; //Set the current state machine if not already set
+
+        OnOrchestrationEvent?.Invoke(new OnStartedRunnableEvent(runnable)); //Invoke the state entered event  
+        await runnable._InitializeRunnable();
+    }
+
+
 
     /// <summary>
     /// Initializes all new state processes asynchronously.
@@ -203,31 +206,37 @@ public class Orchestration
     /// process concurrently. After initialization, it ensures that only distinct state processes, based on their
     /// state ID, remain active.</remarks>
     /// <returns></returns>
-    private async Task InitilizeAllNewProcesses()
+    private async Task SetCurrentRunnableProcesses()
     {
         //Clear all of the active processes
-        CurrentRunnableProcesses?.Clear();
+        CurrentRunnablesWithProcesses.Clear();
 
         OnOrchestrationEvent?.Invoke(new OnVerboseOrchestrationEvent($"Initializing {newRunnableProcesses.Count} new state processes..."));
 
         //If there are no new processes, return
         if (newRunnableProcesses.Count == 0) { HasCompletedSuccessfully(); return; }
 
-        //Initialize each new state process concurrently
-        List<Task> Tasks = new List<Task>();
+        //Setup each state with the process input
         foreach (RunnableProcess process in newRunnableProcesses)
         {
-            Tasks.Add(Task.Run(async () => await InitilizeProcess(process)));
+            AddProcessToRunnable(process);
         }
-        await Task.WhenAll(Tasks);
-        Tasks.Clear();
 
         //This is to remove running the same state twice with two processes.. it gets input from _EnterRuntime
         // Replace the DistinctBy line with this GroupBy approach which is compatible with .NET Standard 2.0
-        CurrentRunnableProcesses = CurrentRunnableProcesses?
-            .GroupBy(state => state.Runner.Id)
+        CurrentRunnablesWithProcesses = newRunnableProcesses.Select(process => process.Runner)
+            .GroupBy(state => state.Id)
             .Select(g => g.First())
-            .ToList()!;
+            .ToList();
+
+        List<Task> Tasks = new List<Task>();
+        //Setup each state with the process input
+        foreach (OrchestrationRunnableBase runnable in CurrentRunnablesWithProcesses)
+        {
+            Tasks.Add(Task.Run(async () => await InitializeRunnable(runnable)));
+        }
+        await Task.WhenAll(Tasks);
+        Tasks.Clear();
 
         _isInitialized = true; //Set the initialized flag to true after the process is initialized
     }
@@ -239,16 +248,14 @@ public class Orchestration
     /// specific conditions. The returned list may be empty if no new state processes are identified.</remarks>
     /// <returns>A list of <see cref="RunnableProcess"/> objects representing the new state processes that meet the specified
     /// conditions. The list will be empty if no new processes are found.</returns>
-    private void GetNewProcesses()
+    private void SetNewRunnableProcesses()
     {
-        OnOrchestrationEvent?.Invoke(new OnVerboseOrchestrationEvent("Validating Runtime conditions for transitions"));
-
         newRunnableProcesses.Clear();
-        CurrentRunnableProcesses.ForEach(process => {
-            newRunnableProcesses.AddRange(process.Runner.CanAdvance() ?? new List<RunnableProcess>());
+        CurrentRunnablesWithProcesses.ForEach(process => {
+            newRunnableProcesses.AddRange(process.CanAdvance() ?? new List<RunnableProcess>());
         });
 
-        OnOrchestrationEvent?.Invoke(new OnVerboseOrchestrationEvent("Finished Validations"));
+        OnOrchestrationEvent?.Invoke(new OnVerboseOrchestrationEvent("Finished validating Runtime conditions for transition"));
     }
 
     /// <summary>
@@ -262,8 +269,7 @@ public class Orchestration
     {
         if (IsCompleted)
         {
-            await ExitActiveRunnables();
-            OnOrchestrationEvent?.Invoke(new OnVerboseOrchestrationEvent("Runtime Machine Finished."));
+            await ExitCurrentRunnableProcesses();
             OnOrchestrationEvent?.Invoke(new OnFinishedOrchestrationEvent()); //Invoke the finished state machine event
             return true;
         }
@@ -283,8 +289,7 @@ public class Orchestration
         if (StopTrigger.IsCancellationRequested)
         {
             //what if invoking the state? How do we handle that?
-            await ExitActiveRunnables();
-            OnOrchestrationEvent?.Invoke(new OnVerboseOrchestrationEvent("Runtime Machine Cancelled."));
+            await ExitCurrentRunnableProcesses();
             OnOrchestrationEvent?.Invoke(new OnCancelledOrchestrationEvent()); //Invoke the cancelled state machine event
             return true;
         }
@@ -304,14 +309,8 @@ public class Orchestration
         _stepCounter = 0;
         _isInitialized = false;
         StopTrigger = new CancellationTokenSource(); //Reset the stop trigger
-        ClearOutProcesses();
-    }
-
-    private void ClearOutProcesses()
-    {
-        CurrentRunnableProcesses.Clear();
+        CurrentRunnablesWithProcesses.Clear();
         newRunnableProcesses.Clear();
-        //Runnable processes are cleared out on the _initializer of the runnable
     }
 
     /// <summary>
@@ -332,7 +331,7 @@ public class Orchestration
         newRunnableProcesses.Add(new RunnableProcess(InitialRunnable, input));
 
         //Initialize the process with the starting state and input
-        await InitilizeAllNewProcesses();
+        await SetCurrentRunnableProcesses();
 
         OnOrchestrationEvent?.Invoke(new OnVerboseOrchestrationEvent("Initilization Completed!")); //Invoke the begin state machine event
     }
@@ -380,13 +379,13 @@ public class Orchestration
         if(await CheckIfCancelled()) return;
 
         //Create List of transitions to new states from conditional movement
-        GetNewProcesses();
+        SetNewRunnableProcesses();
 
         //Exit the current Processes
-        await ExitActiveRunnables();
+        await ExitCurrentRunnableProcesses();
 
         //Reset Active Processes Here
-        await InitilizeAllNewProcesses();
+        await SetCurrentRunnableProcesses();
     }
 
     internal void OnStartingRunnableProcess(RunnableProcess process)
@@ -397,44 +396,6 @@ public class Orchestration
     internal void OnFinishedRunnableProcess(RunnableProcess process)
     {
         OnOrchestrationEvent?.Invoke(new OnFinishedRunnableProcessEvent(process));
-    }
-
-    /// <summary>
-    /// Gets the final results of the state machine run as a list of objects.
-    /// </summary>
-    /// <returns></returns>
-    public virtual List<object>? GetResults()
-    {
-        return this.BaseFinalResult;
-    }
-
-    /// <summary>
-    /// try to get the results of the state machine run as a list of type <typeparamref name="T"/>.
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="value"></param>
-    /// <returns></returns>
-    public virtual bool TryGetResults<T>(out List<T> value)
-    {
-        try
-        {
-            if (BaseFinalResult is List<T> result)
-            {
-                value = result;
-                return true;
-            }
-            else
-            {
-                value = default!;
-                return false;
-            }
-        }
-        catch (Exception ex)
-        {
-            value = default!;
-            OnOrchestrationEvent?.Invoke(new OnErrorOrchestrationEvent(ex));
-            return false;
-        }
     }
 }
 
@@ -454,10 +415,11 @@ public class Orchestration<TInput, TOutput> : Orchestration
     /// <param name="input">The input parameter used to initialize the operation. Can be <see langword="null"/> or the default value of
     /// <typeparamref name="TInput"/>.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
-    public async Task InvokeAsync(TInput? input = default)
+    public async Task<TOutput[]?> InvokeAsync(TInput? input = default)
     {
         await Initialize(input);
         await RunToCompletion();
+        return Results;
     }
 
     /// <summary>
@@ -472,7 +434,7 @@ public class Orchestration<TInput, TOutput> : Orchestration
     /// <c>Results</c> is <see langword="null"/>, the method returns <see langword="null"/>.</remarks>
     /// <returns>A list of objects converted from the <c>Results</c> collection, or <see langword="null"/> if <c>Results</c> is
     /// <see langword="null"/>.</returns>
-    public override List<object>? GetResults()
+    public List<object>? GetResults()
     {
         return RunnableWithResult.GetBaseResults().ToList()!;
     }
@@ -541,26 +503,6 @@ public class Orchestration<TInput, TOutput> : Orchestration
         }
 
         RunnableWithResult = outputRunnable;
-    }
-
-    public override bool TryGetResults<T>(out List<T> value)
-    {
-        if(typeof(T) == typeof(TOutput))
-        {
-            if (BaseFinalResult is List<T> result)
-            {
-                value = result;
-                return true;
-            }
-            else
-            {
-                value = default!;
-                return false;
-            }
-        }
-
-        value = default!;
-        return false;
     }
 }
 

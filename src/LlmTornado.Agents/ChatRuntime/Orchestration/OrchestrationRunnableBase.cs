@@ -35,6 +35,9 @@ public abstract class OrchestrationRunnableBase
     /// </summary>
     public List<OrchestrationAdvancer> BaseAdvancers { get; set; } = new List<OrchestrationAdvancer>();
 
+    /// <summary>
+    /// State machine running the state
+    /// </summary>
     public Orchestration? Orchestrator { get; set; }
 
 
@@ -51,14 +54,13 @@ public abstract class OrchestrationRunnableBase
     internal abstract ValueTask Invoke();
 
     /// <summary>
-    /// Adds state Process to the required state.
+    /// initlizies the current state asynchronously.
     /// </summary>
     /// <remarks>This method is abstract and must be implemented by derived classes to define the
     /// specific behavior of entering a new state.</remarks>
-    /// <param name="input">The input that influences the state transition. Can be null if no specific input is required for the
     /// transition.</param>
     /// <returns></returns>
-    internal abstract ValueTask _InitializeRunnable(RunnableProcess? input);
+    internal abstract ValueTask _InitializeRunnable();
 
     /// <summary>
     /// Transitions the current state to an exit state asynchronously.
@@ -95,10 +97,14 @@ public abstract class OrchestrationRunnableBase
     public bool AllowDeadEnd { get; set; } = false;
 
     /// <summary>
-    /// Whether this state is thread safe to run in parallel.
+    /// Whether this state is thread safe to run in parallel. [not is used yet]
     /// </summary>
-    public bool IsThreadSafe { get; set; } = false;  
+    public bool IsThreadSafe { get; set; } = false;
 
+    /// <summary>
+    /// Set to run this state as a background task. [not is used yet]
+    /// </summary>
+    public bool IsBackgroundTask { get; set; } = false;
 
     /// <summary>
     /// Evaluates and returns a list of runtime processes that meet specific conditions.
@@ -146,12 +152,12 @@ public abstract class OrchestrationRunnableBase
     internal List<RunnableProcess<TInput, TOutput>> GetBaseRunnableProcesses<TInput, TOutput>() => BaseProcesses.Select(process => process.CloneProcess<TInput, TOutput>()).ToList();
 
 
-    internal void AddBaseRunnableProcess(RunnableProcess process)
+    public void AddRunnableProcess(RunnableProcess process)
     {
        BaseProcesses.Add(process);
     }
 
-    internal void AddBaseRunnableProcess<TInput, TOutput>(RunnableProcess<TInput, TOutput> process)
+    public void AddRunnableProcess<TInput, TOutput>(RunnableProcess<TInput, TOutput> process)
     {
         BaseProcesses.Add(process);
     }
@@ -178,7 +184,7 @@ public abstract class OrchestrationRunnableBase
         baseResults.Clear();
     }
 
-    internal void UpdateBaseResults(object[] results)
+    internal void AddRangeBaseResults(object[] results)
     {
         baseResults.AddRange(results);
     }
