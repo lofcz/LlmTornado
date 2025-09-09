@@ -1,11 +1,13 @@
 ﻿using LlmTornado.Agents;
+using LlmTornado.Agents.DataModels;
+using LlmTornado.Agents.Utility;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Code;
+using Newtonsoft.Json.Converters;
 using System.ComponentModel;
-using LlmTornado.Agents.DataModels;
-using LlmTornado.Agents.Utility;
 using System.Security.Cryptography.X509Certificates;
+using System.Text.Json.Serialization;
 
 namespace LlmTornado.Demo;
 
@@ -212,8 +214,7 @@ public class AgentsDemo : DemoBase
         TornadoAgent agent = new TornadoAgent(Program.Connect(),
             ChatModel.OpenAi.Gpt41.V41Mini,
             instructions: "You are a useful assistant.",
-            tools: [GetCurrentWeather],
-            outputSchema: typeof(MathReasoning));
+            tools: [GetCurrentWeather]);
 
         Conversation result = await agent.RunAsync("What is the weather in boston?");
 
@@ -246,14 +247,14 @@ public class AgentsDemo : DemoBase
             Program.Connect(),
             model:ChatModel.OpenAi.Gpt41.V41Mini,
             instructions: "You are a useful assistant.",
-            tools: [GetCurrentWeatherValueTask],
-            outputSchema: typeof(MathReasoning));
+            tools: [GetCurrentWeatherValueTask]);
 
         Conversation result = await TornadoRunner.RunAsync(agent, "What is the weather in boston?");
 
         Console.WriteLine(result.Messages.Last().Content);
     }
 
+    [JsonConverter(typeof(StringEnumConverter))]
     public enum Unit
     {
         Celsius, 
@@ -263,18 +264,18 @@ public class AgentsDemo : DemoBase
     [Description("Get the current weather in a given location")]
     public static string GetCurrentWeather(
         [Description("The city and state, e.g. Boston, MA")] string location,
-        [SchemaIgnore] Unit unit = Unit.Celsius)
+        [Description("unit of temperature measurement in C or F")] Unit unit = Unit.Celsius)
     {
         // Call the weather API here.
         return $"31 C";
     }
 
-    public static async ValueTask<string> GetCurrentWeatherValueTask(
+    public static ValueTask<string> GetCurrentWeatherValueTask(
         [Description("The city and state, e.g. Boston, MA")] string location,
-        [SchemaIgnore] Unit unit = Unit.Celsius)
+        [Description("unit of temperature measurement in C or F")] Unit unit = Unit.Celsius)
     {
         // Call the weather API here.
-        return $"31 C";
+        return ValueTask.FromResult($"31 C");
     }
 
 

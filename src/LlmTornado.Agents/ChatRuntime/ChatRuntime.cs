@@ -15,6 +15,8 @@ namespace LlmTornado.Agents.ChatRuntime;
 
 /// <summary>
 /// Get an active chat runtime to manage conversations with AI agents, including orchestration and tool usage.
+/// This class serves as the main entry point for interacting with the chat runtime system.
+/// This class is responsible for initializing the runtime configuration, and handling internal setup which is kept minimal,
 /// </summary>
 public class ChatRuntime
 {

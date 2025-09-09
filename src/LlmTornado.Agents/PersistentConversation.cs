@@ -12,7 +12,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace LlmTornado.Agents.DataModels;
+namespace LlmTornado.Agents;
 public class PersistedMessage
 {
     public Guid Id { get; set; }
