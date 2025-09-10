@@ -1608,7 +1608,7 @@ public partial class ChatDemo : DemoBase
     {
         Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.Google.Gemini.Gemini2Flash001
+            Model = ChatModel.Google.Gemini.Gemini25Flash
         });
         
         chat2.AppendUserInput([

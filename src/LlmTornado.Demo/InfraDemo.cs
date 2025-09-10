@@ -62,6 +62,47 @@ public class InfraDemo : DemoBase
     {
         public string Name { get; set; }
     }
+    
+    [TornadoTest]
+    public static async Task StructuredDelegateMetadata()
+    {
+        Conversation conversation = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.OpenAi.Gpt5.V5Mini,
+            ResponseFormat = ChatRequestResponseFormats.StructuredJson((
+                Continents continent,
+                ToolArguments args) =>
+            {
+                    
+                return "";
+            }, new ToolMetadata
+            {
+                Params =
+                [
+                    new ToolParamDefinition("continent", new ToolParamListEnum("continents", [
+                        nameof(Continents.Africa), 
+                        nameof(Continents.Antarctica)
+                    ]))
+                ],
+                Ignore = []
+            }),
+            Messages = [
+                new ChatMessage(ChatMessageRoles.User, "Select the continent with the most people")
+            ]
+        });
+
+  
+        TornadoRequestContent serialized = conversation.Serialize(new ChatRequestSerializeOptions
+        {
+            Pretty = true
+        });
+        
+        Console.WriteLine(serialized);
+        
+        ChatRichResponse data = await conversation.GetResponseRich();
+
+        int z = 0;
+    }
 
     [TornadoTest]
     public static async Task TornadoFunctionConcurrentCollection()

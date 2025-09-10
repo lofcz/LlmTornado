@@ -109,14 +109,24 @@ internal static class ToolFactory
                         newParam.Serializer = existing.Type.Serializer;
                         existing.Type = newParam;
                     }
-                    else if (existing.Type is ToolParamListEnum listEnum && def.Param is ToolParamEnum newEnumDefinition)
+                    else switch (existing.Type)
                     {
-                        listEnum.Values = newEnumDefinition.Values;
-                    }
-                    else
-                    {
-                        function.Params.Remove(existing);
-                        function.Params.Add(new ToolParam(def.Name, def.Param));
+                        case ToolParamListEnum listEnum when def.Param is ToolParamEnum newEnumDefinition:
+                        {
+                            listEnum.Values = newEnumDefinition.Values;
+                            break;
+                        }
+                        case ToolParamEnum @enum when def.Param is ToolParamListEnum listEnumOverride:
+                        {
+                            @enum.Values = listEnumOverride.Values.ToList();
+                            break;
+                        }
+                        default:
+                        {
+                            function.Params.Remove(existing);
+                            function.Params.Add(new ToolParam(def.Name, def.Param));
+                            break;
+                        }
                     }
                 }
                 else

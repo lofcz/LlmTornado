@@ -949,7 +949,7 @@ public class ToolParamEnum : ToolParamTypeBase
     /// The list of possible enum values.
     /// </summary>
     [JsonProperty("enum")]
-    public List<string> Values { get; }
+    public List<string> Values { get; set; }
 
     /// <summary>
     /// A parameter that must be one of a predefined set of string values.

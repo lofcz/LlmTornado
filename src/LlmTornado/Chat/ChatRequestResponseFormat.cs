@@ -82,7 +82,7 @@ public class ChatRequestResponseFormats
             return;
         }
 
-        DelegateMetadata cd = ToolFactory.CreateFromMethod(Schema.Delegate, null, provider);
+        DelegateMetadata cd = ToolFactory.CreateFromMethod(Schema.Delegate, Schema.ToolMetadata, provider);
         Schema.DelegateMetadata = cd;
         Schema.Schema = cd.ToolFunction.Parameters ?? new
         {

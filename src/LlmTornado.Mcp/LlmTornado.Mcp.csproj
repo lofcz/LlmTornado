@@ -4,11 +4,20 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <TargetFrameworks>net8.0;netstandard2.0</TargetFrameworks>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <Version>1.0.1</Version>
     </PropertyGroup>
     <ItemGroup>
       <ProjectReference Include="..\LlmTornado\LlmTornado.csproj" />
     </ItemGroup>
     <ItemGroup>
       <PackageReference Include="ModelContextProtocol" Version="[0.3.0-preview.3, )" />
+    </ItemGroup>
+
+    <PropertyGroup>
+        <PackageIcon>nuget_logo.jpg</PackageIcon>
+    </PropertyGroup>
+    <ItemGroup>
+        <None Include="nuget_logo.jpg" Pack="true" PackagePath="\"/>
     </ItemGroup>
 </Project>
