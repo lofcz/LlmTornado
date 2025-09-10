@@ -1,12 +1,14 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
+using System.Net.Mime;
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
+using LlmTornado.Assistants;
 using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
@@ -353,7 +355,7 @@ public interface IMcpContentBlock
     
     /// <summary>Optional annotations for the content.</summary>
     /// <remarks>
-    /// These annotations can be used to specify the intended audience (<see cref="F:ModelContextProtocol.Protocol.Role.User" />, <see cref="F:ModelContextProtocol.Protocol.Role.Assistant" />, or both)
+    /// These annotations can be used to specify the intended audience (<see cref="F:ModelContextProtocol.Protocol.Role.User" />, <see cref="F:Assistant" />, or both)
     /// and the priority level of the content. Clients can use this information to filter or prioritize content for different roles.
     /// </remarks>
     public McpAnnotations? Annotations { get; init; }
@@ -552,7 +554,7 @@ public abstract class McpContentBlockEmbeddedResourceContents
 /// <remarks>
 /// <para>
 /// <see cref="T:ModelContextProtocol.Protocol.TextResourceContents" /> is used when textual data needs to be exchanged through
-/// the Model Context Protocol. The text is stored directly in the <see cref="P:ModelContextProtocol.Protocol.TextResourceContents.Text" /> property.
+/// the Model Context Protocol. The text is stored directly in the <see cref="P:MediaTypeNames.Text" /> property.
 /// </para>
 /// <para>
 /// See the <see href="https://github.com/modelcontextprotocol/specification/blob/main/schema/">schema</see> for more details.
@@ -573,7 +575,7 @@ public class McpContentBlockEmbeddedResourceContentsText : McpContentBlockEmbedd
 /// <para>
 /// <see cref="T:ModelContextProtocol.Protocol.BlobResourceContents" /> is used when binary data needs to be exchanged through
 /// the Model Context Protocol. The binary data is represented as a base64-encoded string
-/// in the <see cref="P:ModelContextProtocol.Protocol.BlobResourceContents.Blob" /> property.
+/// in the <see cref="P:System.Reflection.Metadata.Blob" /> property.
 /// </para>
 /// <para>
 /// See the <see href="https://github.com/modelcontextprotocol/specification/blob/main/schema/">schema</see> for more details.
@@ -649,7 +651,7 @@ public class Tool
         Delegate = function;
         Strict = strict;
         Metadata = metadata;
-        ToolName = name;
+        ToolName = NormalizeName(name);
     }
     
     /// <summary>
@@ -665,7 +667,7 @@ public class Tool
         Delegate = function;
         Strict = strict;
         Metadata = metadata;
-        ToolName = name;
+        ToolName = NormalizeName(name);
         ToolDescription = description;
     }
     
@@ -678,7 +680,7 @@ public class Tool
     /// <param name="strict">Whether strict JSON schema validation is enabled.</param>
     public Tool(List<ToolParam> pars, string name, string description, bool? strict = null)
     {
-        ToolName = name;
+        ToolName = NormalizeName(name);
         ToolDescription = description;
         Strict = strict;
         SchemaParams = pars;
@@ -692,7 +694,7 @@ public class Tool
     /// <param name="strict">Whether strict JSON schema validation is enabled.</param>
     public Tool(List<ToolParam> pars, string name, bool? strict = null)
     {
-        ToolName = name;
+        ToolName = NormalizeName(name);
         Strict = strict;
         SchemaParams = pars;
     }
@@ -770,7 +772,8 @@ public class Tool
         if (Delegate is not null)
         {
             DelegateMetadata = ToolFactory.CreateFromMethod(Delegate, Metadata, provider);
-            DelegateMetadata.ToolFunction.Name = !ToolName.IsNullOrWhiteSpace() ? ToolName : $"tool_{functionIndex + 1}";
+            SchemaNameAttribute? schemaName = Delegate.Method.GetCustomAttribute<SchemaNameAttribute>();
+            DelegateMetadata.ToolFunction.Name = !ToolName.IsNullOrWhiteSpace() ? ToolName : schemaName?.Name ?? $"tool_{functionIndex + 1}";
 
             if (!ToolDescription.IsNullOrWhiteSpace())
             {
@@ -835,6 +838,11 @@ public class Tool
     public static implicit operator Tool(ToolFunction function)
     {
         return new Tool(function);
+    }
+
+    internal static string NormalizeName(string name)
+    {
+        return name.Replace(" ", "_").Trim();
     }
 }
 
@@ -1099,7 +1107,7 @@ public class ToolFunction
     /// <param name="description"></param>
     public ToolFunction(string name, string description)
     {
-        Name = name;
+        Name = Tool.NormalizeName(name);
         Description = description;
         Parameters = null;
     }
@@ -1112,7 +1120,7 @@ public class ToolFunction
     /// <param name="parameters">JSON serialized object, will be deserialized into <see cref="JObject" /> </param>
     public ToolFunction(string name, string description, string parameters)
     {
-        Name = name;
+        Name = Tool.NormalizeName(name);
         Description = description;
         Parameters = JObject.Parse(parameters);
     }
@@ -1125,7 +1133,7 @@ public class ToolFunction
     /// <param name="parameters"></param>
     public ToolFunction(string name, string description, JObject parameters)
     {
-        Name = name;
+        Name = Tool.NormalizeName(name);
         Description = description;
         Parameters = parameters;
         RawParameters = parameters;
@@ -1139,7 +1147,7 @@ public class ToolFunction
     /// <param name="parameters"></param>
     public ToolFunction(string name, string description, JsonElement parameters)
     {
-        Name = name;
+        Name = Tool.NormalizeName(name);
         Description = description;
         Parameters = JObject.Parse(parameters.ToString());
         RawParameters = parameters;
@@ -1153,7 +1161,7 @@ public class ToolFunction
     /// <param name="parameters">A JSON-serializable object</param>
     public ToolFunction(string name, string description, object parameters)
     {
-        Name = name;
+        Name = Tool.NormalizeName(name);
         Description = description;
         Parameters = JObject.FromObject(parameters, JsonSerializer.Create(serializerSettings));
     }

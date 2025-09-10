@@ -1,0 +1,132 @@
+﻿using LlmTornado.Agents;
+using LlmTornado.Agents.ChatRuntime;
+using LlmTornado.Agents.ChatRuntime.RuntimeConfigurations;
+using LlmTornado.Agents.DataModels;
+using LlmTornado.Chat;
+using LlmTornado.Chat.Models;
+using LlmTornado.Responses;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace LlmTornado.Demo;
+
+public class AgentRuntimeDemo : DemoBase
+{
+    [TornadoTest]
+    public static async Task BasicSequentialRuntimeDemo()
+    {
+        string researchInstructions = """
+                    You are a research assistant. Given a search term, you search the web for that term and
+                    produce a concise summary of the results. The summary must be 2-3 paragraphs and less than 300 
+                    words. Capture the main points. Write succinctly, no need to have complete sentences or good
+                    grammar. This will be consumed by someone synthesizing a report, so its vital you capture the 
+                    essence and ignore any fluff. Do not include any additional commentary other than the summary itself.
+                    """;
+
+        SequentialRuntimeAgent ResearchAgent = new SequentialRuntimeAgent(
+            client:Program.Connect(),
+            name: "Research Agent",
+            model: ChatModel.OpenAi.Gpt41.V41Mini,
+            instructions: researchInstructions,
+            sequentialInstructions:"Research the provided topic in my next message thoroughly and provide a summary.");
+
+        ResearchAgent.ResponseOptions = new ResponseRequest() { Tools = [new ResponseWebSearchTool()] };
+
+        string reportInstructions = """
+                    You are a senior researcher tasked with writing a cohesive report for a research query.
+                    you will be provided with the original query, and some initial research done by a research assistant.
+
+                    you should first come up with an outline for the report that describes the structure and flow of the report. 
+                    Then, generate the report and return that as your final output.
+
+                    The final output should be in markdown format, and it should be lengthy and detailed. Aim for 2-3 pages of content, at least 250 words.
+                    """;
+
+       SequentialRuntimeAgent ReportAgent = new SequentialRuntimeAgent(
+            client: Program.Connect(),
+            name: "Report Agent",
+            model: ChatModel.OpenAi.Gpt41.V41Mini,
+            instructions: reportInstructions,
+            sequentialInstructions: "With the provided research summarize the findings in this thread.");
+
+        SequentialRuntimeConfiguration sequentialRuntimeConfiguration = new SequentialRuntimeConfiguration([ResearchAgent, ReportAgent]);
+
+        ChatRuntime runtime = new ChatRuntime(sequentialRuntimeConfiguration);
+
+        ChatMessage report = await runtime.InvokeAsync(new ChatMessage(Code.ChatMessageRoles.User, "Write a report about the benefits of using AI agents."));
+
+        Console.WriteLine(report.Content);
+    }
+
+
+    [TornadoTest]
+    public static async Task BasicHandoffRuntimeDemo()
+    {
+        HandoffAgent translatorAgent = new HandoffAgent(
+            client: Program.Connect(),
+            name: "SpanishAgent",
+            model: ChatModel.OpenAi.Gpt41.V41Mini,
+            instructions: "You are a useful assistant. Please only respond in spanish",
+            description: "Use this Agent for spanish speaking response");
+
+        HandoffAgent usefulAgent = new HandoffAgent(
+             client: Program.Connect(),
+             name: "EnglishAgent",
+             model: ChatModel.OpenAi.Gpt41.V41Mini,
+             instructions: "You are a useful assistant. Please only respond in english",
+             description: "Use this Agent for english speaking response",
+             handoffs: [translatorAgent]);
+
+        translatorAgent.HandoffAgents = [usefulAgent];
+
+        HandoffRuntimeConfiguration runtimeConfiguration = new HandoffRuntimeConfiguration(usefulAgent);
+
+        ChatRuntime runtime = new ChatRuntime(runtimeConfiguration);
+
+        ChatMessage report = await runtime.InvokeAsync(new ChatMessage(Code.ChatMessageRoles.User, "¿cuanto es 2+2?"));
+        
+        Console.WriteLine(report.Content);
+    }
+
+    [TornadoTest]
+    public static async Task BasicRuntimeStreamingDemo()
+    {
+        HandoffAgent translatorAgent = new HandoffAgent(
+            client: Program.Connect(),
+            name: "SpanishAgent",
+            model: ChatModel.OpenAi.Gpt41.V41Mini,
+            instructions: "You are a useful assistant. Please only respond in spanish",
+            description: "Use this Agent for spanish speaking response",
+            streaming:true);
+
+        HandoffRuntimeConfiguration runtimeConfiguration = new HandoffRuntimeConfiguration(translatorAgent);
+
+        ChatRuntime runtime = new ChatRuntime(runtimeConfiguration);
+
+        runtime.RuntimeConfiguration.OnRuntimeEvent += async (evt) =>
+        {
+            if (evt.EventType == ChatRuntimeEventTypes.AgentRunner)
+            {
+                if(evt is ChatRuntimeAgentRunnerEvents runnerEvt)
+                {
+                    if (runnerEvt.AgentRunnerEvent is AgentRunnerStreamingEvent streamEvt)
+                    {
+                        if (streamEvt.ModelStreamingEvent is ModelStreamingOutputTextDeltaEvent deltaTextEvent)
+                        {
+                            Console.Write(deltaTextEvent.DeltaText);
+                        }
+                    }
+                }
+            }
+            await ValueTask.CompletedTask;
+        };
+
+        Console.WriteLine("[User]:¿cuanto es 2+2?");
+        Console.Write("[Assistant]: ");
+        ChatMessage report = await runtime.InvokeAsync(new ChatMessage(Code.ChatMessageRoles.User, "¿cuanto es 2+2?"));
+    }
+}
+

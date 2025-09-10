@@ -33,6 +33,18 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.OpenApiGenerator
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.SemanticKernel", "LlmTornado.SemanticKernel\LlmTornado.SemanticKernel.csproj", "{4A4395C4-FB29-4DDD-9A4C-B38C40394B59}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.Agents", "LlmTornado.Agents\LlmTornado.Agents.csproj", "{98DD4043-78B8-450B-A2BD-457F5699E8C5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.Agents.Native", "LlmTornado.Agents.Native\LlmTornado.Agents.Native.csproj", "{BA23150F-8360-4F37-BB60-D5D784ECD30E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.Agents.API", "LlmTornado.Agents.API\LlmTornado.Agents.API.csproj", "{BD8B6165-038D-4DB6-A0FB-0DAF0B847467}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.Agents.WebUI", "LlmTornado.Agents.WebUI\LlmTornado.Agents.WebUI.csproj", "{DEEDA67F-4CD3-71F8-3102-C88A4A1279C4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.VectorDatabases", "LlmTornado.VectorDatabases\LlmTornado.VectorDatabases.csproj", "{E58A23FE-0DB3-4EB6-8212-0291AA5BADCB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.VectorDatabases.ChromaDB", "LlmTornado.VectorDatabases.ChromaDB\LlmTornado.VectorDatabases.ChromaDB.csproj", "{3A733F18-3431-4557-B42F-FA38EE2C11F6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -87,6 +99,30 @@ Global
 		{4A4395C4-FB29-4DDD-9A4C-B38C40394B59}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4A4395C4-FB29-4DDD-9A4C-B38C40394B59}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4A4395C4-FB29-4DDD-9A4C-B38C40394B59}.Release|Any CPU.Build.0 = Release|Any CPU
+		{98DD4043-78B8-450B-A2BD-457F5699E8C5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{98DD4043-78B8-450B-A2BD-457F5699E8C5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{98DD4043-78B8-450B-A2BD-457F5699E8C5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{98DD4043-78B8-450B-A2BD-457F5699E8C5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BA23150F-8360-4F37-BB60-D5D784ECD30E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BA23150F-8360-4F37-BB60-D5D784ECD30E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BA23150F-8360-4F37-BB60-D5D784ECD30E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BA23150F-8360-4F37-BB60-D5D784ECD30E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BD8B6165-038D-4DB6-A0FB-0DAF0B847467}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BD8B6165-038D-4DB6-A0FB-0DAF0B847467}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BD8B6165-038D-4DB6-A0FB-0DAF0B847467}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BD8B6165-038D-4DB6-A0FB-0DAF0B847467}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DEEDA67F-4CD3-71F8-3102-C88A4A1279C4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DEEDA67F-4CD3-71F8-3102-C88A4A1279C4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DEEDA67F-4CD3-71F8-3102-C88A4A1279C4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DEEDA67F-4CD3-71F8-3102-C88A4A1279C4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E58A23FE-0DB3-4EB6-8212-0291AA5BADCB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E58A23FE-0DB3-4EB6-8212-0291AA5BADCB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E58A23FE-0DB3-4EB6-8212-0291AA5BADCB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E58A23FE-0DB3-4EB6-8212-0291AA5BADCB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3A733F18-3431-4557-B42F-FA38EE2C11F6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3A733F18-3431-4557-B42F-FA38EE2C11F6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3A733F18-3431-4557-B42F-FA38EE2C11F6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3A733F18-3431-4557-B42F-FA38EE2C11F6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

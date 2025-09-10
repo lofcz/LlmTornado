@@ -1,0 +1,574 @@
+﻿@page "/"
+@page "/chat"
+@layout ChatLayout
+@using Microsoft.AspNetCore.Components.Web
+@using System.Text.Json
+@using Models = LlmTornado.Chat.Web.Models
+@inject ChatService ChatService
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+@rendermode InteractiveServer
+
+<PageTitle>LlmTornado Chat</PageTitle>
+
+<link href="css/chat.css" rel="stylesheet" />
+<link href="css/runtime-management.css" rel="stylesheet" />
+<script src="js/file-upload.js"></script>
+
+<div class="chat-layout @(isDarkMode ? "dark-theme" : "light-theme")">
+    <!-- Main Chat Area -->
+    <div class="chat-main @(showLogPanel ? "with-log-panel" : "full-width")">
+        <div class="chat-container">
+            <ChatHeader IsConnected="isConnected" 
+                       IsConnecting="isConnecting"
+                       IsCreatingRuntime="isCreatingRuntime"
+                       IsDarkMode="isDarkMode" 
+                       ShowLogPanel="showLogPanel"
+                       AvailableConfigurations="availableConfigurations"
+                       ActiveRuntimes="activeRuntimes"
+                       SelectedConfiguration="selectedConfiguration"
+                       SelectedConfigurationChanged="OnSelectedConfigurationChanged"
+                       SelectedRuntimeId="selectedRuntimeId"
+                       SelectedRuntimeIdChanged="OnSelectedRuntimeIdChanged"
+                       OnCreateRuntime="OnCreateRuntime"
+                       OnRemoveRuntime="OnRemoveRuntime"
+                       OnRefreshRuntimes="OnRefreshRuntimes"
+                       OnToggleTheme="ToggleTheme"
+                       OnToggleLogPanel="ToggleLogPanel"
+                       OnClearChat="ClearChat" />
+
+            <ChatMessageList Messages="messages" 
+                           ShowTypingIndicator="isConnecting" />
+
+            <ChatInput CurrentMessage="currentMessage" 
+                      CurrentMessageChanged="OnCurrentMessageChanged"
+                      IsDisabled="isConnecting || !isConnected"
+                      OnSendMessage="SendMessageWithFile" />
+        </div>
+    </div>
+
+    <!-- Log Panel -->
+    <LogPanel IsVisible="showLogPanel" 
+             LogEvents="logEvents"
+             OnClearLogs="ClearLogs"
+             OnTogglePanel="ToggleLogPanel" />
+</div>
+
+@code {
+    // State variables
+    private List<Models.ChatMessage> messages = new();
+    private List<Models.LogEvent> logEvents = new();
+    private string currentMessage = "";
+    private bool isConnecting = false;
+    private bool isConnected = false;
+    private bool isCreatingRuntime = false;
+    private bool showLogPanel = false;
+    private bool isDarkMode = true;
+    private string selectedRuntimeId = "";
+    private bool hasRendered = false;
+    private string[] availableConfigurations = Array.Empty<string>();
+    private Models.RuntimeInfo[] activeRuntimes = Array.Empty<Models.RuntimeInfo>();
+    private string selectedConfiguration = "";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            hasRendered = true;
+            await LoadThemePreference();
+            await LoadAvailableConfigurations();
+            await RefreshActiveRuntimes();
+        }
+    }
+
+    #region Configuration & Runtime Management
+    private async Task LoadAvailableConfigurations()
+    {
+        try
+        {
+            availableConfigurations = await ChatService.GetRuntimeConfigurationsAsync();
+            if (availableConfigurations.Any())
+            {
+                selectedConfiguration = availableConfigurations.First();
+            }
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await AddSystemMessage($"Failed to load configurations: {ex.Message}");
+            await AddLogEvent("Configuration", "Load Failed", ex.Message, "");
+        }
+    }
+
+    private async Task RefreshActiveRuntimes()
+    {
+        try
+        {
+            activeRuntimes = await ChatService.GetActiveRuntimesAsync();
+            
+            // If we have a selected runtime that no longer exists, clear it
+            if (!string.IsNullOrEmpty(selectedRuntimeId) && 
+                !activeRuntimes.Any(r => r.RuntimeId == selectedRuntimeId))
+            {
+                selectedRuntimeId = "";
+                isConnected = false;
+            }
+            
+            StateHasChanged();
+            await AddLogEvent("Runtime", "List Refreshed", $"Found {activeRuntimes.Length} active runtimes", "");
+        }
+        catch (Exception ex)
+        {
+            await AddSystemMessage($"Failed to refresh runtimes: {ex.Message}");
+            await AddLogEvent("Runtime", "Refresh Failed", ex.Message, "");
+        }
+    }
+
+    private async Task OnConfigurationChanged(string configuration)
+    {
+        if (!string.IsNullOrEmpty(configuration) && selectedConfiguration != configuration)
+        {
+            selectedConfiguration = configuration;
+            await AddLogEvent("Configuration", "Changed", $"Selected configuration: {configuration}", "");
+            StateHasChanged(); // Ensure UI updates properly
+        }
+    }
+
+    private async Task OnRuntimeSelectionChanged(string runtimeId)
+    {
+        if (selectedRuntimeId != runtimeId)
+        {
+            selectedRuntimeId = runtimeId;
+            isConnected = !string.IsNullOrEmpty(runtimeId);
+            
+            if (isConnected)
+            {
+                var runtime = activeRuntimes.FirstOrDefault(r => r.RuntimeId == runtimeId);
+                if (runtime != null)
+                {
+                    await AddSystemMessage($"Connected to runtime: {runtime.DisplayName}");
+                    await AddLogEvent("Runtime", "Connected", $"Runtime ID: {runtimeId}", "");
+                }
+            }
+            else
+            {
+                await AddSystemMessage("Disconnected from runtime");
+                await AddLogEvent("Runtime", "Disconnected", "No runtime selected", "");
+            }
+            
+            StateHasChanged(); // Ensure UI updates properly
+        }
+    }
+
+    // Add event handlers for the two-way binding changes
+    private async Task OnSelectedConfigurationChanged(string configuration)
+    {
+        selectedConfiguration = configuration;
+        await AddLogEvent("Configuration", "Changed", $"Selected configuration: {configuration}", "");
+        StateHasChanged();
+    }
+
+    private async Task OnSelectedRuntimeIdChanged(string runtimeId)
+    {
+        selectedRuntimeId = runtimeId;
+        isConnected = !string.IsNullOrEmpty(runtimeId);
+        
+        if (isConnected)
+        {
+            var runtime = activeRuntimes.FirstOrDefault(r => r.RuntimeId == runtimeId);
+            if (runtime != null)
+            {
+                await AddSystemMessage($"Connected to runtime: {runtime.DisplayName}");
+                await AddLogEvent("Runtime", "Connected", $"Runtime ID: {runtimeId}", "");
+            }
+        }
+        else
+        {
+            await AddSystemMessage("Disconnected from runtime");
+            await AddLogEvent("Runtime", "Disconnected", "No runtime selected", "");
+        }
+        
+        StateHasChanged();
+    }
+    private async Task OnCreateRuntime(string configurationType)
+    {
+        if (string.IsNullOrEmpty(configurationType))
+        {
+            await AddSystemMessage("Please select a configuration type first");
+            return;
+        }
+
+        isCreatingRuntime = true;
+        StateHasChanged();
+
+        try
+        {
+            var response = await ChatService.CreateChatRuntimeAsync(configurationType);
+            if (response != null && !string.IsNullOrEmpty(response.RuntimeId))
+            {
+                await AddSystemMessage($"Created new {configurationType.Replace("Configuration", "")} runtime: {response.RuntimeId[..8]}...");
+                await AddLogEvent("Runtime", "Created", $"Runtime ID: {response.RuntimeId}, Configuration: {configurationType}", "");
+                
+                // Refresh the runtime list and automatically select the new runtime
+                await RefreshActiveRuntimes();
+                selectedRuntimeId = response.RuntimeId;
+                isConnected = true;
+                StateHasChanged();
+            }
+            else
+            {
+                await AddSystemMessage("Failed to create runtime");
+                await AddLogEvent("Runtime", "Creation Failed", "No runtime ID returned", "");
+            }
+        }
+        catch (Exception ex)
+        {
+            await AddSystemMessage($"Error creating runtime: {ex.Message}");
+            await AddLogEvent("Runtime", "Creation Error", ex.Message, "");
+        }
+        finally
+        {
+            isCreatingRuntime = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnRemoveRuntime(string runtimeId)
+    {
+        if (string.IsNullOrEmpty(runtimeId))
+        {
+            await AddSystemMessage("No runtime selected to remove");
+            return;
+        }
+
+        try
+        {
+            var success = await ChatService.RemoveRuntimeAsync(runtimeId);
+            if (success)
+            {
+                await AddSystemMessage($"Removed runtime: {runtimeId[..8]}...");
+                await AddLogEvent("Runtime", "Removed", $"Runtime ID: {runtimeId}", "");
+                
+                // If this was the selected runtime, clear selection
+                if (selectedRuntimeId == runtimeId)
+                {
+                    selectedRuntimeId = "";
+                    isConnected = false;
+                }
+                
+                // Refresh the runtime list
+                await RefreshActiveRuntimes();
+                StateHasChanged();
+            }
+            else
+            {
+                await AddSystemMessage($"Failed to remove runtime: {runtimeId[..8]}...");
+                await AddLogEvent("Runtime", "Removal Failed", $"Runtime ID: {runtimeId}", "");
+            }
+        }
+        catch (Exception ex)
+        {
+            await AddSystemMessage($"Error removing runtime: {ex.Message}");
+            await AddLogEvent("Runtime", "Removal Error", ex.Message, "");
+        }
+    }
+
+    private async Task OnRefreshRuntimes()
+    {
+        await RefreshActiveRuntimes();
+        StateHasChanged();
+    }
+    #endregion
+
+    #region Theme Management
+    private async Task LoadThemePreference()
+    {
+        isDarkMode = await ChatService.LoadThemePreferenceAsync();
+        StateHasChanged();
+    }
+
+    private async Task ToggleTheme()
+    {
+        isDarkMode = !isDarkMode;
+        await ChatService.SaveThemePreferenceAsync(isDarkMode);
+        StateHasChanged();
+    }
+    #endregion
+
+    #region Message Handling
+    private async Task OnCurrentMessageChanged(string value)
+    {
+        currentMessage = value;
+    }
+
+    private async Task SendMessageWithFile((string message, string? base64File) data)
+    {
+        if ((string.IsNullOrWhiteSpace(data.message) && string.IsNullOrEmpty(data.base64File)) || 
+            isConnecting || string.IsNullOrEmpty(selectedRuntimeId))
+            return;
+
+        currentMessage = "";
+        await AddUserMessage(data.message, data.base64File);
+        
+        var logDetails = $"Message sent: {data.message.Length} characters";
+        if (!string.IsNullOrEmpty(data.base64File))
+        {
+            logDetails += $", File: with file";
+        }
+        await AddLogEvent("Message", "User Input", logDetails, "");
+        
+        isConnecting = true;
+        StateHasChanged();
+
+        try
+        {
+            await StreamMessage(data.message, data.base64File);
+        }
+        catch (Exception ex)
+        {
+            await AddSystemMessage($"Error: {ex.Message}");
+            await AddLogEvent("Error", "Stream Error", ex.Message, "");
+        }
+        finally
+        {
+            isConnecting = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task StreamMessage(string message, string? base64File)
+    {
+        var assistantMessage = new Models.ChatMessage
+        {
+            Id = Guid.NewGuid().ToString(),
+            Role = "Assistant",
+            Content = "",
+            Timestamp = DateTime.Now,
+            CssClass = "assistant"
+        };
+        
+        messages.Add(assistantMessage);
+        await AddLogEvent("Stream", "Started", "Streaming response initiated", "");
+        StateHasChanged();
+
+        try
+        {
+            if (hasRendered && !string.IsNullOrEmpty(selectedRuntimeId))
+            {
+                // For now, we'll send the message with file info in the content
+                // In a real implementation, you'd want to modify the API to handle file attachments
+                var messageContent = message;
+                
+                await ChatService.StreamMessageAsync(selectedRuntimeId, messageContent, base64File, DotNetObjectReference.Create(this));
+            }
+        }
+        catch (Exception ex)
+        {
+            assistantMessage.Content = $"Stream error: {ex.Message}";
+            await AddLogEvent("Stream", "Error", ex.Message, "");
+            StateHasChanged();
+        }
+    }
+
+    private async Task AddUserMessage(string content, string? base64File = null)
+    {
+        var message = new Models.ChatMessage
+        {
+            Id = Guid.NewGuid().ToString(),
+            Role = "You",
+            Content = content,
+            Timestamp = DateTime.Now,
+            CssClass = "user",
+            Base64File = base64File
+        };
+
+        // Check if user message contains markdown
+        if (MarkdownHelper.ContainsMarkdown(content))
+        {
+            message.IsMarkdown = true;
+        }
+
+        messages.Add(message);
+        StateHasChanged();
+        
+        if (hasRendered)
+        {
+            await ChatService.ScrollToBottomAsync();
+        }
+    }
+
+    private async Task AddSystemMessage(string content)
+    {
+        messages.Add(new Models.ChatMessage
+        {
+            Id = Guid.NewGuid().ToString(),
+            Role = "System",
+            Content = content,
+            Timestamp = DateTime.Now,
+            CssClass = "system"
+        });
+        
+        StateHasChanged();
+        if (hasRendered)
+        {
+            await ChatService.ScrollToBottomAsync();
+        }
+    }
+    #endregion
+
+    #region Panel Management
+    private async Task ToggleLogPanel()
+    {
+        showLogPanel = !showLogPanel;
+        StateHasChanged();
+        
+        if (hasRendered)
+        {
+            await Task.Delay(300); // Wait for CSS transition
+            await ChatService.ScrollToBottomAsync();
+            await ChatService.ScrollLogToBottomAsync();
+        }
+    }
+
+    private async Task ClearChat()
+    {
+        messages.Clear();
+        StateHasChanged();
+    }
+
+    private async Task ClearLogs()
+    {
+        logEvents.Clear();
+        StateHasChanged();
+    }
+    #endregion
+
+    #region Logging
+    private async Task AddLogEvent(string type, string subType, string details, string data)
+    {
+        logEvents.Add(new Models.LogEvent
+        {
+            Id = Guid.NewGuid().ToString(),
+            Type = $"{type} - {subType}",
+            Details = details,
+            Data = data,
+            Timestamp = DateTime.Now,
+            CssClass = GetLogEventCssClass(type.ToLower())
+        });
+        
+        StateHasChanged();
+        if (hasRendered && showLogPanel)
+        {
+            await ChatService.ScrollLogToBottomAsync();
+        }
+    }
+
+    private string GetLogEventCssClass(string type)
+    {
+        return type.ToLower() switch
+        {
+            "tool" => "log-tool",
+            "reasoning" => "log-reasoning", 
+            "stream" => "log-stream",
+            "error" => "log-error",
+            "runtime" => "log-runtime",
+            "message" => "log-message",
+            "configuration" => "log-runtime",
+            _ => "log-default"
+        };
+    }
+    #endregion
+
+    #region Streaming Event Handlers
+    [JSInvokable]
+    public async Task OnStreamEvent(string eventType, string data)
+    {
+        await InvokeAsync(() =>
+        {
+            try
+            {
+                var lastMessage = messages.LastOrDefault(m => m.CssClass == "assistant");
+                if (lastMessage == null) return;
+
+                switch (eventType)
+                {
+                    case "output_text_delta":
+                        var deltaData = JsonSerializer.Deserialize<Models.TextDeltaEvent>(data, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                        if (deltaData?.Text != null)
+                        {
+                            lastMessage.Content += deltaData.Text;
+                        }
+                        break;
+
+                    case "tool_invoked":
+                        var toolEvent = JsonSerializer.Deserialize<Models.ToolEvent>(data, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                        if (toolEvent != null)
+                        {
+                            _ = AddLogEvent("Tool", "Invoked", $"Tool: {toolEvent.ToolName}", JsonSerializer.Serialize(toolEvent, new JsonSerializerOptions { WriteIndented = true }));
+                        }
+                        break;
+
+                    case "reasoning_part_added":
+                        var reasoningEvent = JsonSerializer.Deserialize<Models.ReasoningEvent>(data, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                        if (reasoningEvent != null)
+                        {
+                            _ = AddLogEvent("Reasoning", "Part Added", reasoningEvent.Text ?? "Thinking...", "");
+                        }
+                        break;
+
+                    case "stream_complete":
+                        // Mark as markdown if it contains markdown syntax
+                        if (MarkdownHelper.ContainsMarkdown(lastMessage.Content))
+                        {
+                            lastMessage.IsMarkdown = true;
+                        }
+                        _ = AddLogEvent("Stream", "Complete", "Response streaming completed", "");
+                        break;
+
+                    default:
+                        // Log all other event types
+                        _ = AddLogEvent("Event", eventType.Replace("_", " ").ToTitleCase(), "Event received", data);
+                        break;
+                }
+
+                StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error processing stream event: {ex.Message}");
+                _ = AddLogEvent("Error", "Event Processing", ex.Message, eventType + ": " + data);
+            }
+        });
+    }
+
+    [JSInvokable]
+    public async Task OnStreamError(string error)
+    {
+        await InvokeAsync(() =>
+        {
+            var lastMessage = messages.LastOrDefault(m => m.CssClass == "assistant");
+            if (lastMessage != null)
+            {
+                lastMessage.Content += $"\n\n❌ Stream error: {error}";
+                StateHasChanged();
+            }
+        });
+    }
+
+    [JSInvokable]
+    public async Task OnStreamComplete()
+    {
+        await InvokeAsync(() =>
+        {
+            isConnecting = false;
+            _ = AddLogEvent("Stream", "Session Complete", "Streaming session finished", "");
+            StateHasChanged();
+        });
+    }
+    #endregion
+
+    public void Dispose()
+    {
+        ChatService?.Dispose();
+    }
+}
