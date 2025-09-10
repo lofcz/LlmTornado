@@ -5,6 +5,11 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <TargetFrameworks>net8.0;netstandard2.0</TargetFrameworks>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <Title>LlmTornado.Agents.Native</Title>
+        <PackageProjectUrl>https://llmtornado.ai/</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/lofcz/LlmTornado</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
     </PropertyGroup>
 
     <ItemGroup>
@@ -13,6 +18,13 @@
 
     <ItemGroup>
       <PackageReference Include="System.Drawing.Common" Version="[8.0.18, )" />
+    </ItemGroup>
+
+    <PropertyGroup>
+        <PackageIcon>nuget_logo.jpg</PackageIcon>
+    </PropertyGroup>
+    <ItemGroup>
+        <None Include="nuget_logo.jpg" Pack="true" PackagePath="\"/>
     </ItemGroup>
 
     <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
