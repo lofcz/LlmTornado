@@ -1802,6 +1802,38 @@ public partial class ChatDemo : DemoBase
         Console.WriteLine(response);
         Console.WriteLine(response.Result?.Usage?.TotalTokens);
     }
+    
+    [TornadoTest]
+    [Flaky("long running, often overloaded")]
+    public static async Task AnthropicContainerUpload()
+    {
+        TornadoApi api = Program.Connect();
+        HttpCallResult<TornadoFile> uploadedFile = await api.Files.Upload("Static/Files/sample.pdf", mimeType: "application/pdf", provider: LLmProviders.Anthropic);
+
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Anthropic.Claude4.Sonnet250514,
+            VendorExtensions = new ChatRequestVendorExtensions(new ChatRequestVendorAnthropicExtensions
+            {
+                BuiltInTools = [
+                    new VendorAnthropicChatRequestBuiltInToolCodeExecution20250825()
+                ]
+            }),
+            MaxTokens = 4096
+        });
+        
+        chat.AppendUserInput([
+            new ChatMessagePart("Write python script to count unique words in this document, summarize the results and create a graph of the frequencies, export it to jpeg image."),
+            new ChatMessagePart(new ChatMessagePartContainerUpload(uploadedFile.Data))
+        ]);
+
+        var rr = chat.Serialize();
+        
+        ChatRichResponse response = await chat.GetResponseRich();
+        
+        Console.WriteLine(response);
+        Console.WriteLine(response.Result?.Usage?.TotalTokens);
+    }
 
     [Flaky("access limited in Europe")]
     [TornadoTest]

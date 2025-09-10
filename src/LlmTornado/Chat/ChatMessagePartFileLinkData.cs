@@ -1,7 +1,42 @@
+using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Files;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Chat;
+
+/// <summary>
+/// A content block that represents a file to be uploaded to the container. Files uploaded via this block will be available in the container's input directory.
+/// </summary>
+public class ChatMessagePartContainerUpload
+{
+    /// <summary>
+    /// File ID.
+    /// </summary>
+    [JsonProperty("file_id")]
+    public string FileId { get; set; }
+    
+    /// <summary>
+    /// Cache control settings.
+    /// </summary>
+    [JsonProperty("cache_control")]
+    public AnthropicCacheSettings? Cache { get; set; }
+    
+    /// <summary>
+    /// Creates a new container upload data.<br/>
+    /// </summary>
+    public ChatMessagePartContainerUpload(string fileId)
+    {
+        FileId = fileId;
+    }
+    
+    /// <summary>
+    /// Creates a new container upload data.<br/>
+    /// </summary>
+    public ChatMessagePartContainerUpload(TornadoFile file)
+    {
+        FileId = file.Uri ?? file.Id;
+    }
+}
 
 /// <summary>
 /// URI-based file data.

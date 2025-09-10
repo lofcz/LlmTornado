@@ -672,7 +672,7 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
         }
         else
         {
-            req.Headers.Add("anthropic-beta", ["interleaved-thinking-2025-05-14", "extended-cache-ttl-2025-04-11", "files-api-2025-04-14", "search-results-2025-06-09"]);
+            req.Headers.Add("anthropic-beta", ["interleaved-thinking-2025-05-14", "files-api-2025-04-14", "code-execution-2025-08-25", "search-results-2025-06-09"]);
         }
 
         return req;

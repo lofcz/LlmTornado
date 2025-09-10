@@ -62,7 +62,13 @@ public enum VendorAnthropicChatRequestBuiltInToolTypes
     /// Text editor tool (older version).
     /// </summary>
     [EnumMember(Value = "text_editor_20250429")]
-    TextEditor20250429
+    TextEditor20250429,
+    
+    /// <summary>
+    /// Code execution tool.
+    /// </summary>
+    [EnumMember(Value = "code_execution_20250825")]
+    CodeExecution20250825
 }
 
 /// <summary>
@@ -81,6 +87,29 @@ public class VendorAnthropicChatRequestBuiltInToolBash20250124 : IVendorAnthropi
     /// </summary>
     [JsonProperty("name")]
     public string Name => "bash";
+
+    /// <summary>
+    /// Cache control settings for the tool.
+    /// </summary>
+    [JsonProperty("cache_control")]
+    public AnthropicCacheSettings? Cache { get; set; }
+}
+
+/// <summary>
+/// A built-in code execution tool.
+/// </summary>
+public class VendorAnthropicChatRequestBuiltInToolCodeExecution20250825 : IVendorAnthropicChatRequestBuiltInTool
+{
+    /// <summary>
+    /// The type of the tool.
+    /// </summary>
+    public VendorAnthropicChatRequestBuiltInToolTypes Type => VendorAnthropicChatRequestBuiltInToolTypes.CodeExecution20250825;
+    
+    /// <summary>
+    /// The name of the tool.
+    /// </summary>
+    [JsonProperty("name")]
+    public string Name => "code_execution";
 
     /// <summary>
     /// Cache control settings for the tool.

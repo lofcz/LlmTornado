@@ -326,6 +326,23 @@ public partial class VendorAnthropicChatRequestMessageContent
                             
                             break;
                         }
+                        case ChatMessageTypes.ContainerUpload:
+                        {
+                            writer.WritePropertyName("type");
+                            writer.WriteValue("container_upload");
+                            
+                            writer.WritePropertyName("file_id");
+                            writer.WriteValue(part.ContainerUploadData?.FileId);
+                            
+                            if (part.ContainerUploadData?.Cache is not null)
+                            {
+                                writer.WritePropertyName("cache_control");
+                                JToken cacheToken = JToken.FromObject(part.ContainerUploadData.Cache);
+                                cacheToken.WriteTo(writer);
+                            }
+                            
+                            break;
+                        }
                         case ChatMessageTypes.SearchResult:
                         {
                             writer.WritePropertyName("type");

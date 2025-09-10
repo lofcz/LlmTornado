@@ -43,6 +43,15 @@ public class ChatMessagePart
         FileLinkData = fileLinkData;
     }
     
+    /// <summary>
+    /// Sets the part to <see cref="ChatMessageTypes.ContainerUpload"/>. Supported only by Anthropic.
+    /// </summary>
+    /// <param name="containerUpload"></param>
+    public ChatMessagePart(ChatMessagePartContainerUpload containerUpload)
+    {
+        Type = ChatMessageTypes.ContainerUpload;
+        ContainerUploadData = containerUpload;
+    }
        
     /// <summary>
     /// Sets the part to <see cref="ChatMessageTypes.SearchResult"/>. Supported only by Anthropic.
@@ -261,6 +270,12 @@ public class ChatMessagePart
     /// </summary>
     [JsonIgnore]
     public ChatMessagePartFileLinkData? FileLinkData { get; set; }
+    
+    /// <summary>
+    /// Container upload data.
+    /// </summary>
+    [JsonIgnore]
+    public ChatMessagePartContainerUpload? ContainerUploadData { get; set; }
     
     /// <summary>
     ///     Document of the message part if type is <see cref="ChatMessageTypes.Document" />.

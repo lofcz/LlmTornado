@@ -60,5 +60,11 @@ public enum ChatMessageTypes
     /// <summary>
     /// Message part is result of a code execution.
     /// </summary>
-    CodeExecutionResult
+    CodeExecutionResult,
+    
+    /// <summary>
+    /// A content block that represents a file to be uploaded to the container. Files uploaded via this block will be available in the container's input directory.<br/>
+    /// <b>Supported only by Anthropic.</b>
+    /// </summary>
+    ContainerUpload,
 }
