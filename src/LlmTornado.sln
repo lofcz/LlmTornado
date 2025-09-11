@@ -45,6 +45,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.VectorDatabases"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.VectorDatabases.ChromaDB", "LlmTornado.VectorDatabases.ChromaDB\LlmTornado.VectorDatabases.ChromaDB.csproj", "{3A733F18-3431-4557-B42F-FA38EE2C11F6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.A2A", "LlmTornado.A2A\LlmTornado.A2A.csproj", "{EB265C13-2353-44F2-B04A-8F69DEB10A86}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -123,6 +125,10 @@ Global
 		{3A733F18-3431-4557-B42F-FA38EE2C11F6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3A733F18-3431-4557-B42F-FA38EE2C11F6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3A733F18-3431-4557-B42F-FA38EE2C11F6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EB265C13-2353-44F2-B04A-8F69DEB10A86}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EB265C13-2353-44F2-B04A-8F69DEB10A86}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EB265C13-2353-44F2-B04A-8F69DEB10A86}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EB265C13-2353-44F2-B04A-8F69DEB10A86}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
