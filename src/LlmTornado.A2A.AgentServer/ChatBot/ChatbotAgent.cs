@@ -19,7 +19,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 
-namespace LlmTornado.A2A.ChatBot;
+namespace LlmTornado.A2A.AgentServer;
 
 public class ChatBotAgent : OrchestrationRuntimeConfiguration
 {
@@ -36,8 +36,6 @@ public class ChatBotAgent : OrchestrationRuntimeConfiguration
 
         AgentRunnable simpleAgentRunnable = new AgentRunnable(client, this, streaming);
 
-        ExitPathRunnable exitPathRunnable = new ExitPathRunnable(this);
-
         return new OrchestrationBuilder(this)
            .SetEntryRunnable(inputModerator)
            .SetOutputRunnable(simpleAgentRunnable)
@@ -53,8 +51,7 @@ public class ChatBotAgent : OrchestrationRuntimeConfiguration
            .WithRuntimeProperty("LatestUserMessage", "")
            .WithChatMemory(conversationFile)
            .AddAdvancer<ChatMessage>(inputModerator, simpleAgentRunnable)
-           .AddAdvancer<ChatMessage>(simpleAgentRunnable, exitPathRunnable)
-           .AddExitPath<ChatMessage>(exitPathRunnable, _ => true)
+           .AddExitPath<ChatMessage>(simpleAgentRunnable, _ => true)
            .CreateDotGraphVisualization("SimpleChatBotAgent.dot").Build();
     }
 }
@@ -110,7 +107,7 @@ public class ModeratorRunnable : OrchestrationRunnable<ChatMessage, ChatMessage>
     }
 }
 
-public class AgentRunnable : OrchestrationRunnable<CombinationalResult<string>, ChatMessage>
+public class AgentRunnable : OrchestrationRunnable<ChatMessage, ChatMessage>
 {
     TornadoAgent Agent;
     public Action<AgentRunnerEvents>? OnAgentRunnerEvent { get; set; }
@@ -125,24 +122,25 @@ Given the following context will include Vector Search Memory, Websearch Results
         Agent = new TornadoAgent(
             client: client,
             model: ChatModel.OpenAi.Gpt5.V5Mini,
-            name: "Assistant",
+            name: "Agent Runner",
             instructions: instructions,
             streaming: streaming);
         _conv = Agent.Client.Chat.CreateConversation(Agent.Options);
+
+        Agent.ResponseOptions = new ResponseRequest() { Tools = [new ResponseWebSearchTool()] };
         _runtimeConfiguration = orchestrator;
     }
 
 
-    public override async ValueTask<ChatMessage> Invoke(RunnableProcess<CombinationalResult<string>, ChatMessage> process)
+    public override async ValueTask<ChatMessage> Invoke(RunnableProcess<ChatMessage, ChatMessage> process)
     {
         process.RegisterAgent(Agent);
 
-
-        string prompt = string.Join("\n\n", process.Input.Values);
+        List<ChatMessage> messages = _runtimeConfiguration.GetMessages();
+        messages.Add(process.Input);
 
         _conv = await Agent.RunAsync(
-            input: prompt,
-            appendMessages: _runtimeConfiguration.GetMessages(),
+            appendMessages: messages,
             streaming: Agent.Streaming,
             onAgentRunnerEvent: (sEvent) =>
             {
@@ -153,19 +151,4 @@ Given the following context will include Vector Search Memory, Websearch Results
         return _conv.Messages.Last();
     }
 }
-
-public class ExitPathRunnable : OrchestrationRunnable<ChatMessage, ChatMessage>
-{
-    public ExitPathRunnable(Orchestration orchestrator) : base(orchestrator)
-    {
-        AllowDeadEnd = true;
-    }
-
-    public override ValueTask<ChatMessage> Invoke(RunnableProcess<ChatMessage, ChatMessage> process)
-    {
-        Orchestrator?.HasCompletedSuccessfully();
-        return new ValueTask<ChatMessage>(process.Input);
-    }
-}
-
 

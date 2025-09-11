@@ -1,5 +1,5 @@
 ﻿using A2A;
-using LlmTornado.A2A.ChatBot;
+using A2A.AspNetCore;
 using LlmTornado.Agents;
 using LlmTornado.Agents.ChatRuntime;
 using LlmTornado.Agents.ChatRuntime.RuntimeConfigurations;
@@ -10,12 +10,10 @@ using Microsoft.Extensions.Logging;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 
-namespace LlmTornado.A2A;
-
-
-
-#region Semantic Kernel Agent
+namespace LlmTornado.A2A.AgentServer;
 
 /// <summary>
 /// Wraps Semantic Kernel-based agents to handle Travel related tasks
@@ -23,21 +21,20 @@ namespace LlmTornado.A2A;
 public class TornadoRuntimeAgent : IDisposable
 {
     public static readonly ActivitySource ActivitySource = new("A2A.TornadoRuntimeAgent", "1.0.0");
-
+    //private readonly ILogger _logger;
+    private readonly ChatRuntime _agent;
+    private ITaskManager? _taskManager;
+    private IRuntimeConfiguration _runtimeConfig;
+    private AgentTask _currentTask;
+    private CancellationToken _cancellationToken;
     /// <summary>
     /// Initializes a new instance of the SemanticKernelTravelAgent
     /// </summary>
-    /// <param name="configuration">Application configuration</param>
-    /// <param name="httpClient">HTTP client</param>
     /// <param name="logger">Logger for the agent</param>
-    public TornadoRuntimeAgent(
-        IConfiguration configuration,
-        HttpClient httpClient,
-        ILogger logger)
+    public TornadoRuntimeAgent(IRuntimeConfiguration runtimeConfig)
     {
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-        _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+        //_logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _runtimeConfig = runtimeConfig ?? throw new ArgumentNullException(nameof(runtimeConfig));
 
         // Initialize the agent
         _agent = InitializeAgent();
@@ -57,10 +54,60 @@ public class TornadoRuntimeAgent : IDisposable
         taskManager.OnTaskCreated = ExecuteAgentTaskAsync;
         taskManager.OnTaskUpdated = ExecuteAgentTaskAsync;
         taskManager.OnAgentCardQuery = GetAgentCardAsync;
+        taskManager.OnMessageReceived = ProcessMessageAsync;
+    }
+
+    private async Task<A2AResponse> ProcessMessageAsync(MessageSendParams messageSendParams, CancellationToken cancellationToken)
+    {
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return new AgentMessage()
+            {
+                Role = MessageRole.Agent,
+                MessageId = Guid.NewGuid().ToString(),
+                ContextId = messageSendParams.Message.ContextId,
+                Parts = [new TextPart() {
+                    Text = "Operation cancelled."
+                }]
+            };
+        }
+
+        // Process the message
+        var messageText = messageSendParams.Message.Parts.OfType<TextPart>().First().Text;
+
+        ChatMessage response = await _agent.InvokeAsync(new ChatMessage(Code.ChatMessageRoles.User, messageText));
+
+        List<Part> parts = new List<Part>();
+
+
+        if(response.Content != null)
+        {
+            parts.Add(new TextPart() { Text = response.Content });
+        }
+        else
+        {
+            foreach (var part in response.Parts)
+            {
+                if (part.Text != null)
+                {
+                    parts.Add(new TextPart() { Text = part.Text });
+                }
+            }
+        }
+
+        // Create and return an artifact
+        return new AgentMessage()
+        {
+            Role = MessageRole.Agent,
+            MessageId = Guid.NewGuid().ToString(),
+            ContextId = messageSendParams.Message.ContextId,
+            Parts = parts
+        };
     }
 
     public async Task ExecuteAgentTaskAsync(AgentTask task, CancellationToken cancellationToken)
     {
+        _currentTask = task;
         if (_taskManager == null)
         {
             throw new InvalidOperationException("TaskManager is not attached.");
@@ -73,21 +120,17 @@ public class TornadoRuntimeAgent : IDisposable
 
         var artifact = new Artifact();
 
-        _agent.RuntimeConfiguration.OnRuntimeEvent += ProcessRuntimeEvent;
+        _agent.RuntimeConfiguration.OnRuntimeEvent += ProcessRuntimeStreamingEvent;
 
         // Get the response from the agent
         
         ChatMessage response = await _agent.InvokeAsync(new ChatMessage(Code.ChatMessageRoles.User, userMessage ?? "Hello"));
 
-        var content = response.Content;
-        artifact.Parts.Add(new TextPart() { Text = content! });
-
         // Return as artifacts
-        await _taskManager.ReturnArtifactAsync(task.Id, artifact, cancellationToken);
-        await _taskManager.UpdateStatusAsync(task.Id, TaskState.Completed, cancellationToken: cancellationToken);
+        await _taskManager.UpdateStatusAsync(_currentTask.Id, TaskState.Completed, cancellationToken: cancellationToken);
     }
 
-    public static ValueTask ProcessRuntimeEvent(ChatRuntimeEvents evt)
+    public async ValueTask ProcessRuntimeStreamingEvent(ChatRuntimeEvents evt)
     {
         if (evt.EventType == ChatRuntimeEventTypes.AgentRunner)
         {
@@ -98,11 +141,21 @@ public class TornadoRuntimeAgent : IDisposable
                     if (streamEvt.ModelStreamingEvent is ModelStreamingOutputTextDeltaEvent deltaTextEvent)
                     {
                         Console.Write(deltaTextEvent.DeltaText);
+                        await _taskManager.ReturnArtifactAsync(_currentTask.Id, new Artifact()
+                        {
+                            Parts = [new TextPart() {
+                                Text = deltaTextEvent.DeltaText ?? ""
+                            }]
+                        }, _cancellationToken);
                     }
                 }
             }
         }
-        else if (evt.EventType == ChatRuntimeEventTypes.Orchestration)
+    }
+
+    public static ValueTask ProcessRuntimeOrchestrationEvent(ChatRuntimeEvents evt)
+    {
+        if (evt.EventType == ChatRuntimeEventTypes.Orchestration)
         {
             if (evt is ChatRuntimeOrchestrationEvent orchestrationEvt)
             {
@@ -155,33 +208,21 @@ public class TornadoRuntimeAgent : IDisposable
         });
     }
 
-    #region private
-    private readonly ILogger _logger;
-    private readonly IConfiguration _configuration;
-    private readonly HttpClient _httpClient;
-    private readonly ChatRuntime _agent;
-    private ITaskManager? _taskManager;
-
     public List<string> SupportedContentTypes { get; } = ["text", "text/plain"];
 
     private ChatRuntime InitializeAgent()
     {
         try
         {
-            TornadoApi client = new TornadoApi(Code.LLmProviders.OpenAi, Environment.GetEnvironmentVariable("OPENAI_API_KEY"));
-            ChatBotAgent chatbotConfig = new ChatBotAgent();
-            OrchestrationRuntimeConfiguration config = chatbotConfig.BuildSimpleAgent(client, streaming: true, conversationFile: "Conversation1.json");
-            ChatRuntime runtime = new ChatRuntime(config);
+            ChatRuntime runtime = new ChatRuntime(_runtimeConfig);
             return runtime;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to initialize TornadoRuntimeAgent");
+            //_logger.LogError(ex, "Failed to initialize TornadoRuntimeAgent");
             throw;
         }
     }
-
-    #endregion
 }
-#endregion
+
 
