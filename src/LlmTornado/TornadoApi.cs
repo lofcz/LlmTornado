@@ -228,15 +228,20 @@ public class TornadoApi
     ///     for OpenAI, should be "https://api.openai.com/{0}/{1}"
     ///     for Azure, should be
     ///     "https://(your-resource-name.openai.azure.com/openai/deployments/(deployment-id)/{1}?api-version={0}"
-    ///     this will be formatted as {0} = <see cref="ApiVersion" />, {1} = <see cref="EndpointBase.Endpoint" />
+    ///     this will be formatted as {0} = <see cref="ResolveApiVersion" />, {1} = <see cref="EndpointBase.Endpoint" />
     /// </summary>
     public string? ApiUrlFormat { get; set; }
 
     /// <summary>
     ///     Version of the Rest Api
     /// </summary>
-    public string ApiVersion { get; set; } = "v1";
+    public string? ApiVersion { get; set; }
 
+    /// <summary>
+    /// Resolves the API version.
+    /// </summary>
+    public string ResolveApiVersion(string defaultValue = "v1") => ApiVersion ?? defaultValue;
+    
     internal IEndpointProvider ResolveProvider(LLmProviders? userSignalledProvider = null)
     {
         return GetProvider(userSignalledProvider ?? GetFirstAuthenticatedProvider());

@@ -49,7 +49,7 @@ public class ChatResponseVendorCohereExtensions
     /// <returns></returns>
     public List<VendorCohereCitationBlock> ParseCitations()
     {
-        return ParseCitations(Response.Text ?? string.Empty);
+        return []; // ParseCitations(Response.Message ?? string.Empty);
     }
 
     /// <summary>
@@ -128,10 +128,10 @@ public class ChatResponseVendorCohereExtensions
 
     internal ChatResponseVendorCohereExtensions(VendorCohereChatResult response)
     {
-        Citations = response.Citations;
+        /*Citations = response.Citations;
         Documents = response.Documents;
         SearchQueries = response.SearchQueries;
         SearchResults = response.SearchResults;
-        Response = response;
+        Response = response;*/
     }
 }

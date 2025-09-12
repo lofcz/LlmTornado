@@ -504,7 +504,7 @@ public class ChatRequest : IModelRequest, ISerializableRequest
 		return sourceObject.ToString(settings?.Formatting ?? Formatting.None);
 	}
 
-	private static readonly Dictionary<LLmProviders, Func<ChatRequest, IEndpointProvider, CapabilityEndpoints, JsonSerializerSettings?, string>> SerializeMap = new Dictionary<LLmProviders, Func<ChatRequest, IEndpointProvider, CapabilityEndpoints, JsonSerializerSettings?, string>>((int)LLmProviders.Length)
+	private static readonly Dictionary<LLmProviders, Func<ChatRequest, IEndpointProvider, CapabilityEndpoints, JsonSerializerSettings?, string>> serializeMap = new Dictionary<LLmProviders, Func<ChatRequest, IEndpointProvider, CapabilityEndpoints, JsonSerializerSettings?, string>>((int)LLmProviders.Length)
 	{
 		{
 			LLmProviders.OpenAi, (x, y, z, a) =>
@@ -530,7 +530,14 @@ public class ChatRequest : IModelRequest, ISerializableRequest
 		},
 		{ LLmProviders.DeepSeek, (x, y, z, a) => PreparePayload(x, x, y, z, GetSerializer(EndpointBase.NullSettings, a)) },
 		{ LLmProviders.Anthropic, (x, y, z, a) => PreparePayload(new VendorAnthropicChatRequest(x, y), x, y, z, GetSerializer(EndpointBase.NullSettings, a)) },
-		{ LLmProviders.Cohere, (x, y, z, a) => PreparePayload(new VendorCohereChatRequest(x, y), x, y, z, GetSerializer(EndpointBase.NullSettings, a)) },
+		{
+			LLmProviders.Cohere, (x, y, z, a) =>
+			{
+				VendorCohereChatRequest request = new VendorCohereChatRequest(x, y);
+				JsonSerializerSettings serializer = GetSerializer(EndpointBase.NullSettings, a);
+				return PreparePayload(request.Serialize(serializer), x, y, z, serializer);
+			}
+		},
 		{ LLmProviders.Google, (x, y, z, a) => PreparePayload(new VendorGoogleChatRequest(x, y), x, y, z, GetSerializer(EndpointBase.NullSettings, a)) },
 		{
 			LLmProviders.Mistral, (x, y, z, a) =>
@@ -730,7 +737,7 @@ public class ChatRequest : IModelRequest, ISerializableRequest
 			outboundCopy.ReasoningFormat = null;
 		}
 		
-		TornadoRequestContent serialized = SerializeMap.TryGetValue(provider.Provider, out Func<ChatRequest, IEndpointProvider, CapabilityEndpoints, JsonSerializerSettings?, string>? serializerFn) ? new TornadoRequestContent(serializerFn.Invoke(outboundCopy, provider, capabilityEndpoint, pretty ? new JsonSerializerSettings
+		TornadoRequestContent serialized = serializeMap.TryGetValue(provider.Provider, out Func<ChatRequest, IEndpointProvider, CapabilityEndpoints, JsonSerializerSettings?, string>? serializerFn) ? new TornadoRequestContent(serializerFn.Invoke(outboundCopy, provider, capabilityEndpoint, pretty ? new JsonSerializerSettings
 		{
 			Formatting = Formatting.Indented
 		} : null), outboundCopy.Model, outboundCopy.UrlOverride, provider, capabilityEndpoint) : new TornadoRequestContent(string.Empty, outboundCopy.Model, outboundCopy.UrlOverride, provider, CapabilityEndpoints.Chat);

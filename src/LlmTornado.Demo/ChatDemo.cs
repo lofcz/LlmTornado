@@ -145,6 +145,32 @@ public partial class ChatDemo : DemoBase
     }
     
     [TornadoTest]
+    public static async Task<bool> CohereTool()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Cohere.Command.A0325,
+            Tools = [new Tool(new ToolFunction("get_weather", "gets the current weather"), true)],
+            ToolChoice = new OutboundToolChoice(OutboundToolChoiceModes.Required),
+            Messages = [
+                new ChatMessage(ChatMessageRoles.User, "What is the weather like today?")
+            ]
+        });
+ 
+        ChatRichResponse response = await chat.GetResponseRich();
+
+        ChatRichResponseBlock? block = response.Blocks?.FirstOrDefault(x => x.Type is ChatRichResponseBlockTypes.Function);
+
+        if (block is not null)
+        {
+            Console.WriteLine($"fn block found: {block.FunctionCall?.Name}");
+            return true;
+        }
+        
+        return false;
+    }
+    
+    [TornadoTest]
     public static async Task<bool> ChatFunctionGemini()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest

@@ -125,7 +125,7 @@ public class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
     public override string ApiUrl(CapabilityEndpoints endpoint, string? url, IModel? model = null)
     {
         string eStr = GetEndpointUrlFragment(endpoint);
-        return UrlResolver is not null ? string.Format(UrlResolver.Invoke(endpoint, url, new RequestUrlContext(eStr, url, model)), eStr, url, model?.Name) : $"https://api.cohere.ai/v1/{eStr}{url}";
+        return UrlResolver is not null ? string.Format(UrlResolver.Invoke(endpoint, url, new RequestUrlContext(eStr, url, model)), eStr, url, model?.Name) : $"https://api.cohere.ai/v2/{eStr}{url}";
     }
 
     enum ChatStreamEventTypes
@@ -290,7 +290,7 @@ public class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
                         continue;
                     }
 
-                    yield return new ChatResult
+                    /*yield return new ChatResult
                     {
                         VendorExtensions = new ChatResponseVendorExtensions
                         {
@@ -299,7 +299,7 @@ public class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
                                 SearchQueries = data.SearchQueries
                             })
                         }
-                    };
+                    };*/
                     
                     break;
                 }
@@ -312,7 +312,7 @@ public class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
                         continue;
                     }
 
-                    yield return new ChatResult
+                    /*yield return new ChatResult
                     {
                         VendorExtensions = new ChatResponseVendorExtensions
                         {
@@ -321,7 +321,7 @@ public class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
                                 SearchResults = data.SearchResults
                             })
                         }
-                    };
+                    };*/
                     
                     break;
                 }
@@ -334,7 +334,7 @@ public class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
                         continue;
                     }
 
-                    yield return new ChatResult
+                    /*yield return new ChatResult
                     {
                         VendorExtensions = new ChatResponseVendorExtensions
                         {
@@ -343,7 +343,7 @@ public class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
                                 Citations = data.Citations
                             })
                         }
-                    };
+                    };*/
                     
                     break;
                 }
@@ -397,12 +397,12 @@ public class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
                     {
                         usage = new ChatUsage(LLmProviders.Cohere)
                         {
-                            TotalTokens = result.Response.Meta.BilledUnits.InputTokens + result.Response.Meta.BilledUnits.OutputTokens,
-                            PromptTokens = result.Response.Meta.BilledUnits.InputTokens,
-                            CompletionTokens = result.Response.Meta.BilledUnits.OutputTokens
+                            TotalTokens = result.Response.Usage.BilledUnits.InputTokens + result.Response.Usage.BilledUnits.OutputTokens,
+                            PromptTokens = result.Response.Usage.BilledUnits.InputTokens,
+                            CompletionTokens = result.Response.Usage.BilledUnits.OutputTokens
                         };
 
-                        finishReason = ChatMessageFinishReasonsConverter.Map.GetValueOrDefault(result.Response.FinishReason, ChatMessageFinishReasons.Unknown);
+                        //finishReason = ChatMessageFinishReasonsConverter.Map.GetValueOrDefault(result.Response.FinishReason, ChatMessageFinishReasons.Unknown);
                     }
                     
                     goto finalizer;
