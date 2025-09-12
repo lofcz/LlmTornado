@@ -22,7 +22,7 @@ builder.Services.AddOpenTelemetry()
     .WithTracing(tracing => tracing
         .AddSource(TaskManager.ActivitySource.Name)
         .AddSource(A2AJsonRpcProcessor.ActivitySource.Name)
-        .AddSource(TornadoRuntimeAgent.ActivitySource.Name)
+        .AddSource(A2ATornadoRuntimeController.ActivitySource.Name)
         .AddAspNetCoreInstrumentation()
         .AddHttpClientInstrumentation()
         .AddConsoleExporter()
@@ -44,7 +44,7 @@ app.MapGet("/health", () => Results.Ok(new { Status = "Healthy", Timestamp = Dat
 var taskManager = new TaskManager();
 
 TornadoApi client = new TornadoApi(LlmTornado.Code.LLmProviders.OpenAi, Environment.GetEnvironmentVariable("OPENAI_API_KEY"));
-var chatAgent = new TornadoRuntimeAgent(new ChatBotAgent());
+var chatAgent = new A2ATornadoRuntimeController(new ChatBotAgent());
 chatAgent.Attach(taskManager);
 app.MapA2A(taskManager, "/chat");
 app.MapWellKnownAgentCard(taskManager, "/chat");
