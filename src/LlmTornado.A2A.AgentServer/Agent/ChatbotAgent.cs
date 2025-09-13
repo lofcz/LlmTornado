@@ -51,8 +51,7 @@ public class ChatBotAgent : OrchestrationRuntimeConfiguration
            .WithRuntimeProperty("LatestUserMessage", "")
            .WithChatMemory(conversationFile)
            .AddAdvancer<ChatMessage>(inputModerator, simpleAgentRunnable)
-           .AddExitPath<ChatMessage>(simpleAgentRunnable, _ => true)
-           .CreateDotGraphVisualization("SimpleChatBotAgent.dot").Build();
+           .AddExitPath<ChatMessage>(simpleAgentRunnable, _ => true).Build();
     }
 }
 

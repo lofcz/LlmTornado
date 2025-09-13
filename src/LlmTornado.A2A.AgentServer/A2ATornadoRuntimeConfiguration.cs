@@ -16,10 +16,17 @@ using System.Threading.Tasks;
 
 namespace LlmTornado.A2A.AgentServer;
 
+public interface IA2ARuntimeConfiguration
+{
+    Task<A2AResponse> ProcessMessageAsync(MessageSendParams messageSendParams, CancellationToken cancellationToken);
+    Task ExecuteAgentTaskAsync(AgentTask task, CancellationToken cancellationToken);
+    Task<AgentCard> GetAgentCardAsync(string agentUrl, CancellationToken cancellationToken);
+}
+
 /// <summary>
 /// Wraps Semantic Kernel-based agents to handle Travel related tasks
 /// </summary>
-public class A2ATornadoRuntimeController : IDisposable
+public class A2ATornadoRuntimeConfiguration : IA2ARuntimeConfiguration, IDisposable
 {
     public static readonly ActivitySource ActivitySource = new("A2A.TornadoRuntimeAgent", "1.0.0");
 
@@ -31,12 +38,10 @@ public class A2ATornadoRuntimeController : IDisposable
     private ConcurrentQueue<Artifact> _artifactQueue = new();
     private CancellationToken _cancellationToken;
 
-
     /// <summary>
-    /// Initializes a new instance of the SemanticKernelTravelAgent
+    /// Initializes a new instance of the A2ATornadoRuntimeService
     /// </summary>
-    /// <param name="logger">Logger for the agent</param>
-    public A2ATornadoRuntimeController(IRuntimeConfiguration runtimeConfig)
+    public A2ATornadoRuntimeConfiguration(IRuntimeConfiguration runtimeConfig)
     {
         //_logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _runtimeConfig = runtimeConfig ?? throw new ArgumentNullException(nameof(runtimeConfig));
@@ -46,9 +51,7 @@ public class A2ATornadoRuntimeController : IDisposable
 
         //Setup streaming event handler
         _agent.RuntimeConfiguration.OnRuntimeEvent += ProcessRuntimeStreamingEvent;
-
     }
-
 
     /// <summary>
     /// Dispose of resources
@@ -77,7 +80,7 @@ public class A2ATornadoRuntimeController : IDisposable
     /// <param name="messageSendParams"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    private async Task<A2AResponse> ProcessMessageAsync(MessageSendParams messageSendParams, CancellationToken cancellationToken)
+    public async Task<A2AResponse> ProcessMessageAsync(MessageSendParams messageSendParams, CancellationToken cancellationToken)
     {
         //Check for cancellation
         if (cancellationToken.IsCancellationRequested)
@@ -140,7 +143,7 @@ public class A2ATornadoRuntimeController : IDisposable
     /// </summary>
     /// <param name="evt"></param>
     /// <returns></returns>
-    public async ValueTask ProcessRuntimeStreamingEvent(ChatRuntimeEvents evt)
+    private async ValueTask ProcessRuntimeStreamingEvent(ChatRuntimeEvents evt)
     {
         if (evt.EventType == ChatRuntimeEventTypes.AgentRunner)
         {
@@ -186,7 +189,7 @@ public class A2ATornadoRuntimeController : IDisposable
     /// </summary>
     /// <param name="evt"></param>
     /// <returns></returns>
-    public static ValueTask ProcessRuntimeOrchestrationEvent(ChatRuntimeEvents evt)
+    private static ValueTask ProcessRuntimeOrchestrationEvent(ChatRuntimeEvents evt)
     {
         if (evt.EventType == ChatRuntimeEventTypes.Orchestration)
         {
@@ -208,20 +211,30 @@ public class A2ATornadoRuntimeController : IDisposable
     /// <param name="agentUrl"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public static Task<AgentCard> GetAgentCardAsync(string agentUrl, CancellationToken cancellationToken)
+    public Task<AgentCard> GetAgentCardAsync(string agentUrl, CancellationToken cancellationToken)
     {
         if (cancellationToken.IsCancellationRequested)
         {
             return Task.FromCanceled<AgentCard>(cancellationToken);
         }
 
-        var capabilities = new AgentCapabilities()
+        return Task.FromResult(DescribeAgentCard(agentUrl));
+    }
+
+
+    /// <summary>
+    /// Defines a static Agent Card for the agent
+    /// </summary>
+    /// <returns></returns>
+    public virtual AgentCard DescribeAgentCard(string agentUrl)
+    {
+        AgentCapabilities capabilities = new AgentCapabilities()
         {
             Streaming = false,
             PushNotifications = false,
         };
 
-        var chattingSkill= new AgentSkill()
+        AgentSkill chattingSkill = new AgentSkill()
         {
             Id = "chatting_skill",
             Name = "Chatting feature",
@@ -234,18 +247,18 @@ public class A2ATornadoRuntimeController : IDisposable
             ],
         };
 
-        return Task.FromResult(new AgentCard()
+        return new AgentCard()
         {
             Name = "Tornado Agent",
             Description = "Agent to chat with and search the web",
-            Url = agentUrl,
+            Url = agentUrl, // Placeholder URL
             Version = "1.0.0",
             DefaultInputModes = ["text"],
             DefaultOutputModes = ["text"],
             Capabilities = capabilities,
             Skills = [chattingSkill],
-        });
-    }
+        };
+    }   
 }
 
 

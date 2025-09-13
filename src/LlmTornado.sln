@@ -49,6 +49,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.A2A", "LlmTornad
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.A2A.AgentServer", "LlmTornado.A2A.AgentServer\LlmTornado.A2A.AgentServer.csproj", "{1551F947-EE7D-437F-9A11-A02D0504DF9E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.A2A.Hosting", "LlmTornado.A2A.Hosting\LlmTornado.A2A.Hosting.csproj", "{34D6405C-B0A1-44AA-93C2-80DC8D6ABCA6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -135,6 +137,10 @@ Global
 		{1551F947-EE7D-437F-9A11-A02D0504DF9E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1551F947-EE7D-437F-9A11-A02D0504DF9E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1551F947-EE7D-437F-9A11-A02D0504DF9E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{34D6405C-B0A1-44AA-93C2-80DC8D6ABCA6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{34D6405C-B0A1-44AA-93C2-80DC8D6ABCA6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{34D6405C-B0A1-44AA-93C2-80DC8D6ABCA6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{34D6405C-B0A1-44AA-93C2-80DC8D6ABCA6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

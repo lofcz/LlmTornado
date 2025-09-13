@@ -7,6 +7,8 @@ WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
 
+# Create output directory for mounted files
+RUN mkdir -p /app/output && chmod 755 /app/output
 
 # This stage is used to build the service project
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
