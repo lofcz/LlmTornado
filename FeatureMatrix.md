@@ -19,7 +19,7 @@ _Empty field means the feature is unsupported by the provider._
 |**Images**     | ✅ |    | ✅ |    |    |     |     |  ✅  |     |        |      |      |     |
 |**Models**     | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |  ✅ |   |    |      |  ✅    |  ✅    |
 |**Moderation** | ✅ |    |     |    |    |     |     |    |     |        |      |      |      |
-|**Responses**  | ✅ |    |     |    |    |     |     |     |     |        |      |      |      |
+|**Responses**  | ✅ |    |     |    |    |     |     | ❌ |     |        |      |      |      |
 |**Tokenize**   |    | ❌ |     | ❌ |    |     |     |    |     |       |      |      |      |
 |**FIM**        |    |     |     |    | ❌ |     | ❌  |    |     |       |      |      |      |
 
