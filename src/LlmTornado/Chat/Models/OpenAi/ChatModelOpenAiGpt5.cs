@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
@@ -48,11 +49,9 @@ public class ChatModelOpenAiGpt5 : IVendorModelClassProvider
     /// <summary>
     /// All known GPT-5 models from OpenAI.
     /// </summary>
-    public static readonly List<IModel> ModelsAll = [
-        ModelV5,
-        ModelV5Mini,
-        ModelV5Nano
-    ];
+    public static List<IModel> ModelsAll => LazyModelsAll.Value;
+
+    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [ModelV5, ModelV5Mini, ModelV5Nano]);
     
     /// <summary>
     /// <inheritdoc cref="ModelsAll"/>

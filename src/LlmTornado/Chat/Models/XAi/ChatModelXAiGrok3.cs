@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
@@ -52,12 +53,9 @@ public class ChatModelXAiGrok3 : IVendorModelClassProvider
     /// <summary>
     /// All Grok 3 models.
     /// </summary>
-    public static readonly List<IModel> ModelsAll = [
-        ModelV3,
-        ModelV3Fast,
-        ModelV3Mini,
-        ModelV3MiniFast
-    ];
+    public static List<IModel> ModelsAll => LazyModelsAll.Value;
+
+    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [ModelV3, ModelV3Fast, ModelV3Mini, ModelV3MiniFast]);
     
     /// <summary>
     /// <inheritdoc cref="ModelsAll"/>

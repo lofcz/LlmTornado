@@ -265,7 +265,7 @@ public class ChatModelOpenAiGpt4 : IVendorModelClassProvider
     public readonly ChatModel VisionPreview231106 = ModelVisionPreview231106;
     
     /// <summary>
-    /// Currently points to gpt-4-0613.
+    /// Currently points to gpt-4.
     /// </summary>
     public static readonly ChatModel ModelDefault = new ChatModel("gpt-4", LLmProviders.OpenAi, 8_192);
 
@@ -307,61 +307,31 @@ public class ChatModelOpenAiGpt4 : IVendorModelClassProvider
     /// <summary>
     /// All known GPT 4 models from OpenAI.
     /// </summary>
-    public static readonly List<IModel> ModelsAll = [
-        ModelOMini,
-        ModelOMini240718,
-        ModelO,
-        ModelO240513,
-        ModelO240806,
-        ModelO241120,
-        ModelChatGptLatest,
-        ModelTurbo,
-        ModelTurbo240409,
-        ModelPreview240125,
-        ModelPreview231106,
-        ModelVisionPreview231106,
-        ModelDefault,
-        ModelPreview230613,
-        ModelContext32K,
-        ModelContext32K230613,
-        ModelO1Pro,
-        ModelO1,
-        ModelO1240912,
-        ModelO1Mini,
-        ModelO1Mini240912,
-        ModelAudioPreview,
-        ModelAudioPreview241001,
-        ModelO1241217,
-        ModelAudioPreview241217,
-        ModelOSearchPreview,
-        ModelOMiniSearchPreview,
-        ModelAudioPreview250603
-    ];
+    public static List<IModel> ModelsAll => LazyModelsAll.Value;
+
+    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [ModelOMini, ModelOMini240718, ModelO, ModelO240513, ModelO240806, ModelO241120, ModelChatGptLatest, ModelTurbo, ModelTurbo240409, ModelPreview240125, ModelPreview231106, ModelVisionPreview231106, ModelDefault, ModelPreview230613, ModelContext32K, ModelContext32K230613, ModelO1Pro, ModelO1, ModelO1240912, ModelO1Mini, ModelO1Mini240912, ModelAudioPreview, ModelAudioPreview241001, ModelO1241217, ModelAudioPreview241217, ModelOSearchPreview, ModelOMiniSearchPreview, ModelAudioPreview250603]);
 
     /// <summary>
     /// Models using max_completion_tokens instead of max_tokens.
     /// </summary>
-    public static readonly HashSet<IModel> ReasoningModels =
-    [
+    public static HashSet<IModel> ReasoningModels => LazyReasoningModels.Value;
+
+    private static readonly Lazy<HashSet<IModel>> LazyReasoningModels = new Lazy<HashSet<IModel>>(() => new HashSet<IModel>(ChatModelOpenAiO3.ModelsAll)
+    {
         ModelO1Pro,
         ModelO1,
         ModelO1240912,
         ModelO1Mini,
         ModelO1Mini240912,
-        ModelO1241217,
-        ..ChatModelOpenAiO3.ModelsAll
-    ];
+        ModelO1241217
+    });
     
     /// <summary>
     /// Models with audio capability.
     /// </summary>
-    public static readonly HashSet<IModel> AudioModels =
-    [
-        ModelAudioPreview,
-        ModelAudioPreview241001,
-        ModelAudioPreview241217,
-        ModelAudioPreview250603
-    ];
+    public static HashSet<IModel> AudioModels => LazyAudioModels.Value;
+
+    private static readonly Lazy<HashSet<IModel>> LazyAudioModels = new Lazy<HashSet<IModel>>(() => new HashSet<IModel> { ModelAudioPreview, ModelAudioPreview241001, ModelAudioPreview241217, ModelAudioPreview250603 });
 
     /// <summary>
     /// <inheritdoc cref="ModelsAll"/>

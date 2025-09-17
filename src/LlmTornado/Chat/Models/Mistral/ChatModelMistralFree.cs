@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
@@ -112,19 +113,9 @@ public class ChatModelMistralFree : IVendorModelClassProvider
     /// <summary>
     /// All known Free models from Mistral.
     /// </summary>
-    public static readonly List<IModel> ModelsAll =
-    [
-        ModelMistralSmall2503,
-        ModelMistralSmall,
-        ModelPixtral,
-        ModelDevstralSmall2505,
-        ModelMagistralSmall2506,
-        ModelMagistralSmall2507,
-        ModelMistralSmall2506,
-        ModelDevstralSmall2507,
-        ModelVoxtralSmall2507,
-        ModelVoxtralMini2507
-    ];
+    public static List<IModel> ModelsAll => LazyModelsAll.Value;
+
+    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [ModelMistralSmall2503, ModelMistralSmall, ModelPixtral, ModelDevstralSmall2505, ModelMagistralSmall2506, ModelMagistralSmall2507, ModelMistralSmall2506, ModelDevstralSmall2507, ModelVoxtralSmall2507, ModelVoxtralMini2507]);
 
     /// <summary>
     /// <inheritdoc cref="ModelsAll"/>

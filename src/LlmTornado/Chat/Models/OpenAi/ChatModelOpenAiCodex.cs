@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
@@ -39,16 +40,15 @@ public class ChatModelOpenAiCodex : IVendorModelClassProvider
     /// <summary>
     /// All known Codex models from OpenAI.
     /// </summary>
-    public static readonly List<IModel> ModelsAll = [
-        ModelMiniLatest,
-        ModelComputerUsePreview
-    ];
+    public static List<IModel> ModelsAll => LazyModelsAll.Value;
 
+    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [ModelMiniLatest, ModelComputerUsePreview]);
+    
     /// <summary>
     /// <inheritdoc cref="ModelsAll"/>
     /// </summary>
     public List<IModel> AllModels => ModelsAll;
-    
+
     internal ChatModelOpenAiCodex()
     {
         

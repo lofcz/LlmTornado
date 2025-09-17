@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
@@ -49,13 +50,12 @@ public class ChatModelXAiGrok : IVendorModelClassProvider
     /// </summary>
     public readonly ChatModel Grok2Vision241212 = ModelGrok2Vision241212;
     
-    public static readonly List<IModel> ModelsAll = [
-        ModelGrok2241212,
-        ModelGrok2Vision241212,
-        
-        ModelGrokBeta,
-        ModelGrokVisionBeta
-    ];
+    /// <summary>
+    /// All Grok 1 & 2 models.
+    /// </summary>
+    public static List<IModel> ModelsAll => LazyModelsAll.Value;
+
+    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [ModelGrok2241212, ModelGrok2Vision241212, ModelGrokBeta, ModelGrokVisionBeta]);
     
     /// <summary>
     /// <inheritdoc cref="ModelsAll"/>

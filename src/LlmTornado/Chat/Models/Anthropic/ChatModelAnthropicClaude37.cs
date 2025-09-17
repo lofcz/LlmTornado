@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
@@ -32,11 +33,9 @@ public class ChatModelAnthropicClaude37 : IVendorModelClassProvider
     /// <summary>
     /// All known Claude 3.7 models from Anthropic.
     /// </summary>
-    public static readonly List<IModel> ModelsAll =
-    [
-        ModelSonnet,
-        ModelSonnetLatest
-    ];
+    public static List<IModel> ModelsAll => LazyModelsAll.Value;
+
+    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [ModelSonnet, ModelSonnetLatest]);
 
     /// <summary>
     /// <inheritdoc cref="ModelsAll"/>

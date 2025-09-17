@@ -1,4 +1,6 @@
+using LlmTornado.Chat.Models;
 using LlmTornado.Code;
+using LlmTornado.Code.Models;
 using LlmTornado.Models;
 
 
@@ -17,6 +19,21 @@ public class ModelsDemo : DemoBase
         {
             Console.WriteLine(model);
         }
+    }
+    
+    [TornadoTest]
+    public static async Task AccessAllModels()
+    {
+        List<IModel> m = ChatModel.Anthropic.AllModels;
+        m = ChatModel.OpenAi.AllModels;
+        m = ChatModel.Google.AllModels;
+        m = ChatModel.Groq.AllModels;
+        m = ChatModel.DeepSeek.AllModels;
+        m = ChatModel.Perplexity.AllModels;
+        m = ChatModel.XAi.AllModels;
+        m = ChatModel.Cohere.AllModels;
+        m = ChatModel.Mistral.AllModels;
+        m = ChatModel.DeepInfra.AllModels;
     }
     
     [TornadoTest]

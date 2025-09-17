@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
@@ -25,10 +26,9 @@ public class ChatModelGroqAlibaba : IVendorModelClassProvider
     /// <summary>
     /// All known Alibaba models from Groq.
     /// </summary>
-    public static readonly List<IModel> ModelsAll =
-    [
-        ModelQwen332B
-    ];
+    public static List<IModel> ModelsAll => LazyModelsAll.Value;
+
+    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [ModelQwen332B]);
 
     /// <summary>
     /// <inheritdoc cref="ModelsAll"/>

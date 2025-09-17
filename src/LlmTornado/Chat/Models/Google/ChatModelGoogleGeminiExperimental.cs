@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
@@ -60,14 +61,9 @@ public class ChatModelGoogleGeminiExperimental : IVendorModelClassProvider
     /// <summary>
     /// All known Experimental Gemini models from Google.
     /// </summary>
-    public static readonly List<IModel> ModelsAll =
-    [
-        ModelGemini2FlashThinkingExp250121,
-        ModelLearnLlm15ProExperimental,
-        ModelGemini2ProExp250205,
-        ModelGemini2FlashImageGeneration,
-        ModelGemini2ProExp0325
-    ];
+    public static List<IModel> ModelsAll => LazyModelsAll.Value;
+
+    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [ModelGemini2FlashThinkingExp250121, ModelLearnLlm15ProExperimental, ModelGemini2ProExp250205, ModelGemini2FlashImageGeneration, ModelGemini2ProExp0325]);
 
     /// <summary>
     /// <inheritdoc cref="ModelsAll"/>

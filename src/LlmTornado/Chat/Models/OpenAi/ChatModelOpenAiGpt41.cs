@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
@@ -48,11 +49,9 @@ public class ChatModelOpenAiGpt41 : IVendorModelClassProvider
     /// <summary>
     /// All known GPT-4.1 models from OpenAI.
     /// </summary>
-    public static readonly List<IModel> ModelsAll = [
-        ModelV41,
-        ModelV41Mini,
-        ModelV41Nano
-    ];
+    public static List<IModel> ModelsAll => LazyModelsAll.Value;
+
+    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [ModelV41, ModelV41Mini, ModelV41Nano]);
     
     /// <summary>
     /// <inheritdoc cref="ModelsAll"/>

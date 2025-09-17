@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
@@ -42,12 +43,9 @@ public class ChatModelDeepInfraGoogle : IVendorModelClassProvider
     /// <summary>
     /// Known models.
     /// </summary>
-    public static readonly List<IModel> ModelsAll =
-    [
-        ModelGemma327BIt,
-        ModelGemma312BIt,
-        ModelGemma34BIt
-    ];
+    public static List<IModel> ModelsAll => LazyModelsAll.Value;
+
+    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [ModelGemma327BIt, ModelGemma312BIt, ModelGemma34BIt]);
 
     /// <summary>
     /// <inheritdoc cref="ModelsAll"/>

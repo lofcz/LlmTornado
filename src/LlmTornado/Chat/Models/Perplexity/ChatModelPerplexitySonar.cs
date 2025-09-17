@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
@@ -59,13 +60,12 @@ public class ChatModelPerplexitySonar : IVendorModelClassProvider
     /// </summary>
     public readonly ChatModel Reasoning = ModelReasoning;
     
-    public static readonly List<IModel> ModelsAll = [
-        ModelPro,
-        ModelDefault,
-        ModelDeepResearch,
-        ModelReasoningPro,
-        ModelReasoning
-    ];
+    /// <summary>
+    /// All known Sonar models from Perplexity.
+    /// </summary>
+    public static List<IModel> ModelsAll => LazyModelsAll.Value;
+
+    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [ModelPro, ModelDefault, ModelDeepResearch, ModelReasoningPro, ModelReasoning]);
     
     /// <summary>
     /// <inheritdoc cref="ModelsAll"/>

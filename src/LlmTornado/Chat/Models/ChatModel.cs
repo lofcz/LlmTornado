@@ -78,14 +78,48 @@ public class ChatModel : ModelBase
     /// <summary>
     /// All known models keyed by name.
     /// </summary>
-    public static readonly Dictionary<string, IModel> AllModelsMap = [];
+    public static Dictionary<string, IModel> AllModelsMap => LazyAllModelsMap.Value;
 
-    internal static readonly Dictionary<string, IModel> AllModelsApiMap = [];
+    private static readonly Lazy<Dictionary<string, IModel>> LazyAllModelsMap = new Lazy<Dictionary<string, IModel>>(() =>
+    {
+        Dictionary<string, IModel> map = [];
+
+        AllModels.ForEach(x =>
+        {
+            map.TryAdd(x.Name, x);
+
+            if (!x.ApiName.IsNullOrWhiteSpace())
+            {
+                AllModelsApiMap.TryAdd(x.ApiName, x);
+            }
+        });
+
+        return map;
+    });
+
+    internal static Dictionary<string, IModel> AllModelsApiMap => LazyAllModelsApiMap.Value;
     
+    private static readonly Lazy<Dictionary<string, IModel>> LazyAllModelsApiMap = new Lazy<Dictionary<string, IModel>>(() =>
+    {
+        Dictionary<string, IModel> map = [];
+
+        AllModels.ForEach(x =>
+        {
+            if (!x.ApiName.IsNullOrWhiteSpace())
+            {
+                map.TryAdd(x.ApiName, x);
+            }
+        });
+
+        return map;
+    });
+
     /// <summary>
     /// All known chat models.
     /// </summary>
-    public static readonly List<IModel> AllModels;
+    public static List<IModel> AllModels => LazyAllModels.Value;
+    
+    private static readonly Lazy<List<IModel>> LazyAllModels = new Lazy<List<IModel>>(() => AllProviders.SelectMany(x => x.AllModels).ToList());
     
     /// <summary>
     /// Minimum reasoning tokens
@@ -144,25 +178,11 @@ public class ChatModel : ModelBase
     /// <summary>
     /// All known chat model providers.
     /// </summary>
-    public static readonly List<BaseVendorModelProvider> AllProviders =
-    [
-        OpenAi, Anthropic, Cohere, Google, Groq, DeepSeek, Mistral, XAi, Perplexity, DeepInfra, OpenRouter
-    ];
-    
-    static ChatModel()
-    {
-        AllModels = AllProviders.SelectMany(x => x.AllModels).ToList();
-        
-        AllModels.ForEach(x =>
-        {
-            AllModelsMap.TryAdd(x.Name, x);
+    public static List<BaseVendorModelProvider> AllProviders => LazyAllProviders.Value;
 
-            if (!x.ApiName.IsNullOrWhiteSpace())
-            {
-                AllModelsApiMap.TryAdd(x.ApiName, x);
-            }
-        });
-    }
+    private static readonly Lazy<List<BaseVendorModelProvider>> LazyAllProviders = new Lazy<List<BaseVendorModelProvider>>(() => [
+        OpenAi, Anthropic, Cohere, Google, Groq, DeepSeek, Mistral, XAi, Perplexity, DeepInfra, OpenRouter
+    ]);
     
     /// <summary>
     /// Represents a Model with the given name.

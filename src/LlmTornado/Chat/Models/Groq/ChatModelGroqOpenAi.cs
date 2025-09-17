@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
@@ -38,11 +39,9 @@ public class ChatModelGroqOpenAi : IVendorModelClassProvider
     /// <summary>
     /// All known OpenAI models from Groq.
     /// </summary>
-    public static readonly List<IModel> ModelsAll =
-    [
-        ModelGptOss120B,
-        ModelGptOss20B
-    ];
+    public static List<IModel> ModelsAll => LazyModelsAll.Value;
+
+    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [ModelGptOss120B, ModelGptOss20B]);
 
     /// <summary>
     /// <inheritdoc cref="ModelsAll"/>

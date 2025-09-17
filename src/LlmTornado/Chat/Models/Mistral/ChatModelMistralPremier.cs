@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
@@ -132,21 +133,9 @@ public class ChatModelMistralPremier : IVendorModelClassProvider
     /// <summary>
     /// All known Premier models from Mistral.
     /// </summary>
-    public static readonly List<IModel> ModelsAll =
-    [
-        ModelMistralLarge,
-        ModelPixtralLarge,
-        ModelMistralSaba,
-        ModelMinistral3B,
-        ModelMinistral8B,
-        ModelMedium3,
-        ModelMagistralMedium2506,
-        ModelMagistralMedium2507,
-        ModelDevstralMedium2507,
-        ModelCodestral2501,
-        ModelCodestral2508,
-        ModelMistralMedium2508
-    ];
+    public static List<IModel> ModelsAll => LazyModelsAll.Value;
+
+    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [ModelMistralLarge, ModelPixtralLarge, ModelMistralSaba, ModelMinistral3B, ModelMinistral8B, ModelMedium3, ModelMagistralMedium2506, ModelMagistralMedium2507, ModelDevstralMedium2507, ModelCodestral2501, ModelCodestral2508, ModelMistralMedium2508]);
 
     /// <summary>
     /// <inheritdoc cref="ModelsAll"/>

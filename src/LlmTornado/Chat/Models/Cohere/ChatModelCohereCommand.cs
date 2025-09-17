@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
@@ -122,20 +123,9 @@ public class ChatModelCohereCommand : IVendorModelClassProvider
     /// <summary>
     /// All known Coral models from Cohere.
     /// </summary>
-    public static readonly List<IModel> ModelsAll =
-    [
-        ModelRPlus2408,
-        ModelNightly,
-        ModelDefault,
-        ModelDefault2408,
-        ModelLightNightly,
-        ModelR7B,
-        ModelR7BArabic2412,
-        ModelA0325,
-        ModelAVision2507,
-        ModelAReasoning2508,
-        ModelATranslate2508
-    ];
+    public static List<IModel> ModelsAll => LazyModelsAll.Value;
+
+    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [ModelRPlus2408, ModelNightly, ModelDefault, ModelDefault2408, ModelLightNightly, ModelR7B, ModelR7BArabic2412, ModelA0325, ModelAVision2507, ModelAReasoning2508, ModelATranslate2508]);
 
     /// <summary>
     /// <inheritdoc cref="ModelsAll"/>
