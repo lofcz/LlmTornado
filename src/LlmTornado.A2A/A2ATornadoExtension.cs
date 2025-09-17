@@ -47,6 +47,48 @@ public static class A2ATornadoExtension
         };
     }
 
+    /// <summary>
+    /// Work in progress
+    /// </summary>
+    /// <param name="chatMessage"></param>
+    /// <param name="metadata"></param>
+    /// <param name="contextId"></param>
+    /// <param name="taskId"></param>
+    /// <param name="referenceTaskIds"></param>
+    /// <param name="extensions"></param>
+    /// <returns></returns>
+    public static Artifact ToA2AArtifact(this ChatMessage chatMessage,
+       Dictionary<string, JsonElement>? metadata = null,
+       string? description = null,
+       string? name = null, 
+       string[]? extensions = null
+       )
+    {
+        List<Part> parts = new List<Part>();
+
+        if (chatMessage.Content != null)
+        {
+            parts.Add(new TextPart() { Text = chatMessage.Content });
+        }
+        else if (chatMessage.Parts != null)
+        {
+            foreach (var part in chatMessage.Parts)
+            {
+                parts.Add(part.ToA2APart());
+            }
+        }
+
+        return new Artifact
+        {
+            Metadata = metadata,
+            Parts = new List<Part>(),
+            ArtifactId = chatMessage.Id.ToString(),
+            Description = description,
+            Name = name,
+            Extensions = extensions?.ToList()
+        };
+    }
+
     public static Part ToA2APart(this ChatMessagePart part)
     {
         if (part.Text != null)

@@ -1,5 +1,6 @@
 using LlmTornado.A2A.Hosting;
 using LlmTornado.A2A.Hosting.Services;
+using Microsoft.AspNetCore.ResponseCompression;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,8 +12,16 @@ builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddSwaggerGen();
 
+// Add response compression for SSE
+builder.Services.AddResponseCompression(opts =>
+{
+    opts.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
+        new[] { "text/event-stream" });
+});
+
 // Register application services
 builder.Services.AddSingleton<IA2ADispatchService, DockerDispatchService>();
+builder.Services.AddSingleton<IA2AContainerService, A2AContainerService>();
 
 var app = builder.Build();
 

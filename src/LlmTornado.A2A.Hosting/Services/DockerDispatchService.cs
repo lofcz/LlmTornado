@@ -1,5 +1,4 @@
 ﻿using LlmTornado.A2A.Hosting.Models;
-using LlmTornado.A2A.Hosting.Services;
 using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -7,7 +6,7 @@ using System.Text;
 using System.Threading;
 
 
-namespace LlmTornado.A2A.Hosting;
+namespace LlmTornado.A2A.Hosting.Services;
 
 public class DockerDispatchService: IA2ADispatchService
 {

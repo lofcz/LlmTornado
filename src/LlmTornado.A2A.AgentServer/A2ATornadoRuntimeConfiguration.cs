@@ -51,6 +51,7 @@ public class A2ATornadoRuntimeConfiguration : IA2ARuntimeConfiguration, IDisposa
 
         //Setup streaming event handler
         _agent.RuntimeConfiguration.OnRuntimeEvent += ProcessRuntimeStreamingEvent;
+        _agent.RuntimeConfiguration.OnRuntimeEvent += ProcessRuntimeOrchestrationEvent;
     }
 
     /// <summary>
@@ -71,7 +72,6 @@ public class A2ATornadoRuntimeConfiguration : IA2ARuntimeConfiguration, IDisposa
         taskManager.OnTaskCreated = ExecuteAgentTaskAsync;
         taskManager.OnTaskUpdated = ExecuteAgentTaskAsync;
         taskManager.OnAgentCardQuery = GetAgentCardAsync;
-        taskManager.OnMessageReceived = ProcessMessageAsync;
     }
 
     /// <summary>
@@ -122,20 +122,39 @@ public class A2ATornadoRuntimeConfiguration : IA2ARuntimeConfiguration, IDisposa
 
         //Shared for the event handler
         _cancellationToken = cancellationToken;
+
         //Set current task
         _currentTask = task;
+
+        //Check for cancellation
+        if (cancellationToken.IsCancellationRequested)
+        {
+            await _taskManager.UpdateStatusAsync(task.Id, TaskState.Canceled, 
+                message: new AgentMessage()
+                {
+                    Role = MessageRole.Agent,
+                    MessageId = Guid.NewGuid().ToString(),
+                    Parts = [new TextPart() {
+                        Text = "Operation cancelled."
+                    }]
+                },
+            cancellationToken: cancellationToken);
+            return;
+        }
 
         //Send Notify working status
         await _taskManager.UpdateStatusAsync(task.Id, TaskState.Working, cancellationToken: cancellationToken);
 
         // Get message from the user
-        var userMessage = task.History!.Last().Parts.First().AsTextPart().Text;
+        var userMessage = task.History!.Last().Parts.OfType<TextPart>().First().Text;
+
 
         // Get the response from the agent
         ChatMessage response = await _agent.InvokeAsync(new ChatMessage(Code.ChatMessageRoles.User, userMessage ?? "Empty message"));
 
+
         // Update the Status to Completed
-        await _taskManager.UpdateStatusAsync(_currentTask.Id, TaskState.Completed, cancellationToken: cancellationToken);
+        await _taskManager.UpdateStatusAsync(_currentTask.Id, TaskState.Completed, message:response.ToA2AAgentMessage(), cancellationToken: cancellationToken);
     }
 
     /// <summary>
@@ -157,6 +176,7 @@ public class A2ATornadoRuntimeConfiguration : IA2ARuntimeConfiguration, IDisposa
                         _artifactQueue.Enqueue(new Artifact()
                         {
                             ArtifactId = deltaTextEvent.ItemId,
+                            Description = "Partial response from agent",
                             Parts = [new TextPart() {
                                 Text = deltaTextEvent.DeltaText ?? ""
                             }]
@@ -189,7 +209,7 @@ public class A2ATornadoRuntimeConfiguration : IA2ARuntimeConfiguration, IDisposa
     /// </summary>
     /// <param name="evt"></param>
     /// <returns></returns>
-    private static ValueTask ProcessRuntimeOrchestrationEvent(ChatRuntimeEvents evt)
+    private async ValueTask ProcessRuntimeOrchestrationEvent(ChatRuntimeEvents evt)
     {
         if (evt.EventType == ChatRuntimeEventTypes.Orchestration)
         {
@@ -197,12 +217,19 @@ public class A2ATornadoRuntimeConfiguration : IA2ARuntimeConfiguration, IDisposa
             {
                 if (orchestrationEvt.OrchestrationEventData is OnVerboseOrchestrationEvent verbose)
                 {
-                    Console.WriteLine(verbose.Message);
+                    Artifact artifact = new Artifact()
+                    {
+                        ArtifactId = Guid.NewGuid().ToString(),
+                        Description = "Agent Orchestration Event",
+                        Parts = [new TextPart() {
+                                Text = verbose.Message ?? ""
+                            }]
+                    };
+                    await _taskManager.ReturnArtifactAsync(_currentTask.Id, artifact, _cancellationToken);
+                    await Task.Delay(100); // Adjust the delay as needed
                 }
             }
         }
-
-        return ValueTask.CompletedTask;
     }
 
     /// <summary>
