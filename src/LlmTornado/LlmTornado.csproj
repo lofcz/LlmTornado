@@ -12,7 +12,7 @@
         <PackageTags>OpenAI;Anthropic;Google;DeepSeek;Mistral;Cohere;Azure;Perplexity;xAi;Voyage;Gateway;API;SDK</PackageTags>
         <Title>LlmTornado</Title>
         <PackageId>LlmTornado</PackageId>
-        <Version>3.7.38</Version>
+        <Version>3.7.39</Version>
         <AssemblyVersion>3.0.5</AssemblyVersion>
         <FileVersion>3.0.5</FileVersion>
         <GenerateDocumentationFile>True</GenerateDocumentationFile>
