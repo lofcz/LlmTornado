@@ -68,7 +68,7 @@ public class ChatResponseVendorCohereExtensions
             {
                 if (text.Length > 0 && citation.Start > pos)
                 {
-                    string beforeSnippet = ClearSnippet(text.Substring(pos, citation.Start - pos));
+                    string beforeSnippet = ClearSnippet(text.Substring(pos, citation.Start.Value - pos));
 
                     if (beforeSnippet.Length > 0)
                     {
@@ -78,7 +78,7 @@ public class ChatResponseVendorCohereExtensions
                         });   
                     }
 
-                    pos += citation.Start - pos;
+                    pos += citation.Start.Value - pos;
                 }
                 
                 string snippet = ClearSnippet(citation.Text);

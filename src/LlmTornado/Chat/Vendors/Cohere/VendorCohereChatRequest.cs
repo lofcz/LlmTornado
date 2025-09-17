@@ -1,5 +1,4 @@
-using System.Collections.Generic;
-using LlmTornado.Chat.Models;
+using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -8,14 +7,11 @@ namespace LlmTornado.Chat.Vendors.Cohere;
 
 internal class VendorCohereChatRequest
 {
-    private static readonly HashSet<ChatModel> Gen1Models = [ 
-        ChatModel.Cohere.Command.Default, 
-        ChatModel.Cohere.Command.CommandLight, 
-        ChatModel.Cohere.Command.RPlus
-    ];
-    
     internal class VendorCohereChatRequestData : ChatRequest
     {
+        [JsonProperty("tool_choice")]
+        public string? ToolChoice { get; set; }
+        
         [JsonProperty("safe_prompt")]
         public bool? SafePrompt { get; set; }
         
@@ -76,5 +72,22 @@ internal class VendorCohereChatRequest
         {
             NativeRequest = request;
         }
+
+        if (request.ToolChoice is not null)
+        {
+            string? toolChoice = request.ToolChoice.Mode switch
+            {
+                OutboundToolChoiceModes.None => "NONE",
+                OutboundToolChoiceModes.Required => "REQUIRED",
+                OutboundToolChoiceModes.ToolFunction => "REQUIRED",
+                _ => null
+            };
+
+            if (toolChoice is not null)
+            {
+                ExtendedRequest ??= new VendorCohereChatRequestData(request);
+                ExtendedRequest.ToolChoice = toolChoice;
+            }
+        }
     }
- }
+}

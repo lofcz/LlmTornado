@@ -1355,13 +1355,27 @@ public class Conversation
                     {
                         responseRole = delta.Role;
                     }
-                    
-                    string? deltaContent = delta.Content;
 
-                    if (!string.IsNullOrEmpty(deltaContent))
+                    if (delta.Parts?.Count > 0)
                     {
-                        responseStringBuilder.Append(deltaContent);
-                        yield return deltaContent;
+                        foreach (ChatMessagePart part in delta.Parts)
+                        {
+                            if (part.Type is ChatMessageTypes.Text && part.Text?.Length > 0)
+                            {
+                                responseStringBuilder.Append(part.Text);
+                                yield return part.Text;  
+                            }
+                        }
+                    }
+                    else
+                    {
+                        string? deltaContent = delta.Content;
+
+                        if (deltaContent is not null && deltaContent.Length > 0)
+                        {
+                            responseStringBuilder.Append(deltaContent);
+                            yield return deltaContent;  
+                        }
                     }
                 }
             }
@@ -1556,137 +1570,137 @@ public class Conversation
             ResponseRequest responsesRequest = ResponseHelpers.ToResponseRequest(provider, req.ResponseRequestParameters, req);
             
             await responsesEndpoint.StreamResponseRich(responsesRequest, new ResponseStreamEventHandler
+            {
+                OnEvent = async (evt) =>
                 {
-                    OnEvent = async (evt) =>
+                    if (eventsHandler?.OnResponseEvent is not null)
                     {
-                        if (eventsHandler?.OnResponseEvent is not null)
+                        await eventsHandler.OnResponseEvent.Invoke(evt);
+                    }
+
+                    switch (evt.EventType)
+                    {
+                        case ResponseEventTypes.ResponseOutputTextDelta when
+                            evt is ResponseEventOutputTextDelta deltaEvt:
                         {
-                            await eventsHandler.OnResponseEvent.Invoke(evt);
+                            if (eventsHandler?.MessageTokenHandler is not null)
+                            {
+                                await eventsHandler.MessageTokenHandler.Invoke(deltaEvt.Delta);
+                            }
+
+                            break;
                         }
-
-                        switch (evt.EventType)
+                        case ResponseEventTypes.ResponseReasoningSummaryPartDone when
+                            evt is ResponseEventReasoningSummaryPartDone reasoningPartDoneEvt:
                         {
-                            case ResponseEventTypes.ResponseOutputTextDelta when
-                                evt is ResponseEventOutputTextDelta deltaEvt:
+                            if (eventsHandler?.ReasoningTokenHandler is not null)
                             {
-                                if (eventsHandler?.MessageTokenHandler is not null)
+                                await eventsHandler.ReasoningTokenHandler.Invoke(new ChatMessageReasoningData
                                 {
-                                    await eventsHandler.MessageTokenHandler.Invoke(deltaEvt.Delta);
-                                }
-
-                                break;
+                                    Content = reasoningPartDoneEvt.Part.Text
+                                });
                             }
-                            case ResponseEventTypes.ResponseReasoningSummaryPartDone when
-                                evt is ResponseEventReasoningSummaryPartDone reasoningPartDoneEvt:
-                            {
-                                if (eventsHandler?.ReasoningTokenHandler is not null)
-                                {
-                                    await eventsHandler.ReasoningTokenHandler.Invoke(new ChatMessageReasoningData
-                                    {
-                                        Content = reasoningPartDoneEvt.Part.Text
-                                    });
-                                }
 
-                                break;
-                            }
-                            case ResponseEventTypes.ResponseCompleted when
-                                evt is ResponseEventCompleted completedEvt:
+                            break;
+                        }
+                        case ResponseEventTypes.ResponseCompleted when
+                            evt is ResponseEventCompleted completedEvt:
+                        {
+                            ChatChoice chatChoice = ResponseHelpers.ToChatChoice(completedEvt.Response);
+                            
+                            if (chatChoice.Message is not null)
                             {
-                                ChatChoice chatChoice = ResponseHelpers.ToChatChoice(completedEvt.Response);
+                                AppendMessage(chatChoice.Message);
+                            }
+
+                            if (completedEvt.Response.Tools?.Count > 0)
+                            {
+                                object? structuredResult = null;
                                 
-                                if (chatChoice.Message is not null)
+                                if (chatChoice.Message is not null && (eventsHandler?.FunctionCallHandler is not null || eventsHandler?.ToolCallsHandler is not null))
                                 {
-                                    AppendMessage(chatChoice.Message);
-                                }
+                                    structuredResult = await ChatEndpoint.HandleChatResult(req, chatChoice.Message, null).ConfigureAwait(false);   
+                                    ParsedToolCalls parsedCalls = ParseCalls(chatChoice.Message);
+                                    ResolvedToolsCall result = new ResolvedToolsCall();
 
-                                if (completedEvt.Response.Tools?.Count > 0)
-                                {
-                                    object? structuredResult = null;
-                                    
-                                    if (chatChoice.Message is not null && (eventsHandler?.FunctionCallHandler is not null || eventsHandler?.ToolCallsHandler is not null))
+                                    if (parsedCalls.FunctionCalls.Count > 0)
                                     {
-                                        structuredResult = await ChatEndpoint.HandleChatResult(req, chatChoice.Message, null).ConfigureAwait(false);   
-                                        ParsedToolCalls parsedCalls = ParseCalls(chatChoice.Message);
-                                        ResolvedToolsCall result = new ResolvedToolsCall();
-
-                                        if (parsedCalls.FunctionCalls.Count > 0)
+                                        if (eventsHandler.FunctionCallHandler is not null)
                                         {
-                                            if (eventsHandler.FunctionCallHandler is not null)
+                                            await eventsHandler.FunctionCallHandler.Invoke(parsedCalls.FunctionCalls);   
+                                        }
+                                    
+                                        foreach (FunctionCall call in parsedCalls.FunctionCalls)
+                                        {
+                                            ChatMessage fnResultMsg = new ChatMessage(ChatMessageRoles.Tool,
+                                                call.Result?.Content ?? "The service returned no data.".ToJson(),
+                                                Guid.NewGuid())
                                             {
-                                                await eventsHandler.FunctionCallHandler.Invoke(parsedCalls.FunctionCalls);   
-                                            }
-                                        
-                                            foreach (FunctionCall call in parsedCalls.FunctionCalls)
+                                                ToolCallId = call.ToolCall?.Id ?? call.Name,
+                                                ToolInvocationSucceeded = call.Result?.InvocationSucceeded ?? false,
+                                                ContentJsonType = call.Result?.ContentJsonType ?? typeof(string),
+                                                FunctionCall = call
+                                            };
+
+                                            AppendMessage(fnResultMsg);
+
+                                            result.ToolResults.Add(new ResolvedToolCall
                                             {
-                                                ChatMessage fnResultMsg = new ChatMessage(ChatMessageRoles.Tool,
-                                                    call.Result?.Content ?? "The service returned no data.".ToJson(),
-                                                    Guid.NewGuid())
-                                                {
-                                                    ToolCallId = call.ToolCall?.Id ?? call.Name,
-                                                    ToolInvocationSucceeded = call.Result?.InvocationSucceeded ?? false,
-                                                    ContentJsonType = call.Result?.ContentJsonType ?? typeof(string),
-                                                    FunctionCall = call
-                                                };
-
-                                                AppendMessage(fnResultMsg);
-
-                                                result.ToolResults.Add(new ResolvedToolCall
-                                                {
-                                                    Call = call,
-                                                    Result = call.Result ?? new FunctionResult(call, null, null, false),
-                                                    ToolMessage = fnResultMsg
-                                                });
-                                            }
-
-                                            if (eventsHandler.AfterFunctionCallsResolvedHandler is not null)
-                                            {
-                                                await eventsHandler.AfterFunctionCallsResolvedHandler.Invoke(result, eventsHandler);
-                                            }
-
-                                            if (OnAfterToolsCall is not null)
-                                            {
-                                                await OnAfterToolsCall(result);
-                                            }
+                                                Call = call,
+                                                Result = call.Result ?? new FunctionResult(call, null, null, false),
+                                                ToolMessage = fnResultMsg
+                                            });
                                         }
 
-                                        return;
-                                    }
-                                }
+                                        if (eventsHandler.AfterFunctionCallsResolvedHandler is not null)
+                                        {
+                                            await eventsHandler.AfterFunctionCallsResolvedHandler.Invoke(result, eventsHandler);
+                                        }
 
-
-                                if (eventsHandler?.OnFinished is not null)
-                                {
-                                    ChatUsage usage = new ChatUsage(LLmProviders.OpenAi);
-
-                                    if (completedEvt.Response.Usage != null)
-                                    {
-                                        usage = new ChatUsage(completedEvt.Response.Usage);
+                                        if (OnAfterToolsCall is not null)
+                                        {
+                                            await OnAfterToolsCall(result);
+                                        }
                                     }
 
-                                    await eventsHandler.OnFinished.Invoke(new ChatStreamFinishedData
-                                    (
-                                        usage,
-                                        completedEvt.Response.Error is not null
-                                            ? ChatMessageFinishReasons.Error
-                                            : ChatMessageFinishReasons.EndTurn
-                                    ));
+                                    return;
                                 }
-
-                                break;
                             }
-                            case ResponseEventTypes.ResponseOutputTextDone when evt is ResponseEventOutputTextDone doneEvt:
+
+
+                            if (eventsHandler?.OnFinished is not null)
                             {
-                                if (eventsHandler?.BlockFinishedHandler is not null)
+                                ChatUsage usage = new ChatUsage(LLmProviders.OpenAi);
+
+                                if (completedEvt.Response.Usage != null)
                                 {
-                                    //TODO:
-                                    // await eventsHandler.BlockFinishedHandler.Invoke(doneEvt.);
+                                    usage = new ChatUsage(completedEvt.Response.Usage);
                                 }
 
-                                break;
+                                await eventsHandler.OnFinished.Invoke(new ChatStreamFinishedData
+                                (
+                                    usage,
+                                    completedEvt.Response.Error is not null
+                                        ? ChatMessageFinishReasons.Error
+                                        : ChatMessageFinishReasons.EndTurn
+                                ));
                             }
+
+                            break;
+                        }
+                        case ResponseEventTypes.ResponseOutputTextDone when evt is ResponseEventOutputTextDone doneEvt:
+                        {
+                            if (eventsHandler?.BlockFinishedHandler is not null)
+                            {
+                                //TODO:
+                                // await eventsHandler.BlockFinishedHandler.Invoke(doneEvt.);
+                            }
+
+                            break;
                         }
                     }
-                }, token);
+                }
+            }, token);
         }
         else
         {

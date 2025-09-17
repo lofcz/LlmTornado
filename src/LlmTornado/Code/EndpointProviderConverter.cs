@@ -10,10 +10,7 @@ internal static class EndpointProviderConverter
         {
             LLmProviders.OpenAi => new OpenAiEndpointProvider(),
             LLmProviders.Anthropic => new AnthropicEndpointProvider(),
-            LLmProviders.Cohere => new OpenAiEndpointProvider(LLmProviders.Cohere)
-            {
-                UrlResolver = (endpoint, url, ctx) => $"{string.Format(api.ApiUrlFormat ?? "https://api.cohere.ai/{0}/{1}", api.ResolveApiVersion("v2"), OpenAiEndpointProvider.GetEndpointUrlFragment(endpoint, LLmProviders.Cohere))}{url}"
-            },
+            LLmProviders.Cohere => new CohereEndpointProvider(),
             LLmProviders.Google => new GoogleEndpointProvider(),
             LLmProviders.DeepSeek => new OpenAiEndpointProvider(LLmProviders.DeepSeek)
             {

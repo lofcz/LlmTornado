@@ -373,26 +373,6 @@ public class ChatModelOpenRouterAll : IVendorModelClassProvider
     public readonly ChatModel CommandA = ModelCommandA;
 
     /// <summary>
-    /// cohere/command-r
-    /// </summary>
-    public static readonly ChatModel ModelCommandR = new ChatModel("cohere/command-r", "cohere/command-r", LLmProviders.OpenRouter, 128000);
-
-    /// <summary>
-    /// <inheritdoc cref="ModelCommandR"/>
-    /// </summary>
-    public readonly ChatModel CommandR = ModelCommandR;
-
-    /// <summary>
-    /// cohere/command-r-03-2024
-    /// </summary>
-    public static readonly ChatModel ModelCommandR032024 = new ChatModel("cohere/command-r-03-2024", "cohere/command-r-03-2024", LLmProviders.OpenRouter, 128000);
-
-    /// <summary>
-    /// <inheritdoc cref="ModelCommandR032024"/>
-    /// </summary>
-    public readonly ChatModel CommandR032024 = ModelCommandR032024;
-
-    /// <summary>
     /// cohere/command-r-08-2024
     /// </summary>
     public static readonly ChatModel ModelCommandR082024 = new ChatModel("cohere/command-r-08-2024", "cohere/command-r-08-2024", LLmProviders.OpenRouter, 128000);
@@ -411,16 +391,6 @@ public class ChatModelOpenRouterAll : IVendorModelClassProvider
     /// <inheritdoc cref="ModelCommandRPlus"/>
     /// </summary>
     public readonly ChatModel CommandRPlus = ModelCommandRPlus;
-
-    /// <summary>
-    /// cohere/command-r-plus-04-2024
-    /// </summary>
-    public static readonly ChatModel ModelCommandRPlus042024 = new ChatModel("cohere/command-r-plus-04-2024", "cohere/command-r-plus-04-2024", LLmProviders.OpenRouter, 128000);
-
-    /// <summary>
-    /// <inheritdoc cref="ModelCommandRPlus042024"/>
-    /// </summary>
-    public readonly ChatModel CommandRPlus042024 = ModelCommandRPlus042024;
 
     /// <summary>
     /// cohere/command-r-plus-08-2024
@@ -3274,11 +3244,8 @@ public class ChatModelOpenRouterAll : IVendorModelClassProvider
         ModelUiTars157b,
         ModelCommand,
         ModelCommandA,
-        ModelCommandR,
-        ModelCommandR032024,
         ModelCommandR082024,
         ModelCommandRPlus,
-        ModelCommandRPlus042024,
         ModelCommandRPlus082024,
         ModelCommandR7b122024,
         ModelDeepseekProverV2,

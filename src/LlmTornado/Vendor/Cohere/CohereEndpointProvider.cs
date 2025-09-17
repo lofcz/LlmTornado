@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
@@ -9,14 +8,14 @@ using LlmTornado.Chat;
 using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Chat.Vendors.Cohere;
 using LlmTornado.Code.Models;
+using LlmTornado.Code.Sse;
 using LlmTornado.Embedding;
 using LlmTornado.Models.Vendors;
-using LlmTornado.Threads;
-using LlmTornado.Vendor.Anthropic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using FunctionCall = LlmTornado.ChatFunctions.FunctionCall;
 using ToolCall = LlmTornado.ChatFunctions.ToolCall;
+using VendorCohereChatCitation = LlmTornado.Chat.Vendors.Cohere.VendorCohereChatCitation;
+using VendorCohereChatFinishReason = LlmTornado.Chat.Vendors.Cohere.VendorCohereChatFinishReason;
 
 namespace LlmTornado.Code.Vendor;
 
@@ -25,6 +24,7 @@ namespace LlmTornado.Code.Vendor;
 /// </summary>
 public class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider, IEndpointProviderExtended
 {
+    private const string DoneString = "[DONE]";
     private const string Event = "event:";
     private const string Data = "data:";
     private const string StreamMsgStart = $"{Event} message_start";
@@ -51,6 +51,12 @@ public class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
         BlockStop,
         Skip,
         MsgStart
+    }
+    
+    enum ChatStreamParsingStates
+    {
+        Text,
+        Tools
     }
     
     public CohereEndpointProvider() : base()
@@ -203,220 +209,210 @@ public class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
 
     public override async IAsyncEnumerable<ChatResult?> InboundStream(StreamReader reader, ChatRequest request, ChatStreamEventHandler? eventHandler)
     {
-        ChatResult baseResult = new ChatResult();
-        ChatMessage? plaintextAccu = null;
+        StringBuilder? plaintextBuilder = null;
+        StringBuilder? reasoningBuilder = null;
         ChatUsage? usage = null;
-        ChatMessageFinishReasons finishReason = ChatMessageFinishReasons.Unknown;    
+        ChatMessageFinishReasons finishReason = ChatMessageFinishReasons.Unknown;
+        ChatResponseVendorExtensions? vendorExtensions = null;
+        Dictionary<int, ToolCallInboundAccumulator> toolCallAccumulators = new Dictionary<int, ToolCallInboundAccumulator>();
+        List<ToolCall> finalizedToolCalls = [];
+
+        #if DEBUG
+        List<string> data = [];
+        #endif
         
-        while (true)
+        await foreach (SseItem<string> item in SseParser.Create(reader.BaseStream).EnumerateAsync(request.CancellationToken))
         {
-            string? line = await reader.ReadLineAsync(); // note this is not sse like openai/anthropic
-
-            if (line is null)
-            {
-                yield break;
-            }
+            #if DEBUG
+            data.Add(item.Data);
+            #endif
             
-            if (line.IsNullOrWhiteSpace())
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
+            if (item.Data is null || item.Data.Length is 0)
             {
                 continue;
             }
 
-            if (eventHandler?.OnSse is not null)
-            {
-                await eventHandler.OnSse.Invoke(new ServerSentEvent
-                {
-                    Data = line
-                });
-            }
-            
-            ChatStreamEventBase? baseEvent = JsonConvert.DeserializeObject<ChatStreamEventBase>(line);
+            CohereChatStreamEvent? streamEvent = JsonConvert.DeserializeObject<CohereChatStreamEvent>(item.Data);
 
-            if (baseEvent is null)
+            if (streamEvent is null)
             {
                 continue;
             }
 
-            if (!EventsMap.TryGetValue(baseEvent.EventType, out ChatStreamEventTypes eventType))
+            switch (streamEvent.Type)
             {
-                continue;
-            }
-
-            switch (eventType)
-            {
-                case ChatStreamEventTypes.TextGeneration:
+                case CohereChatStreamEventType.MessageStart:
                 {
-                    ChatTextGenerationEventData? data = JsonConvert.DeserializeObject<ChatTextGenerationEventData>(line);
-
-                    if (data is null)
-                    {
-                        continue;
-                    }
-
-                    yield return new ChatResult
-                    {
-                        Choices =
-                        [
-                            new ChatChoice
-                            {
-                                Delta = new ChatMessage(ChatMessageRoles.Assistant, data.Text)
-                            }
-                        ]
-                    };
-                    
-                    plaintextAccu ??= new ChatMessage();
-                    plaintextAccu.ContentBuilder ??= new StringBuilder();
-                    plaintextAccu.ContentBuilder.Append(data.Text);
                     break;
                 }
-                case ChatStreamEventTypes.StreamStart:
+                case CohereChatStreamEventType.ContentStart:
                 {
-                    ChatStreamStartEventData? data = JsonConvert.DeserializeObject<ChatStreamStartEventData>(line);
-
-                    if (data is null)
-                    {
-                        continue;
-                    }
-
-                    baseResult.Id = data.GenerationId;
                     break;
                 }
-                case ChatStreamEventTypes.SearchQueriesGeneration:
+                case CohereChatStreamEventType.ContentDelta:
                 {
-                    ChatSearchQueriesGenerationEventData? data = JsonConvert.DeserializeObject<ChatSearchQueriesGenerationEventData>(line);
-
-                    if (data is null)
+                    if (streamEvent is ContentDeltaEvent contentDeltaEvent)
                     {
-                        continue;
-                    }
-
-                    /*yield return new ChatResult
-                    {
-                        VendorExtensions = new ChatResponseVendorExtensions
-                        {
-                            Cohere = new ChatResponseVendorCohereExtensions(new VendorCohereChatResult
-                            {
-                                SearchQueries = data.SearchQueries
-                            })
-                        }
-                    };*/
-                    
-                    break;
-                }
-                case ChatStreamEventTypes.SearchResults:
-                {
-                    ChatSearchResultsEventData? data = JsonConvert.DeserializeObject<ChatSearchResultsEventData>(line);
-
-                    if (data is null)
-                    {
-                        continue;
-                    }
-
-                    /*yield return new ChatResult
-                    {
-                        VendorExtensions = new ChatResponseVendorExtensions
-                        {
-                            Cohere = new ChatResponseVendorCohereExtensions(new VendorCohereChatResult
-                            {
-                                SearchResults = data.SearchResults
-                            })
-                        }
-                    };*/
-                    
-                    break;
-                }
-                case ChatStreamEventTypes.CitationGeneration:
-                {
-                    ChatCitationGenerationEventData? data = JsonConvert.DeserializeObject<ChatCitationGenerationEventData>(line);
-
-                    if (data is null)
-                    {
-                        continue;
-                    }
-
-                    /*yield return new ChatResult
-                    {
-                        VendorExtensions = new ChatResponseVendorExtensions
-                        {
-                            Cohere = new ChatResponseVendorCohereExtensions(new VendorCohereChatResult
-                            {
-                                Citations = data.Citations
-                            })
-                        }
-                    };*/
-                    
-                    break;
-                }
-                case ChatStreamEventTypes.ToolCallsGeneration:
-                {
-                    ToolCallsGenerationEventData? data = JsonConvert.DeserializeObject<ToolCallsGenerationEventData>(line);
-
-                    if (data is null)
-                    {
-                        continue;
-                    }
-
-                    List<ToolCall> calls = [];
-
-                    foreach (VendorCohereChatInboundTool x in data.ToolCalls)
-                    {
-                        ToolCall call = new ToolCall
-                        {
-                            Type = "function",
-                            Id = $"{x.Name}{General.IIID()}", // cohere doesn't return a unique tool ID, so we make one up
-                            FunctionCall = new FunctionCall
-                            {
-                                Name = x.Name,
-                                Arguments = x.Parameters.ToJson()
-                            }
-                        };
+                        List<ChatMessagePart> parts = [];
                         
-                        calls.Add(call);
-                    }
-                    
-                    yield return new ChatResult
-                    {
-                        Choices = [
-                            new ChatChoice
+                        if (contentDeltaEvent.Delta?.Message?.Content?.Text is not null)
+                        {
+                            plaintextBuilder ??= new StringBuilder();
+                            plaintextBuilder.Append(contentDeltaEvent.Delta.Message.Content.Text);
+                            
+                            parts.Add(new ChatMessagePart(ChatMessageTypes.Text)
                             {
-                                Delta = new ChatMessage(ChatMessageRoles.Tool)
+                                Text = contentDeltaEvent.Delta.Message.Content.Text
+                            });
+                        }
+                        
+                        if (contentDeltaEvent.Delta?.Message?.Content?.Thinking is not null)
+                        {
+                            reasoningBuilder ??= new StringBuilder();
+                            reasoningBuilder.Append(contentDeltaEvent.Delta.Message.Content.Thinking);
+                            
+                            parts.Add(new ChatMessagePart(ChatMessageTypes.Reasoning)
+                            {
+                                Reasoning = new ChatMessageReasoningData
                                 {
-                                    ToolCalls = calls
+                                    Content = contentDeltaEvent.Delta.Message.Content.Thinking,
+                                    Provider = LLmProviders.Cohere
                                 }
-                            }
-                        ]
-                    };
-                    
+                            });
+                        }
+                        
+                        yield return new ChatResult
+                        {
+                            Choices =
+                            [
+                                new ChatChoice
+                                {
+                                    Delta = new ChatMessage
+                                    {
+                                        Parts = parts,
+                                        Role = ChatMessageRoles.Assistant
+                                    }
+                                }
+                            ]
+                        };
+                    }
                     break;
                 }
-                case ChatStreamEventTypes.StreamEnd:
+                case CohereChatStreamEventType.ContentEnd:
                 {
-                    ChatStreamEventComplete? result = JsonConvert.DeserializeObject<ChatStreamEventComplete>(line);
-
-                    if (result?.Response is not null)
-                    {
-                        usage = new ChatUsage(LLmProviders.Cohere)
-                        {
-                            TotalTokens = result.Response.Usage.BilledUnits.InputTokens + result.Response.Usage.BilledUnits.OutputTokens,
-                            PromptTokens = result.Response.Usage.BilledUnits.InputTokens,
-                            CompletionTokens = result.Response.Usage.BilledUnits.OutputTokens
-                        };
-
-                        //finishReason = ChatMessageFinishReasonsConverter.Map.GetValueOrDefault(result.Response.FinishReason, ChatMessageFinishReasons.Unknown);
-                    }
-                    
-                    goto finalizer;
+                    break;
                 }
-            }
-            
-            if (baseEvent.IsFinished)
-            {
-                goto finalizer;
+                case CohereChatStreamEventType.ToolPlanDelta:
+                {
+                    if (streamEvent is ToolPlanDeltaEvent toolPlanDeltaEvent)
+                    {
+                        if (toolPlanDeltaEvent.Delta?.Message?.ToolPlan is not null)
+                        {
+                            reasoningBuilder ??= new StringBuilder();
+                            reasoningBuilder.Append(toolPlanDeltaEvent.Delta.Message.ToolPlan);
+                        }
+                    }
+                    break;
+                }
+                case CohereChatStreamEventType.ToolCallStart:
+                {
+                    if (streamEvent is ToolCallStartEvent toolCallStartEvent && toolCallStartEvent.Index.HasValue)
+                    {
+                        VendorCohereToolCall? toolCallData = toolCallStartEvent.Delta?.Message?.ToolCalls;
+                        
+                        if (toolCallData?.Function is not null)
+                        {
+                            ToolCall toolCall = new ToolCall
+                            {
+                                Id = toolCallData.Id,
+                                FunctionCall = new ChatFunctions.FunctionCall
+                                {
+                                    Name = toolCallData.Function.Name,
+                                    Arguments = toolCallData.Function.Arguments
+                                }
+                            };
+                            
+                            toolCallAccumulators[toolCallStartEvent.Index.Value] = new ToolCallInboundAccumulator
+                            {
+                                ToolCall = toolCall,
+                                ArgumentsBuilder = new StringBuilder(toolCall.FunctionCall.Arguments ?? string.Empty)
+                            };
+                        }
+                    }
+                    break;
+                }
+                case CohereChatStreamEventType.ToolCallDelta:
+                {
+                    if (streamEvent is ToolCallDeltaEvent toolCallDeltaEvent && toolCallDeltaEvent.Index.HasValue)
+                    {
+                        if (toolCallAccumulators.TryGetValue(toolCallDeltaEvent.Index.Value, out ToolCallInboundAccumulator? accumulator))
+                        {
+                            accumulator.ArgumentsBuilder.Append(toolCallDeltaEvent.Delta?.Message?.ToolCalls?.Function?.Arguments);
+                        }
+                    }
+                    break;
+                }
+                case CohereChatStreamEventType.ToolCallEnd:
+                {
+                    if (streamEvent is ToolCallEndEvent toolCallEndEvent && toolCallEndEvent.Index.HasValue)
+                    {
+                        if (toolCallAccumulators.Remove(toolCallEndEvent.Index.Value, out ToolCallInboundAccumulator? accumulator))
+                        {
+                            accumulator.ToolCall.FunctionCall!.Arguments = accumulator.ArgumentsBuilder.ToString();
+                            finalizedToolCalls.Add(accumulator.ToolCall);
+                        }
+                    }
+                    break;
+                }
+                case CohereChatStreamEventType.CitationStart:
+                {
+                    break;
+                }
+                case CohereChatStreamEventType.CitationEnd:
+                {
+                    break;
+                }
+                case CohereChatStreamEventType.MessageEnd:
+                {
+                    if (streamEvent is MessageEndEvent messageEndEvent)
+                    {
+                        if (messageEndEvent.Delta?.Usage is not null)
+                        {
+                            usage = new ChatUsage(messageEndEvent.Delta.Usage);
+                        }
+
+                        if (messageEndEvent.Delta?.FinishReason is not null)
+                        {
+                            finishReason = messageEndEvent.Delta.FinishReason.Value switch
+                            {
+                                VendorCohereChatFinishReason.Complete => ChatMessageFinishReasons.EndTurn,
+                                VendorCohereChatFinishReason.StopSequence => ChatMessageFinishReasons.EndTurn,
+                                VendorCohereChatFinishReason.MaxTokens => ChatMessageFinishReasons.Length,
+                                VendorCohereChatFinishReason.ToolCall => ChatMessageFinishReasons.ToolCalls,
+                                VendorCohereChatFinishReason.Error => ChatMessageFinishReasons.Error,
+                                _ => ChatMessageFinishReasons.Unknown
+                            };
+                        }
+                    }
+                    goto afterStreamEnds;
+                }
+                case CohereChatStreamEventType.Debug:
+                {
+                    break;
+                }
             }
         }
-     
-        finalizer:
-        if (plaintextAccu is not null)
+        
+        afterStreamEnds:
+
+        foreach (KeyValuePair<int, ToolCallInboundAccumulator> entry in toolCallAccumulators)
+        {
+            entry.Value.ToolCall.FunctionCall!.Arguments = entry.Value.ArgumentsBuilder.ToString();
+            finalizedToolCalls.Add(entry.Value.ToolCall);
+        }
+
+        if (finalizedToolCalls.Count > 0)
         {
             yield return new ChatResult
             {
@@ -426,26 +422,58 @@ public class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
                     {
                         Delta = new ChatMessage
                         {
-                            Content = plaintextAccu.ContentBuilder?.ToString()
-                        }
+                            ToolCalls = finalizedToolCalls,
+                            Role = ChatMessageRoles.Assistant
+                        },
+                        FinishReason = ChatMessageFinishReasons.ToolCalls
                     }
                 ],
-                StreamInternalKind = ChatResultStreamInternalKinds.AppendAssistantMessage,
                 Usage = usage
             };
         }
+
+        string? accuPlaintext = plaintextBuilder?.ToString();
+        string? reasoningPlaintext = reasoningBuilder?.ToString();
         
+        if (accuPlaintext is not null || reasoningPlaintext is not null)
+        {
+            yield return new ChatResult
+            {
+                Usage = usage,
+                Choices =
+                [
+                    new ChatChoice
+                    {
+                        Delta = new ChatMessage
+                        {
+                            Content = accuPlaintext,
+                            ReasoningContent = reasoningPlaintext,
+                            Role = ChatMessageRoles.Assistant
+                        }
+                    }
+                ],
+                StreamInternalKind = ChatResultStreamInternalKinds.AppendAssistantMessage
+            };
+        }
+
+        if (vendorExtensions is not null)
+        {
+            yield return new ChatResult
+            {
+                VendorExtensions = vendorExtensions
+            };
+        }
+
         yield return new ChatResult
         {
-            Choices =
-            [
+            Usage = usage,
+            Choices = [
                 new ChatChoice
                 {
                     FinishReason = finishReason
                 }
             ],
-            StreamInternalKind = ChatResultStreamInternalKinds.FinishData,
-            Usage = usage
+            StreamInternalKind = ChatResultStreamInternalKinds.FinishData
         };
     }
 

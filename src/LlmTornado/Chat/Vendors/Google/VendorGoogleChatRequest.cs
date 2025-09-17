@@ -456,10 +456,9 @@ internal class VendorGoogleChatRequestMessagePart
             return new ToolCall();
         }
 
-        FunctionCall fc = new FunctionCall
+        FunctionCall fc = new FunctionCall(FunctionCall.Args)
         {
-            Name = FunctionCall.Name,
-            Arguments = FunctionCall.Args.ToJson() // todo: this is a bit slow as we encode already decoded value just to decode it once more once args are first accessed
+            Name = FunctionCall.Name
         };
 
         ToolCall tc = new ToolCall

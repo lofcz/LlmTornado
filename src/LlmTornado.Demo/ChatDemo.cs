@@ -1084,7 +1084,7 @@ public partial class ChatDemo : DemoBase
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.Cohere.Command.Default
+            Model = ChatModel.Cohere.Command.A0325
         });
         
         chat.AppendSystemMessage("Pretend you are a dog. Sound authentic.");
@@ -1100,7 +1100,7 @@ public partial class ChatDemo : DemoBase
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.Cohere.Command.Default
+            Model = ChatModel.Cohere.Command.A0325
         });
         
         chat.AppendSystemMessage("Pretend you are a dog. Sound authentic.");
@@ -2095,15 +2095,15 @@ public partial class ChatDemo : DemoBase
         Console.WriteLine(response);
         return response;
     }
-
+    
+    [TornadoTestCase("gemini-2.5-flash")]
+    [TornadoTestCase("command-a-03-2025")]
     [TornadoTest]
-    public static async Task GoogleStreamingFunctions()
+    public static async Task StreamingFunctions(string model)
     {
-        StringBuilder sb = new StringBuilder();
-
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.Google.Gemini.Gemini15Pro002,
+            Model = model,
             Tools = [
                 new Tool(new ToolFunction("get_weather", "gets the current weather", new
                 {
@@ -2134,7 +2134,7 @@ public partial class ChatDemo : DemoBase
 
         await chat.StreamResponseRich(msgId, (x) =>
         {
-            sb.Append(x);
+            Console.Write(x);
             return ValueTask.CompletedTask;
         }, functions =>
         {
@@ -2145,10 +2145,6 @@ public partial class ChatDemo : DemoBase
 
             return ValueTask.CompletedTask;
         }, null);
-
-
-        string response = sb.ToString();
-        Console.WriteLine(response);
     }
 
     // note: CachedContent can not be used with GenerateContent request setting system_instruction, tools or tool_config.\n\nProposed fix: move those values to CachedContent from GenerateContent request.

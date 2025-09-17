@@ -13,21 +13,6 @@ using Newtonsoft.Json.Converters;
 namespace LlmTornado.Chat.Vendors.Cohere;
 
 [JsonConverter(typeof(StringEnumConverter))]
-internal enum VendorCohereChatFinishReason
-{
-    [EnumMember(Value = "COMPLETE")]
-    Complete,
-    [EnumMember(Value = "STOP_SEQUENCE")]
-    StopSequence,
-    [EnumMember(Value = "MAX_TOKENS")]
-    MaxTokens,
-    [EnumMember(Value = "TOOL_CALL")]
-    ToolCall,
-    [EnumMember(Value = "ERROR")]
-    Error
-}
-
-[JsonConverter(typeof(StringEnumConverter))]
 internal enum VendorCohereChatRole
 {
     [EnumMember(Value = "assistant")]
@@ -35,68 +20,23 @@ internal enum VendorCohereChatRole
 }
 
 [JsonConverter(typeof(StringEnumConverter))]
-internal enum VendorCohereToolCallType
-{
-    [EnumMember(Value = "function")]
-    Function
-}
-
-[JsonConverter(typeof(StringEnumConverter))]
 internal enum VendorCohereContentType
 {
     [EnumMember(Value = "text")]
     Text,
+
     [EnumMember(Value = "thinking")]
     Thinking
-}
-
-[JsonConverter(typeof(StringEnumConverter))]
-internal enum VendorCohereCitationType
-{
-    [EnumMember(Value = "TEXT_CONTENT")]
-    TextContent,
-    [EnumMember(Value = "THINKING_CONTENT")]
-    ThinkingContent,
-    [EnumMember(Value = "PLAN")]
-    Plan
-}
-
-internal class VendorCohereLogProbs
-{
-    [JsonProperty("token_ids")]
-    public List<int> TokenIds { get; set; }
-    [JsonProperty("text")]
-    public string Text { get; set; }
-    [JsonProperty("logprobs")]
-    public List<double> Logprobs { get; set; }
-}
-
-internal class VendorCohereBilledUnits
-{
-    [JsonProperty("input_tokens")]
-    public double? InputTokens { get; set; }
-    [JsonProperty("output_tokens")]
-    public double? OutputTokens { get; set; }
-    [JsonProperty("search_units")]
-    public double? SearchUnits { get; set; }
-    [JsonProperty("classifications")]
-    public double? Classifications { get; set; }
-}
-
-internal class VendorCohereTokens
-{
-    [JsonProperty("input_tokens")]
-    public double? InputTokens { get; set; }
-    [JsonProperty("output_tokens")]
-    public double? OutputTokens { get; set; }
 }
 
 internal class VendorCohereToolSource
 {
     [JsonProperty("type")]
     public string Type { get; set; } = "tool";
+
     [JsonProperty("id")]
     public string Id { get; set; }
+
     [JsonProperty("tool_output")]
     public Dictionary<string, object> ToolOutput { get; set; }
 }
@@ -105,8 +45,10 @@ internal class VendorCohereDocumentSource
 {
     [JsonProperty("type")]
     public string Type { get; set; } = "document";
+
     [JsonProperty("document")]
     public Dictionary<string, object> Document { get; set; }
+
     [JsonProperty("id")]
     public string Id { get; set; }
 }
@@ -115,19 +57,19 @@ internal class VendorCohereChatResult : VendorChatResult
 {
     [JsonProperty("id")]
     public string ResponseId { get; set; }
-    
+
     [JsonProperty("message")]
     public VendorCohereMessage? Message { get; set; }
 
     [JsonProperty("finish_reason")]
     public VendorCohereChatFinishReason FinishReason { get; set; }
-    
+
     [JsonProperty("usage")]
     public VendorCohereUsage? Usage { get; set; }
-    
+
     [JsonProperty("logprobs")]
     public List<VendorCohereLogProbs>? Logprobs { get; set; }
-    
+
     [JsonProperty("citations")]
     public List<VendorCohereChatCitation>? Citations { get; set; }
 
@@ -141,29 +83,29 @@ internal class VendorCohereChatResult : VendorChatResult
         /// </summary>
         [JsonProperty("role")]
         public VendorCohereChatRole Role { get; set; }
-        
+
         /// <summary>
         /// 
         /// </summary>
         [JsonProperty("tool_calls")]
         public List<VendorCohereToolCall>? ToolCalls { get; set; }
-        
+
         /// <summary>
         /// A chain-of-thought style reflection and plan that the model generates when working with Tools.
         /// </summary>
         [JsonProperty("tool_plan")]
         public string? ToolPlan { get; set; }
-        
+
         /// <summary>
         /// 
         /// </summary>
         [JsonProperty("content")]
         public List<VendorCohereContent>? Content { get; set; }
-        
+
         [JsonProperty("citations")]
         public List<VendorCohereChatCitation>? Citations { get; set; }
     }
-    
+
     /// <summary>
     /// 
     /// </summary>
@@ -177,7 +119,7 @@ internal class VendorCohereChatResult : VendorChatResult
 
         [JsonProperty("thinking")]
         public string Thinking { get; set; }
-        
+
         /// <summary>
         /// 
         /// </summary>
@@ -195,20 +137,20 @@ internal class VendorCohereChatResult : VendorChatResult
         /// </summary>
         [JsonProperty("id")]
         public string Id { get; set; }
-        
+
         /// <summary>
         /// 
         /// </summary>
         [JsonProperty("type")]
         public VendorCohereToolCallType Type { get; set; }
-        
+
         /// <summary>
         /// 
         /// </summary>
         [JsonProperty("function")]
         public VendorCohereToolCallFunction Function { get; set; }
     }
-    
+
     /// <summary>
     /// 
     /// </summary>
@@ -219,7 +161,7 @@ internal class VendorCohereChatResult : VendorChatResult
         /// </summary>
         [JsonProperty("name")]
         public string Name { get; set; }
-        
+
         /// <summary>
         /// 
         /// </summary>
@@ -234,19 +176,19 @@ internal class VendorCohereChatResult : VendorChatResult
     {
         [JsonProperty("start")]
         public int? Start { get; set; }
-        
+
         [JsonProperty("end")]
         public int? End { get; set; }
-        
+
         [JsonProperty("text")]
         public string Text { get; set; }
-        
+
         [JsonProperty("sources")]
         public List<object> Sources { get; set; }
-        
+
         [JsonProperty("content_index")]
         public int? ContentIndex { get; set; }
-        
+
         [JsonProperty("type")]
         public VendorCohereCitationType Type { get; set; }
     }
@@ -256,7 +198,7 @@ internal class VendorCohereChatResult : VendorChatResult
         VendorCohereChatResult? resultEx = JsonConvert.DeserializeObject<VendorCohereChatResult>(json);
         return resultEx?.ToChatResult(null, null);
     }
-    
+
     public override ChatResult ToChatResult(string? postData, object? chatRequest)
     {
         ChatResult result = new ChatResult
@@ -292,7 +234,7 @@ internal class VendorCohereChatResult : VendorChatResult
                     tc.FunctionCall?.ToolCall = tc;
                 }
             }
-            
+
             result.Choices.Add(new ChatChoice
             {
                 FinishReason = FinishReason switch
