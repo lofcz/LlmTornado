@@ -622,61 +622,6 @@
         }
 
         /// <summary>
-        /// A tool call made by the model.
-        /// </summary>
-        internal class VendorCohereToolCall
-        {
-            /// <summary>
-            /// The ID of the tool call.
-            /// </summary>
-            [JsonProperty("id")]
-            public string? Id { get; set; }
-
-            /// <summary>
-            /// The type of the tool call.
-            /// </summary>
-            [JsonProperty("type")]
-            public VendorCohereToolCallType? Type { get; set; }
-            
-            /// <summary>
-            /// The function that was called.
-            /// </summary>
-            [JsonProperty("function")]
-            public VendorCohereToolCallFunction? Function { get; set; }
-        }
-        
-        /// <summary>
-        /// The type of a tool call.
-        /// </summary>
-        [JsonConverter(typeof(StringEnumConverter))]
-        internal enum VendorCohereToolCallType
-        {
-            /// <summary>
-            /// A function call.
-            /// </summary>
-            [EnumMember(Value = "function")]
-            Function
-        }
-        
-        /// <summary>
-        /// A function that was called.
-        /// </summary>
-        internal class VendorCohereToolCallFunction
-        {
-            /// <summary>
-            /// The name of the function.
-            /// </summary>
-            [JsonProperty("name")]
-            public string? Name { get; set; }
-            
-            /// <summary>
-            /// The arguments to the function.
-            /// </summary>
-            [JsonProperty("arguments")]
-            public string? Arguments { get; set; }
-        }
-        
-        /// <summary>
         /// A citation from the model.
         /// </summary>
         public class VendorCohereChatCitation

@@ -1898,7 +1898,7 @@ public partial class ChatDemo : DemoBase
             ],
             ToolChoice = new OutboundToolChoice("get_weather")
         });
-
+        
         chat.OnAfterToolsCall = async (result) =>
         {
             chat.RequestParameters.ToolChoice = null; // stop forcing the model to use the get_weather tool
@@ -2121,7 +2121,7 @@ public partial class ChatDemo : DemoBase
             ],
             ToolChoice = new OutboundToolChoice("get_weather")
         });
-
+        
         chat.OnAfterToolsCall = async (result) =>
         {
             chat.RequestParameters.ToolChoice = null; // stop forcing the model to use the get_weather tool
@@ -2132,6 +2132,8 @@ public partial class ChatDemo : DemoBase
         Guid msgId = Guid.NewGuid();
         chat.AppendMessage(ChatMessageRoles.User, "1. Solve the following equation: 2+2=?\n2. What is the weather like today in Prague?", msgId);
 
+        TornadoRequestContent z = chat.Serialize();
+        
         await chat.StreamResponseRich(msgId, (x) =>
         {
             Console.Write(x);
