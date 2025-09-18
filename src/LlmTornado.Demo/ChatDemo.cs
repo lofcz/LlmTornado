@@ -1024,6 +1024,28 @@ public partial class ChatDemo : DemoBase
     }
     
     [TornadoTest]
+    public static async Task CohereMessageParts()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Cohere.Command.R7B,
+            Messages = [
+                new ChatMessage(ChatMessageRoles.System, [
+                    new ChatMessagePart("You are a helpful assistant")
+                ]),
+                new ChatMessage(ChatMessageRoles.User, [
+                    new ChatMessagePart("Who are you?")
+                ])
+            ]
+        });
+        
+        RestDataOrException<ChatRichResponse> response = await chat.GetResponseRichSafe();
+
+        Console.WriteLine("Cohere:");
+        Console.WriteLine(response.Data);
+    }
+    
+    [TornadoTest]
     public static async Task Cohere2408()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest

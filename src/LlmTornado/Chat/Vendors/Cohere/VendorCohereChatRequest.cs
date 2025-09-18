@@ -125,7 +125,7 @@ internal class VendorCohereChatRequest
                     
                     if (m.Parts is { Count: > 0 })
                     {
-                        var contentBlocks = m.Parts.Select<ChatMessagePart, VendorCohereContentBlock?>(p =>
+                        List<VendorCohereContentBlock?> contentBlocks = m.Parts.Select<ChatMessagePart, VendorCohereContentBlock?>(p =>
                         {
                             return p.Type switch
                             {
@@ -205,7 +205,10 @@ internal class VendorCohereChatRequest
                     {
                         content = new VendorCohereSystemMessageContent(m.Parts
                             .Where(p => p.Type == ChatMessageTypes.Text)
-                            .Select<ChatMessagePart, VendorCohereTextContentBlock>(p => new VendorCohereTextContentBlock { Text = p.Text ?? string.Empty }).ToList());
+                            .Select<ChatMessagePart, VendorCohereTextContentBlock>(p => new VendorCohereTextContentBlock
+                            {
+                                Text = p.Text ?? string.Empty
+                            }).ToList());
                     }
                     else
                     {
@@ -560,7 +563,31 @@ internal class VendorCohereContentBlockConverter : JsonConverter<VendorCohereCon
 
     public override void WriteJson(JsonWriter writer, VendorCohereContentBlock? value, JsonSerializer serializer)
     {
-        serializer.Serialize(writer, value, value.GetType());
+        if (value is null)
+        {
+            writer.WriteNull();
+            return;
+        }
+
+        JObject jo = new JObject
+        {
+            { "type", value.Type }
+        };
+
+        switch (value)
+        {
+            case VendorCohereTextContentBlock textBlock:
+                jo.Add("text", textBlock.Text);
+                break;
+            case VendorCohereImageContentBlock imageBlock:
+                jo.Add("image_url", JObject.FromObject(imageBlock.ImageUrl, serializer));
+                break;
+            case VendorCohereDocumentContentBlock docBlock:
+                jo.Add("document", JObject.FromObject(docBlock.Document, serializer));
+                break;
+        }
+
+        jo.WriteTo(writer);
     }
 }
 
@@ -655,7 +682,7 @@ internal class VendorCohereSystemMessageContentConverter : JsonConverter<VendorC
         
         if (reader.TokenType == JsonToken.StartArray)
         {
-            var blocks = serializer.Deserialize<List<VendorCohereTextContentBlock>>(reader);
+            List<VendorCohereTextContentBlock>? blocks = serializer.Deserialize<List<VendorCohereTextContentBlock>>(reader);
             return new VendorCohereSystemMessageContent(blocks!);
         }
         
@@ -690,7 +717,7 @@ internal class VendorCohereAssistantMessageContentConverter : JsonConverter<Vend
         
         if (reader.TokenType == JsonToken.StartArray)
         {
-            var blocks = serializer.Deserialize<List<VendorCohereContentBlock>>(reader);
+            List<VendorCohereContentBlock>? blocks = serializer.Deserialize<List<VendorCohereContentBlock>>(reader);
             return new VendorCohereAssistantMessageContent(blocks!);
         }
         
@@ -725,7 +752,7 @@ internal class VendorCohereToolMessageContentConverter : JsonConverter<VendorCoh
         
         if (reader.TokenType == JsonToken.StartArray)
         {
-            var blocks = serializer.Deserialize<List<VendorCohereContentBlock>>(reader);
+            List<VendorCohereContentBlock>? blocks = serializer.Deserialize<List<VendorCohereContentBlock>>(reader);
             return new VendorCohereToolMessageContent(blocks!);
         }
         
@@ -760,7 +787,7 @@ internal class VendorCohereUserMessageContentConverter : JsonConverter<VendorCoh
         
         if (reader.TokenType == JsonToken.StartArray)
         {
-            var blocks = serializer.Deserialize<List<VendorCohereContentBlock>>(reader);
+            List<VendorCohereContentBlock>? blocks = serializer.Deserialize<List<VendorCohereContentBlock>>(reader);
             return new VendorCohereUserMessageContent(blocks!);
         }
         
@@ -782,6 +809,6 @@ internal class VendorCohereUserMessageContentConverter : JsonConverter<VendorCoh
             writer.WriteNull();
         }
     }
-}
+ }
 
 #endregion
