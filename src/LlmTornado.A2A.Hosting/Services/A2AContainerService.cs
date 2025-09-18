@@ -6,8 +6,8 @@ namespace LlmTornado.A2A.Hosting.Services;
 public interface IA2AContainerService
 {
     Task<AgentCard> GetAgentCardAsync(string endPoint);
-    Task<AgentMessage> SendMessageAsync(string endPoint, List<Part> parts);
-    Task SendStreamingMessageAsync(string endPoint, List<Part> parts, Func<AgentMessage, Task>? onMessageReceived);
+    Task<A2AResponse> SendMessageAsync(string endPoint, List<Part> parts);
+    Task SendStreamingMessageAsync(string endPoint, List<Part> parts, Func<SseItem<A2AEvent>, Task>? onEventReceived);
     Task<AgentTask> CancelTask(string endPoint, string taskId);
     Task<AgentTask> GetTask(string endPoint, string taskId);
 }
@@ -19,7 +19,7 @@ public class A2AContainerService : IA2AContainerService
         return await new A2ACardResolver(new Uri(endPoint)).GetAgentCardAsync();
     }
 
-    public async Task<AgentMessage> SendMessageAsync(string endPoint, List<Part> parts)
+    public async Task<A2AResponse> SendMessageAsync(string endPoint, List<Part> parts)
     {
         A2ACardResolver cardResolver = new(new Uri(endPoint));
         AgentCard agentCard = await cardResolver.GetAgentCardAsync();
@@ -31,17 +31,19 @@ public class A2AContainerService : IA2AContainerService
             Parts = parts
         };
 
-        var response = await client.SendMessageAsync(new MessageSendParams
+        A2AResponse response = await client.SendMessageAsync(new MessageSendParams
         {
             Message = message
         });
 
-        return (AgentMessage)response;
+        return response;
     }
 
-    public async Task SendStreamingMessageAsync(string endPoint, List<Part> parts, Func<AgentMessage, Task>? onMessageReceived)
+    public async Task SendStreamingMessageAsync(string endPoint, List<Part> parts, Func<SseItem<A2AEvent>, Task>? onEventReceived)
     {
-        var client = new A2AClient(new Uri(endPoint));
+        A2ACardResolver cardResolver = new(new Uri(endPoint));
+        AgentCard agentCard = await cardResolver.GetAgentCardAsync();
+        A2AClient client = new A2AClient(new Uri(agentCard.Url));
 
         AgentMessage userMessage = new()
         {
@@ -52,10 +54,7 @@ public class A2AContainerService : IA2AContainerService
 
         await foreach (SseItem<A2AEvent> sseItem in client.SendMessageStreamingAsync(new MessageSendParams { Message = userMessage }))
         {
-            AgentMessage agentResponse = (AgentMessage)sseItem.Data;
-            // Display each part of the response as it arrives
-            onMessageReceived?.Invoke(agentResponse);
-            Console.WriteLine($" Received streaming response chunk: {((TextPart)agentResponse.Parts[0]).Text}");
+            await onEventReceived?.Invoke(sseItem);
         }
     }
 

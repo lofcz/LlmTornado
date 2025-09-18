@@ -94,18 +94,48 @@ namespace LlmTornado.A2A.Hosting.Controllers
                 Response.Headers.Append("X-Accel-Buffering", "no"); // Disable nginx buffering
                                                                     // Disable response buffering for real-time streaming
                 var feature = HttpContext.Features.Get<Microsoft.AspNetCore.Http.Features.IHttpResponseBodyFeature>();
+
                 if (feature != null)
                 {
                     feature.DisableBuffering();
                 }
 
-                await _containerService.SendStreamingMessageAsync(message.Endpoint, message.Parts.ToList(), async (part) =>
+                await _containerService.SendStreamingMessageAsync(message.Endpoint, message.Parts.ToList(), async (a2aEvent) =>
                 {
-                    await Response.WriteAsync($"event: streamed_content\n");
-                    await Response.WriteAsync($"data: {{\n");
-                    await Response.WriteAsync($"data: \"text\": \"{EscapeJsonString(part.Parts.OfType<TextPart>().Last().Text)}\"\n");
-                    await Response.WriteAsync($"data: }}\n\n");
-                    await Task.CompletedTask;
+                    if (a2aEvent.Data.Kind == A2AEventKind.Message)
+                    {
+                        await Response.WriteAsync($"event: streamed_content\n");
+                        await Response.WriteAsync($"data: {{\n");
+                        await Response.WriteAsync($"data: \"text\": \"{EscapeJsonString(((AgentMessage)a2aEvent.Data).Parts.OfType<TextPart>().Last().Text)}\"\n");
+                        await Response.WriteAsync($"data: }}\n\n");
+                    }
+                    else if(a2aEvent.Data.Kind == A2AEventKind.StatusUpdate)
+                    {
+                        await Response.WriteAsync($"event: task_status_update\n");
+                        await Response.WriteAsync($"data: {{\n");
+                        await Response.WriteAsync($"data: \"status\": \"{((TaskStatusUpdateEvent)a2aEvent.Data).Status.State}\",\n");
+                        await Response.WriteAsync($"data: \"taskId\": \"{((TaskStatusUpdateEvent)a2aEvent.Data).TaskId}\"\n");
+                        await Response.WriteAsync($"data: }}\n\n");
+                    }
+                    else if(a2aEvent.Data.Kind == A2AEventKind.Task)
+                    {
+                        AgentTask task = (AgentTask)a2aEvent.Data;
+                        await Response.WriteAsync($"event: task_info\n");
+                        await Response.WriteAsync($"data: {{\n");
+                        await Response.WriteAsync($"data: \"taskId\": \"{task.Id}\",\n");
+                        await Response.WriteAsync($"data: \"taskState\": \"{task.Status.State}\",\n");
+                        await Response.WriteAsync($"data: \"taskStateMessage\": \"{EscapeJsonString(task.Status.Message.Parts.OfType<TextPart>().Last().Text) ?? ""}\"\n");
+                        await Response.WriteAsync($"data: }}\n\n");
+                    }
+                    else if (a2aEvent.Data.Kind == A2AEventKind.ArtifactUpdate)
+                    {
+                        TaskArtifactUpdateEvent artifactUpdate = (TaskArtifactUpdateEvent)a2aEvent.Data;
+                        await Response.WriteAsync($"event: artifact_update\n");
+                        await Response.WriteAsync($"data: {{\n");
+                        await Response.WriteAsync($"data: \"taskId\": \"{artifactUpdate.TaskId}\",\n");
+                        await Response.WriteAsync($"data: \"artifact\": \"{EscapeJsonString(artifactUpdate.Artifact.Parts.OfType<TextPart>().Last().Text) ?? ""}\"\n");
+                        await Response.WriteAsync($"data: }}\n\n");
+                    }
                 });
             }
             catch (Exception ex)

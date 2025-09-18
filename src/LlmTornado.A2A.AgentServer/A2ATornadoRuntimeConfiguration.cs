@@ -5,6 +5,7 @@ using LlmTornado.Agents.ChatRuntime;
 using LlmTornado.Agents.ChatRuntime.RuntimeConfigurations;
 using LlmTornado.Agents.DataModels;
 using LlmTornado.Chat;
+using Microsoft.AspNetCore.Mvc.ApplicationModels;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
@@ -152,6 +153,14 @@ public class A2ATornadoRuntimeConfiguration : IA2ARuntimeConfiguration, IDisposa
         // Get the response from the agent
         ChatMessage response = await _agent.InvokeAsync(new ChatMessage(Code.ChatMessageRoles.User, userMessage ?? "Empty message"));
 
+        var artifact = new Artifact()
+        {
+            ArtifactId = response.Id.ToString(),
+            Description = "response from agent",
+            Parts = [new TextPart() {Text = response.Content ?? "" }]
+        };
+
+        await _taskManager.ReturnArtifactAsync(_currentTask.Id, artifact, _cancellationToken);
 
         // Update the Status to Completed
         await _taskManager.UpdateStatusAsync(_currentTask.Id, TaskState.Completed, message:response.ToA2AAgentMessage(), cancellationToken: cancellationToken);
@@ -191,7 +200,7 @@ public class A2ATornadoRuntimeConfiguration : IA2ARuntimeConfiguration, IDisposa
 
     private async Task RunQueue()
     {
-        while (!_cancellationToken.IsCancellationRequested)
+        if(!_cancellationToken.IsCancellationRequested)
         {
             if (_artifactQueue.TryDequeue(out var artifact))
             {
