@@ -23,6 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\LlmTornado.Agents\LlmTornado.Agents.csproj" />
     <ProjectReference Include="..\LlmTornado\LlmTornado.csproj" />
   </ItemGroup>
 

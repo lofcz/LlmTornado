@@ -3,6 +3,7 @@ using LlmTornado.A2A.Hosting.Models;
 using LlmTornado.A2A.Hosting.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Net.Mime;
 
 namespace LlmTornado.A2A.Hosting.Controllers
 {
@@ -57,7 +58,7 @@ namespace LlmTornado.A2A.Hosting.Controllers
         {
             try
             {
-                await _containerService.CancelTask(request.Endpoint, request.TaskId);
+                await _containerService.CancelTaskAsync(request.Endpoint, request.TaskId);
                 return Ok(new { message = "Task cancellation requested" });
             }
             catch (Exception ex)
@@ -72,7 +73,7 @@ namespace LlmTornado.A2A.Hosting.Controllers
         {
             try
             {
-                var status = await _containerService.GetTask(endpoint, taskId);
+                var status = await _containerService.GetTaskAsync(endpoint, taskId);
                 return Ok(status);
             }
             catch (Exception ex)
@@ -82,7 +83,7 @@ namespace LlmTornado.A2A.Hosting.Controllers
             }
         }
 
-        [HttpPost("SendStreamingMessage")]  
+        [HttpPost("SendStreamingMessage")]
         public async Task TaskSendStreamingMessage([FromBody] ContainerAgentMessage message)
         {
             try
@@ -136,6 +137,7 @@ namespace LlmTornado.A2A.Hosting.Controllers
                         await Response.WriteAsync($"data: \"artifact\": \"{EscapeJsonString(artifactUpdate.Artifact.Parts.OfType<TextPart>().Last().Text) ?? ""}\"\n");
                         await Response.WriteAsync($"data: }}\n\n");
                     }
+                    await Response.Body.FlushAsync();
                 });
             }
             catch (Exception ex)

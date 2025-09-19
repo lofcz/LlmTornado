@@ -34,6 +34,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseResponseCompression();
+
 app.UseAuthorization();
 
 app.MapControllers();

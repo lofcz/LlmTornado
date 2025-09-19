@@ -1,19 +1,20 @@
 using A2A;
 using A2A.AspNetCore;
-using LlmTornado;
 using LlmTornado.A2A;
 using LlmTornado.A2A.AgentServer;
-using LlmTornado.Agents.ChatRuntime;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
-using System.Collections.Concurrent;
 
+//Add your Agent Here
+A2ATornadoRuntimeConfiguration agent = new A2ATornadoRuntimeConfiguration(
+    runtimeConfig: new ChatBotAgent(), 
+    name: "LlmTornado.A2A.AgentServer", 
+    version:"1.0.0"
+    );
 
-/// This is the main entry point for the A2A Agent Server application
-/// This Server is used for hosting agents on the docker container
-/// Hosting project handles the lifecycle of the containers and communication to the containers
-ConcurrentDictionary<string, IRuntimeConfiguration> configurations = new();
-RegisterRuntimeConfiguration<ChatBotAgent>();
+// Create and register the specified agent
+var taskManager = new TaskManager();
+agent.Attach(taskManager);
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,7 +24,7 @@ builder.Services.AddOpenTelemetry()
     .WithTracing(tracing => tracing
         .AddSource(TaskManager.ActivitySource.Name)
         .AddSource(A2AJsonRpcProcessor.ActivitySource.Name)
-        .AddSource(A2ATornadoRuntimeConfiguration.ActivitySource.Name)
+        .AddSource(agent.ActivitySource.Name)
         .AddAspNetCoreInstrumentation()
         .AddHttpClientInstrumentation()
         .AddConsoleExporter()
@@ -55,53 +56,10 @@ app.UseHttpsRedirection();
 // Add health endpoint
 app.MapGet("/health", () => Results.Ok(new { Status = "Healthy", Timestamp = DateTimeOffset.UtcNow }));
 
-IRuntimeConfiguration configurationType;
-
-//A2A Setup
-// Create and register the specified agent
-var taskManager = new TaskManager();
-var configType = GetConfigurationTypeFromArgs(args);
-
-if(configType != null && configType != "ChatBotAgent")
-{
-    configurationType = Activator.CreateInstance(configurations[configType].GetType()) as IRuntimeConfiguration ?? new ChatBotAgent();
-}
-else
-{
-   configurationType = new ChatBotAgent(); // Default to ChatBotAgent if no valid config type is provided
-}
-
-var chatAgent = new A2ATornadoRuntimeConfiguration(configurationType);
-
-chatAgent.Attach(taskManager);
+//A2A API Setup
 app.MapA2A(taskManager, "/agent");
 app.MapWellKnownAgentCard(taskManager, "/agent");
 app.MapHttpA2A(taskManager, "/agent");
 
 //A2A Setup End
-
-
-
 app.Run();
-
-static string? GetConfigurationTypeFromArgs(string[] args)
-{
-    // Look for --agent parameter
-    for (int i = 0; i < args.Length - 1; i++)
-    {
-        if (args[i] == "--configType" || args[i] == "-ct")
-        {
-            return args[i + 1];
-        }
-    }
-
-    // Default to ChatBot if no config type specified
-    Console.WriteLine("No config type specified. Use --configType or -ct parameter to specify config type. Defaulting to 'ChatBot'.");
-    return null;
-}
-
-void RegisterRuntimeConfiguration<T>() where T : IRuntimeConfiguration
-{
-    configurations.AddOrUpdate(typeof(T).Name, Activator.CreateInstance<T>(), (key, oldValue) => Activator.CreateInstance<T>());
-    Console.WriteLine("Registered runtime configuration: {0}", typeof(T).Name);
-}
