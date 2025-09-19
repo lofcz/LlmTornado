@@ -100,7 +100,7 @@ namespace LlmTornado.A2A.Hosting.Controllers
                     feature.DisableBuffering();
                 }
 
-                await _containerService.SendStreamingMessageAsync(message.Endpoint, message.Parts.ToList(), async (a2aEvent) =>
+                await _containerService.SendMessageStreamingAsync(message.Endpoint, message.Parts.ToList(), async (a2aEvent) =>
                 {
                     if (a2aEvent.Data.Kind == A2AEventKind.Message)
                     {

@@ -7,9 +7,9 @@ public interface IA2AContainerService
 {
     Task<AgentCard> GetAgentCardAsync(string endPoint);
     Task<A2AResponse> SendMessageAsync(string endPoint, List<Part> parts);
-    Task SendStreamingMessageAsync(string endPoint, List<Part> parts, Func<SseItem<A2AEvent>, Task>? onEventReceived);
-    Task<AgentTask> CancelTask(string endPoint, string taskId);
-    Task<AgentTask> GetTask(string endPoint, string taskId);
+    Task SendMessageStreamingAsync(string endPoint, List<Part> parts, Func<SseItem<A2AEvent>, Task>? onEventReceived);
+    Task<AgentTask> CancelTaskAsync(string endPoint, string taskId);
+    Task<AgentTask> GetTaskAsync(string endPoint, string taskId);
 }
 
 public class A2AContainerService : IA2AContainerService
@@ -39,7 +39,7 @@ public class A2AContainerService : IA2AContainerService
         return response;
     }
 
-    public async Task SendStreamingMessageAsync(string endPoint, List<Part> parts, Func<SseItem<A2AEvent>, Task>? onEventReceived)
+    public async Task SendMessageStreamingAsync(string endPoint, List<Part> parts, Func<SseItem<A2AEvent>, Task>? onEventReceived)
     {
         A2ACardResolver cardResolver = new(new Uri(endPoint));
         AgentCard agentCard = await cardResolver.GetAgentCardAsync();
@@ -60,23 +60,19 @@ public class A2AContainerService : IA2AContainerService
         Console.WriteLine(" Streaming completed.");
     }
 
-    public async Task<AgentTask> CancelTask(string endPoint, string taskId)
+    public async Task<AgentTask> CancelTaskAsync(string endPoint, string taskId)
     {
-        var client = new A2AClient(new Uri(endPoint));
+        A2ACardResolver cardResolver = new(new Uri(endPoint));
+        AgentCard agentCard = await cardResolver.GetAgentCardAsync();
+        A2AClient client = new A2AClient(new Uri(agentCard.Url));
         return await client.CancelTaskAsync(taskId);
     }
 
-    public async Task<AgentTask> GetTask(string endPoint, string taskId)
+    public async Task<AgentTask> GetTaskAsync(string endPoint, string taskId)
     {
-        var client = new A2AClient(new Uri(endPoint));
+        A2ACardResolver cardResolver = new(new Uri(endPoint));
+        AgentCard agentCard = await cardResolver.GetAgentCardAsync();
+        A2AClient client = new A2AClient(new Uri(agentCard.Url));
         return await client.GetTaskAsync(taskId);
-    }
-
-    private static void DisplayTaskDetails(AgentTask agentResponse)
-    {
-        Console.WriteLine(" Received task details:");
-        Console.WriteLine($"  ID: {agentResponse.Id}");
-        Console.WriteLine($"  Status: {agentResponse.Status.State}");
-        Console.WriteLine($"  Artifact: {(agentResponse.Artifacts?[0].Parts?[0] as TextPart)?.Text}");
     }
 }

@@ -192,7 +192,7 @@ internal class A2ATests
         var a2aService = new A2AContainerService();
 
         // Act
-        await a2aService.SendStreamingMessageAsync(createResult.Endpoint, new List<Part> { new TextPart { Text = "Hello, how are you?" } },async (message) =>
+        await a2aService.SendMessageStreamingAsync(createResult.Endpoint, new List<Part> { new TextPart { Text = "Hello, how are you?" } },async (message) =>
         {
             // Assert
             if(message.Data.Kind == A2AEventKind.Message)
