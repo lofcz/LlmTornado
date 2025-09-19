@@ -56,6 +56,8 @@ public class A2AContainerService : IA2AContainerService
         {
             await onEventReceived?.Invoke(sseItem);
         }
+
+        Console.WriteLine(" Streaming completed.");
     }
 
     public async Task<AgentTask> CancelTask(string endPoint, string taskId)

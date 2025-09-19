@@ -30,13 +30,13 @@ public class ChatBotAgent : OrchestrationRuntimeConfiguration
         BuildSimpleAgent(client, true, "AgentV10.json");
     }
 
-    public OrchestrationRuntimeConfiguration BuildSimpleAgent(TornadoApi client, bool streaming = false, string conversationFile = "SimpleAgent.json")
+    public void BuildSimpleAgent(TornadoApi client, bool streaming = false, string conversationFile = "SimpleAgent.json")
     {
         ModeratorRunnable inputModerator = new ModeratorRunnable(client, this);
 
         AgentRunnable simpleAgentRunnable = new AgentRunnable(client, this, streaming);
 
-        return new OrchestrationBuilder(this)
+       new OrchestrationBuilder(this)
            .SetEntryRunnable(inputModerator)
            .SetOutputRunnable(simpleAgentRunnable)
            .WithRuntimeInitializer((config) =>
@@ -51,7 +51,8 @@ public class ChatBotAgent : OrchestrationRuntimeConfiguration
            .WithRuntimeProperty("LatestUserMessage", "")
            .WithChatMemory(conversationFile)
            .AddAdvancer<ChatMessage>(inputModerator, simpleAgentRunnable)
-           .AddExitPath<ChatMessage>(simpleAgentRunnable, _ => true).Build();
+           .AddExitPath<ChatMessage>(simpleAgentRunnable, _ => true)
+           .Build();
     }
 }
 

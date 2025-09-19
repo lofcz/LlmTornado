@@ -144,6 +144,7 @@ public class A2ATornadoRuntimeConfiguration : IA2ARuntimeConfiguration, IDisposa
         }
 
         //Send Notify working status
+        await _taskManager.UpdateStatusAsync(task.Id, TaskState.Submitted, cancellationToken: cancellationToken);
         await _taskManager.UpdateStatusAsync(task.Id, TaskState.Working, cancellationToken: cancellationToken);
 
         // Get message from the user
@@ -162,8 +163,10 @@ public class A2ATornadoRuntimeConfiguration : IA2ARuntimeConfiguration, IDisposa
 
         await _taskManager.ReturnArtifactAsync(_currentTask.Id, artifact, _cancellationToken);
 
+        await _taskManager.UpdateStatusAsync(task.Id, TaskState.Working, message: response.ToA2AAgentMessage(), cancellationToken: cancellationToken);
+
         // Update the Status to Completed
-        await _taskManager.UpdateStatusAsync(_currentTask.Id, TaskState.Completed, message:response.ToA2AAgentMessage(), cancellationToken: cancellationToken);
+        await _taskManager.UpdateStatusAsync(_currentTask.Id, TaskState.Completed, final:true, cancellationToken: cancellationToken);
     }
 
     /// <summary>
@@ -181,16 +184,17 @@ public class A2ATornadoRuntimeConfiguration : IA2ARuntimeConfiguration, IDisposa
                 {
                     if (streamEvt.ModelStreamingEvent is ModelStreamingOutputTextDeltaEvent deltaTextEvent)
                     {
-                        Console.Write(deltaTextEvent.DeltaText);
-                        _artifactQueue.Enqueue(new Artifact()
+                        Artifact artifact = new Artifact()
                         {
-                            ArtifactId = deltaTextEvent.ItemId,
-                            Description = "Partial response from agent",
+                            ArtifactId = Guid.NewGuid().ToString(),
+                            Description = "Streaming event",
                             Parts = [new TextPart() {
                                 Text = deltaTextEvent.DeltaText ?? ""
                             }]
-                        });
-                        await RunQueue();
+                        };
+                        Console.Write(deltaTextEvent.DeltaText);
+                        await _taskManager.ReturnArtifactAsync(_currentTask.Id, artifact, _cancellationToken);
+                        await Task.Delay(100); // Adjust the delay as needed
                     }
                 }
             }
@@ -198,20 +202,6 @@ public class A2ATornadoRuntimeConfiguration : IA2ARuntimeConfiguration, IDisposa
     }
 
 
-    private async Task RunQueue()
-    {
-        if(!_cancellationToken.IsCancellationRequested)
-        {
-            if (_artifactQueue.TryDequeue(out var artifact))
-            {
-                await _taskManager.ReturnArtifactAsync(_currentTask.Id, artifact, _cancellationToken);
-            }
-            else
-            {
-                await Task.Delay(100); // Adjust the delay as needed
-            }
-        }
-    }
 
     /// <summary>
     /// Possibly handle logging

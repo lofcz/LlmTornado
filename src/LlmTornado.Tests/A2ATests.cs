@@ -50,6 +50,7 @@ internal class A2ATests
 
         return new A2AClient(new Uri("http://localhost"), httpClient);
     }
+
     public class MockHttpMessageHandler : HttpMessageHandler
     {
         private readonly HttpResponseMessage _response;
@@ -177,7 +178,7 @@ internal class A2ATests
     }
 
     [Test]
-    public async Task A2AClientSendStreamingMessageTest()
+    public async Task A2ASendStreamingMessageTest()
     {
         // Arrange
         var createResult = await dockerService.CreateContainerAsync(_availableAgents[0], $"OPENAI_API_KEY={_apiKey}");
@@ -187,6 +188,7 @@ internal class A2ATests
         Assert.That(createResult.ServerId, Is.Not.Null);
         Assert.That(createResult.Endpoint, Is.Not.Null);
         Console.WriteLine($"Server ID: {createResult.ServerId}, Endpoint: {createResult.Endpoint}");
+
         var a2aService = new A2AContainerService();
 
         // Act
