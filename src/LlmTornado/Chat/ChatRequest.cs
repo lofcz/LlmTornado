@@ -582,6 +582,12 @@ public class ChatRequest : IModelRequest, ISerializableRequest
 			{
 				return PreparePayload(x, x, y, z, GetSerializer(EndpointBase.NullSettings, a));
 			}
+		},
+		{
+			LLmProviders.MoonshotAi, (x, y, z, a) =>
+			{
+				return PreparePayload(x, x, y, z, GetSerializer(EndpointBase.NullSettings, a));
+			}
 		}
 	};
 
