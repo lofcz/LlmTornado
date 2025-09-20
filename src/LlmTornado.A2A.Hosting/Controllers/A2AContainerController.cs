@@ -1,10 +1,8 @@
 ﻿using A2A;
 using LlmTornado.A2A.Hosting.Models;
 using LlmTornado.A2A.Hosting.Services;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using System.Net.Mime;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+using System.Text.Json;
 
 namespace LlmTornado.A2A.Hosting.Controllers;
 
@@ -132,178 +130,36 @@ public class A2AContainerController : ControllerBase
         }
     }
 
-    private async Task HandleMessageEvent(AgentMessage data)
+    private async Task HandleArtifactUpdateEvent(TaskArtifactUpdateEvent data)
     {
-        var convertedParts = ConvertPartsToJson(data.Parts);
-        var metadata = data.Metadata != null ? ConvertDictionaryToJson(data.Metadata) : "{}";
-        var associatedTaskIds = data.ReferenceTaskIds != null ? ConvertArrayToJson(data.ReferenceTaskIds.ToArray()) : "[]";
-        var extensions = data.Extensions != null ? ConvertArrayToJson(data.Extensions.ToArray()) : "[]";
+        var eventData = JsonSerializer.Serialize(data);
 
-        await Response.WriteAsync($"event: message_event\n");
-        await Response.WriteAsync($"data: {{\n");
-        await Response.WriteAsync($"data:   \"role\": \"{data.Role}\",\n");
-        await Response.WriteAsync($"data:   \"kind\": \"{data.Kind.ToString()}\",\n");
-        await Response.WriteAsync($"data:   \"messageId\": \"{data.MessageId}\",\n");
-        await Response.WriteAsync($"data:   \"contextId\": \"{data.ContextId}\",\n");
-        await Response.WriteAsync($"data:   \"taskId\": \"{data.TaskId}\",\n");
-        await Response.WriteAsync($"data:   \"associatedTaskIds\": {associatedTaskIds},\n");
-        await Response.WriteAsync($"data:   \"parts\": {convertedParts},\n");
-        await Response.WriteAsync($"data:   \"metadata\": {metadata},\n");
-        await Response.WriteAsync($"data:   \"extensions\": {extensions}\n");
-        await Response.WriteAsync($"data: }}\n\n");
+        await Response.WriteAsync($"event: artifact_update_event\n");
+        await Response.WriteAsync($"data: {eventData}\n\n");
         await Response.Body.FlushAsync();
     }
 
     private async Task HandleStateUpdateEvent(TaskStatusUpdateEvent data)
     {
-        var metadata = data.Metadata != null ? ConvertDictionaryToJson(data.Metadata) : "{}";
-
+        var eventData = JsonSerializer.Serialize(data);
         await Response.WriteAsync($"event: task_status_update_event\n");
-        await Response.WriteAsync($"data: {{\n");
-        await Response.WriteAsync($"data:   \"kind\": \"{data.Kind.ToString()}\",\n");
-        await Response.WriteAsync($"data:   \"contextId\": \"{data.ContextId}\",\n");
-        await Response.WriteAsync($"data:   \"taskId\": \"{data.TaskId}\",\n");
-        await Response.WriteAsync($"data:   \"final\": \"{data.Final}\",\n");
-        await Response.WriteAsync($"data:   \"status\": \"{data.Status.State}\",\n");
-        await Response.WriteAsync($"data:   \"timestamp\": \"{data.Status.Timestamp.DateTime}\",\n");
-        await Response.WriteAsync($"data:   \"metadata\": {metadata}\n");
-        await Response.WriteAsync($"data: }}\n\n");
-
-        if(data.Status.Message != null)
-        {
-            await HandleMessageEvent(data.Status.Message);
-        }
-
+        await Response.WriteAsync($"data: {eventData}\n\n");
         await Response.Body.FlushAsync();
     }
 
     private async Task HandleTaskEvent(AgentTask data)
     {
-        var metadata = data.Metadata != null ? ConvertDictionaryToJson(data.Metadata) : "{}";
-
-        await Response.WriteAsync($"event: task_status_update_event\n");
-        await Response.WriteAsync($"data: {{\n");
-        await Response.WriteAsync($"data:   \"kind\": \"{data.Kind}\",\n");
-        await Response.WriteAsync($"data:   \"contextId\": \"{data.ContextId}\",\n");
-        await Response.WriteAsync($"data:   \"taskId\": \"{data.Id}\",\n");
-        await Response.WriteAsync($"data:   \"status\": \"{data.Status.State}\",\n");
-        await Response.WriteAsync($"data:   \"timestamp\": \"{data.Status.Timestamp.DateTime}\",\n");
-        await Response.WriteAsync($"data:   \"metadata\": {metadata}\n");
-        await Response.WriteAsync($"data: }}\n\n");
-
-        if (data.Status.Message != null)
-        {
-            await HandleMessageEvent(data.Status.Message);
-        }
-
+        var eventData = JsonSerializer.Serialize(data);
+        await Response.WriteAsync($"event: task_update_event\n");
+        await Response.WriteAsync($"data: {eventData}\n\n");
         await Response.Body.FlushAsync();
     }
 
-    private async Task HandleArtifactUpdateEvent(TaskArtifactUpdateEvent data)
+    private async Task HandleMessageEvent(AgentMessage data)
     {
-        var convertedParts = ConvertPartsToJson(data.Artifact.Parts);
-        var metadata = data.Metadata != null ? ConvertDictionaryToJson(data.Metadata) : "{}";
-        var artifactMetadata = data.Artifact.Metadata != null ? ConvertDictionaryToJson(data.Artifact.Metadata) : "{}";
-        var extensions = data.Artifact.Extensions != null ? ConvertArrayToJson(data.Artifact.Extensions.ToArray()) : "[]";
-
-        await Response.WriteAsync($"event: artifact_update_event\n");
-        await Response.WriteAsync($"data: {{\n");
-        await Response.WriteAsync($"data:   \"kind\": \"{data.Kind.ToString()}\",\n");
-        await Response.WriteAsync($"data:   \"contextId\": \"{data.ContextId}\",\n");
-        await Response.WriteAsync($"data:   \"taskId\": \"{data.TaskId}\",\n");
-        await Response.WriteAsync($"data:   \"metadata\": {metadata},\n");
-        await Response.WriteAsync($"data:   \"artifactId\": \"{data.Artifact.ArtifactId}\",\n");
-        await Response.WriteAsync($"data:   \"name\": \"{EscapeJsonString(data.Artifact.Name)}\",\n");
-        await Response.WriteAsync($"data:   \"description\": \"{EscapeJsonString(data.Artifact.Description)}\",\n");
-        await Response.WriteAsync($"data:   \"append\": \"{data.Append}\",\n");
-        await Response.WriteAsync($"data:   \"lastChunk\": \"{data.LastChunk}\",\n");
-        await Response.WriteAsync($"data:   \"parts\": {convertedParts},\n");
-        await Response.WriteAsync($"data:   \"artifactMetadata\": {artifactMetadata},\n");
-        await Response.WriteAsync($"data:   \"extensions\": {extensions}\n");
-        await Response.WriteAsync($"data: }}\n\n");
+        var eventData = JsonSerializer.Serialize(data);
+        await Response.WriteAsync($"event: message_event\n");
+        await Response.WriteAsync($"data: {eventData}\n\n");
         await Response.Body.FlushAsync();
-    }
-
-    private static string EscapeJsonString(string s)
-    {
-        if (string.IsNullOrEmpty(s))
-            return string.Empty;
-
-        return s.Replace("\\", "\\\\")
-            .Replace("\"", "\\\"")
-            .Replace("\n", "\\n")
-            .Replace("\r", "\\r")
-            .Replace("\t", "\\t");
-    }
-
-    private static string ConvertPartsToJson(IEnumerable<Part> parts)
-    {
-        var partsList = new List<string>();
-
-        foreach (var part in parts)
-        {
-            switch (part)
-            {
-                case TextPart textPart:
-                    partsList.Add($"{{\"kind\": \"text\", \"text\": \"{EscapeJsonString(textPart.Text)}\"}}");
-                    break;
-                case FilePart filePart:
-                    if (filePart.File is FileWithBytes bytesPart)
-                    {
-                        partsList.Add($"{{\"kind\": \"file\", \"name\": \"{EscapeJsonString(bytesPart.Name)}\", \"mimeType\": \"{EscapeJsonString(bytesPart.MimeType ?? "")}\", \"bytes\": \"{EscapeJsonString(bytesPart.Bytes)}\"}}");
-                    }
-                    else if (filePart.File is FileWithUri uriPart)
-                    {
-                        partsList.Add($"{{\"kind\": \"file\", \"name\": \"{EscapeJsonString(uriPart.Name)}\", \"mimeType\": \"{EscapeJsonString(uriPart.MimeType)}\", \"uri\": \"{EscapeJsonString(uriPart.Uri ?? "")}\"}}");
-                    }
-                    break;
-                case DataPart dataPart:
-                    partsList.Add($"{{\"kind\": \"data\", \"data\": \"{ConvertDictionaryToJson(dataPart.Data)}\"}}");
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        if (partsList.Count == 0)
-        {
-            return "[]";
-        }
-
-        return $"[{string.Join(", ", partsList)}]";
-    }
-
-    private static string ConvertArrayToJson(string[] array)
-    {
-        var escapedItems = array.Select(item => $"\"{EscapeJsonString(item)}\"");
-        return $"[{string.Join(", ", escapedItems)}]";
-    }
-
-    private static string ConvertDictionaryToJson(Dictionary<string, System.Text.Json.JsonElement> dictionary)
-    {
-        var keyValuePairs = new List<string>();
-
-        foreach (var kvp in dictionary)
-        {
-            var value = ConvertJsonElementToString(kvp.Value);
-            keyValuePairs.Add($"\"{EscapeJsonString(kvp.Key)}\": \"{EscapeJsonString(value)}\"");
-        }
-
-        return $"{{{string.Join(", ", keyValuePairs)}}}";
-    }
-
-    private static string ConvertJsonElementToString(System.Text.Json.JsonElement element)
-    {
-        return element.ValueKind switch
-        {
-            System.Text.Json.JsonValueKind.String => element.GetString() ?? "",
-            System.Text.Json.JsonValueKind.Number => element.GetRawText(),
-            System.Text.Json.JsonValueKind.True => "true",
-            System.Text.Json.JsonValueKind.False => "false",
-            System.Text.Json.JsonValueKind.Null => "null",
-            System.Text.Json.JsonValueKind.Object => element.GetRawText(),
-            System.Text.Json.JsonValueKind.Array => element.GetRawText(),
-            _ => element.GetRawText()
-        };
     }
 }
