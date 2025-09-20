@@ -51,6 +51,16 @@ public class ChatModelMistralFree : IVendorModelClassProvider
     public readonly ChatModel MistralSmall2506 = ModelMistralSmall2506;
     
     /// <summary>
+    /// Our small reasoning model released September 2025 with vision support.
+    /// </summary>
+    public static readonly ChatModel ModelMagistralSmall2509 = new ChatModel("magistral-small-2509", LLmProviders.Mistral, 128_000);
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelMagistralSmall2509"/>
+    /// </summary>
+    public readonly ChatModel MagistralSmall2509 = ModelMagistralSmall2509;
+    
+    /// <summary>
     /// Building upon Mistral Small 3.1 (2503), with added reasoning capabilities, undergoing SFT from Magistral Medium traces and RL on top, it's a small, efficient reasoning model with 24B parameters.
     /// </summary>
     public static readonly ChatModel ModelMagistralSmall2507 = new ChatModel("magistral-small-2507", LLmProviders.Mistral, 40_000);
@@ -115,7 +125,10 @@ public class ChatModelMistralFree : IVendorModelClassProvider
     /// </summary>
     public static List<IModel> ModelsAll => LazyModelsAll.Value;
 
-    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [ModelMistralSmall2503, ModelMistralSmall, ModelPixtral, ModelDevstralSmall2505, ModelMagistralSmall2506, ModelMagistralSmall2507, ModelMistralSmall2506, ModelDevstralSmall2507, ModelVoxtralSmall2507, ModelVoxtralMini2507]);
+    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [
+        ModelMistralSmall2503, ModelMistralSmall, ModelPixtral, ModelDevstralSmall2505, ModelMagistralSmall2506, ModelMagistralSmall2507, 
+        ModelMistralSmall2506, ModelDevstralSmall2507, ModelVoxtralSmall2507, ModelVoxtralMini2507, ModelMagistralSmall2509
+    ]);
 
     /// <summary>
     /// <inheritdoc cref="ModelsAll"/>
