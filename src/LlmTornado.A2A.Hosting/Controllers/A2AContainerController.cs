@@ -239,30 +239,26 @@ public class A2AContainerController : ControllerBase
     private static string ConvertPartsToJson(IEnumerable<Part> parts)
     {
         var partsList = new List<string>();
-        
+
         foreach (var part in parts)
         {
             switch (part)
             {
                 case TextPart textPart:
-                    partsList.Add($"{{\"type\": \"text\", \"content\": \"{EscapeJsonString(textPart.Text)}\"}}");
+                    partsList.Add($"{{\"kind\": \"text\", \"text\": \"{EscapeJsonString(textPart.Text)}\"}}");
                     break;
                 case FilePart filePart:
                     if (filePart.File is FileWithBytes bytesPart)
                     {
-                        partsList.Add($"{{\"type\": \"file\", \"name\": \"{EscapeJsonString(bytesPart.Name)}\", \"mimeType\": \"{EscapeJsonString(bytesPart.MimeType ?? "")}\", \"bytes\": \"{EscapeJsonString(bytesPart.Bytes)}\"}}");
+                        partsList.Add($"{{\"kind\": \"file\", \"name\": \"{EscapeJsonString(bytesPart.Name)}\", \"mimeType\": \"{EscapeJsonString(bytesPart.MimeType ?? "")}\", \"bytes\": \"{EscapeJsonString(bytesPart.Bytes)}\"}}");
                     }
                     else if (filePart.File is FileWithUri uriPart)
                     {
-                        partsList.Add($"{{\"type\": \"file\", \"name\": \"{EscapeJsonString(uriPart.Name)}\", \"mimeType\": \"{EscapeJsonString(uriPart.MimeType)}\", \"uri\": \"{EscapeJsonString(uriPart.Uri ?? "")}\"}}");
-                    }
-                    else
-                    {
-                        partsList.Add($"{{\"type\": \"file\",\"content\": \"unknown file type\"}}");
+                        partsList.Add($"{{\"kind\": \"file\", \"name\": \"{EscapeJsonString(uriPart.Name)}\", \"mimeType\": \"{EscapeJsonString(uriPart.MimeType)}\", \"uri\": \"{EscapeJsonString(uriPart.Uri ?? "")}\"}}");
                     }
                     break;
                 case DataPart dataPart:
-                    partsList.Add($"{{\"type\": \"data\", \"data\": \"{ConvertDictionaryToJson(dataPart.Data)}\"}}");
+                    partsList.Add($"{{\"kind\": \"data\", \"data\": \"{ConvertDictionaryToJson(dataPart.Data)}\"}}");
                     break;
                 default:
                     break;
