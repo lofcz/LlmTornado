@@ -64,6 +64,7 @@ Conversation result = await agent.RunAsync("Hello Streaming World!", streaming: 
 ```csharp
 
 // Automatic Enum conversion support
+[JsonConverter(typeof(StringEnumConverter))]
 public enum Unit
 {
     Celsius, 
@@ -74,7 +75,7 @@ public enum Unit
 [Description("Get the current weather in a given location")]
 public static string GetCurrentWeather(
     [Description("The city and state, e.g. Boston, MA")] string location,
-    [SchemaIgnore] Unit unit = Unit.Celsius)
+    [Description("Unit of temp.")]  Unit unit = Unit.Celsius)
 {
     // Call the weather API here.
     return $"31 C";
@@ -178,21 +179,21 @@ It provides a structured way to manage the flow of conversation, handle user inp
 
 # The Standard Process for talking with an agent goes like this:
 
-![standard process](ChatCompletionFlow.jpg)
+![standard process](/assets/ChatCompletionFlow.jpg)
 
 # Using the Agent loop we can handle the tool invoking automatically
 
-![AgentFlow](AgentRunnerFlow.jpg)
+![AgentFlow](/assets/AgentRunnerFlow.jpg)
 
 Custom Runtime Configurations can be created as long as the Class inherits the interface `IRuntimeConfiguration`
 
 # Using ChatRuntime To add more complex agentic behavior  
 ## Basic Concept
-![RuntimeFlow](RuntimeFlow.jpg)
+![RuntimeFlow](/assets/RuntimeFlow.jpg)
 
 # Prebuilt Runtime Configurations
 ## Sequential ChatRuntime Configuration
-![SequentialFlow](SequentialFlow.jpg)
+![SequentialFlow](/assets/SequentialFlow.jpg)
 
 Sequential Instructions allows additional controls over the basic Instructions to allow the next agent in line not to repond to itself (Role.Assistant message)
 
@@ -241,7 +242,7 @@ Sequential Instructions allows additional controls over the basic Instructions t
 ```
 
 ## Handoff ChatRuntime Configuration
-![HandoffFlow](handoffOrchestrationflow.jpg)
+![HandoffFlow](/assets/handoffOrchestrationflow.jpg)
 ```csharp
 HandoffAgent translatorAgent = new HandoffAgent(
             client: client,
@@ -270,10 +271,10 @@ Console.WriteLine(report.Content);
 ```
 # Power of the Orchestration Runtime Configuration
 ## Orchestration powered by State Machine architecture
-![OrchestrationFlow](OrchestrationFlow.jpg)
+![OrchestrationFlow](/assets/OrchestrationFlow.jpg)
 
 ## Inside the Orchestration Invoke
-![OrchestrationInvoke](OrchestrationInvokeFlow.jpg)
+![OrchestrationInvoke](/assets/OrchestrationInvokeFlow.jpg)
 
 * Think of a `Orchestration` as a State Machine with strongly typed `TInput` and `TOutput` values for input validation
 * Think of a `Runnable` as a state within a State Machine with strongly typed `TInput` and `TOutput` values for input validation
@@ -282,15 +283,10 @@ Console.WriteLine(report.Content);
 * Using the `Advancer` you can even add a Conversion Method as an input parameter to the transition to facilitate advancing to a Runnable with a invalid `TInput` (`TInput` != `TOutput`)
 
 ## Creating Custom Orchestration Workflows
-![CodingOrchestration](CodingOrchestrationflow.jpg)
+![CodingOrchestration](/assets/CodingOrchestrationflow.jpg)
 
 ## Create Complex Orchestration Workflows
-![ComplexOrchestration](PlannerOrchestrationFlow.jpg)
+![ComplexOrchestration](/assets/PlannerOrchestrationFlow.jpg)
 
 ## TODO
-* [ ] Ability to see which states take longest and cost the most
-* [ ] More comprehensive examples in the repo
-* [ ] Observability as a whole
-* [x] Api for Runtime
-* [ ] Finish adding Streaming Events in runner
-* [ ] Need to add in Computer tool events on the output 
+* [ ]  Make todo list

@@ -5,13 +5,14 @@ using LlmTornado.A2A.AgentServer;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 
-//Add your Agent Here
+
 A2ATornadoRuntimeConfiguration agent = new A2ATornadoRuntimeConfiguration(
-    runtimeConfig: new ChatBotAgent(), 
+    runtimeConfig: new ChatBotAgent(),  //Add your Agent Here
     name: "LlmTornado.A2A.AgentServer", 
     version:"1.0.0"
     );
 
+#region API Configuration
 // Create and register the specified agent
 var taskManager = new TaskManager();
 agent.Attach(taskManager);
@@ -63,3 +64,4 @@ app.MapHttpA2A(taskManager, "/agent");
 
 //A2A Setup End
 app.Run();
+#endregion

@@ -1,7 +1,6 @@
-@page "/legacy"
+@page "/tasks"
 @using LlmTornado.A2A.WebUI.Models
 @using LlmTornado.A2A.WebUI.Services
-@using LlmTornado.A2A.WebUI.Components.A2A.ServerManagement
 @using LlmTornado.A2A.WebUI.Components.A2A.TaskSender
 @using LlmTornado.A2A.WebUI.Components.A2A.ChatWindow
 @using LlmTornado.A2A.WebUI.Components.A2A.DebugWindow
@@ -9,24 +8,13 @@
 @using global::A2A
 @inject IA2AApiService ApiService
 @inject SSEStreamingService StreamingService
-@inject IJSRuntime JS
 @implements IDisposable
 @rendermode InteractiveServer
 
-<PageTitle>Legacy A2A Interface</PageTitle>
+<PageTitle>Tasks</PageTitle>
 
 <div class="a2a-interface">
     <div class="main-content">
-        <!-- Server Management Panel -->
-        <div class="server-panel">
-            <ServerManagementComponent @bind-SelectedServer="selectedServer"
-                                     @bind-ApiKey="apiKey"
-                                     Servers="servers"
-                                     OnServerCreated="OnServerCreated"
-                                     OnServerDeleted="OnServerDeleted" />
-        </div>
-
-        <!-- Task Sender and Chat Windows -->
         <div class="communication-area">
             <div class="task-sender-section">
                 <TaskSenderComponent SelectedServer="selectedServer"
@@ -77,7 +65,6 @@
         StreamingService.OnDebugMessage += OnStreamDebugMessage;
         StreamingService.OnTaskUpdate += OnStreamTaskUpdate;
 
-        // Load initial data
         await LoadActiveServers();
     }
 
@@ -116,27 +103,6 @@
         }
     }
 
-    private Task OnServerCreated(ServerInstance server)
-    {
-        servers.Add(server);
-        selectedServer = server;
-        AddDebugMessage($"Server created: {server.ServerId}", "Info");
-        StateHasChanged();
-        return Task.CompletedTask;
-    }
-
-    private Task OnServerDeleted(string serverId)
-    {
-        servers.RemoveAll(s => s.ServerId == serverId);
-        if (selectedServer?.ServerId == serverId)
-        {
-            selectedServer = null;
-        }
-        AddDebugMessage($"Server deleted: {serverId}", "Info");
-        StateHasChanged();
-        return Task.CompletedTask;
-    }
-
     private Task OnMessageSentWrapper((string message, List<FileAttachment> attachments) data)
     {
         return OnMessageSent(data.message, data.attachments);
@@ -163,7 +129,7 @@
             Content = string.Empty,
             IsFromUser = false,
             Timestamp = DateTime.Now
-		};
+        };
 
         chatMessages.Add(streamingMessage);
         streaming = true;
@@ -183,9 +149,9 @@
             var message = new ChatMessage
             {
                 Role = "Assistant",
-				Content = eventData.Parts.OfType<TextPart>().FirstOrDefault()?.Text ?? string.Empty,
+                Content = eventData.Parts.OfType<TextPart>().FirstOrDefault()?.Text ?? string.Empty,
                 IsFromUser = false,
-				Timestamp = DateTime.Now
+                Timestamp = DateTime.Now
             };
             chatMessages.Add(message);
             StateHasChanged();
@@ -215,7 +181,7 @@
             }
             else
             {
-				AddDebugMessage($"Task Status Update: {eventData.Status.State}", "Info");
+                AddDebugMessage($"Task Status Update: {eventData.Status.State}", "Info");
             }
 
             StateHasChanged();
