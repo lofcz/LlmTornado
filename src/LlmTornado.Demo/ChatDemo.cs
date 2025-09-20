@@ -94,6 +94,23 @@ public partial class ChatDemo : DemoBase
     }
 
     [TornadoTest]
+    public static async Task<ChatResult?> CompletionMoonshotAi()
+    {
+        ChatResult? result = await Program.Connect().Chat.CreateChatCompletion(new ChatRequest
+        {
+            Model = ChatModel.MoonshotAi.Models.KimiK2Instruct,
+            Messages = [
+                new ChatMessage(ChatMessageRoles.System, "You are a helpful assistant that provides concise answers."),
+                new ChatMessage(ChatMessageRoles.User, "What is the capital of China?")
+            ]
+        });
+
+        Console.WriteLine(result?.Choices?.Count > 0 ? result.Choices?[0].Message?.Content : "no response");
+        
+        return result;
+    }
+
+    [TornadoTest]
     public static async Task Completion4OStructuredJson()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest

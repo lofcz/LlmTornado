@@ -231,7 +231,10 @@ internal class VendorCohereChatResult : VendorChatResult
             {
                 foreach (ToolCall tc in toolCalls)
                 {
-                    tc.FunctionCall?.ToolCall = tc;
+                    if (tc.FunctionCall is not null)
+                    {
+                        tc.FunctionCall.ToolCall = tc;
+                    }
                 }
             }
 
