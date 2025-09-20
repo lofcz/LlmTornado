@@ -74,7 +74,7 @@ public class A2ADispatchController : ControllerBase
     }
 
     [HttpGet("active")]
-    public async Task<ActionResult<string[]>> GetActiveServers()
+    public async Task<ActionResult<ServerInfo[]>> GetActiveServers()
     {
         try
         {
