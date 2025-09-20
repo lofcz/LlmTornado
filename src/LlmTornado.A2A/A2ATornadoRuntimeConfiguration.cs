@@ -51,7 +51,6 @@ public class A2ATornadoRuntimeConfiguration : BaseA2ATornadoRuntimeConfiguration
         }
 
         //Send Notify working status
-        await _taskManager.UpdateStatusAsync(task.Id, TaskState.Submitted, cancellationToken: cancellationToken);
         await _taskManager.UpdateStatusAsync(task.Id, TaskState.Working, cancellationToken: cancellationToken);
 
         // Get message from the user

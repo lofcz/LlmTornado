@@ -17,6 +17,7 @@ using System.Threading.Tasks;
 
 namespace LlmTornado.A2A;
 
+///SERVER CODE
 
 /// <summary>
 /// Wraps Semantic Kernel-based agents to handle Travel related tasks
@@ -100,8 +101,7 @@ public abstract class BaseA2ATornadoRuntimeConfiguration : IA2ARuntimeConfigurat
                     {
                         Artifact artifact = new Artifact()
                         {
-                            ArtifactId = Guid.NewGuid().ToString(),
-                            Description = "Streaming event",
+                            Description = streamEvt.ModelStreamingEvent.EventType.ToString(),
                             Parts = [new TextPart() {
                                 Text = deltaTextEvent.DeltaText ?? ""
                             }]
