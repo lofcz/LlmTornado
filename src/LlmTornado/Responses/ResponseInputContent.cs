@@ -3,6 +3,10 @@ using System.Linq;
 using LlmTornado.Images;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.IO;
+using System.Runtime.Serialization;
+using LlmTornado.Chat;
+using Newtonsoft.Json.Converters;
 
 namespace LlmTornado.Responses;
 
@@ -35,8 +39,15 @@ public class ResponseInputContentText : ResponseInputContent
     [JsonProperty("text")]
     public string Text { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Creates a new, empty <see cref="ResponseInputContentText"/>.
+    /// </summary>
     public ResponseInputContentText() { }
 
+    /// <summary>
+    /// Creates a new <see cref="ResponseInputContentText"/> with the specified text.
+    /// </summary>
+    /// <param name="text"></param>
     public ResponseInputContentText(string text)
     {
         Text = text;
@@ -72,6 +83,9 @@ public class ResponseInputContentImage : ResponseInputContent
     [JsonProperty("detail")]
     public ImageDetail? Detail { get; set; }
 
+    /// <summary>
+    /// Creates a new, empty <see cref="ResponseInputContentImage"/>.
+    /// </summary>
     public ResponseInputContentImage()
     {
         
@@ -95,13 +109,66 @@ public class ResponseInputContentImage : ResponseInputContent
     {
         return new ResponseInputContentImage
         {
-            ImageUrl = imageUrl
+            FileId = imageUrl
         };
     }
 }
 
 /// <summary>
-/// File input content
+/// An audio input to the model.
+/// </summary>
+public class ResponseInputContentAudio : ResponseInputContent
+{
+    /// <summary>
+    /// The type of the input item. Always "input_audio".
+    /// </summary>
+    public override string Type => "input_audio";
+
+    /// <summary>
+    /// The audio data.
+    /// </summary>
+    [JsonProperty("input_audio")]
+    public InputAudioData InputAudio { get; set; } = new InputAudioData();
+}
+
+/// <summary>
+/// Audio data for the input audio content.
+/// </summary>
+public class InputAudioData
+{
+    /// <summary>
+    /// Base64-encoded audio data.
+    /// </summary>
+    [JsonProperty("data")]
+    public string Data { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The format of the audio data.
+    /// </summary>
+    [JsonProperty("format")]
+    public InputAudioDataFormat Format { get; set; }
+}
+
+/// <summary>
+/// Supported audio formats.
+/// </summary>
+[JsonConverter(typeof(StringEnumConverter))]
+public enum InputAudioDataFormat
+{
+    /// <summary>
+    /// MP3 format.
+    /// </summary>
+    [EnumMember(Value = "mp3")]
+    Mp3,
+    /// <summary>
+    /// WAV format.
+    /// </summary>
+    [EnumMember(Value = "wav")]
+    Wav
+}
+
+/// <summary>
+/// A file input to the model.
 /// </summary>
 public class ResponseInputContentFile : ResponseInputContent
 {
@@ -128,13 +195,25 @@ public class ResponseInputContentFile : ResponseInputContent
     [JsonProperty("file_data")]
     public string? FileData { get; set; }
 
+    /// <summary>
+    /// Creates a new, empty <see cref="ResponseInputContentFile"/>.
+    /// </summary>
     public ResponseInputContentFile() { }
 
+    /// <summary>
+    /// Creates a new <see cref="ResponseInputContentFile"/> with the specified file ID.
+    /// </summary>
+    /// <param name="fileId"></param>
     public ResponseInputContentFile(string fileId)
     {
         FileId = fileId;
     }
 
+    /// <summary>
+    /// Creates a new <see cref="ResponseInputContentFile"/> with the specified filename and file data.
+    /// </summary>
+    /// <param name="filename"></param>
+    /// <param name="fileData"></param>
     public ResponseInputContentFile(string filename, string fileData)
     {
         Filename = filename;
@@ -181,6 +260,12 @@ internal class InputContentJsonConverter : JsonConverter<ResponseInputContent>
                 }
                 writer.WritePropertyName("detail");
                 serializer.Serialize(writer, imageContent.Detail);
+                break;
+            }
+            case ResponseInputContentAudio audioContent:
+            {
+                writer.WritePropertyName("input_audio");
+                serializer.Serialize(writer, audioContent.InputAudio);
                 break;
             }
             case ResponseInputContentFile fileContent:
@@ -248,6 +333,14 @@ internal class InputContentJsonConverter : JsonConverter<ResponseInputContent>
                     FileData = jo["file_data"]?.ToString()
                 };
                 return fileContent;
+            }
+            case "input_audio":
+            {
+                ResponseInputContentAudio audioContent = new ResponseInputContentAudio
+                {
+                    InputAudio = jo["input_audio"]?.ToObject<InputAudioData>(serializer) ?? new InputAudioData()
+                };
+                return audioContent;
             }
             default:
             {

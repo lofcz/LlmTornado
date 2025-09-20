@@ -1444,7 +1444,12 @@ public enum CapabilityEndpoints
     /// <summary>
     /// Reranker endpoint.
     /// </summary>
-    Rerank
+    Rerank,
+    
+    /// <summary>
+    /// Responses conversation endpoint.
+    /// </summary>
+    ResponsesConversation
 }
 
 /// <summary>

@@ -51,6 +51,7 @@ public class TornadoApi
     private readonly Lazy<ResponsesEndpoint> responses;
     private readonly Lazy<UploadsEndpoint> uploads;
     private readonly Lazy<RerankEndpoint> rerank;
+    private readonly Lazy<ResponsesConversationEndpoint> responsesConversation;
 
     /// <summary>
     ///     If true, the API will throw exceptions for non-200 responses.
@@ -80,6 +81,7 @@ public class TornadoApi
         responses = new Lazy<ResponsesEndpoint>(() => new ResponsesEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
         uploads = new Lazy<UploadsEndpoint>(() => new UploadsEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
         rerank = new Lazy<RerankEndpoint>(() => new RerankEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
+        responsesConversation = new Lazy<ResponsesConversationEndpoint>(() => new ResponsesConversationEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
     }
 
     /// <summary>
@@ -382,6 +384,11 @@ public class TornadoApi
     ///     OpenAI's most advanced interface for generating model responses. Supports text and image inputs, and text outputs. Create stateful interactions with the model, using the output of previous responses as input. Extend the model's capabilities with built-in tools for file search, web search, computer use, and more. Allow the model access to external systems and data using function calling.
     /// </summary>
     public ResponsesEndpoint Responses => responses.Value;
+
+    /// <summary>
+    /// Create and manage conversations to store and retrieve conversation state across Response API calls.
+    /// </summary>
+    internal ResponsesConversationEndpoint ResponsesConversation => responsesConversation.Value;
 
     /// <summary>
     ///     Classify text against the OpenAI Content Policy.

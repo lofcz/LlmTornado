@@ -86,6 +86,7 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
             CapabilityEndpoints.Threads => "threads",
             CapabilityEndpoints.VectorStores => "vector_stores",
             CapabilityEndpoints.Responses => "responses",
+            CapabilityEndpoints.ResponsesConversation => "conversations",
             // conditionally supported
             CapabilityEndpoints.ContextualEmbeddings when provider is LLmProviders.Voyage => "contextualizedembeddings",
             CapabilityEndpoints.MultimodalEmbeddings when provider is LLmProviders.Voyage => "multimodalembeddings",
@@ -137,7 +138,7 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
         }
         else
         {
-            req.Headers.Add("OpenAI-Beta", "assistants=v2");
+            //req.Headers.Add("OpenAI-Beta", "");
         }
         
         return req;
