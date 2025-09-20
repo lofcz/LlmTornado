@@ -1,0 +1,147 @@
+@LlmTornado.A2A.AgentServer_HostAddress = http://localhost:5125
+
+#===============================================================================
+# AGENT CARD REQUESTS
+# This file contains requests for retrieving agent cards
+# 
+# For setup instructions and launch profile details, see: ../README.md
+# 
+# Launch Settings Profiles:
+# - The .well-known endpoint works with any agent profile
+# - Agent-specific endpoints require the corresponding agent profile
+#===============================================================================
+
+#===============================================================================
+# HTTP API REQUESTS
+#===============================================================================
+
+## Get agent card
+# Description: Retrieves the agent card for the chat agent
+# Profile: chat-agent or echotasks-agent
+GET {{host}}/chat/v1/card
+
+###
+
+#===============================================================================
+# JSON-RPC REQUESTS
+#===============================================================================
+
+## Get agent card
+# Description: Retrieves the agent card at the application root
+# Profile: Any agent profile (echo-agent, echotasks-agent, researcher-agent)
+GET {{host}}/.well-known/agent-card.json
+
+###
+
+#===============================================================================
+# MESSAGE SEND REQUESTS
+# This file contains requests for sending messages synchronously to agents
+# 
+# For setup instructions and launch profile details, see: ../README.md
+# 
+# Launch Settings Profiles:
+# - echo-agent: For basic echo agent requests
+# - echotasks-agent: For echo agent with task management support
+#===============================================================================
+
+#===============================================================================
+# HTTP API REQUESTS
+#===============================================================================
+
+## Send message to chat agent
+# Description: Sends a simple "Hello, world!" message to the chat agent
+# Profile: chat-agent
+POST {{host}}/chat/v1/message:send
+Content-Type: application/json
+{
+        "message": {
+            "kind": "message",
+            "messageId": "12345",
+            "role": "user",
+            "parts": [
+                {
+                    "kind": "text",
+                    "text": "Hello, world!"
+                }
+            ]
+        }
+}
+
+###
+
+## Send message to echo agent with tasks
+# Description: Sends a message to the echo agent that creates a task
+# Profile: echotasks-agent
+POST {{host}}/echotasks/v1/message:send
+Content-Type: application/json
+{
+        "message": {
+            "kind": "message",
+            "messageId": "12345",
+            "role": "user",
+            "parts": [
+                {
+                    "kind": "text",
+                    "text": "Hello, world!"
+                }
+            ]
+        }
+}
+
+###
+
+#===============================================================================
+# JSON-RPC REQUESTS
+#===============================================================================
+
+## Send message to echo agent
+# Description: Sends a simple "Hello, world!" message to the chat agent
+# Profile: chat-agent
+POST {{host}}/chat
+Content-Type: application/json
+{
+    "id": "3",
+    "jsonrpc": "2.0",
+    "method": "message/send",
+    "params": {
+          "message": {
+            "kind": "message",
+            "messageId": "12345",
+            "role": "user",
+            "parts": [
+                {
+                    "kind": "text",
+                    "text": "Hello, world!"
+                }
+            ]
+        }
+    }
+}
+
+###
+
+## Send message to echo agent with tasks
+# Description: Sends a message to the echo agent that uses task management
+# Profile: echotasks-agent
+POST {{host}}/echotasks
+Content-Type: application/json
+{
+    "id": "3",
+    "jsonrpc": "2.0",
+    "method": "message/send",
+    "params": {
+          "message": {
+            "kind": "message",
+            "messageId": "12345",
+            "role": "user",
+            "parts": [
+                {
+                    "kind": "text",
+                    "text": "Hello, world!"
+                }
+            ]
+        }
+    }
+}
+
+###

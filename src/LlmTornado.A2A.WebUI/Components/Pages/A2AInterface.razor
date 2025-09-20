@@ -1,0 +1,285 @@
+@page "/"
+@using LlmTornado.A2A.WebUI.Models
+@using LlmTornado.A2A.WebUI.Services
+@using LlmTornado.A2A.WebUI.Components.A2A.ServerManagement
+@using LlmTornado.A2A.WebUI.Components.A2A.TaskSender
+@using LlmTornado.A2A.WebUI.Components.A2A.ChatWindow
+@using LlmTornado.A2A.WebUI.Components.A2A.DebugWindow
+@using LlmTornado.A2A.WebUI.Components.A2A.ServerMonitor
+@using global::A2A
+@inject IA2AApiService ApiService
+@inject SSEStreamingService StreamingService
+@inject IJSRuntime JS
+@implements IDisposable
+@rendermode InteractiveServer
+
+<PageTitle>A2A Interface</PageTitle>
+
+<div class="a2a-interface">
+    <div class="main-content">
+        <!-- Server Management Panel -->
+        <div class="server-panel">
+            <ServerManagementComponent @bind-SelectedServer="selectedServer"
+                                     @bind-ApiKey="apiKey"
+                                     Servers="servers"
+                                     OnServerCreated="OnServerCreated"
+                                     OnServerDeleted="OnServerDeleted" />
+        </div>
+
+        <!-- Task Sender and Chat Windows -->
+        <div class="communication-area">
+            <div class="task-sender-section">
+                <TaskSenderComponent SelectedServer="selectedServer"
+                                   ApiKey="apiKey"
+                                   IsEnabled="!string.IsNullOrEmpty(selectedServer?.Endpoint)"
+                                   OnMessageSent="OnMessageSentWrapper" />
+            </div>
+
+            <div class="chat-windows">
+                <div class="chat-section">
+                    <h3>Chat Messages</h3>
+                    <ChatWindowComponent Messages="chatMessages" />
+                </div>
+                
+                <div class="debug-section">
+                    <h3>Debug Messages</h3>
+                    <DebugWindowComponent Messages="debugMessages" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Server Monitor Sidebar -->
+    <div class="monitor-sidebar">
+        <ServerMonitorComponent Servers="servers"
+                              @bind-SelectedServer="selectedServer"
+                              OnServerStatusChanged="OnServerStatusChanged" />
+    </div>
+</div>
+
+<link href="~/css/a2a-interface.css" rel="stylesheet" />
+
+@code {
+    private ServerInstance? selectedServer;
+    private string apiKey = string.Empty;
+    private List<ServerInstance> servers = new();
+    private List<ChatMessage> chatMessages = new();
+    private List<DebugMessage> debugMessages = new();
+    int currentMessageIndex = 1;
+    bool streaming = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Subscribe to streaming events
+        StreamingService.OnMessageReceived += OnStreamMessageReceived;
+        StreamingService.OnTaskStatusUpdate += OnStreamTaskStatusUpdate;
+        StreamingService.OnArtifactUpdate += OnStreamArtifactUpdate;
+        StreamingService.OnDebugMessage += OnStreamDebugMessage;
+        StreamingService.OnTaskUpdate += OnStreamTaskUpdate;
+
+        // Load initial data
+        await LoadActiveServers();
+    }
+
+    private async Task LoadActiveServers()
+    {
+        try
+        {
+            var activeServerIds = await ApiService.GetActiveServersAsync();
+            var serverList = new List<ServerInstance>();
+
+            foreach (var server in activeServerIds)
+            {
+                try
+                {
+                    var status = await ApiService.GetServerStatusAsync(server.ServerId);
+                    serverList.Add(new ServerInstance
+                    {
+                        ServerId = server.ServerId,
+                        Endpoint = status.Endpoint ?? string.Empty,
+                        Status = status.Status,
+                        IsHealthy = status.IsHealthy
+                    });
+                }
+                catch (Exception ex)
+                {
+                    AddDebugMessage($"Failed to get status for server {server.ServerId}: {ex.Message}", "Error");
+                }
+            }
+
+            servers = serverList;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            AddDebugMessage($"Failed to load active servers: {ex.Message}", "Error");
+        }
+    }
+
+    private Task OnServerCreated(ServerInstance server)
+    {
+        servers.Add(server);
+        selectedServer = server;
+        AddDebugMessage($"Server created: {server.ServerId}", "Info");
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private Task OnServerDeleted(string serverId)
+    {
+        servers.RemoveAll(s => s.ServerId == serverId);
+        if (selectedServer?.ServerId == serverId)
+        {
+            selectedServer = null;
+        }
+        AddDebugMessage($"Server deleted: {serverId}", "Info");
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private Task OnMessageSentWrapper((string message, List<FileAttachment> attachments) data)
+    {
+        return OnMessageSent(data.message, data.attachments);
+    }
+
+    private Task OnMessageSent(string message, List<FileAttachment> attachments)
+    {
+        if (selectedServer == null) return Task.CompletedTask;
+
+        // Add user message to chat
+        var userMessage = new ChatMessage
+        {
+            Role = "User",
+            Content = message,
+            IsFromUser = true,
+            Attachments = attachments
+        };
+
+        chatMessages.Add(userMessage);
+
+        var streamingMessage = new ChatMessage
+        {
+            Role = "Assistant",
+            Content = string.Empty,
+            IsFromUser = false,
+            Timestamp = DateTime.Now
+		};
+
+        chatMessages.Add(streamingMessage);
+		streaming = true;
+        currentMessageIndex = chatMessages.Count - 1;
+
+        StateHasChanged();
+
+        AddDebugMessage($"Message sent to {selectedServer.ServerId}: {message.Length} characters, {attachments.Count} attachments", "Info");
+        return Task.CompletedTask;
+    }
+
+    private void OnStreamMessageReceived(AgentMessage eventData)
+    {
+        InvokeAsync(() =>
+        {
+            if (streaming) return;
+            var message = new ChatMessage
+            {
+                Role = "Assistant",
+				Content = eventData.Parts.OfType<TextPart>().FirstOrDefault()?.Text ?? string.Empty,
+                IsFromUser = false,
+				Timestamp = DateTime.Now
+            };
+            chatMessages.Add(message);
+            StateHasChanged();
+        });
+    }
+
+    private void OnStreamTaskUpdate(AgentTask eventData)
+    {
+        InvokeAsync(() =>
+        {
+            AddDebugMessage($"Task Update: {eventData.Id}", "Info");
+            StateHasChanged();
+        });
+    }
+
+    private void OnStreamTaskStatusUpdate(TaskStatusUpdateEvent eventData)
+    {
+        InvokeAsync(() =>
+        {
+            if(eventData.Status.State == TaskState.Completed || eventData.Status.State == TaskState.Failed)
+            {
+                AddDebugMessage($"Task {eventData.Status.State}: {eventData.Status.Message}", "Info");
+                streaming = false;
+            }
+            else
+            {
+                AddDebugMessage($"Task Status Update: {eventData.Status.State} - {eventData.Status.Message.Parts.OfType<TextPart>().FirstOrDefault()?.Text ?? string.Empty}", "Info");
+            }
+            StateHasChanged();
+        });
+    }
+
+    private void OnStreamArtifactUpdate(TaskArtifactUpdateEvent eventData)
+    {
+        InvokeAsync(() =>
+        {
+            if (eventData.Artifact.Description.Contains("Stream"))
+            {
+                chatMessages[currentMessageIndex].Content += eventData.Artifact.Parts.OfType<TextPart>().FirstOrDefault()?.Text ?? string.Empty;
+            }
+            else
+            {
+                AddDebugMessage($"Artifact Update: {eventData.Artifact.Parts.OfType<TextPart>().FirstOrDefault()?.Text ?? string.Empty}", "Info");
+            }
+            
+            StateHasChanged();
+        });
+    }
+
+    private void OnStreamDebugMessage(string message)
+    {
+        InvokeAsync(() =>
+        {
+            AddDebugMessage(message, "Debug");
+            StateHasChanged();
+        });
+    }
+
+    private void OnServerStatusChanged(ServerInstance server)
+    {
+        InvokeAsync(() =>
+        {
+            var existingServer = servers.FirstOrDefault(s => s.ServerId == server.ServerId);
+            if (existingServer != null)
+            {
+                existingServer.Status = server.Status;
+                existingServer.IsHealthy = server.IsHealthy;
+                StateHasChanged();
+            }
+        });
+    }
+
+    private void AddDebugMessage(string message, string level = "Info")
+    {
+        debugMessages.Add(new DebugMessage
+        {
+            Message = message,
+            Level = level,
+            Timestamp = DateTime.Now
+        });
+
+        // Keep only last 100 debug messages
+        if (debugMessages.Count > 100)
+        {
+            debugMessages = debugMessages.TakeLast(100).ToList();
+        }
+    }
+
+    public void Dispose()
+    {
+        StreamingService.OnMessageReceived -= OnStreamMessageReceived;
+        StreamingService.OnTaskStatusUpdate -= OnStreamTaskStatusUpdate;
+        StreamingService.OnArtifactUpdate -= OnStreamArtifactUpdate;
+        StreamingService.OnDebugMessage -= OnStreamDebugMessage;
+        StreamingService?.Dispose();
+    }
+}
