@@ -1,5 +1,6 @@
 ﻿using A2A;
 using LlmTornado.A2A.Hosting;
+using LlmTornado.A2A.Hosting.Models;
 using LlmTornado.A2A.Hosting.Services;
 using LlmTornado.Code;
 using LlmTornado.Demo.ExampleAgents.ChatBot;
@@ -92,7 +93,10 @@ internal class A2ATests
     public async Task CreateContainerTest()
     {
         // Act
-        var result = await dockerService.CreateContainerAsync(_availableAgents[0], $"OPENAI_API_KEY={_apiKey}");
+        var result = await dockerService.CreateContainerAsync(new ServerCreationRequest(){ 
+            AgentImageKey = _availableAgents[0], 
+            EnvironmentVariables = [$"OPENAI_API_KEY={_apiKey}"] 
+        });
 
         // Assert
         Assert.That(result.Success);
@@ -105,7 +109,11 @@ internal class A2ATests
     [Test]
     public async Task DeleteContainerTest()
     {
-        var createResult = await dockerService.CreateContainerAsync(_availableAgents[0], $"OPENAI_API_KEY={_apiKey}");
+        var createResult = await dockerService.CreateContainerAsync(new ServerCreationRequest()
+        {
+            AgentImageKey = _availableAgents[0],
+            EnvironmentVariables = [$"OPENAI_API_KEY={_apiKey}"]
+        });
         // Assert
         Assert.That(createResult.Success);
         Assert.That(createResult.ServerId, Is.Not.Null);
@@ -123,7 +131,11 @@ internal class A2ATests
     public async Task GetContainerStatusTest()
     {
         // Arrange
-        var createResult = await dockerService.CreateContainerAsync(_availableAgents[0], $"OPENAI_API_KEY={_apiKey}");
+        var createResult = await dockerService.CreateContainerAsync(new ServerCreationRequest()
+        {
+            AgentImageKey = _availableAgents[0],
+            EnvironmentVariables = [$"OPENAI_API_KEY={_apiKey}"]
+        });
         // Assert
         Assert.That(createResult.Success);
         Assert.That(createResult.ServerId, Is.Not.Null);
@@ -152,7 +164,11 @@ internal class A2ATests
     public async Task A2AClientSendMessageTest()
     {
         // Arrange
-        var createResult = await dockerService.CreateContainerAsync(_availableAgents[0], $"OPENAI_API_KEY={_apiKey}");
+        var createResult = await dockerService.CreateContainerAsync(new ServerCreationRequest()
+        {
+            AgentImageKey = _availableAgents[0],
+            EnvironmentVariables = [$"OPENAI_API_KEY={_apiKey}"]
+        });
 
         // Assert
         Assert.That(createResult.Success);
@@ -181,7 +197,11 @@ internal class A2ATests
     public async Task A2ASendStreamingMessageTest()
     {
         // Arrange
-        var createResult = await dockerService.CreateContainerAsync(_availableAgents[0], $"OPENAI_API_KEY={_apiKey}");
+        var createResult = await dockerService.CreateContainerAsync(new ServerCreationRequest()
+        {
+            AgentImageKey = _availableAgents[0],
+            EnvironmentVariables = [$"OPENAI_API_KEY={_apiKey}"]
+        });
 
         // Assert
         Assert.That(createResult.Success);

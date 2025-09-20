@@ -151,26 +151,42 @@ public class SSEStreamingService : IDisposable
     private void OnMessageReceivedEvent(StreamingEventData eventData)
     {
         var agentMessage = JsonSerializer.Deserialize<AgentMessage>(eventData.Data, _jsonOptions);
-
+        if(agentMessage == null)
+        {
+            OnDebugMessage?.Invoke("Failed to deserialize AgentMessage");
+            return;
+        }
         OnMessageReceived?.Invoke(agentMessage);
     }
 
     private void OnTaskStatusUpdateEvent(StreamingEventData eventData)
     {
         var taskStatus = JsonSerializer.Deserialize<TaskStatusUpdateEvent>(eventData.Data, _jsonOptions);
-
+        if (taskStatus == null)
+        {
+            OnDebugMessage?.Invoke("Failed to deserialize TaskStatusUpdateEvent");
+            return;
+        }
         OnTaskStatusUpdate?.Invoke(taskStatus);
     }
     private void OnTaskUpdateEvent(StreamingEventData eventData)
     {
         var taskUpdate = JsonSerializer.Deserialize<AgentTask>(eventData.Data, _jsonOptions);
-
+        if (taskUpdate == null)
+        {
+            OnDebugMessage?.Invoke("Failed to deserialize AgentTask");
+            return;
+        }
         OnTaskUpdate?.Invoke(taskUpdate);
     }
     private void OnArtifactUpdateEvent(StreamingEventData eventData)
     {
         var artifactUpdate = JsonSerializer.Deserialize<TaskArtifactUpdateEvent>(eventData.Data, _jsonOptions);
-
+        if (artifactUpdate == null)
+        {
+            OnDebugMessage?.Invoke("Failed to deserialize TaskArtifactUpdateEvent");
+            return;
+        }
         OnArtifactUpdate?.Invoke(artifactUpdate);
     }
 

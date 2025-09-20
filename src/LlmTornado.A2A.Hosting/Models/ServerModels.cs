@@ -1,4 +1,6 @@
-﻿namespace LlmTornado.A2A.Hosting.Models;
+﻿using System.Text.Json.Serialization;
+
+namespace LlmTornado.A2A.Hosting.Models;
 
 public class ServerInfo
 {
@@ -37,6 +39,24 @@ public class ServerCreationResult
     public string? ErrorMessage { get; set; }
 }
 
+/// <summary>
+/// Container creation result model
+/// </summary>
+public class ServerCreationRequest
+{
+    /// <summary>
+    /// Whether the container was created successfully
+    /// </summary>
+    [JsonPropertyName("agentImageKey")]
+    public string AgentImageKey { get; set; } = string.Empty;
+
+    [JsonPropertyName("environmentVariables")]
+    public string[] EnvironmentVariables { get; set; } = Array.Empty<string>();
+
+    [JsonPropertyName("mountPath")]
+    public string? MountPath { get; set; } = null;
+}
+
 public class ServerStatus
 {
     /// <summary>
@@ -65,9 +85,3 @@ public class ServerStatus
     public string? ErrorMessage { get; set; }
 }
 
-
-public class ServerCreationRequest
-{
-    public string Configuration { get; set; } = string.Empty;
-    public string ApiKey { get; set; } = string.Empty;
-}

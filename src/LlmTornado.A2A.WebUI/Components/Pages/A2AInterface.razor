@@ -65,7 +65,7 @@
     private List<ServerInstance> servers = new();
     private List<ChatMessage> chatMessages = new();
     private List<DebugMessage> debugMessages = new();
-    int currentMessageIndex = 1;
+    int currentMessageIndex = 0;
     bool streaming = false;
 
     protected override async Task OnInitializedAsync()
@@ -166,7 +166,7 @@
 		};
 
         chatMessages.Add(streamingMessage);
-		streaming = true;
+        streaming = true;
         currentMessageIndex = chatMessages.Count - 1;
 
         StateHasChanged();
@@ -207,13 +207,17 @@
         {
             if(eventData.Status.State == TaskState.Completed || eventData.Status.State == TaskState.Failed)
             {
-                AddDebugMessage($"Task {eventData.Status.State}: {eventData.Status.Message}", "Info");
                 streaming = false;
             }
-            else
+            if(eventData.Status.Message != null)
             {
                 AddDebugMessage($"Task Status Update: {eventData.Status.State} - {eventData.Status.Message.Parts.OfType<TextPart>().FirstOrDefault()?.Text ?? string.Empty}", "Info");
             }
+            else
+            {
+				AddDebugMessage($"Task Status Update: {eventData.Status.State}", "Info");
+            }
+
             StateHasChanged();
         });
     }
@@ -222,7 +226,7 @@
     {
         InvokeAsync(() =>
         {
-            if (eventData.Artifact.Description.Contains("Stream"))
+            if (eventData.Artifact.Description.Contains("OutputTextDelta"))
             {
                 chatMessages[currentMessageIndex].Content += eventData.Artifact.Parts.OfType<TextPart>().FirstOrDefault()?.Text ?? string.Empty;
             }

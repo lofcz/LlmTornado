@@ -25,7 +25,7 @@ public class DockerDispatchService: IA2ADispatchService
 
     public async Task<ServerCreationResult> DispatchServerAsync(ServerCreationRequest request)
     {
-        return await CreateContainerAsync(request.Configuration, request.ApiKey, _configuration["Docker:MountPath"]);
+        return await CreateContainerAsync(request);
     }
 
     public async Task<bool> RemoveServerAsync(string serverId)
@@ -49,7 +49,7 @@ public class DockerDispatchService: IA2ADispatchService
         return GetActiveContainers();
     }
 
-    public async Task<ServerCreationResult> CreateContainerAsync(string agentImageKey, string apiKeyString,string? mountPath = null)
+    public async Task<ServerCreationResult> CreateContainerAsync(ServerCreationRequest creationRequest)
     {
         try
         {
@@ -66,17 +66,20 @@ public class DockerDispatchService: IA2ADispatchService
                 "-p", $"{hostPort}:{containerPort}",
             };
 
-            dockerArgs.AddRange(new[] { "-e", apiKeyString });
+            foreach (var envVar in creationRequest.EnvironmentVariables ?? Array.Empty<string>())
+            {
+                dockerArgs.AddRange(new[] { "-e", envVar });
+            }
 
             // Add volume mount if specified
-            if (!string.IsNullOrEmpty(mountPath))
+            if (!string.IsNullOrEmpty(_configuration["Docker:MountPath"]))
             {
-                var absoluteMountPath = Path.GetFullPath(mountPath);
+                var absoluteMountPath = Path.GetFullPath(_configuration["Docker:MountPath"]);
                 Directory.CreateDirectory(absoluteMountPath); // Ensure directory exists
                 dockerArgs.AddRange(new[] { "-v", $"{absoluteMountPath}:/app/output" });
             }
 
-            dockerArgs.Add(_agentImages[agentImageKey]);
+            dockerArgs.Add(_agentImages[creationRequest.AgentImageKey]);
 
             // Execute docker run command
             var processInfo = new ProcessStartInfo
@@ -126,7 +129,7 @@ public class DockerDispatchService: IA2ADispatchService
                 HostPort = hostPort,
                 RemotePort = containerPort,
                 Endpoint = endpoint,
-                MountPath = mountPath,
+                MountPath = creationRequest.MountPath,
                 CreatedAt = DateTime.UtcNow
             };
 

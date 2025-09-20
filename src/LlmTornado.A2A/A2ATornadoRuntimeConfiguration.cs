@@ -71,7 +71,7 @@ public class A2ATornadoRuntimeConfiguration : BaseA2ATornadoRuntimeConfiguration
     {
         AgentCapabilities capabilities = new AgentCapabilities()
         {
-            Streaming = false,
+            Streaming = true,
             PushNotifications = false,
         };
 

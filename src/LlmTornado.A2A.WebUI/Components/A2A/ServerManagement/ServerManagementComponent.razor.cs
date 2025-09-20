@@ -49,8 +49,8 @@ public partial class ServerManagementComponent : ComponentBase
         {
             var request = new ServerCreationRequest
             {
-                Configuration = selectedConfiguration,
-                ApiKey = ApiKey
+                AgentImageKey = selectedConfiguration,
+                EnvironmentVariables = new[] { $"{ApiKey}" }
             };
 
             var result = await ApiService.CreateServerAsync(request);

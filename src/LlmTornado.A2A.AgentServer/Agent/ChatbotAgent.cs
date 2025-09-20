@@ -17,7 +17,7 @@ public class ChatBotAgent : OrchestrationRuntimeConfiguration
     {
         TornadoApi client = new TornadoApi(LLmProviders.OpenAi, Environment.GetEnvironmentVariable("OPENAI_API_KEY"));
 
-        BuildSimpleAgent(client, true, "AgentV10.json");
+        BuildSimpleAgent(client, true, "/app/output/AgentV10.json");
     }
 
     public void BuildSimpleAgent(TornadoApi client, bool streaming = false, string conversationFile = "SimpleAgent.json")
@@ -126,8 +126,7 @@ Given the following context will include Vector Search Memory, Websearch Results
     {
         process.RegisterAgent(Agent);
 
-        List<ChatMessage> messages = _runtimeConfiguration.GetMessages();
-        messages.Add(process.Input);
+        List<ChatMessage> messages = _runtimeConfiguration.GetMessages(); //Includes latest user message
 
         _conv = await Agent.RunAsync(
             appendMessages: messages,

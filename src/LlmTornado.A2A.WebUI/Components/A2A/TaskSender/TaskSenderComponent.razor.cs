@@ -53,11 +53,11 @@ public partial class TaskSenderComponent : ComponentBase
                 parts.Add(new FilePart { File = file });
             }
 
-            // Start streaming
-            await StreamingService.StartStreamingAsync(SelectedServer.Endpoint, parts);
-
             // Notify parent component
             await OnMessageSent.InvokeAsync((messageText, new List<FileAttachment>(attachments)));
+
+            // Start streaming
+            await StreamingService.StartStreamingAsync(SelectedServer.Endpoint, parts);
 
             // Clear the input
             messageText = string.Empty;
