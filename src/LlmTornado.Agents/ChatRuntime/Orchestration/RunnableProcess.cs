@@ -45,14 +45,14 @@ public class RunnableProcess
     /// Gets or sets the input object to process.
     /// </summary>
     /// [SerializationRequired]
-    [JsonIgnore]
+    [JsonPropertyName("input")]
     public object BaseInput { get; set; } = new object();
 
     /// <summary>
     /// Gets or sets the base result of the operation.
     /// </summary>
     /// [SerializationRequired]
-    [JsonIgnore]
+    [JsonPropertyName("result")]
     public object? BaseResult { get; set; }
 
     /// <summary>
@@ -76,6 +76,10 @@ public class RunnableProcess
     [JsonPropertyName("tokenUsage")]
     public int TokenUsage { get; set; } = 0;
 
+    /// <summary>
+    /// Check if the process is completed.
+    /// </summary>
+    public bool IsCompleted => BaseResult != null;
 
     //public object Result { get; set; }
     public RunnableProcess() { }
@@ -246,10 +250,8 @@ public class RunnableProcess<TInput, TOutput> : RunnableProcess
     /// <summary>
     /// Gets or sets the input value of type <typeparamref name="T"/>.
     /// </summary>
-    [JsonPropertyName("input")]
     public TInput Input { get => (TInput)BaseInput; set => BaseInput = value!; }
 
-    [JsonPropertyName("result")]
     public TOutput? Result { get => (TOutput?)BaseResult; set => BaseResult = value!; }
 
     /// <summary>

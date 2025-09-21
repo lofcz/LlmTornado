@@ -288,5 +288,11 @@ Console.WriteLine(report.Content);
 ## Create Complex Orchestration Workflows
 ![ComplexOrchestration](/assets/PlannerOrchestrationFlow.jpg)
 
-## TODO
-* [ ]  Make todo list
+## Where I left off at.
+* Need to add saving to orchestration and impliment serializing RunnableProcess
+* Need to work out completed states in a parallel Tick while other states are waiting for user input
+* Images and streaming are both supported on WebUI
+
+
+## Ideas
+* [ ] Add MCP tool json to WebUI 
