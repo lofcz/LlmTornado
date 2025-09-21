@@ -248,7 +248,7 @@ internal static class ResponseHelpers
     {
         ChatChoice choice = new ChatChoice();
 
-        choice.Message ??= new ChatMessage();
+        choice.Message ??= new ChatMessage(ChatMessageRoles.Assistant);
         choice.Message.Parts ??= [];
         string? textOutput = response.OutputText;
         
