@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
@@ -38,6 +39,16 @@ public class ChatModelMistralPremier : IVendorModelClassProvider
     /// <inheritdoc cref="ModelMagistralMedium2507"/>
     /// </summary>
     public readonly ChatModel MagistralMedium2507 = ModelMagistralMedium2507;
+    
+    /// <summary>
+    /// Our frontier-class reasoning model released September 2025 with vision support. 
+    /// </summary>
+    public static readonly ChatModel ModelMagistralMedium2509 = new ChatModel("magistral-medium-2509", LLmProviders.Mistral, 128_000);
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelMagistralMedium2509"/>
+    /// </summary>
+    public readonly ChatModel MagistralMedium2509 = ModelMagistralMedium2509;
     
     /// <summary>
     /// Our frontier-class reasoning model released June 2025. 
@@ -132,21 +143,13 @@ public class ChatModelMistralPremier : IVendorModelClassProvider
     /// <summary>
     /// All known Premier models from Mistral.
     /// </summary>
-    public static readonly List<IModel> ModelsAll =
-    [
-        ModelMistralLarge,
-        ModelPixtralLarge,
-        ModelMistralSaba,
-        ModelMinistral3B,
-        ModelMinistral8B,
-        ModelMedium3,
-        ModelMagistralMedium2506,
-        ModelMagistralMedium2507,
-        ModelDevstralMedium2507,
-        ModelCodestral2501,
-        ModelCodestral2508,
-        ModelMistralMedium2508
-    ];
+    public static List<IModel> ModelsAll => LazyModelsAll.Value;
+
+    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [
+        ModelMistralLarge, ModelPixtralLarge, ModelMistralSaba, ModelMinistral3B, ModelMinistral8B, ModelMedium3, 
+        ModelMagistralMedium2506, ModelMagistralMedium2507, ModelDevstralMedium2507, ModelCodestral2501, ModelCodestral2508, 
+        ModelMistralMedium2508, ModelMagistralMedium2509
+    ]);
 
     /// <summary>
     /// <inheritdoc cref="ModelsAll"/>

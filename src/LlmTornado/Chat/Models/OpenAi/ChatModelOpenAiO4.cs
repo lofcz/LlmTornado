@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
@@ -32,10 +33,12 @@ public class ChatModelOpenAiO4 : IVendorModelClassProvider
     /// </summary>
     public readonly ChatModel V4Mini = ModelV4Mini;
     
-    public static readonly List<IModel> ModelsAll = [
-        ModelV4Mini,
-        ModelV4MiniDeepResearch
-    ];
+    /// <summary>
+    /// All known O4 models from OpenAI.
+    /// </summary>
+    public static List<IModel> ModelsAll => LazyModelsAll.Value;
+
+    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [ModelV4Mini, ModelV4MiniDeepResearch]);
     
     /// <summary>
     /// <inheritdoc cref="ModelsAll"/>

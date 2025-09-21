@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
@@ -32,11 +33,9 @@ public class ChatModelGoogleGemma : IVendorModelClassProvider
     /// <summary>
     /// All known Gemma models from Google.
     /// </summary>
-    public static readonly List<IModel> ModelsAll =
-    [
-        ModelV327B,
-        Model3Ne4B
-    ];
+    public static List<IModel> ModelsAll => LazyModelsAll.Value;
+
+    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [ModelV327B, Model3Ne4B]);
 
     /// <summary>
     /// <inheritdoc cref="ModelsAll"/>

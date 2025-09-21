@@ -45,12 +45,9 @@ public class ChatModelAnthropicClaude3 : IVendorModelClassProvider
     /// <summary>
     /// All known Claude 3 models from Anthropic.
     /// </summary>
-    public static readonly List<IModel> ModelsAll =
-    [
-        ModelHaiku,
-        ModelSonnet,
-        ModelOpus
-    ];
+    public static List<IModel> ModelsAll => LazyModelsAll.Value;
+    
+    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [ModelHaiku, ModelSonnet, ModelOpus]);
 
     /// <summary>
     /// <inheritdoc cref="ModelsAll"/>

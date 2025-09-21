@@ -113,9 +113,10 @@ public class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
 
     public override async IAsyncEnumerable<ChatResult?> InboundStream(StreamReader reader, ChatRequest request, ChatStreamEventHandler? eventHandler)
     {
-        ChatMessage? plaintextAccu = null;
         ChatUsage? usage = null;
         ChatMessageFinishReasons finishReason = ChatMessageFinishReasons.Unknown;
+
+        StringBuilder? plaintextAccu = null, reasoningAccu = null;
         
 #if MODERN
         await using JsonTextReader jsonReader = new JsonTextReader(reader);
@@ -123,7 +124,7 @@ public class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
         using JsonTextReader jsonReader = new JsonTextReader(reader);
 #endif
         // whenever using json schema, the response is received as a series of plaintext events
-        bool isBufferingTool = request.VendorExtensions?.Google?.ResponseSchema is not null || request.ToolChoice?.Mode is OutboundToolChoiceModes.Required or OutboundToolChoiceModes.ToolFunction;
+        bool isBufferingTool = request.VendorExtensions?.Google?.ResponseSchema is not null;
         
         if (await jsonReader.ReadAsync(request.CancellationToken) && jsonReader.TokenType is JsonToken.StartArray)
         {
@@ -150,11 +151,20 @@ public class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
                             {
                                 foreach (VendorGoogleChatRequestMessagePart part in candidate.Content.Parts)
                                 {
+                                    bool thought = part.Thought ?? false;
+           
                                     if (part.Text is not null)
                                     {
-                                        plaintextAccu ??= new ChatMessage();
-                                        plaintextAccu.ContentBuilder ??= new StringBuilder();
-                                        plaintextAccu.ContentBuilder.Append(part.Text);
+                                        if (!thought)
+                                        {
+                                            plaintextAccu ??= new StringBuilder();
+                                            plaintextAccu.Append(part.Text);
+                                        }
+                                        else
+                                        {
+                                            reasoningAccu ??= new StringBuilder();
+                                            reasoningAccu.Append(part.Text);
+                                        }
                                     }
                                 }   
                             }
@@ -185,9 +195,9 @@ public class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
             }
         }
 
-        if (plaintextAccu is not null)
+        if (plaintextAccu is not null || reasoningAccu is not null)
         {
-            if (isBufferingTool)
+            if (plaintextAccu is not null && isBufferingTool)
             {
                 yield return new ChatResult
                 {
@@ -202,10 +212,9 @@ public class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
                                     new ToolCall
                                     {
                                         Type = "function",
-                                        FunctionCall = new FunctionCall
+                                        FunctionCall = new FunctionCall(plaintextAccu.ToString())
                                         {
-                                            Name = request.Tools?.FirstOrDefault(x => x.Strict ?? false)?.Function?.Name ?? request.VendorExtensions?.Google?.ResponseSchema?.Function?.Name ?? string.Empty,
-                                            Arguments = plaintextAccu.ContentBuilder?.ToString() ?? string.Empty
+                                            Name = request.Tools?.FirstOrDefault(x => x.Strict ?? false)?.Function?.Name ?? request.VendorExtensions?.Google?.ResponseSchema?.Function?.Name ?? string.Empty
                                         }
                                     }
                                 ]
@@ -217,6 +226,29 @@ public class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
                 
                 yield break;
             }
+
+            List<ChatMessagePart> parts = [];
+            string? plaintext = plaintextAccu?.ToString();
+            string? reasoning = reasoningAccu?.ToString();
+
+            if (reasoning?.Length > 0)
+            {
+                parts.Add(new ChatMessagePart(ChatMessageTypes.Reasoning)
+                {
+                    Reasoning = new ChatMessageReasoningData
+                    {
+                        Content = reasoning
+                    }
+                });
+            }
+
+            if (plaintext?.Length > 0)
+            {
+                parts.Add(new ChatMessagePart(ChatMessageTypes.Text)
+                {
+                    Text = plaintext
+                });
+            }
             
             yield return new ChatResult
             {
@@ -226,7 +258,7 @@ public class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
                     {
                         Delta = new ChatMessage
                         {
-                            Content = plaintextAccu.ContentBuilder?.ToString()
+                            Parts = parts
                         }
                     }
                 ],

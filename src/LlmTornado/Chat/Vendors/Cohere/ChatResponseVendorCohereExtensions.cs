@@ -49,7 +49,7 @@ public class ChatResponseVendorCohereExtensions
     /// <returns></returns>
     public List<VendorCohereCitationBlock> ParseCitations()
     {
-        return ParseCitations(Response.Text ?? string.Empty);
+        return []; // ParseCitations(Response.Message ?? string.Empty);
     }
 
     /// <summary>
@@ -68,7 +68,7 @@ public class ChatResponseVendorCohereExtensions
             {
                 if (text.Length > 0 && citation.Start > pos)
                 {
-                    string beforeSnippet = ClearSnippet(text.Substring(pos, citation.Start - pos));
+                    string beforeSnippet = ClearSnippet(text.Substring(pos, citation.Start.Value - pos));
 
                     if (beforeSnippet.Length > 0)
                     {
@@ -78,7 +78,7 @@ public class ChatResponseVendorCohereExtensions
                         });   
                     }
 
-                    pos += citation.Start - pos;
+                    pos += citation.Start.Value - pos;
                 }
                 
                 string snippet = ClearSnippet(citation.Text);
@@ -128,10 +128,10 @@ public class ChatResponseVendorCohereExtensions
 
     internal ChatResponseVendorCohereExtensions(VendorCohereChatResult response)
     {
-        Citations = response.Citations;
+        /*Citations = response.Citations;
         Documents = response.Documents;
         SearchQueries = response.SearchQueries;
         SearchResults = response.SearchResults;
-        Response = response;
+        Response = response;*/
     }
 }

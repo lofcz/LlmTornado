@@ -20,6 +20,7 @@ class Program
         AppendLine("// This code was generated with LlmTornado.Internal.OpenRouter");
         AppendLine("// do not edit manually");
         AppendLine();
+        AppendLine("using System;");
         AppendLine("using System.Collections.Generic;");
         AppendLine("using LlmTornado.Code.Models;");
         AppendLine("using LlmTornado.Code;");
@@ -33,6 +34,7 @@ class Program
         AppendLine("{");
 
         int i = 0;
+        List<string> nonSkippedModelIdentifiers = [];
         
         foreach (RetrievedModel model in models)
         {
@@ -43,6 +45,8 @@ class Program
                 skip.Add(model);
                 continue;
             } 
+            
+            nonSkippedModelIdentifiers.Add($"Model{identifier}");
             
             AppendLine($"/// <summary>", 1);
             AppendLine($"/// {model.Id}", 1);
@@ -68,21 +72,9 @@ class Program
         AppendLine($"/// <summary>", 1);
         AppendLine($"/// All known models from Open Router.", 1);
         AppendLine($"/// </summary>", 1);
-        AppendLine("public static readonly List<IModel> ModelsAll =", 1);
-        AppendLine("[", 1);
-        
-        foreach (RetrievedModel model in models)
-        {
-            if (skip.Contains(model))
-            {
-                continue;
-            }
-            
-            string identifier = Normalize(model.Id);
-            AppendLine($"Model{identifier},", 2);
-        }
-        
-        AppendLine("];", 1);
+        AppendLine("public static List<IModel> ModelsAll => LazyModelsAll.Value;", 1);
+        AppendLine();
+        AppendLine($"private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [{string.Join(", ", nonSkippedModelIdentifiers)}]);", 1);
         AppendLine();
         
         AppendLine($"/// <summary>", 1);

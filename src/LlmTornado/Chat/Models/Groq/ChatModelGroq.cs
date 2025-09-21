@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
@@ -65,28 +66,23 @@ public class ChatModelGroq : BaseVendorModelProvider
     /// <summary>
     /// Map of models owned by the provider.
     /// </summary>
-    public static readonly HashSet<string> AllModelsMap = [];
+    public static HashSet<string> AllModelsMap => LazyAllModelsMap.Value;
+
+    private static readonly Lazy<HashSet<string>> LazyAllModelsMap = new Lazy<HashSet<string>>(() =>
+    {
+        HashSet<string> map = [];
+
+        ModelsAll.ForEach(x => { map.Add(x.Name); });
+
+        return map;
+    });
     
     /// <summary>
     /// <inheritdoc cref="AllModels"/>
     /// </summary>
-    public static readonly List<IModel> ModelsAll = [
-        ..ChatModelGroqMeta.ModelsAll,
-        ..ChatModelGroqGoogle.ModelsAll,
-        ..ChatModelGroqGroq.ModelsAll,
-        ..ChatModelGroqMistral.ModelsAll,
-        ..ChatModelGroqAlibaba.ModelsAll,
-        ..ChatModelGroqMoonshotAi.ModelsAll,
-        ..ChatModelGroqOpenAi.ModelsAll
-    ];
-    
-    static ChatModelGroq()
-    {
-        ModelsAll.ForEach(x =>
-        {
-            AllModelsMap.Add(x.Name);
-        });
-    }
+    public static List<IModel> ModelsAll => LazyModelsAll.Value;
+
+    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [..ChatModelGroqMeta.ModelsAll, ..ChatModelGroqGoogle.ModelsAll, ..ChatModelGroqGroq.ModelsAll, ..ChatModelGroqMistral.ModelsAll, ..ChatModelGroqAlibaba.ModelsAll, ..ChatModelGroqMoonshotAi.ModelsAll, ..ChatModelGroqOpenAi.ModelsAll]);
     
     internal ChatModelGroq()
     {

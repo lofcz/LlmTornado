@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
@@ -25,10 +26,9 @@ public class ChatModelGroqMoonshotAi : IVendorModelClassProvider
     /// <summary>
     /// All known Moonshot AI models from Groq.
     /// </summary>
-    public static readonly List<IModel> ModelsAll =
-    [
-        ModelKimiK2Instruct
-    ];
+    public static List<IModel> ModelsAll => LazyModelsAll.Value;
+
+    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [ModelKimiK2Instruct]);
 
     /// <summary>
     /// <inheritdoc cref="ModelsAll"/>

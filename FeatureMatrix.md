@@ -19,7 +19,7 @@ _Empty field means the feature is unsupported by the provider._
 |**Images**     | ✅ |    | ✅ |    |    |     |     |  ✅  |     |        |      |      |     |
 |**Models**     | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |  ✅ |   |    |      |  ✅    |  ✅    |
 |**Moderation** | ✅ |    |     |    |    |     |     |    |     |        |      |      |      |
-|**Responses**  | ✅ |    |     |    |    |     |     |     |     |        |      |      |      |
+|**Responses**  | ✅ |    |     |    |    |     |     | ❌ |     |        |      |      |      |
 |**Tokenize**   |    | ❌ |     | ❌ |    |     |     |    |     |       |      |      |      |
 |**FIM**        |    |     |     |    | ❌ |     | ❌  |    |     |       |      |      |      |
 
@@ -46,11 +46,9 @@ Conversations | Assistants | Threads | Messages | Runs | Run steps | Vector stor
 
 ## Cohere Specific
 
- Rerank | Embed Jobs* |  Datasets* | 
-|-----------|------------ | ------------ |
-| ❌ | ❌ |  ❌ | ❌
-
-_*`/v1` APIs, future support is unsure and probably won't be implemented._
+ Rerank 
+|-----------|
+| ❌ |
 
 ## Mistral Specific
 

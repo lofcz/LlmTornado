@@ -26,10 +26,9 @@ public class ChatModelGroqGoogle : IVendorModelClassProvider
     /// <summary>
     /// All known Google models from Groq.
     /// </summary>
-    public static readonly List<IModel> ModelsAll =
-    [
-        ModelGemma29B
-    ];
+    public static List<IModel> ModelsAll => LazyModelsAll.Value;
+
+    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [ModelGemma29B]);
 
     /// <summary>
     /// <inheritdoc cref="ModelsAll"/>

@@ -76,6 +76,20 @@ public class FunctionCall
         ArgGetter = new Lazy<ChatFunctionParamsGetter>(() => new ChatFunctionParamsGetter(DecodedArguments?.Value));
         DecodedArguments = new Lazy<Dictionary<string, object?>?>(() => Arguments.IsNullOrWhiteSpace() ? [] : JsonConvert.DeserializeObject<Dictionary<string, object?>>(Arguments));
     }
+
+    internal FunctionCall(Dictionary<string, object?> arguments)
+    {
+        Arguments = arguments.ToJson();
+        ArgGetter = new Lazy<ChatFunctionParamsGetter>(() => new ChatFunctionParamsGetter(DecodedArguments?.Value));
+        DecodedArguments = new Lazy<Dictionary<string, object?>?>(() => Arguments.IsNullOrWhiteSpace() ? [] : JsonConvert.DeserializeObject<Dictionary<string, object?>>(Arguments));
+    }
+
+    internal FunctionCall(string arguments)
+    {
+        Arguments = arguments;
+        ArgGetter = new Lazy<ChatFunctionParamsGetter>(() => new ChatFunctionParamsGetter(DecodedArguments?.Value));
+        DecodedArguments = new Lazy<Dictionary<string, object?>?>(() => Arguments.IsNullOrWhiteSpace() ? [] : JsonConvert.DeserializeObject<Dictionary<string, object?>>(Arguments));
+    }
     
     /// <summary>
     /// Tool this call is linked to. This property might not be set outside remote tools (MCP).

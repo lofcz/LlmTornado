@@ -22,7 +22,7 @@ internal class VendorCohereUsage : IChatUsage
     [JsonProperty("api_version")]
     public VendorCohereUsageApi Api { get; set; }
     [JsonProperty("billed_units")]
-    public VendorCohereUsageTokens BilledUnits { get; set; }
+    public VendorCohereUsageTokens? BilledUnits { get; set; }
     [JsonProperty("tokens")]
     public VendorCohereUsageTokens? Tokens { get; set; }
     [JsonProperty("response_type")]

@@ -14,13 +14,21 @@ namespace LlmTornado.Responses;
 /// Base class for input items
 /// </summary>
 [JsonConverter(typeof(InputItemJsonConverter))]
-public abstract class ResponseInputItem
+public abstract class ResponseInputItem : IResponsesConversationItem
 {
     /// <summary>
     /// The type of the input item
     /// </summary>
     [JsonProperty("type")]
     public abstract string Type { get; }
+}
+
+/// <summary>
+/// Responses items that can be stored in conversations.
+/// </summary>
+public interface IResponsesConversationItem
+{
+    
 }
 
 /// <summary>

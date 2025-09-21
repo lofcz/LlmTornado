@@ -8,6 +8,7 @@ using System.Net.Http.Headers;
 using System.Reflection;
 using System.Text;
 using LlmTornado.Chat;
+using LlmTornado.Chat.Vendors.Cohere;
 using LlmTornado.Chat.Vendors.Perplexity;
 using LlmTornado.Chat.Vendors.XAi;
 using LlmTornado.Code.Models;
@@ -67,6 +68,9 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
     {
         return endpoint switch
         {
+            // variant providers overrides
+            CapabilityEndpoints.Chat when provider is LLmProviders.Cohere => "chat",
+            // default endpoints
             CapabilityEndpoints.Audio => "audio",
             CapabilityEndpoints.Chat => "chat/completions",
             CapabilityEndpoints.Completions => "completions",
@@ -82,6 +86,7 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
             CapabilityEndpoints.Threads => "threads",
             CapabilityEndpoints.VectorStores => "vector_stores",
             CapabilityEndpoints.Responses => "responses",
+            CapabilityEndpoints.ResponsesConversation => "conversations",
             // conditionally supported
             CapabilityEndpoints.ContextualEmbeddings when provider is LLmProviders.Voyage => "contextualizedembeddings",
             CapabilityEndpoints.MultimodalEmbeddings when provider is LLmProviders.Voyage => "multimodalembeddings",
@@ -100,7 +105,7 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
     public override string ApiUrl(CapabilityEndpoints endpoint, string? url, IModel? model = null)
     {
         string eStr = GetEndpointUrlFragment(endpoint, Provider);
-        return UrlResolver is not null ? string.Format(UrlResolver.Invoke(endpoint, url, new RequestUrlContext(eStr, url, model)), eStr, url, model?.Name) : $"{string.Format(Api?.ApiUrlFormat ?? "https://api.openai.com/{0}/{1}", Api?.ApiVersion ?? "v1", GetEndpointUrlFragment(endpoint), model?.Name)}{url}";
+        return UrlResolver is not null ? string.Format(UrlResolver.Invoke(endpoint, url, new RequestUrlContext(eStr, url, model)), eStr, url, model?.Name) : $"{string.Format(Api?.ApiUrlFormat ?? "https://api.openai.com/{0}/{1}", Api?.ResolveApiVersion(), GetEndpointUrlFragment(endpoint), model?.Name)}{url}";
     }
     
     public override HttpRequestMessage OutboundMessage(string url, HttpMethod verb, object? data, bool streaming)
@@ -133,7 +138,7 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
         }
         else
         {
-            req.Headers.Add("OpenAI-Beta", "assistants=v2");
+            //req.Headers.Add("OpenAI-Beta", "");
         }
         
         return req;
@@ -180,9 +185,20 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
         {
             LLmProviders.OpenAi => JsonConvert.DeserializeObject<T>(jsonData),
             LLmProviders.XAi => InboundMessageVariantProviderXAi<T>(jsonData, postData),
+            LLmProviders.Cohere => InboundMessageVariantProviderCohere<T>(jsonData, postData),
             LLmProviders.Perplexity => InboundMessageVariantProviderPerplexity<T>(jsonData, postData),
             _ => JsonConvert.DeserializeObject<T>(jsonData)
         };
+    }
+    
+    static T? InboundMessageVariantProviderCohere<T>(string jsonData, string? postData)
+    {
+        if (typeof(T) == typeof(ChatResult))
+        {
+            return (T?)(object?)VendorCohereChatResult.Deserialize(jsonData);
+        }
+        
+        return JsonConvert.DeserializeObject<T>(jsonData);
     }
 
     static T? InboundMessageVariantProviderXAi<T>(string jsonData, string? postData)
@@ -241,6 +257,7 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
             {
                 LLmProviders.OpenAi => JsonConvert.DeserializeObject<ChatResult>(item.Data),
                 LLmProviders.XAi => InboundMessageVariantProviderXAi<ChatResult>(item.Data, null),
+                LLmProviders.Cohere => InboundMessageVariantProviderCohere<ChatResult>(item.Data, null),
                 _ => JsonConvert.DeserializeObject<ChatResult>(item.Data)
             };
      

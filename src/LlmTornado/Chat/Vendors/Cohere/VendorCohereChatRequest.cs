@@ -1,332 +1,814 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
+using System.ComponentModel;
 using System.Linq;
-using System.Net;
-using System.Net.Http;
-using LlmTornado.Chat;
+using System.Runtime.Serialization;
 using LlmTornado.Chat.Models;
-using LlmTornado.Chat.Vendors.Cohere;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
-using LlmTornado.Common;
+using LlmTornado.Images;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
 
 namespace LlmTornado.Chat.Vendors.Cohere;
 
+#region Request Model
+
+/// <summary>
+/// Represents the request payload for the Cohere Chat API (v2).
+/// </summary>
 internal class VendorCohereChatRequest
 {
-    private static readonly HashSet<ChatModel> Gen1Models = [ 
-        ChatModel.Cohere.Command.Default, 
-        ChatModel.Cohere.Command.CommandLight, 
-        ChatModel.Cohere.Command.RPlus
-    ];
-    
-    internal class VendorCohereChatRequestMessage
-    {
-        [JsonProperty("role")]
-        public string Role { get; set; }
-        [JsonProperty("message")]
-        [JsonConverter(typeof(VendorCohereChatRequestMessageContent.VendorAnthropicChatRequestMessageContentJsonConverter))]
-        public VendorCohereChatRequestMessageContent Content { get; set; }
-        
-        internal class VendorCohereChatRequestMessageContent
-        {
-            public ChatMessage Msg { get; set; }
+    [JsonProperty("stream")]
+    public bool Stream { get; set; }
 
-            public VendorCohereChatRequestMessageContent(ChatMessage msg)
-            {
-                Msg = msg;
-            }
-
-            public VendorCohereChatRequestMessageContent()
-            {
-                
-            }
-
-            internal class VendorAnthropicChatRequestMessageContentJsonConverter : JsonConverter<VendorCohereChatRequestMessageContent>
-            {
-                public override void WriteJson(JsonWriter writer, VendorCohereChatRequestMessageContent value, JsonSerializer serializer)
-                {
-                    if (value.Msg.Parts?.Count > 0)
-                    {
-                        writer.WriteValue(string.Join(" ", value.Msg.Parts.Select(x => x.Text)));
-                    }
-                    else if (value.Msg.ToolCallId is not null)
-                    {
-                        // [todo]
-                    }
-                    else if (value.Msg.ToolCalls?.Count > 0)
-                    {
-                        writer.WriteRawValue(value.Msg.Content ?? string.Empty);
-                    }
-                    else
-                    {
-                        writer.WriteValue(value.Msg.Content ?? string.Empty);   
-                    }
-                }
-
-                public override VendorCohereChatRequestMessageContent ReadJson(JsonReader reader, Type objectType, VendorCohereChatRequestMessageContent existingValue, bool hasExistingValue, JsonSerializer serializer)
-                {
-                    return new VendorCohereChatRequestMessageContent();
-                }
-            }
-        }
-        
-        public VendorCohereChatRequestMessage(ChatMessageRoles role, ChatMessage msg)
-        {
-            Role = role switch
-            {
-                ChatMessageRoles.Assistant => "CHATBOT",
-                ChatMessageRoles.System => "SYSTEM",
-                ChatMessageRoles.User => "USER",
-                _ => "USER"
-            };
-
-            Content = new VendorCohereChatRequestMessageContent(msg);
-        }
-    }
-    
-    [JsonProperty("message")]
-    public string Message { get; set; }
-    [JsonProperty("chat_history")]
-    public List<VendorCohereChatRequestMessage>? ChatHistory { get; set; }
     [JsonProperty("model")]
     public string Model { get; set; }
-    [JsonProperty("preamble")]
-    public string? Preamble { get; set; }
-    [JsonProperty("prompt_truncation")]
-    public ChatVendorCohereExtensionPromptTruncation? PromptTruncation { get; set; }
-    [JsonProperty("connectors")]
-    public List<ChatVendorCohereExtensionConnector>? Connectors { get; set; }
-    [JsonProperty("max_tokens")]
-    public int MaxTokens { get; set; }
-    [JsonProperty("max_input_tokens")]
-    public int? MaxInputTokens { get; set; }
-    [JsonProperty("stop_seqences")]
-    public List<string>? StopSequences { get; set; }
-    [JsonProperty("stream")]
-    public bool? Stream { get; set; }
-    [JsonProperty("temperature")]
-    public double? Temperature { get; set; }
-    [JsonProperty("P")]
-    public double? P { get; set; }
-    [JsonProperty("K")]
-    public int? K { get; set; }
-    [JsonProperty("frequency_penalty")]
-    public double? FrequencyPenalty { get; set; }
-    [JsonProperty("presence_penalty")]
-    public double? PresencePenalty { get; set; }
-    [JsonProperty("tools")]
-    public List<VendorCohereChatTool>? Tools { get; set; }
-    [JsonProperty("tool_results")]
-    public List<VendorCohereChatToolResult>? ToolResults { get; set; }
-    [JsonProperty("safety_mode")]
-    public ChatVendorCohereExtensionSafetyMode? SafetyMode { get; set; }
-    [JsonProperty("response_format")]
-    public object? ResponseFormat { get; set; } // TODO: map me
-    [JsonProperty("force_single_step")]
-    public bool? ForceSingleStep { get; set; }
-    [JsonProperty("citation_quality")]
-    public ChatVendorCohereExtensionCitationQuality? CitationQuality { get; set; }
-    [JsonProperty("documents")]
-    public List<object>? Documents { get; set; } // TODO: map me
-    [JsonProperty("search_queries_only")]
-    public bool? SearchQueriesOnly { get; set; }
-    [JsonProperty("conversation_id")]
-    public string? ConversationId { get; set; }
 
-    public VendorCohereChatRequest()
+    [JsonProperty("messages")]
+    public List<VendorCohereChatMessage> Messages { get; set; }
+
+    [JsonProperty("tools", NullValueHandling = NullValueHandling.Ignore)]
+    public List<VendorCohereTool>? Tools { get; set; }
+    
+    [JsonProperty("citation_options", NullValueHandling = NullValueHandling.Ignore)]
+    public VendorCohereCitationOptions? CitationOptions { get; set; }
+
+    [JsonProperty("response_format", NullValueHandling = NullValueHandling.Ignore)]
+    public VendorCohereResponseFormat? ResponseFormat { get; set; }
+
+    [JsonProperty("safety_mode", NullValueHandling = NullValueHandling.Ignore)]
+    public VendorCohereSafetyMode? SafetyMode { get; set; }
+
+    [JsonProperty("max_tokens", NullValueHandling = NullValueHandling.Ignore)]
+    public int? MaxTokens { get; set; }
+
+    [JsonProperty("stop_sequences", NullValueHandling = NullValueHandling.Ignore)]
+    public List<string>? StopSequences { get; set; }
+
+    [JsonProperty("temperature", NullValueHandling = NullValueHandling.Ignore)]
+    public double? Temperature { get; set; }
+
+    [JsonProperty("seed", NullValueHandling = NullValueHandling.Ignore)]
+    public int? Seed { get; set; }
+
+    [JsonProperty("frequency_penalty", NullValueHandling = NullValueHandling.Ignore)]
+    public double? FrequencyPenalty { get; set; }
+
+    [JsonProperty("presence_penalty", NullValueHandling = NullValueHandling.Ignore)]
+    public double? PresencePenalty { get; set; }
+
+    [JsonProperty("k", NullValueHandling = NullValueHandling.Ignore)]
+    public int? K { get; set; }
+
+    [JsonProperty("p", NullValueHandling = NullValueHandling.Ignore)]
+    public double? P { get; set; }
+
+    [JsonProperty("logprobs", NullValueHandling = NullValueHandling.Ignore)]
+    public bool? Logprobs { get; set; }
+
+    [JsonProperty("tool_choice", NullValueHandling = NullValueHandling.Ignore)]
+    public VendorCohereToolChoice? ToolChoice { get; set; }
+    
+    public JObject Serialize(JsonSerializerSettings settings)
     {
-        
+        JsonSerializer serializer = JsonSerializer.CreateDefault(settings);
+        JObject jsonPayload = JObject.FromObject(this, serializer);
+        return jsonPayload;
     }
     
     public VendorCohereChatRequest(ChatRequest request, IEndpointProvider provider)
     {
-        IList<ChatMessage>? msgs = request.Messages;
-        string? preamble = null;
-        string? respondMsg = null;
-        ChatMessage? lastToolCallsMsg = null;
-        
-        if (msgs is not null)
-        {
-            foreach (ChatMessage msg in msgs)
-            {
-                msg.ExcludeFromRequest = false;
-            }
-            
-            ChatMessage? systemMsg = msgs.FirstOrDefault(x => x.Role is ChatMessageRoles.System);
-
-            if (systemMsg is not null)
-            {
-                systemMsg.ExcludeFromRequest = true;
-                preamble = systemMsg.Content;
-            }
-
-            ChatMessage? lastMsg = msgs.LastOrDefault(x => x.Role is ChatMessageRoles.User);
-
-            if (lastMsg is not null)
-            {
-                lastMsg.ExcludeFromRequest = true;
-                respondMsg = lastMsg.Content;
-                int? lastUserMsgIndex = msgs.IndexOf(lastMsg);
-
-                for (int i = 0; i < lastUserMsgIndex; i++)
-                {
-                    ChatMessage msg = msgs[i];
-
-                    msg.ExcludeFromRequest = msg.Role switch
-                    {
-                        ChatMessageRoles.Tool => true,
-                        ChatMessageRoles.Assistant when msg.ToolCalls?.Count > 0 => true,
-                        _ => msg.ExcludeFromRequest
-                    };
-                }
-            }
-
-            lastToolCallsMsg = msgs.LastOrDefault(x => x is { Role: ChatMessageRoles.Assistant, ToolCalls.Count: > 0 });
-        }
-
-        Message = respondMsg;
-        Model = request.Model?.Name ?? ChatModel.Cohere.Command.Default.Name;
-        Preamble = preamble;
-        MaxTokens = request.MaxTokens ?? 1024;
-        StopSequences = request.StopSequence?.Split(',').ToList();
-        Stream = request.Stream;
+        Stream = request.Stream ?? false;
+        Model = request.Model?.Name ?? ChatModel.Cohere.Command.A0325;
+        MaxTokens = request.MaxTokens;
         Temperature = request.Temperature;
         P = request.TopP;
-        ChatHistory = null;
-
-        if (!(request.Model is not null && Gen1Models.Contains(request.Model)))
+        FrequencyPenalty = request.FrequencyPenalty;
+        PresencePenalty = request.PresencePenalty;
+        StopSequences = request.StopSequence?.Split().ToList();
+        Seed = request.Seed;
+        Logprobs = request.Logprobs;
+        
+        if (request.Tools is { Count: > 0 })
         {
-            SafetyMode = request.VendorExtensions?.Cohere?.SafetyMode;    
+            Tools = request.Tools.Where(x => x.Function is not null).Select(t => new VendorCohereTool
+            {
+                Function = new VendorCohereFunctionDefinition
+                {
+                    Name = t.Function!.Name,
+                    Description = t.Function.Description,
+                    Parameters = JObject.FromObject(t.Function.Parameters ?? new object())
+                }
+            }).ToList();
+        }
+
+        if (request.ToolChoice?.Mode is not null)
+        {
+            ToolChoice = request.ToolChoice.Mode switch
+            {
+                OutboundToolChoiceModes.None => VendorCohereToolChoice.None,
+                OutboundToolChoiceModes.Required => VendorCohereToolChoice.Required,
+                OutboundToolChoiceModes.ToolFunction => VendorCohereToolChoice.Required,
+                _ => null
+            };
         }
         
-        ForceSingleStep = request.VendorExtensions?.Cohere?.ForceSingleStep;
-        CitationQuality = request.VendorExtensions?.Cohere?.CitationQuality;
-        ConversationId = request.VendorExtensions?.Cohere?.ConversationId;
-        PromptTruncation = request.VendorExtensions?.Cohere?.PromptTruncation;
-
-        if (msgs is not null && request.Messages is not null && request.Messages.Any(x => !x.ExcludeFromRequest))
+        Messages = request.Messages?.Select<ChatMessage, VendorCohereChatMessage>(m =>
         {
-            ChatHistory = [];
-            int toolCallIndex = 0;
-            ChatMessage? lastAssistantMsg = null;
-            
-            foreach (ChatMessage msg in msgs.Where(x => !x.ExcludeFromRequest))
+            switch (m.Role)
             {
-                switch (msg.Role)
+                case ChatMessageRoles.User:
                 {
-                    case ChatMessageRoles.Assistant:
+                    VendorCohereUserMessageContent content;
+                    
+                    if (m.Parts is { Count: > 0 })
                     {
-                        if (msg.Content is not null && msg != lastToolCallsMsg)
+                        List<VendorCohereContentBlock?> contentBlocks = m.Parts.Select<ChatMessagePart, VendorCohereContentBlock?>(p =>
                         {
-                            ChatHistory.Add(new VendorCohereChatRequestMessage(ChatMessageRoles.Assistant, msg));
-                        }
-
-                        lastAssistantMsg = msg;
-                        break;
-                    }
-                    case ChatMessageRoles.User:
-                    {
-                        ChatHistory.Add(new VendorCohereChatRequestMessage(ChatMessageRoles.User, msg));
-                        break;
-                    }
-                    case ChatMessageRoles.System:
-                    {
-                        ChatHistory.Add(new VendorCohereChatRequestMessage(ChatMessageRoles.System, msg));
-                        break;
-                    }
-                    case ChatMessageRoles.Tool:
-                    {
-                        if (lastAssistantMsg != lastToolCallsMsg)
-                        {
-                            continue;
-                        }
-                        
-                        ToolResults ??= [];
-                        ToolCall? toolCall = lastToolCallsMsg?.ToolCalls?.Count > toolCallIndex ? lastToolCallsMsg.ToolCalls[toolCallIndex] : null;
-
-                        if (toolCall is not null)
-                        {
-                            VendorCohereChatToolResult vr = new VendorCohereChatToolResult
+                            return p.Type switch
                             {
-                                Call = new VendorCohereChatToolResultCallObject
+                                ChatMessageTypes.Text => new VendorCohereTextContentBlock
                                 {
-                                    Name = toolCall.FunctionCall.Name,
-                                    Parameters = toolCall.FunctionCall.Arguments.JsonDecode<object>()
+                                    Text = p.Text ?? string.Empty
                                 },
-                                Outputs = []
+                                ChatMessageTypes.Image => new VendorCohereImageContentBlock
+                                {
+                                    ImageUrl = new VendorCohereImageUrl
+                                    {
+                                        Url = p.Image!.Url,
+                                        Detail = p.Image!.Detail switch
+                                        {
+                                            ImageDetail.Auto => "auto",
+                                            ImageDetail.High => "high",
+                                            ImageDetail.Low => "low",
+                                            _ => null
+                                        }
+                                    }
+                                },
+                                _ => null
                             };
-                            
-                            if (msg.Content is not null)
-                            {
-                                vr.Outputs.Add(msg.Content.JsonDecode<object>());
-                            }
-                            
-                            ToolResults.Add(vr);
+                        }).Where(x => x is not null).ToList();
+
+                        if (contentBlocks.Count == 1 && contentBlocks[0] is VendorCohereTextContentBlock textBlock)
+                        {
+                            content = textBlock.Text;
                         }
-
-                        toolCallIndex++;
-                        break;
+                        else
+                        {
+                            content = new VendorCohereUserMessageContent(contentBlocks!);
+                        }
                     }
-                }
-            }
-
-            foreach (ChatMessage msg in msgs)
-            {
-                msg.ExcludeFromRequest = false;
-            }
-        }
-
-        if (request.VendorExtensions?.Cohere is not null)
-        {
-            if (request.VendorExtensions.Cohere.Connectors?.Count > 0)
-            {
-                Connectors = request.VendorExtensions.Cohere.Connectors;
-            }
-        }
-
-        if (request.Tools is not null)
-        {
-            Tools = [];
-
-            foreach (Tool tool in request.Tools)
-            {
-                if (tool.Function is null)
-                {
-                    continue;
-                }
-                
-                VendorCohereChatTool cohereTool = new VendorCohereChatTool
-                {
-                    Name = tool.Function.Name,
-                    Description = tool.Function.Description
-                };
-
-                /*if (tool.Function.RawParameters is ChatPluginFunctionTypeObject obj)
-                {
-                    foreach (ChatFunctionParam prop in obj.Properties)
+                    else if (m.Content is not null)
                     {
-                        cohereTool.ParameterDefinitions ??= [];
-
-                        object compiled = prop.Type.Compile(ChatPluginCompileBackends.Python);
-
-                        if (compiled is VendorCohereChatToolParameter param)
-                        {
-                            cohereTool.ParameterDefinitions.Add(prop.Name, param);
-                        }
-                        
-                        cohereTool.ParameterDefinitions.Add(prop.Name, new VendorCohereChatToolParameter
-                        {
-                            Required = prop.Required
-                        });
+                        content = new VendorCohereUserMessageContent(m.Content);
                     }
-                }*/
+                    else
+                    {
+                        content = new VendorCohereUserMessageContent(string.Empty);
+                    }
 
-                Tools.Add(cohereTool);
+                    return new VendorCohereUserChatMessage
+                    {
+                        Content = content
+                    };
+                }
+                case ChatMessageRoles.Assistant:
+                {
+                    VendorCohereAssistantChatMessage assistantMessage = new VendorCohereAssistantChatMessage
+                    {
+                        Content = m.Content
+                    };
+
+                    if (m.ToolCalls is { Count: > 0 })
+                    {
+                        assistantMessage.ToolCalls = m.ToolCalls.Where(x => x.FunctionCall is not null).Select(tc => new VendorCohereToolCall
+                        {
+                            Id = tc.Id,
+                            Type = VendorCohereToolCallType.Function,
+                            Function = new VendorCohereToolCallFunction
+                            {
+                                Name = tc.FunctionCall!.Name,
+                                Arguments = tc.FunctionCall.Arguments
+                            }
+                        }).ToList();
+                    }
+                    
+                    return assistantMessage;
+                }
+                case ChatMessageRoles.System:
+                {
+                    VendorCohereSystemMessageContent content;
+
+                    if (m.Parts is { Count: > 0 })
+                    {
+                        content = new VendorCohereSystemMessageContent(m.Parts
+                            .Where(p => p.Type == ChatMessageTypes.Text)
+                            .Select<ChatMessagePart, VendorCohereTextContentBlock>(p => new VendorCohereTextContentBlock
+                            {
+                                Text = p.Text ?? string.Empty
+                            }).ToList());
+                    }
+                    else
+                    {
+                        content = new VendorCohereSystemMessageContent(m.Content ?? string.Empty);
+                    }
+
+                    return new VendorCohereSystemChatMessage
+                    {
+                        Content = content
+                    };
+                }
+                case ChatMessageRoles.Tool:
+                {
+                    return new VendorCohereToolChatMessage
+                    {
+                        ToolCallId = m.ToolCallId,
+                        Content = new VendorCohereToolMessageContent(m.Content ?? string.Empty)
+                    };
+                }
+                default:
+                {
+                    return null;
+                }
+            }
+        }).Where(x => x is not null).ToList()!;
+        
+        ChatRequestVendorCohereExtensions? extensions = request.VendorExtensions?.Cohere;
+
+        if (extensions is not null)
+        {
+            if (extensions.CitationQuality.HasValue)
+            {
+                CitationOptions = new VendorCohereCitationOptions
+                {
+                    Mode = extensions.CitationQuality.Value switch
+                    {
+                        ChatVendorCohereExtensionCitationQuality.Fast => VendorCohereCitationMode.Fast,
+                        ChatVendorCohereExtensionCitationQuality.Accurate => VendorCohereCitationMode.Accurate,
+                        ChatVendorCohereExtensionCitationQuality.Off => VendorCohereCitationMode.Off,
+                        _ => throw new InvalidEnumArgumentException()
+                    }
+                };
+            }
+
+            if (extensions.SafetyMode.HasValue)
+            {
+                SafetyMode = extensions.SafetyMode.Value switch
+                {
+                    ChatVendorCohereExtensionSafetyMode.Contextual => VendorCohereSafetyMode.Contextual,
+                    ChatVendorCohereExtensionSafetyMode.Strict => VendorCohereSafetyMode.Strict,
+                    ChatVendorCohereExtensionSafetyMode.None => VendorCohereSafetyMode.Off,
+                    _ => throw new InvalidEnumArgumentException()
+                };
             }
         }
     }
+}
+
+#endregion
+
+#region Messages and Content Blocks
+
+internal abstract class VendorCohereChatMessage
+{
+    [JsonProperty("role")]
+    public string Role { get; protected set; }
+}
+
+internal class VendorCohereUserChatMessage : VendorCohereChatMessage
+{
+    public VendorCohereUserChatMessage()
+    {
+        Role = "user";
+    }
+    
+    [JsonProperty("content")]
+    public VendorCohereUserMessageContent Content { get; set; }
+}
+
+internal class VendorCohereAssistantChatMessage : VendorCohereChatMessage
+{
+    public VendorCohereAssistantChatMessage() { Role = "assistant"; }
+    [JsonProperty("tool_calls", NullValueHandling = NullValueHandling.Ignore)]
+    public List<VendorCohereToolCall>? ToolCalls { get; set; }
+    [JsonProperty("tool_plan", NullValueHandling = NullValueHandling.Ignore)]
+    public string? ToolPlan { get; set; }
+    [JsonProperty("content", NullValueHandling = NullValueHandling.Ignore)]
+    public VendorCohereAssistantMessageContent? Content { get; set; }
+}
+
+internal class VendorCohereSystemChatMessage : VendorCohereChatMessage
+{
+    public VendorCohereSystemChatMessage() { Role = "system"; }
+    [JsonProperty("content")]
+    public VendorCohereSystemMessageContent Content { get; set; }
+}
+
+internal class VendorCohereToolChatMessage : VendorCohereChatMessage
+{
+    public VendorCohereToolChatMessage() { Role = "tool"; }
+    [JsonProperty("tool_call_id")]
+    public string ToolCallId { get; set; }
+    [JsonProperty("content")]
+    public VendorCohereToolMessageContent Content { get; set; }
+}
+
+[JsonConverter(typeof(VendorCohereContentBlockConverter))]
+internal abstract class VendorCohereContentBlock
+{
+    [JsonProperty("type")]
+    public string Type { get; protected set; }
+}
+
+internal class VendorCohereTextContentBlock : VendorCohereContentBlock
+{
+    public VendorCohereTextContentBlock()
+    {
+        Type = "text";
+    }
+    
+    [JsonProperty("text")]
+    public string Text { get; set; }
+}
+
+internal class VendorCohereImageContentBlock : VendorCohereContentBlock
+{
+    public VendorCohereImageContentBlock()
+    {
+        Type = "image_url";
+    }
+    
+    [JsonProperty("image_url")]
+    public VendorCohereImageUrl ImageUrl { get; set; }
+}
+
+internal class VendorCohereThinkingContentBlock : VendorCohereContentBlock
+{
+    public VendorCohereThinkingContentBlock()
+    {
+        Type = "thinking";
+    }
+}
+
+internal class VendorCohereDocumentContentBlock : VendorCohereContentBlock
+{
+    public VendorCohereDocumentContentBlock()
+    {
+        Type = "document";
+    }
+    
+    [JsonProperty("document")]
+    public VendorCohereDocument Document { get; set; }
+}
+
+internal class VendorCohereDocument
+{
+    [JsonProperty("data")]
+    public Dictionary<string, object> Data { get; set; }
+    [JsonProperty("id")]
+    public string Id { get; set; }
+}
+
+internal class VendorCohereImageUrl
+{
+    [JsonProperty("url")]
+    public string Url { get; set; }
+    [JsonProperty("detail", NullValueHandling = NullValueHandling.Ignore)]
+    public string? Detail { get; set; }
+}
+
+#endregion
+
+#region Tools and Functions
+
+[JsonConverter(typeof(StringEnumConverter))]
+internal enum VendorCohereToolCallType
+{
+    [EnumMember(Value = "function")] Function
+}
+
+internal class VendorCohereToolCall
+{
+    [JsonProperty("id")]
+    public string Id { get; set; }
+    [JsonProperty("type")]
+    public VendorCohereToolCallType Type { get; set; }
+    [JsonProperty("function")]
+    public VendorCohereToolCallFunction Function { get; set; }
+}
+
+internal class VendorCohereToolCallFunction
+{
+    [JsonProperty("name")]
+    public string Name { get; set; }
+    [JsonProperty("arguments")]
+    public string Arguments { get; set; }
+}
+
+internal class VendorCohereTool
+{
+    [JsonProperty("type")]
+    public string Type { get; } = "function";
+    [JsonProperty("function")]
+    public VendorCohereFunctionDefinition Function { get; set; }
+}
+
+internal class VendorCohereFunctionDefinition
+{
+    [JsonProperty("name")]
+    public string Name { get; set; }
+    [JsonProperty("parameters")]
+    public JObject Parameters { get; set; }
+    [JsonProperty("description", NullValueHandling = NullValueHandling.Ignore)]
+    public string? Description { get; set; }
+}
+
+#endregion
+
+#region Other Options
+
+[JsonConverter(typeof(StringEnumConverter))]
+internal enum VendorCohereSafetyMode
+{
+    [EnumMember(Value = "CONTEXTUAL")] Contextual,
+    [EnumMember(Value = "STRICT")] Strict,
+    [EnumMember(Value = "OFF")] Off
+}
+
+[JsonConverter(typeof(StringEnumConverter))]
+internal enum VendorCohereToolChoice
+{
+    [EnumMember(Value = "REQUIRED")] Required,
+    [EnumMember(Value = "NONE")] None
+}
+
+internal class VendorCohereCitationOptions
+{
+    [JsonProperty("mode")]
+    public VendorCohereCitationMode Mode { get; set; }
+}
+
+[JsonConverter(typeof(StringEnumConverter))]
+internal enum VendorCohereCitationMode
+{
+    [EnumMember(Value = "FAST")] Fast,
+    [EnumMember(Value = "ACCURATE")] Accurate,
+    [EnumMember(Value = "OFF")] Off
+}
+
+[JsonConverter(typeof(VendorCohereResponseFormatConverter))]
+internal abstract class VendorCohereResponseFormat
+{
+    [JsonProperty("type")]
+    public string Type { get; protected set; }
+}
+
+internal class VendorCohereTextResponseFormat : VendorCohereResponseFormat
+{
+    public VendorCohereTextResponseFormat() { Type = "text"; }
+}
+
+internal class VendorCohereJsonObjectResponseFormat : VendorCohereResponseFormat
+{
+    public VendorCohereJsonObjectResponseFormat() { Type = "json_object"; }
+    [JsonProperty("json_schema", NullValueHandling = NullValueHandling.Ignore)]
+    public JObject? JsonSchema { get; set; }
+}
+
+#endregion
+
+#region Converters
+
+internal class VendorCohereChatMessageConverter : JsonConverter
+{
+    public override bool CanConvert(Type objectType)
+    {
+        return typeof(VendorCohereChatMessage).IsAssignableFrom(objectType);
+    }
+
+    public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+    {
+        JObject item = JObject.Load(reader);
+        string role = item["role"]?.Value<string>();
+
+        VendorCohereChatMessage message = role switch
+        {
+            "user" => new VendorCohereUserChatMessage(),
+            "assistant" => new VendorCohereAssistantChatMessage(),
+            "system" => new VendorCohereSystemChatMessage(),
+            "tool" => new VendorCohereToolChatMessage(),
+            _ => throw new NotSupportedException($"Unsupported message role: {role}")
+        };
+
+        serializer.Populate(item.CreateReader(), message);
+        return message;
+    }
+
+    public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+    {
+        serializer.Serialize(writer, value, value.GetType());
+    }
+}
+
+internal class VendorCohereResponseFormatConverter : JsonConverter
+{
+    public override bool CanConvert(Type objectType)
+    {
+        return typeof(VendorCohereResponseFormat).IsAssignableFrom(objectType);
+    }
+    
+    public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+    {
+        JObject item = JObject.Load(reader);
+        string type = item["type"]?.Value<string>();
+
+        VendorCohereResponseFormat format = type switch
+        {
+            "text" => new VendorCohereTextResponseFormat(),
+            "json_object" => new VendorCohereJsonObjectResponseFormat(),
+            _ => throw new NotSupportedException($"Unsupported response format type: {type}")
+        };
+        
+        serializer.Populate(item.CreateReader(), format);
+        return format;
+    }
+
+    public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+    {
+        serializer.Serialize(writer, value, value.GetType());
+    }
+}
+
+internal class VendorCohereContentBlockConverter : JsonConverter<VendorCohereContentBlock>
+{
+    public override VendorCohereContentBlock ReadJson(JsonReader reader, Type objectType, VendorCohereContentBlock? existingValue, bool hasExistingValue, JsonSerializer serializer)
+    {
+        JObject item = JObject.Load(reader);
+        string type = item["type"]?.Value<string>();
+
+        VendorCohereContentBlock block = type switch
+        {
+            "text" => new VendorCohereTextContentBlock(),
+            "image_url" => new VendorCohereImageContentBlock(),
+            "thinking" => new VendorCohereThinkingContentBlock(),
+            "document" => new VendorCohereDocumentContentBlock(),
+            _ => throw new NotSupportedException($"Unsupported content block type: {type}")
+        };
+        
+        serializer.Populate(item.CreateReader(), block);
+        return block;
+    }
+
+    public override void WriteJson(JsonWriter writer, VendorCohereContentBlock? value, JsonSerializer serializer)
+    {
+        if (value is null)
+        {
+            writer.WriteNull();
+            return;
+        }
+
+        JObject jo = new JObject
+        {
+            { "type", value.Type }
+        };
+
+        switch (value)
+        {
+            case VendorCohereTextContentBlock textBlock:
+                jo.Add("text", textBlock.Text);
+                break;
+            case VendorCohereImageContentBlock imageBlock:
+                jo.Add("image_url", JObject.FromObject(imageBlock.ImageUrl, serializer));
+                break;
+            case VendorCohereDocumentContentBlock docBlock:
+                jo.Add("document", JObject.FromObject(docBlock.Document, serializer));
+                break;
+        }
+
+        jo.WriteTo(writer);
+    }
+}
+
+[JsonConverter(typeof(VendorCohereUserMessageContentConverter))]
+internal class VendorCohereUserMessageContent
+{
+    public string? StringContent { get; }
+    public List<VendorCohereContentBlock>? BlocksContent { get; }
+
+    public VendorCohereUserMessageContent(string content)
+    {
+        StringContent = content;
+    }
+
+    public VendorCohereUserMessageContent(List<VendorCohereContentBlock> blocks)
+    {
+        BlocksContent = blocks;
+    }
+
+    public static implicit operator VendorCohereUserMessageContent(string content) => new(content);
+    public static implicit operator VendorCohereUserMessageContent(List<VendorCohereContentBlock> blocks) => new(blocks);
+}
+
+[JsonConverter(typeof(VendorCohereAssistantMessageContentConverter))]
+internal class VendorCohereAssistantMessageContent
+{
+    public string? StringContent { get; }
+    public List<VendorCohereContentBlock>? BlocksContent { get; }
+
+    public VendorCohereAssistantMessageContent(string content)
+    {
+        StringContent = content;
+    }
+
+    public VendorCohereAssistantMessageContent(List<VendorCohereContentBlock> blocks)
+    {
+        BlocksContent = blocks;
+    }
+
+    public static implicit operator VendorCohereAssistantMessageContent(string content) => new(content);
+    public static implicit operator VendorCohereAssistantMessageContent(List<VendorCohereContentBlock> blocks) => new(blocks);
+}
+
+[JsonConverter(typeof(VendorCohereSystemMessageContentConverter))]
+internal class VendorCohereSystemMessageContent
+{
+    public string? StringContent { get; }
+    public List<VendorCohereTextContentBlock>? BlocksContent { get; }
+
+    public VendorCohereSystemMessageContent(string content)
+    {
+        StringContent = content;
+    }
+
+    public VendorCohereSystemMessageContent(List<VendorCohereTextContentBlock> blocks)
+    {
+        BlocksContent = blocks;
+    }
+
+    public static implicit operator VendorCohereSystemMessageContent(string content) => new(content);
+    public static implicit operator VendorCohereSystemMessageContent(List<VendorCohereTextContentBlock> blocks) => new(blocks);
+}
+
+[JsonConverter(typeof(VendorCohereToolMessageContentConverter))]
+internal class VendorCohereToolMessageContent
+{
+    public string? StringContent { get; }
+    public List<VendorCohereContentBlock>? BlocksContent { get; }
+
+    public VendorCohereToolMessageContent(string content)
+    {
+        StringContent = content;
+    }
+
+    public VendorCohereToolMessageContent(List<VendorCohereContentBlock> blocks)
+    {
+        BlocksContent = blocks;
+    }
+
+    public static implicit operator VendorCohereToolMessageContent(string content) => new(content);
+    public static implicit operator VendorCohereToolMessageContent(List<VendorCohereContentBlock> blocks) => new(blocks);
+}
+
+internal class VendorCohereSystemMessageContentConverter : JsonConverter<VendorCohereSystemMessageContent>
+{
+    public override VendorCohereSystemMessageContent ReadJson(JsonReader reader, Type objectType, VendorCohereSystemMessageContent? existingValue, bool hasExistingValue, JsonSerializer serializer)
+    {
+        if (reader.TokenType == JsonToken.String)
+        {
+            return new VendorCohereSystemMessageContent(reader.Value!.ToString()!);
+        }
+        
+        if (reader.TokenType == JsonToken.StartArray)
+        {
+            List<VendorCohereTextContentBlock>? blocks = serializer.Deserialize<List<VendorCohereTextContentBlock>>(reader);
+            return new VendorCohereSystemMessageContent(blocks!);
+        }
+        
+        throw new JsonSerializationException("Unexpected token type for VendorCohereSystemMessageContent");
+    }
+
+    public override void WriteJson(JsonWriter writer, VendorCohereSystemMessageContent? value, JsonSerializer serializer)
+    {
+        if (value?.StringContent is not null)
+        {
+            writer.WriteValue(value.StringContent);
+        }
+        else if (value?.BlocksContent is not null)
+        {
+            serializer.Serialize(writer, value.BlocksContent);
+        }
+        else
+        {
+            writer.WriteNull();
+        }
+    }
+}
+
+internal class VendorCohereAssistantMessageContentConverter : JsonConverter<VendorCohereAssistantMessageContent>
+{
+    public override VendorCohereAssistantMessageContent ReadJson(JsonReader reader, Type objectType, VendorCohereAssistantMessageContent? existingValue, bool hasExistingValue, JsonSerializer serializer)
+    {
+        if (reader.TokenType == JsonToken.String)
+        {
+            return new VendorCohereAssistantMessageContent(reader.Value!.ToString()!);
+        }
+        
+        if (reader.TokenType == JsonToken.StartArray)
+        {
+            List<VendorCohereContentBlock>? blocks = serializer.Deserialize<List<VendorCohereContentBlock>>(reader);
+            return new VendorCohereAssistantMessageContent(blocks!);
+        }
+        
+        throw new JsonSerializationException("Unexpected token type for VendorCohereAssistantMessageContent");
+    }
+
+    public override void WriteJson(JsonWriter writer, VendorCohereAssistantMessageContent? value, JsonSerializer serializer)
+    {
+        if (value?.StringContent is not null)
+        {
+            writer.WriteValue(value.StringContent);
+        }
+        else if (value?.BlocksContent is not null)
+        {
+            serializer.Serialize(writer, value.BlocksContent);
+        }
+        else
+        {
+            writer.WriteNull();
+        }
+    }
+}
+
+internal class VendorCohereToolMessageContentConverter : JsonConverter<VendorCohereToolMessageContent>
+{
+    public override VendorCohereToolMessageContent ReadJson(JsonReader reader, Type objectType, VendorCohereToolMessageContent? existingValue, bool hasExistingValue, JsonSerializer serializer)
+    {
+        if (reader.TokenType == JsonToken.String)
+        {
+            return new VendorCohereToolMessageContent(reader.Value!.ToString()!);
+        }
+        
+        if (reader.TokenType == JsonToken.StartArray)
+        {
+            List<VendorCohereContentBlock>? blocks = serializer.Deserialize<List<VendorCohereContentBlock>>(reader);
+            return new VendorCohereToolMessageContent(blocks!);
+        }
+        
+        throw new JsonSerializationException("Unexpected token type for VendorCohereToolMessageContent");
+    }
+
+    public override void WriteJson(JsonWriter writer, VendorCohereToolMessageContent? value, JsonSerializer serializer)
+    {
+        if (value?.StringContent is not null)
+        {
+            writer.WriteValue(value.StringContent);
+        }
+        else if (value?.BlocksContent is not null)
+        {
+            serializer.Serialize(writer, value.BlocksContent);
+        }
+        else
+        {
+            writer.WriteNull();
+        }
+    }
+}
+
+internal class VendorCohereUserMessageContentConverter : JsonConverter<VendorCohereUserMessageContent>
+{
+    public override VendorCohereUserMessageContent ReadJson(JsonReader reader, Type objectType, VendorCohereUserMessageContent? existingValue, bool hasExistingValue, JsonSerializer serializer)
+    {
+        if (reader.TokenType == JsonToken.String)
+        {
+            return new VendorCohereUserMessageContent(reader.Value!.ToString()!);
+        }
+        
+        if (reader.TokenType == JsonToken.StartArray)
+        {
+            List<VendorCohereContentBlock>? blocks = serializer.Deserialize<List<VendorCohereContentBlock>>(reader);
+            return new VendorCohereUserMessageContent(blocks!);
+        }
+        
+        throw new JsonSerializationException("Unexpected token type for VendorCohereUserMessageContent");
+    }
+
+    public override void WriteJson(JsonWriter writer, VendorCohereUserMessageContent? value, JsonSerializer serializer)
+    {
+        if (value?.StringContent is not null)
+        {
+            writer.WriteValue(value.StringContent);
+        }
+        else if (value?.BlocksContent is not null)
+        {
+            serializer.Serialize(writer, value.BlocksContent);
+        }
+        else
+        {
+            writer.WriteNull();
+        }
+    }
  }
+
+#endregion

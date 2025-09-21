@@ -1,5 +1,5 @@
 [![LlmTornado](https://badgen.net/nuget/v/LlmTornado?v=302&icon=nuget&label=LlmTornado)](https://www.nuget.org/packages/LlmTornado)
-[![LlmTornado.Toolkit](https://badgen.net/nuget/v/LlmTornado.Toolkit?v=302&icon=nuget&label=LlmTornado.Toolkit)](https://www.nuget.org/packages/LlmTornado.Toolkit)
+[![LlmTornado.Agents](https://badgen.net/nuget/v/LlmTornado.Agents?v=303&icon=nuget&label=LlmTornado.Agents)](https://www.nuget.org/packages/LlmTornado.Agents)
 [![LlmTornado.Mcp](https://badgen.net/nuget/v/LlmTornado.Mcp?v=302&icon=nuget&label=LlmTornado.Mcp)](https://www.nuget.org/packages/LlmTornado.Mcp)
 [![LlmTornado.Contrib](https://badgen.net/nuget/v/LlmTornado.Contrib?v=302&icon=nuget&label=LlmTornado.Contrib)](https://www.nuget.org/packages/LlmTornado.Contrib)
 

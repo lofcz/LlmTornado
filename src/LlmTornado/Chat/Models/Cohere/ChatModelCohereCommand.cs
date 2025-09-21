@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
@@ -48,16 +49,6 @@ public class ChatModelCohereCommand : IVendorModelClassProvider
     /// <inheritdoc cref="ModelA0325"/>
     /// </summary>
     public readonly ChatModel A0325 = ModelA0325;
-        
-    /// <summary>
-    /// Command R+ is an instruction-following conversational model that performs language tasks at a higher quality, more reliably, and with a longer context than previous models. It is best suited for complex RAG workflows and multi-step tool use.
-    /// </summary>
-    public static readonly ChatModel ModelRPlus = new ChatModel("command-r-plus", LLmProviders.Cohere, 128_000);
-    
-    /// <summary>
-    /// <inheritdoc cref="ModelRPlus"/>
-    /// </summary>
-    public readonly ChatModel RPlus = ModelRPlus;
     
     /// <summary>
     /// 7B open-weights model optimized for Arabic language (MSA dialect), in addition to English.
@@ -120,16 +111,6 @@ public class ChatModelCohereCommand : IVendorModelClassProvider
     public readonly ChatModel R7B = ModelR7B;
     
     /// <summary>
-    /// A smaller, faster version of command. Almost as capable, but a lot faster.
-    /// </summary>
-    public static readonly ChatModel ModelLight = new ChatModel("command-light", LLmProviders.Cohere, 4_000);
-
-    /// <summary>
-    /// <inheritdoc cref="ModelLight"/>
-    /// </summary>
-    public readonly ChatModel CommandLight = ModelLight;
-    
-    /// <summary>
     /// Be advised that command-light-nightly is the latest, most experimental, and (possibly) unstable version of its default counterpart. Nightly releases are updated regularly, without warning, and are not recommended for production use.
     /// </summary>
     public static readonly ChatModel ModelLightNightly = new ChatModel("command-light-nightly", LLmProviders.Cohere, 4_000);
@@ -142,22 +123,9 @@ public class ChatModelCohereCommand : IVendorModelClassProvider
     /// <summary>
     /// All known Coral models from Cohere.
     /// </summary>
-    public static readonly List<IModel> ModelsAll =
-    [
-        ModelRPlus,
-        ModelRPlus2408,
-        ModelNightly,
-        ModelDefault,
-        ModelDefault2408,
-        ModelLight,
-        ModelLightNightly,
-        ModelR7B,
-        ModelR7BArabic2412,
-        ModelA0325,
-        ModelAVision2507,
-        ModelAReasoning2508,
-        ModelATranslate2508
-    ];
+    public static List<IModel> ModelsAll => LazyModelsAll.Value;
+
+    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [ModelRPlus2408, ModelNightly, ModelDefault, ModelDefault2408, ModelLightNightly, ModelR7B, ModelR7BArabic2412, ModelA0325, ModelAVision2507, ModelAReasoning2508, ModelATranslate2508]);
 
     /// <summary>
     /// <inheritdoc cref="ModelsAll"/>

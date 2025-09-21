@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
 
@@ -66,58 +67,41 @@ public class ChatModelOpenAi : BaseVendorModelProvider
     /// <summary>
     /// Map of models owned by the provider.
     /// </summary>
-    public static readonly HashSet<string> AllModelsMap = [];
+    public static HashSet<string> AllModelsMap => LazyAllModelsMap.Value;
+
+    private static readonly Lazy<HashSet<string>> LazyAllModelsMap = new Lazy<HashSet<string>>(() =>
+    {
+        HashSet<string> map = [];
+
+        ModelsAll.ForEach(x => { map.Add(x.Name); });
+
+        return map;
+    });
     
     /// <summary>
     /// <inheritdoc cref="AllModels"/>
     /// </summary>
-    public static readonly List<IModel> ModelsAll = [
-        ..ChatModelOpenAiGpt35.ModelsAll,
-        ..ChatModelOpenAiGpt4.ModelsAll,
-        ..ChatModelOpenAiO3.ModelsAll,
-        ..ChatModelOpenAiO4.ModelsAll,
-        ..ChatModelOpenAiGpt41.ModelsAll,
-        ..ChatModelOpenAiGpt5.ModelsAll,
-        ..ChatModelOpenAiCodex.ModelsAll,
-    ];
+    public static List<IModel> ModelsAll => LazyModelsAll.Value;
+
+    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [..ChatModelOpenAiGpt35.ModelsAll, ..ChatModelOpenAiGpt4.ModelsAll, ..ChatModelOpenAiO3.ModelsAll, ..ChatModelOpenAiO4.ModelsAll, ..ChatModelOpenAiGpt41.ModelsAll, ..ChatModelOpenAiGpt5.ModelsAll, ..ChatModelOpenAiCodex.ModelsAll]);
 
     /// <summary>
     /// All reasoning models. Requests for these models are serialized differently.
     /// </summary>
-    public static readonly List<IModel> ReasoningModelsAll =
-    [
-        ..ChatModelOpenAiGpt4.ReasoningModels,
-        ..ChatModelOpenAiO3.ModelsAll,
-        ..ChatModelOpenAiO4.ModelsAll,
-        ..ChatModelOpenAiGpt5.ModelsAll
-    ];
+    public static List<IModel> ReasoningModelsAll => LazyReasoningModelsAll.Value;
+
+    private static readonly Lazy<List<IModel>> LazyReasoningModelsAll = new Lazy<List<IModel>>(() => [..ChatModelOpenAiGpt4.ReasoningModels, ..ChatModelOpenAiO3.ModelsAll, ..ChatModelOpenAiO4.ModelsAll, ..ChatModelOpenAiGpt5.ModelsAll]);
 
     /// <summary>
     /// All models compatible with web_search. Requests for these models are serialized differently.
     /// </summary>
-    public static readonly List<IModel> WebSearchCompatibleModelsAll =
-    [
-        ChatModelOpenAiGpt4.ModelOSearchPreview,
-        ChatModelOpenAiGpt4.ModelOMiniSearchPreview,
-        ..ChatModelOpenAiGpt5.ModelsAll,
-    ];
+    public static List<IModel> WebSearchCompatibleModelsAll => LazyWebSearchCompatibleModelsAll.Value;
 
-    internal static readonly HashSet<IModel> TempIncompatibleModels =
-    [
-        //..ReasoningModelsAll,
-        ..WebSearchCompatibleModelsAll,
-        ..ChatModelOpenAiO3.ModelsAll,
-        ..ChatModelOpenAiO4.ModelsAll,
-        ..ChatModelOpenAiGpt5.ModelsAll
-    ];
-    
-    static ChatModelOpenAi()
-    {
-        ModelsAll.ForEach(x =>
-        {
-            AllModelsMap.Add(x.Name);
-        });
-    }
+    private static readonly Lazy<List<IModel>> LazyWebSearchCompatibleModelsAll = new Lazy<List<IModel>>(() => [ChatModelOpenAiGpt4.ModelOSearchPreview, ChatModelOpenAiGpt4.ModelOMiniSearchPreview, ..ChatModelOpenAiGpt5.ModelsAll]);
+
+    internal static HashSet<IModel> TempIncompatibleModels => LazyTempIncompatibleModels.Value;
+
+    private static readonly Lazy<HashSet<IModel>> LazyTempIncompatibleModels = new Lazy<HashSet<IModel>>(() => new HashSet<IModel>(WebSearchCompatibleModelsAll.Concat(ChatModelOpenAiO3.ModelsAll).Concat(ChatModelOpenAiO4.ModelsAll).Concat(ChatModelOpenAiGpt5.ModelsAll)));
     
     internal ChatModelOpenAi()
     {

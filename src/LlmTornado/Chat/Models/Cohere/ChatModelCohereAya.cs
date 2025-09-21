@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
@@ -52,14 +53,9 @@ public class ChatModelCohereAya : IVendorModelClassProvider
     /// <summary>
     /// All known Aya models from Cohere.
     /// </summary>
-    public static readonly List<IModel> ModelsAll =
-    [
-        ModelExpanse8B,
-        ModelExpanse32B,
-        
-        ModelVision8B,
-        ModelVision32B
-    ];
+    public static List<IModel> ModelsAll => LazyModelsAll.Value;
+
+    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [ModelExpanse8B, ModelExpanse32B, ModelVision8B, ModelVision32B]);
 
     /// <summary>
     /// <inheritdoc cref="ModelsAll"/>

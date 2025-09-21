@@ -145,6 +145,32 @@ public partial class ChatDemo : DemoBase
     }
     
     [TornadoTest]
+    public static async Task<bool> CohereTool()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Cohere.Command.A0325,
+            Tools = [new Tool(new ToolFunction("get_weather", "gets the current weather"), true)],
+            ToolChoice = new OutboundToolChoice(OutboundToolChoiceModes.Required),
+            Messages = [
+                new ChatMessage(ChatMessageRoles.User, "What is the weather like today?")
+            ]
+        });
+ 
+        ChatRichResponse response = await chat.GetResponseRich();
+
+        ChatRichResponseBlock? block = response.Blocks?.FirstOrDefault(x => x.Type is ChatRichResponseBlockTypes.Function);
+
+        if (block is not null)
+        {
+            Console.WriteLine($"fn block found: {block.FunctionCall?.Name}");
+            return true;
+        }
+        
+        return false;
+    }
+    
+    [TornadoTest]
     public static async Task<bool> ChatFunctionGemini()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
@@ -998,6 +1024,28 @@ public partial class ChatDemo : DemoBase
     }
     
     [TornadoTest]
+    public static async Task CohereMessageParts()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Cohere.Command.R7B,
+            Messages = [
+                new ChatMessage(ChatMessageRoles.System, [
+                    new ChatMessagePart("You are a helpful assistant")
+                ]),
+                new ChatMessage(ChatMessageRoles.User, [
+                    new ChatMessagePart("Who are you?")
+                ])
+            ]
+        });
+        
+        RestDataOrException<ChatRichResponse> response = await chat.GetResponseRichSafe();
+
+        Console.WriteLine("Cohere:");
+        Console.WriteLine(response.Data);
+    }
+    
+    [TornadoTest]
     public static async Task Cohere2408()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
@@ -1058,7 +1106,7 @@ public partial class ChatDemo : DemoBase
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.Cohere.Command.Default
+            Model = ChatModel.Cohere.Command.A0325
         });
         
         chat.AppendSystemMessage("Pretend you are a dog. Sound authentic.");
@@ -1074,7 +1122,7 @@ public partial class ChatDemo : DemoBase
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.Cohere.Command.Default
+            Model = ChatModel.Cohere.Command.A0325
         });
         
         chat.AppendSystemMessage("Pretend you are a dog. Sound authentic.");
@@ -1872,7 +1920,7 @@ public partial class ChatDemo : DemoBase
             ],
             ToolChoice = new OutboundToolChoice("get_weather")
         });
-
+        
         chat.OnAfterToolsCall = async (result) =>
         {
             chat.RequestParameters.ToolChoice = null; // stop forcing the model to use the get_weather tool
@@ -2069,15 +2117,15 @@ public partial class ChatDemo : DemoBase
         Console.WriteLine(response);
         return response;
     }
-
+    
+    [TornadoTestCase("gemini-2.5-flash")]
+    [TornadoTestCase("command-a-03-2025")]
     [TornadoTest]
-    public static async Task GoogleStreamingFunctions()
+    public static async Task StreamingFunctions(string model)
     {
-        StringBuilder sb = new StringBuilder();
-
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.Google.Gemini.Gemini15Pro002,
+            Model = model,
             Tools = [
                 new Tool(new ToolFunction("get_weather", "gets the current weather", new
                 {
@@ -2095,7 +2143,7 @@ public partial class ChatDemo : DemoBase
             ],
             ToolChoice = new OutboundToolChoice("get_weather")
         });
-
+        
         chat.OnAfterToolsCall = async (result) =>
         {
             chat.RequestParameters.ToolChoice = null; // stop forcing the model to use the get_weather tool
@@ -2106,9 +2154,11 @@ public partial class ChatDemo : DemoBase
         Guid msgId = Guid.NewGuid();
         chat.AppendMessage(ChatMessageRoles.User, "1. Solve the following equation: 2+2=?\n2. What is the weather like today in Prague?", msgId);
 
+        TornadoRequestContent z = chat.Serialize();
+        
         await chat.StreamResponseRich(msgId, (x) =>
         {
-            sb.Append(x);
+            Console.Write(x);
             return ValueTask.CompletedTask;
         }, functions =>
         {
@@ -2119,10 +2169,6 @@ public partial class ChatDemo : DemoBase
 
             return ValueTask.CompletedTask;
         }, null);
-
-
-        string response = sb.ToString();
-        Console.WriteLine(response);
     }
 
     // note: CachedContent can not be used with GenerateContent request setting system_instruction, tools or tool_config.\n\nProposed fix: move those values to CachedContent from GenerateContent request.
