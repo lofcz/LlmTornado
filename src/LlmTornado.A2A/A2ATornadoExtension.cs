@@ -12,9 +12,55 @@ namespace LlmTornado.A2A;
 
 public static class A2ATornadoExtension
 {
-    public static AgentMessage ToA2AAgentMessage(this ChatMessage chatMessage, 
-        Dictionary<string, JsonElement>? metadata = null, 
-        string? contextId = null, 
+    public static ChatMessage ToTornadoMessage(this AgentMessage agentMessage)
+    {
+        List<ChatMessagePart> parts = new List<ChatMessagePart>();
+        if (agentMessage.Parts != null)
+        {
+            foreach (var part in agentMessage.Parts)
+            {
+                if (part is TextPart textPart)
+                {
+                    parts.Add(new ChatMessagePart { Text = textPart.Text });
+                }
+                else if (part is FilePart filePart)
+                {
+                    if (filePart.File is FileWithUri fileWithUri)
+                    {
+                        parts.Add(ChatMessagePart.Create(new Uri(fileWithUri.Uri), ChatMessageTypes.Image));
+                    }
+                    else if (filePart.File is FileWithBytes fileWithBytes)
+                    {
+                        if (fileWithBytes.Bytes.Contains("image"))
+                        {
+                            parts.Add(new ChatMessagePart(fileWithBytes.Bytes, Images.ImageDetail.Auto));
+                        }
+                        else if(fileWithBytes.Bytes.Contains("audio"))
+                        {
+                            if(fileWithBytes.MimeType == "audio/wav" || fileWithBytes.MimeType == "audio/x-wav")
+                                parts.Add(ChatMessagePart.Create(fileWithBytes.Bytes, ChatAudioFormats.Wav));
+                            else if (fileWithBytes.MimeType == "audio/mpeg" || fileWithBytes.MimeType == "audio/mp3" || fileWithBytes.MimeType == "audio/x-mp3")
+                                parts.Add(ChatMessagePart.Create(fileWithBytes.Bytes, ChatAudioFormats.Mp3));
+                        }
+                        else
+                        {
+                            parts.Add(new ChatMessagePart(fileWithBytes.Bytes, DocumentLinkTypes.Base64));
+                        }
+                    }
+                }
+            }
+        }
+
+        return new ChatMessage
+        {
+            Role = ToTornadoMessageRole(agentMessage.Role),
+            Parts = parts
+        };
+    }
+
+    public static AgentMessage ToA2AAgentMessage(this ChatMessage chatMessage,
+        Dictionary<string, JsonElement>? metadata = null,
+        string? contextId = null,
         string? taskId = null,
         string[]? referenceTaskIds = null,
         string[]? extensions = null
@@ -26,7 +72,7 @@ public static class A2ATornadoExtension
         {
             parts.Add(new TextPart() { Text = chatMessage.Content });
         }
-        else if(chatMessage.Parts != null)
+        else if (chatMessage.Parts != null)
         {
             foreach (var part in chatMessage.Parts)
             {
@@ -60,7 +106,7 @@ public static class A2ATornadoExtension
     public static Artifact ToA2AArtifact(this ChatMessage chatMessage,
        Dictionary<string, JsonElement>? metadata = null,
        string? description = null,
-       string? name = null, 
+       string? name = null,
        string[]? extensions = null
        )
     {
@@ -121,6 +167,16 @@ public static class A2ATornadoExtension
             ChatMessageRoles.System => MessageRole.User,
             ChatMessageRoles.Assistant => MessageRole.Agent,
             _ => MessageRole.Agent,
+        };
+    }
+
+    public static ChatMessageRoles ToTornadoMessageRole(this MessageRole? role)
+    {
+        return role switch
+        {
+            MessageRole.User => ChatMessageRoles.User,
+            MessageRole.Agent => ChatMessageRoles.Assistant,
+            _ => ChatMessageRoles.User,
         };
     }
 }

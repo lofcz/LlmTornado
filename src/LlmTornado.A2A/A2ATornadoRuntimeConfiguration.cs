@@ -54,10 +54,10 @@ public class A2ATornadoRuntimeConfiguration : BaseA2ATornadoRuntimeConfiguration
         await _taskManager.UpdateStatusAsync(task.Id, TaskState.Working, cancellationToken: cancellationToken);
 
         // Get message from the user
-        var userMessage = task.History!.Last().Parts.OfType<TextPart>().First().Text;
+        var userMessage = task.History!.Last().ToTornadoMessage();
 
         // Get the response from the agent
-        ChatMessage response = await _agent.InvokeAsync(new ChatMessage(Code.ChatMessageRoles.User, userMessage ?? "Empty message"));
+        ChatMessage response = await _agent.InvokeAsync(userMessage);
 
         // Update the Status to Completed
         await _taskManager.UpdateStatusAsync(_currentTask.Id, TaskState.Completed, message: response.ToA2AAgentMessage(), final: true, cancellationToken: cancellationToken);

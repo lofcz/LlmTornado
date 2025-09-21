@@ -466,6 +466,56 @@
     box-shadow: 0 -4px 6px rgba(0,0,0,0.1);
 }
 
+/* Message Attachments Styles */
+.message-attachments {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.attachment-display {
+    max-width: 100%;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+/* Image attachment styles - adding max dimensions */
+.attachment-image {
+    max-width: 400px;  /* Maximum width for images */
+    max-height: 300px; /* Maximum height for images */
+    object-fit: contain; /* Keep aspect ratio and fit within dimensions */
+    border-radius: 4px;
+    border: 1px solid #dee2e6;
+    display: block;
+    margin: 0.5rem 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Add image click behavior for expandable view if needed */
+.attachment-image:hover {
+    cursor: pointer;
+    opacity: 0.9;
+}
+
+/* For small screens, make images responsive */
+@media (max-width: 576px) {
+    .attachment-image {
+        max-width: 100%;
+        max-height: 200px;
+    }
+}
+
+.attachment-file {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+}
+
 /* Debug Window Styles */
 .debug-window {
     display: flex;
