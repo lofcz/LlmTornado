@@ -41,45 +41,6 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
         Console.WriteLine(result.Content);
     }
 
-    [TornadoTest]
-    public static async Task MagenticOneAgentStreamingDemo()
-    {
-        MagenticOneConfiguration RuntimeConfiguration = new MagenticOneConfiguration(Program.Connect());
-
-        ChatRuntime runtime = new ChatRuntime(RuntimeConfiguration);
-
-        RuntimeConfiguration.OnRuntimeEvent = async (evt) =>
-        {
-            if (evt.EventType == ChatRuntimeEventTypes.AgentRunner)
-            {
-                if (evt is ChatRuntimeAgentRunnerEvents runnerEvt)
-                {
-                    if (runnerEvt.AgentRunnerEvent is AgentRunnerStreamingEvent streamEvt)
-                    {
-                        if (streamEvt.ModelStreamingEvent is ModelStreamingOutputTextDeltaEvent deltaTextEvent)
-                        {
-                            Console.Write(deltaTextEvent.DeltaText);
-                        }
-                    }
-                }
-            }
-            await ValueTask.CompletedTask;
-        };
-
-        ChatMessage result = await runtime.InvokeAsync(new ChatMessage(Code.ChatMessageRoles.User, "Write a Python script to analyze a CSV file and save the results to a new file."));
-
-        Console.WriteLine("\n\nFinal Result:");
-        Console.WriteLine(result.Content);
-    }
-
-    [TornadoTest]
-    public static async Task MagenticOneAgentVisualizationDemo()
-    {
-        MagenticOneConfiguration RuntimeConfiguration = new MagenticOneConfiguration(Program.Connect());
-        Console.WriteLine(OrchestrationVisualization.ToDotGraph<ChatMessage, ChatMessage>(RuntimeConfiguration, "MagenticOneOrchestration"));
-    }
-
-
     #region ResearchAgent
     [TornadoTest]
     public static async Task ResearchAgentRuntimeDemo()
@@ -147,6 +108,7 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
 
         RunnerRecordVisualizationUtility.SaveRunnerRecordDotGraphToFileAsync(RuntimeConfiguration.RunSteps.ToDictionary(), "ResearchAgentRecord.dot", "ResearchAgentRecord");
     }
+
     [TornadoTest]
     public static async Task SimpleChatbotDemo()
     {

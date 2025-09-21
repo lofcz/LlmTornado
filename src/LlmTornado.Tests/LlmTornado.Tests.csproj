@@ -24,6 +24,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\LlmTornado.A2A.AgentServer\LlmTornado.A2A.AgentServer.csproj" />
       <ProjectReference Include="..\LlmTornado.A2A.Hosting\LlmTornado.A2A.Hosting.csproj" />
       <ProjectReference Include="..\LlmTornado.A2A\LlmTornado.A2A.csproj" />
       <ProjectReference Include="..\LlmTornado.Demo\LlmTornado.Demo.csproj" />

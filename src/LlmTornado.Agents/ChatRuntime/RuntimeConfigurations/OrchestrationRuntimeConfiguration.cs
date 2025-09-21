@@ -20,7 +20,7 @@ public class OrchestrationRuntimeConfiguration : Orchestration<ChatMessage, Chat
     public ChatRuntime Runtime { get; set; }
     public CancellationTokenSource cts { get; set; } = new CancellationTokenSource();
     public Func<ChatRuntimeEvents, ValueTask>? OnRuntimeEvent { get; set; }
-    private PersistedConversation _messageHistory { get;  set; } 
+    private PersistentConversation _messageHistory { get;  set; } 
     public string? MessageHistoryFileLocation { get; set; }
     public Func<OrchestrationRuntimeConfiguration, ValueTask>? CustomInitialization { get; set; }
 
@@ -32,7 +32,7 @@ public class OrchestrationRuntimeConfiguration : Orchestration<ChatMessage, Chat
     private void LoadMessageHistory()
     {
         if(MessageHistoryFileLocation != null)
-            _messageHistory = new PersistedConversation(MessageHistoryFileLocation);
+            _messageHistory = new PersistentConversation(MessageHistoryFileLocation);
     }
 
     public virtual void OnRuntimeInitialized()
