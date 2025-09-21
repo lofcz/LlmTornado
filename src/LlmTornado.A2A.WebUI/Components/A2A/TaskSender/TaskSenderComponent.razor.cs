@@ -48,7 +48,7 @@ public partial class TaskSenderComponent : ComponentBase
                 {
                     Name = attachment.Name,
                     MimeType = attachment.MimeType,
-                    Bytes = attachment.Base64Data // Use the base64 string directly
+                    Bytes = $"data:{attachment.MimeType};base64,{attachment.Base64Data}" // Use the base64 string directly
                 };
                 parts.Add(new FilePart { File = file });
             }

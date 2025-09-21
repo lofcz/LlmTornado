@@ -39,7 +39,6 @@ public class A2AContainerService : IA2AContainerService
         AgentMessage userMessage = new()
         {
             Role = MessageRole.User,
-            MessageId = Guid.NewGuid().ToString(),
             Parts = parts
         };
 
