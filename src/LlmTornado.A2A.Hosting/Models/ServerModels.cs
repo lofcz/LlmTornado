@@ -53,8 +53,6 @@ public class ServerCreationRequest
     [JsonPropertyName("environmentVariables")]
     public string[] EnvironmentVariables { get; set; } = Array.Empty<string>();
 
-    [JsonPropertyName("mountPath")]
-    public string? MountPath { get; set; } = null;
 }
 
 public class ServerStatus

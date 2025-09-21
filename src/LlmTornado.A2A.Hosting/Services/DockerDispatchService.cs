@@ -129,7 +129,7 @@ public class DockerDispatchService: IA2ADispatchService
                 HostPort = hostPort,
                 RemotePort = containerPort,
                 Endpoint = endpoint,
-                MountPath = creationRequest.MountPath,
+                MountPath = _configuration["Docker:MountPath"],
                 CreatedAt = DateTime.UtcNow
             };
 
