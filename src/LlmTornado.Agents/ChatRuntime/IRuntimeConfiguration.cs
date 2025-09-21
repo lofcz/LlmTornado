@@ -23,6 +23,11 @@ public interface IRuntimeConfiguration
     public Func<ChatRuntimeEvents, ValueTask>? OnRuntimeEvent { get; set; }
 
     /// <summary>
+    /// Runtime event handler for runtime events.
+    /// </summary>
+    public Func<string, ValueTask<bool>>? OnRuntimeRequestEvent { get; set; }
+
+    /// <summary>
     /// Gets the current list of messages in the conversation.
     /// </summary>
     /// <returns></returns>

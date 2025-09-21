@@ -69,7 +69,7 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
         public ChatRuntime Runtime { get; set; }
         public CancellationTokenSource cts { get; set; }
         public Func<ChatRuntimeEvents, ValueTask>? OnRuntimeEvent { get; set; }
-
+        public Func<string, ValueTask<bool>>? OnRuntimeRequestEvent { get; set; }
         /// <summary>
         /// Current conversation being managed by the runtime configuration.
         /// </summary>

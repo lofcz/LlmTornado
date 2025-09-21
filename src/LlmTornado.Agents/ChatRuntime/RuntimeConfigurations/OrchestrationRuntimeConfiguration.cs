@@ -23,6 +23,7 @@ public class OrchestrationRuntimeConfiguration : Orchestration<ChatMessage, Chat
     private PersistentConversation _messageHistory { get;  set; } 
     public string? MessageHistoryFileLocation { get; set; }
     public Func<OrchestrationRuntimeConfiguration, ValueTask>? CustomInitialization { get; set; }
+    public Func<string, ValueTask<bool>>? OnRuntimeRequestEvent { get; set; }
 
     public OrchestrationRuntimeConfiguration()
     {
