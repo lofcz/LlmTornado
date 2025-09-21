@@ -17,7 +17,7 @@ public class ChatBotAgent : OrchestrationRuntimeConfiguration
     {
         TornadoApi client = new TornadoApi(LLmProviders.OpenAi, Environment.GetEnvironmentVariable("OPENAI_API_KEY"));
 
-        BuildSimpleAgent(client, true, "/app/output/AgentV10.json");
+        BuildSimpleAgent(client, true, "AgentV10.json");
     }
 
     public void BuildSimpleAgent(TornadoApi client, bool streaming = false, string conversationFile = "SimpleAgent.json")
@@ -36,6 +36,16 @@ public class ChatBotAgent : OrchestrationRuntimeConfiguration
                    // Forward agent runner events (including streaming) to runtime
                    config.OnRuntimeEvent?.Invoke(new ChatRuntimeAgentRunnerEvents(sEvent, config.Runtime?.Id ?? string.Empty));
                };
+
+               simpleAgentRunnable.OnAgentToolPermissionEvent += async (tool) =>
+               {
+                   if (config.OnRuntimeRequestEvent != null)
+                   {
+                       return await config.OnRuntimeRequestEvent.Invoke(tool);
+                   }
+                   return false;
+               };
+
                return ValueTask.CompletedTask;
            })
            .WithRuntimeProperty("LatestUserMessage", "")
@@ -101,6 +111,7 @@ public class AgentRunnable : OrchestrationRunnable<ChatMessage, ChatMessage>
 {
     TornadoAgent Agent;
     public Action<AgentRunnerEvents>? OnAgentRunnerEvent { get; set; }
+    public Func<string, ValueTask<bool>>? OnAgentToolPermissionEvent { get; set; }
 
     Conversation _conv;
     OrchestrationRuntimeConfiguration _runtimeConfiguration;
@@ -135,7 +146,10 @@ Given the following context will include Vector Search Memory, Websearch Results
             {
                 OnAgentRunnerEvent?.Invoke(sEvent);
                 return ValueTask.CompletedTask;
-            });
+            },
+
+            toolPermissionHandle: OnAgentToolPermissionEvent
+            );
 
         return _conv.Messages.Last();
     }

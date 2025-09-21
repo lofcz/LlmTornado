@@ -21,7 +21,7 @@ public class A2ATornadoRuntimeConfiguration : BaseA2ATornadoRuntimeConfiguration
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     /// <exception cref="InvalidOperationException"></exception>
-    public override async Task ExecuteAgentTaskAsync(AgentTask task, CancellationToken cancellationToken)
+    public override async Task StartAgentTaskAsync(AgentTask task, CancellationToken cancellationToken)
     {
         if (_taskManager == null)
         {
@@ -61,6 +61,19 @@ public class A2ATornadoRuntimeConfiguration : BaseA2ATornadoRuntimeConfiguration
 
         // Update the Status to Completed
         await _taskManager.UpdateStatusAsync(_currentTask.Id, TaskState.Completed, message: response.ToA2AAgentMessage(), final: true, cancellationToken: cancellationToken);
+    }
+
+
+    /// <summary>
+    /// Process a task assigned to the agent with streaming output
+    /// </summary>
+    /// <param name="task"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    /// <exception cref="InvalidOperationException"></exception>
+    public override async Task UpdateAgentTaskAsync(AgentTask task, CancellationToken cancellationToken)
+    {
+        await StartAgentTaskAsync(task, cancellationToken);
     }
 
     /// <summary>

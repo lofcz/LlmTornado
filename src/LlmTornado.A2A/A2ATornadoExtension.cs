@@ -9,7 +9,10 @@ using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace LlmTornado.A2A;
-
+/// <summary>
+/// ToDo:
+/// - Handle more file types (e.g. video, other documents)
+/// </summary>
 public static class A2ATornadoExtension
 {
     public static ChatMessage ToTornadoMessage(this AgentMessage agentMessage)
@@ -42,6 +45,7 @@ public static class A2ATornadoExtension
                             else if (fileWithBytes.MimeType == "audio/mpeg" || fileWithBytes.MimeType == "audio/mp3" || fileWithBytes.MimeType == "audio/x-mp3")
                                 parts.Add(ChatMessagePart.Create(fileWithBytes.Bytes, ChatAudioFormats.Mp3));
                         }
+                        //ToDo - handle other types
                         else
                         {
                             parts.Add(new ChatMessagePart(fileWithBytes.Bytes, DocumentLinkTypes.Base64));
@@ -147,11 +151,29 @@ public static class A2ATornadoExtension
         }
         else if (part.Document != null)
         {
-            return new FilePart() { File = new FileWithBytes() { Bytes = part.Document.Base64 } };
+            if (part.Document.Uri != null)
+                return new FilePart() { File = new FileWithUri() { Uri = part.Document.Uri.AbsoluteUri } };
+            else
+                return new FilePart() { File = new FileWithBytes() { Bytes = part.Document.Base64 } };
         }
         else if (part.Audio != null)
         {
-            return new FilePart() { File = new FileWithBytes() { Bytes = part.Audio.Data, MimeType = part.Audio.MimeType } };
+            if (part.Audio.Url != null)
+                return new FilePart() { File = new FileWithUri() { Uri = part.Audio.Url.AbsoluteUri } };
+            else
+                return new FilePart() { File = new FileWithBytes() { Bytes = part.Audio.Data, MimeType = part.Audio.MimeType } };
+        }
+        else if (part.Reasoning != null)
+        {
+            if (part.Reasoning?.IsRedacted ?? true)
+            {
+                JsonElement stringElement = JsonDocument.Parse($"{{\"message\": \"{part.Reasoning.Content}\"}}").RootElement.GetProperty("message");
+                return new TextPart() { Text = "Reasoning", Metadata = new Dictionary<string, JsonElement>() { { "Content", stringElement } } };
+            }  
+        }
+        else if (part.Video != null) 
+        { 
+            return new FilePart() { File = new FileWithUri() { Uri = part.Video.Url.AbsoluteUri} };
         }
         else
         {

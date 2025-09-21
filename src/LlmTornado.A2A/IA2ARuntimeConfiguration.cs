@@ -9,6 +9,6 @@ namespace LlmTornado.A2A;
 
 public interface IA2ARuntimeConfiguration
 {
-    Task ExecuteAgentTaskAsync(AgentTask task, CancellationToken cancellationToken);
+    Task StartAgentTaskAsync(AgentTask task, CancellationToken cancellationToken);
     Task<AgentCard> GetAgentCardAsync(string agentUrl, CancellationToken cancellationToken);
 }
