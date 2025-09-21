@@ -124,7 +124,8 @@ public static class A2ATornadoExtension
         {
             foreach (var part in chatMessage.Parts)
             {
-                parts.Add(part.ToA2APart());
+                var a2aPart = part.ToA2APart();
+                if (a2aPart != null) { parts.Add(a2aPart); }
             }
         }
 
@@ -139,7 +140,7 @@ public static class A2ATornadoExtension
         };
     }
 
-    public static Part ToA2APart(this ChatMessagePart part)
+    public static Part? ToA2APart(this ChatMessagePart part)
     {
         if (part.Text != null)
         {
@@ -175,10 +176,8 @@ public static class A2ATornadoExtension
         { 
             return new FilePart() { File = new FileWithUri() { Uri = part.Video.Url.AbsoluteUri} };
         }
-        else
-        {
-            throw new NotSupportedException("Unsupported ChatMessagePart type.");
-        }
+
+        return null;
     }
 
     public static MessageRole ToA2AMessageRole(this ChatMessageRoles? role)
