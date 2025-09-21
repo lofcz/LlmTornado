@@ -89,7 +89,7 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
 
     internal override async ValueTask _CleanupRunnable()
     {
-        AddRangeBaseResults(Processes.Select(process => (object)process.Result).ToArray() ?? Array.Empty<object>());
+        AddRangeBaseResults(Processes.ToArray());
         ClearAllProcesses(); //Clear out existing processes after grabbing results
         await CleanupRunnable();
     }

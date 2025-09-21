@@ -5,6 +5,7 @@ using ModelContextProtocol.Protocol;
 using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace LlmTornado.Agents.ChatRuntime.Orchestration;
@@ -20,48 +21,72 @@ public class RunnableProcess
     /// <summary>
     /// Max alled reruns for this process.
     /// </summary>
+    [JsonIgnore]
     public int MaxReruns { get; set; } = 3;
     /// <summary>
     /// Current rerun attempts for this process.
     /// </summary>
-    public int RerunAttempts { get; private set; } = 0;
+    /// [SerializationRequired]
+    [JsonPropertyName("attempts")]
+    public int RerunAttempts { get; set; } = 0;
     /// <summary>
     /// Gets or sets the unique identifier for the entity.
     /// </summary>
+    /// [SerializationRequired]
+    [JsonPropertyName("id")]
     public string Id { get; set; } = Guid.NewGuid().ToString();
     /// <summary>
     /// Get the State for this process.
     /// </summary>
+    [JsonIgnore]
     public OrchestrationRunnableBase Runner { get; set; }
 
     /// <summary>
     /// Gets or sets the input object to process.
     /// </summary>
+    /// [SerializationRequired]
+    [JsonIgnore]
     public object BaseInput { get; set; } = new object();
 
-    public object? BaseResult { get; set; } 
+    /// <summary>
+    /// Gets or sets the base result of the operation.
+    /// </summary>
+    /// [SerializationRequired]
+    [JsonIgnore]
+    public object? BaseResult { get; set; }
 
     /// <summary>
     /// Time Execution process has Started
     /// </summary>
+    /// [SerializationRequired]
+    [JsonPropertyName("startTime")]
     public DateTime? StartTime { get; set; }
 
     /// <summary>
     /// Execution process time.
     /// </summary>
+    /// [SerializationRequired]
+    [JsonPropertyName("executionTime")]
     public TimeSpan RunnableExecutionTime { get; set; }
 
     /// <summary>
     /// Token usage for this process
     /// </summary>
+    /// [SerializationRequired]
+    [JsonPropertyName("tokenUsage")]
     public int TokenUsage { get; set; } = 0;
 
 
     //public object Result { get; set; }
     public RunnableProcess() { }
 
+    [JsonIgnore]
     public List<TornadoAgent> RegisteredAgents { get; set; } = new List<TornadoAgent>();
-
+    /// <summary>
+    /// Process had an error during execution.
+    /// </summary>
+    /// [SerializationRequired]
+    [JsonPropertyName("hadError")]
     public bool HadError { get; set; } = false;
 
     public void RegisterAgent(TornadoAgent agent)
@@ -147,6 +172,15 @@ public class RunnableProcess
         RerunAttempts = runsAttempted ?? RerunAttempts;
     }
 
+    public virtual void Serialize()
+    {
+        // Implement serialization logic here
+    }
+
+    public virtual void Deserialize()
+    {
+        // Implement deserialization logic here
+    }
 
     /// <summary>
     /// Determines whether another attempt can be made based on the current number of rerun attempts.
@@ -212,7 +246,10 @@ public class RunnableProcess<TInput, TOutput> : RunnableProcess
     /// <summary>
     /// Gets or sets the input value of type <typeparamref name="T"/>.
     /// </summary>
+    [JsonPropertyName("input")]
     public TInput Input { get => (TInput)BaseInput; set => BaseInput = value!; }
+
+    [JsonPropertyName("result")]
     public TOutput? Result { get => (TOutput?)BaseResult; set => BaseResult = value!; }
 
     /// <summary>
