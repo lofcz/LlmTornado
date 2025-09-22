@@ -1,26 +1,24 @@
-﻿using LlmTornado.A2A.Hosting.Models;
-using System.Collections.Concurrent;
-using System.ComponentModel;
+﻿using LlmTornado.A2A.Hosting.Docker;
+using LlmTornado.A2A.Hosting.Models;
 using System.Diagnostics;
 using System.Text;
-using System.Threading;
-
 
 namespace LlmTornado.A2A.Hosting.Services;
 
-public class DockerDispatchService: IA2ADispatchService
+
+public class DockerComposeService : IA2ADispatchService
 {
     private Dictionary<string, ServerInfo> _containers = new Dictionary<string, ServerInfo>();
-    private readonly Dictionary<string,string> _agentImages;
+    private readonly Dictionary<string, string> _agentImages;
     private readonly IConfiguration _configuration;
 
-    public DockerDispatchService(IConfiguration configuration)
+    public DockerComposeService(IConfiguration configuration)
     {
         _configuration = configuration;
-        _agentImages = new Dictionary<string,string>
-        {
-            { "ChatBot", "llmtornadoa2aagentserver:latest" }
-        };
+        _agentImages = new Dictionary<string, string>
+    {
+        { "ChatBot", "llmtornadoa2aagentserver:latest" }
+    };
     }
 
     public async Task<ServerCreationResult> DispatchServerAsync(ServerCreationRequest request)
@@ -54,43 +52,55 @@ public class DockerDispatchService: IA2ADispatchService
         try
         {
             // Generate unique container name
-            var containerName = $"llmtornado-runtime-{Guid.NewGuid().ToString()}";
+            var projectName = $"llmtornado-runtime-{Guid.NewGuid().ToString()}";
             var hostPort = await GetAvailablePortAsync();
             var containerPort = 8080;
 
-            // Build docker run command
-            var dockerArgs = new List<string>
-            {
-                "run", "-d",
-                "--name", containerName,
-                "-p", $"{hostPort}:{containerPort}",
-                "--network","llmtornado-network"
-            };
-
-            foreach (var envVar in creationRequest.EnvironmentVariables ?? Array.Empty<string>())
-            {
-                dockerArgs.AddRange(new[] { "-e", envVar });
-            }
+            //We should be prebuilding the image and pushing to a registry in production
+            var builder = new DockerComposeBuilder();
+            var serviceBuilder = new DockerContainerOptionsBuilder();
+            serviceBuilder = serviceBuilder
+                .BuildDockerComposeYaml(creationRequest.AgentImageKey, _agentImages[creationRequest.AgentImageKey], "3.8")
+                .AddPortMapping(hostPort.ToString(), containerPort.ToString());
 
             // Add volume mount if specified
             if (!string.IsNullOrEmpty(_configuration["Docker:MountPath"]))
             {
                 var absoluteMountPath = Path.GetFullPath(_configuration["Docker:MountPath"]);
                 Directory.CreateDirectory(absoluteMountPath); // Ensure directory exists
-                dockerArgs.AddRange(new[] { "-v", $"{absoluteMountPath}:/app/output" });
+                serviceBuilder.AddVolumeMount(absoluteMountPath, "/app/output");
             }
 
-            dockerArgs.Add(_agentImages[creationRequest.AgentImageKey]);
+            var envVars = new Dictionary<string, string>();
+
+            foreach (var envVar in creationRequest.EnvironmentVariables ?? Array.Empty<string>())
+            {
+                var parts = envVar.Split(new[] { '=' }, 2);
+                if (parts.Length == 2)
+                {
+                    envVars[parts[0]] = parts[1];
+                }
+            }
+
+            if (envVars.Count > 0)
+            {
+                serviceBuilder.AddEnvironmentVariables(envVars);
+            }
+
+            builder.AddService(serviceBuilder);
+            builder.AddChromaService();
+            builder.SaveToFile(Path.Combine(Directory.GetCurrentDirectory(), "docker-compose.yml"));
 
             // Execute docker run command
             var processInfo = new ProcessStartInfo
             {
                 FileName = "docker",
-                Arguments = string.Join(" ", dockerArgs.Select(arg => arg.Contains(" ") ? $"\"{arg}\"" : arg)),
+                Arguments = $"compose  --project-name {projectName} up --build -d",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
-                CreateNoWindow = true
+                CreateNoWindow = true,
+                WorkingDirectory = Directory.GetCurrentDirectory()
             };
 
             //_logger.LogInformation("Starting container for runtime {RuntimeId}: {Command}", runtimeId, processInfo.Arguments);
@@ -119,14 +129,13 @@ public class DockerDispatchService: IA2ADispatchService
                 };
             }
 
-            var containerId = output.Trim();
             var endpoint = $"http://localhost:{hostPort}";
 
             // Store container info
             var containerInfo = new ServerInfo
             {
-                ServerId = containerId,
-                ServerConfiguration = containerName,
+                ServerId = projectName,
+                ServerConfiguration = _agentImages[creationRequest.AgentImageKey],
                 HostPort = hostPort,
                 RemotePort = containerPort,
                 Endpoint = endpoint,
@@ -134,7 +143,7 @@ public class DockerDispatchService: IA2ADispatchService
                 CreatedAt = DateTime.UtcNow
             };
 
-            _containers.Add(containerId, containerInfo);
+            _containers.Add(projectName, containerInfo);
 
             // Wait for container to be ready
             await WaitForContainerReadyAsync(endpoint, TimeSpan.FromSeconds(30));
@@ -144,7 +153,7 @@ public class DockerDispatchService: IA2ADispatchService
             return new ServerCreationResult
             {
                 Success = true,
-                ServerId = containerId,
+                ServerId = projectName,
                 Endpoint = endpoint
             };
         }
@@ -159,19 +168,18 @@ public class DockerDispatchService: IA2ADispatchService
         }
     }
 
-    public async Task<bool> RemoveContainerAsync(string containerId)
+    public async Task<bool> RemoveContainerAsync(string serverId)
     {
         try
         {
-            if (!_containers.Remove(containerId, out var containerInfo))
+            if (!_containers.Remove(serverId, out var containerInfo))
             {
                 //_logger.LogWarning("Container not found for runtime {RuntimeId}", runtimeId);
                 return false;
             }
 
             // Stop and remove the container
-            await ExecuteDockerCommandAsync($"stop {containerInfo.ServerId}");
-            await ExecuteDockerCommandAsync($"rm {containerInfo.ServerId}");
+            await ExecuteDockerCommandAsync($"compose -p {containerInfo.ServerId} down");
 
             //_logger.LogInformation("Container removed for runtime {RuntimeId}: {ContainerId}", runtimeId, containerInfo.ContainerId);
             return true;
@@ -183,11 +191,11 @@ public class DockerDispatchService: IA2ADispatchService
         }
     }
 
-    public async Task<ServerStatus> GetContainerStatusAsync(string containerId)
+    public async Task<ServerStatus> GetContainerStatusAsync(string serverId)
     {
         try
         {
-            if (!_containers.TryGetValue(containerId, out var containerInfo))
+            if (!_containers.TryGetValue(serverId, out var containerInfo))
             {
                 return new ServerStatus
                 {
@@ -303,7 +311,8 @@ public class DockerDispatchService: IA2ADispatchService
             using (AutoResetEvent outputWaitHandle = new AutoResetEvent(false))
             using (AutoResetEvent errorWaitHandle = new AutoResetEvent(false))
             {
-                process.OutputDataReceived += (sender, e) => {
+                process.OutputDataReceived += (sender, e) =>
+                {
                     if (e.Data == null)
                     {
                         outputWaitHandle.Set();
@@ -347,7 +356,7 @@ public class DockerDispatchService: IA2ADispatchService
 
             return output.ToString();
         }
-       
+
     }
 
     private async Task WaitForContainerReadyAsync(string endpoint, TimeSpan timeout)
@@ -391,9 +400,5 @@ public class DockerDispatchService: IA2ADispatchService
             return false;
         }
     }
-
 }
-
-
-
-
+    

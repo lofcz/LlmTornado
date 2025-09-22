@@ -1,5 +1,6 @@
 ﻿using A2A;
 using LlmTornado.A2A.Hosting;
+using LlmTornado.A2A.Hosting.Docker;
 using LlmTornado.A2A.Hosting.Models;
 using LlmTornado.A2A.Hosting.Services;
 using LlmTornado.Code;
@@ -237,5 +238,56 @@ internal class A2ATests
         // Cleanup
         var deleteResult = await dockerService.RemoveContainerAsync(createResult.ServerId!);
         Assert.That(deleteResult, Is.True);
+    }
+
+    [Test]
+    public void DockerComposeBuilderTest()
+    {
+        var builder = new DockerComposeBuilder();
+        var serviceBuilder = new DockerContainerOptionsBuilder();
+        var serviceYaml = serviceBuilder
+            .BuildDockerComposeYaml("test-service", "test-image:latest","3.8")
+            .AddPortMapping("8080", "80")
+            .AddVolumeMount("/host/data", "/container/data")
+            .AddEnvironmentVariables(new Dictionary<string, string>
+            {
+                { "ENV_VAR1", "value1" },
+                { "ENV_VAR2", "value2" }
+            });
+        var serviceBuilder2 = new DockerContainerOptionsBuilder();
+        var serviceYaml2 = serviceBuilder2
+            .BuildDockerComposeYaml("test-service2", "test-image2:latest", "3.8")
+            .AddPortMapping("8080", "80")
+            .AddVolumeMount("/host/data", "/container/data")
+            .AddEnvironmentVariables(new Dictionary<string, string>
+            {
+                { "ENV_VAR1", "value1" },
+                { "ENV_VAR2", "value2" }
+            });
+        builder.AddService(serviceBuilder);
+        builder.AddService(serviceBuilder2);
+        var expectedYaml = $@"version: '3.8'
+services:
+  test-service:
+    image: test-image:latest
+    ports:
+      - ""8080:80""
+    volumes:
+      - /host/data:/container/data
+    environment:
+      ENV_VAR1: value1
+      ENV_VAR2: value2
+  test-service2:
+    image: test-image2:latest
+    ports:
+      - ""8080:80""
+    volumes:
+      - /host/data:/container/data
+    environment:
+      ENV_VAR1: value1
+      ENV_VAR2: value2
+";
+        Assert.That(builder.DockerComposeYaml, Is.EqualTo(expectedYaml));
+
     }
 }
