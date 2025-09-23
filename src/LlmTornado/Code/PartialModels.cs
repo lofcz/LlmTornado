@@ -1326,6 +1326,10 @@ public enum LLmProviders
     /// </summary>
     OpenRouter,
     /// <summary>
+    /// Moonshot AI.
+    /// </summary>
+    MoonshotAi,
+    /// <summary>
     /// Internal value.
     /// </summary>
     Length

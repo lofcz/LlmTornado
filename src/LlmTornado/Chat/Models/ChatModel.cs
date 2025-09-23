@@ -5,6 +5,7 @@ using System.Linq;
 using LlmTornado.Chat.Models.DeepInfra;
 using LlmTornado.Chat.Models.DeepSeek;
 using LlmTornado.Chat.Models.Mistral;
+using LlmTornado.Chat.Models.MoonshotAi;
 using LlmTornado.Chat.Models.OpenRouter;
 using LlmTornado.Chat.Models.Perplexity;
 using LlmTornado.Chat.Models.XAi;
@@ -64,6 +65,11 @@ public class ChatModel : ModelBase
     /// Models provided by xAI.
     /// </summary>
     public static readonly ChatModelPerplexity Perplexity = new ChatModelPerplexity();
+    
+    /// <summary>
+    /// Models provided by Moonshot AI.
+    /// </summary>
+    public static readonly ChatModelMoonshotAi MoonshotAi = new ChatModelMoonshotAi();
     
     /// <summary>
     /// Models provided by DeepInfra.
@@ -181,7 +187,7 @@ public class ChatModel : ModelBase
     public static List<BaseVendorModelProvider> AllProviders => LazyAllProviders.Value;
 
     private static readonly Lazy<List<BaseVendorModelProvider>> LazyAllProviders = new Lazy<List<BaseVendorModelProvider>>(() => [
-        OpenAi, Anthropic, Cohere, Google, Groq, DeepSeek, Mistral, XAi, Perplexity, DeepInfra, OpenRouter
+        OpenAi, Anthropic, Cohere, Google, Groq, DeepSeek, Mistral, XAi, Perplexity, MoonshotAi, DeepInfra, OpenRouter
     ]);
     
     /// <summary>

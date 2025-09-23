@@ -2,10 +2,20 @@
   "OpenAi": "",
   "Anthropic": "",
   "Cohere": "",
+  "Google": "",
   "Azure": {
     "Version": "",
     "ApiUrlFormat": "",
     "Key": ""
   },
-  "Groq": ""
+  "Groq": "",
+  "DeepSeek": "",
+  "Mistral": "",
+  "XAi": "",
+  "Perplexity": "",
+  "Voyage": "",
+  "DeepInfra": "",
+  "OpenRouter": "",
+  "AiFoundry": "",
+  "MoonshotAi": ""
 }
