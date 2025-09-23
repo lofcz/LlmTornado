@@ -587,7 +587,18 @@ public class ChatRequest : IModelRequest, ISerializableRequest
 			LLmProviders.MoonshotAi, (x, y, z, a) =>
 			{
 				// temperature parameter in the Kimi API is [0, 1]
-				x.Temperature = x.Temperature is null ? null : MathPolyfill.Clamp(x.Temperature.Value, 0, 1);
+				if (x.Temperature is not null)
+				{
+					if (x.Temperature < 0)
+					{
+						x.Temperature = 0;
+					}
+
+					if (x.Temperature > 1)
+					{
+						x.Temperature = 1;
+					}	
+				}
 
 				// Kimi API does not support the tool_choice=required parameter
 				if (x.ToolChoice == OutboundToolChoice.Required)
