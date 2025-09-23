@@ -143,7 +143,7 @@ public class DockerComposeService : IA2ADispatchService
                 CreatedAt = DateTime.UtcNow
             };
 
-            _containers.Add(projectName, containerInfo);
+            _containers.Add(projectName, containerInfo); //needs to be deleted on failed creation
 
             // Wait for container to be ready
             await WaitForContainerReadyAsync(endpoint, TimeSpan.FromSeconds(30));

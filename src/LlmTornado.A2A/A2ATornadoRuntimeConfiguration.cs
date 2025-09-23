@@ -5,7 +5,7 @@ using LlmTornado.Chat;
 namespace LlmTornado.A2A;
 
 /// <summary>
-/// Wraps Semantic Kernel-based agents to handle Travel related tasks
+/// Wraps Llm Runtime agents to handle Travel related tasks
 /// </summary>
 public class A2ATornadoRuntimeConfiguration : BaseA2ATornadoRuntimeConfiguration
 {
