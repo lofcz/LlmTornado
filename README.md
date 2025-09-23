@@ -8,7 +8,7 @@
 **Build AI agents and multi-agent systems in minutes with one toolkit and the broadest Provider support.**
 
 ## Key Features:
--  **Use Any Provider**: All you need to know is the model's name; we handle the rest. Built-in: [Anthropic](https://docs.anthropic.com/en/docs/intro), [Azure](https://azure.microsoft.com/en-us/products/ai-services/openai-service), [Cohere](https://docs.cohere.com/changelog), [DeepInfra](https://deepinfra.com/docs/), [DeepSeek](https://api-docs.deepseek.com/), [Google](https://ai.google.dev/gemini-api/docs), [Groq](https://console.groq.com/docs/overview), [Mistral](https://docs.mistral.ai/getting-started), [Ollama](https://ollama.com/search), [OpenAI](https://platform.openai.com/docs), [OpenRouter](https://openrouter.ai/docs/quickstart), [Perplexity](https://docs.perplexity.ai/home), [Voyage](https://www.voyageai.com/), [xAI](https://docs.x.ai/docs). Check the full Feature Matrix [here](https://github.com/lofcz/LlmTornado/blob/master/FeatureMatrix.md).
+-  **Use Any Provider**: All you need to know is the model's name; we handle the rest. Built-in: [Anthropic](https://docs.anthropic.com/en/docs/intro), [Azure](https://azure.microsoft.com/en-us/products/ai-services/openai-service), [Cohere](https://docs.cohere.com/changelog), [DeepInfra](https://deepinfra.com/docs/), [DeepSeek](https://api-docs.deepseek.com/), [Google](https://ai.google.dev/gemini-api/docs), [Groq](https://console.groq.com/docs/overview), [Mistral](https://docs.mistral.ai/getting-started), [MoonshotAI](https://platform.moonshot.ai/docs/overview), [Ollama](https://ollama.com/search), [OpenAI](https://platform.openai.com/docs), [OpenRouter](https://openrouter.ai/docs/quickstart), [Perplexity](https://docs.perplexity.ai/home), [Voyage](https://www.voyageai.com/), [xAI](https://docs.x.ai/docs). Check the full Feature Matrix [here](https://github.com/lofcz/LlmTornado/blob/master/FeatureMatrix.md).
 - **First-class Local Deployments**: Run with [vLLM](https://docs.vllm.ai/en/latest), [Ollama](https://ollama.com/), or [LocalAI](https://localai.io/) with integrated support for request transformations.
 - **Multi-Agent Systems**: Toolkit for the orchestration of multiple collaborating specialist agents.
 - **Maximize Request Success Rate**: If enabled, we keep track of which parameters are supported by which models, how long the reasoning context can be, etc., and silently modify your requests to comply with rules enforced by a diverse set of Providers.
@@ -34,12 +34,13 @@
 Install LLM Tornado via NuGet:
 
 ```bash
-dotnet add package LlmTornado.Toolkit
+dotnet add package LlmTornado
 ```
 
 Optional addons:
 
 ```bash
+dotnet add package LlmTornado.Agents # Agentic framework, higher-level abstractions
 dotnet add package LlmTornado.Mcp # Model Context Protocol (MCP) integration
 dotnet add package LlmTornado.Contrib # productivity, quality of life enhancements
 ```
@@ -460,6 +461,14 @@ orange: 2
 - [Monster Collector](https://github.com/primaryobjects/monster-collector) - A database of AI-generated monsters
 
 _Have you built something with Tornado? Let us know about it in the issues to get a spotlight!_
+
+## 🤝 Partners
+
+<a href="https://www.scio.cz/prace-u-nas" target="_blank">
+    <figure>
+        <img alt="Scio" width="300" alt="image" src="https://github.com/user-attachments/assets/6a5aa9b3-af8b-4194-8dbe-c3add79763e7" />
+    </figure>
+</a>
 
 ## 📚 Contributing
 
