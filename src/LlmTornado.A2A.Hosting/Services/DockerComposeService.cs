@@ -15,10 +15,12 @@ public class DockerComposeService : IA2ADispatchService
     public DockerComposeService(IConfiguration configuration)
     {
         _configuration = configuration;
+
         _agentImages = new Dictionary<string, string>
-    {
-        { "ChatBot", "llmtornadoa2aagentserver:latest" }
-    };
+        {
+            { "ChatBot", "llmtornadoa2aagentserver:latest" }
+        };
+
     }
 
     public async Task<ServerCreationResult> DispatchServerAsync(ServerCreationRequest request)
@@ -88,7 +90,11 @@ public class DockerComposeService : IA2ADispatchService
             }
 
             builder.AddService(serviceBuilder);
+
+            //Need to make this optional/configurable
             builder.AddChromaService();
+
+
             builder.SaveToFile(Path.Combine(Directory.GetCurrentDirectory(), "docker-compose.yml"));
 
             // Execute docker run command

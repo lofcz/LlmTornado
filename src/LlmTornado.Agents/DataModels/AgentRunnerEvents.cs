@@ -1,6 +1,7 @@
 ﻿using LlmTornado.Chat;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Common;
+using LlmTornado.Responses;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,7 +21,8 @@ public enum AgentRunnerEventTypes
     Streaming,
     MaxTurnsReached,
     GuardRailTriggered,
-    UsageReceived
+    UsageReceived,
+    ComputerToolInvoked
 }
 
 /// <summary>
@@ -37,6 +39,20 @@ public class AgentRunnerEvents : EventArgs
     /// Timestamp of when the event occurred.
     /// </summary>
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+}
+
+
+public class AgentRunnerComputerToolEvent : AgentRunnerEvents
+{
+    public IComputerAction ComputerAction { get; }
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AgentRunnerComputerToolEvent"/> class.
+    /// </summary>
+    public AgentRunnerComputerToolEvent(IComputerAction computerAction)
+    {
+        EventType = AgentRunnerEventTypes.ComputerToolInvoked;
+        ComputerAction = computerAction;
+    }
 }
 
 /// <summary>
