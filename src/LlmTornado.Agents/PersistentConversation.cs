@@ -13,15 +13,15 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace LlmTornado.Agents;
-public class PersistedMessage
+public class PersistentMessage
 {
     public Guid Id { get; set; }
     public ChatMessageRoles? Role { get; set; }
     public string? Content { get; set; }
-    public List<PersistedPart>? Parts { get; set; }
+    public List<PersistentPart>? Parts { get; set; }
 }
 
-public class PersistedPart
+public class PersistentPart
 {
     public string Type { get; set; } = "";
     public string? Text { get; set; }
@@ -30,7 +30,7 @@ public class PersistedPart
     public string? AudioFormat { get; set; }
 }
 
-public class PersistedConversation
+public class PersistentConversation
 {
     private readonly object lockObject = new object();
     public List<ChatMessage> Messages => GetMessages();
@@ -38,31 +38,42 @@ public class PersistedConversation
 
     private ConcurrentQueue<ChatMessage> _unsavedMessages = new ConcurrentQueue<ChatMessage>();
     public bool ContinuousSaving { get; set; } = false;
-    public string ConversationPath { get; set; }
-    public PersistedConversation(string conversationPath = "", bool continuousSave = false)
-    { 
-        if (!string.IsNullOrEmpty(conversationPath))
+
+    public readonly string ConversationPath;
+
+    public PersistentConversation(string conversationPath, bool continuousSave = false)
+    {
+        ConversationPath = conversationPath;
+        if (string.IsNullOrEmpty(ConversationPath))
         {
-            ConversationPath = conversationPath;
-            ContinuousSaving = continuousSave;
-            if (File.Exists(conversationPath))
+            throw new ArgumentException("conversationPath cannot be null or empty", nameof(conversationPath));
+        }
+
+        ContinuousSaving = continuousSave;
+
+        // Load existing conversation
+        if (File.Exists(ConversationPath))
+        {
+            Task.Run(async () => await LoadAsync()).Wait();
+        }
+        else // file does not exist, ensure directory exists
+        {
+            if (!Directory.Exists(Path.GetDirectoryName(ConversationPath))) // create directory if it doesn't exist
             {
-                Task.Run(async () => await LoadAsync()).Wait();
-            }
-            // Use a temp file
-            else if (!Directory.Exists(Path.GetDirectoryName(conversationPath)))
-            {
-                string? dir = Path.GetDirectoryName(conversationPath);
+                string? dir = Path.GetDirectoryName(ConversationPath);
                 if (!string.IsNullOrEmpty(dir))
                     Directory.CreateDirectory(dir);
             }
-            else
+            else // file does not exist but directory does, create empty file
             {
-                Task.Run(async () => await LoadAsync()).Wait();
+                using var fs = File.Create(ConversationPath);
             }
         }
     }
 
+    /// <summary>
+    /// Clears the conversation history from memory (does not delete any saved files)
+    /// </summary>
     public void Clear()
     {
         lock (lockObject)
@@ -72,6 +83,10 @@ public class PersistedConversation
         }
     }
 
+    /// <summary>
+    /// Get messages from the conversation in chronological order
+    /// </summary>
+    /// <returns></returns>
     public List<ChatMessage> GetMessages()
     {
         lock (lockObject)
@@ -82,6 +97,10 @@ public class PersistedConversation
         }
     }
 
+    /// <summary>
+    /// Append a message to the conversation memory and save if ContinuousSaving is enabled
+    /// </summary>
+    /// <param name="message"></param>
     public void AppendMessage(ChatMessage message)
     {
         lock (lockObject)
@@ -92,6 +111,9 @@ public class PersistedConversation
         }
     }
 
+    /// <summary>
+    /// Saves any unsaved messages to the conversation file
+    /// </summary>
     public void SaveChanges()
     {
         if (string.IsNullOrEmpty(ConversationPath))
@@ -103,36 +125,42 @@ public class PersistedConversation
         UpdateConversationFile();
     }
 
-    public void DeleteConversation()
+    /// <summary>
+    /// Delete the conversation file
+    /// </summary>
+    /// <param name="conversationPath"></param>
+    public static void DeleteConversation(string conversationPath)
     {
-        if (string.IsNullOrEmpty(ConversationPath))
+        if (File.Exists(conversationPath))
         {
-            Console.WriteLine("Warning: ConversationPath is not set. Cannot save conversation.");
-            return;
+            File.Delete(conversationPath);
         }
-
-        lock (lockObject)
+        else
         {
-            if (File.Exists(ConversationPath))
-            {
-                File.Delete(ConversationPath);
-            }
-
-            _messages.Clear();
-            _unsavedMessages = new ConcurrentQueue<ChatMessage>();
+           Console.WriteLine("Warning: Conversation file does not exist. Cannot delete.");
         }
     }
 
+    /// <summary>
+    /// Load messages from the conversation file
+    /// </summary>
+    /// <returns></returns>
     private async Task LoadAsync()
     {
         if (string.IsNullOrEmpty(ConversationPath))
         {
-            Console.WriteLine("Warning: ConversationPath is not set. Cannot save conversation.");
+            Console.WriteLine("Warning: ConversationPath is not set. Cannot load conversation.");
             return;
         }
+
         if (!File.Exists(ConversationPath))
+        {
+            Console.WriteLine("Warning: Conversation file does not exist. Cannot load conversation.");
             return;
+        }
+
         List<ChatMessage> loadedMessages = await LoadMessagesJsonlAsync();
+
         lock (lockObject)
             _messages = new ConcurrentStack<ChatMessage>(loadedMessages);
     }
@@ -161,7 +189,7 @@ public class PersistedConversation
 
             while (_unsavedMessages.TryDequeue(out var msg))
             {
-                var dto = ConversationIOUtility.ConvertChatMessageToPersisted(msg);
+                var dto = ConversationIOUtility.ConvertChatMessageToPersistent(msg);
 
                 string json = JsonConvert.SerializeObject(dto);
                 writer.WriteLine(json);
@@ -197,7 +225,7 @@ public class PersistedConversation
             if (string.IsNullOrWhiteSpace(line))
                 continue;
 
-            var dto = JsonConvert.DeserializeObject<PersistedMessage>(line);
+            var dto = JsonConvert.DeserializeObject<PersistentMessage>(line);
             if (dto == null)
                 continue;
 
@@ -213,14 +241,14 @@ public class PersistedConversation
 public static class ConversationIOUtility
 {
 
-    public static PersistedMessage ConvertChatMessageToPersisted(ChatMessage message)
+    public static PersistentMessage ConvertChatMessageToPersistent(ChatMessage message)
     {
-        return new PersistedMessage
+        return new PersistentMessage
         {
             Id = message.Id,
             Role = message.Role,
             Content = message.Content,
-            Parts = message.Parts?.Select(p => new PersistedPart
+            Parts = message.Parts?.Select(p => new PersistentPart
             {
                 Type = p.Type.ToString(),
                 Text = p.Text,
@@ -231,7 +259,7 @@ public static class ConversationIOUtility
         };
     }
 
-    public static ChatMessage ConvertPersistantToChatMessage(PersistedMessage persisted)
+    public static ChatMessage ConvertPersistantToChatMessage(PersistentMessage persisted)
     {
         // Rebuild parts (fallback to Content)
         List<ChatMessagePart>? parts = null;
@@ -284,7 +312,7 @@ public static class ConversationIOUtility
     }
 
     /// <summary>
-    /// Save the conversation to a file
+    /// Save a conversation to a file
     /// </summary>
     /// <param name="Messages"></param>
     /// <param name="filePath"></param>
@@ -294,7 +322,7 @@ public static class ConversationIOUtility
             throw new FileNotFoundException("Conversation file not found", filePath);
 
         var dto = Messages
-            .Select(m => ConvertChatMessageToPersisted(m)).ToList();
+            .Select(m => ConvertChatMessageToPersistent(m)).ToList();
 
         var json = JsonConvert.SerializeObject(dto, Formatting.Indented);
         File.WriteAllText(filePath, json);
@@ -306,15 +334,30 @@ public static class ConversationIOUtility
     /// </summary>
     /// <param name="filePath"> File to load conversation from</param>
     /// <returns></returns>
-    public static async Task<List<ChatMessage>> LoadMessagesAsync(this List<ChatMessage> messages,  string filePath)
+    public static async Task<List<ChatMessage>> LoadMessagesAsync(this List<ChatMessage> messages,  string conversationPath)
     {
-        using var sr = new StreamReader(filePath);
-        string json = await sr.ReadToEndAsync();
-        var dto = JsonConvert.DeserializeObject<List<PersistedMessage>>(json) ?? [];
-
-        foreach (var m in dto)
+        if (string.IsNullOrEmpty(conversationPath))
         {
-            messages.Add(ConvertPersistantToChatMessage(m));
+            Console.WriteLine("Warning: ConversationPath is not set. Cannot save conversation.");
+            return new List<ChatMessage>();
+        }
+
+        if (!File.Exists(conversationPath))
+            throw new FileNotFoundException("Conversation file not found", conversationPath);
+
+        using var reader = new StreamReader(conversationPath);
+        string? line;
+
+        while ((line = await reader.ReadLineAsync()) != null)
+        {
+            if (string.IsNullOrWhiteSpace(line))
+                continue;
+
+            var dto = JsonConvert.DeserializeObject<PersistentMessage>(line);
+            if (dto == null)
+                continue;
+
+            messages.Add(ConvertPersistantToChatMessage(dto));
         }
 
         return messages;
@@ -325,15 +368,30 @@ public static class ConversationIOUtility
     /// </summary>
     /// <param name="filePath"> File to load conversation from</param>
     /// <returns></returns>
-    public static List<ChatMessage> LoadMessages(this List<ChatMessage> messages, string filePath)
+    public static List<ChatMessage> LoadMessages(this List<ChatMessage> messages, string conversationPath)
     {
-        using var sr = new StreamReader(filePath);
-        string json = sr.ReadToEnd();
-        var dto = JsonConvert.DeserializeObject<List<PersistedMessage>>(json) ?? [];
-
-        foreach (var m in dto)
+        if (string.IsNullOrEmpty(conversationPath))
         {
-            messages.Add(ConvertPersistantToChatMessage(m));
+            Console.WriteLine("Warning: ConversationPath is not set. Cannot save conversation.");
+            return new List<ChatMessage>();
+        }
+
+        if (!File.Exists(conversationPath))
+            throw new FileNotFoundException("Conversation file not found", conversationPath);
+
+        using var reader = new StreamReader(conversationPath);
+        string? line;
+
+        while ((line = reader.ReadLine()) != null)
+        {
+            if (string.IsNullOrWhiteSpace(line))
+                continue;
+
+            var dto = JsonConvert.DeserializeObject<PersistentMessage>(line);
+            if (dto == null)
+                continue;
+
+            messages.Add(ConvertPersistantToChatMessage(dto));
         }
 
         return messages;

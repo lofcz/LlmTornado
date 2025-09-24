@@ -1,0 +1,107 @@
+@page "/"
+@using LlmTornado.A2A.WebUI.Models
+@using LlmTornado.A2A.WebUI.Services
+@using LlmTornado.A2A.WebUI.Components.A2A.ServerManagement
+@using LlmTornado.A2A.WebUI.Components.A2A.ServerMonitor
+@inject IA2AApiService ApiService
+
+@rendermode InteractiveServer
+
+<PageTitle>Servers</PageTitle>
+
+<div class="a2a-interface">
+    <div class="main-content">
+        <!-- Server Management Panel -->
+        <div class="server-panel">
+            <ServerManagementComponent @bind-SelectedServer="selectedServer"
+                                       @bind-ApiKey="apiKey"
+                                       Servers="servers"
+                                       OnServerCreated="OnServerCreated"
+                                       OnServerDeleted="OnServerDeleted" />
+        </div>
+    </div>
+
+    <!-- Server Monitor Sidebar -->
+    <div class="monitor-sidebar">
+        <ServerMonitorComponent Servers="servers"
+                                @bind-SelectedServer="selectedServer"
+                                OnServerStatusChanged="OnServerStatusChanged" />
+    </div>
+</div>
+
+<link href="~/css/a2a-interface.css" rel="stylesheet" />
+
+@code {
+    private ServerInstance? selectedServer;
+    private string apiKey = string.Empty;
+    private List<ServerInstance> servers = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadActiveServers();
+    }
+
+    private async Task LoadActiveServers()
+    {
+        try
+        {
+            var activeServerIds = await ApiService.GetActiveServersAsync();
+            var serverList = new List<ServerInstance>();
+
+            foreach (var server in activeServerIds)
+            {
+                try
+                {
+                    var status = await ApiService.GetServerStatusAsync(server.ServerId);
+                    serverList.Add(new ServerInstance
+                    {
+                        ServerId = server.ServerId,
+                        Endpoint = status.Endpoint ?? string.Empty,
+                        Status = status.Status,
+                        IsHealthy = status.IsHealthy
+                    });
+                }
+                catch (Exception ex)
+                {
+                    // swallow per-server status errors on load
+                }
+            }
+
+            servers = serverList;
+            StateHasChanged();
+        }
+        catch
+        {
+        }
+    }
+
+    private Task OnServerCreated(ServerInstance server)
+    {
+        servers.Add(server);
+        selectedServer = server;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private Task OnServerDeleted(string serverId)
+    {
+        servers.RemoveAll(s => s.ServerId == serverId);
+        if (selectedServer?.ServerId == serverId)
+        {
+            selectedServer = null;
+        }
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private void OnServerStatusChanged(ServerInstance server)
+    {
+        var existingServer = servers.FirstOrDefault(s => s.ServerId == server.ServerId);
+        if (existingServer != null)
+        {
+            existingServer.Status = server.Status;
+            existingServer.IsHealthy = server.IsHealthy;
+            StateHasChanged();
+        }
+    }
+}

@@ -26,11 +26,12 @@ public abstract class Orchestration
     /// <summary>
     /// Triggers events related to the state machine, such as state transitions and errors.
     /// </summary>
-    public Action<OrchestrationEvent>? OnOrchestrationEvent { get; set; } 
+    public Action<OrchestrationEvent>? OnOrchestrationEvent { get; set; }
 
     /// <summary>
     /// List of processes that will be run in the state machine this tick.
     /// </summary>
+    /// [SerializationRequired]
     internal List<OrchestrationRunnableBase> CurrentRunnablesWithProcesses { get; private set; } = new List<OrchestrationRunnableBase>();
 
     /// <summary>
@@ -51,6 +52,7 @@ public abstract class Orchestration
     /// <summary>
     /// You can use this to store runtime properties that you want to access later or in other states.
     /// </summary>
+    /// [SerializationRequired]
     public ConcurrentDictionary<string, object> RuntimeProperties { get; set; } = new ConcurrentDictionary<string, object>();
 
     /// <summary>
@@ -78,6 +80,7 @@ public abstract class Orchestration
     /// <summary>
     /// Gets or sets the collection of steps, where each step is represented as a list of runnable processes.
     /// </summary>
+    /// [SerializationRequired]
     public ConcurrentDictionary<int, List<RunnerRecord>> RunSteps { get; set; } = new ConcurrentDictionary<int, List<RunnerRecord>>();
 
     private int _stepCounter = 0;

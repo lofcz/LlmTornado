@@ -17,7 +17,7 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
         public List<ChatMessage> Conversation { get; set; } = new List<ChatMessage>();
         public List<TornadoAgent> Agents { get; set; } = new List<TornadoAgent>();
         public bool Streaming { get; set; } = false;
-
+        public Func<string, ValueTask<bool>>? OnRuntimeRequestEvent { get; set; }
         public Func<ChatRuntimeEvents, ValueTask>? OnRuntimeEvent { get; set; }
         public string ResultProcessingInstructions { get; set; }
 

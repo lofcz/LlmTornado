@@ -1,5 +1,8 @@
-﻿using LlmTornado.Agents;
+﻿using LlmTornado.A2A.AgentServer;
+using LlmTornado.Agents;
+using LlmTornado.Agents.ChatRuntime;
 using LlmTornado.Agents.DataModels;
+using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Code;
 using System;
@@ -160,6 +163,18 @@ public class AgentTests
     {
         return $"Processed: {input}";
     }
+
+
+
+    [Test]
+    public async Task TestChatBot()
+    {
+        var bot = new ChatBotAgent();
+        var runtime = new ChatRuntime(bot);
+        var response = await runtime.InvokeAsync(new ChatMessage(ChatMessageRoles.User, "Hello, can you help me?"));
+        Console.WriteLine(response.Content);
+    }
+
 }
 
 // Test structured output class

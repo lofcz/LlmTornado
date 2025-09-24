@@ -4,6 +4,7 @@ using LlmTornado.Chat.Models;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Common;
+using LlmTornado.Responses;
 
 namespace LlmTornado.Agents;
 
@@ -269,7 +270,6 @@ public class TornadoRunner
         return functionResult;
     }
 
-
     /// <summary>
     /// Get response from the model or If Error delete last message in thread and retry (max agent loops will cap)
     /// </summary>
@@ -351,6 +351,11 @@ public class TornadoRunner
             MessagePartHandler = (part) =>
             {
                 //Need to handle other modalities here like images/audio don't have classes for them yet
+                return Threading.ValueTaskCompleted;
+            },
+            OnResponseEvent = (response) =>
+            {
+                runnerCallback?.Invoke(new AgentRunnerResponseApiEvent(response));
                 return Threading.ValueTaskCompleted;
             },
             FunctionCallHandler = async (toolCall) =>

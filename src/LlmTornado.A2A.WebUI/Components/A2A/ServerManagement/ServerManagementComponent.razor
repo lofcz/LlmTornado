@@ -1,0 +1,87 @@
+@using LlmTornado.A2A.WebUI.Models
+@using LlmTornado.A2A.WebUI.Services
+@using LlmTornado.A2A.Hosting.Models
+@inject IA2AApiService ApiService
+
+<div class="server-management">
+    <div class="server-config-section">
+        <h3>Server Configuration</h3>
+        
+        <div class="form-group">
+            <label for="configuration-select">Configuration:</label>
+            <select id="configuration-select" @bind="selectedConfiguration" class="form-control">
+                <option value="">Select Configuration...</option>
+                @foreach (var config in availableConfigurations)
+                {
+                    <option value="@config">@config</option>
+                }
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="api-key-input">API Key:</label>
+            <input id="api-key-input" type="password" @bind="ApiKey" @bind:event="oninput" 
+                   class="form-control" placeholder="Enter API Key..." />
+        </div>
+
+        <div class="button-group">
+            <button class="btn btn-primary" @onclick="CreateServer" 
+                    disabled="@(string.IsNullOrEmpty(selectedConfiguration) || string.IsNullOrEmpty(ApiKey) || isCreating)">
+                @if (isCreating)
+                {
+                    <span class="spinner"></span>
+                    <text>Creating...</text>
+                }
+                else
+                {
+                    <text>Launch Server</text>
+                }
+            </button>
+
+            <button class="btn btn-danger" @onclick="DeleteSelectedServer" 
+                    disabled="@(SelectedServer == null || isDeleting)">
+                @if (isDeleting)
+                {
+                    <span class="spinner"></span>
+                    <text>Deleting...</text>
+                }
+                else
+                {
+                    <text>Delete Server</text>
+                }
+            </button>
+        </div>
+    </div>
+
+    <div class="server-selection-section">
+        <h3>Active Servers</h3>
+        <div class="server-list">
+            @foreach (var server in Servers)
+            {
+                <div class="server-item @(server == SelectedServer ? "selected" : "")" 
+                     @onclick="() => SelectServer(server)">
+                    <div class="server-info">
+                        <div class="server-id">@server.ServerId</div>
+                        <div class="server-config">@server.Configuration</div>
+                        <div class="server-status @GetStatusClass(server.Status)">
+                            @server.Status
+                        </div>
+                    </div>
+                    <div class="server-endpoint">@server.Endpoint</div>
+                </div>
+            }
+            @if (!Servers.Any())
+            {
+                <div class="no-servers">No active servers</div>
+            }
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="error-message">
+            @errorMessage
+            <button class="btn-close" @onclick="ClearError">×</button>
+        </div>
+    }
+</div>

@@ -1,0 +1,76 @@
+@using LlmTornado.A2A.WebUI.Models
+@using LlmTornado.A2A.WebUI.Services
+@inject IA2AApiService ApiService
+@implements IDisposable
+
+<div class="server-monitor">
+    <div class="monitor-header">
+        <h3>Server Monitor</h3>
+        <button class="btn btn-sm btn-secondary refresh-btn" @onclick="RefreshAllStatuses" 
+                disabled="@isRefreshing">
+            @if (isRefreshing)
+            {
+                <span class="spinner-sm"></span>
+            }
+            else
+            {
+                <text>🔄</text>
+            }
+        </button>
+    </div>
+
+    <div class="server-monitor-list">
+        @foreach (var server in Servers)
+        {
+            <div class="monitor-server-item @(server == SelectedServer ? "selected" : "")" 
+                 @onclick="() => SelectServer(server)">
+                <div class="server-header">
+                    <div class="server-name">
+                        @server.ServerId.Substring(0, Math.Min(8, server.ServerId.Length))...
+                    </div>
+                    <div class="server-status-indicator @GetStatusClass(server.Status)">
+                        @GetStatusIcon(server.Status)
+                    </div>
+                </div>
+                
+                <div class="server-details">
+                    <div class="server-config">@server.Configuration</div>
+                    <div class="server-uptime">
+                        Up: @GetUptime(server.CreatedAt)
+                    </div>
+                    <div class="server-tasks">
+                        Tasks: @server.ActiveTasks.Count
+                    </div>
+                </div>
+
+                <div class="server-endpoint-short">
+                    @(string.IsNullOrEmpty(server.Endpoint) ? "No endpoint" : 
+                      server.Endpoint.Length > 30 ? server.Endpoint.Substring(0, 30) + "..." : server.Endpoint)
+                </div>
+
+                @if (server.IsHealthy)
+                {
+                    <div class="health-indicator healthy">✓</div>
+                }
+                else
+                {
+                    <div class="health-indicator unhealthy">⚠</div>
+                }
+            </div>
+        }
+        
+        @if (!Servers.Any())
+        {
+            <div class="no-servers-monitor">
+                <div class="no-servers-icon">🖥️</div>
+                <div class="no-servers-text">No servers to monitor</div>
+            </div>
+        }
+    </div>
+
+    <div class="monitor-actions">
+        <small class="last-refresh">
+            Last refresh: @(lastRefreshTime?.ToString("HH:mm:ss") ?? "Never")
+        </small>
+    </div>
+</div>

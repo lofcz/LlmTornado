@@ -1,0 +1,47 @@
+@LlmTornado.A2A.Hosting_HostAddress = http://localhost:5029
+
+#===============================================================================
+# AGENT CARD REQUESTS
+# This file contains requests for retrieving agent cards
+# 
+# For setup instructions and launch profile details, see: ../README.md
+# 
+# Launch Settings Profiles:
+# - The .well-known endpoint works with any agent profile
+# - Agent-specific endpoints require the corresponding agent profile
+#===============================================================================
+
+#===============================================================================
+# HTTP API REQUESTS
+#===============================================================================
+
+GET {{host}}/GetAgentCard
+###
+
+#===============================================================================
+POST {{host}}/SendMessage
+Content-Type: application/json
+{
+    "parts": [
+        {
+            "kind": "text",
+            "text": "Hello, world!"
+        }
+    ],
+    endpoint: "http://localhost:5029"
+        
+}
+
+###
+
+#===============================================================================
+
+POST {{host}}/CancelTask
+Content-Type: application/json
+{
+    "taskId": "342526164",
+    endpoint: "http://localhost:5029"
+        
+}
+
+###
