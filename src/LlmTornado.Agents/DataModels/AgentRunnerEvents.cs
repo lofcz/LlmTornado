@@ -2,6 +2,7 @@
 using LlmTornado.ChatFunctions;
 using LlmTornado.Common;
 using LlmTornado.Responses;
+using LlmTornado.Responses.Events;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,7 +23,7 @@ public enum AgentRunnerEventTypes
     MaxTurnsReached,
     GuardRailTriggered,
     UsageReceived,
-    ComputerToolInvoked
+    ResponseApiEvent,
 }
 
 /// <summary>
@@ -42,16 +43,16 @@ public class AgentRunnerEvents : EventArgs
 }
 
 
-public class AgentRunnerComputerToolEvent : AgentRunnerEvents
+public class AgentRunnerResponseApiEvent : AgentRunnerEvents
 {
-    public IComputerAction ComputerAction { get; }
+    public IResponseEvent ResponseApiEvent { get; }
     /// <summary>
-    /// Initializes a new instance of the <see cref="AgentRunnerComputerToolEvent"/> class.
+    /// Initializes a new instance of the <see cref="AgentRunnerResponseEvent"/> class.
     /// </summary>
-    public AgentRunnerComputerToolEvent(IComputerAction computerAction)
+    public AgentRunnerResponseApiEvent(IResponseEvent responseEvent)
     {
-        EventType = AgentRunnerEventTypes.ComputerToolInvoked;
-        ComputerAction = computerAction;
+        EventType = AgentRunnerEventTypes.ResponseApiEvent;
+        ResponseApiEvent = responseEvent;
     }
 }
 

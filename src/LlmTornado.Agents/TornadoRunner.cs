@@ -270,33 +270,6 @@ public class TornadoRunner
         return functionResult;
     }
 
-
-    private static async Task<ComputerToolCallOutput> HandleComputerToolCall(ResponseComputerToolCallItem computerToolCall, Func<AgentRunnerEvents, ValueTask>? runnerCallback = null)
-    {
-        runnerCallback?.Invoke(new AgentRunnerComputerToolEvent(computerToolCall.Action));
-        string imageUrl = await GetScreenshot();
-        return CreateComputerToolCallOutput(computerToolCall.CallId, imageUrl);
-    }
-
-    //Placeholder for actual screenshot logic
-    private static async Task<string> GetScreenshot()
-    {
-        //Placeholder for actual screenshot logic
-        await Task.Delay(1000); //Simulate delay
-        return "https://example.com/screenshot.png"; //Return a dummy URL
-    }
-
-
-    private static ComputerToolCallOutput CreateComputerToolCallOutput(string callId,string imageUrl)
-    {
-        ComputerScreenshot ss = new();
-        ResponseInputContentImage ssContent = ResponseInputContentImage.CreateImageUrl(imageUrl);
-        ss.ImageUrl = ssContent.ImageUrl;
-        ComputerToolCallOutput computerToolCallOutput = new ComputerToolCallOutput(callId, ss);
-        return computerToolCallOutput;
-    }
-
-
     /// <summary>
     /// Get response from the model or If Error delete last message in thread and retry (max agent loops will cap)
     /// </summary>
@@ -382,6 +355,7 @@ public class TornadoRunner
             },
             OnResponseEvent = (response) =>
             {
+                runnerCallback?.Invoke(new AgentRunnerResponseApiEvent(response));
                 return Threading.ValueTaskCompleted;
             },
             FunctionCallHandler = async (toolCall) =>
