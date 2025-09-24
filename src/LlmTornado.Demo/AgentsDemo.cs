@@ -4,6 +4,7 @@ using LlmTornado.Agents.Utility;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Code;
+using LlmTornado.Responses;
 using Newtonsoft.Json.Converters;
 using System.ComponentModel;
 using System.Security.Cryptography.X509Certificates;
@@ -325,5 +326,23 @@ public class AgentsDemo : DemoBase
         Conversation result = await agent.RunAsync("What is the weather in boston?", onAgentRunnerEvent:runEventHandler,toolPermissionHandle: toolApprovalHandler);
 
         Console.WriteLine(result.Messages.Last().Content);
+    }
+
+
+    [TornadoTest]
+    public static async Task TestResponseAPIToolCall()
+    {
+        TornadoAgent agent = new TornadoAgent(
+            Program.Connect(),
+            ChatModel.OpenAi.Gpt41.V41Mini,
+            instructions: "You are a useful assistant.");
+
+        agent.ResponseOptions = new ResponseRequest()
+        {
+            Tools = [new ResponseWebSearchTool()]
+        };
+
+        var convo = await agent.RunAsync("What is the weather in boston?");
+        Console.WriteLine(convo.Messages.Last().Content);
     }
 }
