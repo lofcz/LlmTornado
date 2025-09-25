@@ -18,38 +18,21 @@ public static partial class A2ATornadoExtension
     public static ChatMessage ToTornadoMessage(this AgentMessage agentMessage)
     {
         List<ChatMessagePart> parts = new List<ChatMessagePart>();
+
         if (agentMessage.Parts != null)
         {
             foreach (var part in agentMessage.Parts)
             {
-                if (part is TextPart textPart)
+                if(part is TextPart text)
                 {
-                    parts.Add(new ChatMessagePart { Text = textPart.Text });
+                    parts.Add(text.ToTornadoMessagePart());
                 }
-                else if (part is FilePart filePart)
+                else if(part is FilePart file)
                 {
-                    if (filePart.File is FileWithUri fileWithUri)
+                    var tornadoPart = file.ToTornadoMessagePart();
+                    if(tornadoPart != null)
                     {
-                        parts.Add(ChatMessagePart.Create(new Uri(fileWithUri.Uri), ChatMessageTypes.Image));
-                    }
-                    else if (filePart.File is FileWithBytes fileWithBytes)
-                    {
-                        if (fileWithBytes.Bytes.Contains("image"))
-                        {
-                            parts.Add(new ChatMessagePart(fileWithBytes.Bytes, Images.ImageDetail.Auto));
-                        }
-                        else if(fileWithBytes.Bytes.Contains("audio"))
-                        {
-                            if(fileWithBytes.MimeType == "audio/wav" || fileWithBytes.MimeType == "audio/x-wav")
-                                parts.Add(ChatMessagePart.Create(fileWithBytes.Bytes, ChatAudioFormats.Wav));
-                            else if (fileWithBytes.MimeType == "audio/mpeg" || fileWithBytes.MimeType == "audio/mp3" || fileWithBytes.MimeType == "audio/x-mp3")
-                                parts.Add(ChatMessagePart.Create(fileWithBytes.Bytes, ChatAudioFormats.Mp3));
-                        }
-                        //ToDo - handle other types
-                        else
-                        {
-                            parts.Add(new ChatMessagePart(fileWithBytes.Bytes, DocumentLinkTypes.Base64));
-                        }
+                        parts.Add(tornadoPart);
                     }
                 }
             }
@@ -71,10 +54,21 @@ public static partial class A2ATornadoExtension
         )
     {
         List<Part> parts = new List<Part>();
-
         if (chatMessage.Content != null)
         {
-            parts.Add(new TextPart() { Text = chatMessage.Content });
+            parts.Add(chatMessage.Content.ToA2ATextPart());
+        }
+        else if(chatMessage.Reasoning != null)
+        {
+            parts.Add(chatMessage.Reasoning.ToA2ATextPart());
+        }
+        else if (chatMessage.Audio != null)
+        {
+            parts.Add(chatMessage.Audio.ToA2AFilePart());
+        }
+        else if(chatMessage.Reasoning != null)
+        {
+            parts.Add(chatMessage.Reasoning.ToA2ATextPart());
         }
         else if (chatMessage.Parts != null)
         {
@@ -83,6 +77,11 @@ public static partial class A2ATornadoExtension
                 parts.Add(part.ToA2APart());
             }
         }
+
+        metadata ??= new Dictionary<string, JsonElement>();
+        metadata["tokens"] = JsonDocument.Parse($"{chatMessage.Tokens ?? 0}").RootElement;
+        metadata["refusal"] = JsonDocument.Parse($"\"{chatMessage.Refusal ?? ""}\"").RootElement;
+        metadata["userName"] = JsonDocument.Parse($"\"{chatMessage.Name ?? ""}\"").RootElement;
 
         return new AgentMessage
         {
@@ -142,42 +141,18 @@ public static partial class A2ATornadoExtension
 
     public static Part? ToA2APart(this ChatMessagePart part)
     {
-        if (part.Text != null)
+        return part.Type switch
         {
-            return new TextPart() { Text = part.Text };
-        }
-        else if (part.Image != null)
-        {
-            return new FilePart() { File = new FileWithUri() { Uri = part.Image.Url, MimeType = part.Image.MimeType } };
-        }
-        else if (part.Document != null)
-        {
-            if (part.Document.Uri != null)
-                return new FilePart() { File = new FileWithUri() { Uri = part.Document.Uri.AbsoluteUri } };
-            else
-                return new FilePart() { File = new FileWithBytes() { Bytes = part.Document.Base64 } };
-        }
-        else if (part.Audio != null)
-        {
-            if (part.Audio.Url != null)
-                return new FilePart() { File = new FileWithUri() { Uri = part.Audio.Url.AbsoluteUri } };
-            else
-                return new FilePart() { File = new FileWithBytes() { Bytes = part.Audio.Data, MimeType = part.Audio.MimeType } };
-        }
-        else if (part.Reasoning != null)
-        {
-            if (part.Reasoning?.IsRedacted ?? true)
-            {
-                JsonElement stringElement = JsonDocument.Parse($"{{\"message\": \"{part.Reasoning.Content}\"}}").RootElement.GetProperty("message");
-                return new TextPart() { Text = "Reasoning", Metadata = new Dictionary<string, JsonElement>() { { "Content", stringElement } } };
-            }  
-        }
-        else if (part.Video != null) 
-        { 
-            return new FilePart() { File = new FileWithUri() { Uri = part.Video.Url.AbsoluteUri} };
-        }
-
-        return null;
+            ChatMessageTypes.Text => part.Text?.ToA2ATextPart(),
+            ChatMessageTypes.Image => part.Image?.ToA2AFilePart(),
+            ChatMessageTypes.Document => part.Document?.ToA2AFilePart(),
+            ChatMessageTypes.Audio => part.Audio?.ToA2AFilePart(),
+            ChatMessageTypes.Reasoning => part.Reasoning?.ToA2ATextPart(),
+            ChatMessageTypes.Video => part.Video?.ToA2AFilePart(),
+            ChatMessageTypes.FileLink => part.FileLinkData?.ToA2AFilePart(),
+            ChatMessageTypes.ExecutableCode => part.ExecutableCode?.ToA2ATextPart(),
+            _ => null,
+        };
     }
 
     public static MessageRole ToA2AMessageRole(this ChatMessageRoles? role)
