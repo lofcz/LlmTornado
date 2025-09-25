@@ -22,13 +22,13 @@
     </ItemGroup>
     
     <ItemGroup>
-        <PackageReference Include="BlazorWasmBrotliLoader.Build" Version="1.0.1" />
+        <PackageReference Include="BlazorWasmBrotliLoader.Build" Version="1.0.3" />
         <PackageReference Include="JetBrains.Annotations" Version="2025.2.2" />
         <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.0-preview.5.25277.114" />
         <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.0-preview.5.25277.114" PrivateAssets="all" />
         <ProjectReference Include="..\fork_blazor_workers\src\BlazorWorker.ServiceFactory\BlazorWorker.BackgroundServiceFactory.csproj" />
-        <PackageReference Include="PublishSPAforGitHubPages.Build" Version="3.0.1" />
-        <PackageReference Include="Scriban" Version="6.2.1" />
+        <PackageReference Include="PublishSPAforGitHubPages.Build" Version="3.0.3" />
+        <PackageReference Include="Scriban" Version="6.4.0" />
     </ItemGroup>
 
     <ItemGroup>

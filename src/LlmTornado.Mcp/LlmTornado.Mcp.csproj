@@ -11,7 +11,7 @@
       <ProjectReference Include="..\LlmTornado\LlmTornado.csproj" />
     </ItemGroup>
     <ItemGroup>
-      <PackageReference Include="ModelContextProtocol" Version="[0.3.0-preview.3, )" />
+      <PackageReference Include="ModelContextProtocol" Version="[0.4.0-preview.1, )" />
     </ItemGroup>
 
     <PropertyGroup>

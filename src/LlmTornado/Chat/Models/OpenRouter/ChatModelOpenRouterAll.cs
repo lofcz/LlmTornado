@@ -404,16 +404,6 @@ public class ChatModelOpenRouterAll : IVendorModelClassProvider
     public readonly ChatModel CogitoV2PreviewLlama109bMoe = ModelCogitoV2PreviewLlama109bMoe;
 
     /// <summary>
-    /// cohere/command
-    /// </summary>
-    public static readonly ChatModel ModelCommand = new ChatModel("cohere/command", "cohere/command", LLmProviders.OpenRouter, 4096);
-
-    /// <summary>
-    /// <inheritdoc cref="ModelCommand"/>
-    /// </summary>
-    public readonly ChatModel Command = ModelCommand;
-
-    /// <summary>
     /// cohere/command-a
     /// </summary>
     public static readonly ChatModel ModelCommandA = new ChatModel("cohere/command-a", "cohere/command-a", LLmProviders.OpenRouter, 256000);
@@ -424,26 +414,6 @@ public class ChatModelOpenRouterAll : IVendorModelClassProvider
     public readonly ChatModel CommandA = ModelCommandA;
 
     /// <summary>
-    /// cohere/command-r
-    /// </summary>
-    public static readonly ChatModel ModelCommandR = new ChatModel("cohere/command-r", "cohere/command-r", LLmProviders.OpenRouter, 128000);
-
-    /// <summary>
-    /// <inheritdoc cref="ModelCommandR"/>
-    /// </summary>
-    public readonly ChatModel CommandR = ModelCommandR;
-
-    /// <summary>
-    /// cohere/command-r-03-2024
-    /// </summary>
-    public static readonly ChatModel ModelCommandR032024 = new ChatModel("cohere/command-r-03-2024", "cohere/command-r-03-2024", LLmProviders.OpenRouter, 128000);
-
-    /// <summary>
-    /// <inheritdoc cref="ModelCommandR032024"/>
-    /// </summary>
-    public readonly ChatModel CommandR032024 = ModelCommandR032024;
-
-    /// <summary>
     /// cohere/command-r-08-2024
     /// </summary>
     public static readonly ChatModel ModelCommandR082024 = new ChatModel("cohere/command-r-08-2024", "cohere/command-r-08-2024", LLmProviders.OpenRouter, 128000);
@@ -452,26 +422,6 @@ public class ChatModelOpenRouterAll : IVendorModelClassProvider
     /// <inheritdoc cref="ModelCommandR082024"/>
     /// </summary>
     public readonly ChatModel CommandR082024 = ModelCommandR082024;
-
-    /// <summary>
-    /// cohere/command-r-plus
-    /// </summary>
-    public static readonly ChatModel ModelCommandRPlus = new ChatModel("cohere/command-r-plus", "cohere/command-r-plus", LLmProviders.OpenRouter, 128000);
-
-    /// <summary>
-    /// <inheritdoc cref="ModelCommandRPlus"/>
-    /// </summary>
-    public readonly ChatModel CommandRPlus = ModelCommandRPlus;
-
-    /// <summary>
-    /// cohere/command-r-plus-04-2024
-    /// </summary>
-    public static readonly ChatModel ModelCommandRPlus042024 = new ChatModel("cohere/command-r-plus-04-2024", "cohere/command-r-plus-04-2024", LLmProviders.OpenRouter, 128000);
-
-    /// <summary>
-    /// <inheritdoc cref="ModelCommandRPlus042024"/>
-    /// </summary>
-    public readonly ChatModel CommandRPlus042024 = ModelCommandRPlus042024;
 
     /// <summary>
     /// cohere/command-r-plus-08-2024
@@ -572,6 +522,16 @@ public class ChatModelOpenRouterAll : IVendorModelClassProvider
     /// <inheritdoc cref="ModelDeepseekV31Base"/>
     /// </summary>
     public readonly ChatModel DeepseekV31Base = ModelDeepseekV31Base;
+
+    /// <summary>
+    /// deepseek/deepseek-v3.1-terminus
+    /// </summary>
+    public static readonly ChatModel ModelDeepseekV31Terminus = new ChatModel("deepseek/deepseek-v3.1-terminus", "deepseek/deepseek-v3.1-terminus", LLmProviders.OpenRouter, 163840);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelDeepseekV31Terminus"/>
+    /// </summary>
+    public readonly ChatModel DeepseekV31Terminus = ModelDeepseekV31Terminus;
 
     /// <summary>
     /// deepseek/deepseek-r1-0528-qwen3-8b
@@ -734,6 +694,16 @@ public class ChatModelOpenRouterAll : IVendorModelClassProvider
     public readonly ChatModel Llemma7b = ModelLlemma7b;
 
     /// <summary>
+    /// google/gemini-2.5-flash-image-preview
+    /// </summary>
+    public static readonly ChatModel ModelGemini25FlashImagePreview = new ChatModel("google/gemini-2.5-flash-image-preview", "google/gemini-2.5-flash-image-preview", LLmProviders.OpenRouter, 32768);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelGemini25FlashImagePreview"/>
+    /// </summary>
+    public readonly ChatModel Gemini25FlashImagePreview = ModelGemini25FlashImagePreview;
+
+    /// <summary>
     /// alpindale/goliath-120b
     /// </summary>
     public static readonly ChatModel ModelGoliath120b = new ChatModel("alpindale/goliath-120b", "alpindale/goliath-120b", LLmProviders.OpenRouter, 6144);
@@ -744,16 +714,6 @@ public class ChatModelOpenRouterAll : IVendorModelClassProvider
     public readonly ChatModel Goliath120b = ModelGoliath120b;
 
     /// <summary>
-    /// google/gemini-flash-1.5
-    /// </summary>
-    public static readonly ChatModel ModelGeminiFlash15 = new ChatModel("google/gemini-flash-1.5", "google/gemini-flash-1.5", LLmProviders.OpenRouter, 1000000);
-
-    /// <summary>
-    /// <inheritdoc cref="ModelGeminiFlash15"/>
-    /// </summary>
-    public readonly ChatModel GeminiFlash15 = ModelGeminiFlash15;
-
-    /// <summary>
     /// google/gemini-flash-1.5-8b
     /// </summary>
     public static readonly ChatModel ModelGeminiFlash158b = new ChatModel("google/gemini-flash-1.5-8b", "google/gemini-flash-1.5-8b", LLmProviders.OpenRouter, 1000000);
@@ -762,16 +722,6 @@ public class ChatModelOpenRouterAll : IVendorModelClassProvider
     /// <inheritdoc cref="ModelGeminiFlash158b"/>
     /// </summary>
     public readonly ChatModel GeminiFlash158b = ModelGeminiFlash158b;
-
-    /// <summary>
-    /// google/gemini-pro-1.5
-    /// </summary>
-    public static readonly ChatModel ModelGeminiPro15 = new ChatModel("google/gemini-pro-1.5", "google/gemini-pro-1.5", LLmProviders.OpenRouter, 2000000);
-
-    /// <summary>
-    /// <inheritdoc cref="ModelGeminiPro15"/>
-    /// </summary>
-    public readonly ChatModel GeminiPro15 = ModelGeminiPro15;
 
     /// <summary>
     /// google/gemini-2.0-flash-001
@@ -814,16 +764,6 @@ public class ChatModelOpenRouterAll : IVendorModelClassProvider
     public readonly ChatModel Gemini25Flash = ModelGemini25Flash;
 
     /// <summary>
-    /// google/gemini-2.5-flash-image-preview
-    /// </summary>
-    public static readonly ChatModel ModelGemini25FlashImagePreview = new ChatModel("google/gemini-2.5-flash-image-preview", "google/gemini-2.5-flash-image-preview", LLmProviders.OpenRouter, 32768);
-
-    /// <summary>
-    /// <inheritdoc cref="ModelGemini25FlashImagePreview"/>
-    /// </summary>
-    public readonly ChatModel Gemini25FlashImagePreview = ModelGemini25FlashImagePreview;
-
-    /// <summary>
     /// google/gemini-2.5-flash-lite
     /// </summary>
     public static readonly ChatModel ModelGemini25FlashLite = new ChatModel("google/gemini-2.5-flash-lite", "google/gemini-2.5-flash-lite", LLmProviders.OpenRouter, 1048576);
@@ -842,6 +782,26 @@ public class ChatModelOpenRouterAll : IVendorModelClassProvider
     /// <inheritdoc cref="ModelGemini25FlashLitePreview0617"/>
     /// </summary>
     public readonly ChatModel Gemini25FlashLitePreview0617 = ModelGemini25FlashLitePreview0617;
+
+    /// <summary>
+    /// google/gemini-2.5-flash-lite-preview-09-2025
+    /// </summary>
+    public static readonly ChatModel ModelGemini25FlashLitePreview092025 = new ChatModel("google/gemini-2.5-flash-lite-preview-09-2025", "google/gemini-2.5-flash-lite-preview-09-2025", LLmProviders.OpenRouter, 1048576);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelGemini25FlashLitePreview092025"/>
+    /// </summary>
+    public readonly ChatModel Gemini25FlashLitePreview092025 = ModelGemini25FlashLitePreview092025;
+
+    /// <summary>
+    /// google/gemini-2.5-flash-preview-09-2025
+    /// </summary>
+    public static readonly ChatModel ModelGemini25FlashPreview092025 = new ChatModel("google/gemini-2.5-flash-preview-09-2025", "google/gemini-2.5-flash-preview-09-2025", LLmProviders.OpenRouter, 1048576);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelGemini25FlashPreview092025"/>
+    /// </summary>
+    public readonly ChatModel Gemini25FlashPreview092025 = ModelGemini25FlashPreview092025;
 
     /// <summary>
     /// google/gemini-2.5-pro
@@ -1142,16 +1102,6 @@ public class ChatModelOpenRouterAll : IVendorModelClassProvider
     /// <inheritdoc cref="ModelLlama31405bInstruct"/>
     /// </summary>
     public readonly ChatModel Llama31405bInstruct = ModelLlama31405bInstruct;
-
-    /// <summary>
-    /// meta-llama/llama-3.1-405b-instruct:free
-    /// </summary>
-    public static readonly ChatModel ModelLlama31405bInstructFree = new ChatModel("meta-llama/llama-3.1-405b-instruct:free", "meta-llama/llama-3.1-405b-instruct:free", LLmProviders.OpenRouter, 65536);
-
-    /// <summary>
-    /// <inheritdoc cref="ModelLlama31405bInstructFree"/>
-    /// </summary>
-    public readonly ChatModel Llama31405bInstructFree = ModelLlama31405bInstructFree;
 
     /// <summary>
     /// meta-llama/llama-3.1-70b-instruct
@@ -1934,6 +1884,16 @@ public class ChatModelOpenRouterAll : IVendorModelClassProvider
     public readonly ChatModel Noromaid20b = ModelNoromaid20b;
 
     /// <summary>
+    /// nousresearch/deephermes-3-llama-3-8b-preview
+    /// </summary>
+    public static readonly ChatModel ModelDeephermes3Llama38bPreview = new ChatModel("nousresearch/deephermes-3-llama-3-8b-preview", "nousresearch/deephermes-3-llama-3-8b-preview", LLmProviders.OpenRouter, 131072);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelDeephermes3Llama38bPreview"/>
+    /// </summary>
+    public readonly ChatModel Deephermes3Llama38bPreview = ModelDeephermes3Llama38bPreview;
+
+    /// <summary>
     /// nousresearch/deephermes-3-llama-3-8b-preview:free
     /// </summary>
     public static readonly ChatModel ModelDeephermes3Llama38bPreviewFree = new ChatModel("nousresearch/deephermes-3-llama-3-8b-preview:free", "nousresearch/deephermes-3-llama-3-8b-preview:free", LLmProviders.OpenRouter, 131072);
@@ -2264,6 +2224,16 @@ public class ChatModelOpenRouterAll : IVendorModelClassProvider
     public readonly ChatModel Gpt5Chat = ModelGpt5Chat;
 
     /// <summary>
+    /// openai/gpt-5-codex
+    /// </summary>
+    public static readonly ChatModel ModelGpt5Codex = new ChatModel("openai/gpt-5-codex", "openai/gpt-5-codex", LLmProviders.OpenRouter, 400000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelGpt5Codex"/>
+    /// </summary>
+    public readonly ChatModel Gpt5Codex = ModelGpt5Codex;
+
+    /// <summary>
     /// openai/gpt-5-mini
     /// </summary>
     public static readonly ChatModel ModelGpt5Mini = new ChatModel("openai/gpt-5-mini", "openai/gpt-5-mini", LLmProviders.OpenRouter, 400000);
@@ -2554,26 +2524,6 @@ public class ChatModelOpenRouterAll : IVendorModelClassProvider
     public readonly ChatModel Qwq32b = ModelQwq32b;
 
     /// <summary>
-    /// qwen/qwq-32b:free
-    /// </summary>
-    public static readonly ChatModel ModelQwq32bFree = new ChatModel("qwen/qwq-32b:free", "qwen/qwq-32b:free", LLmProviders.OpenRouter, 32768);
-
-    /// <summary>
-    /// <inheritdoc cref="ModelQwq32bFree"/>
-    /// </summary>
-    public readonly ChatModel Qwq32bFree = ModelQwq32bFree;
-
-    /// <summary>
-    /// qwen/qwq-32b-preview
-    /// </summary>
-    public static readonly ChatModel ModelQwq32bPreview = new ChatModel("qwen/qwq-32b-preview", "qwen/qwq-32b-preview", LLmProviders.OpenRouter, 32768);
-
-    /// <summary>
-    /// <inheritdoc cref="ModelQwq32bPreview"/>
-    /// </summary>
-    public readonly ChatModel Qwq32bPreview = ModelQwq32bPreview;
-
-    /// <summary>
     /// qwen/qwen-plus-2025-07-28
     /// </summary>
     public static readonly ChatModel ModelQwenPlus20250728 = new ChatModel("qwen/qwen-plus-2025-07-28", "qwen/qwen-plus-2025-07-28", LLmProviders.OpenRouter, 1000000);
@@ -2676,7 +2626,7 @@ public class ChatModelOpenRouterAll : IVendorModelClassProvider
     /// <summary>
     /// qwen/qwen2.5-vl-72b-instruct:free
     /// </summary>
-    public static readonly ChatModel ModelQwen25Vl72bInstructFree = new ChatModel("qwen/qwen2.5-vl-72b-instruct:free", "qwen/qwen2.5-vl-72b-instruct:free", LLmProviders.OpenRouter, 32768);
+    public static readonly ChatModel ModelQwen25Vl72bInstructFree = new ChatModel("qwen/qwen2.5-vl-72b-instruct:free", "qwen/qwen2.5-vl-72b-instruct:free", LLmProviders.OpenRouter, 131072);
 
     /// <summary>
     /// <inheritdoc cref="ModelQwen25Vl72bInstructFree"/>
@@ -2914,6 +2864,26 @@ public class ChatModelOpenRouterAll : IVendorModelClassProvider
     public readonly ChatModel Qwen3Next80bA3bThinking = ModelQwen3Next80bA3bThinking;
 
     /// <summary>
+    /// qwen/qwen3-vl-235b-a22b-instruct
+    /// </summary>
+    public static readonly ChatModel ModelQwen3Vl235bA22bInstruct = new ChatModel("qwen/qwen3-vl-235b-a22b-instruct", "qwen/qwen3-vl-235b-a22b-instruct", LLmProviders.OpenRouter, 131072);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelQwen3Vl235bA22bInstruct"/>
+    /// </summary>
+    public readonly ChatModel Qwen3Vl235bA22bInstruct = ModelQwen3Vl235bA22bInstruct;
+
+    /// <summary>
+    /// qwen/qwen3-vl-235b-a22b-thinking
+    /// </summary>
+    public static readonly ChatModel ModelQwen3Vl235bA22bThinking = new ChatModel("qwen/qwen3-vl-235b-a22b-thinking", "qwen/qwen3-vl-235b-a22b-thinking", LLmProviders.OpenRouter, 131072);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelQwen3Vl235bA22bThinking"/>
+    /// </summary>
+    public readonly ChatModel Qwen3Vl235bA22bThinking = ModelQwen3Vl235bA22bThinking;
+
+    /// <summary>
     /// undi95/remm-slerp-l2-13b
     /// </summary>
     public static readonly ChatModel ModelRemmSlerpL213b = new ChatModel("undi95/remm-slerp-l2-13b", "undi95/remm-slerp-l2-13b", LLmProviders.OpenRouter, 6144);
@@ -3086,7 +3056,7 @@ public class ChatModelOpenRouterAll : IVendorModelClassProvider
     /// <summary>
     /// thedrummer/anubis-70b-v1.1
     /// </summary>
-    public static readonly ChatModel ModelAnubis70bV11 = new ChatModel("thedrummer/anubis-70b-v1.1", "thedrummer/anubis-70b-v1.1", LLmProviders.OpenRouter, 16384);
+    public static readonly ChatModel ModelAnubis70bV11 = new ChatModel("thedrummer/anubis-70b-v1.1", "thedrummer/anubis-70b-v1.1", LLmProviders.OpenRouter, 4096);
 
     /// <summary>
     /// <inheritdoc cref="ModelAnubis70bV11"/>
@@ -3264,6 +3234,16 @@ public class ChatModelOpenRouterAll : IVendorModelClassProvider
     public readonly ChatModel Grok4 = ModelGrok4;
 
     /// <summary>
+    /// x-ai/grok-4-fast
+    /// </summary>
+    public static readonly ChatModel ModelGrok4Fast = new ChatModel("x-ai/grok-4-fast", "x-ai/grok-4-fast", LLmProviders.OpenRouter, 2000000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelGrok4Fast"/>
+    /// </summary>
+    public readonly ChatModel Grok4Fast = ModelGrok4Fast;
+
+    /// <summary>
     /// x-ai/grok-4-fast:free
     /// </summary>
     public static readonly ChatModel ModelGrok4FastFree = new ChatModel("x-ai/grok-4-fast:free", "x-ai/grok-4-fast:free", LLmProviders.OpenRouter, 2000000);
@@ -3288,7 +3268,7 @@ public class ChatModelOpenRouterAll : IVendorModelClassProvider
     /// </summary>
     public static List<IModel> ModelsAll => LazyModelsAll.Value;
 
-    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [ModelJambaLarge17, ModelJambaMini17, ModelDeepcoder14bPreview, ModelDeepcoder14bPreviewFree, ModelAion10, ModelAion10Mini, ModelAionRpLlama318b, ModelCodellama7bInstructSolidity, ModelMolmo7bD, ModelOlmo2032532bInstruct, ModelNovaLiteV1, ModelNovaMicroV1, ModelNovaProV1, ModelClaude3Haiku, ModelClaude3Opus, ModelClaude35Haiku, ModelClaude35Haiku20241022, ModelClaude35Sonnet, ModelClaude35Sonnet20240620, ModelClaude37Sonnet, ModelClaude37SonnetThinking, ModelClaudeOpus4, ModelClaudeOpus41, ModelClaudeSonnet4, ModelAfm45b, ModelCoderLarge, ModelMaestroReasoning, ModelSpotlight, ModelVirtuosoLarge, ModelQwq32bArliaiRprV1, ModelQwq32bArliaiRprV1Free, ModelAuto, ModelErnie4521bA3b, ModelErnie45300bA47b, ModelErnie45Vl28bA3b, ModelErnie45Vl424bA47b, ModelSeedOss36bInstruct, ModelUiTars157b, ModelCogitoV2PreviewLlama109bMoe, ModelCommand, ModelCommandA, ModelCommandR, ModelCommandR032024, ModelCommandR082024, ModelCommandRPlus, ModelCommandRPlus042024, ModelCommandRPlus082024, ModelCommandR7b122024, ModelCogitoV2PreviewDeepseek671b, ModelDeepseekProverV2, ModelDeepseekChat, ModelDeepseekChatV30324, ModelDeepseekChatV30324Free, ModelDeepseekChatV31, ModelDeepseekChatV31Free, ModelDeepseekV31Base, ModelDeepseekR10528Qwen38b, ModelDeepseekR10528Qwen38bFree, ModelDeepseekR1, ModelDeepseekR1Free, ModelDeepseekR10528, ModelDeepseekR10528Free, ModelDeepseekR1DistillLlama70b, ModelDeepseekR1DistillLlama70bFree, ModelDeepseekR1DistillLlama8b, ModelDeepseekR1DistillQwen14b, ModelDeepseekR1DistillQwen32b, ModelDolphin30Mistral24b, ModelDolphin30Mistral24bFree, ModelDolphin30R1Mistral24b, ModelDolphin30R1Mistral24bFree, ModelLlemma7b, ModelGoliath120b, ModelGeminiFlash15, ModelGeminiFlash158b, ModelGeminiPro15, ModelGemini20Flash001, ModelGemini20FlashExpFree, ModelGemini20FlashLite001, ModelGemini25Flash, ModelGemini25FlashImagePreview, ModelGemini25FlashLite, ModelGemini25FlashLitePreview0617, ModelGemini25Pro, ModelGemini25ProPreview0506, ModelGemini25ProPreview, ModelGemma227bIt, ModelGemma29bIt, ModelGemma29bItFree, ModelGemma312bIt, ModelGemma312bItFree, ModelGemma327bIt, ModelGemma327bItFree, ModelGemma34bIt, ModelGemma34bItFree, ModelGemma3nE2bItFree, ModelGemma3nE4bIt, ModelGemma3nE4bItFree, ModelMercury, ModelMercuryCoder, ModelInflection3Pi, ModelInflection3Productivity, ModelLfm3b, ModelLfm7b, ModelLlamaGuard38b, ModelMagnumV272b, ModelMagnumV472b, ModelWeaver, ModelLongcatFlashChat, ModelLlama370bInstruct, ModelLlama38bInstruct, ModelLlama31405b, ModelLlama31405bInstruct, ModelLlama31405bInstructFree, ModelLlama3170bInstruct, ModelLlama318bInstruct, ModelLlama3211bVisionInstruct, ModelLlama321bInstruct, ModelLlama323bInstruct, ModelLlama323bInstructFree, ModelLlama3290bVisionInstruct, ModelLlama3370bInstruct, ModelLlama3370bInstructFree, ModelLlama338bInstructFree, ModelLlama4Maverick, ModelLlama4MaverickFree, ModelLlama4Scout, ModelLlama4ScoutFree, ModelLlamaGuard412b, ModelLlamaGuard28b, ModelMaiDsR1, ModelMaiDsR1Free, ModelPhi4, ModelPhi4MultimodalInstruct, ModelPhi4ReasoningPlus, ModelPhi3Medium128kInstruct, ModelPhi3Mini128kInstruct, ModelPhi35Mini128kInstruct, ModelMinimaxM1, ModelMinimax01, ModelMistralLarge, ModelMistralLarge2407, ModelMistralLarge2411, ModelMistralSmall, ModelMistralTiny, ModelCodestral2501, ModelCodestral2508, ModelDevstralMedium, ModelDevstralSmall, ModelDevstralSmall2505, ModelDevstralSmall2505Free, ModelMagistralMedium2506, ModelMagistralMedium2506Thinking, ModelMagistralSmall2506, ModelMinistral3b, ModelMinistral8b, ModelMistral7bInstruct, ModelMistral7bInstructFree, ModelMistral7bInstructV01, ModelMistral7bInstructV03, ModelMistralMedium3, ModelMistralMedium31, ModelMistralNemo, ModelMistralNemoFree, ModelMistralSmall24bInstruct2501, ModelMistralSmall24bInstruct2501Free, ModelMistralSmall3124bInstruct, ModelMistralSmall3124bInstructFree, ModelMistralSmall3224bInstruct, ModelMistralSmall3224bInstructFree, ModelMixtral8x22bInstruct, ModelMixtral8x7bInstruct, ModelPixtral12b, ModelPixtralLarge2411, ModelMistralSaba, ModelKimiDev72b, ModelKimiDev72bFree, ModelKimiK2, ModelKimiK2Free, ModelKimiK20905, ModelKimiVlA3bThinking, ModelKimiVlA3bThinkingFree, ModelMorphV3Fast, ModelMorphV3Large, ModelMythomaxL213b, ModelLlama31Nemotron70bInstruct, ModelLlama31NemotronUltra253bV1, ModelNemotronNano9bV2, ModelNemotronNano9bV2Free, ModelLlama3Lumimaid70b, ModelLlama31Lumimaid8b, ModelNoromaid20b, ModelDeephermes3Llama38bPreviewFree, ModelDeephermes3Mistral24bPreview, ModelHermes3Llama31405b, ModelHermes3Llama3170b, ModelHermes4405b, ModelHermes470b, ModelHermes2ProLlama38b, ModelChatgpt4oLatest, ModelCodexMini, ModelGpt35Turbo, ModelGpt35Turbo0613, ModelGpt35Turbo16k, ModelGpt35TurboInstruct, ModelGpt4, ModelGpt40314, ModelGpt4Turbo, ModelGpt41106Preview, ModelGpt4TurboPreview, ModelGpt41, ModelGpt41Mini, ModelGpt41Nano, ModelGpt4o, ModelGpt4o20240513, ModelGpt4o20240806, ModelGpt4o20241120, ModelGpt4oExtended, ModelGpt4oAudioPreview, ModelGpt4oSearchPreview, ModelGpt4oMini, ModelGpt4oMini20240718, ModelGpt4oMiniSearchPreview, ModelGpt5, ModelGpt5Chat, ModelGpt5Mini, ModelGpt5Nano, ModelGptOss120b, ModelGptOss120bFree, ModelGptOss20b, ModelGptOss20bFree, ModelO1, ModelO1Mini, ModelO1Mini20240912, ModelO1Pro, ModelO3, ModelO3Mini, ModelO3MiniHigh, ModelO3Pro, ModelO4Mini, ModelO4MiniHigh, ModelInternvl378b, ModelR11776, ModelSonar, ModelSonarDeepResearch, ModelSonarPro, ModelSonarReasoning, ModelSonarReasoningPro, ModelQwen2572bInstruct, ModelQwen2572bInstructFree, ModelQwen257bInstruct, ModelQwen25Coder32bInstruct, ModelQwen25Coder32bInstructFree, ModelQwq32b, ModelQwq32bFree, ModelQwq32bPreview, ModelQwenPlus20250728, ModelQwenPlus20250728Thinking, ModelQwenVlMax, ModelQwenVlPlus, ModelQwenMax, ModelQwenPlus, ModelQwenTurbo, ModelQwen25Vl32bInstruct, ModelQwen25Vl32bInstructFree, ModelQwen25Vl72bInstruct, ModelQwen25Vl72bInstructFree, ModelQwen25Vl7bInstruct, ModelQwen314b, ModelQwen314bFree, ModelQwen3235bA22b, ModelQwen3235bA22bFree, ModelQwen3235bA22b2507, ModelQwen3235bA22bThinking2507, ModelQwen330bA3b, ModelQwen330bA3bFree, ModelQwen330bA3bInstruct2507, ModelQwen330bA3bThinking2507, ModelQwen332b, ModelQwen34bFree, ModelQwen38b, ModelQwen38bFree, ModelQwen3Coder30bA3bInstruct, ModelQwen3Coder, ModelQwen3CoderFree, ModelQwen3CoderFlash, ModelQwen3CoderPlus, ModelQwen3Max, ModelQwen3Next80bA3bInstruct, ModelQwen3Next80bA3bThinking, ModelRemmSlerpL213b, ModelL3Lunaris8b, ModelL31Euryale70b, ModelL33Euryale70b, ModelL3Euryale70b, ModelShisaV2Llama3370b, ModelShisaV2Llama3370bFree, ModelSorcererlm8x22b, ModelStep3, ModelRouter, ModelGlm41v9bThinking, ModelGlmZ132b, ModelDeepseekR1tChimera, ModelDeepseekR1tChimeraFree, ModelDeepseekR1t2ChimeraFree, ModelHunyuanA13bInstruct, ModelHunyuanA13bInstructFree, ModelAnubis70bV11, ModelAnubisPro105bV1, ModelRocinante12b, ModelSkyfall36bV2, ModelUnslopnemo12b, ModelTongyiDeepresearch30bA3b, ModelDolphinMistral24bVeniceEditionFree, ModelWizardlm28x22b, ModelGlm432b, ModelGlm45, ModelGlm45Air, ModelGlm45AirFree, ModelGlm45v, ModelGrok3, ModelGrok3Beta, ModelGrok3Mini, ModelGrok3MiniBeta, ModelGrok4, ModelGrok4FastFree, ModelGrokCodeFast1]);
+    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [ModelJambaLarge17, ModelJambaMini17, ModelDeepcoder14bPreview, ModelDeepcoder14bPreviewFree, ModelAion10, ModelAion10Mini, ModelAionRpLlama318b, ModelCodellama7bInstructSolidity, ModelMolmo7bD, ModelOlmo2032532bInstruct, ModelNovaLiteV1, ModelNovaMicroV1, ModelNovaProV1, ModelClaude3Haiku, ModelClaude3Opus, ModelClaude35Haiku, ModelClaude35Haiku20241022, ModelClaude35Sonnet, ModelClaude35Sonnet20240620, ModelClaude37Sonnet, ModelClaude37SonnetThinking, ModelClaudeOpus4, ModelClaudeOpus41, ModelClaudeSonnet4, ModelAfm45b, ModelCoderLarge, ModelMaestroReasoning, ModelSpotlight, ModelVirtuosoLarge, ModelQwq32bArliaiRprV1, ModelQwq32bArliaiRprV1Free, ModelAuto, ModelErnie4521bA3b, ModelErnie45300bA47b, ModelErnie45Vl28bA3b, ModelErnie45Vl424bA47b, ModelSeedOss36bInstruct, ModelUiTars157b, ModelCogitoV2PreviewLlama109bMoe, ModelCommandA, ModelCommandR082024, ModelCommandRPlus082024, ModelCommandR7b122024, ModelCogitoV2PreviewDeepseek671b, ModelDeepseekProverV2, ModelDeepseekChat, ModelDeepseekChatV30324, ModelDeepseekChatV30324Free, ModelDeepseekChatV31, ModelDeepseekChatV31Free, ModelDeepseekV31Base, ModelDeepseekV31Terminus, ModelDeepseekR10528Qwen38b, ModelDeepseekR10528Qwen38bFree, ModelDeepseekR1, ModelDeepseekR1Free, ModelDeepseekR10528, ModelDeepseekR10528Free, ModelDeepseekR1DistillLlama70b, ModelDeepseekR1DistillLlama70bFree, ModelDeepseekR1DistillLlama8b, ModelDeepseekR1DistillQwen14b, ModelDeepseekR1DistillQwen32b, ModelDolphin30Mistral24b, ModelDolphin30Mistral24bFree, ModelDolphin30R1Mistral24b, ModelDolphin30R1Mistral24bFree, ModelLlemma7b, ModelGemini25FlashImagePreview, ModelGoliath120b, ModelGeminiFlash158b, ModelGemini20Flash001, ModelGemini20FlashExpFree, ModelGemini20FlashLite001, ModelGemini25Flash, ModelGemini25FlashLite, ModelGemini25FlashLitePreview0617, ModelGemini25FlashLitePreview092025, ModelGemini25FlashPreview092025, ModelGemini25Pro, ModelGemini25ProPreview0506, ModelGemini25ProPreview, ModelGemma227bIt, ModelGemma29bIt, ModelGemma29bItFree, ModelGemma312bIt, ModelGemma312bItFree, ModelGemma327bIt, ModelGemma327bItFree, ModelGemma34bIt, ModelGemma34bItFree, ModelGemma3nE2bItFree, ModelGemma3nE4bIt, ModelGemma3nE4bItFree, ModelMercury, ModelMercuryCoder, ModelInflection3Pi, ModelInflection3Productivity, ModelLfm3b, ModelLfm7b, ModelLlamaGuard38b, ModelMagnumV272b, ModelMagnumV472b, ModelWeaver, ModelLongcatFlashChat, ModelLlama370bInstruct, ModelLlama38bInstruct, ModelLlama31405b, ModelLlama31405bInstruct, ModelLlama3170bInstruct, ModelLlama318bInstruct, ModelLlama3211bVisionInstruct, ModelLlama321bInstruct, ModelLlama323bInstruct, ModelLlama323bInstructFree, ModelLlama3290bVisionInstruct, ModelLlama3370bInstruct, ModelLlama3370bInstructFree, ModelLlama338bInstructFree, ModelLlama4Maverick, ModelLlama4MaverickFree, ModelLlama4Scout, ModelLlama4ScoutFree, ModelLlamaGuard412b, ModelLlamaGuard28b, ModelMaiDsR1, ModelMaiDsR1Free, ModelPhi4, ModelPhi4MultimodalInstruct, ModelPhi4ReasoningPlus, ModelPhi3Medium128kInstruct, ModelPhi3Mini128kInstruct, ModelPhi35Mini128kInstruct, ModelMinimaxM1, ModelMinimax01, ModelMistralLarge, ModelMistralLarge2407, ModelMistralLarge2411, ModelMistralSmall, ModelMistralTiny, ModelCodestral2501, ModelCodestral2508, ModelDevstralMedium, ModelDevstralSmall, ModelDevstralSmall2505, ModelDevstralSmall2505Free, ModelMagistralMedium2506, ModelMagistralMedium2506Thinking, ModelMagistralSmall2506, ModelMinistral3b, ModelMinistral8b, ModelMistral7bInstruct, ModelMistral7bInstructFree, ModelMistral7bInstructV01, ModelMistral7bInstructV03, ModelMistralMedium3, ModelMistralMedium31, ModelMistralNemo, ModelMistralNemoFree, ModelMistralSmall24bInstruct2501, ModelMistralSmall24bInstruct2501Free, ModelMistralSmall3124bInstruct, ModelMistralSmall3124bInstructFree, ModelMistralSmall3224bInstruct, ModelMistralSmall3224bInstructFree, ModelMixtral8x22bInstruct, ModelMixtral8x7bInstruct, ModelPixtral12b, ModelPixtralLarge2411, ModelMistralSaba, ModelKimiDev72b, ModelKimiDev72bFree, ModelKimiK2, ModelKimiK2Free, ModelKimiK20905, ModelKimiVlA3bThinking, ModelKimiVlA3bThinkingFree, ModelMorphV3Fast, ModelMorphV3Large, ModelMythomaxL213b, ModelLlama31Nemotron70bInstruct, ModelLlama31NemotronUltra253bV1, ModelNemotronNano9bV2, ModelNemotronNano9bV2Free, ModelLlama3Lumimaid70b, ModelLlama31Lumimaid8b, ModelNoromaid20b, ModelDeephermes3Llama38bPreview, ModelDeephermes3Llama38bPreviewFree, ModelDeephermes3Mistral24bPreview, ModelHermes3Llama31405b, ModelHermes3Llama3170b, ModelHermes4405b, ModelHermes470b, ModelHermes2ProLlama38b, ModelChatgpt4oLatest, ModelCodexMini, ModelGpt35Turbo, ModelGpt35Turbo0613, ModelGpt35Turbo16k, ModelGpt35TurboInstruct, ModelGpt4, ModelGpt40314, ModelGpt4Turbo, ModelGpt41106Preview, ModelGpt4TurboPreview, ModelGpt41, ModelGpt41Mini, ModelGpt41Nano, ModelGpt4o, ModelGpt4o20240513, ModelGpt4o20240806, ModelGpt4o20241120, ModelGpt4oExtended, ModelGpt4oAudioPreview, ModelGpt4oSearchPreview, ModelGpt4oMini, ModelGpt4oMini20240718, ModelGpt4oMiniSearchPreview, ModelGpt5, ModelGpt5Chat, ModelGpt5Codex, ModelGpt5Mini, ModelGpt5Nano, ModelGptOss120b, ModelGptOss120bFree, ModelGptOss20b, ModelGptOss20bFree, ModelO1, ModelO1Mini, ModelO1Mini20240912, ModelO1Pro, ModelO3, ModelO3Mini, ModelO3MiniHigh, ModelO3Pro, ModelO4Mini, ModelO4MiniHigh, ModelInternvl378b, ModelR11776, ModelSonar, ModelSonarDeepResearch, ModelSonarPro, ModelSonarReasoning, ModelSonarReasoningPro, ModelQwen2572bInstruct, ModelQwen2572bInstructFree, ModelQwen257bInstruct, ModelQwen25Coder32bInstruct, ModelQwen25Coder32bInstructFree, ModelQwq32b, ModelQwenPlus20250728, ModelQwenPlus20250728Thinking, ModelQwenVlMax, ModelQwenVlPlus, ModelQwenMax, ModelQwenPlus, ModelQwenTurbo, ModelQwen25Vl32bInstruct, ModelQwen25Vl32bInstructFree, ModelQwen25Vl72bInstruct, ModelQwen25Vl72bInstructFree, ModelQwen25Vl7bInstruct, ModelQwen314b, ModelQwen314bFree, ModelQwen3235bA22b, ModelQwen3235bA22bFree, ModelQwen3235bA22b2507, ModelQwen3235bA22bThinking2507, ModelQwen330bA3b, ModelQwen330bA3bFree, ModelQwen330bA3bInstruct2507, ModelQwen330bA3bThinking2507, ModelQwen332b, ModelQwen34bFree, ModelQwen38b, ModelQwen38bFree, ModelQwen3Coder30bA3bInstruct, ModelQwen3Coder, ModelQwen3CoderFree, ModelQwen3CoderFlash, ModelQwen3CoderPlus, ModelQwen3Max, ModelQwen3Next80bA3bInstruct, ModelQwen3Next80bA3bThinking, ModelQwen3Vl235bA22bInstruct, ModelQwen3Vl235bA22bThinking, ModelRemmSlerpL213b, ModelL3Lunaris8b, ModelL31Euryale70b, ModelL33Euryale70b, ModelL3Euryale70b, ModelShisaV2Llama3370b, ModelShisaV2Llama3370bFree, ModelSorcererlm8x22b, ModelStep3, ModelRouter, ModelGlm41v9bThinking, ModelGlmZ132b, ModelDeepseekR1tChimera, ModelDeepseekR1tChimeraFree, ModelDeepseekR1t2ChimeraFree, ModelHunyuanA13bInstruct, ModelHunyuanA13bInstructFree, ModelAnubis70bV11, ModelAnubisPro105bV1, ModelRocinante12b, ModelSkyfall36bV2, ModelUnslopnemo12b, ModelTongyiDeepresearch30bA3b, ModelDolphinMistral24bVeniceEditionFree, ModelWizardlm28x22b, ModelGlm432b, ModelGlm45, ModelGlm45Air, ModelGlm45AirFree, ModelGlm45v, ModelGrok3, ModelGrok3Beta, ModelGrok3Mini, ModelGrok3MiniBeta, ModelGrok4, ModelGrok4Fast, ModelGrok4FastFree, ModelGrokCodeFast1]);
 
     /// <summary>
     /// <inheritdoc cref="ModelsAll"/>
