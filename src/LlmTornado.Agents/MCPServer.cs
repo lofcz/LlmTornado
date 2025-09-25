@@ -60,7 +60,7 @@ public class MCPServer
             }
             else
             {
-                SseClientTransport sseClientTransport = new SseClientTransport(new SseClientTransportOptions
+                HttpClientTransport sseClientTransport = new HttpClientTransport(new HttpClientTransportOptions
                 {
                     Name = this.ServerLabel,
                     Endpoint = new Uri(this.ServerUrl)
@@ -103,7 +103,7 @@ public class MCPServer
             }
             else
             {
-                SseClientTransport sseClientTransport = new SseClientTransport(new SseClientTransportOptions
+                HttpClientTransport sseClientTransport = new HttpClientTransport(new HttpClientTransportOptions
                 {
                     Name = serverLabel,
                     Endpoint = new Uri(serverUrl)
