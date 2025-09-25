@@ -8,6 +8,7 @@ using LlmTornado.Chat.Models;
 using LlmTornado.Code;
 using LlmTornado.Moderation;
 using LlmTornado.Responses;
+using LlmTornado.Responses.Events;
 
 namespace LlmTornado.A2A.AgentServer;
 
@@ -33,6 +34,22 @@ public class ChatBotAgent : OrchestrationRuntimeConfiguration
            {
                simpleAgentRunnable.OnAgentRunnerEvent += (sEvent) =>
                {
+                   if (sEvent.EventType == AgentRunnerEventTypes.ResponseApiEvent)
+                   {
+                       if (sEvent is AgentRunnerResponseApiEvent apiEvent)
+                       {
+                           if (apiEvent.ResponseApiEvent.EventType == ResponseEventTypes.ResponseOutputItemAdded)
+                           {
+                               if(apiEvent.ResponseApiEvent is ResponseEventOutputItemAdded outputItemEvent)
+                               {
+                                   if (outputItemEvent.Item is ResponseLocalShellToolCallItem shellCall)
+                                   {
+                                       HandleShellCall(shellCall);
+                                   }
+                               }
+                           }
+                       }
+                   }
                    // Forward agent runner events (including streaming) to runtime
                    config.OnRuntimeEvent?.Invoke(new ChatRuntimeAgentRunnerEvents(sEvent, config.Runtime?.Id ?? string.Empty));
                };
@@ -54,6 +71,13 @@ public class ChatBotAgent : OrchestrationRuntimeConfiguration
            .AddExitPath<ChatMessage>(simpleAgentRunnable, _ => true)
            .Build();
     }
+
+    private void HandleShellCall(ResponseLocalShellToolCallItem shellCall)
+    {
+        // Example of handling a shell call
+        Console.WriteLine($"Executing shell command: {shellCall.Action.WorkingDirectory} {shellCall.Action.Command}");
+        // Implement actual shell command execution logic here
+    }   
 }
 
 
@@ -126,6 +150,7 @@ Given the following context will include Vector Search Memory, Websearch Results
             name: "Agent Runner",
             instructions: instructions,
             streaming: streaming);
+
         _conv = Agent.Client.Chat.CreateConversation(Agent.Options);
 
         Agent.ResponseOptions = new ResponseRequest() { Tools = [new ResponseWebSearchTool()] };
@@ -137,9 +162,15 @@ Given the following context will include Vector Search Memory, Websearch Results
     {
         process.RegisterAgent(Agent);
 
-        List<ChatMessage> messages = _runtimeConfiguration.GetMessages(); //Includes latest user message
+        _conv = await RunAgent();
 
-        _conv = await Agent.RunAsync(
+        return _conv.Messages.Last();
+    }
+
+    public async Task<Conversation> RunAgent()
+    {
+        List<ChatMessage> messages = _runtimeConfiguration.GetMessages(); //Includes latest user message
+        return await Agent.RunAsync(
             appendMessages: messages,
             streaming: Agent.Streaming,
             onAgentRunnerEvent: (sEvent) =>
@@ -150,8 +181,6 @@ Given the following context will include Vector Search Memory, Websearch Results
 
             toolPermissionHandle: OnAgentToolPermissionEvent
             );
-
-        return _conv.Messages.Last();
     }
 }
 

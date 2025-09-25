@@ -13,7 +13,7 @@ namespace LlmTornado.A2A;
 /// ToDo:
 /// - Handle more file types (e.g. video, other documents)
 /// </summary>
-public static class A2ATornadoExtension
+public static partial class A2ATornadoExtension
 {
     public static ChatMessage ToTornadoMessage(this AgentMessage agentMessage)
     {
