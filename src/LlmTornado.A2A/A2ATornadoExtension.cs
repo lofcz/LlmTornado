@@ -114,19 +114,34 @@ public static partial class A2ATornadoExtension
        )
     {
         List<Part> parts = new List<Part>();
-
         if (chatMessage.Content != null)
         {
-            parts.Add(new TextPart() { Text = chatMessage.Content });
+            parts.Add(chatMessage.Content.ToA2ATextPart());
+        }
+        else if (chatMessage.Reasoning != null)
+        {
+            parts.Add(chatMessage.Reasoning.ToA2ATextPart());
+        }
+        else if (chatMessage.Audio != null)
+        {
+            parts.Add(chatMessage.Audio.ToA2AFilePart());
+        }
+        else if (chatMessage.Reasoning != null)
+        {
+            parts.Add(chatMessage.Reasoning.ToA2ATextPart());
         }
         else if (chatMessage.Parts != null)
         {
             foreach (var part in chatMessage.Parts)
             {
-                var a2aPart = part.ToA2APart();
-                if (a2aPart != null) { parts.Add(a2aPart); }
+                parts.Add(part.ToA2APart());
             }
         }
+
+        metadata ??= new Dictionary<string, JsonElement>();
+        metadata["tokens"] = JsonDocument.Parse($"{chatMessage.Tokens ?? 0}").RootElement;
+        metadata["refusal"] = JsonDocument.Parse($"\"{chatMessage.Refusal ?? ""}\"").RootElement;
+        metadata["userName"] = JsonDocument.Parse($"\"{chatMessage.Name ?? ""}\"").RootElement;
 
         return new Artifact
         {
