@@ -7,7 +7,7 @@ using OpenTelemetry.Trace;
 
 
 A2ATornadoRuntimeConfiguration agent = new A2ATornadoRuntimeConfiguration(
-    runtimeConfig: new ChatBotAgent(),  //Add your Agent Here
+    runtimeConfig: new SimpleChatbotAgent(),  //Add your Agent Here
     name: "LlmTornado.A2A.AgentServer", 
     version:"1.0.0"
     );

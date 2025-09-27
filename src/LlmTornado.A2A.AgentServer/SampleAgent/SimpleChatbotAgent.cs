@@ -12,9 +12,9 @@ using LlmTornado.Responses.Events;
 
 namespace LlmTornado.A2A.AgentServer;
 
-public class ChatBotAgent : OrchestrationRuntimeConfiguration
+public class SimpleChatbotAgent : OrchestrationRuntimeConfiguration
 {
-    public ChatBotAgent()
+    public SimpleChatbotAgent()
     {
         TornadoApi client = new TornadoApi(LLmProviders.OpenAi, Environment.GetEnvironmentVariable("OPENAI_API_KEY"));
 
@@ -23,33 +23,16 @@ public class ChatBotAgent : OrchestrationRuntimeConfiguration
 
     public void BuildSimpleAgent(TornadoApi client, bool streaming = false, string conversationFile = "SimpleAgent.json")
     {
-        ModeratorRunnable inputModerator = new ModeratorRunnable(client, this);
 
-        AgentRunnable simpleAgentRunnable = new AgentRunnable(client, this, streaming);
+        SimpleAgentRunnable simpleAgentRunnable = new SimpleAgentRunnable(client, this, streaming);
 
        new OrchestrationBuilder(this)
-           .SetEntryRunnable(inputModerator)
+           .SetEntryRunnable(simpleAgentRunnable)
            .SetOutputRunnable(simpleAgentRunnable)
            .WithRuntimeInitializer((config) =>
            {
                simpleAgentRunnable.OnAgentRunnerEvent += (sEvent) =>
                {
-                   if (sEvent.EventType == AgentRunnerEventTypes.ResponseApiEvent)
-                   {
-                       if (sEvent is AgentRunnerResponseApiEvent apiEvent)
-                       {
-                           if (apiEvent.ResponseApiEvent.EventType == ResponseEventTypes.ResponseOutputItemAdded)
-                           {
-                               if(apiEvent.ResponseApiEvent is ResponseEventOutputItemAdded outputItemEvent)
-                               {
-                                   if (outputItemEvent.Item is ResponseLocalShellToolCallItem shellCall)
-                                   {
-                                       HandleShellCall(shellCall);
-                                   }
-                               }
-                           }
-                       }
-                   }
                    // Forward agent runner events (including streaming) to runtime
                    config.OnRuntimeEvent?.Invoke(new ChatRuntimeAgentRunnerEvents(sEvent, config.Runtime?.Id ?? string.Empty));
                };
@@ -67,71 +50,12 @@ public class ChatBotAgent : OrchestrationRuntimeConfiguration
            })
            .WithRuntimeProperty("LatestUserMessage", "")
            .WithChatMemory(conversationFile)
-           .AddAdvancer<ChatMessage>(inputModerator, simpleAgentRunnable)
            .AddExitPath<ChatMessage>(simpleAgentRunnable, _ => true)
            .Build();
     }
-
-    private void HandleShellCall(ResponseLocalShellToolCallItem shellCall)
-    {
-        // Example of handling a shell call
-        Console.WriteLine($"Executing shell command: {shellCall.Action.WorkingDirectory} {shellCall.Action.Command}");
-        // Implement actual shell command execution logic here
-    }   
 }
 
-
-public class ModeratorRunnable : OrchestrationRunnable<ChatMessage, ChatMessage>
-{
-    TornadoApi Client { get; set; }
-    public ModeratorRunnable(TornadoApi client, Orchestration orchestrator) : base(orchestrator)
-    {
-        Client = client;
-    }
-
-    public override async ValueTask<ChatMessage> Invoke(RunnableProcess<ChatMessage, ChatMessage> input)
-    {
-        await ThrowOnModeratedInput(input.Input, Client);
-
-        try
-        {
-            Orchestrator?.RuntimeProperties.AddOrUpdate("LatestUserMessage", (newValue) => input.Input.Content ?? "", (key, Value) => input.Input.Content ?? "");
-        }
-        catch(Exception e) {
-            Console.WriteLine(e.Message);
-            throw;
-        }
-
-        return input.Input;
-    }
-
-    private async Task ThrowOnModeratedInput(ChatMessage Input, TornadoApi Client)
-    {
-        // Moderate input content by OpenAI Moderation API Standards
-        if (Input.Content is not null)
-        {
-            ModerationResult modResult = await Client.Moderation.CreateModeration(Input.Content);
-            if (modResult.Results.FirstOrDefault()?.Flagged == true)
-            {
-                throw new Exception("Input content was flagged by moderation.");
-            }
-        }
-
-        foreach (ChatMessagePart part in Input.Parts ?? [])
-        {
-            if (part.Text is not null)
-            {
-                ModerationResult modResult = await Client.Moderation.CreateModeration(part.Text);
-                if (modResult.Results.FirstOrDefault()?.Flagged == true)
-                {
-                    throw new Exception("Input content was flagged by moderation.");
-                }
-            }
-        }
-    }
-}
-
-public class AgentRunnable : OrchestrationRunnable<ChatMessage, ChatMessage>
+public class SimpleAgentRunnable : OrchestrationRunnable<ChatMessage, ChatMessage>
 {
     TornadoAgent Agent;
     public Action<AgentRunnerEvents>? OnAgentRunnerEvent { get; set; }
@@ -139,7 +63,7 @@ public class AgentRunnable : OrchestrationRunnable<ChatMessage, ChatMessage>
 
     Conversation _conv;
     OrchestrationRuntimeConfiguration _runtimeConfiguration;
-    public AgentRunnable(TornadoApi client, OrchestrationRuntimeConfiguration orchestrator, bool streaming = false) : base(orchestrator)
+    public SimpleAgentRunnable(TornadoApi client, OrchestrationRuntimeConfiguration orchestrator, bool streaming = false) : base(orchestrator)
     {
         string instructions = @"You are a conversational chatbot, be engaging and creative to have a playful and interesting conversation with the user.
 Given the following context will include Vector Search Memory, Websearch Results, and Entity Memory to keep track of real world things.";

@@ -169,7 +169,7 @@ public class AgentTests
     [Test]
     public async Task TestChatBot()
     {
-        var bot = new ChatBotAgent();
+        var bot = new SimpleChatbotAgent();
         var runtime = new ChatRuntime(bot);
         var response = await runtime.InvokeAsync(new ChatMessage(ChatMessageRoles.User, "Hello, can you help me?"));
         Console.WriteLine(response.Content);
