@@ -206,7 +206,7 @@ public class GitHubTool
     {
         try
         {
-            var processInfo = new System.Diagnostics.ProcessStartInfo("bash", $"-c \"git add . && git commit -m \\\"{commitMessage}\\\" && git push origin {branchName}\"")
+            var processInfo = new System.Diagnostics.ProcessStartInfo("bash", $"-c \"git add . && git commit -m \\\"{commitMessage}\\\" && git push origin {BranchName}\"")
             {
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
