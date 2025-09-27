@@ -8,6 +8,16 @@ using LlmTornado.Infra;
 
 namespace LlmTornado.Agents;
 
+
+public class ToolNameAttribute : Attribute
+{
+    public string Name { get; }
+    public ToolNameAttribute(string name)
+    {
+        Name = name;
+    }
+}
+
 public static class ToolUtility
 {
     /// <summary>
@@ -40,7 +50,15 @@ public static class ToolUtility
     {
         MethodInfo method = function.Method;
         List<string> required_inputs = [];
-        string toolDescription = method.Name;
+
+        string methodName = method.Name.Contains("<") ? "Tool_" + Guid.NewGuid().ToString().Substring(0, 6) : method.Name;
+
+        if (method.IsDefined(typeof(ToolNameAttribute), false))
+        {
+            methodName = method.GetCustomAttributes<ToolNameAttribute>().First().Name;
+        }
+
+        string toolDescription = methodName;
 
         if (method.IsDefined(typeof(DescriptionAttribute), false))
         {
@@ -70,8 +88,6 @@ public static class ToolUtility
         }
 
         bool strictSchema = required_inputs.Count == parameters.Length;
-
-        string methodName = method.Name.Contains("<") ? Guid.NewGuid().ToString().Substring(0,6) : method.Name;
 
         return new Tool(function, methodName, toolDescription, toolMetadata, strictSchema);
     }
