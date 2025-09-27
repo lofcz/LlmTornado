@@ -136,6 +136,12 @@ public enum ResponseIncludeFields
     CodeInterpreterCallOutputs,
 
     /// <summary>
+    /// Includes the outputs of python code execution in code interpreter tool call items.
+    /// </summary>
+    [EnumMember(Value = "local_shell_call_output.output")]
+    LocalShellCallOutput,
+
+    /// <summary>
     /// Include image urls from the computer call output.
     /// </summary>
     [EnumMember(Value = "computer_call_output.output.image_url")]
