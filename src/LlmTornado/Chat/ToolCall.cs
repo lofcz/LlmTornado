@@ -1,3 +1,4 @@
+using System.Reflection.Emit;
 using Newtonsoft.Json;
 
 namespace LlmTornado.ChatFunctions;
@@ -39,6 +40,12 @@ public class ToolCall
     /// </summary>
     [JsonProperty("custom")]
     public CustomToolCall? CustomCall { get; set; }
+    
+    /// <summary>
+    /// The underlying built-in tool call, if any.
+    /// </summary>
+    [JsonIgnore]
+    public BuiltInToolCall? BuiltInToolCall { get; set; }
     
     /// <summary>
     ///     Gets the json encoded function call, this is cached to avoid serializing the function over and over.

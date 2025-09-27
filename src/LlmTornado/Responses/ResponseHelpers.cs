@@ -226,14 +226,18 @@ internal static class ResponseHelpers
     /// mapping properties such as ID, model, and output from the response result to the chat result structure.
     /// </summary>
     /// <param name="result">The <see cref="ResponseResult"/> object containing the data to be transformed into a chat result.</param>
+    /// <param name="request">The request.</param>
+    /// <param name="provider">The provider.</param>
     /// <returns>A <see cref="ChatResult"/> object populated with the relevant properties from the provided response result.</returns>
-    public static ChatResult ToChatResult(ResponseResult result)
+    public static ChatResult ToChatResult(ResponseResult result, ResponseRequest request, IEndpointProvider provider)
     {
         return new ChatResult
         {
             Id = result.Id,
             Model = result.Model ?? string.Empty,
-            Choices = result.Output is not null ? [ ToChatChoice(result) ] : [],
+            Choices = result.Output is not null ? [ 
+                ToChatChoice(result, request, provider) 
+            ] : [],
             Usage = result.Usage is not null ? new ChatUsage(result.Usage) : null
         };
     }
@@ -243,48 +247,188 @@ internal static class ResponseHelpers
     /// Extracts response details such as message content, reasoning, and parts, and maps them to a structured <see cref="ChatChoice"/> representation.
     /// </summary>
     /// <param name="response">The <see cref="ResponseResult"/> object containing the raw response data to be converted.</param>
+    /// <param name="request">The request.</param>
+    /// <param name="provider">The provider.</param>
     /// <returns>A <see cref="ChatChoice"/> object populated with the structured message and associated components extracted from the input response.</returns>
-    public static ChatChoice ToChatChoice(ResponseResult response)
+    public static ChatChoice ToChatChoice(ResponseResult response, ResponseRequest request, IEndpointProvider provider)
     {
         ChatChoice choice = new ChatChoice();
 
         choice.Message ??= new ChatMessage(ChatMessageRoles.Assistant);
         choice.Message.Parts ??= [];
-        string? textOutput = response.OutputText;
-        
-        if (textOutput is not null)
-        {
-            choice.Message.Parts.Add(new ChatMessagePart(textOutput));
-            choice.Message.Content = textOutput;
-        }
+        choice.Message.NativeObject = response;
         
         foreach (IResponseOutputItem responseItem in response.Output ?? [])
         {
-            if (responseItem.Type == ResponseOutputTypes.Reasoning && responseItem is ResponseReasoningItem reasoningItem)
+            switch (responseItem)
             {
-                string[] reasoning = reasoningItem.Summary.Select(x => x.Text).ToArray();
-                choice.Message.ReasoningContent = string.Join("\n", reasoning);
-                choice.Message.Parts.Add(new ChatMessagePart(new ChatMessageReasoningData
+                case ResponseOutputMessageItem responseOutputMessageItem:
                 {
-                    Content = choice.Message.ReasoningContent
-                }));
-            }
-            
-            if (responseItem.Type == ResponseOutputTypes.FunctionCall && responseItem is ResponseFunctionToolCallItem functionItem)
-            {
-                choice.Message.ToolCalls ??= [];
-                choice.Message.ToolCallId = functionItem.CallId;
-                
-                choice.Message.ToolCalls.Add(new ToolCall
-                {
-                    Id = functionItem.CallId,
-                    FunctionCall = new FunctionCall
+                    foreach (IResponseOutputContent item in responseOutputMessageItem.Content)
                     {
-                        Arguments = functionItem.Arguments,
-                        Name = functionItem.Name,
-                        Result = functionItem.Result
+                        switch (item)
+                        {
+                            case ResponseOutputTextContent responseOutputTextContent:
+                            {
+                                choice.Message.Parts.Add(new ChatMessagePart(ChatMessageTypes.Text)
+                                {
+                                    Text = responseOutputTextContent.Text,
+                                    NativeObject = responseOutputTextContent
+                                });
+                                break;
+                            }
+                            case RefusalContent refusalContent:
+                            {
+                                choice.Message.Refusal = refusalContent.Refusal;
+                                break;
+                            }
+                        }
                     }
-                });
+                    
+                    break;
+                } 
+                case ResponseReasoningItem reasoningItem:
+                {
+                    string[] reasoning = reasoningItem.Summary.Select(x => x.Text).ToArray();
+                   
+                    choice.Message.Parts.Add(new ChatMessagePart(new ChatMessageReasoningData
+                    {
+                        Content = reasoning.Length > 0 ? string.Join("\n", reasoning) : null,
+                        Signature = reasoningItem.EncryptedContent,
+                        Provider = provider.Provider
+                    }));
+                    break;
+                }
+                case ResponseFunctionToolCallItem functionItem:
+                {
+                    choice.Message.ToolCalls ??= [];
+                    choice.Message.ToolCallId = functionItem.CallId;
+                
+                    choice.Message.ToolCalls.Add(new ToolCall
+                    {
+                        Id = functionItem.CallId,
+                        FunctionCall = new FunctionCall
+                        {
+                            Arguments = functionItem.Arguments,
+                            Name = functionItem.Name,
+                            Result = functionItem.Result
+                        }
+                    });
+                    break;
+                }
+                case ResponseLocalShellToolCallItem localShellToolCallItem:
+                {
+                    choice.Message.ToolCalls ??= [];
+
+                    ToolCall tc = new ToolCall
+                    {
+                        Type = localShellToolCallItem.Type
+                    };
+
+                    tc.BuiltInToolCall = new BuiltInToolCall(true, localShellToolCallItem.CallId, localShellToolCallItem, tc, new
+                    {
+                        action = localShellToolCallItem.Action,
+                        status = localShellToolCallItem.Status
+                    }.ToJson());
+                    
+                    choice.Message.ToolCalls.Add(tc);
+                    break;
+                }
+                case ResponseWebSearchToolCallItem webSearchToolCallItem:
+                {
+                    choice.Message.ToolCalls ??= [];
+
+                    ToolCall tc = new ToolCall
+                    {
+                        Type = webSearchToolCallItem.Type
+                    };
+
+                    tc.BuiltInToolCall = new BuiltInToolCall(false, webSearchToolCallItem.Id, webSearchToolCallItem, tc, new
+                    {
+                        action = webSearchToolCallItem.Action,
+                        status = webSearchToolCallItem.Status
+                    }.ToJson());
+                    
+                    choice.Message.ToolCalls.Add(tc);
+                    break;
+                }
+                case ResponseFileSearchToolCallItem fileSearchToolCallItem:
+                {
+                    choice.Message.ToolCalls ??= [];
+
+                    ToolCall tc = new ToolCall
+                    {
+                        Type = fileSearchToolCallItem.Type
+                    };
+
+                    tc.BuiltInToolCall = new BuiltInToolCall(false, fileSearchToolCallItem.Id, fileSearchToolCallItem, tc, new
+                    {
+                        queries = fileSearchToolCallItem.Queries,
+                        status = fileSearchToolCallItem.Status,
+                        results = fileSearchToolCallItem.Results
+                    }.ToJson());
+                    
+                    choice.Message.ToolCalls.Add(tc);
+                    break;
+                } 
+                case ResponseComputerToolCallItem computerToolCallItem:
+                {
+                    choice.Message.ToolCalls ??= [];
+
+                    ToolCall tc = new ToolCall
+                    {
+                        Type = computerToolCallItem.Type
+                    };
+
+                    tc.BuiltInToolCall = new BuiltInToolCall(true, computerToolCallItem.CallId, computerToolCallItem, tc, new
+                    {
+                        action = computerToolCallItem.Action,
+                        status = computerToolCallItem.Status,
+                        pendingSafetyChecks = computerToolCallItem.PendingSafetyChecks
+                    }.ToJson());
+                    
+                    choice.Message.ToolCalls.Add(tc);
+                    break;
+                }
+                case ResponseImageGenToolCallItem imageGenerationTool:
+                {
+                    choice.Message.ToolCalls ??= [];
+
+                    ToolCall tc = new ToolCall
+                    {
+                        Type = imageGenerationTool.Type
+                    };
+
+                    tc.BuiltInToolCall = new BuiltInToolCall(false, imageGenerationTool.Id, imageGenerationTool, tc, new
+                    {
+                        result = imageGenerationTool.Result,
+                        status = imageGenerationTool.Status,
+                        revisedPrompt = imageGenerationTool.RevisedPrompt
+                    }.ToJson());
+                    
+                    choice.Message.ToolCalls.Add(tc);
+                    break;
+                }
+                case ResponseCodeInterpreterToolCallItem codeInterpreterToolCallItem:
+                {
+                    choice.Message.ToolCalls ??= [];
+
+                    ToolCall tc = new ToolCall
+                    {
+                        Type = codeInterpreterToolCallItem.Type
+                    };
+
+                    tc.BuiltInToolCall = new BuiltInToolCall(false, codeInterpreterToolCallItem.Id, codeInterpreterToolCallItem, tc, new
+                    {
+                        containerId = codeInterpreterToolCallItem.ContainerId,
+                        status = codeInterpreterToolCallItem.Status,
+                        outputs = codeInterpreterToolCallItem.Outputs,
+                        code = codeInterpreterToolCallItem.Code
+                    }.ToJson());
+                    
+                    choice.Message.ToolCalls.Add(tc);
+                    break;
+                }
             }
         }
         

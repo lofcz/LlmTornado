@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
+using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Common;
 using LlmTornado.Images;
@@ -247,7 +248,7 @@ public class ResponseOutputMessageItem : IResponseOutputItem, IResponsesConversa
 /// <summary>
 /// The results of a file search tool call.
 /// </summary>
-public class ResponseFileSearchToolCallItem : IResponseOutputItem
+public class ResponseFileSearchToolCallItem : IResponseOutputItem, IBuiltInToolCallData
 {
     /// <inheritdoc/>
     [JsonProperty("type")]
@@ -324,7 +325,7 @@ public class ResponseFunctionToolCallItem : IResponseOutputItem
 /// <summary>
 /// The results of a web search tool call.
 /// </summary>
-public class ResponseWebSearchToolCallItem : IResponseOutputItem
+public class ResponseWebSearchToolCallItem : IResponseOutputItem, IBuiltInToolCallData
 {
     /// <inheritdoc/>
     [JsonProperty("type")]
@@ -403,7 +404,7 @@ public class WebSearchActionFind : IWebSearchAction
 /// <summary>
 /// A tool call to a computer use tool.
 /// </summary>
-public class ResponseComputerToolCallItem : IResponseOutputItem
+public class ResponseComputerToolCallItem : IResponseOutputItem, IBuiltInToolCallData
 {
     /// <inheritdoc/>
     [JsonProperty("type")]
@@ -741,7 +742,7 @@ public class ResponseReasoningItem : IResponseOutputItem
 /// <summary>
 /// An image generation request made by the model.
 /// </summary>
-public class ResponseImageGenToolCallItem : IResponseOutputItem
+public class ResponseImageGenToolCallItem : IResponseOutputItem, IBuiltInToolCallData
 {
     /// <inheritdoc/>
     [JsonProperty("type")]
@@ -799,7 +800,7 @@ public class ResponseImageGenToolCallItem : IResponseOutputItem
 /// <summary>
 /// A tool call to run code.
 /// </summary>
-public class ResponseCodeInterpreterToolCallItem : IResponseOutputItem
+public class ResponseCodeInterpreterToolCallItem : IResponseOutputItem, IBuiltInToolCallData
 {
     /// <inheritdoc/>
     [JsonProperty("type")]
@@ -964,7 +965,7 @@ internal class CodeInterpreterOutputConverter : JsonConverter<ICodeInterpreterOu
 /// <summary>
 /// A tool call to run a command on the local shell.
 /// </summary>
-public class ResponseLocalShellToolCallItem : IResponseOutputItem
+public class ResponseLocalShellToolCallItem : IResponseOutputItem, IBuiltInToolCallData
 {
     /// <inheritdoc/>
     [JsonProperty("type")]
@@ -1092,7 +1093,7 @@ public class ResponseMcpToolCallItem : IResponseOutputItem
 /// <summary>
 /// A list of tools available on an MCP server.
 /// </summary>
-public class ResponseMcpListToolsItem : IResponseOutputItem
+public class ResponseMcpListToolsItem : IResponseOutputItem, IBuiltInToolCallData
 {
     /// <inheritdoc/>
     [JsonProperty("type")]
@@ -1156,7 +1157,7 @@ public class ResponseMcpListToolsItem : IResponseOutputItem
 /// <summary>
 /// A request for human approval of a tool invocation.
 /// </summary>
-public class ResponseMcpApprovalRequestItem : IResponseOutputItem
+public class ResponseMcpApprovalRequestItem : IResponseOutputItem, IBuiltInToolCallData
 {
     /// <inheritdoc/>
     [JsonProperty("type")]
