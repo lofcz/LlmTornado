@@ -355,14 +355,6 @@ public class AgentsDemo : DemoBase
                 if(evt is AgentRunnerResponseApiEvent responseApiEvent)
                 {
                     Console.WriteLine($"\n[Response API Event]: {responseApiEvent.ResponseApiEvent.EventType}");
-                    if (responseApiEvent.ResponseApiEvent is ResponseApiToolCallEvent toolCallEvent)
-                    {
-                        Console.WriteLine($"[Tool Call]: {toolCallEvent.ToolCall.Function}({string.Join(", ", toolCallEvent.ToolCall.Arguments.Select(kv => kv.Key + "=" + kv.Value))})");
-                    }
-                    else if (responseApiEvent.ResponseApiEvent is ResponseApiToolResultEvent toolResultEvent)
-                    {
-                        Console.WriteLine($"[Tool Result]: {toolResultEvent.ToolResult.Result}");
-                    }
                 }
             }
                 return ValueTask.CompletedTask;
