@@ -71,7 +71,9 @@ public static class ToolUtility
 
         bool strictSchema = required_inputs.Count == parameters.Length;
 
-        return new Tool(function, method.Name, toolDescription, toolMetadata, strictSchema);
+        string methodName = method.Name.Contains("<") ? Guid.NewGuid().ToString().Substring(0,6) : method.Name;
+
+        return new Tool(function, methodName, toolDescription, toolMetadata, strictSchema);
     }
 
     /// <summary>
