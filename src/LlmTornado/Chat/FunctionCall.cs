@@ -55,6 +55,7 @@ public class BuiltInToolCall
         Name = name;
         Arguments = args;
         ToolCall = toolCall;
+        ResponseExpected = responseExpected;
     } 
 }
 
