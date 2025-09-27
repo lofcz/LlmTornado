@@ -334,15 +334,39 @@ public class AgentsDemo : DemoBase
     {
         TornadoAgent agent = new TornadoAgent(
             Program.Connect(),
-            ChatModel.OpenAi.Gpt41.V41Mini,
+            ChatModel.OpenAi.Codex.MiniLatest,
             instructions: "You are a useful assistant.");
 
         agent.ResponseOptions = new ResponseRequest()
         {
-            Tools = [new ResponseWebSearchTool()]
+            Tools = [new ResponseLocalShellTool()]
         };
 
-        var convo = await agent.RunAsync("What is the weather in boston?");
+        var convo = await agent.RunAsync("what files are in current directory?",streaming:true, onAgentRunnerEvent: (evt) => {
+            if (evt.EventType == AgentRunnerEventTypes.Streaming && evt is AgentRunnerStreamingEvent streamingEvent)
+            {
+                if (streamingEvent.ModelStreamingEvent is ModelStreamingOutputTextDeltaEvent deltaTextEvent)
+                {
+                    Console.Write(deltaTextEvent.DeltaText); // Write the text delta directly
+                }
+            }
+            else if(evt.EventType == AgentRunnerEventTypes.ResponseApiEvent)
+            {
+                if(evt is AgentRunnerResponseApiEvent responseApiEvent)
+                {
+                    Console.WriteLine($"\n[Response API Event]: {responseApiEvent.ResponseApiEvent.EventType}");
+                    if (responseApiEvent.ResponseApiEvent is ResponseApiToolCallEvent toolCallEvent)
+                    {
+                        Console.WriteLine($"[Tool Call]: {toolCallEvent.ToolCall.Function}({string.Join(", ", toolCallEvent.ToolCall.Arguments.Select(kv => kv.Key + "=" + kv.Value))})");
+                    }
+                    else if (responseApiEvent.ResponseApiEvent is ResponseApiToolResultEvent toolResultEvent)
+                    {
+                        Console.WriteLine($"[Tool Result]: {toolResultEvent.ToolResult.Result}");
+                    }
+                }
+            }
+                return ValueTask.CompletedTask;
+        }); 
         Console.WriteLine(convo.Messages.Last().Content);
     }
 }

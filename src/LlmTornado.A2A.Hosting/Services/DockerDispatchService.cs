@@ -19,7 +19,7 @@ public class DockerDispatchService: IA2ADispatchService
         _configuration = configuration;
         _agentImages = new Dictionary<string,string>
         {
-            { "ChatBot", "llmtornadoa2aagentserver:latest" }
+            { "ChatBot", "llmtornadoa2aagentserver:latest" } //Add more agent images as needed
         };
     }
 

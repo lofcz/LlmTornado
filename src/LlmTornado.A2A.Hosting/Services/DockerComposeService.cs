@@ -18,7 +18,7 @@ public class DockerComposeService : IA2ADispatchService
 
         _agentImages = new Dictionary<string, string>
         {
-            { "ChatBot", "llmtornadoa2aagentserver:latest" }
+            { "ChatBot", "llmtornadoa2aagentserver:latest" } //add more images as needed / Need to setup a configuration for this in appsettings.json
         };
 
     }
