@@ -13,6 +13,71 @@ using Newtonsoft.Json.Linq;
 namespace LlmTornado.ChatFunctions;
 
 /// <summary>
+/// Built-in tool call
+/// </summary>
+public class BuiltInToolCall
+{
+    /// <summary>
+    /// The associated data.
+    /// </summary>
+    public IBuiltInToolCallData Data { get; set; }
+        
+    /// <summary>
+    ///     The full tool call object.
+    /// </summary>
+    [JsonIgnore]
+    public ToolCall? ToolCall { get; set; }
+
+    /// <summary>
+    ///     The name of the function.
+    /// </summary>
+    [JsonProperty("name")]
+    public string Name { get; set; }
+
+    /// <summary>
+    ///     Any arguments that need to be passed to the function. This needs to be in JSON format.
+    /// </summary>
+    [JsonProperty("arguments")]
+    public string? Arguments { get; set; }
+    
+    /// <summary>
+    /// Whether a response is expected or not.
+    /// </summary>
+    [JsonIgnore]
+    public bool ResponseExpected { get; set; }
+    
+    /// <summary>
+    /// Crates an instance of the built-in tool call.
+    /// </summary>
+    public BuiltInToolCall(bool responseExpected, string name, IBuiltInToolCallData data, ToolCall toolCall, string? args = null)
+    {
+        Data = data;
+        Name = name;
+        Arguments = args;
+        ToolCall = toolCall;
+    } 
+}
+
+/// <summary>
+/// Shared interface for built-in tool calls.
+/// </summary>
+public interface IBuiltInToolCallData
+{
+    
+}
+
+/// <summary>
+/// Empty data for built-in tools.
+/// </summary>
+public class DummyBuiltInToolCallData : IBuiltInToolCallData
+{
+    /// <summary>
+    /// Static instance.
+    /// </summary>
+    public static readonly DummyBuiltInToolCallData Inst = new DummyBuiltInToolCallData();
+}
+
+/// <summary>
 ///     Result of tool call of type "custom".
 /// </summary>
 public class CustomToolCall

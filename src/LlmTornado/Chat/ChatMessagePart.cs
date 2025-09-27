@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Code;
 using LlmTornado.Images;
+using LlmTornado.Responses;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Chat;
@@ -312,6 +313,13 @@ public class ChatMessagePart
     /// </summary>
     [JsonIgnore]
     public ChatMessagePartCodeExecutionResult? CodeExecutionResult { get; set; }
+    
+    /// <summary>
+    /// The native object this message part was created from, if any.<br/>
+    /// Could be: null, <see cref="IResponseOutputContent"/>
+    /// </summary>
+    [JsonIgnore]
+    public object? NativeObject { get; set; }
     
     /// <summary>
     ///     Creates an audio part from a given stream.
