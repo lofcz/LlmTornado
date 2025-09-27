@@ -156,7 +156,16 @@ public class TornadoRunner
     {
         Conversation chat = agent.Client.Chat.CreateConversation(agent.Options);
 
-        chat.AddSystemMessage(agent.Instructions); //Set the instructions for the agent
+        //Set response id
+        if (!string.IsNullOrEmpty(responseId))
+        {
+            chat.RequestParameters.ResponseRequestParameters!.PreviousResponseId = responseId;
+        }
+        else
+        {
+            chat.AddSystemMessage(agent.Instructions); //Set the instructions for the agent
+        }
+
 
         //Set the cancellation token for the agent client
         chat.RequestParameters.CancellationToken = cancellationToken;
@@ -164,12 +173,7 @@ public class TornadoRunner
         //Setup the messages from previous runs or memory
         chat = AddMessagesToConversation(chat, messages);
 
-        //Set response id
-        if (!string.IsNullOrEmpty(responseId) && chat.RequestParameters.ResponseRequestParameters != null)
-        {
-            chat.RequestParameters.ResponseRequestParameters!.PreviousResponseId = responseId;
-        }
-
+        
         //Add the latest message to the stream
         if (!string.IsNullOrEmpty(input.Trim())) chat.AppendUserInput(input);
 
@@ -229,7 +233,21 @@ public class TornadoRunner
 
     private static bool GotToolCall(Conversation chat)
     {
+        if(CheckForChatToolCall(chat)) return true;
+        //if(CheckForResponseToolCall(chat)) return true;
+        return false;
+    }
+
+    private static bool CheckForChatToolCall(Conversation chat)
+    {
         return chat.Messages.Last() is { Role: ChatMessageRoles.Tool };
+    }
+
+    private static bool CheckForResponseToolCall(Conversation chat)
+    {
+        ChatMessage lastMsg = chat.Messages.Last();
+        List<ToolCall>? calls = lastMsg.ToolCalls?.Where(x => x.BuiltInToolCall?.ResponseExpected ?? false).ToList();
+        return calls != null && calls.Count > 0;
     }
 
     /// <summary>
@@ -389,6 +407,15 @@ public class TornadoRunner
             OnUsageReceived = (usage) =>
             {
                 runnerCallback?.Invoke(new AgentRunnerUsageReceivedEvent(usage.TotalTokens));
+                return Threading.ValueTaskCompleted;
+            },
+            OutboundHttpRequestHandler = (http) =>
+            {
+
+                return Threading.ValueTaskCompleted;
+            },
+            OnFinished = (finishedData) =>
+            {
                 return Threading.ValueTaskCompleted;
             }
         });
