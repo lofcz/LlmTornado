@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace LlmTornado.Agents.Samples.Common;
+namespace LlmTornado.Agents.Samples.Common.Utility;
 
 public partial class CodeUtility
 {

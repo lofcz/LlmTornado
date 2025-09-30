@@ -1,21 +1,13 @@
-﻿using LlmTornado.Agents;
-using LlmTornado.Agents.ChatRuntime;
+﻿using LlmTornado.Agents.ChatRuntime;
 using LlmTornado.Agents.ChatRuntime.Orchestration;
 using LlmTornado.Agents.ChatRuntime.RuntimeConfigurations;
 using LlmTornado.Agents.DataModels;
-using LlmTornado.Agents.Samples.Common;
+using LlmTornado.Agents.Samples.Common.Tools;
+using LlmTornado.Agents.Samples.Common.Utility;
 using LlmTornado.Agents.Samples.DataModels;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.IO.Compression;
-using System.Linq;
-using System.Net.Sockets;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace LlmTornado.Agents.Samples.CodingAgent;
 
@@ -123,17 +115,6 @@ public class CodingAgentConfiguration : OrchestrationRuntimeConfiguration
         return result.BuildInfo?.BuildResult.BuildCompleted ?? false;
     }
 
-    [Description("Use this tool to read files already written")]
-    public static string ReadFileTool([Description("file path of the file you wish to read.")] string filePath)
-    {
-        return FileIOUtility.ReadFile(filePath);
-    }
-
-    [Description("Use this tool to get all the file paths in the project")]
-    public static string GetFilesTool()
-    {
-        return FileIOUtility.GetAllPaths(ProjectName);
-    }
 
     class ProjectSummaryRunnable : OrchestrationRunnable<CodeBuildInfoOutput, ChatMessage>
     {
@@ -197,7 +178,7 @@ public class CodingAgentConfiguration : OrchestrationRuntimeConfiguration
                 client: client,
                 model: ChatModel.OpenAi.Gpt5.V5Mini,
                 name: "Research Agent",
-                tools: [ReadFileTool, GetFilesTool],
+                tools: [FileIOTools.ReadFileTool, FileIOTools.GetFilesTool],
                 outputSchema: typeof(CodeReview),
                 instructions: instructions);
         }
@@ -238,7 +219,7 @@ public class CodingAgentConfiguration : OrchestrationRuntimeConfiguration
                 client:client,
                 model: ChatModel.OpenAi.Gpt5.V5Mini,
                 name: "Research Agent",
-                tools: [ReadFileTool, GetFilesTool],
+                tools: [FileIOTools.ReadFileTool, FileIOTools.GetFilesTool],
                 outputSchema: typeof(ProgramResult),
                 instructions: instructions);
         }
