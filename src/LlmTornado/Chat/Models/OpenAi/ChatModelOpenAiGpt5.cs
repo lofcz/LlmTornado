@@ -11,6 +11,19 @@ namespace LlmTornado.Chat.Models;
 public class ChatModelOpenAiGpt5 : IVendorModelClassProvider
 {
     /// <summary>
+    /// GPT-5-Codex is a version of GPT-5 optimized for agentic coding tasks in Codex or similar environments. 
+    /// </summary>
+    public static readonly ChatModel ModelV5Codex = new ChatModel("gpt-5-codex", LLmProviders.OpenAi, 400_000, [ ])
+    {
+        EndpointCapabilities = [ ChatModelEndpointCapabilities.Responses, ChatModelEndpointCapabilities.Batch ]
+    };
+
+    /// <summary>
+    /// <inheritdoc cref="ModelV5Codex"/>
+    /// </summary>
+    public readonly ChatModel V5Codex = ModelV5Codex;
+    
+    /// <summary>
     /// Latest snapshot of GPT-5, currently gpt-5-2025-08-07.
     /// </summary>
     public static readonly ChatModel ModelV5 = new ChatModel("gpt-5", LLmProviders.OpenAi, 400_000, [ "gpt-5-2025-08-07" ])
@@ -51,7 +64,9 @@ public class ChatModelOpenAiGpt5 : IVendorModelClassProvider
     /// </summary>
     public static List<IModel> ModelsAll => LazyModelsAll.Value;
 
-    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [ModelV5, ModelV5Mini, ModelV5Nano]);
+    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [
+        ModelV5, ModelV5Mini, ModelV5Nano, ModelV5Codex
+    ]);
     
     /// <summary>
     /// <inheritdoc cref="ModelsAll"/>

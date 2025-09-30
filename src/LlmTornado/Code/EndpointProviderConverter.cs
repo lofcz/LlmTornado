@@ -44,6 +44,10 @@ internal static class EndpointProviderConverter
             {
                 UrlResolver = (endpoint, url, ctx) => $"{string.Format(api.ApiUrlFormat ?? "https://openrouter.ai/api/{0}/{1}", api.ResolveApiVersion(), OpenAiEndpointProvider.GetEndpointUrlFragment(endpoint, LLmProviders.OpenRouter))}{url}"
             },
+            LLmProviders.MoonshotAi => new OpenAiEndpointProvider(LLmProviders.MoonshotAi)
+            {
+                UrlResolver = (endpoint, url, ctx) => $"{string.Format(api.ApiUrlFormat ?? "https://api.moonshot.ai/{0}/{1}", api.ResolveApiVersion(), OpenAiEndpointProvider.GetEndpointUrlFragment(endpoint, LLmProviders.MoonshotAi))}{url}"
+            },
             _ => new OpenAiEndpointProvider()
         };
 

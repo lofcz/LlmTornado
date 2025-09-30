@@ -1299,6 +1299,12 @@ public partial class ChatDemo : DemoBase
     }
     
     [TornadoTest]
+    public static async Task MoonshotKimi()
+    {
+        await BasicChat(ChatModel.MoonshotAi.Models.KimiK2TurboPreview);
+    }
+    
+    [TornadoTest]
     public static async Task Gpt41()
     {
         await BasicChat(ChatModel.OpenAi.Gpt41.V41);

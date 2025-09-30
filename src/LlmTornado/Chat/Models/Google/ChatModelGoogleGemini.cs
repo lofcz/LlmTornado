@@ -26,6 +26,21 @@ public class ChatModelGoogleGemini : IVendorModelClassProvider
     public readonly ChatModel Gemini25Pro = ModelGemini25Pro;
     
     /// <summary>
+    /// gemini-2.5-flash-preview-09-2025
+    /// </summary>
+    public static readonly ChatModel ModelGeminiFlashLatest = new ChatModel("gemini-flash-latest", LLmProviders.Google, 1_000_000) 
+    {
+        ReasoningTokensMin = 0,
+        ReasoningTokensMax = 24_576,
+        ReasoningTokensSpecialValues = [ -1 ]
+    };
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelGeminiFlashLatest"/>
+    /// </summary>
+    public readonly ChatModel GeminiFlashLatest = ModelGeminiFlashLatest;
+    
+    /// <summary>
     /// Our best model in terms of price-performance, offering well-rounded capabilities. 2.5 Flash is best for large scale processing, low-latency, high volume tasks that require thinking, and agentic use cases.
     /// </summary>
     public static readonly ChatModel ModelGemini25Flash = new ChatModel("gemini-2.5-flash", LLmProviders.Google, 1_000_000) 
@@ -39,6 +54,21 @@ public class ChatModelGoogleGemini : IVendorModelClassProvider
     /// <inheritdoc cref="ModelGemini25Flash"/>
     /// </summary>
     public readonly ChatModel Gemini25Flash = ModelGemini25Flash;
+    
+    /// <summary>
+    /// gemini-2.5-flash-lite-preview-09-2025
+    /// </summary>
+    public static readonly ChatModel ModelGeminiFlashLiteLatest = new ChatModel("gemini-flash-lite-latest", LLmProviders.Google, 1_000_000) 
+    {
+        ReasoningTokensMin = 512,
+        ReasoningTokensMax = 24_576,
+        ReasoningTokensSpecialValues = [ 0, -1 ]
+    };
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelGeminiFlashLiteLatest"/>
+    /// </summary>
+    public readonly ChatModel GeminiFlashLiteLatest = ModelGeminiFlashLiteLatest;
     
     /// <summary>
     /// A Gemini 2.5 Flash model optimized for cost-efficiency and high throughput.
@@ -200,7 +230,12 @@ public class ChatModelGoogleGemini : IVendorModelClassProvider
     /// </summary>
     public static List<IModel> ModelsAll => LazyModelsAll.Value;
 
-    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [ModelGemini15FlashLatest, ModelGemini15Flash, ModelGemini15Flash001, ModelGemini15Flash002, ModelGemini15ProLatest, ModelGemini15Pro, ModelGemini15Pro001, ModelGemini15Pro002, ModelGemini15Flash8B, ModelGemini15Flash8BLatest, ModelGemini2Flash001, ModelGemini2FlashLatest, ModelGemini2FlashLite001, ModelGemini2FlashLiteLatest, ModelGemini25Pro, ModelGemini25Flash, ModelGemini25FlashLite]);
+    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [
+        ModelGemini15FlashLatest, ModelGemini15Flash, ModelGemini15Flash001, ModelGemini15Flash002, ModelGemini15ProLatest, 
+        ModelGemini15Pro, ModelGemini15Pro001, ModelGemini15Pro002, ModelGemini15Flash8B, ModelGemini15Flash8BLatest, ModelGemini2Flash001,
+        ModelGemini2FlashLatest, ModelGemini2FlashLite001, ModelGemini2FlashLiteLatest, ModelGemini25Pro, ModelGemini25Flash, 
+        ModelGemini25FlashLite, ModelGeminiFlashLiteLatest, ModelGeminiFlashLatest
+    ]);
 
     /// <summary>
     /// <inheritdoc cref="ModelsAll"/>

@@ -12,6 +12,36 @@ namespace LlmTornado.Chat.Models;
 public class ChatModelGoogleGeminiPreview : IVendorModelClassProvider
 {
     /// <summary>
+    /// Gemini Robotics-ER, short for Gemini Robotics-Embodied Reasoning, is a thinking model that enhances robots' abilities to understand and interact with the physical world.
+    /// </summary>
+    public static readonly ChatModel ModelGeminiRoboticsRe15Preview = new ChatModel("gemini-robotics-er-1.5-preview", LLmProviders.Google, 1_048_576);
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelGeminiRoboticsRe15Preview"/>
+    /// </summary>
+    public readonly ChatModel GeminiRoboticsRe15Preview = ModelGeminiRoboticsRe15Preview;
+    
+    /// <summary>
+    /// The latest adaptive thinking, cost efficient model
+    /// </summary>
+    public static readonly ChatModel ModelGemini25FlashPreview0925 = new ChatModel("gemini-2.5-flash-preview-09-2025", LLmProviders.Google, 1_048_576);
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelGemini25FlashPreview0925"/>
+    /// </summary>
+    public readonly ChatModel Gemini25FlashPreview0925 = ModelGemini25FlashPreview0925;
+    
+    /// <summary>
+    /// The latest model based on the Gemini 2.5 Flash lite model optimized for cost-efficiency, high throughput and high quality.
+    /// </summary>
+    public static readonly ChatModel ModelGemini25FlashLitePreview0925 = new ChatModel("gemini-2.5-flash-lite-preview-09-2025", LLmProviders.Google, 1_048_576);
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelGemini25FlashLitePreview0925"/>
+    /// </summary>
+    public readonly ChatModel Gemini25FlashLitePreview0925 = ModelGemini25FlashLitePreview0925;
+    
+    /// <summary>
     /// Gemini 2.5 Flash Image Preview is our latest, fastest, and most efficient natively multimodal model that lets you generate and edit images conversationally.
     /// </summary>
     public static readonly ChatModel ModelGemini25FlashImagePreview = new ChatModel("gemini-2.5-flash-image-preview", LLmProviders.Google, 32_768);
@@ -121,7 +151,12 @@ public class ChatModelGoogleGeminiPreview : IVendorModelClassProvider
     /// </summary>
     public static List<IModel> ModelsAll => LazyModelsAll.Value;
 
-    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [ModelGemini25ProPreview0325, ModelGemini25ProPreview0506, ModelGemini25ProPreview0605, ModelGemini25FlashPreview0417, ModelGemini25FlashPreview0520, ModelGemini2FlashPreviewImageGeneration, ModelGemini25FlashPreviewTts, ModelGemini25ProPreviewTts, ModelGemini25FlashLitePreview0617, ModelGemini25FlashImagePreview]);
+    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [
+        ModelGemini25ProPreview0325, ModelGemini25ProPreview0506, ModelGemini25ProPreview0605, ModelGemini25FlashPreview0417, 
+        ModelGemini25FlashPreview0520, ModelGemini2FlashPreviewImageGeneration, ModelGemini25FlashPreviewTts, ModelGemini25ProPreviewTts, 
+        ModelGemini25FlashLitePreview0617, ModelGemini25FlashImagePreview, ModelGemini25FlashPreview0925, ModelGemini25FlashLitePreview0925,
+        ModelGeminiRoboticsRe15Preview
+    ]);
 
     /// <summary>
     /// <inheritdoc cref="ModelsAll"/>
