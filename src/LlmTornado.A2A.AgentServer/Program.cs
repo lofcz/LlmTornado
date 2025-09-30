@@ -10,7 +10,11 @@ using LlmTornado.Responses;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 
+var taskManager = new TaskManager();
+
+//Sample Agent Server using LlmTornado and A2A
 //Requires docker environment variable OPENAI_API_KEY to be set in Launch settings or in run command
+#region Setup To Replace
 TornadoApi client = new TornadoApi(LlmTornado.Code.LLmProviders.OpenAi, Environment.GetEnvironmentVariable("OPENAI_API_KEY") ?? "");
 
 string instructions = @"
@@ -28,16 +32,16 @@ TornadoAgent Agent =  new TornadoAgent(
 
 IRuntimeConfiguration runtimeConfig = new SingletonRuntimeConfiguration(Agent); //Add your Runtime Configuration here
 
-
 BasicA2ATornadoRuntimeConfiguration agentRuntime = new BasicA2ATornadoRuntimeConfiguration(
-    runtimeConfig: runtimeConfig,  
-    name: "LlmTornado.A2A.AgentServer", 
-    version:"1.0.0"
+    runtimeConfig: runtimeConfig,
+    name: "LlmTornado.A2A.AgentServer",  //Name of your agent server
+    version: "1.0.0" //Version of your agent server
     );
 
 // Create and register the specified agent runtime
-var taskManager = new TaskManager();
 agentRuntime.Attach(taskManager);
+#endregion
+
 
 #region API Configuration
 var builder = WebApplication.CreateBuilder(args);
