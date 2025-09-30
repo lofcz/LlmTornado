@@ -3,7 +3,7 @@ using LlmTornado.A2A.Hosting.Models;
 using System.Text;
 using System.Text.Json;
 
-namespace LlmTornado.A2A.Client;
+namespace LlmTornado.A2A.Hosting.Client;
 
 /// <summary>
 /// Service for communicating with A2A Hosting API

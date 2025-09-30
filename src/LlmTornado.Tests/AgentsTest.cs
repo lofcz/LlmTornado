@@ -1,6 +1,4 @@
-﻿using LlmTornado.A2A.AgentServer;
-using LlmTornado.A2A.AgentServer.SampleAgent.ComplexAgent;
-using LlmTornado.Agents;
+﻿using LlmTornado.Agents;
 using LlmTornado.Agents.ChatRuntime;
 using LlmTornado.Agents.DataModels;
 using LlmTornado.Chat;
@@ -163,43 +161,6 @@ public class AgentTests
     public static string TestFunction(string input)
     {
         return $"Processed: {input}";
-    }
-
-
-
-    [Test]
-    public async Task TestChatBot()
-    {
-        var bot = new SimpleChatbotAgent();
-        var runtime = new ChatRuntime(bot);
-        var response = await runtime.InvokeAsync(new ChatMessage(ChatMessageRoles.User, "Hello, can you help me?"));
-        Console.WriteLine(response.Content);
-    }
-
-    [Test]
-    public void TestGitHubToolClone()
-    {
-        GitHubTool gitHubTool = new GitHubTool() { RepoDirectory = "C:\\Users\\johnl\\source\\AgentDockerMount" };
-        var result = gitHubTool.CloneGithubRepositoryTool("https://github.com/rtyley/small-test-repo.git");
-        Console.WriteLine(result);
-    }
-
-    [Test]
-    public void TestGitHubPushChanges()
-    {
-        GitHubTool gitHubTool = new GitHubTool() { 
-            RepoDirectory = "C:\\Users\\johnl\\source\\AgentDockerMount" ,
-            RepoName = "small-test-repo",
-            RepoUrl = "https://github.com/rtyley/small-test-repo.git"
-        };
-
-        var stageResults = "";
-        stageResults = gitHubTool.StageChanges();
-        Console.WriteLine(stageResults);
-        stageResults = gitHubTool.CommitChanges("Test commit from LLM");
-        Console.WriteLine(stageResults);
-       // stageResults = gitHubTool.PushChanges();
-       // Console.WriteLine(stageResults);
     }
 }
 

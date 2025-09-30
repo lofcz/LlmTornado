@@ -5,7 +5,6 @@ using LlmTornado.Agents.ChatRuntime.RuntimeConfigurations;
 using LlmTornado.Agents.DataModels;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
-using LlmTornado.Demo.ExampleAgents.MagenticOneAgent;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -16,11 +15,131 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using static LlmTornado.Demo.ExampleAgents.CSCodingAgent.CodeUtility;
-using static LlmTornado.Demo.TornadoTextFixture;
 
 namespace LlmTornado.Demo.ExampleAgents.CSCodingAgent;
 
 #region Data Models
+public struct TaskRequest
+{
+    public string Task { get; set; }
+    public string Context { get; set; }
+    public TaskRequest(string task, string context = "")
+    {
+        Task = task;
+        Context = context;
+    }
+}
+
+public struct TaskPlan
+{
+    public string OriginalTask { get; set; }
+    public string[] RequiredAgents { get; set; }
+    public string ExecutionPlan { get; set; }
+    public string[] StepDescriptions { get; set; }
+    public TaskPlan(string originalTask, string[] requiredAgents, string executionPlan, string[] stepDescriptions)
+    {
+        OriginalTask = originalTask;
+        RequiredAgents = requiredAgents;
+        ExecutionPlan = executionPlan;
+        StepDescriptions = stepDescriptions;
+    }
+}
+
+public struct AgentAction
+{
+    public string AgentType { get; set; }
+    public string Action { get; set; }
+    public string Reasoning { get; set; }
+    public string Parameters { get; set; }
+    public AgentAction(string agentType, string action, string reasoning, string parameters = "")
+    {
+        AgentType = agentType;
+        Action = action;
+        Reasoning = reasoning;
+        Parameters = parameters;
+    }
+}
+
+public struct WebSearchResult
+{
+    public string Query { get; set; }
+    public string Results { get; set; }
+    public string Summary { get; set; }
+    public WebSearchResult(string query, string results, string summary)
+    {
+        Query = query;
+        Results = results;
+        Summary = summary;
+    }
+}
+
+public struct FileOperationResult
+{
+    public string Operation { get; set; }
+    public string FilePath { get; set; }
+    public string Content { get; set; }
+    public bool Success { get; set; }
+    public string ErrorMessage { get; set; }
+    public FileOperationResult(string operation, string filePath, string content, bool success, string errorMessage = "")
+    {
+        Operation = operation;
+        FilePath = filePath;
+        Content = content;
+        Success = success;
+        ErrorMessage = errorMessage;
+    }
+}
+
+public struct CodeExecutionResult
+{
+    public string Code { get; set; }
+    public string Language { get; set; }
+    public string Output { get; set; }
+    public bool Success { get; set; }
+    public string ErrorMessage { get; set; }
+    public CodeExecutionResult(string code, string language, string output, bool success, string errorMessage = "")
+    {
+        Code = code;
+        Language = language;
+        Output = output;
+        Success = success;
+        ErrorMessage = errorMessage;
+    }
+}
+
+public struct TerminalCommandResult
+{
+    public string Command { get; set; }
+    public string Output { get; set; }
+    public int ExitCode { get; set; }
+    public bool Success { get; set; }
+    public TerminalCommandResult(string command, string output, int exitCode, bool success)
+    {
+        Command = command;
+        Output = output;
+        ExitCode = exitCode;
+        Success = success;
+    }
+}
+
+public struct AgentExecutionResults
+{
+    public string OriginalTask { get; set; }
+    public string WebSearchResults { get; set; }
+    public string FileOperationResults { get; set; }
+    public string CodeExecutionResults { get; set; }
+    public string TerminalResults { get; set; }
+    public string[] ActionsPerformed { get; set; }
+    public AgentExecutionResults(string originalTask, string webResults, string fileResults, string codeResults, string terminalResults, string[] actionsPerformed)
+    {
+        OriginalTask = originalTask;
+        WebSearchResults = webResults;
+        FileOperationResults = fileResults;
+        CodeExecutionResults = codeResults;
+        TerminalResults = terminalResults;
+        ActionsPerformed = actionsPerformed;
+    }
+}
 public struct ProgramResult
 {
     public CodeItem[] items { get; set; }
