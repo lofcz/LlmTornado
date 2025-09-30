@@ -46,7 +46,7 @@ public interface IRuntimeConfiguration
 
 
     /// <summary>
-    /// Clears all messages from the conversation.
+    /// Runtime Initialize event.
     /// </summary>
     public void OnRuntimeInitialized();
 

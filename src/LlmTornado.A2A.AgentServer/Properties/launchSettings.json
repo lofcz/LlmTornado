@@ -34,10 +34,12 @@
       "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}/swagger",
       "environmentVariables": {
         "ASPNETCORE_HTTPS_PORTS": "8081",
-        "ASPNETCORE_HTTP_PORTS": "8080"
+        "ASPNETCORE_HTTP_PORTS": "8080",
+        "OPENAI_API_KEY": ""
       },
       "publishAllPorts": true,
-      "useSSL": true
+      "useSSL": true,
+      "containerName": "EnvironmentAgent"
     }
   },
   "$schema": "http://json.schemastore.org/launchsettings.json",

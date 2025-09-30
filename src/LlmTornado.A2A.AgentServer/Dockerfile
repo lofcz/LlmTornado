@@ -2,7 +2,7 @@
 
 # This stage is used when running from VS in fast mode (Default for Debug configuration)
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
-USER $APP_UID
+USER root
 WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
@@ -30,4 +30,8 @@ RUN dotnet publish "./LlmTornado.A2A.AgentServer.csproj" -c $BUILD_CONFIGURATION
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+
+#install latest updates for linux
+RUN apt-get update && apt-get install -y curl jq
+
 ENTRYPOINT ["dotnet", "LlmTornado.A2A.AgentServer.dll"]

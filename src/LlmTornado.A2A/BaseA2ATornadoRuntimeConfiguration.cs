@@ -33,6 +33,8 @@ public abstract class BaseA2ATornadoRuntimeConfiguration : IA2ARuntimeConfigurat
     protected IRuntimeConfiguration _runtimeConfig;
     protected AgentTask _currentTask;
     protected CancellationToken _cancellationToken;
+    protected string AgentName { get; set; }
+    protected string AgentVersion { get; set; }
 
     /// <summary>
     /// Initializes a new instance of the A2ATornadoRuntimeService
@@ -40,6 +42,8 @@ public abstract class BaseA2ATornadoRuntimeConfiguration : IA2ARuntimeConfigurat
     public BaseA2ATornadoRuntimeConfiguration(IRuntimeConfiguration runtimeConfig, string name, string version = "1.0.0")
     {
         ActivitySource = new(name, version);
+        AgentName = name;
+        AgentVersion = version;
         //_logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _runtimeConfig = runtimeConfig ?? throw new ArgumentNullException(nameof(runtimeConfig));
 
@@ -84,6 +88,11 @@ public abstract class BaseA2ATornadoRuntimeConfiguration : IA2ARuntimeConfigurat
         {
             throw new InvalidOperationException("TaskManager is not attached.");
         }
+
+        using var activity = ActivitySource.StartActivity("Invoke", ActivityKind.Server);
+        activity?.SetTag("task.id", task.Id);
+        activity?.SetTag("message", task.History.Last().ToString());
+        activity?.SetTag("state", "working");
 
         //Shared for the event handler
         _cancellationToken = cancellationToken;
@@ -152,6 +161,8 @@ public abstract class BaseA2ATornadoRuntimeConfiguration : IA2ARuntimeConfigurat
             Text = request
         });
 
+
+
         await _taskManager?.ReturnArtifactAsync(_currentTask.Id, artifact, _cancellationToken)!;
         await _taskManager?.UpdateStatusAsync(_currentTask.Id, TaskState.InputRequired, cancellationToken: _cancellationToken)!;
 
@@ -169,6 +180,10 @@ public abstract class BaseA2ATornadoRuntimeConfiguration : IA2ARuntimeConfigurat
             await Task.Delay(100); // Adjust the delay as needed
             return;
         }
+
+        using var activity = ActivitySource.StartActivity("Invoke", ActivityKind.Server);
+        activity?.SetTag("task.id", _currentTask.Id);
+        activity?.SetTag("event", artifact.Description);
 
         await _taskManager.ReturnArtifactAsync(_currentTask.Id, artifact, _cancellationToken);
         await Task.Delay(100); // Adjust the delay as needed
