@@ -327,6 +327,7 @@ public class OutboundToolChoice
             HostedToolTypes.ComputerUsePreview => "computer_use_preview",
             HostedToolTypes.CodeInterpreter => "code_interpreter",
             HostedToolTypes.ImageGeneration => "image_generation",
+            HostedToolTypes.LocalShell => "local_shell",
             _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
         };
     }
@@ -340,6 +341,7 @@ public class OutboundToolChoice
             case "computer_use_preview": value = HostedToolTypes.ComputerUsePreview; return true;
             case "code_interpreter": value = HostedToolTypes.CodeInterpreter; return true;
             case "image_generation": value = HostedToolTypes.ImageGeneration; return true;
+            case "local_shell": value = HostedToolTypes.LocalShell; return true;
             default: value = default; return false;
         }
     }
@@ -391,5 +393,11 @@ public enum HostedToolTypes
     /// Generate or edit images using GPT Image.
     /// </summary>
     [EnumMember(Value = "image_generation")] 
-    ImageGeneration
+    ImageGeneration,
+
+    /// <summary>
+    /// Allow the model to execute shell commands on the local machine.
+    /// </summary>
+    [EnumMember(Value = "local_shell")]
+    LocalShell,
 }

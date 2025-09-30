@@ -1,6 +1,8 @@
 ﻿using LlmTornado.Chat;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Common;
+using LlmTornado.Responses;
+using LlmTornado.Responses.Events;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,7 +22,8 @@ public enum AgentRunnerEventTypes
     Streaming,
     MaxTurnsReached,
     GuardRailTriggered,
-    UsageReceived
+    UsageReceived,
+    ResponseApiEvent,
 }
 
 /// <summary>
@@ -37,6 +40,20 @@ public class AgentRunnerEvents : EventArgs
     /// Timestamp of when the event occurred.
     /// </summary>
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+}
+
+
+public class AgentRunnerResponseApiEvent : AgentRunnerEvents
+{
+    public IResponseEvent ResponseApiEvent { get; }
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AgentRunnerResponseEvent"/> class.
+    /// </summary>
+    public AgentRunnerResponseApiEvent(IResponseEvent responseEvent)
+    {
+        EventType = AgentRunnerEventTypes.ResponseApiEvent;
+        ResponseApiEvent = responseEvent;
+    }
 }
 
 /// <summary>

@@ -1,6 +1,0 @@
-@LlmTornado.Agents.API_HostAddress = http://localhost:5036
-
-GET {{LlmTornado.Agents.API_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###

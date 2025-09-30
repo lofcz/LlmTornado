@@ -709,7 +709,7 @@ public class ResponsesDemo : DemoBase
     [TornadoTest]
     public static async Task ResponseLocalShellTool()
     {
-        ResponseResult result = await Program.Connect().Responses.CreateResponse(new ResponseRequest
+        ResponseRequest req = new ResponseRequest
         {
             Model = ChatModel.OpenAi.Codex.MiniLatest,
             Background = false,
@@ -719,9 +719,27 @@ public class ResponsesDemo : DemoBase
             Tools = [
                 new ResponseLocalShellTool()
             ]
-        });
+        };
+
+        ResponseResult result = await Program.Connect().Responses.CreateResponse(req);
 
         Assert.That(result.Output.OfType<ResponseLocalShellToolCallItem>().Count(), Is.GreaterThan(0));
+
+        ResponseRequest req2 = new ResponseRequest
+        {
+            Model = ChatModel.OpenAi.Codex.MiniLatest,
+            Background = false,
+            InputItems = [
+                new LocalShellCallOutput(result.Output.OfType<ResponseLocalShellToolCallItem>().First().CallId, "helloWorld.txt")
+            ],
+            Tools = [
+                new ResponseLocalShellTool()
+            ],
+            PreviousResponseId = result.Id
+        };
+
+        ResponseResult result2 = await Program.Connect().Responses.CreateResponse(req2);
+
         int z = 0;
     }
 

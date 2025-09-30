@@ -1,4 +1,5 @@
 using LlmTornado.Agents.DataModels;
+using System.Runtime.ConstrainedExecution;
 
 namespace LlmTornado.Agents.ChatRuntime.Orchestration;
 
@@ -11,9 +12,18 @@ namespace LlmTornado.Agents.ChatRuntime.Orchestration;
 /// transitions.</remarks>
 public abstract class OrchestrationRunnableBase 
 {
-    internal List<object> baseResults { get; set; } = new List<object>();
+
+    /// [SerializationRequired]
+    internal List<object> baseResults  => BaseLastFinishedProcesses.Where(process => process.BaseResult != null).Select(process => process.BaseResult!).ToList();
+
+    /// <summary>
+    /// Results process that the state has to process this tick.
+    /// </summary>
+    /// [SerializationRequired]
+    public List<RunnableProcess> BaseLastFinishedProcesses { get; set; } = new List<RunnableProcess>();
 
     public string RunnableName { get; set; } = "Runnable";
+
     /// <summary>
     /// Used to limit the number of times to rerun the state.
     /// </summary>
@@ -28,6 +38,7 @@ public abstract class OrchestrationRunnableBase
     /// <summary>
     /// Input processes that the state has to process this tick.
     /// </summary>
+    /// [SerializationRequired]
     public List<RunnableProcess> BaseProcesses { get; set; } = new List<RunnableProcess>();
 
     /// <summary>
@@ -172,11 +183,11 @@ public abstract class OrchestrationRunnableBase
 
     internal void ClearResults()
     {
-        baseResults.Clear();
+        BaseLastFinishedProcesses.Clear();
     }
 
-    internal void AddRangeBaseResults(object[] results)
+    internal void AddRangeBaseResults(RunnableProcess[] results)
     {
-        baseResults.AddRange(results);
+        BaseLastFinishedProcesses.AddRange(results);
     }
 }

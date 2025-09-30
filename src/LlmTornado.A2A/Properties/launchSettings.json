@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "LlmTornado.A2A": {
+      "commandName": "Project"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}

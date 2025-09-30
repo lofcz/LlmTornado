@@ -200,7 +200,7 @@ public class TornadoAgent
         if (tool.Delegate != null)
         {
             SetDefaultToolPermission(tool);
-            ToolList.Add(tool.Delegate.Method.Name, tool);
+            ToolList.Add(tool.ToolName, tool);
             Options.Tools?.Add(tool);
         }
     }

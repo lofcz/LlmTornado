@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
+using LlmTornado.Responses;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Chat;
@@ -202,6 +203,12 @@ public class ChatMessage
     /// </summary>
     [JsonIgnore]
     public IChatMessageVendorExtensions? VendorExtensions { get; set; }
+    
+    /// <summary>
+    /// The native object this chat message was constructed from, if any. Could be <see cref="ResponseResult"/>
+    /// </summary>
+    [JsonIgnore]
+    public object? NativeObject { get; set; }
 }
 
 /// <summary>

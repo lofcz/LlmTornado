@@ -3,7 +3,9 @@ using LlmTornado.Agents.DataModels;
 using LlmTornado.Agents.Utility;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
+using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
+using LlmTornado.Responses;
 using Newtonsoft.Json.Converters;
 using System.ComponentModel;
 using System.Security.Cryptography.X509Certificates;
@@ -214,7 +216,15 @@ public class AgentsDemo : DemoBase
         TornadoAgent agent = new TornadoAgent(Program.Connect(),
             ChatModel.OpenAi.Gpt41.V41Mini,
             instructions: "You are a useful assistant.",
-            tools: [GetCurrentWeather]);
+            tools: [(
+                [ToolName("GetCurrentWeather")]( 
+                    [Description("The city and state, e.g. Boston, MA")] string location,
+                    [Description("unit of temperature measurement in C or F")] Unit unit = Unit.Celsius
+                    ) => 
+                    { 
+                        return "31 C";
+                    })
+            ]);
 
         Conversation result = await agent.RunAsync("What is the weather in boston?");
 
@@ -325,5 +335,80 @@ public class AgentsDemo : DemoBase
         Conversation result = await agent.RunAsync("What is the weather in boston?", onAgentRunnerEvent:runEventHandler,toolPermissionHandle: toolApprovalHandler);
 
         Console.WriteLine(result.Messages.Last().Content);
+    }
+
+
+    [TornadoTest]
+    public static async Task TestResponseAPIToolCall()
+    {
+        TornadoAgent agent = new TornadoAgent(
+            Program.Connect(),
+            ChatModel.OpenAi.Codex.MiniLatest,
+            instructions: "You are a useful assistant.");
+
+        agent.ResponseOptions = new ResponseRequest()
+        {
+            Tools = [new ResponseLocalShellTool()]
+        };
+
+        var convo = await agent.RunAsync("what files are in current directory?",streaming:false, onAgentRunnerEvent: (evt) => {
+            if (evt.EventType == AgentRunnerEventTypes.Streaming && evt is AgentRunnerStreamingEvent streamingEvent)
+            {
+                if (streamingEvent.ModelStreamingEvent is ModelStreamingOutputTextDeltaEvent deltaTextEvent)
+                {
+                    Console.Write(deltaTextEvent.DeltaText); // Write the text delta directly
+                }
+            }
+            else if(evt.EventType == AgentRunnerEventTypes.ResponseApiEvent)
+            {
+                if(evt is AgentRunnerResponseApiEvent responseApiEvent)
+                {
+                    Console.WriteLine($"\n[Response API Event]: {responseApiEvent.ResponseApiEvent.EventType}");
+                }
+            }
+                return ValueTask.CompletedTask;
+        });
+
+        ChatMessage lastMsg = convo.Messages.Last();
+        List<ToolCall>? calls = lastMsg.ToolCalls?.Where(x => x.BuiltInToolCall?.ResponseExpected ?? false).ToList();
+
+        agent.ResponseOptions.PreviousResponseId = lastMsg.NativeObject is ResponseResult rr ? rr.Id : null;
+
+        agent.ResponseOptions.InputItems = [new LocalShellCallOutput()
+        {
+            Id = calls?.First().BuiltInToolCall.Name ?? "",
+            Output = "AgentsDemo.cs\nDemoBase.cs\nProgram.cs\nTornadoTestAttribute.cs",
+            Status = ResponseMessageStatuses.Completed
+        }];
+
+        //ChatMessage response = new ChatMessage(ChatMessageRoles.Tool, "Hello.txt")
+        //{
+        //    FunctionCall = new FunctionCall()
+        //    {
+        //        Name = calls?.First().BuiltInToolCall.Name ?? "",
+        //        Arguments = "{\"file_path\":\"Hello.txt\"}",
+        //        ToolCall = calls?.First()
+        //    }
+        //};
+
+        convo = await agent.RunAsync(streaming: false, responseId: agent.ResponseOptions.PreviousResponseId??"", onAgentRunnerEvent: (evt) => {
+            if (evt.EventType == AgentRunnerEventTypes.Streaming && evt is AgentRunnerStreamingEvent streamingEvent)
+            {
+                if (streamingEvent.ModelStreamingEvent is ModelStreamingOutputTextDeltaEvent deltaTextEvent)
+                {
+                    Console.Write(deltaTextEvent.DeltaText); // Write the text delta directly
+                }
+            }
+            else if (evt.EventType == AgentRunnerEventTypes.ResponseApiEvent)
+            {
+                if (evt is AgentRunnerResponseApiEvent responseApiEvent)
+                {
+                    Console.WriteLine($"\n[Response API Event]: {responseApiEvent.ResponseApiEvent.EventType}");
+                }
+            }
+            return ValueTask.CompletedTask;
+        });
+
+        Console.WriteLine(convo.Messages.Last().Content);
     }
 }

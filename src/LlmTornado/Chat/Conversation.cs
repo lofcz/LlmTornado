@@ -920,7 +920,8 @@ public class Conversation
         if (capabilityEndpoint is CapabilityEndpoints.Responses)
         {
             IEndpointProvider provider = responsesEndpoint.Api.GetProvider(req.Model ?? ChatModel.OpenAi.Gpt35.Turbo);
-            HttpCallResult<ResponseResult> result = await responsesEndpoint.CreateResponseSafe(ResponseHelpers.ToResponseRequest(provider, req.ResponseRequestParameters, req)).ConfigureAwait(false);
+            ResponseRequest responsesReq = ResponseHelpers.ToResponseRequest(provider, req.ResponseRequestParameters, req);
+            HttpCallResult<ResponseResult> result = await responsesEndpoint.CreateResponseSafe(responsesReq).ConfigureAwait(false);
             
             if (!result.Ok)
             {
@@ -928,7 +929,7 @@ public class Conversation
             }
 
             httpResult = result;
-            chatResult = ResponseHelpers.ToChatResult(result.Data);
+            chatResult = ResponseHelpers.ToChatResult(result.Data, responsesReq, provider);
         }
         else
         {
@@ -1177,8 +1178,9 @@ public class Conversation
         {
             // avoid double-serializing, use provider resolved without regards to available API keys
             IEndpointProvider provider = endpoint.Api.GetProvider(req.Model ?? ChatModel.OpenAi.Gpt35.Turbo);
-            ResponseResult result = await responsesEndpoint.CreateResponse(ResponseHelpers.ToResponseRequest(provider, req.ResponseRequestParameters, req)).ConfigureAwait(false);
-            res = ResponseHelpers.ToChatResult(result);
+            ResponseRequest responsesReq = ResponseHelpers.ToResponseRequest(provider, req.ResponseRequestParameters, req);
+            ResponseResult result = await responsesEndpoint.CreateResponse(responsesReq).ConfigureAwait(false);
+            res = ResponseHelpers.ToChatResult(result, responsesReq, provider);
         }
         else
         {
@@ -1606,8 +1608,8 @@ public class Conversation
                         case ResponseEventTypes.ResponseCompleted when
                             evt is ResponseEventCompleted completedEvt:
                         {
-                            ChatChoice chatChoice = ResponseHelpers.ToChatChoice(completedEvt.Response);
-                            
+                            ChatChoice chatChoice = ResponseHelpers.ToChatChoice(completedEvt.Response, responsesRequest, provider);
+ 
                             if (chatChoice.Message is not null)
                             {
                                 AppendMessage(chatChoice.Message);

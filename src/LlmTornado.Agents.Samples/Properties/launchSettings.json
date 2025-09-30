@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "LlmTornado.Agents.Samples": {
+      "commandName": "Project"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}
