@@ -242,7 +242,7 @@ Sequential Instructions allows additional controls over the basic Instructions t
 ```
 
 ## Handoff ChatRuntime Configuration
-![HandoffFlow](/src/LlmTornado.Agents/assets/handoffOrchestrationflow.jpg)
+![HandoffFlow](/src/LlmTornado.Agents/assets/handoffOrchestrationFlow.jpg)
 ```csharp
 HandoffAgent translatorAgent = new HandoffAgent(
             client: client,
