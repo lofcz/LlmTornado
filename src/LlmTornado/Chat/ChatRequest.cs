@@ -108,6 +108,7 @@ public class ChatRequest : IModelRequest, ISerializableRequest
 		Verbosity = basedOn.Verbosity;
 		SafetyIdentifier = basedOn.SafetyIdentifier;
 		PromptCacheKey = basedOn.PromptCacheKey;
+		CancellationToken = basedOn.CancellationToken;
 	}
 
 	/// <summary>
