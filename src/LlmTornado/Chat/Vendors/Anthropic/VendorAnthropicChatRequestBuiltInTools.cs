@@ -68,7 +68,13 @@ public enum VendorAnthropicChatRequestBuiltInToolTypes
     /// Code execution tool.
     /// </summary>
     [EnumMember(Value = "code_execution_20250825")]
-    CodeExecution20250825
+    CodeExecution20250825,
+    
+    /// <summary>
+    /// Memory tool.
+    /// </summary>
+    [EnumMember(Value = "memory_20250818")]
+    Memory20250818,
 }
 
 /// <summary>
@@ -87,6 +93,29 @@ public class VendorAnthropicChatRequestBuiltInToolBash20250124 : IVendorAnthropi
     /// </summary>
     [JsonProperty("name")]
     public string Name => "bash";
+
+    /// <summary>
+    /// Cache control settings for the tool.
+    /// </summary>
+    [JsonProperty("cache_control")]
+    public AnthropicCacheSettings? Cache { get; set; }
+}
+
+/// <summary>
+/// A built-in code execution tool.
+/// </summary>
+public class VendorAnthropicChatRequestBuiltInToolMemory20250825 : IVendorAnthropicChatRequestBuiltInTool
+{
+    /// <summary>
+    /// The type of the tool.
+    /// </summary>
+    public VendorAnthropicChatRequestBuiltInToolTypes Type => VendorAnthropicChatRequestBuiltInToolTypes.Memory20250818;
+    
+    /// <summary>
+    /// The name of the tool.
+    /// </summary>
+    [JsonProperty("name")]
+    public string Name => "memory";
 
     /// <summary>
     /// Cache control settings for the tool.

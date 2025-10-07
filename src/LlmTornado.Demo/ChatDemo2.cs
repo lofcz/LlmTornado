@@ -1839,6 +1839,31 @@ public partial class ChatDemo : DemoBase
     }
     
     [TornadoTest]
+    public static async Task AnthropicMemory()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Anthropic.Claude4.Sonnet250514,
+            VendorExtensions = new ChatRequestVendorExtensions(new ChatRequestVendorAnthropicExtensions
+            {
+                BuiltInTools = [
+                    new VendorAnthropicChatRequestBuiltInToolMemory20250825()
+                ]
+            }),
+            Messages = [
+                new ChatMessage(ChatMessageRoles.User, "I'\''m working on a Python web scraper that keeps crashing with a timeout error. Here'\''s the problematic function:\n\n```python\ndef fetch_page(url, retries=3):\n    for i in range(retries):\n        try:\n            response = requests.get(url, timeout=5)\n            return response.text\n        except requests.exceptions.Timeout:\n            if i == retries - 1:\n                raise\n            time.sleep(1)\n```\n\nPlease help me debug this.")
+            ]
+        });
+        
+        TornadoRequestContent rr = chat.Serialize();
+        
+        ChatRichResponse response = await chat.GetResponseRich();
+        
+        Console.WriteLine(response);
+        Console.WriteLine(response.Result?.Usage?.TotalTokens);
+    }
+    
+    [TornadoTest]
     [Flaky("long running, often overloaded")]
     public static async Task AnthropicContainerUpload()
     {

@@ -79,7 +79,7 @@ public class VendorAnthropicToolFunction : IVendorAnthropicChatRequestTool
     public AnthropicCacheSettings? Cache { get; set; }
     
     /// <summary>
-    /// custom | web_search_20250305 | text_editor_20250728 | text_editor_20250124 | bash_20250124 | computer_20250124 | text_editor_20241022
+    /// custom | web_search_20250305 | text_editor_20250728 | text_editor_20250124 | bash_20250124 | computer_20250124 | text_editor_20241022 | memory_20250818
     /// </summary>
     [JsonProperty("type")]
     public string? Type { get; set; }
