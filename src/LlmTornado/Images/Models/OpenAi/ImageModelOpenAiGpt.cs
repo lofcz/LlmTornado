@@ -12,6 +12,16 @@ public class ImageModelOpenAiGpt : IVendorModelClassProvider
     /// <summary>
     /// Superior instruction following, text rendering, detailed editing, real-world knowledge
     /// </summary>
+    public static readonly ImageModel ModelV1Mini = new ImageModel("gpt-image-1-mini", LLmProviders.OpenAi);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelV1Mini"/>
+    /// </summary>
+    public readonly ImageModel V1Mini = ModelV1Mini;
+    
+    /// <summary>
+    /// Superior instruction following, text rendering, detailed editing, real-world knowledge
+    /// </summary>
     public static readonly ImageModel ModelV1 = new ImageModel("gpt-image-1", LLmProviders.OpenAi);
 
     /// <summary>
@@ -23,7 +33,7 @@ public class ImageModelOpenAiGpt : IVendorModelClassProvider
     /// All known GPT image models from OpenAI.
     /// </summary>
     public static readonly List<IModel> ModelsAll = [
-        ModelV1
+        ModelV1, ModelV1Mini
     ];
 
     /// <summary>
