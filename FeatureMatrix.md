@@ -22,7 +22,7 @@ _Empty field means the feature is unsupported by the provider._
 | **Voyage** | | | ✅ | | | | | | | | | | | |
 | **DeepInfra** | ✅ | | | | | | | | | | | | | |
 | **OpenRouter**| ✅ | ✅ | ✅ | | | | | | | | | | | |
-| **Z.ai** | ✅ | | | ❌ | | | | | | ❌ | | | | |
+| **Z.ai** | ✅ | | | ✅ | | | | | | ❌ | | | | |
 | **Custom*** | ✅ | ✅ | | | | | | | | | | | | |
 
 _*Custom means any OpenAI compatible provider, such as Azure OpenAI, Ollama, KoboldCpp, etc._  
