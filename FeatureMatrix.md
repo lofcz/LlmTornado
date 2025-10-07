@@ -26,7 +26,6 @@ _Empty field means the feature is unsupported by the provider._
 | **Custom*** | ✅ | ✅ | | | | | | | | | | | | |
 
 _*Custom means any OpenAI compatible provider, such as Azure OpenAI, Ollama, KoboldCpp, etc._  
-**_Includes caching, if implemented by the provider._
 
 ## OpenAI Specific
 
