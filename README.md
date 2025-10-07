@@ -453,12 +453,11 @@ orange: 2
 - The license will never change.
 
 ## 📢 Built With Tornado
-- [ScioBot](https://sciobot.org/) - AI For Educators, 100k+ users
-- [LombdaAgentSDK](https://github.com/Johnny2x2/LombdaAgentSDK) - A lightweight C# SDK designed to create and run modular agents
-- [NotT3Chat](https://github.com/shaltielshmid/NotT3Chat) - The C# Answer to the T3 Stack
-- [ClaudeCodeProxy](https://github.com/salty-flower/ClaudeCodeProxy) - Provider multiplexing proxy
-- [Semantic Search](https://github.com/primaryobjects/semantic-search) - AI semantic search where a query is matched by context and meaning
-- [Monster Collector](https://github.com/primaryobjects/monster-collector) - A database of AI-generated monsters
+- [ScioBot](https://sciobot.org/) - AI For Educators, 100k+ users.
+- [ProseFlow](https://github.com/LSXPrime/ProseFlow) - Your universal AI text processor, powered by local and cloud LLMs. Edit, refactor, and transform text in any application on Windows, macOS, and Linux.
+- [NotT3Chat](https://github.com/shaltielshmid/NotT3Chat) - The C# Answer to the T3 Stack.
+- [ClaudeCodeProxy](https://github.com/salty-flower/ClaudeCodeProxy) - Provider multiplexing proxy.
+- [Semantic Search](https://github.com/primaryobjects/semantic-search) - AI semantic search where a query is matched by context and meaning.
 
 _Have you built something with Tornado? Let us know about it in the issues to get a spotlight!_
 
