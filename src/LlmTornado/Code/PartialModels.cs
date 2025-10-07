@@ -1371,6 +1371,10 @@ public enum LLmProviders
     /// </summary>
     MoonshotAi,
     /// <summary>
+    /// ZAI.
+    /// </summary>
+    Zai,
+    /// <summary>
     /// Internal value.
     /// </summary>
     Length

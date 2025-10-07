@@ -4,6 +4,7 @@ using LlmTornado.Chat.Vendors.Google;
 using LlmTornado.Chat.Vendors.Mistral;
 using LlmTornado.Chat.Vendors.Perplexity;
 using LlmTornado.Chat.Vendors.XAi;
+using LlmTornado.Chat.Vendors.Zai;
 
 namespace LlmTornado.Chat;
 
@@ -41,6 +42,11 @@ public class ChatRequestVendorExtensions
     ///     xAI extensions.
     /// </summary>
     public ChatRequestVendorXAiExtensions? XAi { get; set; }
+    
+    /// <summary>
+    ///     ZAI extensions.
+    /// </summary>
+    public ChatRequestVendorZaiExtensions? Zai { get; set; }
 
     /// <summary>
     ///     Empty extensions.
@@ -102,5 +108,14 @@ public class ChatRequestVendorExtensions
     public ChatRequestVendorExtensions(ChatRequestVendorXAiExtensions xaiExtensions)
     {
         XAi = xaiExtensions;
+    }
+    
+    /// <summary>
+    ///     ZAI extensions.
+    /// </summary>
+    /// <param name="zaiExtensions"></param>
+    public ChatRequestVendorExtensions(ChatRequestVendorZaiExtensions zaiExtensions)
+    {
+        Zai = zaiExtensions;
     }
 }

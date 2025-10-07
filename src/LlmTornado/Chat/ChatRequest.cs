@@ -13,6 +13,7 @@ using LlmTornado.Chat.Vendors.Cohere;
 using LlmTornado.Chat.Vendors.Mistral;
 using LlmTornado.Chat.Vendors.Perplexity;
 using LlmTornado.Chat.Vendors.XAi;
+using LlmTornado.Chat.Vendors.Zai;
 using LlmTornado.Code.Models;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
@@ -578,6 +579,14 @@ public class ChatRequest : IModelRequest, ISerializableRequest
 			LLmProviders.Perplexity, (x, y, z, a) =>
 			{
 				VendorPerplexityChatRequest request = new VendorPerplexityChatRequest(x, y);
+				JsonSerializerSettings serializer = GetSerializer(EndpointBase.NullSettings, a);
+				return PreparePayload(request.Serialize(serializer), x, y, z, serializer);
+			}
+		},
+		{
+			LLmProviders.Zai, (x, y, z, a) =>
+			{
+				VendorZaiChatRequest request = new VendorZaiChatRequest(x, y);
 				JsonSerializerSettings serializer = GetSerializer(EndpointBase.NullSettings, a);
 				return PreparePayload(request.Serialize(serializer), x, y, z, serializer);
 			}
