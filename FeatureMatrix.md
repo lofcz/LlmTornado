@@ -20,6 +20,7 @@ _Empty field means the feature is unsupported by the provider._
 |**Models** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | | | | ✅ | ✅ |
 |**Moderation** | ✅ | | | | | | | | | | | | | |
 |**Responses** | ✅ | | | | | | | ❌ | | | | | | |
+|**Videos** | ❌ | | | |  | |  | | | | | | | |
 |**Tokenize** | | ❌ | | ❌ | | | | | ❌ | | | | | |
 |**FIM** | | | | | ❌ | | ❌ | | | | | | | |
 
