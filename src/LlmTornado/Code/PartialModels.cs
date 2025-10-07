@@ -330,7 +330,8 @@ internal class ChatMessageFinishReasonsConverter : JsonConverter<ChatMessageFini
         { "tool_use", ChatMessageFinishReasons.ToolCalls },
         { "tool_calls", ChatMessageFinishReasons.ToolCalls },
         { "function_call", ChatMessageFinishReasons.ToolCalls },
-
+        
+        { "model_context_window_exceeded", ChatMessageFinishReasons.ContextWindowExceeded }
     }.ToFrozenDictionary();
     
     /// <summary>
@@ -427,14 +428,19 @@ public enum ChatMessageFinishReasons
     ImageSafety,
     
     /// <summary>
-    /// The request was cancelled.
+    /// The request was canceled.
     /// </summary>
     Cancel,
     
     /// <summary>
     /// There was an error while processing the request.
     /// </summary>
-    Error
+    Error,
+    
+    /// <summary>
+    /// Response hit context window limit before max_tokens
+    /// </summary>
+    ContextWindowExceeded
 }
 
 /// <summary>
