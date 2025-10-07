@@ -4,6 +4,7 @@ using LlmTornado.Chat.Vendors.Zai;
 using LlmTornado.Code;
 using LlmTornado.Common;
 using LlmTornado.Demo;
+using LlmTornado.Files;
 
 namespace LlmTornado.Tests
 {
@@ -202,6 +203,24 @@ namespace LlmTornado.Tests
             string bodyJson = serialized.Body.ToString();
             Assert.That(bodyJson, Does.Contain("function"));
             Assert.That(bodyJson, Does.Contain("get_weather"));
+        }
+
+        [Test]
+        public void ZaiProvider_FileUpload_Works()
+        {
+            // Arrange
+            var api = new TornadoApi("test-key");
+            var testFileBytes = System.Text.Encoding.UTF8.GetBytes("test file content");
+            
+            // Act
+            var result = api.Files.Upload(testFileBytes, "test.txt", FilePurpose.Agent, "text/plain", LLmProviders.Zai).Result;
+            
+            // Assert
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result.Ok, Is.True);
+            Assert.That(result.Data, Is.Not.Null);
+            Assert.That(result.Data.Name, Is.EqualTo("test.txt"));
+            Assert.That(result.Data.Bytes, Is.EqualTo(testFileBytes.Length));
         }
     }
 }

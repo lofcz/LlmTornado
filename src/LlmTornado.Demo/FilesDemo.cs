@@ -34,6 +34,16 @@ public class FilesDemo : DemoBase
     }
     
     [TornadoTest]
+    public static async Task<TornadoFile?> UploadZAi()
+    {
+        HttpCallResult<TornadoFile> uploadedFile = await Program.Connect().Files.Upload("Static/Files/sample.pdf", provider: LLmProviders.Zai, purpose: FilePurpose.Agent);
+        TornadoFile? retrievedFile = await Program.Connect().Files.Get(uploadedFile.Data?.Id, provider: LLmProviders.Zai);
+        Console.WriteLine($"uploaded id: {uploadedFile.Data.Id}");
+        Console.WriteLine($"retrieved file id: {retrievedFile?.Id}");
+        return uploadedFile.Data;
+    }
+    
+    [TornadoTest]
     public static async Task<TornadoFile?> UploadGoogle()
     {
         HttpCallResult<TornadoFile> uploadedFile = await Program.Connect().Files.Upload("Static/Files/sample.pdf", provider: LLmProviders.Google);

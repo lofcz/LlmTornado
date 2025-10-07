@@ -9,6 +9,7 @@ using LlmTornado.Chat.Vendors.Cohere;
 using LlmTornado.Code;
 using LlmTornado.Files.Vendors;
 using LlmTornado.Files.Vendors.Google;
+using LlmTornado.Files.Vendors.Zai;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Files;
@@ -57,6 +58,7 @@ public class FileUploadRequest
         {
             FilePurpose.Finetune => "fine-tune",
             FilePurpose.Assistants => "assistants",
+            FilePurpose.Agent => "agent",
             _ => string.Empty
         };
     }
@@ -66,6 +68,7 @@ public class FileUploadRequest
         return provider switch
         {
             LLmProviders.Google => JsonConvert.DeserializeObject<VendorGoogleTornadoFile>(jsonData)?.ToFile(postData),
+            LLmProviders.Zai => JsonConvert.DeserializeObject<VendorZaiTornadoFile>(jsonData)?.ToFile(),
             _ => JsonConvert.DeserializeObject<TornadoFile>(jsonData)
         };
     }
@@ -117,6 +120,19 @@ public class FileUploadRequest
                     }
                 };
             } 
+        },
+        { 
+            LLmProviders.Zai, (x, y) =>
+            {
+                ByteArrayContent bc = new ByteArrayContent(x.Bytes);
+                StringContent sc = new StringContent(x.Purpose is null ? "agent" : GetPurpose(x.Purpose.Value));
+                
+                MultipartFormDataContent content = new MultipartFormDataContent();
+                content.Add(sc, "purpose");
+                content.Add(bc, "file", x.Name);
+
+                return content;
+            }
         }
     };
     

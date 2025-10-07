@@ -26,7 +26,6 @@ public class TornadoFile
 	///     What is the purpose of this file, fine-tune, fine-tune-results, assistants or assistants_output
 	/// </summary>
 	[JsonProperty("purpose")]
-    [JsonConverter(typeof(RetrievedFilePurpose.RetrievedFilePurposeJsonConverter))]
     public RetrievedFilePurpose Purpose { get; set; }
 
 	/// <summary>
