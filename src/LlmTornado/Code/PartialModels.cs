@@ -781,9 +781,30 @@ internal class ToolCallInboundAccumulator
 }
 
 /// <summary>
+/// Shared interface for audio objects.
+/// </summary>
+public interface IChatAudio
+{
+    /// <summary>
+    /// Data of the audio (url, base64..)
+    /// </summary>
+    public string? Data { get; set; }
+
+    /// <summary>
+    /// MIME type.
+    /// </summary>
+    public string? MimeType { get; set; }
+    
+    /// <summary>
+    /// Format.
+    /// </summary>
+    public ChatAudioFormats? Format { get; set; }
+}
+
+/// <summary>
 ///     Audio block content.
 /// </summary>
-public class ChatMessageAudio
+public class ChatMessageAudio : IChatAudio
 {
     /// <summary>
     ///     Unique identifier for this audio response.
@@ -830,6 +851,7 @@ public class ChatMessageAudio
 /// <summary>
 ///     Strategies for reducing audio modality pricing.
 /// </summary>
+[JsonConverter(typeof(StringEnumConverter))]
 public enum ChatAudioCompressionStrategies
 {
     /// <summary>
@@ -857,15 +879,13 @@ public class ChatRequestAudio
     ///     The voice to use.
     /// </summary>
     [JsonProperty("voice")]
-    [JsonConverter(typeof(StringEnumConverter), true)]
-    public ChatAudioRequestKnownVoices Voice { get; set; }
+    public ChatAudioRequestKnownVoices? Voice { get; set; }
     
     /// <summary>
     ///     The output audio format.
     /// </summary>
     [JsonProperty("format")]
-    [JsonConverter(typeof(StringEnumConverter), true)]
-    public ChatRequestAudioFormats Format { get; set; }
+    public ChatRequestAudioFormats? Format { get; set; }
 
     /// <summary>
     ///     The compression strategy to use when serializing requests.
@@ -883,140 +903,155 @@ public class ChatRequestAudio
         Voice = voice;
         Format = format;
     }
+    
+    /// <summary>
+    /// Creates an empty audio object.
+    /// </summary>
+    public ChatRequestAudio()
+    {
+
+    }
 }
 
 /// <summary>
 ///     Formats in which the transcription can be returned.
 /// </summary>
+[JsonConverter(typeof(StringEnumConverter))]
 public enum AudioTranscriptionResponseFormats
 {
     /// <summary>
     ///     JSON.
     /// </summary>
-    [JsonProperty("json")]
+    [EnumMember(Value = "json")]
     Json,
     
     /// <summary>
     ///     Plaintext.
     /// </summary>
-    [JsonProperty("text")]
+    [EnumMember(Value = "text")]
     Text,
     
     /// <summary>
     ///     SubRip Subtitle.
     /// </summary>
-    [JsonProperty("srt")]
+    [EnumMember(Value = "srt")]
     Srt,
     
     /// <summary>
     ///     Json with details.
     /// </summary>
-    [JsonProperty("verbose_json")]
+    [EnumMember(Value = "verbose_json")]
     VerboseJson,
     
     /// <summary>
     ///     Video Text to Track.
     /// </summary>
-    [JsonProperty("vtt")]
+    [EnumMember(Value = "vtt")]
     Vtt
 }
 
 /// <summary>
 ///     Output audio formats.
 /// </summary>
+[JsonConverter(typeof(StringEnumConverter))]
 public enum ChatRequestAudioFormats
 {
     /// <summary>
     ///     Waveform
     /// </summary>
-    [JsonProperty("wav")]
+    [EnumMember(Value = "wav")]
     Wav,
     /// <summary>
     ///     MP3
     /// </summary>
-    [JsonProperty("mp3")]
+    [EnumMember(Value = "mp3")]
     Mp3,
     /// <summary>
     ///     Flac
     /// </summary>
-    [JsonProperty("flac")]
+    [EnumMember(Value = "flac")]
     Flac,
     /// <summary>
     ///     Opus
     /// </summary>
-    [JsonProperty("opus")]
+    [EnumMember(Value = "opus")]
     Opus,
     /// <summary>
     ///    Pulse-code modulation. Supported in streaming mode.
     /// </summary>
-    [JsonProperty("pcm16")]
+    [EnumMember(Value = "pcm16")]
     Pcm16
 }
 
 /// <summary>
 ///     Known chat request audio settings voices.
 /// </summary>
+[JsonConverter(typeof(StringEnumConverter))]
 public enum ChatAudioRequestKnownVoices
 {
     /// <summary>
     ///     Male voice, deep.
     /// </summary>
-    [JsonProperty("ash")]
-    
+    [EnumMember(Value = "ash")]
     Ash,
+    
     /// <summary>
     ///     Male voice, younger.
     /// </summary>
-    [JsonProperty("ballad")]
+    [EnumMember(Value = "ballad")]
     Ballad,
     
-    [JsonProperty("coral")]
+    [EnumMember(Value = "coral")]
     Coral,
-    [JsonProperty("sage")]
+    [EnumMember(Value = "sage")]
     Sage,
-    [JsonProperty("verse")]
+    [EnumMember(Value = "verse")]
     Verse,
     
     /// <summary>
     ///     Not recommended by OpenAI, less expressive.
     /// </summary>
-    [JsonProperty("alloy")]
+    [EnumMember(Value = "alloy")]
     Alloy,
     /// <summary>
     ///     Not recommended by OpenAI, less expressive.
     /// </summary>
-    [JsonProperty("echo")]
+    [EnumMember(Value = "echo")]
     Echo,
     /// <summary>
     ///     Not recommended by OpenAI, less expressive.
     /// </summary>
-    [JsonProperty("summer")]
+    [EnumMember(Value = "summer")]
     Summer
 }
 
 /// <summary>
 ///     Represents modalities of chat models.
 /// </summary>
+[JsonConverter(typeof(StringEnumConverter))]
 public enum ChatModelModalities
 {
     /// <summary>
     ///     Model is capable of generating text.
     /// </summary>
+    [EnumMember(Value = "text")]
     Text,
     /// <summary>
     ///     Model is capable of generating audio.
     /// </summary>
+    [EnumMember(Value = "audio")]
     Audio,
     /// <summary>
     ///     Model is capable of generating images (currently only Gemini 2.0+)
     /// </summary>
+    [EnumMember(Value = "image")]
     Image
 }
 
 /// <summary>
 ///     Represents an audio part of a chat message.
 /// </summary>
-public class ChatAudio
+public class ChatAudio : IChatAudio
 {
     /// <summary>
     ///     Base64 encoded audio data.
@@ -1037,7 +1072,7 @@ public class ChatAudio
     /// <summary>
     ///     Format of the encoded audio data.
     /// </summary>
-    public ChatAudioFormats Format { get; set; }
+    public ChatAudioFormats? Format { get; set; }
 
     /// <summary>
     ///     Creates an empty audio instance.
@@ -1595,7 +1630,7 @@ public class TornadoRequestContent
 
         return EndpointBase.BuildRequestUrl(Url, Provider, CapabilityEndpoint.Value, Model);
     }
-
+    
     internal static TornadoRequestContent Dummy => new TornadoRequestContent(new { }, null, null, new OpenAiEndpointProvider(LLmProviders.OpenAi), CapabilityEndpoints.Chat);
 
     internal TornadoRequestContent()

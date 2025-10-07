@@ -427,7 +427,7 @@ public static class ConversationIOUtility
                             break;
                         case ChatMessageTypes.Audio:
                             if (!string.IsNullOrEmpty(part.Audio.Data))
-                                parts.Add(new ChatMessagePart(part.Audio.Data, part.Audio.Format));
+                                parts.Add(new ChatMessagePart(part.Audio.Data, part.Audio.Format ?? ChatAudioFormats.Wav));
                             break;
                         default:
                             // ignore unsupported types for now

@@ -18,7 +18,7 @@ public class ApiResultBase
     /// </summary>
     [JsonIgnore]
     public DateTime? Created => CreatedUnixTime.HasValue ? DateTimeOffset.FromUnixTimeSeconds(CreatedUnixTime.Value).DateTime : null;
-
+    
     /// <summary>
     ///     The time when the result was generated in unix epoch format.
     /// </summary>

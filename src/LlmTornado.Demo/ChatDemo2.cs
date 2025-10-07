@@ -1078,6 +1078,35 @@ public partial class ChatDemo : DemoBase
             PlaySound(audioPath);   
         }
     }
+    
+    [Flaky("playback")]
+    [TornadoTest]
+    public static async Task Gpt5Audio()
+    {
+        Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.OpenAi.Gpt5.AudioMini,
+            Modalities = [ ChatModelModalities.Audio, ChatModelModalities.Text ],
+            Temperature = 1d
+        });
+
+        chat2.AppendUserInput("""
+                              Read in a warm, energetic tone:
+                              Speaker 1: How are you today?
+                              Speaker 2: Thanks, I'm doing fine.
+                              Speaker 1: Glad to hear that!
+                              """);
+       
+        ChatRichResponse response = await chat2.GetResponseRich();
+        ChatRichResponseBlock? block = response.Blocks.FirstOrDefault();
+        string? audioPath = block?.ChatAudio?.Export(ChatAudioFormats.Wav);
+         
+        // example: play the dialogue using LibVLC
+        if (audioPath is not null)
+        {
+            PlaySound(audioPath);   
+        }
+    }
 
     static void PlaySound(string path)
     {

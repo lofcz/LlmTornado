@@ -460,6 +460,9 @@ public class ChatRequest : IModelRequest, ISerializableRequest
 	[JsonIgnore]
 	public bool? UseResponseEndpoint { get; set; }
 	
+	[JsonIgnore]
+	internal ChatRequest? TransformedRequest { get; set; }
+	
 	internal void OverrideUrl(string url)
 	{
 		UrlOverride = url;
@@ -515,6 +518,13 @@ public class ChatRequest : IModelRequest, ISerializableRequest
 					if (ChatModelOpenAi.TempIncompatibleModels.Contains(x.Model))
 					{
 						x.Temperature = null;
+					}
+					
+					if ((x.Modalities?.Contains(ChatModelModalities.Audio) ?? false) && ChatModelOpenAi.AudioModelsAll.Contains(x.Model))
+					{
+						x.Audio ??= new ChatRequestAudio();
+						x.Audio.Format ??= ChatRequestAudioFormats.Wav;
+						x.Audio.Voice ??= ChatAudioRequestKnownVoices.Ash;
 					}
 				}
 
@@ -772,6 +782,7 @@ public class ChatRequest : IModelRequest, ISerializableRequest
 			Formatting = Formatting.Indented
 		} : null), outboundCopy.Model, outboundCopy.UrlOverride, provider, capabilityEndpoint) : new TornadoRequestContent(string.Empty, outboundCopy.Model, outboundCopy.UrlOverride, provider, CapabilityEndpoints.Chat);
 		
+		TransformedRequest = outboundCopy;
 		return serialized;
 	}
 

@@ -101,7 +101,18 @@ public class ChatModelOpenAi : BaseVendorModelProvider
 
     internal static HashSet<IModel> TempIncompatibleModels => LazyTempIncompatibleModels.Value;
 
-    private static readonly Lazy<HashSet<IModel>> LazyTempIncompatibleModels = new Lazy<HashSet<IModel>>(() => new HashSet<IModel>(WebSearchCompatibleModelsAll.Concat(ChatModelOpenAiO3.ModelsAll).Concat(ChatModelOpenAiO4.ModelsAll).Concat(ChatModelOpenAiGpt5.ModelsAll)));
+    private static readonly Lazy<HashSet<IModel>> LazyTempIncompatibleModels = new Lazy<HashSet<IModel>>(() => [..WebSearchCompatibleModelsAll.Concat(ChatModelOpenAiO3.ModelsAll).Concat(ChatModelOpenAiO4.ModelsAll).Concat(ChatModelOpenAiGpt5.ModelsAll)]);
+    
+    /// <summary>
+    /// All audio models. Requests for these models are serialized differently.
+    /// </summary>
+    public static List<IModel> AudioModelsAll => LazyAudioModelsAll.Value;
+
+    private static readonly Lazy<List<IModel>> LazyAudioModelsAll = new Lazy<List<IModel>>(() => [
+        ChatModelOpenAiGpt5.ModelAudio, ChatModelOpenAiGpt5.ModelAudioMini, ChatModelOpenAiGpt4.ModelAudioPreview, ChatModelOpenAiGpt4.ModelAudioPreview241001, ChatModelOpenAiGpt4.ModelAudioPreview241217,
+        ChatModelOpenAiGpt4.ModelAudioPreview250603
+    ]);
+
     
     internal ChatModelOpenAi()
     {
