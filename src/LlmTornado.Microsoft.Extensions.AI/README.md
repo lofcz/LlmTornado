@@ -30,6 +30,7 @@ using LlmTornado;
 using LlmTornado.Chat.Models;
 using LlmTornado.Microsoft.Extensions.AI;
 using Microsoft.Extensions.AI;
+using System.Linq;
 
 // Initialize the LlmTornado API
 var api = new TornadoApi("your-api-key");
@@ -44,16 +45,22 @@ var messages = new List<ChatMessage>
     new(ChatRole.User, "What is the capital of France?")
 };
 
-var response = await chatClient.CompleteAsync(messages);
-Console.WriteLine(response.Message.Text);
+var response = await chatClient.GetResponseAsync(messages);
+Console.WriteLine(response.Contents.OfType<TextContent>().FirstOrDefault()?.Text);
 ```
 
 ### Streaming Chat
 
 ```csharp
-await foreach (var update in chatClient.CompleteStreamingAsync(messages))
+await foreach (var update in chatClient.GetStreamingResponseAsync(messages))
 {
-    Console.Write(update.Text);
+    foreach (var content in update.Contents)
+    {
+        if (content is TextContent textContent)
+        {
+            Console.Write(textContent.Text);
+        }
+    }
 }
 ```
 
@@ -61,6 +68,7 @@ await foreach (var update in chatClient.CompleteStreamingAsync(messages))
 
 ```csharp
 using LlmTornado.Embedding.Models;
+using System;
 
 // Create an embedding generator
 var embeddingGenerator = api.AsEmbeddingGenerator(
@@ -73,7 +81,8 @@ var embeddings = await embeddingGenerator.GenerateAsync(texts);
 
 foreach (var embedding in embeddings)
 {
-    Console.WriteLine($"Embedding: {string.Join(", ", embedding.Vector.Take(5))}...");
+    var vector = embedding.AsReadOnlySpan();
+    Console.WriteLine($"Embedding: {string.Join(", ", vector.Slice(0, Math.Min(5, vector.Length)))}...");
 }
 ```
 
@@ -107,17 +116,18 @@ var embeddingGenerator = serviceProvider.GetRequiredService<IEmbeddingGenerator<
 
 ```csharp
 using Microsoft.Extensions.AI;
+using System.Linq;
 
 var messages = new List<ChatMessage>
 {
     new(ChatRole.User, new AIContent[]
     {
         new TextContent("What's in this image?"),
-        new ImageContent("https://example.com/image.jpg")
+        new UriContent("https://example.com/image.jpg", "image/jpeg")
     })
 };
 
-var response = await chatClient.CompleteAsync(messages);
+var response = await chatClient.GetResponseAsync(messages);
 ```
 
 ### Function/Tool Calling
@@ -134,7 +144,7 @@ var options = new ChatOptions
     }
 };
 
-var response = await chatClient.CompleteAsync(messages, options);
+var response = await chatClient.GetResponseAsync(messages, options);
 ```
 
 ## OpenTelemetry Support
