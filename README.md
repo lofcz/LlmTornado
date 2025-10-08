@@ -13,7 +13,7 @@
 - **Multi-Agent Systems**: [Toolkit](https://github.com/lofcz/LlmTornado/tree/master/src/LlmTornado.Agents) for the orchestration of multiple collaborating specialist agents.
 - **Rapid Development**: Write workflows once, execute with any provider. Non-standard features from all major Providers are carefully mapped, documented, and ready to use via strongly-typed code.
 - **Fully Multimodal**: Text, images, videos, documents, URLs, and audio inputs are supported.
-- **Built-in Cutting Edge Protocols**
+- **Cutting Edge Protocols:**
   - **MCP**: Connect agents to data sources, tools, and workflows via Model Context Protocol with `LlmTornado.Mcp`.
   - **A2A**: Enable seamless collaboration between AI agents across different platforms with `LlmTornado.A2A`.
 - **Integrated**: Built-in support for [Microsoft.Extensions.AI](https://learn.microsoft.com/en-us/dotnet/ai/microsoft-extensions-ai) enables plugging Tornado in [Semantic Kernel](https://github.com/microsoft/semantic-kernel) applications, granting instant access to 100+ Cloud Providers with `LlmTornado.Microsoft.Extensions.AI`.
