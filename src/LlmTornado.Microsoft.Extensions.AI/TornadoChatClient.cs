@@ -10,6 +10,7 @@ using LlmTornado.Chat.Models;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using Microsoft.Extensions.AI;
+using ChatMessage = LlmTornado.Chat.ChatMessage;
 
 namespace LlmTornado.Microsoft.Extensions.AI;
 
@@ -18,7 +19,7 @@ namespace LlmTornado.Microsoft.Extensions.AI;
 /// </summary>
 public sealed class TornadoChatClient : IChatClient
 {
-    private static readonly ActivitySource ActivitySource = new("LlmTornado.Microsoft.Extensions.AI.Chat");
+    private static readonly ActivitySource ActivitySource = new ActivitySource("LlmTornado.Microsoft.Extensions.AI.Chat");
 
     private readonly TornadoApi _api;
     private readonly ChatModel _defaultModel;
@@ -51,43 +52,42 @@ public sealed class TornadoChatClient : IChatClient
     }
 
     /// <inheritdoc />
-    public ChatClientMetadata Metadata => new(
-        providerName: "LlmTornado",
-        providerUri: new Uri("https://github.com/lofcz/LlmTornado"),
-        modelId: _defaultModel.ToString());
+    public ChatClientMetadata Metadata => new ChatClientMetadata(providerName: "LlmTornado", providerUri: new Uri("https://github.com/lofcz/LlmTornado"), defaultModelId: _defaultModel.ToString());
 
     /// <inheritdoc />
-    public async Task<ChatCompletion> CompleteAsync(
-        IList<global::Microsoft.Extensions.AI.ChatMessage> chatMessages,
+    public async Task<global::Microsoft.Extensions.AI.ChatResponse> GetResponseAsync(
+        IEnumerable<global::Microsoft.Extensions.AI.ChatMessage> chatMessages,
         ChatOptions? options = null,
         CancellationToken cancellationToken = default)
     {
-        using var activity = ActivitySource.StartActivity("CompleteAsync");
+        using Activity? activity = ActivitySource.StartActivity("CompleteAsync");
 
+        List<global::Microsoft.Extensions.AI.ChatMessage> msgs = chatMessages.ToList();
+        
         activity?.SetTag("llm.model", _defaultModel.ToString());
-        activity?.SetTag("llm.request.messages.count", chatMessages.Count);
+        activity?.SetTag("llm.request.messages.count", msgs.Count);
 
         try
         {
             // Create request
-            var request = CreateRequest(options);
-            request.Messages = chatMessages.Select(m => m.ToLlmTornado()).ToList();
+            ChatRequest request = CreateRequest(options);
+            request.Messages = msgs.Select(m => m.ToLlmTornado()).ToList();
             request.Stream = false;
 
             activity?.SetTag("llm.request.temperature", request.Temperature);
             activity?.SetTag("llm.request.max_tokens", request.MaxTokens);
 
             // Execute request
-            var result = await _api.Chat.CreateChatCompletion(request);
+            ChatResult? result = await _api.Chat.CreateChatCompletion(request);
 
             if (result == null)
             {
                 throw new InvalidOperationException("Chat completion returned null result.");
             }
 
-            var completion = result.ToChatCompletion();
+            ChatResponse completion = result.ToChatCompletion();
 
-            activity?.SetTag("llm.response.id", completion.CompletionId);
+            activity?.SetTag("llm.response.id", completion.ResponseId);
             activity?.SetTag("llm.response.finish_reason", completion.FinishReason?.ToString());
             activity?.SetTag("llm.usage.input_tokens", completion.Usage?.InputTokenCount);
             activity?.SetTag("llm.usage.output_tokens", completion.Usage?.OutputTokenCount);
@@ -105,31 +105,33 @@ public sealed class TornadoChatClient : IChatClient
     }
 
     /// <inheritdoc />
-    public async IAsyncEnumerable<StreamingChatCompletionUpdate> CompleteStreamingAsync(
-        IList<global::Microsoft.Extensions.AI.ChatMessage> chatMessages,
+    public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(
+        IEnumerable<global::Microsoft.Extensions.AI.ChatMessage> chatMessages,
         ChatOptions? options = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        using var activity = ActivitySource.StartActivity("CompleteStreamingAsync");
+        using Activity? activity = ActivitySource.StartActivity("CompleteStreamingAsync");
 
+        List<global::Microsoft.Extensions.AI.ChatMessage> msgs = chatMessages.ToList();
+        
         activity?.SetTag("llm.model", _defaultModel.ToString());
-        activity?.SetTag("llm.request.messages.count", chatMessages.Count);
+        activity?.SetTag("llm.request.messages.count", msgs.Count);
         activity?.SetTag("llm.streaming", true);
 
         // Create request
-        var request = CreateRequest(options);
-        request.Messages = chatMessages.Select(m => m.ToLlmTornado()).ToList();
+        ChatRequest request = CreateRequest(options);
+        request.Messages = msgs.Select(m => m.ToLlmTornado()).ToList();
         request.Stream = true;
 
         activity?.SetTag("llm.request.temperature", request.Temperature);
         activity?.SetTag("llm.request.max_tokens", request.MaxTokens);
 
         int chunkIndex = 0;
-        var accumulatedText = "";
-        var accumulatedToolCalls = new List<LlmTornado.ChatFunctions.ToolCall>();
+        string accumulatedText = "";
+        List<ToolCall> accumulatedToolCalls = [];
 
         // Execute streaming request
-        await foreach (var chunk in _api.Chat.StreamChatEnumerable(request))
+        await foreach (var chunk in _api.Chat.StreamChatEnumerable(request).WithCancellation(cancellationToken))
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -138,13 +140,9 @@ public sealed class TornadoChatClient : IChatClient
                 continue;
             }
 
-            var choice = chunk.Choices?.FirstOrDefault();
-            if (choice == null)
-            {
-                continue;
-            }
-
-            var delta = choice.Delta;
+            ChatChoice? choice = chunk.Choices?.FirstOrDefault();
+            ChatMessage? delta = choice?.Delta;
+            
             if (delta == null)
             {
                 continue;
@@ -159,20 +157,21 @@ public sealed class TornadoChatClient : IChatClient
             // Track tool calls
             if (delta.ToolCalls != null)
             {
-                foreach (var toolCall in delta.ToolCalls)
+                foreach (ToolCall toolCall in delta.ToolCalls)
                 {
                     if (toolCall.Index.HasValue)
                     {
                         while (accumulatedToolCalls.Count <= toolCall.Index.Value)
                         {
-                            accumulatedToolCalls.Add(new LlmTornado.ChatFunctions.ToolCall());
+                            accumulatedToolCalls.Add(new ToolCall());
                         }
 
-                        var existing = accumulatedToolCalls[toolCall.Index.Value];
+                        ToolCall existing = accumulatedToolCalls[toolCall.Index.Value];
                         existing.Id ??= toolCall.Id;
+                        
                         if (toolCall.FunctionCall != null)
                         {
-                            existing.FunctionCall ??= new LlmTornado.ChatFunctions.FunctionCall();
+                            existing.FunctionCall ??= new FunctionCall();
                             existing.FunctionCall.Name ??= toolCall.FunctionCall.Name;
                             existing.FunctionCall.Arguments = (existing.FunctionCall.Arguments ?? "") + (toolCall.FunctionCall.Arguments ?? "");
                         }
@@ -181,7 +180,7 @@ public sealed class TornadoChatClient : IChatClient
             }
 
             // Create streaming update
-            var contents = new List<AIContent>();
+            List<AIContent> contents = [];
 
             if (!string.IsNullOrEmpty(delta.Content))
             {
@@ -191,7 +190,7 @@ public sealed class TornadoChatClient : IChatClient
             // Add tool calls if present
             if (delta.ToolCalls != null)
             {
-                foreach (var toolCall in delta.ToolCalls)
+                foreach (ToolCall toolCall in delta.ToolCalls)
                 {
                     if (toolCall.FunctionCall != null && !string.IsNullOrEmpty(toolCall.FunctionCall.Name))
                     {
@@ -205,18 +204,18 @@ public sealed class TornadoChatClient : IChatClient
                 }
             }
 
-            var role = delta.Role switch
+            ChatRole role = delta.Role switch
             {
-                Code.ChatMessageRoles.User => ChatRole.User,
-                Code.ChatMessageRoles.Assistant => ChatRole.Assistant,
-                Code.ChatMessageRoles.System => ChatRole.System,
-                Code.ChatMessageRoles.Tool => ChatRole.Tool,
+                ChatMessageRoles.User => ChatRole.User,
+                ChatMessageRoles.Assistant => ChatRole.Assistant,
+                ChatMessageRoles.System => ChatRole.System,
+                ChatMessageRoles.Tool => ChatRole.Tool,
                 _ => ChatRole.Assistant
             };
 
-            var update = new StreamingChatCompletionUpdate
+            ChatResponseUpdate update = new ChatResponseUpdate
             {
-                CompletionId = chunk.Id,
+                ResponseId = chunk.Id,
                 Contents = contents,
                 Role = role,
                 RawRepresentation = chunk
@@ -226,11 +225,11 @@ public sealed class TornadoChatClient : IChatClient
             {
                 update.FinishReason = choice.FinishReason switch
                 {
-                    Code.ChatMessageFinishReasons.EndTurn => ChatFinishReason.Stop,
-                    Code.ChatMessageFinishReasons.StopSequence => ChatFinishReason.Stop,
-                    Code.ChatMessageFinishReasons.Length => ChatFinishReason.Length,
-                    Code.ChatMessageFinishReasons.ToolCalls => ChatFinishReason.ToolCalls,
-                    Code.ChatMessageFinishReasons.ContentFilter => ChatFinishReason.ContentFilter,
+                    ChatMessageFinishReasons.EndTurn => ChatFinishReason.Stop,
+                    ChatMessageFinishReasons.StopSequence => ChatFinishReason.Stop,
+                    ChatMessageFinishReasons.Length => ChatFinishReason.Length,
+                    ChatMessageFinishReasons.ToolCalls => ChatFinishReason.ToolCalls,
+                    ChatMessageFinishReasons.ContentFilter => ChatFinishReason.ContentFilter,
                     _ => null
                 };
             }
@@ -245,12 +244,7 @@ public sealed class TornadoChatClient : IChatClient
     /// <inheritdoc />
     public object? GetService(Type serviceType, object? serviceKey = null)
     {
-        if (serviceType == typeof(TornadoApi))
-        {
-            return _api;
-        }
-
-        return null;
+        return serviceType == typeof(TornadoApi) ? _api : null;
     }
 
     /// <inheritdoc />
@@ -264,7 +258,7 @@ public sealed class TornadoChatClient : IChatClient
     /// </summary>
     private ChatRequest CreateRequest(ChatOptions? options)
     {
-        var request = _defaultRequest != null ? new ChatRequest(_defaultRequest) : new ChatRequest();
+        ChatRequest request = _defaultRequest != null ? new ChatRequest(_defaultRequest) : new ChatRequest();
         request.Model = _defaultModel;
 
         if (options != null)

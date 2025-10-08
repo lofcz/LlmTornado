@@ -15,7 +15,7 @@ namespace LlmTornado.Microsoft.Extensions.AI;
 /// </summary>
 public sealed class TornadoEmbeddingGenerator : IEmbeddingGenerator<string, Embedding<float>>
 {
-    private static readonly ActivitySource ActivitySource = new("LlmTornado.Microsoft.Extensions.AI.Embeddings");
+    private static readonly ActivitySource ActivitySource = new ActivitySource("LlmTornado.Microsoft.Extensions.AI.Embeddings");
 
     private readonly TornadoApi _api;
     private readonly EmbeddingModel _defaultModel;
@@ -48,11 +48,7 @@ public sealed class TornadoEmbeddingGenerator : IEmbeddingGenerator<string, Embe
     }
 
     /// <inheritdoc />
-    public EmbeddingGeneratorMetadata Metadata => new(
-        providerName: "LlmTornado",
-        providerUri: new Uri("https://github.com/lofcz/LlmTornado"),
-        modelId: _defaultModel.ToString(),
-        dimensions: _defaultDimensions);
+    public EmbeddingGeneratorMetadata Metadata => new EmbeddingGeneratorMetadata(providerName: "LlmTornado", providerUri: new Uri("https://github.com/lofcz/LlmTornado"), defaultModelId: _defaultModel.ToString(), defaultModelDimensions: _defaultDimensions);
 
     /// <inheritdoc />
     public async Task<GeneratedEmbeddings<Embedding<float>>> GenerateAsync(
@@ -60,9 +56,9 @@ public sealed class TornadoEmbeddingGenerator : IEmbeddingGenerator<string, Embe
         EmbeddingGenerationOptions? options = null,
         CancellationToken cancellationToken = default)
     {
-        var valuesList = values.ToList();
+        List<string> valuesList = values.ToList();
         
-        using var activity = ActivitySource.StartActivity("GenerateAsync");
+        using Activity? activity = ActivitySource.StartActivity("GenerateAsync");
 
         activity?.SetTag("llm.model", _defaultModel.ToString());
         activity?.SetTag("llm.embedding.input.count", valuesList.Count);
@@ -89,7 +85,7 @@ public sealed class TornadoEmbeddingGenerator : IEmbeddingGenerator<string, Embe
                 }
                 else
                 {
-                    var request = new EmbeddingRequest(_defaultModel, valuesList)
+                    EmbeddingRequest request = new EmbeddingRequest(_defaultModel, valuesList)
                     {
                         Dimensions = dimensions.Value
                     };
@@ -108,22 +104,20 @@ public sealed class TornadoEmbeddingGenerator : IEmbeddingGenerator<string, Embe
                 }
             }
 
-            if (result == null || result.Data == null)
+            if (result?.Data == null)
             {
                 throw new InvalidOperationException("Embedding generation returned null result.");
             }
 
             // Convert to Microsoft.Extensions.AI format
-            var embeddings = result.Data.Select((entry, index) => 
-                new Embedding<float>(entry.Embedding ?? Array.Empty<float>())
+            List<Embedding<float>> embeddings = result.Data.Select((entry, index) => 
+                new Embedding<float>(entry.Embedding ?? [])
                 {
                     ModelId = result.Model,
-                    CreatedAt = result.Created != null 
-                        ? result.Created 
-                        : null
+                    CreatedAt = result.Created
                 }).ToList();
 
-            var generated = new GeneratedEmbeddings<Embedding<float>>(embeddings);
+            GeneratedEmbeddings<Embedding<float>> generated = new GeneratedEmbeddings<Embedding<float>>(embeddings);
 
             // Add usage information if available
             if (result.Usage != null)
@@ -136,7 +130,7 @@ public sealed class TornadoEmbeddingGenerator : IEmbeddingGenerator<string, Embe
             }
 
             // Set additional properties
-            generated.AdditionalProperties ??= new global::Microsoft.Extensions.AI.AdditionalPropertiesDictionary();
+            generated.AdditionalProperties ??= new AdditionalPropertiesDictionary();
             generated.AdditionalProperties["RawRepresentation"] = result;
 
             activity?.SetTag("llm.embedding.output.count", embeddings.Count);
@@ -157,12 +151,7 @@ public sealed class TornadoEmbeddingGenerator : IEmbeddingGenerator<string, Embe
     /// <inheritdoc />
     public object? GetService(Type serviceType, object? serviceKey = null)
     {
-        if (serviceType == typeof(TornadoApi))
-        {
-            return _api;
-        }
-
-        return null;
+        return serviceType == typeof(TornadoApi) ? _api : null;
     }
 
     /// <inheritdoc />

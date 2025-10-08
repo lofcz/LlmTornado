@@ -1,13 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using LlmTornado.Chat;
 using LlmTornado.Code;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Common;
-using LlmTornado.Infra;
 using Microsoft.Extensions.AI;
+using ChatMessage = LlmTornado.Chat.ChatMessage;
 
 namespace LlmTornado.Microsoft.Extensions.AI;
 
@@ -19,9 +15,9 @@ internal static class TypeConverters
     /// <summary>
     /// Converts a Microsoft.Extensions.AI ChatMessage to a LlmTornado ChatMessage.
     /// </summary>
-    public static LlmTornado.Chat.ChatMessage ToLlmTornado(this global::Microsoft.Extensions.AI.ChatMessage message)
+    public static ChatMessage ToLlmTornado(this global::Microsoft.Extensions.AI.ChatMessage message)
     {
-        var role = message.Role.Value switch
+        ChatMessageRoles role = message.Role.Value switch
         {
             "user" => ChatMessageRoles.User,
             "assistant" => ChatMessageRoles.Assistant,
@@ -30,14 +26,14 @@ internal static class TypeConverters
             _ => ChatMessageRoles.User
         };
 
-        var tornadoMessage = new LlmTornado.Chat.ChatMessage(role);
+        ChatMessage tornadoMessage = new ChatMessage(role);
 
         // Handle different content types
-        if (message.Contents != null && message.Contents.Count > 0)
+        if (message.Contents is { Count: > 0 })
         {
-            var parts = new List<ChatMessagePart>();
+            List<ChatMessagePart> parts = [];
 
-            foreach (var content in message.Contents)
+            foreach (AIContent content in message.Contents)
             {
                 switch (content)
                 {
@@ -48,16 +44,10 @@ internal static class TypeConverters
                         }
                         break;
 
-                    case ImageContent imageContent:
-                        if (!string.IsNullOrEmpty(imageContent.Uri))
+                    case UriContent imageContent:
+                        if (!string.IsNullOrEmpty(imageContent.Uri.AbsolutePath))
                         {
-                            parts.Add(new ChatMessagePart(new Uri(imageContent.Uri)));
-                        }
-                        else if (imageContent.Data.HasValue)
-                        {
-                            var base64 = Convert.ToBase64String(imageContent.Data.Value.ToArray());
-                            var dataUrl = $"data:{imageContent.MediaType ?? "image/png"};base64,{base64}";
-                            parts.Add(new ChatMessagePart(dataUrl, Images.ImageDetail.Auto));
+                            parts.Add(new ChatMessagePart(imageContent.Uri));
                         }
                         break;
 
@@ -66,9 +56,9 @@ internal static class TypeConverters
                         {
                             parts.Add(new ChatMessagePart(new Uri(dataContent.Uri), ChatMessageTypes.Document));
                         }
-                        else if (dataContent.Data.HasValue)
+                        else
                         {
-                            var base64 = Convert.ToBase64String(dataContent.Data.Value.ToArray());
+                            string base64 = Convert.ToBase64String(dataContent.Data.ToArray());
                             parts.Add(new ChatMessagePart(base64, DocumentLinkTypes.Base64));
                         }
                         break;
@@ -90,13 +80,13 @@ internal static class TypeConverters
         }
 
         // Handle function/tool calls
-        var functionCalls = message.Contents?.OfType<FunctionCallContent>().ToList();
+        List<FunctionCallContent>? functionCalls = message.Contents?.OfType<FunctionCallContent>().ToList();
         if (functionCalls != null && functionCalls.Count > 0)
         {
-            tornadoMessage.ToolCalls = functionCalls.Select(fc => new LlmTornado.ChatFunctions.ToolCall
+            tornadoMessage.ToolCalls = functionCalls.Select(fc => new ToolCall
             {
                 Id = fc.CallId,
-                FunctionCall = new LlmTornado.ChatFunctions.FunctionCall
+                FunctionCall = new FunctionCall
                 {
                     Name = fc.Name,
                     Arguments = fc.Arguments != null 
@@ -107,8 +97,8 @@ internal static class TypeConverters
         }
 
         // Handle function/tool results
-        var functionResults = message.Contents?.OfType<FunctionResultContent>().ToList();
-        if (functionResults != null && functionResults.Count > 0 && role == ChatMessageRoles.Tool)
+        List<FunctionResultContent>? functionResults = message.Contents?.OfType<FunctionResultContent>().ToList();
+        if (functionResults is { Count: > 0 } && role == ChatMessageRoles.Tool)
         {
             tornadoMessage.ToolCallId = functionResults.First().CallId;
             tornadoMessage.Content = functionResults.First().Result?.ToString();
@@ -120,9 +110,9 @@ internal static class TypeConverters
     /// <summary>
     /// Converts a LlmTornado ChatMessage to a Microsoft.Extensions.AI ChatMessage.
     /// </summary>
-    public static global::Microsoft.Extensions.AI.ChatMessage ToMicrosoftAI(this LlmTornado.Chat.ChatMessage message)
+    public static global::Microsoft.Extensions.AI.ChatMessage ToMicrosoftAI(this ChatMessage message)
     {
-        var role = message.Role switch
+        ChatRole role = message.Role switch
         {
             ChatMessageRoles.User => ChatRole.User,
             ChatMessageRoles.Assistant => ChatRole.Assistant,
@@ -131,7 +121,7 @@ internal static class TypeConverters
             _ => ChatRole.User
         };
 
-        var contents = new List<AIContent>();
+        List<AIContent> contents = [];
 
         // Add text content
         if (!string.IsNullOrEmpty(message.Content))
@@ -142,7 +132,7 @@ internal static class TypeConverters
         // Add parts if available
         if (message.Parts != null)
         {
-            foreach (var part in message.Parts)
+            foreach (ChatMessagePart part in message.Parts)
             {
                 switch (part.Type)
                 {
@@ -160,18 +150,18 @@ internal static class TypeConverters
                             if (part.Image.Url.StartsWith("data:"))
                             {
                                 // Parse data URL
-                                var dataUrlParts = part.Image.Url.Split(new[] { ',' }, 2);
+                                string[] dataUrlParts = part.Image.Url.Split([','], 2);
                                 if (dataUrlParts.Length == 2)
                                 {
-                                    var mimeType = dataUrlParts[0].Split(new[] { ';' })[0].Replace("data:", "");
-                                    var base64Data = dataUrlParts[1];
-                                    var bytes = Convert.FromBase64String(base64Data);
-                                    contents.Add(new ImageContent(bytes, mimeType));
+                                    string mimeType = dataUrlParts[0].Split([';'])[0].Replace("data:", "");
+                                    string base64Data = dataUrlParts[1];
+                                    byte[] bytes = Convert.FromBase64String(base64Data);
+                                    contents.Add(new DataContent(bytes, mimeType));
                                 }
                             }
                             else
                             {
-                                contents.Add(new ImageContent(part.Image.Url));
+                                contents.Add(new UriContent(part.Image.Url, part.Image.MimeType ?? string.Empty));
                             }
                         }
                         break;
@@ -180,13 +170,13 @@ internal static class TypeConverters
         }
 
         // Add tool calls
-        if (message.ToolCalls != null && message.ToolCalls.Count > 0)
+        if (message.ToolCalls is { Count: > 0 })
         {
-            foreach (var toolCall in message.ToolCalls)
+            foreach (ToolCall toolCall in message.ToolCalls)
             {
                 if (toolCall.FunctionCall != null)
                 {
-                    var args = toolCall.FunctionCall.Arguments != null
+                    Dictionary<string, object?>? args = toolCall.FunctionCall.Arguments != null
                         ? System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object?>>(toolCall.FunctionCall.Arguments)
                         : null;
                     
@@ -201,7 +191,7 @@ internal static class TypeConverters
         // Handle tool results
         if (role == ChatRole.Tool && !string.IsNullOrEmpty(message.ToolCallId))
         {
-            contents.Add(new FunctionResultContent(message.ToolCallId, message.ToolCallId, message.Content));
+            contents.Add(new FunctionResultContent(message.ToolCallId, message.Content));
         }
 
         return new global::Microsoft.Extensions.AI.ChatMessage(role, contents);
@@ -242,7 +232,7 @@ internal static class TypeConverters
             request.PresencePenalty = options.PresencePenalty.Value;
         }
 
-        if (options.StopSequences != null && options.StopSequences.Count > 0)
+        if (options.StopSequences is { Count: > 0 })
         {
             if (options.StopSequences.Count == 1)
             {
@@ -255,15 +245,15 @@ internal static class TypeConverters
         }
 
         // Convert tools/functions
-        if (options.Tools != null && options.Tools.Count > 0)
+        if (options.Tools is { Count: > 0 })
         {
-            var tools = new List<LlmTornado.Common.Tool>();
+            List<Tool> tools = [];
             
-            foreach (var tool in options.Tools)
+            foreach (AITool tool in options.Tools)
             {
                 if (tool is AIFunction aiFunction)
                 {                    
-                    tools.Add(new LlmTornado.Common.Tool(aiFunction.ToToolFunction()));
+                    tools.Add(new Tool(aiFunction.ToToolFunction()));
                 }
             }
             
@@ -277,23 +267,23 @@ internal static class TypeConverters
     /// <summary>
     /// Converts LlmTornado ChatResult to Microsoft.Extensions.AI ChatCompletion.
     /// </summary>
-    public static global::Microsoft.Extensions.AI.ChatCompletion ToChatCompletion(this ChatResult result)
+    public static ChatResponse ToChatCompletion(this ChatResult result)
     {
-        var choices = result.Choices ?? new List<LlmTornado.Chat.ChatChoice>();
-        var choice = choices.FirstOrDefault();
+        List<ChatChoice> choices = result.Choices ?? [];
+        ChatChoice? choice = choices.FirstOrDefault();
 
-        var message = choice?.Message ?? new LlmTornado.Chat.ChatMessage(ChatMessageRoles.Assistant, "");
+        ChatMessage message = choice?.Message ?? new ChatMessage(ChatMessageRoles.Assistant, "");
         
-        var completion = new global::Microsoft.Extensions.AI.ChatCompletion(message.ToMicrosoftAI())
+        ChatResponse completion = new ChatResponse(message.ToMicrosoftAI())
         {
-            CompletionId = result.Id,
+            ResponseId = result.Id,
             ModelId = result.Model,
             CreatedAt = result.Created,
             FinishReason = ConvertFinishReason(choice?.FinishReason),
         };
         
         // Set raw representation via additional properties
-        completion.AdditionalProperties ??= new global::Microsoft.Extensions.AI.AdditionalPropertiesDictionary();
+        completion.AdditionalProperties ??= new AdditionalPropertiesDictionary();
         completion.AdditionalProperties["RawRepresentation"] = result;
 
         // Add usage information
@@ -330,36 +320,8 @@ internal static class TypeConverters
     public static ToolFunction ToToolFunction(this AIFunction function)
     {
         return new ToolFunction(
-           name: function.Metadata.Name,
-           description: function.Metadata.Description,
-           parameters: $"{{ \"type\": \"object\","+
-                                $"\"properties\": {{{GenerateProertiesFromMetaData(function)}}},"+
-                                "\"additionalProperties\": false,"+
-                                $"\"required\": {GenerateRequiredFromMetaData(function)} }}"
-            );
-    }
-
-    private static string GenerateRequiredFromMetaData(AIFunction function)
-    {
-        if (function.Metadata.Parameters == null || function.Metadata.Parameters.Count == 0)
-        {
-            return "[ \"input\" ]";
-        }
-        var required = function.Metadata.Parameters.Where(p => p.IsRequired || !p.HasDefaultValue).Select(p => $"\"{p.Name}\"");
-        string jsonStringArray = "[" + string.Join(", ", required) + "]";
-        return jsonStringArray;
-    }
-
-    private static string GenerateProertiesFromMetaData(AIFunction function)
-    {
-        if (function.Metadata.Parameters == null || function.Metadata.Parameters.Count == 0)
-        {
-            return "{\"input\" : {\"type\" : \"string\"}";
-        }
-        var props = function.Metadata.Parameters.Select(kvp =>
-        {
-            return $"\"{kvp.Name}\" : {kvp.Schema}";
-        });
-        return string.Join(", ", props);
+           name: function.Name,
+           description: function.Description,
+           parameters: function.JsonSchema);
     }
 }

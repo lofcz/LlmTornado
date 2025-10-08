@@ -23,7 +23,7 @@ public static class TornadoServiceExtensions
         this IServiceCollection services,
         TornadoApi api,
         ChatModel defaultModel,
-        LlmTornado.Chat.ChatRequest? defaultRequest = null)
+        Chat.ChatRequest? defaultRequest = null)
     {
         services.AddSingleton<IChatClient>(sp => new TornadoChatClient(api, defaultModel, defaultRequest));
         return services;
@@ -41,7 +41,7 @@ public static class TornadoServiceExtensions
         this IServiceCollection services,
         TornadoApi api,
         string defaultModel,
-        LlmTornado.Chat.ChatRequest? defaultRequest = null)
+        Chat.ChatRequest? defaultRequest = null)
     {
         services.AddSingleton<IChatClient>(sp => new TornadoChatClient(api, defaultModel, defaultRequest));
         return services;
@@ -95,7 +95,7 @@ public static class TornadoServiceExtensions
     public static IChatClient AsChatClient(
         this TornadoApi api,
         ChatModel defaultModel,
-        LlmTornado.Chat.ChatRequest? defaultRequest = null)
+        Chat.ChatRequest? defaultRequest = null)
     {
         return new TornadoChatClient(api, defaultModel, defaultRequest);
     }
@@ -110,7 +110,7 @@ public static class TornadoServiceExtensions
     public static IChatClient AsChatClient(
         this TornadoApi api,
         string defaultModel,
-        LlmTornado.Chat.ChatRequest? defaultRequest = null)
+        Chat.ChatRequest? defaultRequest = null)
     {
         return new TornadoChatClient(api, defaultModel, defaultRequest);
     }
