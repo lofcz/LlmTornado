@@ -16,7 +16,7 @@
 - **Cutting Edge Protocols:**
   - **MCP**: Connect agents to data sources, tools, and workflows via Model Context Protocol with `LlmTornado.Mcp`.
   - **A2A**: Enable seamless collaboration between AI agents across different platforms with `LlmTornado.A2A`.
-- **Integrated**: Built-in support for [Microsoft.Extensions.AI](https://learn.microsoft.com/en-us/dotnet/ai/microsoft-extensions-ai) enables plugging Tornado in [Semantic Kernel](https://github.com/microsoft/semantic-kernel) applications, granting instant access to 100+ Cloud Providers with `LlmTornado.Microsoft.Extensions.AI`.
+- **Integrated**: Built-in support for [Microsoft.Extensions.AI](https://learn.microsoft.com/en-us/dotnet/ai/microsoft-extensions-ai) enables plugging Tornado in [Semantic Kernel](https://github.com/lofcz/LlmTornado/blob/master/src/LlmTornado.Demo/MicrosoftExtensionsAiDemo.cs) applications, granting instant access to 100+ Cloud Providers with `LlmTornado.Microsoft.Extensions.AI`.
 - **Enterprise Proven**: Preview any request before committing to it. Automatic redaction of secrets in outputs. Stable APIs.
 
 ## ⭐ You Can Easily:
