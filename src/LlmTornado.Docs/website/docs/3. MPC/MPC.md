@@ -181,55 +181,6 @@ string? response = await conversation.GetResponse();
 Console.WriteLine(response);
 ```
 
-### Creating an MCP Server
-
-Define tools on your MCP server using the official SDK:
-
-```csharp
-using System.ComponentModel;
-using ModelContextProtocol.Server;
-
-[McpServerToolType]
-public sealed class WeatherTools
-{
-    [McpServerTool, Description("Get weather forecast for a location.")]
-    public static async Task<string> GetForecast(
-        HttpClient client,
-        [Description("Latitude of the location.")] double latitude,
-        [Description("Longitude of the location.")] double longitude)
-    {
-        string pointUrl = string.Create(
-            CultureInfo.InvariantCulture, 
-            $"/points/{latitude},{longitude}"
-        );
-        
-        JsonDocument jsonDocument = await client.ReadJsonDocumentAsync(pointUrl);
-        string? forecastUrl = jsonDocument.RootElement
-            .GetProperty("properties")
-            .GetProperty("forecast")
-            .GetString();
-            
-        if (forecastUrl == null)
-        {
-            throw new Exception("No forecast URL provided");
-        }
-        
-        JsonDocument forecastDoc = await client.ReadJsonDocumentAsync(forecastUrl);
-        JsonElement.ArrayEnumerator periods = forecastDoc.RootElement
-            .GetProperty("properties")
-            .GetProperty("periods")
-            .EnumerateArray();
-        
-        return string.Join("\n---\n", periods.Select(period => $"""
-            {period.GetProperty("name").GetString()}
-            Temperature: {period.GetProperty("temperature").GetInt32()}°F
-            Wind: {period.GetProperty("windSpeed").GetString()} {period.GetProperty("windDirection").GetString()}
-            Forecast: {period.GetProperty("detailedForecast").GetString()}
-            """));
-    }
-}
-```
-
 ## Advanced Usage
 
 ### Using MCP Tools with Agents
