@@ -391,6 +391,8 @@ public class AgentsDemo : DemoBase
         //    }
         //};
 
+
+
         convo = await agent.RunAsync(streaming: false, responseId: agent.ResponseOptions.PreviousResponseId??"", onAgentRunnerEvent: (evt) => {
             if (evt.EventType == AgentRunnerEventTypes.Streaming && evt is AgentRunnerStreamingEvent streamingEvent)
             {
