@@ -900,30 +900,34 @@ internal class VendorGoogleChatRequest
 
     internal class VendorGoogleChatTool
     {
-        [JsonProperty("functionDeclarations")] 
-        public List<VendorGoogleChatToolFunctionDeclaration> FunctionDeclarations { get; set; } = [];
+        [JsonProperty("functionDeclarations")]
+        public List<VendorGoogleChatToolFunctionDeclaration>? FunctionDeclarations { get; set; }
 
         [JsonProperty("googleSearchRetrieval")]
         public ChatRequestVendorGoogleSearchRetrieval? GoogleSearchRetrieval { get; set; }
-        
+
         [JsonProperty("codeExecution")]
         public ChatRequestVendorGoogleCodeExecution? CodeExecution { get; set; }
-        
+
         [JsonProperty("googleSearch")]
         public ChatRequestVendorGoogleSearch? GoogleSearch { get; set; }
-        
+
         [JsonProperty("urlContext")]
         public ChatRequestVendorGoogleUrlContext? UrlContext { get; set; }
-        
+
+        [JsonProperty("computerUse")]
+        public ChatRequestVendorGoogleComputerUse? ComputerUse { get; set; }
+
         public VendorGoogleChatTool()
         {
-            
+
         }
 
         public VendorGoogleChatTool(Tool tool)
         {
             if (tool.Function is not null)
             {
+                FunctionDeclarations ??= [];
                 FunctionDeclarations.Add(new VendorGoogleChatToolFunctionDeclaration(tool.Function));
             }
         }
@@ -1016,11 +1020,12 @@ internal class VendorGoogleChatRequest
         {
             if (tool.Function is not null)
             {
+                toolWrapper.FunctionDeclarations ??= [];
                 toolWrapper.FunctionDeclarations.Add(new VendorGoogleChatToolFunctionDeclaration(tool.Function));   
             }
         }
 
-        if (toolWrapper.FunctionDeclarations.Count > 0)
+        if (toolWrapper.FunctionDeclarations?.Count > 0)
         {
             localTools.Add(toolWrapper);   
         }
@@ -1228,29 +1233,35 @@ internal class VendorGoogleChatRequest
         if (request.VendorExtensions?.Google is not null)
         {
             VendorGoogleChatTool? builtInTool = null;
-            
+
             if (request.VendorExtensions.Google.CodeExecution is not null)
             {
                 builtInTool ??= new VendorGoogleChatTool();
                 builtInTool.CodeExecution = request.VendorExtensions.Google.CodeExecution;
             }
-            
+
             if (request.VendorExtensions.Google.GoogleSearchRetrieval is not null)
             {
                 builtInTool ??= new VendorGoogleChatTool();
                 builtInTool.GoogleSearchRetrieval = request.VendorExtensions.Google.GoogleSearchRetrieval;
             }
-            
+
             if (request.VendorExtensions.Google.GoogleSearch is not null)
             {
                 builtInTool ??= new VendorGoogleChatTool();
                 builtInTool.GoogleSearch = request.VendorExtensions.Google.GoogleSearch;
             }
-            
+
             if (request.VendorExtensions.Google.UrlContext is not null)
             {
                 builtInTool ??= new VendorGoogleChatTool();
                 builtInTool.UrlContext = request.VendorExtensions.Google.UrlContext;
+            }
+
+            if (request.VendorExtensions.Google.ComputerUse is not null)
+            {
+                builtInTool ??= new VendorGoogleChatTool();
+                builtInTool.ComputerUse = request.VendorExtensions.Google.ComputerUse;
             }
 
             if (builtInTool is not null)

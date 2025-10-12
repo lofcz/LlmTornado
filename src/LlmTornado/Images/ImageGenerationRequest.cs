@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Frozen;
 using System.Collections.Generic;
+using System.Reflection;
+using System.Runtime.Serialization;
 using LlmTornado.Code;
 using LlmTornado.Images.Models;
 using LlmTornado.Images.Vendors.Google;
@@ -57,7 +59,7 @@ public class ImageGenerationRequest
 	///     A text description of the desired image(s). The maximum length is 32000 characters for gpt-image-1, 1000 characters for dall-e-2, and 4000 characters for dall-e-3.
 	/// </summary>
 	[JsonProperty("prompt")]
-    public string Prompt { get; set; }
+    public string? Prompt { get; set; }
 
 	/// <summary>
 	///     How many different choices to request for each prompt. Defaults to 1.
@@ -98,8 +100,84 @@ public class ImageGenerationRequest
 	/// <summary>
 	///     The size of the generated images. Defaults to 1024x1024/auto, depending on the model.
 	/// </summary>
-	[JsonProperty("size")]
+	[JsonIgnore]
 	public TornadoImageSizes? Size { get; set; }
+	
+	/// <summary>
+	///     Custom width for the generated image. Used when Size is not set and provider supports custom dimensions.
+	/// </summary>
+	[JsonIgnore]
+	public int? Width { get; set; }
+	
+	/// <summary>
+	///     Custom height for the generated image. Used when Size is not set and provider supports custom dimensions.
+	/// </summary>
+	[JsonIgnore]
+	public int? Height { get; set; }
+	
+	/// <summary>
+	///     Internal property for JSON serialization of the size parameter.
+	/// </summary>
+	[JsonProperty("size")]
+	internal string? InternalSize => GetSizeString(Size, Width, Height);
+	
+	/// <summary>
+	///     Converts a size enum value or width/height to a size string.
+	/// </summary>
+	internal static string? GetSizeString(TornadoImageSizes? size, int? width, int? height)
+	{
+		if (size.HasValue)
+		{
+			// If Custom enum is used, fall through to width/height
+			if (size.Value is TornadoImageSizes.Custom)
+			{
+				if (width.HasValue && height.HasValue)
+				{
+					return $"{width}x{height}";
+				}
+				
+				return null;
+			}
+			
+			FieldInfo? memberInfo = typeof(TornadoImageSizes).GetField(size.Value.ToString());
+			object[]? attributes = memberInfo?.GetCustomAttributes(typeof(EnumMemberAttribute), false);
+			
+			if (attributes?.Length > 0)
+			{
+				EnumMemberAttribute? enumMemberAttr = attributes[0] as EnumMemberAttribute;
+				return enumMemberAttr?.Value;
+			}
+		}
+		else if (width.HasValue && height.HasValue)
+		{
+			return $"{width}x{height}";
+		}
+		
+		return null;
+	}
+	
+	/// <summary>
+	///     Tries to parse a size string (e.g., "1024x1024") into a TornadoImageSizes enum value.
+	/// </summary>
+	internal static TornadoImageSizes? TryParseSizeString(string sizeString)
+	{
+		foreach (TornadoImageSizes enumValue in Enum.GetValues(typeof(TornadoImageSizes)))
+		{
+			FieldInfo? memberInfo = typeof(TornadoImageSizes).GetField(enumValue.ToString());
+			object[]? attributes = memberInfo?.GetCustomAttributes(typeof(EnumMemberAttribute), false);
+			
+			if (attributes?.Length > 0)
+			{
+				EnumMemberAttribute? enumMemberAttr = attributes[0] as EnumMemberAttribute;
+				if (enumMemberAttr?.Value == sizeString)
+				{
+					return enumValue;
+				}
+			}
+		}
+		
+		return null;
+	}
 	
 	/// <summary>
 	///     The format in which the generated images are returned. Must be one of url or b64_json. Defaults to Url.

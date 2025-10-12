@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.Serialization;
 using LlmTornado.Caching;
 using LlmTornado.Common;
@@ -69,6 +70,12 @@ public class ChatRequestVendorGoogleExtensions
     /// </summary>
     [JsonIgnore]
     public ChatRequestVendorGoogleCodeExecution? CodeExecution { get; set; }
+
+    /// <summary>
+    /// Computer Use environment configuration for browser automation.
+    /// </summary>
+    [JsonIgnore]
+    public ChatRequestVendorGoogleComputerUse? ComputerUse { get; set; }
     
     /// <summary>
     /// Empty Google extensions.
@@ -105,13 +112,151 @@ public class ChatRequestVendorGoogleCodeExecution
 {
     internal ChatRequestVendorGoogleCodeExecution()
     {
-        
+
     }
 
     /// <summary>
     /// An instance of the tool.
     /// </summary>
     public static readonly ChatRequestVendorGoogleCodeExecution Inst = new ChatRequestVendorGoogleCodeExecution();
+}
+
+/// <summary>
+/// Computer Use configuration for browser automation.
+/// </summary>
+public class ChatRequestVendorGoogleComputerUse
+{
+    /// <summary>
+    /// The environment for Computer Use.
+    /// </summary>
+    [JsonProperty("environment")]
+    public ChatRequestVendorGoogleComputerUseEnvironment Environment { get; set; } = ChatRequestVendorGoogleComputerUseEnvironment.Browser;
+
+    /// <summary>
+    /// Optional list of predefined functions to exclude from Computer Use.
+    /// </summary>
+    [JsonProperty("excludedPredefinedFunctions")]
+    public List<ChatRequestVendorGoogleComputerUsePredefinedFunctions>? ExcludedPredefinedFunctions { get; set; }
+
+    /// <summary>
+    /// Creates a Computer Use configuration for browser automation.
+    /// </summary>
+    public ChatRequestVendorGoogleComputerUse()
+    {
+
+    }
+
+    /// <summary>
+    /// Creates a Computer Use configuration with excluded functions.
+    /// </summary>
+    /// <param name="excludedFunctions">Functions to exclude like "drag_and_drop", "key_combination", etc.</param>
+    public ChatRequestVendorGoogleComputerUse(params ChatRequestVendorGoogleComputerUsePredefinedFunctions[] excludedFunctions)
+    {
+        ExcludedPredefinedFunctions = excludedFunctions.ToList();
+    }
+
+    /// <summary>
+    /// A public instance of the Computer Use tool for browser automation.
+    /// </summary>
+    public static readonly ChatRequestVendorGoogleComputerUse Browser = new ChatRequestVendorGoogleComputerUse();
+}
+
+/// <summary>
+/// Supported environments for Computer Use.
+/// </summary>
+[JsonConverter(typeof(StringEnumConverter))]
+public enum ChatRequestVendorGoogleComputerUseEnvironment
+{
+    /// <summary>
+    /// Browser environment for web automation.
+    /// </summary>
+    [EnumMember(Value = "ENVIRONMENT_BROWSER")]
+    Browser
+}
+
+/// <summary>
+/// Predefined functions that can be excluded from Computer Use.
+/// </summary>
+[JsonConverter(typeof(StringEnumConverter))]
+public enum ChatRequestVendorGoogleComputerUsePredefinedFunctions
+{
+    /// <summary>
+    /// Opens the web browser.
+    /// </summary>
+    [EnumMember(Value = "open_web_browser")]
+    OpenWebBrowser,
+
+    /// <summary>
+    /// Pauses execution for 5 seconds.
+    /// </summary>
+    [EnumMember(Value = "wait_5_seconds")]
+    Wait5Seconds,
+
+    /// <summary>
+    /// Navigates to the previous page.
+    /// </summary>
+    [EnumMember(Value = "go_back")]
+    GoBack,
+
+    /// <summary>
+    /// Navigates to the next page.
+    /// </summary>
+    [EnumMember(Value = "go_forward")]
+    GoForward,
+
+    /// <summary>
+    /// Navigates to the default search engine.
+    /// </summary>
+    [EnumMember(Value = "search")]
+    Search,
+
+    /// <summary>
+    /// Navigates to a specific URL.
+    /// </summary>
+    [EnumMember(Value = "navigate")]
+    Navigate,
+
+    /// <summary>
+    /// Clicks at specific coordinates.
+    /// </summary>
+    [EnumMember(Value = "click_at")]
+    ClickAt,
+
+    /// <summary>
+    /// Hovers at specific coordinates.
+    /// </summary>
+    [EnumMember(Value = "hover_at")]
+    HoverAt,
+
+    /// <summary>
+    /// Types text at specific coordinates.
+    /// </summary>
+    [EnumMember(Value = "type_text_at")]
+    TypeTextAt,
+
+    /// <summary>
+    /// Presses keyboard keys or combinations.
+    /// </summary>
+    [EnumMember(Value = "key_combination")]
+    KeyCombination,
+
+    /// <summary>
+    /// Scrolls the document in a direction.
+    /// </summary>
+    [EnumMember(Value = "scroll_document")]
+    ScrollDocument,
+
+    /// <summary>
+    /// Scrolls at specific coordinates.
+    /// </summary>
+    [EnumMember(Value = "scroll_at")]
+    ScrollAt,
+
+    /// <summary>
+    /// Drags and drops from one coordinate to another.
+    /// </summary>
+    [EnumMember(Value = "drag_and_drop")]
+    DragAndDrop
 }
 
 /// <summary>

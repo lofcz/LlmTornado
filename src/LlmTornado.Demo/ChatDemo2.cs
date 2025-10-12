@@ -1078,6 +1078,35 @@ public partial class ChatDemo : DemoBase
             PlaySound(audioPath);   
         }
     }
+    
+    [Flaky("playback")]
+    [TornadoTest]
+    public static async Task Gpt5Audio()
+    {
+        Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.OpenAi.Gpt5.AudioMini,
+            Modalities = [ ChatModelModalities.Audio, ChatModelModalities.Text ],
+            Temperature = 1d
+        });
+
+        chat2.AppendUserInput("""
+                              Read in a warm, energetic tone:
+                              Speaker 1: How are you today?
+                              Speaker 2: Thanks, I'm doing fine.
+                              Speaker 1: Glad to hear that!
+                              """);
+       
+        ChatRichResponse response = await chat2.GetResponseRich();
+        ChatRichResponseBlock? block = response.Blocks.FirstOrDefault();
+        string? audioPath = block?.ChatAudio?.Export(ChatAudioFormats.Wav);
+         
+        // example: play the dialogue using LibVLC
+        if (audioPath is not null)
+        {
+            PlaySound(audioPath);   
+        }
+    }
 
     static void PlaySound(string path)
     {
@@ -1802,6 +1831,31 @@ public partial class ChatDemo : DemoBase
             new ChatMessagePart("What is this file about?"),
             new ChatMessagePart(new ChatMessagePartFileLinkData(uploadedFile.Data.Uri))
         ]);
+        
+        ChatRichResponse response = await chat.GetResponseRich();
+        
+        Console.WriteLine(response);
+        Console.WriteLine(response.Result?.Usage?.TotalTokens);
+    }
+    
+    [TornadoTest]
+    public static async Task AnthropicMemory()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Anthropic.Claude4.Sonnet250514,
+            VendorExtensions = new ChatRequestVendorExtensions(new ChatRequestVendorAnthropicExtensions
+            {
+                BuiltInTools = [
+                    new VendorAnthropicChatRequestBuiltInToolMemory20250825()
+                ]
+            }),
+            Messages = [
+                new ChatMessage(ChatMessageRoles.User, "I'\''m working on a Python web scraper that keeps crashing with a timeout error. Here'\''s the problematic function:\n\n```python\ndef fetch_page(url, retries=3):\n    for i in range(retries):\n        try:\n            response = requests.get(url, timeout=5)\n            return response.text\n        except requests.exceptions.Timeout:\n            if i == retries - 1:\n                raise\n            time.sleep(1)\n```\n\nPlease help me debug this.")
+            ]
+        });
+        
+        TornadoRequestContent rr = chat.Serialize();
         
         ChatRichResponse response = await chat.GetResponseRich();
         

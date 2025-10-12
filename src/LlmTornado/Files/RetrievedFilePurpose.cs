@@ -1,84 +1,70 @@
 using System;
+using System.Runtime.Serialization;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace LlmTornado.Files;
 
 /// <summary>
 ///     Represents the retrieved purpose of a file
 /// </summary>
-public class RetrievedFilePurpose
+[JsonConverter(typeof(StringEnumConverter))]
+public enum RetrievedFilePurpose
 {
-    private RetrievedFilePurpose(string? value)
-    {
-        Value = value;
-    }
-
-    public string Value { get; }
-
     /// <summary>
     ///     Finetuning
     /// </summary>
-    public static RetrievedFilePurpose Finetune => new RetrievedFilePurpose("fine-tune");
+    [EnumMember(Value = "fine-tune")]
+    Finetune,
 
     /// <summary>
     ///     Finetuning results
     /// </summary>
-    public static RetrievedFilePurpose FinetuneResults => new RetrievedFilePurpose("fine-tune-results");
+    [EnumMember(Value = "fine-tune-results")]
+    FinetuneResults,
 
     /// <summary>
     ///     Assistants input file
     /// </summary>
-    public static RetrievedFilePurpose Assistants => new RetrievedFilePurpose("assistants");
+    [EnumMember(Value = "assistants")]
+    Assistants,
 
     /// <summary>
     ///     Assistants output file
     /// </summary>
-    public static RetrievedFilePurpose AssistantsOutput => new RetrievedFilePurpose("assistants_output");
+    [EnumMember(Value = "assistants_output")]
+    AssistantsOutput,
+    
+    /// <summary>
+    ///     User data.
+    /// </summary>
+    [EnumMember(Value = "user_data")]
+    UserData,
 
+    /// <summary>
+    ///     Agent file for ZAI
+    /// </summary>
+    [EnumMember(Value = "agent")]
+    Agent
+}
+
+/// <summary>
+///     Extension methods for RetrievedFilePurpose enum
+/// </summary>
+public static class RetrievedFilePurposeExtensions
+{
     /// <summary>
     ///     Converts <see cref="FilePurpose" /> into <see cref="RetrievedFilePurpose" />
     /// </summary>
     /// <param name="purpose"></param>
     /// <returns></returns>
-    public static RetrievedFilePurpose ToRetrievedFilePurpose(FilePurpose purpose)
+    public static RetrievedFilePurpose ToRetrievedFilePurpose(this FilePurpose purpose)
     {
-        return purpose is FilePurpose.Assistants ? Assistants : Finetune;
-    }
-
-    /// <summary>
-    ///     Gets the string value for this file purpose to pass to the API
-    /// </summary>
-    /// <returns>The quality as a string</returns>
-    public override string ToString()
-    {
-        return Value;
-    }
-
-    /// <summary>
-    ///     Gets the string value for this file purpose to pass to the API
-    /// </summary>
-    /// <param name="value">The RetrievedFilePurpose to convert</param>
-    public static implicit operator string(RetrievedFilePurpose value)
-    {
-        return value.Value;
-    }
-
-    internal class RetrievedFilePurposeJsonConverter : JsonConverter<RetrievedFilePurpose>
-    {
-        public override void WriteJson(JsonWriter writer, RetrievedFilePurpose value, JsonSerializer serializer)
+        return purpose switch
         {
-            writer.WriteValue(value.ToString());
-        }
-
-        public override RetrievedFilePurpose ReadJson(JsonReader reader, Type objectType, RetrievedFilePurpose existingValue, bool hasExistingValue, JsonSerializer serializer)
-        {
-            if (reader.TokenType is JsonToken.String)
-            {
-                string? str = reader.Value as string;
-                return new RetrievedFilePurpose(str);
-            }
-
-            return new RetrievedFilePurpose(reader.ReadAsString());
-        }
+            FilePurpose.Assistants => RetrievedFilePurpose.Assistants,
+            FilePurpose.Agent => RetrievedFilePurpose.Agent,
+            _ => RetrievedFilePurpose.Finetune
+        };
     }
 }

@@ -53,6 +53,15 @@ public class ChatMessagePart
         Type = ChatMessageTypes.ContainerUpload;
         ContainerUploadData = containerUpload;
     }
+    
+    /// <summary>
+    /// Sets the part to <see cref="ChatMessageTypes.Image"/>.
+    /// </summary>
+    public ChatMessagePart(ChatImage image)
+    {
+        Type = ChatMessageTypes.Image;
+        Image = image;
+    }
        
     /// <summary>
     /// Sets the part to <see cref="ChatMessageTypes.SearchResult"/>. Supported only by Anthropic.

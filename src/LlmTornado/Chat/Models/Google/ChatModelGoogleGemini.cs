@@ -226,6 +226,16 @@ public class ChatModelGoogleGemini : IVendorModelClassProvider
     public readonly ChatModel Gemini15Flash8B = ModelGemini15Flash8B;
     
     /// <summary>
+    /// Gemini 2.5 Flash Image is our latest, fastest, and most efficient natively multimodal model that lets you generate and edit images conversationally.
+    /// </summary>
+    public static readonly ChatModel ModelGemini25FlashImage = new ChatModel("gemini-2.5-flash-image", LLmProviders.Google, 32_768);
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelGemini25FlashImage"/>
+    /// </summary>
+    public readonly ChatModel Gemini25FlashImage = ModelGemini25FlashImage;
+    
+    /// <summary>
     /// All known Gemini models from Google.
     /// </summary>
     public static List<IModel> ModelsAll => LazyModelsAll.Value;
@@ -234,7 +244,7 @@ public class ChatModelGoogleGemini : IVendorModelClassProvider
         ModelGemini15FlashLatest, ModelGemini15Flash, ModelGemini15Flash001, ModelGemini15Flash002, ModelGemini15ProLatest, 
         ModelGemini15Pro, ModelGemini15Pro001, ModelGemini15Pro002, ModelGemini15Flash8B, ModelGemini15Flash8BLatest, ModelGemini2Flash001,
         ModelGemini2FlashLatest, ModelGemini2FlashLite001, ModelGemini2FlashLiteLatest, ModelGemini25Pro, ModelGemini25Flash, 
-        ModelGemini25FlashLite, ModelGeminiFlashLiteLatest, ModelGeminiFlashLatest
+        ModelGemini25FlashLite, ModelGeminiFlashLiteLatest, ModelGeminiFlashLatest, ModelGemini25FlashImage
     ]);
 
     /// <summary>

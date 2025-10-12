@@ -13,6 +13,7 @@ using LlmTornado.Common;
 using LlmTornado.Files.Vendors;
 using LlmTornado.Files.Vendors.Anthropic;
 using LlmTornado.Files.Vendors.Google;
+using LlmTornado.Files.Vendors.Zai;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Files;
@@ -63,6 +64,10 @@ public class FilesEndpoint : EndpointBase
 				Items = (await HttpGet<TornadoFiles>(resolvedProvider, Endpoint, queryParams: query?.ToQueryParams(resolvedProvider), ct: token).ConfigureAwait(false)).Data?.Data ?? []
 			},
 			LLmProviders.Anthropic => (await HttpGet<VendorAnthropicTornadoFiles>(resolvedProvider, Endpoint, queryParams: query?.ToQueryParams(resolvedProvider), ct: token).ConfigureAwait(false)).Data?.ToList(),
+			LLmProviders.Zai => new TornadoPagingList<TornadoFile>
+			{
+				Items = (await HttpGet<TornadoFiles>(resolvedProvider, Endpoint, queryParams: query?.ToQueryParams(resolvedProvider), ct: token).ConfigureAwait(false)).Data?.Data ?? []
+			},
 			_ => null
 		};
 	}
@@ -142,6 +147,11 @@ public class FilesEndpoint : EndpointBase
 			case LLmProviders.Anthropic:
 			{
 				return (await HttpGet<VendorAnthropicTornadoFile>(resolvedProvider, Endpoint, GetUrl(resolvedProvider, $"/{fileId}")).ConfigureAwait(false)).Data?.ToFile();
+			}
+			case LLmProviders.Zai:
+			{
+				// z-ai doesn't implement this feature yet
+				return null;
 			}
 		}
 	    
@@ -303,6 +313,17 @@ public class FilesEndpoint : EndpointBase
 				if (content.Body is IDisposable disposableOaiBody)
 				{
 					disposableOaiBody.Dispose();
+				}
+
+				return new HttpCallResult<TornadoFile>(file.Code, file.Response, file.Data?.ToFile(), file.Ok, file.Request);
+			}
+			case LLmProviders.Zai:
+			{
+				HttpCallResult<VendorZaiTornadoFile> file = await HttpPost<VendorZaiTornadoFile>(resolvedProvider, CapabilityEndpoints.Files, url, content.Body).ConfigureAwait(false);
+
+				if (content.Body is IDisposable disposableZaiBody)
+				{
+					disposableZaiBody.Dispose();
 				}
 
 				return new HttpCallResult<TornadoFile>(file.Code, file.Response, file.Data?.ToFile(), file.Ok, file.Request);

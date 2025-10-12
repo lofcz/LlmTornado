@@ -7,24 +7,25 @@ _Empty field means the feature is unsupported by the provider._
 
 ## Inference
 
-| | OpenAI | Anthropic | Google | Cohere | DeepSeek | Groq | Mistral | xAI | MoonshotAI | Perplexity | Voyage | DeepInfra | OpenRouter | Custom* |
+| Provider | Chat | Models | Embeddings | Files | Images | Audio | Uploads | Moderation | Responses | Videos | Tokenize | FIM | Fine-tuning | Batch |
 |:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-|**Audio** | ✅ | | | | | | ✅ | | | | | | | |
-|**Chat**** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | | ✅ | ✅ |✅ |
-|**Embeddings** | ✅ | | ✅ | ✅ | | | ✅ | | | | ✅ | | ✅ | |
-|**Fine-tuning**| ✅ | | ❌ | | | | ❌ | | | | | | | |
-|**Batch** | ❌ | ❌ | ❌ | | | ❌ | ❌ | | | | | | | |
-|**Files** | ✅ | ✅ | ✅ | | | ❌ | ❌ | | ✅ | | | | | |
-|**Uploads** | ✅ | | | | | | | | | | | | | |
-|**Images** | ✅ | | ✅ | | | | | ✅ | | | | | | |
-|**Models** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | | | | ✅ | ✅ |
-|**Moderation** | ✅ | | | | | | | | | | | | | |
-|**Responses** | ✅ | | | | | | | ❌ | | | | | | |
-|**Tokenize** | | ❌ | | ❌ | | | | | ❌ | | | | | |
-|**FIM** | | | | | ❌ | | ❌ | | | | | | | |
+| **OpenAI** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | | | ✅ | ❌ |
+| **Anthropic** | ✅ | ✅ | | ✅ | | | | | | | ❌ | | | ❌ |
+| **Google** | ✅ | ✅ | ✅ | ✅ | ✅ | | | | | | | | ❌ | ❌ |
+| **Cohere** | ✅ | ✅ | ✅ | | | | | | | | ❌ | | | |
+| **DeepSeek** | ✅ | ✅ | | | | | | | | | | ❌ | | |
+| **Groq** | ✅ | ✅ | | ❌ | | | | | | | | | | ❌ |
+| **Mistral** | ✅ | ✅ | ✅ | ❌ | | ✅ | | | | | | ❌ | ❌ | ❌ |
+| **xAI** | ✅ | ✅ | | | ✅ | | | | ❌ | | | | | |
+| **MoonshotAI**| ✅ | ✅ | | ✅ | | | | | | | ❌ | | | |
+| **Perplexity**| ✅ | | | | | | | | | | | | | |
+| **Voyage** | | | ✅ | | | | | | | | | | | |
+| **DeepInfra** | ✅ | | | | | | | | | | | | | |
+| **OpenRouter**| ✅ | ✅ | ✅ | | | | | | | | | | | |
+| **Z.ai** | ✅ | | | ✅ | | | | | | ❌ | | | | |
+| **Custom*** | ✅ | ✅ | | | | | | | | | | | | |
 
 _*Custom means any OpenAI compatible provider, such as Azure OpenAI, Ollama, KoboldCpp, etc._  
-**_Includes caching, if implemented by the provider._
 
 ## OpenAI Specific
 

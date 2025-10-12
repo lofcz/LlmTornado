@@ -8,14 +8,16 @@
 **Build AI agents and multi-agent systems in minutes with one toolkit and the broadest Provider support.**
 
 ## Key Features:
--  **Use Any Provider**: All you need to know is the model's name; we handle the rest. Built-in: [Anthropic](https://docs.anthropic.com/en/docs/intro), [Azure](https://azure.microsoft.com/en-us/products/ai-services/openai-service), [Cohere](https://docs.cohere.com/changelog), [DeepInfra](https://deepinfra.com/docs/), [DeepSeek](https://api-docs.deepseek.com/), [Google](https://ai.google.dev/gemini-api/docs), [Groq](https://console.groq.com/docs/overview), [Mistral](https://docs.mistral.ai/getting-started), [MoonshotAI](https://platform.moonshot.ai/docs/overview), [Ollama](https://ollama.com/search), [OpenAI](https://platform.openai.com/docs), [OpenRouter](https://openrouter.ai/docs/quickstart), [Perplexity](https://docs.perplexity.ai/home), [Voyage](https://www.voyageai.com/), [xAI](https://docs.x.ai/docs). Check the full Feature Matrix [here](https://github.com/lofcz/LlmTornado/blob/master/FeatureMatrix.md).
+-  **Use Any Provider**: All you need to know is the model's name; we handle the rest. Built-in: [Anthropic](https://docs.anthropic.com/en/docs/intro), [Azure](https://azure.microsoft.com/en-us/products/ai-services/openai-service), [Cohere](https://docs.cohere.com/changelog), [DeepInfra](https://deepinfra.com/docs/), [DeepSeek](https://api-docs.deepseek.com/), [Google](https://ai.google.dev/gemini-api/docs), [Groq](https://console.groq.com/docs/overview), [Mistral](https://docs.mistral.ai/getting-started), [MoonshotAI](https://platform.moonshot.ai/docs/overview), [OpenAI](https://platform.openai.com/docs), [OpenRouter](https://openrouter.ai/docs/quickstart), [Perplexity](https://docs.perplexity.ai/home), [Voyage](https://www.voyageai.com/), [xAI](https://docs.x.ai/docs), [Z.ai](https://docs.z.ai/guides/overview/quick-start). Check the full Feature Matrix [here](https://github.com/lofcz/LlmTornado/blob/master/FeatureMatrix.md).
 - **First-class Local Deployments**: Run with [vLLM](https://docs.vllm.ai/en/latest), [Ollama](https://ollama.com/), or [LocalAI](https://localai.io/) with integrated support for request transformations.
 - **Multi-Agent Systems**: [Toolkit](https://github.com/lofcz/LlmTornado/tree/master/src/LlmTornado.Agents) for the orchestration of multiple collaborating specialist agents.
-- **Maximize Request Success Rate**: If enabled, we keep track of which parameters are supported by which models, how long the reasoning context can be, etc., and silently modify your requests to comply with rules enforced by a diverse set of Providers.
-- **Leverage Multiple APIs**: Non-standard features from all major Providers are carefully mapped, documented, and ready to use via strongly-typed code.
+- **Rapid Development**: Write workflows once, execute with any provider. Non-standard features from all major Providers are carefully mapped, documented, and ready to use via strongly-typed code.
 - **Fully Multimodal**: Text, images, videos, documents, URLs, and audio inputs are supported.
-- **MCP Compatible**: Seamlessly integrate Model Context Protocol using the official .NET SDK and `LlmTornado.Mcp` adapter.
-- **Enterprise Ready**: Preview any request before committing to it. Automatic redaction of secrets in outputs. Stable APIs.
+- **Cutting Edge Protocols:**
+  - **MCP**: Connect agents to data sources, tools, and workflows via Model Context Protocol with `LlmTornado.Mcp`.
+  - **A2A**: Enable seamless collaboration between AI agents across different platforms with `LlmTornado.A2A`.
+- **Integrated**: Built-in support for [Microsoft.Extensions.AI](https://learn.microsoft.com/en-us/dotnet/ai/microsoft-extensions-ai) enables plugging Tornado in [Semantic Kernel](https://github.com/lofcz/LlmTornado/blob/master/src/LlmTornado.Demo/MicrosoftExtensionsAiDemo.cs) applications, granting instant access to 100+ Cloud Providers with `LlmTornado.Microsoft.Extensions.AI`.
+- **Enterprise Proven**: Preview any request before committing to it. Automatic redaction of secrets in outputs. Stable APIs.
 
 ## ⭐ You Can Easily:
 - [Chat with your documents](https://github.com/lofcz/LlmTornado/blob/61d2a4732c88c45d4a8c053204ecdef807c34652/LlmTornado.Demo/ChatDemo.cs#L722-L757)
@@ -42,6 +44,8 @@ Optional addons:
 ```bash
 dotnet add package LlmTornado.Agents # Agentic framework, higher-level abstractions
 dotnet add package LlmTornado.Mcp # Model Context Protocol (MCP) integration
+dotnet add package LlmTornado.A2A # Agent2Agent (A2A) integration
+dotnet add package LlmTornado.Microsoft.Extensions.AI # Semantic Kernel interoperability
 dotnet add package LlmTornado.Contrib # productivity, quality of life enhancements
 ```
 
@@ -453,12 +457,11 @@ orange: 2
 - The license will never change.
 
 ## 📢 Built With Tornado
-- [ScioBot](https://sciobot.org/) - AI For Educators, 100k+ users
-- [LombdaAgentSDK](https://github.com/Johnny2x2/LombdaAgentSDK) - A lightweight C# SDK designed to create and run modular agents
-- [NotT3Chat](https://github.com/shaltielshmid/NotT3Chat) - The C# Answer to the T3 Stack
-- [ClaudeCodeProxy](https://github.com/salty-flower/ClaudeCodeProxy) - Provider multiplexing proxy
-- [Semantic Search](https://github.com/primaryobjects/semantic-search) - AI semantic search where a query is matched by context and meaning
-- [Monster Collector](https://github.com/primaryobjects/monster-collector) - A database of AI-generated monsters
+- [ScioBot](https://sciobot.org/) - AI For Educators, 100k+ users.
+- [ProseFlow](https://github.com/LSXPrime/ProseFlow) - Your universal AI text processor, powered by local and cloud LLMs. Edit, refactor, and transform text in any application on Windows, macOS, and Linux.
+- [NotT3Chat](https://github.com/shaltielshmid/NotT3Chat) - The C# Answer to the T3 Stack.
+- [ClaudeCodeProxy](https://github.com/salty-flower/ClaudeCodeProxy) - Provider multiplexing proxy.
+- [Semantic Search](https://github.com/primaryobjects/semantic-search) - AI semantic search where a query is matched by context and meaning.
 
 _Have you built something with Tornado? Let us know about it in the issues to get a spotlight!_
 

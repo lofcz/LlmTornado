@@ -1,0 +1,43 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Authors>Matěj Štágl, LlmTornado contributors</Authors>
+    <Product>LlmTornado.Microsoft.Extensions.AI</Product>
+    <Description>Microsoft.Extensions.AI provider implementation for LlmTornado, enabling seamless integration with the Microsoft AI abstractions.</Description>
+    <Copyright>Matěj Štágl</Copyright>
+    <PackageLicenseExpression>CC0-1.0</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/lofcz/LlmTornado</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/lofcz/LlmTornado</RepositoryUrl>
+    <PackageTags>OpenAI;Anthropic;Google;Microsoft.Extensions.AI;AI;LLM;Chat;Embeddings;ImageGeneration</PackageTags>
+    <Title>LlmTornado.Microsoft.Extensions.AI</Title>
+    <PackageId>LlmTornado.Microsoft.Extensions.AI</PackageId>
+    <Version>1.1.1</Version>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    <TargetFrameworks>net8.0;netstandard2.0</TargetFrameworks>
+    <LangVersion>preview</LangVersion>
+    <PackageIcon>nuget_logo.jpg</PackageIcon>
+    <NoWarn>$(NoWarn);MEAI001</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.AI" Version="[9.9.1, )" />
+    <PackageReference Include="Microsoft.Extensions.AI.Abstractions" Version="[9.9.1, )" />
+    <PackageReference Include="OpenTelemetry" Version="[1.13.0, )" />
+    <PackageReference Include="OpenTelemetry.Api" Version="[1.13.0, )" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\LlmTornado\LlmTornado.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <PackageIcon>nuget_logo.jpg</PackageIcon>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="nuget_logo.jpg" Pack="true" PackagePath="\"/>
+  </ItemGroup>
+
+</Project>

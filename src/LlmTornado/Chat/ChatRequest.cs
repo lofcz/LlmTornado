@@ -13,6 +13,7 @@ using LlmTornado.Chat.Vendors.Cohere;
 using LlmTornado.Chat.Vendors.Mistral;
 using LlmTornado.Chat.Vendors.Perplexity;
 using LlmTornado.Chat.Vendors.XAi;
+using LlmTornado.Chat.Vendors.Zai;
 using LlmTornado.Code.Models;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
@@ -460,6 +461,9 @@ public class ChatRequest : IModelRequest, ISerializableRequest
 	[JsonIgnore]
 	public bool? UseResponseEndpoint { get; set; }
 	
+	[JsonIgnore]
+	internal ChatRequest? TransformedRequest { get; set; }
+	
 	internal void OverrideUrl(string url)
 	{
 		UrlOverride = url;
@@ -516,6 +520,13 @@ public class ChatRequest : IModelRequest, ISerializableRequest
 					{
 						x.Temperature = null;
 					}
+					
+					if ((x.Modalities?.Contains(ChatModelModalities.Audio) ?? false) && ChatModelOpenAi.AudioModelsAll.Contains(x.Model))
+					{
+						x.Audio ??= new ChatRequestAudio();
+						x.Audio.Format ??= ChatRequestAudioFormats.Wav;
+						x.Audio.Voice ??= ChatAudioRequestKnownVoices.Ash;
+					}
 				}
 
 				JsonSerializerSettings settings = (x.MaxTokensSerializer, x.Model) switch
@@ -568,6 +579,14 @@ public class ChatRequest : IModelRequest, ISerializableRequest
 			LLmProviders.Perplexity, (x, y, z, a) =>
 			{
 				VendorPerplexityChatRequest request = new VendorPerplexityChatRequest(x, y);
+				JsonSerializerSettings serializer = GetSerializer(EndpointBase.NullSettings, a);
+				return PreparePayload(request.Serialize(serializer), x, y, z, serializer);
+			}
+		},
+		{
+			LLmProviders.Zai, (x, y, z, a) =>
+			{
+				VendorZaiChatRequest request = new VendorZaiChatRequest(x, y);
 				JsonSerializerSettings serializer = GetSerializer(EndpointBase.NullSettings, a);
 				return PreparePayload(request.Serialize(serializer), x, y, z, serializer);
 			}
@@ -772,6 +791,7 @@ public class ChatRequest : IModelRequest, ISerializableRequest
 			Formatting = Formatting.Indented
 		} : null), outboundCopy.Model, outboundCopy.UrlOverride, provider, capabilityEndpoint) : new TornadoRequestContent(string.Empty, outboundCopy.Model, outboundCopy.UrlOverride, provider, CapabilityEndpoints.Chat);
 		
+		TransformedRequest = outboundCopy;
 		return serialized;
 	}
 

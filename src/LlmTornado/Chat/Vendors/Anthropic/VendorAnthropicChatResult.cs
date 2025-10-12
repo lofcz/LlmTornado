@@ -151,7 +151,8 @@ internal class VendorAnthropicChatResult : VendorChatResult
     /// "end_turn": the model reached a natural stopping point<br/>
     /// "max_tokens": we exceeded the requested max_tokens or the model's maximum<br/>
     /// "stop_sequence": one of your provided custom stop_sequences was generated<br/>
-    /// "tool_use": the model invoked one or more tools
+    /// "tool_use": the model invoked one or more tools<br/>
+    /// "model_context_window_exceeded": the model stopped because it reached context window limit
     /// </summary>
     [JsonProperty("stop_reason")]
     public string StopReason { get; set; }

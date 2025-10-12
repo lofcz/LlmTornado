@@ -193,19 +193,62 @@ public class ChatEndpoint : EndpointBase
         return result;
     }
 
-    internal static async ValueTask<object?> HandleChatResult(ChatRequest request, ChatMessage contentSource, ChatResult? result)
+    internal static async ValueTask<object?> HandleChatResult(ChatRequest rawRequest, ChatMessage contentSource, ChatResult? result)
     {
+        ChatRequest request = rawRequest.TransformedRequest ?? rawRequest;
+        
         if (request.ResponseFormat?.Schema?.Delegate is not null && request.ResponseFormat.Type is ChatRequestResponseFormatTypes.StructuredJson)
         {
             string? content = contentSource.Content ?? contentSource.Parts?.FirstOrDefault(x => x.Type is ChatMessageTypes.Text)?.Text;
-            object? structuredResult = await request.ResponseFormat.Invoke(content ?? "{}").ConfigureAwait(false);
-
-            if (result is not null)
-            {
-                result.InvocationResult = structuredResult;
-            }
+            object structuredResult = await request.ResponseFormat.Invoke(content ?? "{}").ConfigureAwait(false);
+            result?.InvocationResult = structuredResult;
 
             return structuredResult;
+        }
+
+        void NormalizeAudio(IChatAudio audio)
+        {
+            audio.Format ??= request.Audio?.Format switch
+            {
+                ChatRequestAudioFormats.Wav => ChatAudioFormats.Wav,
+                ChatRequestAudioFormats.Mp3 => ChatAudioFormats.Mp3,
+                _ => null
+            };
+                            
+            audio.MimeType ??= request.Audio?.Format switch
+            {
+                ChatRequestAudioFormats.Wav => "audio/wav",
+                ChatRequestAudioFormats.Mp3 => "audio/mp3",
+                ChatRequestAudioFormats.Pcm16 => null,
+                ChatRequestAudioFormats.Flac => "audio/flac",
+                ChatRequestAudioFormats.Opus => "audio/ogg",
+                _ => null
+            };
+        }
+        
+        if (result?.Choices is not null)
+        {
+            foreach (ChatChoice choice in result.Choices)
+            {
+                if (choice.Message is not null)
+                {
+                    if (choice.Message.Audio is not null)
+                    {
+                        NormalizeAudio(choice.Message.Audio);
+                    }
+                    
+                    if (choice.Message.Parts is not null)
+                    {
+                        foreach (ChatMessagePart part in choice.Message.Parts)
+                        {
+                            if (part.Audio is not null)
+                            {
+                                NormalizeAudio(part.Audio);
+                            }
+                        }
+                    }
+                }
+            }
         }
         
         if ((request.Tools?.Any(x => x.Delegate is not null) ?? false) && contentSource.ToolCalls?.Count > 0)
@@ -214,19 +257,22 @@ public class ChatEndpoint : EndpointBase
                 
             foreach (ToolCall toolCall in contentSource.ToolCalls)
             {
-                Tool? match = request.Tools.FirstOrDefault(x => string.Equals(x.Function?.Name, toolCall.FunctionCall.Name));
-
-                if (match?.Delegate is null)
+                if (toolCall.FunctionCall is not null)
                 {
-                    continue;
-                }
+                    Tool? match = request.Tools.FirstOrDefault(x => string.Equals(x.Function?.Name, toolCall.FunctionCall.Name));
 
-                toolCall.FunctionCall.Tool = match;
+                    if (match?.Delegate is null)
+                    {
+                        continue;
+                    }
+
+                    toolCall.FunctionCall.Tool = match;
                     
-                tasks.Add(Task.Run(async () =>
-                { 
-                    await toolCall.FunctionCall.Invoke(toolCall.FunctionCall.Arguments).ConfigureAwait(false);
-                }));
+                    tasks.Add(Task.Run(async () =>
+                    { 
+                        await toolCall.FunctionCall.Invoke(toolCall.FunctionCall.Arguments ?? "{}").ConfigureAwait(false);
+                    }));   
+                }
             }
 
             if (tasks.Count > 0)

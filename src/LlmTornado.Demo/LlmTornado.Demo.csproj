@@ -6,10 +6,12 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <LangVersion>preview</LangVersion>
+        <NoWarn>$(NoWarn);MEAI001</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\LlmTornado.Contrib\LlmTornado.Contrib.csproj" />
+        <ProjectReference Include="..\LlmTornado.Microsoft.Extensions.AI\LlmTornado.Microsoft.Extensions.AI.csproj" />
         <ProjectReference Include="..\LlmTornado.Toolkit\LlmTornado.Toolkit.csproj" />
         <ProjectReference Include="..\LlmTornado.Agents\LlmTornado.Agents.csproj" />
         <ProjectReference Include="..\LlmTornado.VectorDatabases.ChromaDB\LlmTornado.VectorDatabases.ChromaDB.csproj" />
@@ -26,6 +28,7 @@
     <ItemGroup>
       <PackageReference Include="Flurl.Http" Version="4.0.2" />
       <PackageReference Include="LibVLCSharp" Version="3.9.4" />
+      <PackageReference Include="PuppeteerSharp" Version="20.2.4" />
       <PackageReference Include="VideoLAN.LibVLC.Windows" Version="3.0.21" />
     </ItemGroup>
 </Project>

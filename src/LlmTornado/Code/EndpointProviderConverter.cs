@@ -32,6 +32,10 @@ internal static class EndpointProviderConverter
             {
                 UrlResolver = (endpoint, url, ctx) => $"{string.Format(api.ApiUrlFormat ?? "https://api.perplexity.ai/{0}", OpenAiEndpointProvider.GetEndpointUrlFragment(endpoint, LLmProviders.Perplexity))}{url}"
             },
+            LLmProviders.Zai => new OpenAiEndpointProvider(LLmProviders.Zai)
+            {
+                UrlResolver = (endpoint, url, ctx) => $"{string.Format(api.ApiUrlFormat ?? "https://api.z.ai/api/paas/v4/{0}", OpenAiEndpointProvider.GetEndpointUrlFragment(endpoint, LLmProviders.Zai))}{url}"
+            },
             LLmProviders.Voyage => new OpenAiEndpointProvider(LLmProviders.Voyage)
             {
                 UrlResolver = (endpoint, url, ctx) => $"{string.Format(api.ApiUrlFormat ?? "https://api.voyageai.com/{0}/{1}", api.ResolveApiVersion(), OpenAiEndpointProvider.GetEndpointUrlFragment(endpoint, LLmProviders.Voyage))}{url}"

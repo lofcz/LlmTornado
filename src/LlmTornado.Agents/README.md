@@ -179,21 +179,21 @@ It provides a structured way to manage the flow of conversation, handle user inp
 
 # The Standard Process for talking with an agent goes like this:
 
-![standard process](/assets/ChatCompletionFlow.jpg)
+![standard process](/src/LlmTornado.Agents/assets/ChatCompletionFlow.jpg)
 
 # Using the Agent loop we can handle the tool invoking automatically
 
-![AgentFlow](/assets/AgentRunnerFlow.jpg)
+![AgentFlow](/src/LlmTornado.Agents/assets/AgentRunnerFlow.jpg)
 
 Custom Runtime Configurations can be created as long as the Class inherits the interface `IRuntimeConfiguration`
 
 # Using ChatRuntime To add more complex agentic behavior  
 ## Basic Concept
-![RuntimeFlow](/assets/RuntimeFlow.jpg)
+![RuntimeFlow](/src/LlmTornado.Agents/assets/RuntimeFlow.jpg)
 
 # Prebuilt Runtime Configurations
 ## Sequential ChatRuntime Configuration
-![SequentialFlow](/assets/SequentialFlow.jpg)
+![SequentialFlow](/src/LlmTornado.Agents/assets/SequentialFlow.jpg)
 
 Sequential Instructions allows additional controls over the basic Instructions to allow the next agent in line not to repond to itself (Role.Assistant message)
 
@@ -242,7 +242,7 @@ Sequential Instructions allows additional controls over the basic Instructions t
 ```
 
 ## Handoff ChatRuntime Configuration
-![HandoffFlow](/assets/handoffOrchestrationflow.jpg)
+![HandoffFlow](/src/LlmTornado.Agents/assets/handoffOrchestrationFlow.jpg)
 ```csharp
 HandoffAgent translatorAgent = new HandoffAgent(
             client: client,
@@ -271,10 +271,10 @@ Console.WriteLine(report.Content);
 ```
 # Power of the Orchestration Runtime Configuration
 ## Orchestration powered by State Machine architecture
-![OrchestrationFlow](/assets/OrchestrationFlow.jpg)
+![OrchestrationFlow](/src/LlmTornado.Agents/assets/OrchestrationFlow.jpg)
 
 ## Inside the Orchestration Invoke
-![OrchestrationInvoke](/assets/OrchestrationInvokeFlow.jpg)
+![OrchestrationInvoke](/src/LlmTornado.Agents/assets/OrchestrationInvokeFlow.jpg)
 
 * Think of a `Orchestration` as a State Machine with strongly typed `TInput` and `TOutput` values for input validation
 * Think of a `Runnable` as a state within a State Machine with strongly typed `TInput` and `TOutput` values for input validation
@@ -283,10 +283,10 @@ Console.WriteLine(report.Content);
 * Using the `Advancer` you can even add a Conversion Method as an input parameter to the transition to facilitate advancing to a Runnable with a invalid `TInput` (`TInput` != `TOutput`)
 
 ## Creating Custom Orchestration Workflows
-![CodingOrchestration](/assets/CodingOrchestrationflow.jpg)
+![CodingOrchestration](/src/LlmTornado.Agents/assets/CodingOrchestrationflow.jpg)
 
 ## Create Complex Orchestration Workflows
-![ComplexOrchestration](/assets/PlannerOrchestrationFlow.jpg)
+![ComplexOrchestration](/src/LlmTornado.Agents/assets/PlannerOrchestrationFlow.jpg)
 
 ## Where I left off at.
 * Need to add saving to orchestration and impliment serializing RunnableProcess
