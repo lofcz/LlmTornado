@@ -27,7 +27,7 @@ public class MCPServer
     /// </summary>
     public List<McpClientTool> Tools { get; set; } = [];
 
-    public IMcpClient? McpClient { get; set; }
+    public McpClient? McpClient { get; set; }
 
     /// <summary>
     /// Setup the MCP server connection and auto-load tools.
@@ -47,27 +47,31 @@ public class MCPServer
     {
         try
         {
-            if (!this.ServerUrl.StartsWith("http"))
+            IClientTransport clientTransport;
+            if (this.ServerUrl.StartsWith("http"))
             {
-                (string command, string[] arguments) = GetCommandAndArguments([this.ServerUrl]);
-                // Create MCP client to connect to the server
-                McpClient = await McpClientFactory.CreateAsync(new StdioClientTransport(new StdioClientTransportOptions
-                {
-                    Name = this.ServerLabel,
-                    Command = command,
-                    Arguments = arguments,
-                }));
-            }
-            else
-            {
-                HttpClientTransport sseClientTransport = new HttpClientTransport(new HttpClientTransportOptions
+                clientTransport = new HttpClientTransport(new HttpClientTransportOptions
                 {
                     Name = this.ServerLabel,
                     Endpoint = new Uri(this.ServerUrl)
                 });
-                McpClient = await McpClientFactory.CreateAsync(sseClientTransport);
+                
+            }
+            else
+            {
+               
+                (string command, string[] arguments) = GetCommandAndArguments([this.ServerUrl]);
+                // Create MCP client to connect to the server
+
+                clientTransport = new StdioClientTransport(new StdioClientTransportOptions
+                {
+                    Name = this.ServerLabel,
+                    Command = command,
+                    Arguments = arguments,
+                });
             }
 
+            McpClient = await McpClient.CreateAsync(clientTransport);
             // Ping the server to ensure it's reachable
             await McpClient.PingAsync();
 
@@ -85,32 +89,36 @@ public class MCPServer
     /// <param name="serverUrl">Server you wish to get tools from</param>
     /// <param name="serverLabel">Label of the server</param>
     /// <returns>Returns the required IMcpClient type for the following MCP server (SSE vs Stdio).</returns>
-    public static async Task<IMcpClient>? TryGetMcpClientAsync(string serverUrl, string serverLabel)
+    public static async Task<McpClient>? TryGetMcpClientAsync(string serverUrl, string serverLabel)
     {
-        IMcpClient? mcpClient = null;
+        McpClient? mcpClient = null;
         try
         {
-            if (!serverUrl.StartsWith("http"))
+            IClientTransport clientTransport;
+            if (serverUrl.StartsWith("http"))
             {
-                (string command, string[] arguments) = GetCommandAndArguments([serverUrl]);
-                // Create MCP client to connect to the server
-                mcpClient = await McpClientFactory.CreateAsync(new StdioClientTransport(new StdioClientTransportOptions
-                {
-                    Name = serverLabel,
-                    Command = command,
-                    Arguments = arguments,
-                }));
-            }
-            else
-            {
-                HttpClientTransport sseClientTransport = new HttpClientTransport(new HttpClientTransportOptions
+                clientTransport = new HttpClientTransport(new HttpClientTransportOptions
                 {
                     Name = serverLabel,
                     Endpoint = new Uri(serverUrl)
                 });
-                mcpClient = await McpClientFactory.CreateAsync(sseClientTransport);
+
+            }
+            else
+            {
+
+                (string command, string[] arguments) = GetCommandAndArguments([serverUrl]);
+                // Create MCP client to connect to the server
+
+                clientTransport = new StdioClientTransport(new StdioClientTransportOptions
+                {
+                    Name = serverLabel,
+                    Command = command,
+                    Arguments = arguments,
+                });
             }
 
+            mcpClient = await McpClient.CreateAsync(clientTransport);
             // Ping the server to ensure it's reachable
             await mcpClient.PingAsync();
 

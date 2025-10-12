@@ -22,8 +22,11 @@ class Program
             Command = command,
             Arguments = arguments,
         });
-        
-        await using IMcpClient mcpClient = await McpClientFactory.CreateAsync(clientTransport);
+
+        await using var mcpClient = await McpClient.CreateAsync(clientTransport!);
+
+
+        //var tools = await mcpClient.ListToolsAsync();
         List<Tool> tools = await mcpClient.ListTornadoToolsAsync();
         
         TornadoApi api = new TornadoApi(LLmProviders.OpenAi, apiKeys.OpenAi);
