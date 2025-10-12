@@ -10,30 +10,86 @@ namespace LlmTornado.Demo;
 
 public class ImagesDemo : DemoBase
 {
-    static async Task DisplayImage(ImageGenerationResult generatedImg)
+    public static async Task DisplayImage(ImageGenerationResult generatedImg)
     {
-        byte[] imageBytes = Convert.FromBase64String(generatedImg.Data[0].Base64);
-        string tempFile = $"{Path.GetTempFileName()}.jpg";
-        await File.WriteAllBytesAsync(tempFile, imageBytes);
-
-        if (await Helpers.ProgramExists("chafa"))
+        if (generatedImg?.Data == null || generatedImg.Data.Count == 0)
         {
-            try
+            Console.WriteLine("No image data available.");
+            return;
+        }
+
+        string tempFile = $"{Path.GetTempFileName()}.jpg";
+
+        try
+        {
+            // Check if we have base64 data
+            byte[] imageBytes;
+            if (!string.IsNullOrEmpty(generatedImg.Data[0].Base64))
             {
-                Process process = new Process();
-                process.StartInfo.FileName = "chafa";
-                process.StartInfo.Arguments = $"{tempFile}";
-                process.StartInfo.UseShellExecute = false;
-                process.Start();
-                await process.WaitForExitAsync();
+                imageBytes = Convert.FromBase64String(generatedImg.Data[0].Base64);
+                await File.WriteAllBytesAsync(tempFile, imageBytes);
             }
-            catch (Exception e)
+            // Check if we have a URL instead
+            else if (!string.IsNullOrEmpty(generatedImg.Data[0].Url))
             {
+                Console.WriteLine($"Downloading image from URL: {generatedImg.Data[0].Url}");
                 
+                using (HttpClient httpClient = new HttpClient())
+                {
+                    imageBytes = await httpClient.GetByteArrayAsync(generatedImg.Data[0].Url);
+                    await File.WriteAllBytesAsync(tempFile, imageBytes);
+                }
+                
+                Console.WriteLine("Image downloaded successfully.");
+            }
+            else
+            {
+                Console.WriteLine("No base64 data or URL available in the image result.");
+                return;
+            }
+
+            // Display image using chafa if available
+            if (await Helpers.ProgramExists("chafa"))
+            {
+                try
+                {
+                    Process process = new Process();
+                    process.StartInfo.FileName = "chafa";
+                    process.StartInfo.Arguments = $"{tempFile}";
+                    process.StartInfo.UseShellExecute = false;
+                    process.Start();
+                    await process.WaitForExitAsync();
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"Failed to display image with chafa: {e.Message}");
+                }
+            }
+            else
+            {
+                Console.WriteLine("chafa not found. Install it to display images in the terminal.");
+                Console.WriteLine($"Image saved temporarily to: {tempFile}");
             }
         }
-        
-        File.Delete(tempFile);
+        catch (Exception e)
+        {
+            Console.WriteLine($"Error processing image: {e.Message}");
+        }
+        finally
+        {
+            // Clean up temporary file
+            if (File.Exists(tempFile))
+            {
+                try
+                {
+                    File.Delete(tempFile);
+                }
+                catch
+                {
+                    // Ignore cleanup errors
+                }
+            }
+        }
     }
     
     [TornadoTest]

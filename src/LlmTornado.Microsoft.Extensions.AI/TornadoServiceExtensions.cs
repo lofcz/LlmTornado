@@ -86,6 +86,22 @@ public static class TornadoServiceExtensions
     }
 
     /// <summary>
+    /// Adds a <see cref="TornadoImageGenerator"/> as an <see cref="IImageGenerator"/> to the service collection.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="api">The LlmTornado API instance.</param>
+    /// <param name="defaultModel">The default model string to use.</param>
+    /// <returns>The service collection for chaining.</returns>
+    public static IServiceCollection AddTornadoImageGenerator(
+        this IServiceCollection services,
+        TornadoApi api,
+        string defaultModel)
+    {
+        services.AddSingleton<IImageGenerator>(sp => new TornadoImageGenerator(api, defaultModel));
+        return services;
+    }
+
+    /// <summary>
     /// Creates a new <see cref="TornadoChatClient"/> instance.
     /// </summary>
     /// <param name="api">The LlmTornado API instance.</param>
@@ -143,5 +159,18 @@ public static class TornadoServiceExtensions
         int? defaultDimensions = null)
     {
         return new TornadoEmbeddingGenerator(api, defaultModel, defaultDimensions);
+    }
+    
+    /// <summary>
+    /// Creates a new <see cref="TornadoImageGenerator"/> instance.
+    /// </summary>
+    /// <param name="api">The LlmTornado API instance.</param>
+    /// <param name="defaultModel">The default model string to use.</param>
+    /// <returns>A new image generator instance.</returns>
+    public static IImageGenerator AsImageGenerator(
+        this TornadoApi api,
+        string defaultModel)
+    {
+        return new TornadoImageGenerator(api, defaultModel);
     }
 }

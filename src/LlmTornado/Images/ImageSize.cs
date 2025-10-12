@@ -79,7 +79,12 @@ public enum TornadoImageSizes
     /// Portrait, supported by gpt-image-1
     /// </summary>
     [EnumMember(Value = "1024x1536")]
-    Size1024x1536
+    Size1024x1536,
+    
+    /// <summary>
+    /// When used, forces <see cref="ImageGenerationRequest.Width"/> and <see cref="ImageGenerationRequest.Height"/> to be use instead.
+    /// </summary>
+    Custom
 }
 
 /// <summary>

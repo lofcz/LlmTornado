@@ -4,6 +4,7 @@ using LlmTornado.ChatFunctions;
 using LlmTornado.Common;
 using Microsoft.Extensions.AI;
 using ChatMessage = LlmTornado.Chat.ChatMessage;
+using LlmTornado.Images;
 
 namespace LlmTornado.Microsoft.Extensions.AI;
 
@@ -323,5 +324,78 @@ internal static class TypeConverters
            name: function.Name,
            description: function.Description,
            parameters: function.JsonSchema);
+    }
+    
+    /// <summary>
+    /// Converts a Microsoft.Extensions.AI ImageGenerationRequest to a LlmTornado ImageGenerationRequest.
+    /// </summary>
+    public static Images.ImageGenerationRequest ToLlmTornado(this global::Microsoft.Extensions.AI.ImageGenerationRequest request, string model, global::Microsoft.Extensions.AI.ImageGenerationOptions? options)
+    {
+        Images.ImageGenerationRequest tornadoRequest = new Images.ImageGenerationRequest
+        {
+            Prompt = request.Prompt,
+            Model = model,
+            NumOfImages = options?.Count,
+            ResponseFormat = options?.ResponseFormat != null 
+                ? (options.ResponseFormat == ImageGenerationResponseFormat.Uri 
+                    ? TornadoImageResponseFormats.Url 
+                    : TornadoImageResponseFormats.Base64)
+                : null
+        };
+        
+        // Handle image size conversion
+        if (options?.ImageSize is not null)
+        {
+            var size = options.ImageSize.Value;
+            string sizeString = $"{size.Width}x{size.Height}";
+            
+            // Try to find a matching enum value
+            var matchedSize = Images.ImageGenerationRequest.TryParseSizeString(sizeString);
+            
+            if (matchedSize.HasValue)
+            {
+                tornadoRequest.Size = matchedSize.Value;
+            }
+            else
+            {
+                // Custom size - use Custom enum with Width/Height properties
+                tornadoRequest.Size = TornadoImageSizes.Custom;
+                tornadoRequest.Width = size.Width;
+                tornadoRequest.Height = size.Height;
+            }
+        }
+        
+        return tornadoRequest;
+    }
+    
+    /// <summary>
+    /// Converts a LlmTornado ImageResult to a Microsoft.Extensions.AI ImageGenerationResponse.
+    /// </summary>
+    public static global::Microsoft.Extensions.AI.ImageGenerationResponse ToMicrosoftAI(this ImageGenerationResult result)
+    {
+        List<AIContent> contents = [];
+
+        if (result.Data != null)
+        {
+            foreach (TornadoGeneratedImage data in result.Data)
+            {
+                if (!string.IsNullOrEmpty(data.Url))
+                {
+                    contents.Add(new UriContent(new Uri(data.Url), "image/png"));
+                }
+                else if (!string.IsNullOrEmpty(data.Base64))
+                {
+                    byte[] bytes = Convert.FromBase64String(data.Base64);
+                    contents.Add(new DataContent(bytes, "image/png"));
+                }
+            }
+        }
+
+        ImageGenerationResponse response = new ImageGenerationResponse(contents)
+        {
+            RawRepresentation = result
+        };
+
+        return response;
     }
 }

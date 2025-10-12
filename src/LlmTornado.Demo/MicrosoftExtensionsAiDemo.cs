@@ -1,5 +1,8 @@
+using System;
+using System.IO;
 using LlmTornado.Chat.Models;
 using LlmTornado.Embedding.Models;
+using LlmTornado.Images.Models;
 using LlmTornado.Microsoft.Extensions.AI;
 using Microsoft.Extensions.AI;
 
@@ -10,8 +13,6 @@ public class MicrosoftExtensionsAiDemo
     [TornadoTest]
     public static async Task SimpleChatExample()
     {
-        Console.WriteLine("--- Example 1: Simple Chat ---");
-        
         // Create a chat client
         TornadoApi api = Program.Connect();
         IChatClient chatClient = api.AsChatClient(ChatModel.OpenAi.Gpt41.V41Mini);
@@ -33,7 +34,6 @@ public class MicrosoftExtensionsAiDemo
     [TornadoTest]
     public static async Task StreamingChatExample()
     {
-        Console.WriteLine("--- Example 2: Streaming Chat ---");
         TornadoApi api = Program.Connect();
         IChatClient chatClient = api.AsChatClient(ChatModel.OpenAi.Gpt41.V41Mini);
         
@@ -54,8 +54,6 @@ public class MicrosoftExtensionsAiDemo
     [TornadoTest]
     public static async Task MultiModalChatExample()
     {
-        Console.WriteLine("--- Example 3: Multi-modal Chat ---");
-        
         TornadoApi api = Program.Connect();
         IChatClient chatClient = api.AsChatClient(ChatModel.OpenAi.Gpt41.V41);
         
@@ -74,8 +72,6 @@ public class MicrosoftExtensionsAiDemo
     [TornadoTest]
     public static async Task FunctionCallingExample()
     {
-        Console.WriteLine("--- Example 4: Function Calling ---");
-        
         TornadoApi api = Program.Connect();
         IChatClient chatClient = api.AsChatClient(ChatModel.OpenAi.Gpt41.V41Mini);
         
@@ -130,8 +126,6 @@ public class MicrosoftExtensionsAiDemo
     [TornadoTest]
     public static async Task EmbeddingExample()
     {
-        Console.WriteLine("--- Example 5: Embeddings ---");
-        
         TornadoApi api = Program.Connect();
         IEmbeddingGenerator<string, Embedding<float>> embeddingGenerator = api.AsEmbeddingGenerator(
             EmbeddingModel.OpenAi.Gen3.Small,
@@ -158,5 +152,49 @@ public class MicrosoftExtensionsAiDemo
         }
         
         Console.WriteLine($"Tokens used: {embeddings.Usage?.TotalTokenCount}\n");
+    }
+
+    [TornadoTest]
+    public static async Task ImageGenerationOpenAiExample()
+    {
+        TornadoApi api = Program.Connect();
+        IImageGenerator imageGenerator = api.AsImageGenerator(ImageModel.OpenAi.Dalle.V3);
+        
+        ImageGenerationRequest request = new ImageGenerationRequest("A serene mountain landscape at sunset with a crystal clear lake reflecting the mountains");
+        ImageGenerationResponse response = await imageGenerator.GenerateAsync(request);
+        
+        Console.WriteLine($"Generated {response.Contents.Count} image(s)");
+        
+        if (response.RawRepresentation is Images.ImageGenerationResult tornadoResult)
+        {
+            await ImagesDemo.DisplayImage(tornadoResult);
+        }
+        
+        Console.WriteLine();
+    }
+
+    [TornadoTest]
+    public static async Task ImageGenerationGoogleImagenExample()
+    {
+        TornadoApi api = Program.Connect();
+        IImageGenerator imageGenerator = api.AsImageGenerator(ImageModel.Google.Imagen.V4FastGenerate001);
+        
+        ImageGenerationRequest request = new ImageGenerationRequest("A futuristic cityscape with flying cars and neon lights at night, cyberpunk style");
+        ImageGenerationOptions options = new ImageGenerationOptions
+        {
+            ImageSize = new System.Drawing.Size(1536, 1024),
+            ResponseFormat = ImageGenerationResponseFormat.Data
+        };
+        
+        ImageGenerationResponse response = await imageGenerator.GenerateAsync(request, options);
+        
+        Console.WriteLine($"Generated {response.Contents.Count} image(s)");
+        
+        if (response.RawRepresentation is Images.ImageGenerationResult tornadoResult)
+        {
+            await ImagesDemo.DisplayImage(tornadoResult);
+        }
+        
+        Console.WriteLine();
     }
 }

@@ -11,7 +11,7 @@
     <PackageLicenseExpression>CC0-1.0</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/lofcz/LlmTornado</PackageProjectUrl>
     <RepositoryUrl>https://github.com/lofcz/LlmTornado</RepositoryUrl>
-    <PackageTags>OpenAI;Anthropic;Google;Microsoft.Extensions.AI;AI;LLM;Chat;Embeddings</PackageTags>
+    <PackageTags>OpenAI;Anthropic;Google;Microsoft.Extensions.AI;AI;LLM;Chat;Embeddings;ImageGeneration</PackageTags>
     <Title>LlmTornado.Microsoft.Extensions.AI</Title>
     <PackageId>LlmTornado.Microsoft.Extensions.AI</PackageId>
     <Version>1.1.0</Version>
@@ -19,6 +19,7 @@
     <TargetFrameworks>net8.0;netstandard2.0</TargetFrameworks>
     <LangVersion>preview</LangVersion>
     <PackageIcon>nuget_logo.jpg</PackageIcon>
+    <NoWarn>$(NoWarn);MEAI001</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

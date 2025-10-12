@@ -10,6 +10,7 @@ This package provides `IChatClient` and `IEmbeddingGenerator` implementations th
 
 - ✅ Full `IChatClient` implementation with streaming support
 - ✅ Full `IEmbeddingGenerator` implementation
+- ✅ Full `IImageGenerator` implementation
 - ✅ OpenTelemetry instrumentation for observability
 - ✅ Automatic message content conversion (text, images, files)
 - ✅ Tool/function calling support
@@ -64,6 +65,23 @@ await foreach (var update in chatClient.GetStreamingResponseAsync(messages))
 }
 ```
 
+### Image Generation
+
+```csharp
+using LlmTornado.Images;
+
+// Create an image generator
+var imageGenerator = api.AsImageGenerator(ImageModels.DallE3);
+
+// Generate an image
+var imageResponse = await imageGenerator.GenerateImageAsync(
+    "A cat wearing a top hat",
+    new ImageGenerationOptions { ImageSize = new System.Drawing.Size(1024, 1024) });
+
+var imageUrl = imageResponse.Contents.OfType<UriContent>().FirstOrDefault()?.Uri;
+Console.WriteLine($"Generated image URL: {imageUrl}");
+```
+
 ### Embedding Generator
 
 ```csharp
@@ -105,11 +123,15 @@ services.AddTornadoEmbeddingGenerator(
     EmbeddingModel.OpenAi.TextEmbedding3Small,
     dimensions: 1536);
 
+// Add image generator
+services.AddTornadoImageGenerator(api, ImageModels.DallE3);
+
 var serviceProvider = services.BuildServiceProvider();
 
 // Use from DI
 var chatClient = serviceProvider.GetRequiredService<IChatClient>();
 var embeddingGenerator = serviceProvider.GetRequiredService<IEmbeddingGenerator<string, Embedding<float>>>();
+var imageGenerator = serviceProvider.GetRequiredService<IImageGenerator>();
 ```
 
 ### Multi-Modal Content
