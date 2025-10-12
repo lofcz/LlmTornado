@@ -1270,7 +1270,7 @@ public class ChatImage
     }
 
     /// <summary>
-    ///     Creates a new chat image
+    ///     Creates a new chat image.
     /// </summary>
     /// <param name="content">Publicly available URL to the image or base64 encoded content</param>
     /// <param name="detail">The detail level to use, defaults to <see cref="ImageDetail.Auto" /></param>
@@ -1278,6 +1278,15 @@ public class ChatImage
     {
         Url = content;
         Detail = detail;
+    }
+    
+    /// <summary>
+    ///     Creates a new chat image.
+    /// </summary>
+    public ChatImage(string content, string mimeType)
+    {
+        Url = content;
+        MimeType = mimeType;
     }
     
     /// <summary>

@@ -12,10 +12,20 @@ namespace LlmTornado.Chat.Models;
 public class ChatModelGoogleGeminiPreview : IVendorModelClassProvider
 {
     /// <summary>
+    /// Gemini 2.5 Computer Use Preview model enables building browser control agents that interact with and automate tasks using screenshots and UI actions like mouse clicks and keyboard inputs.
+    /// </summary>
+    public static readonly ChatModel ModelGemini25ComputerUsePreview102025 = new ChatModel("gemini-2.5-computer-use-preview-10-2025", LLmProviders.Google, 1_048_576);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelGemini25ComputerUsePreview102025"/>
+    /// </summary>
+    public readonly ChatModel Gemini25ComputerUsePreview102025 = ModelGemini25ComputerUsePreview102025;
+
+    /// <summary>
     /// Gemini Robotics-ER, short for Gemini Robotics-Embodied Reasoning, is a thinking model that enhances robots' abilities to understand and interact with the physical world.
     /// </summary>
     public static readonly ChatModel ModelGeminiRoboticsRe15Preview = new ChatModel("gemini-robotics-er-1.5-preview", LLmProviders.Google, 1_048_576);
-    
+
     /// <summary>
     /// <inheritdoc cref="ModelGeminiRoboticsRe15Preview"/>
     /// </summary>
@@ -152,8 +162,8 @@ public class ChatModelGoogleGeminiPreview : IVendorModelClassProvider
     public static List<IModel> ModelsAll => LazyModelsAll.Value;
 
     private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [
-        ModelGemini25ProPreview0325, ModelGemini25ProPreview0506, ModelGemini25ProPreview0605, ModelGemini25FlashPreview0417, 
-        ModelGemini25FlashPreview0520, ModelGemini2FlashPreviewImageGeneration, ModelGemini25FlashPreviewTts, ModelGemini25ProPreviewTts, 
+        ModelGemini25ComputerUsePreview102025, ModelGemini25ProPreview0325, ModelGemini25ProPreview0506, ModelGemini25ProPreview0605, ModelGemini25FlashPreview0417,
+        ModelGemini25FlashPreview0520, ModelGemini2FlashPreviewImageGeneration, ModelGemini25FlashPreviewTts, ModelGemini25ProPreviewTts,
         ModelGemini25FlashLitePreview0617, ModelGemini25FlashImagePreview, ModelGemini25FlashPreview0925, ModelGemini25FlashLitePreview0925,
         ModelGeminiRoboticsRe15Preview
     ]);

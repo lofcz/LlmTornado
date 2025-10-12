@@ -69,6 +69,13 @@ public class ChatModelGoogle : BaseVendorModelProvider
     public static List<IModel> ModelsAll => LazyModelsAll.Value;
 
     private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [..ChatModelGoogleGemini.ModelsAll, ..ChatModelGoogleGeminiExperimental.ModelsAll, ..ChatModelGoogleGemma.ModelsAll, ..ChatModelGoogleGeminiPreview.ModelsAll]);
+
+    /// <summary>
+    /// Computer Use capable models from Google.
+    /// </summary>
+    public static List<IModel> ComputerUseModels => LazyComputerUseModels.Value;
+
+    private static readonly Lazy<List<IModel>> LazyComputerUseModels = new Lazy<List<IModel>>(() => [ChatModelGoogleGeminiPreview.ModelGemini25ComputerUsePreview102025]);
     
     /// <summary>
     /// Models capable of reasoning.

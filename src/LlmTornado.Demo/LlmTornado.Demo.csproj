@@ -28,6 +28,7 @@
     <ItemGroup>
       <PackageReference Include="Flurl.Http" Version="4.0.2" />
       <PackageReference Include="LibVLCSharp" Version="3.9.4" />
+      <PackageReference Include="PuppeteerSharp" Version="20.2.4" />
       <PackageReference Include="VideoLAN.LibVLC.Windows" Version="3.0.21" />
     </ItemGroup>
 </Project>
