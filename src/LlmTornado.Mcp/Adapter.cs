@@ -9,7 +9,7 @@ namespace LlmTornado.Mcp;
 
 public static class McpExtensions
 {
-    public static async ValueTask<List<Tool>> ListTornadoToolsAsync(this IMcpClient client)
+    public static async ValueTask<List<Tool>> ListTornadoToolsAsync(this McpClient client)
     {
         IList<McpClientTool> tools = await client.ListToolsAsync();
         List<Tool> converted = tools.Select(x => x.ToTornadoTool()).ToList();

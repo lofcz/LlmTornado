@@ -11,13 +11,13 @@
       <ProjectReference Include="..\LlmTornado\LlmTornado.csproj" />
     </ItemGroup>
     <ItemGroup>
-      <PackageReference Include="ModelContextProtocol" Version="[0.4.0-preview.1, )" />
+      <PackageReference Include="ModelContextProtocol" Version="0.4.0-preview.2" />
     </ItemGroup>
 
     <PropertyGroup>
         <PackageIcon>nuget_logo.jpg</PackageIcon>
     </PropertyGroup>
     <ItemGroup>
-        <None Include="nuget_logo.jpg" Pack="true" PackagePath="\"/>
+        <None Include="nuget_logo.jpg" Pack="true" PackagePath="\" />
     </ItemGroup>
 </Project>
