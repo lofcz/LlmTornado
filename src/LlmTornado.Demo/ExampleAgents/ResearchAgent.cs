@@ -90,13 +90,13 @@ public class ResearchAgentConfiguration : OrchestrationRuntimeConfiguration
         exit = new ExitRunnable(this) { AllowDeadEnd = true }; //Set deadend to disable reattempts and finish the execution
 
         //Setup the orchestration flow
-        planner.AddAdvancer((plan) => plan.items.Length > 0, researcher);
+        planner.AddAdvancer((plan) => !string.IsNullOrWhiteSpace(plan), researcher);
         researcher.AddAdvancer((research) => !string.IsNullOrEmpty(research), reporter);
         reporter.AddAdvancer((reporter) => !string.IsNullOrEmpty(reporter.FinalReport), exit);
 
         //Configure the Orchestration entry and exit points
         SetEntryRunnable(planner);
-        SetRunnableWithResult(exit); 
+        SetRunnableWithResult(exit);
     }
 
     public ResearchAgentConfiguration(TornadoApi? client = null)
@@ -110,7 +110,7 @@ public class ResearchAgentConfiguration : OrchestrationRuntimeConfiguration
         exit = new ExitRunnable(this) { AllowDeadEnd = true }; //Set deadend to disable reattempts and finish the execution
 
         //Setup the orchestration flow
-        planner.AddAdvancer((plan) => plan.items.Length > 0, researcher);
+        planner.AddAdvancer((plan) => !string.IsNullOrWhiteSpace(plan), (result)=>new ChatMessage(ChatMessageRoles.Assistant,result), researcher);
         researcher.AddAdvancer((research) => !string.IsNullOrEmpty(research), reporter);
         reporter.AddAdvancer((reporter) => !string.IsNullOrEmpty(reporter.FinalReport), exit);
 
@@ -132,7 +132,7 @@ public class ResearchAgentConfiguration : OrchestrationRuntimeConfiguration
 }
 
 
-public class PlannerRunnable : OrchestrationRunnable<ChatMessage, WebSearchPlan>
+public class PlannerRunnable : OrchestrationRunnable<ChatMessage, string>
 {
     TornadoAgent Agent;
     private int _maxItemsToPlan = 10;
@@ -152,46 +152,38 @@ public class PlannerRunnable : OrchestrationRunnable<ChatMessage, WebSearchPlan>
             instructions: instructions);
     }
 
-    public override async ValueTask<WebSearchPlan> Invoke(RunnableProcess<ChatMessage, WebSearchPlan> process)
+    public override async ValueTask<string> Invoke(RunnableProcess<ChatMessage, string> process)
     {
         process.RegisterAgent(agent: Agent);
 
         Conversation conv = await Agent.RunAsync(appendMessages: new List<ChatMessage> { process.Input });
 
-        WebSearchPlan? plan = await conv.Messages.Last().Content?.SmartParseJsonAsync<WebSearchPlan>(Agent);
-
-        if (plan is null || plan?.items is null || plan?.items.Length == 0)
-        {
-            return new WebSearchPlan([]);
-        }
-        else
-        {
-            return plan.Value;
-        }
+       return conv.Messages.Last().Content ?? string.Empty;
     }
 }
 
-public class ResearchRunnable : OrchestrationRunnable<WebSearchPlan, string>
+public class ResearchRunnable : OrchestrationRunnable<ChatMessage, string>
 {
     public int MaxDegreeOfParallelism { get; set; } = 4;
     public int MaxItemsToProcess { get; set; } = 3;
     TornadoApi Client { get; set; }
     public ResearchRunnable(TornadoApi client, Orchestration orchestrator, int maxItemsToProcess = 3) : base(orchestrator) { Client = client; MaxItemsToProcess = maxItemsToProcess; }
 
-    public override async ValueTask<string> Invoke(RunnableProcess<WebSearchPlan, string> process)
+    public override async ValueTask<string> Invoke(RunnableProcess<ChatMessage, string> process)
     {
+        WebSearchPlan? plan = await process.Input.Content?.SmartParseJsonAsync<WebSearchPlan>(new TornadoAgent(Client,ChatModel.OpenAi.Gpt41.V41Mini));
 
         SemaphoreSlim semaphore = new SemaphoreSlim(MaxDegreeOfParallelism);
 
         List<Task<string>> researchTasks =
-            process.Input.items
+            plan.Value.items
                 .Take(MaxItemsToProcess)
                 .Select(item => Task.Run(async () =>
                 {
                     await semaphore.WaitAsync();
                     try
                     {
-                        return await RunResearchAgent(item, process);
+                        return await RunResearchAgent(item.query);
                     }
                     finally
                     {
@@ -206,7 +198,7 @@ public class ResearchRunnable : OrchestrationRunnable<WebSearchPlan, string>
     }
 
 
-    private async ValueTask<string> RunResearchAgent(WebSearchItem item, RunnableProcess<WebSearchPlan, string> process)
+    private async ValueTask<string> RunResearchAgent(string item)
     {
         string instructions = """
                 You are a research assistant. Given a search term, you search the web for that term and
@@ -224,9 +216,7 @@ public class ResearchRunnable : OrchestrationRunnable<WebSearchPlan, string>
 
         Agent.ResponseOptions = new ResponseRequest() { Tools = [new ResponseWebSearchTool()] };
 
-        process.RegisterAgent(Agent);
-
-        ChatMessage userMessage = new ChatMessage(Code.ChatMessageRoles.User, item.query);
+        ChatMessage userMessage = new ChatMessage(Code.ChatMessageRoles.User, item);
 
         Conversation conv = await Agent.RunAsync(appendMessages: new List<ChatMessage> { userMessage });
 
