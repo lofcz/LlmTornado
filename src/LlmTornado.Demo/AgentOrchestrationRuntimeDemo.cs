@@ -3,6 +3,8 @@ using LlmTornado.Agents.ChatRuntime;
 using LlmTornado.Agents.ChatRuntime.Orchestration;
 using LlmTornado.Agents.ChatRuntime.RuntimeConfigurations;
 using LlmTornado.Agents.DataModels;
+using LlmTornado.Agents.Samples;
+using LlmTornado.Agents.Samples.ChatBot;
 using LlmTornado.Agents.Utility;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
@@ -27,16 +29,16 @@ namespace LlmTornado.Demo;
 public class AgentOrchestrationRuntimeDemo : DemoBase
 {
     [TornadoTest]
-    public static async Task MagenticOneAgentRuntimeDemo()
+    public static async Task MemoryChatBotAgentRuntimeDemo()
     {
-        MagenticOneConfiguration RuntimeConfiguration = new MagenticOneConfiguration(Program.Connect());
+        MemoryChatBot RuntimeConfiguration = new MemoryChatBot(Program.Connect());
 
         ChatRuntime runtime = new ChatRuntime(RuntimeConfiguration);
 
         Console.WriteLine("[Assistant]: What task would you like the Magentic-One agents to accomplish?");
         Console.Write("[User]: ");
         string task = Console.ReadLine();
-        ChatMessage result = await runtime.InvokeAsync(new ChatMessage(Code.ChatMessageRoles.User, task ?? "Research the latest trends in AI and create a summary document."));
+        ChatMessage result = await runtime.InvokeAsync(new ChatMessage(Code.ChatMessageRoles.User, task ?? "hello world."));
 
         Console.WriteLine(result.Content);
     }

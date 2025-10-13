@@ -8,7 +8,8 @@
         "ASPNETCORE_ENVIRONMENT": "Development"
       },
       "dotnetRunMessages": true,
-      "applicationUrl": "http://localhost:5125"
+      "applicationUrl": "http://localhost:5125",
+      "nativeDebugging": true
     },
     "https": {
       "commandName": "Project",
@@ -18,7 +19,8 @@
         "ASPNETCORE_ENVIRONMENT": "Development"
       },
       "dotnetRunMessages": true,
-      "applicationUrl": "https://localhost:7263;http://localhost:5125"
+      "applicationUrl": "https://localhost:7263;http://localhost:5125",
+      "nativeDebugging": true
     },
     "IIS Express": {
       "commandName": "IISExpress",
@@ -26,7 +28,8 @@
       "launchUrl": "swagger",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
-      }
+      },
+      "nativeDebugging": true
     },
     "Container (Dockerfile)": {
       "commandName": "Docker",

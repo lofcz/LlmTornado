@@ -48,12 +48,15 @@ public class OrchestrationAdvancer
     /// Represents the type of the state transition.
     /// </summary>
     public string type = "base";
+
+    public OrchestrationAdvancer() { }
+
     public OrchestrationAdvancer(OrchestrationRunnableBase runnable)
     {
         NextRunnable = runnable ?? throw new ArgumentNullException(nameof(runnable), "Next runner cannot be null.");
     }
 
-    public OrchestrationAdvancer(Delegate methodToInvoke, OrchestrationRunnableBase nextRunnable) 
+    public OrchestrationAdvancer(Delegate methodToInvoke, OrchestrationRunnableBase nextRunnable)
     {
         type = "out";
 
@@ -89,7 +92,12 @@ public class OrchestrationAdvancer
 /// <typeparam name="T"> T being the Type of Input for the next State</typeparam>
 public class OrchestrationAdvancer<T> : OrchestrationAdvancer
 {
-    public OrchestrationAdvancer(OrchestrationRunnableBase nextRunnable):base(nextRunnable) 
+    public OrchestrationAdvancer(OrchestrationRunnableBase nextRunnable, string type) : base(nextRunnable)
+    {
+        this.type = type;
+    }
+
+    public OrchestrationAdvancer(OrchestrationRunnableBase nextRunnable, AdvancementRequirement<T>? methodToInvoke = null) : base(nextRunnable)
     {
         type = "out";
 
@@ -99,7 +107,10 @@ public class OrchestrationAdvancer<T> : OrchestrationAdvancer
             throw new InvalidOperationException($"{NextRunnable.RunnableName} with input type of {nextRunnable.GetInputType()} requires Input type assignable to type of {typeof(T)}");
         }
 
-        InvokeMethod = new AdvancementRequirement<T>((T input) => true);
+        if (methodToInvoke is null)
+            InvokeMethod = new AdvancementRequirement<T>((T input) => true);
+        else
+            InvokeMethod = methodToInvoke;
     }
 
     public OrchestrationAdvancer(AdvancementRequirement<T> methodToInvoke, OrchestrationRunnableBase nextRunnable) : base(nextRunnable)
@@ -151,7 +162,7 @@ public class OrchestrationAdvancer<TInput, TOutput> : OrchestrationAdvancer<TInp
         }
     }
 
-    public OrchestrationAdvancer(AdvancementRequirement<TInput> methodToInvoke, AdvancementResultConverter<TInput, TOutput> converter, OrchestrationRunnableBase nextRunnable) : base(nextRunnable)
+    public OrchestrationAdvancer(AdvancementRequirement<TInput> methodToInvoke, AdvancementResultConverter<TInput, TOutput> converter, OrchestrationRunnableBase nextRunnable) : base(nextRunnable, "in_out")
     {
         // Validate the next state input type against the type of TOutput
         if (!typeof(TOutput).IsAssignableFrom(nextRunnable.GetInputType()))

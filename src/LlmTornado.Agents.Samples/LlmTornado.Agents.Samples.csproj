@@ -13,6 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\..\ChatBotAgent\LlmTornado.VectorDatabases.PgVector\LlmTornado.VectorDatabases.PgVector.csproj" />
     <ProjectReference Include="..\LlmTornado.Agents\LlmTornado.Agents.csproj" />
     <ProjectReference Include="..\LlmTornado.VectorDatabases.ChromaDB\LlmTornado.VectorDatabases.ChromaDB.csproj" />
     <ProjectReference Include="..\LlmTornado\LlmTornado.csproj" />

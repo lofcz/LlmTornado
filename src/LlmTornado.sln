@@ -49,6 +49,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.Agents.Samples",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.Microsoft.Extensions.AI", "LlmTornado.Microsoft.Extensions.AI\LlmTornado.Microsoft.Extensions.AI.csproj", "{03BA5870-E0F1-4800-BEC9-CB584DFECDD1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.VectorDatabases.PgVector", "..\..\..\ChatBotAgent\LlmTornado.VectorDatabases.PgVector\LlmTornado.VectorDatabases.PgVector.csproj", "{25156F19-C724-59FA-B93E-AEA618B13E23}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -135,6 +137,10 @@ Global
 		{03BA5870-E0F1-4800-BEC9-CB584DFECDD1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{03BA5870-E0F1-4800-BEC9-CB584DFECDD1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{03BA5870-E0F1-4800-BEC9-CB584DFECDD1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{25156F19-C724-59FA-B93E-AEA618B13E23}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{25156F19-C724-59FA-B93E-AEA618B13E23}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{25156F19-C724-59FA-B93E-AEA618B13E23}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{25156F19-C724-59FA-B93E-AEA618B13E23}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
