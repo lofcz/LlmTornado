@@ -8,6 +8,9 @@ namespace LlmTornado.Agents.ChatRuntime;
 /// </summary>
 public interface IRuntimeConfiguration
 {
+    /// <summary>
+    /// Reference to the active ChatRuntime
+    /// </summary>
     public ChatRuntime Runtime { get; set; }
     /// <summary>
     /// Add new message to the chat conversation.
@@ -23,7 +26,7 @@ public interface IRuntimeConfiguration
     public Func<ChatRuntimeEvents, ValueTask>? OnRuntimeEvent { get; set; }
 
     /// <summary>
-    /// Runtime event handler for runtime events.
+    ///  Runtime event handler for tool permission handling.
     /// </summary>
     public Func<string, ValueTask<bool>>? OnRuntimeRequestEvent { get; set; }
 

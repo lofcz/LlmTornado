@@ -25,6 +25,62 @@ public class AgentsDemo : DemoBase
         Console.WriteLine(result.Messages.Last().Content);
     }
 
+    [TornadoTest]
+    public static async Task BasicAgentChatBotStreaming()
+    {
+        TornadoAgent agent = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41Mini, instructions: "You are a useful assistant.", streaming:true);
+
+        Conversation conv = agent.Client.Chat.CreateConversation(agent.Options);
+
+        Console.WriteLine("[Assistant]: Hello");
+        string topic = "";
+        while (topic != "exit")
+        {
+            Console.Write("[User]: ");
+            topic = Console.ReadLine();
+            if (topic == "exit") break;
+            Console.Write("[Assistant]: ");
+            conv = await agent.RunAsync(topic, appendMessages: conv.Messages.ToList(), streaming: true, onAgentRunnerEvent: runEventHandler);
+            Console.WriteLine();
+        }
+    }
+
+    [TornadoTest]
+    public static async Task BasicAgentChatBot()
+    {
+
+        TornadoAgent agent = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41Mini, instructions: "You are a useful assistant.");
+
+        Conversation conv = agent.Client.Chat.CreateConversation(agent.Options);
+
+        Console.Write("\n[Assistant]: Hello");
+        string topic = "";
+        while (topic != "exit")
+        {
+            Console.Write("\n[User]: ");
+            topic = Console.ReadLine();
+            if (topic == "exit") break;
+            Console.Write("\n[Assistant]: ");
+            conv = await agent.RunAsync(topic, appendMessages: conv.Messages.ToList());
+            Console.Write(conv.Messages.Last().Content);
+        }
+    }
+
+    public static ValueTask runEventHandler(AgentRunnerEvents runEvent)
+    {
+        switch (runEvent)
+        {
+            case AgentRunnerStreamingEvent streamingEvent:
+                if (streamingEvent.ModelStreamingEvent is ModelStreamingOutputTextDeltaEvent deltaTextEvent)
+                {
+                    Console.Write(deltaTextEvent.DeltaText); // Write the text delta directly
+                }
+                break;
+            default:
+                break;
+        }
+        return ValueTask.CompletedTask;
+    }
 
     [TornadoTest]
     public static async Task TornadoAgentSaveConversation()
@@ -390,6 +446,8 @@ public class AgentsDemo : DemoBase
         //        ToolCall = calls?.First()
         //    }
         //};
+
+
 
         convo = await agent.RunAsync(streaming: false, responseId: agent.ResponseOptions.PreviousResponseId??"", onAgentRunnerEvent: (evt) => {
             if (evt.EventType == AgentRunnerEventTypes.Streaming && evt is AgentRunnerStreamingEvent streamingEvent)

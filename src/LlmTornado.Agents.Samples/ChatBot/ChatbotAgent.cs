@@ -23,10 +23,10 @@ using System.Text.Json.Serialization;
 
 namespace LlmTornado.Agents.Samples.ChatBot;
 
-public class ChatBotAgent : OrchestrationRuntimeConfiguration
+public class ChatbotAgent : OrchestrationRuntimeConfiguration
 {
     TornadoApi Client { get; set; }
-    public ChatBotAgent()
+    public ChatbotAgent()
     {
         Client = new TornadoApi(LLmProviders.OpenAi, Environment.GetEnvironmentVariable("OPENAI_API_KEY"));
 

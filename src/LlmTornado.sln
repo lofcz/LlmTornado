@@ -45,13 +45,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.A2A", "LlmTornad
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.A2A.AgentServer", "LlmTornado.A2A.AgentServer\LlmTornado.A2A.AgentServer.csproj", "{1551F947-EE7D-437F-9A11-A02D0504DF9E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.A2A.Hosting", "LlmTornado.A2A.Hosting\LlmTornado.A2A.Hosting.csproj", "{34D6405C-B0A1-44AA-93C2-80DC8D6ABCA6}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.A2A.WebUI", "LlmTornado.A2A.WebUI\LlmTornado.A2A.WebUI.csproj", "{5F0719AA-FE7A-3A55-E2AD-48430A64A50D}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.Agents.Samples", "LlmTornado.Agents.Samples\LlmTornado.Agents.Samples.csproj", "{F5528AD5-125C-40D9-9CEB-1794AD755CBD}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.Microsoft.Extensions.AI", "LlmTornado.Microsoft.Extensions.AI\LlmTornado.Microsoft.Extensions.AI.csproj", "{03BA5870-E0F1-4800-BEC9-CB584DFECDD1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.VectorDatabases.PgVector", "LlmTornado.VectorDatabases.PgVector\LlmTornado.VectorDatabases.PgVector.csproj", "{722E4695-ABEC-627B-2415-692A736A76DB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -131,14 +129,6 @@ Global
 		{1551F947-EE7D-437F-9A11-A02D0504DF9E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1551F947-EE7D-437F-9A11-A02D0504DF9E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1551F947-EE7D-437F-9A11-A02D0504DF9E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{34D6405C-B0A1-44AA-93C2-80DC8D6ABCA6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{34D6405C-B0A1-44AA-93C2-80DC8D6ABCA6}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{34D6405C-B0A1-44AA-93C2-80DC8D6ABCA6}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{34D6405C-B0A1-44AA-93C2-80DC8D6ABCA6}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5F0719AA-FE7A-3A55-E2AD-48430A64A50D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5F0719AA-FE7A-3A55-E2AD-48430A64A50D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5F0719AA-FE7A-3A55-E2AD-48430A64A50D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5F0719AA-FE7A-3A55-E2AD-48430A64A50D}.Release|Any CPU.Build.0 = Release|Any CPU
 		{F5528AD5-125C-40D9-9CEB-1794AD755CBD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{F5528AD5-125C-40D9-9CEB-1794AD755CBD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F5528AD5-125C-40D9-9CEB-1794AD755CBD}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -147,6 +137,10 @@ Global
 		{03BA5870-E0F1-4800-BEC9-CB584DFECDD1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{03BA5870-E0F1-4800-BEC9-CB584DFECDD1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{03BA5870-E0F1-4800-BEC9-CB584DFECDD1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{722E4695-ABEC-627B-2415-692A736A76DB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{722E4695-ABEC-627B-2415-692A736A76DB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{722E4695-ABEC-627B-2415-692A736A76DB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{722E4695-ABEC-627B-2415-692A736A76DB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

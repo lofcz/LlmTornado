@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -9,14 +9,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="LlmTornado" Version="[3.8.3, )" />
+    <PackageReference Include="LlmTornado.A2A" Version="[1.0.0, )" />
+    <PackageReference Include="LlmTornado.Agents" Version="[1.0.2, )" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\LlmTornado.A2A\LlmTornado.A2A.csproj" />
-    <ProjectReference Include="..\LlmTornado.Agents\LlmTornado.Agents.csproj" />
-    <ProjectReference Include="..\LlmTornado\LlmTornado.csproj" />
+    
   </ItemGroup>
 
 </Project>

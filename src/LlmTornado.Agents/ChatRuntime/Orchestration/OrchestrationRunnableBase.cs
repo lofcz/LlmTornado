@@ -125,20 +125,17 @@ public abstract class OrchestrationRunnableBase
 
     internal void AddAdvancer(OrchestrationAdvancer advancer)
     {
-        BaseAdvancers.Add(new OrchestrationAdvancer(advancer.InvokeMethod, advancer.NextRunnable));
+        BaseAdvancers.Add(advancer);
     }
 
     internal void AddAdvancer<TOutput>(OrchestrationAdvancer<TOutput> advancer)
     {
-        AdvancementRequirement<object> advancementRequirement = (object input) => (bool)advancer.InvokeMethod.DynamicInvoke(input)!;
-        BaseAdvancers.Add(new OrchestrationAdvancer<object>(advancementRequirement, advancer.NextRunnable));
+        BaseAdvancers.Add(advancer);
     }
 
     internal void AddAdvancer<TValue, TOutput>(OrchestrationAdvancer<TOutput, TOutput> advancer)
     {
-        AdvancementRequirement<object> advancementRequirement = (object input) => (bool)advancer.InvokeMethod.DynamicInvoke(input)!;
-        AdvancementResultConverter<object, object> converter = (object input) => advancer.ConverterMethodResult = (object)advancer.ConverterMethod.DynamicInvoke(input)!;
-        BaseAdvancers.Add(new OrchestrationAdvancer<object, object>(advancementRequirement, converter, advancer.NextRunnable));
+        BaseAdvancers.Add(advancer);
     }
 
     internal object[] GetBaseResults()

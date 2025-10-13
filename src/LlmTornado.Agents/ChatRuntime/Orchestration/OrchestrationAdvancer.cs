@@ -49,6 +49,7 @@ public class OrchestrationAdvancer
     /// </summary>
     public string type = "base";
 
+    public OrchestrationAdvancer() { }
 
     public OrchestrationAdvancer(OrchestrationRunnableBase runnable)
     {

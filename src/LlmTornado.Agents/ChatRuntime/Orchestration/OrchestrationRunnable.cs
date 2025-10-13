@@ -43,9 +43,15 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
         BaseAdvancers.ForEach(advancer => {
             if (advancer.NextRunnable is not null)
             {
-                AdvancementRequirement<TOutput> advancementRequirement = (TOutput input) => (bool)advancer.InvokeMethod.DynamicInvoke(input)!;
-                OrchestrationAdvancer<TOutput> advancement = new OrchestrationAdvancer<TOutput>(advancementRequirement, advancer.NextRunnable);
+                OrchestrationAdvancer<TOutput> advancement = new OrchestrationAdvancer<TOutput>(advancer.NextRunnable, "out") 
+                { 
+                    InvokeMethod = advancer.InvokeMethod,
+                    ConverterMethod = advancer.ConverterMethod,
+                    type = advancer.type
+                };
+
                 advancers.Add(advancement);
+
             }
         });
 
