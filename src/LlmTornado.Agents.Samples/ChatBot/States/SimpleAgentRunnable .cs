@@ -37,6 +37,15 @@ public class SimpleAgentRunnable : OrchestrationRunnable<ChatMessage, ChatMessag
     {
         List<ChatMessage> history = _runtime.GetMessages();
 
+        string context = _runtime.RuntimeProperties.TryGetValue("LatestContext", out var ctx) ? ctx.ToString() ?? "Unavailable" : "Unavailable";
+
+        history.Last().Content = $"""
+                Context:
+                {context}
+                Question:
+                {history.Last().Content}
+                """;
+
         Conversation conv = await Agent.RunAsync(
             appendMessages: history,
             streaming: Agent.Streaming,

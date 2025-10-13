@@ -20,7 +20,7 @@ public class VectorDBAgentRunnable : OrchestrationRunnable<ChatMessage, ChatMess
 
     OrchestrationRuntimeConfiguration _runtime;
     TornadoPgVector pgVector;
-    string connectionString = "Host=localhost;Database=postgres;Username=postgres;Password=pass";
+    string connectionString = "Host=localhost;Database=postgres;Username=postgres;Password=john";
 
     public VectorDBAgentRunnable(TornadoApi client, OrchestrationRuntimeConfiguration orchestrator) : base(orchestrator)
     {

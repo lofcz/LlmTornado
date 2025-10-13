@@ -35,12 +35,35 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
 
         ChatRuntime runtime = new ChatRuntime(RuntimeConfiguration);
 
-        Console.WriteLine("[Assistant]: What task would you like the Magentic-One agents to accomplish?");
-        Console.Write("[User]: ");
-        string task = Console.ReadLine();
-        ChatMessage result = await runtime.InvokeAsync(new ChatMessage(Code.ChatMessageRoles.User, task ?? "hello world."));
+        RuntimeConfiguration.OnRuntimeEvent = async (evt) =>
+        {
+            if (evt.EventType == ChatRuntimeEventTypes.AgentRunner)
+            {
+                if (evt is ChatRuntimeAgentRunnerEvents runnerEvt)
+                {
+                    if (runnerEvt.AgentRunnerEvent is AgentRunnerStreamingEvent streamEvt)
+                    {
+                        if (streamEvt.ModelStreamingEvent is ModelStreamingOutputTextDeltaEvent deltaTextEvent)
+                        {
+                            Console.Write(deltaTextEvent.DeltaText);
+                        }
+                    }
+                }
+            }
+            await ValueTask.CompletedTask;
+        };
 
-        Console.WriteLine(result.Content);
+        Console.WriteLine("Ask a Question");
+
+        string topic = "";
+        while (topic != "exit")
+        {
+            Console.Write("\n[User]: ");
+            topic = Console.ReadLine();
+            if (topic == "exit") break;
+            Console.Write("\n[Assistant]: ");
+            ChatMessage report = await runtime.InvokeAsync(new ChatMessage(Code.ChatMessageRoles.User, topic));
+        }
     }
 
     #region ResearchAgent
