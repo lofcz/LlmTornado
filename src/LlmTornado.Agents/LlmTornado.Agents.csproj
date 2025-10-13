@@ -27,7 +27,7 @@
 
     <PropertyGroup>
         <PackageIcon>nuget_logo.jpg</PackageIcon>
-        <Version>1.0.1</Version>
+        <Version>1.0.2</Version>
     </PropertyGroup>
     <ItemGroup>
         <None Include="nuget_logo.jpg" Pack="true" PackagePath="\" />
