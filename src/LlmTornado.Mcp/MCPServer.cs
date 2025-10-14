@@ -4,7 +4,7 @@ using ModelContextProtocol.Client;
 using ModelContextProtocol.Protocol;
 
 
-namespace LlmTornado.Agents;
+namespace LlmTornado.Mcp;
 
 /// <summary>
 /// MCP Server Class for managing connections to MCP server and their tools.

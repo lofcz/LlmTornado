@@ -5,6 +5,7 @@ using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
+using LlmTornado.Mcp;
 using LlmTornado.Responses;
 using Newtonsoft.Json.Converters;
 using System.ComponentModel;

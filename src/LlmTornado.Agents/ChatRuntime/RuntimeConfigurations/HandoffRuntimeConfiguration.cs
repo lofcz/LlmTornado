@@ -2,6 +2,7 @@
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Code;
+using LlmTornado.Mcp;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
