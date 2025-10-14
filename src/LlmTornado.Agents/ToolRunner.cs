@@ -3,6 +3,7 @@ using LlmTornado.Chat;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Common;
+using LlmTornado.Mcp;
 using ModelContextProtocol.Client;
 using ModelContextProtocol.Protocol;
 using Newtonsoft.Json;

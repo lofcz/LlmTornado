@@ -16,6 +16,7 @@ public class ParallelRunnable : OrchestrationRunnable<ChatMessage, ChatMessage>
 
     public override ValueTask<ChatMessage> Invoke(RunnableProcess<ChatMessage, ChatMessage> process)
     {
+        Orchestrator.RuntimeProperties.AddOrUpdate("CurrentTask", process.Input.Content, (key, oldValue) => process.Input.Content);
         return ValueTask.FromResult(process.Input);
     }
 }

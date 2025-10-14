@@ -21,7 +21,7 @@ public class VectorDataSaverRunnable : OrchestrationRunnable<ChatMessage, ChatMe
 
     OrchestrationRuntimeConfiguration _runtime;
     TornadoPgVector pgVector;
-    string connectionString = "Host=localhost;Database=postgres;Username=postgres;Password=pass";
+    string connectionString = "Host=localhost;Database=postgres;Username=postgres;Password=john";
 
     public VectorDataSaverRunnable(TornadoApi client, OrchestrationRuntimeConfiguration orchestrator, ChatModel? model = null) : base(orchestrator)
     {
@@ -53,13 +53,8 @@ public class VectorDataSaverRunnable : OrchestrationRunnable<ChatMessage, ChatMe
 
     public override async ValueTask<ChatMessage> Invoke(RunnableProcess<ChatMessage, ChatMessage> process)
     {
-        
-        string CurrentTask = "";
 
-        if (_runtime.RuntimeProperties.TryGetValue("CurrentTask", out object prompt))
-        {
-            CurrentTask = prompt.ToString() ?? "";
-        }
+        string CurrentTask = _runtime.GetLastMessage().Content ?? _runtime.GetLastMessage().Parts.Where(part => !string.IsNullOrEmpty(part.Text)).Last().Text ?? "";
 
         if (checkContextOversized(CurrentTask) || checkContextOversized(process.Input.Content))
         {

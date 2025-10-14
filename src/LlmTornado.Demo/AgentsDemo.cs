@@ -5,11 +5,13 @@ using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
+using LlmTornado.Mcp;
 using LlmTornado.Responses;
 using Newtonsoft.Json.Converters;
 using System.ComponentModel;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.Json.Serialization;
+using static System.Net.WebRequestMethods;
 
 namespace LlmTornado.Demo;
 
@@ -302,6 +304,28 @@ public class AgentsDemo : DemoBase
                 );
 
         Conversation result = await agent.RunAsync("What is the weather in boston?");
+
+        Console.WriteLine(result.Messages.Last().Content);
+    }
+
+    [TornadoTest]
+    public static async Task MCPRemoteToolExample()
+    {
+        string serverPath = "https://api.githubcopilot.com/mcp";
+
+        var mcpServer = new MCPServer("github", serverPath, additionalConnectionHeaders: new Dictionary<string, string>
+        {
+            { "Authorization", "Bearer ghp_your_key_here" }
+        });
+
+        TornadoAgent agent = new TornadoAgent(
+            Program.Connect(),
+            model: ChatModel.OpenAi.Gpt41.V41Mini,
+            instructions: "You are a useful assistant.",
+            mcpServers: [mcpServer]
+                );
+
+        Conversation result = await agent.RunAsync("What repos do i have?");
 
         Console.WriteLine(result.Messages.Last().Content);
     }

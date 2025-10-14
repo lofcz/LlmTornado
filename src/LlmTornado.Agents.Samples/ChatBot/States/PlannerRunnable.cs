@@ -32,6 +32,15 @@ public class PlannerRunnable : OrchestrationRunnable<ChatMessage, WebSearchPlan>
     {
         process.RegisterAgent(agent: Agent);
 
+        string context = Orchestrator.RuntimeProperties.TryGetValue("LatestContext", out var ctx) ? ctx.ToString() ?? "Unavailable" : "Unavailable";
+
+        process.Input.Content = $"""
+                Context:
+                {context}
+                Question:
+                {process.Input.Content}
+                """;
+
         Conversation conv = await Agent.RunAsync(appendMessages: new List<ChatMessage> { process.Input });
 
         WebSearchPlan? plan = await conv.Messages.Last().Content?.SmartParseJsonAsync<WebSearchPlan>(Agent);

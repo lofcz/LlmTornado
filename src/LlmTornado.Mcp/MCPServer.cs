@@ -1,9 +1,10 @@
 ﻿using LlmTornado.Common;
+using ModelContextProtocol.Authentication;
 using ModelContextProtocol.Client;
 using ModelContextProtocol.Protocol;
 
 
-namespace LlmTornado.Agents;
+namespace LlmTornado.Mcp;
 
 /// <summary>
 /// MCP Server Class for managing connections to MCP server and their tools.
@@ -22,6 +23,17 @@ public class MCPServer
     /// Select tools to disable from the server.
     /// </summary>
     public string[]? DisableTools { get; set; }
+
+    /// <summary>
+    /// Authentication options for the MCP server, if required.
+    /// </summary>
+    public ClientOAuthOptions? OAuthOptions { get; set; }
+
+    /// <summary>
+    /// Additional Headers to include in the connection to the MCP server (Authentication).
+    /// </summary>
+    public Dictionary<string, string>? AdditionalConnectionHeaders { get; set; } 
+
     /// <summary>
     /// Tools available from the MCP server.
     /// </summary>
@@ -35,11 +47,13 @@ public class MCPServer
     /// <param name="serverLabel"> Label of the MCP Server</param>
     /// <param name="serverUrl">URL of the MCP Server</param>
     /// <param name="disableTools">List of tools to not use</param>
-    public MCPServer( string serverLabel, string serverUrl,  string[]? disableTools = null)
+    public MCPServer( string serverLabel, string serverUrl,  string[]? disableTools = null, Dictionary<string, string>? additionalConnectionHeaders = null, ClientOAuthOptions? oAuthOptions = null)
     {
         ServerLabel = serverLabel;
         ServerUrl = serverUrl;
         DisableTools = disableTools;
+        AdditionalConnectionHeaders = additionalConnectionHeaders;
+        OAuthOptions = oAuthOptions;
         Task.Run(async () => await AutoSetupToolsAsync()).Wait();
     }
 
@@ -53,9 +67,11 @@ public class MCPServer
                 clientTransport = new HttpClientTransport(new HttpClientTransportOptions
                 {
                     Name = this.ServerLabel,
-                    Endpoint = new Uri(this.ServerUrl)
-                });
-                
+                    Endpoint = new Uri(this.ServerUrl),
+                    AdditionalHeaders = AdditionalConnectionHeaders
+                }); 
+
+                Console.WriteLine($"Connecting to MCP server at {this.ServerUrl} via HTTP...");
             }
             else
             {
@@ -79,6 +95,7 @@ public class MCPServer
         }
         catch (Exception ex)
         {
+            Console.WriteLine($"Failed to connect to MCP server at {this.ServerUrl}: {ex.Message}");
             return false;
         }
     }
@@ -89,7 +106,7 @@ public class MCPServer
     /// <param name="serverUrl">Server you wish to get tools from</param>
     /// <param name="serverLabel">Label of the server</param>
     /// <returns>Returns the required IMcpClient type for the following MCP server (SSE vs Stdio).</returns>
-    public static async Task<McpClient>? TryGetMcpClientAsync(string serverUrl, string serverLabel)
+    public static async Task<McpClient>? TryGetMcpClientAsync(string serverUrl, string serverLabel, Dictionary<string, string>? additionalConnectionHeaders = null, ClientOAuthOptions? oAuthOptions = null)
     {
         McpClient? mcpClient = null;
         try
@@ -100,7 +117,9 @@ public class MCPServer
                 clientTransport = new HttpClientTransport(new HttpClientTransportOptions
                 {
                     Name = serverLabel,
-                    Endpoint = new Uri(serverUrl)
+                    Endpoint = new Uri(serverUrl),
+                    AdditionalHeaders = additionalConnectionHeaders,
+                    OAuth = oAuthOptions,
                 });
 
             }
