@@ -84,6 +84,8 @@ public class MCPServer
         ServerLabel = serverLabel;
         ServerUrl = serverUrl;
         DisableTools = disableTools;
+        Command = command;
+        Arguments = arguments ?? [];
         Task.Run(async () => await AutoSetupToolsAsync()).Wait();
     }
 
