@@ -18,7 +18,7 @@ public class MCPServer
     /// <summary>
     /// Get the URL of the MCP server.
     /// </summary>
-    public string ServerUrl { get; private set; }
+    public string ServerUrl { get; private set; } 
     /// <summary>
     /// Select tools to disable from the server.
     /// </summary>
@@ -32,7 +32,21 @@ public class MCPServer
     /// <summary>
     /// Additional Headers to include in the connection to the MCP server (Authentication).
     /// </summary>
-    public Dictionary<string, string>? AdditionalConnectionHeaders { get; set; } 
+    public Dictionary<string, string>? AdditionalConnectionHeaders { get; set; }
+
+    /// <summary>
+    /// Command to start the MCP server if using stdio transport.
+    /// </summary>
+    public string Command { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Arguments to pass to the command when starting the MCP server if using stdio transport.
+    /// </summary>
+    public string[] Arguments { get; set; } = [];
+
+    public string WorkingDirectory { get; set; } = Directory.GetCurrentDirectory();
+
+    public Dictionary<string, string> EnvironmentVariables { get; set; } = new Dictionary<string, string>();
 
     /// <summary>
     /// Tools available from the MCP server.
@@ -47,7 +61,13 @@ public class MCPServer
     /// <param name="serverLabel"> Label of the MCP Server</param>
     /// <param name="serverUrl">URL of the MCP Server</param>
     /// <param name="disableTools">List of tools to not use</param>
-    public MCPServer( string serverLabel, string serverUrl,  string[]? disableTools = null, Dictionary<string, string>? additionalConnectionHeaders = null, ClientOAuthOptions? oAuthOptions = null)
+    public MCPServer( 
+        string serverLabel, 
+        string serverUrl,  
+        string[]? disableTools = null, 
+        Dictionary<string, string>? additionalConnectionHeaders = null, 
+        ClientOAuthOptions? oAuthOptions = null
+        )
     {
         ServerLabel = serverLabel;
         ServerUrl = serverUrl;
@@ -57,12 +77,31 @@ public class MCPServer
         Task.Run(async () => await AutoSetupToolsAsync()).Wait();
     }
 
+    public MCPServer(
+       string serverLabel,
+       string command,
+       string[]? arguments,
+       string workingDirectory = "",
+       Dictionary<string, string>? environmentVariables = null,
+       string[]? disableTools = null
+       )
+    {
+        ServerLabel = serverLabel;
+        DisableTools = disableTools;
+        Command = command;
+        Arguments = arguments ?? [];
+        WorkingDirectory = string.IsNullOrEmpty(workingDirectory) ? Directory.GetCurrentDirectory() : workingDirectory;
+        EnvironmentVariables = environmentVariables ?? new Dictionary<string, string>();
+        Task.Run(async () => await AutoSetupToolsAsync()).Wait();
+    }
+
     private async Task<bool> TryGetMcpClientAsync()
     {
         try
         {
             IClientTransport clientTransport;
-            if (this.ServerUrl.StartsWith("http"))
+
+            if (!string.IsNullOrEmpty(ServerUrl))
             {
                 clientTransport = new HttpClientTransport(new HttpClientTransportOptions
                 {
@@ -75,15 +114,20 @@ public class MCPServer
             }
             else
             {
-               
-                (string command, string[] arguments) = GetCommandAndArguments([this.ServerUrl]);
+               if(string.IsNullOrEmpty(Command) || Arguments == null || Arguments.Length == 0)
+                {
+                    (Command, Arguments) = TryGetCommandAndArguments([this.ServerUrl]);
+                }
+
                 // Create MCP client to connect to the server
 
                 clientTransport = new StdioClientTransport(new StdioClientTransportOptions
                 {
-                    Name = this.ServerLabel,
-                    Command = command,
-                    Arguments = arguments,
+                    Name = ServerLabel,
+                    Command = Command,
+                    Arguments = Arguments,
+                    WorkingDirectory = WorkingDirectory,
+                    EnvironmentVariables = EnvironmentVariables
                 });
             }
 
@@ -100,55 +144,7 @@ public class MCPServer
         }
     }
 
-    /// <summary>
-    /// Helper method to attempt to create and return an MCP client for the given server.
-    /// </summary>
-    /// <param name="serverUrl">Server you wish to get tools from</param>
-    /// <param name="serverLabel">Label of the server</param>
-    /// <returns>Returns the required IMcpClient type for the following MCP server (SSE vs Stdio).</returns>
-    public static async Task<McpClient>? TryGetMcpClientAsync(string serverUrl, string serverLabel, Dictionary<string, string>? additionalConnectionHeaders = null, ClientOAuthOptions? oAuthOptions = null)
-    {
-        McpClient? mcpClient = null;
-        try
-        {
-            IClientTransport clientTransport;
-            if (serverUrl.StartsWith("http"))
-            {
-                clientTransport = new HttpClientTransport(new HttpClientTransportOptions
-                {
-                    Name = serverLabel,
-                    Endpoint = new Uri(serverUrl),
-                    AdditionalHeaders = additionalConnectionHeaders,
-                    OAuth = oAuthOptions,
-                });
-
-            }
-            else
-            {
-
-                (string command, string[] arguments) = GetCommandAndArguments([serverUrl]);
-                // Create MCP client to connect to the server
-
-                clientTransport = new StdioClientTransport(new StdioClientTransportOptions
-                {
-                    Name = serverLabel,
-                    Command = command,
-                    Arguments = arguments,
-                });
-            }
-
-            mcpClient = await McpClient.CreateAsync(clientTransport);
-            // Ping the server to ensure it's reachable
-            await mcpClient.PingAsync();
-
-            return mcpClient;
-        }
-        catch (Exception ex)
-        {
-            return mcpClient;
-        }
-    }
-
+   
     private async Task AutoSetupToolsAsync()
     {
         // If we cannot connect to the server, return an empty list
@@ -177,7 +173,7 @@ public class MCPServer
 
     }
 
-    internal static (string command, string[] arguments) GetCommandAndArguments(string[] args)
+    internal static (string command, string[] arguments) TryGetCommandAndArguments(string[] args)
     {
         return args switch
         {

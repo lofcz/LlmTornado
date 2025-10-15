@@ -10,6 +10,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\LlmTornado.A2A\LlmTornado.A2A.csproj" />
         <ProjectReference Include="..\LlmTornado.Agents.Samples\LlmTornado.Agents.Samples.csproj" />
         <ProjectReference Include="..\LlmTornado.Contrib\LlmTornado.Contrib.csproj" />
         <ProjectReference Include="..\LlmTornado.Microsoft.Extensions.AI\LlmTornado.Microsoft.Extensions.AI.csproj" />

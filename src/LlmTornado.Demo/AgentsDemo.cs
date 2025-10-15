@@ -1,4 +1,5 @@
-﻿using LlmTornado.Agents;
+﻿using LlmTornado.A2A;
+using LlmTornado.Agents;
 using LlmTornado.Agents.DataModels;
 using LlmTornado.Agents.Utility;
 using LlmTornado.Chat;
@@ -294,7 +295,31 @@ public class AgentsDemo : DemoBase
     {
         string serverPath = Path.GetFullPath(Path.Join("..", "..", "..", "..", "LlmTornado.Mcp.Sample.Server"));
 
-        var mcpServer = new MCPServer("weather-tool", serverPath);
+        var mcpServer = new MCPServer("weather-tool", command: "dotnet", arguments: new[] { "run", "--project", serverPath });
+
+        TornadoAgent agent = new TornadoAgent(
+            Program.Connect(),
+            model: ChatModel.OpenAi.Gpt41.V41Mini,
+            instructions: "You are a useful assistant.",
+            mcpServers: [mcpServer]
+                );
+
+        Conversation result = await agent.RunAsync("What is the weather in boston?");
+
+        Console.WriteLine(result.Messages.Last().Content);
+    }
+
+    [TornadoTest]
+    public static async Task RunMCPPuppeteerToolExample()
+    {
+        var mcpServer = new MCPServer("puppeteer",  command: "docker", arguments: new[] {
+            "run",
+            "-i",
+            "--rm",
+            "--init",
+            "-e",
+            "DOCKER_CONTAINER=true",
+            "mcp/puppeteer" });
 
         TornadoAgent agent = new TornadoAgent(
             Program.Connect(),
@@ -323,6 +348,25 @@ public class AgentsDemo : DemoBase
             model: ChatModel.OpenAi.Gpt41.V41Mini,
             instructions: "You are a useful assistant.",
             mcpServers: [mcpServer]
+                );
+
+        Conversation result = await agent.RunAsync("What repos do i have?");
+
+        Console.WriteLine(result.Messages.Last().Content);
+    }
+
+    [TornadoTest]
+    public static async Task A2AAgentAsTool()
+    {
+        A2ATornadoConnector a2ATornadoConnector = new A2ATornadoConnector(["http://localhost:5125"]);
+
+        a2ATornadoConnector.A2ACards.ToList().ForEach(x => Console.WriteLine($"Agent Name: {x.Value.Name}, Description: {x.Value.Description}, Endpoint: {x.Value.Url}"));
+
+        TornadoAgent agent = new TornadoAgent(
+            Program.Connect(),
+            model: ChatModel.OpenAi.Gpt41.V41Mini,
+            instructions: "You are a useful assistant.",
+            tools: [a2ATornadoConnector.GetAvailableAgentsTool,a2ATornadoConnector.SendMessageTool]
                 );
 
         Conversation result = await agent.RunAsync("What repos do i have?");
