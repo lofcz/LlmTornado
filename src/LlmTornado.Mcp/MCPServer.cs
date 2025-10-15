@@ -75,14 +75,12 @@ public class MCPServer
 
     public MCPServer(
        string serverLabel,
-       string serverUrl,
        string command,
        string[]? arguments = null,
        string[]? disableTools = null
        )
     {
         ServerLabel = serverLabel;
-        ServerUrl = serverUrl;
         DisableTools = disableTools;
         Command = command;
         Arguments = arguments ?? [];
