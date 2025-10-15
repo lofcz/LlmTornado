@@ -18,7 +18,7 @@ public class MCPServer
     /// <summary>
     /// Get the URL of the MCP server.
     /// </summary>
-    public string ServerUrl { get; private set; }
+    public string ServerUrl { get; private set; } 
     /// <summary>
     /// Select tools to disable from the server.
     /// </summary>
@@ -43,6 +43,10 @@ public class MCPServer
     /// Arguments to pass to the command when starting the MCP server if using stdio transport.
     /// </summary>
     public string[] Arguments { get; set; } = [];
+
+    public string WorkingDirectory { get; set; } = Directory.GetCurrentDirectory();
+
+    public Dictionary<string, string> EnvironmentVariables { get; set; } = new Dictionary<string, string>();
 
     /// <summary>
     /// Tools available from the MCP server.
@@ -77,6 +81,8 @@ public class MCPServer
        string serverLabel,
        string command,
        string[]? arguments = null,
+       string workingDirectory = "",
+       Dictionary<string, string>? environmentVariables = null,
        string[]? disableTools = null
        )
     {
@@ -84,6 +90,8 @@ public class MCPServer
         DisableTools = disableTools;
         Command = command;
         Arguments = arguments ?? [];
+        WorkingDirectory = string.IsNullOrEmpty(workingDirectory) ? Directory.GetCurrentDirectory() : workingDirectory;
+        EnvironmentVariables = environmentVariables ?? new Dictionary<string, string>();
         Task.Run(async () => await AutoSetupToolsAsync()).Wait();
     }
 
@@ -93,7 +101,7 @@ public class MCPServer
         {
             IClientTransport clientTransport;
 
-            if (this.ServerUrl.StartsWith("http"))
+            if (!string.IsNullOrEmpty(ServerUrl))
             {
                 clientTransport = new HttpClientTransport(new HttpClientTransportOptions
                 {
@@ -115,9 +123,11 @@ public class MCPServer
 
                 clientTransport = new StdioClientTransport(new StdioClientTransportOptions
                 {
-                    Name = this.ServerLabel,
+                    Name = ServerLabel,
                     Command = Command,
                     Arguments = Arguments,
+                    WorkingDirectory = WorkingDirectory,
+                    EnvironmentVariables = EnvironmentVariables
                 });
             }
 

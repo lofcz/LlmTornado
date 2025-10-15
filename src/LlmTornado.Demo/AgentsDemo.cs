@@ -312,8 +312,6 @@ public class AgentsDemo : DemoBase
     [TornadoTest]
     public static async Task RunMCPPuppeteerToolExample()
     {
-        string serverPath = "D:\\Repos\\public\\mcp-run-python\\";
-
         var mcpServer = new MCPServer("puppeteer",  command: "docker", arguments: new[] {
             "run",
             "-i",
