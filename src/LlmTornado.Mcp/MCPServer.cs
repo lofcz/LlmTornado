@@ -80,7 +80,7 @@ public class MCPServer
     public MCPServer(
        string serverLabel,
        string command,
-       string[]? arguments = null,
+       string[]? arguments,
        string workingDirectory = "",
        Dictionary<string, string>? environmentVariables = null,
        string[]? disableTools = null
