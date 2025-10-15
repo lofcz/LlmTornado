@@ -295,7 +295,33 @@ public class AgentsDemo : DemoBase
     {
         string serverPath = Path.GetFullPath(Path.Join("..", "..", "..", "..", "LlmTornado.Mcp.Sample.Server"));
 
-        var mcpServer = new MCPServer("weather-tool", serverPath);
+        var mcpServer = new MCPServer("weather-tool", serverPath, command: "dotnet", arguments: new[] { "run", "--project", serverPath });
+
+        TornadoAgent agent = new TornadoAgent(
+            Program.Connect(),
+            model: ChatModel.OpenAi.Gpt41.V41Mini,
+            instructions: "You are a useful assistant.",
+            mcpServers: [mcpServer]
+                );
+
+        Conversation result = await agent.RunAsync("What is the weather in boston?");
+
+        Console.WriteLine(result.Messages.Last().Content);
+    }
+
+    [TornadoTest]
+    public static async Task RunMCPPuppeteerToolExample()
+    {
+        string serverPath = Path.GetFullPath(Path.Join("..", "..", "..", "..", "LlmTornado.Mcp.Sample.Server"));
+
+        var mcpServer = new MCPServer("puppeteer", serverPath, command: "docker", arguments: new[] {
+            "run",
+            "-i",
+            "--rm",
+            "--init",
+            "-e",
+            "DOCKER_CONTAINER=true",
+            "mcp/puppeteer" });
 
         TornadoAgent agent = new TornadoAgent(
             Program.Connect(),
