@@ -2,7 +2,7 @@
 [![LlmTornado.Agents](https://badgen.net/nuget/v/LlmTornado.Agents?v=303&icon=nuget&label=LlmTornado.Agents)](https://www.nuget.org/packages/LlmTornado.Agents)
 [![LlmTornado.Mcp](https://badgen.net/nuget/v/LlmTornado.Mcp?v=302&icon=nuget&label=LlmTornado.Mcp)](https://www.nuget.org/packages/LlmTornado.Mcp)
 [![LlmTornado.Contrib](https://badgen.net/nuget/v/LlmTornado.Contrib?v=302&icon=nuget&label=LlmTornado.Contrib)](https://www.nuget.org/packages/LlmTornado.Contrib)
-[![License:MIT](https://img.shields.io/badge/License-MIT-34D058.svg)](https://www.gnu.org/licenses/agpl-3.0)
+[![License:MIT](https://img.shields.io/badge/License-MIT-34D058.svg)](https://opensource.org/license/mit)
 
 # 🌪️ LLM Tornado
 
