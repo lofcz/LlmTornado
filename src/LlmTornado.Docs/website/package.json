@@ -1,6 +1,7 @@
 {
   "type": "module",
   "scripts": {
+    "build": "echo 'mock build'",
     "docs:dev": "vitepress dev docs",
     "docs:build": "npm run clean && npm run build:blazor && npm run docs:build-vitepress",
     "docs:build-vitepress": "vitepress build docs",
