@@ -6,8 +6,8 @@
     "docs:build": "npm run clean && npm run build:blazor && npm run docs:build-vitepress",
     "docs:build-vitepress": "vitepress build docs",
     "docs:preview": "vitepress preview docs",
-    "build:blazor": "dotnet publish ../LlmTornado.Docs.csproj -c Release -o ./blazor-dist /p:GHPages=true && cpr ./blazor-dist/wwwroot ./docs/public/playground -o",
-    "clean": "rimraf ./docs/.vitepress/dist"
+    "build:blazor": "dotnet publish ../LlmTornado.Docs.csproj -c Release -o ./blazor-dist /p:GHPages=true /p:SkipViteBuild=true && cpr ./blazor-dist/wwwroot ./docs/public/playground -o",
+    "clean": "rimraf ./docs/.vitepress/dist ./docs/public ./blazor-dist"
   },
   "keywords": [],
   "devDependencies": {
