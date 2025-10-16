@@ -2,30 +2,42 @@
 
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Version>1.0.1</Version>
     <Nullable>enable</Nullable>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+    <LangVersion>preview</LangVersion>
+    <TargetFramework>net8.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="A2A" Version="0.3.1-preview" />
-    <PackageReference Include="A2A.AspNetCore" Version="0.3.1-preview" />
-    <PackageReference Include="Microsoft.AspNetCore.Http" Version="2.2.0" />
-    <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.9" />
-    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
-    <PackageReference Include="OpenTelemetry" Version="1.12.0" />
-    <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.12.0" />
-    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.12.0" />
-    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.12.0" />
-    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.12.0" />
-    <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.12.0" />
+    <PackageReference Include="A2A" Version="[0.3.1-preview, )" />
+    <PackageReference Include="A2A.AspNetCore" Version="[0.3.1-preview, )" />
+    <PackageReference Include="Microsoft.AspNetCore.Http" Version="[2.3.0, )" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="[9.0.9, )" />
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="[1.22.1, )" />
+    <PackageReference Include="OpenTelemetry" Version="[1.13.1, )" />
+    <PackageReference Include="OpenTelemetry.Exporter.Console" Version="[1.13.1, )" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="[1.13.1, )" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="[1.13.1, )" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="[1.12.0, )" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="[1.12.0, )" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\LlmTornado.Agents\LlmTornado.Agents.csproj" />
     <ProjectReference Include="..\LlmTornado\LlmTornado.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="nuget_logo.jpg" Pack="true" PackagePath="\"/>
+  </ItemGroup>
+  
+  <ItemGroup>
+    <None Update="nuget_logo.jpg">
+      <Pack>true</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
   </ItemGroup>
 
 </Project>

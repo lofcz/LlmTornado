@@ -4,7 +4,7 @@
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <Authors>Matěj Štágl, LlmTornado contributors</Authors>
         <Product>LlmTornado</Product>
-        <Description>The .NET library to consume 100+ APIs: OpenAI, Anthropic, Google, DeepSeek, Cohere, Mistral, Azure, xAI, Perplexity, Groq, Voyage, DeepInfra, Ollama, vLLM, LocalAi, and many more!</Description>
+        <Description>Build AI agents and multi-agent systems in minutes with one toolkit and 100+ built-in connectors to API Providers and Vector Databases.</Description>
         <Copyright>Matěj Štágl</Copyright>
         <PackageLicenseExpression>CC0-1.0</PackageLicenseExpression>
         <PackageProjectUrl>https://github.com/lofcz/LlmTornado</PackageProjectUrl>
