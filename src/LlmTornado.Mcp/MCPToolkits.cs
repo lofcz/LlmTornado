@@ -8,30 +8,6 @@ namespace LlmTornado.Mcp;
 
 public class MCPToolkits
 {
-    public static readonly string[] SupportedToolkits = new string[]
-    {
-        "python_repl",
-        "requests",
-        "serpapi",
-        "wikipedia",
-        "llm-math",
-        "open-meteo",
-        "news-api",
-        "wolfram-alpha",
-        "weatherapi-com",
-        "tmdbv3",
-        "google-search",
-        "zillow",
-        "yelp-fusion",
-        "air-quality",
-        "currency-exchange",
-        "flight-info",
-        "crypto-prices",
-        "stock-prices",
-        "real-time-traffic",
-        "event-discovery",
-        "restaurant-reservations"
-    };
 
     public static async Task<MCPServer> PuppeteerToolkit(string[]? disableTools)
     {
@@ -44,7 +20,6 @@ public class MCPToolkits
             "DOCKER_CONTAINER=true",
             "mcp/puppeteer" },
             disableTools: disableTools);
-        await server.InitializeAsync();
         return server;
     }
 
@@ -67,18 +42,15 @@ public class MCPToolkits
             "/projects"
         },
             disableTools: disableTools);
-        await server.InitializeAsync();
         return server;
     }
 
     public static async Task<MCPServer> GmailToolkit(string[]? disableTools = null)
     {
         var server = new MCPServer("gmail", command: "npx", arguments: new[] {
-            "@gongrzhe/server-gmail-autoauth-mcp",
-            "auth"
+            "@gongrzhe/server-gmail-autoauth-mcp"
         },
             disableTools: disableTools);
-        await server.InitializeAsync();
         return server;
     }
 
