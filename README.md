@@ -6,7 +6,7 @@
 
 # 🌪️ LLM Tornado
 
-Build [AI agents](## "LLMs calling tools in a loop to achieve a goal.") and [workflows](## "A predefined sequence of steps to complete a task.") in minutes with one toolkit and built-in connectors to 100+ API Providers & Vector Databases.
+**Build AI agents and workflows in minutes with one toolkit and built-in connectors to 100+ API Providers & Vector Databases.**    
 
 ## Key Features:
 -  **API Providers**: Built-in connectors to: [Anthropic](https://docs.anthropic.com/en/docs/intro), [Azure](https://azure.microsoft.com/en-us/products/ai-services/openai-service), [Cohere](https://docs.cohere.com/changelog), [DeepInfra](https://deepinfra.com/docs/), [DeepSeek](https://api-docs.deepseek.com/), [Google](https://ai.google.dev/gemini-api/docs), [Groq](https://console.groq.com/docs/overview), [Mistral](https://docs.mistral.ai/getting-started), [MoonshotAI](https://platform.moonshot.ai/docs/overview), [OpenAI](https://platform.openai.com/docs), [OpenRouter](https://openrouter.ai/docs/quickstart), [Perplexity](https://docs.perplexity.ai/home), [Voyage](https://www.voyageai.com/), [xAI](https://docs.x.ai/docs), [Z.ai](https://docs.z.ai/guides/overview/quick-start). All models are recognized by name. Check the full Feature Matrix [here](https://github.com/lofcz/LlmTornado/blob/master/FeatureMatrix.md).
