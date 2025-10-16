@@ -2,13 +2,14 @@
 [![LlmTornado.Agents](https://badgen.net/nuget/v/LlmTornado.Agents?v=303&icon=nuget&label=LlmTornado.Agents)](https://www.nuget.org/packages/LlmTornado.Agents)
 [![LlmTornado.Mcp](https://badgen.net/nuget/v/LlmTornado.Mcp?v=302&icon=nuget&label=LlmTornado.Mcp)](https://www.nuget.org/packages/LlmTornado.Mcp)
 [![LlmTornado.Contrib](https://badgen.net/nuget/v/LlmTornado.Contrib?v=302&icon=nuget&label=LlmTornado.Contrib)](https://www.nuget.org/packages/LlmTornado.Contrib)
+[![License](https://badgen.net/nuget/v/LlmTornado.Contrib?v=302&icon=nuget&label=LlmTornado.Contrib)](https://www.nuget.org/packages/LlmTornado.Contrib)
 
 # 🌪️ LLM Tornado
 
-**Build AI agents and multi-agent systems in minutes with one toolkit and the broadest Provider support.**
+Build [AI agents](## "LLMs calling tools in a loop to achieve a goal.") and [workflows](## "A predefined sequence of steps to complete a task.") in minutes with one toolkit and built-in connectors to 100+ API Providers & Vector Databases.
 
 ## Key Features:
--  **Use Any Provider**: All you need to know is the model's name; we handle the rest. Built-in: [Anthropic](https://docs.anthropic.com/en/docs/intro), [Azure](https://azure.microsoft.com/en-us/products/ai-services/openai-service), [Cohere](https://docs.cohere.com/changelog), [DeepInfra](https://deepinfra.com/docs/), [DeepSeek](https://api-docs.deepseek.com/), [Google](https://ai.google.dev/gemini-api/docs), [Groq](https://console.groq.com/docs/overview), [Mistral](https://docs.mistral.ai/getting-started), [MoonshotAI](https://platform.moonshot.ai/docs/overview), [OpenAI](https://platform.openai.com/docs), [OpenRouter](https://openrouter.ai/docs/quickstart), [Perplexity](https://docs.perplexity.ai/home), [Voyage](https://www.voyageai.com/), [xAI](https://docs.x.ai/docs), [Z.ai](https://docs.z.ai/guides/overview/quick-start). Check the full Feature Matrix [here](https://github.com/lofcz/LlmTornado/blob/master/FeatureMatrix.md).
+-  **API Providers**: Built-in connectors to: [Anthropic](https://docs.anthropic.com/en/docs/intro), [Azure](https://azure.microsoft.com/en-us/products/ai-services/openai-service), [Cohere](https://docs.cohere.com/changelog), [DeepInfra](https://deepinfra.com/docs/), [DeepSeek](https://api-docs.deepseek.com/), [Google](https://ai.google.dev/gemini-api/docs), [Groq](https://console.groq.com/docs/overview), [Mistral](https://docs.mistral.ai/getting-started), [MoonshotAI](https://platform.moonshot.ai/docs/overview), [OpenAI](https://platform.openai.com/docs), [OpenRouter](https://openrouter.ai/docs/quickstart), [Perplexity](https://docs.perplexity.ai/home), [Voyage](https://www.voyageai.com/), [xAI](https://docs.x.ai/docs), [Z.ai](https://docs.z.ai/guides/overview/quick-start). All models are recognized by name. Check the full Feature Matrix [here](https://github.com/lofcz/LlmTornado/blob/master/FeatureMatrix.md).
 - **First-class Local Deployments**: Run with [vLLM](https://docs.vllm.ai/en/latest), [Ollama](https://ollama.com/), or [LocalAI](https://localai.io/) with integrated support for request transformations.
 - **Multi-Agent Systems**: [Toolkit](https://github.com/lofcz/LlmTornado/tree/master/src/LlmTornado.Agents) for the orchestration of multiple collaborating specialist agents.
 - **Rapid Development**: Write workflows once, execute with any provider. Non-standard features from all major Providers are carefully mapped, documented, and ready to use via strongly-typed code.
@@ -16,8 +17,9 @@
 - **Cutting Edge Protocols:**
   - **MCP**: Connect agents to data sources, tools, and workflows via Model Context Protocol with `LlmTornado.Mcp`.
   - **A2A**: Enable seamless collaboration between AI agents across different platforms with `LlmTornado.A2A`.
-- **Integrated**: Built-in support for [Microsoft.Extensions.AI](https://learn.microsoft.com/en-us/dotnet/ai/microsoft-extensions-ai) enables plugging Tornado in [Semantic Kernel](https://github.com/lofcz/LlmTornado/blob/master/src/LlmTornado.Demo/MicrosoftExtensionsAiDemo.cs) applications, granting instant access to 100+ Cloud Providers with `LlmTornado.Microsoft.Extensions.AI`.
-- **Enterprise Proven**: Preview any request before committing to it. Automatic redaction of secrets in outputs. Stable APIs.
+- **Vector Databases**: Built-in connectors to [Chroma](https://www.trychroma.com) and [PgVector](https://github.com/pgvector/pgvector).
+- **Integrated**: Built-in support for [Microsoft.Extensions.AI](https://learn.microsoft.com/en-us/dotnet/ai/microsoft-extensions-ai) enables plugging Tornado in [Semantic Kernel](https://github.com/lofcz/LlmTornado/blob/master/src/LlmTornado.Demo/MicrosoftExtensionsAiDemo.cs) applications with `LlmTornado.Microsoft.Extensions.AI`.
+- **Enterprise Proven**: Preview any request before committing to it. [Open Telemetry](https://opentelemetry.io) support. Stable APIs.
 
 ## ⭐ You Can Easily:
 - [Chat with your documents](https://github.com/lofcz/LlmTornado/blob/61d2a4732c88c45d4a8c053204ecdef807c34652/LlmTornado.Demo/ChatDemo.cs#L722-L757)
