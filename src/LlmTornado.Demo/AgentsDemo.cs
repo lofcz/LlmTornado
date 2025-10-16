@@ -8,6 +8,7 @@ using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Mcp;
 using LlmTornado.Responses;
+using ModelContextProtocol.Server;
 using Newtonsoft.Json.Converters;
 using System.ComponentModel;
 using System.Security.Cryptography.X509Certificates;
@@ -297,6 +298,8 @@ public class AgentsDemo : DemoBase
 
         var mcpServer = new MCPServer("weather-tool", command: "dotnet", arguments: new[] { "run", "--project", serverPath });
 
+        await mcpServer.InitializeAsync();
+
         TornadoAgent agent = new TornadoAgent(
             Program.Connect(),
             model: ChatModel.OpenAi.Gpt41.V41Mini,
@@ -321,6 +324,8 @@ public class AgentsDemo : DemoBase
             "DOCKER_CONTAINER=true",
             "mcp/puppeteer" });
 
+        await mcpServer.InitializeAsync();
+
         TornadoAgent agent = new TornadoAgent(
             Program.Connect(),
             model: ChatModel.OpenAi.Gpt41.V41Mini,
@@ -343,6 +348,8 @@ public class AgentsDemo : DemoBase
             { "Authorization", "Bearer ghp_your_key_here" }
         });
 
+        await mcpServer.InitializeAsync();
+
         TornadoAgent agent = new TornadoAgent(
             Program.Connect(),
             model: ChatModel.OpenAi.Gpt41.V41Mini,
@@ -354,6 +361,30 @@ public class AgentsDemo : DemoBase
 
         Console.WriteLine(result.Messages.Last().Content);
     }
+
+    /// <summary>
+    /// https://github.com/gongrzhe/gmail-mcp-server?tab=readme-ov-file  see this to setup Auth
+    /// </summary>
+    /// <returns></returns>
+    [TornadoTest]
+    public static async Task MCPGmailToolkitExample()
+    {
+        MCPServer gmailServer = await MCPToolkits.GmailToolkit();
+
+        await gmailServer.InitializeAsync();
+
+        TornadoAgent agent = new TornadoAgent(
+            Program.Connect(),
+            model: ChatModel.OpenAi.Gpt41.V41Mini,
+            instructions: "You are a useful assistant.",
+            mcpServers: [gmailServer]
+                );
+
+        Conversation result = await agent.RunAsync("Did yeezy respond?");
+
+        Console.WriteLine(result.Messages.Last().Content);
+    }
+    
 
     [TornadoTest]
     public static async Task A2AAgentAsTool()

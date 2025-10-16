@@ -306,11 +306,24 @@ public class TornadoRunner
     {
         try
         {
+            try
+            {
+                //dynamically set the tools for the request
+                if (agent.Options.Tools != null)
+                    chat.RequestParameters.Tools = agent.Options.Tools; 
+                if (agent.ResponseOptions != null)
+                    if (agent.ResponseOptions.Tools != null)
+                        chat.RequestParameters.ResponseRequestParameters.Tools = agent.ResponseOptions.Tools;
+            }
+            catch
+            {
+            }
+
             if (Streaming && runnerCallback != null)
             {
                 return await HandleStreaming(agent, chat, runnerCallback, toolPermissionRequest);
             }
-
+            
             RestDataOrException<ChatRichResponse> response = await chat.GetResponseRichSafe(async functions =>
             {
                 foreach (FunctionCall fn in functions)
