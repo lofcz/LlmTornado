@@ -1,0 +1,11 @@
+{
+  "cacheBootResources": true,
+  "entryAssembly": "LlmTornado.Docs.dll",
+  "resources": {
+    "assembly": {
+      "dotnet.native.dll": "dotnet.native.ulywfn9r8g.wasm"
+    },
+    "pdb": {},
+    "runtime": {}
+  }
+}
