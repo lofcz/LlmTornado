@@ -142,7 +142,10 @@ public class SkillsDemo : DemoBase
         foreach (SkillVersion v in versions.Data)
         {
             Console.WriteLine($"  - Version {v.Id}");
-            Console.WriteLine($"    Prompt preview: {v.SystemPrompt?.Substring(0, Math.Min(50, v.SystemPrompt.Length ?? 0))}...");
+            if (!string.IsNullOrEmpty(v.SystemPrompt))
+            {
+                Console.WriteLine($"    Prompt preview: {v.SystemPrompt.Substring(0, Math.Min(50, v.SystemPrompt.Length))}...");
+            }
         }
         
         // GET SPECIFIC VERSION
