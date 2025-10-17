@@ -74,7 +74,6 @@ public class MCPServer
         DisableTools = disableTools;
         AdditionalConnectionHeaders = additionalConnectionHeaders;
         OAuthOptions = oAuthOptions;
-        Task.Run(async () => await AutoSetupToolsAsync()).Wait();
     }
 
     public MCPServer(
@@ -92,7 +91,6 @@ public class MCPServer
         Arguments = arguments ?? [];
         WorkingDirectory = string.IsNullOrEmpty(workingDirectory) ? Directory.GetCurrentDirectory() : workingDirectory;
         EnvironmentVariables = environmentVariables ?? new Dictionary<string, string>();
-        Task.Run(async () => await AutoSetupToolsAsync()).Wait();
     }
 
     private async Task<bool> TryGetMcpClientAsync()
@@ -144,8 +142,11 @@ public class MCPServer
         }
     }
 
-   
-    private async Task AutoSetupToolsAsync()
+   /// <summary>
+   /// Run this to get tools for the MCP server
+   /// </summary>
+   /// <returns></returns>
+    public async Task InitializeAsync()
     {
         // If we cannot connect to the server, return an empty list
         if (!(await TryGetMcpClientAsync())) return; 

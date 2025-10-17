@@ -82,7 +82,7 @@ public abstract class BaseA2ATornadoRuntimeConfiguration : IA2ARuntimeConfigurat
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     /// <exception cref="InvalidOperationException"></exception>
-    public async Task StartAgentTaskAsync(AgentTask task, CancellationToken cancellationToken)
+    public async virtual Task StartAgentTaskAsync(AgentTask task, CancellationToken cancellationToken)
     {
         if (_taskManager == null)
         {
@@ -112,7 +112,8 @@ public abstract class BaseA2ATornadoRuntimeConfiguration : IA2ARuntimeConfigurat
                     Text = "Operation cancelled."
                 }]
                 },
-            cancellationToken: cancellationToken);
+                final: true,
+                cancellationToken: cancellationToken);
             return;
         }
 
