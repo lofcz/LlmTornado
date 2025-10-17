@@ -9,7 +9,7 @@ namespace LlmTornado.Mcp;
 public class MCPToolkits
 {
 
-    public static async Task<MCPServer> PuppeteerToolkit(string[]? disableTools)
+    public static MCPServer PuppeteerToolkit(string[]? disableTools)
     {
         var server = new MCPServer("puppeteer", command: "docker", arguments: new[] {
             "run",
@@ -31,7 +31,7 @@ public class MCPToolkits
         });
     }
 
-    public static async Task<MCPServer> LocalToolkit(string workspaceFolder, string[]? disableTools = null)
+    public static MCPServer LocalToolkit(string workspaceFolder, string[]? disableTools = null)
     {
         var server = new MCPServer("filesystem", command: "docker", arguments: new[] {
             "run",
@@ -45,7 +45,7 @@ public class MCPToolkits
         return server;
     }
 
-    public static async Task<MCPServer> GmailToolkit(string[]? disableTools = null)
+    public static MCPServer GmailToolkit(string[]? disableTools = null)
     {
         var server = new MCPServer("gmail", command: "npx", arguments: new[] {
             "@gongrzhe/server-gmail-autoauth-mcp"
@@ -54,5 +54,21 @@ public class MCPToolkits
         return server;
     }
 
+    public static MCPServer PlaywrightToolkit(string[]? disableTools = null)
+    {
+        var server = new MCPServer("gmail", command: "npx", arguments: new[] {
+            "@playwright/mcp@latest"
+        },
+            disableTools: disableTools);
+        return server;
+    }
 
+    public static MCPServer fetchToolkit(string[]? disableTools = null)
+    {
+        var server = new MCPServer("fetch", command: "uvx", arguments: new[] {
+            "mcp-server-fetch"
+        },
+            disableTools: disableTools);
+        return server;
+    }
 }
