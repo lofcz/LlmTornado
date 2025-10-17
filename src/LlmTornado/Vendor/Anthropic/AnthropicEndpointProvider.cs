@@ -223,6 +223,7 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
             CapabilityEndpoints.Completions => "complete",
             CapabilityEndpoints.Models => "models",
             CapabilityEndpoints.Files => "files",
+            CapabilityEndpoints.Skills => "skills",
             _ => throw new Exception($"Anthropic doesn't support endpoint {endpoint}")
         };
     }
