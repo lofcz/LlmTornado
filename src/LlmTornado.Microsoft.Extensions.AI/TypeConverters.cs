@@ -1,3 +1,4 @@
+using System.Drawing;
 using LlmTornado.Chat;
 using LlmTornado.Code;
 using LlmTornado.ChatFunctions;
@@ -346,11 +347,11 @@ internal static class TypeConverters
         // Handle image size conversion
         if (options?.ImageSize is not null)
         {
-            var size = options.ImageSize.Value;
+            Size size = options.ImageSize.Value;
             string sizeString = $"{size.Width}x{size.Height}";
             
             // Try to find a matching enum value
-            var matchedSize = Images.ImageGenerationRequest.TryParseSizeString(sizeString);
+            TornadoImageSizes? matchedSize = Images.ImageGenerationRequest.TryParseSizeString(sizeString);
             
             if (matchedSize.HasValue)
             {
