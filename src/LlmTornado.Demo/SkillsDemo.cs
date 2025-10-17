@@ -1,5 +1,7 @@
 using System;
 using System.Threading.Tasks;
+using LlmTornado.Code;
+using LlmTornado.Code.Vendor;
 using LlmTornado.Skills;
 
 namespace LlmTornado.Demo;
@@ -13,8 +15,19 @@ public class SkillsDemo : DemoBase
     [TornadoTest("List all skills")]
     public static async Task ListSkills()
     {
-        TornadoApi api = Program.Connect();
-        
+        TornadoApi api = new TornadoApi(new AnthropicEndpointProvider
+        {
+            Auth = new ProviderAuthentication(Program.ApiKeys.Anthropic),
+            UrlResolver = (endpoint, url, ctx) => "https://api.anthropic.com/v1/skills",
+            RequestResolver = (request, data, streaming) =>
+            {
+                // by default, providing a custom request resolver omits beta headers
+                // to include beta headers for features like interleaved thinking, files API, code execution, and search results:
+                request.Headers.Add("anthropic-beta", ["skills-2025-10-02", "files-api-2025-04-14", "code-execution-2025-08-25", "search-results-2025-06-09"]);
+            }
+        });
+
+
         Console.WriteLine("Listing all skills...");
         SkillListResponse skills = await api.Skills.ListSkillsAsync();
         
@@ -36,8 +49,18 @@ public class SkillsDemo : DemoBase
     [TornadoTest("Create a new skill")]
     public static async Task CreateSkill()
     {
-        TornadoApi api = Program.Connect();
-        
+        TornadoApi api = new TornadoApi(new AnthropicEndpointProvider
+        {
+            Auth = new ProviderAuthentication(Program.ApiKeys.Anthropic),
+            UrlResolver = (endpoint, url, ctx) => "https://api.anthropic.com/v1/skills",
+            RequestResolver = (request, data, streaming) =>
+            {
+                // by default, providing a custom request resolver omits beta headers
+                // to include beta headers for features like interleaved thinking, files API, code execution, and search results:
+                request.Headers.Add("anthropic-beta", ["skills-2025-10-02", "files-api-2025-04-14", "code-execution-2025-08-25", "search-results-2025-06-09"]);
+            }
+        });
+
         Console.WriteLine("Creating a new skill...");
         Skill skill = await api.Skills.CreateSkillAsync(
             "Code Review Assistant",
@@ -57,8 +80,18 @@ public class SkillsDemo : DemoBase
     [TornadoTest("Create skill with version")]
     public static async Task CreateSkillWithVersion()
     {
-        TornadoApi api = Program.Connect();
-        
+        TornadoApi api = new TornadoApi(new AnthropicEndpointProvider
+        {
+            Auth = new ProviderAuthentication(Program.ApiKeys.Anthropic),
+            UrlResolver = (endpoint, url, ctx) => "https://api.anthropic.com/v1/skills",
+            RequestResolver = (request, data, streaming) =>
+            {
+                // by default, providing a custom request resolver omits beta headers
+                // to include beta headers for features like interleaved thinking, files API, code execution, and search results:
+                request.Headers.Add("anthropic-beta", ["skills-2025-10-02", "files-api-2025-04-14", "code-execution-2025-08-25", "search-results-2025-06-09"]);
+            }
+        });
+
         Console.WriteLine("Creating a new skill...");
         Skill skill = await api.Skills.CreateSkillAsync(
             "Technical Writer",
@@ -93,8 +126,19 @@ public class SkillsDemo : DemoBase
     [TornadoTest("Full CRUD operations")]
     public static async Task FullCrudOperations()
     {
-        TornadoApi api = Program.Connect();
-        
+        TornadoApi api = new TornadoApi(new AnthropicEndpointProvider
+        {
+            Auth = new ProviderAuthentication(Program.ApiKeys.Anthropic),
+            UrlResolver = (endpoint, url, ctx) => "https://api.anthropic.com/v1/skills",
+            RequestResolver = (request, data, streaming) =>
+            {
+                // by default, providing a custom request resolver omits beta headers
+                // to include beta headers for features like interleaved thinking, files API, code execution, and search results:
+                request.Headers.Add("anthropic-beta", ["skills-2025-10-02", "files-api-2025-04-14", "code-execution-2025-08-25", "search-results-2025-06-09"]);
+                request.Headers.Add("anthropic-version", "2023-06-01");
+            }
+        });
+
         // CREATE
         Console.WriteLine("=== CREATE ===");
         Skill skill = await api.Skills.CreateSkillAsync(

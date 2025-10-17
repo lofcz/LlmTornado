@@ -369,7 +369,7 @@ public class AgentsDemo : DemoBase
     [TornadoTest]
     public static async Task MCPGmailToolkitExample()
     {
-        MCPServer gmailServer = await MCPToolkits.GmailToolkit();
+        MCPServer gmailServer = MCPToolkits.GmailToolkit();
 
         await gmailServer.InitializeAsync();
 
