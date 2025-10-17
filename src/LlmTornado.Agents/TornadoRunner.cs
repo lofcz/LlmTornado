@@ -42,14 +42,21 @@ public class TornadoRunner
         bool streaming = false,
         string responseId = "",
         Func<string, ValueTask<bool>>? toolPermissionHandle = null,
+        TornadoRunnerOptions? runnerOptions = null,
         CancellationToken cancellationToken = default
     )
     {
+        if (runnerOptions is null)
+        {
+            runnerOptions = new TornadoRunnerOptions();
+        }
+
         Conversation conversation = SetupConversation(agent, input, messagesToAppend, responseId, cancellationToken);
+
         //Check if the input triggers a guardrail to stop the agent from continuing
         await CheckInputGuardrail(input, guardRail);
 
-        return await RunAgentLoop(conversation, agent, singleTurn, maxTurns, runnerCallback, streaming, responseId, cancellationToken, toolPermissionHandle);
+        return await RunAgentLoop(conversation, agent, singleTurn, maxTurns, runnerCallback, streaming, responseId, toolPermissionHandle, runnerOptions, cancellationToken);
     }
 
     /// <summary>
@@ -85,12 +92,13 @@ public class TornadoRunner
         bool streaming = false,
         string responseId = "",
         Func<string, ValueTask<bool>>? toolPermissionHandle = null,
+        TornadoRunnerOptions? runnerOptions = null,
         CancellationToken cancellationToken = default
     )
     {
         TornadoAgent agent = new TornadoAgent(api, model, instructions) { Options = options };
 
-        return await RunAsync(agent, input, guardRail, singleTurn, maxTurns, messagesToAppend, runnerCallback, streaming, responseId, toolPermissionHandle, cancellationToken);
+        return await RunAsync(agent, input, guardRail, singleTurn, maxTurns, messagesToAppend, runnerCallback, streaming, responseId, toolPermissionHandle, runnerOptions: runnerOptions, cancellationToken: cancellationToken);
     }
 
     /// <summary>
@@ -114,8 +122,9 @@ public class TornadoRunner
         Func<AgentRunnerEvents, ValueTask>? runnerCallback = null,
         bool streaming = false,
         string responseId = "",
-        CancellationToken cancellationToken = default,
-        Func<string, ValueTask<bool>>? toolPermissionRequest = null
+        Func<string, ValueTask<bool>>? toolPermissionRequest = null,
+        TornadoRunnerOptions runnerOptions = null,
+        CancellationToken cancellationToken = default
     )
     {
         runnerCallback?.Invoke(new AgentRunnerStartedEvent());
@@ -125,9 +134,9 @@ public class TornadoRunner
         {
             do
             {
-                CheckForCancellation(runnerCallback, cancellationToken);
+                CheckForCancellation(runnerCallback, runnerOptions, cancellationToken);
 
-                CheckForMaxTurns(currentTurn, maxTurns, runnerCallback);
+                CheckForMaxTurns(currentTurn, maxTurns, runnerCallback, runnerOptions);
 
                 currentTurn++;
 
@@ -209,7 +218,7 @@ public class TornadoRunner
         }
     }
 
-    private static void CheckForCancellation(Func<AgentRunnerEvents, ValueTask>? runnerCallback = null, CancellationToken cancellationToken = default)
+    private static void CheckForCancellation(Func<AgentRunnerEvents, ValueTask>? runnerCallback = null, TornadoRunnerOptions runnerOptions = null, CancellationToken cancellationToken = default)
     {
         if (cancellationToken.IsCancellationRequested)
         {
@@ -220,14 +229,15 @@ public class TornadoRunner
         }
     }
 
-    private static void CheckForMaxTurns(int currentTurn, int maxTurns, Func<AgentRunnerEvents, ValueTask>? runnerCallback = null)
+    private static void CheckForMaxTurns(int currentTurn, int maxTurns, Func<AgentRunnerEvents, ValueTask>? runnerCallback = null, TornadoRunnerOptions runnerOptions = null)
     {
         if (currentTurn >= maxTurns)
         {
             Exception error = new Exception("Max Turns Reached");
             runnerCallback?.Invoke(new AgentRunnerMaxTurnsReachedEvent());
             runnerCallback?.Invoke(new AgentRunnerErrorEvent(error.Message, error));
-            throw error;
+            if(runnerOptions.ThrowOnMaxTurnsExceeded)
+                throw error;
         }
     }
 
@@ -302,7 +312,8 @@ public class TornadoRunner
         Conversation chat, 
         bool Streaming = false, 
         Func<AgentRunnerEvents, ValueTask>? runnerCallback = null, 
-        Func<string, ValueTask<bool>>? toolPermissionRequest = null)
+        Func<string, ValueTask<bool>>? toolPermissionRequest = null,
+        TornadoRunnerOptions ? runnerOptions = null)
     {
         try
         {
