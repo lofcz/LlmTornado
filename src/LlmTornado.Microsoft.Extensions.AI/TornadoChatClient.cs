@@ -131,7 +131,7 @@ public sealed class TornadoChatClient : IChatClient
         List<ToolCall> accumulatedToolCalls = [];
 
         // Execute streaming request
-        await foreach (var chunk in _api.Chat.StreamChatEnumerable(request).WithCancellation(cancellationToken))
+        await foreach (ChatResult? chunk in _api.Chat.StreamChatEnumerable(request).WithCancellation(cancellationToken))
         {
             cancellationToken.ThrowIfCancellationRequested();
 
