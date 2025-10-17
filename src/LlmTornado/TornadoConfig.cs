@@ -15,7 +15,7 @@ public static class TornadoConfig
     ///     the default way, you are responsible for constructing and returning your own <see cref="HttpClient"/> instance.
     ///     Async version takes precedence.
     /// </summary>
-    public static Func<IEndpointProvider, Task<HttpClient>>? CreateClientAsync { get; set; }
+    public static Func<IEndpointProvider, Task<HttpClient?>>? CreateClientAsync { get; set; }
 
     /// <summary>
     ///     Tornado uses one <see cref="HttpClient"/> per <see cref="LLmProviders"/>, if you set this delegate instead of constructing the client

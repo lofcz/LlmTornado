@@ -52,7 +52,7 @@ public abstract class EndpointBase
     /// Invoked when a <see cref="HttpClient"/> is requested. Can be used to reuse your http client, instead of creating new one. If null is returned, http client is created via the built-in way.
     /// Async version takes precedence.
     /// </summary>
-    public static Func<IEndpointProvider, Task<HttpClient>?>? OnHttpClientRequestedAsync { get; set; }
+    public static Func<IEndpointProvider, Task<HttpClient?>>? OnHttpClientRequestedAsync { get; set; }
 
     /// <summary>
     /// Invoked when a <see cref="HttpClient"/> is requested. Can be used to reuse your http client, instead of creating new one. If null is returned, http client is created via the built-in way.
