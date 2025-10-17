@@ -265,7 +265,8 @@ public partial class ChatDemo : DemoBase
             RequestResolver = (request, data, streaming) =>
             {
                 // by default, providing a custom request resolver omits beta headers
-                // request is HttpRequestMessage, data contains the payload
+                // to include beta headers for features like interleaved thinking, files API, code execution, and search results:
+                request.Headers.Add("anthropic-beta", ["interleaved-thinking-2025-05-14", "files-api-2025-04-14", "code-execution-2025-08-25", "search-results-2025-06-09"]);
             }
         });
 
