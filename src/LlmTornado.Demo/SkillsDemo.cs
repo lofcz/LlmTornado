@@ -8,6 +8,7 @@ using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Code.Vendor;
 using LlmTornado.Common;
+using LlmTornado.Files;
 using LlmTornado.Skills;
 
 namespace LlmTornado.Demo;
@@ -21,17 +22,7 @@ public class SkillsDemo : DemoBase
     [TornadoTest("List all skills")]
     public static async Task ListSkills()
     {
-        TornadoApi api = new TornadoApi(new AnthropicEndpointProvider
-        {
-            Auth = new ProviderAuthentication(Program.ApiKeys.Anthropic),
-            UrlResolver = (endpoint, url, ctx) => "https://api.anthropic.com/v1/skills",
-            RequestResolver = (request, data, streaming) =>
-            {
-                // by default, providing a custom request resolver omits beta headers
-                // to include beta headers for features like interleaved thinking, files API, code execution, and search results:
-                request.Headers.Add("anthropic-beta", ["skills-2025-10-02", "files-api-2025-04-14", "code-execution-2025-08-25", "search-results-2025-06-09"]);
-            }
-        });
+        TornadoApi api = Program.Connect();
 
 
         Console.WriteLine("Listing all skills...");
@@ -47,21 +38,16 @@ public class SkillsDemo : DemoBase
     [TornadoTest("Create a new skill")]
     public static async Task CreateSkill()
     {
-        TornadoApi api = new TornadoApi(new AnthropicEndpointProvider
-        {
-            Auth = new ProviderAuthentication(Program.ApiKeys.Anthropic),
-            UrlResolver = (endpoint, url, ctx) => "https://api.anthropic.com/v1/skills",
-            RequestResolver = (request, data, streaming) =>
-            {
-                // by default, providing a custom request resolver omits beta headers
-                // to include beta headers for features like interleaved thinking, files API, code execution, and search results:
-                request.Headers.Add("anthropic-beta", ["skills-2025-10-02", "files-api-2025-04-14", "code-execution-2025-08-25", "search-results-2025-06-09"]);
-            }
-        });
+        TornadoApi api = Program.Connect();
 
         Console.WriteLine("Creating a new skill...");
         Skill skill = await api.Skills.CreateSkillAsync(
-            "Code Review Assistant"
+            "pdf-processor",
+            [new FileUploadRequest() {
+                Bytes = File.ReadAllBytes("Static/Files/pdf-processor/SKILL.md"),
+                Name = "pdf-processor/SKILL.md",
+                MimeType = "text/markdown"
+            }]
         );
         
         Console.WriteLine($"Created skill: {skill.DisplayTitle} (ID: {skill.Id})");
@@ -72,25 +58,59 @@ public class SkillsDemo : DemoBase
         bool deleted = await api.Skills.DeleteSkillAsync(skill.Id);
         Console.WriteLine($"Skill deleted: {deleted}");
     }
-    
+
+    [TornadoTest("Delete skill")]
+    public static async Task DeleteSkill()
+    {
+        TornadoApi api = Program.Connect();
+        Console.WriteLine("Listing all skills...");
+        SkillListResponse skills = await api.Skills.ListSkillsAsync();
+
+        Console.WriteLine($"Found {skills.Data.Count} skill(s):");
+        int cindex = 0;
+        foreach (Skill skill in skills.Data)
+        {
+            if(skill.Source != "custom")
+            {
+                continue;
+            }
+            Console.WriteLine($" {cindex} - {skill.DisplayTitle} (ID: {skill.Id})");
+            cindex++;
+        }
+
+        Console.WriteLine($"Enter the # to delete: 0 - {skills.Data.Count - 1} ");
+        string skillIndex = Console.ReadLine();
+        if (!int.TryParse(skillIndex, out int index) || index < 0 || index >= skills.Data.Count)
+        {
+            Console.WriteLine("Invalid Skill ID.");
+            return;
+        }
+        string skillId = skills.Data[index].Id;
+        Console.WriteLine($"\nDeleting skill ID: {skillId} ...");
+        SkillVersionListResponse versions = await api.Skills.ListSkillVersionsAsync(skillId);
+        foreach (SkillVersion version in versions.Data)
+        {
+            Console.WriteLine($" - {version.Id} (Created at: {version.CreatedAt})");
+            await api.Skills.DeleteSkillVersionAsync(version.SkillId, version.Version);
+        }
+        // Clean up
+        Console.WriteLine("\nCleaning up - deleting created skill...");
+        bool deleted = await api.Skills.DeleteSkillAsync(skillId);
+        Console.WriteLine($"Skill deleted: {deleted}");
+    }
+
     [TornadoTest("Create skill with version")]
     public static async Task CreateSkillWithVersion()
     {
-        TornadoApi api = new TornadoApi(new AnthropicEndpointProvider
-        {
-            Auth = new ProviderAuthentication(Program.ApiKeys.Anthropic),
-            UrlResolver = (endpoint, url, ctx) => "https://api.anthropic.com/v1/skills",
-            RequestResolver = (request, data, streaming) =>
-            {
-                // by default, providing a custom request resolver omits beta headers
-                // to include beta headers for features like interleaved thinking, files API, code execution, and search results:
-                request.Headers.Add("anthropic-beta", ["skills-2025-10-02", "files-api-2025-04-14", "code-execution-2025-08-25", "search-results-2025-06-09"]);
-            }
-        });
+        TornadoApi api = Program.Connect();
 
         Console.WriteLine("Creating a new skill...");
         Skill skill = await api.Skills.CreateSkillAsync(
-            "Technical Writer"
+            new CreateSkillRequest("pdf-processor", [new FileUploadRequest() {
+                Bytes = File.ReadAllBytes("Static/Files/pdf-processor/SKILL.md"),
+                Name = "pdf-processor/SKILL.md",
+                MimeType = "text/markdown"
+            }])
         );
         
         Console.WriteLine($"Created skill: {skill.DisplayTitle} (ID: {skill.Id})");
@@ -98,7 +118,11 @@ public class SkillsDemo : DemoBase
         Console.WriteLine("\nCreating a version for the skill...");
         SkillVersion version = await api.Skills.CreateSkillVersionAsync(
             skill.Id,
-            new CreateSkillVersionRequest()
+            new CreateSkillVersionRequest([new FileUploadRequest() {
+                Bytes = File.ReadAllBytes("Static/Files/pdf-processor/SKILL.md"),
+                Name = "pdf-processor/SKILL.md",
+                MimeType = "text/markdown"
+            }])
         );
         
         Console.WriteLine($"Created version: {version.Id}");
@@ -107,7 +131,7 @@ public class SkillsDemo : DemoBase
         // Clean up
         Console.WriteLine("\nCleaning up...");
         Console.WriteLine("Deleting version...");
-        bool versionDeleted = await api.Skills.DeleteSkillVersionAsync(skill.Id, version.Id);
+        bool versionDeleted = await api.Skills.DeleteSkillVersionAsync(version.SkillId, version.Version);
         Console.WriteLine($"Version deleted: {versionDeleted}");
         
         Console.WriteLine("Deleting skill...");
@@ -118,23 +142,16 @@ public class SkillsDemo : DemoBase
     [TornadoTest("Full CRUD operations")]
     public static async Task FullCrudOperations()
     {
-        TornadoApi api = new TornadoApi(new AnthropicEndpointProvider
-        {
-            Auth = new ProviderAuthentication(Program.ApiKeys.Anthropic),
-            UrlResolver = (endpoint, url, ctx) => "https://api.anthropic.com/v1/skills",
-            RequestResolver = (request, data, streaming) =>
-            {
-                // by default, providing a custom request resolver omits beta headers
-                // to include beta headers for features like interleaved thinking, files API, code execution, and search results:
-                request.Headers.Add("anthropic-beta", ["skills-2025-10-02", "files-api-2025-04-14", "code-execution-2025-08-25", "search-results-2025-06-09"]);
-                request.Headers.Add("anthropic-version", "2023-06-01");
-            }
-        });
+        TornadoApi api = Program.Connect();
 
         // CREATE
         Console.WriteLine("=== CREATE ===");
         Skill skill = await api.Skills.CreateSkillAsync(
-            "Data Analyst"
+            new CreateSkillRequest("pdf-processor", [new FileUploadRequest() {
+                Bytes = File.ReadAllBytes("Static/Files/pdf-processor/SKILL.md"),
+                Name = "pdf-processor/SKILL.md",
+                MimeType = "text/markdown"
+            }])
         );
         Console.WriteLine($"Created: {skill.DisplayTitle} (ID: {skill.Id})");
         
@@ -148,13 +165,21 @@ public class SkillsDemo : DemoBase
         Console.WriteLine("\n=== CREATE VERSION ===");
         SkillVersion version1 = await api.Skills.CreateSkillVersionAsync(
             skill.Id,
-            new CreateSkillVersionRequest()
+            new CreateSkillVersionRequest([new FileUploadRequest() {
+                Bytes = File.ReadAllBytes("Static/Files/pdf-processor/SKILL.md"),
+                Name = "pdf-processor/SKILL.md",
+                MimeType = "text/markdown"
+            }])
         );
         Console.WriteLine($"Created version: {version1.Id}");
         
         SkillVersion version2 = await api.Skills.CreateSkillVersionAsync(
             skill.Id,
-            new CreateSkillVersionRequest()
+            new CreateSkillVersionRequest([new FileUploadRequest() {
+                Bytes = File.ReadAllBytes("Static/Files/pdf-processor/SKILL.md"),
+                Name = "pdf-processor/SKILL.md",
+                MimeType = "text/markdown"
+            }])
         );
         Console.WriteLine($"Created version: {version2.Id}");
         
@@ -170,7 +195,7 @@ public class SkillsDemo : DemoBase
         
         // GET SPECIFIC VERSION
         Console.WriteLine("\n=== GET VERSION ===");
-        SkillVersion retrievedVersion = await api.Skills.GetSkillVersionAsync(skill.Id, version1.Id);
+        SkillVersion retrievedVersion = await api.Skills.GetSkillVersionAsync(skill.Id, version1.Version);
         Console.WriteLine($"Retrieved version: {retrievedVersion.Id}");
         Console.WriteLine($"System Prompt: {retrievedVersion.Description}");
         
@@ -178,12 +203,17 @@ public class SkillsDemo : DemoBase
         // DELETE (cleanup)
         Console.WriteLine("\n=== DELETE ===");
         Console.WriteLine("Deleting versions...");
-        bool v1Deleted = await api.Skills.DeleteSkillVersionAsync(skill.Id, version1.Id);
+        bool v1Deleted = await api.Skills.DeleteSkillVersionAsync(skill.Id, version1.Version);
         Console.WriteLine($"Version 1 deleted: {v1Deleted}");
-        
-        bool v2Deleted = await api.Skills.DeleteSkillVersionAsync(skill.Id, version2.Id);
+
+        bool v2Deleted = await api.Skills.DeleteSkillVersionAsync(skill.Id, version2.Version);
         Console.WriteLine($"Version 2 deleted: {v2Deleted}");
-        
+
+        bool latestVersionDeleted = await api.Skills.DeleteSkillVersionAsync(skill.Id, skill.LatestVersion);
+        Console.WriteLine($"Latest version deleted: {latestVersionDeleted}");
+
+        Task.Delay(3000).Wait(); // Wait a moment to ensure versions are deleted before deleting skill
+
         Console.WriteLine("Deleting skill...");
         bool skillDeleted = await api.Skills.DeleteSkillAsync(skill.Id);
         Console.WriteLine($"Skill deleted: {skillDeleted}");
@@ -191,11 +221,19 @@ public class SkillsDemo : DemoBase
         Console.WriteLine("\n=== DEMO COMPLETE ===");
     }
     
-    [TornadoTest("PowerPoint Skill Demo - Create presentation with container")]
+    [TornadoTest("PowerPoint Skill Demo - Create presentation with container (beware cost)")]
     public static async Task PowerPointSkillDemo()
     {
         const int ArgumentPreviewLength = 200;
 
+        Console.WriteLine("Beware: This demo may incur costs as it uses Anthropic's Claude model with the PowerPoint skill.");
+        Console.WriteLine("Do you want to proceed? (y/n)");
+        string? input = Console.ReadLine();
+        if (input?.ToLower() != "y")
+        {
+            Console.WriteLine("Demo cancelled.");
+            return;
+        }
 
         Console.WriteLine("=== CREATING POWERPOINT PRESENTATION WITH SKILLS (this could take 2-3 mins) ===\n");
 

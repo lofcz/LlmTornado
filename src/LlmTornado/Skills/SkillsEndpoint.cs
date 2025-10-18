@@ -168,10 +168,10 @@ public class SkillsEndpoint : EndpointBase
     /// <param name="skillId">The ID of the skill</param>
     /// <param name="versionId">The ID of the version to retrieve</param>
     /// <returns>The requested skill version</returns>
-    public async Task<SkillVersion> GetSkillVersionAsync(string skillId, string versionId)
+    public async Task<SkillVersion> GetSkillVersionAsync(string skillId, string version)
     {
         IEndpointProvider provider = Api.ResolveProvider(LLmProviders.Anthropic);
-        return (await HttpGet<SkillVersion>(provider, Endpoint, GetUrl(provider, $"/{skillId}/versions/{versionId}")).ConfigureAwait(false)).Data!;
+        return (await HttpGet<SkillVersion>(provider, Endpoint, GetUrl(provider, $"/{skillId}/versions/{version}")).ConfigureAwait(false)).Data!;
     }
     
     /// <summary>

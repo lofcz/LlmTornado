@@ -8,30 +8,54 @@ using System.Net.Http.Headers;
 namespace LlmTornado.Skills;
 
 /// <summary>
-/// Request to create a new skill.
+/// Request to create a new skill version.
 /// </summary>
 public class CreateSkillVersionRequest
 {
-
     /// <summary>
-    /// A description of what the skill does.
+    /// Files to upload for the skill version.
+    /// All files must be in the same top-level directory and must include a SKILL.md file at the root of that directory.
     /// </summary>
     [JsonProperty("files")]
-    public TornadoFile[] Files { get; set; }
+    public FileUploadRequest[] Files { get; set; }
 
     /// <summary>
-    /// Creates a new create skill request.
+    /// Creates a new create skill version request.
     /// </summary>
     public CreateSkillVersionRequest()
     {
+        Files = Array.Empty<FileUploadRequest>();
     }
 
     /// <summary>
-    /// Creates a new create skill request with a name and description.
+    /// Creates a new create skill version request with files.
     /// </summary>
-    /// <param name="name">The name of the skill</param>
-    /// <param name="description">A description of what the skill does</param>
-    public CreateSkillVersionRequest(TornadoFile[] files = null){
-        Files = files;
+    /// <param name="files">Files to upload for the skill version</param>
+    public CreateSkillVersionRequest(FileUploadRequest[]? files = null)
+    {
+        Files = files ?? Array.Empty<FileUploadRequest>();
+    }
+
+    /// <summary>
+    /// Converts the request to MultipartFormDataContent for API submission.
+    /// </summary>
+    /// <returns>MultipartFormDataContent ready for API submission</returns>
+    public MultipartFormDataContent ToMultipartContent()
+    {
+        MultipartFormDataContent content = new MultipartFormDataContent();
+
+        foreach (FileUploadRequest file in Files)
+        {
+            if (file == null || file.Bytes == null || string.IsNullOrEmpty(file.Name))
+            {
+                continue;
+            }
+
+            ByteArrayContent bc = new ByteArrayContent(file.Bytes);
+            bc.Headers.ContentType = new MediaTypeHeaderValue(file.MimeType ?? "application/pdf");
+            content.Add(bc, "files[]", file.Name);
+        }
+
+        return content;
     }
 }
