@@ -231,6 +231,8 @@ public class SkillsDemo : DemoBase
     [TornadoTest("PowerPoint Skill Demo - Create presentation with container")]
     public static async Task PowerPointSkillDemo()
     {
+        const int ArgumentPreviewLength = 200;
+        
         TornadoApi api = new TornadoApi
         {
             Auth = new ProviderAuthentication(Program.ApiKeys.Anthropic)
@@ -254,14 +256,14 @@ public class SkillsDemo : DemoBase
                     "5. Call to Action\n\n" +
                     "Make it visually appealing with a professional design.")
             },
-            Tools = new List<Tool>
-            {
+            Tools =
+            [
                 new Tool
                 {
                     Type = "code_execution_20250825",
                     Name = "code_execution"
                 }
-            },
+            ],
             VendorExtensions = new ChatRequestVendorExtensions
             {
                 Anthropic = new ChatRequestVendorAnthropicExtensions
@@ -308,8 +310,8 @@ public class SkillsDemo : DemoBase
                         Console.WriteLine($"  - {toolCall.FunctionCall.Name}");
                         if (!string.IsNullOrEmpty(toolCall.FunctionCall.Arguments))
                         {
-                            string preview = toolCall.FunctionCall.Arguments.Length > 200 
-                                ? toolCall.FunctionCall.Arguments.Substring(0, 200) + "..." 
+                            string preview = toolCall.FunctionCall.Arguments.Length > ArgumentPreviewLength 
+                                ? toolCall.FunctionCall.Arguments.Substring(0, ArgumentPreviewLength) + "..." 
                                 : toolCall.FunctionCall.Arguments;
                             Console.WriteLine($"    Arguments: {preview}");
                         }

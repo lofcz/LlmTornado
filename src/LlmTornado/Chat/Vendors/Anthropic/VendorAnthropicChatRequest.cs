@@ -678,7 +678,7 @@ internal class VendorAnthropicChatRequest
                 }
             }
             
-            // Add container if skills are specified
+            // Add container if specified
             if (request.VendorExtensions.Anthropic.Container is not null)
             {
                 Container = request.VendorExtensions.Anthropic.Container;

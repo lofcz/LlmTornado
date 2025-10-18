@@ -136,14 +136,6 @@ public class AnthropicSkill
         SkillId = skillId;
         Version = version;
     }
-    
-    /// <summary>
-    /// Creates a new Anthropic skill.
-    /// </summary>
-    public AnthropicSkill()
-    {
-        SkillId = string.Empty;
-    }
 }
 
 /// <summary>
