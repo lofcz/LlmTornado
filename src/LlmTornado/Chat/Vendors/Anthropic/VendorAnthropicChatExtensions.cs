@@ -104,6 +104,61 @@ public interface IAnthropicChatRequestItem
 }
 
 /// <summary>
+/// Represents a skill that can be loaded in the container.
+/// </summary>
+public class AnthropicSkill
+{
+    /// <summary>
+    /// Type of the skill (typically "anthropic" for built-in skills).
+    /// </summary>
+    [JsonProperty("type")]
+    public string Type { get; set; } = "anthropic";
+    
+    /// <summary>
+    /// Skill identifier (e.g., "xlsx", "pptx", "pdf").
+    /// </summary>
+    [JsonProperty("skill_id")]
+    public string SkillId { get; set; }
+    
+    /// <summary>
+    /// Version of the skill (typically "latest" or a specific version ID).
+    /// </summary>
+    [JsonProperty("version")]
+    public string Version { get; set; } = "latest";
+    
+    /// <summary>
+    /// Creates a new Anthropic skill.
+    /// </summary>
+    /// <param name="skillId">Skill identifier (e.g., "xlsx", "pptx", "pdf")</param>
+    /// <param name="version">Version of the skill (default: "latest")</param>
+    public AnthropicSkill(string skillId, string version = "latest")
+    {
+        SkillId = skillId;
+        Version = version;
+    }
+    
+    /// <summary>
+    /// Creates a new Anthropic skill.
+    /// </summary>
+    public AnthropicSkill()
+    {
+        SkillId = string.Empty;
+    }
+}
+
+/// <summary>
+/// Container configuration for loading skills and resources.
+/// </summary>
+public class AnthropicContainer
+{
+    /// <summary>
+    /// List of skills to load in the container.
+    /// </summary>
+    [JsonProperty("skills")]
+    public List<AnthropicSkill>? Skills { get; set; }
+}
+
+/// <summary>
 ///     Chat features supported only by Anthropic.
 /// </summary>
 public class ChatRequestVendorAnthropicExtensions
@@ -124,4 +179,20 @@ public class ChatRequestVendorAnthropicExtensions
     /// Server-side tools.
     /// </summary>
     public List<IVendorAnthropicChatRequestBuiltInTool>? BuiltInTools { get; set; }
+    
+    /// <summary>
+    /// Container configuration for loading skills. Skills allow Claude to perform specialized tasks like creating PowerPoint presentations, Excel spreadsheets, or PDF documents.<br/>
+    /// <b>Note:</b> When using skills, you must also include code execution in your tools and use the beta Messages API.
+    /// </summary>
+    public AnthropicContainer? Container { get; set; }
+    
+    /// <summary>
+    /// List of beta features to enable. Common values include:<br/>
+    /// - "code-execution-2025-08-25" (enables code execution)<br/>
+    /// - "files-api-2025-04-14" (required for downloading files)<br/>
+    /// - "skills-2025-10-02" (enables Skills feature)<br/>
+    /// - "interleaved-thinking-2025-05-14" (enables thinking blocks)<br/>
+    /// - "search-results-2025-06-09" (enables search results)
+    /// </summary>
+    public List<string>? Betas { get; set; }
 }

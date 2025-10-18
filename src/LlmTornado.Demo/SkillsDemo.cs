@@ -1,5 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using LlmTornado.Chat;
+using LlmTornado.Chat.Models;
+using LlmTornado.Chat.Vendors.Anthropic;
+using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Code.Vendor;
 using LlmTornado.Skills;
@@ -221,5 +226,111 @@ public class SkillsDemo : DemoBase
         Console.WriteLine($"Skill deleted: {skillDeleted}");
         
         Console.WriteLine("\n=== DEMO COMPLETE ===");
+    }
+    
+    [TornadoTest("PowerPoint Skill Demo - Create presentation with container")]
+    public static async Task PowerPointSkillDemo()
+    {
+        TornadoApi api = new TornadoApi
+        {
+            Auth = new ProviderAuthentication(Program.ApiKeys.Anthropic)
+        };
+
+        Console.WriteLine("=== CREATING POWERPOINT PRESENTATION WITH SKILLS ===\n");
+
+        ChatRequest chatRequest = new ChatRequest
+        {
+            Model = ChatModel.Anthropic.Claude4.Sonnet250929,
+            MaxTokens = 4096,
+            Messages = new List<ChatMessage>
+            {
+                new ChatMessage(ChatMessageRoles.User, 
+                    "Create a professional PowerPoint presentation about renewable energy. " +
+                    "Include 5 slides:\n" +
+                    "1. Title slide: 'The Future of Renewable Energy'\n" +
+                    "2. Types of Renewable Energy (solar, wind, hydro, geothermal)\n" +
+                    "3. Benefits and Challenges\n" +
+                    "4. Market Growth Statistics\n" +
+                    "5. Call to Action\n\n" +
+                    "Make it visually appealing with a professional design.")
+            },
+            Tools = new List<Tool>
+            {
+                new Tool
+                {
+                    Type = "code_execution_20250825",
+                    Name = "code_execution"
+                }
+            },
+            VendorExtensions = new ChatRequestVendorExtensions
+            {
+                Anthropic = new ChatRequestVendorAnthropicExtensions
+                {
+                    // Configure container with PowerPoint skill
+                    Container = new AnthropicContainer
+                    {
+                        Skills = new List<AnthropicSkill>
+                        {
+                            new AnthropicSkill("pptx", "latest")
+                        }
+                    },
+                    // Specify required beta features
+                    Betas = new List<string>
+                    {
+                        "code-execution-2025-08-25",
+                        "files-api-2025-04-14",
+                        "skills-2025-10-02"
+                    }
+                }
+            }
+        };
+
+        Console.WriteLine("Sending request to Claude with PowerPoint skill...\n");
+
+        ChatResult response = await api.Chat.CreateChatCompletionAsync(chatRequest);
+
+        Console.WriteLine("=== RESPONSE ===\n");
+        
+        if (response.Choices?.Count > 0)
+        {
+            foreach (ChatChoice choice in response.Choices)
+            {
+                if (choice.Message?.Content is not null)
+                {
+                    Console.WriteLine($"Message: {choice.Message.Content}\n");
+                }
+                
+                if (choice.Message?.ToolCalls?.Count > 0)
+                {
+                    Console.WriteLine("Tool Calls:");
+                    foreach (ToolCall toolCall in choice.Message.ToolCalls)
+                    {
+                        Console.WriteLine($"  - {toolCall.FunctionCall.Name}");
+                        if (!string.IsNullOrEmpty(toolCall.FunctionCall.Arguments))
+                        {
+                            string preview = toolCall.FunctionCall.Arguments.Length > 200 
+                                ? toolCall.FunctionCall.Arguments.Substring(0, 200) + "..." 
+                                : toolCall.FunctionCall.Arguments;
+                            Console.WriteLine($"    Arguments: {preview}");
+                        }
+                    }
+                    Console.WriteLine();
+                }
+            }
+        }
+
+        if (response.Usage is not null)
+        {
+            Console.WriteLine("=== TOKEN USAGE ===");
+            Console.WriteLine($"Input tokens: {response.Usage.PromptTokens}");
+            Console.WriteLine($"Output tokens: {response.Usage.CompletionTokens}");
+            Console.WriteLine($"Total tokens: {response.Usage.TotalTokens}");
+        }
+
+        Console.WriteLine("\n=== DEMO COMPLETE ===");
+        Console.WriteLine("Note: To download the created file, you would need to:");
+        Console.WriteLine("1. Extract the file_id from the response");
+        Console.WriteLine("2. Use the Files API to download the file");
+        Console.WriteLine("3. Save it to disk as a .pptx file");
     }
 }

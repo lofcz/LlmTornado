@@ -551,6 +551,14 @@ internal class VendorAnthropicChatRequest
     public VendorAnthropicChatRequestToolChoice? ToolChoice { get; set; }
     [JsonProperty("tools")]
     public List<VendorAnthropicToolFunction>? Tools { get; set; }
+    [JsonProperty("container")]
+    public AnthropicContainer? Container { get; set; }
+    
+    /// <summary>
+    /// Beta features to enable (sent in HTTP header, not in JSON body).
+    /// </summary>
+    [JsonIgnore]
+    public List<string>? Betas { get; set; }
 
     public VendorAnthropicChatRequest(ChatRequest request, IEndpointProvider provider)
     {
@@ -668,6 +676,18 @@ internal class VendorAnthropicChatRequest
                         MaxTokens = Thinking.BudgetTokens.Value + 4_096;
                     }
                 }
+            }
+            
+            // Add container if skills are specified
+            if (request.VendorExtensions.Anthropic.Container is not null)
+            {
+                Container = request.VendorExtensions.Anthropic.Container;
+            }
+            
+            // Add betas if specified
+            if (request.VendorExtensions.Anthropic.Betas is not null)
+            {
+                Betas = request.VendorExtensions.Anthropic.Betas;
             }
             
             request.VendorExtensions.Anthropic.OutboundRequest?.Invoke(System, Messages.Select(x => x.Content).ToList(), Tools);
