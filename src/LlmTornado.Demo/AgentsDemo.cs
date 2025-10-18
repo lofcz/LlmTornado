@@ -5,6 +5,7 @@ using LlmTornado.Agents.Samples.claude_skills;
 using LlmTornado.Agents.Utility;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
+using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Mcp;
@@ -13,6 +14,7 @@ using ModelContextProtocol.Server;
 using Newtonsoft.Json.Converters;
 using System.ComponentModel;
 using System.Security.Cryptography.X509Certificates;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using static System.Net.WebRequestMethods;
 
@@ -575,12 +577,21 @@ public class AgentsDemo : DemoBase
     {
         TornadoApi api = Program.Connect();
         ClaudeSkillAgent agent = new ClaudeSkillAgent();
-
         // run once
-        // await agent.UploadSkillFile(api, "ability-generator", "SKILL.md", "Static/Files/ability-generator/SKILL.md");
-        
-        Conversation conv = await agent.Invoke(api, new ChatMessage(ChatMessageRoles.User, "Create me a new skill to create code tutorials on LlmTornado API for Medium."));
+        //await agent.UploadSkillFolder(api, "llmtornado-tutorial-generator", "Static/Files/llmtornado-tutorial-generator");
 
-        Console.WriteLine(conv.Messages.Last().Content ?? "n/a");
+        var skills = new List<AnthropicSkill>
+                        {
+                            new AnthropicSkill("skill_016mAwJ3Z9CjdnNHXsftbypW", "latest"),
+                            new AnthropicSkill("skill_01FBEnqs5m8r4pYEugE9kaht", "latest")
+                        };
+
+       Conversation conv = await agent.Invoke(api, 
+           new ChatMessage(ChatMessageRoles.User, 
+           "Can you please make me a LLMTornado Medium tutorial on setting up a basic TornadoAgent and please save it to my local disk. Make sure to pull the repo so you have access to it."),
+           "github_api_key",
+           skills);
+
+       Console.WriteLine(conv.Messages.Last().Content ?? "n/a");
     }
 }

@@ -3,6 +3,7 @@ using LlmTornado.Chat.Models;
 using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Code;
 using LlmTornado.Files;
+using LlmTornado.Mcp;
 using LlmTornado.Skills;
 using System;
 using System.Collections.Generic;
@@ -28,13 +29,31 @@ public class ClaudeSkillAgent
         return skill;
     }
 
-    public async Task<Conversation> Invoke(TornadoApi api, ChatMessage message)
+    public async Task<Skill> UploadSkillFolder(TornadoApi api, string skillName, string folderPath)
     {
-        TornadoAgent agent = new TornadoAgent(api, ChatModel.Anthropic.Claude45.Sonnet250929);
+        var files = Directory.GetFiles(folderPath, "*", SearchOption.AllDirectories)
+            .Select(filePath => new FileUploadRequest()
+            {
+                Bytes = File.ReadAllBytes(filePath),
+                Name = $"{skillName}/{Path.GetRelativePath(folderPath, filePath).Replace("\\", "/")}",
+                MimeType = "text/markdown"
+            }).ToList();
+        var folder = new CreateSkillRequest(skillName, files.ToArray());
+        Skill skill = await api.Skills.CreateSkillAsync(
+          folder
+       );
+        return skill;
+    }
 
-        SkillListResponse skills = await api.Skills.ListSkillsAsync();
-        Skill mySkill = skills.Data.FirstOrDefault(s => s.Source == "custom");
+    public async Task<Conversation> Invoke(TornadoApi api, ChatMessage message, string githubApiKey, List<AnthropicSkill> skills)
+    {
+        var localFileToolkit = MCPToolkits.FileSystemToolkit(Directory.GetCurrentDirectory());
+        await localFileToolkit.InitializeAsync();
 
+        var githubToolkit = MCPToolkits.GithubToolkit(githubApiKey);
+        await githubToolkit.InitializeAsync();
+
+        TornadoAgent agent = new TornadoAgent(api, ChatModel.Anthropic.Claude45.Sonnet250929, mcpServers: [localFileToolkit, githubToolkit]);
 
         agent.Options.VendorExtensions = new ChatRequestVendorExtensions
         {
@@ -43,10 +62,7 @@ public class ClaudeSkillAgent
                 // Configure container with PowerPoint skill
                 Container = new AnthropicContainer
                 {
-                    Skills = new List<AnthropicSkill>
-                        {
-                            new AnthropicSkill(mySkill.Id, "latest")
-                        }
+                    Skills = skills
                 },
                 BuiltInTools =
                    [
@@ -55,7 +71,7 @@ public class ClaudeSkillAgent
             }
         };
 
-        agent.Options.MaxTokens = 1024;
+        agent.Options.MaxTokens = 10024;
 
         return await agent.RunAsync(appendMessages: [message] );
     }
