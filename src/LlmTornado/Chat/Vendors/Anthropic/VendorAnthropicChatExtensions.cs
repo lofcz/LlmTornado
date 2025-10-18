@@ -177,14 +177,4 @@ public class ChatRequestVendorAnthropicExtensions
     /// <b>Note:</b> When using skills, you must also include code execution in your tools and use the beta Messages API.
     /// </summary>
     public AnthropicContainer? Container { get; set; }
-    
-    /// <summary>
-    /// List of beta features to enable. Common values include:<br/>
-    /// - "code-execution-2025-08-25" (enables code execution)<br/>
-    /// - "files-api-2025-04-14" (required for downloading files)<br/>
-    /// - "skills-2025-10-02" (enables Skills feature)<br/>
-    /// - "interleaved-thinking-2025-05-14" (enables thinking blocks)<br/>
-    /// - "search-results-2025-06-09" (enables search results)
-    /// </summary>
-    public List<string>? Betas { get; set; }
 }

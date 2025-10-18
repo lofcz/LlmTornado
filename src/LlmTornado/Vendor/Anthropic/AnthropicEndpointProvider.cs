@@ -673,15 +673,8 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
         }
         else
         {
-            // Extract betas from the request data if it's a VendorAnthropicChatRequest
-            List<string> betaHeaders = ["interleaved-thinking-2025-05-14", "files-api-2025-04-14", "code-execution-2025-08-25", "search-results-2025-06-09", "skills-2025-10-02"];
-            
-            if (data is VendorAnthropicChatRequest chatRequest && chatRequest.Betas?.Count > 0)
-            {
-                betaHeaders = chatRequest.Betas;
-            }
-            
-            req.Headers.Add("anthropic-beta", betaHeaders);
+
+            req.Headers.Add("anthropic-beta", ["interleaved-thinking-2025-05-14", "files-api-2025-04-14", "code-execution-2025-08-25", "search-results-2025-06-09", "skills-2025-10-02"]);
         }
 
         return req;
