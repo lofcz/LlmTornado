@@ -35,9 +35,15 @@ Conversations | Assistants | Threads | Messages | Runs | Run steps | Vector stor
 
 ## Google Specific
 
- Caching* | Semantic Retrieval | Live | Video | Speech
+ Caching | Semantic Retrieval | Live | Video | Speech
 |-----------|------------ | ------------ | ------------ | ------------ |
 | ✅ | ❌ | ❌ | ❌ | ✅ |
+
+## Anthropic Specific
+
+ Skills |
+|-----------|
+| ✅ |
 
 ## Voyage Specific
 
