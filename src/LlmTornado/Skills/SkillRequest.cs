@@ -60,7 +60,7 @@ public class CreateSkillRequest
 
         foreach (FileUploadRequest file in Files)
         {
-            if (file == null)
+            if (file == null || file.Bytes == null || string.IsNullOrEmpty(file.Name))
             {
                 continue;
             }
@@ -164,7 +164,7 @@ public class CreateSkillVersionRequest
 
         foreach (FileUploadRequest file in Files)
         {
-            if (file == null)
+            if (file == null || file.Bytes == null || string.IsNullOrEmpty(file.Name))
             {
                 continue;
             }
