@@ -19,7 +19,8 @@ internal enum VendorAnthropicChatMessageTypes
     BashCodeExecutionToolResult,
     McpToolUse,
     McpToolResult,
-    ContainerUpload
+    ContainerUpload,
+    TextEditorCodeExecutionViewResult
 }
 
 internal static class VendorAnthropicChatMessageTypesCls
@@ -39,7 +40,7 @@ internal static class VendorAnthropicChatMessageTypesCls
         {"bash_code_execution_tool_result", VendorAnthropicChatMessageTypes.BashCodeExecutionToolResult },
         {"mcp_tool_use", VendorAnthropicChatMessageTypes.McpToolUse },
         {"mcp_tool_result", VendorAnthropicChatMessageTypes.McpToolResult },
-        {"container_upload", VendorAnthropicChatMessageTypes.ContainerUpload }
-
+        {"container_upload", VendorAnthropicChatMessageTypes.ContainerUpload },
+        {"text_editor_code_execution_view_result", VendorAnthropicChatMessageTypes.TextEditorCodeExecutionViewResult }
     } .ToFrozenDictionary();
 }

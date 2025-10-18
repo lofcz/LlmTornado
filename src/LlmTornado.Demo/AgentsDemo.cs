@@ -522,7 +522,7 @@ public class AgentsDemo : DemoBase
                     Console.WriteLine($"\n[Response API Event]: {responseApiEvent.ResponseApiEvent.EventType}");
                 }
             }
-                return ValueTask.CompletedTask;
+            return ValueTask.CompletedTask;
         });
 
         ChatMessage lastMsg = convo.Messages.Last();
@@ -576,6 +576,9 @@ public class AgentsDemo : DemoBase
         TornadoApi api = Program.Connect();
         ClaudeSkillAgent agent = new ClaudeSkillAgent();
 
+        // run once
+        // await agent.UploadSkillFile(api, "ability-generator", "SKILL.md", "Static/Files/ability-generator/SKILL.md");
+        
         Conversation conv = await agent.Invoke(api, new ChatMessage(ChatMessageRoles.User, "Create me a new skill to create code tutorials on LlmTornado API for Medium."));
 
         Console.WriteLine(conv.Messages.Last().Content ?? "n/a");
