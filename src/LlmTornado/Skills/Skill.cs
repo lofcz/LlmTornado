@@ -1,6 +1,8 @@
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Reflection.Emit;
+using System.Xml.Linq;
 
 namespace LlmTornado.Skills;
 
@@ -9,12 +11,22 @@ namespace LlmTornado.Skills;
 /// </summary>
 public class Skill
 {
+    [JsonProperty("display_title")]
+    public string DisplayTitle { get; set; }
     /// <summary>
     /// Unique identifier for the skill.
     /// </summary>
     [JsonProperty("id")]
     public string Id { get; set; }
-    
+
+
+    /// <summary>
+    /// "custom": the skill was created by a user
+    /// "anthropic": the skill was created by Anthropic
+    /// </summary>
+    [JsonProperty("source")]
+    public string Source { get; set; } = "anthropic";
+
     /// <summary>
     /// The type of object. Always "skill".
     /// </summary>
@@ -22,34 +34,22 @@ public class Skill
     public string Type { get; set; } = "skill";
     
     /// <summary>
-    /// The name of the skill.
-    /// </summary>
-    [JsonProperty("name")]
-    public string Name { get; set; }
-    
-    /// <summary>
-    /// A description of what the skill does.
-    /// </summary>
-    [JsonProperty("description")]
-    public string? Description { get; set; }
-    
-    /// <summary>
     /// The ID of the currently active version for this skill.
     /// </summary>
-    [JsonProperty("active_version_id")]
-    public string? ActiveVersionId { get; set; }
+    [JsonProperty("latest_version")]
+    public string LatestVersion { get; set; }
     
     /// <summary>
     /// The timestamp when the skill was created.
     /// </summary>
     [JsonProperty("created_at")]
-    public DateTime? CreatedAt { get; set; }
+    public DateTime CreatedAt { get; set; }
     
     /// <summary>
     /// The timestamp when the skill was last updated.
     /// </summary>
     [JsonProperty("updated_at")]
-    public DateTime? UpdatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
 }
 
 /// <summary>
@@ -57,54 +57,72 @@ public class Skill
 /// </summary>
 public class SkillVersion
 {
+    [JsonProperty("name")]
+    public string Name { get; set; }
     /// <summary>
     /// Unique identifier for the skill version.
     /// </summary>
     [JsonProperty("id")]
     public string Id { get; set; }
-    
+
     /// <summary>
-    /// The type of object. Always "skill_version".
-    /// </summary>
-    [JsonProperty("type")]
-    public string Type { get; set; } = "skill_version";
-    
-    /// <summary>
-    /// The ID of the skill this version belongs to.
+    /// Unique identifier for the skill.
     /// </summary>
     [JsonProperty("skill_id")]
     public string SkillId { get; set; }
-    
+
     /// <summary>
-    /// The system prompt for this skill version.
+    /// Description of the skill version.
+    /// This is extracted from the SKILL.md file in the skill upload.
     /// </summary>
-    [JsonProperty("system_prompt")]
-    public string? SystemPrompt { get; set; }
-    
+    [JsonProperty("description")]
+    public string Description { get; set; }
     /// <summary>
-    /// Optional metadata about this version.
+    /// Directory name of the skill version.
+    /// This is the top-level directory name that was extracted from the uploaded files
     /// </summary>
-    [JsonProperty("metadata")]
-    public Dictionary<string, object>? Metadata { get; set; }
-    
+    [JsonProperty("directory")]
+    public string Directory { get; set; }
+
     /// <summary>
-    /// The timestamp when the version was created.
+    /// The type of object. Always "skill".
+    /// </summary>
+    [JsonProperty("type")]
+    public string Type { get; set; } = "skill_version";
+
+    /// <summary>
+    /// The ID of the currently active version for this skill.
+    /// </summary>
+    [JsonProperty("version")]
+    public string Version { get; set; }
+
+    /// <summary>
+    /// The timestamp when the skill was created.
     /// </summary>
     [JsonProperty("created_at")]
-    public DateTime? CreatedAt { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+
+public class SkillDeleteResponse
+{
+    /// <summary>
+    /// Type of object. Always "skill_deleted".
+    /// </summary>
+    [JsonProperty("type")]
+    public string Type { get; set; } = "skill_deleted";
+
+    /// <summary>
+    /// Unique identifier for the skill.
+    /// </summary>
+    [JsonProperty("id")]
+    public string Id { get; set; }
 }
 
 /// <summary>
 /// Response containing a list of skills.
 /// </summary>
 public class SkillListResponse
-{
-    /// <summary>
-    /// The type of object. Always "list".
-    /// </summary>
-    [JsonProperty("type")]
-    public string Type { get; set; } = "list";
-    
+{ 
     /// <summary>
     /// The list of skills.
     /// </summary>
@@ -118,50 +136,49 @@ public class SkillListResponse
     public bool HasMore { get; set; }
     
     /// <summary>
-    /// The first ID in this page of results.
+    /// The next page of results.
     /// </summary>
-    [JsonProperty("first_id")]
-    public string? FirstId { get; set; }
+    [JsonProperty("next_page")]
+    public string? NextPage { get; set; }
     
-    /// <summary>
-    /// The last ID in this page of results.
-    /// </summary>
-    [JsonProperty("last_id")]
-    public string? LastId { get; set; }
 }
 
 /// <summary>
-/// Response containing a list of skill versions.
+/// Response containing a list of skills.
 /// </summary>
 public class SkillVersionListResponse
 {
     /// <summary>
-    /// The type of object. Always "list".
-    /// </summary>
-    [JsonProperty("type")]
-    public string Type { get; set; } = "list";
-    
-    /// <summary>
-    /// The list of skill versions.
+    /// The list of skills.
     /// </summary>
     [JsonProperty("data")]
     public List<SkillVersion> Data { get; set; } = new();
-    
+
     /// <summary>
     /// Whether there are more results available.
     /// </summary>
     [JsonProperty("has_more")]
     public bool HasMore { get; set; }
-    
+
     /// <summary>
-    /// The first ID in this page of results.
+    /// The next page of results.
     /// </summary>
-    [JsonProperty("first_id")]
-    public string? FirstId { get; set; }
-    
+    [JsonProperty("next_page")]
+    public string? NextPage { get; set; }
+
+}
+
+public class SkillVersionDeleteResponse
+{
     /// <summary>
-    /// The last ID in this page of results.
+    /// Type of object. Always "skill_deleted".
     /// </summary>
-    [JsonProperty("last_id")]
-    public string? LastId { get; set; }
+    [JsonProperty("type")]
+    public string Type { get; set; } = "skill_version_deleted";
+
+    /// <summary>
+    /// Unique identifier for the skill.
+    /// </summary>
+    [JsonProperty("id")]
+    public string Id { get; set; }
 }

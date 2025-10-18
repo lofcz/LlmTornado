@@ -39,15 +39,7 @@ public class SkillsDemo : DemoBase
         Console.WriteLine($"Found {skills.Data.Count} skill(s):");
         foreach (Skill skill in skills.Data)
         {
-            Console.WriteLine($"  - {skill.Name} (ID: {skill.Id})");
-            if (!string.IsNullOrEmpty(skill.Description))
-            {
-                Console.WriteLine($"    Description: {skill.Description}");
-            }
-            if (!string.IsNullOrEmpty(skill.ActiveVersionId))
-            {
-                Console.WriteLine($"    Active Version: {skill.ActiveVersionId}");
-            }
+            Console.WriteLine($"  - {skill.DisplayTitle} (ID: {skill.Id})");
         }
     }
     
@@ -68,12 +60,10 @@ public class SkillsDemo : DemoBase
 
         Console.WriteLine("Creating a new skill...");
         Skill skill = await api.Skills.CreateSkillAsync(
-            "Code Review Assistant",
-            "Specialized skill for reviewing code and providing constructive feedback"
+            "Code Review Assistant"
         );
         
-        Console.WriteLine($"Created skill: {skill.Name} (ID: {skill.Id})");
-        Console.WriteLine($"Description: {skill.Description}");
+        Console.WriteLine($"Created skill: {skill.DisplayTitle} (ID: {skill.Id})");
         Console.WriteLine($"Created at: {skill.CreatedAt}");
         
         // Clean up
@@ -99,22 +89,18 @@ public class SkillsDemo : DemoBase
 
         Console.WriteLine("Creating a new skill...");
         Skill skill = await api.Skills.CreateSkillAsync(
-            "Technical Writer",
-            "Specialized skill for writing technical documentation"
+            "Technical Writer"
         );
         
-        Console.WriteLine($"Created skill: {skill.Name} (ID: {skill.Id})");
+        Console.WriteLine($"Created skill: {skill.DisplayTitle} (ID: {skill.Id})");
         
         Console.WriteLine("\nCreating a version for the skill...");
         SkillVersion version = await api.Skills.CreateSkillVersionAsync(
             skill.Id,
-            "You are a technical writer specializing in API documentation. " +
-            "Write clear, concise documentation with examples. " +
-            "Always include code samples and usage instructions."
+            new CreateSkillVersionRequest()
         );
         
         Console.WriteLine($"Created version: {version.Id}");
-        Console.WriteLine($"System Prompt: {version.SystemPrompt}");
         Console.WriteLine($"Created at: {version.CreatedAt}");
         
         // Clean up
@@ -147,40 +133,27 @@ public class SkillsDemo : DemoBase
         // CREATE
         Console.WriteLine("=== CREATE ===");
         Skill skill = await api.Skills.CreateSkillAsync(
-            "Data Analyst",
-            "Analyzes data and provides insights"
+            "Data Analyst"
         );
-        Console.WriteLine($"Created: {skill.Name} (ID: {skill.Id})");
+        Console.WriteLine($"Created: {skill.DisplayTitle} (ID: {skill.Id})");
         
         // READ
         Console.WriteLine("\n=== READ ===");
         Skill retrievedSkill = await api.Skills.GetSkillAsync(skill.Id);
-        Console.WriteLine($"Retrieved: {retrievedSkill.Name}");
-        Console.WriteLine($"Description: {retrievedSkill.Description}");
+        Console.WriteLine($"Retrieved: {retrievedSkill.DisplayTitle}");
         
-        // UPDATE
-        Console.WriteLine("\n=== UPDATE ===");
-        UpdateSkillRequest updateRequest = new UpdateSkillRequest
-        {
-            Name = "Advanced Data Analyst",
-            Description = "Advanced skill for analyzing complex datasets and providing detailed insights"
-        };
-        Skill updatedSkill = await api.Skills.UpdateSkillAsync(skill.Id, updateRequest);
-        Console.WriteLine($"Updated: {updatedSkill.Name}");
-        Console.WriteLine($"New Description: {updatedSkill.Description}");
         
         // CREATE VERSION
         Console.WriteLine("\n=== CREATE VERSION ===");
         SkillVersion version1 = await api.Skills.CreateSkillVersionAsync(
             skill.Id,
-            "You are an expert data analyst. Analyze the provided data and give actionable insights."
+            new CreateSkillVersionRequest()
         );
         Console.WriteLine($"Created version: {version1.Id}");
         
         SkillVersion version2 = await api.Skills.CreateSkillVersionAsync(
             skill.Id,
-            "You are a senior data analyst with 10 years of experience. " +
-            "Provide comprehensive analysis with statistical rigor."
+            new CreateSkillVersionRequest()
         );
         Console.WriteLine($"Created version: {version2.Id}");
         
@@ -191,27 +164,16 @@ public class SkillsDemo : DemoBase
         foreach (SkillVersion v in versions.Data)
         {
             Console.WriteLine($"  - Version {v.Id}");
-            if (!string.IsNullOrEmpty(v.SystemPrompt))
-            {
-                Console.WriteLine($"    Prompt preview: {v.SystemPrompt.Substring(0, Math.Min(50, v.SystemPrompt.Length))}...");
-            }
+            Console.WriteLine($"    Prompt preview: {v.Description}...");
         }
         
         // GET SPECIFIC VERSION
         Console.WriteLine("\n=== GET VERSION ===");
         SkillVersion retrievedVersion = await api.Skills.GetSkillVersionAsync(skill.Id, version1.Id);
         Console.WriteLine($"Retrieved version: {retrievedVersion.Id}");
-        Console.WriteLine($"System Prompt: {retrievedVersion.SystemPrompt}");
+        Console.WriteLine($"System Prompt: {retrievedVersion.Description}");
         
-        // UPDATE SKILL WITH ACTIVE VERSION
-        Console.WriteLine("\n=== SET ACTIVE VERSION ===");
-        UpdateSkillRequest activateRequest = new UpdateSkillRequest
-        {
-            ActiveVersionId = version2.Id
-        };
-        Skill skillWithActiveVersion = await api.Skills.UpdateSkillAsync(skill.Id, activateRequest);
-        Console.WriteLine($"Active version set to: {skillWithActiveVersion.ActiveVersionId}");
-        
+
         // DELETE (cleanup)
         Console.WriteLine("\n=== DELETE ===");
         Console.WriteLine("Deleting versions...");

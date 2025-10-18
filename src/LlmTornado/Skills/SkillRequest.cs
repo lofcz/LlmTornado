@@ -1,5 +1,9 @@
+using LlmTornado.Files;
 using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
+using System.Net.Http;
+using System.Net.Http.Headers;
 
 namespace LlmTornado.Skills;
 
@@ -11,97 +15,116 @@ public class CreateSkillRequest
     /// <summary>
     /// The name of the skill.
     /// </summary>
-    [JsonProperty("name")]
-    public string Name { get; set; }
-    
+    [JsonProperty("display_title")]
+    public string DisplayTitle { get; set; }
+
     /// <summary>
     /// A description of what the skill does.
     /// </summary>
-    [JsonProperty("description")]
-    public string? Description { get; set; }
-    
+    [JsonProperty("files")]
+    public FileUploadRequest[] Files { get; set; }
+
+    public MultipartFormDataContent Content { get; set; } = new MultipartFormDataContent();
+
     /// <summary>
     /// Creates a new create skill request.
     /// </summary>
     public CreateSkillRequest()
     {
     }
-    
-    /// <summary>
-    /// Creates a new create skill request with a name.
-    /// </summary>
-    /// <param name="name">The name of the skill</param>
-    public CreateSkillRequest(string name)
-    {
-        Name = name;
-    }
-    
+
     /// <summary>
     /// Creates a new create skill request with a name and description.
     /// </summary>
     /// <param name="name">The name of the skill</param>
     /// <param name="description">A description of what the skill does</param>
-    public CreateSkillRequest(string name, string description)
+    public CreateSkillRequest(string displayTitle, FileUploadRequest[]? files = null)
     {
-        Name = name;
-        Description = description;
+        DisplayTitle = displayTitle;
+        Files = files;
+
+        Content.Add(new StringContent(displayTitle), "display_title");
+
+        foreach (FileUploadRequest x in files)
+        {
+            ByteArrayContent bc = new ByteArrayContent(x.Bytes);
+            bc.Headers.ContentType = new MediaTypeHeaderValue(x.MimeType ?? "application/pdf");
+
+            Content.Add(bc, "files[]", x.Name);
+        }
     }
 }
 
-/// <summary>
-/// Request to update a skill.
-/// </summary>
-public class UpdateSkillRequest
+
+
+public class CreateSkillResponse
 {
+    [JsonProperty("display_title")]
+    public string DisplayTitle { get; set; }
     /// <summary>
-    /// The name of the skill.
+    /// Unique identifier for the skill.
     /// </summary>
-    [JsonProperty("name")]
-    public string? Name { get; set; }
-    
+    [JsonProperty("id")]
+    public string Id { get; set; }
+
+
     /// <summary>
-    /// A description of what the skill does.
+    /// "custom": the skill was created by a user
+    /// "anthropic": the skill was created by Anthropic
     /// </summary>
-    [JsonProperty("description")]
-    public string? Description { get; set; }
-    
+    [JsonProperty("source")]
+    public string Source { get; set; } = "custom";
+
     /// <summary>
-    /// The ID of the active version for this skill.
+    /// The type of object. Always "skill".
     /// </summary>
-    [JsonProperty("active_version_id")]
-    public string? ActiveVersionId { get; set; }
+    [JsonProperty("type")]
+    public string Type { get; set; } = "skill";
+
+    /// <summary>
+    /// The ID of the currently active version for this skill.
+    /// </summary>
+    [JsonProperty("latest_version")]
+    public string LatestVersion { get; set; }
+
+    /// <summary>
+    /// The timestamp when the skill was created.
+    /// </summary>
+    [JsonProperty("created_at")]
+    public DateTime CreatedAt { get; set; }
+
+    /// <summary>
+    /// The timestamp when the skill was last updated.
+    /// </summary>
+    [JsonProperty("updated_at")]
+    public DateTime UpdatedAt { get; set; }
 }
 
 /// <summary>
-/// Request to create a new skill version.
+/// Request to create a new skill.
 /// </summary>
 public class CreateSkillVersionRequest
 {
+
     /// <summary>
-    /// The system prompt for this skill version.
+    /// A description of what the skill does.
     /// </summary>
-    [JsonProperty("system_prompt")]
-    public string? SystemPrompt { get; set; }
-    
+    [JsonProperty("files")]
+    public TornadoFile[] Files { get; set; }
+
     /// <summary>
-    /// Optional metadata about this version.
-    /// </summary>
-    [JsonProperty("metadata")]
-    public Dictionary<string, object>? Metadata { get; set; }
-    
-    /// <summary>
-    /// Creates a new create skill version request.
+    /// Creates a new create skill request.
     /// </summary>
     public CreateSkillVersionRequest()
     {
     }
-    
+
     /// <summary>
-    /// Creates a new create skill version request with a system prompt.
+    /// Creates a new create skill request with a name and description.
     /// </summary>
-    /// <param name="systemPrompt">The system prompt for this version</param>
-    public CreateSkillVersionRequest(string systemPrompt)
-    {
-        SystemPrompt = systemPrompt;
+    /// <param name="name">The name of the skill</param>
+    /// <param name="description">A description of what the skill does</param>
+    public CreateSkillVersionRequest(TornadoFile[] files = null){
+        Files = files;
     }
 }
