@@ -52,8 +52,10 @@ public class SkillsDemo : DemoBase
         
         Console.WriteLine($"Created skill: {skill.DisplayTitle} (ID: {skill.Id})");
         Console.WriteLine($"Created at: {skill.CreatedAt}");
-        
+
         // Clean up
+        bool latestVersionDeleted = await api.Skills.DeleteSkillVersionAsync(skill.Id, skill.LatestVersion);
+        Console.WriteLine($"Latest version deleted: {latestVersionDeleted}");
         Console.WriteLine("\nCleaning up - deleting created skill...");
         bool deleted = await api.Skills.DeleteSkillAsync(skill.Id);
         Console.WriteLine($"Skill deleted: {deleted}");
@@ -77,8 +79,12 @@ public class SkillsDemo : DemoBase
             Console.WriteLine($" {cindex} - {skill.DisplayTitle} (ID: {skill.Id})");
             cindex++;
         }
-
-        Console.WriteLine($"Enter the # to delete: 0 - {skills.Data.Count - 1} ");
+        if(cindex == 0)
+        {
+            Console.WriteLine("No custom skills found to delete.");
+            return;
+        }
+        Console.WriteLine($"Enter the # to delete: 0 - {cindex - 1} ");
         string skillIndex = Console.ReadLine();
         if (!int.TryParse(skillIndex, out int index) || index < 0 || index >= skills.Data.Count)
         {
@@ -131,6 +137,9 @@ public class SkillsDemo : DemoBase
         // Clean up
         Console.WriteLine("\nCleaning up...");
         Console.WriteLine("Deleting version...");
+        bool latestVersionDeleted = await api.Skills.DeleteSkillVersionAsync(skill.Id, skill.LatestVersion);
+        Console.WriteLine($"Latest version deleted: {latestVersionDeleted}");
+
         bool versionDeleted = await api.Skills.DeleteSkillVersionAsync(version.SkillId, version.Version);
         Console.WriteLine($"Version deleted: {versionDeleted}");
         
