@@ -248,7 +248,7 @@ public class SkillsDemo : DemoBase
 
         ChatRequest chatRequest = new ChatRequest
         {
-            Model = ChatModel.Anthropic.Claude4.Sonnet250929,
+            Model = ChatModel.Anthropic.Claude45.Sonnet250929,
             MaxTokens = 1024,
             Messages = new List<ChatMessage>
             {

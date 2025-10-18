@@ -135,6 +135,14 @@ public class AnthropicSkill
     {
         SkillId = skillId;
         Version = version;
+        if(skillId == "xlsx" || skillId == "pptx" || skillId == "pdf" || skillId == "docx")
+        {
+            Type = "anthropic";
+        }
+        else
+        {
+            Type = "custom";
+        }
     }
 }
 

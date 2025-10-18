@@ -5,12 +5,13 @@ using LlmTornado.Chat;
 using LlmTornado.Chat.Vendors;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
+using LlmTornado.Skills;
 using LlmTornado.Vendor.Anthropic;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Chat.Vendors.Anthropic;
 
-internal class VendorAnthropicChatResult : VendorChatResult
+internal partial class VendorAnthropicChatResult : VendorChatResult
 {
     internal class VendorAnthropicChatResultContentBlockCitation
     {
@@ -131,7 +132,7 @@ internal class VendorAnthropicChatResult : VendorChatResult
         [JsonProperty("signature")]
         public string? Signature { get; set; }
     }
-    
+
     [JsonProperty("id")]
     public string Id { get; set; }
     
@@ -162,7 +163,10 @@ internal class VendorAnthropicChatResult : VendorChatResult
     
     [JsonProperty("usage")]
     public VendorAnthropicUsage Usage { get; set; }
-    
+
+    [JsonProperty("container")]
+    public VendorAnthropicChatResultContainer? Container { get; set; }  
+
     public override ChatResult ToChatResult(string? postData, object? chatRequest)
     {
         ChatResult result = new ChatResult

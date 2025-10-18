@@ -9,7 +9,17 @@ internal enum VendorAnthropicChatMessageTypes
     Text,
     ToolUse,
     ToolResult,
-    Thinking
+    Thinking,
+    RedactedThinking,
+    ServerToolUse,
+    TextEditorCodeExecutionToolResult,
+    WebSearchToolResult,
+    WebFetchToolResult,
+    CodeExecutionToolResult,
+    BashCodeExecutionToolResult,
+    McpToolUse,
+    McpToolResult,
+    ContainerUpload
 }
 
 internal static class VendorAnthropicChatMessageTypesCls
@@ -19,6 +29,17 @@ internal static class VendorAnthropicChatMessageTypesCls
         { "text", VendorAnthropicChatMessageTypes.Text },
         { "tool_use", VendorAnthropicChatMessageTypes.ToolUse },
         { "tool_result", VendorAnthropicChatMessageTypes.ToolResult },
-        { "thinking", VendorAnthropicChatMessageTypes.Thinking }
+        { "thinking", VendorAnthropicChatMessageTypes.Thinking },
+        { "redacted_thinking", VendorAnthropicChatMessageTypes.RedactedThinking },
+        {"server_tool_use", VendorAnthropicChatMessageTypes.ServerToolUse },
+        {"text_editor_code_execution_tool_result", VendorAnthropicChatMessageTypes.TextEditorCodeExecutionToolResult },
+        {"web_search_tool_result", VendorAnthropicChatMessageTypes.WebSearchToolResult },
+        {"web_fetch_tool_result", VendorAnthropicChatMessageTypes.WebFetchToolResult },
+        {"code_execution_tool_result", VendorAnthropicChatMessageTypes.CodeExecutionToolResult },
+        {"bash_code_execution_tool_result", VendorAnthropicChatMessageTypes.BashCodeExecutionToolResult },
+        {"mcp_tool_use", VendorAnthropicChatMessageTypes.McpToolUse },
+        {"mcp_tool_result", VendorAnthropicChatMessageTypes.McpToolResult },
+        {"container_upload", VendorAnthropicChatMessageTypes.ContainerUpload }
+
     } .ToFrozenDictionary();
 }
