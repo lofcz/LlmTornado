@@ -14,11 +14,18 @@ public class ChatModelAnthropicClaude4 : IVendorModelClassProvider
     /// Latest snapshot of Sonnet 4
     /// </summary>
     public static readonly ChatModel ModelSonnet250514 = new ChatModel("claude-sonnet-4-20250514", LLmProviders.Anthropic, 200_000);
-    
+
+    public readonly ChatModel Sonnet250514 = ModelSonnet250514;
+
+    /// <summary>
+    /// Latest snapshot of Sonnet 4
+    /// </summary>
+    public static readonly ChatModel ModelSonnet250929 = new ChatModel("claude-sonnet-4-20250929", LLmProviders.Anthropic, 200_000);
+
     /// <summary>
     /// <inheritdoc cref="ModelSonnet250514"/>
     /// </summary>
-    public readonly ChatModel Sonnet250514 = ModelSonnet250514;
+    public readonly ChatModel Sonnet250929 = ModelSonnet250929;
     
     /// <summary>
     /// Latest snapshot of Opus 4

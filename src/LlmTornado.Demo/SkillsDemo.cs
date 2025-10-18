@@ -7,6 +7,7 @@ using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Code.Vendor;
+using LlmTornado.Common;
 using LlmTornado.Skills;
 
 namespace LlmTornado.Demo;
@@ -194,18 +195,14 @@ public class SkillsDemo : DemoBase
     public static async Task PowerPointSkillDemo()
     {
         const int ArgumentPreviewLength = 200;
-        
-        TornadoApi api = new TornadoApi
-        {
-            Auth = new ProviderAuthentication(Program.ApiKeys.Anthropic)
-        };
 
-        Console.WriteLine("=== CREATING POWERPOINT PRESENTATION WITH SKILLS ===\n");
+
+        Console.WriteLine("=== CREATING POWERPOINT PRESENTATION WITH SKILLS (this could take 2-3 mins) ===\n");
 
         ChatRequest chatRequest = new ChatRequest
         {
             Model = ChatModel.Anthropic.Claude4.Sonnet250929,
-            MaxTokens = 4096,
+            MaxTokens = 1024,
             Messages = new List<ChatMessage>
             {
                 new ChatMessage(ChatMessageRoles.User, 
@@ -218,16 +215,9 @@ public class SkillsDemo : DemoBase
                     "5. Call to Action\n\n" +
                     "Make it visually appealing with a professional design.")
             },
-            Tools =
-            [
-                new Tool
-                {
-                    Type = "code_execution_20250825",
-                    Name = "code_execution"
-                }
-            ],
             VendorExtensions = new ChatRequestVendorExtensions
             {
+                
                 Anthropic = new ChatRequestVendorAnthropicExtensions
                 {
                     // Configure container with PowerPoint skill
@@ -238,20 +228,17 @@ public class SkillsDemo : DemoBase
                             new AnthropicSkill("pptx", "latest")
                         }
                     },
-                    // Specify required beta features
-                    Betas = new List<string>
-                    {
-                        "code-execution-2025-08-25",
-                        "files-api-2025-04-14",
-                        "skills-2025-10-02"
-                    }
+                    BuiltInTools =
+                    [
+                       new VendorAnthropicChatRequestBuiltInToolCodeExecution20250825()
+                    ]
                 }
             }
         };
 
         Console.WriteLine("Sending request to Claude with PowerPoint skill...\n");
 
-        ChatResult response = await api.Chat.CreateChatCompletionAsync(chatRequest);
+        ChatResult response = await Program.Connect().Chat.CreateChatCompletion(chatRequest);
 
         Console.WriteLine("=== RESPONSE ===\n");
         
