@@ -13,18 +13,18 @@ namespace LlmTornado.Skills;
 public class CreateSkillRequest
 {
     /// <summary>
-    /// The name of the skill.
+    /// The display title for the skill.
+    /// This is a human-readable label that is not included in the prompt sent to the model.
     /// </summary>
     [JsonProperty("display_title")]
     public string DisplayTitle { get; set; }
 
     /// <summary>
-    /// A description of what the skill does.
+    /// Files to upload for the skill.
+    /// All files must be in the same top-level directory and must include a SKILL.md file at the root of that directory.
     /// </summary>
     [JsonProperty("files")]
     public FileUploadRequest[] Files { get; set; }
-
-    public MultipartFormDataContent Content { get; set; } = new MultipartFormDataContent();
 
     /// <summary>
     /// Creates a new create skill request.
@@ -34,31 +34,53 @@ public class CreateSkillRequest
     }
 
     /// <summary>
-    /// Creates a new create skill request with a name and description.
+    /// Creates a new create skill request with a display title and optional files.
     /// </summary>
-    /// <param name="name">The name of the skill</param>
-    /// <param name="description">A description of what the skill does</param>
+    /// <param name="displayTitle">The display title for the skill</param>
+    /// <param name="files">Optional files to upload for the skill</param>
     public CreateSkillRequest(string displayTitle, FileUploadRequest[]? files = null)
     {
         DisplayTitle = displayTitle;
         Files = files;
+    }
 
-        Content.Add(new StringContent(displayTitle), "display_title");
+    /// <summary>
+    /// Converts the request to MultipartFormDataContent for API submission.
+    /// </summary>
+    /// <returns>MultipartFormDataContent ready for API submission</returns>
+    public MultipartFormDataContent ToMultipartContent()
+    {
+        MultipartFormDataContent content = new MultipartFormDataContent();
 
-        foreach (FileUploadRequest x in files)
+        if (!string.IsNullOrEmpty(DisplayTitle))
         {
-            ByteArrayContent bc = new ByteArrayContent(x.Bytes);
-            bc.Headers.ContentType = new MediaTypeHeaderValue(x.MimeType ?? "application/pdf");
-
-            Content.Add(bc, "files[]", x.Name);
+            content.Add(new StringContent(DisplayTitle), "display_title");
         }
+
+        if (Files != null)
+        {
+            foreach (FileUploadRequest file in Files)
+            {
+                ByteArrayContent bc = new ByteArrayContent(file.Bytes);
+                bc.Headers.ContentType = new MediaTypeHeaderValue(file.MimeType ?? "application/pdf");
+                content.Add(bc, "files", file.Name);
+            }
+        }
+
+        return content;
     }
 }
 
 
 
+/// <summary>
+/// Response returned when creating a skill.
+/// </summary>
 public class CreateSkillResponse
 {
+    /// <summary>
+    /// The display title for the skill.
+    /// </summary>
     [JsonProperty("display_title")]
     public string DisplayTitle { get; set; }
     /// <summary>
@@ -101,30 +123,51 @@ public class CreateSkillResponse
 }
 
 /// <summary>
-/// Request to create a new skill.
+/// Request to create a new skill version.
 /// </summary>
 public class CreateSkillVersionRequest
 {
-
     /// <summary>
-    /// A description of what the skill does.
+    /// Files to upload for the skill version.
+    /// All files must be in the same top-level directory and must include a SKILL.md file at the root of that directory.
     /// </summary>
     [JsonProperty("files")]
-    public TornadoFile[] Files { get; set; }
+    public FileUploadRequest[] Files { get; set; }
 
     /// <summary>
-    /// Creates a new create skill request.
+    /// Creates a new create skill version request.
     /// </summary>
     public CreateSkillVersionRequest()
     {
     }
 
     /// <summary>
-    /// Creates a new create skill request with a name and description.
+    /// Creates a new create skill version request with files.
     /// </summary>
-    /// <param name="name">The name of the skill</param>
-    /// <param name="description">A description of what the skill does</param>
-    public CreateSkillVersionRequest(TornadoFile[] files = null){
+    /// <param name="files">Files to upload for the skill version</param>
+    public CreateSkillVersionRequest(FileUploadRequest[] files = null)
+    {
         Files = files;
+    }
+
+    /// <summary>
+    /// Converts the request to MultipartFormDataContent for API submission.
+    /// </summary>
+    /// <returns>MultipartFormDataContent ready for API submission</returns>
+    public MultipartFormDataContent ToMultipartContent()
+    {
+        MultipartFormDataContent content = new MultipartFormDataContent();
+
+        if (Files != null)
+        {
+            foreach (FileUploadRequest file in Files)
+            {
+                ByteArrayContent bc = new ByteArrayContent(file.Bytes);
+                bc.Headers.ContentType = new MediaTypeHeaderValue(file.MimeType ?? "application/pdf");
+                content.Add(bc, "files", file.Name);
+            }
+        }
+
+        return content;
     }
 }
