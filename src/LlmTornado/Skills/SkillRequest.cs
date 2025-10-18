@@ -60,6 +60,11 @@ public class CreateSkillRequest
 
         foreach (FileUploadRequest file in Files)
         {
+            if (file == null)
+            {
+                continue;
+            }
+            
             ByteArrayContent bc = new ByteArrayContent(file.Bytes);
             bc.Headers.ContentType = new MediaTypeHeaderValue(file.MimeType ?? "application/pdf");
             content.Add(bc, "files", file.Name);
@@ -159,6 +164,11 @@ public class CreateSkillVersionRequest
 
         foreach (FileUploadRequest file in Files)
         {
+            if (file == null)
+            {
+                continue;
+            }
+            
             ByteArrayContent bc = new ByteArrayContent(file.Bytes);
             bc.Headers.ContentType = new MediaTypeHeaderValue(file.MimeType ?? "application/pdf");
             content.Add(bc, "files", file.Name);
