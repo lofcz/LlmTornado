@@ -1,15 +1,9 @@
 using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
-using System.Reflection.Emit;
-using System.Xml.Linq;
 
 namespace LlmTornado.Skills;
 
-/// <summary>
-/// Represents a skill that can be used with Claude.
-/// </summary>
-public class Skill
+public class CreateSkillResponse
 {
     [JsonProperty("display_title")]
     public string DisplayTitle { get; set; }
@@ -25,26 +19,26 @@ public class Skill
     /// "anthropic": the skill was created by Anthropic
     /// </summary>
     [JsonProperty("source")]
-    public string Source { get; set; } = "anthropic";
+    public string Source { get; set; } = "custom";
 
     /// <summary>
     /// The type of object. Always "skill".
     /// </summary>
     [JsonProperty("type")]
     public string Type { get; set; } = "skill";
-    
+
     /// <summary>
     /// The ID of the currently active version for this skill.
     /// </summary>
     [JsonProperty("latest_version")]
     public string LatestVersion { get; set; }
-    
+
     /// <summary>
     /// The timestamp when the skill was created.
     /// </summary>
     [JsonProperty("created_at")]
     public DateTime CreatedAt { get; set; }
-    
+
     /// <summary>
     /// The timestamp when the skill was last updated.
     /// </summary>
