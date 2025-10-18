@@ -71,7 +71,12 @@ public class SkillsEndpoint : EndpointBase
         
         try
         {
-            return (await HttpPost<Skill>(provider, Endpoint, postData: content).ConfigureAwait(false)).Data!;
+            var result = (await HttpPost<Skill>(provider, Endpoint, postData: content).ConfigureAwait(false));
+            return result.Data!;
+        }
+        catch (Exception ex)
+        {
+            throw;
         }
         finally
         {
