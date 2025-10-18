@@ -104,6 +104,61 @@ public interface IAnthropicChatRequestItem
 }
 
 /// <summary>
+/// Represents a skill that can be loaded in the container.
+/// </summary>
+public class AnthropicSkill
+{
+    /// <summary>
+    /// Type of the skill (typically "anthropic" for built-in skills).
+    /// </summary>
+    [JsonProperty("type")]
+    public string Type { get; set; } = "anthropic";
+    
+    /// <summary>
+    /// Skill identifier (e.g., "xlsx", "pptx", "pdf").
+    /// </summary>
+    [JsonProperty("skill_id")]
+    public string SkillId { get; set; }
+    
+    /// <summary>
+    /// Version of the skill (typically "latest" or a specific version ID).
+    /// </summary>
+    [JsonProperty("version")]
+    public string Version { get; set; } = "latest";
+    
+    /// <summary>
+    /// Creates a new Anthropic skill.
+    /// </summary>
+    /// <param name="skillId">Skill identifier (e.g., "xlsx", "pptx", "pdf")</param>
+    /// <param name="version">Version of the skill (default: "latest")</param>
+    public AnthropicSkill(string skillId, string version = "latest")
+    {
+        SkillId = skillId;
+        Version = version;
+        if(skillId == "xlsx" || skillId == "pptx" || skillId == "pdf" || skillId == "docx")
+        {
+            Type = "anthropic";
+        }
+        else
+        {
+            Type = "custom";
+        }
+    }
+}
+
+/// <summary>
+/// Container configuration for loading skills and resources.
+/// </summary>
+public class AnthropicContainer
+{
+    /// <summary>
+    /// List of skills to load in the container.
+    /// </summary>
+    [JsonProperty("skills")]
+    public List<AnthropicSkill>? Skills { get; set; }
+}
+
+/// <summary>
 ///     Chat features supported only by Anthropic.
 /// </summary>
 public class ChatRequestVendorAnthropicExtensions
@@ -124,4 +179,10 @@ public class ChatRequestVendorAnthropicExtensions
     /// Server-side tools.
     /// </summary>
     public List<IVendorAnthropicChatRequestBuiltInTool>? BuiltInTools { get; set; }
+    
+    /// <summary>
+    /// Container configuration for loading skills. Skills allow Claude to perform specialized tasks like creating PowerPoint presentations, Excel spreadsheets, or PDF documents.<br/>
+    /// <b>Note:</b> When using skills, you must also include code execution in your tools and use the beta Messages API.
+    /// </summary>
+    public AnthropicContainer? Container { get; set; }
 }

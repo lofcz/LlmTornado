@@ -9,7 +9,7 @@ namespace LlmTornado.Mcp;
 public class MCPToolkits
 {
 
-    public static MCPServer PuppeteerToolkit(string[]? disableTools)
+    public static MCPServer PuppeteerToolkit(string[]? disableTools = null)
     {
         var server = new MCPServer("puppeteer", command: "docker", arguments: new[] {
             "run",
@@ -23,15 +23,22 @@ public class MCPToolkits
         return server;
     }
 
-    public static MCPServer GithubToolkit(string githubApiKey, string[]? disableTools)
+    public static MCPServer GithubToolkit(string githubApiKey, string[]? disableTools = null)
     {
         return new MCPServer("github", "https://api.githubcopilot.com/mcp", additionalConnectionHeaders: new Dictionary<string, string>
         {
             { "Authorization", $"Bearer {githubApiKey}" }
-        });
+        },
+        disableTools:disableTools);
     }
 
-    public static MCPServer LocalToolkit(string workspaceFolder, string[]? disableTools = null)
+    /// <summary>
+    /// File System Toolkit using MCP Server Docker image
+    /// </summary>
+    /// <param name="workspaceFolder"></param>
+    /// <param name="disableTools"></param>
+    /// <returns></returns>
+    public static MCPServer FileSystemToolkit(string workspaceFolder, string[]? disableTools = null)
     {
         var server = new MCPServer("filesystem", command: "docker", arguments: new[] {
             "run",
@@ -39,7 +46,7 @@ public class MCPToolkits
             "--rm",
             "--mount", $"type=bind,src={workspaceFolder},dst=/projects/workspace",
             "mcp/filesystem",
-            "/projects"
+            "/projects/workspace"
         },
             disableTools: disableTools);
         return server;
@@ -54,16 +61,21 @@ public class MCPToolkits
         return server;
     }
 
+    /// <summary>
+    /// Playwright for web interactions
+    /// </summary>
+    /// <param name="disableTools"></param>
+    /// <returns></returns>
     public static MCPServer PlaywrightToolkit(string[]? disableTools = null)
     {
-        var server = new MCPServer("gmail", command: "npx", arguments: new[] {
+        var server = new MCPServer("playwright", command: "npx", arguments: new[] {
             "@playwright/mcp@latest"
         },
             disableTools: disableTools);
         return server;
     }
 
-    public static MCPServer fetchToolkit(string[]? disableTools = null)
+    public static MCPServer FetchToolkit(string[]? disableTools = null)
     {
         var server = new MCPServer("fetch", command: "uvx", arguments: new[] {
             "mcp-server-fetch"

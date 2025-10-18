@@ -5,10 +5,67 @@ using LlmTornado.Chat;
 using LlmTornado.Chat.Vendors;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
+using LlmTornado.Skills;
 using LlmTornado.Vendor.Anthropic;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace LlmTornado.Chat.Vendors.Anthropic;
+
+internal class SingleOrArrayConverter<T> : JsonConverter
+{
+    public override bool CanConvert(Type objectType)
+    {
+        return objectType == typeof(List<T>);
+    }
+
+    public override object ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
+    {
+        JToken token = JToken.Load(reader);
+        
+        if (token.Type == JTokenType.Array)
+        {
+            return token.ToObject<List<T>>(serializer) ?? [];
+        }
+ 
+        T? item = token.ToObject<T>(serializer);
+        return item != null ? new List<T> { item } : new List<T>();
+    }
+
+    public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
+    {
+        serializer.Serialize(writer, value);
+    }
+}
+
+internal class StringOrObjectConverter : JsonConverter
+{
+    public override bool CanConvert(Type objectType)
+    {
+        return objectType == typeof(string);
+    }
+
+    public override object? ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
+    {
+        JToken token = JToken.Load(reader);
+        
+        switch (token.Type)
+        {
+            case JTokenType.String:
+                return token.ToString();
+            case JTokenType.Object:
+            case JTokenType.Array:
+                return token.ToString(Formatting.None);
+            default:
+                return null;
+        }
+    }
+
+    public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
+    {
+        writer.WriteValue(value?.ToString());
+    }
+}
 
 internal class VendorAnthropicChatResult : VendorChatResult
 {
@@ -117,6 +174,7 @@ internal class VendorAnthropicChatResult : VendorChatResult
         /// Tool out response.
         /// </summary>
         [JsonProperty("content")]
+        [JsonConverter(typeof(StringOrObjectConverter))]
         public string? Content { get; set; }
         
         /// <summary>
@@ -131,7 +189,7 @@ internal class VendorAnthropicChatResult : VendorChatResult
         [JsonProperty("signature")]
         public string? Signature { get; set; }
     }
-    
+
     [JsonProperty("id")]
     public string Id { get; set; }
     
@@ -141,7 +199,8 @@ internal class VendorAnthropicChatResult : VendorChatResult
     [JsonProperty("role")]
     public string Role { get; set; }
     
-    [JsonProperty("content")] 
+    [JsonProperty("content")]
+    [JsonConverter(typeof(SingleOrArrayConverter<VendorAnthropicChatResultContentBlock>))]
     public List<VendorAnthropicChatResultContentBlock> Content { get; set; } = [];
     
     [JsonProperty("model")]
@@ -162,7 +221,10 @@ internal class VendorAnthropicChatResult : VendorChatResult
     
     [JsonProperty("usage")]
     public VendorAnthropicUsage Usage { get; set; }
-    
+
+    [JsonProperty("container")]
+    public VendorAnthropicChatResultContainer? Container { get; set; }  
+
     public override ChatResult ToChatResult(string? postData, object? chatRequest)
     {
         ChatResult result = new ChatResult
@@ -183,58 +245,74 @@ internal class VendorAnthropicChatResult : VendorChatResult
         foreach (VendorAnthropicChatResultContentBlock contentBlock in Content) // we need to merge all tool blocks into one
         {
             VendorAnthropicChatMessageTypes type = VendorAnthropicChatMessageTypesCls.Map.GetValueOrDefault(contentBlock.Type, VendorAnthropicChatMessageTypes.Unknown);
-                
-            if (type is VendorAnthropicChatMessageTypes.ToolUse)
-            {
-                toolsMsg ??= new ChatMessage(ChatMessageRoles.Tool)
-                {
-                    ToolCalls = []
-                };
 
-                toolsMsg.ToolCalls?.Add(ParseToolCall(contentBlock));
-            }
-            else if (type is VendorAnthropicChatMessageTypes.Text)
+            switch (type)
             {
-                ChatMessagePart textPart = new ChatMessagePart(contentBlock.Text ?? string.Empty);
-                
-                if (contentBlock.Citations?.Count > 0)
+                case VendorAnthropicChatMessageTypes.ToolUse:
                 {
-                    List<IChatMessagePartCitation> convertedCitations = [];
-                    
-                    foreach (VendorAnthropicChatResultContentBlockCitation cit in contentBlock.Citations)
+                    toolsMsg ??= new ChatMessage(ChatMessageRoles.Tool)
                     {
-                        if (TryConvertCitation(cit, out IChatMessagePartCitation? conv) && conv is not null)
+                        ToolCalls = []
+                    };
+
+                    toolsMsg.ToolCalls?.Add(ParseToolCall(contentBlock));
+                    break;
+                }
+                case VendorAnthropicChatMessageTypes.Text:
+                {
+                    ChatMessagePart textPart = new ChatMessagePart(contentBlock.Text ?? string.Empty);
+                
+                    if (contentBlock.Citations?.Count > 0)
+                    {
+                        List<IChatMessagePartCitation> convertedCitations = [];
+                    
+                        foreach (VendorAnthropicChatResultContentBlockCitation cit in contentBlock.Citations)
                         {
-                            convertedCitations.Add(conv);
+                            if (TryConvertCitation(cit, out IChatMessagePartCitation? conv) && conv is not null)
+                            {
+                                convertedCitations.Add(conv);
+                            }
+                        }
+
+                        if (convertedCitations.Count > 0)
+                        {
+                            textPart.Citations = convertedCitations;
                         }
                     }
 
-                    if (convertedCitations.Count > 0)
+                    ChatMessage textBlockMsg = new ChatMessage(ChatMessageRoles.Assistant, [ textPart ] );
+
+                    textChoice = new ChatChoice
                     {
-                        textPart.Citations = convertedCitations;
-                    }
-                }
-
-                ChatMessage textBlockMsg = new ChatMessage(ChatMessageRoles.Assistant, [ textPart ] );
-
-                textChoice = new ChatChoice
-                {
-                    FinishReason = ChatMessageFinishReasonsConverter.Map.GetValueOrDefault(StopReason, ChatMessageFinishReasons.Unknown),
-                    Index = result.Choices.Count + 1,
-                    Message = textBlockMsg,
-                    Delta = textBlockMsg
-                };
+                        FinishReason = ChatMessageFinishReasonsConverter.Map.GetValueOrDefault(StopReason, ChatMessageFinishReasons.Unknown),
+                        Index = result.Choices.Count + 1,
+                        Message = textBlockMsg,
+                        Delta = textBlockMsg
+                    };
                 
-                result.Choices.Add(textChoice);
-            }
-            else if (type is VendorAnthropicChatMessageTypes.Thinking)
-            {
-                thinkingBlocks ??= [];
-                thinkingBlocks.Add(new ChatChoiceAnthropicThinkingBlock
+                    result.Choices.Add(textChoice);
+                    break;
+                }
+                case VendorAnthropicChatMessageTypes.Thinking:
                 {
-                    Content = contentBlock.Thinking ?? string.Empty,
-                    Signature = contentBlock.Signature ?? string.Empty
-                });
+                    thinkingBlocks ??= [];
+                    thinkingBlocks.Add(new ChatChoiceAnthropicThinkingBlock
+                    {
+                        Content = contentBlock.Thinking ?? string.Empty,
+                        Signature = contentBlock.Signature ?? string.Empty
+                    });
+                    break;
+                }
+                case VendorAnthropicChatMessageTypes.TextEditorCodeExecutionViewResult:
+                {
+                    // todo: do something
+                    break;
+                }
+                case VendorAnthropicChatMessageTypes.TextEditorCodeExecutionToolResult:
+                {
+                    // todo: do something
+                    break;
+                }
             }
         }
 

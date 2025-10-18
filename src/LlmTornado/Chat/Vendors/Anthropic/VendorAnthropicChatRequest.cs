@@ -551,6 +551,9 @@ internal class VendorAnthropicChatRequest
     public VendorAnthropicChatRequestToolChoice? ToolChoice { get; set; }
     [JsonProperty("tools")]
     public List<VendorAnthropicToolFunction>? Tools { get; set; }
+    [JsonProperty("container")]
+    public AnthropicContainer? Container { get; set; }
+    
 
     public VendorAnthropicChatRequest(ChatRequest request, IEndpointProvider provider)
     {
@@ -669,6 +672,13 @@ internal class VendorAnthropicChatRequest
                     }
                 }
             }
+            
+            // Add container if specified
+            if (request.VendorExtensions.Anthropic.Container is not null)
+            {
+                Container = request.VendorExtensions.Anthropic.Container;
+            }
+            
             
             request.VendorExtensions.Anthropic.OutboundRequest?.Invoke(System, Messages.Select(x => x.Content).ToList(), Tools);
         }

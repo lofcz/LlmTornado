@@ -1,9 +1,11 @@
 ﻿using LlmTornado.A2A;
 using LlmTornado.Agents;
 using LlmTornado.Agents.DataModels;
+using LlmTornado.Agents.Samples.claude_skills;
 using LlmTornado.Agents.Utility;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
+using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Mcp;
@@ -12,6 +14,7 @@ using ModelContextProtocol.Server;
 using Newtonsoft.Json.Converters;
 using System.ComponentModel;
 using System.Security.Cryptography.X509Certificates;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using static System.Net.WebRequestMethods;
 
@@ -521,7 +524,7 @@ public class AgentsDemo : DemoBase
                     Console.WriteLine($"\n[Response API Event]: {responseApiEvent.ResponseApiEvent.EventType}");
                 }
             }
-                return ValueTask.CompletedTask;
+            return ValueTask.CompletedTask;
         });
 
         ChatMessage lastMsg = convo.Messages.Last();
@@ -567,5 +570,28 @@ public class AgentsDemo : DemoBase
         });
 
         Console.WriteLine(convo.Messages.Last().Content);
+    }
+
+    [TornadoTest("Test Skills")]
+    public static async Task RunSkillsAgent()
+    {
+        TornadoApi api = Program.Connect();
+        ClaudeSkillAgent agent = new ClaudeSkillAgent();
+        // run once
+        //await agent.UploadSkillFolder(api, "llmtornado-tutorial-generator", "Static/Files/llmtornado-tutorial-generator");
+
+        var skills = new List<AnthropicSkill>
+                        {
+                            new AnthropicSkill("skill_016mAwJ3Z9CjdnNHXsftbypW", "latest"),
+                            new AnthropicSkill("skill_01FBEnqs5m8r4pYEugE9kaht", "latest")
+                        };
+
+       Conversation conv = await agent.Invoke(api, 
+           new ChatMessage(ChatMessageRoles.User, 
+           "Can you please make me a LLMTornado Medium tutorial on setting up a basic TornadoAgent and please save it to my local disk. Make sure to pull the repo so you have access to it."),
+           "github_api_key",
+           skills);
+
+       Console.WriteLine(conv.Messages.Last().Content ?? "n/a");
     }
 }

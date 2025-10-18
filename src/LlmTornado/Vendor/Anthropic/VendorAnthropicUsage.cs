@@ -37,6 +37,25 @@ public class VendorAnthropicUsage : IChatUsage
     /// </summary>
     [JsonProperty("cache_creation")]
     public VendorAnthropicUsageCacheCreation? CacheCreation { get; set; }
+
+    [JsonProperty("service_tier")]
+    public string? ServiceTier { get; set; }
+
+    [JsonProperty("server_tool_use")]
+    public VendorAnthropicServerUsage? ServerToolUsage { get; set; }
+
+}
+
+public class VendorAnthropicServerUsage
+{
+    /// <summary>
+    /// Usage details.
+    /// </summary>
+    [JsonProperty("web_search_requests")]
+    public int WebSearchRequests { get; set; }
+
+    [JsonProperty("web_fetch_requests")]
+    public int WebFetchRequests { get; set; }
 }
 
 /// <summary>
@@ -56,3 +75,4 @@ public class VendorAnthropicUsageCacheCreation
     [JsonProperty("ephemeral_1h_input_tokens")]
     public int Ephemeral1HInputTokens { get; set; }
 }
+
