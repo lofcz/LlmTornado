@@ -1,6 +1,7 @@
 ﻿using LlmTornado.A2A;
 using LlmTornado.Agents;
 using LlmTornado.Agents.DataModels;
+using LlmTornado.Agents.Samples.claude_skills;
 using LlmTornado.Agents.Utility;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
@@ -521,7 +522,7 @@ public class AgentsDemo : DemoBase
                     Console.WriteLine($"\n[Response API Event]: {responseApiEvent.ResponseApiEvent.EventType}");
                 }
             }
-                return ValueTask.CompletedTask;
+            return ValueTask.CompletedTask;
         });
 
         ChatMessage lastMsg = convo.Messages.Last();
@@ -567,5 +568,19 @@ public class AgentsDemo : DemoBase
         });
 
         Console.WriteLine(convo.Messages.Last().Content);
+    }
+
+    [TornadoTest("Test Skills")]
+    public static async Task RunSkillsAgent()
+    {
+        TornadoApi api = Program.Connect();
+        ClaudeSkillAgent agent = new ClaudeSkillAgent();
+
+        // run once
+        // await agent.UploadSkillFile(api, "ability-generator", "SKILL.md", "Static/Files/ability-generator/SKILL.md");
+        
+        Conversation conv = await agent.Invoke(api, new ChatMessage(ChatMessageRoles.User, "Create me a new skill to create code tutorials on LlmTornado API for Medium."));
+
+        Console.WriteLine(conv.Messages.Last().Content ?? "n/a");
     }
 }

@@ -22,6 +22,7 @@ using LlmTornado.Responses;
 using LlmTornado.Threads;
 using LlmTornado.VectorStores;
 using LlmTornado.Uploads;
+using LlmTornado.Skills;
 
 namespace LlmTornado;
 
@@ -52,6 +53,7 @@ public class TornadoApi
     private readonly Lazy<UploadsEndpoint> uploads;
     private readonly Lazy<RerankEndpoint> rerank;
     private readonly Lazy<ResponsesConversationEndpoint> responsesConversation;
+    private readonly Lazy<SkillsEndpoint> skills;
 
     /// <summary>
     ///     If true, the API will throw exceptions for non-200 responses.
@@ -82,6 +84,7 @@ public class TornadoApi
         uploads = new Lazy<UploadsEndpoint>(() => new UploadsEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
         rerank = new Lazy<RerankEndpoint>(() => new RerankEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
         responsesConversation = new Lazy<ResponsesConversationEndpoint>(() => new ResponsesConversationEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
+        skills = new Lazy<SkillsEndpoint>(() => new SkillsEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
     }
 
     /// <summary>
@@ -431,4 +434,10 @@ public class TornadoApi
     ///     Voyage reranker endpoint receives as input a query, a list of documents, and other arguments such as the model name, and returns a response containing the reranking results.
     /// </summary>
     public RerankEndpoint Rerank => rerank.Value;
+    
+    /// <summary>
+    ///     The Skills API allows you to manage specialized prompts and configurations for Claude that can be automatically selected and used.
+    ///     Only available with Anthropic provider.
+    /// </summary>
+    public SkillsEndpoint Skills => skills.Value;
 }
