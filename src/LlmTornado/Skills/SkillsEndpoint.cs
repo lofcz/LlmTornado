@@ -67,14 +67,23 @@ public class SkillsEndpoint : EndpointBase
     public async Task<Skill> CreateSkillAsync(CreateSkillRequest request)
     {
         IEndpointProvider provider = Api.ResolveProvider(LLmProviders.Anthropic);
-        return (await HttpPost<Skill>(provider, Endpoint, postData: request).ConfigureAwait(false)).Data!;
+        MultipartFormDataContent content = request.ToMultipartContent();
+        
+        try
+        {
+            return (await HttpPost<Skill>(provider, Endpoint, postData: content).ConfigureAwait(false)).Data!;
+        }
+        finally
+        {
+            content.Dispose();
+        }
     }
     
     /// <summary>
     /// Creates a new skill.
     /// </summary>
-    /// <param name="name">The name of the skill</param>
-    /// <param name="description">Optional description of what the skill does</param>
+    /// <param name="name">The display title of the skill</param>
+    /// <param name="files">Optional files to upload for the skill</param>
     /// <returns>The created skill</returns>
     public async Task<Skill> CreateSkillAsync(string name, FileUploadRequest[]? files = null)
     {
@@ -140,7 +149,16 @@ public class SkillsEndpoint : EndpointBase
     public async Task<SkillVersion> CreateSkillVersionAsync(string skillId, CreateSkillVersionRequest request)
     {
         IEndpointProvider provider = Api.ResolveProvider(LLmProviders.Anthropic);
-        return (await HttpPost<SkillVersion>(provider, Endpoint, GetUrl(provider, $"/{skillId}/versions"), postData: request).ConfigureAwait(false)).Data!;
+        MultipartFormDataContent content = request.ToMultipartContent();
+        
+        try
+        {
+            return (await HttpPost<SkillVersion>(provider, Endpoint, GetUrl(provider, $"/{skillId}/versions"), postData: content).ConfigureAwait(false)).Data!;
+        }
+        finally
+        {
+            content.Dispose();
+        }
     }
     
     
