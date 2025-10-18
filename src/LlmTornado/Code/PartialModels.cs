@@ -1507,7 +1507,12 @@ public enum CapabilityEndpoints
     /// <summary>
     /// Responses conversation endpoint.
     /// </summary>
-    ResponsesConversation
+    ResponsesConversation,
+    
+    /// <summary>
+    /// Skills endpoint.
+    /// </summary>
+    Skills
 }
 
 /// <summary>

@@ -273,13 +273,16 @@ public partial class ChatDemo : DemoBase
                         }
                     },
                     required = new List<string> { "location" }
-                }))
+                }
+                )
+                )
                 {
                     VendorExtensions = new ToolVendorExtensions(new AnthropicToolVendorExtensions
                     {
                         Cache = AnthropicCacheSettings.Ephemeral
                     })
                 }
+
             ],
             VendorExtensions = new ChatRequestVendorExtensions(new ChatRequestVendorAnthropicExtensions
             {
