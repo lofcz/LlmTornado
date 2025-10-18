@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using LlmTornado.Code;
 using LlmTornado.Code.Vendor;
 using LlmTornado.Common;
+using LlmTornado.Files;
 
 namespace LlmTornado.Skills;
 
@@ -34,7 +35,7 @@ public class SkillsEndpoint : EndpointBase
     /// <param name="before">Return skills with IDs before this cursor</param>
     /// <param name="after">Return skills with IDs after this cursor</param>
     /// <returns>A list of skills</returns>
-    public async Task<SkillListResponse> ListSkillsAsync(int? limit = null, string? before = null, string? after = null)
+    public async Task<SkillListResponse> ListSkillsAsync(int? limit = null, string? page = null, string? source = null)
     {
         var queryParams = new Dictionary<string, object>();
         
@@ -42,15 +43,16 @@ public class SkillsEndpoint : EndpointBase
         {
             queryParams["limit"] = limit.Value;
         }
-        
-        if (!string.IsNullOrEmpty(before))
+
+        if (!string.IsNullOrEmpty(page))
         {
-            queryParams["before"] = before;
+            queryParams["page"] = page;
         }
-        
-        if (!string.IsNullOrEmpty(after))
+
+
+        if (!string.IsNullOrEmpty(source))
         {
-            queryParams["after"] = after;
+            queryParams["source"] = source;
         }
         
         IEndpointProvider provider = Api.ResolveProvider(LLmProviders.Anthropic);
@@ -74,9 +76,9 @@ public class SkillsEndpoint : EndpointBase
     /// <param name="name">The name of the skill</param>
     /// <param name="description">Optional description of what the skill does</param>
     /// <returns>The created skill</returns>
-    public async Task<Skill> CreateSkillAsync(string name, string? description = null)
+    public async Task<Skill> CreateSkillAsync(string name, FileUploadRequest[]? files = null)
     {
-        return await CreateSkillAsync(new CreateSkillRequest(name, description ?? string.Empty));
+        return await CreateSkillAsync(new CreateSkillRequest(name, files));
     }
     
     /// <summary>
@@ -90,17 +92,6 @@ public class SkillsEndpoint : EndpointBase
         return (await HttpGet<Skill>(provider, Endpoint, GetUrl(provider, $"/{skillId}")).ConfigureAwait(false)).Data!;
     }
     
-    /// <summary>
-    /// Updates a skill.
-    /// </summary>
-    /// <param name="skillId">The ID of the skill to update</param>
-    /// <param name="request">The update request</param>
-    /// <returns>The updated skill</returns>
-    public async Task<Skill> UpdateSkillAsync(string skillId, UpdateSkillRequest request)
-    {
-        IEndpointProvider provider = Api.ResolveProvider(LLmProviders.Anthropic);
-        return (await HttpAtomic<Skill>(provider, Endpoint, HttpVerbs.Patch, GetUrl(provider, $"/{skillId}"), postData: request).ConfigureAwait(false)).Data!;
-    }
     
     /// <summary>
     /// Deletes a skill.
@@ -110,7 +101,7 @@ public class SkillsEndpoint : EndpointBase
     public async Task<bool> DeleteSkillAsync(string skillId)
     {
         IEndpointProvider provider = Api.ResolveProvider(LLmProviders.Anthropic);
-        HttpCallResult<Skill> result = await HttpAtomic<Skill>(provider, Endpoint, HttpVerbs.Delete, GetUrl(provider, $"/{skillId}")).ConfigureAwait(false);
+        HttpCallResult<SkillDeleteResponse> result = await HttpAtomic<SkillDeleteResponse>(provider, Endpoint, HttpVerbs.Delete, GetUrl(provider, $"/{skillId}")).ConfigureAwait(false);
         return result.Ok;
     }
     
@@ -122,25 +113,20 @@ public class SkillsEndpoint : EndpointBase
     /// <param name="before">Return versions with IDs before this cursor</param>
     /// <param name="after">Return versions with IDs after this cursor</param>
     /// <returns>A list of skill versions</returns>
-    public async Task<SkillVersionListResponse> ListSkillVersionsAsync(string skillId, int? limit = null, string? before = null, string? after = null)
+    public async Task<SkillVersionListResponse> ListSkillVersionsAsync(string skillId, int? limit = null, string? page = null)
     {
         var queryParams = new Dictionary<string, object>();
-        
+
         if (limit.HasValue)
         {
             queryParams["limit"] = limit.Value;
         }
-        
-        if (!string.IsNullOrEmpty(before))
+
+        if (!string.IsNullOrEmpty(page))
         {
-            queryParams["before"] = before;
+            queryParams["page"] = page;
         }
-        
-        if (!string.IsNullOrEmpty(after))
-        {
-            queryParams["after"] = after;
-        }
-        
+
         IEndpointProvider provider = Api.ResolveProvider(LLmProviders.Anthropic);
         return (await HttpGet<SkillVersionListResponse>(provider, Endpoint, GetUrl(provider, $"/{skillId}/versions"), queryParams: queryParams).ConfigureAwait(false)).Data!;
     }
@@ -157,16 +143,6 @@ public class SkillsEndpoint : EndpointBase
         return (await HttpPost<SkillVersion>(provider, Endpoint, GetUrl(provider, $"/{skillId}/versions"), postData: request).ConfigureAwait(false)).Data!;
     }
     
-    /// <summary>
-    /// Creates a new version of a skill.
-    /// </summary>
-    /// <param name="skillId">The ID of the skill</param>
-    /// <param name="systemPrompt">The system prompt for this version</param>
-    /// <returns>The created skill version</returns>
-    public async Task<SkillVersion> CreateSkillVersionAsync(string skillId, string systemPrompt)
-    {
-        return await CreateSkillVersionAsync(skillId, new CreateSkillVersionRequest(systemPrompt));
-    }
     
     /// <summary>
     /// Gets a specific version of a skill.
@@ -189,7 +165,7 @@ public class SkillsEndpoint : EndpointBase
     public async Task<bool> DeleteSkillVersionAsync(string skillId, string versionId)
     {
         IEndpointProvider provider = Api.ResolveProvider(LLmProviders.Anthropic);
-        HttpCallResult<SkillVersion> result = await HttpAtomic<SkillVersion>(provider, Endpoint, HttpVerbs.Delete, GetUrl(provider, $"/{skillId}/versions/{versionId}")).ConfigureAwait(false);
+        HttpCallResult<SkillVersionDeleteResponse> result = await HttpAtomic<SkillVersionDeleteResponse>(provider, Endpoint, HttpVerbs.Delete, GetUrl(provider, $"/{skillId}/versions/{versionId}")).ConfigureAwait(false);
         return result.Ok;
     }
 }
