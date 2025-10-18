@@ -31,6 +31,7 @@ public class CreateSkillRequest
     /// </summary>
     public CreateSkillRequest()
     {
+        Files = Array.Empty<FileUploadRequest>();
     }
 
     /// <summary>
@@ -57,14 +58,11 @@ public class CreateSkillRequest
             content.Add(new StringContent(DisplayTitle), "display_title");
         }
 
-        if (Files != null)
+        foreach (FileUploadRequest file in Files)
         {
-            foreach (FileUploadRequest file in Files)
-            {
-                ByteArrayContent bc = new ByteArrayContent(file.Bytes);
-                bc.Headers.ContentType = new MediaTypeHeaderValue(file.MimeType ?? "application/pdf");
-                content.Add(bc, "files", file.Name);
-            }
+            ByteArrayContent bc = new ByteArrayContent(file.Bytes);
+            bc.Headers.ContentType = new MediaTypeHeaderValue(file.MimeType ?? "application/pdf");
+            content.Add(bc, "files", file.Name);
         }
 
         return content;
@@ -139,6 +137,7 @@ public class CreateSkillVersionRequest
     /// </summary>
     public CreateSkillVersionRequest()
     {
+        Files = Array.Empty<FileUploadRequest>();
     }
 
     /// <summary>
@@ -158,14 +157,11 @@ public class CreateSkillVersionRequest
     {
         MultipartFormDataContent content = new MultipartFormDataContent();
 
-        if (Files != null)
+        foreach (FileUploadRequest file in Files)
         {
-            foreach (FileUploadRequest file in Files)
-            {
-                ByteArrayContent bc = new ByteArrayContent(file.Bytes);
-                bc.Headers.ContentType = new MediaTypeHeaderValue(file.MimeType ?? "application/pdf");
-                content.Add(bc, "files", file.Name);
-            }
+            ByteArrayContent bc = new ByteArrayContent(file.Bytes);
+            bc.Headers.ContentType = new MediaTypeHeaderValue(file.MimeType ?? "application/pdf");
+            content.Add(bc, "files", file.Name);
         }
 
         return content;
