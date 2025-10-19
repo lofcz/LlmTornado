@@ -34,6 +34,7 @@ public class ModelsDemo : DemoBase
         m = ChatModel.Cohere.AllModels;
         m = ChatModel.Mistral.AllModels;
         m = ChatModel.DeepInfra.AllModels;
+        m = ChatModel.Blablador.AllModels;
     }
     
     [TornadoTest]
@@ -82,5 +83,11 @@ public class ModelsDemo : DemoBase
     public static async Task GetModelsXAi()
     {
         await GetProviderModels(LLmProviders.XAi);
+    }
+    
+    [TornadoTest]
+    public static async Task GetModelsBlablador()
+    {
+        await GetProviderModels(LLmProviders.Blablador);
     }
 }

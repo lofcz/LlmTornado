@@ -598,6 +598,12 @@ public class ChatRequest : IModelRequest, ISerializableRequest
 			}
 		},
 		{
+			LLmProviders.Blablador, (x, y, z, a) =>
+			{
+				return PreparePayload(x, x, y, z, GetSerializer(EndpointBase.NullSettings, a));
+			}
+		},
+		{
 			LLmProviders.OpenRouter, (x, y, z, a) =>
 			{
 				return PreparePayload(x, x, y, z, GetSerializer(EndpointBase.NullSettings, a));
