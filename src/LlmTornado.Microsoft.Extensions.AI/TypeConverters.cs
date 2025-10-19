@@ -6,6 +6,7 @@ using LlmTornado.Common;
 using Microsoft.Extensions.AI;
 using ChatMessage = LlmTornado.Chat.ChatMessage;
 using LlmTornado.Images;
+#pragma warning disable MEAI001
 
 namespace LlmTornado.Microsoft.Extensions.AI;
 

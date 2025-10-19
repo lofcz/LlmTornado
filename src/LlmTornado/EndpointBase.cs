@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -33,63 +34,29 @@ public abstract class EndpointBase
     private static string userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36";
     internal static readonly JsonSerializerSettings NullSettings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore };
     private static TimeSpan endpointTimeout = TimeSpan.FromSeconds(600);
-    private static readonly Lazy<Dictionary<LLmProviders, Lazy<HttpClient>>> EndpointClients = new Lazy<Dictionary<LLmProviders, Lazy<HttpClient>>>(() =>
-    {
-        Dictionary<LLmProviders, Lazy<HttpClient>> dict = new Dictionary<LLmProviders, Lazy<HttpClient>>((int)LLmProviders.Length + 1);
-        
-#if MODERN
-        foreach (LLmProviders provider in Enum.GetValues<LLmProviders>())
-#else
-        foreach (LLmProviders provider in (LLmProviders[])Enum.GetValues(typeof(LLmProviders)))
-#endif
-        {
-            dict.Add(provider, new Lazy<HttpClient>(() =>
-            {
-                HttpClient? userClient = OnHttpClientRequested?.Invoke(provider);
-
-                if (userClient is not null)
-                {
-                    return userClient;
-                }
-
-                if (Runtime.IsBrowser)
-                {
-                    HttpClient basicClient = new HttpClient();
-                    OnHttpClientCreated?.Invoke(basicClient, provider);
-                    return basicClient;
-                }
-
-                HttpClient client = TornadoConfig.CreateClient is null ? new HttpClient(
-#if MODERN
-                    new SocketsHttpHandler
-                    {
-                        MaxConnectionsPerServer = 10000,
-                        PooledConnectionLifetime = TimeSpan.FromMinutes(3)
-                    }
-#endif
-                    )
-                {
-                    Timeout = endpointTimeout,
-#if MODERN
-                    DefaultRequestVersion = HttpVersion.Version20
-#endif
-                } : TornadoConfig.CreateClient.Invoke(provider);
-
-                OnHttpClientCreated?.Invoke(client, provider);
-                return client;
-            }));
-        }
-        
-        return dict;
-    });
+    private static readonly ConcurrentDictionary<LLmProviders, HttpClient> EndpointClients = new ConcurrentDictionary<LLmProviders, HttpClient>();
 
     /// <summary>
     /// Invoked when a <see cref="HttpClient"/> is created. Can be used to customize the client.
+    /// Async version takes precedence.
+    /// </summary>
+    public static Func<HttpClient, IEndpointProvider, Task>? OnHttpClientCreatedAsync { get; set; }
+
+    /// <summary>
+    /// Invoked when a <see cref="HttpClient"/> is created. Can be used to customize the client.
+    /// Async version takes precedence.
     /// </summary>
     public static Action<HttpClient, LLmProviders>? OnHttpClientCreated { get; set; }
-    
+
     /// <summary>
     /// Invoked when a <see cref="HttpClient"/> is requested. Can be used to reuse your http client, instead of creating new one. If null is returned, http client is created via the built-in way.
+    /// Async version takes precedence.
+    /// </summary>
+    public static Func<IEndpointProvider, Task<HttpClient?>>? OnHttpClientRequestedAsync { get; set; }
+
+    /// <summary>
+    /// Invoked when a <see cref="HttpClient"/> is requested. Can be used to reuse your http client, instead of creating new one. If null is returned, http client is created via the built-in way.
+    /// Async version takes precedence.
     /// </summary>
     public static Func<LLmProviders, HttpClient?>? OnHttpClientRequested { get; set; }
 
@@ -140,19 +107,18 @@ public abstract class EndpointBase
     public static bool SetRequestsTimeout(int seconds)
     {
         bool ok = true;
-        
-        foreach (KeyValuePair<LLmProviders, Lazy<HttpClient>> x in EndpointClients.Value)
+        foreach (HttpClient x in EndpointClients.Values.ToList())
         {
             try
             {
-                x.Value.Value.Timeout = TimeSpan.FromSeconds(seconds);
+                x.Timeout = TimeSpan.FromSeconds(seconds);
             }
             catch (Exception e)
             {
                 ok = false;
             }
         }
-        
+
         endpointTimeout = TimeSpan.FromSeconds(seconds);
         return ok;
     }
@@ -182,9 +148,78 @@ public abstract class EndpointBase
     ///     Thrown if there is no valid authentication.  Please refer to
     ///     <see href="https://github.com/OkGoDoIt/OpenAI-API-dotnet#authentication" /> for details.
     /// </exception>
-    private static HttpClient GetClient(LLmProviders provider)
+    private static async Task<HttpClient> GetClient(IEndpointProvider provider)
     {
-        return EndpointClients.Value[provider].Value;
+        if (EndpointClients.TryGetValue(provider.Provider, out HttpClient? client))
+        {
+            return client;
+        }
+
+        // Can run more than once, but should be fast
+        client = await CreateHttpClient(provider);
+        client = EndpointClients.GetOrAdd(provider.Provider, client);
+        return client;
+    }
+
+    /// <summary>
+    /// Creates HttpClient with the use of <see cref="OnHttpClientRequested"/> and <see cref="OnHttpClientRequestedAsync"/>
+    /// Tries to use <see cref="TornadoConfig.CreateClientAsync"/> and <see cref="TornadoConfig.CreateClient"/> if one are set.
+    /// After creating, uses <see cref="OnHttpClientCreated"/> and <see cref="OnHttpClientCreatedAsync"/> to configure the client.
+    /// </summary>
+    /// <param name="provider">Endpoint Provider requesting HttpClient</param>
+    /// <returns>A fully initialized HttpClient instance</returns>
+    private static async Task<HttpClient> CreateHttpClient(IEndpointProvider provider)
+    {
+        var userClientTask = OnHttpClientRequestedAsync?.Invoke(provider);
+        HttpClient? userClient = userClientTask is not null
+            ? await userClientTask
+            : OnHttpClientRequested?.Invoke(provider.Provider);
+
+        if (userClient is not null)
+        {
+            return userClient;
+        }
+
+        if (Runtime.IsBrowser)
+        {
+            HttpClient basicClient = new HttpClient();
+            await ConfigureHttpClient(basicClient);
+            return basicClient;
+        }
+
+        var configClient = TornadoConfig.CreateClientAsync?.Invoke(provider);
+        HttpClient? client = configClient is not null
+            ? await configClient
+            : TornadoConfig.CreateClient?.Invoke(provider.Provider);
+
+        client ??= new HttpClient(
+#if MODERN
+            new SocketsHttpHandler
+            {
+                MaxConnectionsPerServer = 10000,
+                PooledConnectionLifetime = TimeSpan.FromMinutes(3)
+            }
+#endif
+        )
+        {
+            Timeout = endpointTimeout,
+#if MODERN
+            DefaultRequestVersion = HttpVersion.Version20
+#endif
+        };
+
+        await ConfigureHttpClient(client);
+        return client;
+
+        async Task ConfigureHttpClient(HttpClient createdClient)
+        {
+            OnHttpClientCreated?.Invoke(createdClient, provider.Provider);
+            var configureTask = OnHttpClientCreatedAsync?.Invoke(createdClient, provider);
+            if (configureTask is not null)
+            {
+                await configureTask;
+            }
+        }
     }
 
     /// <summary>
@@ -275,7 +310,7 @@ public abstract class EndpointBase
         url = BuildRequestUrl(url, provider, endpoint, model, queryParams);
         verb ??= HttpVerbs.Get;
 
-        HttpClient client = GetClient(provider.Provider);
+        HttpClient client = await GetClient(provider);
         using HttpRequestMessage req = provider.OutboundMessage(url, verb.Value.ToMethod(), postData, streaming);
 
         SetRequestContent(req, postData, out string requestContent);
@@ -350,7 +385,7 @@ public abstract class EndpointBase
         url = BuildRequestUrl(url, provider, endpoint, model, queryParams);
         verb ??= HttpVerbs.Get;
 
-        HttpClient client = GetClient(provider.Provider);
+        HttpClient client = await GetClient(provider);
         using HttpRequestMessage req = provider.OutboundMessage(url, verb.Value.ToMethod(), content, streaming);
 
         if (headers is not null)

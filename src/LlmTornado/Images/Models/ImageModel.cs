@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using LlmTornado.Chat.Models;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
+using LlmTornado.Images.Models.DeepInfra;
 using LlmTornado.Images.Models.Google;
 using LlmTornado.Images.Models.OpenAi;
 using LlmTornado.Images.Models.XAi;
@@ -28,6 +29,11 @@ public class ImageModel : ModelBase
     /// Models from xAI.
     /// </summary>
     public static readonly ImageModelXAi XAi = new ImageModelXAi();
+    
+    /// <summary>
+    /// Models from DeepInfra.
+    /// </summary>
+    public static readonly ImageModelDeepInfra DeepInfra = new ImageModelDeepInfra();
      
     /// <summary>
     /// All known models keyed by name.
@@ -44,7 +50,8 @@ public class ImageModel : ModelBase
         AllModels = [
             ..OpenAi.AllModels,
             ..Google.AllModels,
-            ..XAi.AllModels
+            ..XAi.AllModels,
+            ..DeepInfra.AllModels
         ];
         
         AllModels.ForEach(x =>

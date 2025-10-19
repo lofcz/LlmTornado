@@ -17,6 +17,7 @@
 - **Cutting Edge Protocols:**
   - **MCP**: Connect agents to data sources, tools, and workflows via Model Context Protocol with `LlmTornado.Mcp`.
   - **A2A**: Enable seamless collaboration between AI agents across different platforms with `LlmTornado.A2A`.
+  - **Skills**: Dynamically load folders of instructions, scripts, and resources to improve performance on specialized tasks.
 - **Vector Databases**: Built-in connectors to [Chroma](https://www.trychroma.com) and [PgVector](https://github.com/pgvector/pgvector).
 - **Integrated**: Built-in support for [Microsoft.Extensions.AI](https://learn.microsoft.com/en-us/dotnet/ai/microsoft-extensions-ai) enables plugging Tornado in [Semantic Kernel](https://github.com/lofcz/LlmTornado/blob/master/src/LlmTornado.Demo/MicrosoftExtensionsAiDemo.cs) applications with `LlmTornado.Microsoft.Extensions.AI`.
 - **Enterprise Proven**: Preview any request before committing to it. [Open Telemetry](https://opentelemetry.io) support. Stable APIs.

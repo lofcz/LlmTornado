@@ -88,6 +88,11 @@ public class ChatModel : ModelBase
     public static readonly ChatModelOpenRouter OpenRouter = new ChatModelOpenRouter();
     
     /// <summary>
+    /// Models provided by Blablador (Helmholtz).
+    /// </summary>
+    public static readonly ChatModelBlablador Blablador = new ChatModelBlablador();
+    
+    /// <summary>
     /// All known models keyed by name.
     /// </summary>
     public static Dictionary<string, IModel> AllModelsMap => LazyAllModelsMap.Value;

@@ -1384,6 +1384,10 @@ public enum LLmProviders
     /// </summary>
     Zai,
     /// <summary>
+    /// Blablador (Helmholtz).
+    /// </summary>
+    Blablador,
+    /// <summary>
     /// Internal value.
     /// </summary>
     Length

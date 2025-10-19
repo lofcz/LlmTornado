@@ -52,6 +52,10 @@ internal static class EndpointProviderConverter
             {
                 UrlResolver = (endpoint, url, ctx) => $"{string.Format(api.ApiUrlFormat ?? "https://api.moonshot.ai/{0}/{1}", api.ResolveApiVersion(), OpenAiEndpointProvider.GetEndpointUrlFragment(endpoint, LLmProviders.MoonshotAi))}{url}"
             },
+            LLmProviders.Blablador => new OpenAiEndpointProvider(LLmProviders.Blablador)
+            {
+                UrlResolver = (endpoint, url, ctx) => $"{string.Format(api.ApiUrlFormat ?? "https://api.helmholtz-blablador.fz-juelich.de/{0}/{1}", api.ResolveApiVersion(), OpenAiEndpointProvider.GetEndpointUrlFragment(endpoint, LLmProviders.Blablador))}{url}"
+            },
             _ => new OpenAiEndpointProvider()
         };
 

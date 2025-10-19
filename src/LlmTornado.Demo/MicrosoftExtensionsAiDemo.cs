@@ -5,6 +5,7 @@ using LlmTornado.Embedding.Models;
 using LlmTornado.Images.Models;
 using LlmTornado.Microsoft.Extensions.AI;
 using Microsoft.Extensions.AI;
+#pragma warning disable MEAI001
 
 namespace LlmTornado.Demo;
 

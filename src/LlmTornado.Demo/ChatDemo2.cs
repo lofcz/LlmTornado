@@ -1387,6 +1387,12 @@ public partial class ChatDemo : DemoBase
         await BasicChat(ChatModel.Cohere.Command.AVision2507);
     }
     
+    [TornadoTest]
+    public static async Task BlabladorLarge()
+    {
+        await BasicChat(ChatModel.Blablador.Aliases.Large);
+    }
+    
     private static async Task BasicChat(ChatModel model)
     {
         Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
