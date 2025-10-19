@@ -336,7 +336,7 @@ public partial class ChatDemo : DemoBase
                     new AnthropicMcpServer(){
                             Name = "github",
                             Url = "https://api.githubcopilot.com/mcp/",
-                            AuthorizationToken = "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"
+                            AuthorizationToken = "github_token"
                         }
                     ]
                 }
