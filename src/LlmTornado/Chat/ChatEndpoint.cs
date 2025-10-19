@@ -486,7 +486,7 @@ public class ChatEndpoint : EndpointBase
 
     private async IAsyncEnumerable<ChatResult> StreamChatReal(IEndpointProvider provider, TornadoRequestContent requestBody, ChatRequest request, ChatStreamEventHandler? handler)
     {
-        await using TornadoStreamRequest tornadoStreamRequest = await HttpStreamingRequestData(provider, Endpoint, requestBody.Url, queryParams: null, HttpVerbs.Post, requestBody.Body, request.Model, request.CancellationToken);
+        await using TornadoStreamRequest tornadoStreamRequest = await HttpStreamingRequestData(provider, Endpoint, requestBody.Url, queryParams: null, HttpVerbs.Post, requestBody.Body, request.Model, request, request.CancellationToken);
 
         if (tornadoStreamRequest.Exception is not null)
         {

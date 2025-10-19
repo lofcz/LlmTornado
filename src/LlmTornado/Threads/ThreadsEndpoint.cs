@@ -302,7 +302,7 @@ public sealed class ThreadsEndpoint : EndpointBase
         request.Stream = true;
         string url = GetUrl(provider, $"/{threadId}/runs");
         TornadoStreamRequest tornadoStreamRequest = await HttpStreamingRequestData(provider, CapabilityEndpoints.Threads,
-            url, postData: request, verb: HttpVerbs.Post, model: request.Model, token: cancellationToken);
+            url, postData: request, verb: HttpVerbs.Post, model: request.Model, requestObj: request, token: cancellationToken);
 
         try
         {
@@ -358,7 +358,7 @@ public sealed class ThreadsEndpoint : EndpointBase
         request.Stream = true;
         string url = GetUrl(provider, $"/{threadId}/runs/{runId}/submit_tool_outputs");
         TornadoStreamRequest tornadoStreamRequest = await HttpStreamingRequestData(provider, CapabilityEndpoints.Threads,
-            url, postData: request, verb: HttpVerbs.Post, token: cancellationToken);
+            url, postData: request, verb: HttpVerbs.Post, requestObj: request, token: cancellationToken);
 
         try
         {
@@ -526,7 +526,7 @@ public sealed class ThreadsEndpoint : EndpointBase
         request.Stream = true;
         string url = GetUrl(provider, $"/runs");
         TornadoStreamRequest tornadoStreamRequest = await HttpStreamingRequestData(provider, CapabilityEndpoints.Threads,
-            url, postData: request, verb: HttpVerbs.Post, token: cancellationToken);
+            url, postData: request, verb: HttpVerbs.Post, requestObj: request, token: cancellationToken);
 
         try
         {

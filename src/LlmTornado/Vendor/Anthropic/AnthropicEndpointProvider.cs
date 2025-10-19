@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
+using System.Text.Json;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Code.Models;
@@ -650,7 +651,7 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
         yield break;
     }
     
-    public override HttpRequestMessage OutboundMessage(string url, HttpMethod verb, object? data, bool streaming)
+    public override HttpRequestMessage OutboundMessage(string url, HttpMethod verb, object? data, bool streaming, object? sourceObject)
     {
         HttpRequestMessage req = new HttpRequestMessage(verb, url)
         {
@@ -672,9 +673,10 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
             RequestResolver.Invoke(req, data, streaming);
         }
         else
-        {
-
-            req.Headers.Add("anthropic-beta", ["interleaved-thinking-2025-05-14", "files-api-2025-04-14", "code-execution-2025-08-25", "search-results-2025-06-09", "skills-2025-10-02"]);
+        {     
+            req.Headers.Add("anthropic-beta", AccumulateHeaders([
+                "interleaved-thinking-2025-05-14", "files-api-2025-04-14", "code-execution-2025-08-25", "search-results-2025-06-09"
+            ], sourceObject));
         }
 
         return req;

@@ -18,7 +18,7 @@ public interface IEndpointProvider
     /// <summary>
     /// Invoked to construct outbound messages.
     /// </summary>
-    public HttpRequestMessage OutboundMessage(string url, HttpMethod verb, object? data, bool streaming);
+    public HttpRequestMessage OutboundMessage(string url, HttpMethod verb, object? data, bool streaming, object? sourceObject);
 
     /// <summary>
     /// Invoked to parse inbound messages.
