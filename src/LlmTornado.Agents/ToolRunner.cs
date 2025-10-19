@@ -3,9 +3,6 @@ using LlmTornado.Chat;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Common;
-using LlmTornado.Mcp;
-using ModelContextProtocol.Client;
-using ModelContextProtocol.Protocol;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Reflection;
@@ -88,10 +85,9 @@ public static class ToolRunner
     public static async Task<FunctionResult> CallMcpToolAsync(TornadoAgent agent, FunctionCall call)
     {
 
-        if (!agent.McpTools.TryGetValue(call.Name, out MCPServer? server))
+        if (!agent.McpTools.TryGetValue(call.Name, out Tool? tool))
             throw new Exception($"I don't have a tool called {call.Name}");
 
-        CallToolResult localResult;
         Dictionary<string, object?>? dict = null;
 
         //Need to check if function has required parameters and if so, parse them from the call.FunctionArguments
@@ -102,25 +98,22 @@ public static class ToolRunner
             dict = JsonConvert.DeserializeObject<Dictionary<string, object?>>(call.Arguments);
         }
 
-        localResult = await server.McpClient!.CallToolAsync(call.Name, dict);
+        // call the tool on MCP server, pass args
+        await call.ResolveRemote(dict);
 
-        if (localResult is not { } callToolResult) return new FunctionResult(call, "Error");
-
-        if (callToolResult.Content.Count <= 0) return new FunctionResult(call, string.Empty);
-
-        ContentBlock firstBlock = callToolResult.Content[0];
-
-        string result = firstBlock switch
+        // extract tool result and pass it back to the model
+        if (call.Result?.RemoteContent is McpContent mcpContent)
         {
-            TextContentBlock textBlock => textBlock.Text,
-            ImageContentBlock imageBlock => imageBlock.Data,
-            AudioContentBlock audioBlock => audioBlock.Data,
-            EmbeddedResourceBlock embeddedResourceBlock => embeddedResourceBlock.Resource.Uri,
-            ResourceLinkBlock resourceLinkBlock => resourceLinkBlock.Uri,
-            _ => string.Empty
-        };
+            foreach (IMcpContentBlock block in mcpContent.McpContentBlocks)
+            {
+                if (block is McpContentBlockText textBlock)
+                {
+                    call.Result.Content = textBlock.Text;
+                }
+            }
+        }
 
-        return new FunctionResult(call, result);
+        return call.Result;
     }
 
    

@@ -35,9 +35,8 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
             string instructions = "You are a helpful assistant",
             Type? outputSchema = null,
             List<Delegate>? tools = null,
-            List<MCPServer>? mcpServers = null,
             List<HandoffAgent>? handoffs = null,
-            bool streaming = false) : base(client, model, name, instructions, outputSchema, tools, mcpServers, streaming)
+            bool streaming = false) : base(client, model, name, instructions, outputSchema, tools, streaming)
         {
             HandoffAgents = handoffs ?? new List<HandoffAgent>();
             Description = description;
@@ -55,7 +54,7 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
             TornadoAgent cloneAgent,
             bool streaming = false,
             List<HandoffAgent>? handoffs = null,
-            string description = "") : base(cloneAgent.Client, cloneAgent.Model, cloneAgent.Name, cloneAgent.Instructions, cloneAgent.OutputSchema, cloneAgent.Tools, cloneAgent.McpServers, streaming)
+            string description = "") : base(cloneAgent.Client, cloneAgent.Model, cloneAgent.Name, cloneAgent.Instructions, cloneAgent.OutputSchema, cloneAgent.Tools, streaming)
         {
             HandoffAgents = handoffs ?? new List<HandoffAgent>();
             Description = description;

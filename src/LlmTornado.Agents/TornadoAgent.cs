@@ -81,9 +81,8 @@ public class TornadoAgent
     /// <summary>
     /// MCP tols mapped to their servers
     /// </summary>
-    public Dictionary<string, MCPServer> McpTools = new Dictionary<string, MCPServer>();
+    public Dictionary<string, Tool> McpTools = new Dictionary<string, Tool>();
 
-    public List<MCPServer> McpServers;
 
     /// <summary>
     /// Get agent runner events
@@ -122,7 +121,6 @@ public class TornadoAgent
         string instructions = "You are a helpful assistant",
         Type? outputSchema = null,
         List<Delegate>? tools = null,
-        List<MCPServer>? mcpServers = null,
         bool streaming = false,
         Dictionary<string, bool>? toolPermissionRequired = null)
     {
@@ -133,7 +131,6 @@ public class TornadoAgent
         OutputSchema = outputSchema;
         Tools = tools ?? Tools;
         Options.Model = model;
-        McpServers = mcpServers ?? new List<MCPServer>();
         Name = string.IsNullOrEmpty(name) ? "Assistant" : name;
         Streaming = streaming;
         ToolPermissionRequired = toolPermissionRequired ?? new Dictionary<string, bool>();
@@ -145,7 +142,6 @@ public class TornadoAgent
 
         //Setup tools and agent tools
         AutoSetupTools(Tools);
-        GetMcpTools();
     }
 
     /// <summary>
@@ -225,16 +221,17 @@ public class TornadoAgent
     /// </summary>
     /// <param name="tool">MCP client tool</param>
     /// <param name="server">MCP Server where tool lives</param>
-    public void AddMcpTool(McpClientTool tool, MCPServer server)
+    public void AddMcpTools(Tool[] tools)
     {
-        if (tool != null && server != null)
+        if (tools.Length > 0)
         {
-
-            Tool tornadoMcpTool = new Tool(new ToolFunction(tool.Name, tool.Description, tool.JsonSchema));
-            SetDefaultToolPermission(tornadoMcpTool);
-            McpTools.Add(tool.Name, server);
-            ToolList.Add(tool.Name, tornadoMcpTool);
-            Options.Tools?.Add(tornadoMcpTool);
+            foreach (var tool in tools)
+            {
+                SetDefaultToolPermission(tool);
+                McpTools.Add(tool.ToolName, tool);
+                ToolList.Add(tool.ToolName, tool);
+                Options.Tools?.Add(tool);
+            }
         }
     }
 
@@ -263,25 +260,6 @@ public class TornadoAgent
         if (!ToolPermissionRequired.ContainsKey(tool.ToolName))
         {
             ToolPermissionRequired.Add(tool.ToolName, false); //Default all tools to false
-        }
-    }
-
-    private void GetMcpTools()
-    {
-        Options.Tools ??= new List<Tool>();
-
-        foreach (MCPServer server in McpServers)
-        {
-            try
-            {
-                server.Tools.ForEach(tool => AddMcpTool(tool, server));
-            }
-            catch (Exception ex)
-            {
-                //throw new InvalidOperationException($"Failed to setup MCP server {server.ServerLabel}: {ex.Message}", ex);
-                Console.WriteLine($"Failed to setup MCP server {server.ServerLabel}: {ex.Message}");
-                continue; // Skip this server and continue with others
-            }
         }
     }
 

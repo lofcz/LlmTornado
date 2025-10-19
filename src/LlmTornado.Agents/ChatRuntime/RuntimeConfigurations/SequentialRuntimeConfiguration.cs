@@ -30,9 +30,8 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
             string? sequentialInstructions = null,
             Type? outputSchema = null,
             List<Delegate>? tools = null,
-            List<MCPServer>? mcpServers = null,
             bool streaming = false
-            ) : base(client, model, name, instructions, outputSchema, tools, mcpServers, streaming)
+            ) : base(client, model, name, instructions, outputSchema, tools,  streaming)
         {
             SequentialInstructions = sequentialInstructions ?? SequentialInstructions;
         }
@@ -40,7 +39,7 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
         public SequentialRuntimeAgent(
             TornadoAgent cloneAgent,
             string? sequentialInstructions = null,
-            bool streaming = false) : base(cloneAgent.Client, cloneAgent.Model, cloneAgent.Name, cloneAgent.Instructions, cloneAgent.OutputSchema, cloneAgent.Tools, cloneAgent.McpServers, streaming)
+            bool streaming = false) : base(cloneAgent.Client, cloneAgent.Model, cloneAgent.Name, cloneAgent.Instructions, cloneAgent.OutputSchema, cloneAgent.Tools,  streaming)
         {
             SequentialInstructions = sequentialInstructions ?? SequentialInstructions;
             Streaming = streaming;

@@ -307,9 +307,10 @@ public class AgentsDemo : DemoBase
         TornadoAgent agent = new TornadoAgent(
             Program.Connect(),
             model: ChatModel.OpenAi.Gpt41.V41Mini,
-            instructions: "You are a useful assistant.",
-            mcpServers: [mcpServer]
+            instructions: "You are a useful assistant."
                 );
+
+        agent.AddMcpTools(mcpServer.AllowedTornadoTools.ToArray());
 
         Conversation result = await agent.RunAsync("What is the weather in boston?");
 
@@ -333,9 +334,10 @@ public class AgentsDemo : DemoBase
         TornadoAgent agent = new TornadoAgent(
             Program.Connect(),
             model: ChatModel.OpenAi.Gpt41.V41Mini,
-            instructions: "You are a useful assistant.",
-            mcpServers: [mcpServer]
+            instructions: "You are a useful assistant."
                 );
+
+        agent.AddMcpTools(mcpServer.AllowedTornadoTools.ToArray());
 
         Conversation result = await agent.RunAsync("What is the weather in boston?");
 
@@ -357,9 +359,10 @@ public class AgentsDemo : DemoBase
         TornadoAgent agent = new TornadoAgent(
             Program.Connect(),
             model: ChatModel.OpenAi.Gpt41.V41Mini,
-            instructions: "You are a useful assistant.",
-            mcpServers: [mcpServer]
+            instructions: "You are a useful assistant."
                 );
+
+        agent.AddMcpTools(mcpServer.AllowedTornadoTools.ToArray());
 
         Conversation result = await agent.RunAsync("What repos do i have?");
 
@@ -380,9 +383,11 @@ public class AgentsDemo : DemoBase
         TornadoAgent agent = new TornadoAgent(
             Program.Connect(),
             model: ChatModel.OpenAi.Gpt41.V41Mini,
-            instructions: "You are a useful assistant.",
-            mcpServers: [gmailServer]
+            instructions: "You are a useful assistant."
                 );
+
+
+        agent.AddMcpTools(gmailServer.AllowedTornadoTools.ToArray());
 
         Conversation result = await agent.RunAsync("Did yeezy respond?");
 
