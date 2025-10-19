@@ -152,10 +152,44 @@ public class AnthropicSkill
 public class AnthropicContainer
 {
     /// <summary>
-    /// List of skills to load in the container.
+    /// List of skills to load in the container max 8
     /// </summary>
     [JsonProperty("skills")]
     public List<AnthropicSkill>? Skills { get; set; }
+}
+
+/// <summary>
+/// MCP servers to be utilized in this request max 20
+/// </summary>
+public class AnthropicMcpServer
+{
+    /// <summary>
+    /// Type of the skill (typically "anthropic" for built-in skills).
+    /// </summary>
+    [JsonProperty("type")]
+    public string Type { get; } = "url";
+
+    [JsonProperty("name")]
+    public string Name { get; set; }
+
+    [JsonProperty("url")]
+    public string Url { get; set; }
+
+    [JsonProperty("authorization_token")]
+    public string? AuthorizationToken { get; set; }
+
+    [JsonProperty("tool_configuration")]
+    public AnthropicMcpConfiguration? Configuration { get; set; }
+}
+
+public class AnthropicMcpConfiguration
+{
+    [JsonProperty("allowed_tools")]
+    public string[]? AllowedTools { get; set; }
+
+
+    [JsonProperty("enabled")]
+    public bool? Enabled { get; set; } = true;
 }
 
 /// <summary>
@@ -185,4 +219,10 @@ public class ChatRequestVendorAnthropicExtensions
     /// <b>Note:</b> When using skills, you must also include code execution in your tools and use the beta Messages API.
     /// </summary>
     public AnthropicContainer? Container { get; set; }
+
+    /// <summary>
+    /// List of MCP servers to be utilized in this request. (Max length 20)
+    /// </summary>
+    public List<AnthropicMcpServer>? McpServers { get; set; }
+
 }
