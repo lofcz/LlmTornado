@@ -318,33 +318,4 @@ public partial class ChatDemo : DemoBase
         Console.WriteLine();
         Console.WriteLine("The model will avoid using the excluded functions in its response.");
     }
-
-    [TornadoTest("MCP Anthropic")]
-    public static async Task AnthropicMcpServerUse()
-    {
-        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
-        {
-            Model = ChatModel.Anthropic.Claude45.Sonnet250929,
-            Messages = [
-                new ChatMessage(ChatMessageRoles.User, "Make a new branch on the Agent-Skills Repo")
-            ],
-            VendorExtensions = new ChatRequestVendorExtensions()
-            {
-                Anthropic = new ChatRequestVendorAnthropicExtensions
-                {
-                    McpServers = [
-                    new AnthropicMcpServer(){
-                            Name = "github",
-                            Url = "https://api.githubcopilot.com/mcp/",
-                            AuthorizationToken = "github_token"
-                        }
-                    ]
-                }
-            }
-        });
-
-        ChatRichResponse response = await chat.GetResponseRich();
-        Console.WriteLine("Anthropic MCP Server Use:");
-        Console.WriteLine(response);
-    }
 }

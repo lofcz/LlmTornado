@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
-using System.Text.Json;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Code.Models;
@@ -673,22 +672,9 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
             RequestResolver.Invoke(req, data, streaming);
         }
         else
-        {     
-            List<string> defaultBetaHeaders = ["interleaved-thinking-2025-05-14", "files-api-2025-04-14", "code-execution-2025-08-25", "search-results-2025-06-09"];
-            var MessageObject = JsonConvert.DeserializeObject<JObject>(data?.ToString() ?? "");
-            if (MessageObject != null)
-            {
-                if (MessageObject["mcp_servers"] != null)
-                {
-                    defaultBetaHeaders.Add("mcp-client-2025-04-04");
-                }
+        {
 
-                if (MessageObject["container"] != null)
-                {
-                    defaultBetaHeaders.Add("skills-2025-10-02");
-                }
-            }
-            req.Headers.Add("anthropic-beta", defaultBetaHeaders);
+            req.Headers.Add("anthropic-beta", ["interleaved-thinking-2025-05-14", "files-api-2025-04-14", "code-execution-2025-08-25", "search-results-2025-06-09", "skills-2025-10-02"]);
         }
 
         return req;

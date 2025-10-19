@@ -551,12 +551,10 @@ internal class VendorAnthropicChatRequest
     public VendorAnthropicChatRequestToolChoice? ToolChoice { get; set; }
     [JsonProperty("tools")]
     public List<VendorAnthropicToolFunction>? Tools { get; set; }
-
     [JsonProperty("container")]
     public AnthropicContainer? Container { get; set; }
+    
 
-    [JsonProperty("mcp_servers")]
-    public AnthropicMcpServer[]? McpServers { get; set; }
     public VendorAnthropicChatRequest(ChatRequest request, IEndpointProvider provider)
     {
         Model = request.Model?.Name ?? ChatModel.Anthropic.Claude4.Sonnet250514.Name;
@@ -680,12 +678,8 @@ internal class VendorAnthropicChatRequest
             {
                 Container = request.VendorExtensions.Anthropic.Container;
             }
-
-            if (request.VendorExtensions.Anthropic.McpServers is not null)
-            {
-                McpServers = request.VendorExtensions.Anthropic.McpServers.ToArray();
-            }
-
+            
+            
             request.VendorExtensions.Anthropic.OutboundRequest?.Invoke(System, Messages.Select(x => x.Content).ToList(), Tools);
         }
     }

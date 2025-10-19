@@ -9,7 +9,7 @@ namespace LlmTornado.Mcp;
 public class MCPToolkits
 {
 
-    public static MCPServer PuppeteerToolkit(string[]? allowedTools = null)
+    public static MCPServer PuppeteerToolkit(string[]? disableTools = null)
     {
         var server = new MCPServer("puppeteer", command: "docker", arguments: new[] {
             "run",
@@ -19,17 +19,17 @@ public class MCPToolkits
             "-e",
             "DOCKER_CONTAINER=true",
             "mcp/puppeteer" },
-            allowedTools: allowedTools);
+            disableTools: disableTools);
         return server;
     }
 
-    public static MCPServer GithubToolkit(string githubApiKey, string[]? allowedTools = null)
+    public static MCPServer GithubToolkit(string githubApiKey, string[]? disableTools = null)
     {
         return new MCPServer("github", "https://api.githubcopilot.com/mcp", additionalConnectionHeaders: new Dictionary<string, string>
         {
             { "Authorization", $"Bearer {githubApiKey}" }
         },
-        allowedTools:allowedTools);
+        disableTools:disableTools);
     }
 
     /// <summary>
@@ -38,7 +38,7 @@ public class MCPToolkits
     /// <param name="workspaceFolder"></param>
     /// <param name="disableTools"></param>
     /// <returns></returns>
-    public static MCPServer FileSystemToolkit(string workspaceFolder, string[]? allowedTools = null)
+    public static MCPServer FileSystemToolkit(string workspaceFolder, string[]? disableTools = null)
     {
         var server = new MCPServer("filesystem", command: "docker", arguments: new[] {
             "run",
@@ -48,16 +48,16 @@ public class MCPToolkits
             "mcp/filesystem",
             "/projects/workspace"
         },
-            allowedTools: allowedTools);
+            disableTools: disableTools);
         return server;
     }
 
-    public static MCPServer GmailToolkit(string[]? allowedTools = null)
+    public static MCPServer GmailToolkit(string[]? disableTools = null)
     {
         var server = new MCPServer("gmail", command: "npx", arguments: new[] {
             "@gongrzhe/server-gmail-autoauth-mcp"
         },
-            allowedTools: allowedTools);
+            disableTools: disableTools);
         return server;
     }
 
@@ -66,21 +66,21 @@ public class MCPToolkits
     /// </summary>
     /// <param name="disableTools"></param>
     /// <returns></returns>
-    public static MCPServer PlaywrightToolkit(string[]? allowedTools = null)
+    public static MCPServer PlaywrightToolkit(string[]? disableTools = null)
     {
         var server = new MCPServer("playwright", command: "npx", arguments: new[] {
             "@playwright/mcp@latest"
         },
-            allowedTools: allowedTools);
+            disableTools: disableTools);
         return server;
     }
 
-    public static MCPServer FetchToolkit(string[]? allowedTools = null)
+    public static MCPServer FetchToolkit(string[]? disableTools = null)
     {
         var server = new MCPServer("fetch", command: "uvx", arguments: new[] {
             "mcp-server-fetch"
         },
-            allowedTools: allowedTools);
+            disableTools: disableTools);
         return server;
     }
 }

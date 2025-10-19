@@ -20,9 +20,9 @@ public class MCPServer
     /// </summary>
     public string ServerUrl { get; private set; } 
     /// <summary>
-    /// Select tools to enable from the server.
+    /// Select tools to disable from the server.
     /// </summary>
-    public string[]? AllowedTools { get; set; }
+    public string[]? DisableTools { get; set; }
 
     /// <summary>
     /// Authentication options for the MCP server, if required.
@@ -53,36 +53,25 @@ public class MCPServer
     /// </summary>
     public List<McpClientTool> Tools { get; set; } = [];
 
-    /// <summary>
-    /// List of all tools from the MCP server, regardless of filtering.
-    /// </summary>
-    public List<McpClientTool> AllTools { get; set; } = [];
-
     public McpClient? McpClient { get; set; }
-
-
-    /// <summary>
-    /// Tornado Tools available from the MCP server.
-    /// </summary>
-    public List<LlmTornado.Common.Tool> AllowedTornadoTools { get; set; } = [];
 
     /// <summary>
     /// Setup the MCP server connection and auto-load tools.
     /// </summary>
     /// <param name="serverLabel"> Label of the MCP Server</param>
     /// <param name="serverUrl">URL of the MCP Server</param>
-    /// <param name="allowedTools">List of tools to not use</param>
+    /// <param name="disableTools">List of tools to not use</param>
     public MCPServer( 
         string serverLabel, 
         string serverUrl,  
-        string[]? allowedTools = null, 
+        string[]? disableTools = null, 
         Dictionary<string, string>? additionalConnectionHeaders = null, 
         ClientOAuthOptions? oAuthOptions = null
         )
     {
         ServerLabel = serverLabel;
         ServerUrl = serverUrl;
-        AllowedTools = allowedTools;
+        DisableTools = disableTools;
         AdditionalConnectionHeaders = additionalConnectionHeaders;
         OAuthOptions = oAuthOptions;
     }
@@ -93,11 +82,11 @@ public class MCPServer
        string[]? arguments,
        string workingDirectory = "",
        Dictionary<string, string>? environmentVariables = null,
-       string[]? allowedTools = null
+       string[]? disableTools = null
        )
     {
         ServerLabel = serverLabel;
-        AllowedTools = allowedTools;
+        DisableTools = disableTools;
         Command = command;
         Arguments = arguments ?? [];
         WorkingDirectory = string.IsNullOrEmpty(workingDirectory) ? Directory.GetCurrentDirectory() : workingDirectory;
@@ -112,25 +101,12 @@ public class MCPServer
 
             if (!string.IsNullOrEmpty(ServerUrl))
             {
-                if(OAuthOptions != null)
+                clientTransport = new HttpClientTransport(new HttpClientTransportOptions
                 {
-                    clientTransport = new HttpClientTransport(new HttpClientTransportOptions
-                    {
-                        Name = this.ServerLabel,
-                        Endpoint = new Uri(this.ServerUrl),
-                        AdditionalHeaders = AdditionalConnectionHeaders,
-                        OAuth = OAuthOptions
-                    });
-                }
-                else
-                {
-                    clientTransport = new HttpClientTransport(new HttpClientTransportOptions
-                    {
-                        Name = this.ServerLabel,
-                        Endpoint = new Uri(this.ServerUrl),
-                        AdditionalHeaders = AdditionalConnectionHeaders
-                    });
-                }
+                    Name = this.ServerLabel,
+                    Endpoint = new Uri(this.ServerUrl),
+                    AdditionalHeaders = AdditionalConnectionHeaders
+                }); 
 
                 Console.WriteLine($"Connecting to MCP server at {this.ServerUrl} via HTTP...");
             }
@@ -182,22 +158,19 @@ public class MCPServer
 
             foreach (McpClientTool tool in tools)
             {
-                if (AllowedTools != null)
+                if (DisableTools != null)
                 {
-                    if (AllowedTools.Contains(tool.Name))
-                    {
-                        Tools.Add(tool); // Skip tools not in the allowed list
-                        AllowedTornadoTools.Add(tool.ToTornadoTool());
-                    }
+                    if (DisableTools.Contains(tool.Name)) continue; // Skip tools not in the allowed list
                 }
-                AllTools.Add(tool);
+
+                Tools.Add(tool);
             }
         }
     }
 
     public McpClientTool? GetToolByName(string toolName)
     {
-        return AllTools.DefaultIfEmpty(null).FirstOrDefault(t => t.Name.Equals(toolName, StringComparison.OrdinalIgnoreCase));
+        return Tools.DefaultIfEmpty(null).FirstOrDefault(t => t.Name.Equals(toolName, StringComparison.OrdinalIgnoreCase));
 
     }
 

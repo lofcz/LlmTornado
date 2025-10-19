@@ -1,5 +1,4 @@
-﻿using LlmTornado.Chat.Vendors.Anthropic;
-using LlmTornado.Code;
+﻿using LlmTornado.Code;
 using LlmTornado.Common;
 using ModelContextProtocol;
 using ModelContextProtocol.Client;
@@ -10,21 +9,6 @@ namespace LlmTornado.Mcp;
 
 public static class McpExtensions
 {
-    public static AnthropicMcpServer ToAnthropicMcpServerAsync(this MCPServer client)
-    {
-        return new AnthropicMcpServer()
-        {
-            Name = client.ServerLabel,
-            Url = client.ServerUrl,
-            AuthorizationToken = client.AdditionalConnectionHeaders?.FirstOrDefault(key => key.Key.ToLower().Contains("auth")).Value ?? string.Empty,
-            Configuration = new AnthropicMcpConfiguration()
-            {
-                Enabled = true,
-                AllowedTools = client.AllowedTools ?? []
-            }
-        };
-    }
-
     public static async ValueTask<List<Tool>> ListTornadoToolsAsync(this McpClient client)
     {
         IList<McpClientTool> tools = await client.ListToolsAsync();
