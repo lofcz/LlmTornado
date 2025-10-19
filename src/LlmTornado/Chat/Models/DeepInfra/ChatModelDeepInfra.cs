@@ -39,6 +39,21 @@ public class ChatModelDeepInfra : BaseVendorModelProvider
     public readonly ChatModelDeepInfraGoogle Google = new ChatModelDeepInfraGoogle();
     
     /// <summary>
+    /// Models from Mistral.
+    /// </summary>
+    public readonly ChatModelDeepInfraMistral Mistral = new ChatModelDeepInfraMistral();
+    
+    /// <summary>
+    /// Models from NVIDIA Nemotron.
+    /// </summary>
+    public readonly ChatModelDeepInfraNemotron Nemotron = new ChatModelDeepInfraNemotron();
+    
+    /// <summary>
+    /// Models from Anthropic.
+    /// </summary>
+    public readonly ChatModelDeepInfraAnthropic Anthropic = new ChatModelDeepInfraAnthropic();
+    
+    /// <summary>
     /// All known chat models from DeepInfra.
     /// </summary>
     public override List<IModel> AllModels => ModelsAll;
@@ -72,7 +87,7 @@ public class ChatModelDeepInfra : BaseVendorModelProvider
     /// </summary>
     public static List<IModel> ModelsAll => LazyModelsAll.Value;
 
-    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [..ChatModelDeepInfraDeepSeek.ModelsAll, ..ChatModelDeepInfraQwen.ModelsAll, ..ChatModelDeepInfraMeta.ModelsAll, ..ChatModelDeepInfraMicrosoft.ModelsAll, ..ChatModelDeepInfraGoogle.ModelsAll]);
+    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [..ChatModelDeepInfraDeepSeek.ModelsAll, ..ChatModelDeepInfraQwen.ModelsAll, ..ChatModelDeepInfraMeta.ModelsAll, ..ChatModelDeepInfraMicrosoft.ModelsAll, ..ChatModelDeepInfraGoogle.ModelsAll, ..ChatModelDeepInfraMistral.ModelsAll, ..ChatModelDeepInfraNemotron.ModelsAll, ..ChatModelDeepInfraAnthropic.ModelsAll]);
     
     internal ChatModelDeepInfra()
     {
