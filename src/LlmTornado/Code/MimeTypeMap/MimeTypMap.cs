@@ -8,7 +8,7 @@ namespace LlmTornado.Code.MimeTypeMap;
 /// <summary>
 /// Mime type map.
 /// </summary>
-internal static class MimeTypeMap
+public static class MimeTypeMap
 {
     private const string Dot = ".";
     private const string QuestionMark = "?";

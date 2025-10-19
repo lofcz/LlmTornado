@@ -10,6 +10,7 @@ using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Mcp;
 using LlmTornado.Responses;
+using LlmTornado.Skills;
 using ModelContextProtocol.Server;
 using Newtonsoft.Json.Converters;
 using System.ComponentModel;
@@ -572,24 +573,24 @@ public class AgentsDemo : DemoBase
         Console.WriteLine(convo.Messages.Last().Content);
     }
 
-    [TornadoTest("Test Skills")]
+    //[TornadoTest("Test Skills")]
     public static async Task RunSkillsAgent()
     {
         TornadoApi api = Program.Connect();
         ClaudeSkillAgent agent = new ClaudeSkillAgent();
         // run once
-        //await agent.UploadSkillFolder(api, "llmtornado-tutorial-generator", "Static/Files/llmtornado-tutorial-generator");
+        //Skill skill = await agent.UploadSkillFolder(api, "skill-creator", "Static/Files/Skills/skill-creator");
 
         var skills = new List<AnthropicSkill>
                         {
-                            new AnthropicSkill("skill_016mAwJ3Z9CjdnNHXsftbypW", "latest"),
-                            new AnthropicSkill("skill_01FBEnqs5m8r4pYEugE9kaht", "latest")
+                            //new AnthropicSkill("skill_016mAwJ3Z9CjdnNHXsftbypW", "latest"), //llmtornado-tutorial-generator
+                            //new AnthropicSkill("skill_01FBEnqs5m8r4pYEugE9kaht", "latest"), //codebase-context-extractor
+                            new AnthropicSkill("skill_01XRrc3ciQHW3ZbCxmMzcQPo","latest") //ability-generator
                         };
 
        Conversation conv = await agent.Invoke(api, 
-           new ChatMessage(ChatMessageRoles.User, 
-           "Can you please make me a LLMTornado Medium tutorial on setting up a basic TornadoAgent and please save it to my local disk. Make sure to pull the repo so you have access to it."),
-           "github_api_key",
+           new ChatMessage(ChatMessageRoles.User,
+           "Can you please make me an anthropic SKILL that can compile a Company Product Context based off Company PDF file extraction, web search, and related industry knowledge?"),
            skills);
 
        Console.WriteLine(conv.Messages.Last().Content ?? "n/a");
