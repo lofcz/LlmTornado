@@ -462,7 +462,7 @@ internal class VendorAnthropicChatResult : VendorChatResult
                     
                     if (contentBlock.Results != null)
                     {
-                        webContent = $"[WEB RESULTS]\n{JsonConvert.SerializeObject(contentBlock.Results, Formatting.Indented)}";
+                        webContent = $"[WEB RESULTS]\n{JsonConvert.SerializeObject(contentBlock.Results, Formatting.None)}";
                     }
                     else if (string.IsNullOrEmpty(webContent) && contentBlock.Output != null)
                     {
@@ -493,7 +493,7 @@ internal class VendorAnthropicChatResult : VendorChatResult
                     string mcpToolContent = $"[MCP Tool Use: {contentBlock.ToolName ?? contentBlock.Name ?? "unknown"}]";
                     if (contentBlock.Params != null)
                     {
-                        mcpToolContent += $"\nParams: {JsonConvert.SerializeObject(contentBlock.Params, Formatting.Indented)}";
+                        mcpToolContent += $"\nParams: {JsonConvert.SerializeObject(contentBlock.Params, Formatting.None)}";
                     }
                     else if (contentBlock.Input != null)
                     {
