@@ -27,7 +27,7 @@ namespace LlmTornado.Chat;
 ///     <see cref="Completions.CompletionRequest" />
 ///     Based on the <see href="https://platform.openai.com/docs/api-reference/chat">OpenAI API docs</see>
 /// </summary>
-public class ChatRequest : IModelRequest, ISerializableRequest
+public class ChatRequest : IModelRequest, ISerializableRequest, IHeaderProvider
 {
 	/// <summary>
 	///     Creates a new, empty <see cref="ChatRequest" />
@@ -690,7 +690,7 @@ public class ChatRequest : IModelRequest, ISerializableRequest
 
 		if (options?.IncludeHeaders ?? false)
 		{
-			using HttpRequestMessage msg = provider.OutboundMessage(finalUrl, HttpMethod.Post, serialized.Body, options.Stream);
+			using HttpRequestMessage msg = provider.OutboundMessage(finalUrl, HttpMethod.Post, serialized.Body, options.Stream, this);
 			serialized.Headers = msg.Headers.ConvertHeaders();
 		}
 
@@ -810,6 +810,28 @@ public class ChatRequest : IModelRequest, ISerializableRequest
 	public TornadoRequestContent Serialize(IEndpointProvider provider)
 	{
 		return Serialize(provider, GetCapabilityEndpoint(this), false);
+	}
+
+	/// <summary>
+	/// Returns additional headers required by this request for the specified provider.
+	/// </summary>
+	IEnumerable<string> IHeaderProvider.GetHeaders(LLmProviders provider)
+	{
+		if (provider is LLmProviders.Anthropic)
+		{
+			if (VendorExtensions?.Anthropic is not null)
+			{
+				if (VendorExtensions.Anthropic.McpServers is not null)
+				{
+					yield return "mcp-client-2025-04-04";
+				}
+			
+				if (VendorExtensions.Anthropic.Container is not null)
+				{
+					yield return "skills-2025-10-02";
+				}
+			}
+		}
 	}
 	
 	internal class ModalitiesJsonConverter : JsonConverter<List<ChatModelModalities>>

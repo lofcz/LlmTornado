@@ -62,6 +62,9 @@
         <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
             <_Parameter1>LlmTornado.Microsoft.Extensions.AI</_Parameter1>
         </AssemblyAttribute>
+        <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+            <_Parameter1>LlmTornado.Agents.Samples</_Parameter1>
+        </AssemblyAttribute>
     </ItemGroup>
     <PropertyGroup>
         <DefineConstants Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">$(DefineConstants);MODERN</DefineConstants>

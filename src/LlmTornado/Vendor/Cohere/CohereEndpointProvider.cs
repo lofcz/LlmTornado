@@ -487,7 +487,7 @@ public class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
         yield break;
     }
 
-    public override HttpRequestMessage OutboundMessage(string url, HttpMethod verb, object? data, bool streaming)
+    public override HttpRequestMessage OutboundMessage(string url, HttpMethod verb, object? data, bool streaming, object? sourceObject)
     {
         HttpRequestMessage req = new HttpRequestMessage(verb, url) 
         {
