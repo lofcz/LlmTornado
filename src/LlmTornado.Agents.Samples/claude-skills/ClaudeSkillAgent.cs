@@ -57,10 +57,8 @@ public class ClaudeSkillAgent
 
     public async Task<Conversation> Invoke(TornadoApi api, ChatMessage message,  List<AnthropicSkill> skills)
     {
-        var githubToolkit = MCPToolkits.GithubToolkit(Environment.GetEnvironmentVariable("GITHUB_API_KEY"), ["search_issues", "update_issues", "create_issue"]);
-        await githubToolkit.InitializeAsync();
 
-        TornadoAgent agent = new TornadoAgent(api, ChatModel.Anthropic.Claude45.Sonnet250929, mcpServers: [githubToolkit]);
+        TornadoAgent agent = new TornadoAgent(api, ChatModel.Anthropic.Claude45.Sonnet250929);
 
         agent.Options.VendorExtensions = new ChatRequestVendorExtensions
         {
