@@ -157,7 +157,7 @@ public class SkillsDemo : DemoBase
         Console.WriteLine("=== CREATE ===");
         Skill skill = await api.Skills.CreateSkillAsync(
             new CreateSkillRequest("pdf-processor", [new FileUploadRequest() {
-                Bytes = File.ReadAllBytes("Static/Files/pdf-processor/SKILL.md"),
+                Bytes = File.ReadAllBytes("Static/Files/Skills/pdf-processor/SKILL.md"),
                 Name = "pdf-processor/SKILL.md",
                 MimeType = "text/markdown"
             }])
@@ -175,7 +175,7 @@ public class SkillsDemo : DemoBase
         SkillVersion version1 = await api.Skills.CreateSkillVersionAsync(
             skill.Id,
             new CreateSkillVersionRequest([new FileUploadRequest() {
-                Bytes = File.ReadAllBytes("Static/Files/pdf-processor/SKILL.md"),
+                Bytes = File.ReadAllBytes("Static/Files/Skills/pdf-processor/SKILL.md"),
                 Name = "pdf-processor/SKILL.md",
                 MimeType = "text/markdown"
             }])
@@ -185,7 +185,7 @@ public class SkillsDemo : DemoBase
         SkillVersion version2 = await api.Skills.CreateSkillVersionAsync(
             skill.Id,
             new CreateSkillVersionRequest([new FileUploadRequest() {
-                Bytes = File.ReadAllBytes("Static/Files/pdf-processor/SKILL.md"),
+                Bytes = File.ReadAllBytes("Static/Files/Skills/pdf-processor/SKILL.md"),
                 Name = "pdf-processor/SKILL.md",
                 MimeType = "text/markdown"
             }])

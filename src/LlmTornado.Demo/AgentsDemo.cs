@@ -381,23 +381,23 @@ public class AgentsDemo : DemoBase
     [Flaky("Requires Gmail OAuth setup")]
     public static async Task MCPGmailToolkitExample()
     {
-        MCPServer gmailServer = new MCPServer("gmail", command: "npx", arguments: new[] {
+        MCPServer gmailServer = new MCPServer(serverLabel:"gmail", command: "npx", arguments: new[] {
             "@gongrzhe/server-gmail-autoauth-mcp"
         },
-            allowedTools: ["get_emails"]);
+            allowedTools: ["read_email", "draft_email", "search_emails"]);
 
         await gmailServer.InitializeAsync();
 
         TornadoAgent agent = new TornadoAgent(
             Program.Connect(),
             model: ChatModel.OpenAi.Gpt41.V41Mini,
-            instructions: "You are a useful assistant."
+            instructions: "You are a useful assistant for managing Gmail."
                 );
 
 
         agent.AddMcpTools(gmailServer.AllowedTornadoTools.ToArray());
 
-        Conversation result = await agent.RunAsync("Did yeezy respond?");
+        Conversation result = await agent.RunAsync("Did mom respond?");
 
         Console.WriteLine(result.Messages.Last().Content);
     }

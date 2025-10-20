@@ -6,22 +6,33 @@ The Model Context Protocol (MCP) is an open standard that enables seamless integ
 
 ## Quick Start
 
-Here's a basic example of using MCP with LlmTornado:
+ Please see [https://github.com/GongRzhe/Gmail-MCP-Server](gmail-mcp-server) for more details on setting up OAuth
+
 ```csharp
-string serverPath = Path.GetFullPath(Path.Join("..", "..", "..", "..", "LlmTornado.Mcp.Sample.Server"));
 
-var mcpServer = new MCPServer("weather-tool", serverPath);
+    MCPServer gmailServer = new MCPServer(
+        serverLabel:"gmail",
+        command: "npx", 
+        arguments: new[] { "@gongrzhe/server-gmail-autoauth-mcp" },
+        allowedTools: [
+            "read_email", 
+            "draft_email", 
+            "search_emails"]);
 
-TornadoAgent agent = new TornadoAgent(
-    api,
-    model: ChatModel.OpenAi.Gpt41.V41Mini,
-    instructions: "You are a useful assistant.",
-    mcpServers: [mcpServer]
-        );
+    await gmailServer.InitializeAsync(); // This will handle MCP Client connection to setup tools
 
-Conversation result = await agent.RunAsync("What is the weather in boston?");
+    TornadoAgent agent = new TornadoAgent(
+        client,
+        model: ChatModel.OpenAi.Gpt41.V41Mini,
+        instructions: "You are a useful assistant for managing Gmail."
+            );
 
-Console.WriteLine(result.Messages.Last().Content);
+
+    agent.AddMcpTools(gmailServer.AllowedTornadoTools.ToArray()); // Register MCP tools to the agent
+
+    Conversation result = await agent.RunAsync("Did mom respond?");
+
+    Console.WriteLine(result.Messages.Last().Content);
 ```
 
 ## Best Practices

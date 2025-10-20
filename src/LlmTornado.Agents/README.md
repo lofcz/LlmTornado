@@ -133,21 +133,28 @@ Conversation result = await agent.RunAsync("What is 2+2? and can you provide the
 Console.WriteLine(result.Messages.Last().Content);
 ```
 ## Create MCP Tool
+ Please see [https://github.com/GongRzhe/Gmail-MCP-Server](gmail-mcp-server) for more details on setting up OAuth
 ```csharp
-string serverPath = Path.GetFullPath(Path.Join("..", "..", "..", "..", "LlmTornado.Mcp.Sample.Server"));
 
-var mcpServer = new MCPServer("weather-tool", serverPath);
+    MCPServer gmailServer = new MCPServer("gmail", command: "npx", arguments: new[] {
+        "@gongrzhe/server-gmail-autoauth-mcp"
+    },
+        allowedTools: ["read_email, draft_email, search_emails,"]);
 
-TornadoAgent agent = new TornadoAgent(
-    Program.Connect(),
-    model: ChatModel.OpenAi.Gpt41.V41Mini,
-    instructions: "You are a useful assistant.",
-    mcpServers: [mcpServer]
-        );
+    await gmailServer.InitializeAsync();
 
-Conversation result = await agent.RunAsync("What is the weather in boston?");
+    TornadoAgent agent = new TornadoAgent(
+        client,
+        model: ChatModel.OpenAi.Gpt41.V41Mini,
+        instructions: "You are a useful assistant for managing Gmail."
+            );
 
-Console.WriteLine(result.Messages.Last().Content);
+
+    agent.AddMcpTools(gmailServer.AllowedTornadoTools.ToArray());
+
+    Conversation result = await agent.RunAsync("Did yeezy respond?");
+
+    Console.WriteLine(result.Messages.Last().Content);
 ```
 ## Create input guardrails to stop runner
 ```csharp
