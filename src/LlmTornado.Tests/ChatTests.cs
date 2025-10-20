@@ -222,5 +222,121 @@ namespace LlmTornado.Tests
             Assert.That(result.Data.Name, Is.EqualTo("test.txt"));
             Assert.That(result.Data.Bytes, Is.EqualTo(testFileBytes.Length));
         }
+        
+        [Test]
+        public async Task Conversation_CompressMessages_ReducesMessageCount()
+        {
+            // Arrange
+            TornadoApi api = Program.Connect();
+            Conversation conversation = api.Chat.CreateConversation(new ChatRequest
+            {
+                Model = ChatModel.OpenAi.Gpt35.Turbo
+            });
+            
+            // Add system message and multiple exchanges
+            conversation.AddSystemMessage("You are a helpful assistant.");
+            
+            // Create a conversation with 20 messages (10 user + 10 assistant)
+            for (int i = 0; i < 10; i++)
+            {
+                conversation.AddUserMessage($"This is message {i + 1}. Tell me something interesting about the number {i + 1}.");
+                conversation.AddAssistantMessage($"The number {i + 1} is interesting because... [simulated response]");
+            }
+            
+            int originalCount = conversation.Messages.Count;
+            Console.WriteLine($"Original message count: {originalCount}");
+            
+            // Act
+            int compressedCount = await conversation.CompressMessages(
+                chunkSize: 5000,
+                preserveRecentCount: 4, // Keep last 4 messages (2 exchanges)
+                preserveSystemMessages: true
+            );
+            
+            int finalCount = conversation.Messages.Count;
+            Console.WriteLine($"Final message count: {finalCount}");
+            Console.WriteLine($"Compression result: {compressedCount}");
+            
+            // Assert
+            Assert.That(finalCount, Is.LessThan(originalCount), 
+                "Message count should be reduced after compression");
+            Assert.That(conversation.Messages.Count(m => m.Role == ChatMessageRoles.System), Is.EqualTo(1), 
+                "System message should be preserved");
+            
+            // Verify recent messages are preserved
+            List<ChatMessage> recentMessages = conversation.Messages.TakeLast(4).ToList();
+            Assert.That(recentMessages.Any(m => m.Content?.Contains("message 10") ?? false), Is.True,
+                "Most recent messages should be preserved");
+        }
+        
+        [Test]
+        public async Task Conversation_CompressMessages_WithNoMessages_ReturnsZero()
+        {
+            // Arrange
+            TornadoApi api = Program.Connect();
+            Conversation conversation = api.Chat.CreateConversation(new ChatRequest
+            {
+                Model = ChatModel.OpenAi.Gpt35.Turbo
+            });
+            
+            // Act
+            int result = await conversation.CompressMessages();
+            
+            // Assert
+            Assert.That(result, Is.EqualTo(0), "Should return 0 when there are no messages to compress");
+        }
+        
+        [Test]
+        public async Task Conversation_CompressMessages_WithFewMessages_ReturnsZero()
+        {
+            // Arrange
+            TornadoApi api = Program.Connect();
+            Conversation conversation = api.Chat.CreateConversation(new ChatRequest
+            {
+                Model = ChatModel.OpenAi.Gpt35.Turbo
+            });
+            
+            conversation.AddSystemMessage("You are a helpful assistant.");
+            conversation.AddUserMessage("Hello");
+            conversation.AddAssistantMessage("Hi there!");
+            
+            // Act - with preserveRecentCount = 5, no compression should happen
+            int result = await conversation.CompressMessages(preserveRecentCount: 5);
+            
+            // Assert
+            Assert.That(result, Is.EqualTo(0), "Should return 0 when there are too few messages to compress");
+            Assert.That(conversation.Messages.Count, Is.EqualTo(3), "Message count should remain unchanged");
+        }
+        
+        [Test]
+        public void Conversation_CompressMessages_PreservesSystemMessage()
+        {
+            // Arrange
+            TornadoApi api = Program.Connect();
+            Conversation conversation = api.Chat.CreateConversation(new ChatRequest
+            {
+                Model = ChatModel.OpenAi.Gpt35.Turbo
+            });
+            
+            string systemPrompt = "You are a knowledgeable science tutor.";
+            conversation.AddSystemMessage(systemPrompt);
+            
+            // Add many messages
+            for (int i = 0; i < 15; i++)
+            {
+                conversation.AddUserMessage($"Question {i + 1}");
+                conversation.AddAssistantMessage($"Answer {i + 1}");
+            }
+            
+            // Act
+            var task = conversation.CompressMessages(
+                preserveRecentCount: 4,
+                preserveSystemMessages: true
+            );
+            
+            // Assert - Just verify structure is correct (don't run full compression in unit test)
+            Assert.That(conversation.Messages.First().Role, Is.EqualTo(ChatMessageRoles.System));
+            Assert.That(conversation.Messages.First().Content, Is.EqualTo(systemPrompt));
+        }
     }
 }

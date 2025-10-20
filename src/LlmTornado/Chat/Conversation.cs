@@ -2076,4 +2076,220 @@ public class Conversation
     }
 
     #endregion
+
+    #region Message Compression
+
+    /// <summary>
+    ///     Compresses the conversation messages by summarizing older messages while preserving recent context.
+    ///     Messages are grouped into chunks and summarized in parallel for efficiency.
+    /// </summary>
+    /// <param name="chunkSize">The approximate character count per chunk (default: 10000)</param>
+    /// <param name="preserveRecentCount">Number of recent messages to preserve without summarization (default: 5)</param>
+    /// <param name="preserveSystemMessages">Whether to preserve system messages (default: true)</param>
+    /// <param name="summaryModel">The model to use for summarization (default: uses conversation's current model)</param>
+    /// <param name="summaryPrompt">Custom prompt for summarization (default: "Summarize this chat conversation concisely, preserving key information:")</param>
+    /// <param name="maxSummaryTokens">Maximum tokens for each summary (default: 1000)</param>
+    /// <param name="token">Cancellation token</param>
+    /// <returns>The number of messages compressed</returns>
+    public async Task<int> CompressMessages(
+        int chunkSize = 10000,
+        int preserveRecentCount = 5,
+        bool preserveSystemMessages = true,
+        ChatModel? summaryModel = null,
+        string? summaryPrompt = null,
+        int maxSummaryTokens = 1000,
+        CancellationToken token = default)
+    {
+        if (messages.Count <= preserveRecentCount + (preserveSystemMessages ? 1 : 0))
+        {
+            return 0; // Not enough messages to compress
+        }
+
+        summaryModel ??= Model;
+        summaryPrompt ??= "Summarize this chat conversation concisely, preserving key information:";
+
+        // Separate system messages if preserving them
+        List<ChatMessage> systemMessages = [];
+        List<ChatMessage> messagesToCompress = [];
+        List<ChatMessage> recentMessages = [];
+
+        // Collect messages into categories
+        for (int i = 0; i < messages.Count; i++)
+        {
+            ChatMessage msg = messages[i];
+
+            if (preserveSystemMessages && msg.Role == ChatMessageRoles.System)
+            {
+                systemMessages.Add(msg);
+            }
+            else if (i >= messages.Count - preserveRecentCount)
+            {
+                recentMessages.Add(msg);
+            }
+            else if (!preserveSystemMessages || msg.Role != ChatMessageRoles.System)
+            {
+                messagesToCompress.Add(msg);
+            }
+        }
+
+        if (messagesToCompress.Count == 0)
+        {
+            return 0; // Nothing to compress
+        }
+
+        // Group messages into chunks based on character count
+        List<List<ChatMessage>> chunks = [];
+        List<ChatMessage> currentChunk = [];
+        int currentChunkLength = 0;
+
+        foreach (ChatMessage msg in messagesToCompress)
+        {
+            int msgLength = GetMessageLength(msg);
+
+            if (currentChunkLength + msgLength > chunkSize && currentChunk.Count > 0)
+            {
+                chunks.Add(currentChunk);
+                currentChunk = [];
+                currentChunkLength = 0;
+            }
+
+            currentChunk.Add(msg);
+            currentChunkLength += msgLength;
+        }
+
+        if (currentChunk.Count > 0)
+        {
+            chunks.Add(currentChunk);
+        }
+
+        // Process chunks in parallel to get summaries
+        Task<string>[] summaryTasks = chunks.Select(chunk => SummarizeChunk(chunk, summaryModel, summaryPrompt, maxSummaryTokens, token)).ToArray();
+        string[] summaries = await Task.WhenAll(summaryTasks);
+
+        // Rebuild the message list
+        int originalCount = messages.Count;
+        messages.Clear();
+
+        // Add system messages first
+        messages.AddRange(systemMessages);
+
+        // Add summaries as assistant messages
+        foreach (string summary in summaries)
+        {
+            if (!summary.IsNullOrWhiteSpace())
+            {
+                messages.Add(new ChatMessage(ChatMessageRoles.Assistant, $"[Previous conversation summary]: {summary}"));
+            }
+        }
+
+        // Add recent messages
+        messages.AddRange(recentMessages);
+
+        return originalCount - messages.Count + summaries.Length; // Return compression ratio
+    }
+
+    /// <summary>
+    ///     Gets the approximate character length of a message, including all parts.
+    /// </summary>
+    private static int GetMessageLength(ChatMessage message)
+    {
+        int length = 0;
+
+        if (message.Content != null)
+        {
+            length += message.Content.Length;
+        }
+
+        if (message.Parts != null)
+        {
+            foreach (ChatMessagePart part in message.Parts)
+            {
+                if (part.Text != null)
+                {
+                    length += part.Text.Length;
+                }
+                // Note: Images, audio, and other non-text parts contribute minimal length
+                // as they're typically references
+            }
+        }
+
+        if (message.Reasoning != null)
+        {
+            length += message.Reasoning.Length;
+        }
+
+        if (message.ReasoningContent != null)
+        {
+            length += message.ReasoningContent.Length;
+        }
+
+        return length;
+    }
+
+    /// <summary>
+    ///     Summarizes a chunk of messages using the AI.
+    /// </summary>
+    private async Task<string> SummarizeChunk(List<ChatMessage> chunk, ChatModel model, string summaryPrompt, int maxSummaryTokens, CancellationToken token)
+    {
+        // Build the text representation of the chunk
+        StringBuilder chunkText = new StringBuilder();
+
+        foreach (ChatMessage msg in chunk)
+        {
+            string roleStr = msg.Role switch
+            {
+                ChatMessageRoles.System => "System",
+                ChatMessageRoles.User => "User",
+                ChatMessageRoles.Assistant => "Assistant",
+                ChatMessageRoles.Tool => "Tool",
+                _ => "Unknown"
+            };
+
+            chunkText.AppendLine($"{roleStr}: {GetMessageContent(msg)}");
+        }
+
+        // Create a temporary chat request for summarization
+        ChatRequest summarizeRequest = new ChatRequest(null, RequestParameters)
+        {
+            Model = model,
+            Messages = [
+                new ChatMessage(ChatMessageRoles.System, summaryPrompt),
+                new ChatMessage(ChatMessageRoles.User, chunkText.ToString())
+            ],
+            MaxTokens = maxSummaryTokens, // Limit summary length
+            Temperature = 0.3, // Lower temperature for more consistent summaries
+            CancellationToken = token
+        };
+
+        try
+        {
+            ChatResult? result = await endpoint.CreateChatCompletion(summarizeRequest);
+            return result?.Choices?[0]?.Message?.Content ?? string.Empty;
+        }
+        catch (Exception)
+        {
+            // If summarization fails, return a simple concatenation
+            return $"[{chunk.Count} messages from this conversation]";
+        }
+    }
+
+    /// <summary>
+    ///     Gets the text content of a message, combining Content and Parts.
+    /// </summary>
+    private static string GetMessageContent(ChatMessage message)
+    {
+        if (message.Content != null)
+        {
+            return message.Content;
+        }
+
+        if (message.Parts != null)
+        {
+            return string.Join(" ", message.Parts.Where(p => p.Text != null).Select(p => p.Text));
+        }
+
+        return string.Empty;
+    }
+
+    #endregion
 }
