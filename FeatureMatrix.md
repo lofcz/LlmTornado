@@ -23,6 +23,8 @@ _Empty field means the feature is unsupported by the provider._
 | **DeepInfra** | ✅ | | | | | | | | | | | | | |
 | **OpenRouter**| ✅ | ✅ | ✅ | | | | | | | | | | | |
 | **Z.ai** | ✅ | | | ✅ | | | | | | ❌ | | | | |
+| **Alibaba** | ✅ | ✅ | ✅ | | | | | | | | | | | ❌ |
+| **Blablador** | ✅ | ✅ | ✅ | | | | | | | | | | | |
 | **Custom*** | ✅ | ✅ | | | | | | | | | | | | |
 
 _*Custom means any OpenAI compatible provider, such as Azure OpenAI, Ollama, KoboldCpp, etc._  

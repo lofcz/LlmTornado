@@ -1388,6 +1388,10 @@ public enum LLmProviders
     /// </summary>
     Blablador,
     /// <summary>
+    /// Alibaba.
+    /// </summary>
+    Alibaba,
+    /// <summary>
     /// Internal value.
     /// </summary>
     Length

@@ -398,7 +398,7 @@ public class ResponsesEndpoint : EndpointBase
         TornadoRequestContent requestBody = request.Serialize(provider);
         request.Stream = streamOption;
 
-        await using TornadoStreamRequest tornadoStreamRequest = await HttpStreamingRequestData(provider, Endpoint, requestBody.Url, queryParams: null, HttpVerbs.Post, requestBody.Body, request.Model, token).ConfigureAwait(false);
+        await using TornadoStreamRequest tornadoStreamRequest = await HttpStreamingRequestData(provider, Endpoint, requestBody.Url, queryParams: null, HttpVerbs.Post, requestBody.Body, request.Model, request, token).ConfigureAwait(false);
 
         if (tornadoStreamRequest.Exception is not null)
         {

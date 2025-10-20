@@ -291,7 +291,7 @@ public class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
         yield break;
     }
 
-    public override HttpRequestMessage OutboundMessage(string url, HttpMethod verb, object? data, bool streaming)
+    public override HttpRequestMessage OutboundMessage(string url, HttpMethod verb, object? data, bool streaming, object? sourceObject)
     {
         ProviderAuthentication? auth = Api?.GetProvider(LLmProviders.Google).Auth;
         UriBuilder uriBuilder = new UriBuilder(url);

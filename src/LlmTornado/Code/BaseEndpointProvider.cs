@@ -51,6 +51,19 @@ public abstract class BaseEndpointProvider : IEndpointProviderExtended
         }
     }
 
+    internal static HashSet<string> AccumulateHeaders(HashSet<string> defaultHeaders, object? data)
+    {
+        if (data is IHeaderProvider headerProvider)
+        {
+            foreach (string header in headerProvider.GetHeaders(LLmProviders.Anthropic))
+            {
+                defaultHeaders.Add(header);
+            }
+        }
+
+        return defaultHeaders;
+    }
+
     public abstract string ApiUrl(CapabilityEndpoints endpoint, string? url, IModel? model = null);
     public abstract T? InboundMessage<T>(string jsonData, string? postData, object? request);
     public abstract object? InboundMessage(Type type, string jsonData, string? postData, object? request);
@@ -59,7 +72,7 @@ public abstract class BaseEndpointProvider : IEndpointProviderExtended
     public abstract IAsyncEnumerable<object?> InboundStream(Type type, StreamReader streamReader);
     public abstract IAsyncEnumerable<T?> InboundStream<T>(StreamReader streamReader) where T : class;
     public abstract IAsyncEnumerable<ChatResult?> InboundStream(StreamReader streamReader, ChatRequest request, ChatStreamEventHandler? eventHandler);
-    public abstract HttpRequestMessage OutboundMessage(string url, HttpMethod verb, object? data, bool streaming);
+    public abstract HttpRequestMessage OutboundMessage(string url, HttpMethod verb, object? data, bool streaming, object? sourceObject);
     public ProviderAuthentication? Auth { get; set; }
     
 #if MODERN

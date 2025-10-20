@@ -3,6 +3,7 @@ using LlmTornado.Chat.Models;
 using LlmTornado.Embedding.Models;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
+#pragma warning disable MEAI001
 
 namespace LlmTornado.Microsoft.Extensions.AI;
 

@@ -9,6 +9,7 @@ using LlmTornado.Code;
 using LlmTornado.Common;
 using Newtonsoft.Json;
 using LlmTornado.Chat.Vendors.Anthropic;
+using LlmTornado.Chat.Vendors.Alibaba;
 using LlmTornado.Chat.Vendors.Cohere;
 using LlmTornado.Chat.Vendors.Mistral;
 using LlmTornado.Chat.Vendors.Perplexity;
@@ -27,7 +28,7 @@ namespace LlmTornado.Chat;
 ///     <see cref="Completions.CompletionRequest" />
 ///     Based on the <see href="https://platform.openai.com/docs/api-reference/chat">OpenAI API docs</see>
 /// </summary>
-public class ChatRequest : IModelRequest, ISerializableRequest
+public class ChatRequest : IModelRequest, ISerializableRequest, IHeaderProvider
 {
 	/// <summary>
 	///     Creates a new, empty <see cref="ChatRequest" />
@@ -637,6 +638,14 @@ public class ChatRequest : IModelRequest, ISerializableRequest
 				
 				return PreparePayload(x, x, y, z, GetSerializer(EndpointBase.NullSettings, a));
 			}
+		},
+		{
+			LLmProviders.Alibaba, (x, y, z, a) =>
+			{
+				VendorAlibabaChatRequest request = new VendorAlibabaChatRequest(x, y);
+				JsonSerializerSettings serializer = GetSerializer(EndpointBase.NullSettings, a);
+				return PreparePayload(request.Serialize(serializer), x, y, z, serializer);
+			}
 		}
 	};
 
@@ -690,7 +699,7 @@ public class ChatRequest : IModelRequest, ISerializableRequest
 
 		if (options?.IncludeHeaders ?? false)
 		{
-			using HttpRequestMessage msg = provider.OutboundMessage(finalUrl, HttpMethod.Post, serialized.Body, options.Stream);
+			using HttpRequestMessage msg = provider.OutboundMessage(finalUrl, HttpMethod.Post, serialized.Body, options.Stream, this);
 			serialized.Headers = msg.Headers.ConvertHeaders();
 		}
 
@@ -810,6 +819,28 @@ public class ChatRequest : IModelRequest, ISerializableRequest
 	public TornadoRequestContent Serialize(IEndpointProvider provider)
 	{
 		return Serialize(provider, GetCapabilityEndpoint(this), false);
+	}
+
+	/// <summary>
+	/// Returns additional headers required by this request for the specified provider.
+	/// </summary>
+	IEnumerable<string> IHeaderProvider.GetHeaders(LLmProviders provider)
+	{
+		if (provider is LLmProviders.Anthropic)
+		{
+			if (VendorExtensions?.Anthropic is not null)
+			{
+				if (VendorExtensions.Anthropic.McpServers is not null)
+				{
+					yield return "mcp-client-2025-04-04";
+				}
+			
+				if (VendorExtensions.Anthropic.Container is not null)
+				{
+					yield return "skills-2025-10-02";
+				}
+			}
+		}
 	}
 	
 	internal class ModalitiesJsonConverter : JsonConverter<List<ChatModelModalities>>
