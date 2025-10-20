@@ -651,7 +651,7 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
         yield break;
     }
     
-    public override HttpRequestMessage OutboundMessage(string url, HttpMethod verb, object? data, bool streaming)
+    public override HttpRequestMessage OutboundMessage(string url, HttpMethod verb, object? data, bool streaming, object? sourceObject)
     {
         HttpRequestMessage req = new HttpRequestMessage(verb, url)
         {
@@ -674,21 +674,9 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
         }
         else
         {     
-            List<string> defaultBetaHeaders = ["interleaved-thinking-2025-05-14", "files-api-2025-04-14", "code-execution-2025-08-25", "search-results-2025-06-09"];
-            var MessageObject = JsonConvert.DeserializeObject<JObject>(data?.ToString() ?? "");
-            if (MessageObject != null)
-            {
-                if (MessageObject["mcp_servers"] != null)
-                {
-                    defaultBetaHeaders.Add("mcp-client-2025-04-04");
-                }
-
-                if (MessageObject["container"] != null)
-                {
-                    defaultBetaHeaders.Add("skills-2025-10-02");
-                }
-            }
-            req.Headers.Add("anthropic-beta", defaultBetaHeaders);
+            req.Headers.Add("anthropic-beta", AccumulateHeaders([
+                "interleaved-thinking-2025-05-14", "files-api-2025-04-14", "code-execution-2025-08-25", "search-results-2025-06-09"
+            ], sourceObject));
         }
 
         return req;
