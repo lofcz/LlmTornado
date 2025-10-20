@@ -9,6 +9,7 @@ using LlmTornado.Code;
 using LlmTornado.Common;
 using Newtonsoft.Json;
 using LlmTornado.Chat.Vendors.Anthropic;
+using LlmTornado.Chat.Vendors.Alibaba;
 using LlmTornado.Chat.Vendors.Cohere;
 using LlmTornado.Chat.Vendors.Mistral;
 using LlmTornado.Chat.Vendors.Perplexity;
@@ -636,6 +637,14 @@ public class ChatRequest : IModelRequest, ISerializableRequest, IHeaderProvider
 				// todo: decide about web search https://platform.moonshot.ai/docs/guide/use-web-search#about-model-size-selection
 				
 				return PreparePayload(x, x, y, z, GetSerializer(EndpointBase.NullSettings, a));
+			}
+		},
+		{
+			LLmProviders.Alibaba, (x, y, z, a) =>
+			{
+				VendorAlibabaChatRequest request = new VendorAlibabaChatRequest(x, y);
+				JsonSerializerSettings serializer = GetSerializer(EndpointBase.NullSettings, a);
+				return PreparePayload(request.Serialize(serializer), x, y, z, serializer);
 			}
 		}
 	};

@@ -1,23 +1,10 @@
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Net.Http.Headers;
-using LibVLCSharp.Shared;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Chat.Vendors.Google;
-using LlmTornado.Chat.Vendors.Mistral;
-using LlmTornado.Chat.Vendors.Perplexity;
-using LlmTornado.Chat.Vendors.XAi;
 using LlmTornado.Chat.Vendors.Zai;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
-using LlmTornado.Code.Vendor;
-using LlmTornado.Common;
-using LlmTornado.Contrib;
-using LlmTornado.Files;
-using LlmTornado.Responses;
-using Newtonsoft.Json.Linq;
 using PuppeteerSharp;
 
 namespace LlmTornado.Demo;
@@ -346,5 +333,11 @@ public partial class ChatDemo : DemoBase
         ChatRichResponse response = await chat.GetResponseRich();
         Console.WriteLine("Anthropic MCP Server Use:");
         Console.WriteLine(response);
+    }
+    
+    [TornadoTest]
+    public static async Task QwenMax()
+    {
+        await BasicChat(ChatModel.Alibaba.Flagship.Qwen3Max);
     }
 }
