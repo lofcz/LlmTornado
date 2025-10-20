@@ -1,85 +1,86 @@
 # Anthropic Skills
 See [https://docs.claude.com/en/api/skills-guide](https://docs.claude.com/en/api/skills-guide) for more information.
 
-# Full Crud Demo Review
+# Quick Start
+Beware the token usage when using skills, as they can increase the token count significantly.
+
+Some built in tools include:
+ - PowerPoint (pptx): Create and edit presentations
+ - Excel (xlsx): Create and analyze spreadsheets
+ - Word (docx): Create and edit documents
+ - PDF (pdf): Generate PDF documents
+
 ```csharp
- TornadoApi api = Program.Connect();
+ChatRequest chatRequest = new ChatRequest
+        {
+            Model = ChatModel.Anthropic.Claude45.Sonnet250929,
+            MaxTokens = 2048,
+            Messages = new List<ChatMessage>
+            {
+                new ChatMessage(ChatMessageRoles.User, 
+                    "Create a professional PowerPoint presentation about renewable energy. " +
+                    "Include 5 slides:\n" +
+                    "1. Title slide: 'The Future of Renewable Energy'\n" +
+                    "2. Types of Renewable Energy (solar, wind, hydro, geothermal)\n" +
+                    "3. Benefits and Challenges\n" +
+                    "4. Market Growth Statistics\n" +
+                    "5. Call to Action\n\n" +
+                    "Make it visually appealing with a professional design.")
+            },
+            VendorExtensions = new ChatRequestVendorExtensions
+            {
+                
+                Anthropic = new ChatRequestVendorAnthropicExtensions
+                {
+                    // Configure container with PowerPoint skill
+                    Container = new AnthropicContainer
+                    {
+                        Skills = new List<AnthropicSkill>
+                        {
+                            new AnthropicSkill("pptx", "latest")
+                        }
+                    },
+                    BuiltInTools =
+                    [
+                       new VendorAnthropicChatRequestBuiltInToolCodeExecution20250825()
+                    ]
+                }
+            }
+        };
 
-    // CREATE
-    Console.WriteLine("=== CREATE ===");
+        ChatResult response = await Program.Connect().Chat.CreateChatCompletion(chatRequest);
+        
+        if (response.Choices?.Count > 0)
+        {
+            foreach (ChatChoice choice in response.Choices)
+            {
+                if (choice.Message?.Content is not null)
+                {
+                    Console.WriteLine($"Message: {choice.Message.Content}\n");
+                }
+            }
+        }
+```
+
+# Custom Skills
+
+## Create A Skill
+```csharp
+
+    TornadoApi api = Program.Connect();
+
+    Console.WriteLine("Creating a new skill...");
     Skill skill = await api.Skills.CreateSkillAsync(
-        new CreateSkillRequest("pdf-processor", [new FileUploadRequest() {
-            Bytes = File.ReadAllBytes("Static/Files/pdf-processor/SKILL.md"),
+        "pdf-processor",
+        [new FileUploadRequest() {
+            Bytes = File.ReadAllBytes("Static/Files/Skills/pdf-processor/SKILL.md"),
             Name = "pdf-processor/SKILL.md",
             MimeType = "text/markdown"
-        }])
+        }]
     );
-    Console.WriteLine($"Created: {skill.DisplayTitle} (ID: {skill.Id})");
         
-    // READ
-    Console.WriteLine("\n=== READ ===");
-    Skill retrievedSkill = await api.Skills.GetSkillAsync(skill.Id);
-    Console.WriteLine($"Retrieved: {retrievedSkill.DisplayTitle}");
-        
-        
-    // CREATE VERSION
-    Console.WriteLine("\n=== CREATE VERSION ===");
-    SkillVersion version1 = await api.Skills.CreateSkillVersionAsync(
-        skill.Id,
-        new CreateSkillVersionRequest([new FileUploadRequest() {
-            Bytes = File.ReadAllBytes("Static/Files/pdf-processor/SKILL.md"),
-            Name = "pdf-processor/SKILL.md",
-            MimeType = "text/markdown"
-        }])
-    );
-    Console.WriteLine($"Created version: {version1.Id}");
-        
-    SkillVersion version2 = await api.Skills.CreateSkillVersionAsync(
-        skill.Id,
-        new CreateSkillVersionRequest([new FileUploadRequest() {
-            Bytes = File.ReadAllBytes("Static/Files/pdf-processor/SKILL.md"),
-            Name = "pdf-processor/SKILL.md",
-            MimeType = "text/markdown"
-        }])
-    );
-    Console.WriteLine($"Created version: {version2.Id}");
-        
-    // LIST VERSIONS
-    Console.WriteLine("\n=== LIST VERSIONS ===");
-    SkillVersionListResponse versions = await api.Skills.ListSkillVersionsAsync(skill.Id);
-    Console.WriteLine($"Found {versions.Data.Count} version(s):");
-    foreach (SkillVersion v in versions.Data)
-    {
-        Console.WriteLine($"  - Version {v.Id}");
-        Console.WriteLine($"    Prompt preview: {v.Description}...");
-    }
-        
-    // GET SPECIFIC VERSION
-    Console.WriteLine("\n=== GET VERSION ===");
-    SkillVersion retrievedVersion = await api.Skills.GetSkillVersionAsync(skill.Id, version1.Version);
-    Console.WriteLine($"Retrieved version: {retrievedVersion.Id}");
-    Console.WriteLine($"System Prompt: {retrievedVersion.Description}");
-        
-
-    // DELETE (cleanup)
-    Console.WriteLine("\n=== DELETE ===");
-    Console.WriteLine("Deleting versions...");
-    bool v1Deleted = await api.Skills.DeleteSkillVersionAsync(skill.Id, version1.Version);
-    Console.WriteLine($"Version 1 deleted: {v1Deleted}");
-
-    bool v2Deleted = await api.Skills.DeleteSkillVersionAsync(skill.Id, version2.Version);
-    Console.WriteLine($"Version 2 deleted: {v2Deleted}");
-
-    bool latestVersionDeleted = await api.Skills.DeleteSkillVersionAsync(skill.Id, skill.LatestVersion);
-    Console.WriteLine($"Latest version deleted: {latestVersionDeleted}");
-
-    Task.Delay(3000).Wait(); // Wait a moment to ensure versions are deleted before deleting skill
-
-    Console.WriteLine("Deleting skill...");
-    bool skillDeleted = await api.Skills.DeleteSkillAsync(skill.Id);
-    Console.WriteLine($"Skill deleted: {skillDeleted}");
-        
-    Console.WriteLine("\n=== DEMO COMPLETE ===");
+    Console.WriteLine($"Created skill: {skill.DisplayTitle} (ID: {skill.Id})");
+    Console.WriteLine($"Created at: {skill.CreatedAt}");
 ```
 
 ## Creating A Custom Skill
@@ -120,8 +121,40 @@ For Uploading a Folder of Files, you can use the following helper method:
 
 ```
 
-# Read a Skill
-All you need is the skill ID to get name / description and other metadata.
+# Using A Custom Skill
 ```csharp
-Skill retrievedSkill = await api.Skills.GetSkillAsync(skill.Id);
+TornadoApi api = Program.Connect();
+
+//Max 8 Skills
+var skills = new List<AnthropicSkill>
+                {
+                    new AnthropicSkill("skill_id_1", "latest"), 
+                    new AnthropicSkill("skill_id_8","latest") 
+                };
+
+TornadoAgent agent = new TornadoAgent(api, ChatModel.Anthropic.Claude45.Sonnet250929);
+
+agent.Options.VendorExtensions = new ChatRequestVendorExtensions
+{
+    Anthropic = new ChatRequestVendorAnthropicExtensions
+    {
+        // Configure container with PowerPoint skill
+        Container = new AnthropicContainer
+        {
+            Skills = skills
+        },
+        BuiltInTools =
+        [
+            new VendorAnthropicChatRequestBuiltInToolCodeExecution20250825() //Required
+        ],
+    }
+};
+
+agent.Options.MaxTokens = 10024;
+agent.Options.ReasoningBudget = 8000;
+        
+Conversation conv = await agent.RunAsync(appendMessages: [new ChatMessage(ChatMessageRoles.User,
+    "Can you please make me an anthropic SKILL that can compile a Company Product Context based off Company PDF file extraction, web search, and related industry knowledge?")] );
+
+Console.WriteLine(conv.Messages.Last().Content ?? "n/a");
 ```

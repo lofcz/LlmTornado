@@ -307,6 +307,7 @@ public partial class ChatDemo : DemoBase
     }
 
     [TornadoTest("MCP Anthropic")]
+    [Flaky("Requires GITHUB_API_KEY setup in environment variables")]
     public static async Task AnthropicMcpServerUse()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
@@ -323,7 +324,7 @@ public partial class ChatDemo : DemoBase
                     new AnthropicMcpServer(){
                             Name = "github",
                             Url = "https://api.githubcopilot.com/mcp/",
-                            AuthorizationToken = "github_token"
+                            AuthorizationToken = Environment.GetEnvironmentVariable("GITHUB_API_KEY") ?? "github-api-key"
                         }
                     ]
                 }
