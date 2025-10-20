@@ -24,6 +24,32 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
 /**
+ * Convert a filename or folder name to a clean URL-friendly slug
+ * Examples:
+ *   '1. LlmTornado' -> 'llmtornado'
+ *   '2. Agents' -> 'agents'
+ *   '1. basics' -> 'basics'
+ *   'getting-started' -> 'getting-started'
+ */
+function toSlug(str) {
+  // Check if the string starts with a number followed by a period and possibly spaces (e.g., "1. " or "1. LlmTornado")
+  const hasNumberPrefix = /^\d+\.\s*/.test(str)
+  
+  if (hasNumberPrefix) {
+    // Extract the rest of the string after the number prefix
+    const match = str.match(/^\d+\.\s*(.+)/)
+    if (match) {
+      const rest = match[1]
+      // Convert to lowercase and replace spaces with hyphens
+      return rest.toLowerCase().replace(/\s+/g, '-')
+    }
+  }
+  
+  // Otherwise, just convert to lowercase and replace spaces with hyphens
+  return str.toLowerCase().replace(/\s+/g, '-')
+}
+
+/**
  * Convert a filename or folder name to a human-readable title
  * Examples:
  *   'getting-started' -> 'Getting Started'
@@ -140,9 +166,15 @@ function buildSidebarFromDirectory(dirPath, baseDocsPath) {
           .replace(/\\/g, '/')
           .replace(/\.md$/, '')
         
+        // Convert the relative path to use clean URLs
+        // Split the path into parts and convert each part using toSlug
+        const pathParts = relativePath.split('/').filter(part => part.length > 0)
+        const cleanPathParts = pathParts.map(part => toSlug(part))
+        const cleanPath = '/' + cleanPathParts.join('/')
+        
         items.push({
           text: toTitle(fileName),
-          link: relativePath
+          link: cleanPath
         })
       }
     }
