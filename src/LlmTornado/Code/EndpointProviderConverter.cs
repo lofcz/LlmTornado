@@ -56,6 +56,10 @@ internal static class EndpointProviderConverter
             {
                 UrlResolver = (endpoint, url, ctx) => $"{string.Format(api.ApiUrlFormat ?? "https://api.helmholtz-blablador.fz-juelich.de/{0}/{1}", api.ResolveApiVersion(), OpenAiEndpointProvider.GetEndpointUrlFragment(endpoint, LLmProviders.Blablador))}{url}"
             },
+            LLmProviders.Alibaba => new OpenAiEndpointProvider(LLmProviders.Alibaba)
+            {
+                UrlResolver = (endpoint, url, ctx) => $"{string.Format(api.ApiUrlFormat ?? "https://dashscope-intl.aliyuncs.com/compatible-mode/{0}/{1}", api.ResolveApiVersion(), OpenAiEndpointProvider.GetEndpointUrlFragment(endpoint, LLmProviders.Alibaba))}{url}"
+            },
             _ => new OpenAiEndpointProvider()
         };
 

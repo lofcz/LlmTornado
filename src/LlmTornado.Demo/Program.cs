@@ -36,6 +36,7 @@ public class Program
         public string MoonshotAi { get; set; }
         public string ZAi { get; set; }
         public string Blablador { get; set; }
+        public string Alibaba { get; set; }
     }
 
     public static TornadoApi ConnectMulti(bool httpStrict = true)
@@ -55,7 +56,8 @@ public class Program
             new ProviderAuthentication(LLmProviders.Perplexity, ApiKeys.Perplexity),
             new ProviderAuthentication(LLmProviders.MoonshotAi, ApiKeys.MoonshotAi),
             new ProviderAuthentication(LLmProviders.Zai, ApiKeys.ZAi),
-            new ProviderAuthentication(LLmProviders.Blablador, ApiKeys.Blablador)
+            new ProviderAuthentication(LLmProviders.Blablador, ApiKeys.Blablador),
+            new ProviderAuthentication(LLmProviders.Alibaba, ApiKeys.Alibaba)
         ])
         {
             HttpStrict = httpStrict
