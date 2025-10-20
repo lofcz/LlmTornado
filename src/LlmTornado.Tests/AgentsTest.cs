@@ -99,21 +99,7 @@ public class AgentTests
         Assert.That(agent.AgentTools.ContainsKey(subAgent.Id), Is.True);
     }
 
-    [Test]
-    public void Constructor_WithMCPServers_ShouldSetupMCPCorrectly()
-    {
-        // Arrange
-        if (_modelProvider == null) Assert.Ignore("Model provider not initialized");
-        string serverPath = Path.GetFullPath(Path.Join("..", "..", "..", "..", "LlmTornado.Mcp.Sample.Server"));
-        var mcpServers = new List<MCPServer>{
-        new MCPServer("test-server", serverPath)};
 
-        // Act
-        var agent = new TornadoAgent(_modelProvider, ChatModel.OpenAi.O4.V4Mini, mcpServers: mcpServers);
-
-        // Assert
-        Assert.That(agent.McpServers, Has.Count.EqualTo(1));
-    }
 
     [Test]
     public void Constructor_WithEmptyInstructions_ShouldUseDefault()

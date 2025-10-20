@@ -29,6 +29,7 @@ namespace LlmTornado.Demo;
 public class AgentOrchestrationRuntimeDemo : DemoBase
 {
     [TornadoTest]
+    [Flaky("manual interaction")]
     public static async Task MemoryChatBotAgentRuntimeDemo()
     {
         MemoryChatBot RuntimeConfiguration = new MemoryChatBot(Program.Connect());
@@ -296,6 +297,7 @@ public class AgentOrchestrationRuntimeDemo : DemoBase
 
 
     [TornadoTest]
+    [Flaky("manual interaction")]
     public static async Task CodingAgentRuntimeDemo()
     {
 
