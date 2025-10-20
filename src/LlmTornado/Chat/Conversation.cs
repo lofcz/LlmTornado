@@ -2080,6 +2080,150 @@ public class Conversation
     #region Message Compression
 
     /// <summary>
+    ///     Strategy for determining when compression should occur.
+    /// </summary>
+    public IConversationCompressionStrategy? CompressionStrategy { get; set; }
+    
+    /// <summary>
+    ///     Handler for customizing the summarization process.
+    /// </summary>
+    public IConversationSummarizer? Summarizer { get; set; }
+
+    /// <summary>
+    ///     Adds a message to the conversation with automatic compression when needed.
+    ///     This is a smart insert that triggers compression based on the configured strategy.
+    /// </summary>
+    /// <param name="message">Message to add</param>
+    /// <param name="token">Cancellation token</param>
+    /// <returns>True if compression occurred, false otherwise</returns>
+    public async Task<bool> AddMessageSmart(ChatMessage message, CancellationToken token = default)
+    {
+        AppendMessage(message);
+        return await CheckAndCompress(token);
+    }
+    
+    /// <summary>
+    ///     Adds a user message to the conversation with automatic compression when needed.
+    /// </summary>
+    /// <param name="content">Message content</param>
+    /// <param name="token">Cancellation token</param>
+    /// <returns>True if compression occurred, false otherwise</returns>
+    public async Task<bool> AddUserMessageSmart(string content, CancellationToken token = default)
+    {
+        return await AddMessageSmart(new ChatMessage(ChatMessageRoles.User, content), token);
+    }
+    
+    /// <summary>
+    ///     Adds an assistant message to the conversation with automatic compression when needed.
+    /// </summary>
+    /// <param name="content">Message content</param>
+    /// <param name="token">Cancellation token</param>
+    /// <returns>True if compression occurred, false otherwise</returns>
+    public async Task<bool> AddAssistantMessageSmart(string content, CancellationToken token = default)
+    {
+        return await AddMessageSmart(new ChatMessage(ChatMessageRoles.Assistant, content), token);
+    }
+    
+    /// <summary>
+    ///     Gets a response and automatically compresses if needed before the next message.
+    /// </summary>
+    /// <param name="token">Cancellation token</param>
+    /// <returns>The response from the API</returns>
+    public async Task<ChatRichResponse> GetResponseRichSmart(CancellationToken token = default)
+    {
+        ChatRichResponse response = await GetResponseRich(token);
+        await CheckAndCompress(token);
+        return response;
+    }
+    
+    /// <summary>
+    ///     Checks if compression is needed based on the strategy and performs it if necessary.
+    /// </summary>
+    /// <param name="token">Cancellation token</param>
+    /// <returns>True if compression occurred, false otherwise</returns>
+    private async Task<bool> CheckAndCompress(CancellationToken token = default)
+    {
+        if (CompressionStrategy == null)
+        {
+            return false;
+        }
+
+        if (!CompressionStrategy.ShouldCompress(this))
+        {
+            return false;
+        }
+
+        ConversationCompressionOptions options = CompressionStrategy.GetCompressionOptions(this);
+        await CompressMessages(options, token);
+        return true;
+    }
+
+    /// <summary>
+    ///     Compresses the conversation messages by summarizing older messages while preserving recent context.
+    ///     Messages are grouped into chunks and summarized in parallel for efficiency.
+    /// </summary>
+    /// <param name="options">Compression options</param>
+    /// <param name="token">Cancellation token</param>
+    /// <returns>The number of messages compressed</returns>
+    public async Task<int> CompressMessages(ConversationCompressionOptions options, CancellationToken token = default)
+    {
+        if (messages.Count <= options.PreserveRecentCount + (options.PreserveSystemMessages ? 1 : 0))
+        {
+            return 0; // Not enough messages to compress
+        }
+
+        // Use custom summarizer if provided, otherwise use default
+        IConversationSummarizer summarizer = Summarizer ?? new DefaultConversationSummarizer(endpoint, RequestParameters);
+        
+        // Separate system messages if preserving them
+        List<ChatMessage> systemMessages = [];
+        List<ChatMessage> messagesToCompress = [];
+        List<ChatMessage> recentMessages = [];
+
+        // Collect messages into categories
+        for (int i = 0; i < messages.Count; i++)
+        {
+            ChatMessage msg = messages[i];
+
+            if (options.PreserveSystemMessages && msg.Role == ChatMessageRoles.System)
+            {
+                systemMessages.Add(msg);
+            }
+            else if (i >= messages.Count - options.PreserveRecentCount)
+            {
+                recentMessages.Add(msg);
+            }
+            else if (!options.PreserveSystemMessages || msg.Role != ChatMessageRoles.System)
+            {
+                messagesToCompress.Add(msg);
+            }
+        }
+
+        if (messagesToCompress.Count == 0)
+        {
+            return 0; // Nothing to compress
+        }
+
+        // Delegate to the summarizer
+        List<ChatMessage> summaries = await summarizer.SummarizeMessages(messagesToCompress, options, token);
+
+        // Rebuild the message list
+        int originalCount = messages.Count;
+        messages.Clear();
+
+        // Add system messages first
+        messages.AddRange(systemMessages);
+
+        // Add summaries
+        messages.AddRange(summaries);
+
+        // Add recent messages
+        messages.AddRange(recentMessages);
+
+        return originalCount - messages.Count + summaries.Count; // Return compression ratio
+    }
+
+    /// <summary>
     ///     Compresses the conversation messages by summarizing older messages while preserving recent context.
     ///     Messages are grouped into chunks and summarized in parallel for efficiency.
     /// </summary>
@@ -2100,98 +2244,21 @@ public class Conversation
         int maxSummaryTokens = 1000,
         CancellationToken token = default)
     {
-        if (messages.Count <= preserveRecentCount + (preserveSystemMessages ? 1 : 0))
+        return await CompressMessages(new ConversationCompressionOptions
         {
-            return 0; // Not enough messages to compress
-        }
-
-        summaryModel ??= Model;
-        summaryPrompt ??= "Summarize this chat conversation concisely, preserving key information:";
-
-        // Separate system messages if preserving them
-        List<ChatMessage> systemMessages = [];
-        List<ChatMessage> messagesToCompress = [];
-        List<ChatMessage> recentMessages = [];
-
-        // Collect messages into categories
-        for (int i = 0; i < messages.Count; i++)
-        {
-            ChatMessage msg = messages[i];
-
-            if (preserveSystemMessages && msg.Role == ChatMessageRoles.System)
-            {
-                systemMessages.Add(msg);
-            }
-            else if (i >= messages.Count - preserveRecentCount)
-            {
-                recentMessages.Add(msg);
-            }
-            else if (!preserveSystemMessages || msg.Role != ChatMessageRoles.System)
-            {
-                messagesToCompress.Add(msg);
-            }
-        }
-
-        if (messagesToCompress.Count == 0)
-        {
-            return 0; // Nothing to compress
-        }
-
-        // Group messages into chunks based on character count
-        List<List<ChatMessage>> chunks = [];
-        List<ChatMessage> currentChunk = [];
-        int currentChunkLength = 0;
-
-        foreach (ChatMessage msg in messagesToCompress)
-        {
-            int msgLength = GetMessageLength(msg);
-
-            if (currentChunkLength + msgLength > chunkSize && currentChunk.Count > 0)
-            {
-                chunks.Add(currentChunk);
-                currentChunk = [];
-                currentChunkLength = 0;
-            }
-
-            currentChunk.Add(msg);
-            currentChunkLength += msgLength;
-        }
-
-        if (currentChunk.Count > 0)
-        {
-            chunks.Add(currentChunk);
-        }
-
-        // Process chunks in parallel to get summaries
-        Task<string>[] summaryTasks = chunks.Select(chunk => SummarizeChunk(chunk, summaryModel, summaryPrompt, maxSummaryTokens, token)).ToArray();
-        string[] summaries = await Task.WhenAll(summaryTasks);
-
-        // Rebuild the message list
-        int originalCount = messages.Count;
-        messages.Clear();
-
-        // Add system messages first
-        messages.AddRange(systemMessages);
-
-        // Add summaries as assistant messages
-        foreach (string summary in summaries)
-        {
-            if (!summary.IsNullOrWhiteSpace())
-            {
-                messages.Add(new ChatMessage(ChatMessageRoles.Assistant, $"[Previous conversation summary]: {summary}"));
-            }
-        }
-
-        // Add recent messages
-        messages.AddRange(recentMessages);
-
-        return originalCount - messages.Count + summaries.Length; // Return compression ratio
+            ChunkSize = chunkSize,
+            PreserveRecentCount = preserveRecentCount,
+            PreserveSystemMessages = preserveSystemMessages,
+            SummaryModel = summaryModel ?? Model,
+            SummaryPrompt = summaryPrompt ?? "Summarize this chat conversation concisely, preserving key information:",
+            MaxSummaryTokens = maxSummaryTokens
+        }, token);
     }
 
     /// <summary>
     ///     Gets the approximate character length of a message, including all parts.
     /// </summary>
-    private static int GetMessageLength(ChatMessage message)
+    internal static int GetMessageLength(ChatMessage message)
     {
         int length = 0;
 
@@ -2227,56 +2294,9 @@ public class Conversation
     }
 
     /// <summary>
-    ///     Summarizes a chunk of messages using the AI.
-    /// </summary>
-    private async Task<string> SummarizeChunk(List<ChatMessage> chunk, ChatModel model, string summaryPrompt, int maxSummaryTokens, CancellationToken token)
-    {
-        // Build the text representation of the chunk
-        StringBuilder chunkText = new StringBuilder();
-
-        foreach (ChatMessage msg in chunk)
-        {
-            string roleStr = msg.Role switch
-            {
-                ChatMessageRoles.System => "System",
-                ChatMessageRoles.User => "User",
-                ChatMessageRoles.Assistant => "Assistant",
-                ChatMessageRoles.Tool => "Tool",
-                _ => "Unknown"
-            };
-
-            chunkText.AppendLine($"{roleStr}: {GetMessageContent(msg)}");
-        }
-
-        // Create a temporary chat request for summarization
-        ChatRequest summarizeRequest = new ChatRequest(null, RequestParameters)
-        {
-            Model = model,
-            Messages = [
-                new ChatMessage(ChatMessageRoles.System, summaryPrompt),
-                new ChatMessage(ChatMessageRoles.User, chunkText.ToString())
-            ],
-            MaxTokens = maxSummaryTokens, // Limit summary length
-            Temperature = 0.3, // Lower temperature for more consistent summaries
-            CancellationToken = token
-        };
-
-        try
-        {
-            ChatResult? result = await endpoint.CreateChatCompletion(summarizeRequest);
-            return result?.Choices?[0]?.Message?.Content ?? string.Empty;
-        }
-        catch (Exception)
-        {
-            // If summarization fails, return a simple concatenation
-            return $"[{chunk.Count} messages from this conversation]";
-        }
-    }
-
-    /// <summary>
     ///     Gets the text content of a message, combining Content and Parts.
     /// </summary>
-    private static string GetMessageContent(ChatMessage message)
+    internal static string GetMessageContent(ChatMessage message)
     {
         if (message.Content != null)
         {
