@@ -29,15 +29,21 @@ const __dirname = dirname(__filename)
  *   'getting-started' -> 'Getting Started'
  *   'chat-basics' -> 'Chat Basics'
  *   'models' -> 'Models'
- *   '1. Introduction' -> '1. Introduction'
+ *   '1. Introduction' -> 'Introduction' (numeric prefix removed for display)
  */
 function toTitle(str) {
   // Check if the string starts with a number followed by a period (e.g., "1. ")
   const hasNumberPrefix = /^\d+\.\s/.test(str)
   
   if (hasNumberPrefix) {
-    // Keep the number prefix as-is, only capitalize the rest
-    return str
+    // Remove the number prefix for display, but keep the rest
+    const withoutPrefix = str.replace(/^\d+\.\s/, '')
+    
+    // Apply title case conversion to the remaining text
+    return withoutPrefix
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ')
   }
   
   // Otherwise, apply the usual title case conversion
