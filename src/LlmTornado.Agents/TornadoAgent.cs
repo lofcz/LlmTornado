@@ -3,8 +3,6 @@ using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Common;
 using LlmTornado.Responses;
-using ModelContextProtocol.Client;
-using LlmTornado.Mcp;
 using System;
 
 namespace LlmTornado.Agents;

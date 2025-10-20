@@ -11,7 +11,7 @@ using LlmTornado.Code;
 using LlmTornado.Mcp;
 using LlmTornado.Responses;
 using LlmTornado.Skills;
-using ModelContextProtocol.Server;
+using Microsoft.AspNetCore.Hosting.Server;
 using Newtonsoft.Json.Converters;
 using System.ComponentModel;
 using System.Security.Cryptography.X509Certificates;
@@ -34,6 +34,7 @@ public class AgentsDemo : DemoBase
     }
 
     [TornadoTest]
+    [Flaky("manual interaction")]
     public static async Task BasicAgentChatBotStreaming()
     {
         TornadoAgent agent = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41Mini, instructions: "You are a useful assistant.", streaming:true);
@@ -54,6 +55,7 @@ public class AgentsDemo : DemoBase
     }
 
     [TornadoTest]
+    [Flaky("manual interaction")]
     public static async Task BasicAgentChatBot()
     {
 
@@ -318,6 +320,7 @@ public class AgentsDemo : DemoBase
     }
 
     [TornadoTest]
+    [Flaky]
     public static async Task RunMCPPuppeteerToolExample()
     {
         var mcpServer = new MCPServer("puppeteer",  command: "docker", arguments: new[] {
@@ -345,13 +348,14 @@ public class AgentsDemo : DemoBase
     }
 
     [TornadoTest]
+    [Flaky("REQUIRES GITHUB_API_KEY SETUP IN SYSTEM ENV. VAR")]
     public static async Task MCPRemoteToolExample()
     {
         string serverPath = "https://api.githubcopilot.com/mcp";
 
         var mcpServer = new MCPServer("github", serverPath, additionalConnectionHeaders: new Dictionary<string, string>
         {
-            { "Authorization", "Bearer ghp_your_key_here" }
+            { "Authorization", $"Bearer {Environment.GetEnvironmentVariable("GITHUB_API_KEY")}" }
         });
 
         await mcpServer.InitializeAsync();
@@ -374,9 +378,13 @@ public class AgentsDemo : DemoBase
     /// </summary>
     /// <returns></returns>
     [TornadoTest]
+    [Flaky("Requires Gmail OAuth setup")]
     public static async Task MCPGmailToolkitExample()
     {
-        MCPServer gmailServer = MCPToolkits.GmailToolkit();
+        MCPServer gmailServer = new MCPServer("gmail", command: "npx", arguments: new[] {
+            "@gongrzhe/server-gmail-autoauth-mcp"
+        },
+            allowedTools: ["get_emails"]);
 
         await gmailServer.InitializeAsync();
 
@@ -396,6 +404,7 @@ public class AgentsDemo : DemoBase
     
 
     [TornadoTest]
+    [Flaky("Requires A2A Tornado setup")]
     public static async Task A2AAgentAsTool()
     {
         A2ATornadoConnector a2ATornadoConnector = new A2ATornadoConnector(["http://localhost:5125"]);
@@ -454,6 +463,7 @@ public class AgentsDemo : DemoBase
 
 
     [TornadoTest]
+    [Flaky("manual interaction")]
     public static async Task AgentToolApprovalDemo()
     {
         TornadoAgent agent = new TornadoAgent(

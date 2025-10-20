@@ -2,7 +2,6 @@
 using LlmTornado.Agents.DataModels;
 using LlmTornado.Agents.Utility;
 using LlmTornado.Chat;
-using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;

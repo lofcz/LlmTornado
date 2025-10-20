@@ -128,7 +128,7 @@ public class MCPServer
                     {
                         Name = this.ServerLabel,
                         Endpoint = new Uri(this.ServerUrl),
-                        AdditionalHeaders = AdditionalConnectionHeaders
+                        AdditionalHeaders = AdditionalConnectionHeaders,
                     });
                 }
 
