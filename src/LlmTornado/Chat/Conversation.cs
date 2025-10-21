@@ -2089,59 +2089,13 @@ public class Conversation
     /// </summary>
     public IConversationSummarizer? Summarizer { get; set; }
 
-    /// <summary>
-    ///     Adds a message to the conversation with automatic compression when needed.
-    ///     This is a smart insert that triggers compression based on the configured strategy.
-    /// </summary>
-    /// <param name="message">Message to add</param>
-    /// <param name="token">Cancellation token</param>
-    /// <returns>True if compression occurred, false otherwise</returns>
-    public async Task<bool> AddMessageSmart(ChatMessage message, CancellationToken token = default)
-    {
-        AppendMessage(message);
-        return await CheckAndCompress(token);
-    }
-    
-    /// <summary>
-    ///     Adds a user message to the conversation with automatic compression when needed.
-    /// </summary>
-    /// <param name="content">Message content</param>
-    /// <param name="token">Cancellation token</param>
-    /// <returns>True if compression occurred, false otherwise</returns>
-    public async Task<bool> AddUserMessageSmart(string content, CancellationToken token = default)
-    {
-        return await AddMessageSmart(new ChatMessage(ChatMessageRoles.User, content), token);
-    }
-    
-    /// <summary>
-    ///     Adds an assistant message to the conversation with automatic compression when needed.
-    /// </summary>
-    /// <param name="content">Message content</param>
-    /// <param name="token">Cancellation token</param>
-    /// <returns>True if compression occurred, false otherwise</returns>
-    public async Task<bool> AddAssistantMessageSmart(string content, CancellationToken token = default)
-    {
-        return await AddMessageSmart(new ChatMessage(ChatMessageRoles.Assistant, content), token);
-    }
-    
-    /// <summary>
-    ///     Gets a response and automatically compresses if needed before the next message.
-    /// </summary>
-    /// <param name="token">Cancellation token</param>
-    /// <returns>The response from the API</returns>
-    public async Task<ChatRichResponse> GetResponseRichSmart(CancellationToken token = default)
-    {
-        ChatRichResponse response = await GetResponseRich(token);
-        await CheckAndCompress(token);
-        return response;
-    }
     
     /// <summary>
     ///     Checks if compression is needed based on the strategy and performs it if necessary.
     /// </summary>
     /// <param name="token">Cancellation token</param>
     /// <returns>True if compression occurred, false otherwise</returns>
-    private async Task<bool> CheckAndCompress(CancellationToken token = default)
+    public async Task<bool> CheckAndCompress(CancellationToken token = default)
     {
         if (CompressionStrategy == null)
         {
