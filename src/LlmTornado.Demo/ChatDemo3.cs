@@ -646,7 +646,6 @@ public partial class ChatDemo : DemoBase
             messageThreshold: 15,
             options: new ConversationCompressionOptions
             {
-                PreserveRecentCount = 6,
                 ChunkSize = 8000,
                 SummaryModel = ChatModel.OpenAi.Gpt35.Turbo
             }
@@ -723,7 +722,6 @@ public partial class ChatDemo : DemoBase
         int compressed = await conversation.CompressMessages(new ConversationCompressionOptions
         {
             ChunkSize = 6000,
-            PreserveRecentCount = 4,
             PreserveSystemMessages = true,
             SummaryModel = ChatModel.OpenAi.Gpt35.Turbo,
             SummaryPrompt = "Create a structured technical summary with key topics and decisions:"
@@ -763,7 +761,6 @@ public partial class ChatDemo : DemoBase
             characterThreshold: 30000,
             options: new ConversationCompressionOptions
             {
-                PreserveRecentCount = 5,
                 SummaryModel = ChatModel.OpenAi.Gpt35.Turbo
             }
         );
@@ -826,7 +823,6 @@ public partial class ChatDemo : DemoBase
             interval: 8,
             options: new ConversationCompressionOptions
             {
-                PreserveRecentCount = 4,
                 SummaryModel = ChatModel.OpenAi.Gpt35.Turbo
             }
         );
@@ -874,7 +870,6 @@ public partial class ChatDemo : DemoBase
             messageThreshold: 12,
             options: new ConversationCompressionOptions
             {
-                PreserveRecentCount = 6,
                 SummaryModel = ChatModel.OpenAi.Gpt35.Turbo
             }
         );
@@ -934,7 +929,6 @@ public partial class ChatDemo : DemoBase
             characterThreshold: 25000,
             options: new ConversationCompressionOptions
             {
-                PreserveRecentCount = 5,
                 ChunkSize = 10000,
                 SummaryModel = ChatModel.OpenAi.Gpt35.Turbo
             }
