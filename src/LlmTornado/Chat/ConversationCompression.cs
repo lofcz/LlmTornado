@@ -20,14 +20,14 @@ public class ConversationCompressionOptions
     public int ChunkSize { get; set; } = 10000;
 
     /// <summary>
-    ///     Number of recent messages to preserve without summarization (default: 5).
-    /// </summary>
-    public int PreserveRecentCount { get; set; } = 5;
-
-    /// <summary>
     ///     Whether to preserve system messages (default: true).
     /// </summary>
     public bool PreserveSystemMessages { get; set; } = true;
+
+    /// <summary>
+    ///     Whether to Compress Tool call messages (default: true).
+    /// </summary>
+    public bool CompressToolCallMessages { get; set; } = true;
 
     /// <summary>
     ///     The model to use for summarization.
@@ -78,6 +78,66 @@ public interface IConversationSummarizer
     /// <param name="token">Cancellation token</param>
     /// <returns>List of summary messages</returns>
     Task<List<ChatMessage>> SummarizeMessages(List<ChatMessage> messages, ConversationCompressionOptions options, CancellationToken token = default);
+}
+
+/// <summary>
+///     Adaptive compression strategy that considers multiple factors.
+/// </summary>
+public class TornadoCompressionStrategy : IConversationCompressionStrategy
+{
+    private readonly int messageThreshold;
+    private readonly int characterThreshold;
+    private readonly ConversationCompressionOptions options;
+
+    /// <summary>
+    ///     Creates a new adaptive compression strategy.
+    /// </summary>
+    /// <param name="messageThreshold">Message count threshold (default: 20)</param>
+    /// <param name="characterThreshold">Character count threshold (default: 50000)</param>
+    /// <param name="options">Optional custom compression options</param>
+    public TornadoCompressionStrategy(
+        int messageThreshold = 20,
+        int characterThreshold = 50000,
+        ConversationCompressionOptions? options = null)
+    {
+        this.messageThreshold = messageThreshold;
+        this.characterThreshold = characterThreshold;
+        this.options = options ?? new ConversationCompressionOptions();
+    }
+
+    /// <summary>
+    /// Determines whether the specified conversation should be compressed based on message count and character length.
+    /// </summary>
+    /// <remarks>The method evaluates the conversation against predefined thresholds for the number of
+    /// messages and the total character count. Compression is recommended if either threshold is exceeded.</remarks>
+    /// <param name="conversation">The conversation to evaluate for compression.</param>
+    /// <returns><see langword="true"/> if the conversation should be compressed; otherwise, <see langword="false"/>.</returns>
+    public bool ShouldCompress(Conversation conversation)
+    {
+        int messageCount = conversation.Messages.Count;
+        int totalChars = conversation.Messages.Sum(m => Conversation.GetMessageLength(m));
+
+        // Compress if either threshold is exceeded
+        return messageCount > messageThreshold || totalChars > characterThreshold;
+    }
+
+
+    public ConversationCompressionOptions GetCompressionOptions(Conversation conversation)
+    {
+        // Adapt compression options based on conversation size
+        ConversationCompressionOptions adaptedOptions = new ConversationCompressionOptions
+        {
+            ChunkSize = options.ChunkSize,
+            PreserveSystemMessages = options.PreserveSystemMessages,
+            SummaryModel = options.SummaryModel,
+            SummaryPrompt = options.SummaryPrompt,
+            MaxSummaryTokens = options.MaxSummaryTokens
+        };
+
+        int totalChars = conversation.Messages.Sum(m => Conversation.GetMessageLength(m));
+
+        return adaptedOptions;
+    }
 }
 
 /// <summary>
@@ -165,7 +225,7 @@ public class PeriodicCompressionStrategy : IConversationCompressionStrategy
     public bool ShouldCompress(Conversation conversation)
     {
         messagesSinceLastCompression++;
-        
+
         if (messagesSinceLastCompression >= interval)
         {
             messagesSinceLastCompression = 0;
@@ -221,7 +281,6 @@ public class AdaptiveCompressionStrategy : IConversationCompressionStrategy
         ConversationCompressionOptions adaptedOptions = new ConversationCompressionOptions
         {
             ChunkSize = options.ChunkSize,
-            PreserveRecentCount = options.PreserveRecentCount,
             PreserveSystemMessages = options.PreserveSystemMessages,
             SummaryModel = options.SummaryModel,
             SummaryPrompt = options.SummaryPrompt,
@@ -229,12 +288,6 @@ public class AdaptiveCompressionStrategy : IConversationCompressionStrategy
         };
 
         int totalChars = conversation.Messages.Sum(m => Conversation.GetMessageLength(m));
-
-        // For very long conversations, preserve more recent messages
-        if (totalChars > 100000)
-        {
-            adaptedOptions.PreserveRecentCount = Math.Max(10, options.PreserveRecentCount);
-        }
 
         return adaptedOptions;
     }
@@ -292,7 +345,7 @@ public class DefaultConversationSummarizer : IConversationSummarizer
 
         // Convert summaries to messages
         List<ChatMessage> summaryMessages = [];
-        
+
         foreach (string summary in summaries)
         {
             if (!summary.IsNullOrWhiteSpace())
