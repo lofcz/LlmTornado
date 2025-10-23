@@ -77,7 +77,7 @@ public interface IConversationSummarizer
     /// <param name="options">Compression options</param>
     /// <param name="token">Cancellation token</param>
     /// <returns>List of summary messages</returns>
-    Task<List<ChatMessage>> SummarizeMessages(List<ChatMessage> messages, ConversationCompressionOptions options, CancellationToken token = default);
+    Task<List<ChatMessage>> SummarizeMessages(Conversation conversation, ConversationCompressionOptions options, CancellationToken token = default);
 }
 
 /// <summary>
@@ -312,14 +312,14 @@ public class DefaultConversationSummarizer : IConversationSummarizer
         this.requestParameters = requestParameters;
     }
 
-    public async Task<List<ChatMessage>> SummarizeMessages(List<ChatMessage> messages, ConversationCompressionOptions options, CancellationToken token = default)
+    public async Task<List<ChatMessage>> SummarizeMessages(Conversation conversation,  ConversationCompressionOptions options, CancellationToken token = default)
     {
         // Group messages into chunks based on character count
         List<List<ChatMessage>> chunks = [];
         List<ChatMessage> currentChunk = [];
         int currentChunkLength = 0;
 
-        foreach (ChatMessage msg in messages)
+        foreach (ChatMessage msg in conversation.Messages)
         {
             int msgLength = Conversation.GetMessageLength(msg);
 
@@ -399,5 +399,173 @@ public class DefaultConversationSummarizer : IConversationSummarizer
             // If summarization fails, return a simple placeholder
             return $"[{chunk.Count} messages from this conversation]";
         }
+    }
+}
+
+/// <summary>
+///     Default implementation of conversation summarizer using chunked parallel summarization.
+/// </summary>
+public class TornadoConversationSummarizer : IConversationSummarizer
+{
+    public async Task<List<ChatMessage>> SummarizeMessages(Conversation conversation, ConversationCompressionOptions options, CancellationToken token = default)
+    {
+        // Separate system messages if preserving them
+        ConversationContent content = ConversationContent.SortContent(conversation, options);
+        // Group messages into chunks based on character count
+        List<List<ChatMessage>> chunks = [];
+        List<ChatMessage> currentChunk = [];
+        int currentChunkLength = 0;
+
+        foreach (ChatMessage msg in content.MessagesToCompress)
+        {
+            int msgLength = Conversation.GetMessageLength(msg);
+
+            if (currentChunkLength + msgLength > options.ChunkSize && currentChunk.Count > 0)
+            {
+                chunks.Add(currentChunk);
+                currentChunk = [];
+                currentChunkLength = 0;
+            }
+
+            currentChunk.Add(msg);
+            currentChunkLength += msgLength;
+        }
+
+        if (currentChunk.Count > 0)
+        {
+            chunks.Add(currentChunk);
+        }
+
+        // Process chunks in parallel to get summaries
+        Task<string>[] summaryTasks = chunks.Select(chunk => SummarizeChunk(conversation, chunk, options, token)).ToArray();
+        string[] summaries = await Task.WhenAll(summaryTasks);
+
+        // Convert summaries to messages
+        List<ChatMessage> summaryMessages = [];
+
+        foreach (string summary in summaries)
+        {
+            if (!summary.IsNullOrWhiteSpace())
+            {
+                summaryMessages.Add(new ChatMessage(ChatMessageRoles.Assistant, $"[Previous conversation summary]: {summary}"));
+            }
+        }
+
+        return summaryMessages;
+    }
+
+    private async Task<string> SummarizeChunk(Conversation conversation, List<ChatMessage> chunk, ConversationCompressionOptions options, CancellationToken token)
+    {
+        // Build the text representation of the chunk
+        StringBuilder chunkText = new StringBuilder();
+
+        foreach (ChatMessage msg in chunk)
+        {
+            string roleStr = msg.Role switch
+            {
+                ChatMessageRoles.System => "System",
+                ChatMessageRoles.User => "User",
+                ChatMessageRoles.Assistant => "Assistant",
+                ChatMessageRoles.Tool => "Tool",
+                _ => "Unknown"
+            };
+
+            chunkText.AppendLine($"{roleStr}: {Conversation.GetMessageContent(msg)}");
+        }
+
+        try
+        {
+            conversation.RequestParameters.Messages =  [
+                new ChatMessage(ChatMessageRoles.System, options.SummaryPrompt),
+                new ChatMessage(ChatMessageRoles.User, chunkText.ToString())
+            ];
+            conversation.RequestParameters.Model = options.SummaryModel;
+            conversation.RequestParameters.MaxTokens = options.MaxSummaryTokens;
+            conversation.RequestParameters.Temperature = 0.3;
+            conversation.RequestParameters.CancellationToken = token;
+            ChatResult? result = (await conversation.GetResponseRichSafe())?.Data?.Result;
+            return result?.Choices?[0]?.Message?.Content ?? string.Empty;
+        }
+        catch (Exception)
+        {
+            // If summarization fails, return a simple placeholder
+            return $"[{chunk.Count} messages from this conversation]";
+        }
+    }
+}
+
+public class ConversationContent
+{
+    public List<ChatMessage> SystemMessages { get; set; } = new List<ChatMessage>();
+    public List<ChatMessage> MessagesToCompress { get; set; } = new List<ChatMessage>();
+
+    /// <summary>
+    ///  Get the content of the conversation based on the compression options
+    /// </summary>
+    /// <param name="conversation"></param>
+    /// <param name="options"></param>
+    /// <returns></returns>
+    public static ConversationContent SortContent(Conversation conversation, ConversationCompressionOptions options)
+    {
+        ConversationContent content = new ConversationContent();
+        ChatMessage msg;
+        // Collect messages into categories
+        for (int i = 0; i < conversation.Messages.Count; i++)
+        {
+            msg = conversation.Messages[i];
+
+            if (options.PreserveSystemMessages && msg.Role == ChatMessageRoles.System)
+            {
+                content.SystemMessages.Add(msg);
+            }
+            else if (msg.Role == ChatMessageRoles.User)
+            {
+                content.MessagesToCompress.Add(msg);
+            }
+            else if (msg.Role == ChatMessageRoles.Tool && options.CompressToolCallMessages) //Keep tool messages only if compressing them
+            {
+                content.MessagesToCompress.Add(msg);
+            }
+            else if (msg.Role == ChatMessageRoles.Assistant)
+            {
+                if (msg.FunctionCall != null)
+                {
+                    if (options.CompressToolCallMessages)
+                    {
+                        content.MessagesToCompress.Add(msg);
+                    }
+                }
+                else
+                {
+                    content.MessagesToCompress.Add(msg);
+                }
+            }
+        }
+
+        return content;
+    }
+
+    /// <summary>
+    ///  Get the content of the conversation based on the compression options
+    /// </summary>
+    /// <param name="conversation"></param>
+    /// <param name="options"></param>
+    /// <returns></returns>
+    public static List<ChatMessage> GetSystemMessages(Conversation conversation, ConversationCompressionOptions options)
+    {
+        ConversationContent content = new ConversationContent();
+        ChatMessage msg;
+        // Collect messages into categories
+        for (int i = 0; i < conversation.Messages.Count; i++)
+        {
+            msg = conversation.Messages[i];
+
+            if (options.PreserveSystemMessages && msg.Role == ChatMessageRoles.System)
+            {
+                content.SystemMessages.Add(msg);
+            }
+        }
+
+        return content.SystemMessages;
     }
 }
