@@ -21,6 +21,18 @@ This package implements the `IVectorDatabase` interface using Facebook's FAISS (
 dotnet add package LlmTornado.VectorDatabases.Faiss
 ```
 
+### Native Library Requirements
+
+FaissNet requires native FAISS libraries to be available at runtime. The FaissNet package includes native binaries for Windows x64. For other platforms (Linux, macOS), you may need to:
+
+1. Install FAISS native libraries separately
+2. Ensure the native libraries are in your system's library path
+3. Or build the native wrapper from source
+
+For more information about native library setup, see the [FaissNet GitHub repository](https://github.com/fwaris/FaissNet).
+
+**Note:** If you encounter `Unable to load shared library 'FaissNetNative'` errors, this indicates the native libraries are not available on your system. This is expected behavior and not a code issue.
+
 ## Usage
 
 ### Basic Setup
@@ -118,9 +130,11 @@ The FAISS integration consists of several key components:
 
 ## Limitations
 
+- **Platform Support**: FaissNet currently supports Windows x64 out of the box. Linux and macOS require manual installation of FAISS native libraries.
 - FAISS IndexIDMap doesn't support in-place vector updates. To update embeddings, use `UpsertDocuments` which will delete and re-add the document.
 - Delete operations require rebuilding the index
 - Currently uses IndexFlatL2 (exact search). Future versions may support approximate search indexes (IVF, HNSW, etc.)
+- **Runtime Dependencies**: Requires native FAISS libraries to be available (included for Windows x64)
 
 ## Dependencies
 
