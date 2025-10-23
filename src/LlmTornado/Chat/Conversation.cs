@@ -1244,7 +1244,7 @@ public class Conversation
         return new RestDataOrException<ChatChoice>(new Exception("No choices returned by the service."), res);
     }
 
-    public async Task<ChatRichResponse> GetResponseRichContext(Func<List<FunctionCall>, ValueTask>? fnHandler, ToolCallsHandler? toolCallsHandler, CancellationToken token = default)
+    public async Task<ChatRichResponse> GetResponseRichContext(Func<List<FunctionCall>, ValueTask>? fnHandler = null, ToolCallsHandler? toolCallsHandler = null, CancellationToken token = default)
     {
         if(ContextManager != null)
         {
