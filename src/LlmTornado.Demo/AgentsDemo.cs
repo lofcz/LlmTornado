@@ -302,7 +302,7 @@ public class AgentsDemo : DemoBase
     {
         string serverPath = Path.GetFullPath(Path.Join("..", "..", "..", "..", "LlmTornado.Mcp.Sample.Server"));
 
-        var mcpServer = new MCPServer("weather-tool", command: "dotnet", arguments: new[] { "run", "--project", serverPath });
+        MCPServer mcpServer = new MCPServer("weather-tool", command: "dotnet", arguments: new[] { "run", "--project", serverPath });
 
         await mcpServer.InitializeAsync();
 
@@ -323,7 +323,7 @@ public class AgentsDemo : DemoBase
     [Flaky]
     public static async Task RunMCPPuppeteerToolExample()
     {
-        var mcpServer = new MCPServer("puppeteer",  command: "docker", arguments: new[] {
+        MCPServer mcpServer = new MCPServer("puppeteer",  command: "docker", arguments: new[] {
             "run",
             "-i",
             "--rm",
@@ -353,7 +353,7 @@ public class AgentsDemo : DemoBase
     {
         string serverPath = "https://api.githubcopilot.com/mcp";
 
-        var mcpServer = new MCPServer("github", serverPath, additionalConnectionHeaders: new Dictionary<string, string>
+        MCPServer mcpServer = new MCPServer("github", serverPath, additionalConnectionHeaders: new Dictionary<string, string>
         {
             { "Authorization", $"Bearer {Environment.GetEnvironmentVariable("GITHUB_API_KEY")}" }
         });
@@ -525,7 +525,7 @@ public class AgentsDemo : DemoBase
             Tools = [new ResponseLocalShellTool()]
         };
 
-        var convo = await agent.RunAsync("what files are in current directory?",streaming:false, onAgentRunnerEvent: (evt) => {
+        Conversation convo = await agent.RunAsync("what files are in current directory?",streaming:false, onAgentRunnerEvent: (evt) => {
             if (evt.EventType == AgentRunnerEventTypes.Streaming && evt is AgentRunnerStreamingEvent streamingEvent)
             {
                 if (streamingEvent.ModelStreamingEvent is ModelStreamingOutputTextDeltaEvent deltaTextEvent)
@@ -596,7 +596,7 @@ public class AgentsDemo : DemoBase
         // run once
         //Skill skill = await agent.UploadSkillFolder(api, "skill-creator", "Static/Files/Skills/skill-creator");
 
-        var skills = new List<AnthropicSkill>
+        List<AnthropicSkill> skills = new List<AnthropicSkill>
                         {
                             //new AnthropicSkill("skill_016mAwJ3Z9CjdnNHXsftbypW", "latest"), //llmtornado-tutorial-generator
                             //new AnthropicSkill("skill_01FBEnqs5m8r4pYEugE9kaht", "latest"), //codebase-context-extractor

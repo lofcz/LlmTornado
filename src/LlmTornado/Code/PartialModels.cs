@@ -1520,7 +1520,12 @@ public enum CapabilityEndpoints
     /// <summary>
     /// Skills endpoint.
     /// </summary>
-    Skills
+    Skills,
+    
+    /// <summary>
+    /// Videos endpoint.
+    /// </summary>
+    Videos
 }
 
 /// <summary>

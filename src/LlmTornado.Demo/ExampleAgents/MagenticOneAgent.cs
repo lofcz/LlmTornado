@@ -219,16 +219,16 @@ public static class MagenticOneTools
             if (!Directory.Exists(directoryPath))
                 return $"Directory not found: {directoryPath}";
             
-            var files = Directory.GetFiles(directoryPath);
-            var directories = Directory.GetDirectories(directoryPath);
+            string[] files = Directory.GetFiles(directoryPath);
+            string[] directories = Directory.GetDirectories(directoryPath);
             
             StringBuilder result = new StringBuilder();
             result.AppendLine($"Contents of {directoryPath}:");
             result.AppendLine("Directories:");
-            foreach (var dir in directories)
+            foreach (string dir in directories)
                 result.AppendLine($"  {Path.GetFileName(dir)}/");
             result.AppendLine("Files:");
-            foreach (var file in files)
+            foreach (string file in files)
                 result.AppendLine($"  {Path.GetFileName(file)}");
             
             return result.ToString();
@@ -270,8 +270,8 @@ public static class MagenticOneTools
             }
             else if (command == "ls" || command == "dir")
             {
-                var files = Directory.GetFiles(Directory.GetCurrentDirectory());
-                var dirs = Directory.GetDirectories(Directory.GetCurrentDirectory());
+                string[] files = Directory.GetFiles(Directory.GetCurrentDirectory());
+                string[] dirs = Directory.GetDirectories(Directory.GetCurrentDirectory());
                 return string.Join("\n", dirs.Concat(files).Select(Path.GetFileName));
             }
             else
@@ -406,7 +406,7 @@ public class MagenticOneConfiguration : OrchestrationRuntimeConfiguration
 
     private bool RequiresSpecializedAgent(TaskPlan plan)
     {
-        var task = plan.OriginalTask.ToLower();
+        string task = plan.OriginalTask.ToLower();
         return plan.RequiredAgents.Any(agent => agent != "Orchestrator") ||
                task.Contains("search") || task.Contains("web") || task.Contains("research") ||
                task.Contains("file") || task.Contains("document") || task.Contains("write") ||
@@ -634,10 +634,10 @@ public class OrchestratorRunnable : OrchestrationRunnable<AgentExecutionResults,
         process.RegisterAgent(agent: Agent);
 
         string taskDescription = process.Input.OriginalTask;
-        var actionsPerformed = process.Input.ActionsPerformed.ToList();
+        List<string> actionsPerformed = process.Input.ActionsPerformed.ToList();
 
         // Combine all results from specialized agents
-        var combinedResults = new List<string>();
+        List<string> combinedResults = new List<string>();
         
         if (!string.IsNullOrWhiteSpace(process.Input.WebSearchResults))
         {

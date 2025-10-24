@@ -46,9 +46,9 @@ public class VectorDatabasesDemo
         await chromaDB.AddDocumentsAsync([vectorDocument]);
 
         //Query DB for relevant functions
-        var queryData = await chromaDB.QueryByEmbeddingAsync(dataQuery, topK: 5);
+        VectorDocument[] queryData = await chromaDB.QueryByEmbeddingAsync(dataQuery, topK: 5);
 
-        foreach (var item in queryData)
+        foreach (VectorDocument item in queryData)
         {
             Console.WriteLine($"Function Name: {item.Metadata?["FunctionName"]} \n Description: {item.Content}\n\n");
         }
@@ -64,13 +64,13 @@ public class VectorDatabasesDemo
         }
         public async Task<float[]> Invoke(string text)
         {
-            var embResult = await _tornadoApi.Embeddings.CreateEmbedding(_embeddingModel, text);
+            EmbeddingResult? embResult = await _tornadoApi.Embeddings.CreateEmbedding(_embeddingModel, text);
             return embResult?.Data.FirstOrDefault()?.Embedding ?? Array.Empty<float>();
         }
 
         public async Task<float[][]> Invoke(string[] contents)
         {
-            var embResult = await _tornadoApi.Embeddings.CreateEmbedding(_embeddingModel,contents);
+            EmbeddingResult? embResult = await _tornadoApi.Embeddings.CreateEmbedding(_embeddingModel,contents);
             return embResult?.Data.Select(embedding => embedding.Embedding).ToArray() ?? new float[0][];
         }
     }
@@ -92,13 +92,13 @@ public class VectorDatabasesDemo
         await pcdRetriever.CreateParentChildCollection(text, 2000, 200, 1000, 100, tornadoEmbeddingProvider);
 
         string query = "that a single man in possession of a good fortune";
-        var queryEmb = await tornadoEmbeddingProvider.Invoke(query);
+        float[] queryEmb = await tornadoEmbeddingProvider.Invoke(query);
 
-        var result = await pcdRetriever.SearchAsync(queryEmb);
+        IEnumerable<Document> result = await pcdRetriever.SearchAsync(queryEmb);
 
-        foreach(var doc in result)
+        foreach(Document doc in result)
         {
-            var vectorDoc = (VectorDocument)doc;
+            VectorDocument vectorDoc = (VectorDocument)doc;
             Console.WriteLine($"Content: {vectorDoc.Content}\n");
         }
     }
