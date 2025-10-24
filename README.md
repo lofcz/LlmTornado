@@ -19,8 +19,8 @@
   - **A2A**: Enable seamless collaboration between AI agents across different platforms with `LlmTornado.A2A`.
   - **Skills**: Dynamically load folders of instructions, scripts, and resources to improve performance on specialized tasks.
 - **Vector Databases**: Built-in connectors to [Chroma](https://www.trychroma.com) and [PgVector](https://github.com/pgvector/pgvector).
-- **Integrated**: Built-in support for [Microsoft.Extensions.AI](https://learn.microsoft.com/en-us/dotnet/ai/microsoft-extensions-ai) enables plugging Tornado in [Semantic Kernel](https://github.com/lofcz/LlmTornado/blob/master/src/LlmTornado.Demo/MicrosoftExtensionsAiDemo.cs) applications with `LlmTornado.Microsoft.Extensions.AI`.
-- **Enterprise Proven**: Preview any request before committing to it. [Open Telemetry](https://opentelemetry.io) support. Stable APIs.
+- **Integrated**: Interoperability with [Microsoft.Extensions.AI](https://learn.microsoft.com/en-us/dotnet/ai/microsoft-extensions-ai) enables plugging Tornado in [Semantic Kernel](https://github.com/lofcz/LlmTornado/blob/master/src/LlmTornado.Demo/MicrosoftExtensionsAiDemo.cs) applications with `LlmTornado.Microsoft.Extensions.AI`.
+- **Enterprise Proven**: [Preview any request](https://github.com/lofcz/LlmTornado/blob/2fd75e9cdf551724d59d91aebbcb74caea8ae7b2/src/LlmTornado.Demo/ChatDemo2.cs#L233-L256) before committing to it. [Open Telemetry](https://opentelemetry.io) support. Stable APIs.
 
 ## ⭐ You Can Easily:
 - [Chat with your documents](https://github.com/lofcz/LlmTornado/blob/61d2a4732c88c45d4a8c053204ecdef807c34652/LlmTornado.Demo/ChatDemo.cs#L722-L757)
