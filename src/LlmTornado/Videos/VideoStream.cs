@@ -51,8 +51,12 @@ public class VideoStream : IDisposable, IAsyncDisposable
         }
         
         // Save the stream to file
+        #if MODERN
         await using FileStream fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None);
-        
+        #else 
+        using FileStream fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None);
+        #endif
+
         // Reset stream position if seekable
         if (Stream.CanSeek)
         {
