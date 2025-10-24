@@ -3,7 +3,7 @@
   <PropertyGroup>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <TargetFrameworks>net8.0;net6.0</TargetFrameworks>
+    <TargetFrameworks>net8.0;</TargetFrameworks>
     <LangVersion>preview</LangVersion>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Title>LlmTornado.VectorDatabases.Faiss</Title>
@@ -13,7 +13,6 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <PackageReference Include="LlmTornado.VectorDatabases" Version="1.0.0" />
     <PackageReference Include="FaissNet" Version="1.1.0" />
   </ItemGroup>
 
@@ -31,6 +30,9 @@
     </PropertyGroup>
     <ItemGroup>
         <None Include="nuget_logo.jpg" Pack="true" PackagePath="\" />
+    </ItemGroup>
+    <ItemGroup>
+      <ProjectReference Include="..\LlmTornado.VectorDatabases\LlmTornado.VectorDatabases.csproj" />
     </ItemGroup>
 
   <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
