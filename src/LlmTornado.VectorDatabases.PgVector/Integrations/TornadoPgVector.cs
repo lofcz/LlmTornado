@@ -55,15 +55,15 @@ public class TornadoPgVector : IVectorDatabase
     {
         ThrowIfCollectionNotInitialized();
         
-        List<string> ids = new List<string>();
-        List<float[]> embeddings = new List<float[]>();
-        List<Dictionary<string, object>> metadatas = new List<Dictionary<string, object>>();
-        List<string> contents = new List<string>();
+        List<string> ids = [];
+        List<float[]> embeddings = [];
+        List<Dictionary<string, object>> metadatas = [];
+        List<string> contents = [];
 
-        foreach (var doc in documents)
+        foreach (VectorDocument doc in documents)
         {
             ids.Add(doc.Id);
-            embeddings.Add(doc.Embedding ?? Array.Empty<float>());
+            embeddings.Add(doc.Embedding ?? []);
             metadatas.Add(doc.Metadata ?? new Dictionary<string, object>());
             contents.Add(doc.Content ?? "");
         }
@@ -113,12 +113,12 @@ public class TornadoPgVector : IVectorDatabase
     public async Task<VectorDocument[]> GetDocumentsAsync(string[] ids)
     {
         ThrowIfCollectionNotInitialized();
-        var entries = await CollectionClient!.GetAsync(ids);
+        List<PgVectorEntry> entries = await CollectionClient!.GetAsync(ids);
         return entries.Select(e => new VectorDocument(
             e.Id, 
             e.Document ?? "", 
             e.Metadata, 
-            e.Embedding ?? Array.Empty<float>()
+            e.Embedding ?? []
         )).ToArray();
     }
 
@@ -134,16 +134,16 @@ public class TornadoPgVector : IVectorDatabase
         Dictionary<string, object>? whereDict = null;
         if (where != null)
         {
-            var tornadoPgWhere = new TornadoPgVectorWhere(where);
+            TornadoPgVectorWhere tornadoPgWhere = new TornadoPgVectorWhere(where);
             whereDict = tornadoPgWhere.ToWhere();
         }
 
-        var entries = await CollectionClient!.QueryAsync(embedding, topK, whereDict);
+        List<PgVectorEntry> entries = await CollectionClient!.QueryAsync(embedding, topK, whereDict);
 
-        List<VectorDocument> results = new List<VectorDocument>();
-        foreach (var entry in entries)
+        List<VectorDocument> results = [];
+        foreach (PgVectorEntry entry in entries)
         {
-            float[]? entryEmbedding = entry.Embedding ?? Array.Empty<float>();
+            float[]? entryEmbedding = entry.Embedding ?? [];
             results.Add(new VectorDocument(
                 entry.Id, 
                 entry.Document ?? "", 
@@ -166,7 +166,7 @@ public class TornadoPgVector : IVectorDatabase
         ThrowIfCollectionNotInitialized();
         await CollectionClient!.UpdateAsync(
             documents.Select(d => d.Id).ToList(),
-            embeddings: documents.Select(d => d.Embedding ?? Array.Empty<float>()).ToList(),
+            embeddings: documents.Select(d => d.Embedding ?? []).ToList(),
             metadatas: documents.Select(d => d.Metadata ?? new Dictionary<string, object>()).ToList(),
             documents: documents.Select(d => d.Content ?? "").ToList()
         );
@@ -182,7 +182,7 @@ public class TornadoPgVector : IVectorDatabase
         ThrowIfCollectionNotInitialized();
         await CollectionClient!.UpsertAsync(
             documents.Select(d => d.Id).ToList(),
-            embeddings: documents.Select(d => d.Embedding ?? Array.Empty<float>()).ToList(),
+            embeddings: documents.Select(d => d.Embedding ?? []).ToList(),
             metadatas: documents.Select(d => d.Metadata ?? new Dictionary<string, object>()).ToList(),
             documents: documents.Select(d => d.Content ?? "").ToList()
         );

@@ -21,33 +21,33 @@ public class PgVectorCollectionClient
 
     public async Task<PgVectorEntry?> GetAsync(string id)
     {
-        var entries = await GetAsync(new[] { id });
+        List<PgVectorEntry> entries = await GetAsync([id]);
         return entries.FirstOrDefault();
     }
 
     public async Task<List<PgVectorEntry>> GetAsync(string[] ids)
     {
-        using var connection = _client.CreateConnection();
+        await using NpgsqlConnection connection = _client.CreateConnection();
         await connection.OpenAsync();
 
-        var schema = _client.GetSchema();
-        var tableName = GetTableName();
-        var query = $@"
+        string schema = _client.GetSchema();
+        string tableName = GetTableName();
+        string query = $@"
             SELECT id, document, metadata
             FROM {schema}.{tableName} 
             WHERE id = ANY(@ids)";
 
-        using var cmd = new NpgsqlCommand(query, connection);
+        await using NpgsqlCommand cmd = new NpgsqlCommand(query, connection);
         cmd.Parameters.AddWithValue("ids", ids);
 
-        var entries = new List<PgVectorEntry>();
-        using var reader = await cmd.ExecuteReaderAsync();
+        List<PgVectorEntry> entries = [];
+        await using NpgsqlDataReader reader = await cmd.ExecuteReaderAsync();
         while (await reader.ReadAsync())
         {
-            var id = reader.GetString(0);
-            var document = reader.IsDBNull(1) ? null : reader.GetString(1);
-            var metadataJson = reader.IsDBNull(2) ? null : reader.GetString(2);
-            var metadata = string.IsNullOrEmpty(metadataJson) 
+            string id = reader.GetString(0);
+            string? document = reader.IsDBNull(1) ? null : reader.GetString(1);
+            string? metadataJson = reader.IsDBNull(2) ? null : reader.GetString(2);
+            Dictionary<string, object>? metadata = string.IsNullOrEmpty(metadataJson) 
                 ? null 
                 : JsonSerializer.Deserialize<Dictionary<string, object>>(metadataJson!);
             
@@ -66,13 +66,13 @@ public class PgVectorCollectionClient
 
     public async Task<List<PgVectorEntry>> QueryAsync(float[] queryEmbedding, int topK = 10, Dictionary<string, object>? whereMetadata = null)
     {
-        using var connection = _client.CreateConnection();
+        await using NpgsqlConnection connection = _client.CreateConnection();
         await connection.OpenAsync();
 
-        var schema = _client.GetSchema();
-        var tableName = GetTableName();
+        string schema = _client.GetSchema();
+        string tableName = GetTableName();
         
-        var queryBuilder = new StringBuilder();
+        StringBuilder queryBuilder = new StringBuilder();
         queryBuilder.Append($@"
             SELECT id, document, metadata, embedding, 
                    (embedding <=> @embedding::vector) as distance 
@@ -88,18 +88,18 @@ public class PgVectorCollectionClient
             ORDER BY embedding <=> @embedding::vector 
             LIMIT @limit");
 
-        using var cmd = new NpgsqlCommand(queryBuilder.ToString(), connection);
+        await using NpgsqlCommand cmd = new NpgsqlCommand(queryBuilder.ToString(), connection);
         cmd.Parameters.AddWithValue("embedding", $"[{string.Join(",", queryEmbedding)}]");
         cmd.Parameters.AddWithValue("limit", topK);
 
-        var entries = new List<PgVectorEntry>();
-        using var reader = await cmd.ExecuteReaderAsync();
+        List<PgVectorEntry> entries = [];
+        await using NpgsqlDataReader reader = await cmd.ExecuteReaderAsync();
         while (await reader.ReadAsync())
         {
-            var id = reader.GetString(0);
-            var document = reader.IsDBNull(1) ? null : reader.GetString(1);
-            var metadataJson = reader.IsDBNull(2) ? null : reader.GetString(2);
-            var metadata = string.IsNullOrEmpty(metadataJson) 
+            string id = reader.GetString(0);
+            string? document = reader.IsDBNull(1) ? null : reader.GetString(1);
+            string? metadataJson = reader.IsDBNull(2) ? null : reader.GetString(2);
+            Dictionary<string, object>? metadata = string.IsNullOrEmpty(metadataJson) 
                 ? null 
                 : JsonSerializer.Deserialize<Dictionary<string, object>>(metadataJson!);
 
@@ -110,7 +110,7 @@ public class PgVectorCollectionClient
             //    embedding = ParseVector(embeddingStr);
             //}
 
-            var distance = reader.GetFloat(4);
+            float distance = reader.GetFloat(4);
 
             entries.Add(new PgVectorEntry(id, document, metadata, embedding, distance));
         }
@@ -122,31 +122,31 @@ public class PgVectorCollectionClient
     {
         if (ids.Count == 0) return;
 
-        using var connection = _client.CreateConnection();
+        await using NpgsqlConnection connection = _client.CreateConnection();
         await connection.OpenAsync();
 
-        var schema = _client.GetSchema();
-        var tableName = GetTableName();
+        string schema = _client.GetSchema();
+        string tableName = GetTableName();
 
-        using var transaction = connection.BeginTransaction();
+        await using NpgsqlTransaction transaction = await connection.BeginTransactionAsync();
         try
         {
             for (int i = 0; i < ids.Count; i++)
             {
-                var query = $@"
+                string query = $@"
                     INSERT INTO {schema}.{tableName} (id, document, metadata, embedding)
                     VALUES (@id, @document, @metadata::jsonb, @embedding::vector)";
 
-                using var cmd = new NpgsqlCommand(query, connection, transaction);
+                await using NpgsqlCommand cmd = new NpgsqlCommand(query, connection, transaction);
                 cmd.Parameters.AddWithValue("id", ids[i]);
                 cmd.Parameters.AddWithValue("document", documents != null && i < documents.Count ? (object)documents[i] : DBNull.Value);
                 
-                var metadataJson = metadatas != null && i < metadatas.Count 
+                string metadataJson = metadatas != null && i < metadatas.Count 
                     ? JsonSerializer.Serialize(metadatas[i]) 
                     : "{}";
                 cmd.Parameters.AddWithValue("metadata", metadataJson);
                 
-                var embeddingStr = embeddings != null && i < embeddings.Count 
+                string? embeddingStr = embeddings != null && i < embeddings.Count 
                     ? $"[{string.Join(",", embeddings[i])}]" 
                     : null;
                 cmd.Parameters.AddWithValue("embedding", embeddingStr != null ? (object)embeddingStr : DBNull.Value);
@@ -154,11 +154,11 @@ public class PgVectorCollectionClient
                 await cmd.ExecuteNonQueryAsync();
             }
 
-            transaction.Commit();
+            await transaction.CommitAsync();
         }
         catch
         {
-            transaction.Rollback();
+            await transaction.RollbackAsync();
             throw;
         }
     }
@@ -167,19 +167,19 @@ public class PgVectorCollectionClient
     {
         if (ids.Count == 0) return;
 
-        using var connection = _client.CreateConnection();
+        await using NpgsqlConnection connection = _client.CreateConnection();
         await connection.OpenAsync();
 
-        var schema = _client.GetSchema();
-        var tableName = GetTableName();
+        string schema = _client.GetSchema();
+        string tableName = GetTableName();
 
-        using var transaction = connection.BeginTransaction();
+        await using NpgsqlTransaction transaction = await connection.BeginTransactionAsync();
         try
         {
             for (int i = 0; i < ids.Count; i++)
             {
-                var setParts = new List<string>();
-                var cmd = new NpgsqlCommand { Connection = connection, Transaction = transaction };
+                List<string> setParts = [];
+                NpgsqlCommand cmd = new NpgsqlCommand { Connection = connection, Transaction = transaction };
 
                 if (documents != null && i < documents.Count)
                 {
@@ -201,7 +201,7 @@ public class PgVectorCollectionClient
 
                 if (setParts.Count > 0)
                 {
-                    var query = $@"
+                    string query = $@"
                         UPDATE {schema}.{tableName} 
                         SET {string.Join(", ", setParts)}
                         WHERE id = @id";
@@ -215,11 +215,11 @@ public class PgVectorCollectionClient
                 cmd.Dispose();
             }
 
-            transaction.Commit();
+            await transaction.CommitAsync();
         }
         catch
         {
-            transaction.Rollback();
+            await transaction.RollbackAsync();
             throw;
         }
     }
@@ -228,18 +228,18 @@ public class PgVectorCollectionClient
     {
         if (ids.Count == 0) return;
 
-        using var connection = _client.CreateConnection();
+        await using NpgsqlConnection connection = _client.CreateConnection();
         await connection.OpenAsync();
 
-        var schema = _client.GetSchema();
-        var tableName = GetTableName();
+        string schema = _client.GetSchema();
+        string tableName = GetTableName();
 
-        using var transaction = connection.BeginTransaction();
+        await using NpgsqlTransaction transaction = await connection.BeginTransactionAsync();
         try
         {
             for (int i = 0; i < ids.Count; i++)
             {
-                var query = $@"
+                string query = $@"
                     INSERT INTO {schema}.{tableName} (id, document, metadata, embedding)
                     VALUES (@id, @document, @metadata::jsonb, @embedding::vector)
                     ON CONFLICT (id) DO UPDATE SET
@@ -247,16 +247,16 @@ public class PgVectorCollectionClient
                         metadata = EXCLUDED.metadata,
                         embedding = EXCLUDED.embedding";
 
-                using var cmd = new NpgsqlCommand(query, connection, transaction);
+                await using NpgsqlCommand cmd = new NpgsqlCommand(query, connection, transaction);
                 cmd.Parameters.AddWithValue("id", ids[i]);
                 cmd.Parameters.AddWithValue("document", documents != null && i < documents.Count ? (object)documents[i] : DBNull.Value);
                 
-                var metadataJson = metadatas != null && i < metadatas.Count 
+                string metadataJson = metadatas != null && i < metadatas.Count 
                     ? JsonSerializer.Serialize(metadatas[i]) 
                     : "{}";
                 cmd.Parameters.AddWithValue("metadata", metadataJson);
                 
-                var embeddingStr = embeddings != null && i < embeddings.Count 
+                string? embeddingStr = embeddings != null && i < embeddings.Count 
                     ? $"[{string.Join(",", embeddings[i])}]" 
                     : null;
                 cmd.Parameters.AddWithValue("embedding", embeddingStr != null ? (object)embeddingStr : DBNull.Value);
@@ -264,11 +264,11 @@ public class PgVectorCollectionClient
                 await cmd.ExecuteNonQueryAsync();
             }
 
-            transaction.Commit();
+            await transaction.CommitAsync();
         }
         catch
         {
-            transaction.Rollback();
+            await transaction.RollbackAsync();
             throw;
         }
     }
@@ -277,14 +277,14 @@ public class PgVectorCollectionClient
     {
         if (ids.Count == 0) return;
 
-        using var connection = _client.CreateConnection();
+        await using NpgsqlConnection connection = _client.CreateConnection();
         await connection.OpenAsync();
 
-        var schema = _client.GetSchema();
-        var tableName = GetTableName();
-        var query = $"DELETE FROM {schema}.{tableName} WHERE id = ANY(@ids)";
+        string schema = _client.GetSchema();
+        string tableName = GetTableName();
+        string query = $"DELETE FROM {schema}.{tableName} WHERE id = ANY(@ids)";
 
-        using var cmd = new NpgsqlCommand(query, connection);
+        await using NpgsqlCommand cmd = new NpgsqlCommand(query, connection);
         cmd.Parameters.AddWithValue("ids", ids.ToArray());
 
         await cmd.ExecuteNonQueryAsync();
@@ -292,28 +292,28 @@ public class PgVectorCollectionClient
 
     public async Task DeleteAllAsync()
     {
-        using var connection = _client.CreateConnection();
+        await using NpgsqlConnection connection = _client.CreateConnection();
         await connection.OpenAsync();
 
-        var schema = _client.GetSchema();
-        var tableName = GetTableName();
-        var query = $"DELETE FROM {schema}.{tableName}";
+        string schema = _client.GetSchema();
+        string tableName = GetTableName();
+        string query = $"DELETE FROM {schema}.{tableName}";
 
-        using var cmd = new NpgsqlCommand(query, connection);
+        await using NpgsqlCommand cmd = new NpgsqlCommand(query, connection);
         await cmd.ExecuteNonQueryAsync();
     }
 
     public async Task<int> CountAsync()
     {
-        using var connection = _client.CreateConnection();
+        await using NpgsqlConnection connection = _client.CreateConnection();
         await connection.OpenAsync();
 
-        var schema = _client.GetSchema();
-        var tableName = GetTableName();
-        var query = $"SELECT COUNT(*) FROM {schema}.{tableName}";
+        string schema = _client.GetSchema();
+        string tableName = GetTableName();
+        string query = $"SELECT COUNT(*) FROM {schema}.{tableName}";
 
-        using var cmd = new NpgsqlCommand(query, connection);
-        var result = await cmd.ExecuteScalarAsync();
+        await using NpgsqlCommand cmd = new NpgsqlCommand(query, connection);
+        object? result = await cmd.ExecuteScalarAsync();
         
         return Convert.ToInt32(result);
     }
@@ -321,25 +321,25 @@ public class PgVectorCollectionClient
     private static float[] ParseVector(string vectorStr)
     {
         // Vector format: [1.0,2.0,3.0]
-        var cleaned = vectorStr.Trim('[', ']');
-        var parts = cleaned.Split(',');
+        string cleaned = vectorStr.Trim('[', ']');
+        string[] parts = cleaned.Split(',');
         return parts.Select(p => float.Parse(p.Trim())).ToArray();
     }
 
     private static string BuildMetadataFilter(Dictionary<string, object> whereMetadata)
     {
-        var conditions = new List<string>();
+        List<string> conditions = [];
         
-        foreach (var kvp in whereMetadata)
+        foreach (KeyValuePair<string, object> kvp in whereMetadata)
         {
-            var key = kvp.Key;
-            var value = kvp.Value;
+            string key = kvp.Key;
+            object value = kvp.Value;
 
             if (value is Dictionary<string, object> operatorDict)
             {
-                foreach (var op in operatorDict)
+                foreach (KeyValuePair<string, object> op in operatorDict)
                 {
-                    var condition = BuildCondition(key, op.Key, op.Value);
+                    string? condition = BuildCondition(key, op.Key, op.Value);
                     if (condition != null)
                     {
                         conditions.Add(condition);
