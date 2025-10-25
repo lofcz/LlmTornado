@@ -51,6 +51,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.Microsoft.Extens
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.VectorDatabases.PgVector", "LlmTornado.VectorDatabases.PgVector\LlmTornado.VectorDatabases.PgVector.csproj", "{722E4695-ABEC-627B-2415-692A736A76DB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.VectorDatabases.Faiss", "LlmTornado.VectorDatabases.Faiss\LlmTornado.VectorDatabases.Faiss.csproj", "{EF4AB70D-68E6-4A90-AB19-5507F23B5591}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LlmTornado.VectorDatabases.Qdrant", "LlmTornado.VectorDatabases.Qdrant\LlmTornado.VectorDatabases.Qdrant.csproj", "{78035F0B-20CA-46D6-9AAD-34C563690C2B}"
 EndProject
 Global
@@ -311,6 +313,22 @@ Global
 		{722E4695-ABEC-627B-2415-692A736A76DB}.Debug|x86.Build.0 = Debug|Any CPU
 		{722E4695-ABEC-627B-2415-692A736A76DB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{722E4695-ABEC-627B-2415-692A736A76DB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{722E4695-ABEC-627B-2415-692A736A76DB}.Release|x64.ActiveCfg = Release|Any CPU
+		{722E4695-ABEC-627B-2415-692A736A76DB}.Release|x64.Build.0 = Release|Any CPU
+		{722E4695-ABEC-627B-2415-692A736A76DB}.Release|x86.ActiveCfg = Release|Any CPU
+		{722E4695-ABEC-627B-2415-692A736A76DB}.Release|x86.Build.0 = Release|Any CPU
+		{EF4AB70D-68E6-4A90-AB19-5507F23B5591}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EF4AB70D-68E6-4A90-AB19-5507F23B5591}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EF4AB70D-68E6-4A90-AB19-5507F23B5591}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{EF4AB70D-68E6-4A90-AB19-5507F23B5591}.Debug|x64.Build.0 = Debug|Any CPU
+		{EF4AB70D-68E6-4A90-AB19-5507F23B5591}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{EF4AB70D-68E6-4A90-AB19-5507F23B5591}.Debug|x86.Build.0 = Debug|Any CPU
+		{EF4AB70D-68E6-4A90-AB19-5507F23B5591}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EF4AB70D-68E6-4A90-AB19-5507F23B5591}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EF4AB70D-68E6-4A90-AB19-5507F23B5591}.Release|x64.ActiveCfg = Release|Any CPU
+		{EF4AB70D-68E6-4A90-AB19-5507F23B5591}.Release|x64.Build.0 = Release|Any CPU
+		{EF4AB70D-68E6-4A90-AB19-5507F23B5591}.Release|x86.ActiveCfg = Release|Any CPU
+		{EF4AB70D-68E6-4A90-AB19-5507F23B5591}.Release|x86.Build.0 = Release|Any CPU
 		{722E4695-ABEC-627B-2415-692A736A76DB}.Release|x64.ActiveCfg = Release|Any CPU
 		{722E4695-ABEC-627B-2415-692A736A76DB}.Release|x64.Build.0 = Release|Any CPU
 		{722E4695-ABEC-627B-2415-692A736A76DB}.Release|x86.ActiveCfg = Release|Any CPU

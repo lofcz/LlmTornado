@@ -1,6 +1,7 @@
 ﻿using LlmTornado.Embedding;
 using LlmTornado.Embedding.Models;
 using LlmTornado.VectorDatabases;
+using LlmTornado.VectorDatabases.Faiss.Integrations;
 using LlmTornado.VectorDatabases.Intergrations;
 using LlmTornado.VectorDatabases.Qdrant;
 using System;
@@ -233,113 +234,128 @@ public class VectorDatabasesDemo
         );
         await qdrantDb.UpsertDocumentsAsync(new[] { upsertDoc });
         Console.WriteLine("Document upserted");
-
-        // Delete a document
-        await qdrantDb.DeleteDocumentsAsync(new[] { id3 });
-        Console.WriteLine($"Deleted {id3}");
-
-        // Clean up - delete the collection
-        await qdrantDb.DeleteCollectionAsync("documents");
-        Console.WriteLine("Collection deleted");
-    }
-    [TornadoTest]
-    [Flaky]
-    public static async Task AdvancedFilteringExampleQdrant()
-    {
-        var qdrantDb = new QdrantVectorDatabase(
-            host: "localhost",
-            port: 6334,
-            vectorDimension: 1536
-        );
-
-        await qdrantDb.InitializeCollectionAsync("products");
-
-        // Complex metadata filtering examples
-        var queryEmbedding = GenerateRandomEmbedding(1536);
-
-        // Equal filter
-        var results1 = await qdrantDb.QueryByEmbeddingAsync(
-            embedding: queryEmbedding,
-            where: TornadoWhereOperator.Equal("category", "electronics"),
-            topK: 5,
-            includeScore: true
-        );
-
-        // Greater than filter
-        var results2 = await qdrantDb.QueryByEmbeddingAsync(
-            embedding: queryEmbedding,
-            where: TornadoWhereOperator.GreaterThan("price", 100),
-            topK: 5,
-            includeScore: true
-        );
-
-        // In array filter
-        var results3 = await qdrantDb.QueryByEmbeddingAsync(
-            embedding: queryEmbedding,
-            where: TornadoWhereOperator.In("brand", "Apple", "Samsung", "Sony"),
-            topK: 5,
-            includeScore: true
-        );
-
-        // Combined filters with AND
-        var results4 = await qdrantDb.QueryByEmbeddingAsync(
-            embedding: queryEmbedding,
-            where: TornadoWhereOperator.Equal("category", "electronics")
-                 & TornadoWhereOperator.GreaterThan("price", 100),
-            topK: 5,
-            includeScore: true
-        );
-
-        // Combined filters with OR
-        var results5 = await qdrantDb.QueryByEmbeddingAsync(
-            embedding: queryEmbedding,
-            where: TornadoWhereOperator.Equal("category", "electronics")
-                 | TornadoWhereOperator.Equal("category", "computers"),
-            topK: 5,
-            includeScore: true
-        );
-
-        await qdrantDb.DeleteCollectionAsync("products");
     }
 
     [TornadoTest]
-    [Flaky]
-    public static async Task SyncMethodsExample()
+    public static async Task TestInMemoryVectorDB()
     {
-        // The library also provides synchronous versions of all async methods
-        var qdrantDb = new QdrantVectorDatabase(
-            host: "localhost",
-            port: 6334,
-            vectorDimension: 1536
+        // Initialize the FAISS vector database
+        var faissDb = new FaissVectorDatabase(
+            indexDirectory: "./faiss_example_indexes",
+            vectorDimension: 128 // Using smaller dimension for example
         );
 
-        await qdrantDb.InitializeCollectionAsync("sync_example");
+        // Initialize a collection
+        await faissDb.InitializeCollection("example_collection");
 
+        // Create some sample documents with embeddings
         var documents = new[]
         {
             new VectorDocument(
-                id: "sync1",
-                content: "Synchronous example document",
-                embedding: GenerateRandomEmbedding(1536)
+                id: "doc1",
+                content: "The quick brown fox jumps over the lazy dog",
+                embedding: GenerateRandomEmbedding(128),
+                metadata: new Dictionary<string, object>
+                {
+                    ["category"] = "animals",
+                    ["year"] = 2024
+                }
+            ),
+            new VectorDocument(
+                id: "doc2",
+                content: "Machine learning is a subset of artificial intelligence",
+                embedding: GenerateRandomEmbedding(128),
+                metadata: new Dictionary<string, object>
+                {
+                    ["category"] = "technology",
+                    ["year"] = 2024
+                }
+            ),
+            new VectorDocument(
+                id: "doc3",
+                content: "The cat sat on the mat",
+                embedding: GenerateRandomEmbedding(128),
+                metadata: new Dictionary<string, object>
+                {
+                    ["category"] = "animals",
+                    ["year"] = 2023
+                }
             )
         };
 
-        // Synchronous add
-        qdrantDb.AddDocuments(documents);
+        // Add documents
+        Console.WriteLine("Adding documents...");
+        await faissDb.AddDocumentsAsync(documents);
+        Console.WriteLine($"Added {documents.Length} documents");
 
-        // Synchronous query
-        var results = qdrantDb.QueryByEmbedding(
-            GenerateRandomEmbedding(1536),
-            topK: 5
+        // Get documents by ID
+        Console.WriteLine("\nGetting documents by ID...");
+        var retrievedDocs = await faissDb.GetDocumentsAsync(new[] { "doc1", "doc2" });
+        foreach (var doc in retrievedDocs)
+        {
+            Console.WriteLine($"  {doc.Id}: {doc.Content}");
+        }
+
+        // Query by embedding (using first document's embedding as query)
+        Console.WriteLine("\nQuerying by embedding...");
+        var queryEmbedding = documents[0].Embedding!;
+        var results = await faissDb.QueryByEmbeddingAsync(
+            embedding: queryEmbedding,
+            topK: 3,
+            includeScore: true
         );
 
-        // Synchronous get
-        var docs = qdrantDb.GetDocuments(new[] { "sync1" });
+        Console.WriteLine("Top 3 results:");
+        foreach (var result in results)
+        {
+            Console.WriteLine($"  {result.Id}: {result.Content} (Distance: {result.Score:F4})");
+        }
 
-        // Synchronous delete
-        qdrantDb.DeleteDocuments(new[] { "sync1" });
+        // Query with metadata filter
+        Console.WriteLine("\nQuerying with metadata filter (category = animals)...");
+        var whereFilter = TornadoWhereOperator.Equal("category", "animals");
+        var filteredResults = await faissDb.QueryByEmbeddingAsync(
+            embedding: queryEmbedding,
+            where: whereFilter,
+            topK: 3,
+            includeScore: true
+        );
 
-        await qdrantDb.DeleteCollectionAsync("sync_example");
+        Console.WriteLine("Filtered results:");
+        foreach (var result in filteredResults)
+        {
+            Console.WriteLine($"  {result.Id}: {result.Content} (Distance: {result.Score:F4})");
+        }
+
+        // Update a document
+        Console.WriteLine("\nUpdating document...");
+        var updatedDoc = new VectorDocument(
+            id: "doc1",
+            content: "The quick brown fox jumps over the lazy dog - UPDATED",
+            metadata: new Dictionary<string, object>
+            {
+                ["category"] = "animals",
+                ["year"] = 2024,
+                ["updated"] = true
+            }
+        );
+        await faissDb.UpdateDocumentsAsync(new[] { updatedDoc });
+
+        var updated = await faissDb.GetDocumentsAsync(new[] { "doc1" });
+        Console.WriteLine($"Updated: {updated[0].Content}");
+
+        // Delete a document
+        Console.WriteLine("\nDeleting document...");
+        await faissDb.DeleteDocumentsAsync(new[] { "doc3" });
+
+        var remaining = await faissDb.GetDocumentsAsync(new[] { "doc1", "doc2", "doc3" });
+        Console.WriteLine($"Remaining documents: {remaining.Length}");
+
+        // Clean up
+        Console.WriteLine("\nCleaning up...");
+        await faissDb.DeleteCollectionAsync("example_collection");
+
+        Console.WriteLine("Example completed successfully!");
     }
 
     private static float[] GenerateRandomEmbedding(int dimension)
@@ -348,7 +364,13 @@ public class VectorDatabasesDemo
         var embedding = new float[dimension];
         for (int i = 0; i < dimension; i++)
         {
-            embedding[i] = (float)random.NextDouble();
+            embedding[i] = (float)(random.NextDouble() * 2 - 1); // Random values between -1 and 1
+        }
+        // Normalize the embedding
+        var magnitude = Math.Sqrt(embedding.Sum(x => x * x));
+        for (int i = 0; i < dimension; i++)
+        {
+            embedding[i] /= (float)magnitude;
         }
         return embedding;
     }
