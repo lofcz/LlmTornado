@@ -10,15 +10,17 @@
 
 [![LlmTornado](https://badgen.net/nuget/v/LlmTornado?v=302&icon=nuget&label=LlmTornado)](https://www.nuget.org/packages/LlmTornado)
 [![LlmTornado.Agents](https://badgen.net/nuget/v/LlmTornado.Agents?v=303&icon=nuget&label=LlmTornado.Agents)](https://www.nuget.org/packages/LlmTornado.Agents)
-[![LlmTornado.Mcp](https://badgen.net/nuget/v/LlmTornado.Mcp?v=302&icon=nuget&label=LlmTornado.Mcp)](https://www.nuget.org/packages/LlmTornado.Mcp)
-[![LlmTornado.Contrib](https://badgen.net/nuget/v/LlmTornado.Contrib?v=302&icon=nuget&label=LlmTornado.Contrib)](https://www.nuget.org/packages/LlmTornado.Contrib)
+[![LlmTornado.Mcp](https://badgen.net/nuget/v/LlmTornado.Mcp?v=302&icon=nuget&label=LlmTornado.MCP)](https://www.nuget.org/packages/LlmTornado.Mcp)
+[![LlmTornado.A2A](https://badgen.net/nuget/v/LlmTornado.A2A?v=302&icon=nuget&label=LlmTornado.A2A)](https://www.nuget.org/packages/LlmTornado.A2A)
 [![License:MIT](https://img.shields.io/badge/License-MIT-34D058.svg)](https://opensource.org/license/mit)
 
 LLM Tornado is a .NET provider-agnostic SDK that empowers developers to build, orchestrate, and deploy AI agents and workflows. Whether you're building a simple chatbot or an autonomous coding agent, LLM Tornado provides the tools you need with unparalleled integration into the AI ecosystem.
+
+<a href="https://www.youtube.com/watch?v=h7yTai0cRtE">
+ <img alt="LLM Tornado in .NET AI Community Standup by Microsoft" width="768" src="https://github.com/user-attachments/assets/bbb8f8fa-4675-4728-b1ff-ae3b25cab7d2" />
+</a>
  
 </div>
-
-
 
 ## ✨ Features
 -  **Use Any Provider**: Built-in connectors to: [Alibaba](https://modelstudio.console.alibabacloud.com), [Anthropic](https://docs.anthropic.com/en/docs/intro), [Azure](https://azure.microsoft.com/en-us/products/ai-services/openai-service), [Blablador](https://sdlaml.pages.jsc.fz-juelich.de/ai/guides/blablador_api_access), [Cohere](https://docs.cohere.com/changelog), [DeepInfra](https://deepinfra.com/docs/), [DeepSeek](https://api-docs.deepseek.com/), [Google](https://ai.google.dev/gemini-api/docs), [Groq](https://console.groq.com/docs/overview), [Mistral](https://docs.mistral.ai/getting-started), [MoonshotAI](https://platform.moonshot.ai/docs/overview), [OpenAI](https://platform.openai.com/docs), [OpenRouter](https://openrouter.ai/docs/quickstart), [Perplexity](https://docs.perplexity.ai/home), [Voyage](https://www.voyageai.com/), [xAI](https://docs.x.ai/docs), [Z.ai](https://docs.z.ai/guides/overview/quick-start), and more. All models are recognized by name. Check the full Feature Matrix [here](https://github.com/lofcz/LlmTornado/blob/master/FeatureMatrix.md).
@@ -35,10 +37,22 @@ LLM Tornado is a .NET provider-agnostic SDK that empowers developers to build, o
 - **Enterprise Ready**: [Preview any request](https://github.com/lofcz/LlmTornado/blob/2fd75e9cdf551724d59d91aebbcb74caea8ae7b2/src/LlmTornado.Demo/ChatDemo2.cs#L233-L256) before committing to it. [Open Telemetry](https://opentelemetry.io) support. Stable APIs.
 
 <div align="center">
- <b>➡️ Get started in minutes – see <a href="https://llmtornado.ai/getting-started">Quickstart</a> ⬅️</b>
+ <h4>➡️ Get started in minutes – see <a href="https://llmtornado.ai/getting-started">Quickstart</a> ⬅️</h4>
 </div>
 
-## ⭐ You Can Easily
+## 🔥 News 2025
+- 25/10 - LLM Tornado is featured in [dotInsights](https://blog.jetbrains.com/dotnet/2025/10/06/dotinsights-october-2025) by [JetBrains](https://www.jetbrains.com). [Microsoft](https://www.microsoft.com) uses LLM Tornado in [Generative AI for Beginners .NET](https://github.com/microsoft/Generative-AI-for-beginners-dotnet). Interoperability with [Microsoft.Extensions.AI](https://github.com/dotnet/extensions) is launched.
+- 25/09 - Maintainers [Matěj Štágl](https://github.com/lofcz) and [John Lomba](https://github.com/Johnny2x2) talk about LLM Tornado in [.NET AI Community Standup](https://www.youtube.com/watch?v=h7yTai0cRtE). [Agent2Agent](https://llmtornado.ai/a2a/getting-started) protocol is implemented.
+- 25/08 - [ProseFlow](https://lsxprime.github.io/proseflow-web) is built with LLM Tornado. [MCP](https://llmtornado.ai/mpc/mpc) protocol is implemented.
+- 25/07 - Contributor [Shaltiel Shmidman](https://github.com/shaltielshmid) talks about LLM Tornado in [Asp.net Community Standup](https://www.youtube.com/watch?v=RaZc-2tfh9k). New connectors to [Z.ai](https://docs.z.ai/guides/overview/quick-start), [Alibaba](https://modelstudio.console.alibabacloud.com), and [Blablador](https://sdlaml.pages.jsc.fz-juelich.de/ai/guides/blablador_api_access) are implemented.
+- 25/06 - [C# delegates as Agent tools](https://llmtornado.ai/agents/tornado-agent/tools/function-tools) system is added, freeing applications from authoring JSON schema manually.
+- 25/05 - [Chat to Responses](https://llmtornado.ai/agents/tornado-agent/tools/response-tools) system is added, allowing usage of `/responses` exclusive models from `/chat` endpoint.
+- 25/04 - New connectors to [DeepInfra](https://deepinfra.com/docs/), [DeepSeek](https://api-docs.deepseek.com/), and [Perplexity](https://docs.perplexity.ai/home) are added.
+- 25/03 - [Assistants](https://llmtornado.ai/llmtornado/assistants/basics) are implemented.
+- 25/02 - New connectors to [OpenRouter](https://openrouter.ai/docs/quickstart), [Voyage](https://www.voyageai.com/), and [xAI](https://docs.x.ai/docs) are added.
+- 25/01 - Strict JSON mode is implemented, [Groq](https://console.groq.com/docs/overview) and [Mistral](https://docs.mistral.ai/getting-started) connectors are added.
+
+## ⭐ Samples
 - [Chat with your documents](https://github.com/lofcz/LlmTornado/blob/61d2a4732c88c45d4a8c053204ecdef807c34652/LlmTornado.Demo/ChatDemo.cs#L722-L757)
 - [Make multiple-speaker podcasts](https://github.com/lofcz/LlmTornado/blob/d1042281082ea5ff1de9dcb438a847d4cd9c416b/LlmTornado.Demo/ChatDemo2.cs#L332-L374)
 - [Voice call with AI using your microphone](https://github.com/lofcz/LlmTornado/blob/61d2a4732c88c45d4a8c053204ecdef807c34652/LlmTornado.Demo/ChatDemo.cs#L905-L968)
@@ -47,8 +61,6 @@ LLM Tornado is a .NET provider-agnostic SDK that empowers developers to build, o
 - [Summarize a video (local file / YouTube)](https://github.com/lofcz/LlmTornado/blob/cfd47f915584728d9a2365fc9d38d158673da68a/LlmTornado.Demo/ChatDemo2.cs#L119)
 - [Turn text & images into high quality embeddings](https://github.com/lofcz/LlmTornado/blob/61d2a4732c88c45d4a8c053204ecdef807c34652/LlmTornado.Demo/EmbeddingDemo.cs#L50-L75)
 - [Transcribe audio in real time](https://github.com/lofcz/LlmTornado/blob/e592a2fc0a37dbd0e754dac7b1655703367369df/LlmTornado.Demo/AudioDemo.cs#L29)
-
-... and a lot more! Now, instead of relying on one LLM provider, you can combine the unique strengths of many.
 
 ## ⚡Getting Started
 
