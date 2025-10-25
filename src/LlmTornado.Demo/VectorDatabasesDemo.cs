@@ -2,14 +2,8 @@
 using LlmTornado.Embedding.Models;
 using LlmTornado.VectorDatabases;
 using LlmTornado.VectorDatabases.Intergrations;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using LlmTornado.VectorDatabases.Pinecone;
 using LlmTornado.VectorDatabases.Pinecone.Integrations;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace LlmTornado.Demo;
 
