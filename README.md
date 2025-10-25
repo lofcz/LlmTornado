@@ -14,7 +14,7 @@
 [![LlmTornado.Contrib](https://badgen.net/nuget/v/LlmTornado.Contrib?v=302&icon=nuget&label=LlmTornado.Contrib)](https://www.nuget.org/packages/LlmTornado.Contrib)
 [![License:MIT](https://img.shields.io/badge/License-MIT-34D058.svg)](https://opensource.org/license/mit)
 
-LLM Tornado is a .NET provider-agnostic SDK that empowers developers to build, orchestrate, and deploy AI agents and workflows. Whether you're building a simple chatbot or an autonomous coding agent, LLM Tornado provides the tools you need with with unparalleled integration into the AI ecosystem.
+LLM Tornado is a .NET provider-agnostic SDK that empowers developers to build, orchestrate, and deploy AI agents and workflows. Whether you're building a simple chatbot or an autonomous coding agent, LLM Tornado provides the tools you need with unparalleled integration into the AI ecosystem.
  
 </div>
 
