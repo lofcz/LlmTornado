@@ -261,6 +261,11 @@ public class QdrantVectorDatabase : IVectorDatabase
         await _client.DeleteAsync(_collectionName, pointIds);
     }
 
+    public Task DeleteAllDocumentsAsync()
+    {
+        throw new NotImplementedException();
+    }
+
     /// <summary>
     /// Performs a similarity search using an embedding vector.
     /// </summary>

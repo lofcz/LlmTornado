@@ -207,6 +207,11 @@ public class FaissVectorDatabase : IVectorDatabase
         await CollectionClient!.DeleteAsync(ids.ToList());
     }
 
+    public Task DeleteAllDocumentsAsync()
+    {
+        throw new NotImplementedException();
+    }
+
     public VectorDocument[] QueryByEmbedding(float[] embedding, TornadoWhereOperator? where = null, int topK = 5, bool includeScore = false)
     {
         return Task.Run(async () => await QueryByEmbeddingAsync(embedding, where, topK, includeScore)).Result;
