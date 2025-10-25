@@ -229,3 +229,73 @@ public class ChatMessageVendorExtensionsAnthropic : IChatMessageVendorExtensions
 	/// </summary>
 	public string? Signature { get; set; }
 }
+
+
+public static class ChatMessageExtensions
+{
+    /// <summary>
+    ///     Gets the text content of a message, combining Content and Parts.
+    /// </summary>
+    public static string GetMessageContent(this ChatMessage message)
+    {
+        if (message.Content != null)
+        {
+            return message.Content;
+        }
+
+        if (message.FunctionCall != null)
+        {
+            return message.FunctionCall.ToJson(true);
+        }
+
+        string partsContent = string.Empty;
+        if (message.Parts != null)
+        {
+            partsContent = string.Join(" ", message.Parts.Where(p => p.Text != null).Select(p => p.Text));
+            if (message.Parts.Any(p => p.Reasoning is not null))
+            {
+                partsContent += "\n [REASONING]: " + string.Join(" ", message.Parts.Where(p => p.Reasoning != null).Select(p => p.Reasoning?.Content));
+            }
+        }
+
+        return partsContent;
+    }
+
+
+    /// <summary>
+    ///     Gets the approximate character length of a message, including all parts.
+    /// </summary>
+    public static int GetMessageLength(this ChatMessage message)
+    {
+        int length = 0;
+
+        if (message.Content != null)
+        {
+            length += message.Content.Length;
+        }
+
+        if (message.Parts != null)
+        {
+            foreach (ChatMessagePart part in message.Parts)
+            {
+                if (part.Text != null)
+                {
+                    length += part.Text.Length;
+                }
+                // Note: Images, audio, and other non-text parts are being stripped after compression
+            }
+        }
+
+        if (message.Reasoning != null)
+        {
+            length += message.Reasoning.Length;
+        }
+
+        if (message.ReasoningContent != null)
+        {
+            length += message.ReasoningContent.Length;
+        }
+
+        return length;
+    }
+}

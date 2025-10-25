@@ -11,15 +11,15 @@ public class PgVectorExample
     public static async Task BasicUsageExample()
     {
         // Initialize PgVector with connection string and vector dimension
-        var connectionString = "Host=localhost;Database=vectordb;Username=postgres;Password=password";
-        var pgVector = new TornadoPgVector(connectionString, vectorDimension: 1536);
+        string connectionString = "Host=localhost;Database=vectordb;Username=postgres;Password=password";
+        TornadoPgVector pgVector = new TornadoPgVector(connectionString, vectorDimension: 1536);
 
         // Initialize a collection
         await pgVector.InitializeCollection("documents");
 
         // Create sample documents with embeddings
-        var documents = new[]
-        {
+        VectorDocument[] documents =
+        [
             new VectorDocument(
                 id: "doc1",
                 content: "PostgreSQL is a powerful open-source relational database",
@@ -53,39 +53,39 @@ public class PgVectorExample
                     { "source", "research" }
                 }
             )
-        };
+        ];
 
         // Add documents to the collection
         await pgVector.AddDocumentsAsync(documents);
 
         // Query by embedding similarity
-        var queryEmbedding = GenerateRandomEmbedding(1536);
-        var results = await pgVector.QueryByEmbeddingAsync(
+        float[] queryEmbedding = GenerateRandomEmbedding(1536);
+        VectorDocument[] results = await pgVector.QueryByEmbeddingAsync(
             embedding: queryEmbedding,
             topK: 2
         );
 
         Console.WriteLine("Top 2 similar documents:");
-        foreach (var doc in results)
+        foreach (VectorDocument doc in results)
         {
             Console.WriteLine($"- {doc.Content} (Score: {doc.Score})");
         }
 
         // Query with metadata filtering
-        var filteredResults = await pgVector.QueryByEmbeddingAsync(
+        VectorDocument[] filteredResults = await pgVector.QueryByEmbeddingAsync(
             embedding: queryEmbedding,
             where: TornadoWhereOperator.Equal("category", "database"),
             topK: 2
         );
 
         Console.WriteLine("\nTop 2 database documents:");
-        foreach (var doc in filteredResults)
+        foreach (VectorDocument doc in filteredResults)
         {
             Console.WriteLine($"- {doc.Content} (Score: {doc.Score})");
         }
 
         // Update a document
-        var updatedDoc = new VectorDocument(
+        VectorDocument updatedDoc = new VectorDocument(
             id: "doc1",
             content: "PostgreSQL with pgvector extension enables vector similarity search",
             metadata: new Dictionary<string, object>
@@ -95,14 +95,14 @@ public class PgVectorExample
                 { "updated", true }
             }
         );
-        await pgVector.UpdateDocumentsAsync(new[] { updatedDoc });
+        await pgVector.UpdateDocumentsAsync([updatedDoc]);
 
         // Get specific documents by ID
-        var retrievedDocs = await pgVector.GetDocumentsAsync(new[] { "doc1", "doc2" });
+        VectorDocument[] retrievedDocs = await pgVector.GetDocumentsAsync(["doc1", "doc2"]);
         Console.WriteLine($"\nRetrieved {retrievedDocs.Length} documents by ID");
 
         // Delete a document
-        await pgVector.DeleteDocumentsAsync(new[] { "doc3" });
+        await pgVector.DeleteDocumentsAsync(["doc3"]);
         Console.WriteLine("Deleted doc3");
 
         // Clean up - delete the collection
@@ -112,37 +112,37 @@ public class PgVectorExample
 
     public static async Task AdvancedFilteringExample()
     {
-        var connectionString = "Host=localhost;Database=vectordb;Username=postgres;Password=password";
-        var pgVector = new TornadoPgVector(connectionString, vectorDimension: 1536);
+        string connectionString = "Host=localhost;Database=vectordb;Username=postgres;Password=password";
+        TornadoPgVector pgVector = new TornadoPgVector(connectionString, vectorDimension: 1536);
 
         await pgVector.InitializeCollection("products");
 
         // Complex metadata filtering examples
-        var queryEmbedding = GenerateRandomEmbedding(1536);
+        float[] queryEmbedding = GenerateRandomEmbedding(1536);
 
         // Equal filter
-        var results1 = await pgVector.QueryByEmbeddingAsync(
+        VectorDocument[] results1 = await pgVector.QueryByEmbeddingAsync(
             embedding: queryEmbedding,
             where: TornadoWhereOperator.Equal("category", "electronics"),
             topK: 5
         );
 
         // Greater than filter
-        var results2 = await pgVector.QueryByEmbeddingAsync(
+        VectorDocument[] results2 = await pgVector.QueryByEmbeddingAsync(
             embedding: queryEmbedding,
             where: TornadoWhereOperator.GreaterThan("price", 100),
             topK: 5
         );
 
         // In array filter
-        var results3 = await pgVector.QueryByEmbeddingAsync(
+        VectorDocument[] results3 = await pgVector.QueryByEmbeddingAsync(
             embedding: queryEmbedding,
             where: TornadoWhereOperator.In("brand", "Apple", "Samsung", "Sony"),
             topK: 5
         );
 
         // Combined filters with AND
-        var results4 = await pgVector.QueryByEmbeddingAsync(
+        VectorDocument[] results4 = await pgVector.QueryByEmbeddingAsync(
             embedding: queryEmbedding,
             where: TornadoWhereOperator.Equal("category", "electronics") 
                  & TornadoWhereOperator.GreaterThan("price", 100),
@@ -150,7 +150,7 @@ public class PgVectorExample
         );
 
         // Combined filters with OR
-        var results5 = await pgVector.QueryByEmbeddingAsync(
+        VectorDocument[] results5 = await pgVector.QueryByEmbeddingAsync(
             embedding: queryEmbedding,
             where: TornadoWhereOperator.Equal("category", "electronics") 
                  | TornadoWhereOperator.Equal("category", "computers"),
@@ -162,8 +162,8 @@ public class PgVectorExample
 
     private static float[] GenerateRandomEmbedding(int dimension)
     {
-        var random = new Random();
-        var embedding = new float[dimension];
+        Random random = new Random();
+        float[] embedding = new float[dimension];
         for (int i = 0; i < dimension; i++)
         {
             embedding[i] = (float)random.NextDouble();

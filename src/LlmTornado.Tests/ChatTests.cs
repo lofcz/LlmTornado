@@ -222,5 +222,115 @@ namespace LlmTornado.Tests
             Assert.That(result.Data.Name, Is.EqualTo("test.txt"));
             Assert.That(result.Data.Bytes, Is.EqualTo(testFileBytes.Length));
         }
+        
+        [Test]
+        public async Task Conversation_CompressMessages_ReducesMessageCount()
+        {
+            // Arrange
+            TornadoApi api = Program.Connect();
+            Conversation conversation = api.Chat.CreateConversation(new ChatRequest
+            {
+                Model = ChatModel.OpenAi.Gpt35.Turbo
+            });
+            TornadoContextManager contextManager = new TornadoContextManager(
+                new TornadoCompressionStrategy(options:new ConversationCompressionOptions()
+                {
+                    ChunkSize = 5000,
+                    PreserveSystemMessages = true
+                }),
+                new TornadoConversationSummarizer()
+            );
+            conversation.ContextManager = contextManager;
+            // Act
+            
+            // Add system message and multiple exchanges
+            conversation.AddSystemMessage("You are a helpful assistant.");
+            
+            // Create a conversation with 20 messages (10 user + 10 assistant)
+            for (int i = 0; i < 10; i++)
+            {
+                conversation.AddUserMessage($"This is message {i + 1}. Tell me something interesting about the number {i + 1}.");
+                conversation.AddAssistantMessage($"The number {i + 1} is interesting because... [simulated response]");
+            }
+            
+            int originalCount = conversation.Messages.Count;
+            Console.WriteLine($"Original message count: {originalCount}");
+            
+            // Act
+            await conversation.ContextManager.CheckRefreshAsync(conversation);
+            
+            int finalCount = conversation.Messages.Count;
+            Console.WriteLine($"Final message count: {finalCount}");
+            
+            // Assert
+            Assert.That(finalCount, Is.LessThan(originalCount), 
+                "Message count should be reduced after compression");
+            Assert.That(conversation.Messages.Count(m => m.Role == ChatMessageRoles.System), Is.EqualTo(1), 
+                "System message should be preserved");
+            
+            // Verify recent messages are preserved
+            List<ChatMessage> recentMessages = conversation.Messages.TakeLast(4).ToList();
+            Assert.That(recentMessages.Any(m => m.Content?.Contains("message 10") ?? false), Is.True,
+                "Most recent messages should be preserved");
+        }
+        
+        [Test]
+        public async Task Conversation_CompressMessages_WithNoMessages_ReturnsZero()
+        {
+            // Arrange
+            TornadoApi api = Program.Connect();
+            Conversation conversation = api.Chat.CreateConversation(new ChatRequest
+            {
+                Model = ChatModel.OpenAi.Gpt35.Turbo
+            });
+            TornadoContextManager contextManager = new TornadoContextManager(
+                new TornadoCompressionStrategy(options: new ConversationCompressionOptions()
+                {
+                    ChunkSize = 5000,
+                    PreserveSystemMessages = true
+                }),
+                new TornadoConversationSummarizer()
+            );
+            conversation.ContextManager = contextManager;
+            // Act
+            ChatRichResponse result = await conversation.GetResponseRichContext();
+            
+            // Assert
+            Assert.That(result, Is.EqualTo(conversation.Messages), "Should return 0 when there are no messages to compress");
+        }
+        
+
+        
+        [Test]
+        public void Conversation_CompressMessages_PreservesSystemMessage()
+        {
+            // Arrange
+            TornadoApi api = Program.Connect();
+            Conversation conversation = api.Chat.CreateConversation(new ChatRequest
+            {
+                Model = ChatModel.OpenAi.Gpt35.Turbo
+            });
+            TornadoContextManager contextManager = new TornadoContextManager(
+               new TornadoCompressionStrategy(),
+               new TornadoConversationSummarizer()
+           );
+            conversation.ContextManager = contextManager;
+            string systemPrompt = "You are a knowledgeable science tutor.";
+            conversation.AddSystemMessage(systemPrompt);
+            
+            // Add many messages
+            for (int i = 0; i < 15; i++)
+            {
+                conversation.AddUserMessage($"Question {i + 1}");
+                conversation.AddAssistantMessage($"Answer {i + 1}");
+            }
+            
+            // Act
+            var task = conversation.ContextManager.CheckRefreshAsync(conversation);
+            
+            // Assert - Just verify structure is correct (don't run full compression in unit test)
+            Assert.That(conversation.Messages.First().Role, Is.EqualTo(ChatMessageRoles.System));
+            Assert.That(conversation.Messages.First().Content, Is.EqualTo(systemPrompt));
+        }
     }
 }

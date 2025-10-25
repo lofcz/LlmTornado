@@ -1,0 +1,6 @@
+﻿[vector database] = "Pinecone"
+Write a C# class named [vector database]VectorDatabase that implements the `LlmTornado.VectorDatabases.IVectorDatabase` interface. This class should serve as a connector to the [vector database] vector store. Implement all required interface methods (for example, methods to create/delete collections, insert vectors or documents, and perform similarity search). 
+
+If an official .NET client or library exists for [vector database], include it and use it to implement these methods; otherwise write a minimal client (for example using HTTP/REST calls) to connect to [vector database] and satisfy the interface requirements. Ensure your code is modular and extensible, with proper constructors and error handling. 
+
+For guidance, you can follow the pattern of the existing Tornado connector (see `LlmTornado.VectorDatabases.PgVector`). The final code should compile and fully implement `IVectorDatabase` so that LlmTornado can use [vector database] for vector embeddings and search.
