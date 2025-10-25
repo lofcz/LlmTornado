@@ -72,11 +72,11 @@ jobs:
         
     - name: Restore dependencies for LlmTornado
       run: dotnet restore LlmTornado.slnx
-      working-directory: ./src
+      working-directory: ./src/LlmTornado
 
     - name: Build LlmTornado for .NET Framework
       run: dotnet build LlmTornado.slnx --no-restore --framework net462 --configuration Release
-      working-directory: ./src
+      working-directory: ./src/LlmTornado
 
     - name: Update GitHub status check for .NET Framework build
       if: always()
@@ -110,7 +110,7 @@ jobs:
         
     - name: Restore dependencies for LlmTornado
       run: dotnet restore LlmTornado.slnx
-      working-directory: ./src
+      working-directory: ./src/LlmTornado
 
     - name: Build LlmTornado for .NET Standard 2.0
       run: dotnet build LlmTornado.slnx --no-restore --framework netstandard2.0 --configuration Release
