@@ -19,13 +19,11 @@ public class ToolSelectorHelper
     /// <returns></returns>
     /// <exception cref="ArgumentException"></exception>
     /// <exception cref="InvalidOperationException"></exception>
-    public static ChatRequestResponseFormats CreateResponseFormat(Tool[] tools)
+    public static ChatRequestResponseFormats CreateResponseFormat(string[] tools)
     {
         if (tools == null || tools.Length == 0) throw new ArgumentException("Tools cannot be null or empty", nameof(tools));
 
-        List<string> toolNames = tools.Where(t=>t.ToolName is not null)?.Select(t => t.ToolName)!.ToList<string>() ?? new List<string>();
-
-        dynamic? responseFormat = ConvertObjectDictionaryToDynamic(CreateObjectSchemaFormat(toolNames.ToArray()));
+        dynamic? responseFormat = ConvertObjectDictionaryToDynamic(CreateObjectSchemaFormat(tools));
 
         if (responseFormat == null)
         {

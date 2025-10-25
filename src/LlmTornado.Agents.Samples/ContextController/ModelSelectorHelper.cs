@@ -18,11 +18,11 @@ public class ModelSelectorHelper
     /// <returns></returns>
     /// <exception cref="ArgumentException"></exception>
     /// <exception cref="InvalidOperationException"></exception>
-    public static ChatRequestResponseFormats CreateResponseFormat(ChatModel[] models)
+    public static ChatRequestResponseFormats CreateResponseFormat(string[] models)
     {
         if (models == null || models.Length == 0) throw new ArgumentException("models cannot be null or empty", nameof(models));
 
-        List<string> apiNames = models.Select(h => h.GetApiName).ToList();
+        List<string> apiNames = models.ToList();
 
         dynamic? responseFormat = ConvertObjectDictionaryToDynamic(CreateObjectSchemaFormat(apiNames.ToArray()));
 
@@ -50,7 +50,7 @@ public class ModelSelectorHelper
         return Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(json);
     }
 
-    private static Dictionary<string, object> CreateObjectSchemaFormat(string[] agentNames)
+    private static Dictionary<string, object> CreateObjectSchemaFormat(string[] modelNames)
     {
         string[] requiredProperties = ["reason", "model"];
 
@@ -68,7 +68,7 @@ public class ModelSelectorHelper
                 {
                     ["type"] = "string",
                     ["description"] = "The Model to select",
-                    ["enum"] = agentNames
+                    ["enum"] = modelNames
                 }
             },
             ["required"] = requiredProperties,
