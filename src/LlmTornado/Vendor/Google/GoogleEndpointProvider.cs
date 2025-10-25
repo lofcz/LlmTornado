@@ -53,6 +53,7 @@ public class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
             CapabilityEndpoints.Embeddings => "models",
             CapabilityEndpoints.Chat => "models",
             CapabilityEndpoints.ImageGeneration => "models",
+            CapabilityEndpoints.Videos => "models",
             CapabilityEndpoints.Files => "files",
             CapabilityEndpoints.Caching => "cachedContents",
             CapabilityEndpoints.Models => "models",

@@ -117,6 +117,22 @@ public class ChromaCollectionClient
 		await _httpClient.Post("collections/{collection_id}/delete", request, requestParams);
 	}
 
+	public async Task DeleteAll()
+	{
+		var requestParams = new RequestQueryParams()
+			.Insert("{collection_id}", _collection.Id);
+		// Delete all by providing empty where clause (matches all documents)
+		// Note: Empty IDs list would do nothing (ChromaDB safety feature)
+		// Empty where clause is the efficient way to delete all without recreating collection
+		var request = new CollectionDeleteRequest()
+		{
+			Ids = null,
+			Where = new Dictionary<string, object>(),
+			WhereDocument = null,
+		};
+		await _httpClient.Post("collections/{collection_id}/delete", request, requestParams);
+	}
+
 	public async Task<int> Count()
 	{
 		var requestParams = new RequestQueryParams()

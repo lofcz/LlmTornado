@@ -115,9 +115,17 @@ internal class VendorGoogleChatResult : VendorChatResult
         {
             request = postData.JsonDecode<VendorGoogleChatRequest>();
         }
-
+        
+        ChatResponseVendorGoogleExtensions? googleExtensions = null;
+        
         foreach (VendorGoogleChatResultMessage candidate in Candidates)
         {
+            if (candidate.GroundingMetadata?.GoogleMapsWidgetContextToken is not null)
+            {
+                googleExtensions ??= new ChatResponseVendorGoogleExtensions();
+                googleExtensions.GoogleMapsWidgetContextToken = candidate.GroundingMetadata.GoogleMapsWidgetContextToken;
+            }
+            
             ChatMessage msg = requestObject is ChatRequest cr ? candidate.Content.ToChatMessage(request, cr, candidate) : candidate.Content.ToChatMessage(request, null, candidate);
             
             result.Choices.Add(new ChatChoice
@@ -126,6 +134,12 @@ internal class VendorGoogleChatResult : VendorChatResult
                 Delta = msg,
                 FinishReason = candidate.FinishReason is null ? null : ChatMessageFinishReasonsConverter.Map.GetValueOrDefault(candidate.FinishReason, ChatMessageFinishReasons.Unknown)
             });
+        }
+        
+        if (googleExtensions is not null)
+        {
+            result.VendorExtensions ??= new ChatResponseVendorExtensions();
+            result.VendorExtensions.Google = googleExtensions;
         }
         
         return result;
@@ -287,6 +301,12 @@ internal class VendorGoogleChatResultGroundingMetadata
     /// </summary>
     [JsonProperty("retrievalMetadata")]
     public VendorGoogleChatResultRetrievalMetadata RetrievalMetadata { get; set; }
+    
+    /// <summary>
+    /// Optional. Resource name of the Google Maps widget context token that can be used with the PlacesContextElement widget in order to render contextual data. Only populated in the case that grounding with Google Maps is enabled.
+    /// </summary>
+    [JsonProperty("googleMapsWidgetContextToken")]
+    public string? GoogleMapsWidgetContextToken { get; set; }
 }
 
 /// <summary>
@@ -295,10 +315,16 @@ internal class VendorGoogleChatResultGroundingMetadata
 internal class VendorGoogleChatResultGroundingChunk
 {
     /// <summary>
-    /// Grounding chunk from the web.
+    /// Grounding chunk from web.
     /// </summary>
     [JsonProperty("web")]
-    public VendorGoogleChatResultWeb Web { get; set; }
+    public VendorGoogleChatResultWeb? Web { get; set; }
+    
+    /// <summary>
+    /// Grounding chunk from Google Maps.
+    /// </summary>
+    [JsonProperty("maps")]
+    public VendorGoogleChatResultMaps? Maps { get; set; }
 }
 
 /// <summary>
@@ -314,6 +340,78 @@ internal class VendorGoogleChatResultWeb
 
     /// <summary>
     /// Title of the chunk.
+    /// </summary>
+    [JsonProperty("title")]
+    public string Title { get; set; }
+}
+
+/// <summary>
+/// A grounding chunk from Google Maps. A Maps chunk corresponds to a single place.
+/// </summary>
+internal class VendorGoogleChatResultMaps
+{
+    /// <summary>
+    /// URI reference of the place.
+    /// </summary>
+    [JsonProperty("uri")]
+    public string Uri { get; set; }
+
+    /// <summary>
+    /// Title of the place.
+    /// </summary>
+    [JsonProperty("title")]
+    public string Title { get; set; }
+    
+    /// <summary>
+    /// Text description of the place answer.
+    /// </summary>
+    [JsonProperty("text")]
+    public string Text { get; set; }
+    
+    /// <summary>
+    /// This ID of the place, in places/{placeId} format. A user can use this ID to look up that place.
+    /// </summary>
+    [JsonProperty("placeId")]
+    public string PlaceId { get; set; }
+    
+    /// <summary>
+    /// Sources that provide answers about the features of a given place in Google Maps.
+    /// </summary>
+    [JsonProperty("placeAnswerSources")]
+    public VendorGoogleChatResultPlaceAnswerSources? PlaceAnswerSources { get; set; }
+}
+
+/// <summary>
+/// Collection of sources that provide answers about the features of a given place in Google Maps.
+/// </summary>
+internal class VendorGoogleChatResultPlaceAnswerSources
+{
+    /// <summary>
+    /// Snippets of reviews that are used to generate answers about the features of a given place in Google Maps.
+    /// </summary>
+    [JsonProperty("reviewSnippets")]
+    public List<VendorGoogleChatResultReviewSnippet>? ReviewSnippets { get; set; }
+}
+
+/// <summary>
+/// Encapsulates a snippet of a user review that answers a question about the features of a specific place in Google Maps.
+/// </summary>
+internal class VendorGoogleChatResultReviewSnippet
+{
+    /// <summary>
+    /// The ID of the review snippet.
+    /// </summary>
+    [JsonProperty("reviewId")]
+    public string ReviewId { get; set; }
+    
+    /// <summary>
+    /// A link that corresponds to the user review on Google Maps.
+    /// </summary>
+    [JsonProperty("googleMapsUri")]
+    public string GoogleMapsUri { get; set; }
+    
+    /// <summary>
+    /// Title of the review.
     /// </summary>
     [JsonProperty("title")]
     public string Title { get; set; }

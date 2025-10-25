@@ -37,6 +37,7 @@ public class Program
         public string ZAi { get; set; }
         public string Blablador { get; set; }
         public string Alibaba { get; set; }
+        public string Pinecone { get; set; }
     }
 
     public static TornadoApi ConnectMulti(bool httpStrict = true)

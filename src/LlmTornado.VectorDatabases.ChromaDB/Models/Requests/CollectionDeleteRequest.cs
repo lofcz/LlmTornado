@@ -5,7 +5,7 @@ namespace LlmTornado.VectorDatabases.ChromaDB.Client.Models.Requests;
 internal class CollectionDeleteRequest
 {
 	[JsonPropertyName("ids")]
-	public required List<string> Ids { get; init; }
+	public List<string>? Ids { get; init; }
 
 	[JsonPropertyName("where")]
 	public Dictionary<string, object>? Where { get; init; }

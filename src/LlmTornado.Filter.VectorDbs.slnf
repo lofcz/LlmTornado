@@ -1,0 +1,13 @@
+﻿{
+  "solution": {
+    "path": "LlmTornado.slnx",
+    "projects": [
+      "LlmTornado.Demo\\LlmTornado.Demo.csproj",
+      "LlmTornado.VectorDatabases.ChromaDB\\LlmTornado.VectorDatabases.ChromaDB.csproj",
+      "LlmTornado.VectorDatabases.PgVector\\LlmTornado.VectorDatabases.PgVector.csproj",
+      "LlmTornado.VectorDatabases.Pinecone\\LlmTornado.VectorDatabases.Pinecone.csproj",
+      "LlmTornado.VectorDatabases\\LlmTornado.VectorDatabases.csproj",
+      "LlmTornado\\LlmTornado.csproj"
+    ]
+  }
+}

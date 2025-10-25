@@ -10,11 +10,59 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using static System.Net.Mime.MediaTypeNames;
+using LlmTornado.VectorDatabases.Pinecone;
+using LlmTornado.VectorDatabases.Pinecone.Integrations;
 
 namespace LlmTornado.Demo;
 
 public class VectorDatabasesDemo
 {
+    [TornadoTest, Flaky("requires specific index")]
+    public static async Task TestPinecone()
+    {
+        TornadoPinecone pinecone = new TornadoPinecone(new PineconeConfigurationOptions(Program.ApiKeys.Pinecone)
+        {
+            IndexName = "dancing-poplar",
+            Dimension = 1024,
+            Cloud = PineconeCloud.Aws,
+            Region = "us-east-1"
+        });
+        
+        await pinecone.DeleteAllDocumentsAsync();
+
+        await pinecone.AddDocumentsAsync([
+            new VectorDocument(
+                id: "doc1", 
+                content: "Apple is a popular fruit known for its sweetness and crisp texture."
+            ),
+            new VectorDocument(
+                id: "doc2",
+                content: "The tech company Apple is known for its innovative products like the iPhone."
+            ),
+            new VectorDocument(
+                id: "doc3",
+                content: "Many people enjoy eating apples as a healthy snack."
+            )
+        ]);
+
+        // it takes a few seconds for the newly inserted docs to be searchable and this isn't exposed via api
+        await Task.Delay(10_000);
+        
+        string searchQuery = "which company is known for iphone?";
+        float[] queryEmbedding = await pinecone.EmbedAsync(searchQuery);
+        
+        VectorDocument[] results = await pinecone.QueryByEmbeddingAsync(queryEmbedding);
+
+        Console.WriteLine($"Search query: '{searchQuery}'");
+        Console.WriteLine("Top results:");
+        foreach (VectorDocument result in results)
+        {
+            Console.WriteLine($"  - ID: {result.Id}");
+            Console.WriteLine($"    Content: {result.Content}");
+            Console.WriteLine($"    Score: {result.Score:F4}\n");
+        }
+    }
+
     [TornadoTest]
     public static async Task TestChromaDB()
     {
@@ -48,9 +96,9 @@ public class VectorDatabasesDemo
         await chromaDB.AddDocumentsAsync([vectorDocument]);
 
         //Query DB for relevant functions
-        var queryData = await chromaDB.QueryByEmbeddingAsync(dataQuery, topK: 5);
+        VectorDocument[] queryData = await chromaDB.QueryByEmbeddingAsync(dataQuery, topK: 5);
 
-        foreach (var item in queryData)
+        foreach (VectorDocument item in queryData)
         {
             Console.WriteLine($"Function Name: {item.Metadata?["FunctionName"]} \n Description: {item.Content}\n\n");
         }
@@ -66,13 +114,13 @@ public class VectorDatabasesDemo
         }
         public async Task<float[]> Invoke(string text)
         {
-            var embResult = await _tornadoApi.Embeddings.CreateEmbedding(_embeddingModel, text);
+            EmbeddingResult? embResult = await _tornadoApi.Embeddings.CreateEmbedding(_embeddingModel, text);
             return embResult?.Data.FirstOrDefault()?.Embedding ?? Array.Empty<float>();
         }
 
         public async Task<float[][]> Invoke(string[] contents)
         {
-            var embResult = await _tornadoApi.Embeddings.CreateEmbedding(_embeddingModel,contents);
+            EmbeddingResult? embResult = await _tornadoApi.Embeddings.CreateEmbedding(_embeddingModel,contents);
             return embResult?.Data.Select(embedding => embedding.Embedding).ToArray() ?? new float[0][];
         }
     }
@@ -94,13 +142,13 @@ public class VectorDatabasesDemo
         await pcdRetriever.CreateParentChildCollection(text, 2000, 200, 1000, 100, tornadoEmbeddingProvider);
 
         string query = "that a single man in possession of a good fortune";
-        var queryEmb = await tornadoEmbeddingProvider.Invoke(query);
+        float[] queryEmb = await tornadoEmbeddingProvider.Invoke(query);
 
-        var result = await pcdRetriever.SearchAsync(queryEmb);
+        IEnumerable<Document> result = await pcdRetriever.SearchAsync(queryEmb);
 
-        foreach(var doc in result)
+        foreach(Document doc in result)
         {
-            var vectorDoc = (VectorDocument)doc;
+            VectorDocument vectorDoc = (VectorDocument)doc;
             Console.WriteLine($"Content: {vectorDoc.Content}\n");
         }
     }

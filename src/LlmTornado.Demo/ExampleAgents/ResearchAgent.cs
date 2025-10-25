@@ -192,7 +192,7 @@ public class ResearchRunnable : OrchestrationRunnable<ChatMessage, string>
                 }))
                 .ToList();
 
-        var researchResults = await Task.WhenAll(researchTasks);
+        string[] researchResults = await Task.WhenAll(researchTasks);
 
         return string.Join("[RESEARCH RESULT]\n\n\n", researchResults.ToList().Select(result => result));
     }

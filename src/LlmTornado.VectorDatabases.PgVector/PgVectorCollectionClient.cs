@@ -290,6 +290,19 @@ public class PgVectorCollectionClient
         await cmd.ExecuteNonQueryAsync();
     }
 
+    public async Task DeleteAllAsync()
+    {
+        using var connection = _client.CreateConnection();
+        await connection.OpenAsync();
+
+        var schema = _client.GetSchema();
+        var tableName = GetTableName();
+        var query = $"DELETE FROM {schema}.{tableName}";
+
+        using var cmd = new NpgsqlCommand(query, connection);
+        await cmd.ExecuteNonQueryAsync();
+    }
+
     public async Task<int> CountAsync()
     {
         using var connection = _client.CreateConnection();

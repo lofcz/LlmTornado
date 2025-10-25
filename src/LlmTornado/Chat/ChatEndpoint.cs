@@ -12,7 +12,7 @@ using LlmTornado.Common;
 namespace LlmTornado.Chat;
 
 /// <summary>
-///     ChatGPT API endpoint. Use this endpoint to send multiple messages and carry on a conversation.
+///     Chat API endpoint. Use this endpoint to send multiple messages and carry on a conversation.
 /// </summary>
 public class ChatEndpoint : EndpointBase
 {

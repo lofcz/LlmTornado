@@ -57,23 +57,23 @@ public partial class ChatDemo : DemoBase
         await new BrowserFetcher().DownloadAsync();
 
         // Set up browser
-        var browser = await Puppeteer.LaunchAsync(new LaunchOptions
+        IBrowser? browser = await Puppeteer.LaunchAsync(new LaunchOptions
         {
             Headless = false, // Set to true for headless operation
             DefaultViewport = new ViewPortOptions { Width = 1440, Height = 900 },
             Args = ["--no-sandbox", "--disable-setuid-sandbox"]
         });
 
-        var page = await browser.NewPageAsync();
+        IPage? page = await browser.NewPageAsync();
         await page.SetViewportAsync(new ViewPortOptions { Width = 1440, Height = 900 });
 
         try
         {
             // Create Computer Use API instance
-            var api = Program.Connect();
+            TornadoApi api = Program.Connect();
 
             // Initial screenshot
-            var screenshot = await page.ScreenshotDataAsync(new ScreenshotOptions { Type = ScreenshotType.Png });
+            byte[]? screenshot = await page.ScreenshotDataAsync(new ScreenshotOptions { Type = ScreenshotType.Png });
             string base64Screenshot = Convert.ToBase64String(screenshot);
 
             Console.WriteLine("🤖 Starting Computer Use automation...");
@@ -107,7 +107,7 @@ public partial class ChatDemo : DemoBase
             {
                 Console.WriteLine($"--- Turn {turn} ---");
 
-                var cc = conversation.Serialize();
+                TornadoRequestContent cc = conversation.Serialize();
                 
                 try
                 {
@@ -117,7 +117,7 @@ public partial class ChatDemo : DemoBase
                     Console.WriteLine($"Model response: {response.Text}");
 
                     // Check if response contains tool calls (UI actions)
-                    var toolCalls = response.Blocks.Where(x => x.Type is ChatRichResponseBlockTypes.Function).Select(x => x.FunctionCall!).ToList();
+                    List<FunctionCall>? toolCalls = response.Blocks.Where(x => x.Type is ChatRichResponseBlockTypes.Function).Select(x => x.FunctionCall!).ToList();
                     if (toolCalls == null || toolCalls.Count == 0)
                     {
                         Console.WriteLine("✅ Task completed - no more actions needed");
@@ -129,7 +129,7 @@ public partial class ChatDemo : DemoBase
                     ChatMessage? msg = null;
 
                     // Execute each UI action
-                    foreach (var toolCall in toolCalls)
+                    foreach (FunctionCall toolCall in toolCalls)
                     {
                         msg = await ExecuteComputerUseAction(page, toolCall);
                     }
@@ -138,7 +138,7 @@ public partial class ChatDemo : DemoBase
                     await Task.Delay(2000);
 
                     // Take new screenshot
-                    var newScreenshot = await page.ScreenshotDataAsync(new ScreenshotOptions { Type = ScreenshotType.Png });
+                    byte[]? newScreenshot = await page.ScreenshotDataAsync(new ScreenshotOptions { Type = ScreenshotType.Png });
                     string newBase64Screenshot = Convert.ToBase64String(newScreenshot);
 
                     msg ??= new ChatMessage(ChatMessageRoles.User, [
@@ -203,8 +203,8 @@ public partial class ChatDemo : DemoBase
                         toolCall.Get("y", out int? y))
                     {
                         // Convert normalized coordinates (0-1000) to actual pixels
-                        var actualX = (int)(x / 1000.0 * 1440);
-                        var actualY = (int)(y / 1000.0 * 900);
+                        int actualX = (int)(x / 1000.0 * 1440);
+                        int actualY = (int)(y / 1000.0 * 900);
 
                         await page.Mouse.ClickAsync(actualX, actualY);
                         Console.WriteLine($"    ✅ Clicked at: ({actualX}, {actualY})");
@@ -216,8 +216,8 @@ public partial class ChatDemo : DemoBase
                         toolCall.Get("y", out int? textY) &&
                         toolCall.Get("text", out string? text))
                     {
-                        var actualTextX = (int)(textX / 1000.0 * 1440);
-                        var actualTextY = (int)(textY / 1000.0 * 900);
+                        int actualTextX = (int)(textX / 1000.0 * 1440);
+                        int actualTextY = (int)(textY / 1000.0 * 900);
 
                         await page.Mouse.ClickAsync(actualTextX, actualTextY);
                         await page.Keyboard.TypeAsync(text);

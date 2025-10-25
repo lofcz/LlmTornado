@@ -188,5 +188,11 @@ public class TornadoPgVector : IVectorDatabase
         );
     }
 
+    public async Task DeleteAllDocumentsAsync()
+    {
+        ThrowIfCollectionNotInitialized();
+        await CollectionClient!.DeleteAllAsync();
+    }
+
     public string GetCollectionName() => CollectionName;
 }

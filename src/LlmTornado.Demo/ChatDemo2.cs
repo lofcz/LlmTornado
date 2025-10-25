@@ -1893,7 +1893,7 @@ public partial class ChatDemo : DemoBase
             new ChatMessagePart(new ChatMessagePartContainerUpload(uploadedFile.Data))
         ]);
 
-        var rr = chat.Serialize();
+        TornadoRequestContent rr = chat.Serialize();
         
         ChatRichResponse response = await chat.GetResponseRich();
         
@@ -2336,5 +2336,87 @@ public partial class ChatDemo : DemoBase
         
         chat.AppendMessage(ChatMessageRoles.User, "What changed in NodeJS v24.4.0?");
         await chat.StreamResponseRich(eventsHandler);
+    }
+    
+    [TornadoTest]
+    public static async Task GoogleMapsGrounding()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Google.Gemini.Gemini25Flash,
+            VendorExtensions = new ChatRequestVendorExtensions(new ChatRequestVendorGoogleExtensions
+            {
+                GoogleMaps = new ChatRequestVendorGoogleMaps(50.0850774, 14.5493792) // prague
+            })
+        });
+        
+        chat.AppendUserInput("What are the best restaurants within a 15-minute walk from here?");
+        
+        ChatRichResponse response = await chat.GetResponseRich();
+        
+        Console.WriteLine("Google Maps Grounding:");
+        Console.WriteLine(response.Text);
+
+        foreach (ChatRichResponseBlock block in response.Blocks)
+        {
+            if (block.Citations?.Count > 0)
+            {
+                Console.WriteLine("\nCitations:");
+                foreach (IChatMessagePartCitation citation in block.Citations)
+                {
+                    if (citation is ChatMessagePartCitationWebSearchResultLocation.ChatMessagePartCitationWebGrounding groundingCitation)
+                    {
+                        foreach (ChatMessagePartCitationWebSearchResultLocation.ChatMessagePartCitationWebGroundingSource source in groundingCitation.Sources)
+                        {
+                            Console.WriteLine($"- {source.Title}: {source.Url}");
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    [TornadoTest]
+    public static async Task GoogleMapsGroundingWithWidget()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.Google.Gemini.Gemini25Flash,
+            VendorExtensions = new ChatRequestVendorExtensions(new ChatRequestVendorGoogleExtensions
+            {
+                GoogleMaps = new ChatRequestVendorGoogleMaps(true, 50.0850774, 14.5493792) // prague
+            })
+        });
+        
+        chat.AppendUserInput("What are the best restaurants within a 15-minute walk from here?");
+        
+        ChatRichResponse response = await chat.GetResponseRich();
+        
+        Console.WriteLine("Google Maps Grounding with Widget:");
+        Console.WriteLine(response.Text);
+        
+        if (response.VendorExtensions?.Google?.GoogleMapsWidgetContextToken is not null)
+        {
+            Console.WriteLine($"\nGoogle Maps Widget Context Token: {response.VendorExtensions.Google.GoogleMapsWidgetContextToken}");
+            Console.WriteLine("You can use this token to render a contextual Google Maps widget in your application.");
+        }
+        
+        foreach (ChatRichResponseBlock block in response.Blocks)
+        {
+            if (block?.Citations?.Count > 0)
+            {
+                Console.WriteLine("\nCitations:");
+                foreach (IChatMessagePartCitation citation in block.Citations)
+                {
+                    if (citation is ChatMessagePartCitationWebSearchResultLocation.ChatMessagePartCitationWebGrounding groundingCitation)
+                    {
+                        foreach (ChatMessagePartCitationWebSearchResultLocation.ChatMessagePartCitationWebGroundingSource source in groundingCitation.Sources)
+                        {
+                            Console.WriteLine($"- {source.Title}: {source.Url}");
+                        }
+                    }
+                }
+            }
+        }
     }
 }
