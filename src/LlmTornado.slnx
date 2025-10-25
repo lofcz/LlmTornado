@@ -23,8 +23,8 @@
   <Project Path="LlmTornado.VectorDatabases.ChromaDB/LlmTornado.VectorDatabases.ChromaDB.csproj" />
   <Project Path="LlmTornado.VectorDatabases.PgVector/LlmTornado.VectorDatabases.PgVector.csproj" />
   <Project Path="LlmTornado.VectorDatabases.Pinecone/LlmTornado.VectorDatabases.Pinecone.csproj" />
-  <Project Path="LlmTornado.VectorDatabases.PgVector/LlmTornado.VectorDatabases.Faiss.csproj" />
-  <Project Path="LlmTornado.VectorDatabases.Pinecone/LlmTornado.VectorDatabases.Qdrant.csproj" />
+  <Project Path="LlmTornado.VectorDatabases.Faiss/LlmTornado.VectorDatabases.Faiss.csproj" />
+  <Project Path="LlmTornado.VectorDatabases.Qdrant/LlmTornado.VectorDatabases.Qdrant.csproj" />
   <Project Path="LlmTornado.VectorDatabases/LlmTornado.VectorDatabases.csproj" />
   <Project Path="LlmTornado/LlmTornado.csproj" />
 </Solution>
