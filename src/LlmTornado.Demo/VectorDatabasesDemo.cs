@@ -7,12 +7,62 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using LlmTornado.VectorDatabases.Pinecone;
+using LlmTornado.VectorDatabases.Pinecone.Integrations;
 using static System.Net.Mime.MediaTypeNames;
 
 namespace LlmTornado.Demo;
 
 public class VectorDatabasesDemo
 {
+    [TornadoTest, Flaky("requires specific index")]
+    public static async Task TestPinecone()
+    {
+        TornadoPinecone pinecone = new TornadoPinecone(new PineconeConfigurationOptions(Program.ApiKeys.Pinecone)
+        {
+            IndexName = "dancing-poplar",
+            Dimension = 1024,
+            Cloud = PineconeCloud.Aws,
+            Region = "us-east-1"
+        });
+
+        pinecone.PineconeClient.Client
+        
+        await pinecone.DeleteAllDocumentsAsync();
+
+        await pinecone.AddDocumentsAsync([
+            new VectorDocument(
+                id: "doc1", 
+                content: "Apple is a popular fruit known for its sweetness and crisp texture."
+            ),
+            new VectorDocument(
+                id: "doc2",
+                content: "The tech company Apple is known for its innovative products like the iPhone."
+            ),
+            new VectorDocument(
+                id: "doc3",
+                content: "Many people enjoy eating apples as a healthy snack."
+            )
+        ]);
+
+        // it takes a few seconds for the newly inserted docs to be searchable and this isn't exposed via api
+        await Task.Delay(10_000);
+        
+        string searchQuery = "which company is known for iphone?";
+        float[] queryEmbedding = await pinecone.EmbedAsync(searchQuery);
+        
+        VectorDocument[] results = await pinecone.QueryByEmbeddingAsync(queryEmbedding);
+
+        Console.WriteLine($"Search query: '{searchQuery}'");
+        Console.WriteLine("Top results:");
+        foreach (VectorDocument result in results)
+        {
+            Console.WriteLine($"  - ID: {result.Id}");
+            Console.WriteLine($"    Content: {result.Content}");
+            Console.WriteLine($"    Score: {result.Score:F4}\n");
+        }
+    }
+
     [TornadoTest]
     public static async Task TestChromaDB()
     {

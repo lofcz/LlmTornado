@@ -197,6 +197,14 @@ namespace LlmTornado.VectorDatabases.Intergrations
                 );
         }
 
+        public async Task DeleteAllDocumentsAsync()
+        {
+            ThrowIfCollectionNotInitialized();
+            
+            // ChromaDB efficiently deletes all documents using an empty where clause
+            await CollectionClient.DeleteAll();
+        }
+
         public string GetCollectionName() => CollectionName;
     }
 }

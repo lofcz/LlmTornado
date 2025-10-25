@@ -129,6 +129,12 @@ public interface IVectorDatabase
     /// <returns>A task that represents the asynchronous delete operation.</returns>
     public Task DeleteDocumentsAsync(string[] ids);
     /// <summary>
+    /// Deletes all documents in the current collection/namespace.
+    /// This operation is irreversible and will remove all vectors but preserve the collection structure.
+    /// </summary>
+    /// <returns>A task that represents the asynchronous delete all operation.</returns>
+    public Task DeleteAllDocumentsAsync();
+    /// <summary>
     /// Query the vector database using an embedding vector to find the most similar documents.
     /// </summary>
     /// <param name="embedding">The embedding vector to query against.</param>

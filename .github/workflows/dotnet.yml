@@ -33,11 +33,11 @@ jobs:
         node-version: '22'
         
     - name: Restore dependencies
-      run: dotnet restore LlmTornado.sln
+      run: dotnet restore LlmTornado.slnx
       working-directory: ./src
 
     - name: Build projects for .NET Core
-      run: dotnet build LlmTornado.sln --no-restore --configuration Release -p:GeneratePackageOnBuild=false -p:SkipViteBuild=true
+      run: dotnet build LlmTornado.slnx --no-restore --configuration Release -p:GeneratePackageOnBuild=false -p:SkipViteBuild=true
       working-directory: ./src
 
     - name: Update GitHub status check
@@ -71,11 +71,11 @@ jobs:
         dotnet-version: '10.0.100-preview.5.25277.114'
         
     - name: Restore dependencies for LlmTornado
-      run: dotnet restore LlmTornado.sln
+      run: dotnet restore LlmTornado.slnx
       working-directory: ./src/LlmTornado
 
     - name: Build LlmTornado for .NET Framework
-      run: dotnet build LlmTornado.sln --no-restore --framework net462 --configuration Release
+      run: dotnet build LlmTornado.slnx --no-restore --framework net462 --configuration Release
       working-directory: ./src/LlmTornado
 
     - name: Update GitHub status check for .NET Framework build
@@ -109,11 +109,11 @@ jobs:
         dotnet-version: '10.0.100-preview.5.25277.114'
         
     - name: Restore dependencies for LlmTornado
-      run: dotnet restore LlmTornado.sln
+      run: dotnet restore LlmTornado.slnx
       working-directory: ./src/LlmTornado
 
     - name: Build LlmTornado for .NET Standard 2.0
-      run: dotnet build LlmTornado.sln --no-restore --framework netstandard2.0 --configuration Release
+      run: dotnet build LlmTornado.slnx --no-restore --framework netstandard2.0 --configuration Release
       working-directory: ./src/LlmTornado
 
     - name: Update GitHub status check for .NET Standard build

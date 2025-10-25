@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using LlmTornado.Images;
 using Microsoft.Extensions.AI;
+#pragma warning disable MEAI001
 
 namespace LlmTornado.Microsoft.Extensions.AI;
 
