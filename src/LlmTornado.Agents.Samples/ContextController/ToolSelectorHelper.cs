@@ -1,43 +1,41 @@
 ﻿using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
+using LlmTornado.Common;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
+namespace LlmTornado.Agents.Samples.ContextController;
 
-namespace LlmTornado.Agents;
-
-public class AgentHandoffUtility
+public class ToolSelectorHelper
 {
     /// <summary>
     /// Creates a response format for handing off to another agent.
     /// </summary>
-    /// <param name="handoffs">Agents to add to enum list of selectable agents</param>
+    /// <param name="tools">Agents to add to enum list of selectable agents</param>
     /// <returns></returns>
     /// <exception cref="ArgumentException"></exception>
     /// <exception cref="InvalidOperationException"></exception>
-    public static ChatRequestResponseFormats CreateHandoffResponseFormat(TornadoAgent[] handoffs)
+    public static ChatRequestResponseFormats CreateResponseFormat(Tool[] tools)
     {
-        if (handoffs == null || handoffs.Length == 0) throw new ArgumentException("Handoffs cannot be null or empty", nameof(handoffs));
+        if (tools == null || tools.Length == 0) throw new ArgumentException("Tools cannot be null or empty", nameof(tools));
 
-        List<string> agentNames = handoffs.Select(h => h.Id).ToList();
-        agentNames.Add("CurrentAgent"); // Add the current agent as an option
+        List<string> toolNames = tools.Where(t=>t.ToolName is not null)?.Select(t => t.ToolName)!.ToList<string>() ?? new List<string>();
 
-        dynamic? responseFormat = ConvertObjectDictionaryToDynamic(CreateHandoffObjectSchemaFormat(agentNames.ToArray()));
+        dynamic? responseFormat = ConvertObjectDictionaryToDynamic(CreateObjectSchemaFormat(toolNames.ToArray()));
 
         if (responseFormat == null)
         {
-            throw new InvalidOperationException("Failed to convert handoff object schema to dynamic format.");
+            throw new InvalidOperationException("Failed to convert tools object schema to dynamic format.");
         }
 
         return ChatRequestResponseFormats.StructuredJson(
-            "handoff",
+            "ToolsSelection",
             responseFormat,
-            "I need you to decide if you need to handoff the conversation to another agent.",
+            "A list of available Tools",
             true
         );
 
@@ -53,11 +51,11 @@ public class AgentHandoffUtility
         return Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(json);
     }
 
-    private static Dictionary<string, object> CreateHandoffObjectSchemaFormat(string[] agentNames)
+    private static Dictionary<string, object> CreateObjectSchemaFormat(string[] toolNames)
     {
 
-        string[] requiredProperties = ["reason", "agent"];
-        string[] arrayPropertiesRequired = ["Agents"];
+        string[] requiredProperties = ["reason", "tool"];
+        string[] arrayPropertiesRequired = ["tools"];
 
         Dictionary<string, object> arraySchema = new Dictionary<string, object>
         {
@@ -70,13 +68,13 @@ public class AgentHandoffUtility
                     ["reason"] = new Dictionary<string, object>
                     {
                         ["type"] = "string",
-                        ["description"] = "Reason for the handoff"
+                        ["description"] = "Reason for the tool selection"
                     },
-                    ["agent"] = new Dictionary<string, object>
+                    ["tool"] = new Dictionary<string, object>
                     {
                         ["type"] = "string",
-                        ["description"] = "The Agent to select",
-                        ["enum"] = agentNames
+                        ["description"] = "The tool to select",
+                        ["enum"] = toolNames
                     }
                 },
                 ["required"] = requiredProperties,
@@ -84,23 +82,23 @@ public class AgentHandoffUtility
             }
         };
 
-        Dictionary<string, object> handoffSchema = new Dictionary<string, object>
+        Dictionary<string, object> toolsSchema = new Dictionary<string, object>
         {
-            ["Agents"] = arraySchema,
+            ["tools"] = arraySchema,
         };
 
         return new Dictionary<string, object>
         {
             ["type"] = "object",
-            ["properties"] = handoffSchema,
+            ["properties"] = toolsSchema,
             ["required"] = arrayPropertiesRequired,
             ["additionalProperties"] = false
         };
     }
 
-    public static List<string> ParseHandoffResponse(string response)
+    public static List<string> ParseResponse(string response)
     {
-        List<string> selectedAgents = new();
+        List<string> selectedTools = new();
         if (string.IsNullOrEmpty(response))
         {
             throw new ArgumentException("Response cannot be null or empty", nameof(response));
@@ -108,28 +106,27 @@ public class AgentHandoffUtility
         try
         {
             using JsonDocument doc = JsonDocument.Parse(response);
-            if(doc.RootElement.TryGetProperty("agents", out JsonElement array))
+            if (doc.RootElement.TryGetProperty("tools", out JsonElement array))
             {
-                List<JsonElement> agentArray = array.EnumerateArray().ToList();
-                if(agentArray.Count == 0)
+                List<JsonElement> toolArray = array.EnumerateArray().ToList();
+                if (toolArray.Count == 0)
                 {
-                    selectedAgents.Add("CurrentAgent"); // No agents specified, return current agent
-                    return selectedAgents;
+                    return selectedTools;
                 }
-                
-                foreach (var agent in agentArray)
+
+                foreach (var tool in toolArray)
                 {
-                    if (agent.TryGetProperty("agent", out JsonElement agentNameElement))
+                    if (tool.TryGetProperty("tool", out JsonElement toolNameElement))
                     {
-                        string? agentName = agentNameElement.GetString();
-                        if (agentName is not null && !string.IsNullOrEmpty(agentName))
+                        string? toolName = toolNameElement.GetString();
+                        if (toolName is not null && !string.IsNullOrEmpty(toolName))
                         {
-                            selectedAgents.Add(agentName);
+                            selectedTools.Add(toolName);
                         }
                     }
                     else
                     {
-                        throw new FormatException("Response does not contain required properties 'Reason' and 'Agent'.");
+                        throw new FormatException("Response does not contain required properties 'Reason' and 'Tool'.");
                     }
                 }
             }
@@ -139,6 +136,6 @@ public class AgentHandoffUtility
             throw new FormatException("Response is not in the expected JSON format.", ex);
         }
 
-        return selectedAgents;
+        return selectedTools;
     }
 }

@@ -12,60 +12,50 @@ using System.Threading.Tasks;
 
 namespace LlmTornado.Agents.Samples.ContextController;
 
-public class ContextService
+public interface IToolContextService
 {
-    public List<Tool> AvailableTools { get; set; } = new List<Tool>();
-    public List<ChatMessage> ChatMessages { get; set; } = new List<ChatMessage>();
+    public Task<List<Tool>> GetToolContext();
+}
 
-    private Dictionary<string, ChatModel> modelLibrary { get; set; } = new Dictionary<string, ChatModel>();
-    /// <summary>
-    /// Set the name and the description of the model to be used in the context
-    /// </summary>
-    private Dictionary<string, string> modelDescriptions { get; set; } = new Dictionary<string, string>();
+public interface IModelContextService
+{
+    public Task<ChatModel> GetModelContext();
+}
 
-    private List<ChatMessage> unsavedMessages  = new List<ChatMessage>();
-    
-    public List<string> GoalHistory { get; set; } = new List<string>();
+public interface IMessageContextService
+{
+    public Task<List<ChatMessage>> GetChatContext();
+}
 
-    public string? Goal => GoalHistory.LastOrDefault();
+public interface IInstructionsContextService
+{
+    public Task<string> GetInstructionsContext();
+}
 
+public interface IContextService
+{
+    public Task<AgentContext> GetAgentContext();
+}
+
+
+public class ToolContextService : IToolContextService
+{
     public IVectorDatabase ToolStore { get; set; } // Will need this when tools exceed 50
-
-    public IVectorDatabase LongTermMemory { get; set; }
-
-    public CompressedContextStore CompressedContextStore { get; set; } = new CompressedContextStore();
-
-    public TornadoApi Client { get; set; }
-
-    public ContextService(TornadoApi client)
-    {
-        Client = client;
-    }
+    public List<Tool> AvailableTools { get; set; } = new List<Tool>();
 
     public async Task<List<Tool>> GetToolContext()
     {
         throw new NotImplementedException();
     }
+}
 
-    public async Task<List<ChatMessage>> GetChatContext()
-    {
-        throw new NotImplementedException();
-    }
-
-    public async Task<string> GetInstructionsContext()
-    {
-        throw new NotImplementedException();
-    }
-
-    public async Task<ChatModel> GetModelContext()
-    {
-        throw new NotImplementedException();
-    }
-
-    public async Task ReviewToDo(ChatMessage message)
-    {
-        throw new NotImplementedException();
-    }
+public class ModelContextService : IModelContextService
+{
+    private Dictionary<string, ChatModel> modelLibrary { get; set; } = new Dictionary<string, ChatModel>();
+    /// <summary>
+    /// Set the name and the description of the model to be used in the context
+    /// </summary>
+    private Dictionary<string, string> modelDescriptions { get; set; } = new Dictionary<string, string>();
 
     /// <summary>
     /// Adds a model to the internal library for selection
@@ -79,30 +69,53 @@ public class ContextService
         modelDescriptions[name] = description;
     }
 
-    public async Task<TornadoAgent> GetAgent()
+    public async Task<ChatModel> GetModelContext()
     {
-        TornadoAgent agent = new TornadoAgent(Client, await GetModelContext());
+        throw new NotImplementedException();
+    }
+}
 
-        List<Tool> tools = await GetToolContext();
-        foreach (var tool in tools)
-        {
-            if(tool.RemoteTool != null)
-                agent.AddMcpTools([tool]);
-            else
-                agent.AddTornadoTool(tool);
-        }
+public class MessageContextService : IMessageContextService
+{
+    public List<ChatMessage> ChatMessages { get; set; } = new List<ChatMessage>();
 
-        agent.Instructions = await GetInstructionsContext();
+    private List<ChatMessage> unsavedMessages = new List<ChatMessage>();
+    public IVectorDatabase LongTermMemory { get; set; }
+    public CompressedContextStore CompressedContextStore { get; set; } = new CompressedContextStore();
 
-        return agent;
+    public async Task<List<ChatMessage>> GetChatContext()
+    {
+        throw new NotImplementedException();
     }
 
+    private async Task StoreNewMessages(List<ChatMessage> newMessages)
+    {
+        unsavedMessages.AddRange(newMessages);
+    }
+
+}
+
+public class InstructionContextService : IInstructionsContextService
+{
+    public TornadoApi Client { get; set; }
+    public List<string> GoalHistory { get; set; } = new List<string>();
+    public string? Goal => GoalHistory.LastOrDefault();
+
+    public InstructionContextService(TornadoApi api)
+    {
+        Client = api;
+    }
+
+    public async Task<string> GetInstructionsContext()
+    {
+        throw new NotImplementedException();
+    }
     private struct GoalMessage
     {
         public string Goal { get; set; }
     }
 
-    private async Task UpdateGoal(ChatMessage newMessage)
+    private async Task UpdateGoal(ChatMessage newMessage, List<ChatMessage> chatHistory)
     {
         string? userPrompt = newMessage.GetMessageContent();
         if (string.IsNullOrEmpty(userPrompt))
@@ -114,37 +127,63 @@ If the message contains any information about the user's intent or desired outco
         contextAgent.UpdateOutputSchema(typeof(GoalMessage));
 
         Conversation conv = await contextAgent.RunAsync(
-            appendMessages: ChatMessages.TakeLast(10).ToList());
+            appendMessages: chatHistory.TakeLast(10).ToList());
 
         GoalMessage result = conv.Messages.Last().Content.ParseJson<GoalMessage>();
 
         GoalHistory.Add(result.Goal);
     }
+}
 
-    private async Task StoreNewMessages(List<ChatMessage> newMessages)
+public class AgentContext
+{
+    public List<Tool> Tools { get; set; } = new List<Tool>();
+    public ChatModel Model { get; set; }
+    public List<ChatMessage> ChatMessages { get; set; } = new List<ChatMessage>();
+    public string Instructions { get; set; } = string.Empty;
+}
+
+
+public class ContextService : IContextService
+{   
+    public TornadoApi Client { get; set; }
+
+    public IInstructionsContextService InstructionsContextService { get; set; }
+    public IToolContextService ToolContextService { get; set; }
+    public IModelContextService ModelContextService { get; set; }
+    public IMessageContextService MessageContextService { get; set; }
+
+    public ContextService(
+        TornadoApi client, 
+        IInstructionsContextService instructionsContextService, 
+        IToolContextService toolContextService, 
+        IModelContextService modelContextService, 
+        IMessageContextService messageContextService)
     {
-        unsavedMessages.AddRange(newMessages);
+        Client = client;
+        InstructionsContextService = instructionsContextService;
+        ToolContextService = toolContextService;
+        ModelContextService = modelContextService;
+        MessageContextService = messageContextService;
     }
 
-    public async Task<Conversation> RunAgentWithContext(ChatMessage message, CancellationToken cancellationToken)
+    public TornadoApi GetClient()
     {
-        //Update Goal
-        await UpdateGoal(message);
+        return Client;
+    }
 
-        //Generate Chat Context
-        List<ChatMessage> chatContext = await GetChatContext();
+    public async Task<AgentContext> GetAgentContext()
+    {
+        AgentContext context = new AgentContext();
 
-        //Create Agent
-        TornadoAgent tornadoAgent = await GetAgent();
+        context.Model = await ModelContextService.GetModelContext();
 
-        // Run Agent
-        Conversation conversation = await tornadoAgent.RunAsync(appendMessages: chatContext, cancellationToken: cancellationToken);
+        context.Tools = await ToolContextService.GetToolContext();
 
-        // Track unsaved messages
-        List<ChatMessage> newMessages = conversation.Messages.Skip(chatContext.Count).ToList();
-        await StoreNewMessages(newMessages);
+        context.Instructions = await InstructionsContextService.GetInstructionsContext();
 
-        //Return conversation
-        return conversation;
+        context.ChatMessages = await MessageContextService.GetChatContext();
+
+        return context;
     }
 }

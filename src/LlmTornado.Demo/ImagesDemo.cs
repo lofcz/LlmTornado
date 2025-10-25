@@ -1,9 +1,10 @@
-using System.Diagnostics;
 using LlmTornado.Code;
 using LlmTornado.Images;
 using LlmTornado.Images.Models;
 using LlmTornado.Images.Vendors.Google;
 using LlmTornado.Models;
+using PuppeteerSharp;
+using System.Diagnostics;
 
 
 namespace LlmTornado.Demo;
@@ -187,5 +188,57 @@ public class ImagesDemo : DemoBase
         });
         
         await DisplayImage(generatedImg);
+    }
+   
+    [TornadoTest]
+    [Flaky("expensive")]
+    public static async Task EditLogoGpt1()
+    {
+        byte[] bytes = await File.ReadAllBytesAsync("Static/Images/logo.png");
+        string base64 = Convert.ToBase64String(bytes);
+        var request = new ImageEditRequest("Can you Redesign our logo make it more modern and sophisticated")
+        {
+            Quality = TornadoImageQualities.High,
+            NumOfImages = 2,
+            Model = ImageModel.OpenAi.Gpt.V1,
+            Image = new TornadoInputFile(base64, "image/png")
+        };
+
+        ImageGenerationResult? edited = await Program.Connect().ImageEdit.EditImage(request);
+
+        await SaveImages("logo", edited);
+    }
+
+    public static async Task SaveImages(string imageName, ImageGenerationResult generatedImg)
+    {
+        if (generatedImg?.Data == null || generatedImg.Data.Count == 0)
+        {
+            Console.WriteLine("No image data available.");
+            return;
+        }
+
+        foreach(var imgData in generatedImg.Data)
+        {
+            byte[] imageBytes;
+            if (!string.IsNullOrEmpty(imgData.Base64))
+            {
+                imageBytes = Convert.FromBase64String(imgData.Base64);
+            }
+            else if (!string.IsNullOrEmpty(imgData.Url))
+            {
+                using (HttpClient httpClient = new HttpClient())
+                {
+                    imageBytes = await httpClient.GetByteArrayAsync(imgData.Url);
+                }
+            }
+            else
+            {
+                Console.WriteLine("No base64 data or URL available in the image result.");
+                continue;
+            }
+            string filePath = Path.Combine(Directory.GetCurrentDirectory(), $"{imageName}_{Guid.NewGuid()}.png");
+            await File.WriteAllBytesAsync(filePath, imageBytes);
+            Console.WriteLine($"Image saved to: {filePath}");
+        }
     }
 }
