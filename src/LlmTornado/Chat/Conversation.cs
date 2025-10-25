@@ -25,7 +25,10 @@ public class Conversation
     private readonly ChatEndpoint endpoint;
     private readonly List<ChatMessage> messages;
     private readonly ResponsesEndpoint responsesEndpoint;
-
+    /// <summary>
+    ///     Strategy for determining when compression should occur.
+    /// </summary>
+    public IContextManager? ContextManager { get; set; }
     /// <summary>
     ///     Creates a new conversation.
     /// </summary>
@@ -2087,78 +2090,5 @@ public class Conversation
 
     #endregion
 
-    #region Message Compression
 
-    /// <summary>
-    ///     Strategy for determining when compression should occur.
-    /// </summary>
-    public IContextManager? ContextManager { get; set; }
-
-
-    /// <summary>
-    ///     Gets the approximate character length of a message, including all parts.
-    /// </summary>
-    internal static int GetMessageLength(ChatMessage message)
-    {
-        int length = 0;
-
-        if (message.Content != null)
-        {
-            length += message.Content.Length;
-        }
-
-        if (message.Parts != null)
-        {
-            foreach (ChatMessagePart part in message.Parts)
-            {
-                if (part.Text != null)
-                {
-                    length += part.Text.Length;
-                }
-                // Note: Images, audio, and other non-text parts are being stripped after compression
-            }
-        }
-
-        if (message.Reasoning != null)
-        {
-            length += message.Reasoning.Length;
-        }
-
-        if (message.ReasoningContent != null)
-        {
-            length += message.ReasoningContent.Length;
-        }
-
-        return length;
-    }
-
-    /// <summary>
-    ///     Gets the text content of a message, combining Content and Parts.
-    /// </summary>
-    internal static string GetMessageContent(ChatMessage message)
-    {
-        if (message.Content != null)
-        {
-            return message.Content;
-        }
-
-        if (message.FunctionCall != null)
-        {
-            return message.FunctionCall.ToJson(true);
-        }
-
-        string partsContent = string.Empty;
-        if (message.Parts != null)
-        {
-            partsContent = string.Join(" ", message.Parts.Where(p => p.Text != null).Select(p => p.Text));
-            if (message.Parts.Any(p => p.Reasoning is not null))
-            {
-                partsContent += "\n [REASONING]: " + string.Join(" ", message.Parts.Where(p => p.Reasoning != null).Select(p => p.Reasoning?.Content));
-            }
-        }
-
-        return partsContent;
-    }
-
-    #endregion
 }

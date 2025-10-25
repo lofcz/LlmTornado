@@ -387,13 +387,13 @@ public partial class ChatDemo : DemoBase
             ChatRichResponse response1 = await conversation.GetResponseRichContext();
             conversation.AddAssistantMessage(response);
 
-            int totalChars = conversation.Messages.Sum(m => Conversation.GetMessageLength(m));
+            int totalChars = conversation.Messages.Sum(m => m.GetMessageLength());
 
             Console.WriteLine($"Turn {turnCount}: (messages: {conversation.Messages.Count})");
         }
 
         Console.WriteLine();
-        int finalChars = conversation.Messages.Sum(m => Conversation.GetMessageLength(m));
+        int finalChars = conversation.Messages.Sum(m => m.GetMessageLength());
         Console.WriteLine($"Final state: {conversation.Messages.Count} messages, {finalChars:N0} characters");
     }
 }

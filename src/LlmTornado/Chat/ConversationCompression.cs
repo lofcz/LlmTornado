@@ -115,7 +115,7 @@ public class TornadoCompressionStrategy : IConversationCompressionStrategy
     public bool ShouldCompress(Conversation conversation)
     {
         int messageCount = conversation.Messages.Count;
-        int totalChars = conversation.Messages.Sum(m => Conversation.GetMessageLength(m));
+        int totalChars = conversation.Messages.Sum(m => m.GetMessageLength());
 
         // Compress if either threshold is exceeded
         return messageCount > messageThreshold || totalChars > characterThreshold;
@@ -134,7 +134,7 @@ public class TornadoCompressionStrategy : IConversationCompressionStrategy
             MaxSummaryTokens = options.MaxSummaryTokens
         };
 
-        int totalChars = conversation.Messages.Sum(m => Conversation.GetMessageLength(m));
+        int totalChars = conversation.Messages.Sum(m => m.GetMessageLength());
 
         return adaptedOptions;
     }
@@ -191,7 +191,7 @@ public class CharacterCountCompressionStrategy : IConversationCompressionStrateg
 
     public bool ShouldCompress(Conversation conversation)
     {
-        int totalChars = conversation.Messages.Sum(m => Conversation.GetMessageLength(m));
+        int totalChars = conversation.Messages.Sum(m => m.GetMessageLength());
         return totalChars > characterThreshold;
     }
 
@@ -269,7 +269,7 @@ public class AdaptiveCompressionStrategy : IConversationCompressionStrategy
     public bool ShouldCompress(Conversation conversation)
     {
         int messageCount = conversation.Messages.Count;
-        int totalChars = conversation.Messages.Sum(m => Conversation.GetMessageLength(m));
+        int totalChars = conversation.Messages.Sum(m => m.GetMessageLength());
 
         // Compress if either threshold is exceeded
         return messageCount > messageThreshold || totalChars > characterThreshold;
@@ -287,7 +287,7 @@ public class AdaptiveCompressionStrategy : IConversationCompressionStrategy
             MaxSummaryTokens = options.MaxSummaryTokens
         };
 
-        int totalChars = conversation.Messages.Sum(m => Conversation.GetMessageLength(m));
+        int totalChars = conversation.Messages.Sum(m => m.GetMessageLength());
 
         return adaptedOptions;
     }
@@ -321,7 +321,7 @@ public class DefaultConversationSummarizer : IConversationSummarizer
 
         foreach (ChatMessage msg in conversation.Messages)
         {
-            int msgLength = Conversation.GetMessageLength(msg);
+            int msgLength = msg.GetMessageLength();
 
             if (currentChunkLength + msgLength > options.ChunkSize && currentChunk.Count > 0)
             {
@@ -373,7 +373,7 @@ public class DefaultConversationSummarizer : IConversationSummarizer
                 _ => "Unknown"
             };
 
-            chunkText.AppendLine($"{roleStr}: {Conversation.GetMessageContent(msg)}");
+            chunkText.AppendLine($"{roleStr}: {msg.GetMessageContent()}");
         }
 
         // Create a temporary chat request for summarization
@@ -418,7 +418,7 @@ public class TornadoConversationSummarizer : IConversationSummarizer
 
         foreach (ChatMessage msg in content.MessagesToCompress)
         {
-            int msgLength = Conversation.GetMessageLength(msg);
+            int msgLength = msg.GetMessageLength();
 
             if (currentChunkLength + msgLength > options.ChunkSize && currentChunk.Count > 0)
             {
@@ -470,7 +470,7 @@ public class TornadoConversationSummarizer : IConversationSummarizer
                 _ => "Unknown"
             };
 
-            chunkText.AppendLine($"{roleStr}: {Conversation.GetMessageContent(msg)}");
+            chunkText.AppendLine($"{roleStr}: {msg.GetMessageContent()}");
         }
 
         try
