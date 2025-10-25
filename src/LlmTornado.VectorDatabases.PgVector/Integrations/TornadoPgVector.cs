@@ -43,6 +43,7 @@ public class TornadoPgVector : IVectorDatabase
         
         CollectionName = collectionName;
         PgVectorCollection = await PgVectorClient.GetOrCreateCollectionAsync(collectionName, _vectorDimension);
+        PgVectorCollection.VectorDimension = _vectorDimension;
         CollectionClient = new PgVectorCollectionClient(PgVectorCollection, PgVectorClient);
     }
 
@@ -122,12 +123,12 @@ public class TornadoPgVector : IVectorDatabase
         )).ToArray();
     }
 
-    public VectorDocument[] QueryByEmbedding(float[] embedding, TornadoWhereOperator? where = null, int topK = 5, bool includeScore = false)
+    public VectorDocument[] QueryByEmbedding(float[] embedding, TornadoWhereOperator? where = null, int topK = 5, bool includeScore = true)
     {
         return Task.Run(async () => await QueryByEmbeddingAsync(embedding, where, topK, includeScore)).Result;
     }
 
-    public async Task<VectorDocument[]> QueryByEmbeddingAsync(float[] embedding, TornadoWhereOperator? where = null, int topK = 5, bool includeScore = false)
+    public async Task<VectorDocument[]> QueryByEmbeddingAsync(float[] embedding, TornadoWhereOperator? where = null, int topK = 5, bool includeScore = true)
     {
         ThrowIfCollectionNotInitialized();
         

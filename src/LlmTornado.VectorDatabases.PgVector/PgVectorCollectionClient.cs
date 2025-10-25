@@ -78,14 +78,14 @@ public class PgVectorCollectionClient
                    (embedding <=> @embedding::vector) as distance 
             FROM {schema}.{tableName}");
 
-        if (whereMetadata != null && whereMetadata.Count > 0)
+        if (whereMetadata is { Count: > 0 })
         {
             queryBuilder.Append(" WHERE ");
             queryBuilder.Append(BuildMetadataFilter(whereMetadata));
         }
 
         queryBuilder.Append($@"
-            ORDER BY embedding <=> @embedding::vector 
+            ORDER BY embedding desc
             LIMIT @limit");
 
         await using NpgsqlCommand cmd = new NpgsqlCommand(queryBuilder.ToString(), connection);
@@ -127,8 +127,9 @@ public class PgVectorCollectionClient
 
         string schema = _client.GetSchema();
         string tableName = GetTableName();
-
+        
         await using NpgsqlTransaction transaction = await connection.BeginTransactionAsync();
+        
         try
         {
             for (int i = 0; i < ids.Count; i++)
@@ -172,8 +173,9 @@ public class PgVectorCollectionClient
 
         string schema = _client.GetSchema();
         string tableName = GetTableName();
-
+        
         await using NpgsqlTransaction transaction = await connection.BeginTransactionAsync();
+        
         try
         {
             for (int i = 0; i < ids.Count; i++)
@@ -233,8 +235,9 @@ public class PgVectorCollectionClient
 
         string schema = _client.GetSchema();
         string tableName = GetTableName();
-
+        
         await using NpgsqlTransaction transaction = await connection.BeginTransactionAsync();
+        
         try
         {
             for (int i = 0; i < ids.Count; i++)

@@ -222,7 +222,7 @@ public class TornadoPinecone : IVectorDatabase
         float[] embedding,
         TornadoWhereOperator? where = null,
         int topK = 5,
-        bool includeScore = false)
+        bool includeScore = true)
     {
         return Task.Run(async () => await QueryByEmbeddingAsync(embedding, where, topK, includeScore)).Result;
     }

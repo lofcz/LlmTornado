@@ -142,7 +142,7 @@ public interface IVectorDatabase
     /// <param name="topK">How many results to report back</param>
     /// <param name="includeScore">A value indicating whether to include the similarity score in the returned results.</param>
     /// <returns>An array of <see cref="VectorDocument"/> objects representing the most similar documents.</returns>
-    public VectorDocument[] QueryByEmbedding(float[] embedding, TornadoWhereOperator? where = null, int topK = 5, bool includeScore = false);
+    public VectorDocument[] QueryByEmbedding(float[] embedding, TornadoWhereOperator? where = null, int topK = 5, bool includeScore = true);
     /// <summary>
     /// Queries the vector database using the provided embedding and retrieves the most relevant documents.
     /// </summary>
@@ -153,5 +153,5 @@ public interface IVectorDatabase
     /// <returns>A task that represents the asynchronous operation. The task result contains an array of <see
     /// cref="VectorDocument"/> objects  representing the most relevant documents. The array will be empty if no
     /// matching documents are found.</returns>
-    public Task<VectorDocument[]> QueryByEmbeddingAsync(float[] embedding, TornadoWhereOperator? where = null, int topK = 5, bool includeScore = false);
+    public Task<VectorDocument[]> QueryByEmbeddingAsync(float[] embedding, TornadoWhereOperator? where = null, int topK = 5, bool includeScore = true);
 }

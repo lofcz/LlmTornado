@@ -273,7 +273,7 @@ public class QdrantVectorDatabase : IVectorDatabase
         float[] embedding,
         TornadoWhereOperator? where = null,
         int topK = 5,
-        bool includeScore = false)
+        bool includeScore = true)
     {
         return Task.Run(async () =>
             await QueryByEmbeddingAsync(embedding, where, topK, includeScore)).Result;
@@ -286,7 +286,7 @@ public class QdrantVectorDatabase : IVectorDatabase
         float[] embedding,
         TornadoWhereOperator? where = null,
         int topK = 5,
-        bool includeScore = false)
+        bool includeScore = true)
     {
         ThrowIfCollectionNotInitialized();
 
@@ -312,7 +312,7 @@ public class QdrantVectorDatabase : IVectorDatabase
     /// <summary>
     /// Converts a Qdrant ScoredPoint to a VectorDocument.
     /// </summary>
-    private VectorDocument ConvertToVectorDocument(ScoredPoint scoredPoint, bool includeScore = false)
+    private VectorDocument ConvertToVectorDocument(ScoredPoint scoredPoint, bool includeScore = true)
     {
         var id = scoredPoint.Id.Uuid;
         var embedding = scoredPoint.Vectors?.Vector?.Data?.ToArray() ?? Array.Empty<float>();

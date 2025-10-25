@@ -3,7 +3,7 @@
   <PropertyGroup>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <TargetFrameworks>net8.0;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>net8.0;</TargetFrameworks>
     <LangVersion>preview</LangVersion>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Title>LlmTornado.VectorDatabases.PgVector</Title>
@@ -13,8 +13,7 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <PackageReference Include="LlmTornado.VectorDatabases" Version="1.0.0" />
-    <PackageReference Include="Npgsql" Version="8.0.5" />
+    <PackageReference Include="Npgsql" Version="[9.0.4, )" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -31,6 +30,9 @@
     </PropertyGroup>
     <ItemGroup>
         <None Include="nuget_logo.jpg" Pack="true" PackagePath="\" />
+    </ItemGroup>
+    <ItemGroup>
+      <ProjectReference Include="..\LlmTornado.VectorDatabases\LlmTornado.VectorDatabases.csproj" />
     </ItemGroup>
 
   <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
