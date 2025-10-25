@@ -13,7 +13,7 @@ namespace LlmTornado.Agents.Samples.ContextController;
 /// <summary>
 ///     Options for messages compression.
 /// </summary>
-public class ConversationCompressionOptions
+public class MessageCompressionOptions
 {
     /// <summary>
     ///     The approximate character count per chunk (default: 10000).
@@ -49,7 +49,7 @@ public class ConversationCompressionOptions
 /// <summary>
 ///     Strategy for determining when messages compression should occur.
 /// </summary>
-public interface IConversationCompressionStrategy
+public interface IMessagesCompressionStrategy
 {
     /// <summary>
     ///     Determines if compression should occur based on the current messages state.
@@ -63,13 +63,13 @@ public interface IConversationCompressionStrategy
     /// </summary>
     /// <param name="messages">The messages being compressed</param>
     /// <returns>Compression options</returns>
-    ConversationCompressionOptions GetCompressionOptions(List<ChatMessage>messages);
+    MessageCompressionOptions GetCompressionOptions(List<ChatMessage>messages);
 }
 
 /// <summary>
 ///     Handles the summarization of messages messages.
 /// </summary>
-public interface IConversationSummarizer
+public interface IMessagesSummarizer
 {
     /// <summary>
     ///     Summarizes a list of messages into one or more summary messages.
@@ -78,17 +78,17 @@ public interface IConversationSummarizer
     /// <param name="options">Compression options</param>
     /// <param name="token">Cancellation token</param>
     /// <returns>List of summary messages</returns>
-    Task<List<ChatMessage>> SummarizeMessages(List<ChatMessage>messages, ConversationCompressionOptions options, CancellationToken token = default);
+    Task<List<ChatMessage>> SummarizeMessages(List<ChatMessage>messages, MessageCompressionOptions options, CancellationToken token = default);
 }
 
 /// <summary>
 ///     Adaptive compression strategy that considers multiple factors.
 /// </summary>
-public class TornadoCompressionStrategy : IConversationCompressionStrategy
+public class TornadoCompressionStrategy : IMessagesCompressionStrategy
 {
     private readonly int messageThreshold;
     private readonly int characterThreshold;
-    private readonly ConversationCompressionOptions options;
+    private readonly MessageCompressionOptions options;
 
     /// <summary>
     ///     Creates a new adaptive compression strategy.
@@ -99,11 +99,11 @@ public class TornadoCompressionStrategy : IConversationCompressionStrategy
     public TornadoCompressionStrategy(
         int messageThreshold = 20,
         int characterThreshold = 50000,
-        ConversationCompressionOptions? options = null)
+        MessageCompressionOptions? options = null)
     {
         this.messageThreshold = messageThreshold;
         this.characterThreshold = characterThreshold;
-        this.options = options ?? new ConversationCompressionOptions();
+        this.options = options ?? new MessageCompressionOptions();
     }
 
     /// <summary>
@@ -123,10 +123,10 @@ public class TornadoCompressionStrategy : IConversationCompressionStrategy
     }
 
 
-    public ConversationCompressionOptions GetCompressionOptions(List<ChatMessage>messages)
+    public MessageCompressionOptions GetCompressionOptions(List<ChatMessage>messages)
     {
         // Adapt compression options based on messages size
-        ConversationCompressionOptions adaptedOptions = new ConversationCompressionOptions
+        MessageCompressionOptions adaptedOptions = new MessageCompressionOptions
         {
             ChunkSize = options.ChunkSize,
             PreserveSystemmessages = options.PreserveSystemmessages,
@@ -145,14 +145,14 @@ public class TornadoCompressionStrategy : IConversationCompressionStrategy
 /// <summary>
 ///     Default implementation of messages summarizer using chunked parallel summarization.
 /// </summary>
-public class TornadoMessageSummarizer : IConversationSummarizer
+public class TornadoMessageSummarizer : IMessagesSummarizer
 {
     public TornadoApi Client { get; set; }
     public TornadoMessageSummarizer(TornadoApi client)
     {
         Client = client;
     }
-    public async Task<List<ChatMessage>> SummarizeMessages(List<ChatMessage> messages, ConversationCompressionOptions options, CancellationToken token = default)
+    public async Task<List<ChatMessage>> SummarizeMessages(List<ChatMessage> messages, MessageCompressionOptions options, CancellationToken token = default)
     {
         // Separate system messages if preserving them
         ConversationContent content = ConversationContent.SortContent(messages, options);
@@ -199,7 +199,7 @@ public class TornadoMessageSummarizer : IConversationSummarizer
         return summarymessages;
     }
 
-    private async Task<string> SummarizeChunk(TornadoApi client, List<ChatMessage> chunk, ConversationCompressionOptions options, CancellationToken token)
+    private async Task<string> SummarizeChunk(TornadoApi client, List<ChatMessage> chunk, MessageCompressionOptions options, CancellationToken token)
     {
         // Build the text representation of the chunk
         StringBuilder chunkText = new StringBuilder();
@@ -251,7 +251,7 @@ public class ConversationContent
     /// <param name="messages"></param>
     /// <param name="options"></param>
     /// <returns></returns>
-    public static ConversationContent SortContent(List<ChatMessage>messages, ConversationCompressionOptions options)
+    public static ConversationContent SortContent(List<ChatMessage>messages, MessageCompressionOptions options)
     {
         ConversationContent content = new ConversationContent();
         ChatMessage msg;
@@ -297,7 +297,7 @@ public class ConversationContent
     /// <param name="messages"></param>
     /// <param name="options"></param>
     /// <returns></returns>
-    public static List<ChatMessage> GetSystemMessages(List<ChatMessage>messages, ConversationCompressionOptions options)
+    public static List<ChatMessage> GetSystemMessages(List<ChatMessage>messages, MessageCompressionOptions options)
     {
         ConversationContent content = new ConversationContent();
         ChatMessage msg;

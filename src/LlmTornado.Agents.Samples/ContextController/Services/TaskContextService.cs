@@ -11,6 +11,12 @@ public struct TaskList
     public string[] Tasks { get; set; }
 }
 
+public struct ToDoMarkDown
+{
+    [Description("A markdown file with a todo list")]
+    public string Markdown { get; set; }
+}
+
 public class TaskContextService 
 {
     private TornadoApi _client { get; set; }
@@ -18,6 +24,8 @@ public class TaskContextService
     public string CurrentTask { get; set; } = "";
     public List<List<string>> TaskHistory { get; set; } = new List<List<string>>();
     public List<string> TaskQueue { get; set; } = new List<string>();
+
+    public string ToDoMd { get; set; }
 
     public TaskContextService(TornadoApi api, ContextContainer contextContainer)
     {
@@ -31,8 +39,14 @@ public class TaskContextService
         {
             await CreateTaskList();
         }
+        else
+        {
+            await UpdateTaskList();
+        }
+
         _contextContainer.CurrentTask = TaskQueue.FirstOrDefault() ?? "";
-        return await Task.FromResult(_contextContainer.CurrentTask);
+
+        return _contextContainer.CurrentTask;
     }
 
     private async Task CreateTaskList()
@@ -65,7 +79,14 @@ public class TaskContextService
 The current goal is: {_contextContainer.Goal ?? "N/A"} Given the incomplete Task Queue, The completed Task, and the state of the current goal,
 sort, and if required, add to the task list to help prioritize completing the goal.";
 
-        string taskContext = $"Current Task Queue: {string.Join(", ", TaskQueue)}\n Completed Tasks: {string.Join(", ", TaskHistory)}\n New User Message: {userPrompt}";
+        string taskContext = $@"
+Current Task Queue: {string.Join(", ", TaskQueue)}
+Completed Tasks: {string.Join(", ", TaskHistory)}
+New User Message: {userPrompt}
+
+ToDo.md:
+{ToDoMd}
+";
 
         Conversation conv = await contextAgent.RunAsync(taskContext);
 
@@ -76,5 +97,48 @@ sort, and if required, add to the task list to help prioritize completing the go
         TaskQueue.Clear();
 
         TaskQueue.AddRange(result.Tasks);
+
+        await UpdateToDoMd();
+    }
+
+    private async Task CreateToDoMd()
+    {
+        TornadoAgent contextAgent = new TornadoAgent(_client, ChatModel.OpenAi.Gpt5.V5Mini, outputSchema: typeof(ToDoMarkDown));
+        contextAgent.Instructions = $@"Produce Markdown text with all the current task in a check off list. Also, Include a Description, Notes, and examples of how each step should be completed.";
+
+        string taskContext = $"Current Task Queue: {string.Join(", ", TaskQueue)}\n  Current goal: {_contextContainer.Goal}";
+
+        Conversation conv = await contextAgent.RunAsync(taskContext);
+
+        ToDoMarkDown result = conv.Messages.Last().Content.ParseJson<ToDoMarkDown>();
+
+        if(result.Markdown != null)
+        {
+            ToDoMd = result.Markdown;
+            File.WriteAllText("ToDoList.md", ToDoMd);
+        }
+    }
+
+    private async Task UpdateToDoMd()
+    {
+        if(string.IsNullOrEmpty(ToDoMd))
+        {
+            await CreateToDoMd();
+            return;
+        }
+        TornadoAgent contextAgent = new TornadoAgent(_client, ChatModel.OpenAi.Gpt5.V5Mini, outputSchema: typeof(ToDoMarkDown));
+        contextAgent.Instructions = $@"Produce Updated Markdown text for the current ToDo.md text that is given. Update and check off task that are completed and update/add notes and task accordingly. ";
+
+        string taskContext = $"Current Task Queue: {string.Join(", ", TaskQueue)}\n Completed Tasks: {string.Join(", ", TaskHistory)}\n Current goal: {_contextContainer.Goal}";
+
+        Conversation conv = await contextAgent.RunAsync(taskContext);
+
+        ToDoMarkDown result = conv.Messages.Last().Content.ParseJson<ToDoMarkDown>();
+
+        if (result.Markdown != null)
+        {
+            ToDoMd = result.Markdown;
+            File.WriteAllText("ToDoList.md", ToDoMd);
+        }
     }
 }

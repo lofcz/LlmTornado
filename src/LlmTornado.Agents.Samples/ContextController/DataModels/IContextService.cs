@@ -4,11 +4,6 @@ using LlmTornado.Common;
 
 namespace LlmTornado.Agents.Samples.ContextController;
 
-public interface IContextService
-{
-    public Task<AgentContext> GetAgentContext();
-}
-
 public interface IToolContextService
 {
     public Task<List<Tool>>? GetToolContext();
