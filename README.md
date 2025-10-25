@@ -27,9 +27,9 @@ LLM Tornado is a .NET provider-agnostic SDK that empowers developers to build, o
 - **Rapid Development**: Write pipelines once, execute with any Provider by changing the model's name. Connect your editor to [Context7](https://context7.com/lofcz/llmtornado) to accelerate coding with instant access to vectorized documentation.
 - **Fully Multimodal**: Text, images, videos, documents, URLs, and audio inputs/outputs are supported.
 - **Cutting Edge Protocols:**
-  - **MCP**: Connect agents to data sources, tools, and workflows via Model Context Protocol with `LlmTornado.Mcp`.
-  - **A2A**: Enable seamless collaboration between AI agents across different platforms with `LlmTornado.A2A`.
-  - **Skills**: Dynamically load folders of instructions, scripts, and resources to improve performance on specialized tasks.
+  - [**MCP**](https://llmtornado.ai/mpc/mpc): Connect agents to data sources, tools, and workflows via Model Context Protocol with `LlmTornado.Mcp`.
+  - [**A2A**](https://llmtornado.ai/a2a/getting-started): Enable seamless collaboration between AI agents across different platforms with `LlmTornado.A2A`.
+  - [**Skills**](https://llmtornado.ai/llmtornado/anthropic-specific/skills): Dynamically load folders of instructions, scripts, and resources to improve performance on specialized tasks.
 - **Vector Databases**: Built-in connectors to [Chroma](https://www.trychroma.com), [PgVector](https://github.com/pgvector/pgvector), and [Pinecone](https://www.pinecone.io).
 - **Integrated**: Interoperability with [Microsoft.Extensions.AI](https://learn.microsoft.com/en-us/dotnet/ai/microsoft-extensions-ai) enables plugging Tornado in [Semantic Kernel](https://github.com/lofcz/LlmTornado/blob/master/src/LlmTornado.Demo/MicrosoftExtensionsAiDemo.cs) applications with `LlmTornado.Microsoft.Extensions.AI`.
 - **Enterprise Ready**: [Preview any request](https://github.com/lofcz/LlmTornado/blob/2fd75e9cdf551724d59d91aebbcb74caea8ae7b2/src/LlmTornado.Demo/ChatDemo2.cs#L233-L256) before committing to it. [Open Telemetry](https://opentelemetry.io) support. Stable APIs.
