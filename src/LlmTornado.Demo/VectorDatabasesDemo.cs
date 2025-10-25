@@ -25,8 +25,6 @@ public class VectorDatabasesDemo
             Cloud = PineconeCloud.Aws,
             Region = "us-east-1"
         });
-
-        pinecone.PineconeClient.Client
         
         await pinecone.DeleteAllDocumentsAsync();
 
