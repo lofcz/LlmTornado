@@ -70,7 +70,7 @@
       <EmbeddedResource Remove="fork_blazor_workers\src\BlazorWorker.Demo.IoCExample\**" />
       <EmbeddedResource Remove="fork_blazor_workers\test\**" />
     </ItemGroup>
-    
+
     <Target Name="CreateBmetaJson" AfterTargets="AfterBuild;AfterPublish" Condition="'$(SkipViteBuild)' != 'true'">
         <PropertyGroup>
             <WwwRootPath Condition=" '$(WasmFinalAssetPublishPath)' != '' ">$(WasmFinalAssetPublishPath)</WwwRootPath>
@@ -80,8 +80,11 @@
         <MSBuild Projects="../LlmTornado.BuildInfo/LlmTornado.BuildInfo.csproj" Targets="Restore" />
         <Message Text="Executing LlmTornado.BuildInfo to create bmeta.json..." Importance="high" />
         <Exec Command="dotnet run --project ../LlmTornado.BuildInfo/LlmTornado.BuildInfo.csproj --no-restore -- &quot;$(WwwRootPath)_framework\dotnet.js&quot;" />
-        <Copy SourceFiles="$(WwwRootPath)_framework\bmeta.json" DestinationFolder="wwwroot\_framework\" />
-        <Copy SourceFiles="$(WwwRootPath)_framework\blazor.boot.json" DestinationFolder="wwwroot\_framework\" />
+        <ItemGroup>
+            <_FilesToCopy Include="$(WwwRootPath)_framework\bmeta.json" Condition="Exists('$(WwwRootPath)_framework\bmeta.json')" />
+            <_FilesToCopy Include="$(WwwRootPath)_framework\blazor.boot.json" Condition="Exists('$(WwwRootPath)_framework\blazor.boot.json')" />
+        </ItemGroup>
+        <Copy SourceFiles="@(_FilesToCopy)" DestinationFolder="wwwroot\_framework\" SkipUnchangedFiles="true" />
     </Target>
 
     <Target Name="ViteBuild" BeforeTargets="BeforeBuild" Condition="'$(SkipViteBuild)' != 'true'">

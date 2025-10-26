@@ -27,4 +27,12 @@
   <Project Path="LlmTornado.VectorDatabases.Qdrant/LlmTornado.VectorDatabases.Qdrant.csproj" />
   <Project Path="LlmTornado.VectorDatabases/LlmTornado.VectorDatabases.csproj" />
   <Project Path="LlmTornado/LlmTornado.csproj" />
+ <Project Path="LlmTornado.Docs.Arcade/LlmTornado.Docs.Arcade.csproj" />
+
+<Project Path="fork_blazor_workers/src/BlazorWorker.Extensions.JSRuntime/BlazorWorker.Extensions.JSRuntime.csproj" />
+  <Project Path="fork_blazor_workers/src/BlazorWorker.ServiceFactory/BlazorWorker.BackgroundServiceFactory.csproj" />
+  <Project Path="fork_blazor_workers/src/BlazorWorker.WorkerBackgroundService/BlazorWorker.WorkerBackgroundService.csproj" />
+  <Project Path="fork_blazor_workers/src/BlazorWorker.WorkerCore/BlazorWorker.WorkerCore.csproj" />
+ <Project Path="fork_blazor_workers/src/BlazorWorker/BlazorWorker.Core.csproj" />
+
 </Solution>

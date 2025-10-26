@@ -1,0 +1,9 @@
+﻿{
+  "solution": {
+    "path": "LlmTornado.slnx",
+    "projects": [
+      "LlmTornado.Demo\\LlmTornado.Demo.csproj",
+      "LlmTornado\\LlmTornado.csproj"
+    ]
+  }
+}
