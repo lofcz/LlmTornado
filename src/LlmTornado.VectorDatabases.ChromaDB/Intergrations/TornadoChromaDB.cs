@@ -138,12 +138,12 @@ namespace LlmTornado.VectorDatabases.Intergrations
             return docs.Select(d => new VectorDocument(d.Id, d.Document ?? "", d.Metadata, d.Embeddings?.ToArray() ?? Array.Empty<float>())).ToArray();
         }
 
-        public VectorDocument[] QueryByEmbedding(float[] embedding, TornadoWhereOperator where = null, int topK = 5, bool includeScore = false)
+        public VectorDocument[] QueryByEmbedding(float[] embedding, TornadoWhereOperator where = null, int topK = 5, bool includeScore = true)
         {
             return Task.Run(async () => await QueryByEmbeddingAsync(embedding, where, topK, includeScore)).Result;
         }
 
-        public async Task<VectorDocument[]> QueryByEmbeddingAsync(float[] embedding, TornadoWhereOperator where = null, int topK = 5, bool includeScore = false)
+        public async Task<VectorDocument[]> QueryByEmbeddingAsync(float[] embedding, TornadoWhereOperator where = null, int topK = 5, bool includeScore = true)
         {
             ThrowIfCollectionNotInitialized();
             List<VectorDocument> results = new List<VectorDocument>();
@@ -195,6 +195,14 @@ namespace LlmTornado.VectorDatabases.Intergrations
                 metadatas: documents.Select(d => d.Metadata ?? new Dictionary<string, object>()).ToList(),
                 documents: documents.Select(d => d.Content ?? "").ToList()
                 );
+        }
+
+        public async Task DeleteAllDocumentsAsync()
+        {
+            ThrowIfCollectionNotInitialized();
+            
+            // ChromaDB efficiently deletes all documents using an empty where clause
+            await CollectionClient.DeleteAll();
         }
 
         public string GetCollectionName() => CollectionName;

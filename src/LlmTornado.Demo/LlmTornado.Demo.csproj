@@ -7,6 +7,7 @@
         <Nullable>enable</Nullable>
         <LangVersion>preview</LangVersion>
         <NoWarn>$(NoWarn);MEAI001</NoWarn>
+        <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     </PropertyGroup>
 
     <ItemGroup>
@@ -20,6 +21,9 @@
         <ProjectReference Include="..\LlmTornado.VectorDatabases.ChromaDB\LlmTornado.VectorDatabases.ChromaDB.csproj" />
         <ProjectReference Include="..\LlmTornado.VectorDatabases.Faiss\LlmTornado.VectorDatabases.Faiss.csproj" />
         <ProjectReference Include="..\LlmTornado.VectorDatabases.Qdrant\LlmTornado.VectorDatabases.Qdrant.csproj" />
+        <ProjectReference Include="..\LlmTornado.VectorDatabases.Pinecone\LlmTornado.VectorDatabases.Pinecone.csproj" />
+        <ProjectReference Include="..\LlmTornado.VectorDatabases.Pinecone\LlmTornado.VectorDatabases.PgVector.csproj" />
+        <ProjectReference Include="..\LlmTornado.VectorDatabases\LlmTornado.VectorDatabases.csproj" />
         <ProjectReference Include="..\LlmTornado\LlmTornado.csproj" />
     </ItemGroup>
 

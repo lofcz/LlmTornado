@@ -804,13 +804,25 @@ internal class VendorGoogleChatRequest
                     {
                         List<VendorGoogleChatResultGroundingChunk> matchingSources = nativeResult.GroundingMetadata.GroundingChunks.Where((x, i) => nativeCitation.GroundingChunkIndices.Contains(i)).ToList();
                         
+                        List<ChatMessagePartCitationWebGroundingSource> webSources = matchingSources.Where(x => x.Web is not null).Select(x => new ChatMessagePartCitationWebGroundingSource
+                        {
+                            Url = x.Web!.Uri,
+                            Title = x.Web.Title
+                        }).ToList();
+                        
+                        List<ChatMessagePartCitationWebGroundingSource> mapsSources = matchingSources.Where(x => x.Maps is not null).Select(x => new ChatMessagePartCitationWebGroundingSource
+                        {
+                            Url = x.Maps!.Uri,
+                            Title = x.Maps.Title
+                        }).ToList();
+                        
+                        List<ChatMessagePartCitationWebGroundingSource> allSources = new List<ChatMessagePartCitationWebGroundingSource>();
+                        allSources.AddRange(webSources);
+                        allSources.AddRange(mapsSources);
+                        
                         lastPart.Citations.Add(new ChatMessagePartCitationWebGrounding
                         {
-                            Sources = matchingSources.Select(x => new ChatMessagePartCitationWebGroundingSource
-                            {
-                                Url = x.Web.Uri,
-                                Title = x.Web.Title
-                            }).ToList(),
+                            Sources = allSources,
                             CitedText = nativeCitation.Segment.Text,
                             NativeObject = nativeCitation
                         });
@@ -918,6 +930,9 @@ internal class VendorGoogleChatRequest
         [JsonProperty("computerUse")]
         public ChatRequestVendorGoogleComputerUse? ComputerUse { get; set; }
 
+        [JsonProperty("googleMaps")]
+        public ChatRequestVendorGoogleMaps? GoogleMaps { get; set; }
+
         public VendorGoogleChatTool()
         {
 
@@ -957,6 +972,12 @@ internal class VendorGoogleChatRequest
     {
         [JsonProperty("functionCallingConfig")]
         public VendorGoogleChatToolConfigFunctionConfig? FunctionConfig { get; set; }
+        
+        /// <summary>
+        /// Retrieval configuration for Maps tool.
+        /// </summary>
+        [JsonProperty("retrievalConfig")]
+        public ChatRequestVendorGoogleMapsRetrievalConfig? RetrievalConfig { get; set; }
 
         public static VendorGoogleChatToolConfig Default => new VendorGoogleChatToolConfig
         {
@@ -1262,6 +1283,18 @@ internal class VendorGoogleChatRequest
             {
                 builtInTool ??= new VendorGoogleChatTool();
                 builtInTool.ComputerUse = request.VendorExtensions.Google.ComputerUse;
+            }
+
+            if (request.VendorExtensions.Google.GoogleMaps is not null)
+            {
+                builtInTool ??= new VendorGoogleChatTool();
+                builtInTool.GoogleMaps = request.VendorExtensions.Google.GoogleMaps;
+
+                if (request.VendorExtensions.Google.GoogleMaps.RetrievalConfig is not null)
+                {
+                    ToolConfig ??= new VendorGoogleChatToolConfig();
+                    ToolConfig.RetrievalConfig = request.VendorExtensions.Google.GoogleMaps.RetrievalConfig;
+                }
             }
 
             if (builtInTool is not null)

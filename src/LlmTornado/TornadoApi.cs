@@ -15,6 +15,7 @@ using LlmTornado.Completions;
 using LlmTornado.Embedding;
 using LlmTornado.Files;
 using LlmTornado.Images;
+using LlmTornado.Videos;
 using LlmTornado.Models;
 using LlmTornado.Moderation;
 using LlmTornado.Rerank;
@@ -54,6 +55,7 @@ public class TornadoApi
     private readonly Lazy<RerankEndpoint> rerank;
     private readonly Lazy<ResponsesConversationEndpoint> responsesConversation;
     private readonly Lazy<SkillsEndpoint> skills;
+    private readonly Lazy<VideoGenerationEndpoint> videos;
 
     /// <summary>
     ///     If true, the API will throw exceptions for non-200 responses.
@@ -85,6 +87,7 @@ public class TornadoApi
         rerank = new Lazy<RerankEndpoint>(() => new RerankEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
         responsesConversation = new Lazy<ResponsesConversationEndpoint>(() => new ResponsesConversationEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
         skills = new Lazy<SkillsEndpoint>(() => new SkillsEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
+        videos = new Lazy<VideoGenerationEndpoint>(() => new VideoGenerationEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
     }
 
     /// <summary>
@@ -440,4 +443,10 @@ public class TornadoApi
     ///     Only available with Anthropic provider.
     /// </summary>
     public SkillsEndpoint Skills => skills.Value;
+    
+    /// <summary>
+    ///     The API lets you do operations with videos. Given a prompt and/or an input image, the model will generate a new
+    ///     video.
+    /// </summary>
+    public VideoGenerationEndpoint Videos => videos.Value;
 }

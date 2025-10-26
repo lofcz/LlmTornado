@@ -1,0 +1,15 @@
+﻿{
+  "solution": {
+    "path": "LlmTornado.slnx",
+    "projects": [
+      "LlmTornado.Demo\\LlmTornado.Demo.csproj",
+      "LlmTornado.VectorDatabases.ChromaDB\\LlmTornado.VectorDatabases.ChromaDB.csproj",
+      "LlmTornado.VectorDatabases.PgVector\\LlmTornado.VectorDatabases.PgVector.csproj",
+      "LlmTornado.VectorDatabases.Pinecone\\LlmTornado.VectorDatabases.Pinecone.csproj",
+      "LlmTornado.VectorDatabases.Faiss\\LlmTornado.VectorDatabases.Faiss.csproj",
+      "LlmTornado.VectorDatabases.Qdrant\\LlmTornado.VectorDatabases.Qdrant.csproj",
+      "LlmTornado.VectorDatabases\\LlmTornado.VectorDatabases.csproj",
+      "LlmTornado\\LlmTornado.csproj"
+    ]
+  }
+}

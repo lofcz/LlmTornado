@@ -1,0 +1,9 @@
+version: '3.8'
+
+services:
+  pgvector:
+    image: pgvector/pgvector:0.8.1-pg18-trixie
+    environment:
+      - POSTGRES_HOST_AUTH_METHOD=trust
+    ports:
+      - "5432:5432"

@@ -178,12 +178,11 @@ public class ImagesDemo : DemoBase
     [Flaky("expensive")]
     public static async Task GenerateImagen4Preview()
     {
-        ImageGenerationResult? generatedImg = await Program.Connect().ImageGenerations.CreateImage(new ImageGenerationRequest("a cute cat", responseFormat: TornadoImageResponseFormats.Base64, model: ImageModel.Google.ImagenPreview.V4Preview250606)
+        ImageGenerationResult? generatedImg = await Program.Connect().ImageGenerations.CreateImage(new ImageGenerationRequest("a cute cat", responseFormat: TornadoImageResponseFormats.Base64, model: ImageModel.Google.Imagen.V4Generate001)
         {
             VendorExtensions = new ImageGenerationRequestVendorExtensions(new ImageGenerationRequestGoogleExtensions
             {
-                MimeType = ImageGenerationRequestGoogleExtensionsMimeTypes.Jpeg,
-                CompressionQuality = 90
+                MimeType = ImageGenerationRequestGoogleExtensionsMimeTypes.Png
             })
         });
         

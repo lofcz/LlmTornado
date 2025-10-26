@@ -6,6 +6,7 @@
     <TargetFrameworks>net8.0;netstandard2.0</TargetFrameworks>
     <LangVersion>preview</LangVersion>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Title>LlmTornado.VectorDatabases</Title>
     <PackageProjectUrl>https://llmtornado.ai</PackageProjectUrl>
     <RepositoryUrl>https://github.com/lofcz/LlmTornado</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
@@ -15,19 +16,22 @@
   </PropertyGroup>
 
   <ItemGroup Condition="$(TargetFramework.StartsWith('net4')) OR $(TargetFramework.StartsWith('netstandard'))">
-
-  </ItemGroup>
-
-  <ItemGroup>
+    <Reference Include="System.Net.Http" />
     <PackageReference Include="System.Text.Json" Version="[8.0.6, )" />
   </ItemGroup>
 
-    <PropertyGroup>
-        <PackageIcon>nuget_logo.jpg</PackageIcon>
-    </PropertyGroup>
-    <ItemGroup>
-        <None Include="nuget_logo.jpg" Pack="true" PackagePath="\"/>
-    </ItemGroup>
+  <PropertyGroup>
+      <PackageIcon>nuget_logo.jpg</PackageIcon>
+  </PropertyGroup>
+  <ItemGroup>
+      <None Include="nuget_logo.jpg" Pack="true" PackagePath="\"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>LlmTornado.Demo</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
 
   <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
     <DefineConstants>WINDOWS</DefineConstants>

@@ -6,13 +6,17 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>be163f53-681f-4054-abbf-33655a903785</UserSecretsId>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+    <LangVersion>preview</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="LlmTornado.A2A" Version="[1.0.3, )" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
     
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\LlmTornado.A2A\LlmTornado.A2A.csproj" />
   </ItemGroup>
 
 </Project>

@@ -316,7 +316,7 @@ public class VectorSaveRunnable : OrchestrationRunnable<ChatMessage, ValueTask>
 
     private async Task BackgroundTaskSaveVectorDocs(ChatMessage message)
     {
-        Orchestrator.RuntimeProperties.TryGetValue("MemoryCollectionName", out var colName);
+        Orchestrator.RuntimeProperties.TryGetValue("MemoryCollectionName", out object? colName);
 
         if (colName != null && !string.IsNullOrEmpty(colName.ToString()))
         {
@@ -353,7 +353,7 @@ public class VectorSaveRunnable : OrchestrationRunnable<ChatMessage, ValueTask>
 
     private async Task SaveLastUserMessage(string messageId)
     {
-        string latestUserMessage = Orchestrator?.RuntimeProperties.TryGetValue("LatestUserMessage", out var val) == true ? val?.ToString() ?? "" : "";
+        string latestUserMessage = Orchestrator?.RuntimeProperties.TryGetValue("LatestUserMessage", out object? val) == true ? val?.ToString() ?? "" : "";
         if (!string.IsNullOrEmpty(latestUserMessage))
             await SaveDocument(latestUserMessage, additionalStaticParentMetadata: new Dictionary<string, object>()
                 {
@@ -416,7 +416,7 @@ Please provide 2-3 search queries based off the user's input. for quering the ve
     {
         process.RegisterAgent(Agent);
 
-        Orchestrator.RuntimeProperties.TryGetValue("MemoryCollectionName", out var colName);
+        Orchestrator.RuntimeProperties.TryGetValue("MemoryCollectionName", out object? colName);
 
         if (colName != null && !string.IsNullOrEmpty(colName.ToString()))
         {
@@ -456,13 +456,13 @@ Please provide 2-3 search queries based off the user's input. for quering the ve
 
         List<VectorDocument> results = new List<VectorDocument>();
 
-        foreach (var query in queries)
+        foreach (string query in queries)
         {
-            var queryEmb = await tornadoEmbeddingProvider.Invoke(query);
+            float[] queryEmb = await tornadoEmbeddingProvider.Invoke(query);
 
-            var result = await pcdRetriever.SearchAsync(queryEmb, topK:3);
+            IEnumerable<Document> result = await pcdRetriever.SearchAsync(queryEmb, topK:3);
 
-            foreach (var doc in result)
+            foreach (Document doc in result)
             {
                 results.Add((VectorDocument)doc);
             }
@@ -562,7 +562,7 @@ public class VectorEntitySaveRunnable : OrchestrationRunnable<ChatMessage, strin
 
     public override async ValueTask InitializeRunnable()
     {
-        Orchestrator.RuntimeProperties.TryGetValue("EntitiesCollectionName", out var colName);
+        Orchestrator.RuntimeProperties.TryGetValue("EntitiesCollectionName", out object? colName);
 
         if (colName != null && !string.IsNullOrEmpty(colName.ToString()))
         {
@@ -646,7 +646,7 @@ public class VectorEntitySaveRunnable : OrchestrationRunnable<ChatMessage, strin
 
             await chromaDB.InitializeCollection(collectionName);
 
-            foreach (var doc in newEntities)
+            foreach (VectorDocument doc in newEntities)
             {
                 float[] embedding = await tornadoEmbeddingProvider.Invoke(doc.Content ?? "");
                 doc.Embedding = embedding;
@@ -659,7 +659,7 @@ public class VectorEntitySaveRunnable : OrchestrationRunnable<ChatMessage, strin
     private VectorDocument CreateFromEntity(Entity entity, float[]? data = null)
     {
         Dictionary<string, object> metadata = new Dictionary<string, object>();
-        foreach (var prop in entity.Properties)
+        foreach (KeyValue prop in entity.Properties)
         {
             if (!metadata.ContainsKey(prop.Key))
             {
@@ -683,7 +683,7 @@ public class VectorEntitySaveRunnable : OrchestrationRunnable<ChatMessage, strin
     {
         Dictionary<string, object> metadata = docToUpdate.Metadata ?? new Dictionary<string, object>();
 
-        foreach (var prop in entity.Properties)
+        foreach (KeyValue prop in entity.Properties)
         {
             if (!metadata.ContainsKey(prop.Key))
             {

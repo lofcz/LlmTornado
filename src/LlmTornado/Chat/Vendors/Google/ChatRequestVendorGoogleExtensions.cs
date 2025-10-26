@@ -78,6 +78,12 @@ public class ChatRequestVendorGoogleExtensions
     public ChatRequestVendorGoogleComputerUse? ComputerUse { get; set; }
     
     /// <summary>
+    /// Google Maps tool type. Tool to support Google Maps grounding in Model. Powered by Google.
+    /// </summary>
+    [JsonIgnore]
+    public ChatRequestVendorGoogleMaps? GoogleMaps { get; set; }
+    
+    /// <summary>
     /// Empty Google extensions.
     /// </summary>
     public ChatRequestVendorGoogleExtensions()
@@ -323,6 +329,135 @@ public class ChatRequestVendorGoogleSearch
     /// </summary>
     [JsonProperty("timeRangeFilter")]
     public ChatRequestVendorGoogleInterval? TimeRangeFilter { get; set; }
+}
+
+/// <summary>
+/// GoogleMaps tool type. Tool to support Google Maps grounding in Model. Powered by Google.
+/// </summary>
+public class ChatRequestVendorGoogleMaps
+{
+    /// <summary>
+    /// A public instance of the tool.
+    /// </summary>
+    public static readonly ChatRequestVendorGoogleMaps Inst = new ChatRequestVendorGoogleMaps();
+    
+    /// <summary>
+    /// Whether to enable widget context token generation for Google Maps.
+    /// </summary>
+    [JsonProperty("enableWidget")]
+    public bool? EnableWidget { get; set; }
+    
+    /// <summary>
+    /// Configuration for Google Maps retrieval with location context.
+    /// </summary>
+    [JsonIgnore]
+    public ChatRequestVendorGoogleMapsRetrievalConfig? RetrievalConfig { get; set; }
+    
+    /// <summary>
+    /// Creates a new GoogleMaps tool configuration.
+    /// </summary>
+    public ChatRequestVendorGoogleMaps()
+    {
+        
+    }
+    
+    /// <summary>
+    /// Creates a new GoogleMaps tool configuration with widget enabled.
+    /// </summary>
+    /// <param name="enableWidget">Whether to enable widget context token generation</param>
+    public ChatRequestVendorGoogleMaps(bool enableWidget)
+    {
+        EnableWidget = enableWidget;
+    }
+    
+    /// <summary>
+    /// Creates a new GoogleMaps tool configuration with location.
+    /// </summary>
+    /// <param name="latitude">Latitude for location-aware queries</param>
+    /// <param name="longitude">Longitude for location-aware queries</param>
+    public ChatRequestVendorGoogleMaps(double latitude, double longitude)
+    {
+        RetrievalConfig = new ChatRequestVendorGoogleMapsRetrievalConfig(latitude, longitude);
+    }
+    
+    /// <summary>
+    /// Creates a new GoogleMaps tool configuration with widget and location.
+    /// </summary>
+    /// <param name="enableWidget">Whether to enable widget context token generation</param>
+    /// <param name="latitude">Latitude for location-aware queries</param>
+    /// <param name="longitude">Longitude for location-aware queries</param>
+    public ChatRequestVendorGoogleMaps(bool enableWidget, double latitude, double longitude)
+    {
+        EnableWidget = enableWidget;
+        RetrievalConfig = new ChatRequestVendorGoogleMapsRetrievalConfig(latitude, longitude);
+    }
+}
+
+/// <summary>
+/// Configuration for Google Maps retrieval with location context.
+/// </summary>
+public class ChatRequestVendorGoogleMapsRetrievalConfig
+{
+    /// <summary>
+    /// The latitude and longitude for location-aware queries.
+    /// </summary>
+    [JsonProperty("latLng")]
+    public ChatRequestVendorGoogleMapsLatLng? LatLng { get; set; }
+    
+    /// <summary>
+    /// Creates a new Maps retrieval configuration.
+    /// </summary>
+    public ChatRequestVendorGoogleMapsRetrievalConfig()
+    {
+        
+    }
+    
+    /// <summary>
+    /// Creates a new Maps retrieval configuration with location.
+    /// </summary>
+    /// <param name="latitude">Latitude for location-aware queries</param>
+    /// <param name="longitude">Longitude for location-aware queries</param>
+    public ChatRequestVendorGoogleMapsRetrievalConfig(double latitude, double longitude)
+    {
+        LatLng = new ChatRequestVendorGoogleMapsLatLng(latitude, longitude);
+    }
+}
+
+/// <summary>
+/// Latitude and longitude coordinates for location-aware queries.
+/// </summary>
+public class ChatRequestVendorGoogleMapsLatLng
+{
+    /// <summary>
+    /// Latitude coordinate.
+    /// </summary>
+    [JsonProperty("latitude")]
+    public double Latitude { get; set; }
+    
+    /// <summary>
+    /// Longitude coordinate.
+    /// </summary>
+    [JsonProperty("longitude")]
+    public double Longitude { get; set; }
+    
+    /// <summary>
+    /// Creates new latitude and longitude coordinates.
+    /// </summary>
+    public ChatRequestVendorGoogleMapsLatLng()
+    {
+        
+    }
+    
+    /// <summary>
+    /// Creates new latitude and longitude coordinates.
+    /// </summary>
+    /// <param name="latitude">Latitude coordinate</param>
+    /// <param name="longitude">Longitude coordinate</param>
+    public ChatRequestVendorGoogleMapsLatLng(double latitude, double longitude)
+    {
+        Latitude = latitude;
+        Longitude = longitude;
+    }
 }
 
 /// <summary>
