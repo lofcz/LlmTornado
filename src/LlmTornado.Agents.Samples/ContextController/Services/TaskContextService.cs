@@ -1,5 +1,6 @@
 ﻿using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
+using LlmTornado.Code;
 using System.Collections.Generic;
 using System.ComponentModel;
 
@@ -53,7 +54,7 @@ public class TaskContextService
     {
         TornadoAgent contextAgent = new TornadoAgent(_client, ChatModel.OpenAi.Gpt5.V5Mini, outputSchema: typeof(TaskList));
         contextAgent.Instructions = $@"You are an expert Task Orchestrator for an Agentic system. Use the provided information to create the best list of Task to complete the goal 5-8 task.";
-
+        _contextContainer.Goal = _contextContainer.ChatMessages.FindLast(m=>m.Role == ChatMessageRoles.User)?.GetMessageContent();
         string taskContext = _contextContainer.Goal ?? throw new InvalidOperationException("No Goal Defined");
 
         Conversation conv = await contextAgent.RunAsync(taskContext);

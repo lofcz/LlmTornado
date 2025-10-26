@@ -195,7 +195,7 @@ public class TornadoAgent
         if (tool.Delegate != null)
         {
             SetDefaultToolPermission(tool);
-            ToolList.Add(tool.ToolName, tool);
+            ToolList.Add(tool.ToolName ?? tool.Function.Name, tool);
             Options.Tools?.Add(tool);
         }
     }
@@ -221,13 +221,16 @@ public class TornadoAgent
     /// <param name="server">MCP Server where tool lives</param>
     public void AddMcpTools(Tool[] tools)
     {
+        Options.Tools ??= new List<Tool>();
+
         if (tools.Length > 0)
         {
             foreach (var tool in tools)
             {
+                string? name = tool.ToolName ?? tool.Function.Name ?? throw new InvalidOperationException("Tool name is required");
                 SetDefaultToolPermission(tool);
-                McpTools.Add(tool.ToolName, tool);
-                ToolList.Add(tool.ToolName, tool);
+                McpTools.Add(name, tool);
+                ToolList.Add(name, tool);
                 Options.Tools?.Add(tool);
             }
         }

@@ -36,7 +36,7 @@ public class ContextAgent
 
         Console.WriteLine("Selected Model: " + context.Model);
         Console.WriteLine("Instructions: " + context.Instructions);
-        Console.WriteLine("Tools: " + string.Join(", ", context.Tools?.Select(t => t.ToolName) ?? []));
+        Console.WriteLine("Tools: " + string.Join(", ", context.Tools?.Select(t => t.ToolName ?? t.Function.Name ?? "n/a") ?? []));
         Console.WriteLine("Current Task: " + contextManager.Container.CurrentTask);
         Console.WriteLine("Chat Messages: " + string.Join("\n", context.ChatMessages?.Select(m => $"{m.Role}: {m.GetMessageContent()}") ?? []));
 
@@ -86,8 +86,6 @@ public class ContextAgent
             Console.WriteLine("Token limit hit, summarizing conversation to reduce token count.");
             conv = await RunAsync(userMessage);
         }
-
-        File.WriteAllText("last_msg.md", conv.Messages.Last().Content);
 
         return conv;
     }

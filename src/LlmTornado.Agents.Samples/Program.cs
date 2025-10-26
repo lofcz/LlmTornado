@@ -74,7 +74,25 @@ ContextController contextManager = new ContextController(
 
 
 ContextAgent agent = new ContextAgent(api, contextManager);
-string userPrompt = "";
+string userPrompt = "do a deep research on LLMTornado located on my local drive and create a detailed readme on how to use it with all the most interesting features";
+Console.WriteLine("User: ");
+Console.Write(userPrompt);
+Console.WriteLine("Agent is thinking...");
+var response = await agent.RunAsync(new ChatMessage(ChatMessageRoles.User, userPrompt), (e) =>
+    {
+        if (e.EventType == AgentRunnerEventTypes.Streaming)
+        {
+            if (e is AgentRunnerStreamingEvent streamingEvent)
+            {
+                if (streamingEvent.ModelStreamingEvent is ModelStreamingOutputTextDeltaEvent deltaTextEvent)
+                {
+                    Console.Write(deltaTextEvent.DeltaText); // Write the text delta directly
+                }
+            }
+        }
+        return ValueTask.CompletedTask;
+    });
+
 while (true)
 {
     Console.WriteLine("User: ");
@@ -84,7 +102,7 @@ while (true)
         break;
     }
     Console.WriteLine("Agent is thinking...");
-    var response = await agent.RunAsync(new ChatMessage(ChatMessageRoles.User,userPrompt), (e) =>
+    response = await agent.RunAsync(new ChatMessage(ChatMessageRoles.User,userPrompt), (e) =>
     {
         if(e.EventType == AgentRunnerEventTypes.Streaming)
         {

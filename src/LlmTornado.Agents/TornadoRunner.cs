@@ -342,7 +342,7 @@ public class TornadoRunner
             try
             {
                 //dynamically set the tools for the request
-                if (agent.Options.Tools != null)
+                 if (agent.Options.Tools != null)
                     chat.RequestParameters.Tools = agent.Options.Tools; 
                 if (agent.ResponseOptions != null)
                     if (agent.ResponseOptions.Tools != null)
