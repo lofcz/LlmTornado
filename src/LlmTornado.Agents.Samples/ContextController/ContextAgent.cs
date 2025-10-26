@@ -45,6 +45,7 @@ public class ContextAgent
         //Instructions
         Agent.Instructions = context.Instructions ?? "You are a helpful AI assistant.";
         //Tools
+        Agent.ClearTools();
         foreach (var tool in context.Tools ?? [])
         {
             if (tool is null) continue;
