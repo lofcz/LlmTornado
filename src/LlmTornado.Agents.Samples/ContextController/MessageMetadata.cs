@@ -25,7 +25,12 @@ public enum CompressionState
     /// <summary>
     /// Message has been re-compressed (compressed multiple times)
     /// </summary>
-    ReCompressed = 2
+    ReCompressed = 2,
+
+    /// <summary>
+    /// Message has been archived (replaced by a summary and no longer in active conversation)
+    /// </summary>
+    Archived = 3
 }
 
 /// <summary>
