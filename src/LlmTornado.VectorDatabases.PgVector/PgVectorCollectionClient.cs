@@ -97,7 +97,7 @@ public class PgVectorCollectionClient
         }
 
         queryBuilder.AppendLine($"""
-                                 ORDER BY embedding desc
+                                 ORDER BY distance desc
                                  LIMIT @limit
                                  """);
 
