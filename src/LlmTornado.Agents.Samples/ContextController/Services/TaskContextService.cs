@@ -84,7 +84,7 @@ Current Task Queue: {string.Join(", ", TaskQueue)}
 Completed Tasks: {string.Join(", ", TaskHistory)}
 New User Message: {userPrompt}
 
-ToDo.md:
+TODO.md:
 {ToDoMd}
 ";
 
@@ -115,7 +115,7 @@ ToDo.md:
         if(result.Markdown != null)
         {
             ToDoMd = result.Markdown;
-            File.WriteAllText("ToDoList.md", ToDoMd);
+            File.WriteAllText("TODO.md", ToDoMd);
         }
     }
 
@@ -138,7 +138,7 @@ ToDo.md:
         if (result.Markdown != null)
         {
             ToDoMd = result.Markdown;
-            File.WriteAllText("ToDoList.md", ToDoMd);
+            File.WriteAllText("TODO.md", ToDoMd);
         }
     }
 }

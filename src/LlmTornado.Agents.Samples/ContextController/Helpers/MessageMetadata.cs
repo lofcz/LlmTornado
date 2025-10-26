@@ -72,6 +72,12 @@ public class MessageMetadata
 /// <summary>
 /// Stores and manages metadata for chat messages to track compression state.
 /// </summary>
+/// <remarks>
+/// This store keeps metadata in memory for all tracked messages. For very long-running
+/// conversations (>100k messages), consider periodic cleanup using <see cref="RemoveWhere"/>
+/// to remove metadata for messages no longer in use.
+/// Memory usage: ~200 bytes per message, so 10,000 messages ? 2MB RAM.
+/// </remarks>
 public class MessageMetadataStore
 {
     private readonly Dictionary<Guid, MessageMetadata> _metadata = new();
@@ -82,6 +88,10 @@ public class MessageMetadataStore
     /// </summary>
     /// <param name="message">The message to track</param>
     /// <param name="state">Initial compression state (default: Uncompressed)</param>
+    /// <remarks>
+    /// If the message is already tracked (duplicate ID), this method does nothing.
+    /// This is thread-safe and can be called from multiple threads.
+    /// </remarks>
     public void Track(ChatMessage message, CompressionState state = CompressionState.Uncompressed)
     {
         if (message == null)
@@ -126,6 +136,10 @@ public class MessageMetadataStore
     /// </summary>
     /// <param name="messageId">The message ID to update</param>
     /// <param name="newState">The new compression state</param>
+    /// <remarks>
+    /// If the message is not found, this method does nothing.
+    /// The compression generation is automatically incremented on each state update.
+    /// </remarks>
     public void UpdateState(Guid messageId, CompressionState newState)
     {
         lock (_lock)
@@ -214,6 +228,67 @@ public class MessageMetadataStore
             return messages
                 .Where(m => _metadata.TryGetValue(m.Id, out var meta) && meta.State == state)
                 .Sum(m => _metadata[m.Id].EstimatedTokens);
+        }
+    }
+
+    /// <summary>
+    /// Removes metadata entries that match a predicate. Useful for cleaning up old message metadata.
+    /// </summary>
+    /// <param name="predicate">Predicate to determine which message IDs to remove</param>
+    /// <returns>Number of entries removed</returns>
+    /// <remarks>
+    /// This is useful for memory optimization in long-running conversations.
+    /// Example: Remove metadata for messages no longer in the conversation:
+    /// <code>
+    /// var currentIds = conversation.Messages.Select(m => m.Id).ToHashSet();
+    /// int removed = metadataStore.RemoveWhere(id => !currentIds.Contains(id));
+    /// </code>
+    /// </remarks>
+    public int RemoveWhere(Func<Guid, bool> predicate)
+    {
+        if (predicate == null)
+            throw new ArgumentNullException(nameof(predicate));
+
+        lock (_lock)
+        {
+            var toRemove = _metadata.Keys.Where(predicate).ToList();
+            foreach (var key in toRemove)
+            {
+                _metadata.Remove(key);
+            }
+            return toRemove.Count;
+        }
+    }
+
+    /// <summary>
+    /// Gets all tracked message IDs.
+    /// </summary>
+    /// <returns>Collection of all tracked message IDs</returns>
+    /// <remarks>
+    /// Useful for debugging or cleanup operations.
+    /// </remarks>
+    public IEnumerable<Guid> GetAllMessageIds()
+    {
+        lock (_lock)
+        {
+            return _metadata.Keys.ToList();
+        }
+    }
+
+    /// <summary>
+    /// Gets memory usage statistics for the metadata store.
+    /// </summary>
+    /// <returns>Estimated memory usage in bytes</returns>
+    /// <remarks>
+    /// Rough estimate: ~200 bytes per metadata entry.
+    /// </remarks>
+    public long GetEstimatedMemoryUsage()
+    {
+        lock (_lock)
+        {
+            // Rough estimate: 200 bytes per entry
+            // (Guid=16 + enum=4 + int=4 + DateTime=8 + int=4 + bool=1 + overhead?163)
+            return _metadata.Count * 200L;
         }
     }
 
