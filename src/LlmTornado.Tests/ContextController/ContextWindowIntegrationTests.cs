@@ -39,7 +39,7 @@ public class ContextWindowIntegrationTests
         _metadataStore = new MessageMetadataStore();
         _model = ChatModel.OpenAi.Gpt35.Turbo; // Use cheaper model for testing
         _strategy = new ContextWindowCompressionStrategy(_model, _metadataStore, new ContextWindowCompressionOptions() { SummaryModel = _model});
-        _summarizer = new ContextWindowMessageSummarizer(_client, _model, _metadataStore);
+        _summarizer = new ContextWindowMessageSummarizer(_client, _model, _metadataStore, new ContextWindowCompressionOptions() { SummaryModel = _model });
     }
 
     [Test]

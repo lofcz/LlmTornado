@@ -73,24 +73,28 @@ public class MessageCompressionService
         _metadataStore = new MessageMetadataStore();
         var model = _contextContainer.CurrentModel;
 
+        var _compressionOptions = new ContextWindowCompressionOptions
+        {
+            TargetUtilization = 0.40,
+            UncompressedCompressionThreshold = 0.30,
+            CompressedReCompressionThreshold = 0.80,
+            ReCompressionTarget = 0.20,
+            LargeMessageThreshold = 10000,
+            SummaryModel = ChatModel.OpenAi.Gpt35.Turbo,
+            MaxSummaryTokens = 1000
+        };
+
         _compressionStrategy =  compressionStrategy ?? new ContextWindowCompressionStrategy(
             model,
             _metadataStore,
-            new ContextWindowCompressionOptions
-            {
-                TargetUtilization = 0.40,
-                UncompressedCompressionThreshold = 0.60,
-                CompressedReCompressionThreshold = 0.80,
-                ReCompressionTarget = 0.20,
-                LargeMessageThreshold = 10000,
-                SummaryModel = ChatModel.OpenAi.Gpt35.Turbo,
-                MaxSummaryTokens = 1000
-            });
+            _compressionOptions
+        );
 
         _summarizer =  summarizer ?? new ContextWindowMessageSummarizer(
             _client,
             model,
-            _metadataStore);
+            _metadataStore,
+            _compressionOptions);
 
         // Track existing messages
         foreach (var message in _contextContainer.ChatMessages)
