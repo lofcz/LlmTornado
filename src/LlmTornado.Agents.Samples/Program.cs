@@ -12,10 +12,6 @@ var api = new TornadoApi([
                 ]);
 
 ContextContainer contextContainer = new ContextContainer();
-contextContainer.Goal = "Can you figure out why my food order was late?";
-contextContainer.CurrentModel = ChatModel.OpenAi.Gpt35.Turbo;
-contextContainer.CurrentTask = "Review the chat messages and provide a helpful response to the user's travel questions.";
-
 # region Chat Messages
 contextContainer.ChatMessages.Add(new LlmTornado.Chat.ChatMessage(
     ChatMessageRoles.System,
@@ -943,149 +939,8 @@ contextContainer.ChatMessages.Add(new LlmTornado.Chat.ChatMessage(
 ToolContextService toolContextService = new ToolContextService(api, contextContainer);
 
 # region Tool Definitions
-toolContextService.AddToolToLibrary(
-    toolKey: "get_weather",
-    tool: new Tool(new ToolFunction("get_weather", "Gets details of the weather", new
-    {
-        type = "object",
-        properties = new
-        {
-            location = new
-            {
-                type = "string",
-                description = "location to get weather"
-            }
-        },
-        required = new List<string> { "location" }
-    })),
-    description: "Fetches the current weather information for a specified location.");
 
-toolContextService.AddToolToLibrary(
-    toolKey: "get_order",
-    tool: new Tool(new ToolFunction("get_order", "Gets details of the order", new
-    {
-        type = "object",
-        properties = new
-        {
-            id = new
-            {
-                type = "string",
-                description = "id of the order to fetch"
-            }
-        },
-        required = new List<string> { "location" }
-    })),
-    description: "Fetches the current order information for a specified id.");
 
-toolContextService.AddToolToLibrary(
-    toolKey: "get_location",
-    tool: new Tool(new ToolFunction("get_location", "Gets location of user")),
-    description: "Get the users location");
-
-toolContextService.AddToolToLibrary(
-    toolKey: "order_taco_bell",
-    tool: new Tool(new ToolFunction("order_tacos", "Gets tacos for user")),
-    description: "Orders the users tacos from taco bell.");
-
-toolContextService.AddToolToLibrary(
-    toolKey: "book_flight",
-    tool: new Tool(new ToolFunction("book_flight", "Books a flight for the user")),
-    description: "Books airline tickets for specified destinations.");
-
-toolContextService.AddToolToLibrary(
-    toolKey: "reserve_hotel",
-    tool: new Tool(new ToolFunction("reserve_hotel", "Reserves a hotel room")),
-    description: "Makes hotel reservations for the user.");
-
-toolContextService.AddToolToLibrary(
-    toolKey: "schedule_meeting",
-    tool: new Tool(new ToolFunction("schedule_meeting", "Schedules a meeting")),
-    description: "Adds meetings to the user's calendar.");
-
-toolContextService.AddToolToLibrary(
-    toolKey: "send_email",
-    tool: new Tool(new ToolFunction("send_email", "Sends an email")),
-    description: "Composes and sends emails on behalf of the user.");
-
-toolContextService.AddToolToLibrary(
-    toolKey: "create_reminder",
-    tool: new Tool(new ToolFunction("create_reminder", "Creates a reminder")),
-    description: "Sets up reminders for important tasks or events.");
-
-toolContextService.AddToolToLibrary(
-    toolKey: "calculate_tip",
-    tool: new Tool(new ToolFunction("calculate_tip", "Calculates tip amount")),
-    description: "Computes appropriate tip based on bill amount.");
-
-toolContextService.AddToolToLibrary(
-    toolKey: "convert_currency",
-    tool: new Tool(new ToolFunction("convert_currency", "Converts currency")),
-    description: "Converts amounts between different currencies.");
-
-toolContextService.AddToolToLibrary(
-    toolKey: "track_package",
-    tool: new Tool(new ToolFunction("track_package", "Tracks package delivery")),
-    description: "Monitors shipping status of packages.");
-
-toolContextService.AddToolToLibrary(
-    toolKey: "play_music",
-    tool: new Tool(new ToolFunction("play_music", "Plays music")),
-    description: "Starts playing music from the user's library.");
-
-toolContextService.AddToolToLibrary(
-    toolKey: "set_alarm",
-    tool: new Tool(new ToolFunction("set_alarm", "Sets an alarm")),
-    description: "Creates alarms for specified times.");
-
-toolContextService.AddToolToLibrary(
-    toolKey: "search_restaurants",
-    tool: new Tool(new ToolFunction("search_restaurants", "Searches for restaurants")),
-    description: "Finds nearby restaurants based on preferences.");
-
-toolContextService.AddToolToLibrary(
-    toolKey: "translate_text",
-    tool: new Tool(new ToolFunction("translate_text", "Translates text")),
-    description: "Translates text between different languages.");
-
-toolContextService.AddToolToLibrary(
-    toolKey: "check_stock_price",
-    tool: new Tool(new ToolFunction("check_stock_price", "Checks stock price")),
-    description: "Retrieves current stock market prices.");
-
-toolContextService.AddToolToLibrary(
-    toolKey: "get_news",
-    tool: new Tool(new ToolFunction("get_news", "Gets latest news")),
-    description: "Fetches current news articles and headlines.");
-
-toolContextService.AddToolToLibrary(
-    toolKey: "calculate_distance",
-    tool: new Tool(new ToolFunction("calculate_distance", "Calculates distance")),
-    description: "Computes distance between two locations.");
-
-toolContextService.AddToolToLibrary(
-    toolKey: "check_traffic",
-    tool: new Tool(new ToolFunction("check_traffic", "Checks traffic conditions")),
-    description: "Provides real-time traffic information.");
-
-toolContextService.AddToolToLibrary(
-    toolKey: "order_groceries",
-    tool: new Tool(new ToolFunction("order_groceries", "Orders groceries")),
-    description: "Places grocery orders for delivery.");
-
-toolContextService.AddToolToLibrary(
-    toolKey: "find_parking",
-    tool: new Tool(new ToolFunction("find_parking", "Finds parking spots")),
-    description: "Locates available parking in the area.");
-
-toolContextService.AddToolToLibrary(
-    toolKey: "get_movie_times",
-    tool: new Tool(new ToolFunction("get_movie_times", "Gets movie showtimes")),
-    description: "Retrieves movie schedules for local theaters.");
-
-toolContextService.AddToolToLibrary(
-    toolKey: "control_smart_home",
-    tool: new Tool(new ToolFunction("control_smart_home", "Controls smart home devices")),
-    description: "Manages smart home device settings and automation.");
 #endregion
 
 TaskContextService taskContextService = new TaskContextService(api, contextContainer);
@@ -1108,11 +963,10 @@ ContextController contextManager = new ContextController(
     messageContextService
 );
 
-AgentContext context = await contextManager.GetAgentContext();
+//AgentContext context = await contextManager.GetAgentContext();
 
-Console.WriteLine("Selected Model: " + context.Model);
-Console.WriteLine("Instructions: " + context.Instructions);
-Console.WriteLine("Tools: " + string.Join(", ", context.Tools?.Select(t => t.ToolName) ?? []));
-Console.WriteLine("Current Task: " + contextContainer.CurrentTask);
-Console.WriteLine("Chat Messages: " + string.Join("\n", context.ChatMessages?.Select(m => $"{m.Role}: {m.GetMessageContent()}") ?? []));
+
+ContextAgent agent = new ContextAgent(api, contextManager);
+
+var response = await agent.RunAsync(new ChatMessage(ChatMessageRoles.User,"Can you help me plan a trip to Tokyo for a week? I want to see the main sights, try local food, and experience the culture. Also, any tips for getting around and staying connected would be great."));
 

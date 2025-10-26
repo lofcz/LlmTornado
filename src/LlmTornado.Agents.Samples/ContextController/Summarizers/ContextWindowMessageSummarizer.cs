@@ -14,7 +14,8 @@ namespace LlmTornado.Agents.Samples.ContextController;
 
 /// <summary>
 /// Advanced message summarizer that implements selective compression
-/// based on context window utilization targets.
+/// based on context window utilization targets. Rebuilds the full
+/// conversation while preserving original message order.
 /// </summary>
 public class ContextWindowMessageSummarizer : IMessagesSummarizer
 {
@@ -25,14 +26,7 @@ public class ContextWindowMessageSummarizer : IMessagesSummarizer
     private readonly bool _enableLogging;
     private readonly Action<string>? _logAction;
     private readonly ContextWindowCompressionOptions _compressionOptions;
-    /// <summary>
-    /// Creates a new context window message summarizer
-    /// </summary>
-    /// <param name="client">Tornado API client</param>
-    /// <param name="model">Chat model to use</param>
-    /// <param name="metadataStore">Message metadata store</param>
-    /// <param name="enableLogging">Enable detailed logging</param>
-    /// <param name="logAction">Custom log action (null = Console)</param>
+
     public ContextWindowMessageSummarizer(
         TornadoApi client,
         ChatModel model,
@@ -55,237 +49,302 @@ public class ContextWindowMessageSummarizer : IMessagesSummarizer
     /// </summary>
     public SummarizationMetrics Metrics => _metrics;
 
+    // Represents a contiguous span of original messages to be summarized into a single message
+    private sealed class CompressionGroup
+    {
+        public int StartIndex { get; init; }
+        public int EndIndex { get; init; }
+        public List<ChatMessage> Messages { get; init; } = new();
+        public CompressionState NewState { get; init; } // Compressed or ReCompressed
+        public string? Summary { get; set; }
+        public string SummaryPrefix => NewState == CompressionState.ReCompressed
+            ? "[Re-compressed summary]: "
+            : "[Compressed summary]: ";
+    }
+
     public async Task<List<ChatMessage>> SummarizeMessages(
         List<ChatMessage> messages,
         MessageCompressionOptions options,
         CancellationToken token = default)
     {
+        if (messages == null || messages.Count == 0)
+            return new List<ChatMessage>();
+
         var sw = Stopwatch.StartNew();
         int tokensBefore = messages.Sum(m => TokenEstimator.EstimateTokens(m));
-
         Log($"[ContextWindowMessageSummarizer] Starting summarization for {messages.Count} messages ({tokensBefore:N0} tokens)");
 
+        // First, analyze needs using current thresholds
         var analysis = AnalyzeCompressionNeeds(messages, options);
 
-        List<ChatMessage> result = new();
+        // Select message ids for each operation, preserving system exclusions
+        var selectedLarge = new HashSet<Guid>(analysis.LargeMessages.Select(m => m.Id));
 
-        // Step 1: Handle large messages (>10k tokens)
-        if (analysis.LargeMessages.Any())
+        // Compute target-driven selections for uncompressed and recompression
+        var selectedToCompress = new HashSet<Guid>();
+        var selectedToRecompress = new HashSet<Guid>();
+
+        // Initial compression selection (reduce uncompressed until target)
+        if (analysis.NeedsUncompressedCompression && analysis.UncompressedMessages.Count > 0)
         {
-            Log($"[ContextWindowMessageSummarizer] Compressing {analysis.LargeMessages.Count} large messages");
-            var largeSummaries = await CompressLargeMessages(
-                analysis.LargeMessages, options, token);
-            result.AddRange(largeSummaries);
+            SelectToTarget(
+                allMessages: messages,
+                candidateMessages: analysis.UncompressedMessages.Where(m => !selectedLarge.Contains(m.Id)).ToList(),
+                targetUtilization: analysis.TargetUtilization,
+                out var chosen);
+            foreach (var m in chosen) selectedToCompress.Add(m.Id);
         }
 
-        // Step 2: Handle uncompressed compression (60% threshold)
-        if (analysis.NeedsUncompressedCompression)
+        // Re-compression selection (reduce compressed+system until re-compression target)
+        if (analysis.NeedsReCompression && analysis.CompressedMessages.Count > 0)
         {
-            Log($"[ContextWindowMessageSummarizer] Compressing {analysis.UncompressedMessages.Count} uncompressed messages to target {analysis.TargetUtilization:P1}");
-            var uncompressedSummaries = await CompressToTarget(
-                analysis.UncompressedMessages,
-                analysis.TargetUtilization,
-                options,
-                token);
-            result.AddRange(uncompressedSummaries);
+            SelectToTarget(
+                allMessages: messages,
+                candidateMessages: analysis.CompressedMessages.Where(m => !selectedLarge.Contains(m.Id) && !selectedToCompress.Contains(m.Id)).ToList(),
+                targetUtilization: analysis.ReCompressionTarget,
+                out var chosen);
+            foreach (var m in chosen) selectedToRecompress.Add(m.Id);
         }
 
-        // Step 3: Handle re-compression (80% threshold)
-        if (analysis.NeedsReCompression)
+        // Build contiguous groups that respect original order for each selection
+        var groups = new List<CompressionGroup>();
+
+        // Large messages become single-message groups (treated as initial compression)
+        foreach (var (msg, idx) in messages.Select((m, i) => (m, i)))
         {
-            Log($"[ContextWindowMessageSummarizer] Re-compressing {analysis.CompressedMessages.Count} compressed messages to target {analysis.ReCompressionTarget:P1}");
-            var recompressedSummaries = await ReCompressToTarget(
-                analysis.CompressedMessages,
-                analysis.ReCompressionTarget,
-                options,
-                token);
-            result.AddRange(recompressedSummaries);
+            if (selectedLarge.Contains(msg.Id))
+            {
+                groups.Add(new CompressionGroup
+                {
+                    StartIndex = idx,
+                    EndIndex = idx,
+                    Messages = new List<ChatMessage> { msg },
+                    NewState = CompressionState.Compressed
+                });
+            }
+        }
+
+        // Initial compression groups
+        groups.AddRange(BuildGroups(messages, selectedToCompress, options.ChunkSize, CompressionState.Compressed));
+        // Re-compression groups (use larger chunk size later when summarizing)
+        groups.AddRange(BuildGroups(messages, selectedToRecompress, options.ChunkSize * 2, CompressionState.ReCompressed));
+
+        if (groups.Count == 0)
+        {
+            Log("[ContextWindowMessageSummarizer] No groups selected for summarization. Returning original messages.");
+            return new List<ChatMessage>(messages);
+        }
+
+        // Summarize groups. Use specialized behavior for single large messages.
+        foreach (var group in groups)
+        {
+            if (token.IsCancellationRequested) break;
+
+            if (group.Messages.Count == 1 && selectedLarge.Contains(group.Messages[0].Id))
+            {
+                // Single large message compression
+                var sm = await SummarizeSingleMessage(group.Messages[0], options, token);
+                group.Summary = sm.Content ?? $"[{group.Messages.Count} messages from this conversation]";
+            }
+            else
+            {
+                // Summarize chunk of messages
+                var useOptions = group.NewState == CompressionState.ReCompressed
+                    ? new MessageCompressionOptions
+                    {
+                        ChunkSize = Math.Max(options.ChunkSize, 1) * 2,
+                        PreserveSystemmessages = true,
+                        CompressToolCallmessages = options.CompressToolCallmessages,
+                        SummaryModel = options.SummaryModel,
+                        SummaryPrompt = "Create an ultra-concise summary focusing only on absolutely critical information:",
+                        MaxSummaryTokens = Math.Max(1, options.MaxSummaryTokens / 2)
+                    }
+                    : options;
+
+                var summary = await SummarizeChunk(_client, group.Messages, useOptions, token);
+                group.Summary = summary;
+            }
+        }
+
+        // Rebuild the full message list in original order: replace spans with single summary
+        var rebuilt = new List<ChatMessage>(messages.Count);
+        var groupsByStart = groups.GroupBy(g => g.StartIndex).ToDictionary(g => g.Key, g => g.ToList());
+        int iPtr = 0;
+        while (iPtr < messages.Count)
+        {
+            if (groupsByStart.TryGetValue(iPtr, out var startingGroups))
+            {
+                // If multiple groups start at the same index (shouldn't happen normally),
+                // choose the one with the farthest EndIndex to avoid overlapping emissions.
+                var best = startingGroups.OrderByDescending(g => g.EndIndex).First();
+
+                var content = best.Summary;
+                if (string.IsNullOrWhiteSpace(content))
+                    content = $"[{best.Messages.Count} messages from this conversation]";
+
+                var summaryMessage = new ChatMessage(ChatMessageRoles.Assistant, best.SummaryPrefix + content);
+                rebuilt.Add(summaryMessage);
+
+                // Track summary and archive originals
+                _metadataStore.Track(summaryMessage, best.NewState);
+                foreach (var om in best.Messages)
+                {
+                    _metadataStore.UpdateState(om.Id, CompressionState.Archived);
+                }
+
+                iPtr = best.EndIndex + 1; // Skip the entire span
+                continue;
+            }
+
+            // Not part of any group, preserve original message
+            rebuilt.Add(messages[iPtr]);
+            iPtr++;
         }
 
         sw.Stop();
-        int tokensAfter = result.Sum(m => TokenEstimator.EstimateTokens(m));
+        int tokensAfter = rebuilt.Sum(m => TokenEstimator.EstimateTokens(m));
 
         // Record metrics
-        string type = analysis.LargeMessages.Any() ? "large" :
-                     analysis.NeedsUncompressedCompression ? "uncompressed" : "recompressed";
+        string type = groups.Any(g => g.Messages.Count == 1 && selectedLarge.Contains(g.Messages[0].Id)) ? "large"
+                    : groups.Any(g => g.NewState == CompressionState.Compressed) ? "uncompressed"
+                    : "recompressed";
 
         _metrics.RecordSummarization(
             messages.Count,
-            result.Count,
+            rebuilt.Count,
             tokensBefore,
             tokensAfter,
             sw.ElapsedMilliseconds,
             type);
 
-        Log($"[ContextWindowMessageSummarizer] Summarization complete: {messages.Count} ? {result.Count} messages, {tokensBefore:N0} ? {tokensAfter:N0} tokens ({sw.ElapsedMilliseconds}ms)");
+        Log($"[ContextWindowMessageSummarizer] Summarization complete: {messages.Count} ? {rebuilt.Count} messages, {tokensBefore:N0} ? {tokensAfter:N0} tokens ({sw.ElapsedMilliseconds}ms)");
 
-        return result;
+        return rebuilt;
     }
 
-    private async Task<List<ChatMessage>> CompressLargeMessages(
-        List<ChatMessage> largeMessages,
-        MessageCompressionOptions options,
-        CancellationToken token)
+    // Build contiguous, order-preserving groups capped by chunkSize
+    private static List<CompressionGroup> BuildGroups(
+        List<ChatMessage> original,
+        HashSet<Guid> selectedIds,
+        int chunkSize,
+        CompressionState state)
     {
-        List<ChatMessage> summaries = new();
+        var groups = new List<CompressionGroup>();
+        if (selectedIds == null || selectedIds.Count == 0)
+            return groups;
 
-        foreach (var message in largeMessages)
+        int i = 0;
+        while (i < original.Count)
         {
-            Log($"[ContextWindowMessageSummarizer] Compressing large message {message.Id} ({TokenEstimator.EstimateTokens(message):N0} tokens)");
-            var summary = await SummarizeSingleMessage(message, options, token);
-            summaries.Add(summary);
-
-            // Update metadata
-            _metadataStore.UpdateState(message.Id, CompressionState.Compressed);
-        }
-
-        return summaries;
-    }
-
-    private async Task<List<ChatMessage>> CompressToTarget(
-        List<ChatMessage> uncompressedMessages,
-        double targetUtilization,
-        MessageCompressionOptions options,
-        CancellationToken token)
-    {
-        int contextWindow = TokenEstimator.GetContextWindowSize(_model);
-        int targetTokens = (int)(contextWindow * targetUtilization);
-
-        // Sort by oldest first
-        var sortedMessages = _metadataStore.GetOldestByState(
-            uncompressedMessages, CompressionState.Uncompressed);
-
-        List<ChatMessage> toCompress = new();
-        int currentTokens = uncompressedMessages.Sum(m => TokenEstimator.EstimateTokens(m));
-
-        // Select oldest messages until we reach target
-        foreach (var message in sortedMessages)
-        {
-            if (currentTokens <= targetTokens)
-                break;
-
-            toCompress.Add(message);
-            currentTokens -= TokenEstimator.EstimateTokens(message);
-        }
-
-        if (!toCompress.Any())
-        {
-            Log($"[ContextWindowMessageSummarizer] No messages to compress (already at target)");
-            return new List<ChatMessage>();
-        }
-
-        Log($"[ContextWindowMessageSummarizer] Compressing {toCompress.Count} oldest messages");
-
-        // Group into chunks and compress
-        var chunks = CreateChunks(toCompress, options.ChunkSize);
-        var summaryTasks = chunks.Select(chunk =>
-            SummarizeChunk(_client, chunk, options, token)).ToArray();
-        var summaries = await Task.WhenAll(summaryTasks);
-
-        List<ChatMessage> result = new();
-        foreach (var summary in summaries)
-        {
-            if (!string.IsNullOrWhiteSpace(summary))
+            if (!selectedIds.Contains(original[i].Id))
             {
-                var summaryMessage = new ChatMessage(
-                    ChatMessageRoles.Assistant,
-                    $"[Compressed summary]: {summary}");
-                result.Add(summaryMessage);
+                i++;
+                continue;
+            }
 
-                // Track as compressed
-                _metadataStore.Track(summaryMessage, CompressionState.Compressed);
+            // Start a group at i and extend while contiguous selected and under chunk size
+            int start = i;
+            int currentLength = 0;
+            var spanMessages = new List<ChatMessage>();
+
+            while (i < original.Count && selectedIds.Contains(original[i].Id))
+            {
+                var msg = original[i];
+                int msgLen = msg.GetMessageLength();
+
+                if (spanMessages.Count > 0 && currentLength + msgLen > chunkSize)
+                {
+                    // Flush current span and start a new group
+                    groups.Add(new CompressionGroup
+                    {
+                        StartIndex = start,
+                        EndIndex = i - 1,
+                        Messages = new List<ChatMessage>(spanMessages),
+                        NewState = state
+                    });
+
+                    // Reset for new span starting at current index
+                    start = i;
+                    currentLength = 0;
+                    spanMessages.Clear();
+                }
+
+                spanMessages.Add(msg);
+                currentLength += msgLen;
+                i++;
+
+                // If next message is not selected, we must close the current span
+                if (i < original.Count && !selectedIds.Contains(original[i].Id))
+                {
+                    groups.Add(new CompressionGroup
+                    {
+                        StartIndex = start,
+                        EndIndex = i - 1,
+                        Messages = new List<ChatMessage>(spanMessages),
+                        NewState = state
+                    });
+                    spanMessages.Clear();
+                    currentLength = 0;
+                    break;
+                }
+            }
+
+            // Close any remaining span at end
+            if (spanMessages.Count > 0)
+            {
+                groups.Add(new CompressionGroup
+                {
+                    StartIndex = start,
+                    EndIndex = i - 1,
+                    Messages = new List<ChatMessage>(spanMessages),
+                    NewState = state
+                });
+                spanMessages.Clear();
             }
         }
 
-        // Update metadata for compressed messages
-        foreach (var message in toCompress)
-        {
-            _metadataStore.UpdateState(message.Id, CompressionState.Compressed);
-        }
-
-        return result;
+        return groups;
     }
 
-    private async Task<List<ChatMessage>> ReCompressToTarget(
-        List<ChatMessage> compressedMessages,
+    // Select oldest messages from candidates until uncompressed usage reaches target
+    private void SelectToTarget(
+        List<ChatMessage> allMessages,
+        List<ChatMessage> candidateMessages,
         double targetUtilization,
-        MessageCompressionOptions options,
-        CancellationToken token)
+        out List<ChatMessage> selected)
     {
+        selected = new List<ChatMessage>();
+        if (candidateMessages == null || candidateMessages.Count == 0)
+            return;
+
         int contextWindow = TokenEstimator.GetContextWindowSize(_model);
         int targetTokens = (int)(contextWindow * targetUtilization);
 
-        // Sort by oldest first (including both Compressed and ReCompressed)
-        var sortedMessages = _metadataStore.GetOldestByState(
-            compressedMessages, CompressionState.Compressed)
-            .Concat(_metadataStore.GetOldestByState(
-                compressedMessages, CompressionState.ReCompressed))
-            .OrderBy(m =>
-            {
-                var meta = _metadataStore.Get(m.Id);
-                return meta?.OriginalTimestamp ?? DateTime.MaxValue;
-            })
+        // Compute current token totals
+        int systemTokens = allMessages.Where(m => m.Role == ChatMessageRoles.System).Sum(TokenEstimator.EstimateTokens);
+        int compressedTokens = allMessages
+            .Where(m => _metadataStore.Get(m.Id)?.State is CompressionState.Compressed or CompressionState.ReCompressed)
+            .Sum(TokenEstimator.EstimateTokens);
+        int uncompressedTokens = allMessages
+            .Where(m => _metadataStore.Get(m.Id)?.State == CompressionState.Uncompressed && m.Role != ChatMessageRoles.System)
+            .Sum(TokenEstimator.EstimateTokens);
+
+        int currentUncompressed = uncompressedTokens;
+        int allowedUncompressed = Math.Max(0, targetTokens - (systemTokens + compressedTokens));
+
+        // Oldest first among candidates
+        var sorted = _metadataStore.GetOldestByState(candidateMessages, CompressionState.Uncompressed)
+            .Concat(_metadataStore.GetOldestByState(candidateMessages, CompressionState.Compressed)) // allow re-compress selection when passed in
             .ToList();
 
-        List<ChatMessage> toReCompress = new();
-        int currentTokens = compressedMessages.Sum(m => TokenEstimator.EstimateTokens(m));
-
-        // Select oldest compressed messages until we reach target
-        foreach (var message in sortedMessages)
+        foreach (var msg in sorted)
         {
-            if (currentTokens <= targetTokens)
+            if (currentUncompressed <= allowedUncompressed)
                 break;
 
-            toReCompress.Add(message);
-            currentTokens -= TokenEstimator.EstimateTokens(message);
+            selected.Add(msg);
+            currentUncompressed -= TokenEstimator.EstimateTokens(msg);
         }
-
-        if (!toReCompress.Any())
-        {
-            Log($"[ContextWindowMessageSummarizer] No messages to re-compress (already at target)");
-            return new List<ChatMessage>();
-        }
-
-        Log($"[ContextWindowMessageSummarizer] Re-compressing {toReCompress.Count} oldest compressed messages");
-
-        // Use more aggressive compression for re-compression
-        var reCompressionOptions = new MessageCompressionOptions
-        {
-            ChunkSize = options.ChunkSize * 2, // Larger chunks for re-compression
-            PreserveSystemmessages = true,
-            CompressToolCallmessages = options.CompressToolCallmessages,
-            SummaryModel = options.SummaryModel,
-            SummaryPrompt = "Create an ultra-concise summary focusing only on absolutely critical information:",
-            MaxSummaryTokens = options.MaxSummaryTokens / 2 // Half the tokens
-        };
-
-        var chunks = CreateChunks(toReCompress, reCompressionOptions.ChunkSize);
-        var summaryTasks = chunks.Select(chunk =>
-            SummarizeChunk(_client, chunk, reCompressionOptions, token)).ToArray();
-        var summaries = await Task.WhenAll(summaryTasks);
-
-        List<ChatMessage> result = new();
-        foreach (var summary in summaries)
-        {
-            if (!string.IsNullOrWhiteSpace(summary))
-            {
-                var summaryMessage = new ChatMessage(
-                    ChatMessageRoles.Assistant,
-                    $"[Re-compressed summary]: {summary}");
-                result.Add(summaryMessage);
-
-                // Track as re-compressed
-                _metadataStore.Track(summaryMessage, CompressionState.ReCompressed);
-            }
-        }
-
-        // Update metadata for re-compressed messages
-        foreach (var message in toReCompress)
-        {
-            _metadataStore.UpdateState(message.Id, CompressionState.ReCompressed);
-        }
-
-        return result;
     }
 
     private async Task<ChatMessage> SummarizeSingleMessage(
@@ -293,7 +352,7 @@ public class ContextWindowMessageSummarizer : IMessagesSummarizer
         MessageCompressionOptions options,
         CancellationToken token)
     {
-        var conversation = _client.Chat.CreateConversation(options.SummaryModel);
+        var conversation = _client.Chat.CreateConversation(options.SummaryModel ?? _model);
         conversation.RequestParameters.Messages = new List<ChatMessage>
         {
             new ChatMessage(ChatMessageRoles.System,
@@ -309,39 +368,6 @@ public class ContextWindowMessageSummarizer : IMessagesSummarizer
 
         return new ChatMessage(ChatMessageRoles.Assistant,
             $"[Large message compressed]: {content}");
-    }
-
-    private List<List<ChatMessage>> CreateChunks(
-        List<ChatMessage> messages,
-        int chunkSize)
-    {
-        List<List<ChatMessage>> chunks = new();
-        List<ChatMessage> currentChunk = new();
-        int currentLength = 0;
-
-        foreach (var message in messages)
-        {
-            int messageLength = message.GetMessageLength();
-
-            if (currentLength + messageLength > chunkSize && currentChunk.Any())
-            {
-                chunks.Add(currentChunk);
-                currentChunk = new();
-                currentLength = 0;
-            }
-
-            currentChunk.Add(message);
-            currentLength += messageLength;
-        }
-
-        if (currentChunk.Any())
-        {
-            chunks.Add(currentChunk);
-        }
-
-        Log($"[ContextWindowMessageSummarizer] Created {chunks.Count} chunks from {messages.Count} messages");
-
-        return chunks;
     }
 
     private async Task<string> SummarizeChunk(
@@ -370,7 +396,7 @@ public class ContextWindowMessageSummarizer : IMessagesSummarizer
         {
             Log($"[ContextWindowMessageSummarizer] Summarizing chunk of {chunk.Count} messages ({chunkText.Length} characters)");
 
-            Conversation conversation = client.Chat.CreateConversation(options.SummaryModel);
+            Conversation conversation = client.Chat.CreateConversation(options.SummaryModel ?? _model);
             conversation.AddSystemMessage(options.SummaryPrompt);
             conversation.AddUserMessage(chunkText.ToString());
             conversation.RequestParameters.MaxTokens = options.MaxSummaryTokens;
@@ -414,7 +440,9 @@ public class ContextWindowMessageSummarizer : IMessagesSummarizer
         var compressedMessages = _metadataStore.GetOldestByState(messages, CompressionState.Compressed)
             .Concat(_metadataStore.GetOldestByState(messages, CompressionState.ReCompressed))
             .ToList();
-        var uncompressedMessages = _metadataStore.GetOldestByState(messages, CompressionState.Uncompressed).ToList();
+        var uncompressedMessages = _metadataStore.GetOldestByState(messages, CompressionState.Uncompressed)
+            .Where(m => m.Role != ChatMessageRoles.System)
+            .ToList();
 
         int systemTokens = systemMessages.Sum(m => TokenEstimator.EstimateTokens(m));
         int compressedTokens = compressedMessages.Sum(m => TokenEstimator.EstimateTokens(m));
@@ -426,7 +454,7 @@ public class ContextWindowMessageSummarizer : IMessagesSummarizer
             systemTokens + compressedTokens, contextWindow);
 
         var largeMessages = uncompressedMessages
-            .Where(m => TokenEstimator.EstimateTokens(m) > 10000)
+            .Where(m => TokenEstimator.EstimateTokens(m) > (_compressionOptions.LargeMessageThreshold > 0 ? _compressionOptions.LargeMessageThreshold : 10000))
             .ToList();
 
         return new CompressionAnalysis

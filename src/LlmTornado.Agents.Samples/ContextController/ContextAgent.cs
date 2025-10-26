@@ -15,40 +15,26 @@ public class ContextAgent
 
     public TornadoApi Api { get; set; }
 
-    public ContextContainer ContextContainer { get; }
-
     public ContextController contextManager { get; }
 
-    public MessageMetadataStore MetadataStore { get; set; } = new MessageMetadataStore();
-
-    public ContextAgent(TornadoApi api)
+    public ContextAgent(TornadoApi api, ContextController controller)
     {
-        Agent = new TornadoAgent(api, ChatModel.OpenAi.Gpt5.V5Nano);
-
         Api = api;
-
-        ContextContainer = new ContextContainer();
-        ContextContainer.CurrentModel = ChatModel.OpenAi.Gpt5.V5Nano;
-
-        MessageContextService messageContextService = new MessageContextService(api, ContextContainer);
-        ToolContextService toolContextService = new ToolContextService(api, ContextContainer);
-        TaskContextService taskContextService = new TaskContextService(api, ContextContainer);
-        ModelContextService modelContextService = new ModelContextService(api, ContextContainer);
-        InstructionContextService instructionsContextService = new InstructionContextService(api, ContextContainer);
-
-        contextManager = new ContextController(
-            taskContextService,
-            ContextContainer,
-            instructionsContextService,
-            toolContextService,
-            modelContextService,
-            messageContextService
-        );
+        Agent = new TornadoAgent(Api, ChatModel.OpenAi.Gpt5.V5Nano);
+        contextManager = controller;
     }
 
     public async Task<Conversation> RunAsync(ChatMessage userMessage)
     {
         AgentContext context = await contextManager.GetAgentContext();
+
+
+        Console.WriteLine("Selected Model: " + context.Model);
+        Console.WriteLine("Instructions: " + context.Instructions);
+        Console.WriteLine("Tools: " + string.Join(", ", context.Tools?.Select(t => t.ToolName) ?? []));
+        Console.WriteLine("Current Task: " + contextManager.Container.CurrentTask);
+        Console.WriteLine("Chat Messages: " + string.Join("\n", context.ChatMessages?.Select(m => $"{m.Role}: {m.GetMessageContent()}") ?? []));
+
         //Model selection
         Agent.Model = context.Model ?? ChatModel.OpenAi.Gpt5.V5Nano;
         //Instructions
@@ -67,12 +53,30 @@ public class ContextAgent
             }
         }
 
-        Conversation conv = await Agent.RunAsync(appendMessages: context.ChatMessages, runnerOptions: new Agents.DataModels.TornadoRunnerOptions()
+        bool hitTokenLimit = false;
+        Conversation conv = await Agent.RunAsync(appendMessages: context.ChatMessages, 
+            onAgentRunnerEvent: (e) =>
+            {
+                if(e.EventType == Agents.DataModels.AgentRunnerEventTypes.MaxTokensReached)
+                {
+                    hitTokenLimit = true;
+
+                }
+                return ValueTask.CompletedTask;
+            },
+            runnerOptions: new Agents.DataModels.TornadoRunnerOptions()
+            {
+                ThrowOnMaxTurnsExceeded = false,
+                ThrowOnTokenLimitExceeded = false,
+                TokenLimit = (int)((Agent.Model.ContextTokens ?? 32000)*.08f)
+            });
+
+        if(hitTokenLimit)
         {
-            ThrowOnMaxTurnsExceeded = false,
-            ThrowOnTokenLimitExceeded = false,
-            TokenLimit = 180000
-        });
+            contextManager.Container.ChatMessages = conv.Messages.ToList();
+            Console.WriteLine("Token limit hit, summarizing conversation to reduce token count.");
+            conv = await RunAsync(userMessage);
+        }
 
         return conv;
     }

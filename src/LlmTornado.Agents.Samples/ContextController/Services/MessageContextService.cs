@@ -81,7 +81,7 @@ public class MessageCompressionService
             ReCompressionTarget = 0.20,
             LargeMessageThreshold = 10000,
             SummaryModel = ChatModel.OpenAi.Gpt35.Turbo,
-            MaxSummaryTokens = 1000
+            MaxSummaryTokens = 1000,
         };
 
         _compressionStrategy =  compressionStrategy ?? new ContextWindowCompressionStrategy(
@@ -107,11 +107,12 @@ public class MessageCompressionService
     {
         if (_compressionStrategy.ShouldCompress(_contextContainer.ChatMessages))
         {
-            var summaries = await _summarizer.SummarizeMessages(
+            var compressedMessages = await _summarizer.SummarizeMessages(
                 _contextContainer.ChatMessages,
                 _compressionStrategy.GetCompressionOptions(_contextContainer.ChatMessages));
-
-            return summaries;
+            
+            // Rebuild the ContextContainer.ChatMessages with the compressed result
+            _contextContainer.ChatMessages = compressedMessages;
         }
         
         return _contextContainer.ChatMessages;
