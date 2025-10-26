@@ -144,7 +144,10 @@ internal static class ToolFactory
         return new DelegateMetadata(compiled, function);
     }
 
-    private static IToolParamType GetParamFromType(Delegate? del, Type type, string? description, ParameterInfo? par, PropertyInfo? prop, int recursionLevel, Type topLevelType, IEndpointProvider provider)
+    /// <summary>
+    /// Generates a tool parameter type from a .NET type. This method is used for both tool parameters and structured output schemas.
+    /// </summary>
+    public static IToolParamType GetParamFromType(Delegate? del, Type type, string? description, ParameterInfo? par, PropertyInfo? prop, int recursionLevel, Type topLevelType, IEndpointProvider provider)
     {
         if (recursionLevel > ToolMeta.MaxRecursionLevel)
         {

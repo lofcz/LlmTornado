@@ -2,12 +2,15 @@
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Common;
+using LlmTornado.Infra;
 using System.ComponentModel;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
+using LlmTornado.Code;
+using LlmTornado.Code.Vendor;
 
 namespace LlmTornado.Agents;
 
@@ -58,15 +61,10 @@ public static class JsonUtility
             formatDescription = descriptions.First().Description;
         }
 
-        dynamic? responseFormat = Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(JsonSchemaGenerator.GenerateSchema(type, out bool strictSchema));
+        // Use ToolFactory infrastructure to generate schema params, just like in ChatRequestResponseFormats.StructuredJson demos
+        var toolParams = CreateToolParamsFromType(type);
 
-
-        return ChatRequestResponseFormats.StructuredJson(
-            type.Name,
-            responseFormat,
-            formatDescription,
-            jsonSchemaIsStrict
-        );
+        return ChatRequestResponseFormats.StructuredJson(toolParams, type.Name, formatDescription, jsonSchemaIsStrict);
     }
 
     /// <summary>
@@ -81,7 +79,6 @@ public static class JsonUtility
     public static ChatRequestResponseFormats CreateJsonSchemaFormatFromType(this Type type)
     {
         string formatDescription = "";
-        //Send this down the line to track if schema is strict or not
 
         IEnumerable<DescriptionAttribute> descriptions = type.GetCustomAttributes<DescriptionAttribute>();
         if (descriptions.Any())
@@ -89,14 +86,54 @@ public static class JsonUtility
             formatDescription = descriptions.First().Description;
         }
 
-        dynamic? responseFormat = Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(JsonSchemaGenerator.GenerateSchema(type, out bool jsonSchemaIsStrict));
+        // Use ToolFactory infrastructure to generate schema params, just like in ChatRequestResponseFormats.StructuredJson demos
+        var toolParams = CreateToolParamsFromType(type);
 
-        return ChatRequestResponseFormats.StructuredJson(
-            type.Name,
-            responseFormat,
-            formatDescription,
-            jsonSchemaIsStrict
-        );
+        // Default to strict schema
+        return ChatRequestResponseFormats.StructuredJson(toolParams, type.Name, formatDescription, strict: true);
+    }
+    
+    /// <summary>
+    /// Creates a list of ToolParam from a Type using ToolFactory infrastructure.
+    /// This is the unified way to generate schemas for both tools and structured outputs.
+    /// </summary>
+    private static List<ToolParam> CreateToolParamsFromType(Type type)
+    {
+        var toolParams = new List<ToolParam>();
+        var provider = new OpenAiEndpointProvider(LLmProviders.Unknown);
+        
+        PropertyInfo[] props = type.GetProperties();
+        
+        foreach (PropertyInfo property in props)
+        {
+            string? description = property.GetCustomAttributes<DescriptionAttribute>().FirstOrDefault()?.Description;
+            
+            IToolParamType paramType = ToolFactory.GetParamFromType(
+                del: null,
+                type: property.PropertyType,
+                description: description,
+                par: null,
+                prop: property,
+                recursionLevel: 0,
+                topLevelType: property.PropertyType,
+                provider: provider
+            );
+            
+            // Set required based on nullability
+#if MODERN
+            var nullabilityContext = new System.Reflection.NullabilityInfoContext();
+            var nullabilityInfo = nullabilityContext.Create(property);
+            paramType.Required = nullabilityInfo.WriteState is System.Reflection.NullabilityState.NotNull;
+#else
+            (Type? baseType, bool isNullableValueType) = ToolFactory.GetNullableBaseType(property.PropertyType);
+            paramType.Required = baseType.IsValueType && !isNullableValueType;
+#endif
+            
+            SchemaNameAttribute? schemaName = property.GetCustomAttribute<SchemaNameAttribute>();
+            toolParams.Add(new ToolParam(schemaName?.Name ?? property.Name, paramType));
+        }
+        
+        return toolParams;
     }
 
     /// <summary>
@@ -191,21 +228,6 @@ public static class JsonUtility
             result = default;
             return false;
         }
-    }
-
-    /// <summary>
-    /// Maps a CLR type to its corresponding JSON type representation.
-    /// </summary>
-    /// <param name="type">The CLR <see cref="Type"/> to map to a JSON type.</param>
-    /// <returns>A <see cref="string"/> representing the JSON type: "string" for <see cref="string"/>,  "boolean" for <see
-    /// cref="bool"/>, "number" for numeric types, "array" for array types,  and "object" for other complex types.</returns>
-    public static string MapClrTypeToJsonType(Type type)
-    {
-        if (type == typeof(string)) return "string";
-        if (type == typeof(bool)) return "boolean";
-        if (type.IsPrimitive || type == typeof(decimal) || type == typeof(double) || type == typeof(float)) return "number";
-        if (type.IsArray) return "array";
-        return "object"; // fallback for complex types
     }
 
     /// <summary>
@@ -306,233 +328,5 @@ public static class JsonUtility
     public static async Task<T?> SmartParseJsonAsync<T>(this string possibleJson, TornadoAgent agent)
     {
         return await SmartParseJsonAsync<T>(agent, possibleJson);
-    }
-
-
-}
-
-/// <summary>
-/// Represents the schema for a parameter, including its type, description, and possible enumeration values.
-/// </summary>
-/// <remarks>This class is used to define the structure of a parameter, specifying its data type, a
-/// textual description, and an optional set of allowed values. The <see cref="Enum"/> property is ignored during
-/// JSON serialization if it is null.</remarks>
-public class ParameterSchema
-{
-    [JsonPropertyName("type")]
-    public string Type { get; set; }
-
-    [JsonPropertyName("description")]
-    public string Description { get; set; }
-
-    [JsonPropertyName("enum")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public string[]? Enum { get; set; }
-}
-
-public static class JsonSchemaGenerator
-{
-    /// <summary>
-    /// Constructs a JSON schema for a function based on specified properties and required fields.
-    /// </summary>
-    /// <param name="properties">A dictionary containing the properties of the schema, where the key is the property name and the value is
-    /// the <see cref="ParameterSchema"/> defining the property's characteristics.</param>
-    /// <param name="required">A list of property names that are required in the schema.</param>
-    /// <returns>A JSON string representing the schema, formatted with indentation for readability.</returns>
-    internal static string BuildFunctionSchema(Dictionary<string, ParameterSchema> properties, List<string> required)
-    {
-        var schema = new
-        {
-            type = "object",
-            properties = properties.ToDictionary(
-                kvp => kvp.Key, object (kvp) => kvp.Value
-            ),
-            required = required,
-            additionalProperties = false
-        };
-
-        return JsonSerializer.Serialize(schema, new JsonSerializerOptions { WriteIndented = true });
-    }
-
-    /// <summary>
-    /// Generates a JSON schema for the specified type.
-    /// </summary>
-    /// <remarks>The generated schema includes the type as an object, its properties, and required
-    /// fields.  Additional properties are not allowed in the schema.</remarks>
-    /// <param name="type">The type for which to generate the JSON schema. Must not be <see langword="null"/>.</param>
-    /// <returns>A JSON string representing the schema of the specified type, formatted with indentation for readability.</returns>
-    public static string GenerateSchema(Type type, out bool isStrict, bool lastIsStrict = true)
-    {
-        isStrict = lastIsStrict;
-        Dictionary<string, object> schema = new Dictionary<string, object>
-        {
-            ["type"] = "object",
-            ["properties"] = GetPropertiesSchema(type, out isStrict, lastIsStrict: isStrict),
-            ["required"] = GetRequiredProperties(type, out isStrict, isStrict),
-            ["additionalProperties"] = false
-        };
-
-        return JsonSerializer.Serialize(schema, new JsonSerializerOptions
-        {
-            WriteIndented = true
-        });
-    }
-
-    /// <summary>
-    /// Generates a schema representation of the properties of a specified type.
-    /// </summary>
-    /// <param name="type">The type whose properties are to be represented in the schema.</param>
-    /// <param name="fromArray">A boolean value indicating whether the schema should be generated as if the type is part of an array. If
-    /// <see langword="true"/>, additional schema elements such as "type", "properties", "required", and
-    /// "additionalProperties" are included.</param>
-    /// <returns>A dictionary representing the schema of the properties of the specified type. If <paramref
-    /// name="fromArray"/> is <see langword="true"/>, the dictionary includes additional schema elements.</returns>
-    private static Dictionary<string, object> GetPropertiesSchema(Type type, out bool isStrict, bool fromArray = false, bool lastIsStrict = true)
-    {
-        Dictionary<string, object> properties = new Dictionary<string, object>();
-        isStrict = lastIsStrict;
-        if (fromArray)
-        {
-            string jsonType = JsonUtility.MapClrTypeToJsonType(type);
-            properties.Add("type", jsonType);
-
-            if (jsonType == "object")
-            {
-                Dictionary<string, object> subProperties = new Dictionary<string, object>();
-                foreach (PropertyInfo prop in type.GetProperties())
-                {
-                    if (prop.PropertyType.Name == type.Name)
-                    {
-                        throw new ArgumentException($"Infinite Recursion detected please fix nesting on {prop.Name} in Type {type.Name}.");
-                    }
-                    subProperties[prop.Name] = GetPropertySchema(prop, out isStrict, isStrict);
-                }
-                properties.Add("properties", subProperties);
-                properties.Add("required", GetRequiredProperties(type, out isStrict, isStrict));
-                properties.Add("additionalProperties", false);
-            }
-
-            return properties;
-        }
-        foreach (PropertyInfo prop in type.GetProperties())
-        {
-            properties[prop.Name] = GetPropertySchema(prop, out isStrict, isStrict);
-        }
-        return properties;
-    }
-
-    /// <summary>
-    /// Generates a schema representation for a given property.
-    /// </summary>
-    /// <remarks>The method analyzes the property's type and attributes to construct a schema. It
-    /// supports basic types such as string, boolean, and numeric types, as well as arrays and complex objects. For
-    /// complex objects, it recursively generates schemas for nested properties.</remarks>
-    /// <param name="prop">The <see cref="PropertyInfo"/> object representing the property for which the schema is generated.</param>
-    /// <returns>A dictionary containing the schema details of the property, including type, description, and nested
-    /// properties if applicable.</returns>
-    private static object GetPropertySchema(PropertyInfo prop, out bool isStrict, bool lastIsStrict = true)
-    {
-        Dictionary<string, object> props = new Dictionary<string, object>();
-        isStrict = lastIsStrict;
-        IEnumerable<DescriptionAttribute> descriptions = prop.GetCustomAttributes<DescriptionAttribute>();
-        if (descriptions.Any())
-        {
-            props.Add("description", descriptions.First().Description);
-        }
-        if (prop.PropertyType == typeof(string)) props.Add("type", "string");
-        else if (prop.PropertyType == typeof(bool)) props.Add("type", "boolean");
-        else if (prop.PropertyType.IsNumeric()) props.Add("type", "number");
-        else if (prop.PropertyType == typeof(DateTime)) props.Add("type", "string"); // DateTime is often represented as a string in JSON
-        else if (prop.PropertyType == typeof(Guid)) props.Add("type", "string"); // Guid is also often represented as a string in JSON
-        else if (prop.PropertyType.IsEnum)
-        {
-            props.Add("type", "string");
-            props.Add("enum", Enum.GetNames(prop.PropertyType));
-        }
-        else if (prop.PropertyType.IsArray)
-        {
-            props.Add("type", "array");
-            Type? itemType = prop.PropertyType.GetElementType();
-            props.Add("items", GetPropertiesSchema(itemType, out isStrict, fromArray: true, isStrict));
-        }
-        else
-        {
-            // Fallback for nested objects
-            props = new Dictionary<string, object>
-            {
-                ["type"] = "object",
-                ["properties"] = GetPropertiesSchema(prop.PropertyType, out isStrict, isStrict),
-                ["required"] = GetRequiredProperties(prop.PropertyType, out isStrict, isStrict),
-                ["additionalProperties"] = false
-            };
-        }
-
-        return props;
-    }
-
-    /// <summary>
-    /// Retrieves the names of all properties defined on the specified type.
-    /// </summary>
-    /// <param name="type">The type whose property names are to be retrieved. Cannot be <see langword="null"/>.</param>
-    /// <returns>A list of strings containing the names of all properties defined on the specified type.</returns>
-    private static List<string> GetRequiredProperties(Type type, out bool isStrict, bool lastIsStrict = true)
-    {
-        List<string> requiredProperties = new List<string>();
-        isStrict = lastIsStrict;
-
-        PropertyInfo[] propertyInfos = type.GetProperties();
-
-        foreach (PropertyInfo propertyInfo in propertyInfos)
-        {
-            if(!HasJsonNullablePropertyAttribute(propertyInfo))
-            {
-                requiredProperties.Add(propertyInfo.Name);
-            }
-            else
-            {
-                isStrict = false;
-            }
-
-            if (propertyInfo.PropertyType.Name == type.Name)
-            {
-                throw new ArgumentException($"Infinite Recursion detected please fix nesting on {propertyInfo.Name} in Type {type.Name}.");
-            }
-        }
-
-        return requiredProperties;
-    }
-
-    public static bool HasJsonNullablePropertyAttribute(PropertyInfo propertyInfo)
-    {
-        var nullableAttr = propertyInfo.GetCustomAttribute<Newtonsoft.Json.JsonPropertyAttribute>();
-        return nullableAttr != null && nullableAttr.Required == Newtonsoft.Json.Required.AllowNull;
-    }
-
-
-    /// <summary>
-    /// Represents a collection of numeric types recognized by the system.
-    /// </summary>
-    /// <remarks>This set includes common numeric types such as <see cref="int"/>, <see
-    /// cref="double"/>,  <see cref="decimal"/>, and others. It is used to determine if a given type is considered
-    /// numeric.</remarks>
-    private static readonly HashSet<Type> NumericTypes =
-    [
-        typeof(int), typeof(double), typeof(decimal),
-        typeof(long), typeof(short), typeof(sbyte),
-        typeof(byte), typeof(ulong), typeof(ushort),
-        typeof(uint), typeof(float), typeof(ushort), typeof(uint),
-        typeof(ulong), typeof(float)
-    ];
-
-    /// <summary>
-    /// Determines whether the specified <see cref="Type"/> represents a numeric data type.
-    /// </summary>
-    /// <remarks>This method checks if the provided type, including nullable types, is considered
-    /// numeric. Numeric types typically include integral and floating-point types.</remarks>
-    /// <param name="myType">The <see cref="Type"/> to evaluate.</param>
-    /// <returns><see langword="true"/> if <paramref name="myType"/> is a numeric type; otherwise, <see langword="false"/>.</returns>
-    public static bool IsNumeric(this Type myType)
-    {
-        return NumericTypes.Contains(Nullable.GetUnderlyingType(myType) ?? myType);
     }
 }

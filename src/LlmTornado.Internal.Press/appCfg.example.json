@@ -1,0 +1,62 @@
+{
+  "objective": "Promote LlmTornado as the best C# AI library for building intelligent agents",
+  "apiKeys": {
+    "openAi": "sk-your-openai-key-here",
+    "anthropic": "sk-ant-your-anthropic-key-here",
+    "tavily": "tvly-your-tavily-key-here",
+    "google": "your-google-key-here",
+    "groq": "gsk_your-groq-key-here"
+  },
+  "models": {
+    "ideation": "gpt-4o-mini",
+    "trendAnalysis": "gpt-4o-mini",
+    "research": "gpt-4o",
+    "writing": "gpt-4o",
+    "review": "gpt-4o",
+    "imagePrompt": "gpt-4o-mini"
+  },
+  "output": {
+    "directory": "./output/articles",
+    "exportMarkdown": true,
+    "exportJson": true,
+    "includeMetadata": true
+  },
+  "imageGeneration": {
+    "enabled": true,
+    "model": "dall-e-3"
+  },
+  "reviewLoop": {
+    "enabled": true,
+    "maxIterations": 3,
+    "qualityThresholds": {
+      "minWordCount": 800,
+      "minReadabilityScore": 60,
+      "requireSources": true,
+      "minSeoScore": 70
+    },
+    "improvementCriteria": [
+      "Check for factual accuracy and citations",
+      "Ensure SEO optimization (keywords, meta description)",
+      "Verify clickbait title effectiveness",
+      "Validate temporal relevance and trending topics integration",
+      "Assess promotional objective integration"
+    ]
+  },
+  "articleGeneration": {
+    "maxConcurrent": 3,
+    "delayBetweenArticles": 5000,
+    "retryAttempts": 2
+  },
+  "trendAnalysis": {
+    "maxTopics": 10,
+    "relevanceThreshold": 0.6,
+    "updateFrequency": "daily"
+  },
+  "tavily": {
+    "maxResults": 5,
+    "searchDepth": "advanced",
+    "includeDomains": [],
+    "excludeDomains": []
+  }
+}
+

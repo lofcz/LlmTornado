@@ -1,0 +1,13 @@
+# Output directories
+output/
+*.db
+*.db-shm
+*.db-wal
+
+# User-specific configuration
+appCfg.json
+
+# Build outputs
+bin/
+obj/
+

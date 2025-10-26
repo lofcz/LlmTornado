@@ -33,15 +33,15 @@
     </ItemGroup>
 
     <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
-        <DefineConstants>WINDOWS</DefineConstants>
+        <DefineConstants>$(DefineConstants);WINDOWS</DefineConstants>
     </PropertyGroup>
     <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Linux'))">
-        <DefineConstants>LINUX</DefineConstants>
+        <DefineConstants>$(DefineConstants);LINUX</DefineConstants>
     </PropertyGroup>
     <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('FreeBSD'))">
-        <DefineConstants>FREEBSD</DefineConstants>
+        <DefineConstants>$(DefineConstants);FREEBSD</DefineConstants>
     </PropertyGroup>
     <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('OSX'))">
-        <DefineConstants>MAC</DefineConstants>
+        <DefineConstants>$(DefineConstants);MAC</DefineConstants>
     </PropertyGroup>
 </Project>

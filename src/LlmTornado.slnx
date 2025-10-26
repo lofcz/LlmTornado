@@ -33,10 +33,14 @@
     <Project Path="LlmTornado.VectorDatabases.Qdrant/LlmTornado.VectorDatabases.Qdrant.csproj" />
     <Project Path="LlmTornado.VectorDatabases/LlmTornado.VectorDatabases.csproj" />
   </Folder>
+  <Folder Name="/Internal/">
+    <Project Path="LlmTornado.Internal.OpenRouter/LlmTornado.Internal.OpenRouter.csproj" />
+    <Project Path="LlmTornado.Internal.Press/LlmTornado.Internal.Press.csproj" Type="C#" />
+  </Folder>
+
   <Project Path="LlmTornado.Contrib/LlmTornado.Contrib.csproj" />
   <Project Path="LlmTornado.Demo/LlmTornado.Demo.csproj" />
   <Project Path="LlmTornado.Docs/LlmTornado.Docs.csproj" />
-  <Project Path="LlmTornado.Internal.OpenRouter/LlmTornado.Internal.OpenRouter.csproj" />
   <Project Path="LlmTornado.Microsoft.Extensions.AI/LlmTornado.Microsoft.Extensions.AI.csproj" />
   <Project Path="LlmTornado.OpenApiGenerator/LlmTornado.OpenApiGenerator.csproj" />
   <Project Path="LlmTornado.SemanticKernel/LlmTornado.SemanticKernel.csproj" />
