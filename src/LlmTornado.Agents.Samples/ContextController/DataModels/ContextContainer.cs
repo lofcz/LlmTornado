@@ -11,6 +11,7 @@ namespace LlmTornado.Agents.Samples.ContextController;
 public class ContextContainer
 {
     public List<ChatMessage> ChatMessages { get; set; } = new List<ChatMessage>();
+    public string CurrentSystemMessage { get; set; } = "";
     public string? Goal { get; set; }
     public string? CurrentTask { get; set; } = "";
     public ChatModel CurrentModel { get; set; } = ChatModel.OpenAi.Gpt5.V5Nano;

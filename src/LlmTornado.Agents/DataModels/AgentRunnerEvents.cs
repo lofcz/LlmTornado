@@ -129,7 +129,7 @@ public class  AgentRunnerGuardrailTriggeredEvent : AgentRunnerEvents
     /// Guardrail triggered event from bad input/output.
     /// </summary>
     /// <param name="reason">Reason guardrail was triggered</param>
-    public AgentRunnerGuardrailTriggeredEvent(string reason = "", Conversation conversation)
+    public AgentRunnerGuardrailTriggeredEvent(Conversation conversation, string reason = "")
     {
         EventType = AgentRunnerEventTypes.GuardRailTriggered;
         Reason = reason;
@@ -240,7 +240,7 @@ public class AgentRunnerErrorEvent : AgentRunnerEvents
     /// <param name="errorMessage">A message describing the error. This value cannot be <see langword="null"/> or empty.</param>
     /// <param name="exception">The exception associated with the error, if available. This parameter is optional and can be <see
     /// langword="null"/>.</param>
-    public AgentRunnerErrorEvent(string errorMessage, Exception? exception = null, Conversation conversation)
+    public AgentRunnerErrorEvent(string errorMessage, Conversation conversation, Exception? exception = null)
     {
         EventType = AgentRunnerEventTypes.Error;
         ErrorMessage = errorMessage;

@@ -52,7 +52,7 @@ public class TaskContextService
     private async Task CreateTaskList()
     {
         TornadoAgent contextAgent = new TornadoAgent(_client, ChatModel.OpenAi.Gpt5.V5Mini, outputSchema: typeof(TaskList));
-        contextAgent.Instructions = $@"You are an expert Task Orchestrator for an Agentic system. Use the provided information to create the best list of Task to complete the goal.";
+        contextAgent.Instructions = $@"You are an expert Task Orchestrator for an Agentic system. Use the provided information to create the best list of Task to complete the goal 5-8 task.";
 
         string taskContext = _contextContainer.Goal ?? throw new InvalidOperationException("No Goal Defined");
 
@@ -74,7 +74,7 @@ public class TaskContextService
         if (string.IsNullOrEmpty(userPrompt))
             return;
 
-        TornadoAgent contextAgent = new TornadoAgent(_client, ChatModel.OpenAi.Gpt5.V5Mini, outputSchema:typeof(TaskList));
+        TornadoAgent contextAgent = new TornadoAgent(_client ,ChatModel.OpenAi.Gpt5.V5Mini, outputSchema:typeof(TaskList));
         contextAgent.Instructions = $@"You are an expert Task Orchestrator for an Agentic system. Use the goal and the provided information to create the best list of Task to complete the goal.
 The current goal is: {_contextContainer.Goal ?? "N/A"} Given the incomplete Task Queue, The completed Task, and the state of the current goal,
 sort, and if required, add to the task list to help prioritize completing the goal.";
@@ -88,7 +88,7 @@ TODO.md:
 {ToDoMd}
 ";
 
-        Conversation conv = await contextAgent.RunAsync(taskContext);
+        Conversation conv = await contextAgent.RunAsync(taskContext, appendMessages: _contextContainer.ChatMessages);
 
         TaskList result = conv.Messages.Last().Content.ParseJson<TaskList>();
 

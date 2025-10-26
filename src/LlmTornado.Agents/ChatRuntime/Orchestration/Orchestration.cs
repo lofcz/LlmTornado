@@ -161,10 +161,10 @@ public abstract class Orchestration
         OnOrchestrationEvent?.Invoke(new OnTickOrchestrationEvent()); //Invoke the tick state machine event
         
         List<Task> Tasks = new List<Task>();
-        CurrentRunnablesWithProcesses.ForEach(process => Tasks.Add(Task.Run(async () =>
+        CurrentRunnablesWithProcesses.ForEach(runnable => Tasks.Add(Task.Run(async () =>
         {
-            OnOrchestrationEvent?.Invoke(new OnStartedRunnableEvent(process)); //Invoke the state entered event
-            await process.Invoke(); //Invoke the state process
+            OnOrchestrationEvent?.Invoke(new OnInvokedRunnableEvent(runnable)); //Invoke the state entered event
+            await runnable.Invoke(); //Invoke the state process
 
         })));
 
@@ -197,6 +197,7 @@ public abstract class Orchestration
         runnable.Orchestrator ??= this; //Set the current state machine if not already set
 
         OnOrchestrationEvent?.Invoke(new OnStartedRunnableEvent(runnable)); //Invoke the state entered event  
+
         await runnable._InitializeRunnable();
     }
 

@@ -40,6 +40,7 @@ The current Task is {_contextContainer.CurrentTask ?? "n/a"}.";
 
         InstructionsMessage result = conv.Messages.Last().Content.ParseJson<InstructionsMessage>();
 
-        return result.Instructions;
+        _contextContainer.CurrentSystemMessage = result.Instructions;
+        return _contextContainer.CurrentSystemMessage;
     }
 }

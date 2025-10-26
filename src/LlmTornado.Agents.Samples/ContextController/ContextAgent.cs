@@ -1,5 +1,7 @@
-﻿using LlmTornado.Chat;
+﻿using LlmTornado.Agents.DataModels;
+using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
+using LlmTornado.Code;
 using LlmTornado.VectorDatabases.Faiss.Integrations;
 using System;
 using System.Collections.Generic;
@@ -24,10 +26,13 @@ public class ContextAgent
         contextManager = controller;
     }
 
-    public async Task<Conversation> RunAsync(ChatMessage userMessage)
+    public async Task<Conversation> RunAsync(ChatMessage userMessage, Func<AgentRunnerEvents, ValueTask>? runnerEvent = null)
     {
-        AgentContext context = await contextManager.GetAgentContext();
+        
+        Console.WriteLine("Getting agent Context..");
+        contextManager.Container.ChatMessages.Add(userMessage);
 
+        AgentContext context = await contextManager.GetAgentContext();
 
         Console.WriteLine("Selected Model: " + context.Model);
         Console.WriteLine("Instructions: " + context.Instructions);
@@ -54,29 +59,35 @@ public class ContextAgent
         }
 
         bool hitTokenLimit = false;
-        Conversation conv = await Agent.RunAsync(appendMessages: context.ChatMessages, 
+        int messagesBefore = context.ChatMessages.Count;
+        Conversation conv = await Agent.RunAsync(contextManager.Container.CurrentTask, appendMessages: context.ChatMessages, 
+            streaming:true,
             onAgentRunnerEvent: (e) =>
             {
-                if(e.EventType == Agents.DataModels.AgentRunnerEventTypes.MaxTokensReached)
+                ValueTask? v = runnerEvent?.Invoke(e);
+                if (e.EventType == Agents.DataModels.AgentRunnerEventTypes.MaxTokensReached)
                 {
                     hitTokenLimit = true;
-
                 }
                 return ValueTask.CompletedTask;
-            },
+        },
             runnerOptions: new Agents.DataModels.TornadoRunnerOptions()
             {
                 ThrowOnMaxTurnsExceeded = false,
                 ThrowOnTokenLimitExceeded = false,
                 TokenLimit = (int)((Agent.Model.ContextTokens ?? 32000)*.08f)
             });
+        List<ChatMessage> newMessages = conv.Messages.Skip(messagesBefore).ToList();
+        contextManager.Container.ChatMessages.AddRange(newMessages);
 
-        if(hitTokenLimit)
+        if (hitTokenLimit)
         {
             contextManager.Container.ChatMessages = conv.Messages.ToList();
             Console.WriteLine("Token limit hit, summarizing conversation to reduce token count.");
             conv = await RunAsync(userMessage);
         }
+
+        File.WriteAllText("last_msg.md", conv.Messages.Last().Content);
 
         return conv;
     }

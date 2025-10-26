@@ -197,10 +197,10 @@ public class OnInvokedRunnableEvent : OrchestrationEvent
     /// <summary>
     /// Process that is being invoked.
     /// </summary>
-    public RunnableProcess RunnableProcess { get; set; }
-    public OnInvokedRunnableEvent(RunnableProcess process)
+    public OrchestrationRunnableBase RunnableBase { get; set; }
+    public OnInvokedRunnableEvent(OrchestrationRunnableBase runnableBase)
     {
         Type = "invoked";
-        RunnableProcess = process;
+        RunnableBase = runnableBase;
     }
 }

@@ -149,7 +149,7 @@ public class TornadoRunner
         }
         catch (Exception ex)
         {
-            runnerCallback?.Invoke(new AgentRunnerErrorEvent(ex.Message, ex, chat));
+            runnerCallback?.Invoke(new AgentRunnerErrorEvent(ex.Message, chat, ex));
         }
 
         runnerCallback?.Invoke(new AgentRunnerCompletedEvent(chat));
@@ -213,9 +213,9 @@ public class TornadoRunner
 
             if (guard_railResult != null && guard_railResult.TripwireTriggered)
             {
-                runnerCallback?.Invoke(new AgentRunnerGuardrailTriggeredEvent($"Input Guardrail Stopped the agent from continuing because, {guard_railResult.OutputInfo}", chat));
+                runnerCallback?.Invoke(new AgentRunnerGuardrailTriggeredEvent(chat, $"Input Guardrail Stopped the agent from continuing because, {guard_railResult.OutputInfo}"));
                 GuardRailTriggerException triggerException = new GuardRailTriggerException($"Input Guardrail Stopped the agent from continuing because, {guard_railResult.OutputInfo}");
-                runnerCallback?.Invoke(new AgentRunnerErrorEvent(triggerException.Message, triggerException, chat));
+                runnerCallback?.Invoke(new AgentRunnerErrorEvent(triggerException.Message, chat, triggerException));
                 throw triggerException;
             }
         }
@@ -227,7 +227,7 @@ public class TornadoRunner
         {
             runnerCallback?.Invoke(new AgentRunnerCancelledEvent(chat));
             OperationCanceledException ex = new OperationCanceledException("Operation was cancelled by user.");
-            runnerCallback?.Invoke(new AgentRunnerErrorEvent(ex.Message, ex, chat));
+            runnerCallback?.Invoke(new AgentRunnerErrorEvent(ex.Message, chat, ex));
             if (runnerOptions.ThrowOnCancelled)
                 throw ex;
             return true;
@@ -241,7 +241,7 @@ public class TornadoRunner
         {
             Exception error = new Exception("Max Turns Reached");
             runnerCallback?.Invoke(new AgentRunnerMaxTurnsReachedEvent(chat));
-            runnerCallback?.Invoke(new AgentRunnerErrorEvent(error.Message, error, chat));
+            runnerCallback?.Invoke(new AgentRunnerErrorEvent(error.Message, chat, error));
             if(runnerOptions.ThrowOnMaxTurnsExceeded)
                 throw error;
             return true;
@@ -255,7 +255,7 @@ public class TornadoRunner
         {
             Exception error = new Exception("Max Tokens Reached");
             runnerCallback?.Invoke(new AgentRunnerMaxTokensReachedEvent(chat));
-            runnerCallback?.Invoke(new AgentRunnerErrorEvent(error.Message, error, chat));
+            runnerCallback?.Invoke(new AgentRunnerErrorEvent(error.Message, chat, error));
             if (runnerOptions.ThrowOnTokenLimitExceeded)
                 throw error;
             return true;
@@ -382,7 +382,7 @@ public class TornadoRunner
 
             if(response.Exception != null)
             {
-                runnerCallback?.Invoke(new AgentRunnerErrorEvent(response.Exception.Message, response.Exception, chat));
+                runnerCallback?.Invoke(new AgentRunnerErrorEvent(response.Exception.Message, chat, response.Exception));
                 return chat;
             }
 
@@ -393,7 +393,7 @@ public class TornadoRunner
         }
         catch (Exception ex)
         {
-            runnerCallback?.Invoke(new AgentRunnerErrorEvent(ex.Message,ex, chat));
+            runnerCallback?.Invoke(new AgentRunnerErrorEvent(ex.Message, chat, ex));
         }
 
         return chat;
@@ -460,7 +460,7 @@ public class TornadoRunner
             },
             HttpExceptionHandler = (exception) =>
             {
-                runnerCallback?.Invoke(new AgentRunnerErrorEvent(exception.Exception.Message, exception.Exception, chat));
+                runnerCallback?.Invoke(new AgentRunnerErrorEvent(exception.Exception.Message, chat, exception.Exception));
                 return Threading.ValueTaskCompleted;
             },
             OnUsageReceived = (usage) =>
