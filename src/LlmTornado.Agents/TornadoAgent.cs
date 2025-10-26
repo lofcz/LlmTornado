@@ -194,6 +194,7 @@ public class TornadoAgent
     {
         if (tool.Delegate != null)
         {
+            if(ToolList.ContainsKey(tool.ToolName ?? tool.Function.Name)) return;
             SetDefaultToolPermission(tool);
             ToolList.Add(tool.ToolName ?? tool.Function.Name, tool);
             Options.Tools?.Add(tool);
@@ -208,6 +209,7 @@ public class TornadoAgent
     {
         if (tool != null)
         {
+            if(AgentTools.ContainsKey(tool.ToolAgent.Id)) return;
             SetDefaultToolPermission(tool.Tool);
             AgentTools.Add(tool.ToolAgent.Id, tool);
             Options.Tools?.Add(tool.Tool);
@@ -228,12 +230,22 @@ public class TornadoAgent
             foreach (var tool in tools)
             {
                 string? name = tool.ToolName ?? tool.Function.Name ?? throw new InvalidOperationException("Tool name is required");
+                if (McpTools.ContainsKey(name)) continue;
                 SetDefaultToolPermission(tool);
                 McpTools.Add(name, tool);
                 ToolList.Add(name, tool);
                 Options.Tools?.Add(tool);
             }
         }
+    }
+
+    public void ClearTools()
+    {
+        Options.Tools?.Clear();
+        Options.ResponseRequestParameters?.Tools?.Clear();
+        ToolList.Clear();
+        AgentTools.Clear();
+        McpTools.Clear();
     }
 
     private void GetTornadoTool(Delegate methodAsTool)
