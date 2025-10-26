@@ -9,10 +9,16 @@ public class MessageContextService : IMessageContextService
     private TornadoApi _client { get; set; }
     private ContextContainer _contextContainer { get; set; }
 
+    private MessageProviderService _messageProvider { get; set; }
+
+    private MessageCompressionService _messageCompressor { get; set; }
+
     public MessageContextService(TornadoApi api, ContextContainer contextContainer)
     {
         _client = api;
         _contextContainer = contextContainer;
+        _messageProvider = new MessageProviderService(_client, _contextContainer);
+        _messageCompressor = new MessageCompressionService(_client, _contextContainer, _messageProvider.LongTermMemory);
     }
 
     public async Task<List<ChatMessage>> GetChatContext()
@@ -53,42 +59,70 @@ public class MessageCompressionService
 {
     private TornadoApi _client { get; set; }
     private ContextContainer _contextContainer { get; set; }
+    private MessageMetadataStore _metadataStore { get; set; }
 
     public CompressedContextStore CompressedContextStore { get; set; } = new CompressedContextStore();
+
     public MessageCompressionService(TornadoApi api, ContextContainer contextContainer, IVectorDatabase longTermMemory)
     {
         _client = api;
         _contextContainer = contextContainer;
+        _metadataStore = new MessageMetadataStore();
+        
+        // Track existing messages
+        foreach (var message in _contextContainer.ChatMessages)
+        {
+            _metadataStore.Track(message);
+        }
     }
 
     public async Task<List<ChatMessage>> Invoke()
     {
-        List<ChatMessage> context = new List<ChatMessage>();
-
-        int totalChunkSize = _contextContainer.ChatMessages.Sum(m => m.GetMessageContent().Length);
-        int chunkSize = 10000;
-
-        if ( totalChunkSize >= _contextContainer.CurrentModel.ContextTokens * .60)
+        var model = _contextContainer.CurrentModel;
+        
+        var strategy = new ContextWindowCompressionStrategy(
+            model,
+            _metadataStore,
+            new ContextWindowCompressionOptions
+            {
+                TargetUtilization = 0.40,
+                UncompressedCompressionThreshold = 0.60,
+                CompressedReCompressionThreshold = 0.80,
+                ReCompressionTarget = 0.20,
+                LargeMessageThreshold = 10000,
+                SummaryModel = ChatModel.OpenAi.Gpt35.Turbo,
+                MaxSummaryTokens = 1000
+            });
+        
+        if (strategy.ShouldCompress(_contextContainer.ChatMessages))
         {
-            chunkSize = 20000;
-        }
-
-        var strat = new TornadoCompressionStrategy(options: new MessageCompressionOptions()
-        {
-            ChunkSize = 10000,
-            SummaryModel = ChatModel.OpenAi.Gpt5.V5Nano,
-            MaxSummaryTokens = 1000
-        });
-
-        if (strat.ShouldCompress(_contextContainer.ChatMessages))
-        {
-            var summerizer = new TornadoMessageSummarizer(_client);
-            return await summerizer.SummarizeMessages(
+            var summarizer = new ContextWindowMessageSummarizer(
+                _client, 
+                model, 
+                _metadataStore);
+            
+            var summaries = await summarizer.SummarizeMessages(
                 _contextContainer.ChatMessages,
-                strat.GetCompressionOptions(_contextContainer.ChatMessages)
-                );
+                strategy.GetCompressionOptions(_contextContainer.ChatMessages));
+            
+            return summaries;
         }
-
-        return context;
+        
+        return _contextContainer.ChatMessages;
+    }
+    
+    public void TrackNewMessage(ChatMessage message)
+    {
+        _metadataStore.Track(message);
+    }
+    
+    public ContextWindowAnalysis GetAnalysis()
+    {
+        var strategy = new ContextWindowCompressionStrategy(
+            _contextContainer.CurrentModel,
+            _metadataStore,
+            new ContextWindowCompressionOptions());
+        
+        return strategy.AnalyzeMessages(_contextContainer.ChatMessages);
     }
 }
