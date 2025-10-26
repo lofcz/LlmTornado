@@ -10,7 +10,7 @@ public class PgVectorDemo
     {
         // Initialize PgVector with connection string and vector dimension
         string connectionString = "Host=localhost;Database=vectordb;Username=postgres;Password=";
-        TornadoPgVector pgVector = new TornadoPgVector(connectionString, vectorDimension: 1536);
+        TornadoPgVector pgVector = new TornadoPgVector(connectionString, vectorDimension: 1536, metric: SimilarityMetric.DotProduct);
 
         // Initialize a collection
         await pgVector.InitializeCollection("documents");

@@ -9,10 +9,12 @@ public class TornadoPgVector : IVectorDatabase
 
     private PgVectorConfigurationOptions _configOptions { get; set; }
     private int _vectorDimension { get; set; }
+    private SimilarityMetric metric = SimilarityMetric.DotProduct;
 
-    public TornadoPgVector(string connectionString, int vectorDimension = 1536, string? schema = null)
+    public TornadoPgVector(string connectionString, int vectorDimension = 1536, SimilarityMetric metric = SimilarityMetric.DotProduct, string? schema = null)
     {
         _vectorDimension = vectorDimension;
+        this.metric = metric;
         _configOptions = new PgVectorConfigurationOptions(connectionString, schema);
         PgVectorClient = new PgVectorClient(_configOptions);
         Task.Run(async () => await TestPgVectorConnection()).Wait();
@@ -44,6 +46,7 @@ public class TornadoPgVector : IVectorDatabase
         CollectionName = collectionName;
         PgVectorCollection = await PgVectorClient.GetOrCreateCollectionAsync(collectionName, _vectorDimension);
         PgVectorCollection.VectorDimension = _vectorDimension;
+        PgVectorCollection.Metric = metric;
         CollectionClient = new PgVectorCollectionClient(PgVectorCollection, PgVectorClient);
     }
 

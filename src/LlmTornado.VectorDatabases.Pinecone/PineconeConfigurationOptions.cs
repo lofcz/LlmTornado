@@ -1,30 +1,6 @@
 namespace LlmTornado.VectorDatabases.Pinecone;
 
 /// <summary>
-/// Distance metrics supported by Pinecone for similarity calculations.
-/// </summary>
-public enum PineconeMetric
-{
-    /// <summary>
-    /// Cosine similarity - measures the cosine of the angle between vectors.
-    /// Best for most text embeddings. Range: -1 to 1 (higher is more similar).
-    /// </summary>
-    Cosine,
-    
-    /// <summary>
-    /// Euclidean distance - measures straight-line distance between vectors.
-    /// Range: 0 to ∞ (lower is more similar).
-    /// </summary>
-    Euclidean,
-    
-    /// <summary>
-    /// Dot product - measures the product of vector magnitudes and cosine.
-    /// Useful when vector magnitude is meaningful. Range: -∞ to ∞ (higher is more similar).
-    /// </summary>
-    Dotproduct
-}
-
-/// <summary>
 /// Cloud providers supported by Pinecone for serverless indexes.
 /// </summary>
 public enum PineconeCloud
@@ -70,7 +46,7 @@ public class PineconeConfigurationOptions
     /// The distance metric to use for similarity calculations.
     /// Defaults to Cosine.
     /// </summary>
-    public PineconeMetric Metric { get; set; } = PineconeMetric.Cosine;
+    public SimilarityMetric Metric { get; set; } = SimilarityMetric.DotProduct;
 
     /// <summary>
     /// The cloud provider for serverless indexes. Defaults to AWS.
@@ -109,7 +85,7 @@ public class PineconeConfigurationOptions
         string apiKey,
         string? indexName = null,
         int? dimension = null,
-        PineconeMetric metric = PineconeMetric.Cosine,
+        SimilarityMetric metric = SimilarityMetric.DotProduct,
         PineconeCloud cloud = PineconeCloud.Aws,
         string region = "us-east-1")
     {

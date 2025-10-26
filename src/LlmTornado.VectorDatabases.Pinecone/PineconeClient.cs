@@ -92,9 +92,10 @@ public class PineconeVectorClient
                 Dimension = options.Dimension.Value,
                 Metric = options.Metric switch
                 {
-                    PineconeMetric.Euclidean => MetricType.Euclidean,
-                    PineconeMetric.Dotproduct => MetricType.Dotproduct,
-                    _ => MetricType.Cosine
+                    SimilarityMetric.Euclidean => MetricType.Euclidean,
+                    SimilarityMetric.DotProduct => MetricType.Dotproduct,
+                    SimilarityMetric.Cosine => MetricType.Cosine,
+                    _ => throw new ArgumentOutOfRangeException()
                 },
                 Spec = new ServerlessIndexSpec
                 {

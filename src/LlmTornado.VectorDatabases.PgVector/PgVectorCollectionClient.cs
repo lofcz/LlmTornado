@@ -64,6 +64,18 @@ public class PgVectorCollectionClient
         return entries;
     }
 
+    string MetricOperator()
+    {
+        return _collection.Metric switch
+        {
+            SimilarityMetric.Cosine => "<=>",
+            SimilarityMetric.Euclidean => "<->",
+            SimilarityMetric.DotProduct => "<=>", // they return negative inner product, so use cosine
+            SimilarityMetric.Manhattan => "<+>",
+            _ => throw new ArgumentException()
+        };
+    }
+    
     public async Task<List<PgVectorEntry>> QueryAsync(float[] queryEmbedding, int topK = 10, Dictionary<string, object>? whereMetadata = null)
     {
         await using NpgsqlConnection connection = _client.CreateConnection();
@@ -73,22 +85,24 @@ public class PgVectorCollectionClient
         string tableName = GetTableName();
         
         StringBuilder queryBuilder = new StringBuilder();
-        queryBuilder.Append($@"
-            SELECT id, document, metadata, embedding, 
-                   (embedding <=> @embedding::vector) as distance 
-            FROM {schema}.{tableName}");
+        queryBuilder.AppendLine($"""
+                             SELECT id, document, metadata, embedding, 
+                                    (embedding {MetricOperator()} @embedding::vector) as distance 
+                             FROM {schema}.{tableName}
+                             """);
 
         if (whereMetadata is { Count: > 0 })
         {
-            queryBuilder.Append(" WHERE ");
-            queryBuilder.Append(BuildMetadataFilter(whereMetadata));
+            queryBuilder.AppendLine($" WHERE {BuildMetadataFilter(whereMetadata)}");
         }
 
-        queryBuilder.Append($@"
-            ORDER BY embedding desc
-            LIMIT @limit");
+        queryBuilder.AppendLine($"""
+                                 ORDER BY embedding desc
+                                 LIMIT @limit
+                                 """);
 
-        await using NpgsqlCommand cmd = new NpgsqlCommand(queryBuilder.ToString(), connection);
+        string sql = queryBuilder.ToString();
+        await using NpgsqlCommand cmd = new NpgsqlCommand(sql, connection);
         cmd.Parameters.AddWithValue("embedding", $"[{string.Join(",", queryEmbedding)}]");
         cmd.Parameters.AddWithValue("limit", topK);
 
@@ -203,10 +217,11 @@ public class PgVectorCollectionClient
 
                 if (setParts.Count > 0)
                 {
-                    string query = $@"
-                        UPDATE {schema}.{tableName} 
-                        SET {string.Join(", ", setParts)}
-                        WHERE id = @id";
+                    string query = $"""
+                                    UPDATE {schema}.{tableName} 
+                                    SET {string.Join(", ", setParts)}
+                                    WHERE id = @id
+                                    """;
 
                     cmd.CommandText = query;
                     cmd.Parameters.AddWithValue("id", ids[i]);
@@ -242,13 +257,14 @@ public class PgVectorCollectionClient
         {
             for (int i = 0; i < ids.Count; i++)
             {
-                string query = $@"
-                    INSERT INTO {schema}.{tableName} (id, document, metadata, embedding)
-                    VALUES (@id, @document, @metadata::jsonb, @embedding::vector)
-                    ON CONFLICT (id) DO UPDATE SET
-                        document = EXCLUDED.document,
-                        metadata = EXCLUDED.metadata,
-                        embedding = EXCLUDED.embedding";
+                string query = $"""
+                                INSERT INTO {schema}.{tableName} (id, document, metadata, embedding)
+                                VALUES (@id, @document, @metadata::jsonb, @embedding::vector)
+                                ON CONFLICT (id) DO UPDATE SET
+                                    document = EXCLUDED.document,
+                                    metadata = EXCLUDED.metadata,
+                                    embedding = EXCLUDED.embedding
+                                """;
 
                 await using NpgsqlCommand cmd = new NpgsqlCommand(query, connection, transaction);
                 cmd.Parameters.AddWithValue("id", ids[i]);
@@ -319,14 +335,6 @@ public class PgVectorCollectionClient
         object? result = await cmd.ExecuteScalarAsync();
         
         return Convert.ToInt32(result);
-    }
-
-    private static float[] ParseVector(string vectorStr)
-    {
-        // Vector format: [1.0,2.0,3.0]
-        string cleaned = vectorStr.Trim('[', ']');
-        string[] parts = cleaned.Split(',');
-        return parts.Select(p => float.Parse(p.Trim())).ToArray();
     }
 
     private static string BuildMetadataFilter(Dictionary<string, object> whereMetadata)
