@@ -8,7 +8,7 @@ namespace LlmTornado.Agents.Samples.ContextController;
 
 public class ContextController : IContextController
 {
-    public ContextContainer ContextContainer { get; set; } = new ContextContainer();
+    public ContextContainer Container { get; set; } = new ContextContainer();
     public IInstructionsContextService? InstructionsContextService { get; set; }
     public IToolContextService? ToolContextService { get; set; }
     public IModelContextService? ModelContextService { get; set; }
@@ -18,12 +18,14 @@ public class ContextController : IContextController
 
     public ContextController(
         TaskContextService taskContextService,
+        ContextContainer contextContainer,
         IInstructionsContextService? instructionsContextService = null,
         IToolContextService? toolContextService = null,
         IModelContextService? modelContextService = null,
         IMessageContextService? messageContextService = null)
     {
         TaskContextService = taskContextService;
+        Container = contextContainer;
         InstructionsContextService = instructionsContextService;
         ToolContextService = toolContextService;
         ModelContextService = modelContextService;
@@ -32,14 +34,14 @@ public class ContextController : IContextController
 
     public void SetGoal(string goal)
     {
-        this.ContextContainer.Goal = goal;
+        this.Container.Goal = goal;
     }
 
     public async Task<AgentContext> GetAgentContext()
     {
         AgentContext context = new AgentContext();
 
-        this.ContextContainer.CurrentTask = await TaskContextService.GetTaskContext();
+        this.Container.CurrentTask = await TaskContextService.GetTaskContext();
 
         if (ModelContextService is not null)
             context.Model = await ModelContextService.GetModelContext();

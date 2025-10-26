@@ -134,9 +134,11 @@ public class TornadoRunner
         {
             do
             {
-                CheckForCancellation(runnerCallback, runnerOptions, cancellationToken);
+                if(CheckForCancellation(runnerCallback, runnerOptions, cancellationToken)) break;
 
-                CheckForMaxTurns(currentTurn, maxTurns, runnerCallback, runnerOptions);
+                if(CheckForMaxTurns(currentTurn, maxTurns, runnerCallback, runnerOptions)) break;
+
+                if(CheckForMaxTokens(chat.Messages.Sum(m => TokenEstimator.EstimateTokens(m)), runnerCallback, runnerOptions)) break;
 
                 currentTurn++;
 
@@ -218,18 +220,21 @@ public class TornadoRunner
         }
     }
 
-    private static void CheckForCancellation(Func<AgentRunnerEvents, ValueTask>? runnerCallback = null, TornadoRunnerOptions runnerOptions = null, CancellationToken cancellationToken = default)
+    private static bool CheckForCancellation(Func<AgentRunnerEvents, ValueTask>? runnerCallback = null, TornadoRunnerOptions runnerOptions = null, CancellationToken cancellationToken = default)
     {
         if (cancellationToken.IsCancellationRequested)
         {
             runnerCallback?.Invoke(new AgentRunnerCancelledEvent());
             OperationCanceledException ex = new OperationCanceledException("Operation was cancelled by user.");
             runnerCallback?.Invoke(new AgentRunnerErrorEvent(ex.Message, ex));
-            throw ex;
+            if (runnerOptions.ThrowOnCancelled)
+                throw ex;
+            return true;
         }
+        return false;
     }
 
-    private static void CheckForMaxTurns(int currentTurn, int maxTurns, Func<AgentRunnerEvents, ValueTask>? runnerCallback = null, TornadoRunnerOptions runnerOptions = null)
+    private static bool CheckForMaxTurns(int currentTurn, int maxTurns, Func<AgentRunnerEvents, ValueTask>? runnerCallback = null, TornadoRunnerOptions runnerOptions = null)
     {
         if (currentTurn >= maxTurns)
         {
@@ -238,7 +243,23 @@ public class TornadoRunner
             runnerCallback?.Invoke(new AgentRunnerErrorEvent(error.Message, error));
             if(runnerOptions.ThrowOnMaxTurnsExceeded)
                 throw error;
+            return true;
         }
+        return false;
+    }
+
+    private static bool CheckForMaxTokens(int currentTokens, Func<AgentRunnerEvents, ValueTask>? runnerCallback = null, TornadoRunnerOptions runnerOptions = null)
+    {
+        if (currentTokens >= runnerOptions.TokenLimit)
+        {
+            Exception error = new Exception("Max Tokens Reached");
+            runnerCallback?.Invoke(new AgentRunnerMaxTokensReachedEvent());
+            runnerCallback?.Invoke(new AgentRunnerErrorEvent(error.Message, error));
+            if (runnerOptions.ThrowOnTokenLimitExceeded)
+                throw error;
+            return true;
+        }
+        return false;
     }
 
     private static bool GotToolCall(Conversation chat)
@@ -328,6 +349,19 @@ public class TornadoRunner
             }
             catch
             {
+            }
+
+            // Handle any tool calls from previous response
+            if (chat.Messages.LastOrDefault()?.ToolCalls != null)
+            {
+                foreach (ToolCall tc in chat.Messages.LastOrDefault().ToolCalls)
+                {
+                    if (tc.FunctionCall == null) continue;
+                    FunctionCall fn = tc.FunctionCall;
+                    runnerCallback?.Invoke(new AgentRunnerToolInvokedEvent(fn));
+                    fn.Result = await HandleToolCall(agent, fn, toolPermissionRequest); //[consideration]I could go parallel here but not sure if its worth the complexity
+                    runnerCallback?.Invoke(new AgentRunnerToolCompletedEvent(fn));
+                }
             }
 
             if (Streaming && runnerCallback != null)

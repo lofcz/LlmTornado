@@ -290,6 +290,7 @@ public class TornadoAgent
         string responseId = "",
         Func<string, ValueTask<bool>>? toolPermissionHandle = null, 
         bool singleTurn = false,
+        TornadoRunnerOptions? runnerOptions = null,
         CancellationToken cancellationToken = default)
     {
         onAgentRunnerEvent += OnAgentRunnerEvent;
@@ -303,6 +304,7 @@ public class TornadoAgent
             runnerCallback: onAgentRunnerEvent, 
             maxTurns: maxTurns, 
             responseId: responseId, 
+            runnerOptions: runnerOptions,
             toolPermissionHandle: toolPermissionHandle);
     }
 }

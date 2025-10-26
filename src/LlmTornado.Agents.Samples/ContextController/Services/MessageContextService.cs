@@ -9,7 +9,7 @@ public class MessageContextService : IMessageContextService
     private TornadoApi _client { get; set; }
     private ContextContainer _contextContainer { get; set; }
 
-    private MessageProviderService _messageProvider { get; set; }
+    //private MessageProviderService _messageProvider { get; set; }
 
     private MessageCompressionService _messageCompressor { get; set; }
 
@@ -17,13 +17,13 @@ public class MessageContextService : IMessageContextService
     {
         _client = api;
         _contextContainer = contextContainer;
-        _messageProvider = new MessageProviderService(_client, _contextContainer);
-        _messageCompressor = new MessageCompressionService(_client, _contextContainer, _messageProvider.LongTermMemory);
+        //_messageProvider = new MessageProviderService(_client, _contextContainer);
+        _messageCompressor = new MessageCompressionService(_client, _contextContainer);
     }
 
     public async Task<List<ChatMessage>> GetChatContext()
     {
-        throw new NotImplementedException();
+        return await _messageCompressor.Invoke();
     }
 }
 
@@ -63,24 +63,17 @@ public class MessageCompressionService
 
     public CompressedContextStore CompressedContextStore { get; set; } = new CompressedContextStore();
 
-    public MessageCompressionService(TornadoApi api, ContextContainer contextContainer, IVectorDatabase longTermMemory)
+    IMessagesSummarizer _summarizer;
+    IMessagesCompressionStrategy _compressionStrategy;
+
+    public MessageCompressionService(TornadoApi api, ContextContainer contextContainer, IVectorDatabase? longTermMemory = null, IMessagesSummarizer? summarizer = null, IMessagesCompressionStrategy? compressionStrategy = null)
     {
         _client = api;
         _contextContainer = contextContainer;
         _metadataStore = new MessageMetadataStore();
-        
-        // Track existing messages
-        foreach (var message in _contextContainer.ChatMessages)
-        {
-            _metadataStore.Track(message);
-        }
-    }
-
-    public async Task<List<ChatMessage>> Invoke()
-    {
         var model = _contextContainer.CurrentModel;
-        
-        var strategy = new ContextWindowCompressionStrategy(
+
+        _compressionStrategy =  compressionStrategy ?? new ContextWindowCompressionStrategy(
             model,
             _metadataStore,
             new ContextWindowCompressionOptions
@@ -93,18 +86,27 @@ public class MessageCompressionService
                 SummaryModel = ChatModel.OpenAi.Gpt35.Turbo,
                 MaxSummaryTokens = 1000
             });
-        
-        if (strategy.ShouldCompress(_contextContainer.ChatMessages))
+
+        _summarizer =  summarizer ?? new ContextWindowMessageSummarizer(
+            _client,
+            model,
+            _metadataStore);
+
+        // Track existing messages
+        foreach (var message in _contextContainer.ChatMessages)
         {
-            var summarizer = new ContextWindowMessageSummarizer(
-                _client, 
-                model, 
-                _metadataStore);
-            
-            var summaries = await summarizer.SummarizeMessages(
+            _metadataStore.Track(message);
+        }
+    }
+
+    public async Task<List<ChatMessage>> Invoke()
+    {
+        if (_compressionStrategy.ShouldCompress(_contextContainer.ChatMessages))
+        {
+            var summaries = await _summarizer.SummarizeMessages(
                 _contextContainer.ChatMessages,
-                strategy.GetCompressionOptions(_contextContainer.ChatMessages));
-            
+                _compressionStrategy.GetCompressionOptions(_contextContainer.ChatMessages));
+
             return summaries;
         }
         

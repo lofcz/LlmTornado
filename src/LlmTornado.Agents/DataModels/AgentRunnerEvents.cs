@@ -24,6 +24,7 @@ public enum AgentRunnerEventTypes
     GuardRailTriggered,
     UsageReceived,
     ResponseApiEvent,
+    MaxTokensReached
 }
 
 /// <summary>
@@ -53,6 +54,15 @@ public class AgentRunnerResponseApiEvent : AgentRunnerEvents
     {
         EventType = AgentRunnerEventTypes.ResponseApiEvent;
         ResponseApiEvent = responseEvent;
+    }
+}
+
+public class AgentRunnerMaxTokensReachedEvent : AgentRunnerEvents
+{
+    public AgentRunnerMaxTokensReachedEvent()
+    {
+        EventType = AgentRunnerEventTypes.MaxTokensReached;
+        Timestamp = DateTime.UtcNow;
     }
 }
 

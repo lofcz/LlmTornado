@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -27,6 +28,161 @@ public class CompressionAnalysis
 }
 
 /// <summary>
+/// Metrics for tracking summarization performance
+/// </summary>
+public class SummarizationMetrics
+{
+    private long _totalSummarizations;
+    private long _largeMessageCompressions;
+    private long _uncompressedCompressions;
+    private long _recompressions;
+    private long _totalMessagesBefore;
+    private long _totalMessagesAfter;
+    private long _totalTokensBefore;
+    private long _totalTokensAfter;
+    private long _totalDurationMs;
+    private readonly object _lock = new();
+
+    public long TotalSummarizations
+    {
+        get { lock (_lock) return _totalSummarizations; }
+    }
+
+    public long LargeMessageCompressions
+    {
+        get { lock (_lock) return _largeMessageCompressions; }
+    }
+
+    public long UncompressedCompressions
+    {
+        get { lock (_lock) return _uncompressedCompressions; }
+    }
+
+    public long Recompressions
+    {
+        get { lock (_lock) return _recompressions; }
+    }
+
+    public long TotalMessagesBefore
+    {
+        get { lock (_lock) return _totalMessagesBefore; }
+    }
+
+    public long TotalMessagesAfter
+    {
+        get { lock (_lock) return _totalMessagesAfter; }
+    }
+
+    public long TotalTokensBefore
+    {
+        get { lock (_lock) return _totalTokensBefore; }
+    }
+
+    public long TotalTokensAfter
+    {
+        get { lock (_lock) return _totalTokensAfter; }
+    }
+
+    public long TotalDurationMs
+    {
+        get { lock (_lock) return _totalDurationMs; }
+    }
+
+    public double AverageDurationMs
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _totalSummarizations > 0
+                    ? (double)_totalDurationMs / _totalSummarizations
+                    : 0;
+            }
+        }
+    }
+
+    public double AverageCompressionRatio
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _totalTokensBefore > 0
+                    ? (double)_totalTokensAfter / _totalTokensBefore
+                    : 0;
+            }
+        }
+    }
+
+    public long TotalTokensSaved
+    {
+        get { lock (_lock) return _totalTokensBefore - _totalTokensAfter; }
+    }
+
+    internal void RecordSummarization(
+        int messagesBefore,
+        int messagesAfter,
+        int tokensBefore,
+        int tokensAfter,
+        long durationMs,
+        string type)
+    {
+        lock (_lock)
+        {
+            _totalSummarizations++;
+            _totalMessagesBefore += messagesBefore;
+            _totalMessagesAfter += messagesAfter;
+            _totalTokensBefore += tokensBefore;
+            _totalTokensAfter += tokensAfter;
+            _totalDurationMs += durationMs;
+
+            switch (type)
+            {
+                case "large":
+                    _largeMessageCompressions++;
+                    break;
+                case "uncompressed":
+                    _uncompressedCompressions++;
+                    break;
+                case "recompressed":
+                    _recompressions++;
+                    break;
+            }
+        }
+    }
+
+    public void Reset()
+    {
+        lock (_lock)
+        {
+            _totalSummarizations = 0;
+            _largeMessageCompressions = 0;
+            _uncompressedCompressions = 0;
+            _recompressions = 0;
+            _totalMessagesBefore = 0;
+            _totalMessagesAfter = 0;
+            _totalTokensBefore = 0;
+            _totalTokensAfter = 0;
+            _totalDurationMs = 0;
+        }
+    }
+
+    public override string ToString()
+    {
+        return $@"Summarization Metrics:
+- Total Summarizations: {TotalSummarizations:N0}
+  - Large Messages: {LargeMessageCompressions:N0}
+  - Uncompressed: {UncompressedCompressions:N0}
+  - Re-compressions: {Recompressions:N0}
+- Messages: {TotalMessagesBefore:N0} ? {TotalMessagesAfter:N0}
+- Tokens: {TotalTokensBefore:N0} ? {TotalTokensAfter:N0} (saved {TotalTokensSaved:N0})
+- Compression Ratio: {AverageCompressionRatio:P1}
+- Avg Duration: {AverageDurationMs:F2}ms
+- Total Duration: {TotalDurationMs:N0}ms";
+    }
+}
+
+/// <summary>
 /// Advanced message summarizer that implements selective compression
 /// based on context window utilization targets.
 /// </summary>
@@ -35,22 +191,48 @@ public class ContextWindowMessageSummarizer : IMessagesSummarizer
     private readonly TornadoApi _client;
     private readonly ChatModel _model;
     private readonly MessageMetadataStore _metadataStore;
+    private readonly SummarizationMetrics _metrics;
+    private readonly bool _enableLogging;
+    private readonly Action<string>? _logAction;
 
+    /// <summary>
+    /// Creates a new context window message summarizer
+    /// </summary>
+    /// <param name="client">Tornado API client</param>
+    /// <param name="model">Chat model to use</param>
+    /// <param name="metadataStore">Message metadata store</param>
+    /// <param name="enableLogging">Enable detailed logging</param>
+    /// <param name="logAction">Custom log action (null = Console)</param>
     public ContextWindowMessageSummarizer(
         TornadoApi client,
         ChatModel model,
-        MessageMetadataStore metadataStore)
+        MessageMetadataStore metadataStore,
+        bool enableLogging = false,
+        Action<string>? logAction = null)
     {
         _client = client ?? throw new ArgumentNullException(nameof(client));
         _model = model ?? throw new ArgumentNullException(nameof(model));
         _metadataStore = metadataStore ?? throw new ArgumentNullException(nameof(metadataStore));
+        _metrics = new SummarizationMetrics();
+        _enableLogging = enableLogging;
+        _logAction = logAction;
     }
+
+    /// <summary>
+    /// Gets the current summarization metrics
+    /// </summary>
+    public SummarizationMetrics Metrics => _metrics;
 
     public async Task<List<ChatMessage>> SummarizeMessages(
         List<ChatMessage> messages,
         MessageCompressionOptions options,
         CancellationToken token = default)
     {
+        var sw = Stopwatch.StartNew();
+        int tokensBefore = messages.Sum(m => TokenEstimator.EstimateTokens(m));
+
+        Log($"[ContextWindowMessageSummarizer] Starting summarization for {messages.Count} messages ({tokensBefore:N0} tokens)");
+
         var analysis = AnalyzeCompressionNeeds(messages, options);
 
         List<ChatMessage> result = new();
@@ -58,6 +240,7 @@ public class ContextWindowMessageSummarizer : IMessagesSummarizer
         // Step 1: Handle large messages (>10k tokens)
         if (analysis.LargeMessages.Any())
         {
+            Log($"[ContextWindowMessageSummarizer] Compressing {analysis.LargeMessages.Count} large messages");
             var largeSummaries = await CompressLargeMessages(
                 analysis.LargeMessages, options, token);
             result.AddRange(largeSummaries);
@@ -66,6 +249,7 @@ public class ContextWindowMessageSummarizer : IMessagesSummarizer
         // Step 2: Handle uncompressed compression (60% threshold)
         if (analysis.NeedsUncompressedCompression)
         {
+            Log($"[ContextWindowMessageSummarizer] Compressing {analysis.UncompressedMessages.Count} uncompressed messages to target {analysis.TargetUtilization:P1}");
             var uncompressedSummaries = await CompressToTarget(
                 analysis.UncompressedMessages,
                 analysis.TargetUtilization,
@@ -77,6 +261,7 @@ public class ContextWindowMessageSummarizer : IMessagesSummarizer
         // Step 3: Handle re-compression (80% threshold)
         if (analysis.NeedsReCompression)
         {
+            Log($"[ContextWindowMessageSummarizer] Re-compressing {analysis.CompressedMessages.Count} compressed messages to target {analysis.ReCompressionTarget:P1}");
             var recompressedSummaries = await ReCompressToTarget(
                 analysis.CompressedMessages,
                 analysis.ReCompressionTarget,
@@ -84,6 +269,22 @@ public class ContextWindowMessageSummarizer : IMessagesSummarizer
                 token);
             result.AddRange(recompressedSummaries);
         }
+
+        sw.Stop();
+        int tokensAfter = result.Sum(m => TokenEstimator.EstimateTokens(m));
+
+        // Record metrics
+        string type = analysis.LargeMessages.Any() ? "large" :
+                     analysis.NeedsUncompressedCompression ? "uncompressed" : "recompressed";
+        _metrics.RecordSummarization(
+            messages.Count,
+            result.Count,
+            tokensBefore,
+            tokensAfter,
+            sw.ElapsedMilliseconds,
+            type);
+
+        Log($"[ContextWindowMessageSummarizer] Summarization complete: {messages.Count} ? {result.Count} messages, {tokensBefore:N0} ? {tokensAfter:N0} tokens ({sw.ElapsedMilliseconds}ms)");
 
         return result;
     }
@@ -97,6 +298,7 @@ public class ContextWindowMessageSummarizer : IMessagesSummarizer
 
         foreach (var message in largeMessages)
         {
+            Log($"[ContextWindowMessageSummarizer] Compressing large message {message.Id} ({TokenEstimator.EstimateTokens(message):N0} tokens)");
             var summary = await SummarizeSingleMessage(message, options, token);
             summaries.Add(summary);
 
@@ -134,7 +336,12 @@ public class ContextWindowMessageSummarizer : IMessagesSummarizer
         }
 
         if (!toCompress.Any())
+        {
+            Log($"[ContextWindowMessageSummarizer] No messages to compress (already at target)");
             return new List<ChatMessage>();
+        }
+
+        Log($"[ContextWindowMessageSummarizer] Compressing {toCompress.Count} oldest messages");
 
         // Group into chunks and compress
         var chunks = CreateChunks(toCompress, options.ChunkSize);
@@ -201,7 +408,12 @@ public class ContextWindowMessageSummarizer : IMessagesSummarizer
         }
 
         if (!toReCompress.Any())
+        {
+            Log($"[ContextWindowMessageSummarizer] No messages to re-compress (already at target)");
             return new List<ChatMessage>();
+        }
+
+        Log($"[ContextWindowMessageSummarizer] Re-compressing {toReCompress.Count} oldest compressed messages");
 
         // Use more aggressive compression for re-compression
         var reCompressionOptions = new MessageCompressionOptions
@@ -294,6 +506,8 @@ public class ContextWindowMessageSummarizer : IMessagesSummarizer
             chunks.Add(currentChunk);
         }
 
+        Log($"[ContextWindowMessageSummarizer] Created {chunks.Count} chunks from {messages.Count} messages");
+
         return chunks;
     }
 
@@ -321,6 +535,8 @@ public class ContextWindowMessageSummarizer : IMessagesSummarizer
 
         try
         {
+            Log($"[ContextWindowMessageSummarizer] Summarizing chunk of {chunk.Count} messages ({chunkText.Length} characters)");
+
             Conversation conversation = client.Chat.CreateConversation(options.SummaryModel);
             conversation.AddSystemMessage(options.SummaryPrompt);
             conversation.AddUserMessage(chunkText.ToString());
@@ -330,21 +546,27 @@ public class ContextWindowMessageSummarizer : IMessagesSummarizer
             RestDataOrException<ChatRichResponse> response = await conversation.GetResponseRichSafe();
             if(response.Exception != null)
             {
-                Console.WriteLine($"Error during summarization: {response.Exception.Message}");
+                Log($"[ContextWindowMessageSummarizer] Error during summarization: {response.Exception.Message}");
                 return $"[{chunk.Count} messages from this conversation]";
             }
             else
             {
                 if (response.Data == null)
                 {
+                    Log($"[ContextWindowMessageSummarizer] No data in response");
                     return $"[{chunk.Count} messages from this conversation]";
                 }
             }
             ChatResult? result = response.Data.Result;
-            return result?.Choices?[0]?.Message?.Content ?? string.Empty;
+            var summary = result?.Choices?[0]?.Message?.Content ?? string.Empty;
+            
+            Log($"[ContextWindowMessageSummarizer] Chunk summarized: {chunkText.Length} chars ? {summary.Length} chars");
+            
+            return summary;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            Log($"[ContextWindowMessageSummarizer] Exception during summarization: {ex.Message}");
             return $"[{chunk.Count} messages from this conversation]";
         }
     }
@@ -385,5 +607,20 @@ public class ContextWindowMessageSummarizer : IMessagesSummarizer
             TargetUtilization = 0.40,
             ReCompressionTarget = 0.20
         };
+    }
+
+    private void Log(string message)
+    {
+        if (_enableLogging)
+        {
+            if (_logAction != null)
+            {
+                _logAction(message);
+            }
+            else
+            {
+                Console.WriteLine(message);
+            }
+        }
     }
 }

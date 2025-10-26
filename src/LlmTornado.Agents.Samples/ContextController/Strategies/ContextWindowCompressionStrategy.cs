@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
@@ -68,6 +69,16 @@ public class ContextWindowCompressionOptions
     /// Maximum tokens for each summary (default: 1000)
     /// </summary>
     public int MaxSummaryTokens { get; set; } = 1000;
+
+    /// <summary>
+    /// Enable detailed logging (default: false)
+    /// </summary>
+    public bool EnableLogging { get; set; } = false;
+
+    /// <summary>
+    /// Custom logger action (receives log messages)
+    /// </summary>
+    public Action<string>? LogAction { get; set; }
 }
 
 /// <summary>
@@ -87,6 +98,48 @@ public class ContextWindowAnalysis
     public List<ChatMessage> CompressedMessages { get; set; } = new();
     public List<ChatMessage> UncompressedMessages { get; set; } = new();
 
+    /// <summary>
+    /// Gets the compression recommendation based on analysis
+    /// </summary>
+    public string GetRecommendation()
+    {
+        if (HasLargeMessages)
+            return "Compression recommended: Large messages detected (>10k tokens)";
+        
+        if (TotalUtilization >= 0.80)
+            return $"Compression urgently needed: {TotalUtilization:P1} utilization (critical level)";
+        
+        if (TotalUtilization >= 0.60)
+            return $"Compression recommended: {TotalUtilization:P1} utilization";
+        
+        if (CompressedAndSystemUtilization >= 0.80)
+            return $"Re-compression recommended: {CompressedAndSystemUtilization:P1} compressed+system utilization";
+        
+        return $"No compression needed: {TotalUtilization:P1} utilization (healthy)";
+    }
+
+    /// <summary>
+    /// Gets detailed statistics as a dictionary
+    /// </summary>
+    public Dictionary<string, object> GetStatistics()
+    {
+        return new Dictionary<string, object>
+        {
+            ["ContextWindowSize"] = ContextWindowSize,
+            ["TotalTokens"] = TotalTokens,
+            ["TotalUtilization"] = TotalUtilization,
+            ["SystemTokens"] = SystemTokens,
+            ["CompressedTokens"] = CompressedTokens,
+            ["UncompressedTokens"] = UncompressedTokens,
+            ["CompressedAndSystemUtilization"] = CompressedAndSystemUtilization,
+            ["HasLargeMessages"] = HasLargeMessages,
+            ["SystemMessageCount"] = SystemMessages.Count,
+            ["CompressedMessageCount"] = CompressedMessages.Count,
+            ["UncompressedMessageCount"] = UncompressedMessages.Count,
+            ["Recommendation"] = GetRecommendation()
+        };
+    }
+
     public override string ToString()
     {
         return $@"Context Window Analysis:
@@ -96,7 +149,128 @@ public class ContextWindowAnalysis
 - Compressed: {CompressedTokens} tokens
 - Uncompressed: {UncompressedTokens} tokens
 - Compressed+System: {CompressedAndSystemUtilization:P1}
-- Has Large Messages: {HasLargeMessages}";
+- Has Large Messages: {HasLargeMessages}
+- Recommendation: {GetRecommendation()}";
+    }
+}
+
+/// <summary>
+/// Compression metrics for tracking performance and behavior
+/// </summary>
+public class CompressionMetrics
+{
+    private long _totalAnalysisCalls;
+    private long _totalCompressionChecks;
+    private long _totalCompressionsTriggered;
+    private long _totalAnalysisDurationMs;
+    private readonly object _lock = new();
+
+    /// <summary>
+    /// Total number of analysis operations performed
+    /// </summary>
+    public long TotalAnalysisCalls
+    {
+        get { lock (_lock) return _totalAnalysisCalls; }
+    }
+
+    /// <summary>
+    /// Total number of compression checks performed
+    /// </summary>
+    public long TotalCompressionChecks
+    {
+        get { lock (_lock) return _totalCompressionChecks; }
+    }
+
+    /// <summary>
+    /// Total number of times compression was triggered
+    /// </summary>
+    public long TotalCompressionsTriggered
+    {
+        get { lock (_lock) return _totalCompressionsTriggered; }
+    }
+
+    /// <summary>
+    /// Total time spent in analysis operations (milliseconds)
+    /// </summary>
+    public long TotalAnalysisDurationMs
+    {
+        get { lock (_lock) return _totalAnalysisDurationMs; }
+    }
+
+    /// <summary>
+    /// Average analysis duration in milliseconds
+    /// </summary>
+    public double AverageAnalysisDurationMs
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _totalAnalysisCalls > 0
+                    ? (double)_totalAnalysisDurationMs / _totalAnalysisCalls
+                    : 0;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Compression trigger rate (compressions / checks)
+    /// </summary>
+    public double CompressionTriggerRate
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _totalCompressionChecks > 0
+                    ? (double)_totalCompressionsTriggered / _totalCompressionChecks
+                    : 0;
+            }
+        }
+    }
+
+    internal void RecordAnalysis(long durationMs)
+    {
+        lock (_lock)
+        {
+            _totalAnalysisCalls++;
+            _totalAnalysisDurationMs += durationMs;
+        }
+    }
+
+    internal void RecordCompressionCheck(bool triggered)
+    {
+        lock (_lock)
+        {
+            _totalCompressionChecks++;
+            if (triggered)
+                _totalCompressionsTriggered++;
+        }
+    }
+
+    /// <summary>
+    /// Resets all metrics to zero
+    /// </summary>
+    public void Reset()
+    {
+        lock (_lock)
+        {
+            _totalAnalysisCalls = 0;
+            _totalCompressionChecks = 0;
+            _totalCompressionsTriggered = 0;
+            _totalAnalysisDurationMs = 0;
+        }
+    }
+
+    public override string ToString()
+    {
+        return $@"Compression Metrics:
+- Analysis Calls: {TotalAnalysisCalls:N0}
+- Compression Checks: {TotalCompressionChecks:N0}
+- Compressions Triggered: {TotalCompressionsTriggered:N0}
+- Trigger Rate: {CompressionTriggerRate:P1}
+- Avg Analysis Time: {AverageAnalysisDurationMs:F2}ms
+- Total Analysis Time: {TotalAnalysisDurationMs:N0}ms";
     }
 }
 
@@ -109,6 +283,7 @@ public class ContextWindowCompressionStrategy : IMessagesCompressionStrategy
     private readonly ChatModel _model;
     private readonly MessageMetadataStore _metadataStore;
     private readonly ContextWindowCompressionOptions _options;
+    private readonly CompressionMetrics _metrics;
 
     /// <summary>
     /// Creates a new context window compression strategy.
@@ -124,7 +299,13 @@ public class ContextWindowCompressionStrategy : IMessagesCompressionStrategy
         _model = model ?? throw new ArgumentNullException(nameof(model));
         _metadataStore = metadataStore ?? throw new ArgumentNullException(nameof(metadataStore));
         _options = options ?? new ContextWindowCompressionOptions();
+        _metrics = new CompressionMetrics();
     }
+
+    /// <summary>
+    /// Gets the current compression metrics
+    /// </summary>
+    public CompressionMetrics Metrics => _metrics;
 
     /// <summary>
     /// Determines if compression should occur based on the strategy rules.
@@ -134,23 +315,46 @@ public class ContextWindowCompressionStrategy : IMessagesCompressionStrategy
     public bool ShouldCompress(List<ChatMessage> messages)
     {
         if (messages == null || messages.Count == 0)
+        {
+            _metrics.RecordCompressionCheck(false);
             return false;
+        }
 
         var analysis = AnalyzeMessages(messages);
+        bool shouldCompress = false;
+        string reason = string.Empty;
 
         // Rule 1: Check for large messages (>10k tokens)
         if (analysis.HasLargeMessages)
-            return true;
-
+        {
+            shouldCompress = true;
+            reason = "Large messages detected";
+        }
         // Rule 2: Check if total usage exceeds 60%
-        if (analysis.TotalUtilization >= _options.UncompressedCompressionThreshold)
-            return true;
-
+        else if (analysis.TotalUtilization >= _options.UncompressedCompressionThreshold)
+        {
+            shouldCompress = true;
+            reason = $"Total utilization {analysis.TotalUtilization:P1} exceeds threshold {_options.UncompressedCompressionThreshold:P1}";
+        }
         // Rule 3: Check if compressed + system exceeds 80%
-        if (analysis.CompressedAndSystemUtilization >= _options.CompressedReCompressionThreshold)
-            return true;
+        else if (analysis.CompressedAndSystemUtilization >= _options.CompressedReCompressionThreshold)
+        {
+            shouldCompress = true;
+            reason = $"Compressed+System utilization {analysis.CompressedAndSystemUtilization:P1} exceeds threshold {_options.CompressedReCompressionThreshold:P1}";
+        }
 
-        return false;
+        _metrics.RecordCompressionCheck(shouldCompress);
+
+        if (_options.EnableLogging)
+        {
+            var logMessage = shouldCompress
+                ? $"[ContextWindowCompressionStrategy] Compression triggered: {reason}"
+                : $"[ContextWindowCompressionStrategy] No compression needed: {analysis.TotalUtilization:P1} utilization";
+            
+            Log(logMessage);
+        }
+
+        return shouldCompress;
     }
 
     /// <summary>
@@ -162,7 +366,7 @@ public class ContextWindowCompressionStrategy : IMessagesCompressionStrategy
     {
         var analysis = AnalyzeMessages(messages);
 
-        return new MessageCompressionOptions
+        var options = new MessageCompressionOptions
         {
             ChunkSize = _options.ChunkSize,
             PreserveSystemmessages = true, // Always preserve system messages
@@ -171,6 +375,13 @@ public class ContextWindowCompressionStrategy : IMessagesCompressionStrategy
             SummaryPrompt = DeterminePrompt(analysis),
             MaxSummaryTokens = DetermineMaxTokens(analysis)
         };
+
+        if (_options.EnableLogging)
+        {
+            Log($"[ContextWindowCompressionStrategy] Compression options: Prompt={options.SummaryPrompt.Substring(0, Math.Min(50, options.SummaryPrompt.Length))}..., MaxTokens={options.MaxSummaryTokens}");
+        }
+
+        return options;
     }
 
     /// <summary>
@@ -180,6 +391,8 @@ public class ContextWindowCompressionStrategy : IMessagesCompressionStrategy
     /// <returns>Analysis results</returns>
     public ContextWindowAnalysis AnalyzeMessages(List<ChatMessage> messages)
     {
+        var sw = Stopwatch.StartNew();
+
         int contextWindow = TokenEstimator.GetContextWindowSize(_model);
 
         // Categorize messages - system messages are never compressed
@@ -204,7 +417,7 @@ public class ContextWindowCompressionStrategy : IMessagesCompressionStrategy
         bool hasLargeMessages = _metadataStore.GetLargeMessages(
             uncompressedMessages, _options.LargeMessageThreshold).Any();
 
-        return new ContextWindowAnalysis
+        var analysis = new ContextWindowAnalysis
         {
             ContextWindowSize = contextWindow,
             SystemTokens = systemTokens,
@@ -219,6 +432,16 @@ public class ContextWindowCompressionStrategy : IMessagesCompressionStrategy
             CompressedMessages = compressedMessages,
             UncompressedMessages = uncompressedMessages
         };
+
+        sw.Stop();
+        _metrics.RecordAnalysis(sw.ElapsedMilliseconds);
+
+        if (_options.EnableLogging)
+        {
+            Log($"[ContextWindowCompressionStrategy] Analysis complete in {sw.ElapsedMilliseconds}ms:\n{analysis}");
+        }
+
+        return analysis;
     }
 
     /// <summary>
@@ -244,6 +467,21 @@ public class ContextWindowCompressionStrategy : IMessagesCompressionStrategy
             return _options.MaxSummaryTokens / 2;
         }
         return _options.MaxSummaryTokens;
+    }
+
+    /// <summary>
+    /// Logs a message using the configured logger or Console
+    /// </summary>
+    private void Log(string message)
+    {
+        if (_options.LogAction != null)
+        {
+            _options.LogAction(message);
+        }
+        else
+        {
+            Console.WriteLine(message);
+        }
     }
 
     /// <summary>
