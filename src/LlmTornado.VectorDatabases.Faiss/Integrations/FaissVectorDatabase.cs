@@ -38,16 +38,11 @@ public class FaissVectorDatabase : IVectorDatabase
     /// <param name="indexDirectory">Directory path where FAISS indexes will be stored. Defaults to "./faiss_indexes".</param>
     /// <param name="vectorDimension">Dimension of the vectors to be stored. Default is 1536.</param>
     /// <param name="skipConnectionTest">If true, skips the connection test during initialization. Default is false.</param>
-    public FaissVectorDatabase(string? indexDirectory = null, int vectorDimension = 1536, bool skipConnectionTest = false)
+    public FaissVectorDatabase(string? indexDirectory = null, int vectorDimension = 1536)
     {
         _vectorDimension = vectorDimension;
         _configOptions = new FaissConfigurationOptions(indexDirectory);
         FaissClient = new FaissClient(_configOptions);
-        
-        if (!skipConnectionTest)
-        {
-            Task.Run(async () => await TestFaissConnection()).Wait();
-        }
     }
 
     private async Task TestFaissConnection()

@@ -88,7 +88,7 @@ public class TornadoCompressionStrategy : IMessagesCompressionStrategy
 {
     private readonly int messageThreshold;
     private readonly int characterThreshold;
-    private readonly MessageCompressionOptions options;
+    private  MessageCompressionOptions options;
 
     /// <summary>
     ///     Creates a new adaptive compression strategy.
@@ -136,8 +136,13 @@ public class TornadoCompressionStrategy : IMessagesCompressionStrategy
         };
 
         int totalChars = messages.Sum(m => m.GetMessageLength());
-
+        options = adaptedOptions;
         return adaptedOptions;
+    }
+
+    public MessageCompressionOptions? GetCompressionOptions()
+    {
+        return options;
     }
 }
 
