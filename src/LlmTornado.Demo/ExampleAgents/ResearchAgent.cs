@@ -156,7 +156,7 @@ public class PlannerRunnable : OrchestrationRunnable<ChatMessage, string>
     {
         process.RegisterAgent(agent: Agent);
 
-        Conversation conv = await Agent.RunAsync(appendMessages: new List<ChatMessage> { process.Input });
+        Conversation conv = await Agent.Run(appendMessages: new List<ChatMessage> { process.Input });
 
        return conv.Messages.Last().Content ?? string.Empty;
     }
@@ -218,7 +218,7 @@ public class ResearchRunnable : OrchestrationRunnable<ChatMessage, string>
 
         ChatMessage userMessage = new ChatMessage(Code.ChatMessageRoles.User, item);
 
-        Conversation conv = await Agent.RunAsync(appendMessages: new List<ChatMessage> { userMessage });
+        Conversation conv = await Agent.Run(appendMessages: new List<ChatMessage> { userMessage });
 
         return conv.Messages.Last().Content ?? string.Empty;
     }
@@ -258,7 +258,7 @@ public class ReportingRunnable : OrchestrationRunnable<string, ReportData>
     {
         research.RegisterAgent(agent: Agent);
 
-        Conversation conv = await Agent.RunAsync(
+        Conversation conv = await Agent.Run(
             appendMessages: new List<ChatMessage> { new ChatMessage(Code.ChatMessageRoles.User, research.Input) },
             streaming: Agent.Streaming,
             onAgentRunnerEvent: (sEvent) =>

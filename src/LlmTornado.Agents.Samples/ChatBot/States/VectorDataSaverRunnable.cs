@@ -83,7 +83,7 @@ public class VectorDataSaverRunnable : OrchestrationRunnable<ChatMessage, ChatMe
                 Write succinctly, no need to have complete sentences or good grammar. This will be consumed by someone synthesizing a report, so its vital you capture the essence and ignore any fluff. Do not include any additional commentary other than the summary itself.
                 """;
 
-        Conversation conv = await Agent.RunAsync(
+        Conversation conv = await Agent.Run(
             input: compressionRequest,
             appendMessages: history
         );

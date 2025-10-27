@@ -52,7 +52,7 @@ public class SingletonRuntimeConfiguration : IRuntimeConfiguration
 
         Conversation.AppendMessage(message);
 
-        Conversation = await Agent.RunAsync(
+        Conversation = await Agent.Run(
             appendMessages: Conversation.Messages.ToList(),
             streaming: Agent.Streaming,
             onAgentRunnerEvent: (sEvent) =>

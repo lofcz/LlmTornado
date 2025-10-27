@@ -40,7 +40,7 @@ public class ReportingRunnable : OrchestrationRunnable<string, ChatMessage>
     {
         research.RegisterAgent(agent: Agent);
 
-        Conversation conv = await Agent.RunAsync(
+        Conversation conv = await Agent.Run(
             appendMessages: new List<ChatMessage> { new ChatMessage(ChatMessageRoles.User, research.Input) },
             streaming: Agent.Streaming,
             onAgentRunnerEvent: (sEvent) =>

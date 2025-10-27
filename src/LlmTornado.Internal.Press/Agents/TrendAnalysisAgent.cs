@@ -68,7 +68,7 @@ public class TrendAnalysisRunnable : OrchestrationRunnable<string, TrendAnalysis
         };
 
         var searchContext = $"Search for trends related to: {process.Input}";
-        var conversation = await _agent.RunAsync(searchContext);
+        var conversation = await _agent.Run(searchContext);
 
         var lastMessage = conversation.Messages.Last();
         var trendOutput = await lastMessage.Content?.SmartParseJsonAsync<TrendAnalysisOutput>(_agent);

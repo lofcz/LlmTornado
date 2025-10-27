@@ -46,7 +46,7 @@ public class SimpleAgentRunnable : OrchestrationRunnable<ChatMessage, ChatMessag
                 {history.Last().Content}
                 """;
 
-        Conversation conv = await Agent.RunAsync(
+        Conversation conv = await Agent.Run(
             appendMessages: history,
             streaming: Agent.Streaming,
             onAgentRunnerEvent: (sEvent) =>

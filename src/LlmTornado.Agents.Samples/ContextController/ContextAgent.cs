@@ -61,7 +61,7 @@ public class ContextAgent
 
         bool hitTokenLimit = false;
         int messagesBefore = context.ChatMessages.Count;
-        Conversation conv = await Agent.RunAsync(contextManager.Container.CurrentTask, appendMessages: context.ChatMessages, 
+        Conversation conv = await Agent.Run(contextManager.Container.CurrentTask, appendMessages: context.ChatMessages, 
             streaming:true,
             onAgentRunnerEvent: (e) =>
             {

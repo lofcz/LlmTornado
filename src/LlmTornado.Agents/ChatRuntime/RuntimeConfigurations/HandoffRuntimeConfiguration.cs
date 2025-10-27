@@ -100,7 +100,7 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
 
             if(Conversation == null)
             {
-                Conversation = await CurrentAgent.RunAsync(
+                Conversation = await CurrentAgent.Run(
                appendMessages: [message],
                streaming: CurrentAgent.Streaming,
                onAgentRunnerEvent: (sEvent) => { 
@@ -109,7 +109,7 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
             }
             else
             {
-                Conversation = await CurrentAgent.RunAsync(
+                Conversation = await CurrentAgent.Run(
                appendMessages: Conversation.Messages.ToList(),
                streaming: CurrentAgent.Streaming,
                onAgentRunnerEvent: (sEvent) => { 
@@ -226,7 +226,7 @@ Out of the following Agents which agent should we Handoff the conversation too a
 
             string prompt = GenerateHandoffPrompt(inputMessage);
 
-            Conversation handoffResult = await handoffDecider.RunAsync(prompt, cancellationToken: cts.Token);
+            Conversation handoffResult = await handoffDecider.Run(prompt, cancellationToken: cts.Token);
 
             List<HandoffAgent> handoffAgents = CheckHandoffDeciderResult(handoffResult);
 

@@ -87,7 +87,7 @@ public class ImageGenerationRunnable : OrchestrationRunnable<ArticleOutput, Imag
                 Return only the prompt text, nothing else.
                 """;
 
-            var promptConversation = await _promptAgent.RunAsync(promptRequest, singleTurn: true);
+            var promptConversation = await _promptAgent.Run(promptRequest, singleTurn: true);
             var imagePrompt = promptConversation.Messages.Last().Content?.Trim() ?? 
                             $"Modern technical illustration representing {article.Title}";
 

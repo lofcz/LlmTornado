@@ -28,7 +28,7 @@ public class AgentsDemo : DemoBase
     {
         TornadoAgent agent = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41Mini, instructions:"You are a useful assistant.");
 
-        Conversation result = await agent.RunAsync("What is 2+2?");
+        Conversation result = await agent.Run("What is 2+2?");
 
         Console.WriteLine(result.Messages.Last().Content);
     }
@@ -49,7 +49,7 @@ public class AgentsDemo : DemoBase
             topic = Console.ReadLine();
             if (topic == "exit") break;
             Console.Write("[Assistant]: ");
-            conv = await agent.RunAsync(topic, appendMessages: conv.Messages.ToList(), streaming: true, onAgentRunnerEvent: runEventHandler);
+            conv = await agent.Run(topic, appendMessages: conv.Messages.ToList(), streaming: true, onAgentRunnerEvent: runEventHandler);
             Console.WriteLine();
         }
     }
@@ -71,7 +71,7 @@ public class AgentsDemo : DemoBase
             topic = Console.ReadLine();
             if (topic == "exit") break;
             Console.Write("\n[Assistant]: ");
-            conv = await agent.RunAsync(topic, appendMessages: conv.Messages.ToList());
+            conv = await agent.Run(topic, appendMessages: conv.Messages.ToList());
             Console.Write(conv.Messages.Last().Content);
         }
     }
@@ -117,11 +117,11 @@ public class AgentsDemo : DemoBase
         }
         Console.WriteLine("[User]: My Name is john");
         Console.Write("[Agent]: ");
-        Conversation result = await agent.RunAsync("My Name is john", onAgentRunnerEvent: runEventHandler);
+        Conversation result = await agent.Run("My Name is john", onAgentRunnerEvent: runEventHandler);
         Console.Write("\n");
         Console.WriteLine("[User]: Can you help me with my homework?");
         Console.Write("[Agent]: ");
-        result = await agent.RunAsync("Can you help me with my homework?", appendMessages: result.Messages.ToList(), onAgentRunnerEvent: runEventHandler);
+        result = await agent.Run("Can you help me with my homework?", appendMessages: result.Messages.ToList(), onAgentRunnerEvent: runEventHandler);
         Console.Write("\n");
         Console.WriteLine("Saving conversation to conversation.json");
         result.Messages.ToList().SaveConversation("conversation.json");
@@ -133,7 +133,7 @@ public class AgentsDemo : DemoBase
         Console.WriteLine("Conversation loaded, resuming conversation");
         Console.WriteLine("[User]: What is my name?");
         Console.Write("[Agent]: ");
-        result = await agent.RunAsync("What is my name?", appendMessages: result.Messages.ToList(), onAgentRunnerEvent: runEventHandler);
+        result = await agent.Run("What is my name?", appendMessages: result.Messages.ToList(), onAgentRunnerEvent: runEventHandler);
     }
 
     [TornadoTest]
@@ -180,7 +180,7 @@ public class AgentsDemo : DemoBase
             return ValueTask.CompletedTask;
         }
 
-        Conversation result = await agent.RunAsync("Hello Streaming World!", streaming: true, onAgentRunnerEvent: runEventHandler);
+        Conversation result = await agent.Run("Hello Streaming World!", streaming: true, onAgentRunnerEvent: runEventHandler);
     }
 
     [TornadoTest]
@@ -197,7 +197,7 @@ public class AgentsDemo : DemoBase
             instructions: "You are a useful assistant that when asked to translate you only can rely on the given tools to translate language.",
             tools: [agentTranslator.AsTool]);
 
-        Conversation result = await agent.RunAsync("What is 2+2? and can you provide the result to me in spanish?");
+        Conversation result = await agent.Run("What is 2+2? and can you provide the result to me in spanish?");
 
         Console.WriteLine(result.Messages.Last().Content);
     }
@@ -228,7 +228,7 @@ public class AgentsDemo : DemoBase
             ChatModel.OpenAi.Gpt41.V41Mini,
             instructions: "You are a useful agent");
 
-        Conversation result = await agent.RunAsync("What is the weather?", inputGuardRailFunction: MathGuardRail);
+        Conversation result = await agent.Run("What is the weather?", inputGuardRailFunction: MathGuardRail);
 
         Console.WriteLine(result.Messages.Last().Content);
     }
@@ -269,7 +269,7 @@ public class AgentsDemo : DemoBase
     {
         TornadoAgent agent = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41Mini, instructions: "Have fun", outputSchema: typeof(MathReasoning));
 
-        Conversation result = await agent.RunAsync("How can I solve 8x + 7 = -23?");
+        Conversation result = await agent.Run("How can I solve 8x + 7 = -23?");
 
         MathReasoning mathResult = result.Messages.Last().Content.JsonDecode<MathReasoning>();
 
@@ -292,7 +292,7 @@ public class AgentsDemo : DemoBase
                     })
             ]);
 
-        Conversation result = await agent.RunAsync("What is the weather in boston?");
+        Conversation result = await agent.Run("What is the weather in boston?");
 
         Console.WriteLine(result.Messages.Last().Content);
     }
@@ -314,7 +314,7 @@ public class AgentsDemo : DemoBase
 
         agent.AddMcpTools(mcpServer.AllowedTornadoTools.ToArray());
 
-        Conversation result = await agent.RunAsync("What is the weather in boston?");
+        Conversation result = await agent.Run("What is the weather in boston?");
 
         Console.WriteLine(result.Messages.Last().Content);
     }
@@ -342,7 +342,7 @@ public class AgentsDemo : DemoBase
 
         agent.AddMcpTools(mcpServer.AllowedTornadoTools.ToArray());
 
-        Conversation result = await agent.RunAsync("What is the weather in boston?");
+        Conversation result = await agent.Run("What is the weather in boston?");
 
         Console.WriteLine(result.Messages.Last().Content);
     }
@@ -368,7 +368,7 @@ public class AgentsDemo : DemoBase
 
         agent.AddMcpTools(mcpServer.AllowedTornadoTools.ToArray());
 
-        Conversation result = await agent.RunAsync("What repos do i have?");
+        Conversation result = await agent.Run("What repos do i have?");
 
         Console.WriteLine(result.Messages.Last().Content);
     }
@@ -397,7 +397,7 @@ public class AgentsDemo : DemoBase
 
         agent.AddMcpTools(gmailServer.AllowedTornadoTools.ToArray());
 
-        Conversation result = await agent.RunAsync("Did mom respond?");
+        Conversation result = await agent.Run("Did mom respond?");
 
         Console.WriteLine(result.Messages.Last().Content);
     }
@@ -418,7 +418,7 @@ public class AgentsDemo : DemoBase
             tools: [a2ATornadoConnector.GetAvailableAgentsTool,a2ATornadoConnector.SendMessageTool]
                 );
 
-        Conversation result = await agent.RunAsync("What repos do i have?");
+        Conversation result = await agent.Run("What repos do i have?");
 
         Console.WriteLine(result.Messages.Last().Content);
     }
@@ -506,7 +506,7 @@ public class AgentsDemo : DemoBase
         }
         Console.WriteLine("[User]: What is the weather in boston?");
         Console.Write("[Agent]: ");
-        Conversation result = await agent.RunAsync("What is the weather in boston?", onAgentRunnerEvent:runEventHandler,toolPermissionHandle: toolApprovalHandler);
+        Conversation result = await agent.Run("What is the weather in boston?", onAgentRunnerEvent:runEventHandler,toolPermissionHandle: toolApprovalHandler);
 
         Console.WriteLine(result.Messages.Last().Content);
     }
@@ -525,7 +525,7 @@ public class AgentsDemo : DemoBase
             Tools = [new ResponseLocalShellTool()]
         };
 
-        Conversation convo = await agent.RunAsync("what files are in current directory?",streaming:false, onAgentRunnerEvent: (evt) => {
+        Conversation convo = await agent.Run("what files are in current directory?",streaming:false, onAgentRunnerEvent: (evt) => {
             if (evt.EventType == AgentRunnerEventTypes.Streaming && evt is AgentRunnerStreamingEvent streamingEvent)
             {
                 if (streamingEvent.ModelStreamingEvent is ModelStreamingOutputTextDeltaEvent deltaTextEvent)
@@ -567,7 +567,7 @@ public class AgentsDemo : DemoBase
 
 
 
-        convo = await agent.RunAsync(streaming: false, responseId: agent.ResponseOptions.PreviousResponseId??"", onAgentRunnerEvent: (evt) => {
+        convo = await agent.Run(streaming: false, responseId: agent.ResponseOptions.PreviousResponseId??"", onAgentRunnerEvent: (evt) => {
             if (evt.EventType == AgentRunnerEventTypes.Streaming && evt is AgentRunnerStreamingEvent streamingEvent)
             {
                 if (streamingEvent.ModelStreamingEvent is ModelStreamingOutputTextDeltaEvent deltaTextEvent)

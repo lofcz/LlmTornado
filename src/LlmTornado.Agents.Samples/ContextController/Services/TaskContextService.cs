@@ -57,7 +57,7 @@ public class TaskContextService
         _contextContainer.Goal = _contextContainer.ChatMessages.FindLast(m=>m.Role == ChatMessageRoles.User)?.GetMessageContent();
         string taskContext = _contextContainer.Goal ?? throw new InvalidOperationException("No Goal Defined");
 
-        Conversation conv = await contextAgent.RunAsync(taskContext);
+        Conversation conv = await contextAgent.Run(taskContext);
 
         TaskList result = conv.Messages.Last().Content.ParseJson<TaskList>();
 
@@ -89,7 +89,7 @@ TODO.md:
 {ToDoMd}
 ";
 
-        Conversation conv = await contextAgent.RunAsync(taskContext, appendMessages: _contextContainer.ChatMessages);
+        Conversation conv = await contextAgent.Run(taskContext, appendMessages: _contextContainer.ChatMessages);
 
         TaskList result = conv.Messages.Last().Content.ParseJson<TaskList>();
 
@@ -109,7 +109,7 @@ TODO.md:
 
         string taskContext = $"Current Task Queue: {string.Join(", ", TaskQueue)}\n  Current goal: {_contextContainer.Goal}";
 
-        Conversation conv = await contextAgent.RunAsync(taskContext);
+        Conversation conv = await contextAgent.Run(taskContext);
 
         ToDoMarkDown result = conv.Messages.Last().Content.ParseJson<ToDoMarkDown>();
 
@@ -132,7 +132,7 @@ TODO.md:
 
         string taskContext = $"Current Task Queue: {string.Join(", ", TaskQueue)}\n Completed Tasks: {string.Join(", ", TaskHistory)}\n Current goal: {_contextContainer.Goal}";
 
-        Conversation conv = await contextAgent.RunAsync(taskContext);
+        Conversation conv = await contextAgent.Run(taskContext);
 
         ToDoMarkDown result = conv.Messages.Last().Content.ParseJson<ToDoMarkDown>();
 

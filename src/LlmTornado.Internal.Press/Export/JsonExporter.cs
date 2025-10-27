@@ -24,13 +24,12 @@ public class JsonExporter
 
         Directory.CreateDirectory(articleDir);
 
-        // Build article export object
+        // Build article export object (body excluded - it's in the .md file)
         var exportData = new ArticleExportData
         {
             Id = article.Id,
             Title = article.Title,
             Description = article.Description,
-            Body = article.Body,
             ImageUrl = article.ImageUrl,
             Tags = JsonConvert.DeserializeObject<string[]>(article.Tags) ?? Array.Empty<string>(),
             CreatedDate = article.CreatedDate,
@@ -82,7 +81,7 @@ public class ArticleExportData
     public int Id { get; set; }
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
-    public string Body { get; set; } = string.Empty;
+    // Note: Body is not included - it's in the article.md file
     public string? ImageUrl { get; set; }
     public string[] Tags { get; set; } = Array.Empty<string>();
     public DateTime CreatedDate { get; set; }

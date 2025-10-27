@@ -52,7 +52,7 @@ public class SelectorAgentRunnable : OrchestrationRunnable<ChatMessage, Selector
         List<ChatMessage> history = _runtime.GetMessages();
         history.Add(process.Input);
 
-        Conversation conv = await Agent.RunAsync(
+        Conversation conv = await Agent.Run(
             appendMessages: history);
 
         conv.Messages.Last().Content.TryParseJson<RequiresPlanning>(out RequiresPlanning requires);

@@ -190,6 +190,12 @@ public class MCPServer
                         AllowedTornadoTools.Add(tool.ToTornadoTool());
                     }
                 }
+                else
+                {
+                    Tools.Add(tool);
+                     AllowedTornadoTools.Add(tool.ToTornadoTool());
+                }
+                
                 AllTools.Add(tool);
             }
         }
@@ -198,7 +204,6 @@ public class MCPServer
     public McpClientTool? GetToolByName(string toolName)
     {
         return AllTools.DefaultIfEmpty(null).FirstOrDefault(t => t.Name.Equals(toolName, StringComparison.OrdinalIgnoreCase));
-
     }
 
     internal static (string command, string[] arguments) TryGetCommandAndArguments(string[] args)

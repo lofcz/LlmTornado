@@ -65,7 +65,7 @@ public class VectorDBAgentRunnable : OrchestrationRunnable<ChatMessage, ChatMess
                 {process.Input.Content}
                 """;   
         
-        Conversation conv = await Agent.RunAsync(
+        Conversation conv = await Agent.Run(
             input: prompt,
             appendMessages: history
         );

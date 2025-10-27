@@ -93,7 +93,7 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
             {
                 if (Conversation == null)
                 {
-                    Conversation = await agent.RunAsync(
+                    Conversation = await agent.Run(
                         appendMessages: [new ChatMessage(Code.ChatMessageRoles.User, agent.SequentialInstructions), message], 
                         streaming:agent.Streaming, 
                         onAgentRunnerEvent:(sEvent) =>
@@ -115,7 +115,7 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
                         isFirstAgent = false;
                     }
 
-                    Conversation = await agent.RunAsync(
+                    Conversation = await agent.Run(
                         appendMessages: Conversation.Messages.ToList(), 
                         streaming: agent.Streaming,
                         onAgentRunnerEvent: (sEvent) =>

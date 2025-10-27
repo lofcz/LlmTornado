@@ -158,7 +158,7 @@ public class ReviewRunnable : OrchestrationRunnable<ArticleOutput, ReviewOutput>
             """;
 
         Console.WriteLine($"  [ReviewAgent] 🤔 Running review...");
-        var conversation = await _agent.RunAsync(prompt);
+        var conversation = await _agent.Run(prompt);
         var lastMessage = conversation.Messages.Last();
         var reviewOutput = await lastMessage.Content?.SmartParseJsonAsync<ReviewOutput>(_agent);
 

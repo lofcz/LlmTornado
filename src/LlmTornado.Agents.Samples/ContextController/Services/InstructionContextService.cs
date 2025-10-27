@@ -36,7 +36,7 @@ public class InstructionContextService : IInstructionsContextService
 The current goal is: {_contextContainer.Goal ?? "N/A"}  
 The current Task is {_contextContainer.CurrentTask ?? "n/a"}.";
 
-        Conversation conv = await contextAgent.RunAsync(prompt);
+        Conversation conv = await contextAgent.Run(prompt);
 
         InstructionsMessage result = conv.Messages.Last().Content.ParseJson<InstructionsMessage>();
 

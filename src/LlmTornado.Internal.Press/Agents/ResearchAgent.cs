@@ -122,7 +122,7 @@ public class ResearchRunnable : OrchestrationRunnable<ArticleIdea, ResearchOutpu
         Chat.Conversation conversation;
         try
         {
-            conversation = await _agent.RunAsync(prompt, maxTurns: 8, onAgentRunnerEvent: (evt) =>
+            conversation = await _agent.Run(prompt, maxTurns: 8, onAgentRunnerEvent: (evt) =>
             {
                 Console.WriteLine($"  [ResearchAgent] Event: {evt.EventType} at {evt.Timestamp:HH:mm:ss}");
                 

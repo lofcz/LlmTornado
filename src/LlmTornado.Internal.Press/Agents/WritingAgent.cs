@@ -113,7 +113,7 @@ public class WritingRunnable : OrchestrationRunnable<ResearchOutput, ArticleOutp
                                        ❌ BAD Example:
                                        ```csharp
                                        TornadoAgent agent = new TornadoAgent(...);
-                                       var result = await agent.RunAsync("query");
+                                       var result = await agent.Run("query");
                                        ```
                                        ☝️ Too minimal, doesn't show real usage
 
@@ -360,15 +360,17 @@ public class WritingRunnable : OrchestrationRunnable<ResearchOutput, ArticleOutp
             Write the complete article in MARKDOWN format.
             Include all sections, code examples, and explanations.
             
-            When you're done writing, output ONLY the article content in markdown.
+            When you're done writing, output ONLY the article body in markdown.
+            DO NOT include YAML frontmatter (no --- headers).
             DO NOT output JSON yet - we'll format it in the next step.
+            Start directly with the article content (title as # heading, then content).
             """;
         
         // Temporarily remove output schema to allow tool calls
         var originalSchema = _agent.OutputSchema;
         _agent.UpdateOutputSchema(null);
         
-        var conversation = await _agent.RunAsync(explorationPrompt, maxTurns: 20, onAgentRunnerEvent: (evt) =>
+        var conversation = await _agent.Run(explorationPrompt, maxTurns: 20, onAgentRunnerEvent: (evt) =>
         {
             Console.WriteLine($"  [WritingAgent] Event: {evt.EventType} at {evt.Timestamp:HH:mm:ss}");
             
@@ -435,6 +437,9 @@ public class WritingRunnable : OrchestrationRunnable<ResearchOutput, ArticleOutp
             };
         }
         
+        // Strip any YAML frontmatter if present (should not be there, but just in case)
+        draftArticle = StripFrontmatter(draftArticle);
+        
         // PHASE 2: Extract metadata (without content - keep it pure)
         Console.WriteLine($"  [WritingAgent] PHASE 2: Extracting article metadata...");
         
@@ -461,7 +466,7 @@ public class WritingRunnable : OrchestrationRunnable<ResearchOutput, ArticleOutp
             outputSchema: typeof(ArticleMetadata)
         );
         
-        var metadataConversation = await metadataAgent.RunAsync(metadataPrompt, maxTurns: 1);
+        var metadataConversation = await metadataAgent.Run(metadataPrompt, maxTurns: 1);
         var lastMetadataMessage = metadataConversation.Messages.Last();
         
         // Parse metadata using SmartParseJsonAsync
@@ -692,6 +697,36 @@ public class WritingRunnable : OrchestrationRunnable<ResearchOutput, ArticleOutp
             return text;
         
         return text.Substring(0, maxLength) + "...";
+    }
+    
+    private string StripFrontmatter(string markdown)
+    {
+        if (string.IsNullOrEmpty(markdown))
+            return markdown;
+        
+        var trimmed = markdown.TrimStart();
+        if (!trimmed.StartsWith("---"))
+            return markdown; // No frontmatter to strip
+        
+        // Find the closing ---
+        var lines = trimmed.Split('\n');
+        int closingIndex = -1;
+        
+        for (int i = 1; i < lines.Length; i++)
+        {
+            if (lines[i].Trim() == "---")
+            {
+                closingIndex = i;
+                break;
+            }
+        }
+        
+        if (closingIndex == -1)
+            return markdown; // No closing frontmatter, return as is
+        
+        // Return everything after the closing ---
+        var result = string.Join('\n', lines.Skip(closingIndex + 1));
+        return result.TrimStart('\n', '\r', ' ');
     }
 }
 

@@ -34,7 +34,7 @@ Given the goal and the current task please choose the tools required from the pr
         string contextDescription = "Here is a list of available tools and their descriptions:\n";
         contextDescription += GetToolDescriptions();
 
-        Conversation conv = await contextAgent.RunAsync(contextDescription);
+        Conversation conv = await contextAgent.Run(contextDescription);
 
         List<string> toolSelected = ToolSelectorHelper.ParseResponse(conv.Messages.Last().Content);
 

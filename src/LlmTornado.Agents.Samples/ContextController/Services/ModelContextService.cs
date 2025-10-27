@@ -48,7 +48,7 @@ Given the goal and the current task please choose the best model from the provid
             contextDescription += $"- {kvp.Key}: {kvp.Value}\n";
         }
 
-        Conversation conv = await contextAgent.RunAsync(contextDescription);
+        Conversation conv = await contextAgent.Run(contextDescription);
 
         string modelSelected = ModelSelectorHelper.ParseModelSelectionResponse(conv.Messages.Last().Content);
 

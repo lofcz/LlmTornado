@@ -4,6 +4,9 @@ using LlmTornado.Chat.Models;
 using LlmTornado.Common;
 using LlmTornado.Responses;
 using System;
+#if !MODERN
+using Polyfills;
+#endif
 
 namespace LlmTornado.Agents;
 
@@ -27,6 +30,16 @@ public class TornadoAgent
     /// </summary>
     public ChatRequest Options { get; set; } = new ChatRequest();
 
+    /// <summary>
+    /// Returns whether the run is cancelled.
+    /// </summary>
+    public bool Cancelled { get; internal set; }
+    
+    /// <summary>
+    /// Returns whether the agent is currently running.
+    /// </summary>
+    public bool Running { get; internal set; }
+    
     /// <summary>
     /// Gets or sets the options used to configure the response behavior of the request.
     /// </summary>
@@ -69,7 +82,7 @@ public class TornadoAgent
     /// <summary>
     /// Map of function tools to their methods
     /// </summary>
-    public Dictionary<string, Tool> ToolList = new Dictionary<string, Tool>();
+    public Dictionary<string, Tool?> ToolList = new Dictionary<string, Tool?>();
 
     /// <summary>
     /// Map of agent tools to their agents
@@ -77,7 +90,7 @@ public class TornadoAgent
     public Dictionary<string, TornadoAgentTool> AgentTools = new Dictionary<string, TornadoAgentTool>();
 
     /// <summary>
-    /// MCP tols mapped to their servers
+    /// MCP tools mapped to their servers
     /// </summary>
     public Dictionary<string, Tool> McpTools = new Dictionary<string, Tool>();
 
@@ -201,7 +214,8 @@ public class TornadoAgent
             if(ToolList.ContainsKey(tool.ToolName ?? tool.Function.Name)) return;
             SetDefaultToolPermission(tool);
             ToolList.Add(tool.ToolName ?? tool.Function.Name, tool);
-            Options.Tools?.Add(tool);
+            Options.Tools ??= [];
+            Options.Tools.Add(tool);
         }
     }
 
@@ -216,7 +230,8 @@ public class TornadoAgent
             if(AgentTools.ContainsKey(tool.ToolAgent.Id)) return;
             SetDefaultToolPermission(tool.Tool);
             AgentTools.Add(tool.ToolAgent.Id, tool);
-            Options.Tools?.Add(tool.Tool);
+            Options.Tools ??= [];
+            Options.Tools.Add(tool.Tool);
         }
     }
 
@@ -274,10 +289,7 @@ public class TornadoAgent
     private void SetDefaultToolPermission(Tool tool)
     {
         if (tool.ToolName == null) return;
-        if (!ToolPermissionRequired.ContainsKey(tool.ToolName))
-        {
-            ToolPermissionRequired.Add(tool.ToolName, false); //Default all tools to false
-        }
+        ToolPermissionRequired.TryAdd(tool.ToolName, false);
     }
 
     /// <summary>
@@ -299,7 +311,7 @@ public class TornadoAgent
     /// <param name="cancellationToken">A token to monitor for cancellation requests. Defaults to <see cref="CancellationToken.None"/>.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation. The task result contains the updated <see
     /// cref="Conversation"/> object after processing.</returns>
-    public async Task<Conversation> RunAsync(
+    public async Task<Conversation> Run(
         string input = "", 
         List<ChatMessage>? appendMessages = null, 
         GuardRailFunction? inputGuardRailFunction = null,
@@ -325,5 +337,20 @@ public class TornadoAgent
             responseId: responseId, 
             runnerOptions: runnerOptions,
             toolPermissionHandle: toolPermissionHandle);
+    }
+
+    /// <summary>
+    /// Cancels the active run, if any. Returns whether the run was cancelled.
+    /// </summary>
+    public bool Cancel()
+    {
+        if (!Running)
+        {
+            return false;
+        }
+        
+        bool wasCancelled = !Cancelled;
+        Cancelled = true;
+        return !wasCancelled;
     }
 }

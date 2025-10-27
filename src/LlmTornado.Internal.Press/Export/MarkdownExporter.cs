@@ -38,8 +38,8 @@ public class MarkdownExporter
     private string BuildMarkdown(Article article)
     {
         var sb = new StringBuilder();
-
-        // Frontmatter
+        
+        // Add YAML frontmatter (body should never contain it)
         sb.AppendLine("---");
         sb.AppendLine($"title: \"{EscapeYaml(article.Title)}\"");
         sb.AppendLine($"description: \"{EscapeYaml(article.Description)}\"");
@@ -77,7 +77,7 @@ public class MarkdownExporter
         sb.AppendLine("---");
         sb.AppendLine();
 
-        // Article body
+        // Article body (pure markdown, no frontmatter)
         sb.AppendLine(article.Body);
 
         // Optional: Add sources as footnotes

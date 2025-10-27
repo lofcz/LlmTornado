@@ -123,7 +123,7 @@ public class IdeationRunnable : OrchestrationRunnable<TrendAnalysisOutput, Artic
             Think like a respected developer writing for other developers - what would YOU want to read?
             """;
 
-        var conversation = await _agent.RunAsync(prompt);
+        var conversation = await _agent.Run(prompt);
         var lastMessage = conversation.Messages.Last();
         var ideaOutput = await lastMessage.Content?.SmartParseJsonAsync<ArticleIdeaOutput>(_agent);
 

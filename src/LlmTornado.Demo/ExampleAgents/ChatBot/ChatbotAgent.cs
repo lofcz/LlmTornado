@@ -191,7 +191,7 @@ Given the following context will include Vector Search Memory, Websearch Results
 
         string prompt = string.Join("\n\n", process.Input.Values);
 
-        _conv = await Agent.RunAsync(
+        _conv = await Agent.Run(
             input: prompt,
             appendMessages: _runtimeConfiguration.GetMessages(),
             streaming: Agent.Streaming,
@@ -232,7 +232,7 @@ public class SimpleAgentRunnable : OrchestrationRunnable<ChatMessage, ChatMessag
     {
         process.RegisterAgent(Agent);
 
-        _conv = await Agent.RunAsync(
+        _conv = await Agent.Run(
             appendMessages: _runtimeConfiguration.GetMessages(),
             streaming: Agent.Streaming,
             onAgentRunnerEvent: (sEvent) =>
@@ -266,7 +266,7 @@ public class WebSearchRunnable : OrchestrationRunnable<ChatMessage, string>
     {
         process.RegisterAgent(Agent);
 
-        Conversation conv = await Agent.RunAsync(appendMessages: new List<ChatMessage> { process.Input });
+        Conversation conv = await Agent.Run(appendMessages: new List<ChatMessage> { process.Input });
 
         return "WEB SEARCH CONTEXT: " +  conv.Messages.LastOrDefault()?.Content;
     }
@@ -339,7 +339,7 @@ public class VectorSaveRunnable : OrchestrationRunnable<ChatMessage, ValueTask>
     private async Task SaveLastAssistantMessage(ChatMessage message)
     {
         //Creates a summary of the assistant's response to be saved.
-        Conversation conv = await Agent.RunAsync(appendMessages: new List<ChatMessage> { message });
+        Conversation conv = await Agent.Run(appendMessages: new List<ChatMessage> { message });
         if (!string.IsNullOrEmpty(message.Content))
         {
             await SaveDocument(message.Content, additionalStaticParentMetadata: new Dictionary<string, object>()
@@ -428,7 +428,7 @@ Please provide 2-3 search queries based off the user's input. for quering the ve
             return "VECTOR DB CONTEXT: ";
         }
 
-        Conversation conv = await Agent.RunAsync(appendMessages: new List<ChatMessage> { process.Input });
+        Conversation conv = await Agent.Run(appendMessages: new List<ChatMessage> { process.Input });
 
         SearchQueries? result = conv.Messages.Last().Content.ParseJson<SearchQueries>();
 
@@ -578,7 +578,7 @@ public class VectorEntitySaveRunnable : OrchestrationRunnable<ChatMessage, strin
         process.RegisterAgent(Agent);
         
         //Gather list of entities from user input
-        Conversation conv = await Agent.RunAsync(appendMessages: new List<ChatMessage> { process.Input });
+        Conversation conv = await Agent.Run(appendMessages: new List<ChatMessage> { process.Input });
 
         if (string.IsNullOrEmpty(process.Input.Content)) return "ENTITIES: {}";
 
