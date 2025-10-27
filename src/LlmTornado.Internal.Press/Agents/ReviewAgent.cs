@@ -113,7 +113,9 @@ public class ReviewRunnable : OrchestrationRunnable<ArticleOutput, ReviewOutput>
             model: model,
             name: "Review Agent",
             instructions: instructions,
-            outputSchema: typeof(ReviewOutput));
+            outputSchema: typeof(ReviewOutput),
+            maxTokens: 16_000,
+            temperature: 1);
     }
 
     public override async ValueTask<ReviewOutput> Invoke(RunnableProcess<ArticleOutput, ReviewOutput> process)

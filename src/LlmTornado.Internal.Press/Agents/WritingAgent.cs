@@ -278,7 +278,9 @@ public class WritingRunnable : OrchestrationRunnable<ResearchOutput, ArticleOutp
             model: model,
             name: "Writing Agent",
             instructions: instructions,
-            outputSchema: typeof(ArticleOutput));
+            outputSchema: typeof(ArticleOutput),
+            maxTokens: 16_000,
+            temperature: 1);
     }
 
     public override async ValueTask InitializeRunnable()

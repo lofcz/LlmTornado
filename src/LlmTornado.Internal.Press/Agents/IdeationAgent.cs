@@ -96,8 +96,11 @@ public class IdeationRunnable : OrchestrationRunnable<TrendAnalysisOutput, Artic
             model: model,
             name: "Ideation Agent",
             instructions: instructions,
-            outputSchema: typeof(ArticleIdeaOutput));
+            outputSchema: typeof(ArticleIdeaOutput),
+            temperature: 1);
     }
+    
+    
 
     public override async ValueTask<ArticleIdeaOutput> Invoke(RunnableProcess<TrendAnalysisOutput, ArticleIdeaOutput> process)
     {

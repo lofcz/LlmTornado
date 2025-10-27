@@ -120,7 +120,9 @@ public class TornadoAgent
         Type? outputSchema = null,
         List<Delegate>? tools = null,
         bool streaming = false,
-        Dictionary<string, bool>? toolPermissionRequired = null)
+        Dictionary<string, bool>? toolPermissionRequired = null,
+        int? maxTokens = null,
+        double? temperature = null)
     {
         Client = client ?? throw new ArgumentNullException(nameof(client));
         Model = model ?? throw new ArgumentNullException(nameof(model));
@@ -132,6 +134,8 @@ public class TornadoAgent
         Name = string.IsNullOrEmpty(name) ? "Assistant" : name;
         Streaming = streaming;
         ToolPermissionRequired = toolPermissionRequired ?? new Dictionary<string, bool>();
+        Options.MaxTokens = maxTokens;
+        Options.Temperature = temperature;
 
         if (OutputSchema != null)
         {

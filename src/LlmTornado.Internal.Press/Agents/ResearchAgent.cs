@@ -67,7 +67,8 @@ public class ResearchRunnable : OrchestrationRunnable<ArticleIdea, ResearchOutpu
             name: "Research Agent",
             instructions: instructions,
             outputSchema: typeof(ResearchOutput),
-            tools: [DeepSearchFunc]);
+            tools: [DeepSearchFunc],
+            temperature: 1);
     }
 
     public override async ValueTask<ResearchOutput> Invoke(RunnableProcess<ArticleIdea, ResearchOutput> process)
