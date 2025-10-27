@@ -13,6 +13,14 @@ using System.Threading.Tasks;
 
 namespace LlmTornado.Internal.Press.Agents;
 
+public class ArticleMetadata
+{
+    public string Title { get; set; } = "";
+    public string Description { get; set; } = "";
+    public string[] Tags { get; set; } = Array.Empty<string>();
+    public string Slug { get; set; } = "";
+}
+
 public class WritingRunnable : OrchestrationRunnable<ResearchOutput, ArticleOutput>
 {
     private readonly TornadoAgent _agent;
@@ -28,73 +36,101 @@ public class WritingRunnable : OrchestrationRunnable<ResearchOutput, ArticleOutp
     {
         _config = config;
 
-        string codebaseInstructions = $"""
+        string codebaseInstructions = $$"""
                                        CRITICAL: CODEBASE ACCESS AVAILABLE
 
                                        You have direct access to the LlmTornado C# repository via MCP filesystem tools.
-                                       Repository location: {config.CodebaseAccess.RepositoryPath}
+                                       Repository location: {{config.CodebaseAccess.RepositoryPath}}
 
-                                       **PATH FORMAT RULES:**
-                                       The repository is mounted in a Docker container at `/projects/workspace`.
-                                       ALL paths must be relative to this mount point:
-                                       - ✅ USE: "/projects/workspace/src/LlmTornado.Agents/TornadoAgent.cs"
-                                       - ✅ USE: "/projects/workspace/src/LlmTornado/Chat"
+                                       **PATH FORMAT:** Paths are relative to `/projects/workspace`:
+                                       - ✅ USE: "/projects/workspace/src/LlmTornado.Demo"
                                        - ❌ NEVER: Absolute Windows paths like "C:\\Users\\..."
-                                       - ❌ NEVER: Paths starting with "/app/" or "/src"
 
-                                       **YOU MUST USE THE FILESYSTEM TOOLS TO READ ACTUAL CODE.**
+                                       **RESEARCH PHASE - READ CODE TO LEARN:**
 
-                                       MANDATORY WORKFLOW FOR WRITING ABOUT LLMTORNADO:
+                                       1. **Start with Demo Files (Most Important)**
+                                          - List: "/projects/workspace/src/LlmTornado.Demo"
+                                          - Read 3-4 demo files that match your article topic
+                                          - These show REAL usage patterns developers will use
+                                          - Focus on complete, working examples
 
-                                       1. **FIRST: Explore the Codebase Structure**
-                                          - Use `list_directory` with path: "/projects/workspace/src"
-                                          - Browse subdirectories: "/projects/workspace/src/LlmTornado.Agents", "/projects/workspace/src/LlmTornado/Chat", etc.
-                                          - Identify relevant directories for your article topic
+                                       2. **Understand Public APIs (Not Internals)**
+                                          - Read "/projects/workspace/src/LlmTornado.Agents/TornadoAgent.cs"
+                                          - Read "/projects/workspace/src/LlmTornado/Chat/Conversation.cs"
+                                          - Focus on PUBLIC constructors, methods, properties
+                                          - IGNORE private/internal implementation details
 
-                                       2. **THEN: Read Relevant Source Files**
-                                          - Use `read_file` to examine actual implementation
-                                          - Look in:
-                                            * /projects/workspace/src/LlmTornado - Core library
-                                            * /projects/workspace/src/LlmTornado.Agents - Agents framework
-                                            * /projects/workspace/src/LlmTornado/Chat - Chat and conversation APIs
-                                            * /projects/workspace/src/LlmTornado.Demo - Real usage examples
-                                            * /projects/workspace/src/LlmTornado.Mcp - Model Context Protocol (MCP)
-                                            * /projects/workspace/src/LlmTornado.A2A - Agent-to-Agent communication (A2A)
+                                       3. **Build Understanding, Not Just Copy**
+                                          - Learn HOW developers use the library
+                                          - Understand patterns, idioms, best practices
+                                          - Extract CONCEPTS, not just syntax
 
-                                       3. **USE REAL CODE SNIPPETS**
-                                          - Copy actual code from the files you read
-                                          - DO NOT make up examples - use real implementation
-                                          - Show actual class/method signatures
-                                          - Reference real file paths (e.g., "from src/LlmTornado.Agents/TornadoAgent.cs")
+                                       **WRITING PHASE - USE KNOWLEDGE NATURALLY:**
 
-                                       4. **Verify Technical Claims**
-                                          - If you mention a feature, READ THE CODE that implements it
-                                          - Check actual method names, parameters, return types
-                                          - Look at real examples in Demo projects
+                                       4. **Show Complete, Realistic Examples**
+                                          - Include 4-6 substantial code examples (15-40 lines each)
+                                          - Use actual code from Demo files, but explain it
+                                          - Show initialization, configuration, error handling
+                                          - Demonstrate real-world scenarios
 
-                                       WHY THIS MATTERS:
-                                       - Generic examples are obvious marketing fluff
-                                       - Real code from the actual repository is credible and valuable
-                                       - Developers can verify your claims by looking at the same files
-                                       - Shows you actually understand the library, not just talking about it
+                                       5. **Write Like an Experienced User (Don't Flex)**
+                                          - DON'T say: "from /projects/workspace/src/..."
+                                          - DON'T say: "Looking at the TornadoAgent class definition..."
+                                          - DON'T show internal class fields or private methods
+                                          - DO write naturally as if you've been using it for months
+                                          - DO explain WHAT code does and WHY it matters
 
-                                       EXAMPLES OF WHAT TO DO:
-                                       ✅ "Let's look at how TornadoAgent handles tool calls. Here's the actual implementation from src/LlmTornado.Agents/TornadoAgent.cs..."
-                                       ✅ "The orchestration system uses a graph-based approach. In src/LlmTornado.Agents/ChatRuntime/Orchestration/..."
-                                       ✅ "Here's a real example from the Demo project showing multi-agent workflow..."
+                                       6. **Focus on Developer Value**
+                                          - Show COMPLETE workflows, not snippets
+                                          - Include realistic use cases and patterns
+                                          - Compare with alternatives where appropriate
+                                          - Explain tradeoffs and best practices
 
-                                       WHAT NOT TO DO:
-                                       ❌ "TornadoAgent agent = new TornadoAgent(...);" // Generic placeholder code
-                                       ❌ "You can do X with Y..." // Without showing actual code
-                                       ❌ Writing about features you haven't verified in the codebase
+                                       **QUALITY STANDARDS:**
 
-                                       TRACKING:
-                                       - Maximum {config.CodebaseAccess.MaxFilesPerSession} files per article
-                                       - Track accessed files via RuntimeProperties["AccessedFiles"]
-                                       - Share memory across all agents in orchestration
+                                       ✅ EXCELLENT Example:
+                                       ```csharp
+                                       // Create a research assistant with custom behavior
+                                       var agent = new TornadoAgent(
+                                           client: api,
+                                           model: ChatModel.OpenAi.Gpt4,
+                                           name: "ResearchAssistant",
+                                           instructions: "Provide detailed, cited answers with sources."
+                                       );
 
-                                       **REMEMBER: If you're writing about LlmTornado, YOU MUST READ THE ACTUAL CODE FIRST.**
-                                       **This is not optional - it's the core value proposition of this article.**
+                                       // Add tools for web search and calculations
+                                       agent.AddTool(new WebSearchTool());
+                                       agent.AddTool(new CalculatorTool());
+
+                                       // Stream responses for better UX
+                                       await foreach (var chunk in agent.StreamAsync("Analyze recent AI trends"))
+                                       {
+                                           Console.Write(chunk.Delta);
+                                       }
+                                       ```
+                                       ☝️ Complete, realistic, explains the pattern
+
+                                       ❌ BAD Example:
+                                       ```csharp
+                                       TornadoAgent agent = new TornadoAgent(...);
+                                       var result = await agent.RunAsync("query");
+                                       ```
+                                       ☝️ Too minimal, doesn't show real usage
+
+                                       **AVOID:**
+                                       ❌ Showing internal class fields (public string Instructions { get; set; })
+                                       ❌ Referencing file paths in article ("from TornadoAgent.cs")
+                                       ❌ Minimal 3-line snippets that don't demonstrate real use
+                                       ❌ Code without explanation of purpose/value
+
+                                       **DO:**
+                                       ✅ Show 4-6 complete, runnable examples throughout article
+                                       ✅ Explain the problem each example solves
+                                       ✅ Include setup, configuration, error handling
+                                       ✅ Write naturally, not like a code review
+
+                                       GOAL: Use code to LEARN deeply, then write as an experienced practitioner.
+                                       NOT: Show off that you read the source files.
                                        """;
         
         var instructions = $"""
@@ -120,17 +156,27 @@ public class WritingRunnable : OrchestrationRunnable<ResearchOutput, ArticleOutp
                                - Establish credibility through understanding
                                - Make them WANT the solution you're about to provide
 
-                            2. **Educate First, Influence Second**
+                            2. **Educate First, Influence Second (STRATEGIC POSITIONING)**
                                - Teach concepts, patterns, best practices
                                - Compare multiple approaches objectively
                                - Show tradeoffs, limitations, real-world considerations
-                               - Mention background context as ONE viable option (not THE option)
+                               - **SMART JOURNALISM: Position LlmTornado strategically**
+                                 * In comparison tables/lists: Place LlmTornado FIRST (people pick the first option)
+                                 * In code examples: Show LlmTornado SDK in the FIRST major snippet
+                                 * In feature comparisons: Lead with LlmTornado's strengths, then others
+                                 * Example: "LlmTornado, LangChain, and Semantic Kernel all support X..."
+                                 * NOT: "There's LangChain, Semantic Kernel, and also LlmTornado..."
 
-                            3. **Show, Don't Tell**
+                            3. **Show, Don't Tell (WITH CITATIONS)**
                                - Use code examples, case studies, benchmarks
                                - Share specific numbers, metrics, real experiences
                                - Let results speak louder than claims
                                - "Here's what happened when..." > "This is the best..."
+                               - **ALWAYS hyperlink citations and sources**
+                                 * Link to research papers, documentation, blog posts
+                                 * Example: "[According to recent studies](https://example.com/study)..."
+                                 * Example: "As noted in the [official documentation](https://link.to/docs)..."
+                                 * Increases SEO value and builds credibility
 
                             4. **Natural Integration (NEVER Force It)**
                                - Mention the background context where it GENUINELY fits
@@ -143,8 +189,30 @@ public class WritingRunnable : OrchestrationRunnable<ResearchOutput, ArticleOutp
                             - Conversational but professional (like a senior dev sharing knowledge)
                             - Use "I" and "we" for relatability (share experiences, mistakes, learnings)
                             - Include code examples with C# syntax where relevant
-                            - Cite sources naturally, build credibility
+                            - Cite sources naturally, build credibility with HYPERLINKS to sources
                             - Target: {config.ReviewLoop.QualityThresholds.MinWordCount}+ words of VALUABLE content
+                            
+                            **CRITICAL CODE SNIPPET REQUIREMENTS:**
+                            
+                            1. **ALWAYS Include `using` Statements**
+                               - Every code example MUST start with necessary using statements
+                               - Example: `using LlmTornado.Chat;`, `using LlmTornado.Agents;`
+                            
+                            2. **ALWAYS Include Installation Instructions BEFORE First Code**
+                               - Place installation section immediately before the first code snippet
+                               - Use `dotnet add package` format:
+                               ```bash
+                               dotnet add package LlmTornado
+                               dotnet add package LlmTornado.Agents
+                               ```
+                            
+                            3. **Terminology for LlmTornado**
+                               - Call it an"SDK, library or framework
+                               - Example: "LlmTornado", "this .NET SDK"
+                            
+                            4. **ALWAYS Link once to Repository**
+                               - Include link to GitHub: https://github.com/lofcz/LlmTornado
+                               - Place naturally in context, e.g., "For more examples, check the [LlmTornado repository](https://github.com/lofcz/LlmTornado)"
 
                             STRUCTURE TEMPLATE:
 
@@ -173,13 +241,34 @@ public class WritingRunnable : OrchestrationRunnable<ResearchOutput, ArticleOutp
                             ❌ Writing like a press release or ad copy
 
                             GOOD EXAMPLES:
-                            ✅ "When I was building a production chatbot, I hit a wall with API rate limits..."
-                            ✅ "There are several approaches here - you can use LangChain, Semantic Kernel, LlmTornado, or even roll your own..."
-                            ✅ "After processing 100B+ tokens, here's what I learned about error handling..."
-                            ✅ "The real challenge isn't choosing a library, it's understanding X..."
+                            
+                            ✅ STRATEGIC POSITIONING:
+                            "For C# developers, the main options are the LlmTornado, Semantic Kernel, and LangChain..."
+                            "I tested LlmTornado, LangChain, and Semantic Kernel against this use case..."
+                            
+                            ✅ CODE WITH INSTALLATION & USINGS:
+                            ```bash
+                            dotnet add package LlmTornado.Agents
+                            ```
+                            ```csharp
+                            using LlmTornado.Agents;
+                            using LlmTornado.Chat;
+                            
+                            var agent = new TornadoAgent(client, model, ...);
+                            ```
+                            
+                            ✅ NATURAL NARRATIVE:
+                            "When I was building a production chatbot, I hit a wall with API rate limits..."
+                            "After processing 100B+ tokens with the [LlmTornado](https://github.com/lofcz/LlmTornado), here's what I learned..."
+                            "The real challenge isn't choosing an SDK, it's understanding X..."
+                            
+                            ✅ HYPERLINKED CITATIONS:
+                            "According to [Microsoft's AI documentation](https://docs.microsoft.com/...)..."
+                            "[Recent benchmarks](https://example.com/benchmark) show that..."
 
                             Remember: Your credibility comes from being HONEST and HELPFUL, not promotional.
                             Write the article YOU would want to read as a developer.
+                            Strategic positioning is about being FIRST in comparisons, not being the ONLY option.
                             """;
 
         var model = new ChatModel(config.Models.Writing);
@@ -279,7 +368,7 @@ public class WritingRunnable : OrchestrationRunnable<ResearchOutput, ArticleOutp
         
         var conversation = await _agent.RunAsync(explorationPrompt, maxTurns: 20, onAgentRunnerEvent: (evt) =>
         {
-            Console.WriteLine($"  [WritingAgent] AgentRunner Event: {evt.EventType} at {evt.Timestamp:HH:mm:ss}");
+            Console.WriteLine($"  [WritingAgent] Event: {evt.EventType} at {evt.Timestamp:HH:mm:ss}");
             
             if (evt.InternalConversation != null)
             {
@@ -291,13 +380,14 @@ public class WritingRunnable : OrchestrationRunnable<ResearchOutput, ArticleOutp
                         foreach (var toolCall in lastMsg.ToolCalls)
                         {
                             var funcName = toolCall.FunctionCall?.Name ?? toolCall.CustomCall?.Name ?? "unknown";
-                            Console.WriteLine($"    🔧 Tool: {funcName}");
+                            var args = toolCall.FunctionCall?.Arguments ?? toolCall.CustomCall?.Input ?? "";
+                            Console.WriteLine($"    🔧 Tool: {funcName} | Args: {Snippet(args, 60)}");
                         }
                     }
                     
                     if (!string.IsNullOrEmpty(lastMsg.Content))
                     {
-                        Console.WriteLine($"    💬 Message: {lastMsg.Content}");
+                        Console.WriteLine($"    💬 Message: {Snippet(lastMsg.Content, 150)}");
                     }
                 }
             }
@@ -320,7 +410,8 @@ public class WritingRunnable : OrchestrationRunnable<ResearchOutput, ArticleOutp
                 foreach (var toolCall in msg.ToolCalls)
                 {
                     var funcName = toolCall.FunctionCall?.Name ?? toolCall.CustomCall?.Name ?? "unknown";
-                    Console.WriteLine($"    🔧 Tool called: {funcName}");
+                    var args = toolCall.FunctionCall?.Arguments ?? toolCall.CustomCall?.Input ?? "";
+                    Console.WriteLine($"    🔧 Tool: {funcName} | {Snippet(args, 500)}");
                 }
             }
         }
@@ -342,49 +433,56 @@ public class WritingRunnable : OrchestrationRunnable<ResearchOutput, ArticleOutp
             };
         }
         
-        // PHASE 2: Format into structured JSON
-        Console.WriteLine($"  [WritingAgent] PHASE 2: Formatting article into structured output...");
-        var formattingPrompt = $"""
-            You wrote the following article in markdown format:
+        // PHASE 2: Extract metadata (without content - keep it pure)
+        Console.WriteLine($"  [WritingAgent] PHASE 2: Extracting article metadata...");
+        
+        var metadataPrompt = $"""
+            You wrote the following article:
             
-            {draftArticle}
+            {Snippet(draftArticle, 500)}
             
-            Now, format this article into the required JSON structure:
-            - Extract the title (first heading)
-            - The body is the full markdown content
-            - Create a compelling description (1-2 sentences)
-            - Generate 3-5 relevant tags
-            - Create a URL-friendly slug
-            - Count the words
+            Extract metadata for this article:
+            - Title: The main title (from first # heading)
+            - Description: Compelling 1-2 sentence summary for SEO (max 200 chars)
+            - Tags: 3-5 relevant tags (e.g., ["C#", "AI", "Agents", ".NET"])
+            - Slug: URL-friendly slug (lowercase, hyphens, no special chars)
             
-            Output the article in the required JSON format.
+            Output ONLY the metadata as JSON.
             """;
         
-        var formattingConversation = await _agent.RunAsync(formattingPrompt, maxTurns: 1);
-        var lastMessage = formattingConversation.Messages.Last();
-        var articleOutput = await lastMessage.Content?.SmartParseJsonAsync<ArticleOutput>(_agent);
-
-        if (articleOutput == null)
-        {
-            Console.WriteLine($"  [WritingAgent] ERROR: Failed to parse structured output, using fallback");
-            // Fallback: parse manually from markdown
-            return ParseArticleFromMarkdown(draftArticle);
-        }
-
-        Console.WriteLine($"  [WritingAgent] ✓ Article formatted successfully");
+        // Use structured output for metadata only
+        var metadataAgent = new TornadoAgent(
+            _agent.Client,
+            _agent.Model,
+            name: "MetadataExtractor",
+            instructions: "Extract article metadata accurately. Output must match ArticleMetadata schema.",
+            outputSchema: typeof(ArticleMetadata)
+        );
         
-        // Generate slug if not provided
-        var article = articleOutput;
-        if (string.IsNullOrEmpty(article.Slug))
+        var metadataConversation = await metadataAgent.RunAsync(metadataPrompt, maxTurns: 1);
+        var lastMetadataMessage = metadataConversation.Messages.Last();
+        
+        // Parse metadata using SmartParseJsonAsync
+        var metadata = await lastMetadataMessage.Content?.SmartParseJsonAsync<ArticleMetadata>(metadataAgent);
+        
+        if (metadata == null)
         {
-            article.Slug = GenerateSlug(article.Title);
+            Console.WriteLine($"  [WritingAgent] WARNING: Failed to parse metadata, using fallback extraction");
         }
-
-        // Calculate word count if not provided
-        if (article.WordCount == 0)
+        
+        // Build final article output
+        var article = new ArticleOutput
         {
-            article.WordCount = CountWords(article.Body);
-        }
+            Title = metadata?.Title ?? ExtractTitle(draftArticle),
+            Body = draftArticle, // Keep the pure markdown content
+            Description = metadata?.Description ?? ExtractDescription(draftArticle),
+            Tags = metadata?.Tags ?? new[] { "AI", ".NET", "C#", "Development" },
+            Slug = metadata?.Slug ?? GenerateSlug(ExtractTitle(draftArticle)),
+            WordCount = CountWords(draftArticle)
+        };
+        
+        Console.WriteLine($"  [WritingAgent] ✓ Article complete: {article.Title}");
+        Console.WriteLine($"  [WritingAgent]   Words: {article.WordCount}, Tags: {string.Join(", ", article.Tags)}");
 
         return article;
     }
@@ -403,44 +501,36 @@ public class WritingRunnable : OrchestrationRunnable<ResearchOutput, ArticleOutp
             var filesLeft = _config.CodebaseAccess.MaxFilesPerSession - (accessedFiles?.Count ?? 0);
             
             prompt += $$"""
-                        ⚠️ **MANDATORY STEP: ACCESS THE LLMTORNADO CODEBASE** ⚠️
+                        ⚠️ **MANDATORY: ACCESS CODEBASE FOR REAL EXAMPLES** ⚠️
 
-                        Files accessed: {{accessedFiles?.Count ?? 0}}/{{_config.CodebaseAccess.MaxFilesPerSession}}
-                        Files remaining: {{filesLeft}}
+                        Files remaining: {{filesLeft}}/{{_config.CodebaseAccess.MaxFilesPerSession}}
 
-                        **YOU HAVE FILESYSTEM TOOLS AVAILABLE. USE THEM NOW.**
+                        **RESEARCH WORKFLOW (Do This First):**
 
-                        **IMPORTANT PATH FORMAT:**
-                        The repository is mounted at `/projects/workspace` in the filesystem.
-                        Use paths relative to that mount point:
-                        - ✅ CORRECT: "src/LlmTornado.Agents"
-                        - ✅ CORRECT: "src/LlmTornado/Chat"
-                        - ❌ WRONG: "C:\\Users\\..." (absolute Windows paths)
-                        - ❌ WRONG: "/app/src" (wrong mount point)
+                        1. **Read Demo Files** (PRIORITY)
+                           → list_directory { "path": "/projects/workspace/src/LlmTornado.Demo" }
+                           → Read 3-4 relevant demos to understand real usage patterns
+                           → Focus on complete, working examples
 
-                        STEP-BY-STEP PROCESS (DO THIS FIRST):
+                        2. **Check Public APIs**
+                           → read_file { "path": "/projects/workspace/src/LlmTornado.Agents/TornadoAgent.cs" }
+                           → Note public constructors/methods (ignore internals)
 
-                        Step 1: Explore the repository structure
-                        → list_directory { "path": "src" }
-                        → This shows you what's available (LlmTornado/, LlmTornado.Agents/, LlmTornado.Demo/, etc.)
+                        3. **Build Deep Understanding**
+                           → Learn how developers actually use the library
+                           → Extract patterns, idioms, best practices
 
-                        Step 2: Find relevant files for your article
-                        → If writing about agents: list_directory { "path": "src/LlmTornado.Agents" }
-                        → If writing about chat: list_directory { "path": "src/LlmTornado/Chat" }
-                        → If writing about demos: list_directory { "path": "src/LlmTornado.Demo" }
+                        **WRITING REQUIREMENTS:**
 
-                        Step 3: Read the actual implementation
-                        → Call read_file on 2-3 relevant files
-                        → Example: read_file { "path": "src/LlmTornado.Agents/TornadoAgent.cs" }
-                        → Example: read_file { "path": "src/LlmTornado.Demo/Demos/01 hello world.cs" }
+                        - Include 4-6 COMPLETE code examples (15-40 lines each)
+                        - Show realistic scenarios with setup + error handling
+                        - Use actual code from demos, but explain it naturally
+                        - DON'T reference file paths ("from TornadoAgent.cs")
+                        - DON'T show internal class structure
+                        - DO write as an experienced user
+                        - DO explain WHAT and WHY, not just HOW
 
-                        Step 4: Use the REAL code you just read in your article
-                        → Copy actual method signatures
-                        → Show real implementation patterns
-                        → Reference the file paths
-
-                        **THIS IS NOT OPTIONAL. START BY CALLING THE TOOLS.**
-                        Articles without real code from the repository will be REJECTED.
+                        **Write naturally. Don't "flex" that you read the source.**
                         """;
         }
         
@@ -479,7 +569,7 @@ public class WritingRunnable : OrchestrationRunnable<ResearchOutput, ArticleOutp
 
         if (research.Sources != null && research.Sources.Length > 0)
         {
-            prompt += "**Sources to Reference:**\n";
+            prompt += "**Sources to Reference (MUST USE AS HYPERLINKS):**\n";
             foreach (var source in research.Sources.Take(5))
             {
                 prompt += $"- [{source.Title}]({source.Url})";
@@ -492,13 +582,16 @@ public class WritingRunnable : OrchestrationRunnable<ResearchOutput, ArticleOutp
             prompt += "\n";
         }
 
-        prompt += """
+        prompt += $"""
             
             Write the complete article now. Remember:
+            - **CRITICAL: HYPERLINK ALL CITATIONS** - Use **at least some** of the provided source URLs as markdown links
+            - Example: "According to [recent research]({(research.Sources?.FirstOrDefault()?.Url ?? "url")})..."
+            - Example: "[Studies show](url) that..."
             - Use Markdown formatting
             - Include code examples where appropriate
-            - Cite sources naturally
-            - Write {config.ReviewLoop.QualityThresholds.MinWordCount}+ words
+            - Cite sources naturally throughout the article (not just at the end)
+            - Write {_config.ReviewLoop.QualityThresholds.MinWordCount}+ words
             - Make it engaging and actionable
             - Subtly integrate LlmTornado's advantages
             """;
@@ -506,36 +599,60 @@ public class WritingRunnable : OrchestrationRunnable<ResearchOutput, ArticleOutp
         return prompt;
     }
 
-    private ArticleOutput ParseArticleFromMarkdown(string markdown)
+    private string ExtractTitle(string markdown)
     {
-        // Extract title (first # heading)
         var lines = markdown.Split('\n');
-        var title = "Untitled Article";
-        var bodyLines = new List<string>();
+        foreach (var line in lines)
+        {
+            if (line.TrimStart().StartsWith("# "))
+            {
+                return line.TrimStart().Substring(2).Trim();
+            }
+        }
+        return "Untitled Article";
+    }
+    
+    private string ExtractDescription(string markdown)
+    {
+        // Find first paragraph after title
+        var lines = markdown.Split('\n');
+        bool foundTitle = false;
+        var descriptionLines = new List<string>();
         
         foreach (var line in lines)
         {
-            if (line.StartsWith("# ") && title == "Untitled Article")
+            if (line.TrimStart().StartsWith("# "))
             {
-                title = line.Substring(2).Trim();
+                foundTitle = true;
+                continue;
             }
-            else
+            
+            if (foundTitle && !string.IsNullOrWhiteSpace(line))
             {
-                bodyLines.Add(line);
+                descriptionLines.Add(line.Trim());
+                if (descriptionLines.Count >= 2) break; // Get first 1-2 sentences
             }
         }
         
-        var body = string.Join("\n", bodyLines).Trim();
-        var wordCount = CountWords(body);
+        var description = string.Join(" ", descriptionLines);
+        if (description.Length > 200)
+        {
+            description = description.Substring(0, 197) + "...";
+        }
         
+        return string.IsNullOrEmpty(description) ? "An article about AI and software development." : description;
+    }
+    
+    private ArticleOutput ParseArticleFromMarkdown(string markdown)
+    {
         return new ArticleOutput
         {
-            Title = title,
-            Body = body,
-            Description = title.Length > 150 ? title.Substring(0, 147) + "..." : title,
+            Title = ExtractTitle(markdown),
+            Body = markdown,
+            Description = ExtractDescription(markdown),
             Tags = new[] { "AI", ".NET", "C#", "Development" },
-            WordCount = wordCount,
-            Slug = GenerateSlug(title)
+            WordCount = CountWords(markdown),
+            Slug = GenerateSlug(ExtractTitle(markdown))
         };
     }
 
@@ -563,5 +680,17 @@ public class WritingRunnable : OrchestrationRunnable<ResearchOutput, ArticleOutp
 
         return text.Split(new[] { ' ', '\t', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries).Length;
     }
+
+    private string Snippet(string text, int maxLength = 100)
+    {
+        if (string.IsNullOrEmpty(text))
+            return "[empty]";
+        
+        if (text.Length <= maxLength)
+            return text;
+        
+        return text.Substring(0, maxLength) + "...";
+    }
 }
+
 

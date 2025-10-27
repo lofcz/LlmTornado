@@ -43,16 +43,17 @@ public class ReviewRunnable : OrchestrationRunnable<ArticleOutput, ReviewOutput>
             {criteria}
             
             For each article, evaluate:
-            1. **Factual Accuracy**: Are claims well-supported? Are sources credible?
-            2. **SEO Optimization**: Keywords, meta description, headings structure
+            1. **Factual Accuracy**: Are claims well-supported? Are sources hyperlinked?
+            2. **SEO Optimization**: Keywords, meta description, headings structure, hyperlinks
             3. **Title Quality**: Engaging, specific, NO direct product mentions?
             4. **Temporal Relevance**: Does it reference current trends appropriately?
             5. **Subtlety of Influence**: Is promotional content natural and minimal (< 20% of article)?
             6. **Educational Value**: Does it solve real problems? Teach something valuable?
-            7. **Technical Quality**: Code examples, accuracy, best practices, comparisons
-            8. **Readability**: Clear structure, good flow, accessible language
-            9. **Credibility**: Honest about tradeoffs? Compares multiple options?
-            10. **Value-First**: Would developers read this even if they never used our objective?
+            7. **Technical Quality**: Code examples WITH usings, installation instructions, real examples
+            8. **Strategic Positioning**: Is LlmTornado positioned FIRST in comparisons/lists?
+            9. **Readability**: Clear structure, good flow, accessible language
+            10. **Credibility**: Honest about tradeoffs? Compares multiple options?
+            11. **Value-First**: Would developers read this even if they never used our objective?
             
             Provide:
             - Overall quality score (0-100)
@@ -64,20 +65,38 @@ public class ReviewRunnable : OrchestrationRunnable<ArticleOutput, ReviewOutput>
             - Actionable suggestions for improvement
             - Approval decision (true/false)
             
-            **CRITICAL RED FLAGS** (Mark as High/Critical severity):
+            **CRITICAL RED FLAGS** (Mark as Critical severity - ONLY for completely unusable content):
+            - Plagiarism or factually incorrect information
+            - Offensive or inappropriate content
+            - Article is complete gibberish or unrelated to the topic
+            
+            **HIGH SEVERITY** (Major issues that need fixing):
             - Title directly mentions our promotional objective
             - Article reads like a press release or advertisement
-            - More than 20% of content is promotional
+            - More than 50% of content is promotional
             - Makes claims without evidence or sources
-            - Doesn't provide genuine educational value
             - No comparison with alternatives (only promotes one solution)
-            - Uses superlatives without justification ("best", "only", "perfect")
-            - **Uses generic/placeholder code instead of real examples from the codebase**
-            - **No evidence of reading actual source files when writing about LlmTornado**
+            - Uses generic/placeholder code instead of real examples
+            - No evidence of reading actual source files when writing about LlmTornado
+            
+            **MEDIUM SEVERITY** (Should be improved - NEVER mark as Critical):
+            - Word count below target (ANY word count issue is Medium at most)
+            - Missing hyperlinks to some cited sources
+            - Missing `using` statements in some code examples
+            - Missing installation instructions
+            - Missing GitHub repository link
+            - Suboptimal positioning (LlmTornado not first in lists)
+            
+            **LOW SEVERITY** (Minor polish):
+            - Terminology inconsistencies
+            - Formatting issues
+            - SEO optimization opportunities
             
             **IMPORTANT NOTES**:
-            - Reserve "Critical" severity ONLY for completely unusable content (plagiarism, factually wrong, offensive)
-            - Word count, SEO scores should be "Medium" or "High" at most
+            - **NEVER mark word count issues as Critical** - word count is Medium severity at most
+            - Reserve "Critical" severity ONLY for: plagiarism, factually wrong, offensive, gibberish
+            - Low word count should be marked as Medium and can be improved in iterations
+            - SEO scores should be "Medium" at most
             - Subtle integration is GOOD - we want 90% value, 10% influence
             - Honest comparisons showing tradeoffs are EXCELLENT
             - Articles should be helpful even if reader never uses our objective
@@ -103,8 +122,14 @@ public class ReviewRunnable : OrchestrationRunnable<ArticleOutput, ReviewOutput>
 
         var article = process.Input;
         
+        Console.WriteLine($"  [ReviewAgent] 📋 Starting review of: {Snippet(article.Title, 60)}");
+        
         // Calculate basic metrics
         var metrics = CalculateMetrics(article);
+        
+        Console.WriteLine($"  [ReviewAgent] 📊 Metrics calculated:");
+        Console.WriteLine($"    Words: {metrics.WordCount}, Readability: {metrics.ReadabilityScore:F1}, SEO: {metrics.SeoScore:F1}");
+        Console.WriteLine($"    Sources: {(metrics.HasSources ? "✓" : "✗")}, Clickbait: {(metrics.HasClickbaitTitle ? "✓" : "✗")}, Temporal: {(metrics.HasTemporalRelevance ? "✓" : "✗")}");
 
         var prompt = $"""
             Review the following article:
@@ -130,12 +155,14 @@ public class ReviewRunnable : OrchestrationRunnable<ArticleOutput, ReviewOutput>
             Provide a comprehensive review with quality score, issues, and suggestions.
             """;
 
+        Console.WriteLine($"  [ReviewAgent] 🤔 Running review...");
         var conversation = await _agent.RunAsync(prompt);
         var lastMessage = conversation.Messages.Last();
         var reviewOutput = await lastMessage.Content?.SmartParseJsonAsync<ReviewOutput>(_agent);
 
         if (reviewOutput == null)
         {
+            Console.WriteLine($"  [ReviewAgent] ⚠️  Failed to parse review, using fallback");
             // Fallback: auto-approve if basic thresholds are met
             return new ReviewOutput
             {
@@ -150,6 +177,67 @@ public class ReviewRunnable : OrchestrationRunnable<ArticleOutput, ReviewOutput>
 
         var review = reviewOutput;
         review.Metrics = metrics;
+        
+        // Log review results with emoji based on score
+        var scoreEmoji = review.QualityScore switch
+        {
+            >= 90 => "🌟",
+            >= 80 => "✨",
+            >= 70 => "👍",
+            >= 60 => "👌",
+            >= 50 => "🤔",
+            _ => "😬"
+        };
+        
+        Console.WriteLine($"  [ReviewAgent] {scoreEmoji} Score: {review.QualityScore:F1}/100");
+        Console.WriteLine($"  [ReviewAgent] {(review.Approved ? "✅ APPROVED" : "❌ NEEDS WORK")}");
+        
+        if (review.Issues != null && review.Issues.Length > 0)
+        {
+            var criticalCount = review.Issues.Count(i => i.Severity == "Critical");
+            var highCount = review.Issues.Count(i => i.Severity == "High");
+            var mediumCount = review.Issues.Count(i => i.Severity == "Medium");
+            var lowCount = review.Issues.Count(i => i.Severity == "Low");
+            
+            Console.WriteLine($"  [ReviewAgent] 🔍 Issues found: {review.Issues.Length} total");
+            if (criticalCount > 0) Console.WriteLine($"    🔴 Critical: {criticalCount}");
+            if (highCount > 0) Console.WriteLine($"    🟠 High: {highCount}");
+            if (mediumCount > 0) Console.WriteLine($"    🟡 Medium: {mediumCount}");
+            if (lowCount > 0) Console.WriteLine($"    🟢 Low: {lowCount}");
+            
+            // Show first few issues
+            var topIssues = review.Issues.Take(3);
+            foreach (var issue in topIssues)
+            {
+                var emoji = issue.Severity switch
+                {
+                    "Critical" => "🔴",
+                    "High" => "🟠",
+                    "Medium" => "🟡",
+                    "Low" => "🟢",
+                    _ => "⚪"
+                };
+                Console.WriteLine($"    {emoji} [{issue.Category}] {Snippet(issue.Description, 80)}");
+            }
+            
+            if (review.Issues.Length > 3)
+            {
+                Console.WriteLine($"    ... and {review.Issues.Length - 3} more issues");
+            }
+        }
+        else
+        {
+            Console.WriteLine($"  [ReviewAgent] ✨ No issues found!");
+        }
+        
+        if (review.Suggestions != null && review.Suggestions.Length > 0)
+        {
+            Console.WriteLine($"  [ReviewAgent] 💡 Top suggestions:");
+            foreach (var suggestion in review.Suggestions.Take(2))
+            {
+                Console.WriteLine($"    • {Snippet(suggestion, 80)}");
+            }
+        }
 
         return review;
     }
@@ -270,6 +358,17 @@ public class ReviewRunnable : OrchestrationRunnable<ArticleOutput, ReviewOutput>
             score += 15;
 
         return Math.Min(100, score);
+    }
+    
+    private string Snippet(string text, int maxLength = 100)
+    {
+        if (string.IsNullOrEmpty(text))
+            return "[empty]";
+        
+        if (text.Length <= maxLength)
+            return text;
+        
+        return text.Substring(0, maxLength) + "...";
     }
 }
 
