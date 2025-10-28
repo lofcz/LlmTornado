@@ -426,7 +426,10 @@ public class MemeGeneratorRunnable : OrchestrationRunnable<MemeDecision, MemeCol
                 name: "MemeValidator",
                 instructions: instructions,
                 outputSchema: typeof(MemeValidationResult),
-                temperature: 0.3);
+                options: new ChatRequest
+                {
+                    Temperature = 0.3d
+                });
 
             // Convert local file to base64 data URI for vision model
             string imageDataUri;
@@ -562,7 +565,10 @@ public class MemeGeneratorRunnable : OrchestrationRunnable<MemeDecision, MemeCol
                 model: model,
                 name: $"TemplateSelector{memeNumber}",
                 instructions: instructions,
-                temperature: 0.7);
+                options: new ChatRequest
+                {
+                    Temperature = 0.7d
+                });
 
             // Add MCP tools
             if (_mcpServer != null)

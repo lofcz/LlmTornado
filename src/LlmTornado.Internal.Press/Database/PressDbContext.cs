@@ -37,7 +37,7 @@ public class PressDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.Status);
             entity.HasIndex(e => e.CreatedDate);
-            entity.HasIndex(e => e.Slug).IsUnique();
+            entity.HasIndex(e => e.Slug); // Removed unique constraint - articles can be regenerated
             
             entity.HasMany(e => e.WorkHistory)
                 .WithOne(e => e.Article)
