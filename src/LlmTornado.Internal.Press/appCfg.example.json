@@ -25,6 +25,11 @@
     "enabled": true,
     "model": "dall-e-3"
   },
+  "imageUpload": {
+    "enabled": false,
+    "provider": "freeimage",
+    "apiKey": ""
+  },
   "reviewLoop": {
     "enabled": true,
     "maxIterations": 3,

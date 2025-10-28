@@ -234,7 +234,11 @@ public class MemeInsertionRunnable : OrchestrationRunnable<MemeCollectionOutput,
             var meme = memes[placement.MemeIndex];
             var point = insertionPoints[placement.InsertionPointIndex];
 
-            var memeMarkdown = MemeService.CreateMemeMarkdown(meme.LocalPath, meme.Caption);
+            // Use URL if available (uploaded meme), otherwise use local path
+            var memeMarkdown = !string.IsNullOrEmpty(meme.Url) && 
+                              (meme.Url.StartsWith("http://") || meme.Url.StartsWith("https://"))
+                ? MemeService.CreateMemeMarkdownFromUrl(meme.Url, meme.Caption)
+                : MemeService.CreateMemeMarkdown(meme.LocalPath, meme.Caption);
 
             Console.WriteLine($"  [MemeInsertionAgent]   Inserting meme {placement.MemeIndex + 1} at line {point.LineNumber}: {meme.Topic}");
 

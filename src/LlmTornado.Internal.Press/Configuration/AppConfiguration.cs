@@ -17,6 +17,7 @@ public class AppConfiguration
     public TavilyConfiguration Tavily { get; set; } = new();
     public CodebaseAccessConfiguration CodebaseAccess { get; set; } = new();
     public MemeGenerationConfiguration MemeGeneration { get; set; } = new();
+    public ImageUploadConfiguration ImageUpload { get; set; } = new();
 
     public static AppConfiguration Load(string configPath = "appCfg.json")
     {
@@ -240,5 +241,17 @@ public class MemeGenerationConfiguration
 
     [JsonProperty("minValidationScore")]
     public double MinValidationScore { get; set; } = 0.7;
+}
+
+public class ImageUploadConfiguration
+{
+    [JsonProperty("enabled")]
+    public bool Enabled { get; set; } = false;
+
+    [JsonProperty("provider")]
+    public string Provider { get; set; } = "freeimage";
+
+    [JsonProperty("apiKey")]
+    public string ApiKey { get; set; }
 }
 

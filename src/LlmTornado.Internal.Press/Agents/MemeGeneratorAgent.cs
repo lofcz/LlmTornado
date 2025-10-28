@@ -13,6 +13,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
 using LlmTornado.Images;
+using System.Collections.Generic;
 
 namespace LlmTornado.Internal.Press.Agents;
 
@@ -143,6 +144,7 @@ public class MemeGeneratorRunnable : OrchestrationRunnable<MemeDecision, MemeCol
     private async Task<MemeGenerationOutput?> GenerateSingleMemeAsync(string topic, int memeNumber)
     {
         string? memeUrl = null;
+        string? publicUrl = null;
         string? localPath = null;
         int iteration = 0;
         string feedback = "";
@@ -164,15 +166,21 @@ public class MemeGeneratorRunnable : OrchestrationRunnable<MemeDecision, MemeCol
 
                 Console.WriteLine($"  [MemeGeneratorAgent]   Generated URL: {memeUrl}");
 
-                // Phase 2: Download meme
+                // Phase 2: Process through upload service if enabled
+                publicUrl = await ImageUploadService.ProcessImageUrlAsync(
+                    memeUrl,
+                    _config.ImageUpload,
+                    "MemeGenerator");
+
+                // Phase 3: Download meme (use publicUrl for permanent storage)
                 MemeService.EnsureOutputDirectory(_config.MemeGeneration.OutputDirectory);
                 localPath = await MemeService.DownloadImageFromUrlAsync(
-                    memeUrl,
+                    publicUrl,
                     _config.MemeGeneration.OutputDirectory,
                     $"meme_{memeNumber}_{iteration}.jpg"
                 );
 
-                // Phase 3: Validate with vision model
+                // Phase 4: Validate with vision model
                 var validation = await ValidateMemeWithVisionAsync(localPath, topic);
 
                 Console.WriteLine($"  [MemeGeneratorAgent]   Validation score: {validation.Score:F2}, Approved: {validation.Approved}");
@@ -182,7 +190,7 @@ public class MemeGeneratorRunnable : OrchestrationRunnable<MemeDecision, MemeCol
                     // Success!
                     return new MemeGenerationOutput
                     {
-                        Url = memeUrl,
+                        Url = publicUrl,
                         LocalPath = localPath,
                         Caption = topic,
                         ValidationScore = validation.Score,
@@ -204,9 +212,10 @@ public class MemeGeneratorRunnable : OrchestrationRunnable<MemeDecision, MemeCol
         }
 
         // Max iterations reached without approval
+        // Use the last publicUrl we generated
         return localPath != null ? new MemeGenerationOutput
         {
-            Url = memeUrl ?? string.Empty,
+            Url = publicUrl ?? memeUrl ?? string.Empty,
             LocalPath = localPath,
             Caption = topic,
             ValidationScore = 0,

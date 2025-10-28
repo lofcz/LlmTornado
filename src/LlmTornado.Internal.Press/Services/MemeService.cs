@@ -173,6 +173,14 @@ public static class MemeService
     }
 
     /// <summary>
+    /// Creates markdown for a meme using a URL (for uploaded memes)
+    /// </summary>
+    public static string CreateMemeMarkdownFromUrl(string imageUrl, string caption)
+    {
+        return $"![{caption}]({imageUrl})";
+    }
+
+    /// <summary>
     /// Get surrounding text context for a line
     /// </summary>
     private static string GetSurroundingText(string[] lines, int lineNumber, int radius)

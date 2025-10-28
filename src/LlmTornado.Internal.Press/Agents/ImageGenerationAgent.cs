@@ -6,6 +6,7 @@ using LlmTornado.Code;
 using LlmTornado.Images;
 using LlmTornado.Internal.Press.Configuration;
 using LlmTornado.Internal.Press.DataModels;
+using LlmTornado.Internal.Press.Services;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -113,9 +114,15 @@ public class ImageGenerationRunnable : OrchestrationRunnable<ArticleOutput, Imag
 
             Console.WriteLine($"  [ImageGeneration] ✓ Image generated successfully");
             
+            // Step 3: Process through upload service if enabled
+            var publicUrl = await ImageUploadService.ProcessImageUrlAsync(
+                imageUrl,
+                _config.ImageUpload,
+                "ImageGeneration");
+            
             return new ImageOutput
             {
-                Url = imageUrl,
+                Url = publicUrl,
                 AltText = article.Title,
                 PromptUsed = imagePrompt,
                 Provider = _config.ImageGeneration.Model
