@@ -31,7 +31,7 @@ public class TavilySearchTool
         [Description("The search query")] string query,
         [Description("Maximum number of results")] int? maxResults = null)
     {
-        var request = new TavilySearchRequest
+        TavilySearchRequest request = new TavilySearchRequest
         {
             ApiKey = _apiKey,
             Query = query,
@@ -43,21 +43,21 @@ public class TavilySearchTool
             IncludeRawContent = false
         };
 
-        var json = JsonConvert.SerializeObject(request, new JsonSerializerSettings
+        string json = JsonConvert.SerializeObject(request, new JsonSerializerSettings
         {
             NullValueHandling = NullValueHandling.Ignore,
             Formatting = Formatting.None
         });
 
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
+        StringContent content = new StringContent(json, Encoding.UTF8, "application/json");
 
         try
         {
-            var response = await _httpClient.PostAsync(TavilyApiUrl, content);
+            HttpResponseMessage response = await _httpClient.PostAsync(TavilyApiUrl, content);
             response.EnsureSuccessStatusCode();
 
-            var responseJson = await response.Content.ReadAsStringAsync();
-            var searchResponse = JsonConvert.DeserializeObject<TavilySearchResponse>(responseJson);
+            string responseJson = await response.Content.ReadAsStringAsync();
+            TavilySearchResponse? searchResponse = JsonConvert.DeserializeObject<TavilySearchResponse>(responseJson);
 
             if (searchResponse == null)
             {
@@ -74,7 +74,7 @@ public class TavilySearchTool
 
     private string FormatSearchResults(TavilySearchResponse response)
     {
-        var sb = new StringBuilder();
+        StringBuilder sb = new StringBuilder();
 
         if (!string.IsNullOrEmpty(response.Answer))
         {
@@ -90,7 +90,7 @@ public class TavilySearchTool
 
             for (int i = 0; i < response.Results.Count; i++)
             {
-                var result = response.Results[i];
+                TavilySearchResult result = response.Results[i];
                 sb.AppendLine($"{i + 1}. **{result.Title}**");
                 sb.AppendLine($"   URL: {result.Url}");
                 sb.AppendLine($"   Score: {result.Score:F2}");
@@ -147,7 +147,7 @@ internal class TavilySearchResponse
     public string Query { get; set; } = string.Empty;
 
     [JsonProperty("results")]
-    public List<TavilySearchResult> Results { get; set; } = new();
+    public List<TavilySearchResult> Results { get; set; } = [];
 
     [JsonProperty("response_time")]
     public double ResponseTime { get; set; }

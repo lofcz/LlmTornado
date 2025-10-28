@@ -10,18 +10,17 @@ public class Article
     public int Id { get; set; }
 
     [Required]
-    [MaxLength(500)]
     public string Title { get; set; } = string.Empty;
 
     [Required]
     public string Body { get; set; } = string.Empty;
 
     [Required]
-    [MaxLength(1000)]
     public string Description { get; set; } = string.Empty;
-
-    [MaxLength(2000)]
+    
     public string? ImageUrl { get; set; }
+
+    public string? ImageVariationsJson { get; set; } // Image variation URLs as JSON dictionary
 
     [Required]
     public string Tags { get; set; } = "[]"; // Stored as JSON array
@@ -32,11 +31,9 @@ public class Article
     public DateTime? PublishedDate { get; set; }
 
     [Required]
-    [MaxLength(1000)]
     public string Objective { get; set; } = string.Empty;
 
     [Required]
-    [MaxLength(50)]
     public string Status { get; set; } = ArticleStatus.Draft;
 
     public int WordCount { get; set; }
@@ -44,8 +41,7 @@ public class Article
     public double QualityScore { get; set; }
 
     public int IterationCount { get; set; }
-
-    [MaxLength(500)]
+    
     public string? Slug { get; set; }
 
     public string? SourcesJson { get; set; } // Research sources as JSON

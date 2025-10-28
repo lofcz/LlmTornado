@@ -29,13 +29,13 @@ public static class MemeService
                 fileName = $"meme_{Guid.NewGuid():N}.jpg";
             }
 
-            var outputPath = Path.Combine(outputDirectory, fileName);
+            string outputPath = Path.Combine(outputDirectory, fileName);
 
             // Download image
-            var response = await _httpClient.GetAsync(url);
+            HttpResponseMessage response = await _httpClient.GetAsync(url);
             response.EnsureSuccessStatusCode();
 
-            var imageBytes = await response.Content.ReadAsByteArrayAsync();
+            byte[] imageBytes = await response.Content.ReadAsByteArrayAsync();
             await File.WriteAllBytesAsync(outputPath, imageBytes);
 
             Console.WriteLine($"  [MemeService] Downloaded meme to: {outputPath}");
@@ -54,14 +54,14 @@ public static class MemeService
     /// </summary>
     public static List<MemeInsertionPoint> IdentifyInsertionPoints(string markdown)
     {
-        var insertionPoints = new List<MemeInsertionPoint>();
-        var lines = markdown.Split('\n');
+        List<MemeInsertionPoint> insertionPoints = [];
+        string[] lines = markdown.Split('\n');
         bool inCodeBlock = false;
 
         for (int i = 0; i < lines.Length; i++)
         {
-            var line = lines[i];
-            var trimmed = line.Trim();
+            string line = lines[i];
+            string trimmed = line.Trim();
 
             // Track code block state
             if (trimmed.StartsWith("```"))
@@ -98,7 +98,7 @@ public static class MemeService
             // Between paragraphs (after empty line, before regular text)
             if (i > 0 && string.IsNullOrWhiteSpace(line) && i + 1 < lines.Length)
             {
-                var nextLine = lines[i + 1].TrimStart();
+                string nextLine = lines[i + 1].TrimStart();
                 
                 // Only insert before regular text paragraphs
                 if (!string.IsNullOrWhiteSpace(nextLine) &&
@@ -146,7 +146,7 @@ public static class MemeService
     /// </summary>
     public static string InsertMemeAtLine(string markdown, int lineNumber, string memeMarkdown)
     {
-        var lines = markdown.Split('\n').ToList();
+        List<string> lines = markdown.Split('\n').ToList();
 
         if (lineNumber < 0 || lineNumber > lines.Count)
         {
@@ -168,7 +168,7 @@ public static class MemeService
     public static string CreateMemeMarkdown(string imagePath, string caption)
     {
         // Use relative path from output directory
-        var fileName = Path.GetFileName(imagePath);
+        string fileName = Path.GetFileName(imagePath);
         return $"![{caption}](memes/{fileName})";
     }
 
@@ -188,7 +188,7 @@ public static class MemeService
         int start = Math.Max(0, lineNumber - radius);
         int end = Math.Min(lines.Length - 1, lineNumber + radius);
 
-        var surroundingLines = new List<string>();
+        List<string> surroundingLines = [];
         for (int i = start; i <= end; i++)
         {
             surroundingLines.Add(lines[i]);
@@ -202,7 +202,7 @@ public static class MemeService
     /// </summary>
     public static string[] ExtractTopics(ArticleOutput article)
     {
-        var topics = new List<string>();
+        List<string> topics = [];
 
         // Add tags
         if (article.Tags != null && article.Tags.Length > 0)
@@ -211,8 +211,8 @@ public static class MemeService
         }
 
         // Extract from title (split by common separators)
-        var titleWords = article.Title
-            .Split(new[] { ' ', ':', '-', '—', '–' }, StringSplitOptions.RemoveEmptyEntries)
+        IEnumerable<string> titleWords = article.Title
+            .Split([' ', ':', '-', '—', '–'], StringSplitOptions.RemoveEmptyEntries)
             .Where(w => w.Length > 3)
             .Take(5);
         topics.AddRange(titleWords);
@@ -240,8 +240,8 @@ public static class MemeService
             return null;
 
         // Look for localhost URLs
-        var urlPattern = @"(http://localhost:\d+/[^\s\)""']+)";
-        var match = Regex.Match(content, urlPattern);
+        string urlPattern = @"(http://localhost:\d+/[^\s\)""']+)";
+        Match match = Regex.Match(content, urlPattern);
         
         if (match.Success)
         {
@@ -261,7 +261,7 @@ public static class MemeService
             Directory.CreateDirectory(directory);
             
             // Test write permission
-            var testFile = Path.Combine(directory, ".test");
+            string testFile = Path.Combine(directory, ".test");
             File.WriteAllText(testFile, "test");
             File.Delete(testFile);
         }

@@ -8,6 +8,7 @@ using LlmTornado.Internal.Press.Services;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using LlmTornado.Chat;
 
 namespace LlmTornado.Internal.Press.Agents;
 
@@ -26,31 +27,31 @@ public class MemeInsertionRunnable : OrchestrationRunnable<MemeCollectionOutput,
     {
         _config = config;
 
-        var instructions = $$"""
-                             You are a content editor specializing in meme placement within technical articles.
+        string instructions = $$"""
+                                You are a content editor specializing in meme placement within technical articles.
 
-                             Your role is to select the BEST insertion points for memes within markdown articles.
+                                Your role is to select the BEST insertion points for memes within markdown articles.
 
-                             Guidelines for placement:
-                             1. **After section headings**: Place memes after H2/H3 headings to introduce sections
-                             2. **Between paragraphs**: Break up long text blocks with relevant memes
-                             3. **Contextual relevance**: Match meme topic to surrounding content
-                             4. **Even distribution**: Space memes throughout the article, not clustered
-                             5. **Flow preservation**: Don't interrupt critical explanations or code examples
+                                Guidelines for placement:
+                                1. **After section headings**: Place memes after H2/H3 headings to introduce sections
+                                2. **Between paragraphs**: Break up long text blocks with relevant memes
+                                3. **Contextual relevance**: Match meme topic to surrounding content
+                                4. **Even distribution**: Space memes throughout the article, not clustered
+                                5. **Flow preservation**: Don't interrupt critical explanations or code examples
 
-                             Given:
-                             - Article markdown
-                             - List of available insertion points (with line numbers and context)
-                             - Memes to insert (with topics)
+                                Given:
+                                - Article markdown
+                                - List of available insertion points (with line numbers and context)
+                                - Memes to insert (with topics)
 
-                             Your task:
-                             Select the BEST insertion point for each meme based on contextual relevance and flow.
-                             Match meme topics to nearby content.
+                                Your task:
+                                Select the BEST insertion point for each meme based on contextual relevance and flow.
+                                Match meme topics to nearby content.
 
-                             Output a JSON array mapping each meme to its best insertion point line number.
-                             """;
+                                Output a JSON array mapping each meme to its best insertion point line number.
+                                """;
 
-        var model = new ChatModel(config.MemeGeneration.MemeGenerationModel);
+        ChatModel model = new ChatModel(config.MemeGeneration.MemeGenerationModel);
 
         _agent = new TornadoAgent(
             client: client,
@@ -63,10 +64,10 @@ public class MemeInsertionRunnable : OrchestrationRunnable<MemeCollectionOutput,
 
     public override async ValueTask<ArticleOutput> Invoke(RunnableProcess<MemeCollectionOutput, ArticleOutput> process)
     {
-        var memeCollection = process.Input;
+        MemeCollectionOutput memeCollection = process.Input;
 
         // Get the article from orchestration context
-        if (!Orchestrator.RuntimeProperties.TryGetValue("CurrentArticle", out var articleObj) ||
+        if (!Orchestrator.RuntimeProperties.TryGetValue("CurrentArticle", out object? articleObj) ||
             articleObj is not ArticleOutput article)
         {
             Console.WriteLine("  [MemeInsertionAgent] ✗ Article not found in context");
@@ -75,7 +76,7 @@ public class MemeInsertionRunnable : OrchestrationRunnable<MemeCollectionOutput,
                 Title = "Error",
                 Body = "Article not found",
                 Description = "Error",
-                Tags = Array.Empty<string>()
+                Tags = []
             };
         }
 
@@ -92,7 +93,7 @@ public class MemeInsertionRunnable : OrchestrationRunnable<MemeCollectionOutput,
         try
         {
             // Phase 1: Identify potential insertion points
-            var insertionPoints = MemeService.IdentifyInsertionPoints(article.Body);
+            List<MemeInsertionPoint> insertionPoints = MemeService.IdentifyInsertionPoints(article.Body);
             Console.WriteLine($"  [MemeInsertionAgent] Found {insertionPoints.Count} potential insertion points");
 
             if (insertionPoints.Count == 0)
@@ -102,7 +103,7 @@ public class MemeInsertionRunnable : OrchestrationRunnable<MemeCollectionOutput,
             }
 
             // Phase 2: Use LLM to select best insertion points for each meme
-            var insertionPlan = await SelectInsertionPointsAsync(article, memeCollection.Memes, insertionPoints);
+            MemeInsertionDecision? insertionPlan = await SelectInsertionPointsAsync(article, memeCollection.Memes, insertionPoints);
 
             if (insertionPlan == null || insertionPlan.Placements == null || insertionPlan.Placements.Length == 0)
             {
@@ -111,7 +112,7 @@ public class MemeInsertionRunnable : OrchestrationRunnable<MemeCollectionOutput,
             }
 
             // Phase 3: Insert memes into article markdown
-            var modifiedBody = InsertMemesIntoArticle(article.Body, insertionPlan, memeCollection.Memes);
+            string modifiedBody = InsertMemesIntoArticle(article.Body, insertionPlan, memeCollection.Memes);
 
             Console.WriteLine($"  [MemeInsertionAgent] ✓ Successfully inserted {insertionPlan.Placements.Length} meme(s)");
 
@@ -145,32 +146,32 @@ public class MemeInsertionRunnable : OrchestrationRunnable<MemeCollectionOutput,
         {
 
             // Build prompt with article context and insertion options
-            var prompt = $$"""
-                           Select the best insertion points for {{memes.Length}} meme(s) in this article.
+            string prompt = $$"""
+                              Select the best insertion points for {{memes.Length}} meme(s) in this article.
 
-                           **Article Title:** {{article.Title}}}
-                           **Article Length:** {{article.WordCount}} words
+                              **Article Title:** {{article.Title}}}
+                              **Article Length:** {{article.WordCount}} words
 
-                           **Memes to Insert:**
-                           {{string.Join("\n", memes.Select((m, i) => $"{i + 1}. Topic: {m.Topic}, Caption: {m.Caption}"))}}
+                              **Memes to Insert:**
+                              {{string.Join("\n", memes.Select((m, i) => $"{i + 1}. Topic: {m.Topic}, Caption: {m.Caption}"))}}
 
-                           **Available Insertion Points:**
-                           {{string.Join("\n", availablePoints.Take(20).Select((p, i) => $"{i + 1}. Line {p.LineNumber}: {p.Context}\n   Context: {Snippet(p.SurroundingText, 80)}"))}}
+                              **Available Insertion Points:**
+                              {{string.Join("\n", availablePoints.Take(20).Select((p, i) => $"{i + 1}. Line {p.LineNumber}: {p.Context}\n   Context: {Snippet(p.SurroundingText, 80)}"))}}
 
-                           **Task:**
-                           For each meme, select the insertion point (by number 1-{{Math.Min(20, availablePoints.Count)}}) that:
-                           1. Has contextually relevant surrounding content
-                           2. Maintains good article flow
-                           3. Is well-distributed throughout the article
+                              **Task:**
+                              For each meme, select the insertion point (by number 1-{{Math.Min(20, availablePoints.Count)}}) that:
+                              1. Has contextually relevant surrounding content
+                              2. Maintains good article flow
+                              3. Is well-distributed throughout the article
 
-                           Output JSON array with meme index and selected insertion point number.
-                           Example: [{"memeIndex": 0, "insertionPointIndex": 3}, {"memeIndex": 1, "insertionPointIndex": 12}]
-                           """;
+                              Output JSON array with meme index and selected insertion point number.
+                              Example: [{"memeIndex": 0, "insertionPointIndex": 3}, {"memeIndex": 1, "insertionPointIndex": 12}]
+                              """;
 
-            var conversation = await _agent.Run(prompt, maxTurns: 1);
-            var lastMessage = conversation.Messages.Last();
+            Conversation conversation = await _agent.Run(prompt, maxTurns: 1);
+            ChatMessage lastMessage = conversation.Messages.Last();
 
-            var decision = await lastMessage.Content?.SmartParseJsonAsync<MemeInsertionDecision>(_agent);
+            MemeInsertionDecision? decision = await lastMessage.Content?.SmartParseJsonAsync<MemeInsertionDecision>(_agent);
             return decision;
         }
         catch (Exception ex)
@@ -187,7 +188,7 @@ public class MemeInsertionRunnable : OrchestrationRunnable<MemeCollectionOutput,
         MemeGenerationOutput[] memes,
         List<MemeInsertionPoint> points)
     {
-        var placements = new List<MemePlacement>();
+        List<MemePlacement> placements = [];
 
         // Distribute memes evenly across available points
         int pointsPerMeme = Math.Max(1, points.Count / memes.Length);
@@ -215,15 +216,15 @@ public class MemeInsertionRunnable : OrchestrationRunnable<MemeCollectionOutput,
         MemeInsertionDecision plan,
         MemeGenerationOutput[] memes)
     {
-        var insertionPoints = MemeService.IdentifyInsertionPoints(markdown);
-        var modifiedMarkdown = markdown;
+        List<MemeInsertionPoint> insertionPoints = MemeService.IdentifyInsertionPoints(markdown);
+        string modifiedMarkdown = markdown;
 
         // Sort placements by line number in reverse order to maintain line numbers during insertion
-        var sortedPlacements = plan.Placements
+        MemePlacement[] sortedPlacements = plan.Placements
             .OrderByDescending(p => p.InsertionPointIndex)
             .ToArray();
 
-        foreach (var placement in sortedPlacements)
+        foreach (MemePlacement placement in sortedPlacements)
         {
             if (placement.MemeIndex >= memes.Length || placement.InsertionPointIndex >= insertionPoints.Count)
             {
@@ -231,12 +232,12 @@ public class MemeInsertionRunnable : OrchestrationRunnable<MemeCollectionOutput,
                 continue;
             }
 
-            var meme = memes[placement.MemeIndex];
-            var point = insertionPoints[placement.InsertionPointIndex];
+            MemeGenerationOutput meme = memes[placement.MemeIndex];
+            MemeInsertionPoint point = insertionPoints[placement.InsertionPointIndex];
 
             // Use URL if available (uploaded meme), otherwise use local path
-            var memeMarkdown = !string.IsNullOrEmpty(meme.Url) && 
-                              (meme.Url.StartsWith("http://") || meme.Url.StartsWith("https://"))
+            string memeMarkdown = !string.IsNullOrEmpty(meme.Url) && 
+                                  (meme.Url.StartsWith("http://") || meme.Url.StartsWith("https://"))
                 ? MemeService.CreateMemeMarkdownFromUrl(meme.Url, meme.Caption)
                 : MemeService.CreateMemeMarkdown(meme.LocalPath, meme.Caption);
 
@@ -265,7 +266,7 @@ public class MemeInsertionRunnable : OrchestrationRunnable<MemeCollectionOutput,
 /// </summary>
 public class MemeInsertionDecision
 {
-    public MemePlacement[] Placements { get; set; } = Array.Empty<MemePlacement>();
+    public MemePlacement[] Placements { get; set; } = [];
 }
 
 /// <summary>

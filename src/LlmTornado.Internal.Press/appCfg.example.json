@@ -30,6 +30,29 @@
     "provider": "freeimage",
     "apiKey": ""
   },
+  "imageVariations": {
+    "enabled": true,
+    "formats": [
+      {
+        "name": "featured-seo",
+        "width": 1000,
+        "height": 420,
+        "description": "Primary site featured image"
+      },
+      {
+        "name": "og-image",
+        "width": 1200,
+        "height": 630,
+        "description": "Open Graph social sharing"
+      },
+      {
+        "name": "twitter-card",
+        "width": 1200,
+        "height": 600,
+        "description": "Twitter card"
+      }
+    ]
+  },
   "reviewLoop": {
     "enabled": true,
     "maxIterations": 3,
@@ -50,7 +73,8 @@
   "articleGeneration": {
     "maxConcurrent": 3,
     "delayBetweenArticles": 5000,
-    "retryAttempts": 2
+    "retryAttempts": 2,
+    "writingStyleHints": 3
   },
   "trendAnalysis": {
     "maxTopics": 10,

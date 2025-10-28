@@ -9,11 +9,9 @@ public class TrendingTopic
     public int Id { get; set; }
 
     [Required]
-    [MaxLength(500)]
     public string Topic { get; set; } = string.Empty;
 
     [Required]
-    [MaxLength(2000)]
     public string Description { get; set; } = string.Empty;
 
     public double Relevance { get; set; }
@@ -25,10 +23,8 @@ public class TrendingTopic
     public DateTime LastSeenDate { get; set; } = DateTime.UtcNow;
 
     [Required]
-    [MaxLength(200)]
     public string Source { get; set; } = string.Empty;
-
-    [MaxLength(500)]
+    
     public string Category { get; set; } = string.Empty;
 
     public string? MetadataJson { get; set; } // Additional data as JSON

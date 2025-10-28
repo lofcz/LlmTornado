@@ -11,7 +11,7 @@ public class MemeGenerationOutput
     public string LocalPath { get; set; } = string.Empty;
     public string Caption { get; set; } = string.Empty;
     public double ValidationScore { get; set; }
-    public string[] Feedback { get; set; } = Array.Empty<string>();
+    public string[] Feedback { get; set; } = [];
     public int IterationCount { get; set; }
     public bool Approved { get; set; }
     public string Topic { get; set; } = string.Empty;
@@ -23,8 +23,8 @@ public class MemeGenerationOutput
 public class MemeValidationResult
 {
     public bool Approved { get; set; }
-    public string[] Issues { get; set; } = Array.Empty<string>();
-    public string[] Suggestions { get; set; } = Array.Empty<string>();
+    public string[] Issues { get; set; } = [];
+    public string[] Suggestions { get; set; } = [];
     public double Score { get; set; }
     public string Summary { get; set; } = string.Empty;
 }
@@ -36,7 +36,7 @@ public class MemeDecision
 {
     public bool ShouldGenerateMemes { get; set; }
     public int MemeCount { get; set; }
-    public string[] Topics { get; set; } = Array.Empty<string>();
+    public string[] Topics { get; set; } = [];
     public string Reasoning { get; set; } = string.Empty;
 }
 
@@ -57,8 +57,9 @@ public class MemeInsertionPoint
 /// </summary>
 public class MemeCollectionOutput
 {
-    public MemeGenerationOutput[] Memes { get; set; } = Array.Empty<MemeGenerationOutput>();
+    public MemeGenerationOutput[] Memes { get; set; } = [];
     public bool Success { get; set; }
     public string ErrorMessage { get; set; } = string.Empty;
 }
+
 

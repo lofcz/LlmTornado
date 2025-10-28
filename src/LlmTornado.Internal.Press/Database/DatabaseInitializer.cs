@@ -11,13 +11,13 @@ public static class DatabaseInitializer
     {
         connectionString ??= "Data Source=press.db";
 
-        var optionsBuilder = new DbContextOptionsBuilder<PressDbContext>();
+        DbContextOptionsBuilder<PressDbContext> optionsBuilder = new DbContextOptionsBuilder<PressDbContext>();
         optionsBuilder.UseSqlite(connectionString);
 
-        await using var context = new PressDbContext(optionsBuilder.Options);
+        await using PressDbContext context = new PressDbContext(optionsBuilder.Options);
         
-        // Ensure database is created and all migrations are applied
-        await context.Database.EnsureCreatedAsync();
+        // Apply all pending migrations (creates database if it doesn't exist)
+        await context.Database.MigrateAsync();
         
         Console.WriteLine($"Database initialized at: {GetDatabasePath(connectionString)}");
     }
@@ -26,10 +26,10 @@ public static class DatabaseInitializer
     {
         connectionString ??= "Data Source=press.db";
 
-        var optionsBuilder = new DbContextOptionsBuilder<PressDbContext>();
+        DbContextOptionsBuilder<PressDbContext> optionsBuilder = new DbContextOptionsBuilder<PressDbContext>();
         optionsBuilder.UseSqlite(connectionString);
 
-        await using var context = new PressDbContext(optionsBuilder.Options);
+        await using PressDbContext context = new PressDbContext(optionsBuilder.Options);
         
         // Apply any pending migrations
         await context.Database.MigrateAsync();
@@ -41,22 +41,22 @@ public static class DatabaseInitializer
     {
         connectionString ??= "Data Source=press.db";
 
-        var optionsBuilder = new DbContextOptionsBuilder<PressDbContext>();
+        DbContextOptionsBuilder<PressDbContext> optionsBuilder = new DbContextOptionsBuilder<PressDbContext>();
         optionsBuilder.UseSqlite(connectionString);
 
-        await using var context = new PressDbContext(optionsBuilder.Options);
+        await using PressDbContext context = new PressDbContext(optionsBuilder.Options);
         return await context.Database.CanConnectAsync();
     }
 
     public static string GetDatabasePath(string connectionString)
     {
         // Extract file path from connection string
-        var parts = connectionString.Split(';');
-        foreach (var part in parts)
+        string[] parts = connectionString.Split(';');
+        foreach (string part in parts)
         {
             if (part.Trim().StartsWith("Data Source=", StringComparison.OrdinalIgnoreCase))
             {
-                var path = part.Substring(part.IndexOf('=') + 1).Trim();
+                string path = part.Substring(part.IndexOf('=') + 1).Trim();
                 return Path.GetFullPath(path);
             }
         }
@@ -67,10 +67,10 @@ public static class DatabaseInitializer
     {
         connectionString ??= "Data Source=press.db";
 
-        var optionsBuilder = new DbContextOptionsBuilder<PressDbContext>();
+        DbContextOptionsBuilder<PressDbContext> optionsBuilder = new DbContextOptionsBuilder<PressDbContext>();
         optionsBuilder.UseSqlite(connectionString);
 
-        await using var context = new PressDbContext(optionsBuilder.Options);
+        await using PressDbContext context = new PressDbContext(optionsBuilder.Options);
         
         // Delete and recreate the database
         await context.Database.EnsureDeletedAsync();

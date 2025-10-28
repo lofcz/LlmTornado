@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 using System;
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace LlmTornado.Internal.Press.Export;
@@ -19,25 +20,25 @@ public class MarkdownExporter
     public async Task<string> ExportArticleAsync(Article article)
     {
         // Create directory structure: {output}/{date}/{slug}/
-        var date = article.CreatedDate.ToString("yyyy-MM-dd");
-        var slug = article.Slug ?? GenerateSlug(article.Title);
-        var articleDir = Path.Combine(_outputDirectory, date, slug);
+        string date = article.CreatedDate.ToString("yyyy-MM-dd");
+        string slug = article.Slug ?? GenerateSlug(article.Title);
+        string articleDir = Path.Combine(_outputDirectory, date, slug);
 
         Directory.CreateDirectory(articleDir);
 
         // Create memes subdirectory if article contains memes
-        var memesDir = Path.Combine(articleDir, "memes");
+        string memesDir = Path.Combine(articleDir, "memes");
         if (article.Body.Contains("](memes/"))
         {
             Directory.CreateDirectory(memesDir);
             await CopyMemeFilesAsync(article, memesDir);
         }
 
-        // Build markdown content with frontmatter
-        var markdown = BuildMarkdown(article);
+        // this is the final article ready for publish - without frontmatter! don't call BuildMarkdown here and save the already clean body
+        string markdown = article.Body; // BuildMarkdown(article);
 
         // Write markdown file
-        var markdownPath = Path.Combine(articleDir, "article.md");
+        string markdownPath = Path.Combine(articleDir, "article.md");
         await File.WriteAllTextAsync(markdownPath, markdown);
 
         return markdownPath;
@@ -46,29 +47,29 @@ public class MarkdownExporter
     private async Task CopyMemeFilesAsync(Article article, string memesDestDir)
     {
         // Extract meme references from markdown: ![caption](memes/filename.jpg)
-        var memePattern = new System.Text.RegularExpressions.Regex(@"!\[.*?\]\(memes/([^)]+)\)");
-        var matches = memePattern.Matches(article.Body);
+        Regex memePattern = new System.Text.RegularExpressions.Regex(@"!\[.*?\]\(memes/([^)]+)\)");
+        MatchCollection matches = memePattern.Matches(article.Body);
 
         foreach (System.Text.RegularExpressions.Match match in matches)
         {
             if (match.Groups.Count > 1)
             {
-                var fileName = match.Groups[1].Value;
+                string fileName = match.Groups[1].Value;
                 
                 // Try to find the source meme file
                 // Check common meme output directories
-                var possibleSources = new[]
-                {
+                string[] possibleSources =
+                [
                     Path.Combine("./output/memes", fileName),
                     Path.Combine(_outputDirectory, "../memes", fileName),
                     Path.Combine(Directory.GetCurrentDirectory(), "output", "memes", fileName)
-                };
+                ];
 
-                foreach (var sourcePath in possibleSources)
+                foreach (string sourcePath in possibleSources)
                 {
                     if (File.Exists(sourcePath))
                     {
-                        var destPath = Path.Combine(memesDestDir, fileName);
+                        string destPath = Path.Combine(memesDestDir, fileName);
                         
                         try
                         {
@@ -88,7 +89,7 @@ public class MarkdownExporter
 
     private string BuildMarkdown(Article article)
     {
-        var sb = new StringBuilder();
+        StringBuilder sb = new StringBuilder();
         
         // Add YAML frontmatter (body should never contain it)
         sb.AppendLine("---");
@@ -109,11 +110,11 @@ public class MarkdownExporter
         // Parse and add tags
         try
         {
-            var tags = JsonConvert.DeserializeObject<string[]>(article.Tags);
+            string[]? tags = JsonConvert.DeserializeObject<string[]>(article.Tags);
             if (tags != null && tags.Length > 0)
             {
                 sb.AppendLine("tags:");
-                foreach (var tag in tags)
+                foreach (string tag in tags)
                 {
                     sb.AppendLine($"  - {tag}");
                 }
@@ -129,7 +130,7 @@ public class MarkdownExporter
         sb.AppendLine();
 
         // Article body - strip everything before first # heading
-        var cleanBody = StripPreamble(article.Body);
+        string cleanBody = StripPreamble(article.Body);
         sb.AppendLine(cleanBody);
 
         // Optional: Add sources as footnotes
@@ -143,7 +144,7 @@ public class MarkdownExporter
             
             try
             {
-                var sources = JsonConvert.DeserializeObject<dynamic>(article.SourcesJson);
+                dynamic? sources = JsonConvert.DeserializeObject<dynamic>(article.SourcesJson);
                 if (sources != null)
                 {
                     sb.AppendLine("```json");
@@ -165,13 +166,18 @@ public class MarkdownExporter
         if (string.IsNullOrEmpty(body))
             return body;
 
-        var lines = body.Split('\n');
+        string[] lines = body.Split('\n');
         
-        // Find the first line that starts with #
+        // Find the first line that starts with # (markdown heading)
+        // This will strip:
+        // - Any preamble text
+        // - HTML comments (<!-- -->)
+        // - Empty lines before the first heading
+        // - Any other content before the article starts
         for (int i = 0; i < lines.Length; i++)
         {
-            var trimmed = lines[i].TrimStart();
-            if (trimmed.StartsWith("#"))
+            string trimmed = lines[i].TrimStart();
+            if (trimmed.StartsWith("#") && !trimmed.StartsWith("#!"))  // Heading, but not shebang
             {
                 // Return everything from this line onwards
                 return string.Join('\n', lines[i..]);
@@ -179,7 +185,20 @@ public class MarkdownExporter
         }
 
         // If no heading found, return original body
-        return body;
+        // But strip HTML comments and leading blank lines anyway
+        int firstNonEmpty = 0;
+        for (int i = 0; i < lines.Length; i++)
+        {
+            string trimmed = lines[i].TrimStart();
+            // Skip empty lines and HTML comments
+            if (!string.IsNullOrWhiteSpace(trimmed) && !trimmed.StartsWith("<!--"))
+            {
+                firstNonEmpty = i;
+                break;
+            }
+        }
+        
+        return firstNonEmpty > 0 ? string.Join('\n', lines[firstNonEmpty..]) : body;
     }
 
     private string EscapeYaml(string value)

@@ -18,7 +18,7 @@ using System.Collections.Generic;
 namespace LlmTornado.Internal.Press.Agents;
 
 /// <summary>
-/// Generates memes using MCP toolkit and validates them with vision model
+/// Generates memes by having AI create text and building memegen URLs ourselves
 /// </summary>
 public class MemeGeneratorRunnable : OrchestrationRunnable<MemeDecision, MemeCollectionOutput>
 {
@@ -26,7 +26,7 @@ public class MemeGeneratorRunnable : OrchestrationRunnable<MemeDecision, MemeCol
     private readonly AppConfiguration _config;
     private MCPServer? _mcpServer;
     private bool _mcpInitialized = false;
-    private readonly HashSet<string> _usedTemplates = new HashSet<string>(); // Track used templates
+    private readonly HashSet<string> _usedTemplates = []; // Track used templates
 
     public MemeGeneratorRunnable(
         TornadoApi client,
@@ -41,30 +41,29 @@ public class MemeGeneratorRunnable : OrchestrationRunnable<MemeDecision, MemeCol
     {
         if (_mcpInitialized)
         {
-            Console.WriteLine("  [MemeGeneratorAgent] Already initialized, skipping MCP setup");
+            Console.WriteLine("  [MemeGeneratorAgent] Already initialized");
             return;
         }
 
         _mcpInitialized = true;
-
-        Console.WriteLine("  [MemeGeneratorAgent] Initializing MCP Meme Toolkit...");
+        Console.WriteLine("  [MemeGeneratorAgent] Initializing MCP for template selection...");
 
         try
         {
             _mcpServer = MCPToolkits.MemeToolkit();
             await _mcpServer.InitializeAsync();
-            Console.WriteLine($"  [MemeGeneratorAgent] ✓ MCP server initialized with {_mcpServer.Tools.Count} tools");
+            Console.WriteLine($"  [MemeGeneratorAgent] ✓ MCP initialized ({_mcpServer.Tools.Count} tools)");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"  [MemeGeneratorAgent] ✗ Failed to initialize MCP: {ex.Message}");
+            Console.WriteLine($"  [MemeGeneratorAgent] ✗ MCP init failed: {ex.Message}");
             _mcpServer = null;
         }
     }
 
     public override async ValueTask<MemeCollectionOutput> Invoke(RunnableProcess<MemeDecision, MemeCollectionOutput> process)
     {
-        var decision = process.Input;
+        MemeDecision decision = process.Input;
 
         // If memes not needed, return empty result
         if (!decision.ShouldGenerateMemes || decision.MemeCount == 0)
@@ -72,22 +71,22 @@ public class MemeGeneratorRunnable : OrchestrationRunnable<MemeDecision, MemeCol
             Console.WriteLine("  [MemeGeneratorAgent] No memes requested");
             return new MemeCollectionOutput
             {
-                Memes = Array.Empty<MemeGenerationOutput>(),
+                Memes = [],
                 Success = true,
                 ErrorMessage = string.Empty
             };
         }
 
-        // Ensure MCP is initialized
+        // Ensure MCP is initialized for template selection
         if (_mcpServer == null)
         {
             await InitializeRunnable();
             if (_mcpServer == null)
             {
-                Console.WriteLine("  [MemeGeneratorAgent] ✗ MCP server not available");
+                Console.WriteLine("  [MemeGeneratorAgent] ✗ MCP not available for template selection");
                 return new MemeCollectionOutput
                 {
-                    Memes = Array.Empty<MemeGenerationOutput>(),
+                    Memes = [],
                     Success = false,
                     ErrorMessage = "MCP meme server failed to initialize"
                 };
@@ -95,22 +94,22 @@ public class MemeGeneratorRunnable : OrchestrationRunnable<MemeDecision, MemeCol
         }
 
         Console.WriteLine($"  [MemeGeneratorAgent] Generating {decision.MemeCount} meme(s)");
-        Console.WriteLine($"  [MemeGeneratorAgent] Topics: {string.Join(", ", decision.Topics ?? Array.Empty<string>())}");
+        Console.WriteLine($"  [MemeGeneratorAgent] Topics: {string.Join(", ", decision.Topics ?? [])}");
 
-        var memes = new List<MemeGenerationOutput>();
+        List<MemeGenerationOutput> memes = [];
 
         // Generate each requested meme
         for (int i = 0; i < decision.MemeCount; i++)
         {
             try
             {
-                var topic = decision.Topics != null && i < decision.Topics.Length
+                string topic = decision.Topics != null && i < decision.Topics.Length
                     ? decision.Topics[i]
                     : decision.Topics?.FirstOrDefault() ?? "programming";
 
                 Console.WriteLine($"  [MemeGeneratorAgent] [{i + 1}/{decision.MemeCount}] Generating meme about: {topic}");
 
-                var meme = await GenerateSingleMemeAsync(topic, i + 1);
+                MemeGenerationOutput? meme = await GenerateSingleMemeAsync(topic, i + 1);
 
                 if (meme != null && meme.Approved)
                 {
@@ -181,7 +180,7 @@ public class MemeGeneratorRunnable : OrchestrationRunnable<MemeDecision, MemeCol
                 );
 
                 // Phase 4: Validate with vision model
-                var validation = await ValidateMemeWithVisionAsync(localPath, topic);
+                MemeValidationResult validation = await ValidateMemeWithVisionAsync(localPath, topic);
 
                 Console.WriteLine($"  [MemeGeneratorAgent]   Validation score: {validation.Score:F2}, Approved: {validation.Approved}");
 
@@ -219,7 +218,7 @@ public class MemeGeneratorRunnable : OrchestrationRunnable<MemeDecision, MemeCol
             LocalPath = localPath,
             Caption = topic,
             ValidationScore = 0,
-            Feedback = new[] { "Max iterations reached" },
+            Feedback = ["Max iterations reached"],
             IterationCount = iteration,
             Approved = false,
             Topic = topic
@@ -227,16 +226,16 @@ public class MemeGeneratorRunnable : OrchestrationRunnable<MemeDecision, MemeCol
     }
 
     /// <summary>
-    /// Generate meme using MCP toolkit with 3-step workflow:
+    /// Generate meme with 3-step workflow:
     /// 1. Model selects template
-    /// 2. We generate empty template preview with placeholders
-    /// 3. Model generates actual meme seeing the preview
+    /// 2. We build preview URL with placeholders
+    /// 3. Model generates text, we build final URL
     /// </summary>
     private async Task<string?> GenerateMemeWithMcpAsync(string topic, string feedback, int memeNumber)
     {
         // STEP 1: Model selects the template
         Console.WriteLine($"  [MemeGeneratorAgent]   Step 1: Selecting template...");
-        var (selectedTemplateId, textLineCount) = await SelectTemplateAsync(topic, memeNumber);
+        (string? selectedTemplateId, int textLineCount) = await SelectTemplateAsync(topic, memeNumber);
         
         if (string.IsNullOrEmpty(selectedTemplateId))
         {
@@ -246,91 +245,54 @@ public class MemeGeneratorRunnable : OrchestrationRunnable<MemeDecision, MemeCol
 
         Console.WriteLine($"  [MemeGeneratorAgent]   ✓ Selected template: {selectedTemplateId} (expects {textLineCount} lines)");
 
-        // STEP 2: Generate empty template preview with placeholder text
+        // STEP 2: Generate empty template preview URL with placeholder text
         Console.WriteLine($"  [MemeGeneratorAgent]   Step 2: Generating template preview...");
-        string? templatePreviewUrl = await GenerateTemplatePreviewAsync(selectedTemplateId, textLineCount);
-        
-        if (string.IsNullOrEmpty(templatePreviewUrl))
-        {
-            Console.WriteLine($"  [MemeGeneratorAgent]   ⚠ Failed to generate template preview, continuing without it");
-        }
-        else
-        {
-            Console.WriteLine($"  [MemeGeneratorAgent]   ✓ Template preview: {templatePreviewUrl}");
-        }
+        string[] placeholderLines = Enumerable.Range(1, textLineCount).Select(i => $"LINE_{i}_TEXT_HERE").ToArray();
+        string templatePreviewUrl = $"http://localhost:5000/images/{selectedTemplateId}/{string.Join("/", placeholderLines)}.png";
+        Console.WriteLine($"  [MemeGeneratorAgent]   ✓ Template preview: {templatePreviewUrl}");
 
-        // STEP 3: Model generates actual meme text seeing the preview
-        Console.WriteLine($"  [MemeGeneratorAgent]   Step 3: Generating meme with model...");
-        
-        string? capturedUrl = null;
-        
-        var instructions = $"""
-            You are an EDGY meme text generator for developers. You have already selected the template '{selectedTemplateId}'.
-            
-            {(!string.IsNullOrEmpty(templatePreviewUrl) ? "You will be shown an EMPTY template with placeholder text to understand the layout." : "")}
-            
-            Your task: Generate EXACTLY {textLineCount} text lines for the meme about: {topic}
-            
-            IMPORTANT RULES:
-            1. Generate EXACTLY {textLineCount} lines of text (no more, no less)
-            2. Text must be SHORT and PUNCHY (max 5-8 words per line)
-            3. Keep it relevant to: {topic}
-            4. Make it FUNNY, EDGY, and RELATABLE for developers
-            5. Be SARCASTIC, use IRONY, or be CONTROVERSIAL
-            6. Reference real developer pain points, frustrations, or memes
-            7. Don't be corporate or safe - developers appreciate dark humor
-            {(!string.IsNullOrEmpty(templatePreviewUrl) ? "8. Study the PREVIEW IMAGE to see where text will be placed" : "")}
-            
-            {(string.IsNullOrEmpty(feedback) ? "" : $"Previous feedback to improve: {feedback}\n")}
-            
-            Examples of ACTUALLY FUNNY memes:
-            - "Works on my machine" / "Guess we're shipping your machine" (classic, still hits)
-            - "Git pull" / "847 merge conflicts" (pain everyone knows)
-            - "Just gonna fix one small bug" / "3 AM rewriting entire codebase" (relatable escalation)
-            - "Documentation?" / "We don't do that here" (Wakanda meme reference)
-            - "Production server on fire" / "This is fine" (classic "this is fine" dog)
-            
-            WHAT ACTUALLY MAKES IT FUNNY:
-            - SHORT: Max 5 words per line
-            - OBVIOUS: The joke is immediately clear
-            - REAL: Everyone has lived this exact moment
-            - SIMPLE: No trying to be clever, just true
-            
-            Call 'generate_meme' with:
-            - template_id: '{selectedTemplateId}'
-            - text_lines: ["line 1 with normal spaces", "line 2 with normal spaces", ...]
-            
-            Use NORMAL text with spaces in the array. The tool will handle URL encoding.
-            
-            After you get the meme URL, call 'handoff_result' with it.
-            """;
+        // STEP 3: Model generates text (we build the URL ourselves)
+        Console.WriteLine($"  [MemeGeneratorAgent]   Step 3: Generating meme text...");
 
-        // Use vision-enabled model
-        var model = new ChatModel(_config.MemeGeneration.VisionModel);
+        string instructions = $"""
+                                You are an EDGY meme text generator for developers.
 
-        var memeAgent = new TornadoAgent(
+                                Your task: Generate EXACTLY {textLineCount} text lines for the meme about: {topic}
+
+                                IMPORTANT RULES:
+                                1. Generate EXACTLY {textLineCount} lines of text (no more, no less)
+                                2. Text must be SHORT and PUNCHY (max 5-8 words per line)
+                                3. Keep it relevant to: {topic}
+                                4. Make it FUNNY, EDGY, and RELATABLE for developers
+                                5. Be SARCASTIC, use IRONY, or be CONTROVERSIAL
+                                6. Reference real developer pain points, frustrations, or memes
+                                7. Don't be corporate or safe - developers appreciate dark humor
+
+                                {(string.IsNullOrEmpty(feedback) ? "" : $"Previous feedback to improve: {feedback}\n")}
+
+                                Examples of ACTUALLY FUNNY memes:
+                                - "Works on my machine" / "Guess we're shipping your machine"
+                                - "Git pull" / "847 merge conflicts"
+                                - "Just gonna fix one small bug" / "3 AM rewriting entire codebase"
+                                - "Documentation?" / "We don't do that here"
+                                - "Production server on fire" / "This is fine"
+
+                                WHAT ACTUALLY MAKES IT FUNNY:
+                                - SHORT: Max 5 words per line
+                                - OBVIOUS: The joke is immediately clear
+                                - REAL: Everyone has lived this exact moment
+                                - SIMPLE: No trying to be clever, just true
+                               """;
+
+        ChatModel model = new ChatModel(_config.MemeGeneration.VisionModel);
+
+        TornadoAgent memeAgent = new TornadoAgent(
             client: _client,
             model: model,
             name: $"MemeTextGenerator{memeNumber}",
             instructions: instructions,
+            outputSchema: typeof(MemeTextOutput),
             temperature: 1);
-
-        // Add MCP tools
-        if (_mcpServer != null)
-        {
-            memeAgent.AddMcpTools(_mcpServer.AllowedTornadoTools.ToArray());
-        }
-
-        // Add handoff tool to capture the meme URL
-        memeAgent.AddTornadoTool(new Tool(
-            ([Description("URL to the generated meme")] string url) =>
-            {
-                capturedUrl = url;
-                memeAgent.Cancel();
-                return "Meme URL captured successfully";
-            },
-            "handoff_result"
-        ));
 
         try
         {
@@ -338,54 +300,95 @@ public class MemeGeneratorRunnable : OrchestrationRunnable<MemeDecision, MemeCol
             
             if (!string.IsNullOrEmpty(templatePreviewUrl))
             {
-                // Download the preview image and convert to base64 data URI
-                Console.WriteLine($"  [MemeGeneratorAgent]   Downloading preview image...");
+                Console.WriteLine($"  [MemeGeneratorAgent]   Downloading preview...");
                 
-                using var httpClient = new HttpClient();
-                var imageBytes = await httpClient.GetByteArrayAsync(templatePreviewUrl);
-                var base64Image = Convert.ToBase64String(imageBytes);
-                
-                // Determine mime type from URL
-                string mimeType = templatePreviewUrl.EndsWith(".png", StringComparison.OrdinalIgnoreCase) 
-                    ? "image/png" 
-                    : "image/jpeg";
-                
-                // Create data URI with proper format: data:image/png;base64,<base64data>
+                using HttpClient httpClient = new HttpClient();
+                byte[] imageBytes = await httpClient.GetByteArrayAsync(templatePreviewUrl);
+                string base64Image = Convert.ToBase64String(imageBytes);
+                string mimeType = templatePreviewUrl.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ? "image/png" : "image/jpeg";
                 string dataUri = $"data:{mimeType};base64,{base64Image}";
                 
-                Console.WriteLine($"  [MemeGeneratorAgent]   Preview downloaded ({imageBytes.Length} bytes, {mimeType})");
+                Console.WriteLine($"  [MemeGeneratorAgent]   Preview ready ({imageBytes.Length} bytes)");
                 
-                // Show the preview to help with text placement
                 conversation = await memeAgent.Run([
-                    new ChatMessagePart($"Here is the EMPTY template '{selectedTemplateId}' with placeholder text showing where your {textLineCount} lines will go:"),
+                    new ChatMessagePart($"Template '{selectedTemplateId}' preview ({textLineCount} lines):"),
                     new ChatMessagePart(dataUri, ImageDetail.Auto),
-                    new ChatMessagePart($"Now generate the actual meme text about: {topic}")
-                ], maxTurns: 10);
+                    new ChatMessagePart($"Generate meme text about: {topic}")
+                ], maxTurns: 5);
             }
             else
             {
-                // No preview available
-                conversation = await memeAgent.Run($"Generate the meme now with {textLineCount} lines of text", maxTurns: 10);
+                conversation = await memeAgent.Run($"Generate {textLineCount} meme text lines about: {topic}", maxTurns: 5);
             }
 
-            // Try to extract URL from conversation if handoff wasn't called
-            if (string.IsNullOrEmpty(capturedUrl))
+            MemeTextOutput? textOutput = await conversation.Messages.Last().Content?.SmartParseJsonAsync<MemeTextOutput>(memeAgent);
+            
+            if (textOutput == null || textOutput.TextLines == null || textOutput.TextLines.Length != textLineCount)
             {
-                var lastMessage = conversation.Messages.LastOrDefault()?.Content;
-                if (!string.IsNullOrEmpty(lastMessage))
-                {
-                    capturedUrl = MemeService.ExtractMemeUrlFromContent(lastMessage);
-                }
+                Console.WriteLine($"  [MemeGeneratorAgent]   Failed to parse {textLineCount} text lines");
+                return null;
             }
 
-            return capturedUrl;
+            Console.WriteLine($"  [MemeGeneratorAgent]   Text: {string.Join(" / ", textOutput.TextLines)}");
+
+            // Transform and build URL
+            string[] transformed = textOutput.TextLines.Select(TransformTextForMemegenUrl).ToArray();
+            string memeUrl = $"http://localhost:5000/images/{selectedTemplateId}/{string.Join("/", transformed)}.png";
+            
+            Console.WriteLine($"  [MemeGeneratorAgent]   URL: {memeUrl}");
+            return memeUrl;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"  [MemeGeneratorAgent]   MCP generation error: {ex.Message}");
+            Console.WriteLine($"  [MemeGeneratorAgent]   Error: {ex.Message}");
             return null;
         }
     }
+    
+    private class MemeTextOutput
+    {
+        [System.Text.Json.Serialization.JsonPropertyName("TextLines")]
+        public string[] TextLines { get; set; } = [];
+    }
+    
+    /// <summary>
+    /// Transform normal text into memegen API URL format
+    /// </summary>
+    private static string TransformTextForMemegenUrl(string text)
+    {
+        if (string.IsNullOrEmpty(text))
+            return text;
+            
+        // Apply transformations in order according to memegen API spec
+        string transformed = text;
+        
+        // Handle double characters first (before single character replacements)
+        transformed = transformed.Replace("__", "~u");  // Temporary placeholder for double underscore
+        transformed = transformed.Replace("--", "~d");  // Temporary placeholder for double dash
+        transformed = transformed.Replace("''", "~q"); // Temporary placeholder for double quote
+        
+        // Replace spaces with underscores
+        transformed = transformed.Replace(" ", "_");
+        
+        // Restore double character patterns
+        transformed = transformed.Replace("~u", "__");  // 2 underscores → underscore
+        transformed = transformed.Replace("~d", "--");  // 2 dashes → dash  
+        transformed = transformed.Replace("~q", "''");  // 2 quotes → double quote
+        
+        // Escape reserved URL characters
+        transformed = transformed.Replace("?", "~q");   // question mark
+        transformed = transformed.Replace("&", "~a");   // ampersand
+        transformed = transformed.Replace("%", "~p");   // percentage
+        transformed = transformed.Replace("#", "~h");   // hashtag
+        transformed = transformed.Replace("/", "~s");   // slash
+        transformed = transformed.Replace("\\", "~b");  // backslash
+        transformed = transformed.Replace("<", "~l");   // less-than
+        transformed = transformed.Replace(">", "~g");   // greater-than
+        transformed = transformed.Replace("\n", "~n"); // newline
+        
+        return transformed;
+    }
+    
 
     /// <summary>
     /// Validate meme quality using vision model
@@ -394,30 +397,30 @@ public class MemeGeneratorRunnable : OrchestrationRunnable<MemeDecision, MemeCol
     {
         try
         {
-            var instructions = """
-                You are a meme quality validator. Analyze the meme image and determine if it meets quality standards.
-                
-                Check for:
-                1. **Text Placement**: Is the text readable and properly positioned?
-                2. **Text Quality**: Is the text clear, not cut off, and properly formatted?
-                3. **Visual Quality**: Is the image clear and not distorted?
-                4. **Humor**: Is the meme funny or at least mildly amusing?
-                5. **Relevance**: Does the meme relate to the intended topic?
-                6. **Professionalism**: Is it appropriate for a technical/developer audience?
-                
-                Score the meme from 0.0 to 1.0, where:
-                - 0.0-0.4: Poor quality, reject
-                - 0.5-0.6: Acceptable but needs improvement
-                - 0.7-0.8: Good quality
-                - 0.9-1.0: Excellent quality
-                
-                Approve the meme if score >= 0.7 and there are no critical issues.
-                Provide specific feedback on any issues found.
-                """;
+            string instructions = """
+                                  You are a meme quality validator. Analyze the meme image and determine if it meets quality standards.
 
-            var visionModel = new ChatModel(_config.MemeGeneration.VisionModel);
+                                  Check for:
+                                  1. **Text Placement**: Is the text readable and properly positioned?
+                                  2. **Text Quality**: Is the text clear, not cut off, and properly formatted?
+                                  3. **Visual Quality**: Is the image clear and not distorted?
+                                  4. **Humor**: Is the meme funny or at least mildly amusing?
+                                  5. **Relevance**: Does the meme relate to the intended topic?
+                                  6. **Professionalism**: Is it appropriate for a technical/developer audience?
 
-            var visionAgent = new TornadoAgent(
+                                  Score the meme from 0.0 to 1.0, where:
+                                  - 0.0-0.4: Poor quality, reject
+                                  - 0.5-0.6: Acceptable but needs improvement
+                                  - 0.7-0.8: Good quality
+                                  - 0.9-1.0: Excellent quality
+
+                                  Approve the meme if score >= 0.7 and there are no critical issues.
+                                  Provide specific feedback on any issues found.
+                                  """;
+
+            ChatModel visionModel = new ChatModel(_config.MemeGeneration.VisionModel);
+
+            TornadoAgent visionAgent = new TornadoAgent(
                 client: _client,
                 model: visionModel,
                 name: "MemeValidator",
@@ -440,14 +443,14 @@ public class MemeGeneratorRunnable : OrchestrationRunnable<MemeDecision, MemeCol
                 imageDataUri = imagePath;
             }
             
-            var conversation = await visionAgent.Run([
+            Conversation conversation = await visionAgent.Run([
                 new ChatMessagePart($"Validate this meme about '{topic}'. Is the text placement correct? Is it funny? Does it make sense?"),
                 new ChatMessagePart(imageDataUri, ImageDetail.Auto)
             ]);
             
-            var lastMessage = conversation.Messages.Last();
+            ChatMessage lastMessage = conversation.Messages.Last();
 
-            var validation = await lastMessage.Content?.SmartParseJsonAsync<MemeValidationResult>(visionAgent);
+            MemeValidationResult? validation = await lastMessage.Content?.SmartParseJsonAsync<MemeValidationResult>(visionAgent);
 
             if (validation == null)
             {
@@ -455,8 +458,8 @@ public class MemeGeneratorRunnable : OrchestrationRunnable<MemeDecision, MemeCol
                 {
                     Approved = false,
                     Score = 0,
-                    Issues = new[] { "Failed to parse validation result" },
-                    Suggestions = Array.Empty<string>(),
+                    Issues = ["Failed to parse validation result"],
+                    Suggestions = [],
                     Summary = "Validation failed"
                 };
             }
@@ -470,8 +473,8 @@ public class MemeGeneratorRunnable : OrchestrationRunnable<MemeDecision, MemeCol
             {
                 Approved = false,
                 Score = 0,
-                Issues = new[] { $"Validation error: {ex.Message}" },
-                Suggestions = Array.Empty<string>(),
+                Issues = [$"Validation error: {ex.Message}"],
+                Suggestions = [],
                 Summary = "Validation exception"
             };
         }
@@ -482,12 +485,12 @@ public class MemeGeneratorRunnable : OrchestrationRunnable<MemeDecision, MemeCol
     /// </summary>
     private string BuildFeedbackMessage(MemeValidationResult validation)
     {
-        var feedback = $"Score: {validation.Score:F2}\n";
+        string feedback = $"Score: {validation.Score:F2}\n";
 
         if (validation.Issues != null && validation.Issues.Length > 0)
         {
             feedback += "\nIssues:\n";
-            foreach (var issue in validation.Issues)
+            foreach (string issue in validation.Issues)
             {
                 feedback += $"- {issue}\n";
             }
@@ -496,7 +499,7 @@ public class MemeGeneratorRunnable : OrchestrationRunnable<MemeDecision, MemeCol
         if (validation.Suggestions != null && validation.Suggestions.Length > 0)
         {
             feedback += "\nSuggestions:\n";
-            foreach (var suggestion in validation.Suggestions)
+            foreach (string suggestion in validation.Suggestions)
             {
                 feedback += $"- {suggestion}\n";
             }
@@ -523,38 +526,38 @@ public class MemeGeneratorRunnable : OrchestrationRunnable<MemeDecision, MemeCol
     {
         try
         {
-            var usedTemplatesList = _usedTemplates.Count > 0 
+            string usedTemplatesList = _usedTemplates.Count > 0 
                 ? string.Join(", ", _usedTemplates) 
                 : "none";
 
-            var instructions = $"""
-                You are a meme template selector. Given a topic, select the BEST meme template.
-                
-                Topic: {topic}
-                
-                **IMPORTANT**: These templates have ALREADY been used: {usedTemplatesList}
-                You MUST select a DIFFERENT template. Do NOT reuse any of these.
-                
-                Your task:
-                1. Use 'list_templates' to see available templates
-                2. Choose ONE template that best fits the topic and humor style
-                3. ENSURE the template is NOT in the already-used list
-                4. Use 'get_template' to get details about your chosen template
-                5. Call 'handoff_template' with the template_id and line_count
-                
-                Consider:
-                - Does the template's format match the joke structure?
-                - Is it popular and recognizable among developers?
-                - Will it be FUNNY and maybe a bit edgy?
-                - Is it DIFFERENT from already-used templates?
-                """;
+            string instructions = $"""
+                                   You are a meme template selector. Given a topic, select the BEST meme template.
 
-            var model = new ChatModel(_config.MemeGeneration.MemeGenerationModel);
+                                   Topic: {topic}
+
+                                   **IMPORTANT**: These templates have ALREADY been used: {usedTemplatesList}
+                                   You MUST select a DIFFERENT template. Do NOT reuse any of these.
+
+                                   Your task:
+                                   1. Use 'list_templates' to see available templates
+                                   2. Choose ONE template that best fits the topic and humor style
+                                   3. ENSURE the template is NOT in the already-used list
+                                   4. Use 'get_template' to get details about your chosen template
+                                   5. Call 'handoff_template' with the template_id and line_count
+
+                                   Consider:
+                                   - Does the template's format match the joke structure?
+                                   - Is it popular and recognizable among developers?
+                                   - Will it be FUNNY and maybe a bit edgy?
+                                   - Is it DIFFERENT from already-used templates?
+                                   """;
+
+            ChatModel model = new ChatModel(_config.MemeGeneration.MemeGenerationModel);
             
             string? selectedTemplate = null;
             int lineCount = 2; // Default
 
-            var selectorAgent = new TornadoAgent(
+            TornadoAgent selectorAgent = new TornadoAgent(
                 client: _client,
                 model: model,
                 name: $"TemplateSelector{memeNumber}",
@@ -598,62 +601,5 @@ public class MemeGeneratorRunnable : OrchestrationRunnable<MemeDecision, MemeCol
         }
     }
 
-    /// <summary>
-    /// Step 2: Generate empty template preview with placeholder text
-    /// </summary>
-    private async Task<string?> GenerateTemplatePreviewAsync(string templateId, int lineCount)
-    {
-        try
-        {
-            if (_mcpServer == null)
-                return null;
-
-            // Generate placeholder text based on line count
-            var placeholderLines = new List<string>();
-            for (int i = 1; i <= lineCount; i++)
-            {
-                placeholderLines.Add($"LINE_{i}_TEXT_HERE");
-            }
-
-            Console.WriteLine($"  [MemeGeneratorAgent]     Generating preview with {lineCount} placeholder lines");
-
-            // Create a simple agent to call the MCP tool
-            string? capturedPreviewUrl = null;
-            
-            var previewAgent = new TornadoAgent(
-                client: _client,
-                model: new ChatModel(_config.MemeGeneration.MemeGenerationModel),
-                name: "PreviewGenerator",
-                instructions: $"Generate a preview meme using template '{templateId}' with placeholder text",
-                temperature: 0);
-
-            // Add MCP tools
-            previewAgent.AddMcpTools(_mcpServer.AllowedTornadoTools.ToArray());
-
-            // Add handoff tool to capture the URL
-            previewAgent.AddTornadoTool(new Tool(
-                ([Description("URL to the generated preview meme")] string url) =>
-                {
-                    capturedPreviewUrl = url;
-                    previewAgent.Cancel();
-                    return "Preview captured";
-                },
-                "handoff_preview"
-            ));
-
-            // Build the text_lines as JSON array string
-            var textLinesJson = System.Text.Json.JsonSerializer.Serialize(placeholderLines);
-
-            // Run the agent with explicit instructions
-            await previewAgent.Run($"Call generate_meme with template_id='{templateId}' and text_lines={textLinesJson}, then call handoff_preview with the URL", maxTurns: 5);
-
-            return capturedPreviewUrl;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"  [MemeGeneratorAgent]     Preview generation error: {ex.Message}");
-            return null;
-        }
-    }
 }
 

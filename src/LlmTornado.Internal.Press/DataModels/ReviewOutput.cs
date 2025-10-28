@@ -4,8 +4,8 @@ public class ReviewOutput
 {
     public bool Approved { get; set; }
     public double QualityScore { get; set; }
-    public ReviewIssue[] Issues { get; set; } = Array.Empty<ReviewIssue>();
-    public string[] Suggestions { get; set; } = Array.Empty<string>();
+    public ReviewIssue[] Issues { get; set; } = [];
+    public string[] Suggestions { get; set; } = [];
     public QualityMetrics Metrics { get; set; } = new();
     public string Summary { get; set; } = string.Empty;
 }

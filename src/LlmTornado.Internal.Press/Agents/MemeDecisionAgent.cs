@@ -8,6 +8,7 @@ using LlmTornado.Internal.Press.Services;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using LlmTornado.Chat;
 
 namespace LlmTornado.Internal.Press.Agents;
 
@@ -26,34 +27,34 @@ public class MemeDecisionRunnable : OrchestrationRunnable<ArticleOutput, MemeDec
     {
         _config = config;
 
-        var instructions = """
-            You are a content strategist deciding whether articles should include memes.
-            
-            Your role is to analyze articles and determine:
-            1. Should this article have memes? (considering tone, topic, and audience)
-            2. How many memes would be appropriate? (1-3 max)
-            3. What topics should the memes focus on?
-            
-            Consider these factors:
-            - Article length (longer articles can support more memes)
-            - Topic type (technical tutorials vs. opinion pieces vs. news)
-            - Humor potential (some topics are naturally meme-friendly)
-            - Educational value (memes can help explain concepts)
-            - Professional tone (maintain credibility)
-            
-            Guidelines:
-            - Highly technical/formal articles: 0-1 memes
-            - Tutorial/how-to articles: 1-2 memes (to break up content)
-            - Opinion/editorial pieces: 2-3 memes (more casual)
-            - News/announcements: 1 meme (if appropriate)
-            - Developer culture/career topics: 2-3 memes (highly meme-friendly)
-            
-            IMPORTANT: Memes should enhance, not distract. When in doubt, suggest fewer memes.
-            
-            Output your decision as structured JSON matching the MemeDecision schema.
-            """;
+        string instructions = """
+                              You are a content strategist deciding whether articles should include memes.
 
-        var model = new ChatModel(config.MemeGeneration.MemeGenerationModel);
+                              Your role is to analyze articles and determine:
+                              1. Should this article have memes? (considering tone, topic, and audience)
+                              2. How many memes would be appropriate? (1-3 max)
+                              3. What topics should the memes focus on?
+
+                              Consider these factors:
+                              - Article length (longer articles can support more memes)
+                              - Topic type (technical tutorials vs. opinion pieces vs. news)
+                              - Humor potential (some topics are naturally meme-friendly)
+                              - Educational value (memes can help explain concepts)
+                              - Professional tone (maintain credibility)
+
+                              Guidelines:
+                              - Highly technical/formal articles: 0-1 memes
+                              - Tutorial/how-to articles: 1-2 memes (to break up content)
+                              - Opinion/editorial pieces: 2-3 memes (more casual)
+                              - News/announcements: 1 meme (if appropriate)
+                              - Developer culture/career topics: 2-3 memes (highly meme-friendly)
+
+                              IMPORTANT: Memes should enhance, not distract. When in doubt, suggest fewer memes.
+
+                              Output your decision as structured JSON matching the MemeDecision schema.
+                              """;
+
+        ChatModel model = new ChatModel(config.MemeGeneration.MemeGenerationModel);
 
         _agent = new TornadoAgent(
             client: client,
@@ -73,18 +74,18 @@ public class MemeDecisionRunnable : OrchestrationRunnable<ArticleOutput, MemeDec
             {
                 ShouldGenerateMemes = false,
                 MemeCount = 0,
-                Topics = Array.Empty<string>(),
+                Topics = [],
                 Reasoning = "Meme generation disabled in configuration"
             };
         }
 
-        var article = process.Input;
+        ArticleOutput article = process.Input;
 
         // If force is enabled, skip decision and always generate memes
         if (_config.MemeGeneration.Force)
         {
             Console.WriteLine($"  [MemeDecisionAgent] FORCED mode - always generating memes");
-            var topics = MemeService.ExtractTopics(article);
+            string[] topics = MemeService.ExtractTopics(article);
             
             return new MemeDecision
             {
@@ -100,41 +101,41 @@ public class MemeDecisionRunnable : OrchestrationRunnable<ArticleOutput, MemeDec
             process.RegisterAgent(_agent);
 
             Console.WriteLine($"  [MemeDecisionAgent] Analyzing article: {article.Title}");
-            Console.WriteLine($"  [MemeDecisionAgent] Word count: {article.WordCount}, Tags: {string.Join(", ", article.Tags ?? Array.Empty<string>())}");
+            Console.WriteLine($"  [MemeDecisionAgent] Word count: {article.WordCount}, Tags: {string.Join(", ", article.Tags ?? [])}");
 
             // Extract article metadata for decision
-            var lengthCategory = MemeService.GetArticleLengthCategory(article.WordCount);
-            var topics = MemeService.ExtractTopics(article);
+            string lengthCategory = MemeService.GetArticleLengthCategory(article.WordCount);
+            string[] topics = MemeService.ExtractTopics(article);
 
-            var prompt = $"""
-                          Analyze this article and decide if it should include memes:
+            string prompt = $"""
+                             Analyze this article and decide if it should include memes:
 
-                          **Title:** {article.Title}
-                          **Description:** {article.Description}
-                          **Word Count:** {article.WordCount} ({lengthCategory})
-                          **Tags:** {string.Join(", ", article.Tags ?? Array.Empty<string>())}
-                          **Key Topics:** {string.Join(", ", topics)}
+                             **Title:** {article.Title}
+                             **Description:** {article.Description}
+                             **Word Count:** {article.WordCount} ({lengthCategory})
+                             **Tags:** {string.Join(", ", article.Tags ?? [])}
+                             **Key Topics:** {string.Join(", ", topics)}
 
-                          **Article Preview (first 500 chars):**
-                          {Snippet(article.Body, 500)}
+                             **Article Preview (first 500 chars):**
+                             {Snippet(article.Body, 500)}
 
-                          Based on this information, decide:
-                          1. Should this article have memes? (true/false)
-                          2. How many memes? (0-{_config.MemeGeneration.MaxMemesPerArticle})
-                          3. What topics should the memes cover? (be specific)
+                             Based on this information, decide:
+                             1. Should this article have memes? (true/false)
+                             2. How many memes? (0-{_config.MemeGeneration.MaxMemesPerArticle})
+                             3. What topics should the memes cover? (be specific)
 
-                          Consider the article's tone, technical depth, and target audience.
-                          Memes should add value, not detract from professionalism.
+                             Consider the article's tone, technical depth, and target audience.
+                             Memes should add value, not detract from professionalism.
 
-                          Output your decision with clear reasoning.
-                          """;
+                             Output your decision with clear reasoning.
+                             """;
 
             try
             {
-                var conversation = await _agent.Run(prompt, maxTurns: 1);
-                var lastMessage = conversation.Messages.Last();
+                Conversation conversation = await _agent.Run(prompt, maxTurns: 1);
+                ChatMessage lastMessage = conversation.Messages.Last();
 
-                var decision = await lastMessage.Content?.SmartParseJsonAsync<MemeDecision>(_agent);
+                MemeDecision? decision = await lastMessage.Content?.SmartParseJsonAsync<MemeDecision>(_agent);
 
                 if (decision == null)
                 {
@@ -143,7 +144,7 @@ public class MemeDecisionRunnable : OrchestrationRunnable<ArticleOutput, MemeDec
                     {
                         ShouldGenerateMemes = false,
                         MemeCount = 0,
-                        Topics = Array.Empty<string>(),
+                        Topics = [],
                         Reasoning = "Failed to parse decision"
                     };
                 }
@@ -158,7 +159,7 @@ public class MemeDecisionRunnable : OrchestrationRunnable<ArticleOutput, MemeDec
                 if (decision.ShouldGenerateMemes)
                 {
                     Console.WriteLine($"  [MemeDecisionAgent] Meme count: {decision.MemeCount}");
-                    Console.WriteLine($"  [MemeDecisionAgent] Topics: {string.Join(", ", decision.Topics ?? Array.Empty<string>())}");
+                    Console.WriteLine($"  [MemeDecisionAgent] Topics: {string.Join(", ", decision.Topics ?? [])}");
                     Console.WriteLine($"  [MemeDecisionAgent] Reasoning: {Snippet(decision.Reasoning, 150)}");
                 }
 
@@ -172,7 +173,7 @@ public class MemeDecisionRunnable : OrchestrationRunnable<ArticleOutput, MemeDec
                 {
                     ShouldGenerateMemes = false,
                     MemeCount = 0,
-                    Topics = Array.Empty<string>(),
+                    Topics = [],
                     Reasoning = $"Error during decision: {ex.Message}"
                 };
             }
@@ -185,7 +186,7 @@ public class MemeDecisionRunnable : OrchestrationRunnable<ArticleOutput, MemeDec
             {
                 ShouldGenerateMemes = false,
                 MemeCount = 0,
-                Topics = Array.Empty<string>(),
+                Topics = [],
                 Reasoning = $"Critical error: {ex.Message}"
             };
         }

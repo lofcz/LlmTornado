@@ -122,7 +122,7 @@ public static class ImageUploadService
             Console.WriteLine($"  [{logPrefix}]   Converted to base64 ({base64Image.Length} chars)");
 
             // Prepare POST request
-            var formData = new MultipartFormDataContent();
+            MultipartFormDataContent formData = new MultipartFormDataContent();
             formData.Add(new StringContent(apiKey), "key");
             formData.Add(new StringContent(base64Image), "source");
             formData.Add(new StringContent("json"), "format");
@@ -130,8 +130,8 @@ public static class ImageUploadService
             Console.WriteLine($"  [{logPrefix}]   Sending POST request to freeimage.host...");
 
             // Send request
-            var response = await _httpClient.PostAsync(apiEndpoint, formData);
-            var responseContent = await response.Content.ReadAsStringAsync();
+            HttpResponseMessage response = await _httpClient.PostAsync(apiEndpoint, formData);
+            string responseContent = await response.Content.ReadAsStringAsync();
 
             Console.WriteLine($"  [{logPrefix}]   Response status: {response.StatusCode}");
 
@@ -142,7 +142,7 @@ public static class ImageUploadService
             }
 
             // Parse response
-            var apiResponse = JsonConvert.DeserializeObject<FreeImageHostResponse>(responseContent);
+            FreeImageHostResponse? apiResponse = JsonConvert.DeserializeObject<FreeImageHostResponse>(responseContent);
 
             if (apiResponse?.Image?.Url != null)
             {
@@ -215,4 +215,5 @@ internal class FreeImageHostImage
     [JsonProperty("filename")]
     public string? Filename { get; set; }
 }
+
 

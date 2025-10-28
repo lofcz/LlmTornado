@@ -20,7 +20,7 @@ public class QueueService
 
     public async Task<ArticleQueue> AddToQueueAsync(string title, string ideaSummary, string[] tags, double relevance, int priority = 0)
     {
-        var queueItem = new ArticleQueue
+        ArticleQueue queueItem = new ArticleQueue
         {
             Title = title,
             IdeaSummary = ideaSummary,
@@ -60,7 +60,7 @@ public class QueueService
 
     public async Task UpdateStatusAsync(int queueId, string status, string? errorMessage = null)
     {
-        var queueItem = await _context.ArticleQueue.FindAsync(queueId);
+        ArticleQueue? queueItem = await _context.ArticleQueue.FindAsync(queueId);
         if (queueItem != null)
         {
             queueItem.Status = status;
@@ -81,7 +81,7 @@ public class QueueService
 
     public async Task LinkArticleAsync(int queueId, int articleId)
     {
-        var queueItem = await _context.ArticleQueue.FindAsync(queueId);
+        ArticleQueue? queueItem = await _context.ArticleQueue.FindAsync(queueId);
         if (queueItem != null)
         {
             queueItem.ArticleId = articleId;
@@ -117,7 +117,7 @@ public class QueueService
 
     public async Task ClearFailedAsync()
     {
-        var failed = await _context.ArticleQueue
+        List<ArticleQueue> failed = await _context.ArticleQueue
             .Where(q => q.Status == QueueStatus.Failed)
             .ToListAsync();
 
@@ -127,11 +127,11 @@ public class QueueService
 
     public async Task RetryFailedAsync()
     {
-        var failed = await _context.ArticleQueue
+        List<ArticleQueue> failed = await _context.ArticleQueue
             .Where(q => q.Status == QueueStatus.Failed && q.AttemptCount < 3)
             .ToListAsync();
 
-        foreach (var item in failed)
+        foreach (ArticleQueue item in failed)
         {
             item.Status = QueueStatus.Pending;
             item.ErrorMessage = null;

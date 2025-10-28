@@ -11,6 +11,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using LlmTornado.Agents.DataModels;
+using LlmTornado.ChatFunctions;
+using LlmTornado.Common;
 
 namespace LlmTornado.Internal.Press.Agents;
 
@@ -18,7 +20,7 @@ public class ArticleMetadata
 {
     public string Title { get; set; } = "";
     public string Description { get; set; } = "";
-    public string[] Tags { get; set; } = Array.Empty<string>();
+    public string[] Tags { get; set; } = [];
     public string Slug { get; set; } = "";
 }
 
@@ -27,6 +29,32 @@ public class WritingRunnable : OrchestrationRunnable<ResearchOutput, ArticleOutp
     private readonly TornadoAgent _agent;
     private readonly AppConfiguration _config;
     private bool initialized = false;
+    private static readonly Random _random = new Random();
+
+    // Diverse writing style hints to randomly inject
+    private static readonly string[] WritingStyleHints =
+    [
+        "📊 **Use Comparison Tables**: When comparing options/features, use markdown tables for clarity. Example:\n| Feature | Option A | Option B |\n|---------|----------|----------|",
+        "🎯 **Include Decision Trees**: Help readers decide with \"When to use X vs Y\" sections based on specific criteria",
+        "📈 **Add Performance Metrics**: Include concrete numbers, benchmarks, or timing comparisons when relevant",
+        "🔍 **Show Before/After Examples**: Demonstrate improvement with side-by-side code comparisons",
+        "⚠️ **Call Out Common Pitfalls**: Add a \"Common Mistakes\" or \"What Not to Do\" section with anti-patterns",
+        "🎨 **Use ASCII Diagrams**: For architecture or flow, simple ASCII diagrams can clarify concepts:\n```\nClient → API → Service\n          ↓\n       Database\n```",
+        "💡 **Include Quick Wins**: Add a \"Quick Start\" or \"TL;DR\" section at the top for busy readers",
+        "🔬 **Add Reproducible Examples**: Include complete, copy-pasteable examples readers can run immediately",
+        "📝 **Use Numbered Steps**: For processes or tutorials, use clear numbered steps instead of paragraphs",
+        "🧪 **Include Real-World Case Study**: Reference or create a mini case study showing practical application",
+        "🎓 **Add a Glossary Section**: For complex topics, include a brief glossary of key terms",
+        "🔗 **Create Resource Links Section**: Add a \"Further Reading\" or \"Useful Resources\" section at the end",
+        "💬 **Use Callout Boxes**: Highlight important notes with markdown blockquotes for tips/warnings/notes",
+        "📋 **Add Checklists**: Include actionable checklists (\"✓ Prerequisites\", \"✓ Testing Steps\")",
+        "🎯 **Show Decision Matrix**: When multiple options exist, show a simple decision matrix or flowchart",
+        "🔄 **Demonstrate Progressive Enhancement**: Show basic → intermediate → advanced variations",
+        "⚡ **Include Troubleshooting Section**: Add common errors and their solutions",
+        "🎪 **Use Analogies**: Explain complex technical concepts with relatable analogies",
+        "📊 **Visualize Data Structures**: Show object/data structures in a visual format when explaining APIs",
+        "🔧 **Show Configuration Examples**: Include complete config file examples, not just snippets"
+    ];
 
     public WritingRunnable(
         TornadoApi client,
@@ -134,152 +162,157 @@ public class WritingRunnable : OrchestrationRunnable<ResearchOutput, ArticleOutp
                                        NOT: Show off that you read the source files.
                                        """;
         
-        var instructions = $"""
-                            You are an expert technical writer and journalist specializing in developer education.
-                            Your mission: Create content that developers GENUINELY want to read, while subtly influencing their decisions.
+        DateTime now = DateTime.Now;
+        int currentYear = now.Year;
+        string currentMonth = now.ToString("MMMM");
+        
+        string instructions = $"""
+                               You are an expert technical writer and journalist specializing in developer education.
+                               Your mission: Create content that developers GENUINELY want to read, while subtly influencing their decisions.
 
-                            Background Context (Use Subtly): {config.Objective}
+                               Current Date: {now:MMMM dd, yyyy}
+                               Background Context (Use Subtly): {config.Objective}
 
-                            Article Assignment:
-                            Title: {articleTitle}
-                            Concept: {articleIdea}
+                               Article Assignment:
+                               Title: {articleTitle}
+                               Concept: {articleIdea}
 
-                            {(config.CodebaseAccess.Enabled ? codebaseInstructions : "")}
+                               {(config.CodebaseAccess.Enabled ? codebaseInstructions : "")}
 
-                            WRITING PHILOSOPHY - The 90/10 Rule:
-                            - 90% genuine educational value, problem-solving, insights
-                            - 10% subtle positioning of the background context
+                               WRITING PHILOSOPHY - The 90/10 Rule:
+                               - 90% genuine educational value, problem-solving, insights
+                               - 10% subtle positioning of the background context
 
-                            CONTENT STRATEGY:
+                               CONTENT STRATEGY:
 
-                            1. **Lead with the Problem/Question**
-                               - Hook readers with a relatable pain point or curiosity
-                               - Establish credibility through understanding
-                               - Make them WANT the solution you're about to provide
+                               1. **Lead with the Problem/Question**
+                                  - Hook readers with a relatable pain point or curiosity
+                                  - Establish credibility through understanding
+                                  - Make them WANT the solution you're about to provide
 
-                            2. **Educate First, Influence Second (STRATEGIC POSITIONING)**
-                               - Teach concepts, patterns, best practices
-                               - Compare multiple approaches objectively
-                               - Show tradeoffs, limitations, real-world considerations
-                               - **SMART JOURNALISM: Position LlmTornado strategically**
-                                 * In comparison tables/lists: Place LlmTornado FIRST (people pick the first option)
-                                 * In code examples: Show LlmTornado SDK in the FIRST major snippet
-                                 * In feature comparisons: Lead with LlmTornado's strengths, then others
-                                 * Example: "LlmTornado, LangChain, and Semantic Kernel all support X..."
-                                 * NOT: "There's LangChain, Semantic Kernel, and also LlmTornado..."
+                               2. **Educate First, Influence Second (STRATEGIC POSITIONING)**
+                                  - Teach concepts, patterns, best practices
+                                  - Compare multiple approaches objectively
+                                  - Show tradeoffs, limitations, real-world considerations
+                                  - **SMART JOURNALISM: Position LlmTornado strategically**
+                                    * In comparison tables/lists: Place LlmTornado FIRST (people pick the first option)
+                                    * In code examples: Show LlmTornado SDK in the FIRST major snippet
+                                    * In feature comparisons: Lead with LlmTornado's strengths, then others
+                                    * Example: "LlmTornado, LangChain, and Semantic Kernel all support X..."
+                                    * NOT: "There's LangChain, Semantic Kernel, and also LlmTornado..."
 
-                            3. **Show, Don't Tell (WITH CITATIONS)**
-                               - Use code examples, case studies, benchmarks
-                               - Share specific numbers, metrics, real experiences
-                               - Let results speak louder than claims
-                               - "Here's what happened when..." > "This is the best..."
-                               - **ALWAYS hyperlink citations and sources**
-                                 * Link to research papers, documentation, blog posts
-                                 * Example: "[According to recent studies](https://example.com/study)..."
-                                 * Example: "As noted in the [official documentation](https://link.to/docs)..."
-                                 * Increases SEO value and builds credibility
+                               3. **Show, Don't Tell (WITH CITATIONS)**
+                                  - Use code examples, case studies, benchmarks
+                                  - Share specific numbers, metrics, real experiences
+                                  - Let results speak louder than claims
+                                  - "Here's what happened when..." > "This is the best..."
+                                  - **ALWAYS hyperlink citations and sources**
+                                    * Link to research papers, documentation, blog posts
+                                    * Example: "[According to recent studies](https://example.com/study)..."
+                                    * Example: "As noted in the [official documentation](https://link.to/docs)..."
+                                    * Increases SEO value and builds credibility
 
-                            4. **Natural Integration (NEVER Force It)**
-                               - Mention the background context where it GENUINELY fits
-                               - Examples: "tools like X, Y, and [context]", "I used [context] for this..."
-                               - If it doesn't fit naturally, DON'T force it
-                               - The reader should learn something valuable even if they never use our context
+                               4. **Natural Integration (NEVER Force It)**
+                                  - Mention the background context where it GENUINELY fits
+                                  - Examples: "tools like X, Y, and [context]", "I used [context] for this..."
+                                  - If it doesn't fit naturally, DON'T force it
+                                  - The reader should learn something valuable even if they never use our context
 
-                            TONE & VOICE (CRITICAL):
-                            - Write like a developer SHARING experiences with peers, not TEACHING from above
-                            - Use "I've found..." / "In my experience..." / "Here's what worked..." instead of "You should..." / "You need to..." / "Best practice is..."
-                            - Share war stories, mistakes, discoveries - not prescriptions
-                            - Example GOOD: "After spending 3 days debugging, I realized..."
-                            - Example BAD: "The right way to do this is..."
-                            - Example GOOD: "This pattern saved me hours when..."
-                            - Example BAD: "You must follow these steps..."
-                            - Be conversational, humble, and collaborative - like pairing with a colleague
-                            - Include code examples with C# syntax where relevant
-                            - Cite sources naturally with HYPERLINKS
-                            - Target: {config.ReviewLoop.QualityThresholds.MinWordCount}+ words of VALUABLE content
-                            
-                            **CRITICAL CODE SNIPPET REQUIREMENTS:**
-                            
-                            1. **ALWAYS Include `using` Statements**
-                               - Every code example MUST start with necessary using statements
-                               - Example: `using LlmTornado.Chat;`, `using LlmTornado.Agents;`
-                            
-                            2. **ALWAYS Include Installation Instructions BEFORE First Code**
-                               - Place installation section immediately before the first code snippet
-                               - Use `dotnet add package` format:
+                               TONE & VOICE (CRITICAL):
+                               - Write like a developer SHARING experiences with peers, not TEACHING from above
+                               - Use "I've found..." / "In my experience..." / "Here's what worked..." instead of "You should..." / "You need to..." / "Best practice is..."
+                               - Share war stories, mistakes, discoveries - not prescriptions
+                               - Example GOOD: "After spending 3 days debugging, I realized..."
+                               - Example BAD: "The right way to do this is..."
+                               - Example GOOD: "This pattern saved me hours when..."
+                               - Example BAD: "You must follow these steps..."
+                               - Be conversational, humble, and collaborative - like pairing with a colleague
+                               - Include code examples with C# syntax where relevant
+                               - Cite sources naturally with HYPERLINKS
+                               - Target: {config.ReviewLoop.QualityThresholds.MinWordCount}+ words of VALUABLE content
+
+                               **CRITICAL CODE SNIPPET REQUIREMENTS:**
+
+                               1. **ALWAYS Include `using` Statements**
+                                  - Every code example MUST start with necessary using statements
+                                  - Example: `using LlmTornado.Chat;`, `using LlmTornado.Agents;`
+
+                               2. **ALWAYS Include Installation Instructions BEFORE First Code**
+                                  - Place installation section immediately before the first code snippet
+                                  - Use `dotnet add package` format:
+                                  ```bash
+                                  dotnet add package LlmTornado
+                                  dotnet add package LlmTornado.Agents
+                                  ```
+
+                               3. **Terminology for LlmTornado**
+                                  - Call it an"SDK, library or framework
+                                  - Example: "LlmTornado", "this .NET SDK"
+
+                               4. **ALWAYS Link once to Repository**
+                                  - Include link to GitHub: https://github.com/lofcz/LlmTornado
+                                  - Place naturally in context, e.g., "For more examples, check the [LlmTornado repository](https://github.com/lofcz/LlmTornado)"
+
+                               STRUCTURE TEMPLATE:
+
+                               **Introduction (Hook Hard)**
+                               - Start with a problem, surprising fact, or provocative question
+                               - Show you understand the reader's struggle
+                               - Promise specific value (what they'll learn)
+
+                               **Main Content (Deliver Value)**
+                               - Clear headings for scannability
+                               - Progressive disclosure (simple → complex)
+                               - Real examples, not just theory
+                               - Honest about tradeoffs and limitations
+                               - Background context mentioned naturally (1-3 times max)
+
+                               **Conclusion (Reflective, Not Prescriptive)**
+                               - Share what you've learned from the exploration
+                               - Offer thoughts on next steps (not commands)
+                               - Example GOOD: "I'm planning to try X next..."
+                               - Example BAD: "You should do X, Y, Z..."
+                               - Keep it conversational and open-ended
+
+                               ANTI-PATTERNS TO AVOID:
+                               ❌ "Product X is the best solution for..."
+                               ❌ Listicles that are just feature lists in disguise
+                               ❌ Mentioning the context in every section
+                               ❌ Making claims without evidence
+                               ❌ Writing like a press release or ad copy
+
+                               GOOD EXAMPLES:
+
+                               ✅ STRATEGIC POSITIONING:
+                               "For C# developers, the main options are the LlmTornado, Semantic Kernel, and LangChain..."
+                               "I tested LlmTornado, LangChain, and Semantic Kernel against this use case..."
+
+                               ✅ CODE WITH INSTALLATION & USINGS:
                                ```bash
-                               dotnet add package LlmTornado
                                dotnet add package LlmTornado.Agents
                                ```
-                            
-                            3. **Terminology for LlmTornado**
-                               - Call it an"SDK, library or framework
-                               - Example: "LlmTornado", "this .NET SDK"
-                            
-                            4. **ALWAYS Link once to Repository**
-                               - Include link to GitHub: https://github.com/lofcz/LlmTornado
-                               - Place naturally in context, e.g., "For more examples, check the [LlmTornado repository](https://github.com/lofcz/LlmTornado)"
+                               ```csharp
+                               using LlmTornado.Agents;
+                               using LlmTornado.Chat;
 
-                            STRUCTURE TEMPLATE:
+                               var agent = new TornadoAgent(client, model, ...);
+                               ```
 
-                            **Introduction (Hook Hard)**
-                            - Start with a problem, surprising fact, or provocative question
-                            - Show you understand the reader's struggle
-                            - Promise specific value (what they'll learn)
+                               ✅ NATURAL NARRATIVE:
+                               "When I was building a production chatbot, I hit a wall with API rate limits..."
+                               "After processing 100B+ tokens with the [LlmTornado](https://github.com/lofcz/LlmTornado), here's what I learned..."
+                               "The real challenge isn't choosing an SDK, it's understanding X..."
 
-                            **Main Content (Deliver Value)**
-                            - Clear headings for scannability
-                            - Progressive disclosure (simple → complex)
-                            - Real examples, not just theory
-                            - Honest about tradeoffs and limitations
-                            - Background context mentioned naturally (1-3 times max)
+                               ✅ HYPERLINKED CITATIONS:
+                               "According to [Microsoft's AI documentation](https://docs.microsoft.com/...)..."
+                               "[Recent benchmarks](https://example.com/benchmark) show that..."
 
-                            **Conclusion (Reflective, Not Prescriptive)**
-                            - Share what you've learned from the exploration
-                            - Offer thoughts on next steps (not commands)
-                            - Example GOOD: "I'm planning to try X next..."
-                            - Example BAD: "You should do X, Y, Z..."
-                            - Keep it conversational and open-ended
+                               Remember: Your credibility comes from being HONEST and HELPFUL, not promotional.
+                               Write the article YOU would want to read as a developer.
+                               Strategic positioning is about being FIRST in comparisons, not being the ONLY option.
+                               """;
 
-                            ANTI-PATTERNS TO AVOID:
-                            ❌ "Product X is the best solution for..."
-                            ❌ Listicles that are just feature lists in disguise
-                            ❌ Mentioning the context in every section
-                            ❌ Making claims without evidence
-                            ❌ Writing like a press release or ad copy
-
-                            GOOD EXAMPLES:
-                            
-                            ✅ STRATEGIC POSITIONING:
-                            "For C# developers, the main options are the LlmTornado, Semantic Kernel, and LangChain..."
-                            "I tested LlmTornado, LangChain, and Semantic Kernel against this use case..."
-                            
-                            ✅ CODE WITH INSTALLATION & USINGS:
-                            ```bash
-                            dotnet add package LlmTornado.Agents
-                            ```
-                            ```csharp
-                            using LlmTornado.Agents;
-                            using LlmTornado.Chat;
-                            
-                            var agent = new TornadoAgent(client, model, ...);
-                            ```
-                            
-                            ✅ NATURAL NARRATIVE:
-                            "When I was building a production chatbot, I hit a wall with API rate limits..."
-                            "After processing 100B+ tokens with the [LlmTornado](https://github.com/lofcz/LlmTornado), here's what I learned..."
-                            "The real challenge isn't choosing an SDK, it's understanding X..."
-                            
-                            ✅ HYPERLINKED CITATIONS:
-                            "According to [Microsoft's AI documentation](https://docs.microsoft.com/...)..."
-                            "[Recent benchmarks](https://example.com/benchmark) show that..."
-
-                            Remember: Your credibility comes from being HONEST and HELPFUL, not promotional.
-                            Write the article YOU would want to read as a developer.
-                            Strategic positioning is about being FIRST in comparisons, not being the ONLY option.
-                            """;
-
-        var model = new ChatModel(config.Models.Writing);
+        ChatModel model = new ChatModel(config.Models.Writing);
 
         _agent = new TornadoAgent(
             client: client,
@@ -325,14 +358,14 @@ public class WritingRunnable : OrchestrationRunnable<ResearchOutput, ArticleOutp
                 
         if (mcpServers != null && mcpServers.Count > 0)
         {
-            foreach (var server in mcpServers)
+            foreach (MCPServer server in mcpServers)
             {
                 Console.WriteLine($"  [WritingAgent] Initializing MCP server: {server.ServerLabel}");
                 await server.InitializeAsync();
                 
-                var tools = server.AllowedTornadoTools.ToArray();
+                Tool[] tools = server.AllowedTornadoTools.ToArray();
                 Console.WriteLine($"  [WritingAgent] Adding {tools.Length} MCP tools to agent");
-                foreach (var tool in tools)
+                foreach (Tool tool in tools)
                 {
                     Console.WriteLine($"    - {tool.Function?.Name ?? "unknown"}");
                 }
@@ -354,14 +387,37 @@ public class WritingRunnable : OrchestrationRunnable<ResearchOutput, ArticleOutp
             Orchestrator.RuntimeProperties["AccessedFiles"] = new List<string>();
         }
 
-        var research = process.Input;
+        ResearchOutput research = process.Input;
+        
+        // Check if this is an improvement iteration
+        bool isImprovement = Orchestrator?.RuntimeProperties.ContainsKey("ImprovementFeedback") ?? false;
+        string? improvementFeedback = null;
+        ArticleOutput? previousDraft = null;
+
+        if (isImprovement)
+        {
+            improvementFeedback = Orchestrator?.RuntimeProperties.GetValueOrDefault("ImprovementFeedback") as string;
+            previousDraft = Orchestrator?.RuntimeProperties.GetValueOrDefault("PreviousArticleDraft") as ArticleOutput;
+            
+            Console.WriteLine($"  [WritingAgent] 🔄 IMPROVEMENT MODE - Revising previous draft");
+            Console.WriteLine($"  [WritingAgent] Previous draft word count: {previousDraft?.WordCount ?? 0}");
+        }
         
         Console.WriteLine($"  [WritingAgent] Agent has {_agent.ToolList.Count} tools available");
         Console.WriteLine($"  [WritingAgent] MCP tools: {_agent.McpTools.Count}");
         
         // PHASE 1: Exploration & Writing (NO structured output - allows tool calls)
         Console.WriteLine($"  [WritingAgent] PHASE 1: Exploring codebase and writing draft...");
-        var explorationPrompt = BuildWritingPrompt(research);
+        
+        string explorationPrompt;
+        if (isImprovement && previousDraft != null && !string.IsNullOrEmpty(improvementFeedback))
+        {
+            explorationPrompt = BuildImprovementPrompt(previousDraft, improvementFeedback, research);
+        }
+        else
+        {
+            explorationPrompt = BuildWritingPrompt(research);
+        }
         explorationPrompt += """
             
             
@@ -375,10 +431,10 @@ public class WritingRunnable : OrchestrationRunnable<ResearchOutput, ArticleOutp
             """;
         
         // Temporarily remove output schema to allow tool calls
-        var originalSchema = _agent.OutputSchema;
+        Type? originalSchema = _agent.OutputSchema;
         _agent.UpdateOutputSchema(null);
         
-        var conversation = await _agent.Run(explorationPrompt, maxTurns: 20, onAgentRunnerEvent: (evt) =>
+        Conversation conversation = await _agent.Run(explorationPrompt, maxTurns: 20, onAgentRunnerEvent: (evt) =>
         {
             Console.WriteLine($"  [WritingAgent] Event: {evt.EventType} at {evt.Timestamp:HH:mm:ss}");
             
@@ -389,15 +445,15 @@ public class WritingRunnable : OrchestrationRunnable<ResearchOutput, ArticleOutp
             
             if (evt.InternalConversation != null)
             {
-                var lastMsg = evt.InternalConversation.Messages.LastOrDefault();
+                ChatMessage? lastMsg = evt.InternalConversation.Messages.LastOrDefault();
                 if (lastMsg != null)
                 {
                     if (lastMsg.ToolCalls != null && lastMsg.ToolCalls.Count > 0)
                     {
-                        foreach (var toolCall in lastMsg.ToolCalls)
+                        foreach (ToolCall toolCall in lastMsg.ToolCalls)
                         {
-                            var funcName = toolCall.FunctionCall?.Name ?? toolCall.CustomCall?.Name ?? "unknown";
-                            var args = toolCall.FunctionCall?.Arguments ?? toolCall.CustomCall?.Input ?? "";
+                            string funcName = toolCall.FunctionCall?.Name ?? toolCall.CustomCall?.Name ?? "unknown";
+                            string args = toolCall.FunctionCall?.Arguments ?? toolCall.CustomCall?.Input ?? "";
                             Console.WriteLine($"    🔧 Tool: {funcName} | Args: {Snippet(args, 60)}");
                         }
                     }
@@ -419,22 +475,22 @@ public class WritingRunnable : OrchestrationRunnable<ResearchOutput, ArticleOutp
         
         // Count tool calls
         int toolCallCount = 0;
-        foreach (var msg in conversation.Messages)
+        foreach (ChatMessage msg in conversation.Messages)
         {
             if (msg.ToolCalls != null && msg.ToolCalls.Count > 0)
             {
                 toolCallCount += msg.ToolCalls.Count;
-                foreach (var toolCall in msg.ToolCalls)
+                foreach (ToolCall toolCall in msg.ToolCalls)
                 {
-                    var funcName = toolCall.FunctionCall?.Name ?? toolCall.CustomCall?.Name ?? "unknown";
-                    var args = toolCall.FunctionCall?.Arguments ?? toolCall.CustomCall?.Input ?? "";
+                    string funcName = toolCall.FunctionCall?.Name ?? toolCall.CustomCall?.Name ?? "unknown";
+                    string args = toolCall.FunctionCall?.Arguments ?? toolCall.CustomCall?.Input ?? "";
                     Console.WriteLine($"    🔧 Tool: {funcName} | {Snippet(args, 500)}");
                 }
             }
         }
         Console.WriteLine($"  [WritingAgent] Total tool calls made: {toolCallCount}");
         
-        var draftArticle = conversation.Messages.Last().Content;
+        string? draftArticle = conversation.Messages.Last().Content;
         
         if (string.IsNullOrEmpty(draftArticle))
         {
@@ -444,7 +500,7 @@ public class WritingRunnable : OrchestrationRunnable<ResearchOutput, ArticleOutp
                 Title = "Article Generation Failed",
                 Body = "Unable to generate article content",
                 Description = "Error occurred during writing",
-                Tags = Array.Empty<string>(),
+                Tags = [],
                 WordCount = 0,
                 Slug = "error"
             };
@@ -456,22 +512,22 @@ public class WritingRunnable : OrchestrationRunnable<ResearchOutput, ArticleOutp
         // PHASE 2: Extract metadata (without content - keep it pure)
         Console.WriteLine($"  [WritingAgent] PHASE 2: Extracting article metadata...");
         
-        var metadataPrompt = $"""
-            You wrote the following article:
-            
-            {Snippet(draftArticle, 500)}
-            
-            Extract metadata for this article:
-            - Title: The main title (from first # heading)
-            - Description: Compelling 1-2 sentence summary for SEO (max 200 chars)
-            - Tags: 3-5 relevant tags (e.g., ["C#", "AI", "Agents", ".NET"])
-            - Slug: URL-friendly slug (lowercase, hyphens, no special chars)
-            
-            Output ONLY the metadata as JSON.
-            """;
+        string metadataPrompt = $"""
+                                 You wrote the following article:
+
+                                 {Snippet(draftArticle, 500)}
+
+                                 Extract metadata for this article:
+                                 - Title: The main title (from first # heading)
+                                 - Description: Compelling 1-2 sentence summary for SEO (max 200 chars)
+                                 - Tags: 3-5 relevant tags (e.g., ["C#", "AI", "Agents", ".NET"])
+                                 - Slug: URL-friendly slug (lowercase, hyphens, no special chars)
+
+                                 Output ONLY the metadata as JSON.
+                                 """;
         
         // Use structured output for metadata only
-        var metadataAgent = new TornadoAgent(
+        TornadoAgent metadataAgent = new TornadoAgent(
             _agent.Client,
             _agent.Model,
             name: "MetadataExtractor",
@@ -479,11 +535,11 @@ public class WritingRunnable : OrchestrationRunnable<ResearchOutput, ArticleOutp
             outputSchema: typeof(ArticleMetadata)
         );
         
-        var metadataConversation = await metadataAgent.Run(metadataPrompt, maxTurns: 1);
-        var lastMetadataMessage = metadataConversation.Messages.Last();
+        Conversation metadataConversation = await metadataAgent.Run(metadataPrompt, maxTurns: 1);
+        ChatMessage lastMetadataMessage = metadataConversation.Messages.Last();
         
         // Parse metadata using SmartParseJsonAsync
-        var metadata = await lastMetadataMessage.Content?.SmartParseJsonAsync<ArticleMetadata>(metadataAgent);
+        ArticleMetadata? metadata = await lastMetadataMessage.Content?.SmartParseJsonAsync<ArticleMetadata>(metadataAgent);
         
         if (metadata == null)
         {
@@ -491,12 +547,12 @@ public class WritingRunnable : OrchestrationRunnable<ResearchOutput, ArticleOutp
         }
         
         // Build final article output
-        var article = new ArticleOutput
+        ArticleOutput article = new ArticleOutput
         {
             Title = metadata?.Title ?? ExtractTitle(draftArticle),
             Body = draftArticle, // Keep the pure markdown content
             Description = metadata?.Description ?? ExtractDescription(draftArticle),
-            Tags = metadata?.Tags ?? new[] { "AI", ".NET", "C#", "Development" },
+            Tags = metadata?.Tags ?? ["AI", ".NET", "C#", "Development"],
             Slug = metadata?.Slug ?? GenerateSlug(ExtractTitle(draftArticle)),
             WordCount = CountWords(draftArticle)
         };
@@ -509,16 +565,40 @@ public class WritingRunnable : OrchestrationRunnable<ResearchOutput, ArticleOutp
 
     private string BuildWritingPrompt(ResearchOutput research)
     {
-        var prompt = "";
+        string prompt = "";
+        
+        // Add random writing style hints for diversity (configurable count)
+        int hintCount = _config.ArticleGeneration.WritingStyleHints;
+        if (hintCount > 0)
+        {
+            string[] selectedHints = GetRandomWritingHints(count: hintCount);
+            if (selectedHints.Length > 0)
+            {
+                Console.WriteLine($"  [WritingAgent] 🎨 Selected {selectedHints.Length} writing style hints:");
+                foreach (string hint in selectedHints)
+                {
+                    // Extract just the hint title for logging (first part before colon)
+                    string hintTitle = hint.Split(':')[0].Trim();
+                    Console.WriteLine($"    • {hintTitle}");
+                }
+                
+                prompt += "**✨ WRITING STYLE SUGGESTIONS FOR THIS ARTICLE:**\n\n";
+                foreach (string hint in selectedHints)
+                {
+                    prompt += $"{hint}\n\n";
+                }
+                prompt += "---\n\n";
+            }
+        }
         
         // Add codebase access reminder FIRST if enabled - before any research data
         if (_config.CodebaseAccess.Enabled)
         {
-            var accessedFiles = Orchestrator.RuntimeProperties.TryGetValue("AccessedFiles", out object? property) 
+            List<string>? accessedFiles = Orchestrator.RuntimeProperties.TryGetValue("AccessedFiles", out object? property) 
                 ? property as List<string> 
-                : new List<string>();
+                : [];
             
-            var filesLeft = _config.CodebaseAccess.MaxFilesPerSession - (accessedFiles?.Count ?? 0);
+            int filesLeft = _config.CodebaseAccess.MaxFilesPerSession - (accessedFiles?.Count ?? 0);
             
             prompt += $$"""
                         ⚠️ **MANDATORY: ACCESS CODEBASE FOR REAL EXAMPLES** ⚠️
@@ -565,7 +645,7 @@ public class WritingRunnable : OrchestrationRunnable<ResearchOutput, ArticleOutp
         if (research.KeyInsights != null && research.KeyInsights.Length > 0)
         {
             prompt += "**Key Insights:**\n";
-            foreach (var insight in research.KeyInsights)
+            foreach (string insight in research.KeyInsights)
             {
                 prompt += $"- {insight}\n";
             }
@@ -575,7 +655,7 @@ public class WritingRunnable : OrchestrationRunnable<ResearchOutput, ArticleOutp
         if (research.Facts != null && research.Facts.Length > 0)
         {
             prompt += "**Research Facts:**\n";
-            foreach (var fact in research.Facts.Take(10))
+            foreach (ResearchFact fact in research.Facts.Take(10))
             {
                 prompt += $"- {fact.Fact}";
                 if (!string.IsNullOrEmpty(fact.SourceUrl))
@@ -590,7 +670,7 @@ public class WritingRunnable : OrchestrationRunnable<ResearchOutput, ArticleOutp
         if (research.Sources != null && research.Sources.Length > 0)
         {
             prompt += "**Sources to Reference (MUST USE AS HYPERLINKS):**\n";
-            foreach (var source in research.Sources.Take(5))
+            foreach (ResearchSource source in research.Sources.Take(5))
             {
                 prompt += $"- [{source.Title}]({source.Url})";
                 if (!string.IsNullOrEmpty(source.Excerpt))
@@ -621,8 +701,8 @@ public class WritingRunnable : OrchestrationRunnable<ResearchOutput, ArticleOutp
 
     private string ExtractTitle(string markdown)
     {
-        var lines = markdown.Split('\n');
-        foreach (var line in lines)
+        string[] lines = markdown.Split('\n');
+        foreach (string line in lines)
         {
             if (line.TrimStart().StartsWith("# "))
             {
@@ -635,11 +715,11 @@ public class WritingRunnable : OrchestrationRunnable<ResearchOutput, ArticleOutp
     private string ExtractDescription(string markdown)
     {
         // Find first paragraph after title
-        var lines = markdown.Split('\n');
+        string[] lines = markdown.Split('\n');
         bool foundTitle = false;
-        var descriptionLines = new List<string>();
+        List<string> descriptionLines = [];
         
-        foreach (var line in lines)
+        foreach (string line in lines)
         {
             if (line.TrimStart().StartsWith("# "))
             {
@@ -654,13 +734,101 @@ public class WritingRunnable : OrchestrationRunnable<ResearchOutput, ArticleOutp
             }
         }
         
-        var description = string.Join(" ", descriptionLines);
+        string description = string.Join(" ", descriptionLines);
         if (description.Length > 200)
         {
             description = description.Substring(0, 197) + "...";
         }
         
         return string.IsNullOrEmpty(description) ? "An article about AI and software development." : description;
+    }
+    
+    private string BuildImprovementPrompt(ArticleOutput previousDraft, string feedback, ResearchOutput research)
+    {
+        string researchContext = FormatResearch(research);
+        
+        return $"""
+                IMPROVEMENT MODE: Revise Existing Article
+                
+                You are revising an article based on reviewer feedback. Your goal is to IMPROVE the existing article, not rewrite it from scratch.
+                
+                ═══════════════════════════════════════════════════════════════════
+                PREVIOUS ARTICLE DRAFT:
+                ═══════════════════════════════════════════════════════════════════
+                
+                Title: {previousDraft.Title}
+                
+                {previousDraft.Body}
+                
+                ═══════════════════════════════════════════════════════════════════
+                REVIEWER FEEDBACK:
+                ═══════════════════════════════════════════════════════════════════
+                
+                {feedback}
+                
+                ═══════════════════════════════════════════════════════════════════
+                RESEARCH CONTEXT (for reference):
+                ═══════════════════════════════════════════════════════════════════
+                
+                {researchContext}
+                
+                ═══════════════════════════════════════════════════════════════════
+                YOUR TASK:
+                ═══════════════════════════════════════════════════════════════════
+                
+                1. Read the previous draft carefully
+                2. Address EACH issue mentioned in the reviewer feedback
+                3. Keep what works well - don't change good sections unnecessarily
+                4. Improve specific problem areas:
+                   - Fix factual inaccuracies
+                   - Add missing sources/citations with hyperlinks
+                   - Improve unclear explanations
+                   - Strengthen weak arguments
+                   - Remove clickbait or promotional language
+                   - Add missing code examples if needed
+                   - Improve SEO and readability
+                5. Maintain the article's voice and structure unless feedback requires changes
+                
+                OUTPUT: The improved article in markdown format with the same structure as before but with all issues addressed.
+                
+                DO NOT start from scratch - build on the existing draft and fix the specific problems identified.
+                """;
+    }
+    
+    private string FormatResearch(ResearchOutput research)
+    {
+        System.Text.StringBuilder sb = new System.Text.StringBuilder();
+        
+        if (research.Facts != null && research.Facts.Length > 0)
+        {
+            sb.AppendLine("Key Facts:");
+            foreach (ResearchFact fact in research.Facts.Take(10))
+            {
+                sb.AppendLine($"- {fact.Fact} (confidence: {fact.Confidence:F2})");
+            }
+            sb.AppendLine();
+        }
+        
+        if (research.Sources != null && research.Sources.Length > 0)
+        {
+            sb.AppendLine("Sources:");
+            foreach (ResearchSource source in research.Sources.Take(5))
+            {
+                sb.AppendLine($"- {source.Title} ({source.Url})");
+            }
+            sb.AppendLine();
+        }
+        
+        if (research.KeyInsights != null && research.KeyInsights.Length > 0)
+        {
+            sb.AppendLine("Key Insights:");
+            foreach (string insight in research.KeyInsights.Take(5))
+            {
+                sb.AppendLine($"- {insight}");
+            }
+        }
+        
+        return sb.ToString();
     }
     
     private ArticleOutput ParseArticleFromMarkdown(string markdown)
@@ -670,7 +838,7 @@ public class WritingRunnable : OrchestrationRunnable<ResearchOutput, ArticleOutp
             Title = ExtractTitle(markdown),
             Body = markdown,
             Description = ExtractDescription(markdown),
-            Tags = new[] { "AI", ".NET", "C#", "Development" },
+            Tags = ["AI", ".NET", "C#", "Development"],
             WordCount = CountWords(markdown),
             Slug = GenerateSlug(ExtractTitle(markdown))
         };
@@ -698,7 +866,7 @@ public class WritingRunnable : OrchestrationRunnable<ResearchOutput, ArticleOutp
         if (string.IsNullOrWhiteSpace(text))
             return 0;
 
-        return text.Split(new[] { ' ', '\t', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries).Length;
+        return text.Split([' ', '\t', '\n', '\r'], StringSplitOptions.RemoveEmptyEntries).Length;
     }
 
     private string Snippet(string text, int maxLength = 100)
@@ -717,12 +885,12 @@ public class WritingRunnable : OrchestrationRunnable<ResearchOutput, ArticleOutp
         if (string.IsNullOrEmpty(markdown))
             return markdown;
         
-        var trimmed = markdown.TrimStart();
+        string trimmed = markdown.TrimStart();
         if (!trimmed.StartsWith("---"))
             return markdown; // No frontmatter to strip
         
         // Find the closing ---
-        var lines = trimmed.Split('\n');
+        string[] lines = trimmed.Split('\n');
         int closingIndex = -1;
         
         for (int i = 1; i < lines.Length; i++)
@@ -738,8 +906,32 @@ public class WritingRunnable : OrchestrationRunnable<ResearchOutput, ArticleOutp
             return markdown; // No closing frontmatter, return as is
         
         // Return everything after the closing ---
-        var result = string.Join('\n', lines.Skip(closingIndex + 1));
+        string result = string.Join('\n', lines.Skip(closingIndex + 1));
         return result.TrimStart('\n', '\r', ' ');
+    }
+
+    /// <summary>
+    /// Selects random writing style hints to add diversity to article generation
+    /// </summary>
+    private static string[] GetRandomWritingHints(int count)
+    {
+        if (count <= 0 || count > WritingStyleHints.Length)
+            return [];
+
+        // Create a copy of indices and shuffle
+        List<int> indices = Enumerable.Range(0, WritingStyleHints.Length).ToList();
+        
+        // Fisher-Yates shuffle
+        for (int i = indices.Count - 1; i > 0; i--)
+        {
+            int j = _random.Next(i + 1);
+            (indices[i], indices[j]) = (indices[j], indices[i]);
+        }
+
+        // Take the first 'count' indices and return corresponding hints
+        return indices.Take(count)
+            .Select(i => WritingStyleHints[i])
+            .ToArray();
     }
 }
 
