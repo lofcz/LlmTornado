@@ -254,7 +254,7 @@ public static class ChatMessageExtensions
             partsContent = string.Join(" ", message.Parts.Where(p => p.Text != null).Select(p => p.Text));
             if (message.Parts.Any(p => p.Reasoning is not null))
             {
-                partsContent += "\n [REASONING]: " + string.Join(" ", message.Parts.Where(p => p.Reasoning != null).Select(p => p.Reasoning?.Content));
+                partsContent += "\n [REASONING]: " + string.Join(" ", message.Parts.Where(p => !string.IsNullOrEmpty(p.Reasoning?.Content)).Select(p => p.Reasoning?.Content));
             }
         }
 
