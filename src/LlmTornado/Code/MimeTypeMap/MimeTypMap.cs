@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 
@@ -210,7 +211,7 @@ internal static class MimeTypeMap
     /// <returns>The extension.</returns>
     /// <exception cref="ArgumentNullException" />
     /// <exception cref="ArgumentException" />
-    public static bool TryGetExtension(string mimeType, out string? extension)
+    public static bool TryGetExtension(string mimeType, [NotNullWhen(true)] out string? extension)
     {
         return mimeType.StartsWith(Dot) ? throw new ArgumentException("Requested mime type is not valid: " + mimeType) : mappings.Value.TryGetValue(mimeType, out extension);
     }

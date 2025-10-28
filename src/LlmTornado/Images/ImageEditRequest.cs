@@ -118,4 +118,40 @@ public class ImageEditRequest
 	/// </summary>
 	[JsonProperty("user")]
     public string? User { get; set; }
+	
+	/// <summary>
+	///     Background transparency setting. Only supported for gpt-image-1. Must be one of transparent, opaque or auto (default).
+	/// </summary>
+	[JsonProperty("background")]
+	public TornadoImageBackgrounds? Background { get; set; }
+	
+	/// <summary>
+	///     Control how much effort the model will exert to match the style and features of input images. Only supported for gpt-image-1 (not gpt-image-1-mini). Supports high and low. Defaults to low.
+	/// </summary>
+	[JsonProperty("input_fidelity")]
+	public TornadoImageInputFidelity? InputFidelity { get; set; }
+	
+	/// <summary>
+	///     The format in which the generated images are returned. Only supported for gpt-image-1. Must be one of png (default), jpeg, or webp.
+	/// </summary>
+	[JsonProperty("output_format")]
+	public TornadoImageOutputFormats? OutputFormat { get; set; }
+	
+	/// <summary>
+	///     The compression level (0-100%) for the generated images. Only supported for gpt-image-1 with webp or jpeg output formats. Defaults to 100.
+	/// </summary>
+	[JsonProperty("output_compression")]
+	public int? OutputCompression { get; set; }
+	
+	/// <summary>
+	///     The number of partial images to generate. Used for streaming responses that return partial images. Value must be between 0 and 3. When set to 0, the response will be a single image sent in one streaming event. Defaults to 0.
+	/// </summary>
+	[JsonProperty("partial_images")]
+	public int? PartialImages { get; set; }
+	
+	/// <summary>
+	///     Edit the image in streaming mode. Defaults to false. NOTE: Streaming is not yet supported in this implementation.
+	/// </summary>
+	[JsonProperty("stream")]
+	public bool? Stream { get; set; }
 }
