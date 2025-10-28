@@ -4,7 +4,7 @@
 
 # LLM Tornado
 
-**Build AI agents and workflows in minutes with one toolkit and built-in connectors to 100+ API Providers & Vector Databases.**    
+**Build AI agents and workflows in minutes with one toolkit and built-in connectors to 25+ API Providers & Vector Databases.**    
 
 **[Official Website](https://llmtornado.ai)**
 
