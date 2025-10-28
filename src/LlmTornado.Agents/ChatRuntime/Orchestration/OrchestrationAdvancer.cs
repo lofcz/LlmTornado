@@ -84,6 +84,16 @@ public class OrchestrationAdvancer
         ConverterMethod = converter;
         NextRunnable = nextRunnable ?? throw new ArgumentNullException(nameof(nextRunnable), "Next runner cannot be null.");
     }
+    
+    /// <summary>
+    /// Virtual method for checking if this advancer can advance given the input value.
+    /// Overridden by generic versions to provide type-safe advancement checking.
+    /// </summary>
+    internal virtual bool CanAdvance(object? value)
+    {
+        // Base implementation uses DynamicInvoke
+        return (bool?)InvokeMethod?.DynamicInvoke(value) ?? false;
+    }
 }
 
 /// <summary>
@@ -107,10 +117,7 @@ public class OrchestrationAdvancer<T> : OrchestrationAdvancer
             throw new InvalidOperationException($"{NextRunnable.RunnableName} with input type of {nextRunnable.GetInputType()} requires Input type assignable to type of {typeof(T)}");
         }
 
-        if (methodToInvoke is null)
-            InvokeMethod = new AdvancementRequirement<T>((T input) => true);
-        else
-            InvokeMethod = methodToInvoke;
+        InvokeMethod = methodToInvoke ?? ((input) => true);
     }
 
     public OrchestrationAdvancer(AdvancementRequirement<T> methodToInvoke, OrchestrationRunnableBase nextRunnable) : base(nextRunnable)
@@ -132,9 +139,8 @@ public class OrchestrationAdvancer<T> : OrchestrationAdvancer
     /// <remarks>The method uses dynamic invocation to evaluate the result, which may have performance
     /// implications. Ensure that the invoked method is compatible with the expected input type.</remarks>
     /// <param name="value">The value to be evaluated. Can be null.</param>
-    /// <returns><see langword="true"/> if the dynamically invoked method returns a non-null and true value; otherwise, <see
-    /// langword="false"/>.</returns>
-    internal virtual bool CanAdvance(T? value)
+    /// <returns><see langword="true"/> if the dynamically invoked method returns a non-null and true value; otherwise, <see langword="false"/>.</returns>
+    internal override bool CanAdvance(object? value)
     {
         return (bool?)InvokeMethod.DynamicInvoke(value) ?? false;
     }
@@ -174,7 +180,7 @@ public class OrchestrationAdvancer<TInput, TOutput> : OrchestrationAdvancer<TInp
         InvokeMethod = methodToInvoke;
     }
 
-    internal override bool CanAdvance(TInput? value)
+    internal override bool CanAdvance(object? value)
     {
         try
         {
@@ -186,14 +192,10 @@ public class OrchestrationAdvancer<TInput, TOutput> : OrchestrationAdvancer<TInp
         }
         catch (Exception ex)
         {
-
+            Console.WriteLine($"[ERROR] Converter CanAdvance exception: {ex.Message}");
         }
 
-        if (ConverterMethodResult is null)
-        {
-            throw new ArgumentNullException(nameof(value), "Input cannot be null.");
-        }
-
+        // If condition is false, don't invoke converter - just return false
         return false;
     }
 }

@@ -57,6 +57,16 @@
     "searchDepth": "advanced",
     "includeDomains": [],
     "excludeDomains": []
+  },
+  "memeGeneration": {
+    "enabled": false,
+    "force": false,
+    "visionModel": "gpt-4o",
+    "memeGenerationModel": "claude-3-5-sonnet-20241022",
+    "maxIterations": 3,
+    "maxMemesPerArticle": 3,
+    "outputDirectory": "./output/memes",
+    "minValidationScore": 0.7
   }
 }
 

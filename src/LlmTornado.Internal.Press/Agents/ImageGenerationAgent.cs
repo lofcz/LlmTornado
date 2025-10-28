@@ -62,6 +62,7 @@ public class ImageGenerationRunnable : OrchestrationRunnable<ArticleOutput, Imag
     {
         if (!_config.ImageGeneration.Enabled)
         {
+            Console.WriteLine("  [ImageGeneration] Image generation disabled");
             return new ImageOutput
             {
                 Url = string.Empty,
@@ -77,6 +78,8 @@ public class ImageGenerationRunnable : OrchestrationRunnable<ArticleOutput, Imag
 
         try
         {
+            Console.WriteLine($"  [ImageGeneration] Generating image for: {article.Title}");
+            
             // Step 1: Generate image prompt
             var promptRequest = $"""
                 Generate a DALL-E image prompt for an article with:
@@ -91,9 +94,24 @@ public class ImageGenerationRunnable : OrchestrationRunnable<ArticleOutput, Imag
             var imagePrompt = promptConversation.Messages.Last().Content?.Trim() ?? 
                             $"Modern technical illustration representing {article.Title}";
 
-            // Step 2: Generate image using configured model
-            // LlmTornado will automatically route to the appropriate provider
-            var imageUrl = await GenerateImage(imagePrompt);
+            Console.WriteLine($"  [ImageGeneration] Prompt: {Snippet(imagePrompt, 100)}");
+
+            // Step 2: Generate image with retry logic
+            var imageUrl = await GenerateImageWithRetry(imagePrompt, maxRetries: 2);
+            
+            if (string.IsNullOrEmpty(imageUrl))
+            {
+                Console.WriteLine("  [ImageGeneration] ⚠ Failed to generate image after retries, continuing without image");
+                return new ImageOutput
+                {
+                    Url = string.Empty,
+                    AltText = article.Title,
+                    PromptUsed = imagePrompt,
+                    Provider = "skipped-after-retries"
+                };
+            }
+
+            Console.WriteLine($"  [ImageGeneration] ✓ Image generated successfully");
             
             return new ImageOutput
             {
@@ -105,7 +123,8 @@ public class ImageGenerationRunnable : OrchestrationRunnable<ArticleOutput, Imag
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Image generation failed: {ex.Message}");
+            Console.WriteLine($"  [ImageGeneration] ✗ Critical error: {ex.Message}");
+            Console.WriteLine($"  [ImageGeneration] Continuing without image");
             
             return new ImageOutput
             {
@@ -115,6 +134,58 @@ public class ImageGenerationRunnable : OrchestrationRunnable<ArticleOutput, Imag
                 Provider = "error"
             };
         }
+    }
+
+    private async Task<string> GenerateImageWithRetry(string prompt, int maxRetries)
+    {
+        for (int attempt = 0; attempt <= maxRetries; attempt++)
+        {
+            try
+            {
+                if (attempt > 0)
+                {
+                    var delay = attempt * 2000; // 2s, 4s
+                    Console.WriteLine($"  [ImageGeneration]   Retry {attempt}/{maxRetries} after {delay}ms delay...");
+                    await Task.Delay(delay);
+                }
+
+                var imageUrl = await GenerateImage(prompt);
+                
+                if (!string.IsNullOrEmpty(imageUrl))
+                {
+                    if (attempt > 0)
+                    {
+                        Console.WriteLine($"  [ImageGeneration]   ✓ Retry {attempt} succeeded");
+                    }
+                    return imageUrl;
+                }
+                
+                Console.WriteLine($"  [ImageGeneration]   Attempt {attempt + 1} returned empty URL");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"  [ImageGeneration]   Attempt {attempt + 1} failed: {ex.Message}");
+                
+                if (attempt == maxRetries)
+                {
+                    Console.WriteLine($"  [ImageGeneration]   ✗ All {maxRetries + 1} attempts exhausted");
+                    return string.Empty;
+                }
+            }
+        }
+
+        return string.Empty;
+    }
+
+    private string Snippet(string text, int maxLength = 100)
+    {
+        if (string.IsNullOrEmpty(text))
+            return "[empty]";
+
+        if (text.Length <= maxLength)
+            return text;
+
+        return text.Substring(0, maxLength) + "...";
     }
 
     private async Task<string> GenerateImage(string prompt)

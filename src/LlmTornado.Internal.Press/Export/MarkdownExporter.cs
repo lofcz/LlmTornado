@@ -25,6 +25,14 @@ public class MarkdownExporter
 
         Directory.CreateDirectory(articleDir);
 
+        // Create memes subdirectory if article contains memes
+        var memesDir = Path.Combine(articleDir, "memes");
+        if (article.Body.Contains("](memes/"))
+        {
+            Directory.CreateDirectory(memesDir);
+            await CopyMemeFilesAsync(article, memesDir);
+        }
+
         // Build markdown content with frontmatter
         var markdown = BuildMarkdown(article);
 
@@ -33,6 +41,49 @@ public class MarkdownExporter
         await File.WriteAllTextAsync(markdownPath, markdown);
 
         return markdownPath;
+    }
+
+    private async Task CopyMemeFilesAsync(Article article, string memesDestDir)
+    {
+        // Extract meme references from markdown: ![caption](memes/filename.jpg)
+        var memePattern = new System.Text.RegularExpressions.Regex(@"!\[.*?\]\(memes/([^)]+)\)");
+        var matches = memePattern.Matches(article.Body);
+
+        foreach (System.Text.RegularExpressions.Match match in matches)
+        {
+            if (match.Groups.Count > 1)
+            {
+                var fileName = match.Groups[1].Value;
+                
+                // Try to find the source meme file
+                // Check common meme output directories
+                var possibleSources = new[]
+                {
+                    Path.Combine("./output/memes", fileName),
+                    Path.Combine(_outputDirectory, "../memes", fileName),
+                    Path.Combine(Directory.GetCurrentDirectory(), "output", "memes", fileName)
+                };
+
+                foreach (var sourcePath in possibleSources)
+                {
+                    if (File.Exists(sourcePath))
+                    {
+                        var destPath = Path.Combine(memesDestDir, fileName);
+                        
+                        try
+                        {
+                            File.Copy(sourcePath, destPath, overwrite: true);
+                            Console.WriteLine($"  [MarkdownExporter] Copied meme: {fileName}");
+                            break;
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"  [MarkdownExporter] Failed to copy meme {fileName}: {ex.Message}");
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private string BuildMarkdown(Article article)
@@ -77,8 +128,9 @@ public class MarkdownExporter
         sb.AppendLine("---");
         sb.AppendLine();
 
-        // Article body (pure markdown, no frontmatter)
-        sb.AppendLine(article.Body);
+        // Article body - strip everything before first # heading
+        var cleanBody = StripPreamble(article.Body);
+        sb.AppendLine(cleanBody);
 
         // Optional: Add sources as footnotes
         if (!string.IsNullOrEmpty(article.SourcesJson))
@@ -103,6 +155,31 @@ public class MarkdownExporter
         }
 
         return sb.ToString();
+    }
+
+    /// <summary>
+    /// Strip everything before the first # heading (removes preamble/introductions)
+    /// </summary>
+    private string StripPreamble(string body)
+    {
+        if (string.IsNullOrEmpty(body))
+            return body;
+
+        var lines = body.Split('\n');
+        
+        // Find the first line that starts with #
+        for (int i = 0; i < lines.Length; i++)
+        {
+            var trimmed = lines[i].TrimStart();
+            if (trimmed.StartsWith("#"))
+            {
+                // Return everything from this line onwards
+                return string.Join('\n', lines[i..]);
+            }
+        }
+
+        // If no heading found, return original body
+        return body;
     }
 
     private string EscapeYaml(string value)

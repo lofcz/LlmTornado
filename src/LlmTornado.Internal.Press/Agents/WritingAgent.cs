@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using LlmTornado.Agents.DataModels;
 
 namespace LlmTornado.Internal.Press.Agents;
 
@@ -184,12 +185,17 @@ public class WritingRunnable : OrchestrationRunnable<ResearchOutput, ArticleOutp
                                - If it doesn't fit naturally, DON'T force it
                                - The reader should learn something valuable even if they never use our context
 
-                            STYLE GUIDELINES:
-                            - Write in **Markdown** format with proper structure
-                            - Conversational but professional (like a senior dev sharing knowledge)
-                            - Use "I" and "we" for relatability (share experiences, mistakes, learnings)
+                            TONE & VOICE (CRITICAL):
+                            - Write like a developer SHARING experiences with peers, not TEACHING from above
+                            - Use "I've found..." / "In my experience..." / "Here's what worked..." instead of "You should..." / "You need to..." / "Best practice is..."
+                            - Share war stories, mistakes, discoveries - not prescriptions
+                            - Example GOOD: "After spending 3 days debugging, I realized..."
+                            - Example BAD: "The right way to do this is..."
+                            - Example GOOD: "This pattern saved me hours when..."
+                            - Example BAD: "You must follow these steps..."
+                            - Be conversational, humble, and collaborative - like pairing with a colleague
                             - Include code examples with C# syntax where relevant
-                            - Cite sources naturally, build credibility with HYPERLINKS to sources
+                            - Cite sources naturally with HYPERLINKS
                             - Target: {config.ReviewLoop.QualityThresholds.MinWordCount}+ words of VALUABLE content
                             
                             **CRITICAL CODE SNIPPET REQUIREMENTS:**
@@ -228,10 +234,12 @@ public class WritingRunnable : OrchestrationRunnable<ResearchOutput, ArticleOutp
                             - Honest about tradeoffs and limitations
                             - Background context mentioned naturally (1-3 times max)
 
-                            **Conclusion (Actionable)**
-                            - Recap key insights
-                            - Provide next steps
-                            - Soft CTA if natural (try X, explore Y, etc.)
+                            **Conclusion (Reflective, Not Prescriptive)**
+                            - Share what you've learned from the exploration
+                            - Offer thoughts on next steps (not commands)
+                            - Example GOOD: "I'm planning to try X next..."
+                            - Example BAD: "You should do X, Y, Z..."
+                            - Keep it conversational and open-ended
 
                             ANTI-PATTERNS TO AVOID:
                             ❌ "Product X is the best solution for..."
@@ -373,6 +381,11 @@ public class WritingRunnable : OrchestrationRunnable<ResearchOutput, ArticleOutp
         var conversation = await _agent.Run(explorationPrompt, maxTurns: 20, onAgentRunnerEvent: (evt) =>
         {
             Console.WriteLine($"  [WritingAgent] Event: {evt.EventType} at {evt.Timestamp:HH:mm:ss}");
+            
+            if (evt is AgentRunnerUsageReceivedEvent usage)
+            {
+                Console.WriteLine($"[WriterAgent] Usage received: input: {usage.InputTokens}, output: {usage.OutputTokens}, total: {usage.TokenUsageAmount}");
+            }
             
             if (evt.InternalConversation != null)
             {

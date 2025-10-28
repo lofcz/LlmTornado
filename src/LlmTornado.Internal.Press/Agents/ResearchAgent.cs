@@ -119,7 +119,7 @@ public class ResearchRunnable : OrchestrationRunnable<ArticleIdea, ResearchOutpu
         
         int searchCount = 0;
         
-        Chat.Conversation conversation;
+        Conversation conversation;
         try
         {
             conversation = await _agent.Run(prompt, maxTurns: 8, onAgentRunnerEvent: (evt) =>

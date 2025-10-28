@@ -16,6 +16,7 @@ public class AppConfiguration
     public TrendAnalysisConfiguration TrendAnalysis { get; set; } = new();
     public TavilyConfiguration Tavily { get; set; } = new();
     public CodebaseAccessConfiguration CodebaseAccess { get; set; } = new();
+    public MemeGenerationConfiguration MemeGeneration { get; set; } = new();
 
     public static AppConfiguration Load(string configPath = "appCfg.json")
     {
@@ -212,5 +213,32 @@ public class CodebaseAccessConfiguration
 
     [JsonProperty("maxFilesPerSession")]
     public int MaxFilesPerSession { get; set; } = 10;
+}
+
+public class MemeGenerationConfiguration
+{
+    [JsonProperty("enabled")]
+    public bool Enabled { get; set; } = false;
+
+    [JsonProperty("force")]
+    public bool Force { get; set; } = false;
+
+    [JsonProperty("visionModel")]
+    public string VisionModel { get; set; } = "gpt-4o";
+
+    [JsonProperty("memeGenerationModel")]
+    public string MemeGenerationModel { get; set; } = "gpt-4o-mini";
+
+    [JsonProperty("maxIterations")]
+    public int MaxIterations { get; set; } = 3;
+
+    [JsonProperty("maxMemesPerArticle")]
+    public int MaxMemesPerArticle { get; set; } = 3;
+
+    [JsonProperty("outputDirectory")]
+    public string OutputDirectory { get; set; } = "./output/memes";
+
+    [JsonProperty("minValidationScore")]
+    public double MinValidationScore { get; set; } = 0.7;
 }
 

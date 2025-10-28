@@ -34,31 +34,17 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
     /// <summary>
     /// List of advancements (transitions) from this runnable to the next runnables.
     /// </summary>
-    public OrchestrationAdvancer<TOutput>[] Advances => GetAdvances();
+    public List<OrchestrationAdvancer> Advances => GetAdvances();
 
-    public OrchestrationAdvancer<TOutput>[] GetAdvances()
+    private List<OrchestrationAdvancer> GetAdvances()
     {
-        List<OrchestrationAdvancer<TOutput>> advancers = new List<OrchestrationAdvancer<TOutput>>();
+        // Return base advancers directly to preserve type information
+        // DO NOT reconstruct - this destroys OrchestrationAdvancer<TInput, TOutput> type info!
         
-        BaseAdvancers.ForEach(advancer => {
-            if (advancer.NextRunnable is not null)
-            {
-                OrchestrationAdvancer<TOutput> advancement = new OrchestrationAdvancer<TOutput>(advancer.NextRunnable, "out") 
-                { 
-                    InvokeMethod = advancer.InvokeMethod,
-                    ConverterMethod = advancer.ConverterMethod,
-                    type = advancer.type
-                };
-
-                advancers.Add(advancement);
-
-            }
-        });
-
-        if (!AllowDeadEnd && advancers.Count == 0)
+        if (!AllowDeadEnd && BaseAdvancers.Count == 0)
             throw new InvalidOperationException($"Runnable {RunnableName} must have at least one advancement defined or set AllowDeadEnd to true.");
 
-        return advancers.ToArray();
+        return BaseAdvancers;
     }
 
     public override Type GetInputType() => typeof(TInput);
@@ -276,14 +262,25 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
 
     private List<RunnableProcess> CheckResultForAdvancements(RunnableProcess<TInput,TOutput> process) {         //Check if the state result has a valid transition
         List<RunnableProcess> stateProcessesFromOutput = new List<RunnableProcess>();                                                                                                                                         //If the transition evaluates to true for the output, add it to the new state processes
+        
+        Console.WriteLine($"[DEBUG] CheckResultForAdvancements: {RunnableName}, Advances count: {Advances.Count}");
+        
         Advances.ToList().ForEach(advancer =>
         {
+            Console.WriteLine($"[DEBUG] Checking advancer: Type={advancer.GetType().Name}, type field='{advancer.type}', NextRunnable={advancer.NextRunnable?.RunnableName}");
+            
             if (advancer.CanAdvance(process.Result))
             {
+                Console.WriteLine($"[DEBUG] Advancer matched! type='{advancer.type}', ConverterMethodResult={advancer.ConverterMethodResult?.GetType().Name ?? "null"}");
+                
                 //Check if transition is conversion type or use the output.Result directly
                 object? nextResult = advancer.type == "in_out" ? advancer.ConverterMethodResult : process.Result;
 
                 stateProcessesFromOutput.Add(new RunnableProcess(advancer.NextRunnable, nextResult!));
+            }
+            else
+            {
+                Console.WriteLine($"[DEBUG] Advancer did NOT match");
             }
         });
 
@@ -332,7 +329,8 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
     public void AddAdvancer<T>(AdvancementRequirement<TOutput> methodToInvoke, AdvancementResultConverter<TOutput, T> conversionMethod, OrchestrationRunnableBase nextRunnable)
     {
         OrchestrationAdvancer<TOutput, T> transition = new OrchestrationAdvancer<TOutput, T>(methodToInvoke, conversionMethod, nextRunnable);
-        AddAdvancer(transition);
+        // Explicitly call the two-parameter overload to avoid C# picking the single-parameter one due to inheritance
+        AddAdvancer<TOutput, T>(transition);
     }
 
     /// <summary>
@@ -347,12 +345,14 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
         if (methodToInvoke != null)
         {
             OrchestrationAdvancer<TOutput, T> transition = new OrchestrationAdvancer<TOutput, T>(methodToInvoke, conversionMethod, nextRunnable);
-            AddAdvancer(transition);
+            // Explicitly call the two-parameter overload
+            AddAdvancer<TOutput, T>(transition);
         }
         else
         {
             OrchestrationAdvancer<TOutput, T> transition = new OrchestrationAdvancer<TOutput, T>(_ => true, conversionMethod, nextRunnable);
-            AddAdvancer(transition);
+            // Explicitly call the two-parameter overload
+            AddAdvancer<TOutput, T>(transition);
         }
     }
     #endregion

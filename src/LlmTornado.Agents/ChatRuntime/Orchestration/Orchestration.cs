@@ -32,12 +32,12 @@ public abstract class Orchestration
     /// List of processes that will be run in the state machine this tick.
     /// </summary>
     /// [SerializationRequired]
-    internal List<OrchestrationRunnableBase> CurrentRunnablesWithProcesses { get; private set; } = new List<OrchestrationRunnableBase>();
+    internal List<OrchestrationRunnableBase> CurrentRunnablesWithProcesses { get; private set; } = [];
 
     /// <summary>
     /// Need this to collect new processes while the current ones can be exiting
     /// </summary>
-    private List<RunnableProcess> newRunnableProcesses = new List<RunnableProcess>();
+    private List<RunnableProcess> newRunnableProcesses = [];
 
     /// <summary>
     /// Trigger to stop the state machine.
@@ -63,7 +63,7 @@ public abstract class Orchestration
     /// <summary>
     /// Gets or sets a value indicating whether the process is complete.
     /// </summary>
-    public bool IsCompleted { get => _isCompleted; }
+    public bool IsCompleted => _isCompleted;
 
 
     // [consideration] I actually don't have this set anywhere.. I need this to have all the states but states are internally linked to each other.
@@ -92,7 +92,6 @@ public abstract class Orchestration
 
     }
 
-
     /// <summary>
     /// Marks the current operation as finished.
     /// </summary>
@@ -113,7 +112,7 @@ public abstract class Orchestration
     {
         if (!RecordSteps) return;
 
-        RunSteps.AddOrUpdate(_stepCounter, new List<RunnerRecord>() { record }, (key, existingList) =>
+        RunSteps.AddOrUpdate(_stepCounter, [record], (key, existingList) =>
         {
             existingList.Add(record);
             return existingList;
@@ -128,9 +127,9 @@ public abstract class Orchestration
     /// <returns></returns>
     private async Task ExitCurrentRunnableProcesses()
     {
-        List<Task> Tasks = new List<Task>();
+        List<Task> Tasks = [];
         CurrentRunnablesWithProcesses.ForEach(process => {
-            Tasks.Add(Task.Run(async () => await BeginExit(process)));
+            Tasks.Add(Task.Run(async () => await BeginExit(process), CancelToken));
         });
         await Task.WhenAll(Tasks);
         Tasks.Clear();
@@ -149,7 +148,7 @@ public abstract class Orchestration
     /// by the thread limiter.
     /// </summary>
     /// <remarks>This method runs each active process in parallel, respecting the concurrency limits
-    /// imposed by the <c>threadLimitor</c>. It waits for all processes to complete before returning.</remarks>
+    /// imposed by the <c>threadLimiter</c>. It waits for all processes to complete before returning.</remarks>
     /// <returns></returns>
     private async Task ProcessTick()
     {
@@ -159,18 +158,17 @@ public abstract class Orchestration
         _stepCounter++;
 
         OnOrchestrationEvent?.Invoke(new OnTickOrchestrationEvent()); //Invoke the tick state machine event
+        List<Task> tasks = [];
         
-        List<Task> Tasks = new List<Task>();
-        CurrentRunnablesWithProcesses.ForEach(runnable => Tasks.Add(Task.Run(async () =>
+        CurrentRunnablesWithProcesses.ForEach(runnable => tasks.Add(Task.Run(async () =>
         {
             OnOrchestrationEvent?.Invoke(new OnInvokedRunnableEvent(runnable)); //Invoke the state entered event
             await runnable.Invoke(); //Invoke the state process
-
-        })));
+        }, CancelToken)));
 
         //Wait for collection
-        await Task.WhenAll(Tasks);
-        Tasks.Clear();
+        await Task.WhenAll(tasks);
+        tasks.Clear();
     }
 
     /// <summary>
@@ -183,7 +181,7 @@ public abstract class Orchestration
     /// <param name="process">The state process to initialize. This parameter cannot be null.</param>
     /// <returns></returns>
     /// <exception cref="ArgumentNullException">Thrown when process or process.Runnable is null.</exception>
-    private void AddProcessToRunnable(RunnableProcess process)
+    private static void AddProcessToRunnable(RunnableProcess process)
     {
         if (process?.Runner == null)
             throw new ArgumentNullException(nameof(process), "Process and its Runtime cannot be null");
@@ -201,8 +199,6 @@ public abstract class Orchestration
         await runnable._InitializeRunnable();
     }
 
-
-
     /// <summary>
     /// Initializes all new state processes asynchronously.
     /// </summary>
@@ -212,7 +208,7 @@ public abstract class Orchestration
     /// <returns></returns>
     private async Task SetCurrentRunnableProcesses()
     {
-        //Clear all of the active processes
+        //Clear all the active processes
         CurrentRunnablesWithProcesses.Clear();
 
         OnOrchestrationEvent?.Invoke(new OnVerboseOrchestrationEvent($"Initializing {newRunnableProcesses.Count} new state processes..."));
@@ -233,14 +229,14 @@ public abstract class Orchestration
             .Select(g => g.First())
             .ToList();
 
-        List<Task> Tasks = new List<Task>();
+        List<Task> tasks = [];
         //Setup each state with the process input
         foreach (OrchestrationRunnableBase runnable in CurrentRunnablesWithProcesses)
         {
-            Tasks.Add(Task.Run(async () => await InitializeRunnable(runnable)));
+            tasks.Add(Task.Run(async () => await InitializeRunnable(runnable), CancelToken));
         }
-        await Task.WhenAll(Tasks);
-        Tasks.Clear();
+        await Task.WhenAll(tasks);
+        tasks.Clear();
 
         _isInitialized = true; //Set the initialized flag to true after the process is initialized
     }
@@ -256,7 +252,7 @@ public abstract class Orchestration
     {
         newRunnableProcesses.Clear();
         CurrentRunnablesWithProcesses.ForEach(process => {
-            newRunnableProcesses.AddRange(process.CanAdvance() ?? new List<RunnableProcess>());
+            newRunnableProcesses.AddRange(process.CanAdvance() ?? []);
         });
 
         OnOrchestrationEvent?.Invoke(new OnVerboseOrchestrationEvent("Finished validating Runtime conditions for transition"));

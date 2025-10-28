@@ -6,6 +6,9 @@ using LlmTornado.Chat;
 using Newtonsoft.Json.Linq;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography.X509Certificates;
+#if !MODERN
+using Polyfills;
+#endif
 
 namespace LlmTornado.Agents.ChatRuntime;
 
@@ -76,11 +79,9 @@ public class OrchestrationBuilder
     
     public OrchestrationBuilder AddAdvancer<TOutput>(OrchestrationRunnableBase fromRunnable, OrchestrationRunnableBase toRunnable)
     {
-        if(!Configuration.Runnables.ContainsKey(fromRunnable.RunnableName))
-            Configuration.Runnables.Add(fromRunnable.RunnableName, fromRunnable);
+        Configuration.Runnables.TryAdd(fromRunnable.RunnableName, fromRunnable);
             
-        if (!Configuration.Runnables.ContainsKey(toRunnable.RunnableName))
-            Configuration.Runnables.Add(toRunnable.RunnableName, toRunnable);
+        Configuration.Runnables.TryAdd(toRunnable.RunnableName, toRunnable);
 
         fromRunnable.Orchestrator = Configuration;
         toRunnable.Orchestrator = Configuration;
@@ -90,10 +91,8 @@ public class OrchestrationBuilder
 
     public OrchestrationBuilder AddDeadEndAdvancer<TOutput>(OrchestrationRunnableBase fromRunnable, OrchestrationRunnableBase toRunnable)
     {
-        if (!Configuration.Runnables.ContainsKey(fromRunnable.RunnableName))
-            Configuration.Runnables.Add(fromRunnable.RunnableName, fromRunnable);
-        if (!Configuration.Runnables.ContainsKey(toRunnable.RunnableName))
-            Configuration.Runnables.Add(toRunnable.RunnableName, toRunnable);
+        Configuration.Runnables.TryAdd(fromRunnable.RunnableName, fromRunnable);
+        Configuration.Runnables.TryAdd(toRunnable.RunnableName, toRunnable);
 
         fromRunnable.Orchestrator = Configuration;
         toRunnable.Orchestrator = Configuration;
@@ -104,10 +103,8 @@ public class OrchestrationBuilder
 
     public OrchestrationBuilder AddDeadEndAdvancer<TValue, TOutput>(OrchestrationRunnableBase fromRunnable, AdvancementRequirement<TValue> condition, AdvancementResultConverter<TValue, TOutput> converter, OrchestrationRunnableBase toRunnable)
     {
-        if (!Configuration.Runnables.ContainsKey(fromRunnable.RunnableName))
-            Configuration.Runnables.Add(fromRunnable.RunnableName, fromRunnable);
-        if (!Configuration.Runnables.ContainsKey(toRunnable.RunnableName))
-            Configuration.Runnables.Add(toRunnable.RunnableName, toRunnable);
+        Configuration.Runnables.TryAdd(fromRunnable.RunnableName, fromRunnable);
+        Configuration.Runnables.TryAdd(toRunnable.RunnableName, toRunnable);
 
         fromRunnable.Orchestrator = Configuration;
         toRunnable.Orchestrator = Configuration;
@@ -118,10 +115,8 @@ public class OrchestrationBuilder
 
     public OrchestrationBuilder AddAdvancer<TOutput>(OrchestrationRunnableBase fromRunnable, AdvancementRequirement<TOutput> condition, OrchestrationRunnableBase toRunnable)
     {
-        if (!Configuration.Runnables.ContainsKey(fromRunnable.RunnableName))
-            Configuration.Runnables.Add(fromRunnable.RunnableName, fromRunnable);
-        if (!Configuration.Runnables.ContainsKey(toRunnable.RunnableName))
-            Configuration.Runnables.Add(toRunnable.RunnableName, toRunnable);
+        Configuration.Runnables.TryAdd(fromRunnable.RunnableName, fromRunnable);
+        Configuration.Runnables.TryAdd(toRunnable.RunnableName, toRunnable);
 
         fromRunnable.Orchestrator = Configuration;
         toRunnable.Orchestrator = Configuration;
@@ -131,10 +126,8 @@ public class OrchestrationBuilder
 
     public OrchestrationBuilder AddAdvancer<TValue, TOutput>(OrchestrationRunnableBase fromRunnable, AdvancementRequirement<TValue> condition, AdvancementResultConverter<TValue, TOutput> converter, OrchestrationRunnableBase toRunnable)
     {
-        if (!Configuration.Runnables.ContainsKey(fromRunnable.RunnableName))
-            Configuration.Runnables.Add(fromRunnable.RunnableName, fromRunnable);
-        if (!Configuration.Runnables.ContainsKey(toRunnable.RunnableName))
-            Configuration.Runnables.Add(toRunnable.RunnableName, toRunnable);
+        Configuration.Runnables.TryAdd(fromRunnable.RunnableName, fromRunnable);
+        Configuration.Runnables.TryAdd(toRunnable.RunnableName, toRunnable);
 
         fromRunnable.Orchestrator = Configuration;
         toRunnable.Orchestrator = Configuration;
@@ -144,10 +137,8 @@ public class OrchestrationBuilder
 
     public OrchestrationBuilder AddAdvancer<TValue, TOutput>(OrchestrationRunnableBase fromRunnable, AdvancementResultConverter<TValue, TOutput> converter, OrchestrationRunnableBase toRunnable, AdvancementRequirement<TValue>? condition = null)
     {
-        if (!Configuration.Runnables.ContainsKey(fromRunnable.RunnableName))
-            Configuration.Runnables.Add(fromRunnable.RunnableName, fromRunnable);
-        if (!Configuration.Runnables.ContainsKey(toRunnable.RunnableName))
-            Configuration.Runnables.Add(toRunnable.RunnableName, toRunnable);
+        Configuration.Runnables.TryAdd(fromRunnable.RunnableName, fromRunnable);
+        Configuration.Runnables.TryAdd(toRunnable.RunnableName, toRunnable);
 
         fromRunnable.Orchestrator = Configuration;
         toRunnable.Orchestrator = Configuration;
@@ -158,8 +149,7 @@ public class OrchestrationBuilder
 
     public OrchestrationBuilder AddAdvancers(OrchestrationRunnableBase fromRunnable, params OrchestrationAdvancer[] advancers)
     {
-        if (!Configuration.Runnables.ContainsKey(fromRunnable.RunnableName))
-            Configuration.Runnables.Add(fromRunnable.RunnableName, fromRunnable);
+        Configuration.Runnables.TryAdd(fromRunnable.RunnableName, fromRunnable);
 
         foreach(var advancer in advancers)
         {
@@ -175,8 +165,7 @@ public class OrchestrationBuilder
 
     public OrchestrationBuilder AddParallelAdvancement(OrchestrationRunnableBase fromRunnable, params OrchestrationAdvancer[] advancers)
     {
-        if (!Configuration.Runnables.ContainsKey(fromRunnable.RunnableName))
-            Configuration.Runnables.Add(fromRunnable.RunnableName, fromRunnable);
+        Configuration.Runnables.TryAdd(fromRunnable.RunnableName, fromRunnable);
         fromRunnable.Orchestrator = Configuration;
         foreach (var advancer in advancers)
         {
@@ -199,21 +188,18 @@ public class OrchestrationBuilder
         string combinationRunnableName = "")
     {
         requiredInputToAdvance ??= fromRunnables.Length;
-        if (!Configuration.Runnables.ContainsKey(toRunnable.RunnableName))
-            Configuration.Runnables.Add(toRunnable.RunnableName, toRunnable);
+        Configuration.Runnables.TryAdd(toRunnable.RunnableName, toRunnable);
 
         CombinationalWaiterRunnable<TValue> combinationalWaiter = new CombinationalWaiterRunnable<TValue>(
             Configuration,
             combinationRunnableName,
             requiredInputToAdvance.Value);
 
-        if (!Configuration.Runnables.ContainsKey(combinationalWaiter.RunnableName))
-            Configuration.Runnables.Add(combinationalWaiter.RunnableName, combinationalWaiter); 
+        Configuration.Runnables.TryAdd(combinationalWaiter.RunnableName, combinationalWaiter); 
 
         foreach (var fromRunnable in fromRunnables)
         {
-            if (!Configuration.Runnables.ContainsKey(fromRunnable.RunnableName))
-                Configuration.Runnables.Add(fromRunnable.RunnableName, fromRunnable);
+            Configuration.Runnables.TryAdd(fromRunnable.RunnableName, fromRunnable);
             fromRunnable.Orchestrator = Configuration;
             fromRunnable.AddAdvancer(new OrchestrationAdvancer<TValue>(condition, combinationalWaiter));
         }
@@ -232,10 +218,8 @@ public class OrchestrationBuilder
     public OrchestrationBuilder AddExitPath<TOutput>(OrchestrationRunnableBase fromRunnable, AdvancementRequirement<TOutput> condition)
     {
         ExitRunnable<TOutput> toRunnable = new ExitRunnable<TOutput>(Configuration, "Tornado_Exit");
-        if (!Configuration.Runnables.ContainsKey(fromRunnable.RunnableName))
-            Configuration.Runnables.Add(fromRunnable.RunnableName, fromRunnable);
-        if (!Configuration.Runnables.ContainsKey(toRunnable.RunnableName))
-            Configuration.Runnables.Add(toRunnable.RunnableName, toRunnable);
+        Configuration.Runnables.TryAdd(fromRunnable.RunnableName, fromRunnable);
+        Configuration.Runnables.TryAdd(toRunnable.RunnableName, toRunnable);
 
         fromRunnable.Orchestrator = Configuration;
         toRunnable.Orchestrator = Configuration;

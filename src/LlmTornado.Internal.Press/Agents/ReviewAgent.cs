@@ -120,6 +120,21 @@ public class ReviewRunnable : OrchestrationRunnable<ArticleOutput, ReviewOutput>
 
     public override async ValueTask<ReviewOutput> Invoke(RunnableProcess<ArticleOutput, ReviewOutput> process)
     {
+        // If review is disabled, skip and return auto-approved
+        if (!_config.ReviewLoop.Enabled)
+        {
+            Console.WriteLine("  [ReviewAgent] SKIPPED (disabled in config)");
+            return new ReviewOutput
+            {
+                Approved = true,
+                QualityScore = 100,
+                Summary = "Review skipped (disabled)",
+                Issues = Array.Empty<ReviewIssue>(),
+                Suggestions = Array.Empty<string>(),
+                Metrics = new QualityMetrics()
+            };
+        }
+        
         process.RegisterAgent(_agent);
 
         var article = process.Input;

@@ -35,30 +35,7 @@ class Program
             var client = CreateTornadoClient(config);
             var service = new ArticleGenerationService(client, config, dbContext);
 
-            TornadoAgent agent = new TornadoAgent(new TornadoApi([
-                new ProviderAuthentication(LLmProviders.OpenAi, config.ApiKeys.OpenAi)
-            ]), ChatModel.OpenAi.Gpt4.OMini, instructions: "Generate a funny meme about LLM Tornado SDK. After you are done use tool handoff_result to return the result.");
-
-            agent.AddTornadoTool(new Tool((
-                [Description("URL to meme")] string url) =>
-            {
-                agent.Cancel();
-
-                return new
-                {
-                    test = "whatever"
-                };
-            }, "handoff_result"));
-            
-            MCPServer server = MCPToolkits.MemeToolkit();
-            await server.InitializeAsync();
-            agent.AddMcpTools(server.AllowedTornadoTools.ToArray());
-            
-            agent.AddAgentTool(new TornadoAgentTool(agent, new Tool()));
-
-            var xx = await agent.Run();
-            
-            int z = 0; 
+            new Common.Tool(() => { }, "my_name");
             
             if (args.Length == 0)
             {

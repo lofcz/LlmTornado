@@ -133,7 +133,7 @@ public abstract class OrchestrationRunnableBase
         BaseAdvancers.Add(advancer);
     }
 
-    internal void AddAdvancer<TValue, TOutput>(OrchestrationAdvancer<TOutput, TOutput> advancer)
+    internal void AddAdvancer<TValue, TOutput>(OrchestrationAdvancer<TValue, TOutput> advancer)
     {
         BaseAdvancers.Add(advancer);
     }
@@ -164,13 +164,13 @@ public abstract class OrchestrationRunnableBase
     internal void UpdateBaseRunnableProcess(string id, RunnableProcess result)
     {
        for (int i = 0; i < BaseProcesses.Count; i++)
-        {
-            if (BaseProcesses[i].Id == id)
-            {
-                BaseProcesses[i] = RunnableProcess.CloneProcess(result);
-                break;
-            }
-        }
+       {
+           if (BaseProcesses[i].Id == id)
+           {
+               BaseProcesses[i] = RunnableProcess.CloneProcess(result);
+               break;
+           }
+       }
     }
 
     internal void ClearAllProcesses()
