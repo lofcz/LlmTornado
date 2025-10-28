@@ -18,6 +18,17 @@ namespace LlmTornado.Code;
 
 internal static partial class Extensions
 {
+    public static string StripDataUriPrefix(this string base64Data)
+    {
+        if (!base64Data.StartsWith("data:"))
+        {
+            return base64Data;
+        }
+        
+        int commaIndex = base64Data.IndexOf(',');
+        return commaIndex != -1 ? base64Data[(commaIndex + 1)..] : base64Data;
+    }
+    
     public static void Serialize(this JsonWriter writer, object? obj)
     {
         if (obj is null)

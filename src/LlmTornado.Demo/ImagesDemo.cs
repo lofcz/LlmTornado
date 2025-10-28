@@ -94,6 +94,26 @@ public class ImagesDemo : DemoBase
     
     [TornadoTest]
     [Flaky("expensive")]
+    public static async Task Issue105EditMultipleImagesGpt()
+    {
+        byte[] bytes = await File.ReadAllBytesAsync("Static/Images/catBoi.jpg");
+        byte[] bytesHat = await File.ReadAllBytesAsync("Static/Images/hat.jpg");
+
+        ImageGenerationResult? result = await Program.Connect().ImageEdit.EditImage(new ImageEditRequest
+        {
+            Model = ImageModel.OpenAi.Gpt.V1Mini,
+            Images = [ 
+                new TornadoInputFile(Convert.ToBase64String(bytes), "image/jpeg"),
+                new TornadoInputFile(Convert.ToBase64String(bytesHat), "image/jpeg")
+            ],
+            Prompt = "Give the cat devil-like horns and make it attempt to hide them under this hat."
+        });
+
+        await DisplayImage(result);
+    }
+        
+    [TornadoTest]
+    [Flaky("expensive")]
     public static async Task GenerateGrok2Image()
     {
         ImageGenerationResult? generatedImg = await Program.Connect().ImageGenerations.CreateImage(new ImageGenerationRequest
