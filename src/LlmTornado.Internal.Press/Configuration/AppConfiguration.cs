@@ -19,6 +19,7 @@ public class AppConfiguration
     public MemeGenerationConfiguration MemeGeneration { get; set; } = new();
     public ImageUploadConfiguration ImageUpload { get; set; } = new();
     public ImageVariationConfiguration ImageVariations { get; set; } = new();
+    public PublishingConfiguration Publishing { get; set; } = new();
 
     public static AppConfiguration Load(string configPath = "appCfg.json")
     {
@@ -80,6 +81,9 @@ public class ApiKeysConfiguration
 
     [JsonProperty("groq")]
     public string Groq { get; set; } = string.Empty;
+
+    [JsonProperty("devto")]
+    public string DevTo { get; set; } = string.Empty;
 }
 
 public class ModelsConfiguration
@@ -286,5 +290,20 @@ public class ImageVariationFormat
 
     [JsonProperty("description")]
     public string? Description { get; set; }
+}
+
+public class PublishingConfiguration
+{
+    [JsonProperty("devto")]
+    public PlatformPublishConfig? DevTo { get; set; }
+}
+
+public class PlatformPublishConfig
+{
+    [JsonProperty("enabled")]
+    public bool Enabled { get; set; } = false;
+    
+    [JsonProperty("autoPublish")]
+    public bool AutoPublish { get; set; } = false;
 }
 

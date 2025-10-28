@@ -8,6 +8,7 @@ using LlmTornado.Internal.Press.DataModels;
 using LlmTornado.Internal.Press.Database;
 using LlmTornado.Internal.Press.Database.Models;
 using LlmTornado.Internal.Press.Export;
+using LlmTornado.Internal.Press.Publish;
 using Newtonsoft.Json;
 using System;
 using System.Linq;
@@ -135,7 +136,7 @@ public class ArticleOrchestrationConfiguration : OrchestrationRuntimeConfigurati
         _memeDecision = new MemeDecisionRunnable(_client, _config, this);
         _memeGeneration = new MemeGeneratorRunnable(_client, _config, this);
         _memeInsertion = new MemeInsertionRunnable(_client, _config, this);
-        _saveArticle = new SaveArticleRunnable(_dbContext, _markdownExporter, _jsonExporter, this);
+        _saveArticle = new SaveArticleRunnable(_dbContext, _markdownExporter, _jsonExporter, _config, this);
         _completion = new CompletionRunnable(this);
         _failureCompletion = new FailureCompletionRunnable(this);
 
@@ -492,12 +493,14 @@ public class SaveArticleRunnable : OrchestrationRunnable<ArticleOutput, Article>
     private readonly PressDbContext _dbContext;
     private readonly MarkdownExporter _markdownExporter;
     private readonly JsonExporter _jsonExporter;
+    private readonly AppConfiguration _config;
 
-    public SaveArticleRunnable(PressDbContext dbContext, MarkdownExporter markdownExporter, JsonExporter jsonExporter, Orchestration orchestrator) : base(orchestrator)
+    public SaveArticleRunnable(PressDbContext dbContext, MarkdownExporter markdownExporter, JsonExporter jsonExporter, AppConfiguration config, Orchestration orchestrator) : base(orchestrator)
     {
         _dbContext = dbContext;
         _markdownExporter = markdownExporter;
         _jsonExporter = jsonExporter;
+        _config = config;
     }
 
     public override async ValueTask<Article> Invoke(RunnableProcess<ArticleOutput, Article> process)
@@ -558,6 +561,30 @@ public class SaveArticleRunnable : OrchestrationRunnable<ArticleOutput, Article>
             await _dbContext.SaveChangesAsync();
 
             Console.WriteLine($"✓ Saved article to database: {article.Title} (ID: {article.Id})");
+            
+            // Auto-publish if configured
+            if (_config.Publishing?.DevTo?.Enabled == true && 
+                _config.Publishing.DevTo.AutoPublish)
+            {
+                Console.WriteLine($"[SaveArticle] Auto-publishing to dev.to...");
+                
+                if (!string.IsNullOrEmpty(_config.ApiKeys.DevTo))
+                {
+                    bool published = await Publish.DevToPublisher.PublishArticleAsync(
+                        article, 
+                        _config.ApiKeys.DevTo,
+                        _dbContext);
+                        
+                    if (!published)
+                    {
+                        Console.WriteLine($"[SaveArticle] ⚠ Auto-publish to dev.to failed (see logs above)");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"[SaveArticle] ⚠ dev.to API key not configured");
+                }
+            }
             
             // Now export to files
             try

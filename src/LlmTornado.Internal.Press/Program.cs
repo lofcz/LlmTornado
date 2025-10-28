@@ -13,6 +13,7 @@ using LlmTornado.Chat.Models;
 using LlmTornado.Common;
 using LlmTornado.Internal.Press.Database.Models;
 using LlmTornado.Internal.Press.Export;
+using LlmTornado.Internal.Press.Publish;
 using LlmTornado.Mcp;
 
 namespace LlmTornado.Internal.Press;
@@ -26,22 +27,21 @@ class Program
     static async Task Main(string[] args)
     {
         Console.WriteLine("=== LlmTornado Internal Press - Journalist Agent ===\n");
-
+        
         try
         {
             // Load configuration
             config = AppConfiguration.Load();
             Console.WriteLine($"Objective: {config.Objective}\n");
-
+            
             // Initialize database (basic setup)
             await DatabaseInitializer.InitializeAsync();
 
             // Create services
             PressDbContext dbContext = new PressDbContext();
+            
             TornadoApi client = CreateTornadoClient(true);
             ArticleGenerationService service = new ArticleGenerationService(client, config, dbContext);
-
-            new Tool(() => { }, "my_name");
             
             if (args.Length == 0)
             {
@@ -138,6 +138,14 @@ class Program
                 await HandleExportAllCommand(config, dbContext);
                 break;
 
+            case "publish":
+                await HandlePublishCommand(args, config);
+                break;
+                
+            case "publish-all":
+                await HandlePublishAllCommand(config);
+                break;
+
             case "reset-db":
             case "reset":
                 await HandleResetDbCommand();
@@ -198,6 +206,8 @@ class Program
         Console.WriteLine("  clear-queue           Clear all pending items from queue (alias: clearq)");
         Console.WriteLine("  status                Show queue and article statistics (alias: stat)");
         Console.WriteLine("  export-all            Export all articles to markdown/JSON (alias: export)");
+        Console.WriteLine("  publish <article-id>  Publish article to enabled platforms");
+        Console.WriteLine("  publish-all           Publish all unpublished articles");
         Console.WriteLine("  migrate-db            Apply pending database migrations (alias: migrate)");
         Console.WriteLine("  check-db              Check database status and pending migrations (alias: checkdb)");
         Console.WriteLine("  reset-db              Reset the database - DELETES ALL DATA (alias: reset)");
@@ -360,6 +370,90 @@ class Program
 
         Console.WriteLine($"\n=== Export Complete ===");
         Console.WriteLine($"Exported {exported}/{articles.Count} articles");
+    }
+
+    static async Task HandlePublishCommand(string[] args, AppConfiguration config)
+    {
+        if (args.Length < 2)
+        {
+            Console.WriteLine("Usage: publish <article-id>");
+            return;
+        }
+        
+        if (!int.TryParse(args[1], out int articleId))
+        {
+            Console.WriteLine("Invalid article ID");
+            return;
+        }
+        
+        using PressDbContext context = new PressDbContext();
+        Article? article = await context.Articles.FindAsync(articleId);
+        
+        if (article == null)
+        {
+            Console.WriteLine($"Article {articleId} not found");
+            return;
+        }
+        
+        Console.WriteLine($"Publishing article {articleId}: {article.Title}");
+        
+        // Publish to dev.to if enabled
+        if (config.Publishing?.DevTo?.Enabled == true)
+        {
+            if (!string.IsNullOrEmpty(config.ApiKeys.DevTo))
+            {
+                await Publish.DevToPublisher.PublishArticleAsync(article, config.ApiKeys.DevTo, context);
+            }
+            else
+            {
+                Console.WriteLine("⚠ dev.to API key not configured");
+            }
+        }
+        
+        Console.WriteLine("✓ Publish command completed");
+    }
+
+    static async Task HandlePublishAllCommand(AppConfiguration config)
+    {
+        using PressDbContext context = new PressDbContext();
+        
+        // Get articles that are published but not yet pushed to platforms
+        var articles = await context.Articles
+            .Where(a => a.Status == "Published")
+            .ToListAsync();
+        
+        if (articles.Count == 0)
+        {
+            Console.WriteLine("No published articles to push");
+            return;
+        }
+        
+        Console.WriteLine($"Publishing {articles.Count} article(s)...");
+        
+        int successCount = 0;
+        
+        foreach (var article in articles)
+        {
+            // Check if already published to dev.to
+            bool alreadyPublished = await context.ArticlePublishStatus
+                .AnyAsync(p => p.ArticleId == article.Id && p.Platform == "devto" && p.Status == "Published");
+            
+            if (alreadyPublished)
+            {
+                Console.WriteLine($"  [{article.Id}] Already published: {article.Title}");
+                continue;
+            }
+            
+            Console.WriteLine($"  [{article.Id}] Publishing: {article.Title}");
+            
+            if (config.Publishing?.DevTo?.Enabled == true && !string.IsNullOrEmpty(config.ApiKeys.DevTo))
+            {
+                bool success = await Publish.DevToPublisher.PublishArticleAsync(article, config.ApiKeys.DevTo, context);
+                if (success) successCount++;
+            }
+        }
+        
+        Console.WriteLine($"✓ Published {successCount}/{articles.Count} articles");
     }
 
     static async Task HandleClearQueueCommand(PressDbContext dbContext)

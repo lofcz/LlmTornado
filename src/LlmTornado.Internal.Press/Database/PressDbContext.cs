@@ -9,6 +9,7 @@ public class PressDbContext : DbContext
     public DbSet<ArticleQueue> ArticleQueue { get; set; } = null!;
     public DbSet<TrendingTopic> TrendingTopics { get; set; } = null!;
     public DbSet<WorkHistory> WorkHistory { get; set; } = null!;
+    public DbSet<ArticlePublishStatus> ArticlePublishStatus { get; set; } = null!;
 
     public PressDbContext(DbContextOptions<PressDbContext> options) : base(options)
     {
@@ -71,6 +72,20 @@ public class PressDbContext : DbContext
             entity.HasIndex(e => e.ArticleId);
             entity.HasIndex(e => e.Action);
             entity.HasIndex(e => e.Timestamp);
+        });
+
+        // ArticlePublishStatus configuration
+        modelBuilder.Entity<ArticlePublishStatus>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.ArticleId, e.Platform }).IsUnique();
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.PublishedDate);
+            
+            entity.HasOne(e => e.Article)
+                .WithMany()
+                .HasForeignKey(e => e.ArticleId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

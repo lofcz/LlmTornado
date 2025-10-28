@@ -5,7 +5,8 @@
     "anthropic": "sk-ant-your-anthropic-key-here",
     "tavily": "tvly-your-tavily-key-here",
     "google": "your-google-key-here",
-    "groq": "gsk_your-groq-key-here"
+    "groq": "gsk_your-groq-key-here",
+    "devto": "your-devto-api-key-here"
   },
   "models": {
     "ideation": "gpt-4o-mini",
@@ -96,6 +97,12 @@
     "maxMemesPerArticle": 3,
     "outputDirectory": "./output/memes",
     "minValidationScore": 0.7
+  },
+  "publishing": {
+    "devto": {
+      "enabled": false,
+      "autoPublish": false
+    }
   }
 }
 
