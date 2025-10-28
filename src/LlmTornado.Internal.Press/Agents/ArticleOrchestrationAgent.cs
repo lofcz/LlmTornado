@@ -37,7 +37,9 @@ public class ArticleOrchestrationConfiguration : OrchestrationRuntimeConfigurati
     private ImprovementRunnable? _improvement;
     private ReviewToArticleRunnable? _reviewToArticle;
     private ImageGenerationRunnable? _imageGeneration;
-    private ExportRunnable? _export;
+    private MemeDecisionRunnable? _memeDecision;
+    private MemeGeneratorRunnable? _memeGeneration;
+    private MemeInsertionRunnable? _memeInsertion;
     private SaveArticleRunnable? _saveArticle;
     private CompletionRunnable? _completion;
     private FailureCompletionRunnable? _failureCompletion;
@@ -55,7 +57,7 @@ public class ArticleOrchestrationConfiguration : OrchestrationRuntimeConfigurati
         _config = config;
         _dbContext = dbContext;
         _markdownExporter = new MarkdownExporter(config.Output.Directory);
-        _jsonExporter = new JsonExporter(config.Output.Directory);
+        _jsonExporter = new JsonExporter(config.Output.Directory, config.ImageVariations);
 
         RecordSteps = true;
         SetupOrchestration();
@@ -64,7 +66,7 @@ public class ArticleOrchestrationConfiguration : OrchestrationRuntimeConfigurati
     public override async ValueTask<ChatMessage> AddToChatAsync(ChatMessage message, CancellationToken cancellationToken = default)
     {
         // Invoke the StartingExecution event
-        OnRuntimeEvent?.Invoke(new LlmTornado.Agents.DataModels.ChatRuntimeStartedEvent(Runtime.Id));
+        OnRuntimeEvent?.Invoke(new ChatRuntimeStartedEvent(Runtime.Id));
 
         // Add orchestration event listeners for debugging
         OnOrchestrationEvent += (e) =>
@@ -94,16 +96,16 @@ public class ArticleOrchestrationConfiguration : OrchestrationRuntimeConfigurati
             // Get result from completion runnable
             if (Results != null && Results.Length > 0)
             {
-                var resultMessage = Results.Last();
+                ChatMessage resultMessage = Results.Last();
                 Console.WriteLine($"  → Result: {resultMessage.Content}");
-                OnRuntimeEvent?.Invoke(new LlmTornado.Agents.DataModels.ChatRuntimeCompletedEvent(Runtime.Id));
+                OnRuntimeEvent?.Invoke(new ChatRuntimeCompletedEvent(Runtime.Id));
                 return resultMessage;
             }
             else
             {
                 Console.WriteLine("  ✗ No results from orchestration");
-                var errorMessage = new ChatMessage(Code.ChatMessageRoles.Assistant, "Orchestration completed but no results were generated");
-                OnRuntimeEvent?.Invoke(new LlmTornado.Agents.DataModels.ChatRuntimeCompletedEvent(Runtime.Id));
+                ChatMessage errorMessage = new ChatMessage(ChatMessageRoles.Assistant, "Orchestration completed but no results were generated");
+                OnRuntimeEvent?.Invoke(new ChatRuntimeCompletedEvent(Runtime.Id));
                 return errorMessage;
             }
         }
@@ -111,8 +113,8 @@ public class ArticleOrchestrationConfiguration : OrchestrationRuntimeConfigurati
         {
             Console.WriteLine($"  ✗ Orchestration error: {ex.Message}");
             Console.WriteLine($"  Stack: {ex.StackTrace}");
-            var errorMessage = new ChatMessage(Code.ChatMessageRoles.Assistant, $"Error: {ex.Message}");
-            OnRuntimeEvent?.Invoke(new LlmTornado.Agents.DataModels.ChatRuntimeErrorEvent(ex, Runtime.Id));
+            ChatMessage errorMessage = new ChatMessage(ChatMessageRoles.Assistant, $"Error: {ex.Message}");
+            OnRuntimeEvent?.Invoke(new ChatRuntimeErrorEvent(ex, Runtime.Id));
             return errorMessage;
         }
     }
@@ -125,37 +127,39 @@ public class ArticleOrchestrationConfiguration : OrchestrationRuntimeConfigurati
         _ideation = new IdeationRunnable(_client, _config, this);
         _queueToIdea = new QueueToIdeaRunnable(this);
         
-        // Review, image, export, save, completion runnables
+        // Review, image, meme, save, completion runnables
         _review = new ReviewRunnable(_client, _config, this);
         _improvement = new ImprovementRunnable(this);
         _reviewToArticle = new ReviewToArticleRunnable(this);
         _imageGeneration = new ImageGenerationRunnable(_client, _config, this);
-        _export = new ExportRunnable(_markdownExporter, _jsonExporter, _config, this);
+        _memeDecision = new MemeDecisionRunnable(_client, _config, this);
+        _memeGeneration = new MemeGeneratorRunnable(_client, _config, this);
+        _memeInsertion = new MemeInsertionRunnable(_client, _config, this);
         _saveArticle = new SaveArticleRunnable(_dbContext, _markdownExporter, _jsonExporter, this);
         _completion = new CompletionRunnable(this);
         _failureCompletion = new FailureCompletionRunnable(this);
 
-        // Setup static orchestration flow
+        // Setup static orchestration flow - SEQUENTIAL (no parallel execution)
         // Entry → QueueToIdea (wired per article in SetCurrentQueue)
-        // Dynamic flow (Research → Writing → Review) is wired in SetCurrentQueue()
-        // Static flow: Review → [Improvement Loop OR Approve OR Fail] → Image → Export → Save → Complete
+        // Dynamic flow (Research → Writing → Review/Skip) is wired in SetCurrentQueue()
+        // Sequential flow: Review → [Improvement Loop OR Approve OR Fail] → Image → Meme Decision → [Meme Gen → Meme Insert OR Skip] → Save → Complete
         
         // Entry → QueueToIdea
         _entry!.AddAdvancer((queue) => queue != null && !string.IsNullOrEmpty(queue.Title), _queueToIdea!);
         
         // Review loop with guided autonomy
-        _review!.AddAdvancer(ShouldApprove, _reviewToArticle!);
-        _review!.AddAdvancer(ShouldImprove, _improvement!);
-        _review!.AddAdvancer(ShouldFail, _failureCompletion!);
+        if (_config.ReviewLoop.Enabled)
+        {
+            _review!.AddAdvancer(ShouldApprove, _reviewToArticle!);
+            _review!.AddAdvancer(ShouldImprove, _improvement!);
+            _review!.AddAdvancer(ShouldFail, _failureCompletion!);
+        }
+        else
+        {
+            // If review disabled, always advance to next step
+            _review!.AddAdvancer((review) => true, _reviewToArticle!);
+        }
         
-        // Approved article → Image generation
-        _reviewToArticle!.AddAdvancer((article) => !string.IsNullOrEmpty(article.Title), _imageGeneration!);
-        
-        // Image → Export → Save → Complete
-        _imageGeneration!.AddAdvancer((img) => true, _export!);
-        _export!.AddAdvancer((paths) => paths.MarkdownPath != null, _saveArticle!);
-        _saveArticle!.AddAdvancer((article) => article.Id > 0, _completion!);
-
         // Entry and exit points
         SetEntryRunnable(_entry!);
         SetRunnableWithResult(_completion!); // Success exit
@@ -171,12 +175,12 @@ public class ArticleOrchestrationConfiguration : OrchestrationRuntimeConfigurati
         RuntimeProperties["CurrentQueue"] = queue;
         RuntimeProperties["Objective"] = _config.Objective;
         
-        var articleIdea = new ArticleIdea
+        ArticleIdea articleIdea = new ArticleIdea
         {
             Title = queue.Title,
             IdeaSummary = queue.IdeaSummary,
             EstimatedRelevance = queue.EstimatedRelevance,
-            Tags = JsonConvert.DeserializeObject<string[]>(queue.Tags) ?? Array.Empty<string>(),
+            Tags = JsonConvert.DeserializeObject<string[]>(queue.Tags) ?? [],
             Reasoning = "From queue"
         };
         RuntimeProperties["CurrentArticleIdea"] = articleIdea;
@@ -185,19 +189,89 @@ public class ArticleOrchestrationConfiguration : OrchestrationRuntimeConfigurati
         _research = new ResearchRunnable(_client, _config, this);
         _writing = new WritingRunnable(_client, _config, queue.Title, queue.IdeaSummary, this);
         
-        // Wire the complete article generation flow:
-        // QueueToIdea → Research → Writing → Review → [Improvement back to Research]
+        // Wire EVERYTHING in a simple linear chain - NO CONVERTERS, NO CONDITIONALS
+        // QueueToIdea → Research → Writing → Review → ReviewToArticle → Image → Meme → MemeInsertion → Save → Complete
         _queueToIdea!.AddAdvancer((idea) => !string.IsNullOrEmpty(idea.Title), _research);
         _research.AddAdvancer((researchOutput) => researchOutput.Facts != null && researchOutput.Facts.Length > 0, _writing);
         _writing.AddAdvancer((articleOutput) => 
         {
-            // Store article for later use (review → image)
+            // Store article for ALL downstream use
             RuntimeProperties["CurrentArticle"] = articleOutput;
             return !string.IsNullOrEmpty(articleOutput.Title);
         }, _review!);
         
-        // Wire improvement loop back to research
+        // Wire improvement loop
         _improvement!.AddAdvancer((idea) => !string.IsNullOrEmpty(idea.Title), _research);
+        
+        // Linear chain: Review → ReviewToArticle → Image → Meme → MemeInsertion → Save → Complete
+        ArticleOrchestrationConfiguration orchestration = this;
+        
+        _reviewToArticle!.AddAdvancer((article) => !string.IsNullOrEmpty(article.Title), _imageGeneration!);
+        
+        // ImageGeneration outputs ImageOutput, but MemeDecision needs ArticleOutput
+        // Use converter to pull article from context
+        _imageGeneration!.AddAdvancer(
+            (img) => {
+                // Store image URL
+                if (!string.IsNullOrEmpty(img?.Url))
+                {
+                    orchestration.RuntimeProperties["ImageUrl"] = img.Url;
+                }
+                
+                // Store image variations if available
+                if (img?.Variations != null && img.Variations.Count > 0)
+                {
+                    orchestration.RuntimeProperties["ImageVariations"] = img.Variations;
+                }
+                
+                // Retrieve and return article from context
+                if (orchestration.RuntimeProperties.TryGetValue("CurrentArticle", out object? articleObj) &&
+                    articleObj is ArticleOutput article)
+                {
+                    return article;
+                }
+                
+                // Fallback
+                return new ArticleOutput 
+                { 
+                    Title = "Error", Body = "Article lost", Description = "Error",
+                    Tags = [], WordCount = 0, Slug = "error"
+                };
+            },
+            _memeDecision!);
+        
+        // MemeDecision branches: generate memes OR skip to save
+        _memeDecision!.AddAdvancer(
+            (decision) => decision.ShouldGenerateMemes,
+            _memeGeneration!);
+        
+        // When no memes, use converter to get article from context and pass to save
+        Console.WriteLine($"  [Orchestration] Wiring MemeDecision → SaveArticle with converter");
+        
+        _memeDecision!.AddAdvancer((decision) => !decision.ShouldGenerateMemes, (decision) =>
+        {
+            Console.WriteLine("  [MemeDecision→Save] Converter called");
+            if (orchestration.RuntimeProperties.TryGetValue("CurrentArticle", out object? articleObj) && articleObj is ArticleOutput article)
+            {
+                Console.WriteLine($"  [MemeDecision→Save] Found article: {article.Title}");
+                return article;
+            }
+
+            Console.WriteLine("  [MemeDecision→Save] ERROR: Article not found!");
+            return new ArticleOutput
+            {
+                Title = "Error",
+                Body = "Article lost",
+                Description = "Error",
+                Tags = [],
+                WordCount = 0,
+                Slug = "error"
+            };
+        }, _saveArticle!);
+        
+        _memeGeneration!.AddAdvancer((collection) => true, _memeInsertion!);
+        _memeInsertion!.AddAdvancer((article) => !string.IsNullOrEmpty(article.Title), _saveArticle!);
+        _saveArticle!.AddAdvancer((article) => article.Id > 0, _completion!);
     }
 
     // Decision functions for review loop (guided autonomy)
@@ -263,7 +337,7 @@ public class EntryRunnable : OrchestrationRunnable<ChatMessage, ArticleQueue>
         Console.WriteLine($"  [EntryRunnable] Invoked with message: {process.Input?.Content}");
         
         // Get the queue item from orchestration context (set by SetCurrentQueue)
-        if (Orchestrator?.RuntimeProperties.TryGetValue("CurrentQueue", out var queueObj) == true &&
+        if (Orchestrator?.RuntimeProperties.TryGetValue("CurrentQueue", out object? queueObj) == true &&
             queueObj is ArticleQueue queue)
         {
             Console.WriteLine($"  [EntryRunnable] Found queue: {queue.Title}");
@@ -272,7 +346,7 @@ public class EntryRunnable : OrchestrationRunnable<ChatMessage, ArticleQueue>
 
         // Fallback: shouldn't happen
         Console.WriteLine($"  [EntryRunnable] ERROR: Queue not found in RuntimeProperties");
-        var props = Orchestrator?.RuntimeProperties.Keys.ToList() ?? new List<string>();
+        List<string> props = Orchestrator?.RuntimeProperties.Keys.ToList() ?? [];
         Console.WriteLine($"  [EntryRunnable] Available properties: {string.Join(", ", props)}");
         return ValueTask.FromResult(new ArticleQueue
         {
@@ -289,8 +363,8 @@ public class QueueToIdeaRunnable : OrchestrationRunnable<ArticleQueue, ArticleId
 
     public override ValueTask<ArticleIdea> Invoke(RunnableProcess<ArticleQueue, ArticleIdea> process)
     {
-        var queue = process.Input;
-        var tags = JsonConvert.DeserializeObject<string[]>(queue.Tags) ?? Array.Empty<string>();
+        ArticleQueue queue = process.Input;
+        string[] tags = JsonConvert.DeserializeObject<string[]>(queue.Tags) ?? [];
         
         return ValueTask.FromResult(new ArticleIdea
         {
@@ -309,16 +383,16 @@ public class ImprovementRunnable : OrchestrationRunnable<ReviewOutput, ArticleId
 
     public override ValueTask<ArticleIdea> Invoke(RunnableProcess<ReviewOutput, ArticleIdea> process)
     {
-        var review = process.Input;
+        ReviewOutput review = process.Input;
         
         // Build improvement feedback for the next iteration
-        var feedback = "The article needs improvement. Review feedback:\n\n";
+        string feedback = "The article needs improvement. Review feedback:\n\n";
         feedback += $"Quality Score: {review.QualityScore}/100\n\n";
 
         if (review.Issues != null && review.Issues.Length > 0)
         {
             feedback += "Issues to address:\n";
-            foreach (var issue in review.Issues)
+            foreach (ReviewIssue issue in review.Issues)
             {
                 feedback += $"- [{issue.Severity}] {issue.Category}: {issue.Description}\n";
                 if (!string.IsNullOrEmpty(issue.Suggestion))
@@ -332,7 +406,7 @@ public class ImprovementRunnable : OrchestrationRunnable<ReviewOutput, ArticleId
         if (review.Suggestions != null && review.Suggestions.Length > 0)
         {
             feedback += "Suggestions:\n";
-            foreach (var suggestion in review.Suggestions)
+            foreach (string suggestion in review.Suggestions)
             {
                 feedback += $"- {suggestion}\n";
             }
@@ -341,8 +415,26 @@ public class ImprovementRunnable : OrchestrationRunnable<ReviewOutput, ArticleId
         // Store feedback in orchestration properties for next iteration
         Orchestrator?.RuntimeProperties["ImprovementFeedback"] = feedback;
         
+        // Store the previous article draft for improvement
+        if (Orchestrator?.RuntimeProperties.TryGetValue("CurrentArticle", out object? articleObj) == true &&
+            articleObj is ArticleOutput previousArticle)
+        {
+            Orchestrator.RuntimeProperties["PreviousArticleDraft"] = previousArticle;
+        }
+        
+        // Analyze if research needs to be redone based on issue categories
+        bool needsResearch = review.Issues?.Any(issue => 
+            issue.Category.Contains("Research", StringComparison.OrdinalIgnoreCase) ||
+            issue.Category.Contains("Accuracy", StringComparison.OrdinalIgnoreCase) ||
+            issue.Category.Contains("Sources", StringComparison.OrdinalIgnoreCase) ||
+            issue.Severity == "Critical") ?? false;
+            
+        Orchestrator.RuntimeProperties["NeedsResearch"] = needsResearch;
+        
+        Console.WriteLine($"  [ImprovementRunnable] 🔄 Improvement mode: NeedsResearch={needsResearch}");
+        
         // Return the original article idea from context to re-research
-        if (Orchestrator?.RuntimeProperties.TryGetValue("CurrentArticleIdea", out var ideaObj) == true &&
+        if (Orchestrator?.RuntimeProperties.TryGetValue("CurrentArticleIdea", out object? ideaObj) == true &&
             ideaObj is ArticleIdea idea)
         {
             return ValueTask.FromResult(idea);
@@ -353,7 +445,7 @@ public class ImprovementRunnable : OrchestrationRunnable<ReviewOutput, ArticleId
         {
             Title = "Article Improvement",
             IdeaSummary = feedback,
-            Tags = Array.Empty<string>(),
+            Tags = [],
             EstimatedRelevance = 0.5,
             Reasoning = "Improvement iteration"
         });
@@ -366,8 +458,19 @@ public class ReviewToArticleRunnable : OrchestrationRunnable<ReviewOutput, Artic
 
     public override ValueTask<ArticleOutput> Invoke(RunnableProcess<ReviewOutput, ArticleOutput> process)
     {
+        // Clear improvement-related properties since article was approved
+        if (Orchestrator?.RuntimeProperties != null)
+        {
+            Orchestrator.RuntimeProperties.TryRemove("ImprovementFeedback", out _);
+            Orchestrator.RuntimeProperties.TryRemove("PreviousArticleDraft", out _);
+            Orchestrator.RuntimeProperties.TryRemove("NeedsResearch", out _);
+            Orchestrator.RuntimeProperties.TryRemove("PreviousResearch", out _);
+        }
+        
+        Console.WriteLine("  [ReviewToArticle] ✓ Article approved, cleared improvement properties");
+        
         // Get the approved article from orchestration context
-        if (Orchestrator?.RuntimeProperties.TryGetValue("CurrentArticle", out var articleObj) == true &&
+        if (Orchestrator?.RuntimeProperties.TryGetValue("CurrentArticle", out object? articleObj) == true &&
             articleObj is ArticleOutput article)
         {
             return ValueTask.FromResult(article);
@@ -379,51 +482,12 @@ public class ReviewToArticleRunnable : OrchestrationRunnable<ReviewOutput, Artic
             Title = "Error",
             Body = "Article not found in context",
             Description = "Error",
-            Tags = Array.Empty<string>()
+            Tags = []
         });
     }
 }
 
-public class ExportRunnable : OrchestrationRunnable<ImageOutput, ExportPaths>
-{
-    private readonly MarkdownExporter _markdownExporter;
-    private readonly JsonExporter _jsonExporter;
-    private readonly AppConfiguration _config;
-
-    public ExportRunnable(
-        MarkdownExporter markdownExporter,
-        JsonExporter jsonExporter,
-        AppConfiguration config,
-        Orchestration orchestrator) : base(orchestrator)
-    {
-        _markdownExporter = markdownExporter;
-        _jsonExporter = jsonExporter;
-        _config = config;
-    }
-
-    public override async ValueTask<ExportPaths> Invoke(RunnableProcess<ImageOutput, ExportPaths> process)
-    {
-        var imageOutput = process.Input;
-        
-        // Store image URL for later use
-        if (!string.IsNullOrEmpty(imageOutput.Url))
-        {
-            Orchestrator.RuntimeProperties["ImageUrl"] = imageOutput.Url;
-        }
-
-        // Export will happen after saving to database
-        // For now, just pass through (actual export happens in SaveArticleRunnable or after)
-        Console.WriteLine($"✓ Image generated: {imageOutput.Url}");
-
-        return new ExportPaths
-        {
-            MarkdownPath = "pending",
-            JsonPath = "pending"
-        };
-    }
-}
-
-public class SaveArticleRunnable : OrchestrationRunnable<ExportPaths, Article>
+public class SaveArticleRunnable : OrchestrationRunnable<ArticleOutput, Article>
 {
     private readonly PressDbContext _dbContext;
     private readonly MarkdownExporter _markdownExporter;
@@ -436,43 +500,57 @@ public class SaveArticleRunnable : OrchestrationRunnable<ExportPaths, Article>
         _jsonExporter = jsonExporter;
     }
 
-    public override async ValueTask<Article> Invoke(RunnableProcess<ExportPaths, Article> process)
+    public override async ValueTask<Article> Invoke(RunnableProcess<ArticleOutput, Article> process)
     {
-        // Get article from orchestration context
-        if (!Orchestrator.RuntimeProperties.TryGetValue("CurrentArticle", out var articleOutputObj) ||
-            articleOutputObj is not ArticleOutput articleOutput)
+        ArticleOutput? articleOutput = process.Input;
+        
+        if (articleOutput == null)
         {
-            return new Article { Id = 0, Title = "Error: Article not found" };
+            Console.WriteLine($"✗ SaveArticle: ArticleOutput is null!");
+            return new Article { Id = 0, Title = "Error: Null Input" };
         }
+        
+        Console.WriteLine($"  [SaveArticle] Saving article: {articleOutput.Title}");
 
         try
         {
             // Get the objective from configuration
             string objective = "";
-            if (Orchestrator.RuntimeProperties.TryGetValue("Objective", out var objObj) && objObj is string obj)
+            if (Orchestrator.RuntimeProperties.TryGetValue("Objective", out object? objObj) && objObj is string obj)
             {
                 objective = obj;
             }
 
             // Create Article entity from ArticleOutput
-            var article = new Article
+            // Strip any preamble before first heading
+            string cleanBody = StripPreambleFromBody(articleOutput.Body ?? string.Empty);
+            
+            Article article = new Article
             {
-                Title = articleOutput.Title,
-                Body = articleOutput.Body,
-                Description = articleOutput.Description,
-                Tags = JsonConvert.SerializeObject(articleOutput.Tags ?? Array.Empty<string>()),
+                Title = articleOutput.Title ?? "Untitled",
+                Body = cleanBody,
+                Description = articleOutput.Description ?? string.Empty,
+                Tags = JsonConvert.SerializeObject(articleOutput.Tags ?? []),
                 CreatedDate = DateTime.UtcNow,
                 PublishedDate = DateTime.UtcNow,
                 Status = ArticleStatus.Published,
                 Objective = objective,
                 WordCount = articleOutput.WordCount,
-                Slug = articleOutput.Slug
+                Slug = articleOutput.Slug ?? "untitled"
             };
 
             // Get image URL if available
-            if (Orchestrator.RuntimeProperties.TryGetValue("ImageUrl", out var imageUrlObj) && imageUrlObj is string imageUrl)
+            if (Orchestrator.RuntimeProperties.TryGetValue("ImageUrl", out object? imageUrlObj) && imageUrlObj is string imageUrl)
             {
                 article.ImageUrl = imageUrl;
+            }
+            
+            // Get image variations if available
+            if (Orchestrator.RuntimeProperties.TryGetValue("ImageVariations", out object? variationsObj) && 
+                variationsObj is Dictionary<string, string> variations &&
+                variations.Count > 0)
+            {
+                article.ImageVariationsJson = JsonConvert.SerializeObject(variations);
             }
             
             // Save to database first to get the ID
@@ -484,12 +562,12 @@ public class SaveArticleRunnable : OrchestrationRunnable<ExportPaths, Article>
             // Now export to files
             try
             {
-                var markdownPath = await _markdownExporter.ExportArticleAsync(article);
-                var jsonPath = await _jsonExporter.ExportArticleAsync(article);
+                string markdownPath = await _markdownExporter.ExportArticleAsync(article);
+                string jsonPath = await _jsonExporter.ExportArticleAsync(article);
                 
                 // Convert to absolute paths
-                var absoluteMarkdownPath = Path.GetFullPath(markdownPath);
-                var absoluteJsonPath = Path.GetFullPath(jsonPath);
+                string absoluteMarkdownPath = Path.GetFullPath(markdownPath);
+                string absoluteJsonPath = Path.GetFullPath(jsonPath);
                 
                 Console.WriteLine($"\n📄 Article exported:");
                 Console.WriteLine($"   Markdown: {absoluteMarkdownPath}");
@@ -513,6 +591,49 @@ public class SaveArticleRunnable : OrchestrationRunnable<ExportPaths, Article>
             return new Article { Id = 0, Title = "Error" };
         }
     }
+
+    /// <summary>
+    /// Strip everything before the first # heading (removes model's thinking/preamble)
+    /// </summary>
+    private static string StripPreambleFromBody(string body)
+    {
+        if (string.IsNullOrEmpty(body))
+            return body;
+
+        string[] lines = body.Split('\n');
+        
+        // Find the first line that starts with # (markdown heading)
+        // This will strip:
+        // - Any preamble text
+        // - HTML comments (<!-- -->)
+        // - Empty lines before the first heading
+        // - Any other content before the article starts
+        for (int i = 0; i < lines.Length; i++)
+        {
+            string trimmed = lines[i].TrimStart();
+            if (trimmed.StartsWith("#") && !trimmed.StartsWith("#!"))  // Heading, but not shebang
+            {
+                // Return everything from this line onwards
+                return string.Join('\n', lines[i..]);
+            }
+        }
+
+        // If no heading found, return original body
+        // But strip HTML comments and leading blank lines anyway
+        int firstNonEmpty = 0;
+        for (int i = 0; i < lines.Length; i++)
+        {
+            string trimmed = lines[i].TrimStart();
+            // Skip empty lines and HTML comments
+            if (!string.IsNullOrWhiteSpace(trimmed) && !trimmed.StartsWith("<!--"))
+            {
+                firstNonEmpty = i;
+                break;
+            }
+        }
+        
+        return firstNonEmpty > 0 ? string.Join('\n', lines[firstNonEmpty..]) : body;
+    }
 }
 
 public class CompletionRunnable : OrchestrationRunnable<Article, ChatMessage>
@@ -526,8 +647,8 @@ public class CompletionRunnable : OrchestrationRunnable<Article, ChatMessage>
     {
         Orchestrator?.HasCompletedSuccessfully();
         
-        var article = process.Input;
-        var message = $"Article generation completed successfully: {article.Title}";
+        Article article = process.Input;
+        string message = $"Article generation completed successfully: {article.Title}";
 
         return ValueTask.FromResult(new ChatMessage(ChatMessageRoles.Assistant, message));
     }
@@ -544,8 +665,8 @@ public class FailureCompletionRunnable : OrchestrationRunnable<ReviewOutput, Cha
     {
         Orchestrator?.HasCompletedSuccessfully();
         
-        var review = process.Input;
-        var message = $"Article generation failed after review: {review.Summary}";
+        ReviewOutput review = process.Input;
+        string message = $"Article generation failed after review: {review.Summary}";
 
         return ValueTask.FromResult(new ChatMessage(ChatMessageRoles.Assistant, message));
     }
@@ -556,4 +677,5 @@ public struct ExportPaths
     public string? MarkdownPath { get; set; }
     public string? JsonPath { get; set; }
 }
+
 

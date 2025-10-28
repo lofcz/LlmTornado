@@ -298,7 +298,7 @@ public class TornadoAgent
     /// <remarks>This method orchestrates the conversation flow by invoking the underlying runner with the
     /// provided parameters. It supports optional streaming, guardrail validation, and event handling for advanced
     /// scenarios.</remarks>
-    /// <param name="input">The initial input message to start the conversation. Defaults to an empty string if not provided.</param>
+    /// <param name="input">The initial input message to start the conversation. Defaults to null if not provided.</param>
     /// <param name="appendMessages">A list of additional chat messages to append to the conversation context. Can be <see langword="null"/>.</param>
     /// <param name="inputGuardRailFunction">An optional guardrail function to validate or modify the input before processing. Can be <see langword="null"/>.</param>
     /// <param name="streaming">A value indicating whether the response should be streamed. <see langword="true"/> to enable streaming;
@@ -312,13 +312,64 @@ public class TornadoAgent
     /// <returns>A <see cref="Task"/> representing the asynchronous operation. The task result contains the updated <see
     /// cref="Conversation"/> object after processing.</returns>
     public async Task<Conversation> Run(
-        string input = "", 
+        string? input = null,
+        List<ChatMessage>? appendMessages = null,
+        GuardRailFunction? inputGuardRailFunction = null,
+        bool? streaming = null,
+        Func<AgentRunnerEvents, ValueTask>? onAgentRunnerEvent = null,
+        int maxTurns = 10,
+        string? responseId = null,
+        Func<string, ValueTask<bool>>? toolPermissionHandle = null,
+        bool singleTurn = false,
+        TornadoRunnerOptions? runnerOptions = null,
+        CancellationToken cancellationToken = default)
+    {
+        return await RunInternal(input is null ? null : [new ChatMessagePart(input)], appendMessages, inputGuardRailFunction, streaming, onAgentRunnerEvent, maxTurns, responseId, toolPermissionHandle, singleTurn, runnerOptions, cancellationToken);
+    }
+
+    /// <summary>
+    /// Executes the conversation flow asynchronously, processing the input and managing interactions with the agent.
+    /// </summary>
+    /// <remarks>This method orchestrates the conversation flow by invoking the underlying runner with the
+    /// provided parameters. It supports optional streaming, guardrail validation, and event handling for advanced
+    /// scenarios.</remarks>
+    /// <param name="input">The initial input message to start the conversation. Defaults to null if not provided.</param>
+    /// <param name="appendMessages">A list of additional chat messages to append to the conversation context. Can be <see langword="null"/>.</param>
+    /// <param name="inputGuardRailFunction">An optional guardrail function to validate or modify the input before processing. Can be <see langword="null"/>.</param>
+    /// <param name="streaming">A value indicating whether the response should be streamed. <see langword="true"/> to enable streaming;
+    /// otherwise, <see langword="false"/>.</param>
+    /// <param name="onAgentRunnerEvent">An optional callback function to handle agent runner events during execution. Can be <see langword="null"/>.</param>
+    /// <param name="maxTurns">The maximum number of turns allowed in the conversation. Must be a positive integer. Defaults to 10.</param>
+    /// <param name="responseId">An optional identifier for the response, used for response API chat. Defaults to an empty string.</param>
+    /// <param name="toolPermissionHandle">An optional callback function to handle tool permission requests. Returns a <see langword="true"/> or <see
+    /// langword="false"/> value indicating whether the tool is permitted. Can be <see langword="null"/>.</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation requests. Defaults to <see cref="CancellationToken.None"/>.</param>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation. The task result contains the updated <see
+    /// cref="Conversation"/> object after processing.</returns>
+    public async Task<Conversation> Run(
+        List<ChatMessagePart>? input, 
         List<ChatMessage>? appendMessages = null, 
         GuardRailFunction? inputGuardRailFunction = null,
         bool? streaming = null,
         Func<AgentRunnerEvents, ValueTask>? onAgentRunnerEvent = null, 
         int maxTurns = 10, 
-        string responseId = "",
+        string? responseId = null,
+        Func<string, ValueTask<bool>>? toolPermissionHandle = null, 
+        bool singleTurn = false,
+        TornadoRunnerOptions? runnerOptions = null,
+        CancellationToken cancellationToken = default)
+    {
+        return await RunInternal(input, appendMessages, inputGuardRailFunction, streaming, onAgentRunnerEvent, maxTurns, responseId, toolPermissionHandle, singleTurn, runnerOptions, cancellationToken);
+    }
+     
+    internal async Task<Conversation> RunInternal(
+        List<ChatMessagePart>? input, 
+        List<ChatMessage>? appendMessages = null, 
+        GuardRailFunction? inputGuardRailFunction = null,
+        bool? streaming = null,
+        Func<AgentRunnerEvents, ValueTask>? onAgentRunnerEvent = null, 
+        int maxTurns = 10, 
+        string? responseId = null,
         Func<string, ValueTask<bool>>? toolPermissionHandle = null, 
         bool singleTurn = false,
         TornadoRunnerOptions? runnerOptions = null,
@@ -337,7 +388,7 @@ public class TornadoAgent
             responseId: responseId, 
             runnerOptions: runnerOptions,
             toolPermissionHandle: toolPermissionHandle);
-    }
+    } 
 
     /// <summary>
     /// Cancels the active run, if any. Returns whether the run was cancelled.

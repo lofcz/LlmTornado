@@ -32,14 +32,68 @@ public class TornadoRunner
     /// <exception cref="OperationCanceledException"></exception>
     public static async Task<Conversation> RunAsync(
         TornadoAgent agent,
-        string input = "",
+        string? input = null,
         GuardRailFunction? guardRail = null,
         bool singleTurn = false,
         int maxTurns = 10,
         List<ChatMessage>? messagesToAppend = null,
         Func<AgentRunnerEvents, ValueTask>? runnerCallback = null,
         bool streaming = false,
-        string responseId = "",
+        string? responseId = null,
+        Func<string, ValueTask<bool>>? toolPermissionHandle = null,
+        TornadoRunnerOptions? runnerOptions = null,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return await RunAsyncInternal(agent, input is null ? null : [ new ChatMessagePart(input) ], guardRail, singleTurn, maxTurns, messagesToAppend, runnerCallback, streaming, responseId, toolPermissionHandle, runnerOptions, cancellationToken);
+    }
+    
+    /// <summary>
+    /// Invoke the agent loop to begin async
+    /// </summary>
+    /// <param name="agent">Agent to Run</param>
+    /// <param name="input">Message to the Agent</param>
+    /// <param name="guardRail">Input Guardrail To perform</param>
+    /// <param name="singleTurn">Set loop to not loop</param>
+    /// <param name="maxTurns">Max loops to perform</param>
+    /// <param name="messagesToAppend"> Input messages to add to response</param>
+    /// <param name="streaming">Enable streaming</param>
+    /// <param name="runnerCallback">delegate to send event information </param>
+    /// <param name="responseId">Previous Response ID from response API</param>
+    /// <param name="cancellationToken">Cancellation token to cancel the run</param>
+    /// <param name="toolPermissionHandle">Delegate to request tool permission from user</param>
+    /// <returns>Result of the run</returns>
+    /// <exception cref="GuardRailTriggerException">Triggers when Guardrail detects bad input</exception>
+    /// <exception cref="Exception"> Max Turns Reached or Error</exception>
+    /// <exception cref="OperationCanceledException"></exception>
+    public static async Task<Conversation> RunAsync(
+        TornadoAgent agent,
+        List<ChatMessagePart>? input = null,
+        GuardRailFunction? guardRail = null,
+        bool singleTurn = false,
+        int maxTurns = 10,
+        List<ChatMessage>? messagesToAppend = null,
+        Func<AgentRunnerEvents, ValueTask>? runnerCallback = null,
+        bool streaming = false,
+        string? responseId = null,
+        Func<string, ValueTask<bool>>? toolPermissionHandle = null,
+        TornadoRunnerOptions? runnerOptions = null,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return await RunAsyncInternal(agent, input, guardRail, singleTurn, maxTurns, messagesToAppend, runnerCallback, streaming, responseId, toolPermissionHandle, runnerOptions, cancellationToken);
+    }
+    
+    private static async Task<Conversation> RunAsyncInternal(
+        TornadoAgent agent,
+        List<ChatMessagePart>? input = null,
+        GuardRailFunction? guardRail = null,
+        bool singleTurn = false,
+        int maxTurns = 10,
+        List<ChatMessage>? messagesToAppend = null,
+        Func<AgentRunnerEvents, ValueTask>? runnerCallback = null,
+        bool streaming = false,
+        string? responseId = null,
         Func<string, ValueTask<bool>>? toolPermissionHandle = null,
         TornadoRunnerOptions? runnerOptions = null,
         CancellationToken cancellationToken = default
@@ -126,7 +180,7 @@ public class TornadoRunner
         int maxTurns = 10,
         Func<AgentRunnerEvents, ValueTask>? runnerCallback = null,
         bool streaming = false,
-        string responseId = "",
+        string? responseId = null,
         Func<string, ValueTask<bool>>? toolPermissionRequest = null,
         TornadoRunnerOptions? runnerOptions = null,
         CancellationToken cancellationToken = default
@@ -191,7 +245,7 @@ public class TornadoRunner
     /// <param name="responseId"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    private static Conversation SetupConversation(TornadoAgent agent, string input, List<ChatMessage>? messages = null, string responseId = "", CancellationToken cancellationToken = default)
+    private static Conversation SetupConversation(TornadoAgent agent, List<ChatMessagePart>? input = null, List<ChatMessage>? messages = null, string? responseId = null, CancellationToken cancellationToken = default)
     {
         Conversation chat = agent.Client.Chat.CreateConversation(agent.Options);
 
@@ -214,7 +268,10 @@ public class TornadoRunner
 
         
         //Add the latest message to the stream
-        if (!string.IsNullOrEmpty(input.Trim())) chat.AppendUserInput(input);
+        if (input?.Count > 0)
+        {
+            chat.AppendUserInput(input);
+        }
 
         return chat;
     }
@@ -232,7 +289,7 @@ public class TornadoRunner
         return chat;
     }
 
-    private static async Task CheckInputGuardrail(Conversation chat, string input, GuardRailFunction? guardRail, Func<AgentRunnerEvents, ValueTask>? runnerCallback = null)
+    private static async Task CheckInputGuardrail(Conversation chat, List<ChatMessagePart>? input, GuardRailFunction? guardRail, Func<AgentRunnerEvents, ValueTask>? runnerCallback = null)
     {
         if (guardRail != null)
         {
@@ -487,7 +544,7 @@ public class TornadoRunner
 
             if (runnerCallback is not null && response is { Exception: null })
             {
-                await runnerCallback.Invoke(new AgentRunnerUsageReceivedEvent(response.Data?.Usage?.TotalTokens ?? 0, chat));
+                await runnerCallback.Invoke(new AgentRunnerUsageReceivedEvent(response.Data?.Usage?.PromptTokens ?? 0, response.Data?.Usage?.CompletionTokens ?? 0, response.Data?.Usage?.TotalTokens ?? 0, chat));
             }
         }
         catch (Exception ex)
@@ -583,7 +640,7 @@ public class TornadoRunner
             {
                 if (runnerCallback is not null)
                 {
-                    await runnerCallback.Invoke(new AgentRunnerUsageReceivedEvent(usage.TotalTokens, chat));   
+                    await runnerCallback.Invoke(new AgentRunnerUsageReceivedEvent(usage.PromptTokens, usage.CompletionTokens, usage.TotalTokens, chat));   
                 }
             },
             OutboundHttpRequestHandler = (http) =>

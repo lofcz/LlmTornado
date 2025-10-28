@@ -12,19 +12,15 @@ public class WorkHistory
     public int? ArticleId { get; set; }
 
     [Required]
-    [MaxLength(200)]
     public string Action { get; set; } = string.Empty;
 
     [Required]
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
-
-    [MaxLength(5000)]
+    
     public string? Details { get; set; }
-
-    [MaxLength(100)]
+    
     public string? AgentName { get; set; }
-
-    [MaxLength(50)]
+    
     public string? Status { get; set; }
 
     public string? DataJson { get; set; } // Additional structured data

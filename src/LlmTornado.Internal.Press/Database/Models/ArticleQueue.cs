@@ -9,17 +9,14 @@ public class ArticleQueue
     public int Id { get; set; }
 
     [Required]
-    [MaxLength(500)]
     public string Title { get; set; } = string.Empty;
 
     [Required]
-    [MaxLength(2000)]
     public string IdeaSummary { get; set; } = string.Empty;
 
     public int Priority { get; set; } = 0;
 
     [Required]
-    [MaxLength(50)]
     public string Status { get; set; } = QueueStatus.Pending;
 
     [Required]
@@ -30,13 +27,11 @@ public class ArticleQueue
     public DateTime? ScheduledDate { get; set; }
 
     public int? ArticleId { get; set; }
-
-    [MaxLength(500)]
+    
     public string Tags { get; set; } = "[]"; // Stored as JSON array
 
     public double EstimatedRelevance { get; set; }
-
-    [MaxLength(2000)]
+    
     public string? ErrorMessage { get; set; }
 
     public int AttemptCount { get; set; } = 0;

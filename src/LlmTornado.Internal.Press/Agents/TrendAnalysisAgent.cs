@@ -27,23 +27,36 @@ public class TrendAnalysisRunnable : OrchestrationRunnable<string, TrendAnalysis
         _config = config;
         _tavilyTool = new TavilySearchTool(config.ApiKeys.Tavily, config.Tavily);
 
-        var instructions = $"""
-            You are a trend analysis expert. Your role is to discover and analyze trending topics in the tech industry,
-            particularly focusing on AI, machine learning, and software development trends.
-            
-            The current objective is: {config.Objective}
-            
-            Use the Tavily search tool to:
-            1. Find trending topics in Q4 2025 related to C# AI libraries and agent frameworks
-            2. Discover what developers are currently interested in
-            3. Identify emerging patterns in AI development
-            4. Find newsworthy events and announcements
-            
-            Analyze the relevance of each trend to our objective and provide a relevance score (0.0 to 1.0).
-            Focus on trends that can be naturally integrated with content about C# AI libraries.
-            """;
+        DateTime now = DateTime.Now;
+        int currentYear = now.Year;
+        string currentQuarter = $"Q{(now.Month - 1) / 3 + 1}";
+        string currentMonth = now.ToString("MMMM");
 
-        var model = new ChatModel(config.Models.TrendAnalysis);
+        string instructions = $"""
+                               You are a trend analysis expert. Your role is to discover and analyze trending topics in the tech industry,
+                               particularly focusing on AI, machine learning, and software development trends.
+
+                               Current Date: {now:MMMM dd, yyyy} ({currentQuarter} {currentYear})
+                               The current objective is: {config.Objective}
+
+                               Use the Tavily search tool to:
+                               1. Find trending topics in {currentMonth} {currentYear} ({currentQuarter}) related to AI, machine learning, and .NET/C#
+                               2. Discover what developers are currently interested in RIGHT NOW
+                               3. Identify emerging patterns, new releases, and hot topics in AI development
+                               4. Find newsworthy events, announcements, and discussions happening THIS month/quarter
+
+                               SEARCH BROADLY - don't limit yourself to just "C# AI agents":
+                               - General AI/ML trends (LLMs, RAG, agents, vector databases, etc.)
+                               - Popular frameworks and tools (ANY language, we'll compare)
+                               - Cloud AI services and platforms
+                               - Developer productivity tools
+                               - Industry shifts and debates
+
+                               Analyze the relevance of each trend to our objective and provide a relevance score (0.0 to 1.0).
+                               Cast a WIDE net - we want diverse, current trends that developers care about.
+                               """;
+
+        ChatModel model = new ChatModel(config.Models.TrendAnalysis);
 
         _agent = new TornadoAgent(
             client: client,
@@ -58,27 +71,38 @@ public class TrendAnalysisRunnable : OrchestrationRunnable<string, TrendAnalysis
     {
         process.RegisterAgent(_agent);
 
-        var searchQueries = new List<string>
-        {
-            "latest AI development trends Q4 2025",
-            "C# AI libraries trending 2025",
-            "machine learning frameworks news",
-            "AI agent frameworks popularity",
-            "developer tools trending 2025"
-        };
+        DateTime now = DateTime.Now;
+        int currentYear = now.Year;
+        string currentQuarter = $"Q{(now.Month - 1) / 3 + 1}";
+        string currentMonth = now.ToString("MMMM");
 
-        var searchContext = $"Search for trends related to: {process.Input}";
-        var conversation = await _agent.Run(searchContext);
+        string searchContext = $"""
+                                Current Date: {now:MMMM dd, yyyy}
 
-        var lastMessage = conversation.Messages.Last();
-        var trendOutput = await lastMessage.Content?.SmartParseJsonAsync<TrendAnalysisOutput>(_agent);
+                                Search for DIVERSE, CURRENT trends in AI and software development.
+                                Focus on {currentMonth} {currentYear} ({currentQuarter} {currentYear}) trends.
+
+                                Cast a wide net:
+                                - General AI/ML developments (not just C# specific)
+                                - Popular frameworks, tools, and libraries (multi-language)
+                                - Hot topics developers are discussing NOW
+                                - Recent releases, announcements, and industry shifts
+
+                                Goal: {process.Input}
+                                """;
+        
+        Console.WriteLine($"  [TrendAnalysis] 📅 Searching for trends in {currentMonth} {currentYear} ({currentQuarter})");
+        Conversation conversation = await _agent.Run(searchContext);
+
+        ChatMessage lastMessage = conversation.Messages.Last();
+        TrendAnalysisOutput? trendOutput = await lastMessage.Content?.SmartParseJsonAsync<TrendAnalysisOutput>(_agent);
 
         if (trendOutput == null)
         {
             // Return empty result if parsing fails
             return new TrendAnalysisOutput
             {
-                Trends = Array.Empty<TrendItem>(),
+                Trends = [],
                 Source = "Tavily",
                 Timestamp = DateTime.UtcNow,
                 Summary = "No trends found"

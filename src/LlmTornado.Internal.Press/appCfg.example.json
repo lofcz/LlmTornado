@@ -25,6 +25,34 @@
     "enabled": true,
     "model": "dall-e-3"
   },
+  "imageUpload": {
+    "enabled": false,
+    "provider": "freeimage",
+    "apiKey": ""
+  },
+  "imageVariations": {
+    "enabled": true,
+    "formats": [
+      {
+        "name": "featured-seo",
+        "width": 1000,
+        "height": 420,
+        "description": "Primary site featured image"
+      },
+      {
+        "name": "og-image",
+        "width": 1200,
+        "height": 630,
+        "description": "Open Graph social sharing"
+      },
+      {
+        "name": "twitter-card",
+        "width": 1200,
+        "height": 600,
+        "description": "Twitter card"
+      }
+    ]
+  },
   "reviewLoop": {
     "enabled": true,
     "maxIterations": 3,
@@ -45,7 +73,8 @@
   "articleGeneration": {
     "maxConcurrent": 3,
     "delayBetweenArticles": 5000,
-    "retryAttempts": 2
+    "retryAttempts": 2,
+    "writingStyleHints": 3
   },
   "trendAnalysis": {
     "maxTopics": 10,
@@ -57,6 +86,16 @@
     "searchDepth": "advanced",
     "includeDomains": [],
     "excludeDomains": []
+  },
+  "memeGeneration": {
+    "enabled": false,
+    "force": false,
+    "visionModel": "gpt-4o",
+    "memeGenerationModel": "claude-3-5-sonnet-20241022",
+    "maxIterations": 3,
+    "maxMemesPerArticle": 3,
+    "outputDirectory": "./output/memes",
+    "minValidationScore": 0.7
   }
 }
 

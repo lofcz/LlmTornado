@@ -12,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using LlmTornado.Chat;
 
 namespace LlmTornado.Internal.Press.Services;
 
@@ -38,11 +39,11 @@ public class ArticleGenerationService
     /// </summary>
     public async Task<List<Article>> GenerateArticlesAsync(int count)
     {
-        var articles = new List<Article>();
+        List<Article> articles = [];
 
         for (int i = 0; i < count; i++)
         {
-            var queueItem = await _queueService.GetNextPendingAsync();
+            ArticleQueue? queueItem = await _queueService.GetNextPendingAsync();
             
             if (queueItem == null)
             {
@@ -52,7 +53,7 @@ public class ArticleGenerationService
 
             Console.WriteLine($"\n[{i + 1}/{count}] Processing: {queueItem.Title}");
             
-            var article = await GenerateSingleArticleAsync(queueItem);
+            Article? article = await GenerateSingleArticleAsync(queueItem);
             
             if (article != null)
             {
@@ -86,28 +87,29 @@ public class ArticleGenerationService
         await _queueService.UpdateStatusAsync(queueItem.Id, QueueStatus.InProgress);
         
         // Reload to get updated attempt count
-        var updatedQueue = await _dbContext.ArticleQueue.FindAsync(queueItem.Id);
+        ArticleQueue? updatedQueue = await _dbContext.ArticleQueue.FindAsync(queueItem.Id);
         int attemptCount = updatedQueue?.AttemptCount ?? queueItem.AttemptCount;
 
         try
         {
             // Create orchestration configuration
-            var orchestrationConfig = new ArticleOrchestrationConfiguration(_client, _config, _dbContext);
+            ArticleOrchestrationConfiguration orchestrationConfig = new ArticleOrchestrationConfiguration(_client, _config, _dbContext);
             orchestrationConfig.SetCurrentQueue(queueItem);
+            orchestrationConfig.Options.Debug = true;
 
             // Create runtime
-            var runtime = new ChatRuntime(orchestrationConfig);
+            ChatRuntime runtime = new ChatRuntime(orchestrationConfig);
 
             Console.WriteLine($"  → Starting orchestration (attempt {attemptCount}/3)...");
             
             // Run the orchestration - pass queue item to start processing
-            var initialMessage = new Chat.ChatMessage(Code.ChatMessageRoles.User, $"Generate article: {queueItem.Title}");
-            var result = await runtime.InvokeAsync(initialMessage);
+            ChatMessage initialMessage = new Chat.ChatMessage(ChatMessageRoles.User, $"Generate article: {queueItem.Title}");
+            ChatMessage result = await runtime.InvokeAsync(initialMessage);
 
             Console.WriteLine($"  → Orchestration completed: {result.Content}");
 
             // Extract article from runtime properties
-            if (orchestrationConfig.RuntimeProperties.TryGetValue("FinalArticle", out var articleObj) &&
+            if (orchestrationConfig.RuntimeProperties.TryGetValue("FinalArticle", out object? articleObj) &&
                 articleObj is Article article)
             {
                 Console.WriteLine($"  ✓ Article extracted successfully");
@@ -117,7 +119,7 @@ public class ArticleGenerationService
             Console.WriteLine("  ✗ Article not found in runtime properties");
             
             // Check if there were any results at all
-            var props = orchestrationConfig.RuntimeProperties.Keys.ToList();
+            List<string> props = orchestrationConfig.RuntimeProperties.Keys.ToList();
             Console.WriteLine($"  Available properties: {string.Join(", ", props)}");
             
             // Reset to Pending if we can retry (attempt count < 3)
@@ -138,7 +140,7 @@ public class ArticleGenerationService
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"  ✗ Error generating article: {ex.Message}");
+            Console.WriteLine($"  ✗ Error generating article: {ex.Message}{(ex.InnerException is null ? string.Empty : $" Inner exception: {ex.InnerException.Message}")}");
             Console.WriteLine($"  Stack trace: {ex.StackTrace}");
             
             await LogWorkHistory(null, WorkAction.ErrorOccurred, ex.Message);
@@ -169,21 +171,21 @@ public class ArticleGenerationService
         Console.WriteLine($"Generating {count} article ideas...\n");
 
         // Create simple orchestration config for standalone use
-        var tempConfig = new ArticleOrchestrationConfiguration(_client, _config, _dbContext);
+        ArticleOrchestrationConfiguration tempConfig = new ArticleOrchestrationConfiguration(_client, _config, _dbContext);
         
         // Run trend analysis
-        var trendRunnable = new TrendAnalysisRunnable(_client, _config, tempConfig);
-        var trendProcess = new RunnableProcess<string, TrendAnalysisOutput>(trendRunnable, _config.Objective, Guid.NewGuid().ToString());
+        TrendAnalysisRunnable trendRunnable = new TrendAnalysisRunnable(_client, _config, tempConfig);
+        RunnableProcess<string, TrendAnalysisOutput> trendProcess = new RunnableProcess<string, TrendAnalysisOutput>(trendRunnable, _config.Objective, Guid.NewGuid().ToString());
         
-        var trends = await trendRunnable.Invoke(trendProcess);
+        TrendAnalysisOutput trends = await trendRunnable.Invoke(trendProcess);
 
         Console.WriteLine($"Found {trends.Trends?.Length ?? 0} trending topics");
 
         // Run ideation
-        var ideationRunnable = new IdeationRunnable(_client, _config, tempConfig);
-        var ideationProcess = new RunnableProcess<TrendAnalysisOutput, ArticleIdeaOutput>(ideationRunnable, trends, Guid.NewGuid().ToString());
+        IdeationRunnable ideationRunnable = new IdeationRunnable(_client, _config, tempConfig);
+        RunnableProcess<TrendAnalysisOutput, ArticleIdeaOutput> ideationProcess = new RunnableProcess<TrendAnalysisOutput, ArticleIdeaOutput>(ideationRunnable, trends, Guid.NewGuid().ToString());
         
-        var ideas = await ideationRunnable.Invoke(ideationProcess);
+        ArticleIdeaOutput ideas = await ideationRunnable.Invoke(ideationProcess);
 
         if (ideas.Ideas == null || ideas.Ideas.Length == 0)
         {
@@ -193,12 +195,12 @@ public class ArticleGenerationService
 
         // Add ideas to queue
         int added = 0;
-        foreach (var idea in ideas.Ideas.Take(count))
+        foreach (ArticleIdea idea in ideas.Ideas.Take(count))
         {
             await _queueService.AddToQueueAsync(
                 idea.Title,
                 idea.IdeaSummary,
-                idea.Tags ?? Array.Empty<string>(),
+                idea.Tags ?? [],
                 idea.EstimatedRelevance,
                 priority: (int)(idea.EstimatedRelevance * 100));
 
@@ -226,7 +228,7 @@ public class ArticleGenerationService
 
     private async Task LogWorkHistory(int? articleId, string action, string? details)
     {
-        var history = new WorkHistory
+        WorkHistory history = new WorkHistory
         {
             ArticleId = articleId,
             Action = action,

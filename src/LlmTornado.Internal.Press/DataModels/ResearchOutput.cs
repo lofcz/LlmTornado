@@ -4,9 +4,9 @@ namespace LlmTornado.Internal.Press.DataModels;
 
 public class ResearchOutput
 {
-    public ResearchFact[] Facts { get; set; } = Array.Empty<ResearchFact>();
-    public ResearchSource[] Sources { get; set; } = Array.Empty<ResearchSource>();
-    public string[] KeyInsights { get; set; } = Array.Empty<string>();
+    public ResearchFact[] Facts { get; set; } = [];
+    public ResearchSource[] Sources { get; set; } = [];
+    public string[] KeyInsights { get; set; } = [];
     public string Summary { get; set; } = string.Empty;
     public DateTime ResearchDate { get; set; } = DateTime.UtcNow;
 }

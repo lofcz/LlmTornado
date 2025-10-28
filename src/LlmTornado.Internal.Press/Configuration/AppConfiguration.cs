@@ -16,6 +16,9 @@ public class AppConfiguration
     public TrendAnalysisConfiguration TrendAnalysis { get; set; } = new();
     public TavilyConfiguration Tavily { get; set; } = new();
     public CodebaseAccessConfiguration CodebaseAccess { get; set; } = new();
+    public MemeGenerationConfiguration MemeGeneration { get; set; } = new();
+    public ImageUploadConfiguration ImageUpload { get; set; } = new();
+    public ImageVariationConfiguration ImageVariations { get; set; } = new();
 
     public static AppConfiguration Load(string configPath = "appCfg.json")
     {
@@ -25,7 +28,7 @@ public class AppConfiguration
         }
 
         string json = File.ReadAllText(configPath);
-        var config = JsonConvert.DeserializeObject<AppConfiguration>(json);
+        AppConfiguration? config = JsonConvert.DeserializeObject<AppConfiguration>(json);
 
         if (config == null)
         {
@@ -136,7 +139,7 @@ public class ReviewLoopConfiguration
     public QualityThresholds QualityThresholds { get; set; } = new();
 
     [JsonProperty("improvementCriteria")]
-    public List<string> ImprovementCriteria { get; set; } = new();
+    public List<string> ImprovementCriteria { get; set; } = [];
 }
 
 public class QualityThresholds
@@ -164,6 +167,9 @@ public class ArticleGenerationConfiguration
 
     [JsonProperty("retryAttempts")]
     public int RetryAttempts { get; set; } = 2;
+
+    [JsonProperty("writingStyleHints")]
+    public int WritingStyleHints { get; set; } = 3;
 }
 
 public class TrendAnalysisConfiguration
@@ -187,10 +193,10 @@ public class TavilyConfiguration
     public string SearchDepth { get; set; } = "advanced";
 
     [JsonProperty("includeDomains")]
-    public List<string> IncludeDomains { get; set; } = new();
+    public List<string> IncludeDomains { get; set; } = [];
 
     [JsonProperty("excludeDomains")]
-    public List<string> ExcludeDomains { get; set; } = new();
+    public List<string> ExcludeDomains { get; set; } = [];
 }
 
 public class CodebaseAccessConfiguration
@@ -202,15 +208,83 @@ public class CodebaseAccessConfiguration
     public string RepositoryPath { get; set; } = "C:\\Users\\lordo\\Documents\\GitHub\\OpenAiNg";
 
     [JsonProperty("allowedTools")]
-    public List<string> AllowedTools { get; set; } = new List<string> 
-    { 
-        "read_file", 
-        "list_directory", 
-        "search_files", 
-        "get_file_info" 
-    };
+    public List<string> AllowedTools { get; set; } =
+    [
+        "read_file",
+        "list_directory",
+        "search_files",
+        "get_file_info"
+    ];
 
     [JsonProperty("maxFilesPerSession")]
     public int MaxFilesPerSession { get; set; } = 10;
+}
+
+public class MemeGenerationConfiguration
+{
+    [JsonProperty("enabled")]
+    public bool Enabled { get; set; } = false;
+
+    [JsonProperty("force")]
+    public bool Force { get; set; } = false;
+
+    [JsonProperty("visionModel")]
+    public string VisionModel { get; set; } = "gpt-4o";
+
+    [JsonProperty("memeGenerationModel")]
+    public string MemeGenerationModel { get; set; } = "gpt-4o-mini";
+
+    [JsonProperty("maxIterations")]
+    public int MaxIterations { get; set; } = 3;
+
+    [JsonProperty("maxMemesPerArticle")]
+    public int MaxMemesPerArticle { get; set; } = 3;
+
+    [JsonProperty("outputDirectory")]
+    public string OutputDirectory { get; set; } = "./output/memes";
+
+    [JsonProperty("minValidationScore")]
+    public double MinValidationScore { get; set; } = 0.7;
+}
+
+public class ImageUploadConfiguration
+{
+    [JsonProperty("enabled")]
+    public bool Enabled { get; set; } = false;
+
+    [JsonProperty("provider")]
+    public string Provider { get; set; } = "freeimage";
+
+    [JsonProperty("apiKey")]
+    public string ApiKey { get; set; }
+}
+
+public class ImageVariationConfiguration
+{
+    [JsonProperty("enabled")]
+    public bool Enabled { get; set; } = true;
+
+    [JsonProperty("formats")]
+    public List<ImageVariationFormat> Formats { get; set; } =
+    [
+        new() { Name = "featured-seo", Width = 1000, Height = 420, Description = "Primary site featured image" },
+        new() { Name = "og-image", Width = 1200, Height = 630, Description = "Open Graph social sharing" },
+        new() { Name = "twitter-card", Width = 1200, Height = 600, Description = "Twitter card" }
+    ];
+}
+
+public class ImageVariationFormat
+{
+    [JsonProperty("name")]
+    public string Name { get; set; } = string.Empty;
+
+    [JsonProperty("width")]
+    public int Width { get; set; }
+
+    [JsonProperty("height")]
+    public int Height { get; set; }
+
+    [JsonProperty("description")]
+    public string? Description { get; set; }
 }
 

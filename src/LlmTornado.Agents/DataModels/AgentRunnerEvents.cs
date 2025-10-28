@@ -269,11 +269,16 @@ public class  AgentRunnerMaxTurnsReachedEvent : AgentRunnerEvents
 public class AgentRunnerUsageReceivedEvent : AgentRunnerEvents
 {
     public int TokenUsageAmount { get; private set; }
-    public AgentRunnerUsageReceivedEvent(int usageAmount, Conversation conversation)
+    public int InputTokens { get; private set; }
+    public int OutputTokens { get; private set; }
+
+    public AgentRunnerUsageReceivedEvent(int inTokens, int outTokens, int totalTokens, Conversation conversation)
     {
         EventType = AgentRunnerEventTypes.UsageReceived;
         Timestamp = DateTime.UtcNow;
-        TokenUsageAmount = usageAmount;
+        TokenUsageAmount = totalTokens;
+        InputTokens = inTokens;
+        OutputTokens = outTokens;
         InternalConversation = conversation;
     }
 }
