@@ -28,7 +28,7 @@ public class TornadoAgent
     /// <summary>
     /// chat options for the run
     /// </summary>
-    public ChatRequest Options { get; set; } = new ChatRequest();
+    public ChatRequest Options { get; set; } 
 
     /// <summary>
     /// Returns whether the run is cancelled.
@@ -69,9 +69,9 @@ public class TornadoAgent
     public Type? OutputSchema { get; private set; }
 
     /// <summary>
-    /// Tools available to the agent
+    /// Reference to delegate methods used as tools
     /// </summary>
-    public List<Delegate>? Tools { get; set; } = new List<Delegate>();
+    public List<Delegate>? DelegateReference { get; set; } = new List<Delegate>();
 
     /// <summary>
     /// Gets or sets the permissions for tools, represented as a dictionary where the key is the tool name and the
@@ -134,21 +134,19 @@ public class TornadoAgent
         List<Delegate>? tools = null,
         bool streaming = false,
         Dictionary<string, bool>? toolPermissionRequired = null,
-        int? maxTokens = null,
-        double? temperature = null)
+        ChatRequest? options = null)
     {
         Client = client ?? throw new ArgumentNullException(nameof(client));
         Model = model ?? throw new ArgumentNullException(nameof(model));
-
+        Options = options ?? new ChatRequest();
+        Options.Tools = new List<Tool>();
         Instructions = string.IsNullOrEmpty(instructions) ? "You are a helpful assistant" : instructions;
         OutputSchema = outputSchema;
-        Tools = tools ?? Tools;
+        DelegateReference = tools ?? DelegateReference;
         Options.Model = model;
         Name = string.IsNullOrEmpty(name) ? "Assistant" : name;
         Streaming = streaming;
         ToolPermissionRequired = toolPermissionRequired ?? new Dictionary<string, bool>();
-        Options.MaxTokens = maxTokens;
-        Options.Temperature = temperature;
 
         if (OutputSchema != null)
         {
@@ -156,7 +154,7 @@ public class TornadoAgent
         }
 
         //Setup tools and agent tools
-        AutoSetupTools(Tools);
+        AutoSetupTools(DelegateReference);
     }
 
     /// <summary>
@@ -185,9 +183,7 @@ public class TornadoAgent
     /// <exception cref="InvalidOperationException">Thrown when tool setup fails.</exception>
     private void AutoSetupTools(List<Delegate>? tools)
     {
-        if (tools == null || Tools?.Count == 0) return;
-
-        Options.Tools ??= new List<Tool>();
+        if (tools == null || DelegateReference?.Count == 0) return;
 
         foreach (Delegate fun in tools)
         {
@@ -242,8 +238,6 @@ public class TornadoAgent
     /// <param name="server">MCP Server where tool lives</param>
     public void AddMcpTools(Tool[] tools)
     {
-        Options.Tools ??= new List<Tool>();
-
         if (tools.Length > 0)
         {
             foreach (var tool in tools)

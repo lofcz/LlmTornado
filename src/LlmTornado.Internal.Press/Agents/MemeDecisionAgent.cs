@@ -62,7 +62,7 @@ public class MemeDecisionRunnable : OrchestrationRunnable<ArticleOutput, MemeDec
             name: "Meme Decision Agent",
             instructions: instructions,
             outputSchema: typeof(MemeDecision),
-            temperature: 0.7);
+            options: new ChatRequest() { Temperature = 0.7 });
     }
 
     public override async ValueTask<MemeDecision> Invoke(RunnableProcess<ArticleOutput, MemeDecision> process)

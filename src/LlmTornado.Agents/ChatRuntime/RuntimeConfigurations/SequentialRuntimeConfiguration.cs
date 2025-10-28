@@ -38,7 +38,7 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
         public SequentialRuntimeAgent(
             TornadoAgent cloneAgent,
             string? sequentialInstructions = null,
-            bool streaming = false) : base(cloneAgent.Client, cloneAgent.Model, cloneAgent.Name, cloneAgent.Instructions, cloneAgent.OutputSchema, cloneAgent.Tools,  streaming)
+            bool streaming = false) : base(cloneAgent.Client, cloneAgent.Model, cloneAgent.Name, cloneAgent.Instructions, cloneAgent.OutputSchema, cloneAgent.DelegateReference,  streaming)
         {
             SequentialInstructions = sequentialInstructions ?? SequentialInstructions;
             Streaming = streaming;

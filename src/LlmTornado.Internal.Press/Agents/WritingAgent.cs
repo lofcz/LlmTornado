@@ -320,8 +320,7 @@ public class WritingRunnable : OrchestrationRunnable<ResearchOutput, ArticleOutp
             name: "Writing Agent",
             instructions: instructions,
             outputSchema: typeof(ArticleOutput),
-            maxTokens: 16_000,
-            temperature: 1);
+            options: new ChatRequest() { MaxTokens = 16_000, Temperature = 1 });
     }
 
     public override async ValueTask InitializeRunnable()

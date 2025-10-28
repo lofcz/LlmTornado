@@ -114,8 +114,7 @@ public class ReviewRunnable : OrchestrationRunnable<ArticleOutput, ReviewOutput>
             name: "Review Agent",
             instructions: instructions,
             outputSchema: typeof(ReviewOutput),
-            maxTokens: 16_000,
-            temperature: 1);
+            options: new ChatRequest() { MaxTokens = 16_000, Temperature = 1 });
     }
 
     public override async ValueTask<ReviewOutput> Invoke(RunnableProcess<ArticleOutput, ReviewOutput> process)

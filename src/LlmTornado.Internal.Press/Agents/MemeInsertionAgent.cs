@@ -59,7 +59,7 @@ public class MemeInsertionRunnable : OrchestrationRunnable<MemeCollectionOutput,
             name: "Meme Insertion Agent",
             instructions: instructions,
             outputSchema: typeof(MemeInsertionDecision),
-            temperature: 0.5);
+            options: new ChatRequest() { Temperature = 0.5 });
     }
 
     public override async ValueTask<ArticleOutput> Invoke(RunnableProcess<MemeCollectionOutput, ArticleOutput> process)

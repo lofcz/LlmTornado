@@ -73,7 +73,7 @@ public class ResearchRunnable : OrchestrationRunnable<ArticleIdea, ResearchOutpu
             instructions: instructions,
             outputSchema: typeof(ResearchOutput),
             tools: [DeepSearchFunc],
-            temperature: 1);
+            options: new ChatRequest() { Temperature = 1 });
     }
 
     public override async ValueTask<ResearchOutput> Invoke(RunnableProcess<ArticleIdea, ResearchOutput> process)

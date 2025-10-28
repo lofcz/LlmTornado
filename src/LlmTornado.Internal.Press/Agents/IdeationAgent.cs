@@ -131,7 +131,7 @@ public class IdeationRunnable : OrchestrationRunnable<TrendAnalysisOutput, Artic
             name: "Ideation Agent",
             instructions: instructions,
             outputSchema: typeof(ArticleIdeaOutput),
-            temperature: 1);
+            options: new ChatRequest() { Temperature = 1 });
     }
     
     

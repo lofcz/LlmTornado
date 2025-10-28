@@ -53,7 +53,7 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
             TornadoAgent cloneAgent,
             bool streaming = false,
             List<HandoffAgent>? handoffs = null,
-            string description = "") : base(cloneAgent.Client, cloneAgent.Model, cloneAgent.Name, cloneAgent.Instructions, cloneAgent.OutputSchema, cloneAgent.Tools, streaming)
+            string description = "") : base(cloneAgent.Client, cloneAgent.Model, cloneAgent.Name, cloneAgent.Instructions, cloneAgent.OutputSchema, cloneAgent.DelegateReference, streaming)
         {
             HandoffAgents = handoffs ?? new List<HandoffAgent>();
             Description = description;

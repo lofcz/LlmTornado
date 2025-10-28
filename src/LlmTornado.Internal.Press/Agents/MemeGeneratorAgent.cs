@@ -292,7 +292,7 @@ public class MemeGeneratorRunnable : OrchestrationRunnable<MemeDecision, MemeCol
             name: $"MemeTextGenerator{memeNumber}",
             instructions: instructions,
             outputSchema: typeof(MemeTextOutput),
-            temperature: 1);
+            options: new ChatRequest() { Temperature = 1 });
 
         try
         {
