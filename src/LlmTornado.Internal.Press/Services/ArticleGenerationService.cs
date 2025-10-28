@@ -94,6 +94,7 @@ public class ArticleGenerationService
             // Create orchestration configuration
             var orchestrationConfig = new ArticleOrchestrationConfiguration(_client, _config, _dbContext);
             orchestrationConfig.SetCurrentQueue(queueItem);
+            orchestrationConfig.Options.Debug = true;
 
             // Create runtime
             var runtime = new ChatRuntime(orchestrationConfig);

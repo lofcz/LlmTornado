@@ -263,15 +263,15 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
     private List<RunnableProcess> CheckResultForAdvancements(RunnableProcess<TInput,TOutput> process) {         //Check if the state result has a valid transition
         List<RunnableProcess> stateProcessesFromOutput = new List<RunnableProcess>();                                                                                                                                         //If the transition evaluates to true for the output, add it to the new state processes
         
-        Console.WriteLine($"[DEBUG] CheckResultForAdvancements: {RunnableName}, Advances count: {Advances.Count}");
+        Orchestrator?.LogDebug($"[DEBUG] CheckResultForAdvancements: {RunnableName}, Advances count: {Advances.Count}");
         
         Advances.ToList().ForEach(advancer =>
         {
-            Console.WriteLine($"[DEBUG] Checking advancer: Type={advancer.GetType().Name}, type field='{advancer.type}', NextRunnable={advancer.NextRunnable?.RunnableName}");
+            Orchestrator?.LogDebug($"[DEBUG] Checking advancer: Type={advancer.GetType().Name}, type field='{advancer.type}', NextRunnable={advancer.NextRunnable?.RunnableName}");
             
             if (advancer.CanAdvance(process.Result))
             {
-                Console.WriteLine($"[DEBUG] Advancer matched! type='{advancer.type}', ConverterMethodResult={advancer.ConverterMethodResult?.GetType().Name ?? "null"}");
+                Orchestrator?.LogDebug($"[DEBUG] Advancer matched! type='{advancer.type}', ConverterMethodResult={advancer.ConverterMethodResult?.GetType().Name ?? "null"}");
                 
                 //Check if transition is conversion type or use the output.Result directly
                 object? nextResult = advancer.type == "in_out" ? advancer.ConverterMethodResult : process.Result;
@@ -280,7 +280,7 @@ public abstract class OrchestrationRunnable<TInput, TOutput> : OrchestrationRunn
             }
             else
             {
-                Console.WriteLine($"[DEBUG] Advancer did NOT match");
+                Orchestrator?.LogDebug($"[DEBUG] Advancer did NOT match");
             }
         });
 

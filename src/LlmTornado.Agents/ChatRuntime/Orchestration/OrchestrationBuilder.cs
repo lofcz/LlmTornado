@@ -63,6 +63,17 @@ public class OrchestrationBuilder
         return this;
     }
 
+    /// <summary>
+    /// Enables debug logging for orchestration processes.
+    /// When enabled, detailed diagnostic information about advancement checking and state transitions will be logged.
+    /// </summary>
+    /// <returns>The current OrchestrationBuilder instance for method chaining.</returns>
+    public OrchestrationBuilder WithDebug()
+    {
+        Configuration.Options.Debug = true;
+        return this;
+    }
+
     public OrchestrationBuilder SetEntryRunnable(OrchestrationRunnableBase entryRunnable)
     {
         Configuration.SetEntryRunnable(entryRunnable);

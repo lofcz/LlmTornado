@@ -87,9 +87,27 @@ public abstract class Orchestration
 
     private bool _isInitialized = false;
 
+    /// <summary>
+    /// Gets or sets the orchestration configuration options.
+    /// </summary>
+    public OrchestrationOptions Options { get; set; } = new OrchestrationOptions();
+
     public Orchestration()
     {
 
+    }
+
+    /// <summary>
+    /// Logs a debug message if debug logging is enabled.
+    /// This method provides a centralized logging mechanism that can be easily modified in the future.
+    /// </summary>
+    /// <param name="message">The debug message to log.</param>
+    protected internal void LogDebug(string message)
+    {
+        if (Options.Debug)
+        {
+            Console.WriteLine(message);
+        }
     }
 
     /// <summary>
