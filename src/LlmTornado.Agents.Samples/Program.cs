@@ -22,12 +22,11 @@ ToolContextService toolContextService = new ToolContextService(api, contextConta
 // Mock tools with mock results for performance and testing
 var mcpFileSystemServer = MCPToolkits.FileSystemToolkit("C:\\Users\\johnl\\source\\repos\\Johnny2x2\\LlmTornado\\src",
     [
+    "write_file",
     "read_multiple_files",
     "read_file",
     "list_directory",
-    "directory_tree",
-    "search_files",
-    "list_allowed_directories"]);
+    "directory_tree"]);
 
 await mcpFileSystemServer.InitializeAsync();
 
@@ -43,11 +42,14 @@ toolContextService.AddToolToLibrary(listDirectoryTool.ToolName ?? listDirectoryT
 var directoryTreeTool = mcpFileSystemServer.AllowedTornadoTools.Find(t => t.ToolName == "directory_tree" || t.Function.Name == "directory_tree");
 toolContextService.AddToolToLibrary(directoryTreeTool.ToolName ?? directoryTreeTool.Function.Name, directoryTreeTool, directoryTreeTool.ToolDescription);
 
-var searchFilesTool = mcpFileSystemServer.AllowedTornadoTools.Find(t => t.ToolName == "search_files" || t.Function.Name == "search_files");
-toolContextService.AddToolToLibrary(searchFilesTool.ToolName ?? searchFilesTool.Function.Name, searchFilesTool, searchFilesTool.ToolDescription);
+var writeFileTool = mcpFileSystemServer.AllowedTornadoTools.Find(t => t.ToolName == "write_file" || t.Function.Name == "write_file");
+toolContextService.AddToolToLibrary(writeFileTool.ToolName ?? writeFileTool.Function.Name, writeFileTool, writeFileTool.ToolDescription);
 
-var listAllowedDirectoriesTool = mcpFileSystemServer.AllowedTornadoTools.Find(t => t.ToolName == "list_allowed_directories" || t.Function.Name == "list_allowed_directories");
-toolContextService.AddToolToLibrary(listAllowedDirectoriesTool.ToolName ?? listAllowedDirectoriesTool.Function.Name, listAllowedDirectoriesTool, listAllowedDirectoriesTool.ToolDescription);
+//var searchFilesTool = mcpFileSystemServer.AllowedTornadoTools.Find(t => t.ToolName == "search_files" || t.Function.Name == "search_files");
+//toolContextService.AddToolToLibrary(searchFilesTool.ToolName ?? searchFilesTool.Function.Name, searchFilesTool, searchFilesTool.ToolDescription);
+
+//var listAllowedDirectoriesTool = mcpFileSystemServer.AllowedTornadoTools.Find(t => t.ToolName == "list_allowed_directories" || t.Function.Name == "list_allowed_directories");
+//toolContextService.AddToolToLibrary(listAllowedDirectoriesTool.ToolName ?? listAllowedDirectoriesTool.Function.Name, listAllowedDirectoriesTool, listAllowedDirectoriesTool.ToolDescription);
 #endregion
 
 TaskContextService taskContextService = new TaskContextService(api, contextContainer);

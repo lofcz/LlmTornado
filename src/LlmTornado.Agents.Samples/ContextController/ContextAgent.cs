@@ -5,6 +5,7 @@ using LlmTornado.Code;
 using LlmTornado.VectorDatabases.Faiss.Integrations;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -24,6 +25,15 @@ public class ContextAgent
         Api = api;
         Agent = new TornadoAgent(Api, ChatModel.OpenAi.Gpt5.V5Nano);
         contextManager = controller;
+    }
+
+    [Description("Get user input from the console")]
+    public string GetUserInput([Description("The request message to display to the user")]string request)
+    {
+        Console.Write("Tool Request: ");
+        Console.WriteLine(request);
+        string? input = Console.ReadLine();
+        return input ?? "";
     }
 
     public async Task<Conversation> RunAsync(ChatMessage userMessage, Func<AgentRunnerEvents, ValueTask>? runnerEvent = null)
@@ -46,6 +56,7 @@ public class ContextAgent
         Agent.Instructions = context.Instructions ?? "You are a helpful AI assistant.";
         //Tools
         Agent.ClearTools();
+
         foreach (var tool in context.Tools ?? [])
         {
             if (tool is null) continue;
@@ -58,6 +69,8 @@ public class ContextAgent
                 Agent.AddTornadoTool(tool);
             }
         }
+
+        Agent.AddTornadoTool(new LlmTornado.Common.Tool(GetUserInput,"GetUserInput"));
 
         bool hitTokenLimit = false;
         int messagesBefore = context.ChatMessages.Count;

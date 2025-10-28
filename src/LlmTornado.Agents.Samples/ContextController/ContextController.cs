@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -15,6 +16,8 @@ public class ContextController : IContextController
     public IMessageContextService? MessageContextService { get; set; }
 
     public TaskContextService TaskContextService { get; set; }
+    public AgentContext CurrentContext = new AgentContext();
+    public object LockObject { get; } = new object();
 
     public ContextController(
         TaskContextService taskContextService,
@@ -39,22 +42,65 @@ public class ContextController : IContextController
 
     public async Task<AgentContext> GetAgentContext()
     {
-        AgentContext context = new AgentContext();
 
-        this.Container.CurrentTask = await TaskContextService.GetTaskContext();
 
+        List<Task> contextTasks = new List<Task>();
+        await TaskContextService.GetTaskContext();
+        contextTasks.Add(Task.Run(async () => await GetAgentModel()));
+        contextTasks.Add(Task.Run(async () => await GetToolsContext()));
+        contextTasks.Add(Task.Run(async () => await GetInstructionsContext()));
+        contextTasks.Add(Task.Run(async () => await GetMessagesContext()));
+
+        await Task.WhenAll(contextTasks);
+
+        return CurrentContext;
+    }
+
+    public async Task GetAgentModel()
+    {
         if (ModelContextService is not null)
-            context.Model = await ModelContextService.GetModelContext();
+        {
+            var model = await ModelContextService.GetModelContext();
+            lock (LockObject)
+            {
+                this.CurrentContext.Model = model;
+            }
+        }
+    }
 
+    public async Task GetToolsContext()
+    {
         if (ToolContextService is not null)
-            context.Tools = await ToolContextService.GetToolContext();
+        {
+            var tools = await ToolContextService.GetToolContext();
+            lock (LockObject)
+            {
+                this.CurrentContext.Tools = tools;
+            }
+        }
+    }
 
+    public async Task GetInstructionsContext()
+    {
         if (InstructionsContextService is not null)
-            context.Instructions = await InstructionsContextService.GetInstructionsContext();
+        {
+            var instructions = await InstructionsContextService.GetInstructionsContext();
+            lock (LockObject)
+            {
+                this.CurrentContext.Instructions = instructions;
+            }
+        }
+    }
 
+    public async Task GetMessagesContext()
+    {
         if (MessageContextService is not null)
-            context.ChatMessages = await MessageContextService.GetChatContext();
-
-        return context;
+        {
+            var messages = await MessageContextService.GetChatContext();
+            lock (LockObject)
+            {
+                this.CurrentContext.ChatMessages = messages;
+            }
+        }
     }
 }
