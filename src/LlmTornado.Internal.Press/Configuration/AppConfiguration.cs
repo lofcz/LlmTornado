@@ -84,6 +84,9 @@ public class ApiKeysConfiguration
 
     [JsonProperty("devto")]
     public string DevTo { get; set; } = string.Empty;
+
+    [JsonProperty("linkedin")]
+    public string LinkedIn { get; set; } = string.Empty;
 }
 
 public class ModelsConfiguration
@@ -296,14 +299,29 @@ public class PublishingConfiguration
 {
     [JsonProperty("devto")]
     public PlatformPublishConfig? DevTo { get; set; }
+    
+    [JsonProperty("linkedin")]
+    public LinkedInPublishConfig? LinkedIn { get; set; }
 }
 
 public class PlatformPublishConfig
 {
     [JsonProperty("enabled")]
-    public bool Enabled { get; set; } = false;
+    public bool Enabled { get; set; }
     
     [JsonProperty("autoPublish")]
-    public bool AutoPublish { get; set; } = false;
+    public bool AutoPublish { get; set; }
+}
+
+public class LinkedInPublishConfig
+{
+    [JsonProperty("enabled")]
+    public bool Enabled { get; set; }
+    
+    [JsonProperty("autoPublish")]
+    public bool AutoPublish { get; set; }
+    
+    [JsonProperty("authorUrn")]
+    public string AuthorUrn { get; set; }
 }
 

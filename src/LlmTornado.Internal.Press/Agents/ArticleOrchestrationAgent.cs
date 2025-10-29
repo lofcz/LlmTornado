@@ -8,11 +8,11 @@ using LlmTornado.Internal.Press.DataModels;
 using LlmTornado.Internal.Press.Database;
 using LlmTornado.Internal.Press.Database.Models;
 using LlmTornado.Internal.Press.Export;
-using LlmTornado.Internal.Press.Publish;
 using Newtonsoft.Json;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using LlmTornado.Internal.Press.Publisher;
 
 namespace LlmTornado.Internal.Press.Agents;
 
@@ -570,7 +570,7 @@ public class SaveArticleRunnable : OrchestrationRunnable<ArticleOutput, Article>
                 
                 if (!string.IsNullOrEmpty(_config.ApiKeys.DevTo))
                 {
-                    bool published = await Publish.DevToPublisher.PublishArticleAsync(
+                    bool published = await DevToPublisher.PublishArticleAsync(
                         article, 
                         _config.ApiKeys.DevTo,
                         _dbContext);
@@ -583,6 +583,32 @@ public class SaveArticleRunnable : OrchestrationRunnable<ArticleOutput, Article>
                 else
                 {
                     Console.WriteLine($"[SaveArticle] ⚠ dev.to API key not configured");
+                }
+            }
+            
+            // Auto-publish to LinkedIn (shares dev.to article)
+            if (_config.Publishing?.LinkedIn?.Enabled == true && 
+                _config.Publishing.LinkedIn.AutoPublish)
+            {
+                Console.WriteLine($"[SaveArticle] Auto-publishing to LinkedIn...");
+                
+                if (!string.IsNullOrEmpty(_config.ApiKeys.LinkedIn) && 
+                    !string.IsNullOrEmpty(_config.Publishing.LinkedIn.AuthorUrn))
+                {
+                    bool published = await LinkedInPublisher.PublishArticleAsync(
+                        article, 
+                        _config.ApiKeys.LinkedIn,
+                        _config.Publishing.LinkedIn.AuthorUrn,
+                        _dbContext);
+                        
+                    if (!published)
+                    {
+                        Console.WriteLine($"[SaveArticle] ⚠ Auto-publish to LinkedIn failed (see logs above)");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"[SaveArticle] ⚠ LinkedIn access token or authorUrn not configured");
                 }
             }
             

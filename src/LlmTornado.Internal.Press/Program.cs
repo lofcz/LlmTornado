@@ -13,7 +13,7 @@ using LlmTornado.Chat.Models;
 using LlmTornado.Common;
 using LlmTornado.Internal.Press.Database.Models;
 using LlmTornado.Internal.Press.Export;
-using LlmTornado.Internal.Press.Publish;
+using LlmTornado.Internal.Press.Publisher;
 using LlmTornado.Mcp;
 
 namespace LlmTornado.Internal.Press;
@@ -402,11 +402,29 @@ class Program
         {
             if (!string.IsNullOrEmpty(config.ApiKeys.DevTo))
             {
-                await Publish.DevToPublisher.PublishArticleAsync(article, config.ApiKeys.DevTo, context);
+                await DevToPublisher.PublishArticleAsync(article, config.ApiKeys.DevTo, context);
             }
             else
             {
                 Console.WriteLine("⚠ dev.to API key not configured");
+            }
+        }
+        
+        // Publish to LinkedIn if enabled
+        if (config.Publishing?.LinkedIn?.Enabled == true)
+        {
+            if (!string.IsNullOrEmpty(config.ApiKeys.LinkedIn) && 
+                !string.IsNullOrEmpty(config.Publishing.LinkedIn.AuthorUrn))
+            {
+                await LinkedInPublisher.PublishArticleAsync(
+                    article, 
+                    config.ApiKeys.LinkedIn, 
+                    config.Publishing.LinkedIn.AuthorUrn, 
+                    context);
+            }
+            else
+            {
+                Console.WriteLine("⚠ LinkedIn access token or authorUrn not configured");
             }
         }
         
@@ -446,10 +464,23 @@ class Program
             
             Console.WriteLine($"  [{article.Id}] Publishing: {article.Title}");
             
+            // Publish to dev.to
             if (config.Publishing?.DevTo?.Enabled == true && !string.IsNullOrEmpty(config.ApiKeys.DevTo))
             {
-                bool success = await Publish.DevToPublisher.PublishArticleAsync(article, config.ApiKeys.DevTo, context);
+                bool success = await DevToPublisher.PublishArticleAsync(article, config.ApiKeys.DevTo, context);
                 if (success) successCount++;
+            }
+            
+            // Publish to LinkedIn
+            if (config.Publishing?.LinkedIn?.Enabled == true && 
+                !string.IsNullOrEmpty(config.ApiKeys.LinkedIn) &&
+                !string.IsNullOrEmpty(config.Publishing.LinkedIn.AuthorUrn))
+            {
+                await LinkedInPublisher.PublishArticleAsync(
+                    article, 
+                    config.ApiKeys.LinkedIn, 
+                    config.Publishing.LinkedIn.AuthorUrn, 
+                    context);
             }
         }
         

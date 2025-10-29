@@ -6,7 +6,8 @@
     "tavily": "tvly-your-tavily-key-here",
     "google": "your-google-key-here",
     "groq": "gsk_your-groq-key-here",
-    "devto": "your-devto-api-key-here"
+    "devto": "your-devto-api-key-here",
+    "linkedin": "your-linkedin-access-token-here"
   },
   "models": {
     "ideation": "gpt-4o-mini",
@@ -102,6 +103,11 @@
     "devto": {
       "enabled": false,
       "autoPublish": false
+    },
+    "linkedin": {
+      "enabled": false,
+      "autoPublish": false,
+      "authorUrn": "urn:li:person:YOUR_PERSON_ID"
     }
   }
 }
