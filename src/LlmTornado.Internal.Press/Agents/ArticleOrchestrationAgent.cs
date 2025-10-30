@@ -37,6 +37,7 @@ public class ArticleOrchestrationConfiguration : OrchestrationRuntimeConfigurati
     private ReviewRunnable? _review;
     private ImprovementRunnable? _improvement;
     private ReviewToArticleRunnable? _reviewToArticle;
+    private SummarizationAgent? _summarization;
     private ImageGenerationRunnable? _imageGeneration;
     private MemeDecisionRunnable? _memeDecision;
     private MemeGeneratorRunnable? _memeGeneration;
@@ -59,6 +60,9 @@ public class ArticleOrchestrationConfiguration : OrchestrationRuntimeConfigurati
         _dbContext = dbContext;
         _markdownExporter = new MarkdownExporter(config.Output.Directory);
         _jsonExporter = new JsonExporter(config.Output.Directory, config.ImageVariations);
+
+        // Store client in RuntimeProperties for downstream use (LinkedIn publisher, etc.)
+        RuntimeProperties["TornadoApiClient"] = client;
 
         RecordSteps = true;
         SetupOrchestration();
@@ -128,10 +132,11 @@ public class ArticleOrchestrationConfiguration : OrchestrationRuntimeConfigurati
         _ideation = new IdeationRunnable(_client, _config, this);
         _queueToIdea = new QueueToIdeaRunnable(this);
         
-        // Review, image, meme, save, completion runnables
+        // Review, summarization, image, meme, save, completion runnables
         _review = new ReviewRunnable(_client, _config, this);
         _improvement = new ImprovementRunnable(this);
         _reviewToArticle = new ReviewToArticleRunnable(this);
+        _summarization = new SummarizationAgent(_client, _config, this);
         _imageGeneration = new ImageGenerationRunnable(_client, _config, this);
         _memeDecision = new MemeDecisionRunnable(_client, _config, this);
         _memeGeneration = new MemeGeneratorRunnable(_client, _config, this);
@@ -204,10 +209,32 @@ public class ArticleOrchestrationConfiguration : OrchestrationRuntimeConfigurati
         // Wire improvement loop
         _improvement!.AddAdvancer((idea) => !string.IsNullOrEmpty(idea.Title), _research);
         
-        // Linear chain: Review → ReviewToArticle → Image → Meme → MemeInsertion → Save → Complete
+        // Linear chain: Review → ReviewToArticle → Summarization → Image → Meme → MemeInsertion → Save → Complete
         ArticleOrchestrationConfiguration orchestration = this;
         
-        _reviewToArticle!.AddAdvancer((article) => !string.IsNullOrEmpty(article.Title), _imageGeneration!);
+        _reviewToArticle!.AddAdvancer((article) => !string.IsNullOrEmpty(article.Title), _summarization!);
+        
+        // Summarization → ImageGeneration (convert summary back to article for image gen)
+        _summarization!.AddAdvancer(
+            (summary) => {
+                // Store summary for downstream use (SaveArticle, image generation, etc.)
+                orchestration.RuntimeProperties["ArticleSummary"] = summary;
+                
+                // Retrieve and return article from context for image generation
+                if (orchestration.RuntimeProperties.TryGetValue("CurrentArticle", out object? articleObj) &&
+                    articleObj is ArticleOutput article)
+                {
+                    return article;
+                }
+                
+                // Fallback
+                return new ArticleOutput 
+                { 
+                    Title = "Error", Body = "Article lost", Description = "Error",
+                    Tags = [], WordCount = 0, Slug = "error"
+                };
+            },
+            _imageGeneration!);
         
         // ImageGeneration outputs ImageOutput, but MemeDecision needs ArticleOutput
         // Use converter to pull article from context
@@ -556,6 +583,14 @@ public class SaveArticleRunnable : OrchestrationRunnable<ArticleOutput, Article>
                 article.ImageVariationsJson = JsonConvert.SerializeObject(variations);
             }
             
+            // Get article summary if available
+            if (Orchestrator.RuntimeProperties.TryGetValue("ArticleSummary", out object? summaryObj) && 
+                summaryObj is ArticleSummary summary)
+            {
+                article.SummaryJson = JsonConvert.SerializeObject(summary);
+                Console.WriteLine($"  [SaveArticle] 📝 Saved summary: {summary.ExecutiveSummary.Substring(0, Math.Min(60, summary.ExecutiveSummary.Length))}...");
+            }
+            
             // Save to database first to get the ID
             _dbContext.Articles.Add(article);
             await _dbContext.SaveChangesAsync();
@@ -595,11 +630,22 @@ public class SaveArticleRunnable : OrchestrationRunnable<ArticleOutput, Article>
                 if (!string.IsNullOrEmpty(_config.ApiKeys.LinkedIn) && 
                     !string.IsNullOrEmpty(_config.Publishing.LinkedIn.AuthorUrn))
                 {
+                    // Get TornadoApi client for AI post generation
+                    TornadoApi? client = null;
+                    if (Orchestrator.RuntimeProperties.TryGetValue("TornadoApiClient", out object? clientObj) && 
+                        clientObj is TornadoApi apiClient)
+                    {
+                        client = apiClient;
+                    }
+                    
                     bool published = await LinkedInPublisher.PublishArticleAsync(
                         article, 
                         _config.ApiKeys.LinkedIn,
                         _config.Publishing.LinkedIn.AuthorUrn,
-                        _dbContext);
+                        _dbContext,
+                        client,
+                        _config,
+                        article.SummaryJson); // Pass the summary for enhanced post generation
                         
                     if (!published)
                     {
@@ -609,6 +655,34 @@ public class SaveArticleRunnable : OrchestrationRunnable<ArticleOutput, Article>
                 else
                 {
                     Console.WriteLine($"[SaveArticle] ⚠ LinkedIn access token or authorUrn not configured");
+                }
+            }
+            
+            // Auto-publish to Medium
+            if (_config.Publishing?.Medium?.Enabled == true && 
+                _config.Publishing.Medium.AutoPublish)
+            {
+                Console.WriteLine($"[SaveArticle] Auto-publishing to Medium...");
+                
+                if (!string.IsNullOrEmpty(_config.ApiKeys.Medium?.CookieUid) && 
+                    !string.IsNullOrEmpty(_config.ApiKeys.Medium?.CookieSid))
+                {
+                    bool published = await MediumPublisher.PublishArticleAsync(
+                        article,
+                        _config.ApiKeys.Medium.CookieSid,  // Note: sid before uid in MediumPublisher signature
+                        _config.ApiKeys.Medium.CookieUid,
+                        _config.Publishing.Medium.Headless,
+                        _config.Publishing.Medium.DailyPostLimit,
+                        _dbContext);
+                        
+                    if (!published)
+                    {
+                        Console.WriteLine($"[SaveArticle] ⚠ Auto-publish to Medium failed (see logs above)");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"[SaveArticle] ⚠ Medium cookies (uid/sid) not configured");
                 }
             }
             

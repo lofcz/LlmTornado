@@ -19,7 +19,8 @@
     "research": "gpt-4o",
     "writing": "gpt-4o",
     "review": "gpt-4o",
-    "imagePrompt": "gpt-4o-mini"
+    "imagePrompt": "gpt-4o-mini",
+    "linkedInPost": "gpt-4o-mini"
   },
   "output": {
     "directory": "./output/articles",

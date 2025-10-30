@@ -48,6 +48,8 @@ public class Article
 
     public string? MetadataJson { get; set; } // Additional metadata as JSON
 
+    public string? SummaryJson { get; set; } // Article summary for use by other agents (ArticleSummary as JSON)
+
     // Navigation property
     public virtual ICollection<WorkHistory> WorkHistory { get; set; } = new List<WorkHistory>();
 }

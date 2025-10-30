@@ -111,6 +111,9 @@ public class ModelsConfiguration
 
     [JsonProperty("imagePrompt")]
     public string ImagePrompt { get; set; } = "gpt-4o-mini";
+
+    [JsonProperty("linkedInPost")]
+    public string LinkedInPost { get; set; } = "gpt-4o-mini";
 }
 
 public class OutputConfiguration
