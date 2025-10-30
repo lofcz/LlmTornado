@@ -7,7 +7,11 @@
     "google": "your-google-key-here",
     "groq": "gsk_your-groq-key-here",
     "devto": "your-devto-api-key-here",
-    "linkedin": "your-linkedin-access-token-here"
+    "linkedin": "your-linkedin-access-token-here",
+    "medium": {
+      "cookieUid": "your-medium-uid-cookie-here",
+      "cookieSid": "your-medium-sid-cookie-here"
+    }
   },
   "models": {
     "ideation": "gpt-4o-mini",
@@ -108,6 +112,12 @@
       "enabled": false,
       "autoPublish": false,
       "authorUrn": "urn:li:person:YOUR_PERSON_ID"
+    },
+    "medium": {
+      "enabled": false,
+      "autoPublish": false,
+      "headless": false,
+      "dailyPostLimit": 3
     }
   }
 }

@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "Medium Cookie Extractor",
+  "version": "1.0.0",
+  "description": "Extract Medium cookies (sid, uid) and copy them in appCfg.json format",
+  "permissions": [
+    "cookies",
+    "clipboardWrite"
+  ],
+  "host_permissions": [
+    "https://medium.com/*",
+    "https://*.medium.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icon16.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}
+

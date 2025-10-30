@@ -87,6 +87,9 @@ public class ApiKeysConfiguration
 
     [JsonProperty("linkedin")]
     public string LinkedIn { get; set; } = string.Empty;
+
+    [JsonProperty("medium")]
+    public MediumApiKeysConfiguration Medium { get; set; } = new();
 }
 
 public class ModelsConfiguration
@@ -302,6 +305,9 @@ public class PublishingConfiguration
     
     [JsonProperty("linkedin")]
     public LinkedInPublishConfig? LinkedIn { get; set; }
+    
+    [JsonProperty("medium")]
+    public MediumPublishConfig? Medium { get; set; }
 }
 
 public class PlatformPublishConfig
@@ -323,5 +329,29 @@ public class LinkedInPublishConfig
     
     [JsonProperty("authorUrn")]
     public string AuthorUrn { get; set; }
+}
+
+public class MediumApiKeysConfiguration
+{
+    [JsonProperty("cookieUid")]
+    public string CookieUid { get; set; } = string.Empty;
+    
+    [JsonProperty("cookieSid")]
+    public string CookieSid { get; set; } = string.Empty;
+}
+
+public class MediumPublishConfig
+{
+    [JsonProperty("enabled")]
+    public bool Enabled { get; set; }
+    
+    [JsonProperty("autoPublish")]
+    public bool AutoPublish { get; set; }
+    
+    [JsonProperty("headless")]
+    public bool Headless { get; set; } = false;
+    
+    [JsonProperty("dailyPostLimit")]
+    public int DailyPostLimit { get; set; } = 3;
 }
 

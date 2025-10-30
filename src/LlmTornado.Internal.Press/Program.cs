@@ -138,8 +138,14 @@ class Program
                 await HandleExportAllCommand(config, dbContext);
                 break;
 
+            case "list-articles":
+            case "list":
+            case "articles":
+                await HandleListArticlesCommand(dbContext);
+                break;
+
             case "publish":
-                await HandlePublishCommand(args, config);
+                await HandlePublishCommand(args, config, dbContext);
                 break;
                 
             case "publish-all":
@@ -205,8 +211,9 @@ class Program
         Console.WriteLine("  drop-all              Remove ALL queue items - DELETES EVERYTHING (alias: dropall)");
         Console.WriteLine("  clear-queue           Clear all pending items from queue (alias: clearq)");
         Console.WriteLine("  status                Show queue and article statistics (alias: stat)");
+        Console.WriteLine("  list-articles         List all articles with publish status (alias: list, articles)");
         Console.WriteLine("  export-all            Export all articles to markdown/JSON (alias: export)");
-        Console.WriteLine("  publish <article-id>  Publish article to enabled platforms");
+        Console.WriteLine("  publish <id> [platforms]  Publish article (platforms: devto,linkedin,medium)");
         Console.WriteLine("  publish-all           Publish all unpublished articles");
         Console.WriteLine("  migrate-db            Apply pending database migrations (alias: migrate)");
         Console.WriteLine("  check-db              Check database status and pending migrations (alias: checkdb)");
@@ -218,8 +225,11 @@ class Program
         Console.WriteLine("Examples:");
         Console.WriteLine("  generate 5            Generate 5 articles");
         Console.WriteLine("  seed 10               Seed queue with 10 ideas");
+        Console.WriteLine("  list-articles         List all articles");
+        Console.WriteLine("  publish 1             Publish article #1 to all enabled platforms");
+        Console.WriteLine("  publish 1 devto       Publish article #1 to dev.to only");
+        Console.WriteLine("  publish 1 devto,medium  Publish article #1 to dev.to and Medium");
         Console.WriteLine("  show-queue            Show all pending queue items");
-        Console.WriteLine("  show-queue 5          Show first 5 queue items");
         Console.WriteLine("  drop-queue 3          Remove queue item with ID 3");
         Console.WriteLine("  status                Check current status");
         Console.WriteLine();
@@ -372,11 +382,60 @@ class Program
         Console.WriteLine($"Exported {exported}/{articles.Count} articles");
     }
 
-    static async Task HandlePublishCommand(string[] args, AppConfiguration config)
+    static async Task HandleListArticlesCommand(PressDbContext dbContext)
+    {
+        Console.WriteLine("=== Articles ===\n");
+        
+        var articles = await dbContext.Articles
+            .OrderByDescending(a => a.CreatedDate)
+            .ToListAsync();
+        
+        if (articles.Count == 0)
+        {
+            Console.WriteLine("No articles found. Generate some with 'generate <count>'\n");
+            return;
+        }
+        
+        // Get all publish statuses
+        var publishStatuses = await dbContext.ArticlePublishStatus
+            .Where(ps => ps.Status == "Published")
+            .ToListAsync();
+        
+        // Print header
+        Console.WriteLine("┌──────┬────────────────────────────────────────────┬─────────────────┬──────┬──────────┬──────────┬────────┐");
+        Console.WriteLine("│  ID  │ Title                                      │ Created         │ Words│  DevTo   │ LinkedIn │ Medium │");
+        Console.WriteLine("├──────┼────────────────────────────────────────────┼─────────────────┼──────┼──────────┼──────────┼────────┤");
+        
+        foreach (var article in articles)
+        {
+            string title = Truncate(article.Title, 42);
+            string created = article.CreatedDate.ToString("yyyy-MM-dd HH:mm");
+            string words = article.WordCount.ToString().PadLeft(5);
+            
+            // Check publish status for each platform
+            var devToStatus = publishStatuses.FirstOrDefault(ps => ps.ArticleId == article.Id && ps.Platform == "devto");
+            var linkedInStatus = publishStatuses.FirstOrDefault(ps => ps.ArticleId == article.Id && ps.Platform == "linkedin");
+            var mediumStatus = publishStatuses.FirstOrDefault(ps => ps.ArticleId == article.Id && ps.Platform == "medium");
+            
+            string devToIcon = devToStatus != null ? "\x1b[32m✓\x1b[0m" : "\x1b[90m-\x1b[0m";
+            string linkedInIcon = linkedInStatus != null ? "\x1b[32m✓\x1b[0m" : "\x1b[90m-\x1b[0m";
+            string mediumIcon = mediumStatus != null ? "\x1b[32m✓\x1b[0m" : "\x1b[90m-\x1b[0m";
+            
+            Console.WriteLine($"│ {article.Id,4} │ {title,-42} │ {created,-15} │ {words} │    {devToIcon}     │    {linkedInIcon}     │   {mediumIcon}    │");
+        }
+        
+        Console.WriteLine("└──────┴────────────────────────────────────────────┴─────────────────┴──────┴──────────┴──────────┴────────┘");
+        Console.WriteLine($"\nTotal: {articles.Count} article(s)");
+        Console.WriteLine("\nLegend: \x1b[32m✓\x1b[0m = Published  \x1b[90m-\x1b[0m = Not published\n");
+    }
+
+    static async Task HandlePublishCommand(string[] args, AppConfiguration config, PressDbContext dbContext)
     {
         if (args.Length < 2)
         {
-            Console.WriteLine("Usage: publish <article-id>");
+            Console.WriteLine("Usage: publish <article-id> [platforms]");
+            Console.WriteLine("Platforms: devto, linkedin, medium (comma-separated)");
+            Console.WriteLine("Example: publish 1 devto,medium");
             return;
         }
         
@@ -386,8 +445,7 @@ class Program
             return;
         }
         
-        using PressDbContext context = new PressDbContext();
-        Article? article = await context.Articles.FindAsync(articleId);
+        Article? article = await dbContext.Articles.FindAsync(articleId);
         
         if (article == null)
         {
@@ -395,14 +453,35 @@ class Program
             return;
         }
         
-        Console.WriteLine($"Publishing article {articleId}: {article.Title}");
+        // Parse platform filter if provided
+        HashSet<string> targetPlatforms = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (args.Length >= 3)
+        {
+            var platforms = args[2].Split(',', StringSplitOptions.RemoveEmptyEntries);
+            foreach (var platform in platforms)
+            {
+                targetPlatforms.Add(platform.Trim().ToLower());
+            }
+            Console.WriteLine($"Publishing article {articleId} to: {string.Join(", ", targetPlatforms)}");
+        }
+        else
+        {
+            Console.WriteLine($"Publishing article {articleId} to enabled platforms: {article.Title}");
+        }
         
-        // Publish to dev.to if enabled
-        if (config.Publishing?.DevTo?.Enabled == true)
+        bool publishedAny = false;
+        
+        // Publish to dev.to if enabled (or explicitly requested)
+        bool shouldPublishDevTo = targetPlatforms.Count == 0 
+            ? config.Publishing?.DevTo?.Enabled == true 
+            : targetPlatforms.Contains("devto");
+            
+        if (shouldPublishDevTo)
         {
             if (!string.IsNullOrEmpty(config.ApiKeys.DevTo))
             {
-                await DevToPublisher.PublishArticleAsync(article, config.ApiKeys.DevTo, context);
+                bool success = await DevToPublisher.PublishArticleAsync(article, config.ApiKeys.DevTo, dbContext);
+                publishedAny = publishedAny || success;
             }
             else
             {
@@ -410,17 +489,22 @@ class Program
             }
         }
         
-        // Publish to LinkedIn if enabled
-        if (config.Publishing?.LinkedIn?.Enabled == true)
+        // Publish to LinkedIn if enabled (or explicitly requested)
+        bool shouldPublishLinkedIn = targetPlatforms.Count == 0 
+            ? config.Publishing?.LinkedIn?.Enabled == true 
+            : targetPlatforms.Contains("linkedin");
+            
+        if (shouldPublishLinkedIn)
         {
             if (!string.IsNullOrEmpty(config.ApiKeys.LinkedIn) && 
-                !string.IsNullOrEmpty(config.Publishing.LinkedIn.AuthorUrn))
+                !string.IsNullOrEmpty(config.Publishing?.LinkedIn?.AuthorUrn))
             {
-                await LinkedInPublisher.PublishArticleAsync(
+                bool success = await LinkedInPublisher.PublishArticleAsync(
                     article, 
                     config.ApiKeys.LinkedIn, 
                     config.Publishing.LinkedIn.AuthorUrn, 
-                    context);
+                    dbContext);
+                publishedAny = publishedAny || success;
             }
             else
             {
@@ -428,7 +512,39 @@ class Program
             }
         }
         
-        Console.WriteLine("✓ Publish command completed");
+        // Publish to Medium if enabled (or explicitly requested)
+        bool shouldPublishMedium = targetPlatforms.Count == 0 
+            ? config.Publishing?.Medium?.Enabled == true 
+            : targetPlatforms.Contains("medium");
+            
+        if (shouldPublishMedium)
+        {
+            if (!string.IsNullOrEmpty(config.ApiKeys.Medium?.CookieSid) && 
+                !string.IsNullOrEmpty(config.ApiKeys.Medium?.CookieUid))
+            {
+                bool success = await Publisher.MediumPublisher.PublishArticleAsync(
+                    article,
+                    config.ApiKeys.Medium.CookieSid,
+                    config.ApiKeys.Medium.CookieUid,
+                    config.Publishing?.Medium?.Headless ?? false,
+                    config.Publishing?.Medium?.DailyPostLimit ?? 3,
+                    dbContext);
+                publishedAny = publishedAny || success;
+            }
+            else
+            {
+                Console.WriteLine("⚠ Medium cookies not configured");
+            }
+        }
+        
+        if (publishedAny)
+        {
+            Console.WriteLine("\n✓ Publish command completed successfully");
+        }
+        else
+        {
+            Console.WriteLine("\n⚠ No platforms were published to");
+        }
     }
 
     static async Task HandlePublishAllCommand(AppConfiguration config)
