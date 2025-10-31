@@ -1,0 +1,116 @@
+{
+  "_comment_embedding": "Options: 'local' provider with models like 'jinaai/jina-embeddings-v2-base-code' (768 dim, 161M params, 8K context, code-specialized), 'google/embeddinggemma-300m' (768 dim, 300M params, fast), 'Qwen/Qwen3-Embedding-0.6B' (1024 dim, 600M params), or API providers 'openai', 'voyage', 'cohere', etc.",
+  "embedding": {
+    "provider": "local",
+    "model": "jinaai/jina-embeddings-v2-base-code",
+    "api_key": null,
+    "batch_size": 4
+  },
+  "chunking": {
+    "chunk_size": 3000,
+    "chunk_overlap": 500,
+    "separators": [
+      "\n\n",
+      "\n",
+      ". ",
+      " ",
+      ""
+    ]
+  },
+  "resource": {
+    "max_cpu_percent": 50.0,
+    "max_memory_mb": 2048,
+    "max_workers": null,
+    "idle_timeout_seconds": 300,
+    "debounce_delay_ms": 500
+  },
+  "indexing": {
+    "text_extensions": [
+      ".py",
+      ".js",
+      ".ts",
+      ".jsx",
+      ".tsx",
+      ".java",
+      ".cpp",
+      ".c",
+      ".h",
+      ".hpp",
+      ".cs",
+      ".go",
+      ".rs",
+      ".rb",
+      ".php",
+      ".swift",
+      ".kt",
+      ".scala",
+      ".md",
+      ".txt",
+      ".rst",
+      ".tex",
+      ".org",
+      ".html",
+      ".css",
+      ".scss",
+      ".sass",
+      ".less",
+      ".json",
+      ".yaml",
+      ".yml",
+      ".toml",
+      ".xml",
+      ".ini",
+      ".cfg",
+      ".conf",
+      ".sql",
+      ".sh",
+      ".bash",
+      ".zsh",
+      ".fish",
+      ".ps1",
+      ".vue",
+      ".svelte",
+      ".astro"
+    ],
+    "max_file_size_mb": 10,
+    "respect_gitignore": true,
+    "use_fskbignore": true,
+    "skip_directories": [
+      "node_modules",
+      ".git",
+      "__pycache__",
+      ".venv",
+      "venv",
+      "env",
+      "bin",
+      "obj",
+      ".vs",
+      ".vscode",
+      "target",
+      "build",
+      "dist",
+      ".next",
+      ".nuxt",
+      ".output",
+      "coverage",
+      ".pytest_cache"
+    ]
+  },
+  "search": {
+    "top_k": 10,
+    "min_similarity": 0.0,
+    "context_lines_before": 2,
+    "context_lines_after": 2
+  },
+  "storage": {
+    "use_chromadb": true,
+    "data_dir": "~/.fskb/data",
+    "log_dir": "~/.fskb/logs",
+    "config_dir": "~/.fskb"
+  },
+  "roots": [],
+  "gui_enabled": true,
+  "minimize_to_tray": true,
+  "show_notifications": true
+}
+
