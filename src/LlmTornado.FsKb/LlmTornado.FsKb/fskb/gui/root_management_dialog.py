@@ -575,7 +575,7 @@ class RootManagementDialog(QDialog):
                     'start_line': line_start,
                     'end_line': line_end,
                     'content': content,
-                    'content_hash': metadata.get('content_hash', '')[:8]
+                    'content_hash': metadata.get('content_hash', '')  # Full hash for debugging
                 })
             
             # Sort by start_line

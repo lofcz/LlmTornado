@@ -947,7 +947,7 @@ class IndexingEngine:
             logger.debug(f"Cache hit: {cache_hits}/{len(chunks)} chunks for {file_path.name}")
         
         if chunks_to_embed:
-            new_embeddings = await self.embedding_provider.embed_texts(chunks_to_embed)
+            new_embeddings = await self.embedding_provider.embed_texts(chunks_to_embed, is_query=False)
             
             # Place new embeddings in final list
             for idx, embedding in zip(chunks_to_embed_indices, new_embeddings):

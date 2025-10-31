@@ -75,6 +75,7 @@ class QueryEngine:
         branch_name: str,
         top_k: Optional[int] = None,
         include_context: bool = True,
+        task: Optional[str] = None,
     ) -> List[SearchResult]:
         """
         Search for chunks matching the query.
@@ -85,6 +86,7 @@ class QueryEngine:
             branch_name: Branch name to search
             top_k: Number of results (default from config)
             include_context: Whether to include context lines
+            task: Task type (qa, nl2code, code2code) or None for auto-detect
         
         Returns:
             List of search results
@@ -97,9 +99,9 @@ class QueryEngine:
             top_k = self.settings.search.top_k
         
         try:
-            # Generate query embedding
-            logger.debug(f"Generating embedding for query: {query[:50]}...")
-            query_embedding = await self.embedding_provider.embed_single(query)
+            # Generate query embedding with task parameter
+            logger.debug(f"Generating embedding for query: {query[:50]}... (task: {task or 'auto'})")
+            query_embedding = await self.embedding_provider.embed_single(query, is_query=True, task=task)
             
             # Search in ChromaDB
             logger.debug(f"Searching in {root_path}, branch {branch_name}")

@@ -14,9 +14,9 @@ class EmbeddingConfig(BaseModel):
     """Embedding provider configuration."""
     
     provider: Literal["local", "openai", "voyage", "cohere", "google", "anthropic"] = "local"
-    model: str = "jinaai/jina-embeddings-v2-base-code"  # Default: Jina Code Embeddings (161M params, 768 dim, 8192 context, 30+ languages)
+    model: str = "jinaai/jina-code-embeddings-0.5b"  # Default: Jina Code Embeddings 0.5B (494M params, 896 dim, 32768 context, 15+ languages, task-specific)
     api_key: Optional[str] = None
-    batch_size: int = 4  # Small batch for large chunks (3K chars ≈ 4K tokens with Jina 8K context)
+    batch_size: int = 8  # Larger batch with INT8 quantization (uses ~2-3GB VRAM on RTX 2080)
     
     @field_validator("api_key")
     @classmethod
@@ -130,6 +130,7 @@ class Settings(BaseSettings):
     gui_enabled: bool = True
     minimize_to_tray: bool = True
     show_notifications: bool = True
+    show_debug_panel: bool = False  # Debug panel for testing chunk similarity
     
     # Internal - stores where config was loaded from
     _config_path: Optional[Path] = None

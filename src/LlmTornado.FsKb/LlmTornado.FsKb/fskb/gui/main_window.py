@@ -101,6 +101,17 @@ class SettingsDialog(QDialog):
         chunk_group.setLayout(chunk_layout)
         layout.addWidget(chunk_group)
         
+        # Advanced/Debug settings
+        advanced_group = QGroupBox("Advanced")
+        advanced_layout = QVBoxLayout()
+        
+        self.debug_panel_checkbox = QCheckBox("Show Debug Panel (for testing chunk similarity)")
+        self.debug_panel_checkbox.setChecked(self.settings.show_debug_panel)
+        advanced_layout.addWidget(self.debug_panel_checkbox)
+        
+        advanced_group.setLayout(advanced_layout)
+        layout.addWidget(advanced_group)
+        
         # Buttons
         button_layout = QHBoxLayout()
         save_btn = QPushButton("Save")
@@ -123,6 +134,7 @@ class SettingsDialog(QDialog):
         self.settings.resource.max_memory_mb = self.max_memory_spin.value()
         self.settings.chunking.chunk_size = self.chunk_size_spin.value()
         self.settings.chunking.chunk_overlap = self.chunk_overlap_spin.value()
+        self.settings.show_debug_panel = self.debug_panel_checkbox.isChecked()
         return self.settings
 
 
@@ -318,6 +330,20 @@ class MainWindow(QMainWindow):
         self.query_input.installEventFilter(self)
         query_layout.addWidget(self.query_input)
         
+        # Task selector
+        query_layout.addWidget(QLabel("Task:"))
+        self.task_combo = QComboBox()
+        self.task_combo.addItem("Auto", "auto")  # Auto-detect based on query
+        self.task_combo.addItem("Natural Language (NL→Code)", "nl2code")
+        self.task_combo.addItem("Code Snippet (Code→Code)", "code2code")
+        self.task_combo.setCurrentIndex(0)  # Default to auto
+        self.task_combo.setToolTip(
+            "Auto: Automatically detect (nl2code for text, code2code for code snippets)\n"
+            "NL→Code: Natural language queries, questions, keywords\n"
+            "Code→Code: Paste code to find similar implementations"
+        )
+        query_layout.addWidget(self.task_combo)
+        
         search_btn = QPushButton("Search")
         search_btn.clicked.connect(self._perform_search)
         query_layout.addWidget(search_btn)
@@ -353,6 +379,35 @@ class MainWindow(QMainWindow):
         root_settings_layout.addWidget(self.min_similarity_spin)
         
         layout.addLayout(root_settings_layout)
+        
+        # Debug panel (collapsible) - controlled by settings
+        self.debug_group = QGroupBox("🔍 Debug: Test Chunk Similarity")
+        self.debug_group.setCheckable(False)  # Not collapsible, controlled by menu
+        self.debug_group.setVisible(self.settings.show_debug_panel)  # Respect setting
+        debug_layout = QVBoxLayout()
+        
+        # Content hash input
+        hash_layout = QHBoxLayout()
+        hash_layout.addWidget(QLabel("Content Hash:"))
+        self.debug_hash_input = QLineEdit()
+        self.debug_hash_input.setPlaceholderText("Enter full content hash (from chunk viewer)...")
+        hash_layout.addWidget(self.debug_hash_input)
+        debug_layout.addLayout(hash_layout)
+        
+        # Test button and result
+        test_layout = QHBoxLayout()
+        test_btn = QPushButton("Test Similarity")
+        test_btn.clicked.connect(self._debug_test_similarity)
+        test_layout.addWidget(test_btn)
+        
+        self.debug_result_label = QLabel("Score: -")
+        self.debug_result_label.setStyleSheet("font-weight: bold;")
+        test_layout.addWidget(self.debug_result_label)
+        test_layout.addStretch()
+        debug_layout.addLayout(test_layout)
+        
+        self.debug_group.setLayout(debug_layout)
+        layout.addWidget(self.debug_group)
         
         # Results table
         self.results_table = QTableWidget()
@@ -574,6 +629,81 @@ class MainWindow(QMainWindow):
         except Exception as e:
             logger.error(f"Error saving search settings: {e}")
     
+    def _debug_test_similarity(self):
+        """Debug: Test similarity between current query and specific chunk."""
+        query = self.query_input.text().strip()
+        content_hash = self.debug_hash_input.text().strip()
+        
+        if not query:
+            self.debug_result_label.setText("Score: - (enter query)")
+            return
+        
+        if not content_hash:
+            self.debug_result_label.setText("Score: - (enter hash)")
+            return
+        
+        root_str = self.root_combo.currentText()
+        if not root_str:
+            self.debug_result_label.setText("Score: - (no root)")
+            return
+        
+        root_path = Path(root_str)
+        task = self.task_combo.currentData()
+        if task == "auto":
+            task = None
+        
+        asyncio.create_task(self._debug_test_similarity_async(query, content_hash, root_path, task))
+    
+    async def _debug_test_similarity_async(self, query: str, content_hash: str, root_path: Path, task: str = None):
+        """Async debug similarity test."""
+        try:
+            root_state = self.indexing_engine.roots.get(root_path)
+            if not root_state:
+                self.debug_result_label.setText("Score: - (root not found)")
+                return
+            
+            # Generate query embedding (get provider from query_engine)
+            query_embedding = await self.query_engine.embedding_provider.embed_single(query, is_query=True, task=task)
+            
+            # Get collection for this root
+            collection = await self.query_engine.chroma_store.get_or_create_collection(root_path)
+            
+            # Query by content_hash metadata (wrap in thread executor for blocking I/O)
+            loop = asyncio.get_event_loop()
+            results = await loop.run_in_executor(
+                None,
+                lambda: collection.get(
+                    where={"content_hash": content_hash},
+                    limit=1,
+                    include=['embeddings', 'metadatas', 'documents']
+                )
+            )
+            
+            if not results['ids']:
+                self.debug_result_label.setText(f"Score: - (hash not found: {content_hash[:16]}...)")
+                return
+            
+            # Get chunk embedding
+            chunk_embedding = results['embeddings'][0]
+            
+            # Calculate cosine similarity
+            import numpy as np
+            query_norm = query_embedding / np.linalg.norm(query_embedding)
+            chunk_norm = np.array(chunk_embedding) / np.linalg.norm(chunk_embedding)
+            similarity = np.dot(query_norm, chunk_norm)
+            
+            # Display result
+            file_path = results['metadatas'][0].get('file_path', 'unknown')
+            lines = f"{results['metadatas'][0].get('line_start', '?')}-{results['metadatas'][0].get('line_end', '?')}"
+            self.debug_result_label.setText(
+                f"Score: {similarity:.4f} | {file_path} | Lines: {lines}"
+            )
+            logger.info(f"Debug similarity test: query='{query[:50]}...', hash={content_hash[:16]}, score={similarity:.4f}")
+            
+        except Exception as e:
+            self.debug_result_label.setText(f"Score: - (error: {str(e)[:50]})")
+            logger.error(f"Error in debug similarity test: {e}")
+    
     def _perform_search(self):
         """Perform semantic search."""
         query = self.query_input.text().strip()
@@ -585,10 +715,15 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage("No root selected", 3000)
             return
         
+        # Get selected task (None for "auto")
+        task = self.task_combo.currentData()
+        if task == "auto":
+            task = None  # Let auto-detection handle it
+        
         root_path = Path(root_str)
-        asyncio.create_task(self._search_async(query, root_path))
+        asyncio.create_task(self._search_async(query, root_path, task))
     
-    async def _search_async(self, query: str, root_path: Path):
+    async def _search_async(self, query: str, root_path: Path, task: str = None):
         """Async search."""
         try:
             root_state = self.indexing_engine.roots.get(root_path)
@@ -601,6 +736,7 @@ class MainWindow(QMainWindow):
                 root_path=root_path,
                 branch_name=root_state.current_branch,
                 top_k=self.top_k_spin.value(),
+                task=task,
             )
             
             self.signals.search_completed.emit([r.to_dict() for r in results])
@@ -1015,6 +1151,8 @@ class MainWindow(QMainWindow):
         dialog = SettingsDialog(self.settings, self)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             self.settings = dialog.get_settings()
+            # Apply debug panel visibility
+            self.debug_group.setVisible(self.settings.show_debug_panel)
             # Save settings (will use stored config path)
             self.settings.save_to_file()
             self.statusBar().showMessage("Settings saved", 3000)
