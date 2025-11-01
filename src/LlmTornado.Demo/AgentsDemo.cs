@@ -732,7 +732,7 @@ THE USER WILL CREATE THE NEXT STEPS.
     public static async Task RunCompressionDemo()
     {
         List<ChatMessage> AllContent = new List<ChatMessage>();
-        AllContent.LoadMessages("Static/Files/BeforeCompression.json");
+        AllContent.LoadMessages("Static/Files/DndConvo.json");
 
         ConversationCompressor compressor = new ConversationCompressor(Program.Connect(), 20000, new ConversationCompressionOptions()
         {
