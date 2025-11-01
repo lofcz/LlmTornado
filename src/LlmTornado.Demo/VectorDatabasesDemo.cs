@@ -1,17 +1,21 @@
-﻿using LlmTornado.Embedding;
+﻿using Google.Protobuf.WellKnownTypes;
+using LlmTornado.Embedding;
 using LlmTornado.Embedding.Models;
 using LlmTornado.VectorDatabases;
 using LlmTornado.VectorDatabases.Faiss.Integrations;
 using LlmTornado.VectorDatabases.Intergrations;
+using LlmTornado.VectorDatabases.PgVector.Integrations;
+using LlmTornado.VectorDatabases.Pinecone;
+using LlmTornado.VectorDatabases.Pinecone.Integrations;
 using LlmTornado.VectorDatabases.Qdrant;
+using LlmTornado.VectorDatabases.TextIngest;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using static System.Net.Mime.MediaTypeNames;
-using LlmTornado.VectorDatabases.Pinecone;
-using LlmTornado.VectorDatabases.Pinecone.Integrations;
 
 namespace LlmTornado.Demo;
 
@@ -406,7 +410,36 @@ public class VectorDatabasesDemo
         Console.WriteLine("Example completed successfully!");
     }
 
-    private static float[] GenerateRandomEmbedding(int dimension)
+    [TornadoTest("Faiss golden data")]
+    [Flaky("requires specific golden data file")]
+    public static async Task TestInMemoryVectorDBGolden()
+    {
+        // Initialize the FAISS vector database
+        var faissDb = new FaissVectorDatabase(
+            indexDirectory: "./golden_data_indexes",
+            vectorDimension: 1536 // Using smaller dimension for example
+        );
+
+        // Initialize a collection
+        await faissDb.InitializeCollection("example_collection");
+        TornadoApi api = Program.Connect();
+        var doc = await faissDb.GetDocumentsAsync(new[] { "dc5a13e6-10b5-419b-bf5e-63965f2f7440" });
+        var embedding = await api.Embeddings.CreateEmbedding(EmbeddingModel.OpenAi.Gen3.Small, 
+            @"Convergence Figure 4 depicts the accuracy trends of RoBERTa on SST-2, QNLI, MNLI respectively.
+Due to a stronger dropout module, the one with AttendOut tends to fall behind (SST-2, MNLI)
+at the beginning of training. However, model becomes stronger since the second epoch (SST-2,
+QNLI). Especially on MNLI,");
+
+        //Query
+        var queryResults = await faissDb.QueryByEmbeddingAsync(embedding.Data.First().Embedding, topK: 5);
+        foreach (var result in queryResults)
+        {
+            Console.WriteLine($"Found document {result.Id} with score {result.Score}");
+            Console.WriteLine(result.Content);
+        }
+    }
+  
+private static float[] GenerateRandomEmbedding(int dimension)
     {
         var random = new Random();
         var embedding = new float[dimension];

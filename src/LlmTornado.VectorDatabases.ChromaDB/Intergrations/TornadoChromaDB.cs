@@ -162,7 +162,6 @@ namespace LlmTornado.VectorDatabases.Intergrations
                     results.Add(new VectorDocument(entry.Id, entry.Document ?? "", entry.Metadata, _embedding, entry.Distance));
                 }
             }
-
             return results.ToArray();
         }
 
@@ -203,6 +202,17 @@ namespace LlmTornado.VectorDatabases.Intergrations
             
             // ChromaDB efficiently deletes all documents using an empty where clause
             await CollectionClient.DeleteAll();
+        }
+
+        public async Task<VectorDocument[]> GetDocumentWhereAsync(TornadoWhereOperator where)
+        {
+            ThrowIfCollectionNotInitialized();
+
+            var docs = await CollectionClient.Get(
+                where: new TornadoChromaWhere(where),   
+                include: ChromaGetInclude.Documents | ChromaGetInclude.Metadatas);
+
+            return docs.Select(d => new VectorDocument(d.Id, d.Document ?? "", d.Metadata)).ToArray();
         }
 
         public string GetCollectionName() => CollectionName;

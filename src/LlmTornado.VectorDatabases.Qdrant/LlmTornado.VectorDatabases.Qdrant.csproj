@@ -14,6 +14,7 @@
   
   <ItemGroup>
     <PackageReference Include="Qdrant.Client" Version="1.15.1" />
+    <PackageReference Include="System.Net.Http.WinHttpHandler" Version="9.0.10" />
     <ProjectReference Include="..\LlmTornado.VectorDatabases\LlmTornado.VectorDatabases.csproj" />
   </ItemGroup>
 

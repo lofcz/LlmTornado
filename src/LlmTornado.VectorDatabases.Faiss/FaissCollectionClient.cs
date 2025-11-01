@@ -141,13 +141,13 @@ public class FaissCollectionClient : IDisposable
     /// <summary>
     /// Queries the index for the k nearest neighbors.
     /// </summary>
-    public Task<List<FaissEntry>> QueryAsync(float[] queryEmbedding, int topK = 10, Dictionary<string, object>? whereMetadata = null)
+    public async Task<List<FaissEntry>> QueryAsync(float[] queryEmbedding, int topK = 10, Dictionary<string, object>? whereMetadata = null)
     {
         lock (_lock)
         {
             if (_index == null || _index.Count == 0)
             {
-                return Task.FromResult(new List<FaissEntry>());
+                return new List<FaissEntry>();
             }
 
             // Search in FAISS
@@ -177,7 +177,7 @@ public class FaissCollectionClient : IDisposable
                 }
             }
             
-            return Task.FromResult(entries);
+            return entries;
         }
     }
 

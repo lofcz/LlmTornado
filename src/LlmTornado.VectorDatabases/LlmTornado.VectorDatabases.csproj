@@ -24,13 +24,17 @@
       <PackageIcon>nuget_logo.jpg</PackageIcon>
   </PropertyGroup>
   <ItemGroup>
-      <None Include="nuget_logo.jpg" Pack="true" PackagePath="\"/>
+      <None Include="nuget_logo.jpg" Pack="true" PackagePath="\" />
   </ItemGroup>
 
   <ItemGroup>
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
       <_Parameter1>LlmTornado.Demo</_Parameter1>
     </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
   </ItemGroup>
 
   <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">

@@ -3,6 +3,9 @@ using Qdrant.Client.Grpc;
 using LlmTornado.VectorDatabases;
 using static Qdrant.Client.Grpc.Conditions;
 using QdrantRange = Qdrant.Client.Grpc.Range;
+using Grpc.Net.Client;
+using System.Net.Http;
+using Grpc.Core.Interceptors;
 
 namespace LlmTornado.VectorDatabases.Qdrant;
 
@@ -13,7 +16,7 @@ namespace LlmTornado.VectorDatabases.Qdrant;
 public class QdrantVectorDatabase : IVectorDatabase
 {
     private readonly QdrantClient _client;
-    private string _collectionName = "default_collection";
+    private string _collectionName = "";
     private readonly int _vectorDimension;
 
     /// <summary>
@@ -32,27 +35,8 @@ public class QdrantVectorDatabase : IVectorDatabase
         string? apiKey = null)
     {
         _vectorDimension = vectorDimension;
-        _client = new QdrantClient(host, port, https, apiKey);
-        
-        // Test connection
-        Task.Run(async () => await TestConnectionAsync()).Wait();
-    }
 
-    /// <summary>
-    /// Tests the connection to Qdrant server.
-    /// </summary>
-    private async Task TestConnectionAsync()
-    {
-        try
-        {
-            // Try to get collections to verify connection
-            await _client.ListCollectionsAsync();
-        }
-        catch (Exception ex)
-        {
-            throw new InvalidOperationException(
-                "Qdrant instance not reachable. Please ensure Qdrant is running and accessible.", ex);
-        }
+        _client = new QdrantClient(host, https: https, apiKey: apiKey);
     }
 
     /// <summary>
@@ -77,6 +61,18 @@ public class QdrantVectorDatabase : IVectorDatabase
         }
     }
 
+    public async Task<List<VectorCollection>> GetCollectionList()
+    {
+        var collections = await _client.ListCollectionsAsync();
+        var result = new List<VectorCollection>();
+        foreach (var collection in collections)
+        {
+           result.Add(new VectorCollection(collection));
+        }
+
+        return result;
+    }
+
     /// <summary>
     /// Deletes a collection from Qdrant.
     /// </summary>
@@ -87,7 +83,7 @@ public class QdrantVectorDatabase : IVectorDatabase
         
         if (_collectionName == collectionName)
         {
-            _collectionName = "default_collection";
+            _collectionName = "";
         }
     }
 
@@ -308,6 +304,35 @@ public class QdrantVectorDatabase : IVectorDatabase
         return searchResults.Select(result => ConvertToVectorDocument(result, includeScore))
             .ToArray();
     }
+
+
+
+    /// <summary>
+    /// Performs a similarity search using an embedding vector asynchronously.
+    /// </summary>
+    public async Task<VectorDocument[]> GetDocumentWhere(
+        TornadoWhereOperator? where = null,
+        uint limit = 5)
+    {
+        ThrowIfCollectionNotInitialized();
+
+        Filter? filter = null;
+        if (where != null)
+        {
+            filter = ConvertToQdrantFilter(where);
+        }
+
+        var searchResults = await _client.ScrollAsync(
+            _collectionName,
+            filter: filter,
+            limit: limit,
+            payloadSelector: true,
+            vectorsSelector: true
+        );
+
+        return searchResults.Result.Select(ConvertToVectorDocument).ToArray();
+    }
+
 
     /// <summary>
     /// Converts a Qdrant ScoredPoint to a VectorDocument.
