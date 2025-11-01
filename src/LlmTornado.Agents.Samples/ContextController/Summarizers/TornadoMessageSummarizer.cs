@@ -26,7 +26,7 @@ public class TornadoMessageSummarizer : IMessagesSummarizer
 
         foreach (ChatMessage msg in content.MessagesToCompress)
         {
-            int msgLength = msg.GetMessageLength();
+            int msgLength = msg.GetMessageTokens();
 
             if (currentChunkLength + msgLength > options.ChunkSize && currentChunk.Count > 0)
             {

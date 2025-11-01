@@ -250,7 +250,7 @@ public class ContextWindowMessageSummarizer : IMessagesSummarizer
             while (i < original.Count && selectedIds.Contains(original[i].Id))
             {
                 var msg = original[i];
-                int msgLen = msg.GetMessageLength();
+                int msgLen = msg.GetMessageTokens();
 
                 if (spanMessages.Count > 0 && currentLength + msgLen > chunkSize)
                 {

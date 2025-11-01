@@ -342,59 +342,5 @@ public partial class ChatDemo : DemoBase
     {
         await BasicChat(ChatModel.Alibaba.Flagship.Qwen3Max);
     }
-    
-    
-
-    [TornadoTest]
-    public static async Task ConversationCompression()
-    {
-        Console.WriteLine("===  Compression Strategy Demo ===");
-        Console.WriteLine();
-
-        var api = Program.Connect();
-        Conversation conversation = api.Chat.CreateConversation(new ChatRequest
-        {
-            Model = ChatModel.OpenAi.Gpt4.Turbo
-        });
-        TornadoContextManager contextManager = new TornadoContextManager(
-               new TornadoCompressionStrategy(options: new ConversationCompressionOptions()
-               {
-                   ChunkSize = 10000,
-                   PreserveSystemMessages = true,
-                   SummaryModel = ChatModel.OpenAi.Gpt35.Turbo
-               }),
-               new TornadoConversationSummarizer()
-           );
-        conversation.ContextManager = contextManager;
-
-        conversation.AddSystemMessage("You are a helpful assistant.");
-
-        Console.WriteLine("Adding messages until character threshold is reached...");
-        Console.WriteLine();
-
-        int turnCount = 0;
-
-        while (turnCount < 20)
-        {
-            turnCount++;
-
-            // Vary message length
-            int msgLength = turnCount % 2 == 0 ? 2000 : 500;
-            string message = $"Question {turnCount}: " + new string('x', msgLength);
-            string response = $"Answer {turnCount}: " + new string('y', msgLength);
-
-            conversation.AddUserMessage(message);
-            ChatRichResponse response1 = await conversation.GetResponseRichContext();
-            conversation.AddAssistantMessage(response);
-
-            int totalChars = conversation.Messages.Sum(m => m.GetMessageLength());
-
-            Console.WriteLine($"Turn {turnCount}: (messages: {conversation.Messages.Count})");
-        }
-
-        Console.WriteLine();
-        int finalChars = conversation.Messages.Sum(m => m.GetMessageLength());
-        Console.WriteLine($"Final state: {conversation.Messages.Count} messages, {finalChars:N0} characters");
-    }
 }
 

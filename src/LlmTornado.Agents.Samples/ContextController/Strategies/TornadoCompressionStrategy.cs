@@ -42,7 +42,7 @@ public class TornadoCompressionStrategy : IMessagesCompressionStrategy
     public bool ShouldCompress(List<ChatMessage> messages)
     {
         int messageCount = messages.Count;
-        int totalChars = messages.Sum(m => m.GetMessageLength());
+        int totalChars = messages.Sum(m => m.GetMessageTokens());
 
         // Compress if either threshold is exceeded
         return messageCount > messageThreshold || totalChars > characterThreshold;
@@ -61,7 +61,7 @@ public class TornadoCompressionStrategy : IMessagesCompressionStrategy
             MaxSummaryTokens = options.MaxSummaryTokens
         };
 
-        int totalChars = messages.Sum(m => m.GetMessageLength());
+        int totalChars = messages.Sum(m => m.GetMessageTokens());
         options = adaptedOptions;
         return adaptedOptions;
     }

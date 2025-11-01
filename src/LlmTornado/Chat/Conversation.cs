@@ -26,10 +26,6 @@ public class Conversation
     private readonly List<ChatMessage> messages;
     private readonly ResponsesEndpoint responsesEndpoint;
     /// <summary>
-    ///     Strategy for determining when compression should occur.
-    /// </summary>
-    public IContextManager? ContextManager { get; set; }
-    /// <summary>
     ///     Creates a new conversation.
     /// </summary>
     /// <param name="endpoint">
@@ -1246,17 +1242,6 @@ public class Conversation
 
         return new RestDataOrException<ChatChoice>(new Exception("No choices returned by the service."), res);
     }
-
-    public async Task<ChatRichResponse> GetResponseRichContext(Func<List<FunctionCall>, ValueTask>? fnHandler = null, ToolCallsHandler? toolCallsHandler = null, CancellationToken token = default)
-    {
-        if(ContextManager != null)
-        {
-            await ContextManager.CheckRefreshAsync(this);
-        }
-
-        return await GetResponseRichInternal(fnHandler, toolCallsHandler, token).ConfigureAwait(false);
-    }
-
     #endregion
 
     #region Streaming

@@ -11,13 +11,9 @@ using LlmTornado.Code;
 using LlmTornado.Mcp;
 using LlmTornado.Responses;
 using LlmTornado.Skills;
-using Microsoft.AspNetCore.Hosting.Server;
 using Newtonsoft.Json.Converters;
 using System.ComponentModel;
-using System.Security.Cryptography.X509Certificates;
-using System.Text.Json;
 using System.Text.Json.Serialization;
-using static System.Net.WebRequestMethods;
 
 namespace LlmTornado.Demo;
 
@@ -609,5 +605,148 @@ public class AgentsDemo : DemoBase
            skills);
 
        Console.WriteLine(conv.Messages.Last().Content ?? "n/a");
+    }
+
+    [Description("Roll a 20 sided dice")]
+    public static string RollDice()
+    {
+        Random rand = new Random();
+        string diceRoll = rand.Next(1, 20).ToString();
+        Console.WriteLine($"[Dice Rolled]: {diceRoll}");
+        return diceRoll;
+    }
+
+    [TornadoTest("DnD Roleplay")]
+    [Flaky]
+    public static async Task RunDnDRoleplayDemo()
+    {
+        Console.WriteLine("Welcome Too Dungeon Masters");
+        List<ChatMessage> AllContent = new List<ChatMessage>([new ChatMessage(ChatMessageRoles.User, "Start a new Dungeons and Dragons campaign with me.")]);
+
+        string dungeonMasterInstructions = @"
+You are a Dungeons and Dragons Dungeon Master. You will guide the solo player through an epic adventure. You will role the dice for all interactions. Start by giving the player a character and explaining the scene and backstory. Task the Player with an action requirement at the end of each prompt.";
+
+        string dungeonPlayerInstructions = @"
+You will be given a character and must listen to the dungeon master to embark on a solo adventure. 
+You do not dictate the Story. 
+You are a player.
+DO NOT GIVE NEXT STEPS TO THE DUNGEON MASTER.
+IT IS ONLY YOU PLAYING.
+THE USER WILL DISCRIBE THE OUTCOME OF YOUR ACTIONS.
+THE USER WILL CREATE THE NEXT STEPS.
+";
+
+        TornadoAgent agentDungeonPlayer = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt5.V5Mini, instructions: dungeonPlayerInstructions, streaming: true);
+
+        TornadoAgent agentDungeonMaster = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt5.V5Nano, tools: [RollDice], instructions: dungeonMasterInstructions, streaming: true);
+        
+        Console.WriteLine("\n\n[DUNGEON MASTER]:");
+        Conversation dungeonMasterConv = await agentDungeonMaster.Run(appendMessages: [new ChatMessage(ChatMessageRoles.User, "Start")], streaming: agentDungeonMaster.Streaming, onAgentRunnerEvent: (evt) => {
+            if (evt.EventType == AgentRunnerEventTypes.Streaming && evt is AgentRunnerStreamingEvent streamingEvent)
+            {
+                if (streamingEvent.ModelStreamingEvent is ModelStreamingOutputTextDeltaEvent deltaTextEvent)
+                {
+                    Console.Write(deltaTextEvent.DeltaText); // Write the text delta directly
+                }
+            }
+            return ValueTask.CompletedTask;
+        });
+
+        AllContent.Add(new ChatMessage(ChatMessageRoles.Assistant, dungeonMasterConv.Messages.Last().GetMessageContent()));
+
+
+
+        Console.WriteLine("\n\n[PLAYER]:");
+        Conversation playerDungeonConversation = await agentDungeonPlayer.Run(dungeonMasterConv.Messages.Last().Content, streaming: agentDungeonPlayer.Streaming, onAgentRunnerEvent: (evt) => {
+            if (evt.EventType == AgentRunnerEventTypes.Streaming && evt is AgentRunnerStreamingEvent streamingEvent)
+            {
+                if (streamingEvent.ModelStreamingEvent is ModelStreamingOutputTextDeltaEvent deltaTextEvent)
+                {
+                    Console.Write(deltaTextEvent.DeltaText); // Write the text delta directly
+                }
+            }
+            return ValueTask.CompletedTask;
+        });
+
+        dungeonMasterConv.AddUserMessage("[PLAYER]:" + playerDungeonConversation.Messages.Last().Content);
+
+        AllContent.Add(new ChatMessage(ChatMessageRoles.User, playerDungeonConversation.Messages.Last().GetMessageContent()));
+
+        ConversationCompressor compressor = new ConversationCompressor(Program.Connect(),20000, new ConversationCompressionOptions() 
+        { 
+            CompressToolCallMessages = true,
+            SummaryModel = ChatModel.OpenAi.Gpt5.V5Nano,
+
+        });
+
+        while (true)
+        {
+            Console.WriteLine($"\n\nTokens: {AllContent.Sum(m=>m.GetMessageTokens())}\n\n");
+
+            Console.WriteLine("\n\n[DUNGEON MASTER]:");
+            dungeonMasterConv = await agentDungeonMaster.Run(appendMessages: dungeonMasterConv.Messages.ToList(), streaming: true, onAgentRunnerEvent: (evt) => {
+                if (evt.EventType == AgentRunnerEventTypes.Streaming && evt is AgentRunnerStreamingEvent streamingEvent)
+                {
+                    if (streamingEvent.ModelStreamingEvent is ModelStreamingOutputTextDeltaEvent deltaTextEvent)
+                    {
+                        Console.Write(deltaTextEvent.DeltaText); // Write the text delta directly
+                    }
+                }
+                return ValueTask.CompletedTask;
+            });
+
+            AllContent.Add(new ChatMessage(ChatMessageRoles.Assistant, "[DUNGEON MASTER]: " + dungeonMasterConv.Messages.Last().GetMessageContent()));
+
+            Console.WriteLine("\n\n[PLAYER]:");
+
+            playerDungeonConversation = await agentDungeonPlayer.Run("[DUNGEON MASTER]: " + dungeonMasterConv.Messages.Last().Content, appendMessages: playerDungeonConversation.Messages.ToList(), streaming: true, onAgentRunnerEvent: (evt) => {
+                if (evt.EventType == AgentRunnerEventTypes.Streaming && evt is AgentRunnerStreamingEvent streamingEvent)
+                {
+                    if (streamingEvent.ModelStreamingEvent is ModelStreamingOutputTextDeltaEvent deltaTextEvent)
+                    {
+                        Console.Write(deltaTextEvent.DeltaText); // Write the text delta directly
+                    }
+                }
+                return ValueTask.CompletedTask;
+            });
+
+            dungeonMasterConv.AddUserMessage("[PLAYER]:" + playerDungeonConversation.Messages.Last().Content);
+
+            AllContent.Add(new ChatMessage(ChatMessageRoles.User, "[PLAYER]:" + playerDungeonConversation.Messages.Last().GetMessageContent()));
+
+            if (compressor.ShouldCompress(AllContent))
+            {
+                Console.WriteLine("\n--- Compressing Conversation ---\n");
+                AllContent = await compressor.Compress(AllContent);
+                Console.WriteLine("\n--- Compressed Messages ---\n");
+                Console.WriteLine(string.Join("\n\n", AllContent.Select(m => $"{m.Role}: {m.Content}")));
+                break;
+            }
+
+        }
+    }
+
+
+    [TornadoTest("Compress Messages")]
+    [Flaky]
+    public static async Task RunCompressionDemo()
+    {
+        List<ChatMessage> AllContent = new List<ChatMessage>();
+        AllContent.LoadMessages("Static/Files/BeforeCompression.json");
+
+        ConversationCompressor compressor = new ConversationCompressor(Program.Connect(), 20000, new ConversationCompressionOptions()
+        {
+            CompressToolCallMessages = true,
+            SummaryModel = ChatModel.OpenAi.Gpt5.V5Nano,
+
+        });
+
+        if (compressor.ShouldCompress(AllContent))
+        {
+            Console.WriteLine("\n--- Compressing Conversation ---\n");
+            AllContent = await compressor.Compress(AllContent);
+            Console.WriteLine("\n--- Compressed Messages ---\n");
+            Console.WriteLine(string.Join("\n\n", AllContent.Select(m => $"{m.Role}: {m.Content}")));
+        }
     }
 }

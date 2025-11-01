@@ -5,6 +5,7 @@ using System.Text;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Responses;
+using Microsoft.VisualBasic;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Chat;
@@ -261,41 +262,11 @@ public static class ChatMessageExtensions
         return partsContent;
     }
 
-
     /// <summary>
-    ///     Gets the approximate character length of a message, including all parts.
+    ///     Gets the approximate token count of this message.
     /// </summary>
-    public static int GetMessageLength(this ChatMessage message)
+    public static int GetMessageTokens(this ChatMessage message)
     {
-        int length = 0;
-
-        if (message.Content != null)
-        {
-            length += message.Content.Length;
-        }
-
-        if (message.Parts != null)
-        {
-            foreach (ChatMessagePart part in message.Parts)
-            {
-                if (part.Text != null)
-                {
-                    length += part.Text.Length;
-                }
-                // Note: Images, audio, and other non-text parts are being stripped after compression
-            }
-        }
-
-        if (message.Reasoning != null)
-        {
-            length += message.Reasoning.Length;
-        }
-
-        if (message.ReasoningContent != null)
-        {
-            length += message.ReasoningContent.Length;
-        }
-
-        return length;
+        return message.Tokens ?? GetMessageContent(message).Length/4;
     }
 }
