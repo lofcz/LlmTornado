@@ -1,0 +1,59 @@
+# MCP Server
+mcp>=1.0.0
+
+# Embeddings - Local
+sentence-transformers>=2.7.0
+transformers>=4.40.0
+torch>=2.0.0
+bitsandbytes>=0.48.2  # For INT8 quantization on GPU
+accelerate>=1.11.0  # For device_map and quantization
+# For GPU support, install: pip install torch --index-url https://download.pytorch.org/whl/cu118
+# Or for CUDA 12.1: pip install torch --index-url https://download.pytorch.org/whl/cu121
+
+# Embeddings - API Support
+litellm>=1.0.0
+openai>=1.0.0
+voyageai>=0.2.0
+anthropic>=0.25.0
+google-generativeai>=0.3.0
+
+# Vector Storage (using ChromaDB for simplicity)
+chromadb>=0.4.0
+
+# File Watching & Git
+watchdog>=3.0.0
+GitPython>=3.1.0
+pathspec>=0.11.0
+
+# Database
+aiosqlite>=0.19.0
+
+# GUI
+PyQt6>=6.5.0
+qasync>=0.24.0
+
+# Text Processing
+tiktoken>=0.5.0
+# Removed chardet and python-magic - using built-in robust text detection
+
+# Configuration & Validation
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+python-dotenv>=1.0.0
+
+# Resource Management
+psutil>=5.9.0
+asyncio-throttle>=1.0.0
+
+# Utilities
+aiofiles>=23.0.0
+tenacity>=8.2.0
+loguru>=0.7.0
+msgpack>=1.0.0
+
+# Text Splitting (from langchain)
+langchain-text-splitters>=0.0.1
+
+# Testing (optional, for development)
+pytest>=7.4.0
+pytest-asyncio>=0.21.0

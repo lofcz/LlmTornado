@@ -111,6 +111,7 @@ public class ChatRequest : IModelRequest, ISerializableRequest, IHeaderProvider
 		SafetyIdentifier = basedOn.SafetyIdentifier;
 		PromptCacheKey = basedOn.PromptCacheKey;
 		CancellationToken = basedOn.CancellationToken;
+		InvokeClrToolsAutomatically = basedOn.InvokeClrToolsAutomatically;
 	}
 
 	/// <summary>
@@ -301,6 +302,12 @@ public class ChatRequest : IModelRequest, ISerializableRequest, IHeaderProvider
 
 	[JsonIgnore]
 	internal ChatStreamOptions? StreamOptionsInternal { get; set; }
+	
+	/// <summary>
+	/// If enabled, any tools backed by delegates will be invoked automatically.
+	/// </summary>
+	[JsonIgnore]
+	public bool InvokeClrToolsAutomatically { get; set; } = true;
 	
 	[JsonProperty("stream_options")]
 	internal object? StreamOptionsInternalSerialized { get; set; }

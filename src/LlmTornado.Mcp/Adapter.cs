@@ -1,9 +1,12 @@
-﻿using LlmTornado.Chat.Vendors.Anthropic;
+﻿using System.Collections;
+using System.Text.Json;
+using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Code;
 using LlmTornado.Common;
 using ModelContextProtocol;
 using ModelContextProtocol.Client;
 using ModelContextProtocol.Protocol;
+using Newtonsoft.Json.Linq;
 using Tool = LlmTornado.Common.Tool;
 
 namespace LlmTornado.Mcp;
@@ -31,6 +34,54 @@ public static class McpExtensions
         List<Tool> converted = tools.Select(x => x.ToTornadoTool()).ToList();
         return converted;
     }
+    
+    private static Dictionary<string, object?>? DeepConvert(Dictionary<string, object?>? args)
+    {
+        if (args is null) 
+            return null;
+
+        Dictionary<string, object?> result = [];
+        
+        foreach (KeyValuePair<string, object?> kvp in args)
+        {
+            result[kvp.Key] = ConvertValue(kvp.Value);
+        }
+        
+        return result;
+    }
+
+    private static object? ConvertValue(object? value)
+    {
+        if (value is null) return null;
+        
+        try
+        {
+            return value switch
+            {
+                JArray jArray => jArray.Select(ConvertValue).ToList(),
+                JObject jObject => jObject.Properties()
+                    .ToDictionary(
+                        prop => prop.Name, 
+                        prop => ConvertValue(prop.Value)
+                    ),
+                JValue jValue => ConvertValue(jValue.Value),
+                JToken { Type: JTokenType.Null } => null,
+                JToken jToken => ConvertValue(jToken.ToObject<object>()),
+                
+                IDictionary<string, object?> dict => dict.ToDictionary(
+                    kvp => kvp.Key,
+                    kvp => ConvertValue(kvp.Value)
+                ),
+                IList list => list.Cast<object?>().Select(ConvertValue).ToList(),
+                IEnumerable enumerable and not string => enumerable.Cast<object?>().Select(ConvertValue).ToList(),
+                _ => value
+            };
+        }
+        catch
+        {
+            return value;
+        }
+    }
 
     public static Tool ToTornadoTool(this McpClientTool tool)
     {
@@ -40,7 +91,9 @@ public static class McpExtensions
             {
                 CallAsync = async (args, progress, serializer, fillContent, ct) =>
                 {
-                    CallToolResult callToolResult = await tool.CallAsync(args, progress is null
+                    Dictionary<string, object?>? convertedArgs = DeepConvert(args);
+                    
+                    CallToolResult callToolResult = await tool.CallAsync(convertedArgs, progress is null
                         ? null
                         : new Progress<ProgressNotificationValue>(x =>
                         {

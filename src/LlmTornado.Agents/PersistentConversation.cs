@@ -318,6 +318,18 @@ public static class ConversationIOUtility
     /// <param name="filePath"></param>
     public static void SaveConversation(this List<ChatMessage> Messages, string filePath)
     {
+
+        if (!Directory.Exists(Path.GetDirectoryName(filePath))) // create directory if it doesn't exist
+        {
+            string? dir = Path.GetDirectoryName(filePath);
+            if (!string.IsNullOrEmpty(dir))
+                Directory.CreateDirectory(dir);
+        }
+        else // file does not exist but directory does, create empty file
+        {
+            using var fs = File.Create(filePath);
+        }
+
         if (!File.Exists(filePath))
             throw new FileNotFoundException("Conversation file not found", filePath);
 
@@ -379,18 +391,14 @@ public static class ConversationIOUtility
         if (!File.Exists(conversationPath))
             throw new FileNotFoundException("Conversation file not found", conversationPath);
 
-        using var reader = new StreamReader(conversationPath);
-        string? line;
+        var json = File.ReadAllText(conversationPath);
 
-        while ((line = reader.ReadLine()) != null)
+        var dtos = JsonConvert.DeserializeObject<List<PersistentMessage>>(json);
+        if (dtos == null)
+            return new List<ChatMessage>();
+
+        foreach (var dto in dtos)
         {
-            if (string.IsNullOrWhiteSpace(line))
-                continue;
-
-            var dto = JsonConvert.DeserializeObject<PersistentMessage>(line);
-            if (dto == null)
-                continue;
-
             messages.Add(ConvertPersistantToChatMessage(dto));
         }
 

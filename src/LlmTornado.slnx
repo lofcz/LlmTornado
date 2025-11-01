@@ -3,26 +3,48 @@
     <File Path="../LICENSE" />
     <File Path="../README.md" />
   </Folder>
-  <Project Path="LlmTornado.A2A.AgentServer/LlmTornado.A2A.AgentServer.csproj" />
-  <Project Path="LlmTornado.A2A/LlmTornado.A2A.csproj" />
-  <Project Path="LlmTornado.Agents.Native/LlmTornado.Agents.Native.csproj" />
-  <Project Path="LlmTornado.Agents.Samples/LlmTornado.Agents.Samples.csproj" />
-  <Project Path="LlmTornado.Agents/LlmTornado.Agents.csproj" />
+  <Folder Name="/Docs Arcade/">
+    <Project Path="fork_blazor_workers/src/BlazorWorker.Extensions.JSRuntime/BlazorWorker.Extensions.JSRuntime.csproj" />
+    <Project Path="fork_blazor_workers/src/BlazorWorker.ServiceFactory/BlazorWorker.BackgroundServiceFactory.csproj" />
+    <Project Path="fork_blazor_workers/src/BlazorWorker.WorkerBackgroundService/BlazorWorker.WorkerBackgroundService.csproj" />
+    <Project Path="fork_blazor_workers/src/BlazorWorker.WorkerCore/BlazorWorker.WorkerCore.csproj" />
+    <Project Path="fork_blazor_workers/src/BlazorWorker/BlazorWorker.Core.csproj" />
+    <Project Path="LlmTornado.Docs.Arcade/LlmTornado.Docs.Arcade.csproj" />
+  </Folder>
+  <Folder Name="/A2A/">
+    <Project Path="LlmTornado.A2A.AgentServer/LlmTornado.A2A.AgentServer.csproj" />
+    <Project Path="LlmTornado.A2A/LlmTornado.A2A.csproj" />
+  </Folder>
+  <Folder Name="/MCP/">
+    <Project Path="LlmTornado.Mcp.Sample.Server/LlmTornado.Mcp.Sample.Server.csproj" />
+    <Project Path="LlmTornado.Mcp.Sample/LlmTornado.Mcp.Sample.csproj" />
+    <Project Path="LlmTornado.Mcp/LlmTornado.Mcp.csproj" />
+  </Folder>
+  <Folder Name="/Agents/">
+    <Project Path="LlmTornado.Agents.Native/LlmTornado.Agents.Native.csproj" />
+    <Project Path="LlmTornado.Agents.Samples/LlmTornado.Agents.Samples.csproj" />
+    <Project Path="LlmTornado.Agents/LlmTornado.Agents.csproj" />
+  </Folder>
+  <Folder Name="/Vector DBs/">
+    <Project Path="LlmTornado.VectorDatabases.ChromaDB/LlmTornado.VectorDatabases.ChromaDB.csproj" />
+    <Project Path="LlmTornado.VectorDatabases.Faiss/LlmTornado.VectorDatabases.Faiss.csproj" />
+    <Project Path="LlmTornado.VectorDatabases.PgVector/LlmTornado.VectorDatabases.PgVector.csproj" />
+    <Project Path="LlmTornado.VectorDatabases.Pinecone/LlmTornado.VectorDatabases.Pinecone.csproj" />
+    <Project Path="LlmTornado.VectorDatabases.Qdrant/LlmTornado.VectorDatabases.Qdrant.csproj" />
+    <Project Path="LlmTornado.VectorDatabases.TextIngest/LlmTornado.VectorDatabases.TextIngest.csproj" Id="5ca7681a-657b-46e6-a6cc-f9b61f838bf2" />
+    <Project Path="LlmTornado.VectorDatabases/LlmTornado.VectorDatabases.csproj" />
+  </Folder>
+  <Folder Name="/Internal/">
+    <Project Path="LlmTornado.Internal.OpenRouter/LlmTornado.Internal.OpenRouter.csproj" />
+    <Project Path="LlmTornado.Internal.Press/LlmTornado.Internal.Press.csproj" />
+  </Folder>
   <Project Path="LlmTornado.Contrib/LlmTornado.Contrib.csproj" />
   <Project Path="LlmTornado.Demo/LlmTornado.Demo.csproj" />
   <Project Path="LlmTornado.Docs/LlmTornado.Docs.csproj" />
-  <Project Path="LlmTornado.Internal.OpenRouter/LlmTornado.Internal.OpenRouter.csproj" />
-  <Project Path="LlmTornado.Mcp.Sample.Server/LlmTornado.Mcp.Sample.Server.csproj" />
-  <Project Path="LlmTornado.Mcp.Sample/LlmTornado.Mcp.Sample.csproj" />
-  <Project Path="LlmTornado.Mcp/LlmTornado.Mcp.csproj" />
   <Project Path="LlmTornado.Microsoft.Extensions.AI/LlmTornado.Microsoft.Extensions.AI.csproj" />
   <Project Path="LlmTornado.OpenApiGenerator/LlmTornado.OpenApiGenerator.csproj" />
   <Project Path="LlmTornado.SemanticKernel/LlmTornado.SemanticKernel.csproj" />
   <Project Path="LlmTornado.Tests/LlmTornado.Tests.csproj" />
   <Project Path="LlmTornado.Toolkit/LlmTornado.Toolkit.csproj" />
-  <Project Path="LlmTornado.VectorDatabases.ChromaDB/LlmTornado.VectorDatabases.ChromaDB.csproj" />
-  <Project Path="LlmTornado.VectorDatabases.PgVector/LlmTornado.VectorDatabases.PgVector.csproj" />
-  <Project Path="LlmTornado.VectorDatabases.Pinecone/LlmTornado.VectorDatabases.Pinecone.csproj" />
-  <Project Path="LlmTornado.VectorDatabases/LlmTornado.VectorDatabases.csproj" />
   <Project Path="LlmTornado/LlmTornado.csproj" />
 </Solution>

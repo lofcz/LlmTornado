@@ -8,6 +8,7 @@ using Newtonsoft.Json.Linq;
 using System.Reflection;
 using System.Text.Json;
 using System.Threading.Tasks;
+using LlmTornado.Infra;
 
 namespace LlmTornado.Agents;
 
@@ -25,17 +26,23 @@ public static class ToolRunner
     /// <exception cref="Exception"></exception>
     public static async Task<FunctionResult> CallFuncToolAsync(TornadoAgent agent, FunctionCall call)
     {
-        if (!agent.ToolList.TryGetValue(call.Name, out Common.Tool tool))
-            throw new Exception($"I don't have a tool called {call.Name}");
-
-        //Need to check if function has required parameters and if so, parse them from the call.FunctionArguments
-        if (call.Arguments != null && tool.Delegate != null)
+        if (!agent.ToolList.TryGetValue(call.Name, out Tool? tool))
         {
-            object[]  arguments = tool.Delegate.ParseFunctionCallArgs(call.Arguments);
-
-            string? result = (string?)await tool.Delegate.InvokeAsync(arguments);
-
-            return new FunctionResult(call, result);
+            throw new Exception($"I don't have a tool called {call.Name}");
+        }
+        
+        if (tool?.Delegate is not null)
+        {
+            MethodInvocationResult invocationResult = await call.Invoke(call.Arguments ?? "{}").ConfigureAwait(false);
+            return call.Result ?? (invocationResult.InvocationSuccessful
+                ? new FunctionResult(call, new
+                {
+                    result = "ok"
+                })
+                : new FunctionResult(call, new
+                {
+                    error = invocationResult.InvocationException?.Message,
+                }, false));
         }
 
         return new FunctionResult(call, "Error No Delegate found");

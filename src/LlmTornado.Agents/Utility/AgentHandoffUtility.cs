@@ -9,137 +9,136 @@ using System.Text.Json;
 using System.Threading.Tasks;
 
 
-namespace LlmTornado.Agents
+namespace LlmTornado.Agents;
+
+public class AgentHandoffUtility
 {
-    public class AgentHandoffUtility
+    /// <summary>
+    /// Creates a response format for handing off to another agent.
+    /// </summary>
+    /// <param name="handoffs">Agents to add to enum list of selectable agents</param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentException"></exception>
+    /// <exception cref="InvalidOperationException"></exception>
+    public static ChatRequestResponseFormats CreateHandoffResponseFormat(TornadoAgent[] handoffs)
     {
-        /// <summary>
-        /// Creates a response format for handing off to another agent.
-        /// </summary>
-        /// <param name="handoffs">Agents to add to enum list of selectable agents</param>
-        /// <returns></returns>
-        /// <exception cref="ArgumentException"></exception>
-        /// <exception cref="InvalidOperationException"></exception>
-        public static ChatRequestResponseFormats CreateHandoffResponseFormat(TornadoAgent[] handoffs)
+        if (handoffs == null || handoffs.Length == 0) throw new ArgumentException("Handoffs cannot be null or empty", nameof(handoffs));
+
+        List<string> agentNames = handoffs.Select(h => h.Id).ToList();
+        agentNames.Add("CurrentAgent"); // Add the current agent as an option
+
+        dynamic? responseFormat = ConvertObjectDictionaryToDynamic(CreateHandoffObjectSchemaFormat(agentNames.ToArray()));
+
+        if (responseFormat == null)
         {
-            if (handoffs == null || handoffs.Length == 0) throw new ArgumentException("Handoffs cannot be null or empty", nameof(handoffs));
-
-            List<string> agentNames = handoffs.Select(h => h.Id).ToList();
-            agentNames.Add("CurrentAgent"); // Add the current agent as an option
-
-            dynamic? responseFormat = ConvertObjectDictionaryToDynamic(CreateHandoffObjectSchemaFormat(agentNames.ToArray()));
-
-            if (responseFormat == null)
-            {
-                throw new InvalidOperationException("Failed to convert handoff object schema to dynamic format.");
-            }
-
-            return ChatRequestResponseFormats.StructuredJson(
-                "handoff",
-                responseFormat,
-                "I need you to decide if you need to handoff the conversation to another agent.",
-                true
-            );
-
+            throw new InvalidOperationException("Failed to convert handoff object schema to dynamic format.");
         }
 
-        private static dynamic? ConvertObjectDictionaryToDynamic(Dictionary<string, object> dict)
+        return ChatRequestResponseFormats.StructuredJson(
+            "handoff",
+            responseFormat,
+            "I need you to decide if you need to handoff the conversation to another agent.",
+            true
+        );
+
+    }
+
+    private static dynamic? ConvertObjectDictionaryToDynamic(Dictionary<string, object> dict)
+    {
+        string json = JsonSerializer.Serialize(dict, new JsonSerializerOptions
         {
-            string json = JsonSerializer.Serialize(dict, new JsonSerializerOptions
-            {
-                WriteIndented = true
-            });
+            WriteIndented = true
+        });
 
-            return Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(json);
-        }
+        return Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(json);
+    }
 
-        private static Dictionary<string, object> CreateHandoffObjectSchemaFormat(string[] agentNames)
+    private static Dictionary<string, object> CreateHandoffObjectSchemaFormat(string[] agentNames)
+    {
+
+        string[] requiredProperties = ["reason", "agent"];
+        string[] arrayPropertiesRequired = ["Agents"];
+
+        Dictionary<string, object> arraySchema = new Dictionary<string, object>
         {
-
-            string[] requiredProperties = ["reason", "agent"];
-            string[] arrayPropertiesRequired = ["Agents"];
-
-            Dictionary<string, object> arraySchema = new Dictionary<string, object>
-            {
-                ["type"] = "array",
-                ["items"] = new Dictionary<string, object>
-                {
-                    ["type"] = "object",
-                    ["properties"] = new Dictionary<string, object>
-                    {
-                        ["reason"] = new Dictionary<string, object>
-                        {
-                            ["type"] = "string",
-                            ["description"] = "Reason for the handoff"
-                        },
-                        ["agent"] = new Dictionary<string, object>
-                        {
-                            ["type"] = "string",
-                            ["description"] = "The Agent to select",
-                            ["enum"] = agentNames
-                        }
-                    },
-                    ["required"] = requiredProperties,
-                    ["additionalProperties"] = false
-                }
-            };
-
-            Dictionary<string, object> handoffSchema = new Dictionary<string, object>
-            {
-                ["Agents"] = arraySchema,
-            };
-
-            return new Dictionary<string, object>
+            ["type"] = "array",
+            ["items"] = new Dictionary<string, object>
             {
                 ["type"] = "object",
-                ["properties"] = handoffSchema,
-                ["required"] = arrayPropertiesRequired,
-                ["additionalProperties"] = false
-            };
-        }
-
-        public static List<string> ParseHandoffResponse(string response)
-        {
-            List<string> selectedAgents = new();
-            if (string.IsNullOrEmpty(response))
-            {
-                throw new ArgumentException("Response cannot be null or empty", nameof(response));
-            }
-            try
-            {
-                using JsonDocument doc = JsonDocument.Parse(response);
-                if(doc.RootElement.TryGetProperty("agents", out JsonElement array))
+                ["properties"] = new Dictionary<string, object>
                 {
-                    List<JsonElement> agentArray = array.EnumerateArray().ToList();
-                    if(agentArray.Count == 0)
+                    ["reason"] = new Dictionary<string, object>
                     {
-                        selectedAgents.Add("CurrentAgent"); // No agents specified, return current agent
-                        return selectedAgents;
+                        ["type"] = "string",
+                        ["description"] = "Reason for the handoff"
+                    },
+                    ["agent"] = new Dictionary<string, object>
+                    {
+                        ["type"] = "string",
+                        ["description"] = "The Agent to select",
+                        ["enum"] = agentNames
                     }
-                    
-                    foreach (var agent in agentArray)
+                },
+                ["required"] = requiredProperties,
+                ["additionalProperties"] = false
+            }
+        };
+
+        Dictionary<string, object> handoffSchema = new Dictionary<string, object>
+        {
+            ["Agents"] = arraySchema,
+        };
+
+        return new Dictionary<string, object>
+        {
+            ["type"] = "object",
+            ["properties"] = handoffSchema,
+            ["required"] = arrayPropertiesRequired,
+            ["additionalProperties"] = false
+        };
+    }
+
+    public static List<string> ParseHandoffResponse(string response)
+    {
+        List<string> selectedAgents = new();
+        if (string.IsNullOrEmpty(response))
+        {
+            throw new ArgumentException("Response cannot be null or empty", nameof(response));
+        }
+        try
+        {
+            using JsonDocument doc = JsonDocument.Parse(response);
+            if(doc.RootElement.TryGetProperty("agents", out JsonElement array))
+            {
+                List<JsonElement> agentArray = array.EnumerateArray().ToList();
+                if(agentArray.Count == 0)
+                {
+                    selectedAgents.Add("CurrentAgent"); // No agents specified, return current agent
+                    return selectedAgents;
+                }
+                
+                foreach (var agent in agentArray)
+                {
+                    if (agent.TryGetProperty("agent", out JsonElement agentNameElement))
                     {
-                        if (agent.TryGetProperty("agent", out JsonElement agentNameElement))
+                        string? agentName = agentNameElement.GetString();
+                        if (agentName is not null && !string.IsNullOrEmpty(agentName))
                         {
-                            string? agentName = agentNameElement.GetString();
-                            if (agentName is not null && !string.IsNullOrEmpty(agentName))
-                            {
-                                selectedAgents.Add(agentName);
-                            }
+                            selectedAgents.Add(agentName);
                         }
-                        else
-                        {
-                            throw new FormatException("Response does not contain required properties 'Reason' and 'Agent'.");
-                        }
+                    }
+                    else
+                    {
+                        throw new FormatException("Response does not contain required properties 'Reason' and 'Agent'.");
                     }
                 }
             }
-            catch (JsonException ex)
-            {
-                throw new FormatException("Response is not in the expected JSON format.", ex);
-            }
-
-            return selectedAgents;
         }
+        catch (JsonException ex)
+        {
+            throw new FormatException("Response is not in the expected JSON format.", ex);
+        }
+
+        return selectedAgents;
     }
 }

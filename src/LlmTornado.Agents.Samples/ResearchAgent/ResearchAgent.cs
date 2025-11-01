@@ -97,7 +97,7 @@ public class PlannerRunnable : OrchestrationRunnable<ChatMessage, WebSearchPlan>
     {
         process.RegisterAgent(agent: Agent);
 
-        Conversation conv = await Agent.RunAsync(appendMessages: new List<ChatMessage> { process.Input });
+        Conversation conv = await Agent.Run(appendMessages: new List<ChatMessage> { process.Input });
 
         WebSearchPlan? plan = await conv.Messages.Last().Content?.SmartParseJsonAsync<WebSearchPlan>(Agent);
 
@@ -169,7 +169,7 @@ public class ResearchRunnable : OrchestrationRunnable<WebSearchPlan, string>
 
         ChatMessage userMessage = new ChatMessage(Code.ChatMessageRoles.User, item.query);
 
-        Conversation conv = await Agent.RunAsync(appendMessages: new List<ChatMessage> { userMessage });
+        Conversation conv = await Agent.Run(appendMessages: new List<ChatMessage> { userMessage });
 
         return conv.Messages.Last().Content ?? string.Empty;
     }
@@ -209,7 +209,7 @@ public class ReportingRunnable : OrchestrationRunnable<string, ReportData>
     {
         research.RegisterAgent(agent: Agent);
 
-        Conversation conv = await Agent.RunAsync(
+        Conversation conv = await Agent.Run(
             appendMessages: new List<ChatMessage> { new ChatMessage(Code.ChatMessageRoles.User, research.Input) },
             streaming: Agent.Streaming,
             onAgentRunnerEvent: (sEvent) =>

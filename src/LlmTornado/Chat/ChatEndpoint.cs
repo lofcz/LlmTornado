@@ -206,26 +206,6 @@ public class ChatEndpoint : EndpointBase
             return structuredResult;
         }
 
-        void NormalizeAudio(IChatAudio audio)
-        {
-            audio.Format ??= request.Audio?.Format switch
-            {
-                ChatRequestAudioFormats.Wav => ChatAudioFormats.Wav,
-                ChatRequestAudioFormats.Mp3 => ChatAudioFormats.Mp3,
-                _ => null
-            };
-                            
-            audio.MimeType ??= request.Audio?.Format switch
-            {
-                ChatRequestAudioFormats.Wav => "audio/wav",
-                ChatRequestAudioFormats.Mp3 => "audio/mp3",
-                ChatRequestAudioFormats.Pcm16 => null,
-                ChatRequestAudioFormats.Flac => "audio/flac",
-                ChatRequestAudioFormats.Opus => "audio/ogg",
-                _ => null
-            };
-        }
-        
         if (result?.Choices is not null)
         {
             foreach (ChatChoice choice in result.Choices)
@@ -251,7 +231,7 @@ public class ChatEndpoint : EndpointBase
             }
         }
         
-        if ((request.Tools?.Any(x => x.Delegate is not null) ?? false) && contentSource.ToolCalls?.Count > 0)
+        if (request.InvokeClrToolsAutomatically && (request.Tools?.Any(x => x.Delegate is not null) ?? false) && contentSource.ToolCalls?.Count > 0)
         {
             List<Task> tasks = [];
                 
@@ -282,6 +262,26 @@ public class ChatEndpoint : EndpointBase
         }
 
         return null;
+
+        void NormalizeAudio(IChatAudio audio)
+        {
+            audio.Format ??= request.Audio?.Format switch
+            {
+                ChatRequestAudioFormats.Wav => ChatAudioFormats.Wav,
+                ChatRequestAudioFormats.Mp3 => ChatAudioFormats.Mp3,
+                _ => null
+            };
+                            
+            audio.MimeType ??= request.Audio?.Format switch
+            {
+                ChatRequestAudioFormats.Wav => "audio/wav",
+                ChatRequestAudioFormats.Mp3 => "audio/mp3",
+                ChatRequestAudioFormats.Pcm16 => null,
+                ChatRequestAudioFormats.Flac => "audio/flac",
+                ChatRequestAudioFormats.Opus => "audio/ogg",
+                _ => null
+            };
+        }
     }
 
     internal static async ValueTask HandleChatResult(ChatRequest request, ChatResult result)

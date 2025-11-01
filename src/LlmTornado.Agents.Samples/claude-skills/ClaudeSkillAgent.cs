@@ -78,6 +78,6 @@ public class ClaudeSkillAgent
         agent.Options.MaxTokens = 10024;
         agent.Options.ReasoningBudget = 8000;
         
-        return await agent.RunAsync(appendMessages: [message] );
+        return await agent.Run(appendMessages: [message] );
     }
 }

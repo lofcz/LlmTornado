@@ -6,54 +6,6 @@ using System.Threading.Tasks;
 
 namespace LlmTornado.VectorDatabases;
 
-/// <summary>
-/// Vector document with content, metadata, and embedding.
-/// Used to represent documents stored in or retrieved from a vector database.
-/// </summary>
-public class VectorDocument
-{
-    /// <summary>
-    /// ID of the document.
-    /// </summary>
-    public string Id { get; set; } = string.Empty;
-    /// <summary>
-    /// Content stored in the document.
-    /// </summary>
-    public string Content { get; set; } = string.Empty;
-    /// <summary>
-    /// Metadata associated with the document.
-    /// </summary>
-    public Dictionary<string, object>? Metadata { get; set; }
-    /// <summary>
-    /// Vector embedding representing the document in vector space.
-    /// </summary>
-    public float[]? Embedding { get; set; }
-    /// <summary>
-    /// Dimension of the embedding vector.
-    /// </summary>
-    public int Dimension => Embedding?.Length ?? 0;
-    /// <summary>
-    /// Queried relevance score for the document.
-    /// </summary>
-    public float? Score { get; set; } // Optional relevance score for query results
-    public VectorDocument(string id, string content, Dictionary<string, object>? metadata = null, float[]? embedding = null, float? score = null)
-    {
-        Id = id;
-        Content = content;
-        Metadata = metadata;
-        Embedding = embedding;
-        Score = score;
-    }
-
-    public override string ToString()
-    {
-        string metadataStr = Metadata != null
-            ? "{" + string.Join(", ", Metadata.Select(kv => $"{kv.Key}: {kv.Value}")) + "}"
-            : "null";
-        return $"VectorDocument(Id={Id},\n Content={Content},\n Metadata={metadataStr},\n Score={Score}\n)";
-    }
-}
-
 public interface IVectorDatabase
 {
     public string GetCollectionName();
@@ -142,7 +94,7 @@ public interface IVectorDatabase
     /// <param name="topK">How many results to report back</param>
     /// <param name="includeScore">A value indicating whether to include the similarity score in the returned results.</param>
     /// <returns>An array of <see cref="VectorDocument"/> objects representing the most similar documents.</returns>
-    public VectorDocument[] QueryByEmbedding(float[] embedding, TornadoWhereOperator? where = null, int topK = 5, bool includeScore = false);
+    public VectorDocument[] QueryByEmbedding(float[] embedding, TornadoWhereOperator? where = null, int topK = 5, bool includeScore = true);
     /// <summary>
     /// Queries the vector database using the provided embedding and retrieves the most relevant documents.
     /// </summary>
@@ -153,5 +105,5 @@ public interface IVectorDatabase
     /// <returns>A task that represents the asynchronous operation. The task result contains an array of <see
     /// cref="VectorDocument"/> objects  representing the most relevant documents. The array will be empty if no
     /// matching documents are found.</returns>
-    public Task<VectorDocument[]> QueryByEmbeddingAsync(float[] embedding, TornadoWhereOperator? where = null, int topK = 5, bool includeScore = false);
+    public Task<VectorDocument[]> QueryByEmbeddingAsync(float[] embedding, TornadoWhereOperator? where = null, int topK = 5, bool includeScore = true);
 }

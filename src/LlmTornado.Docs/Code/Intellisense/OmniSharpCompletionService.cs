@@ -305,8 +305,7 @@ public class OmniSharpCompletionService
                                 break;
                             }
 
-                            int additionalEditEndOffset;
-                            (additionalTextEdits, additionalEditEndOffset) = GetAdditionalTextEdits(change, sourceText, (CSharpParseOptions)syntax!.Options, typedSpan, completion.DisplayText, providerName);
+                            (additionalTextEdits, int additionalEditEndOffset) = GetAdditionalTextEdits(change, sourceText, (CSharpParseOptions)syntax!.Options, typedSpan, completion.DisplayText, providerName);
 
                             if (additionalEditEndOffset < 0)
                             {
@@ -361,7 +360,7 @@ public class OmniSharpCompletionService
                 FilterText = completion.FilterText,
                 Kind = getCompletionItemKind(completion.Tags),
                 Detail = completion.InlineDescription,
-                Data = i,
+                Data = (i, i),
                 Preselect = completion.Rules.MatchPriority == MatchPriority.Preselect || filteredItems.Contains(completion.DisplayText),
                 CommitCharacters = commitCharacters,
             });
@@ -493,14 +492,14 @@ public class OmniSharpCompletionService
         (CSharpCompletionList completions, string fileName, int position) = _lastCompletion.Value;
 
         if (request.Item is null
-            || request.Item.Data >= completions.ItemsList.Count
-            || request.Item.Data < 0)
+            || request.Item.Data.Index >= completions.ItemsList.Count
+            || request.Item.Data.Index < 0)
         {
             _logger.LogError("Received invalid completion resolve!");
             return new CompletionResolveResponse { Item = request.Item };
         }
 
-        Microsoft.CodeAnalysis.Completion.CompletionItem lastCompletionItem = completions.ItemsList[request.Item.Data];
+        Microsoft.CodeAnalysis.Completion.CompletionItem lastCompletionItem = completions.ItemsList[request.Item.Data.Index];
         if (lastCompletionItem.DisplayTextPrefix + lastCompletionItem.DisplayText + lastCompletionItem.DisplayTextSuffix != request.Item.Label)
         {
             _logger.LogError($"Inconsistent completion data. Requested data on {request.Item.Label}, but found completion item {lastCompletionItem.DisplayText}");

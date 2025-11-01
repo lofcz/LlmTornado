@@ -354,3 +354,4 @@ src/LlmTornado/openai_openapi.yml
 src/LlmTornado.Docs/wwwroot/_framework/bmeta.json
 src/LlmTornado.sln.DotSettings
 /src/.serena
+/.fskb

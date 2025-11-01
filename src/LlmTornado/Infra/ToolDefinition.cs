@@ -1390,43 +1390,43 @@ public class ToolParamDictionary : ToolParamTypeBase
 
 internal class JsonSchemaSerializedObject
 {
-    [JsonProperty("type", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonProperty("type")]
     public string? Type { get; set; }
 
-    [JsonProperty("description", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonProperty("description")]
     public string? Description { get; set; }
 
-    [JsonProperty("properties", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonProperty("properties")]
     public Dictionary<string, object>? Properties { get; set; }
 
-    [JsonProperty("required", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonProperty("required")]
     public List<string>? Required { get; set; }
 
-    [JsonProperty("additionalProperties", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonProperty("additionalProperties")]
     public object? AdditionalProperties { get; set; }
     
-    [JsonProperty("items", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonProperty("items")]
     public object? Items { get; set; }
     
-    [JsonProperty("prefixItems", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonProperty("prefixItems")]
     public object? PrefixItems { get; set; }
     
-    [JsonProperty("minItems", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonProperty("minItems")]
     public int? MinItems { get; set; }
     
-    [JsonProperty("maxItems", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonProperty("maxItems")]
     public int? MaxItems { get; set; }
     
-    [JsonProperty("enum", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonProperty("enum")]
     public List<string>? Enum { get; set; }
     
-    [JsonProperty("anyOf", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonProperty("anyOf")]
     public object? AnyOf { get; set; }
     
-    [JsonProperty("maxProperties", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonProperty("maxProperties")]
     public int? MaxProperties { get; set; }
     
-    [JsonProperty("minProperties", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonProperty("minProperties")]
     public int? MinProperties { get; set; }
 
     public Dictionary<string, object> ToDictionary()

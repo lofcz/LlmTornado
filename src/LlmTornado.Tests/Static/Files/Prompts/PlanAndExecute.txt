@@ -1,0 +1,3 @@
+﻿I need a new [code feature]. 
+First before starting to work on project, Create a Todo.Md file with all the required steps, instructions, plan, and with a check list to fill out each step as complete. Make sure to add code snippets and details on how you plan to execute each step. 
+here are some rules:

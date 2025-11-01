@@ -4,7 +4,6 @@ using LlmTornado.Chat.Models;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Common;
-using LlmTornado.Responses;
 
 namespace LlmTornado.Agents;
 
@@ -33,30 +32,91 @@ public class TornadoRunner
     /// <exception cref="OperationCanceledException"></exception>
     public static async Task<Conversation> RunAsync(
         TornadoAgent agent,
-        string input = "",
+        string? input = null,
         GuardRailFunction? guardRail = null,
         bool singleTurn = false,
         int maxTurns = 10,
         List<ChatMessage>? messagesToAppend = null,
         Func<AgentRunnerEvents, ValueTask>? runnerCallback = null,
         bool streaming = false,
-        string responseId = "",
+        string? responseId = null,
         Func<string, ValueTask<bool>>? toolPermissionHandle = null,
         TornadoRunnerOptions? runnerOptions = null,
         CancellationToken cancellationToken = default
     )
     {
-        if (runnerOptions is null)
+        return await RunAsyncInternal(agent, input is null ? null : [ new ChatMessagePart(input) ], guardRail, singleTurn, maxTurns, messagesToAppend, runnerCallback, streaming, responseId, toolPermissionHandle, runnerOptions, cancellationToken);
+    }
+    
+    /// <summary>
+    /// Invoke the agent loop to begin async
+    /// </summary>
+    /// <param name="agent">Agent to Run</param>
+    /// <param name="input">Message to the Agent</param>
+    /// <param name="guardRail">Input Guardrail To perform</param>
+    /// <param name="singleTurn">Set loop to not loop</param>
+    /// <param name="maxTurns">Max loops to perform</param>
+    /// <param name="messagesToAppend"> Input messages to add to response</param>
+    /// <param name="streaming">Enable streaming</param>
+    /// <param name="runnerCallback">delegate to send event information </param>
+    /// <param name="responseId">Previous Response ID from response API</param>
+    /// <param name="cancellationToken">Cancellation token to cancel the run</param>
+    /// <param name="toolPermissionHandle">Delegate to request tool permission from user</param>
+    /// <returns>Result of the run</returns>
+    /// <exception cref="GuardRailTriggerException">Triggers when Guardrail detects bad input</exception>
+    /// <exception cref="Exception"> Max Turns Reached or Error</exception>
+    /// <exception cref="OperationCanceledException"></exception>
+    public static async Task<Conversation> RunAsync(
+        TornadoAgent agent,
+        List<ChatMessagePart>? input = null,
+        GuardRailFunction? guardRail = null,
+        bool singleTurn = false,
+        int maxTurns = 10,
+        List<ChatMessage>? messagesToAppend = null,
+        Func<AgentRunnerEvents, ValueTask>? runnerCallback = null,
+        bool streaming = false,
+        string? responseId = null,
+        Func<string, ValueTask<bool>>? toolPermissionHandle = null,
+        TornadoRunnerOptions? runnerOptions = null,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return await RunAsyncInternal(agent, input, guardRail, singleTurn, maxTurns, messagesToAppend, runnerCallback, streaming, responseId, toolPermissionHandle, runnerOptions, cancellationToken);
+    }
+    
+    private static async Task<Conversation> RunAsyncInternal(
+        TornadoAgent agent,
+        List<ChatMessagePart>? input = null,
+        GuardRailFunction? guardRail = null,
+        bool singleTurn = false,
+        int maxTurns = 10,
+        List<ChatMessage>? messagesToAppend = null,
+        Func<AgentRunnerEvents, ValueTask>? runnerCallback = null,
+        bool streaming = false,
+        string? responseId = null,
+        Func<string, ValueTask<bool>>? toolPermissionHandle = null,
+        TornadoRunnerOptions? runnerOptions = null,
+        CancellationToken cancellationToken = default
+    )
+    {
+        agent.Running = true;
+        agent.Cancelled = false;
+
+        try
         {
-            runnerOptions = new TornadoRunnerOptions();
+            runnerOptions ??= new TornadoRunnerOptions();
+            Conversation conversation = SetupConversation(agent, input, messagesToAppend, responseId, cancellationToken);
+        
+            // check if the input triggers a guardrail to stop the agent from continuing
+            await CheckInputGuardrail(conversation, input, guardRail);
+
+            return await RunAgentLoop(conversation, agent, singleTurn, maxTurns, runnerCallback, streaming, responseId, toolPermissionHandle, runnerOptions, cancellationToken);
         }
-
-        Conversation conversation = SetupConversation(agent, input, messagesToAppend, responseId, cancellationToken);
-
-        //Check if the input triggers a guardrail to stop the agent from continuing
-        await CheckInputGuardrail(input, guardRail);
-
-        return await RunAgentLoop(conversation, agent, singleTurn, maxTurns, runnerCallback, streaming, responseId, toolPermissionHandle, runnerOptions, cancellationToken);
+        finally
+        {
+            agent.Running = false;
+            agent.Cancelled = false;
+        }
     }
 
     /// <summary>
@@ -110,7 +170,6 @@ public class TornadoRunner
     /// <param name="maxTurns"></param>
     /// <param name="runnerCallback"></param>
     /// <param name="streaming"></param>
-    /// <param name="responseId"></param>
     /// <param name="cancellationToken"></param>
     /// <param name="toolPermissionRequest"></param>
     /// <returns></returns>
@@ -121,47 +180,72 @@ public class TornadoRunner
         int maxTurns = 10,
         Func<AgentRunnerEvents, ValueTask>? runnerCallback = null,
         bool streaming = false,
-        string responseId = "",
+        string? responseId = null,
         Func<string, ValueTask<bool>>? toolPermissionRequest = null,
-        TornadoRunnerOptions runnerOptions = null,
+        TornadoRunnerOptions? runnerOptions = null,
         CancellationToken cancellationToken = default
     )
     {
-        runnerCallback?.Invoke(new AgentRunnerStartedEvent());
-        //Agent loop
-        int currentTurn = 0;
+        if (runnerCallback is not null)
+        {
+            await runnerCallback.Invoke(new AgentRunnerStartedEvent(chat));   
+        }
+        
+        // agentic loop
+        int turns = 0;
+        
         try
         {
             do
             {
-                CheckForCancellation(runnerCallback, runnerOptions, cancellationToken);
+                if (await CheckForCancellation(agent, chat, runnerCallback, runnerOptions, cancellationToken))
+                {
+                    break;
+                }
 
-                CheckForMaxTurns(currentTurn, maxTurns, runnerCallback, runnerOptions);
+                if (await CheckForMaxTurns(chat, turns, maxTurns, runnerCallback, runnerOptions))
+                {
+                    break;
+                }
 
-                currentTurn++;
+                if (await CheckForMaxTokens(chat, chat.Messages.Sum(TokenEstimator.EstimateTokens), runnerCallback, runnerOptions))
+                {
+                    break;
+                }
 
-                chat = await GetNewResponse(agent, chat, streaming, runnerCallback, toolPermissionRequest) ?? chat;
-
+                turns++;
+                chat = await GetNewResponse(agent, chat, streaming, runnerCallback, toolPermissionRequest);
             } while (GotToolCall(chat) && !singleTurn);
         }
         catch (Exception ex)
         {
-            runnerCallback?.Invoke(new AgentRunnerErrorEvent(ex.Message, ex));
+            if (runnerCallback is not null)
+            {
+                await runnerCallback.Invoke(new AgentRunnerErrorEvent(ex.Message, chat, ex));
+            }
+            else
+            {
+                throw;
+            }
         }
 
-        runnerCallback?.Invoke(new AgentRunnerCompletedEvent(chat));
+        if (runnerCallback is not null)
+        {
+            await runnerCallback.Invoke(new AgentRunnerCompletedEvent(chat));    
+        }
+        
         return chat;
     }
 
     // [consideration] Feeling very off about using setup here or maintaining the conversation within the agent class
-    // Depends if we want to keep the agent stateless or not
+    // Depends on if we want to keep the agent stateless or not
     /// <param name="agent"></param>
     /// <param name="input"></param>
     /// <param name="messages"></param>
     /// <param name="responseId"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    private static Conversation SetupConversation(TornadoAgent agent, string input, List<ChatMessage>? messages = null, string responseId = "", CancellationToken cancellationToken = default)
+    private static Conversation SetupConversation(TornadoAgent agent, List<ChatMessagePart>? input = null, List<ChatMessage>? messages = null, string? responseId = null, CancellationToken cancellationToken = default)
     {
         Conversation chat = agent.Client.Chat.CreateConversation(agent.Options);
 
@@ -184,7 +268,10 @@ public class TornadoRunner
 
         
         //Add the latest message to the stream
-        if (!string.IsNullOrEmpty(input.Trim())) chat.AppendUserInput(input);
+        if (input?.Count > 0)
+        {
+            chat.AppendUserInput(input);
+        }
 
         return chat;
     }
@@ -202,62 +289,109 @@ public class TornadoRunner
         return chat;
     }
 
-    private static async Task CheckInputGuardrail(string input, GuardRailFunction? guardRail, Func<AgentRunnerEvents, ValueTask>? runnerCallback = null)
+    private static async Task CheckInputGuardrail(Conversation chat, List<ChatMessagePart>? input, GuardRailFunction? guardRail, Func<AgentRunnerEvents, ValueTask>? runnerCallback = null)
     {
         if (guardRail != null)
         {
-            GuardRailFunctionOutput? guard_railResult = (GuardRailFunctionOutput?)(await AsyncHelpers.InvokeValueTaskFuncAsync(guardRail, [input]));
+            GuardRailFunctionOutput? result = (GuardRailFunctionOutput?)(await AsyncHelpers.InvokeValueTaskFuncAsync(guardRail, [input]));
 
-            if (guard_railResult != null && guard_railResult.TripwireTriggered)
+            if (result is { TripwireTriggered: true })
             {
-                runnerCallback?.Invoke(new AgentRunnerGuardrailTriggeredEvent($"Input Guardrail Stopped the agent from continuing because, {guard_railResult.OutputInfo}"));
-                GuardRailTriggerException triggerException = new GuardRailTriggerException($"Input Guardrail Stopped the agent from continuing because, {guard_railResult.OutputInfo}");
-                runnerCallback?.Invoke(new AgentRunnerErrorEvent(triggerException.Message, triggerException));
-                throw triggerException;
+                if (runnerCallback is not null)
+                {
+                    await runnerCallback.Invoke(new AgentRunnerGuardrailTriggeredEvent(chat, $"Input Guardrail Stopped the agent from continuing because, {result.OutputInfo}"));
+                    GuardRailTriggerException triggerException = new GuardRailTriggerException($"Input Guardrail Stopped the agent from continuing because, {result.OutputInfo}");
+                    await runnerCallback.Invoke(new AgentRunnerErrorEvent(triggerException.Message, chat, triggerException));
+                    throw triggerException;   
+                }
             }
         }
     }
 
-    private static void CheckForCancellation(Func<AgentRunnerEvents, ValueTask>? runnerCallback = null, TornadoRunnerOptions runnerOptions = null, CancellationToken cancellationToken = default)
+    private static async ValueTask<bool> CheckForCancellation(TornadoAgent agent, Conversation chat, Func<AgentRunnerEvents, ValueTask>? runnerCallback = null, TornadoRunnerOptions? runnerOptions = null, CancellationToken cancellationToken = default)
     {
-        if (cancellationToken.IsCancellationRequested)
+        if (agent.Cancelled)
         {
-            runnerCallback?.Invoke(new AgentRunnerCancelledEvent());
-            OperationCanceledException ex = new OperationCanceledException("Operation was cancelled by user.");
-            runnerCallback?.Invoke(new AgentRunnerErrorEvent(ex.Message, ex));
-            throw ex;
+            return true;
         }
+        
+        if (cancellationToken.IsCancellationRequested && runnerCallback is not null)
+        {
+            await runnerCallback.Invoke(new AgentRunnerCancelledEvent(chat));
+            OperationCanceledException ex = new OperationCanceledException("Operation was cancelled by user.");
+            await runnerCallback.Invoke(new AgentRunnerErrorEvent(ex.Message, chat, ex));
+
+            if (runnerOptions?.ThrowOnCancelled ?? false)
+            {
+                throw ex;
+            }
+            
+            return true;   
+        }
+        
+        return false;
     }
 
-    private static void CheckForMaxTurns(int currentTurn, int maxTurns, Func<AgentRunnerEvents, ValueTask>? runnerCallback = null, TornadoRunnerOptions runnerOptions = null)
+    private static async ValueTask<bool> CheckForMaxTurns(Conversation chat, int currentTurn, int maxTurns, Func<AgentRunnerEvents, ValueTask>? runnerCallback = null, TornadoRunnerOptions? runnerOptions = null)
     {
-        if (currentTurn >= maxTurns)
+        if (currentTurn < maxTurns)
+        {
+            return false;
+        }
+        
+        if (runnerCallback is not null)
         {
             Exception error = new Exception("Max Turns Reached");
-            runnerCallback?.Invoke(new AgentRunnerMaxTurnsReachedEvent());
-            runnerCallback?.Invoke(new AgentRunnerErrorEvent(error.Message, error));
-            if(runnerOptions.ThrowOnMaxTurnsExceeded)
+            await runnerCallback.Invoke(new AgentRunnerMaxTurnsReachedEvent(chat));
+            await runnerCallback.Invoke(new AgentRunnerErrorEvent(error.Message, chat, error));
+                
+            if (runnerOptions?.ThrowOnMaxTurnsExceeded ?? false)
+            {
                 throw error;
+            }
         }
+            
+        return true;
+    }
+
+    private static async ValueTask<bool> CheckForMaxTokens(Conversation chat, int currentTokens, Func<AgentRunnerEvents, ValueTask>? runnerCallback = null, TornadoRunnerOptions? runnerOptions = null)
+    {
+        if (currentTokens < runnerOptions?.TokenLimit)
+        {
+            return false;
+        }
+        
+        Exception error = new Exception("Max Tokens Reached");
+
+        if (runnerCallback is not null)
+        {
+            await runnerCallback.Invoke(new AgentRunnerMaxTokensReachedEvent(chat));
+            await runnerCallback.Invoke(new AgentRunnerErrorEvent(error.Message, chat, error));    
+        }
+            
+        return runnerOptions?.ThrowOnTokenLimitExceeded ?? true ? throw error : true;
     }
 
     private static bool GotToolCall(Conversation chat)
     {
-        if(CheckForChatToolCall(chat)) return true;
-        //if(CheckForResponseToolCall(chat)) return true;
-        return false;
+        return CheckForChatToolCall(chat);
+    }
+
+    static ChatMessage? LastMessage(Conversation chat)
+    {
+        return chat.Messages.Count > 0 ? chat.Messages[^1] : null;
     }
 
     private static bool CheckForChatToolCall(Conversation chat)
     {
-        return chat.Messages.Last() is { Role: ChatMessageRoles.Tool };
+        return LastMessage(chat) is { Role: ChatMessageRoles.Tool };
     }
 
     private static bool CheckForResponseToolCall(Conversation chat)
     {
-        ChatMessage lastMsg = chat.Messages.Last();
-        List<ToolCall>? calls = lastMsg.ToolCalls?.Where(x => x.BuiltInToolCall?.ResponseExpected ?? false).ToList();
-        return calls != null && calls.Count > 0;
+        ChatMessage? lastMsg = LastMessage(chat);
+        List<ToolCall>? calls = lastMsg?.ToolCalls?.Where(x => x.BuiltInToolCall?.ResponseExpected ?? false).ToList();
+        return calls is { Count: > 0 };
     }
 
     /// <summary>
@@ -277,7 +411,7 @@ public class TornadoRunner
             if (agent.ToolPermissionRequired[toolCall.Name])
             {
                 //If tool permission is required, ask user for permission
-                permissionGranted = toolPermissionHandle.Invoke($"Do you want to allow the agent to use the tool: {toolCall.Name}?").Result;
+                permissionGranted = await toolPermissionHandle.Invoke($"Do you want to allow the agent to use the tool: {toolCall.Name}?");
             }
         }
 
@@ -288,7 +422,10 @@ public class TornadoRunner
         }
         else
         {
-            if (agent.McpTools.ContainsKey(toolCall.Name)) { functionResult = await ToolRunner.CallMcpToolAsync(agent, toolCall); }
+            if (agent.McpTools.ContainsKey(toolCall.Name))
+            {
+                functionResult = await ToolRunner.CallMcpToolAsync(agent, toolCall);
+            }
             else
             {
                 functionResult = agent.AgentTools.ContainsKey(toolCall.Name) ? await ToolRunner.CallAgentToolAsync(agent, toolCall) : await ToolRunner.CallFuncToolAsync(agent, toolCall);
@@ -305,7 +442,7 @@ public class TornadoRunner
     /// <param name="chat">Current Conversation</param>
     /// <param name="Streaming">Should we stream the response</param>
     /// <param name="runnerCallback">Callback events</param>
-    /// <param name="toolPermissionRequest">Request Tool permissino</param>
+    /// <param name="toolPermissionRequest">Request Tool permissions</param>
     /// <returns></returns>
     private static async Task<Conversation> GetNewResponse(
         TornadoAgent agent, 
@@ -313,21 +450,56 @@ public class TornadoRunner
         bool Streaming = false, 
         Func<AgentRunnerEvents, ValueTask>? runnerCallback = null, 
         Func<string, ValueTask<bool>>? toolPermissionRequest = null,
-        TornadoRunnerOptions ? runnerOptions = null)
+        TornadoRunnerOptions? runnerOptions = null)
     {
+        // we handle this ourselves
+        chat.RequestParameters.InvokeClrToolsAutomatically = false;
+        
         try
         {
             try
             {
                 //dynamically set the tools for the request
                 if (agent.Options.Tools != null)
-                    chat.RequestParameters.Tools = agent.Options.Tools; 
-                if (agent.ResponseOptions != null)
-                    if (agent.ResponseOptions.Tools != null)
-                        chat.RequestParameters.ResponseRequestParameters.Tools = agent.ResponseOptions.Tools;
+                {
+                    chat.RequestParameters.Tools = agent.Options.Tools;
+                }
+
+                if (agent.ResponseOptions?.Tools != null)
+                {
+                    chat.RequestParameters.ResponseRequestParameters?.Tools = agent.ResponseOptions.Tools;
+                }
             }
             catch
             {
+            }
+
+            // Handle any tool calls from previous response
+            List<ToolCall>? calls = chat.Messages.Count is 0 ? null : chat.Messages[^1].ToolCalls;
+            
+            if (calls is not null)
+            {
+                foreach (ToolCall tc in calls)
+                {
+                    if (tc.FunctionCall is null)
+                    {
+                        continue;
+                    }
+                    
+                    FunctionCall fn = tc.FunctionCall;
+
+                    if (runnerCallback is not null)
+                    {
+                        await runnerCallback.Invoke(new AgentRunnerToolInvokedEvent(fn, chat));    
+                    }
+                    
+                    fn.Result = await HandleToolCall(agent, fn, toolPermissionRequest); //[consideration]I could go parallel here but not sure if its worth the complexity
+
+                    if (runnerCallback is not null)
+                    {
+                        await runnerCallback.Invoke(new AgentRunnerToolCompletedEvent(fn, chat));
+                    }
+                }
             }
 
             if (Streaming && runnerCallback != null)
@@ -337,28 +509,53 @@ public class TornadoRunner
             
             RestDataOrException<ChatRichResponse> response = await chat.GetResponseRichSafe(async functions =>
             {
+                List<Task> tasks = [];
+                
                 foreach (FunctionCall fn in functions)
                 {
-                    runnerCallback?.Invoke(new AgentRunnerToolInvokedEvent(fn));
-                    fn.Result = await HandleToolCall(agent, fn, toolPermissionRequest); //[consideration]I could go parallel here but not sure if its worth the complexity
-                    runnerCallback?.Invoke(new AgentRunnerToolCompletedEvent(fn));
+                    tasks.Add(Task.Run(async () =>
+                    {
+                        if (runnerCallback is not null)
+                        {
+                            await runnerCallback.Invoke(new AgentRunnerToolInvokedEvent(fn, chat));
+                        }
+                        
+                        // guard against double execution
+                        fn.Result ??= await HandleToolCall(agent, fn, toolPermissionRequest);
+
+                        if (runnerCallback is not null)
+                        {
+                            await runnerCallback.Invoke(new AgentRunnerToolCompletedEvent(fn, chat));
+                        }
+                    }));
+                }
+
+                if (tasks.Count > 0)
+                {
+                    await Task.WhenAll(tasks).ConfigureAwait(false);   
                 }
             });
 
-            if(response.Exception != null)
+            if (response.Exception != null && runnerCallback is not null)
             {
-                runnerCallback?.Invoke(new AgentRunnerErrorEvent(response.Exception.Message, response.Exception));
+                await runnerCallback.Invoke(new AgentRunnerErrorEvent(response.Exception.Message, chat, response.Exception));
                 return chat;
             }
 
-            if (response != null && response.Exception == null)
+            if (runnerCallback is not null && response is { Exception: null })
             {
-                runnerCallback?.Invoke(new AgentRunnerUsageReceivedEvent(response.Data.Usage.TotalTokens));
+                await runnerCallback.Invoke(new AgentRunnerUsageReceivedEvent(response.Data?.Usage?.PromptTokens ?? 0, response.Data?.Usage?.CompletionTokens ?? 0, response.Data?.Usage?.TotalTokens ?? 0, chat));
             }
         }
         catch (Exception ex)
         {
-            runnerCallback?.Invoke(new AgentRunnerErrorEvent(ex.Message,ex));
+            if (runnerCallback is not null)
+            {
+                await runnerCallback.Invoke(new AgentRunnerErrorEvent(ex.Message, chat, ex));
+                return chat;
+            }
+
+            throw;
         }
 
         return chat;
@@ -375,15 +572,19 @@ public class TornadoRunner
                 //Call the streaming callback for text
                 return Threading.ValueTaskCompleted;
             },
-            MessageTokenHandler = (text) =>
+            MessageTokenHandler = async (text) =>
             {
-                runnerCallback?.Invoke(new AgentRunnerStreamingEvent(new ModelStreamingOutputTextDeltaEvent(1, 1, 1, text)));
-                return Threading.ValueTaskCompleted;
+                if (runnerCallback is not null)
+                {
+                    await runnerCallback.Invoke(new AgentRunnerStreamingEvent(new ModelStreamingOutputTextDeltaEvent(1, 1, 1, text ?? string.Empty), chat));   
+                }
             },
-            ReasoningTokenHandler = (reasoning) =>
+            ReasoningTokenHandler = async (reasoning) =>
             {
-                runnerCallback?.Invoke(new AgentRunnerStreamingEvent(new ModelStreamingReasoningPartAddedEvent(1, 1, 1, reasoning.Content)));
-                return Threading.ValueTaskCompleted;
+                if (runnerCallback is not null)
+                {
+                    await runnerCallback.Invoke(new AgentRunnerStreamingEvent(new ModelStreamingReasoningPartAddedEvent(1, 1, 1, reasoning.Content ?? string.Empty), chat));
+                }
             },
             BlockFinishedHandler = (message) =>
             {
@@ -395,21 +596,23 @@ public class TornadoRunner
                 //Need to handle other modalities here like images/audio don't have classes for them yet
                 return Threading.ValueTaskCompleted;
             },
-            OnResponseEvent = (response) =>
+            OnResponseEvent = async (response) =>
             {
-                runnerCallback?.Invoke(new AgentRunnerResponseApiEvent(response));
-                return Threading.ValueTaskCompleted;
+                if (runnerCallback is not null)
+                {
+                    await runnerCallback.Invoke(new AgentRunnerResponseApiEvent(response, chat));
+                }
             },
             FunctionCallHandler = async (toolCall) =>
             {
-                foreach (FunctionCall call in toolCall)
+                //Add the tool call to the response output
+                foreach (FunctionCall fn in toolCall)
                 {
-                    //Add the tool call to the response output
-                    foreach (FunctionCall fn in toolCall)
+                    if (runnerCallback is not null)
                     {
-                        runnerCallback?.Invoke(new AgentRunnerToolInvokedEvent(fn));
-                        fn.Result = await HandleToolCall(agent, fn, toolPermissionRequest); //I could go parallel here but not sure if its worth the complexity
-                        runnerCallback?.Invoke(new AgentRunnerToolCompletedEvent(fn));
+                        await runnerCallback.Invoke(new AgentRunnerToolInvokedEvent(fn, chat));
+                        fn.Result ??= await HandleToolCall(agent, fn, toolPermissionRequest); //I could go parallel here but not sure if its worth the complexity
+                        await runnerCallback.Invoke(new AgentRunnerToolCompletedEvent(fn, chat));   
                     }
                 }
             },
@@ -417,25 +620,31 @@ public class TornadoRunner
             {
                 return Threading.ValueTaskCompleted;
             },
-            MutateChatRequestHandler = (request) =>
+            MutateChatRequestHandler = async (request) =>
             {
-                runnerCallback?.Invoke(new AgentRunnerStreamingEvent(new ModelStreamingCreatedEvent(1)));
-                //Mutate the request if needed
-                return Threading.FromResult(request);
+                if (runnerCallback is not null)
+                {
+                    await runnerCallback.Invoke(new AgentRunnerStreamingEvent(new ModelStreamingCreatedEvent(1), chat));
+                }
+                
+                return request;
             },
-            HttpExceptionHandler = (exception) =>
+            HttpExceptionHandler = async (exception) =>
             {
-                runnerCallback?.Invoke(new AgentRunnerErrorEvent(exception.Exception.Message, exception.Exception));
-                return Threading.ValueTaskCompleted;
+                if (runnerCallback is not null)
+                {
+                    await runnerCallback.Invoke(new AgentRunnerErrorEvent(exception.Exception.Message, chat, exception.Exception));
+                }
             },
-            OnUsageReceived = (usage) =>
+            OnUsageReceived = async (usage) =>
             {
-                runnerCallback?.Invoke(new AgentRunnerUsageReceivedEvent(usage.TotalTokens));
-                return Threading.ValueTaskCompleted;
+                if (runnerCallback is not null)
+                {
+                    await runnerCallback.Invoke(new AgentRunnerUsageReceivedEvent(usage.PromptTokens, usage.CompletionTokens, usage.TotalTokens, chat));   
+                }
             },
             OutboundHttpRequestHandler = (http) =>
             {
-
                 return Threading.ValueTaskCompleted;
             },
             OnFinished = (finishedData) =>
@@ -444,8 +653,11 @@ public class TornadoRunner
             }
         });
 
-        runnerCallback?.Invoke(new AgentRunnerStreamingEvent(new ModelStreamingCompletedEvent(1)));
-
+        if (runnerCallback is not null)
+        {
+            await runnerCallback.Invoke(new AgentRunnerStreamingEvent(new ModelStreamingCompletedEvent(1), chat));
+        }
+        
         return chat;
     }
 }

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Medium Cookie Extractor</title>
+  <style>
+    body {
+      width: 400px;
+      padding: 20px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      margin: 0;
+    }
+    
+    .container {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+    
+    h1 {
+      margin: 0 0 15px 0;
+      font-size: 20px;
+      color: #333;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .icon {
+      font-size: 24px;
+    }
+    
+    .info {
+      background: #f0f4ff;
+      border-left: 4px solid #667eea;
+      padding: 12px;
+      margin: 15px 0;
+      border-radius: 4px;
+      font-size: 13px;
+      color: #555;
+    }
+    
+    button {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      margin-top: 10px;
+    }
+    
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+    
+    button:active {
+      transform: translateY(0);
+    }
+    
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    #status {
+      margin-top: 15px;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      display: none;
+      animation: slideIn 0.3s ease;
+    }
+    
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    #status.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+      display: block;
+    }
+    
+    #status.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+      display: block;
+    }
+    
+    #status.warning {
+      background: #fff3cd;
+      color: #856404;
+      border: 1px solid #ffeeba;
+      display: block;
+    }
+    
+    .cookie-display {
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 6px;
+      padding: 12px;
+      margin: 10px 0;
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      max-height: 150px;
+      overflow-y: auto;
+      display: none;
+      word-break: break-all;
+      white-space: pre-wrap;
+    }
+    
+    .cookie-display.show {
+      display: block;
+    }
+    
+    .footer {
+      margin-top: 15px;
+      text-align: center;
+      font-size: 11px;
+      color: #999;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>
+      <span class="icon">🍪</span>
+      Medium Cookie Extractor
+    </h1>
+    
+    <div class="info">
+      📋 Click the button below to extract Medium cookies and copy them in the format ready for <strong>appCfg.json</strong>
+    </div>
+    
+    <button id="extractBtn">Extract & Copy Cookies</button>
+    
+    <pre id="cookieDisplay" class="cookie-display"></pre>
+    
+    <div id="status"></div>
+    
+    <div class="footer">
+      Made for LlmTornado.Internal.Press
+    </div>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
+

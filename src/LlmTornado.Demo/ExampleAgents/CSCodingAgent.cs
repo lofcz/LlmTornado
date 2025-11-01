@@ -384,7 +384,7 @@ public class CodingAgentConfiguration : OrchestrationRuntimeConfiguration
 
             Agent.Instructions = updatedInstructions;
 
-            Conversation result = await Agent.RunAsync($"Errors Generated {codeBuildInfo.Input.BuildInfo.BuildResult.Error}");
+            Conversation result = await Agent.Run($"Errors Generated {codeBuildInfo.Input.BuildInfo.BuildResult.Error}");
 
             CodeReview review = result.Messages.Last().Content.ParseJson<CodeReview>();
 
@@ -421,7 +421,7 @@ public class CodingAgentConfiguration : OrchestrationRuntimeConfiguration
                     Overall context:
                     {0}";
 
-            Conversation result = await Agent.RunAsync(string.Format(prompt, input.Input.Content), appendMessages: [input.Input]);
+            Conversation result = await Agent.Run(string.Format(prompt, input.Input.Content), appendMessages: [input.Input]);
 
             ProgramResult program = result.Messages.Last().Content.ParseJson<ProgramResult>();
 

@@ -77,9 +77,9 @@ public class AgentTests
         var agent = new TornadoAgent(_modelProvider, ChatModel.OpenAi.O4.V4Mini, tools: tools);
 
         // Assert
-        Assert.That(agent.Tools, Is.Not.Null);
-        Assert.That(agent.Tools, Has.Count.EqualTo(1));
-        Assert.That(agent.Tools.First().Method.Name, Is.EqualTo("TestFunction"));
+        Assert.That(agent.DelegateReference, Is.Not.Null);
+        Assert.That(agent.DelegateReference, Has.Count.EqualTo(1));
+        Assert.That(agent.DelegateReference.First().Method.Name, Is.EqualTo("TestFunction"));
     }
 
     [Test]

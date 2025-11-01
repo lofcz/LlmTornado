@@ -66,7 +66,7 @@ public class ResearchRunnable : OrchestrationRunnable<WebSearchPlan, string>
 
         ChatMessage userMessage = new ChatMessage(LlmTornado.Code.ChatMessageRoles.User, item.query);
 
-        Conversation conv = await Agent.RunAsync(appendMessages: new List<ChatMessage> { userMessage });
+        Conversation conv = await Agent.Run(appendMessages: new List<ChatMessage> { userMessage });
 
         return conv.Messages.Last().Content ?? string.Empty;
     }

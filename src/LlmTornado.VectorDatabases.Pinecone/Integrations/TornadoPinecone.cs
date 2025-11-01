@@ -22,14 +22,14 @@ public class TornadoPinecone : IVectorDatabase
     /// <param name="apiKey">Pinecone API key</param>
     /// <param name="indexName">Optional: name of existing index</param>
     /// <param name="dimension">Optional: dimension for auto-creating index</param>
-    /// <param name="metric">Distance metric (default: cosine)</param>
+    /// <param name="metric">Distance metric (default: dot)</param>
     /// <param name="cloud">Cloud provider (default: aws)</param>
     /// <param name="region">Region (default: us-east-1)</param>
     public TornadoPinecone(
         string apiKey,
         string? indexName = null,
         int? dimension = null,
-        PineconeMetric metric = PineconeMetric.Cosine,
+        SimilarityMetric metric = SimilarityMetric.DotProduct,
         PineconeCloud cloud = PineconeCloud.Aws,
         string region = "us-east-1")
     {
@@ -222,7 +222,7 @@ public class TornadoPinecone : IVectorDatabase
         float[] embedding,
         TornadoWhereOperator? where = null,
         int topK = 5,
-        bool includeScore = false)
+        bool includeScore = true)
     {
         return Task.Run(async () => await QueryByEmbeddingAsync(embedding, where, topK, includeScore)).Result;
     }

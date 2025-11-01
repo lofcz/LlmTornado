@@ -6,6 +6,7 @@ using LlmTornado.Chat.Vendors.Zai;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using PuppeteerSharp;
+using System.Text;
 
 namespace LlmTornado.Demo;
 
@@ -342,3 +343,4 @@ public partial class ChatDemo : DemoBase
         await BasicChat(ChatModel.Alibaba.Flagship.Qwen3Max);
     }
 }
+

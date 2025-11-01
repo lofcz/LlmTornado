@@ -41,11 +41,12 @@ internal static class AsyncHelpers
         return false;
     }
 
-    public static async Task<object?> InvokeValueTaskFuncAsync(Delegate function, object[] args)
+    public static async Task<object?> InvokeValueTaskFuncAsync(Delegate function, object?[] args)
     {
         object? returnValue = function.DynamicInvoke(args);
         Type returnType = function.Method.ReturnType;
-        object? result = null;
+        object? result;
+        
         if (IsGenericValueTask(returnType, out _))
         {
             // boxed ValueTask<T> -> call AsTask() via reflection -> await Task<T>

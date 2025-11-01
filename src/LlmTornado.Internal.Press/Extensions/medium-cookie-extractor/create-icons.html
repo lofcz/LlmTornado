@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Generate Extension Icons</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f0f0f0;
+    }
+    .info {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    canvas {
+      display: none;
+    }
+    button {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 5px;
+    }
+    button:hover {
+      background: #5568d3;
+    }
+    .preview {
+      margin-top: 20px;
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+    .preview img {
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background: white;
+    }
+  </style>
+</head>
+<body>
+  <div class="info">
+    <h1>🍪 Medium Cookie Extractor - Icon Generator</h1>
+    <p>Click the buttons below to generate and download the extension icons.</p>
+    <p>Save them in the <code>medium-cookie-extractor</code> folder as:</p>
+    <ul>
+      <li><strong>icon16.png</strong></li>
+      <li><strong>icon48.png</strong></li>
+      <li><strong>icon128.png</strong></li>
+    </ul>
+  </div>
+
+  <div>
+    <button onclick="generateIcon(16)">Generate icon16.png</button>
+    <button onclick="generateIcon(48)">Generate icon48.png</button>
+    <button onclick="generateIcon(128)">Generate icon128.png</button>
+    <button onclick="generateAll()">Generate All Icons</button>
+  </div>
+
+  <div class="preview" id="preview"></div>
+
+  <canvas id="canvas"></canvas>
+
+  <script>
+    function drawIcon(canvas, size) {
+      const ctx = canvas.getContext('2d');
+      canvas.width = size;
+      canvas.height = size;
+      
+      // Background gradient
+      const gradient = ctx.createLinearGradient(0, 0, size, size);
+      gradient.addColorStop(0, '#667eea');
+      gradient.addColorStop(1, '#764ba2');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, size, size);
+      
+      // Draw cookie emoji or simple cookie icon
+      ctx.font = `bold ${size * 0.6}px Arial`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = 'white';
+      ctx.fillText('🍪', size / 2, size / 2);
+      
+      return canvas;
+    }
+
+    function generateIcon(size) {
+      const canvas = document.getElementById('canvas');
+      drawIcon(canvas, size);
+      
+      canvas.toBlob(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `icon${size}.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        // Show preview
+        const preview = document.getElementById('preview');
+        const img = document.createElement('img');
+        img.src = url;
+        img.width = size;
+        img.height = size;
+        img.title = `icon${size}.png`;
+        preview.appendChild(img);
+      });
+    }
+
+    function generateAll() {
+      document.getElementById('preview').innerHTML = '';
+      setTimeout(() => generateIcon(16), 100);
+      setTimeout(() => generateIcon(48), 300);
+      setTimeout(() => generateIcon(128), 500);
+    }
+  </script>
+</body>
+</html>
+

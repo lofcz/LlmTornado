@@ -41,7 +41,7 @@ public class PlannerRunnable : OrchestrationRunnable<ChatMessage, WebSearchPlan>
                 {process.Input.Content}
                 """;
 
-        Conversation conv = await Agent.RunAsync(appendMessages: new List<ChatMessage> { process.Input });
+        Conversation conv = await Agent.Run(appendMessages: new List<ChatMessage> { process.Input });
 
         WebSearchPlan? plan = await conv.Messages.Last().Content?.SmartParseJsonAsync<WebSearchPlan>(Agent);
 

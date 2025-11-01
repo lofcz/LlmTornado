@@ -31,6 +31,24 @@ public class MCPToolkits
         },
         allowedTools:allowedTools);
     }
+    
+    /// <summary>
+    /// Meme generator using MCP Server Docker image
+    /// </summary>
+    /// <returns></returns>
+    public static MCPServer MemeToolkit(string[]? allowedTools = null)
+    {
+        var server = new MCPServer("memegen", command: "docker", arguments: new[] {
+                "run",
+                "-i",
+                "--rm",
+                "-p",
+                "5000:5000",
+                "lofcz1/memegen-mcp"
+            },
+            allowedTools: allowedTools);
+        return server;
+    }
 
     /// <summary>
     /// File System Toolkit using MCP Server Docker image

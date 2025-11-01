@@ -6,18 +6,16 @@ using LlmTornado.Agents.Utility;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Chat.Vendors.Anthropic;
+using LlmTornado.Chat.Vendors.Google;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Mcp;
 using LlmTornado.Responses;
 using LlmTornado.Skills;
-using Microsoft.AspNetCore.Hosting.Server;
 using Newtonsoft.Json.Converters;
+using PuppeteerSharp;
 using System.ComponentModel;
-using System.Security.Cryptography.X509Certificates;
-using System.Text.Json;
 using System.Text.Json.Serialization;
-using static System.Net.WebRequestMethods;
 
 namespace LlmTornado.Demo;
 
@@ -28,7 +26,7 @@ public class AgentsDemo : DemoBase
     {
         TornadoAgent agent = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41Mini, instructions:"You are a useful assistant.");
 
-        Conversation result = await agent.RunAsync("What is 2+2?");
+        Conversation result = await agent.Run("What is 2+2?");
 
         Console.WriteLine(result.Messages.Last().Content);
     }
@@ -49,7 +47,7 @@ public class AgentsDemo : DemoBase
             topic = Console.ReadLine();
             if (topic == "exit") break;
             Console.Write("[Assistant]: ");
-            conv = await agent.RunAsync(topic, appendMessages: conv.Messages.ToList(), streaming: true, onAgentRunnerEvent: runEventHandler);
+            conv = await agent.Run(topic, appendMessages: conv.Messages.ToList(), streaming: true, onAgentRunnerEvent: runEventHandler);
             Console.WriteLine();
         }
     }
@@ -71,7 +69,7 @@ public class AgentsDemo : DemoBase
             topic = Console.ReadLine();
             if (topic == "exit") break;
             Console.Write("\n[Assistant]: ");
-            conv = await agent.RunAsync(topic, appendMessages: conv.Messages.ToList());
+            conv = await agent.Run(topic, appendMessages: conv.Messages.ToList());
             Console.Write(conv.Messages.Last().Content);
         }
     }
@@ -117,11 +115,11 @@ public class AgentsDemo : DemoBase
         }
         Console.WriteLine("[User]: My Name is john");
         Console.Write("[Agent]: ");
-        Conversation result = await agent.RunAsync("My Name is john", onAgentRunnerEvent: runEventHandler);
+        Conversation result = await agent.Run("My Name is john", onAgentRunnerEvent: runEventHandler);
         Console.Write("\n");
         Console.WriteLine("[User]: Can you help me with my homework?");
         Console.Write("[Agent]: ");
-        result = await agent.RunAsync("Can you help me with my homework?", appendMessages: result.Messages.ToList(), onAgentRunnerEvent: runEventHandler);
+        result = await agent.Run("Can you help me with my homework?", appendMessages: result.Messages.ToList(), onAgentRunnerEvent: runEventHandler);
         Console.Write("\n");
         Console.WriteLine("Saving conversation to conversation.json");
         result.Messages.ToList().SaveConversation("conversation.json");
@@ -133,7 +131,7 @@ public class AgentsDemo : DemoBase
         Console.WriteLine("Conversation loaded, resuming conversation");
         Console.WriteLine("[User]: What is my name?");
         Console.Write("[Agent]: ");
-        result = await agent.RunAsync("What is my name?", appendMessages: result.Messages.ToList(), onAgentRunnerEvent: runEventHandler);
+        result = await agent.Run("What is my name?", appendMessages: result.Messages.ToList(), onAgentRunnerEvent: runEventHandler);
     }
 
     [TornadoTest]
@@ -180,7 +178,7 @@ public class AgentsDemo : DemoBase
             return ValueTask.CompletedTask;
         }
 
-        Conversation result = await agent.RunAsync("Hello Streaming World!", streaming: true, onAgentRunnerEvent: runEventHandler);
+        Conversation result = await agent.Run("Hello Streaming World!", streaming: true, onAgentRunnerEvent: runEventHandler);
     }
 
     [TornadoTest]
@@ -197,7 +195,7 @@ public class AgentsDemo : DemoBase
             instructions: "You are a useful assistant that when asked to translate you only can rely on the given tools to translate language.",
             tools: [agentTranslator.AsTool]);
 
-        Conversation result = await agent.RunAsync("What is 2+2? and can you provide the result to me in spanish?");
+        Conversation result = await agent.Run("What is 2+2? and can you provide the result to me in spanish?");
 
         Console.WriteLine(result.Messages.Last().Content);
     }
@@ -228,7 +226,7 @@ public class AgentsDemo : DemoBase
             ChatModel.OpenAi.Gpt41.V41Mini,
             instructions: "You are a useful agent");
 
-        Conversation result = await agent.RunAsync("What is the weather?", inputGuardRailFunction: MathGuardRail);
+        Conversation result = await agent.Run("What is the weather?", inputGuardRailFunction: MathGuardRail);
 
         Console.WriteLine(result.Messages.Last().Content);
     }
@@ -269,7 +267,7 @@ public class AgentsDemo : DemoBase
     {
         TornadoAgent agent = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41Mini, instructions: "Have fun", outputSchema: typeof(MathReasoning));
 
-        Conversation result = await agent.RunAsync("How can I solve 8x + 7 = -23?");
+        Conversation result = await agent.Run("How can I solve 8x + 7 = -23?");
 
         MathReasoning mathResult = result.Messages.Last().Content.JsonDecode<MathReasoning>();
 
@@ -292,7 +290,7 @@ public class AgentsDemo : DemoBase
                     })
             ]);
 
-        Conversation result = await agent.RunAsync("What is the weather in boston?");
+        Conversation result = await agent.Run("What is the weather in boston?");
 
         Console.WriteLine(result.Messages.Last().Content);
     }
@@ -314,7 +312,7 @@ public class AgentsDemo : DemoBase
 
         agent.AddMcpTools(mcpServer.AllowedTornadoTools.ToArray());
 
-        Conversation result = await agent.RunAsync("What is the weather in boston?");
+        Conversation result = await agent.Run("What is the weather in boston?");
 
         Console.WriteLine(result.Messages.Last().Content);
     }
@@ -342,7 +340,7 @@ public class AgentsDemo : DemoBase
 
         agent.AddMcpTools(mcpServer.AllowedTornadoTools.ToArray());
 
-        Conversation result = await agent.RunAsync("What is the weather in boston?");
+        Conversation result = await agent.Run("What is the weather in boston?");
 
         Console.WriteLine(result.Messages.Last().Content);
     }
@@ -368,7 +366,7 @@ public class AgentsDemo : DemoBase
 
         agent.AddMcpTools(mcpServer.AllowedTornadoTools.ToArray());
 
-        Conversation result = await agent.RunAsync("What repos do i have?");
+        Conversation result = await agent.Run("What repos do i have?");
 
         Console.WriteLine(result.Messages.Last().Content);
     }
@@ -397,7 +395,7 @@ public class AgentsDemo : DemoBase
 
         agent.AddMcpTools(gmailServer.AllowedTornadoTools.ToArray());
 
-        Conversation result = await agent.RunAsync("Did mom respond?");
+        Conversation result = await agent.Run("Did mom respond?");
 
         Console.WriteLine(result.Messages.Last().Content);
     }
@@ -418,7 +416,7 @@ public class AgentsDemo : DemoBase
             tools: [a2ATornadoConnector.GetAvailableAgentsTool,a2ATornadoConnector.SendMessageTool]
                 );
 
-        Conversation result = await agent.RunAsync("What repos do i have?");
+        Conversation result = await agent.Run("What repos do i have?");
 
         Console.WriteLine(result.Messages.Last().Content);
     }
@@ -506,7 +504,7 @@ public class AgentsDemo : DemoBase
         }
         Console.WriteLine("[User]: What is the weather in boston?");
         Console.Write("[Agent]: ");
-        Conversation result = await agent.RunAsync("What is the weather in boston?", onAgentRunnerEvent:runEventHandler,toolPermissionHandle: toolApprovalHandler);
+        Conversation result = await agent.Run("What is the weather in boston?", onAgentRunnerEvent:runEventHandler,toolPermissionHandle: toolApprovalHandler);
 
         Console.WriteLine(result.Messages.Last().Content);
     }
@@ -525,7 +523,7 @@ public class AgentsDemo : DemoBase
             Tools = [new ResponseLocalShellTool()]
         };
 
-        Conversation convo = await agent.RunAsync("what files are in current directory?",streaming:false, onAgentRunnerEvent: (evt) => {
+        Conversation convo = await agent.Run("what files are in current directory?",streaming:false, onAgentRunnerEvent: (evt) => {
             if (evt.EventType == AgentRunnerEventTypes.Streaming && evt is AgentRunnerStreamingEvent streamingEvent)
             {
                 if (streamingEvent.ModelStreamingEvent is ModelStreamingOutputTextDeltaEvent deltaTextEvent)
@@ -567,7 +565,7 @@ public class AgentsDemo : DemoBase
 
 
 
-        convo = await agent.RunAsync(streaming: false, responseId: agent.ResponseOptions.PreviousResponseId??"", onAgentRunnerEvent: (evt) => {
+        convo = await agent.Run(streaming: false, responseId: agent.ResponseOptions.PreviousResponseId??"", onAgentRunnerEvent: (evt) => {
             if (evt.EventType == AgentRunnerEventTypes.Streaming && evt is AgentRunnerStreamingEvent streamingEvent)
             {
                 if (streamingEvent.ModelStreamingEvent is ModelStreamingOutputTextDeltaEvent deltaTextEvent)
@@ -609,5 +607,148 @@ public class AgentsDemo : DemoBase
            skills);
 
        Console.WriteLine(conv.Messages.Last().Content ?? "n/a");
+    }
+
+    [Description("Roll a 20 sided dice")]
+    public static string RollDice()
+    {
+        Random rand = new Random();
+        string diceRoll = rand.Next(1, 20).ToString();
+        Console.WriteLine($"[Dice Rolled]: {diceRoll}");
+        return diceRoll;
+    }
+
+    [TornadoTest("DnD Roleplay")]
+    [Flaky]
+    public static async Task RunDnDRoleplayDemo()
+    {
+        Console.WriteLine("Welcome Too Dungeon Masters");
+        List<ChatMessage> AllContent = new List<ChatMessage>([new ChatMessage(ChatMessageRoles.User, "Start a new Dungeons and Dragons campaign with me.")]);
+
+        string dungeonMasterInstructions = @"
+You are a Dungeons and Dragons Dungeon Master. You will guide the solo player through an epic adventure. You will role the dice for all interactions. Start by giving the player a character and explaining the scene and backstory. Task the Player with an action requirement at the end of each prompt.";
+
+        string dungeonPlayerInstructions = @"
+You will be given a character and must listen to the dungeon master to embark on a solo adventure. 
+You do not dictate the Story. 
+You are a player.
+DO NOT GIVE NEXT STEPS TO THE DUNGEON MASTER.
+IT IS ONLY YOU PLAYING.
+THE USER WILL DISCRIBE THE OUTCOME OF YOUR ACTIONS.
+THE USER WILL CREATE THE NEXT STEPS.
+";
+
+        TornadoAgent agentDungeonPlayer = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt5.V5Mini, instructions: dungeonPlayerInstructions, streaming: true);
+
+        TornadoAgent agentDungeonMaster = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt5.V5Nano, tools: [RollDice], instructions: dungeonMasterInstructions, streaming: true);
+        
+        Console.WriteLine("\n\n[DUNGEON MASTER]:");
+        Conversation dungeonMasterConv = await agentDungeonMaster.Run(appendMessages: [new ChatMessage(ChatMessageRoles.User, "Start")], streaming: agentDungeonMaster.Streaming, onAgentRunnerEvent: (evt) => {
+            if (evt.EventType == AgentRunnerEventTypes.Streaming && evt is AgentRunnerStreamingEvent streamingEvent)
+            {
+                if (streamingEvent.ModelStreamingEvent is ModelStreamingOutputTextDeltaEvent deltaTextEvent)
+                {
+                    Console.Write(deltaTextEvent.DeltaText); // Write the text delta directly
+                }
+            }
+            return ValueTask.CompletedTask;
+        });
+
+        AllContent.Add(new ChatMessage(ChatMessageRoles.Assistant, dungeonMasterConv.Messages.Last().GetMessageContent()));
+
+
+
+        Console.WriteLine("\n\n[PLAYER]:");
+        Conversation playerDungeonConversation = await agentDungeonPlayer.Run(dungeonMasterConv.Messages.Last().Content, streaming: agentDungeonPlayer.Streaming, onAgentRunnerEvent: (evt) => {
+            if (evt.EventType == AgentRunnerEventTypes.Streaming && evt is AgentRunnerStreamingEvent streamingEvent)
+            {
+                if (streamingEvent.ModelStreamingEvent is ModelStreamingOutputTextDeltaEvent deltaTextEvent)
+                {
+                    Console.Write(deltaTextEvent.DeltaText); // Write the text delta directly
+                }
+            }
+            return ValueTask.CompletedTask;
+        });
+
+        dungeonMasterConv.AddUserMessage("[PLAYER]:" + playerDungeonConversation.Messages.Last().Content);
+
+        AllContent.Add(new ChatMessage(ChatMessageRoles.User, playerDungeonConversation.Messages.Last().GetMessageContent()));
+
+        ConversationCompressor compressor = new ConversationCompressor(Program.Connect(),20000, new ConversationCompressionOptions() 
+        { 
+            CompressToolCallMessages = true,
+            SummaryModel = ChatModel.OpenAi.Gpt5.V5Nano,
+
+        });
+
+        while (true)
+        {
+            Console.WriteLine($"\n\nTokens: {AllContent.Sum(m=>m.GetMessageTokens())}\n\n");
+
+            Console.WriteLine("\n\n[DUNGEON MASTER]:");
+            dungeonMasterConv = await agentDungeonMaster.Run(appendMessages: dungeonMasterConv.Messages.ToList(), streaming: true, onAgentRunnerEvent: (evt) => {
+                if (evt.EventType == AgentRunnerEventTypes.Streaming && evt is AgentRunnerStreamingEvent streamingEvent)
+                {
+                    if (streamingEvent.ModelStreamingEvent is ModelStreamingOutputTextDeltaEvent deltaTextEvent)
+                    {
+                        Console.Write(deltaTextEvent.DeltaText); // Write the text delta directly
+                    }
+                }
+                return ValueTask.CompletedTask;
+            });
+
+            AllContent.Add(new ChatMessage(ChatMessageRoles.Assistant, "[DUNGEON MASTER]: " + dungeonMasterConv.Messages.Last().GetMessageContent()));
+
+            Console.WriteLine("\n\n[PLAYER]:");
+
+            playerDungeonConversation = await agentDungeonPlayer.Run("[DUNGEON MASTER]: " + dungeonMasterConv.Messages.Last().Content, appendMessages: playerDungeonConversation.Messages.ToList(), streaming: true, onAgentRunnerEvent: (evt) => {
+                if (evt.EventType == AgentRunnerEventTypes.Streaming && evt is AgentRunnerStreamingEvent streamingEvent)
+                {
+                    if (streamingEvent.ModelStreamingEvent is ModelStreamingOutputTextDeltaEvent deltaTextEvent)
+                    {
+                        Console.Write(deltaTextEvent.DeltaText); // Write the text delta directly
+                    }
+                }
+                return ValueTask.CompletedTask;
+            });
+
+            dungeonMasterConv.AddUserMessage("[PLAYER]:" + playerDungeonConversation.Messages.Last().Content);
+
+            AllContent.Add(new ChatMessage(ChatMessageRoles.User, "[PLAYER]:" + playerDungeonConversation.Messages.Last().GetMessageContent()));
+
+            if (compressor.ShouldCompress(AllContent))
+            {
+                Console.WriteLine("\n--- Compressing Conversation ---\n");
+                AllContent = await compressor.Compress(AllContent);
+                Console.WriteLine("\n--- Compressed Messages ---\n");
+                Console.WriteLine(string.Join("\n\n", AllContent.Select(m => $"{m.Role}: {m.Content}")));
+                break;
+            }
+
+        }
+    }
+
+
+    [TornadoTest("Compress Messages")]
+    [Flaky]
+    public static async Task RunCompressionDemo()
+    {
+        List<ChatMessage> AllContent = new List<ChatMessage>();
+        AllContent.LoadMessages("Static/Files/DndConvo.json");
+
+        ConversationCompressor compressor = new ConversationCompressor(Program.Connect(), 20000, new ConversationCompressionOptions()
+        {
+            CompressToolCallMessages = true,
+            SummaryModel = ChatModel.OpenAi.Gpt5.V5Nano,
+
+        });
+
+        if (compressor.ShouldCompress(AllContent))
+        {
+            Console.WriteLine("\n--- Compressing Conversation ---\n");
+            AllContent = await compressor.Compress(AllContent);
+            Console.WriteLine("\n--- Compressed Messages ---\n");
+            Console.WriteLine(string.Join("\n\n", AllContent.Select(m => $"{m.Role}: {m.Content}")));
+        }
     }
 }

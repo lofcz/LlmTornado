@@ -459,7 +459,7 @@ public class PlanningRunnable : OrchestrationRunnable<ChatMessage, TaskPlan>
             Please analyze this task and create a detailed execution plan. Determine which specialized agents are needed and provide a clear sequence of steps.
             """;
 
-        Conversation conv = await Agent.RunAsync(appendMessages: new List<ChatMessage> { 
+        Conversation conv = await Agent.Run(appendMessages: new List<ChatMessage> { 
             new ChatMessage(Code.ChatMessageRoles.User, planningPrompt) 
         });
 
@@ -505,7 +505,7 @@ public class WebSurferRunnable : OrchestrationRunnable<TaskPlan, AgentExecutionR
             As the WebSurfer agent, perform web research and information gathering to support this task. Provide comprehensive results that will be used by the Orchestrator to create the final deliverable.
             """;
 
-        Conversation conv = await Agent.RunAsync(appendMessages: new List<ChatMessage> { 
+        Conversation conv = await Agent.Run(appendMessages: new List<ChatMessage> { 
             new ChatMessage(Code.ChatMessageRoles.User, webPrompt) 
         });
 
@@ -548,7 +548,7 @@ public class FileSurferRunnable : OrchestrationRunnable<TaskPlan, AgentExecution
             As the FileSurfer agent, handle any file operations needed for this task. Use the available tools to read, write, or manage files as required. Provide comprehensive results that will be used by the Orchestrator.
             """;
 
-        Conversation conv = await Agent.RunAsync(appendMessages: new List<ChatMessage> { 
+        Conversation conv = await Agent.Run(appendMessages: new List<ChatMessage> { 
             new ChatMessage(Code.ChatMessageRoles.User, filePrompt) 
         });
 
@@ -591,7 +591,7 @@ public class TerminalRunnable : OrchestrationRunnable<TaskPlan, AgentExecutionRe
             As the Terminal agent, execute any command-line operations needed for this task. Use the available tools safely and effectively. Provide comprehensive results that will be used by the Orchestrator.
             """;
 
-        Conversation conv = await Agent.RunAsync(appendMessages: new List<ChatMessage> { 
+        Conversation conv = await Agent.Run(appendMessages: new List<ChatMessage> { 
             new ChatMessage(Code.ChatMessageRoles.User, terminalPrompt) 
         });
 
@@ -672,7 +672,7 @@ public class OrchestratorRunnable : OrchestrationRunnable<AgentExecutionResults,
             Provide a clear summary of what was accomplished and the final deliverable for the user's task.
             """;
 
-        Conversation finalConv = await Agent.RunAsync(appendMessages: new List<ChatMessage> { 
+        Conversation finalConv = await Agent.Run(appendMessages: new List<ChatMessage> { 
             new ChatMessage(Code.ChatMessageRoles.User, summaryPrompt) 
         });
 
@@ -725,7 +725,7 @@ public class DirectOrchestratorRunnable : OrchestrationRunnable<TaskPlan, Magent
             As the Direct Orchestrator, handle this task directly and provide a comprehensive result.
             """;
 
-        Conversation finalConv = await Agent.RunAsync(appendMessages: new List<ChatMessage> { 
+        Conversation finalConv = await Agent.Run(appendMessages: new List<ChatMessage> { 
             new ChatMessage(Code.ChatMessageRoles.User, directPrompt) 
         });
 

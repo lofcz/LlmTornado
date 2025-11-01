@@ -38,7 +38,7 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
             foreach (TornadoAgent agent in Agents)
             {
                 agentTask.Add(Task.Run(async () => {
-                    Conversation conv = await agent.RunAsync(appendMessages: Conversation, cancellationToken: cancellationToken);
+                    Conversation conv = await agent.Run(appendMessages: Conversation, cancellationToken: cancellationToken);
                     if (conv.Messages.Count > 0)
                     {
                         bag.Add(conv.Messages.LastOrDefault()!);
@@ -63,7 +63,7 @@ namespace LlmTornado.Agents.ChatRuntime.RuntimeConfigurations
 
             this.Conversation.Add(new ChatMessage(ChatMessageRoles.User, ResultProcessingInstructions));
 
-            Conversation synthesizedResult =  await finalAgent.RunAsync(
+            Conversation synthesizedResult =  await finalAgent.Run(
                 appendMessages: this.Conversation, 
                 streaming:Streaming, 
                 onAgentRunnerEvent: (sEvent) => { OnRuntimeEvent?.Invoke(new ChatRuntimeAgentRunnerEvents(sEvent, Runtime.Id)); return Threading.ValueTaskCompleted; }, 

@@ -24,6 +24,7 @@ public enum AgentRunnerEventTypes
     GuardRailTriggered,
     UsageReceived,
     ResponseApiEvent,
+    MaxTokensReached
 }
 
 /// <summary>
@@ -35,6 +36,10 @@ public class AgentRunnerEvents : EventArgs
     /// Type of Agent Runner event.
     /// </summary>
     public AgentRunnerEventTypes EventType { get; set; }
+    /// <summary>
+    /// Conversation after the agent runner has completed.
+    /// </summary>
+    public Conversation InternalConversation { get; set; }
 
     /// <summary>
     /// Timestamp of when the event occurred.
@@ -49,10 +54,21 @@ public class AgentRunnerResponseApiEvent : AgentRunnerEvents
     /// <summary>
     /// Initializes a new instance of the <see cref="AgentRunnerResponseEvent"/> class.
     /// </summary>
-    public AgentRunnerResponseApiEvent(IResponseEvent responseEvent)
+    public AgentRunnerResponseApiEvent(IResponseEvent responseEvent, Conversation conversation)
     {
         EventType = AgentRunnerEventTypes.ResponseApiEvent;
         ResponseApiEvent = responseEvent;
+        InternalConversation = conversation;
+    }
+}
+
+public class AgentRunnerMaxTokensReachedEvent : AgentRunnerEvents
+{
+    public AgentRunnerMaxTokensReachedEvent(Conversation conversation)
+    {
+        EventType = AgentRunnerEventTypes.MaxTokensReached;
+        Timestamp = DateTime.UtcNow;
+        InternalConversation = conversation;
     }
 }
 
@@ -61,10 +77,11 @@ public class AgentRunnerResponseApiEvent : AgentRunnerEvents
 /// </summary>
 public class AgentRunnerStartedEvent : AgentRunnerEvents
 {
-    public AgentRunnerStartedEvent()
+    public AgentRunnerStartedEvent(Conversation conversation)
     {
         EventType = AgentRunnerEventTypes.Started;
         Timestamp = DateTime.UtcNow;
+        InternalConversation = conversation;
     }
 }
 
@@ -73,10 +90,6 @@ public class AgentRunnerStartedEvent : AgentRunnerEvents
 /// </summary>
 public class AgentRunnerCompletedEvent : AgentRunnerEvents
 {
-    /// <summary>
-    /// Conversation after the agent runner has completed.
-    /// </summary>
-    public Conversation Conversation { get; set; }
 
     /// <summary>
     /// Conversation after the agent runner has completed.
@@ -86,7 +99,7 @@ public class AgentRunnerCompletedEvent : AgentRunnerEvents
     {
         EventType = AgentRunnerEventTypes.Completed;
         Timestamp = DateTime.UtcNow;
-        Conversation = conversation;
+        InternalConversation = conversation;
     }
 }
 
@@ -95,10 +108,11 @@ public class AgentRunnerCompletedEvent : AgentRunnerEvents
 /// </summary>
 public class AgentRunnerCancelledEvent : AgentRunnerEvents
 {
-    public AgentRunnerCancelledEvent()
+    public AgentRunnerCancelledEvent(Conversation conversation)
     {
         EventType = AgentRunnerEventTypes.Cancelled;
         Timestamp = DateTime.UtcNow;
+        InternalConversation = conversation;
     }
 }
 
@@ -115,11 +129,12 @@ public class  AgentRunnerGuardrailTriggeredEvent : AgentRunnerEvents
     /// Guardrail triggered event from bad input/output.
     /// </summary>
     /// <param name="reason">Reason guardrail was triggered</param>
-    public AgentRunnerGuardrailTriggeredEvent(string reason = "")
+    public AgentRunnerGuardrailTriggeredEvent(Conversation conversation, string reason = "")
     {
         EventType = AgentRunnerEventTypes.GuardRailTriggered;
         Reason = reason;
         Timestamp = DateTime.UtcNow;
+        InternalConversation = conversation;
     }
 }
 
@@ -140,11 +155,12 @@ public class  AgentRunnerStreamingEvent : AgentRunnerEvents
     /// Streaming event from the model during agent runner execution.
     /// </summary>
     /// <param name="modelStreamingEvent"></param>
-    public AgentRunnerStreamingEvent(ModelStreamingEvents modelStreamingEvent)
+    public AgentRunnerStreamingEvent(ModelStreamingEvents modelStreamingEvent, Conversation conversation)
     {
         ModelStreamingEvent = modelStreamingEvent;
         EventType = AgentRunnerEventTypes.Streaming;
         Timestamp = DateTime.UtcNow;
+        InternalConversation = conversation;
     }
 }
 
@@ -162,11 +178,12 @@ public class AgentRunnerToolInvokedEvent : AgentRunnerEvents
     /// Initializes a new instance of the <see cref="AgentRunnerToolInvokedEvent"/> class, representing a tool invocation event.
     /// </summary>
     /// <param name="toolCall">The <see cref="FunctionCall"/> instance representing the tool call that has been invoked. This parameter must not be <c>null</c>.</param>
-    public AgentRunnerToolInvokedEvent(FunctionCall toolCall)
+    public AgentRunnerToolInvokedEvent(FunctionCall toolCall, Conversation conversation)
     {
         EventType = AgentRunnerEventTypes.ToolInvoked;
         ToolCalled = toolCall;
         Timestamp = DateTime.UtcNow;
+        InternalConversation = conversation;
     }
 }
 
@@ -190,11 +207,12 @@ public class AgentRunnerToolCompletedEvent : AgentRunnerEvents
     /// </summary>
     /// <param name="toolCall">The <see cref="FunctionCall"/> instance representing the tool call that has completed.  This parameter must not
     /// be <c>null</c>.</param>
-    public AgentRunnerToolCompletedEvent(FunctionCall toolCall)
+    public AgentRunnerToolCompletedEvent(FunctionCall toolCall, Conversation conversation)
     {
         EventType = AgentRunnerEventTypes.ToolCompleted;
         ToolCall = toolCall;
         ToolResult = toolCall.Result;
+        Timestamp = DateTime.UtcNow;
     }
 }
 
@@ -222,11 +240,12 @@ public class AgentRunnerErrorEvent : AgentRunnerEvents
     /// <param name="errorMessage">A message describing the error. This value cannot be <see langword="null"/> or empty.</param>
     /// <param name="exception">The exception associated with the error, if available. This parameter is optional and can be <see
     /// langword="null"/>.</param>
-    public AgentRunnerErrorEvent(string errorMessage, Exception? exception = null)
+    public AgentRunnerErrorEvent(string errorMessage, Conversation conversation, Exception? exception = null)
     {
         EventType = AgentRunnerEventTypes.Error;
         ErrorMessage = errorMessage;
         Exception = exception;
+        InternalConversation = conversation;
     }
 }
 
@@ -235,10 +254,11 @@ public class AgentRunnerErrorEvent : AgentRunnerEvents
 /// </summary>
 public class  AgentRunnerMaxTurnsReachedEvent : AgentRunnerEvents
 {
-    public AgentRunnerMaxTurnsReachedEvent()
+    public AgentRunnerMaxTurnsReachedEvent(Conversation conversation)
     {
         EventType = AgentRunnerEventTypes.MaxTurnsReached;
         Timestamp = DateTime.UtcNow;
+        InternalConversation = conversation;
     }
 }
 
@@ -249,11 +269,17 @@ public class  AgentRunnerMaxTurnsReachedEvent : AgentRunnerEvents
 public class AgentRunnerUsageReceivedEvent : AgentRunnerEvents
 {
     public int TokenUsageAmount { get; private set; }
-    public AgentRunnerUsageReceivedEvent(int usageAmount)
+    public int InputTokens { get; private set; }
+    public int OutputTokens { get; private set; }
+
+    public AgentRunnerUsageReceivedEvent(int inTokens, int outTokens, int totalTokens, Conversation conversation)
     {
         EventType = AgentRunnerEventTypes.UsageReceived;
         Timestamp = DateTime.UtcNow;
-        TokenUsageAmount = usageAmount;
+        TokenUsageAmount = totalTokens;
+        InputTokens = inTokens;
+        OutputTokens = outTokens;
+        InternalConversation = conversation;
     }
 }
 

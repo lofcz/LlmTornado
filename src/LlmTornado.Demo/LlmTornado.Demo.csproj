@@ -7,6 +7,7 @@
         <Nullable>enable</Nullable>
         <LangVersion>preview</LangVersion>
         <NoWarn>$(NoWarn);MEAI001</NoWarn>
+        <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     </PropertyGroup>
 
     <ItemGroup>
@@ -18,7 +19,12 @@
         <ProjectReference Include="..\LlmTornado.Toolkit\LlmTornado.Toolkit.csproj" />
         <ProjectReference Include="..\LlmTornado.Agents\LlmTornado.Agents.csproj" />
         <ProjectReference Include="..\LlmTornado.VectorDatabases.ChromaDB\LlmTornado.VectorDatabases.ChromaDB.csproj" />
+        <ProjectReference Include="..\LlmTornado.VectorDatabases.Faiss\LlmTornado.VectorDatabases.Faiss.csproj" />
+        <ProjectReference Include="..\LlmTornado.VectorDatabases.Qdrant\LlmTornado.VectorDatabases.Qdrant.csproj" />
         <ProjectReference Include="..\LlmTornado.VectorDatabases.Pinecone\LlmTornado.VectorDatabases.Pinecone.csproj" />
+        <ProjectReference Include="..\LlmTornado.VectorDatabases.PgVector\LlmTornado.VectorDatabases.PgVector.csproj" />
+        <ProjectReference Include="..\LlmTornado.VectorDatabases.TextIngest\LlmTornado.VectorDatabases.TextIngest.csproj" />
+        <ProjectReference Include="..\LlmTornado.VectorDatabases\LlmTornado.VectorDatabases.csproj" />
         <ProjectReference Include="..\LlmTornado\LlmTornado.csproj" />
     </ItemGroup>
 
@@ -32,7 +38,6 @@
     <ItemGroup>
       <PackageReference Include="Flurl.Http" Version="4.0.2" />
       <PackageReference Include="LibVLCSharp" Version="3.9.4" />
-      <PackageReference Include="Pinecone.Client" Version="4.0.2" />
       <PackageReference Include="PuppeteerSharp" Version="20.2.4" />
       <PackageReference Include="VideoLAN.LibVLC.Windows" Version="3.0.21" />
     </ItemGroup>
