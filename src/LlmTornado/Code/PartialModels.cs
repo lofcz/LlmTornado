@@ -303,15 +303,12 @@ internal class ChatMessageFinishReasonsConverter : JsonConverter<ChatMessageFini
     {
         { "stop", ChatMessageFinishReasons.EndTurn },
         { "end_turn", ChatMessageFinishReasons.EndTurn },
-        { "STOP", ChatMessageFinishReasons.EndTurn },
-        { "COMPLETE", ChatMessageFinishReasons.EndTurn },
+        { "complete", ChatMessageFinishReasons.EndTurn },
 
         { "stop_sequence", ChatMessageFinishReasons.StopSequence },
-        { "STOP_SEQUENCE", ChatMessageFinishReasons.StopSequence },
 
         { "length", ChatMessageFinishReasons.Length },
         { "max_tokens", ChatMessageFinishReasons.Length },
-        { "MAX_TOKENS", ChatMessageFinishReasons.Length },
         { "ERROR_LIMIT", ChatMessageFinishReasons.Length },
 
         { "content_filter", ChatMessageFinishReasons.ContentFilter },
