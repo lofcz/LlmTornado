@@ -4,6 +4,9 @@
 
 # LLM Tornado
 
+[![Run in Smithery](https://smithery.ai/badge/skills/lofcz)](https://smithery.ai/skills?ns=lofcz&utm_source=github&utm_medium=badge)
+
+
 **Build AI agents and workflows in minutes with one toolkit and built-in connectors to 25+ API Providers & Vector Databases.**    
 
 **[Official Website](https://llmtornado.ai)**
