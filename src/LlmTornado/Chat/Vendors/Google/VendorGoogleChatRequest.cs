@@ -1021,13 +1021,15 @@ internal class VendorGoogleChatRequest
                 }
                 
                 // Find the first text part that contains JSON (starts with { or [)
+                // We use a simple heuristic here since Google's response schema should guarantee valid JSON
                 string? jsonContent = null;
                 foreach (string text in nonThoughtTexts)
                 {
                     string trimmed = text.Trim();
-                    if (trimmed.StartsWith("{") || trimmed.StartsWith("["))
+                    if ((trimmed.StartsWith("{") && trimmed.EndsWith("}")) || 
+                        (trimmed.StartsWith("[") && trimmed.EndsWith("]")))
                     {
-                        jsonContent = text;
+                        jsonContent = trimmed;
                         break;
                     }
                 }
