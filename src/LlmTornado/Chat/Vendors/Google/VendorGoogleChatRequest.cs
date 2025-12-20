@@ -1018,7 +1018,7 @@ internal class VendorGoogleChatRequest
             // When expecting JSON response, collect all non-thought text parts and find the first valid JSON
             if (request?.GenerationConfig?.ResponseMimeType is "application/json")
             {
-                List<string> nonThoughtTexts = new List<string>();
+                List<string> nonThoughtTexts = [];
                 
                 foreach (VendorGoogleChatRequestMessagePart x in Parts ?? [])
                 {
@@ -1038,8 +1038,7 @@ internal class VendorGoogleChatRequest
                     }
                 }
                 
-                // Find the first text part that contains JSON (starts with { or [)
-                // We use a simple heuristic here since Google's response schema should guarantee valid JSON
+                // Find the first text part that contains valid JSON structure (both opening and closing brackets)
                 string? jsonContent = null;
                 foreach (string text in nonThoughtTexts)
                 {
