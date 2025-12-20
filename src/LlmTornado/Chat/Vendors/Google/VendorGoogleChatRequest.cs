@@ -986,6 +986,24 @@ internal class VendorGoogleChatRequest
             }
         }
 
+        private static string? ResolveJsonSchemaFunctionName(VendorGoogleChatRequest? request, ChatRequest? chatRequest)
+        {
+            string? fnName = chatRequest?.ResponseFormat?.Schema?.Name ?? request?.ToolConfig?.FunctionConfig?.AllowedFunctionNames?.FirstOrDefault();
+
+            if (fnName is null)
+            {
+                Tool? firstTool = chatRequest?.Tools?.FirstOrDefault();
+
+                if (firstTool is not null)
+                {
+                    fnName = firstTool.ToolName;
+                    fnName ??= firstTool.Function?.Name;
+                }
+            }
+            
+            return fnName;
+        }
+
         public ChatMessage ToChatMessage(VendorGoogleChatRequest? request, ChatRequest? chatRequest, VendorGoogleChatResult.VendorGoogleChatResultMessage nativeResult)
         {
             ChatMessage msg = new ChatMessage
@@ -1037,18 +1055,7 @@ internal class VendorGoogleChatRequest
                 // If we found JSON content, create a tool call with it
                 if (jsonContent is not null)
                 {
-                    string? fnName = chatRequest?.ResponseFormat?.Schema?.Name ?? request.ToolConfig?.FunctionConfig?.AllowedFunctionNames?.FirstOrDefault();
-
-                    if (fnName is null)
-                    {
-                        Tool? firstTool = chatRequest?.Tools?.FirstOrDefault();
-
-                        if (firstTool is not null)
-                        {
-                            fnName = firstTool.ToolName;
-                            fnName ??= firstTool.Function?.Name;
-                        }
-                    }
+                    string? fnName = ResolveJsonSchemaFunctionName(request, chatRequest);
                     
                     msg.ToolCalls ??= [];
                     msg.ToolCalls.Add(new ToolCall
