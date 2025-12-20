@@ -997,42 +997,80 @@ internal class VendorGoogleChatRequest
             bool roleSolved = false;
             bool contentSolved = false;
             
-            foreach (VendorGoogleChatRequestMessagePart x in Parts ?? [])
+            // When expecting JSON response, collect all non-thought text parts and find the first valid JSON
+            if (request?.GenerationConfig?.ResponseMimeType is "application/json")
             {
-                if (x.FunctionCall is not null)
+                List<string> nonThoughtTexts = new List<string>();
+                
+                foreach (VendorGoogleChatRequestMessagePart x in Parts ?? [])
                 {
-                    msg.ToolCalls ??= [];
-                    msg.ToolCalls.Add(x.ToToolCall());
-                }
-                else
-                {
-                    if (x.Thought is not true && request?.GenerationConfig?.ResponseMimeType is "application/json")
+                    if (x.FunctionCall is not null)
                     {
-                        string? fnName = chatRequest?.ResponseFormat?.Schema?.Name ?? request.ToolConfig?.FunctionConfig?.AllowedFunctionNames?.FirstOrDefault();
-
-                        if (fnName is null)
-                        {
-                            Tool? firstTool = chatRequest?.Tools?.FirstOrDefault();
-
-                            if (firstTool is not null)
-                            {
-                                fnName = firstTool.ToolName;
-                                fnName ??= firstTool.Function?.Name;
-                            }
-                        }
-                        
                         msg.ToolCalls ??= [];
-                        msg.ToolCalls.Add(new ToolCall
-                        {
-                            Id = fnName ?? string.Empty,
-                            FunctionCall = new FunctionCall
-                            {
-                                Name = fnName ?? string.Empty,
-                                Arguments = x.Text ?? string.Empty
-                            }
-                        });
+                        msg.ToolCalls.Add(x.ToToolCall());
+                    }
+                    else if (x.Thought is not true && x.Text is not null)
+                    {
+                        nonThoughtTexts.Add(x.Text);
+                    }
+                    else if (x.Thought is true)
+                    {
+                        // Add thought parts to the message parts for transparency
+                        msg.Parts.Add(x.ToMessagePart(sb));
+                    }
+                }
+                
+                // Find the first text part that contains JSON (starts with { or [)
+                string? jsonContent = null;
+                foreach (string text in nonThoughtTexts)
+                {
+                    string trimmed = text.Trim();
+                    if (trimmed.StartsWith("{") || trimmed.StartsWith("["))
+                    {
+                        jsonContent = text;
+                        break;
+                    }
+                }
+                
+                // If we found JSON content, create a tool call with it
+                if (jsonContent is not null)
+                {
+                    string? fnName = chatRequest?.ResponseFormat?.Schema?.Name ?? request.ToolConfig?.FunctionConfig?.AllowedFunctionNames?.FirstOrDefault();
 
-                        contentSolved = true;
+                    if (fnName is null)
+                    {
+                        Tool? firstTool = chatRequest?.Tools?.FirstOrDefault();
+
+                        if (firstTool is not null)
+                        {
+                            fnName = firstTool.ToolName;
+                            fnName ??= firstTool.Function?.Name;
+                        }
+                    }
+                    
+                    msg.ToolCalls ??= [];
+                    msg.ToolCalls.Add(new ToolCall
+                    {
+                        Id = fnName ?? string.Empty,
+                        FunctionCall = new FunctionCall
+                        {
+                            Name = fnName ?? string.Empty,
+                            Arguments = jsonContent
+                        }
+                    });
+
+                    contentSolved = true;
+                }
+            }
+            else
+            {
+                // Non-JSON response handling (original logic)
+                foreach (VendorGoogleChatRequestMessagePart x in Parts ?? [])
+                {
+                    if (x.FunctionCall is not null)
+                    {
+                        msg.ToolCalls ??= [];
+                        msg.ToolCalls.Add(x.ToToolCall());
                     }
                     else
                     {
