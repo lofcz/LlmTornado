@@ -357,7 +357,12 @@ public static class ConversationIOUtility
         if (!File.Exists(conversationPath))
             throw new FileNotFoundException("Conversation file not found", conversationPath);
 
-        string json = await File.ReadAllTextAsync(conversationPath);
+        string json;
+        using (StreamReader sr = new StreamReader(conversationPath))
+        {
+            json = await sr.ReadToEndAsync();
+        }
+
         if (!string.IsNullOrWhiteSpace(json))
         {
             try
