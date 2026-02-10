@@ -98,17 +98,27 @@ public class AcpJsonRpcServer
             }
 
             // Requests (have id)
-            object? result = await HandleRequestAsync(method, paramsElement, cancellationToken);
-
-            await SendResponseAsync(id, result);
+            try
+            {
+                object? result = await HandleRequestAsync(method, paramsElement, cancellationToken);
+                await SendResponseAsync(id, result);
+            }
+            catch (NotSupportedException)
+            {
+                await SendErrorAsync(id, AcpErrorCodes.MethodNotFound, $"Method '{method}' is not supported.");
+            }
+            catch (InvalidOperationException ex)
+            {
+                await SendErrorAsync(id, AcpErrorCodes.InternalError, ex.Message);
+            }
         }
         catch (JsonException)
         {
             await SendErrorAsync(null, AcpErrorCodes.ParseError, "Invalid JSON.");
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            await SendErrorAsync(null, AcpErrorCodes.InternalError, ex.Message);
+            await SendErrorAsync(null, AcpErrorCodes.InternalError, "An internal error occurred.");
         }
     }
 
