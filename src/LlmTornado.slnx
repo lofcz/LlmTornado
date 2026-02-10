@@ -15,6 +15,9 @@
     <Project Path="LlmTornado.A2A.AgentServer/LlmTornado.A2A.AgentServer.csproj" />
     <Project Path="LlmTornado.A2A/LlmTornado.A2A.csproj" />
   </Folder>
+  <Folder Name="/ACP/">
+    <Project Path="LlmTornado.Acp/LlmTornado.Acp.csproj" />
+  </Folder>
   <Folder Name="/MCP/">
     <Project Path="LlmTornado.Mcp.Sample.Server/LlmTornado.Mcp.Sample.Server.csproj" />
     <Project Path="LlmTornado.Mcp.Sample/LlmTornado.Mcp.Sample.csproj" />
