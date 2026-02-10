@@ -94,13 +94,11 @@ public static partial class AcpTornadoExtension
             ChatMessageTypes.Image => new AcpContentBlock
             {
                 Type = AcpContentBlockTypes.Image,
-                Data = part.Image?.Url,
-                MimeType = "image/png"
+                Data = part.Image?.Url
             },
             ChatMessageTypes.Audio => new AcpContentBlock
             {
-                Type = AcpContentBlockTypes.Audio,
-                MimeType = "audio/wav"
+                Type = AcpContentBlockTypes.Audio
             },
             ChatMessageTypes.Reasoning => new AcpContentBlock
             {

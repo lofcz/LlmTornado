@@ -14,6 +14,7 @@ public abstract class BaseAcpTornadoRuntimeConfiguration : IAcpRuntimeConfigurat
     protected readonly IRuntimeConfiguration RuntimeConfig;
     private readonly Dictionary<string, CancellationTokenSource> _sessionCancellations = new();
     private readonly Dictionary<string, string> _sessions = new();
+    private volatile string? _activeSessionId;
 
     protected string AgentName { get; set; }
     protected string AgentVersion { get; set; }
@@ -57,6 +58,7 @@ public abstract class BaseAcpTornadoRuntimeConfiguration : IAcpRuntimeConfigurat
         string sessionId = Guid.NewGuid().ToString();
         _sessions[sessionId] = request.Cwd;
         _sessionCancellations[sessionId] = new CancellationTokenSource();
+        _activeSessionId = sessionId;
 
         AcpNewSessionResponse response = new()
         {
@@ -76,6 +78,8 @@ public abstract class BaseAcpTornadoRuntimeConfiguration : IAcpRuntimeConfigurat
 
         CancellationTokenSource sessionCts = _sessionCancellations[request.SessionId];
         using CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, sessionCts.Token);
+
+        _activeSessionId = request.SessionId;
 
         ChatMessage userMessage = request.Prompt.ToTornadoMessage();
         ChatMessage response = await Agent.InvokeAsync(userMessage);
@@ -144,8 +148,8 @@ public abstract class BaseAcpTornadoRuntimeConfiguration : IAcpRuntimeConfigurat
             return;
         }
 
-        // Find the active session to use for notifications
-        string? activeSessionId = _sessions.Keys.LastOrDefault();
+        // Use the explicitly tracked active session
+        string? activeSessionId = _activeSessionId;
 
         if (activeSessionId is null)
         {
