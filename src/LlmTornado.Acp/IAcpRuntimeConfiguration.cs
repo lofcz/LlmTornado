@@ -27,6 +27,16 @@ public interface IAcpRuntimeConfiguration
     Task CancelAsync(AcpCancelNotification notification, CancellationToken cancellationToken);
 
     /// <summary>
+    /// Changes the active mode for a session.
+    /// </summary>
+    Task<AcpSetSessionModeResponse> SetModeAsync(AcpSetSessionModeRequest request, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Changes a configuration option for a session.
+    /// </summary>
+    Task<AcpSetSessionConfigOptionResponse> SetConfigOptionAsync(AcpSetSessionConfigOptionRequest request, CancellationToken cancellationToken);
+
+    /// <summary>
     /// Event handler for streaming session updates to the client.
     /// </summary>
     event Func<AcpSessionNotification, Task>? OnSessionUpdate;

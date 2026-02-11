@@ -91,6 +91,11 @@ public class AcpPromptCapabilities
 /// </summary>
 public class AcpSessionCapabilities
 {
+    [JsonPropertyName("setMode")]
+    public bool SetMode { get; set; }
+
+    [JsonPropertyName("setConfigOption")]
+    public bool SetConfigOption { get; set; }
 }
 
 /// <summary>

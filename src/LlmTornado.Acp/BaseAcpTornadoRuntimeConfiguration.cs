@@ -122,6 +122,18 @@ public abstract class BaseAcpTornadoRuntimeConfiguration : IAcpRuntimeConfigurat
         return Task.CompletedTask;
     }
 
+    /// <inheritdoc />
+    public virtual Task<AcpSetSessionModeResponse> SetModeAsync(AcpSetSessionModeRequest request, CancellationToken cancellationToken)
+    {
+        return Task.FromResult(new AcpSetSessionModeResponse());
+    }
+
+    /// <inheritdoc />
+    public virtual Task<AcpSetSessionConfigOptionResponse> SetConfigOptionAsync(AcpSetSessionConfigOptionRequest request, CancellationToken cancellationToken)
+    {
+        return Task.FromResult(new AcpSetSessionConfigOptionResponse());
+    }
+
     /// <summary>
     /// Override to describe the agent's capabilities.
     /// </summary>

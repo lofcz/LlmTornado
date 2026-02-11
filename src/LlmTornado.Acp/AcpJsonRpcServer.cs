@@ -90,6 +90,8 @@ public class AcpJsonRpcServer
 
             JsonElement paramsElement = root.TryGetProperty("params", out JsonElement p) ? p : default;
 
+            Console.Error.WriteLine($"[ACP-RPC] {(id is null ? "notification" : "request")} method={method} id={id}");
+
             // Notifications (no id)
             if (id is null)
             {
@@ -127,13 +129,16 @@ public class AcpJsonRpcServer
         try
         {
             return method switch
-            {
-                AcpMethods.Initialize => await HandleInitializeAsync(paramsElement, cancellationToken),
-                AcpMethods.Authenticate => await HandleAuthenticateAsync(paramsElement, cancellationToken),
-                AcpMethods.NewSession => await HandleNewSessionAsync(paramsElement, cancellationToken),
-                AcpMethods.Prompt => await HandlePromptAsync(paramsElement, cancellationToken),
-                _ => throw new NotSupportedException($"Method '{method}' is not supported.")
-            };
+                {
+                    AcpMethods.Initialize => await HandleInitializeAsync(paramsElement, cancellationToken),
+                    AcpMethods.Authenticate => await HandleAuthenticateAsync(paramsElement, cancellationToken),
+                    AcpMethods.NewSession => await HandleNewSessionAsync(paramsElement, cancellationToken),
+                    AcpMethods.LoadSession => throw new NotSupportedException("Session loading is not supported."),
+                    AcpMethods.Prompt => await HandlePromptAsync(paramsElement, cancellationToken),
+                    AcpMethods.SetMode => await HandleSetModeAsync(paramsElement, cancellationToken),
+                    AcpMethods.SetConfigOption => await HandleSetConfigOptionAsync(paramsElement, cancellationToken),
+                    _ => throw new NotSupportedException($"Method '{method}' is not supported.")
+                };
         }
         catch (NotSupportedException)
         {
@@ -190,6 +195,18 @@ public class AcpJsonRpcServer
     {
         AcpPromptRequest request = JsonSerializer.Deserialize<AcpPromptRequest>(paramsElement.GetRawText(), JsonOptions)!;
         return await _runtime.PromptAsync(request, cancellationToken);
+    }
+
+    private async Task<AcpSetSessionModeResponse> HandleSetModeAsync(JsonElement paramsElement, CancellationToken cancellationToken)
+    {
+        AcpSetSessionModeRequest request = JsonSerializer.Deserialize<AcpSetSessionModeRequest>(paramsElement.GetRawText(), JsonOptions)!;
+        return await _runtime.SetModeAsync(request, cancellationToken);
+    }
+
+    private async Task<AcpSetSessionConfigOptionResponse> HandleSetConfigOptionAsync(JsonElement paramsElement, CancellationToken cancellationToken)
+    {
+        AcpSetSessionConfigOptionRequest request = JsonSerializer.Deserialize<AcpSetSessionConfigOptionRequest>(paramsElement.GetRawText(), JsonOptions)!;
+        return await _runtime.SetConfigOptionAsync(request, cancellationToken);
     }
 
     private async Task HandleSessionUpdate(AcpSessionNotification notification)
