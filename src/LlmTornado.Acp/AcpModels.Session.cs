@@ -189,7 +189,9 @@ public class AcpSetSessionConfigOptionResponse
 }
 
 /// <summary>
-/// MCP server configuration.
+/// MCP server configuration passed by the client (IDE) in session/new.
+/// Per the ACP spec, <c>env</c> and <c>headers</c> are JSON objects (Record&lt;string, string&gt;),
+/// not arrays. Rider and other ACP clients serialize them as <c>{"KEY": "value"}</c>.
 /// </summary>
 public class AcpMcpServerConfig
 {
@@ -206,35 +208,11 @@ public class AcpMcpServerConfig
     public List<string>? Args { get; set; }
 
     [JsonPropertyName("env")]
-    public List<AcpEnvVariable>? Env { get; set; }
+    public Dictionary<string, string>? Env { get; set; }
 
     [JsonPropertyName("url")]
     public string? Url { get; set; }
 
     [JsonPropertyName("headers")]
-    public List<AcpHttpHeader>? Headers { get; set; }
-}
-
-/// <summary>
-/// An environment variable.
-/// </summary>
-public class AcpEnvVariable
-{
-    [JsonPropertyName("name")]
-    public string Name { get; set; } = string.Empty;
-
-    [JsonPropertyName("value")]
-    public string Value { get; set; } = string.Empty;
-}
-
-/// <summary>
-/// An HTTP header.
-/// </summary>
-public class AcpHttpHeader
-{
-    [JsonPropertyName("name")]
-    public string Name { get; set; } = string.Empty;
-
-    [JsonPropertyName("value")]
-    public string Value { get; set; } = string.Empty;
+    public Dictionary<string, string>? Headers { get; set; }
 }

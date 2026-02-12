@@ -14,6 +14,7 @@ public abstract class BaseAcpTornadoRuntimeConfiguration : IAcpRuntimeConfigurat
     protected readonly IRuntimeConfiguration RuntimeConfig;
     private readonly Dictionary<string, CancellationTokenSource> _sessionCancellations = new();
     private readonly Dictionary<string, string> _sessions = new();
+    private readonly object _sessionsLock = new();
     private volatile string? _activeSessionId;
 
     protected string AgentName { get; set; }
@@ -56,8 +57,13 @@ public abstract class BaseAcpTornadoRuntimeConfiguration : IAcpRuntimeConfigurat
     public virtual Task<AcpNewSessionResponse> NewSessionAsync(AcpNewSessionRequest request, CancellationToken cancellationToken)
     {
         string sessionId = Guid.NewGuid().ToString();
-        _sessions[sessionId] = request.Cwd;
-        _sessionCancellations[sessionId] = new CancellationTokenSource();
+
+        lock (_sessionsLock)
+        {
+            _sessions[sessionId] = request.Cwd;
+            _sessionCancellations[sessionId] = new CancellationTokenSource();
+        }
+
         _activeSessionId = sessionId;
 
         AcpNewSessionResponse response = new()
@@ -71,18 +77,24 @@ public abstract class BaseAcpTornadoRuntimeConfiguration : IAcpRuntimeConfigurat
     /// <inheritdoc />
     public virtual async Task<AcpPromptResponse> PromptAsync(AcpPromptRequest request, CancellationToken cancellationToken)
     {
-        if (!_sessions.ContainsKey(request.SessionId))
+        CancellationTokenSource? sessionCts;
+
+        lock (_sessionsLock)
         {
-            throw new InvalidOperationException($"Session '{request.SessionId}' not found.");
+            if (!_sessions.ContainsKey(request.SessionId))
+            {
+                throw new InvalidOperationException($"Session '{request.SessionId}' not found.");
+            }
+
+            sessionCts = _sessionCancellations[request.SessionId];
         }
 
-        CancellationTokenSource sessionCts = _sessionCancellations[request.SessionId];
         using CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, sessionCts.Token);
 
         _activeSessionId = request.SessionId;
 
         ChatMessage userMessage = request.Prompt.ToTornadoMessage();
-        ChatMessage response = await Agent.InvokeAsync(userMessage);
+        ChatMessage response = await Agent.RuntimeConfiguration.AddToChatAsync(userMessage, linkedCts.Token);
 
         // Stream the agent's response back as a session update
         if (OnSessionUpdate is not null)
@@ -113,10 +125,13 @@ public abstract class BaseAcpTornadoRuntimeConfiguration : IAcpRuntimeConfigurat
     /// <inheritdoc />
     public virtual Task CancelAsync(AcpCancelNotification notification, CancellationToken cancellationToken)
     {
-        if (_sessionCancellations.TryGetValue(notification.SessionId, out CancellationTokenSource? cts))
+        lock (_sessionsLock)
         {
-            cts.Cancel();
-            _sessionCancellations[notification.SessionId] = new CancellationTokenSource();
+            if (_sessionCancellations.TryGetValue(notification.SessionId, out CancellationTokenSource? cts))
+            {
+                cts.Cancel();
+                _sessionCancellations[notification.SessionId] = new CancellationTokenSource();
+            }
         }
 
         return Task.CompletedTask;
@@ -182,12 +197,16 @@ public abstract class BaseAcpTornadoRuntimeConfiguration : IAcpRuntimeConfigurat
     /// </summary>
     public void Dispose()
     {
-        foreach (CancellationTokenSource cts in _sessionCancellations.Values)
+        lock (_sessionsLock)
         {
-            cts.Dispose();
+            foreach (CancellationTokenSource cts in _sessionCancellations.Values)
+            {
+                cts.Dispose();
+            }
+
+            _sessionCancellations.Clear();
         }
 
-        _sessionCancellations.Clear();
         GC.SuppressFinalize(this);
     }
 }

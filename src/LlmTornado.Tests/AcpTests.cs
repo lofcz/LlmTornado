@@ -333,7 +333,7 @@ public class AcpTests
                     Name = "test-server",
                     Command = "npx",
                     Args = ["-y", "@test/server"],
-                    Env = [new AcpEnvVariable { Name = "API_KEY", Value = "secret" }]
+                    Env = new Dictionary<string, string> { ["API_KEY"] = "secret" }
                 }
             ]
         };
@@ -346,7 +346,7 @@ public class AcpTests
         Assert.That(deserialized.McpServers, Has.Count.EqualTo(1));
         Assert.That(deserialized.McpServers[0].Name, Is.EqualTo("test-server"));
         Assert.That(deserialized.McpServers[0].Args, Has.Count.EqualTo(2));
-        Assert.That(deserialized.McpServers[0].Env![0].Name, Is.EqualTo("API_KEY"));
+        Assert.That(deserialized.McpServers[0].Env!["API_KEY"], Is.EqualTo("secret"));
     }
 
     [Test]
@@ -396,7 +396,7 @@ public class AcpTests
             Type = "http",
             Name = "remote-server",
             Url = "https://example.com/mcp",
-            Headers = [new AcpHttpHeader { Name = "Authorization", Value = "Bearer token" }]
+            Headers = new Dictionary<string, string> { ["Authorization"] = "Bearer token" }
         };
 
         string json = JsonSerializer.Serialize(config, JsonOptions);
@@ -406,6 +406,7 @@ public class AcpTests
         Assert.That(deserialized!.Type, Is.EqualTo("http"));
         Assert.That(deserialized.Url, Is.EqualTo("https://example.com/mcp"));
         Assert.That(deserialized.Headers, Has.Count.EqualTo(1));
+        Assert.That(deserialized.Headers!["Authorization"], Is.EqualTo("Bearer token"));
     }
 
     #endregion
@@ -1396,6 +1397,195 @@ public class AcpTests
 
     #endregion
 
+    #region MCP Integration — Rider-style JSON through AcpJsonRpcServer
+
+    /// <summary>
+    /// Writes a raw JSON string to a MemoryStream as a single line (compacted), matching the
+    /// newline-delimited JSON format that AcpJsonRpcServer expects over stdio.
+    /// </summary>
+    private static void WriteRawJsonLine(MemoryStream stream, string json)
+    {
+        // Compact multi-line JSON to a single line, as ACP stdio transport requires
+        string compacted = json.ReplaceLineEndings(" ").Trim();
+        byte[] bytes = Encoding.UTF8.GetBytes(compacted + "\n");
+        stream.Write(bytes);
+    }
+
+    [Test]
+    public async Task Server_NewSession_WithRiderStdioMcpServer_DeserializesCorrectly()
+    {
+        // Raw JSON exactly as Rider 2025.x sends it for a stdio MCP server
+        string riderJson = """{"jsonrpc":"2.0","id":10,"method":"session/new","params":{"cwd":"/home/user/myproject","mcpServers":[{"type":"stdio","name":"filesystem","command":"npx","args":["-y","@modelcontextprotocol/server-filesystem","/tmp"],"env":{"NODE_ENV":"production","DEBUG":"false"}}]}}""";
+
+        MockAcpRuntime runtime = new();
+        using MemoryStream input = new();
+        using MemoryStream output = new();
+
+        WriteRawJsonLine(input, riderJson);
+        input.Position = 0;
+
+        AcpJsonRpcServer server = new(runtime, input, output);
+        using CancellationTokenSource cts = new(TimeSpan.FromSeconds(2));
+        await server.RunAsync(cts.Token);
+
+        // Verify the runtime received the correctly deserialized MCP config
+        Assert.That(runtime.LastNewSessionRequest, Is.Not.Null);
+        Assert.That(runtime.LastNewSessionRequest!.Cwd, Is.EqualTo("/home/user/myproject"));
+        Assert.That(runtime.LastNewSessionRequest.McpServers, Has.Count.EqualTo(1));
+
+        AcpMcpServerConfig mcpServer = runtime.LastNewSessionRequest.McpServers[0];
+        Assert.That(mcpServer.Type, Is.EqualTo("stdio"));
+        Assert.That(mcpServer.Name, Is.EqualTo("filesystem"));
+        Assert.That(mcpServer.Command, Is.EqualTo("npx"));
+        Assert.That(mcpServer.Args, Is.EqualTo(new[] { "-y", "@modelcontextprotocol/server-filesystem", "/tmp" }));
+        Assert.That(mcpServer.Env, Has.Count.EqualTo(2));
+        Assert.That(mcpServer.Env!["NODE_ENV"], Is.EqualTo("production"));
+        Assert.That(mcpServer.Env["DEBUG"], Is.EqualTo("false"));
+
+        // Verify JSON-RPC response is valid
+        string responseJson = ReadOutput(output);
+        Assert.That(responseJson, Does.Contain("\"id\":10"));
+        Assert.That(responseJson, Does.Contain("\"sessionId\""));
+    }
+
+    [Test]
+    public async Task Server_NewSession_WithRiderHttpMcpServer_DeserializesCorrectly()
+    {
+        // Raw JSON as Rider sends it for an HTTP/SSE MCP server
+        string riderJson = """{"jsonrpc":"2.0","id":11,"method":"session/new","params":{"cwd":"/workspace","mcpServers":[{"type":"http","name":"remote-tools","url":"https://mcp.example.com/sse","headers":{"Authorization":"Bearer sk-test-key","X-Custom":"value"}}]}}""";
+
+        MockAcpRuntime runtime = new();
+        using MemoryStream input = new();
+        using MemoryStream output = new();
+
+        WriteRawJsonLine(input, riderJson);
+        input.Position = 0;
+
+        AcpJsonRpcServer server = new(runtime, input, output);
+        using CancellationTokenSource cts = new(TimeSpan.FromSeconds(2));
+        await server.RunAsync(cts.Token);
+
+        Assert.That(runtime.LastNewSessionRequest, Is.Not.Null);
+
+        AcpMcpServerConfig mcpServer = runtime.LastNewSessionRequest!.McpServers[0];
+        Assert.That(mcpServer.Type, Is.EqualTo("http"));
+        Assert.That(mcpServer.Name, Is.EqualTo("remote-tools"));
+        Assert.That(mcpServer.Url, Is.EqualTo("https://mcp.example.com/sse"));
+        Assert.That(mcpServer.Command, Is.Null);
+        Assert.That(mcpServer.Args, Is.Null);
+        Assert.That(mcpServer.Headers, Has.Count.EqualTo(2));
+        Assert.That(mcpServer.Headers!["Authorization"], Is.EqualTo("Bearer sk-test-key"));
+        Assert.That(mcpServer.Headers["X-Custom"], Is.EqualTo("value"));
+    }
+
+    [Test]
+    public async Task Server_NewSession_WithMultipleMcpServers_DeserializesAll()
+    {
+        // Rider can pass multiple MCP servers in a single session/new
+        string riderJson = """{"jsonrpc":"2.0","id":12,"method":"session/new","params":{"cwd":"/project","mcpServers":[{"type":"stdio","name":"local-fs","command":"node","args":["server.js"]},{"type":"http","name":"cloud-tools","url":"https://tools.example.com"}]}}""";
+
+        MockAcpRuntime runtime = new();
+        using MemoryStream input = new();
+        using MemoryStream output = new();
+
+        WriteRawJsonLine(input, riderJson);
+        input.Position = 0;
+
+        AcpJsonRpcServer server = new(runtime, input, output);
+        using CancellationTokenSource cts = new(TimeSpan.FromSeconds(2));
+        await server.RunAsync(cts.Token);
+
+        Assert.That(runtime.LastNewSessionRequest, Is.Not.Null);
+        Assert.That(runtime.LastNewSessionRequest!.McpServers, Has.Count.EqualTo(2));
+        Assert.That(runtime.LastNewSessionRequest.McpServers[0].Name, Is.EqualTo("local-fs"));
+        Assert.That(runtime.LastNewSessionRequest.McpServers[0].Type, Is.EqualTo("stdio"));
+        Assert.That(runtime.LastNewSessionRequest.McpServers[1].Name, Is.EqualTo("cloud-tools"));
+        Assert.That(runtime.LastNewSessionRequest.McpServers[1].Type, Is.EqualTo("http"));
+    }
+
+    [Test]
+    public async Task Server_NewSession_WithNoMcpServers_DeserializesEmptyList()
+    {
+        string riderJson = """{"jsonrpc":"2.0","id":13,"method":"session/new","params":{"cwd":"/project","mcpServers":[]}}""";
+
+        MockAcpRuntime runtime = new();
+        using MemoryStream input = new();
+        using MemoryStream output = new();
+
+        WriteRawJsonLine(input, riderJson);
+        input.Position = 0;
+
+        AcpJsonRpcServer server = new(runtime, input, output);
+        using CancellationTokenSource cts = new(TimeSpan.FromSeconds(2));
+        await server.RunAsync(cts.Token);
+
+        Assert.That(runtime.LastNewSessionRequest, Is.Not.Null);
+        Assert.That(runtime.LastNewSessionRequest!.McpServers, Is.Empty);
+    }
+
+    [Test]
+    public async Task Server_Initialize_McpCapabilities_ReturnedInResponse()
+    {
+        MockAcpRuntime runtime = new();
+        using MemoryStream input = new();
+        using MemoryStream output = new();
+
+        string initJson = """{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1,"clientInfo":{"name":"JetBrains Rider","version":"2025.2"},"clientCapabilities":{"fs":{"readTextFile":true,"writeTextFile":true},"terminal":true}}}""";
+
+        WriteRawJsonLine(input, initJson);
+        input.Position = 0;
+
+        AcpJsonRpcServer server = new(runtime, input, output);
+        using CancellationTokenSource cts = new(TimeSpan.FromSeconds(2));
+        await server.RunAsync(cts.Token);
+
+        string responseJson = ReadOutput(output);
+        Assert.That(responseJson, Does.Contain("\"mcpCapabilities\""));
+        Assert.That(responseJson, Does.Contain("\"http\":true"));
+
+        // Verify client info was deserialized
+        Assert.That(runtime.LastInitializeRequest, Is.Not.Null);
+        Assert.That(runtime.LastInitializeRequest!.ClientInfo!.Name, Is.EqualTo("JetBrains Rider"));
+        Assert.That(runtime.LastInitializeRequest.ClientCapabilities.Terminal, Is.True);
+    }
+
+    [Test]
+    public async Task Server_FullRiderHandshake_WithMcpServers()
+    {
+        // Simulates Rider's full ACP handshake: initialize → session/new (with MCP servers) → prompt
+        MockAcpRuntime runtime = new();
+        using MemoryStream input = new();
+        using MemoryStream output = new();
+
+        // 1. initialize
+        WriteRawJsonLine(input, """{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1,"clientInfo":{"name":"JetBrains Rider","version":"2025.2"}}}""");
+        // 2. session/new with MCP servers
+        WriteRawJsonLine(input, """{"jsonrpc":"2.0","id":2,"method":"session/new","params":{"cwd":"/project","mcpServers":[{"type":"stdio","name":"git-mcp","command":"uvx","args":["mcp-server-git","--repository","/project"],"env":{"GIT_AUTHOR_NAME":"test"}}]}}""");
+        // 3. prompt
+        WriteRawJsonLine(input, """{"jsonrpc":"2.0","id":3,"method":"session/prompt","params":{"sessionId":"mock-session-1","prompt":[{"type":"text","text":"Explain this repo"}]}}""");
+        input.Position = 0;
+
+        AcpJsonRpcServer server = new(runtime, input, output);
+        using CancellationTokenSource cts = new(TimeSpan.FromSeconds(2));
+        await server.RunAsync(cts.Token);
+
+        string responseJson = ReadOutput(output);
+
+        // All three requests should have gotten responses
+        Assert.That(responseJson, Does.Contain("\"id\":1"));
+        Assert.That(responseJson, Does.Contain("\"id\":2"));
+        Assert.That(responseJson, Does.Contain("\"id\":3"));
+
+        // MCP config was correctly deserialized
+        Assert.That(runtime.LastNewSessionRequest, Is.Not.Null);
+        Assert.That(runtime.LastNewSessionRequest!.McpServers, Has.Count.EqualTo(1));
+        Assert.That(runtime.LastNewSessionRequest.McpServers[0].Name, Is.EqualTo("git-mcp"));
+        Assert.That(runtime.LastNewSessionRequest.McpServers[0].Command, Is.EqualTo("uvx"));
+        Assert.That(runtime.LastNewSessionRequest.McpServers[0].Env!["GIT_AUTHOR_NAME"], Is.EqualTo("test"));
+    }
+
+    #endregion
+
     #region Helpers
 
     private static void WriteJsonLine(MemoryStream stream, object obj)
@@ -1422,6 +1612,8 @@ public class AcpTests
     private class MockAcpRuntime : IAcpRuntimeConfiguration
     {
         public string? LastCancelledSessionId { get; private set; }
+        public AcpNewSessionRequest? LastNewSessionRequest { get; private set; }
+        public AcpInitializeRequest? LastInitializeRequest { get; private set; }
         public bool ThrowOnPrompt { get; set; }
         private int _sessionCounter;
 
@@ -1429,12 +1621,14 @@ public class AcpTests
 
         public Task<AcpInitializeResponse> InitializeAsync(AcpInitializeRequest request, CancellationToken cancellationToken)
         {
+            LastInitializeRequest = request;
             return Task.FromResult(new AcpInitializeResponse
             {
                 ProtocolVersion = request.ProtocolVersion,
                 AgentInfo = new AcpImplementation { Name = "MockAgent", Version = "1.0.0" },
                 AgentCapabilities = new AcpAgentCapabilities
                 {
+                    McpCapabilities = new AcpMcpCapabilities { Http = true, Sse = false },
                     PromptCapabilities = new AcpPromptCapabilities { Image = false, Audio = false }
                 }
             });
@@ -1442,6 +1636,7 @@ public class AcpTests
 
         public Task<AcpNewSessionResponse> NewSessionAsync(AcpNewSessionRequest request, CancellationToken cancellationToken)
         {
+            LastNewSessionRequest = request;
             int id = Interlocked.Increment(ref _sessionCounter);
             return Task.FromResult(new AcpNewSessionResponse
             {

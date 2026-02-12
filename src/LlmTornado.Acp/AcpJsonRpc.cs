@@ -105,6 +105,7 @@ public static class AcpMethods
     public const string LoadSession = "session/load";
     public const string Prompt = "session/prompt";
     public const string Cancel = "session/cancel";
+    public const string Initialized = "initialized";
     public const string Update = "session/update";
     public const string SetMode = "session/set_mode";
     public const string SetConfigOption = "session/set_config_option";

@@ -133,7 +133,7 @@ public class AcpJsonRpcServer
                     AcpMethods.Initialize => await HandleInitializeAsync(paramsElement, cancellationToken),
                     AcpMethods.Authenticate => await HandleAuthenticateAsync(paramsElement, cancellationToken),
                     AcpMethods.NewSession => await HandleNewSessionAsync(paramsElement, cancellationToken),
-                    AcpMethods.LoadSession => throw new NotSupportedException("Session loading is not supported."),
+                    AcpMethods.LoadSession => throw new InvalidOperationException("Session loading is not supported by this agent."),
                     AcpMethods.Prompt => await HandlePromptAsync(paramsElement, cancellationToken),
                     AcpMethods.SetMode => await HandleSetModeAsync(paramsElement, cancellationToken),
                     AcpMethods.SetConfigOption => await HandleSetConfigOptionAsync(paramsElement, cancellationToken),
@@ -154,6 +154,10 @@ public class AcpJsonRpcServer
     {
         switch (method)
         {
+            case AcpMethods.Initialized:
+                Console.Error.WriteLine("[ACP-RPC] Client sent 'initialized' — handshake complete.");
+                break;
+
             case AcpMethods.Cancel:
                 AcpCancelNotification? cancelNotification = paramsElement.ValueKind != JsonValueKind.Undefined
                     ? JsonSerializer.Deserialize<AcpCancelNotification>(paramsElement.GetRawText(), JsonOptions)
