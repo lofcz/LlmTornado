@@ -106,8 +106,28 @@ public class AcpSessionConfigOption
     [JsonPropertyName("currentValue")]
     public string? CurrentValue { get; set; }
 
+    /// <summary>
+    /// Per ACP spec this is a plain array of <see cref="AcpSessionConfigSelectOption"/> (ungrouped)
+    /// or <see cref="AcpSessionConfigSelectGroup"/> (grouped).
+    /// Use grouped format for Rider compatibility.
+    /// </summary>
     [JsonPropertyName("options")]
-    public List<AcpSessionConfigSelectOption>? Options { get; set; }
+    public List<AcpSessionConfigSelectGroup>? Options { get; set; }
+}
+
+/// <summary>
+/// A group of possible values for a session configuration option.
+/// </summary>
+public class AcpSessionConfigSelectGroup
+{
+    [JsonPropertyName("group")]
+    public string Group { get; set; } = string.Empty;
+
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = string.Empty;
+
+    [JsonPropertyName("options")]
+    public List<AcpSessionConfigSelectOption> Options { get; set; } = [];
 }
 
 /// <summary>

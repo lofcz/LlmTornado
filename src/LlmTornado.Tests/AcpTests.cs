@@ -372,7 +372,7 @@ public class AcpTests
                     Name = "Model",
                     Type = "select",
                     CurrentValue = "gpt-4",
-                    Options = [new AcpSessionConfigSelectOption { Value = "gpt-4", Name = "GPT-4" }]
+                    Options = [new AcpSessionConfigSelectGroup { Group = "models", Name = "Models", Options = [new AcpSessionConfigSelectOption { Value = "gpt-4", Name = "GPT-4" }] }]
                 }
             ]
         };

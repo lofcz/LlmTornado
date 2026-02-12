@@ -126,6 +126,10 @@ public class TornadoAcpRuntime : IAcpRuntimeConfiguration
                 CurrentModeId = state.CurrentModeId,
                 AvailableModes = AvailableModes
             }
+            // configOptions omitted — Rider 2025.3 has a bug where its Kotlin deserializer
+            // wraps SessionConfigSelectOptions in a sealed class requiring JsonObject,
+            // but the ACP spec defines it as a plain JsonArray. Both Flat and Grouped
+            // variants crash. Track: https://youtrack.jetbrains.com (LLM project, ACP tag)
         });
     }
 
@@ -274,14 +278,22 @@ public class TornadoAcpRuntime : IAcpRuntimeConfiguration
                 Name = "Model",
                 Description = "The OpenAI model to use for completions",
                 Type = "select",
-                Category = "Model",
+                Category = "model",
                 CurrentValue = session.CurrentModelId,
-                Options = AvailableModels.ConvertAll(m => new AcpSessionConfigSelectOption
-                {
-                    Value = m.Id,
-                    Name = m.Name,
-                    Description = m.Description
-                })
+                Options =
+                [
+                    new AcpSessionConfigSelectGroup
+                    {
+                        Group = "models",
+                        Name = "Models",
+                        Options = AvailableModels.ConvertAll(m => new AcpSessionConfigSelectOption
+                        {
+                            Value = m.Id,
+                            Name = m.Name,
+                            Description = m.Description
+                        })
+                    }
+                ]
             }
         ];
     }
