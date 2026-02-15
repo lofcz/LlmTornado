@@ -357,10 +357,10 @@ public class AcpTests
             SessionId = "session-123",
             Modes = new AcpSessionModeState
             {
-                CurrentModeId = "code",
+                CurrentModeId = "agent",
                 AvailableModes =
                 [
-                    new AcpSessionMode { Id = "code", Name = "Code", Description = "Coding mode" },
+                    new AcpSessionMode { Id = "agent", Name = "Agent", Description = "Coding mode" },
                     new AcpSessionMode { Id = "chat", Name = "Chat" }
                 ]
             },
@@ -382,7 +382,7 @@ public class AcpTests
 
         Assert.That(deserialized, Is.Not.Null);
         Assert.That(deserialized!.SessionId, Is.EqualTo("session-123"));
-        Assert.That(deserialized.Modes!.CurrentModeId, Is.EqualTo("code"));
+        Assert.That(deserialized.Modes!.CurrentModeId, Is.EqualTo("agent"));
         Assert.That(deserialized.Modes.AvailableModes, Has.Count.EqualTo(2));
         Assert.That(deserialized.ConfigOptions, Has.Count.EqualTo(1));
         Assert.That(deserialized.ConfigOptions![0].Options, Has.Count.EqualTo(1));

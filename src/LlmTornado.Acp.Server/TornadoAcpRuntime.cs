@@ -1,6 +1,7 @@
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Code;
+using LlmTornado.Common;
 
 namespace LlmTornado.Acp.Server;
 
@@ -28,14 +29,14 @@ public class TornadoAcpRuntime : IAcpRuntimeConfiguration
 
     private static readonly List<AcpSessionMode> AvailableModes =
     [
-        new() { Id = "code", Name = "Code", Description = "Coding assistant — writes and explains code" },
+        new() { Id = "agent", Name = "Agent", Description = "Coding assistant — writes and explains code" },
         new() { Id = "chat", Name = "Chat", Description = "General-purpose conversational assistant" },
-        new() { Id = "architect", Name = "Architect", Description = "High-level design and architecture guidance" }
+        new() { Id = "plan", Name = "Plan", Description = "High-level design and architecture guidance" }
     ];
 
     private static readonly Dictionary<string, string> ModeSystemPrompts = new()
     {
-        ["code"] = """
+        ["agent"] = """
             You are a coding assistant integrated into JetBrains Rider via ACP.
             - Write clean, idiomatic code
             - Provide code in fenced markdown blocks with the language specified
@@ -48,7 +49,7 @@ public class TornadoAcpRuntime : IAcpRuntimeConfiguration
             - Use markdown formatting where appropriate
             - You can discuss code, concepts, tooling, or anything the user asks
             """,
-        ["architect"] = """
+        ["plan"] = """
             You are a software architecture advisor integrated into JetBrains Rider via ACP.
             - Focus on high-level design, patterns, and trade-offs
             - Suggest project structure, abstractions, and technology choices
@@ -92,7 +93,7 @@ public class TornadoAcpRuntime : IAcpRuntimeConfiguration
         });
     }
 
-    public Task<AcpNewSessionResponse> NewSessionAsync(AcpNewSessionRequest request, CancellationToken cancellationToken)
+    public async Task<AcpNewSessionResponse> NewSessionAsync(AcpNewSessionRequest request, CancellationToken cancellationToken)
     {
         string sessionId = Guid.NewGuid().ToString("N");
         string initialModel = _defaultModel;
@@ -103,12 +104,15 @@ public class TornadoAcpRuntime : IAcpRuntimeConfiguration
             initialModel = AvailableModels[0].Id;
         }
 
+        List<Tool> localTools = BuildAcpLocalTools(request.Cwd);
+
         SessionState state = new()
         {
             Cwd = request.Cwd,
-            CurrentModeId = "code",
+            CurrentModeId = "agent",
             CurrentModelId = initialModel,
-            Conversation = CreateConversation(initialModel, "code", request.Cwd)
+            LocalTools = localTools,
+            Conversation = CreateConversation(initialModel, "agent", request.Cwd, localTools)
         };
 
         lock (_sessionsLock)
@@ -118,7 +122,7 @@ public class TornadoAcpRuntime : IAcpRuntimeConfiguration
 
         Console.Error.WriteLine($"[ACP] New session: {sessionId} (cwd: {request.Cwd}, model: {initialModel})");
 
-        return Task.FromResult(new AcpNewSessionResponse
+        return new AcpNewSessionResponse
         {
             SessionId = sessionId,
             Modes = new AcpSessionModeState
@@ -130,7 +134,7 @@ public class TornadoAcpRuntime : IAcpRuntimeConfiguration
             // wraps SessionConfigSelectOptions in a sealed class requiring JsonObject,
             // but the ACP spec defines it as a plain JsonArray. Both Flat and Grouped
             // variants crash. Track: https://youtrack.jetbrains.com (LLM project, ACP tag)
-        });
+        };
     }
 
     public Task<AcpSetSessionModeResponse> SetModeAsync(AcpSetSessionModeRequest request, CancellationToken cancellationToken)
@@ -145,7 +149,7 @@ public class TornadoAcpRuntime : IAcpRuntimeConfiguration
         if (AvailableModes.Exists(m => m.Id == request.ModeId))
         {
             session.CurrentModeId = request.ModeId;
-            session.Conversation = CreateConversation(session.CurrentModelId, session.CurrentModeId, session.Cwd);
+            session.Conversation = CreateConversation(session.CurrentModelId, session.CurrentModeId, session.Cwd, session.LocalTools);
             Console.Error.WriteLine($"[ACP] Session {request.SessionId} mode changed to: {request.ModeId}");
         }
 
@@ -164,7 +168,7 @@ public class TornadoAcpRuntime : IAcpRuntimeConfiguration
         if (request.ConfigId == "model" && AvailableModels.Exists(m => m.Id == request.Value))
         {
             session.CurrentModelId = request.Value;
-            session.Conversation = CreateConversation(session.CurrentModelId, session.CurrentModeId, session.Cwd);
+            session.Conversation = CreateConversation(session.CurrentModelId, session.CurrentModeId, session.Cwd, session.LocalTools);
             Console.Error.WriteLine($"[ACP] Session {request.SessionId} model changed to: {request.Value}");
         }
 
@@ -214,6 +218,33 @@ public class TornadoAcpRuntime : IAcpRuntimeConfiguration
                             }
                         });
                     }
+                },
+                FunctionCallHandler = async (functionCalls) =>
+                {
+                    foreach (LlmTornado.ChatFunctions.FunctionCall call in functionCalls)
+                    {
+                        try
+                        {
+                            if (call.Tool?.Delegate is not null)
+                            {
+                                await call.Invoke(call.Arguments ?? "{}");
+                            }
+                            else
+                            {
+                                call.Resolve(new
+                                {
+                                    error = $"Tool '{call.Name}' is not executable in this ACP runtime."
+                                }, false);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            call.Resolve(new
+                            {
+                                error = ex.Message
+                            }, false);
+                        }
+                    }
                 }
             }, cancellationToken);
         }
@@ -255,17 +286,272 @@ public class TornadoAcpRuntime : IAcpRuntimeConfiguration
         return Task.CompletedTask;
     }
 
-    private Conversation CreateConversation(string modelId, string modeId, string cwd)
+    private Conversation CreateConversation(string modelId, string modeId, string cwd, List<Tool>? localTools = null)
     {
+        string acpRoot = ResolveAcpRootPath(cwd);
+
         Conversation conversation = _api.Chat.CreateConversation(new ChatRequest
         {
-            Model = modelId
+            Model = modelId,
+            Tools = (modeId == "agent" || modeId == "plan") ? localTools : null
         });
 
-        string systemPrompt = ModeSystemPrompts.GetValueOrDefault(modeId, ModeSystemPrompts["code"]);
-        conversation.AppendSystemMessage($"{systemPrompt}\n\nThe user's current working directory is: {cwd}");
+        string systemPrompt = ModeSystemPrompts.GetValueOrDefault(modeId, ModeSystemPrompts["agent"]);
+        conversation.AppendSystemMessage($"{systemPrompt}\n\nThe user's current working directory is: {cwd}\nTool access is restricted to: {acpRoot}");
 
         return conversation;
+    }
+
+    private static List<Tool> BuildAcpLocalTools(string cwd)
+    {
+        string acpRoot = ResolveAcpRootPath(cwd);
+
+        return
+        [
+            new Tool(
+                (string relativePath) => ListDirectory(acpRoot, relativePath),
+                "list_dir",
+                "Lists files and folders under the ACP directory for a relative path."
+            ),
+            new Tool(
+                (string query, string includePattern, int maxResults) => SearchFiles(acpRoot, query, includePattern, maxResults),
+                "search_files",
+                "Searches for text in files under the ACP directory. includePattern accepts globs like *.cs or *.*."
+            ),
+            new Tool(
+                (string relativePath, int startLine, int endLine) => ReadFileRange(acpRoot, relativePath, startLine, endLine),
+                "read_file",
+                "Reads a range of lines from a file in the ACP directory."
+            ),
+            new Tool(
+                (string relativePath, string content) => WriteFile(acpRoot, relativePath, content),
+                "write_file",
+                "Writes full file content to a file in the ACP directory. Creates folders as needed."
+            ),
+            new Tool(
+                (string relativePath, string oldText, string newText) => ReplaceInFile(acpRoot, relativePath, oldText, newText),
+                "replace_in_file",
+                "Replaces exact text in a file in the ACP directory."
+            )
+        ];
+    }
+
+    private static string ResolveAcpRootPath(string cwd)
+    {
+        string current = Path.GetFullPath(cwd);
+        string nested = Path.GetFullPath(Path.Combine(current, "src", "LlmTornado.Acp"));
+
+        if (Directory.Exists(nested))
+        {
+            return nested;
+        }
+
+        if (string.Equals(Path.GetFileName(current), "LlmTornado.Acp", StringComparison.OrdinalIgnoreCase))
+        {
+            return current;
+        }
+
+        string sibling = Path.GetFullPath(Path.Combine(current, "LlmTornado.Acp"));
+
+        return Directory.Exists(sibling) ? sibling : current;
+    }
+
+    private static string ResolveFilePath(string root, string relativePath)
+    {
+        if (Path.IsPathRooted(relativePath))
+        {
+            throw new InvalidOperationException("Path must be relative to the ACP directory.");
+        }
+
+        string full = Path.GetFullPath(Path.Combine(root, relativePath));
+
+        if (!full.StartsWith(root, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("Path escapes the ACP directory.");
+        }
+
+        return full;
+    }
+
+    private static object SearchFiles(string root, string query, string includePattern, int maxResults)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            return new { error = "query is required" };
+        }
+
+        string pattern = string.IsNullOrWhiteSpace(includePattern) ? "*.*" : includePattern;
+        int take = Math.Clamp(maxResults <= 0 ? 20 : maxResults, 1, 200);
+        List<object> results = [];
+
+        foreach (string file in Directory.EnumerateFiles(root, pattern, SearchOption.AllDirectories))
+        {
+            string[] lines;
+
+            try
+            {
+                lines = File.ReadAllLines(file);
+            }
+            catch
+            {
+                continue;
+            }
+
+            for (int i = 0; i < lines.Length; i++)
+            {
+                if (!lines[i].Contains(query, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                results.Add(new
+                {
+                    path = Path.GetRelativePath(root, file).Replace('\\', '/'),
+                    line = i + 1,
+                    text = lines[i]
+                });
+
+                if (results.Count >= take)
+                {
+                    return new { root, count = results.Count, results };
+                }
+            }
+        }
+
+        return new { root, count = results.Count, results };
+    }
+
+    private static object ListDirectory(string root, string relativePath)
+    {
+        string normalizedRelativePath = string.IsNullOrWhiteSpace(relativePath) ? "." : relativePath;
+        string targetPath = normalizedRelativePath is "."
+            ? root
+            : ResolveFilePath(root, normalizedRelativePath);
+
+        if (!Directory.Exists(targetPath))
+        {
+            return new
+            {
+                ok = false,
+                error = "directory not found",
+                path = normalizedRelativePath
+            };
+        }
+
+        List<string> entries = [];
+
+        foreach (string directory in Directory.EnumerateDirectories(targetPath))
+        {
+            entries.Add(Path.GetFileName(directory) + "/");
+        }
+
+        foreach (string file in Directory.EnumerateFiles(targetPath))
+        {
+            entries.Add(Path.GetFileName(file));
+        }
+
+        return new
+        {
+            ok = true,
+            path = Path.GetRelativePath(root, targetPath).Replace('\\', '/'),
+            count = entries.Count,
+            entries
+        };
+    }
+
+    private static object ReadFileRange(string root, string relativePath, int startLine, int endLine)
+    {
+        string path = ResolveFilePath(root, relativePath);
+
+        if (!File.Exists(path))
+        {
+            return new { error = "file not found", path = relativePath };
+        }
+
+        string[] lines = File.ReadAllLines(path);
+        int from = Math.Max(1, startLine);
+        int to = Math.Min(lines.Length, endLine <= 0 ? lines.Length : endLine);
+
+        if (from > to)
+        {
+            return new { error = "invalid line range", from, to, totalLines = lines.Length };
+        }
+
+        List<object> result = [];
+
+        for (int i = from; i <= to; i++)
+        {
+            result.Add(new { line = i, text = lines[i - 1] });
+        }
+
+        return new
+        {
+            path = Path.GetRelativePath(root, path).Replace('\\', '/'),
+            from,
+            to,
+            totalLines = lines.Length,
+            lines = result
+        };
+    }
+
+    private static object WriteFile(string root, string relativePath, string content)
+    {
+        string path = ResolveFilePath(root, relativePath);
+        string? dir = Path.GetDirectoryName(path);
+
+        if (!string.IsNullOrWhiteSpace(dir))
+        {
+            Directory.CreateDirectory(dir);
+        }
+
+        File.WriteAllText(path, content ?? string.Empty);
+
+        return new
+        {
+            ok = true,
+            path = Path.GetRelativePath(root, path).Replace('\\', '/'),
+            bytesWritten = content?.Length ?? 0
+        };
+    }
+
+    private static object ReplaceInFile(string root, string relativePath, string oldText, string newText)
+    {
+        string path = ResolveFilePath(root, relativePath);
+
+        if (!File.Exists(path))
+        {
+            return new { ok = false, error = "file not found", path = relativePath };
+        }
+
+        if (string.IsNullOrEmpty(oldText))
+        {
+            return new { ok = false, error = "oldText must not be empty" };
+        }
+
+        string original = File.ReadAllText(path);
+        int count = 0;
+        int index = 0;
+
+        while ((index = original.IndexOf(oldText, index, StringComparison.Ordinal)) >= 0)
+        {
+            count++;
+            index += oldText.Length;
+        }
+
+        if (count == 0)
+        {
+            return new { ok = false, error = "text not found", path = relativePath };
+        }
+
+        string updated = original.Replace(oldText, newText, StringComparison.Ordinal);
+        File.WriteAllText(path, updated);
+
+        return new
+        {
+            ok = true,
+            path = Path.GetRelativePath(root, path).Replace('\\', '/'),
+            replacements = count
+        };
     }
 
     private static List<AcpSessionConfigOption> BuildConfigOptions(SessionState session)
@@ -342,6 +628,7 @@ public class TornadoAcpRuntime : IAcpRuntimeConfiguration
         public required string CurrentModeId { get; set; }
         public required string CurrentModelId { get; set; }
         public required Conversation Conversation { get; set; }
+        public List<Tool>? LocalTools { get; set; }
     }
 
     private record ModelOption(string Id, string Name, string Description);
