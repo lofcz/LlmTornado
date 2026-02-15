@@ -1,3 +1,7 @@
+﻿using LlmTornado.Acp;
+using LlmTornado.Agents;
+using LlmTornado.Agents.ChatRuntime;
+using LlmTornado.Agents.ChatRuntime.RuntimeConfigurations;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Code;
@@ -6,17 +10,14 @@ using LlmTornado.Common;
 namespace LlmTornado.Acp.Server;
 
 /// <summary>
-/// ACP runtime backed by LlmTornado's Chat API.
-/// Each session maintains its own conversation history, mode, and model selection.
+/// Concrete ACP runtime implementation backed by LlmTornado's ChatRuntime agent system.
+/// Extends <see cref="BaseAcpTornadoRuntimeConfiguration"/> to leverage per-session ChatRuntime
+/// with factory-created IRuntimeConfiguration instances.
 /// </summary>
-public class TornadoAcpRuntime : IAcpRuntimeConfiguration
+public class TornadoAcpRuntime : BaseAcpTornadoRuntimeConfiguration
 {
     private readonly TornadoApi _api;
     private readonly string _defaultModel;
-    private readonly Dictionary<string, SessionState> _sessions = new();
-    private readonly object _sessionsLock = new();
-
-    public event Func<AcpSessionNotification, Task>? OnSessionUpdate;
 
     private static readonly List<ModelOption> AvailableModels =
     [
@@ -31,7 +32,8 @@ public class TornadoAcpRuntime : IAcpRuntimeConfiguration
     [
         new() { Id = "agent", Name = "Agent", Description = "Coding assistant — writes and explains code" },
         new() { Id = "chat", Name = "Chat", Description = "General-purpose conversational assistant" },
-        new() { Id = "plan", Name = "Plan", Description = "High-level design and architecture guidance" }
+        new() { Id = "plan", Name = "Plan", Description = "High-level design and architecture guidance" },
+        new() { Id = "refactor", Name = "Refactor", Description = "Automated file refactoring pipeline (Analyze → Plan → Edit → Verify)" }
     ];
 
     private static readonly Dictionary<string, string> ModeSystemPrompts = new()
@@ -55,254 +57,210 @@ public class TornadoAcpRuntime : IAcpRuntimeConfiguration
             - Suggest project structure, abstractions, and technology choices
             - When providing code, keep it to key interfaces and contracts
             - Explain rationale behind architectural decisions
+            """,
+        ["refactor"] = """
+            You are an automated file refactoring agent integrated into JetBrains Rider via ACP.
+            - Analyze code structure and identify refactoring opportunities
+            - Create detailed refactoring plans before making changes
+            - Apply changes precisely using file tools
+            - Verify changes compile and preserve behaviour
             """
     };
 
     public TornadoAcpRuntime(string openAiApiKey, string model = "gpt-4.1-nano")
+        : base("LlmTornado", "1.0.0")
     {
         _api = new TornadoApi(openAiApiKey, LLmProviders.OpenAi);
         _defaultModel = model;
     }
 
-    public Task<AcpInitializeResponse> InitializeAsync(AcpInitializeRequest request, CancellationToken cancellationToken)
+    #region BaseAcpTornadoRuntimeConfiguration overrides
+
+    /// <inheritdoc />
+    protected override IRuntimeConfiguration CreateRuntimeConfiguration(AcpNewSessionRequest request, string modeId, string modelId)
     {
-        return Task.FromResult(new AcpInitializeResponse
+        if (modeId == "refactor")
         {
-            ProtocolVersion = request.ProtocolVersion,
-            AgentInfo = new AcpImplementation
+            return CreateRefactoringOrchestrationConfiguration(request, modelId);
+        }
+
+        return CreateSingletonConfiguration(request, modeId, modelId);
+    }
+
+    /// <inheritdoc />
+    protected override string GetInitialMode(AcpNewSessionRequest request) => "agent";
+
+    /// <inheritdoc />
+    protected override string GetInitialModel(AcpNewSessionRequest request)
+    {
+        if (AvailableModels.Exists(m => m.Id == _defaultModel))
+        {
+            return _defaultModel;
+        }
+
+        return AvailableModels[0].Id;
+    }
+
+    /// <inheritdoc />
+    protected override AcpAgentCapabilities DescribeCapabilities()
+    {
+        return new AcpAgentCapabilities
+        {
+            LoadSession = false,
+            SessionCapabilities = new AcpSessionCapabilities
             {
-                Name = "LlmTornado",
-                Version = "1.0.0",
-                Title = "LlmTornado ACP Agent"
+                SetMode = true,
+                SetConfigOption = true
             },
-            AgentCapabilities = new AcpAgentCapabilities
+            PromptCapabilities = new AcpPromptCapabilities
             {
-                LoadSession = false,
-                SessionCapabilities = new AcpSessionCapabilities
-                {
-                    SetMode = true,
-                    SetConfigOption = true
-                },
-                PromptCapabilities = new AcpPromptCapabilities
-                {
-                    Image = false,
-                    Audio = false,
-                    EmbeddedContext = true
-                }
+                Image = false,
+                Audio = false,
+                EmbeddedContext = true
             }
-        });
+        };
     }
 
-    public async Task<AcpNewSessionResponse> NewSessionAsync(AcpNewSessionRequest request, CancellationToken cancellationToken)
+    /// <inheritdoc />
+    public override Task<AcpNewSessionResponse> NewSessionAsync(AcpNewSessionRequest request, CancellationToken cancellationToken)
     {
-        string sessionId = Guid.NewGuid().ToString("N");
-        string initialModel = _defaultModel;
+        // Let the base class create the session with ChatRuntime
+        Task<AcpNewSessionResponse> responseTask = base.NewSessionAsync(request, cancellationToken);
+        AcpNewSessionResponse response = responseTask.Result;
 
-        // Ensure the default model is in our list, otherwise pick the first
-        if (!AvailableModels.Exists(m => m.Id == initialModel))
+        // Attach mode and model metadata
+        response.Modes = new AcpSessionModeState
         {
-            initialModel = AvailableModels[0].Id;
-        }
-
-        List<Tool> localTools = BuildAcpLocalTools(request.Cwd);
-
-        SessionState state = new()
-        {
-            Cwd = request.Cwd,
             CurrentModeId = "agent",
-            CurrentModelId = initialModel,
-            LocalTools = localTools,
-            Conversation = CreateConversation(initialModel, "agent", request.Cwd, localTools)
+            AvailableModes = AvailableModes
         };
 
-        lock (_sessionsLock)
-        {
-            _sessions[sessionId] = state;
-        }
+        Console.Error.WriteLine($"[ACP] New session: {response.SessionId} (cwd: {request.Cwd}, model: {GetInitialModel(request)})");
 
-        Console.Error.WriteLine($"[ACP] New session: {sessionId} (cwd: {request.Cwd}, model: {initialModel})");
-
-        return new AcpNewSessionResponse
-        {
-            SessionId = sessionId,
-            Modes = new AcpSessionModeState
-            {
-                CurrentModeId = state.CurrentModeId,
-                AvailableModes = AvailableModes
-            }
-            // configOptions omitted — Rider 2025.3 has a bug where its Kotlin deserializer
-            // wraps SessionConfigSelectOptions in a sealed class requiring JsonObject,
-            // but the ACP spec defines it as a plain JsonArray. Both Flat and Grouped
-            // variants crash. Track: https://youtrack.jetbrains.com (LLM project, ACP tag)
-        };
+        return Task.FromResult(response);
     }
 
-    public Task<AcpSetSessionModeResponse> SetModeAsync(AcpSetSessionModeRequest request, CancellationToken cancellationToken)
+    /// <inheritdoc />
+    public override Task<AcpSetSessionModeResponse> SetModeAsync(AcpSetSessionModeRequest request, CancellationToken cancellationToken)
     {
-        SessionState? session = GetSession(request.SessionId);
-
-        if (session is null)
+        if (!AvailableModes.Exists(m => m.Id == request.ModeId))
         {
             return Task.FromResult(new AcpSetSessionModeResponse());
         }
 
-        if (AvailableModes.Exists(m => m.Id == request.ModeId))
-        {
-            session.CurrentModeId = request.ModeId;
-            session.Conversation = CreateConversation(session.CurrentModelId, session.CurrentModeId, session.Cwd, session.LocalTools);
-            Console.Error.WriteLine($"[ACP] Session {request.SessionId} mode changed to: {request.ModeId}");
-        }
-
-        return Task.FromResult(new AcpSetSessionModeResponse());
+        Console.Error.WriteLine($"[ACP] Session {request.SessionId} mode changed to: {request.ModeId}");
+        return base.SetModeAsync(request, cancellationToken);
     }
 
-    public Task<AcpSetSessionConfigOptionResponse> SetConfigOptionAsync(AcpSetSessionConfigOptionRequest request, CancellationToken cancellationToken)
+    /// <inheritdoc />
+    public override Task<AcpSetSessionConfigOptionResponse> SetConfigOptionAsync(AcpSetSessionConfigOptionRequest request, CancellationToken cancellationToken)
     {
-        SessionState? session = GetSession(request.SessionId);
+        AcpSessionContext? ctx = GetSessionContext(request.SessionId);
 
-        if (session is null)
+        if (ctx is null)
         {
             return Task.FromResult(new AcpSetSessionConfigOptionResponse());
         }
 
         if (request.ConfigId == "model" && AvailableModels.Exists(m => m.Id == request.Value))
         {
-            session.CurrentModelId = request.Value;
-            session.Conversation = CreateConversation(session.CurrentModelId, session.CurrentModeId, session.Cwd, session.LocalTools);
+            RebuildSessionRuntime(ctx, ctx.CurrentModeId, request.Value);
             Console.Error.WriteLine($"[ACP] Session {request.SessionId} model changed to: {request.Value}");
         }
 
         return Task.FromResult(new AcpSetSessionConfigOptionResponse
         {
-            ConfigOptions = BuildConfigOptions(session)
+            ConfigOptions = BuildConfigOptions(ctx)
         });
     }
 
-    public async Task<AcpPromptResponse> PromptAsync(AcpPromptRequest request, CancellationToken cancellationToken)
+    #endregion
+
+    #region Configuration factories
+
+    private SingletonRuntimeConfiguration CreateSingletonConfiguration(AcpNewSessionRequest request, string modeId, string modelId)
     {
-        SessionState? session = GetSession(request.SessionId);
+        List<Tool> localTools = BuildAcpLocalTools(request.Cwd);
+        string acpRoot = ResolveAcpRootPath(request.Cwd);
+        string systemPrompt = ModeSystemPrompts.GetValueOrDefault(modeId, ModeSystemPrompts["agent"]);
+        string fullSystemPrompt = $"{systemPrompt}\n\nThe user's current working directory is: {request.Cwd}\nTool access is restricted to: {acpRoot}";
 
-        if (session is null)
+        bool useTools = modeId is "agent" or "plan" or "refactor";
+
+        ChatModel resolvedModel = ResolveModel(modelId);
+
+        TornadoAgent agent = new(
+            client: _api,
+            model: resolvedModel,
+            name: $"ACP-{modeId}",
+            instructions: fullSystemPrompt,
+            tools: useTools ? localTools.ConvertAll<Delegate>(t => t.Delegate!) : null,
+            streaming: true
+        );
+
+        return new SingletonRuntimeConfiguration(agent);
+    }
+
+    private IRuntimeConfiguration CreateRefactoringOrchestrationConfiguration(AcpNewSessionRequest request, string modelId)
+    {
+        return new FileRefactoringOrchestrationConfiguration(
+            _api,
+            ResolveModel(modelId),
+            request.Cwd,
+            BuildAcpLocalTools(request.Cwd));
+    }
+
+    private static ChatModel ResolveModel(string modelId)
+    {
+        return modelId switch
         {
-            AcpNewSessionResponse newSession = await NewSessionAsync(new AcpNewSessionRequest { Cwd = Directory.GetCurrentDirectory() }, cancellationToken);
-            session = GetSession(newSession.SessionId);
-            request.SessionId = newSession.SessionId;
-        }
-
-        string userText = ExtractText(request.Prompt);
-        session!.Conversation.AppendUserInput(userText);
-
-        Console.Error.WriteLine($"[ACP] Prompt ({request.SessionId}, {session.CurrentModelId}, {session.CurrentModeId}): {Truncate(userText, 120)}");
-
-        string stopReason = AcpStopReasons.EndTurn;
-
-        try
-        {
-            await session.Conversation.StreamResponseRich(new ChatStreamEventHandler
-            {
-                MessageTokenHandler = async (token) =>
-                {
-                    if (OnSessionUpdate is not null)
-                    {
-                        await OnSessionUpdate.Invoke(new AcpSessionNotification
-                        {
-                            SessionId = request.SessionId,
-                            Update = new AcpSessionUpdate
-                            {
-                                SessionUpdateType = AcpSessionUpdateTypes.AgentMessageChunk,
-                                Content = new AcpContentBlock
-                                {
-                                    Type = AcpContentBlockTypes.Text,
-                                    Text = token
-                                }
-                            }
-                        });
-                    }
-                },
-                FunctionCallHandler = async (functionCalls) =>
-                {
-                    foreach (LlmTornado.ChatFunctions.FunctionCall call in functionCalls)
-                    {
-                        try
-                        {
-                            if (call.Tool?.Delegate is not null)
-                            {
-                                await call.Invoke(call.Arguments ?? "{}");
-                            }
-                            else
-                            {
-                                call.Resolve(new
-                                {
-                                    error = $"Tool '{call.Name}' is not executable in this ACP runtime."
-                                }, false);
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            call.Resolve(new
-                            {
-                                error = ex.Message
-                            }, false);
-                        }
-                    }
-                }
-            }, cancellationToken);
-        }
-        catch (OperationCanceledException)
-        {
-            stopReason = AcpStopReasons.Cancelled;
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"[ACP] Error during completion: {ex.Message}");
-
-            if (OnSessionUpdate is not null)
-            {
-                await OnSessionUpdate.Invoke(new AcpSessionNotification
-                {
-                    SessionId = request.SessionId,
-                    Update = new AcpSessionUpdate
-                    {
-                        SessionUpdateType = AcpSessionUpdateTypes.AgentMessageChunk,
-                        Content = new AcpContentBlock
-                        {
-                            Type = AcpContentBlockTypes.Text,
-                            Text = $"\n\n[Error: {ex.Message}]"
-                        }
-                    }
-                });
-            }
-        }
-
-        return new AcpPromptResponse
-        {
-            StopReason = stopReason
+            "gpt-4.1" => ChatModel.OpenAi.Gpt41.V41,
+            "gpt-4.1-mini" => ChatModel.OpenAi.Gpt41.V41Mini,
+            "o4-mini" => ChatModel.OpenAi.O4.V4Mini,
+            "o3" => ChatModel.OpenAi.O3.V3,
+            _ => ChatModel.OpenAi.Gpt41.V41Nano
         };
     }
 
-    public Task CancelAsync(AcpCancelNotification notification, CancellationToken cancellationToken)
+    #endregion
+
+    #region Config options
+
+    private static List<AcpSessionConfigOption> BuildConfigOptions(AcpSessionContext ctx)
     {
-        Console.Error.WriteLine($"[ACP] Cancel requested for session: {notification.SessionId}");
-        return Task.CompletedTask;
+        return
+        [
+            new AcpSessionConfigOption
+            {
+                Id = "model",
+                Name = "Model",
+                Description = "The OpenAI model to use for completions",
+                Type = "select",
+                Category = "model",
+                CurrentValue = ctx.CurrentModelId,
+                Options =
+                [
+                    new AcpSessionConfigSelectGroup
+                    {
+                        Group = "models",
+                        Name = "Models",
+                        Options = AvailableModels.ConvertAll(m => new AcpSessionConfigSelectOption
+                        {
+                            Value = m.Id,
+                            Name = m.Name,
+                            Description = m.Description
+                        })
+                    }
+                ]
+            }
+        ];
     }
 
-    private Conversation CreateConversation(string modelId, string modeId, string cwd, List<Tool>? localTools = null)
-    {
-        string acpRoot = ResolveAcpRootPath(cwd);
+    #endregion
 
-        Conversation conversation = _api.Chat.CreateConversation(new ChatRequest
-        {
-            Model = modelId,
-            Tools = (modeId == "agent" || modeId == "plan") ? localTools : null
-        });
+    #region Filesystem tools
 
-        string systemPrompt = ModeSystemPrompts.GetValueOrDefault(modeId, ModeSystemPrompts["agent"]);
-        conversation.AppendSystemMessage($"{systemPrompt}\n\nThe user's current working directory is: {cwd}\nTool access is restricted to: {acpRoot}");
-
-        return conversation;
-    }
-
-    private static List<Tool> BuildAcpLocalTools(string cwd)
+    internal static List<Tool> BuildAcpLocalTools(string cwd)
     {
         string acpRoot = ResolveAcpRootPath(cwd);
 
@@ -336,7 +294,7 @@ public class TornadoAcpRuntime : IAcpRuntimeConfiguration
         ];
     }
 
-    private static string ResolveAcpRootPath(string cwd)
+    internal static string ResolveAcpRootPath(string cwd)
     {
         string current = Path.GetFullPath(cwd);
         string nested = Path.GetFullPath(Path.Combine(current, "src", "LlmTornado.Acp"));
@@ -554,46 +512,11 @@ public class TornadoAcpRuntime : IAcpRuntimeConfiguration
         };
     }
 
-    private static List<AcpSessionConfigOption> BuildConfigOptions(SessionState session)
-    {
-        return
-        [
-            new AcpSessionConfigOption
-            {
-                Id = "model",
-                Name = "Model",
-                Description = "The OpenAI model to use for completions",
-                Type = "select",
-                Category = "model",
-                CurrentValue = session.CurrentModelId,
-                Options =
-                [
-                    new AcpSessionConfigSelectGroup
-                    {
-                        Group = "models",
-                        Name = "Models",
-                        Options = AvailableModels.ConvertAll(m => new AcpSessionConfigSelectOption
-                        {
-                            Value = m.Id,
-                            Name = m.Name,
-                            Description = m.Description
-                        })
-                    }
-                ]
-            }
-        ];
-    }
+    #endregion
 
-    private SessionState? GetSession(string sessionId)
-    {
-        lock (_sessionsLock)
-        {
-            _sessions.TryGetValue(sessionId, out SessionState? session);
-            return session;
-        }
-    }
+    #region Logging helpers
 
-    private static string ExtractText(List<AcpContentBlock> blocks)
+    internal static string ExtractTextForLogging(List<AcpContentBlock> blocks)
     {
         List<string> parts = [];
 
@@ -616,20 +539,13 @@ public class TornadoAcpRuntime : IAcpRuntimeConfiguration
         return string.Join("\n\n", parts);
     }
 
-    private static string Truncate(string s, int maxLen)
+    internal static string Truncate(string s, int maxLen)
     {
         string oneLine = s.ReplaceLineEndings(" ");
         return oneLine.Length <= maxLen ? oneLine : string.Concat(oneLine.AsSpan(0, maxLen), "...");
     }
 
-    private class SessionState
-    {
-        public required string Cwd { get; init; }
-        public required string CurrentModeId { get; set; }
-        public required string CurrentModelId { get; set; }
-        public required Conversation Conversation { get; set; }
-        public List<Tool>? LocalTools { get; set; }
-    }
+    #endregion
 
     private record ModelOption(string Id, string Name, string Description);
 }

@@ -34,16 +34,23 @@ public static partial class AcpTornadoExtension
 
     /// <summary>
     /// Converts a single ACP content block to a LlmTornado ChatMessagePart.
+    /// Handles embedded context (resources, resource links) with metadata headers
+    /// so the model receives structured file/resource context.
     /// </summary>
     public static ChatMessagePart? ToTornadoMessagePart(this AcpContentBlock block)
     {
         return block.Type switch
         {
             AcpContentBlockTypes.Text => new ChatMessagePart(block.Text ?? string.Empty),
-            AcpContentBlockTypes.Image when block.Data is not null => new ChatMessagePart(ChatMessageTypes.Image),
+            AcpContentBlockTypes.Image when block.Data is not null => new ChatMessagePart(ChatMessageTypes.Image)
+            {
+                Image = new ChatImage(block.Data, block.MimeType ?? "image/png")
+            },
             AcpContentBlockTypes.Audio when block.Data is not null => new ChatMessagePart(ChatMessageTypes.Audio),
-            AcpContentBlockTypes.ResourceLink => new ChatMessagePart($"[Resource: {block.Name}]({block.Uri})"),
-            AcpContentBlockTypes.Resource when block.Resource?.Text is not null => new ChatMessagePart(block.Resource.Text),
+            AcpContentBlockTypes.ResourceLink when !string.IsNullOrEmpty(block.Uri) => new ChatMessagePart(
+                $"--- Resource: {block.Name ?? "unknown"} ({block.Uri}) ---\n[Linked resource — content not embedded]"),
+            AcpContentBlockTypes.Resource when block.Resource?.Text is not null => new ChatMessagePart(
+                $"--- Resource: {block.Resource.Uri ?? block.Name ?? "embedded"} ---\n{block.Resource.Text}"),
             _ => null
         };
     }

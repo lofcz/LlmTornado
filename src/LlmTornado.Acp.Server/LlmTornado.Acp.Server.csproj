@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\LlmTornado.Acp\LlmTornado.Acp.csproj" />
+    <ProjectReference Include="..\LlmTornado.Agents\LlmTornado.Agents.csproj" />
     <ProjectReference Include="..\LlmTornado\LlmTornado.csproj" />
   </ItemGroup>
 

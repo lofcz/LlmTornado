@@ -5,17 +5,69 @@ using LlmTornado.Chat;
 namespace LlmTornado.Acp;
 
 /// <summary>
+/// Per-session context holding an isolated ChatRuntime, its configuration, and session metadata.
+/// </summary>
+public class AcpSessionContext : IDisposable
+{
+    /// <summary>
+    /// The ChatRuntime instance for this session, wrapping the session-scoped IRuntimeConfiguration.
+    /// </summary>
+    public ChatRuntime Agent { get; set; }
+
+    /// <summary>
+    /// The runtime configuration powering this session's ChatRuntime.
+    /// </summary>
+    public IRuntimeConfiguration RuntimeConfig { get; set; }
+
+    /// <summary>
+    /// Cancellation token source scoped to this session. Cancel to abort in-flight prompts.
+    /// </summary>
+    public CancellationTokenSource Cts { get; set; } = new();
+
+    /// <summary>
+    /// The working directory the IDE reported when creating this session.
+    /// </summary>
+    public string Cwd { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The currently active mode for this session (e.g. "agent", "chat", "plan", "refactor").
+    /// </summary>
+    public string CurrentModeId { get; set; } = "agent";
+
+    /// <summary>
+    /// The currently selected model identifier for this session.
+    /// </summary>
+    public string CurrentModelId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Arbitrary session-scoped metadata that subclasses can use.
+    /// </summary>
+    public Dictionary<string, object?> Metadata { get; set; } = new();
+
+    public AcpSessionContext(IRuntimeConfiguration runtimeConfig, string cwd)
+    {
+        RuntimeConfig = runtimeConfig ?? throw new ArgumentNullException(nameof(runtimeConfig));
+        Cwd = cwd;
+        Agent = new ChatRuntime(RuntimeConfig);
+    }
+
+    public void Dispose()
+    {
+        Cts.Dispose();
+        GC.SuppressFinalize(this);
+    }
+}
+
+/// <summary>
 /// Base implementation of ACP runtime configuration that integrates with the
-/// LlmTornado ChatRuntime agent system. Subclass this to create ACP-compatible agents.
+/// LlmTornado ChatRuntime agent system. Each session gets its own isolated ChatRuntime
+/// created via the abstract <see cref="CreateRuntimeConfiguration"/> factory method.
+/// Subclass this to create ACP-compatible agents backed by any <see cref="IRuntimeConfiguration"/>.
 /// </summary>
 public abstract class BaseAcpTornadoRuntimeConfiguration : IAcpRuntimeConfiguration, IDisposable
 {
-    protected readonly ChatRuntime Agent;
-    protected readonly IRuntimeConfiguration RuntimeConfig;
-    private readonly Dictionary<string, CancellationTokenSource> _sessionCancellations = new();
-    private readonly Dictionary<string, string> _sessions = new();
+    private readonly Dictionary<string, AcpSessionContext> _sessions = new();
     private readonly object _sessionsLock = new();
-    private volatile string? _activeSessionId;
 
     protected string AgentName { get; set; }
     protected string AgentVersion { get; set; }
@@ -26,14 +78,43 @@ public abstract class BaseAcpTornadoRuntimeConfiguration : IAcpRuntimeConfigurat
     /// <summary>
     /// Initializes a new instance of the BaseAcpTornadoRuntimeConfiguration.
     /// </summary>
-    public BaseAcpTornadoRuntimeConfiguration(IRuntimeConfiguration runtimeConfig, string name, string version = "1.0.0")
+    protected BaseAcpTornadoRuntimeConfiguration(string name, string version = "1.0.0")
     {
-        RuntimeConfig = runtimeConfig ?? throw new ArgumentNullException(nameof(runtimeConfig));
         AgentName = name;
         AgentVersion = version;
+    }
 
-        Agent = new ChatRuntime(RuntimeConfig);
-        Agent.RuntimeConfiguration.OnRuntimeEvent += RuntimeEventHandler;
+    /// <summary>
+    /// Factory method: create an <see cref="IRuntimeConfiguration"/> for a new session.
+    /// Override this to return any configuration — SingletonRuntimeConfiguration, OrchestrationRuntimeConfiguration, etc.
+    /// </summary>
+    /// <param name="request">The new-session request containing cwd and other metadata.</param>
+    /// <param name="modeId">The initial mode for the session.</param>
+    /// <param name="modelId">The initial model for the session.</param>
+    /// <returns>An IRuntimeConfiguration that will be wrapped in a per-session ChatRuntime.</returns>
+    protected abstract IRuntimeConfiguration CreateRuntimeConfiguration(AcpNewSessionRequest request, string modeId, string modelId);
+
+    /// <summary>
+    /// Called when the runtime configuration for a session needs to be recreated
+    /// (e.g. mode or model change). Override to customise rebuild behaviour.
+    /// The default implementation calls <see cref="CreateRuntimeConfiguration"/>.
+    /// </summary>
+    protected virtual IRuntimeConfiguration RecreateRuntimeConfiguration(AcpSessionContext session, string modeId, string modelId)
+    {
+        AcpNewSessionRequest syntheticRequest = new() { Cwd = session.Cwd };
+        return CreateRuntimeConfiguration(syntheticRequest, modeId, modelId);
+    }
+
+    /// <summary>
+    /// Retrieves the session context for the given session ID, or null if not found.
+    /// </summary>
+    protected AcpSessionContext? GetSessionContext(string sessionId)
+    {
+        lock (_sessionsLock)
+        {
+            _sessions.TryGetValue(sessionId, out AcpSessionContext? ctx);
+            return ctx;
+        }
     }
 
     /// <inheritdoc />
@@ -56,15 +137,28 @@ public abstract class BaseAcpTornadoRuntimeConfiguration : IAcpRuntimeConfigurat
     /// <inheritdoc />
     public virtual Task<AcpNewSessionResponse> NewSessionAsync(AcpNewSessionRequest request, CancellationToken cancellationToken)
     {
-        string sessionId = Guid.NewGuid().ToString();
+        string sessionId = Guid.NewGuid().ToString("N");
+        string initialMode = GetInitialMode(request);
+        string initialModel = GetInitialModel(request);
+
+        IRuntimeConfiguration config = CreateRuntimeConfiguration(request, initialMode, initialModel);
+        AcpSessionContext ctx = new(config, request.Cwd)
+        {
+            CurrentModeId = initialMode,
+            CurrentModelId = initialModel
+        };
+
+        // Wire runtime events with session ID captured in closure — no race condition
+        string capturedSessionId = sessionId;
+        ctx.Agent.RuntimeConfiguration.OnRuntimeEvent += async (evt) =>
+        {
+            await HandleRuntimeEvent(capturedSessionId, evt);
+        };
 
         lock (_sessionsLock)
         {
-            _sessions[sessionId] = request.Cwd;
-            _sessionCancellations[sessionId] = new CancellationTokenSource();
+            _sessions[sessionId] = ctx;
         }
-
-        _activeSessionId = sessionId;
 
         AcpNewSessionResponse response = new()
         {
@@ -77,61 +171,82 @@ public abstract class BaseAcpTornadoRuntimeConfiguration : IAcpRuntimeConfigurat
     /// <inheritdoc />
     public virtual async Task<AcpPromptResponse> PromptAsync(AcpPromptRequest request, CancellationToken cancellationToken)
     {
-        CancellationTokenSource? sessionCts;
+        AcpSessionContext? ctx = GetSessionContext(request.SessionId);
 
-        lock (_sessionsLock)
+        if (ctx is null)
         {
-            if (!_sessions.ContainsKey(request.SessionId))
-            {
-                throw new InvalidOperationException($"Session '{request.SessionId}' not found.");
-            }
-
-            sessionCts = _sessionCancellations[request.SessionId];
+            throw new InvalidOperationException($"Session '{request.SessionId}' not found.");
         }
 
-        using CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, sessionCts.Token);
-
-        _activeSessionId = request.SessionId;
+        using CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, ctx.Cts.Token);
 
         ChatMessage userMessage = request.Prompt.ToTornadoMessage();
-        ChatMessage response = await Agent.RuntimeConfiguration.AddToChatAsync(userMessage, linkedCts.Token);
 
-        // Stream the agent's response back as a session update
-        if (OnSessionUpdate is not null)
+        string stopReason = AcpStopReasons.EndTurn;
+
+        try
         {
-            AcpSessionNotification notification = new()
-            {
-                SessionId = request.SessionId,
-                Update = new AcpSessionUpdate
-                {
-                    SessionUpdateType = AcpSessionUpdateTypes.AgentMessageChunk,
-                    Content = new AcpContentBlock
-                    {
-                        Type = AcpContentBlockTypes.Text,
-                        Text = response.Content ?? string.Empty
-                    }
-                }
-            };
+            ChatMessage response = await ctx.Agent.RuntimeConfiguration.AddToChatAsync(userMessage, linkedCts.Token);
 
-            await OnSessionUpdate.Invoke(notification);
+            // If the runtime did not stream, send the complete response as a final chunk
+            if (OnSessionUpdate is not null && !string.IsNullOrEmpty(response.Content))
+            {
+                await OnSessionUpdate.Invoke(new AcpSessionNotification
+                {
+                    SessionId = request.SessionId,
+                    Update = new AcpSessionUpdate
+                    {
+                        SessionUpdateType = AcpSessionUpdateTypes.AgentMessageChunk,
+                        Content = new AcpContentBlock
+                        {
+                            Type = AcpContentBlockTypes.Text,
+                            Text = response.Content
+                        }
+                    }
+                });
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            stopReason = AcpStopReasons.Cancelled;
+        }
+        catch (Exception ex)
+        {
+            if (OnSessionUpdate is not null)
+            {
+                await OnSessionUpdate.Invoke(new AcpSessionNotification
+                {
+                    SessionId = request.SessionId,
+                    Update = new AcpSessionUpdate
+                    {
+                        SessionUpdateType = AcpSessionUpdateTypes.AgentMessageChunk,
+                        Content = new AcpContentBlock
+                        {
+                            Type = AcpContentBlockTypes.Text,
+                            Text = $"\n\n[Error: {ex.Message}]"
+                        }
+                    }
+                });
+            }
         }
 
         return new AcpPromptResponse
         {
-            StopReason = AcpStopReasons.EndTurn
+            StopReason = stopReason
         };
     }
 
     /// <inheritdoc />
     public virtual Task CancelAsync(AcpCancelNotification notification, CancellationToken cancellationToken)
     {
-        lock (_sessionsLock)
+        AcpSessionContext? ctx = GetSessionContext(notification.SessionId);
+
+        if (ctx is not null)
         {
-            if (_sessionCancellations.TryGetValue(notification.SessionId, out CancellationTokenSource? cts))
-            {
-                cts.Cancel();
-                _sessionCancellations[notification.SessionId] = new CancellationTokenSource();
-            }
+            ctx.Cts.Cancel();
+            ctx.Agent.CancelExecution();
+            // Replace the CTS so the session can accept new prompts
+            ctx.Cts = new CancellationTokenSource();
         }
 
         return Task.CompletedTask;
@@ -140,6 +255,13 @@ public abstract class BaseAcpTornadoRuntimeConfiguration : IAcpRuntimeConfigurat
     /// <inheritdoc />
     public virtual Task<AcpSetSessionModeResponse> SetModeAsync(AcpSetSessionModeRequest request, CancellationToken cancellationToken)
     {
+        AcpSessionContext? ctx = GetSessionContext(request.SessionId);
+
+        if (ctx is not null)
+        {
+            RebuildSessionRuntime(ctx, request.ModeId, ctx.CurrentModelId);
+        }
+
         return Task.FromResult(new AcpSetSessionModeResponse());
     }
 
@@ -166,30 +288,90 @@ public abstract class BaseAcpTornadoRuntimeConfiguration : IAcpRuntimeConfigurat
     }
 
     /// <summary>
-    /// Handles runtime events and forwards them as ACP session updates.
+    /// Override to control the initial mode for a new session.
     /// </summary>
-    private async ValueTask RuntimeEventHandler(ChatRuntimeEvents evt)
+    protected virtual string GetInitialMode(AcpNewSessionRequest request) => "agent";
+
+    /// <summary>
+    /// Override to control the initial model for a new session.
+    /// </summary>
+    protected virtual string GetInitialModel(AcpNewSessionRequest request) => "gpt-4.1-nano";
+
+    /// <summary>
+    /// Rebuilds the session's ChatRuntime while preserving conversation history.
+    /// </summary>
+    protected virtual void RebuildSessionRuntime(AcpSessionContext ctx, string newModeId, string newModelId)
+    {
+        // Snapshot existing messages
+        List<ChatMessage> existingMessages = ctx.RuntimeConfig.GetMessages();
+
+        ctx.CurrentModeId = newModeId;
+        ctx.CurrentModelId = newModelId;
+
+        // Create fresh runtime config
+        IRuntimeConfiguration newConfig = RecreateRuntimeConfiguration(ctx, newModeId, newModelId);
+        ctx.RuntimeConfig = newConfig;
+        ctx.Agent = new ChatRuntime(newConfig);
+
+        // Re-wire events — session ID is already captured via the dictionary key
+        // We need to find the session ID for this context
+        string? sessionId = null;
+        lock (_sessionsLock)
+        {
+            foreach (KeyValuePair<string, AcpSessionContext> kvp in _sessions)
+            {
+                if (ReferenceEquals(kvp.Value, ctx))
+                {
+                    sessionId = kvp.Key;
+                    break;
+                }
+            }
+        }
+
+        if (sessionId is not null)
+        {
+            string capturedSessionId = sessionId;
+            ctx.Agent.RuntimeConfiguration.OnRuntimeEvent += async (evt) =>
+            {
+                await HandleRuntimeEvent(capturedSessionId, evt);
+            };
+        }
+
+        // Replay conversation history (skip system messages — they're set by the new config)
+        foreach (ChatMessage msg in existingMessages)
+        {
+            if (msg.Role is not Code.ChatMessageRoles.System)
+            {
+                ctx.RuntimeConfig.GetMessages().Add(msg);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Handles runtime events and forwards them as ACP session updates, scoped to the correct session.
+    /// </summary>
+    private async ValueTask HandleRuntimeEvent(string sessionId, ChatRuntimeEvents evt)
     {
         if (OnSessionUpdate is null)
         {
             return;
         }
 
-        // Use the explicitly tracked active session
-        string? activeSessionId = _activeSessionId;
+        List<AcpSessionUpdate>? updates = evt.ToAcpSessionUpdates();
 
-        if (activeSessionId is null)
+        if (updates is null || updates.Count == 0)
         {
             return;
         }
 
-        AcpSessionUpdate update = evt.ToAcpSessionUpdate();
-
-        await OnSessionUpdate.Invoke(new AcpSessionNotification
+        foreach (AcpSessionUpdate update in updates)
         {
-            SessionId = activeSessionId,
-            Update = update
-        });
+            await OnSessionUpdate.Invoke(new AcpSessionNotification
+            {
+                SessionId = sessionId,
+                Update = update
+            });
+        }
     }
 
     /// <summary>
@@ -199,12 +381,12 @@ public abstract class BaseAcpTornadoRuntimeConfiguration : IAcpRuntimeConfigurat
     {
         lock (_sessionsLock)
         {
-            foreach (CancellationTokenSource cts in _sessionCancellations.Values)
+            foreach (AcpSessionContext ctx in _sessions.Values)
             {
-                cts.Dispose();
+                ctx.Dispose();
             }
 
-            _sessionCancellations.Clear();
+            _sessions.Clear();
         }
 
         GC.SuppressFinalize(this);
