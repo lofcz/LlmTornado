@@ -1,11 +1,18 @@
+using System.Text.RegularExpressions;
+
 namespace LlmTornado.Acp.Server.Skills;
 
 /// <summary>
 /// Loads agent skills from SKILL.md files. Each file uses YAML front matter for metadata
 /// and a markdown body for agent instructions, following the standard skill format.
 /// </summary>
-internal static class SkillLoader
+internal static partial class SkillLoader
 {
+    /// <summary>
+    /// Valid skill name pattern: lowercase alphanumeric with hyphens and underscores.
+    /// </summary>
+    [GeneratedRegex(@"^[a-z0-9][a-z0-9_-]{0,63}$")]
+    private static partial Regex ValidSkillNameRegex();
     /// <summary>
     /// Loads all .skill.md files from the given directory and returns a dictionary keyed by skill name.
     /// </summary>
@@ -129,7 +136,7 @@ internal static class SkillLoader
             }
         }
 
-        if (string.IsNullOrEmpty(skill.Name))
+        if (string.IsNullOrEmpty(skill.Name) || !ValidSkillNameRegex().IsMatch(skill.Name))
         {
             return null;
         }
