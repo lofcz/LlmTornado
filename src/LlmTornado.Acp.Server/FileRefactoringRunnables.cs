@@ -1,3 +1,4 @@
+using LlmTornado.Acp.Server.Skills;
 using LlmTornado.Agents;
 using LlmTornado.Agents.ChatRuntime.Orchestration;
 using LlmTornado.Chat;
@@ -20,20 +21,36 @@ internal static class RefactorAgentRunner
         ChatMessage? assistant = result.Messages.LastOrDefault(m => m.Role == ChatMessageRoles.Assistant);
         return assistant?.Content ?? result.Messages.LastOrDefault()?.Content ?? string.Empty;
     }
+
+    /// <summary>
+    /// Gets skill-derived instructions for a pipeline stage, falling back to a default if no skill stage is defined.
+    /// </summary>
+    public static string GetStageInstructions(AgentSkill? skill, string stage, string fallback)
+    {
+        if (skill?.StageInstructions.TryGetValue(stage, out string? instructions) == true && !string.IsNullOrWhiteSpace(instructions))
+        {
+            return instructions;
+        }
+
+        return fallback;
+    }
 }
 
 internal sealed class AnalyzeRunnable : OrchestrationRunnable<ChatMessage, RefactorAnalysis>
 {
     private readonly TornadoAgent _agent;
 
-    public AnalyzeRunnable(TornadoApi api, ChatModel model, List<Tool> tools, Orchestration orchestrator)
+    public AnalyzeRunnable(TornadoApi api, ChatModel model, List<Tool> tools, Orchestration orchestrator, AgentSkill? skill = null)
         : base(orchestrator, "analyze")
     {
+        string instructions = RefactorAgentRunner.GetStageInstructions(skill, "analyze",
+            "Analyze the user's refactoring request. Identify impacted files, symbols, and constraints. Be concise.");
+
         _agent = new TornadoAgent(
             api,
             model,
             name: "RefactorAnalyze",
-            instructions: "Analyze the user's refactoring request. Identify impacted files, symbols, and constraints. Be concise.",
+            instructions: instructions,
             tools: tools.ConvertAll<Delegate>(t => t.Delegate!),
             streaming: false);
     }
@@ -55,14 +72,17 @@ internal sealed class PlanRunnable : OrchestrationRunnable<RefactorAnalysis, Ref
 {
     private readonly TornadoAgent _agent;
 
-    public PlanRunnable(TornadoApi api, ChatModel model, Orchestration orchestrator)
+    public PlanRunnable(TornadoApi api, ChatModel model, Orchestration orchestrator, AgentSkill? skill = null)
         : base(orchestrator, "plan")
     {
+        string instructions = RefactorAgentRunner.GetStageInstructions(skill, "plan",
+            "Create a concrete step-by-step refactoring plan with ordered edits and verification checks.");
+
         _agent = new TornadoAgent(
             api,
             model,
             name: "RefactorPlan",
-            instructions: "Create a concrete step-by-step refactoring plan with ordered edits and verification checks.",
+            instructions: instructions,
             streaming: false);
     }
 
@@ -96,14 +116,17 @@ internal sealed class EditRunnable : OrchestrationRunnable<RefactorPlan, Refacto
 {
     private readonly TornadoAgent _agent;
 
-    public EditRunnable(TornadoApi api, ChatModel model, List<Tool> tools, Orchestration orchestrator)
+    public EditRunnable(TornadoApi api, ChatModel model, List<Tool> tools, Orchestration orchestrator, AgentSkill? skill = null)
         : base(orchestrator, "edit")
     {
+        string instructions = RefactorAgentRunner.GetStageInstructions(skill, "edit",
+            "Execute the refactoring plan using tools. Keep edits minimal and safe.");
+
         _agent = new TornadoAgent(
             api,
             model,
             name: "RefactorEdit",
-            instructions: "Execute the refactoring plan using tools. Keep edits minimal and safe.",
+            instructions: instructions,
             tools: tools.ConvertAll<Delegate>(t => t.Delegate!),
             streaming: false);
     }
@@ -134,14 +157,17 @@ internal sealed class VerifyRunnable : OrchestrationRunnable<RefactorEditResult,
 {
     private readonly TornadoAgent _agent;
 
-    public VerifyRunnable(TornadoApi api, ChatModel model, Orchestration orchestrator)
+    public VerifyRunnable(TornadoApi api, ChatModel model, Orchestration orchestrator, AgentSkill? skill = null)
         : base(orchestrator, "verify")
     {
+        string instructions = RefactorAgentRunner.GetStageInstructions(skill, "verify",
+            "Verify whether the requested refactoring is complete and correct. Start your answer with PASS or FAIL.");
+
         _agent = new TornadoAgent(
             api,
             model,
             name: "RefactorVerify",
-            instructions: "Verify whether the requested refactoring is complete and correct. Start your answer with PASS or FAIL.",
+            instructions: instructions,
             streaming: false);
     }
 

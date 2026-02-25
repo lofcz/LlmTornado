@@ -16,4 +16,8 @@
     <ProjectReference Include="..\LlmTornado\LlmTornado.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="Skills\*.skill.md" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

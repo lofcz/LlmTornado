@@ -1,4 +1,5 @@
 ﻿using LlmTornado.Acp;
+using LlmTornado.Acp.Server.Skills;
 using LlmTornado.Agents;
 using LlmTornado.Agents.ChatRuntime;
 using LlmTornado.Agents.ChatRuntime.RuntimeConfigurations;
@@ -11,6 +12,7 @@ namespace LlmTornado.Acp.Server;
 
 /// <summary>
 /// Concrete ACP runtime implementation backed by LlmTornado's ChatRuntime agent system.
+/// Each session mode is driven by an <see cref="AgentSkill"/> loaded from SKILL.md definitions.
 /// Extends <see cref="BaseAcpTornadoRuntimeConfiguration"/> to leverage per-session ChatRuntime
 /// with factory-created IRuntimeConfiguration instances.
 /// </summary>
@@ -18,6 +20,11 @@ public class TornadoAcpRuntime : BaseAcpTornadoRuntimeConfiguration
 {
     private readonly TornadoApi _api;
     private readonly string _defaultModel;
+
+    /// <summary>
+    /// Loaded skills keyed by skill name (which matches the ACP mode ID).
+    /// </summary>
+    private readonly Dictionary<string, AgentSkill> _skills;
 
     private static readonly List<ModelOption> AvailableModels =
     [
@@ -28,50 +35,18 @@ public class TornadoAcpRuntime : BaseAcpTornadoRuntimeConfiguration
         new("o3", "O3", "Advanced reasoning model")
     ];
 
-    private static readonly List<AcpSessionMode> AvailableModes =
-    [
-        new() { Id = "agent", Name = "Agent", Description = "Coding assistant — writes and explains code" },
-        new() { Id = "chat", Name = "Chat", Description = "General-purpose conversational assistant" },
-        new() { Id = "plan", Name = "Plan", Description = "High-level design and architecture guidance" },
-        new() { Id = "refactor", Name = "Refactor", Description = "Automated file refactoring pipeline (Analyze → Plan → Edit → Verify)" }
-    ];
-
-    private static readonly Dictionary<string, string> ModeSystemPrompts = new()
-    {
-        ["agent"] = """
-            You are a coding assistant integrated into JetBrains Rider via ACP.
-            - Write clean, idiomatic code
-            - Provide code in fenced markdown blocks with the language specified
-            - Be concise and direct
-            - When fixing bugs, explain the root cause briefly
-            """,
-        ["chat"] = """
-            You are a helpful conversational assistant integrated into JetBrains Rider via ACP.
-            - Answer questions clearly and concisely
-            - Use markdown formatting where appropriate
-            - You can discuss code, concepts, tooling, or anything the user asks
-            """,
-        ["plan"] = """
-            You are a software architecture advisor integrated into JetBrains Rider via ACP.
-            - Focus on high-level design, patterns, and trade-offs
-            - Suggest project structure, abstractions, and technology choices
-            - When providing code, keep it to key interfaces and contracts
-            - Explain rationale behind architectural decisions
-            """,
-        ["refactor"] = """
-            You are an automated file refactoring agent integrated into JetBrains Rider via ACP.
-            - Analyze code structure and identify refactoring opportunities
-            - Create detailed refactoring plans before making changes
-            - Apply changes precisely using file tools
-            - Verify changes compile and preserve behaviour
-            """
-    };
-
-    public TornadoAcpRuntime(string openAiApiKey, string model = "gpt-4.1-nano")
+    /// <summary>
+    /// Creates a new ACP runtime with skills loaded from built-in definitions.
+    /// External skills from <paramref name="skillsDirectory"/> override built-in skills with the same name.
+    /// </summary>
+    public TornadoAcpRuntime(string openAiApiKey, string model = "gpt-4.1-nano", string? skillsDirectory = null)
         : base("LlmTornado", "1.0.0")
     {
         _api = new TornadoApi(openAiApiKey, LLmProviders.OpenAi);
         _defaultModel = model;
+        _skills = BuiltInSkills.Load(skillsDirectory);
+
+        Console.Error.WriteLine($"[ACP] Loaded {_skills.Count} skill(s): {string.Join(", ", _skills.Keys)}");
     }
 
     #region BaseAcpTornadoRuntimeConfiguration overrides
@@ -79,12 +54,14 @@ public class TornadoAcpRuntime : BaseAcpTornadoRuntimeConfiguration
     /// <inheritdoc />
     protected override IRuntimeConfiguration CreateRuntimeConfiguration(AcpNewSessionRequest request, string modeId, string modelId)
     {
-        if (modeId == "refactor")
+        AgentSkill skill = ResolveSkill(modeId);
+
+        if (skill.Orchestrated)
         {
-            return CreateRefactoringOrchestrationConfiguration(request, modelId);
+            return CreateRefactoringOrchestrationConfiguration(request, modelId, skill);
         }
 
-        return CreateSingletonConfiguration(request, modeId, modelId);
+        return CreateSkillConfiguration(request, modelId, skill);
     }
 
     /// <inheritdoc />
@@ -128,11 +105,11 @@ public class TornadoAcpRuntime : BaseAcpTornadoRuntimeConfiguration
         Task<AcpNewSessionResponse> responseTask = base.NewSessionAsync(request, cancellationToken);
         AcpNewSessionResponse response = responseTask.Result;
 
-        // Attach mode and model metadata
+        // Build mode list from loaded skills
         response.Modes = new AcpSessionModeState
         {
             CurrentModeId = "agent",
-            AvailableModes = AvailableModes
+            AvailableModes = BuildAvailableModes()
         };
 
         Console.Error.WriteLine($"[ACP] New session: {response.SessionId} (cwd: {request.Cwd}, model: {GetInitialModel(request)})");
@@ -143,7 +120,7 @@ public class TornadoAcpRuntime : BaseAcpTornadoRuntimeConfiguration
     /// <inheritdoc />
     public override Task<AcpSetSessionModeResponse> SetModeAsync(AcpSetSessionModeRequest request, CancellationToken cancellationToken)
     {
-        if (!AvailableModes.Exists(m => m.Id == request.ModeId))
+        if (!_skills.ContainsKey(request.ModeId))
         {
             return Task.FromResult(new AcpSetSessionModeResponse());
         }
@@ -176,41 +153,100 @@ public class TornadoAcpRuntime : BaseAcpTornadoRuntimeConfiguration
 
     #endregion
 
-    #region Configuration factories
+    #region Skill resolution
 
-    private SingletonRuntimeConfiguration CreateSingletonConfiguration(AcpNewSessionRequest request, string modeId, string modelId)
+    /// <summary>
+    /// Resolves a skill by mode ID, falling back to the "agent" skill if the requested mode is not found.
+    /// </summary>
+    private AgentSkill ResolveSkill(string modeId)
     {
-        List<Tool> localTools = BuildAcpLocalTools(request.Cwd);
-        string acpRoot = ResolveAcpRootPath(request.Cwd);
-        string systemPrompt = ModeSystemPrompts.GetValueOrDefault(modeId, ModeSystemPrompts["agent"]);
-        string fullSystemPrompt = $"{systemPrompt}\n\nThe user's current working directory is: {request.Cwd}\nTool access is restricted to: {acpRoot}";
+        if (_skills.TryGetValue(modeId, out AgentSkill? skill))
+        {
+            return skill;
+        }
 
-        bool useTools = modeId is "agent" or "plan" or "refactor";
+        if (_skills.TryGetValue("agent", out AgentSkill? fallback))
+        {
+            return fallback;
+        }
 
-        ChatModel resolvedModel = ResolveModel(modelId);
-
-        TornadoAgent agent = new(
-            client: _api,
-            model: resolvedModel,
-            name: $"ACP-{modeId}",
-            instructions: fullSystemPrompt,
-            tools: useTools ? localTools.ConvertAll<Delegate>(t => t.Delegate!) : null,
-            streaming: true
-        );
-
-        return new SingletonRuntimeConfiguration(agent);
+        // Last resort: return a minimal default skill
+        return new AgentSkill
+        {
+            Name = modeId,
+            DisplayName = modeId,
+            Description = "Default assistant",
+            Instructions = "You are a helpful assistant integrated into JetBrains Rider via ACP.",
+            UseTools = true
+        };
     }
 
-    private IRuntimeConfiguration CreateRefactoringOrchestrationConfiguration(AcpNewSessionRequest request, string modelId)
+    /// <summary>
+    /// Builds the ACP mode list from loaded skills.
+    /// </summary>
+    private List<AcpSessionMode> BuildAvailableModes()
+    {
+        // Maintain a stable ordering: agent, chat, plan, refactor, then any additional skills
+        string[] preferredOrder = ["agent", "chat", "plan", "refactor"];
+        List<AcpSessionMode> modes = [];
+
+        foreach (string id in preferredOrder)
+        {
+            if (_skills.TryGetValue(id, out AgentSkill? skill))
+            {
+                modes.Add(new AcpSessionMode
+                {
+                    Id = skill.Name,
+                    Name = skill.DisplayName,
+                    Description = skill.Description
+                });
+            }
+        }
+
+        foreach (KeyValuePair<string, AgentSkill> kvp in _skills)
+        {
+            if (Array.IndexOf(preferredOrder, kvp.Key) < 0)
+            {
+                modes.Add(new AcpSessionMode
+                {
+                    Id = kvp.Value.Name,
+                    Name = kvp.Value.DisplayName,
+                    Description = kvp.Value.Description
+                });
+            }
+        }
+
+        return modes;
+    }
+
+    #endregion
+
+    #region Configuration factories
+
+    private SkillRuntimeConfiguration CreateSkillConfiguration(AcpNewSessionRequest request, string modelId, AgentSkill skill)
+    {
+        List<Tool> localTools = BuildAcpLocalTools(request.Cwd);
+        ChatModel resolvedModel = ResolveModel(modelId);
+
+        return new SkillRuntimeConfiguration(
+            _api,
+            resolvedModel,
+            skill,
+            request.Cwd,
+            localTools);
+    }
+
+    private IRuntimeConfiguration CreateRefactoringOrchestrationConfiguration(AcpNewSessionRequest request, string modelId, AgentSkill skill)
     {
         return new FileRefactoringOrchestrationConfiguration(
             _api,
             ResolveModel(modelId),
             request.Cwd,
-            BuildAcpLocalTools(request.Cwd));
+            BuildAcpLocalTools(request.Cwd),
+            skill);
     }
 
-    private static ChatModel ResolveModel(string modelId)
+    internal static ChatModel ResolveModel(string modelId)
     {
         return modelId switch
         {
