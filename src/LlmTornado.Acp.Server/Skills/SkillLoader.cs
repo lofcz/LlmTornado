@@ -78,7 +78,14 @@ internal static class SkillLoader
             return null;
         }
 
-        int endFrontMatter = content.IndexOf("\n---", 3, StringComparison.Ordinal);
+        int openingEnd = content.IndexOf('\n', 3);
+
+        if (openingEnd < 0)
+        {
+            return null;
+        }
+
+        int endFrontMatter = content.IndexOf("\n---", openingEnd, StringComparison.Ordinal);
 
         if (endFrontMatter < 0)
         {

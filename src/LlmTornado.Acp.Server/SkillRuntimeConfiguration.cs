@@ -129,7 +129,7 @@ internal sealed class SkillRuntimeConfiguration : IRuntimeConfiguration
         {
             int stageStart = instructions.IndexOf("## stage:", StringComparison.OrdinalIgnoreCase);
 
-            if (stageStart > 0)
+            if (stageStart >= 0)
             {
                 instructions = instructions.Substring(0, stageStart).Trim();
             }

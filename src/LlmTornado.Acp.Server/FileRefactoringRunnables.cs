@@ -25,6 +25,10 @@ internal static class RefactorAgentRunner
     /// <summary>
     /// Gets skill-derived instructions for a pipeline stage, falling back to a default if no skill stage is defined.
     /// </summary>
+    /// <param name="skill">The agent skill to extract stage instructions from, or null to use the fallback.</param>
+    /// <param name="stage">The pipeline stage name (e.g. "analyze", "plan", "edit", "verify").</param>
+    /// <param name="fallback">Default instructions to use when the skill has no matching stage.</param>
+    /// <returns>The stage-specific instructions from the skill, or the fallback if not available.</returns>
     public static string GetStageInstructions(AgentSkill? skill, string stage, string fallback)
     {
         if (skill?.StageInstructions.TryGetValue(stage, out string? instructions) == true && !string.IsNullOrWhiteSpace(instructions))
