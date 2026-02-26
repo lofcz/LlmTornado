@@ -108,7 +108,7 @@ A general-purpose conversational assistant. No filesystem tools — purely knowl
 
 ### Plan (`plan`)
 
-An architecture advisor with read-only filesystem tool access. Explores existing code to inform design decisions.
+An architecture advisor with full filesystem tool access. Explores existing code to inform design decisions and can prototype changes.
 
 - **Tools**: `list_dir`, `search_files`, `read_file`, `write_file`, `replace_in_file`
 - **Style**: Structured plans with rationale, numbered steps, risk analysis
