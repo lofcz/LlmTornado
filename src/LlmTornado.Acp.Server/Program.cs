@@ -6,6 +6,7 @@ Console.Error.WriteLine("[ACP] LlmTornado ACP Server starting...");
 
 string? apiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
 string model = Environment.GetEnvironmentVariable("OPENAI_MODEL") ?? "gpt-4.1-nano";
+string? skillsDir = Environment.GetEnvironmentVariable("ACP_SKILLS_DIR");
 
 if (string.IsNullOrWhiteSpace(apiKey))
 {
@@ -59,9 +60,15 @@ if (string.IsNullOrWhiteSpace(apiKey))
 }
 
 Console.Error.WriteLine($"[ACP] Using model: {model}");
+
+if (!string.IsNullOrWhiteSpace(skillsDir))
+{
+    Console.Error.WriteLine($"[ACP] External skills directory: {skillsDir}");
+}
+
 Console.Error.WriteLine("[ACP] Listening on stdin/stdout...");
 
-TornadoAcpRuntime runtime = new(apiKey, model);
+TornadoAcpRuntime runtime = new(apiKey, model, skillsDir);
 AcpJsonRpcServer server = new(runtime, Console.OpenStandardInput(), Console.OpenStandardOutput());
 
 await server.RunAsync();
