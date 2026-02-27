@@ -1,4 +1,4 @@
-﻿using LlmTornado.Acp;
+using LlmTornado.Acp;
 using LlmTornado.Acp.Server.Skills;
 using LlmTornado.Agents;
 using LlmTornado.Agents.ChatRuntime;
@@ -28,6 +28,8 @@ public class TornadoAcpRuntime : BaseAcpTornadoRuntimeConfiguration
 
     private static readonly List<ModelOption> AvailableModels =
     [
+        new("gpt-5.2", "GPT-5.2", "Newest flagship model for complex coding and reasoning"),
+        new("gpt-5.1", "GPT-5.1", "Strong coding and agentic model with configurable reasoning"),
         new("gpt-4.1-nano", "GPT-4.1 Nano", "Fast and cheap, good for simple tasks"),
         new("gpt-4.1-mini", "GPT-4.1 Mini", "Balanced speed and quality"),
         new("gpt-4.1", "GPT-4.1", "High quality, best for complex coding tasks"),
@@ -250,6 +252,8 @@ public class TornadoAcpRuntime : BaseAcpTornadoRuntimeConfiguration
     {
         return modelId switch
         {
+            "gpt-5.2" => ChatModel.OpenAi.Gpt52.V52,
+            "gpt-5.1" => ChatModel.OpenAi.Gpt51.V51,
             "gpt-4.1" => ChatModel.OpenAi.Gpt41.V41,
             "gpt-4.1-mini" => ChatModel.OpenAi.Gpt41.V41Mini,
             "o4-mini" => ChatModel.OpenAi.O4.V4Mini,
@@ -585,3 +589,4 @@ public class TornadoAcpRuntime : BaseAcpTornadoRuntimeConfiguration
 
     private record ModelOption(string Id, string Name, string Description);
 }
+

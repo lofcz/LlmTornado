@@ -148,6 +148,8 @@ If verification fails, the pipeline retries the Edit → Verify loop (up to 2 to
 
 | Model ID | Display Name | Notes |
 |----------|-------------|-------|
+| `gpt-5.2` | GPT-5.2 | Newest flagship model for complex coding and reasoning |
+| `gpt-5.1` | GPT-5.1 | Strong coding and agentic model with configurable reasoning |
 | `gpt-4.1-nano` | GPT-4.1 Nano | Fast and cheap, good for simple tasks |
 | `gpt-4.1-mini` | GPT-4.1 Mini | Balanced speed and quality |
 | `gpt-4.1` | GPT-4.1 | High quality, best for complex coding tasks |
@@ -270,3 +272,5 @@ LlmTornado.Acp.Server/
 ## License
 
 MIT
+
+
