@@ -1,0 +1,250 @@
+using System.Text;
+using LlmTornado.Agents.DataModels;
+using LlmTornado.Chat;
+using LlmTornado.Cli.Commands;
+using LlmTornado.Cli.Mcp;
+using LlmTornado.Cli.Memory;
+using LlmTornado.Cli.Skills;
+using LlmTornado.Code;
+
+namespace LlmTornado.Cli;
+
+class Program
+{
+    private static McpConfigLoader? _mcpLoader;
+    private static ConversationMemoryManager? _memoryManager;
+    private static ConversationStore? _conversationStore;
+    private static CliAgentBuilder? _agentBuilder;
+
+    static async Task<int> Main(string[] args)
+    {
+        Console.OutputEncoding = Encoding.UTF8;
+        Console.InputEncoding = Encoding.UTF8;
+
+        Console.CancelKeyPress += OnCancelKeyPress;
+
+        try
+        {
+            return await RunAsync(args);
+        }
+        catch (Exception ex)
+        {
+            ConsoleRenderer.WriteError($"Fatal error: {ex.Message}");
+            return 1;
+        }
+    }
+
+    private static async Task<int> RunAsync(string[] args)
+    {
+        // ─── Step 1: Storage ───
+        ConsoleRenderer.WriteBanner();
+        CliStorage.Initialize();
+
+        // ─── Step 2: Settings ───
+        CliSettings settings = CliStorage.LoadJson<CliSettings>(CliStorage.SettingsPath)
+                              ?? new CliSettings();
+
+        // ─── Step 3: Provider Detection ───
+        ConsoleRenderer.WriteInfo("Detecting providers...");
+        ProviderDetectionResult? providerResult = ProviderDetector.Detect();
+        if (providerResult is null)
+        {
+            ConsoleRenderer.WriteError(
+                "No LLM providers detected. Set at least one API key environment variable:");
+            ConsoleRenderer.WriteError(
+                "  OPENAI_API_KEY, ANTHROPIC_API_KEY, GOOGLE_API_KEY, GROQ_API_KEY,");
+            ConsoleRenderer.WriteError(
+                "  COHERE_API_KEY, MISTRAL_API_KEY, DEEPSEEK_API_KEY, XAI_API_KEY,");
+            ConsoleRenderer.WriteError(
+                "  PERPLEXITY_API_KEY, OPENROUTER_API_KEY, DEEPINFRA_API_KEY, VOYAGE_API_KEY");
+            return 1;
+        }
+
+        // Apply saved model preference
+        if (settings.ActiveModel is not null)
+        {
+            Chat.Models.ChatModel? savedModel = providerResult.AllModels
+                .FirstOrDefault(m => m.Name == settings.ActiveModel);
+            if (savedModel is not null)
+                providerResult.ActiveModel = savedModel;
+        }
+
+        ConsoleRenderer.WriteProviderSummary(providerResult);
+
+        // ─── Step 4: Skills ───
+        CliSkillManager skillManager = new(settings);
+        string skillsDir = CliSkillLoader.ResolveSkillsDirectory(settings);
+        skillManager.LoadSkills(skillsDir);
+        ConsoleRenderer.WriteInfo(
+            $"Skills: {skillManager.GetEnabledSkills().Count} enabled, " +
+            $"{skillManager.GetAllSkills().Count} total (from {skillsDir})");
+
+        // ─── Step 5: MCP ───
+        _mcpLoader = new McpConfigLoader();
+        string? mcpConfigPath = McpConfigLoader.ResolveMcpConfigPath(settings);
+        if (mcpConfigPath is not null)
+        {
+            ConsoleRenderer.WriteInfo($"Loading MCP servers from {mcpConfigPath}...");
+            await _mcpLoader.LoadAsync(mcpConfigPath, ConsoleRenderer.WriteInfo);
+        }
+        else
+        {
+            ConsoleRenderer.WriteInfo("No mcp.json found. MCP tools not loaded.");
+        }
+
+        // ─── Step 6: Tool Approval ───
+        ConsoleRenderer renderer = new();
+        ToolApprovalManager toolApproval = new(renderer);
+
+        // ─── Step 7: Conversation Memory ───
+        _memoryManager = new ConversationMemoryManager(
+            providerResult.Api,
+            providerResult.ActiveModel,
+            providerResult.ActiveModel.ContextTokens);
+        _conversationStore = new ConversationStore();
+
+        if (_memoryManager.Messages.Count > 0)
+        {
+            ConsoleRenderer.WriteInfo(
+                $"Resuming previous conversation ({_memoryManager.Messages.Count} messages).");
+        }
+
+        // ─── Step 8: Build Agent ───
+        _agentBuilder = new CliAgentBuilder(
+            providerResult.Api,
+            providerResult.ActiveModel,
+            skillManager,
+            _mcpLoader,
+            toolApproval,
+            _memoryManager);
+
+        Func<ChatRuntimeEvents, ValueTask> runtimeEventHandler = HandleRuntimeEvent;
+        Agents.ChatRuntime.ChatRuntime runtime = _agentBuilder.Build(runtimeEventHandler);
+
+        // ─── Step 9: Register Commands ───
+        CommandDispatcher dispatcher = new();
+        dispatcher.Register(new HelpCommand(dispatcher));
+        dispatcher.Register(new ModelCommand(providerResult, _agentBuilder, runtimeEventHandler));
+        dispatcher.Register(new SkillCommand(skillManager, _agentBuilder, runtimeEventHandler));
+        dispatcher.Register(new ConversationCommand(_memoryManager, _conversationStore, _agentBuilder));
+        dispatcher.Register(new ToolsCommand(toolApproval, _agentBuilder));
+        dispatcher.Register(new McpCommand(_mcpLoader, _agentBuilder));
+        dispatcher.Register(new ClearCommand());
+        dispatcher.Register(new ExitCommand(_memoryManager, _conversationStore, _agentBuilder));
+
+        // ─── Step 10: Banner ───
+        ConsoleRenderer.WriteInfo($"\nActive model: {providerResult.ActiveModel.Name}");
+        ConsoleRenderer.WriteInfo("Type /help for commands. Start chatting!\n");
+
+        // ─── Step 11: REPL Loop ───
+        return await ReplLoop(runtime, dispatcher, _memoryManager, _agentBuilder, runtimeEventHandler);
+    }
+
+    private static async Task<int> ReplLoop(
+        Agents.ChatRuntime.ChatRuntime runtime,
+        CommandDispatcher dispatcher,
+        ConversationMemoryManager memory,
+        CliAgentBuilder builder,
+        Func<ChatRuntimeEvents, ValueTask> runtimeEventHandler)
+    {
+        while (true)
+        {
+            ConsoleRenderer.WritePrompt(builder.ActiveModel.Name);
+
+            string? input = Console.ReadLine();
+            if (input is null) // EOF
+                break;
+
+            input = input.Trim();
+            if (string.IsNullOrEmpty(input))
+                continue;
+
+            // Slash commands
+            if (dispatcher.IsCommand(input))
+            {
+                bool shouldContinue = await dispatcher.DispatchAsync(input);
+                if (!shouldContinue)
+                    break;
+
+                // Commands may rebuild the runtime
+                runtime = builder.Runtime;
+                continue;
+            }
+
+            // Chat message
+            try
+            {
+                ChatMessage userMessage = new(ChatMessageRoles.User, input);
+                memory.AddMessage(userMessage);
+
+                ChatMessage response = await runtime.InvokeAsync(userMessage);
+                ConsoleRenderer.EndStreamingResponse();
+
+                memory.AddMessage(response);
+
+                bool summarized = await memory.MaybeSummarize();
+                if (summarized)
+                    ConsoleRenderer.WriteInfo("[context compressed]");
+            }
+            catch (OperationCanceledException)
+            {
+                ConsoleRenderer.EndStreamingResponse();
+                ConsoleRenderer.WriteInfo("\n[cancelled]");
+            }
+            catch (Exception ex)
+            {
+                ConsoleRenderer.EndStreamingResponse();
+                ConsoleRenderer.WriteError($"Error: {ex.Message}");
+            }
+
+            Console.WriteLine();
+        }
+
+        // Cleanup
+        if (_mcpLoader is not null)
+            await _mcpLoader.DisposeAsync();
+
+        return 0;
+    }
+
+    private static ValueTask HandleRuntimeEvent(ChatRuntimeEvents evt)
+    {
+        if (evt is ChatRuntimeAgentRunnerEvents runnerEvt)
+        {
+            if (runnerEvt.AgentRunnerEvent is AgentRunnerStreamingEvent streamEvt)
+            {
+                if (streamEvt.ModelStreamingEvent is ModelStreamingOutputTextDeltaEvent delta)
+                {
+                    ConsoleRenderer.WriteStreamingToken(delta.DeltaText);
+                }
+            }
+            else if (runnerEvt.AgentRunnerEvent is AgentRunnerToolInvokedEvent toolEvt)
+            {
+                ConsoleRenderer.WriteInfo($"  [calling tool: {toolEvt.ToolCalled.Name}]");
+            }
+            else if (runnerEvt.AgentRunnerEvent is AgentRunnerErrorEvent errorEvt)
+            {
+                ConsoleRenderer.WriteError($"\n[Agent error: {errorEvt.ErrorMessage}]");
+            }
+        }
+        else if (evt is ChatRuntimeErrorEvent runtimeError)
+        {
+            ConsoleRenderer.WriteError($"\n[Runtime error: {runtimeError.Exception?.Message}]");
+        }
+
+        return ValueTask.CompletedTask;
+    }
+
+    private static void OnCancelKeyPress(object? sender, ConsoleCancelEventArgs e)
+    {
+        e.Cancel = true;
+        try
+        {
+            _agentBuilder?.Runtime.CancelExecution();
+        }
+        catch
+        {
+            // best effort
+        }
+    }
+}
