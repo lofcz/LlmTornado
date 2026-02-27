@@ -45,7 +45,17 @@ internal sealed partial class McpConfigLoader : IAsyncDisposable
         _configPath = configPath;
 
         string json = await File.ReadAllTextAsync(configPath);
-        McpConfig? config = JsonSerializer.Deserialize<McpConfig>(json);
+        McpConfig? config;
+        try
+        {
+            config = JsonSerializer.Deserialize<McpConfig>(json);
+        }
+        catch (JsonException ex)
+        {
+            log?.Invoke($"  Failed to parse MCP config: {ex.Message}");
+            return;
+        }
+
         if (config is null || config.Servers.Count == 0)
         {
             log?.Invoke("  No MCP servers configured.");

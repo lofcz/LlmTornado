@@ -55,6 +55,10 @@ internal static class CliStorage
     /// </summary>
     public static void SaveJson<T>(string path, T data)
     {
+        string? dir = Path.GetDirectoryName(path);
+        if (dir is not null)
+            Directory.CreateDirectory(dir);
+
         string json = JsonSerializer.Serialize(data, JsonOptions);
         string tmpPath = path + ".tmp";
 
