@@ -1,5 +1,5 @@
 using LlmTornado.Agents.DataModels;
-using LlmTornado.Cli.Agents;
+using LlmTornado.Cli.Core.Agents;
 
 namespace LlmTornado.Cli.Commands;
 
@@ -62,7 +62,7 @@ internal sealed class CdCommand : ICliCommand
 
         ConsoleRenderer.WriteSuccess($"Changed directory: {resolvedPath}");
 
-        CliAgentDefinition? projectAgent = _agentManager.GetProjectContext();
+        AgentDefinition? projectAgent = _agentManager.GetProjectContext();
         if (projectAgent is not null)
         {
             ConsoleRenderer.WriteInfo($"  Project AGENTS.md detected: {projectAgent.FilePath}");

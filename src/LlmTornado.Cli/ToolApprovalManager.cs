@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using LlmTornado.Cli.Core;
 
 namespace LlmTornado.Cli;
 
@@ -13,7 +14,7 @@ internal enum ToolApprovalState
 /// <summary>
 /// Manages tool approval with first-use prompting and persistence.
 /// </summary>
-internal sealed class ToolApprovalManager
+internal sealed class ToolApprovalManager : IToolApproval
 {
     private readonly Dictionary<string, ToolApprovalState> _approvals = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConsoleRenderer _renderer;
@@ -94,6 +95,13 @@ internal sealed class ToolApprovalManager
         bool removed = _approvals.Remove(toolName);
         if (removed) SaveToDisk();
         return removed;
+    }
+
+    /// <inheritdoc />
+    public bool IsAutoApproved(string toolName)
+    {
+        return _approvals.TryGetValue(toolName, out ToolApprovalState state)
+               && state == ToolApprovalState.AlwaysAllow;
     }
 
     /// <summary>

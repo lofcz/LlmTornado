@@ -14,16 +14,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\LlmTornado\LlmTornado.csproj" />
-        <ProjectReference Include="..\LlmTornado.Agents\LlmTornado.Agents.csproj" />
-        <ProjectReference Include="..\LlmTornado.Mcp\LlmTornado.Mcp.csproj" />
-    </ItemGroup>
-
-    <!-- Built-in agent persona files -->
-    <ItemGroup>
-        <Content Include="Agents\built-in\*.md">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </Content>
+        <ProjectReference Include="..\LlmTornado.Cli.Core\LlmTornado.Cli.Core.csproj" />
     </ItemGroup>
 
 </Project>

@@ -1,6 +1,7 @@
 using LlmTornado.Agents.DataModels;
-using LlmTornado.Cli.Agents;
-using LlmTornado.Cli.Skills;
+using LlmTornado.Cli.Core;
+using LlmTornado.Cli.Core.Agents;
+using LlmTornado.Cli.Core.Skills;
 
 namespace LlmTornado.Cli.Commands;
 
@@ -11,16 +12,16 @@ internal sealed class AgentCommand : ICliCommand
     public string Usage => "/agent [list | set <name> | clear | info <name> | project [on|off]]";
 
     private readonly AgentDefinitionManager _agentManager;
-    private readonly CliSkillManager _skillManager;
+    private readonly SkillManager _skillManager;
     private readonly CliAgentBuilder _builder;
-    private readonly CliSettings _settings;
+    private readonly AgentSettings _settings;
     private readonly Func<ChatRuntimeEvents, ValueTask> _runtimeEventHandler;
 
     public AgentCommand(
         AgentDefinitionManager agentManager,
-        CliSkillManager skillManager,
+        SkillManager skillManager,
         CliAgentBuilder builder,
-        CliSettings settings,
+        AgentSettings settings,
         Func<ChatRuntimeEvents, ValueTask> runtimeEventHandler)
     {
         _agentManager = agentManager;
@@ -71,8 +72,8 @@ internal sealed class AgentCommand : ICliCommand
     private void ShowStatus()
     {
         string activeName = _agentManager.ActivePersonaName ?? "default (none)";
-        CliAgentDefinition? active = _agentManager.GetActivePersona();
-        CliAgentDefinition? project = _agentManager.GetProjectContext();
+        AgentDefinition? active = _agentManager.GetActivePersona();
+        AgentDefinition? project = _agentManager.GetProjectContext();
 
         ConsoleRenderer.WriteInfo($"Active agent: {activeName}");
 
@@ -91,14 +92,14 @@ internal sealed class AgentCommand : ICliCommand
 
     private void ListAgents()
     {
-        List<CliAgentDefinition> agents = _agentManager.GetAllPersonas();
+        List<AgentDefinition> agents = _agentManager.GetAllPersonas();
         if (agents.Count == 0)
         {
             ConsoleRenderer.WriteInfo("No agent personas found.");
             return;
         }
 
-        foreach (CliAgentDefinition agent in agents)
+        foreach (AgentDefinition agent in agents)
         {
             string marker = agent.Name == _agentManager.ActivePersonaName ? "→ " : "  ";
             string sourceTag = agent.Source switch
@@ -127,7 +128,7 @@ internal sealed class AgentCommand : ICliCommand
 
     private void SetAgent(string name)
     {
-        CliAgentDefinition? selected = _agentManager.SetActivePersona(name);
+        AgentDefinition? selected = _agentManager.SetActivePersona(name);
         if (selected is null)
         {
             ConsoleRenderer.WriteError($"Agent '{name}' not found. Use /agent list to see available agents.");
@@ -136,8 +137,8 @@ internal sealed class AgentCommand : ICliCommand
 
         _builder.RebuildForAgentChange(_runtimeEventHandler);
 
-        List<CliSkill> enabledSkills = _skillManager.GetEnabledSkills();
-        List<CliSkill> allSkills = _skillManager.GetAllSkills();
+        List<Skill> enabledSkills = _skillManager.GetEnabledSkills();
+        List<Skill> allSkills = _skillManager.GetAllSkills();
         ConsoleRenderer.WriteSuccess(
             $"Activated agent: {selected.Name} ({enabledSkills.Count}/{allSkills.Count} skills enabled)");
 
@@ -159,15 +160,15 @@ internal sealed class AgentCommand : ICliCommand
         _agentManager.ClearActivePersona();
         _builder.RebuildForAgentChange(_runtimeEventHandler);
 
-        List<CliSkill> nowEnabled = _skillManager.GetEnabledSkills();
-        List<CliSkill> nowAll = _skillManager.GetAllSkills();
+        List<Skill> nowEnabled = _skillManager.GetEnabledSkills();
+        List<Skill> nowAll = _skillManager.GetAllSkills();
         ConsoleRenderer.WriteSuccess(
             $"Agent cleared. All capabilities restored ({nowEnabled.Count}/{nowAll.Count} skills enabled).");
     }
 
     private void ShowInfo(string name)
     {
-        CliAgentDefinition? info = _agentManager.GetPersona(name);
+        AgentDefinition? info = _agentManager.GetPersona(name);
         if (info is null)
         {
             ConsoleRenderer.WriteError($"Agent '{name}' not found.");
@@ -234,7 +235,7 @@ internal sealed class AgentCommand : ICliCommand
         }
         else
         {
-            CliAgentDefinition? project = _agentManager.GetProjectContext();
+            AgentDefinition? project = _agentManager.GetProjectContext();
             ConsoleRenderer.WriteInfo(
                 $"Project AGENTS.md: {(_settings.ProjectAgentsEnabled ? "enabled" : "disabled")}");
             if (project is not null)

@@ -1,5 +1,5 @@
 using LlmTornado.Chat.Models;
-using LlmTornado.Cli;
+using LlmTornado.Cli.Core.Providers;
 using LlmTornado.Code;
 
 namespace LlmTornado.Cli.Tests;

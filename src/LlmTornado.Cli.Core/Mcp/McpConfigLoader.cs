@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 using LlmTornado.Common;
 using LlmTornado.Mcp;
 
-namespace LlmTornado.Cli.Mcp;
+namespace LlmTornado.Cli.Core.Mcp;
 
 /// <summary>
 /// Loads MCP server definitions from a JSON config file and initializes them.
@@ -22,16 +22,18 @@ internal sealed partial class McpConfigLoader : IAsyncDisposable
     public IReadOnlyList<McpServerStatus> ServerStatuses => _serverStatuses;
 
     /// <summary>
-    /// Resolve the MCP config file path. Returns null if none found.
+    /// Resolve the MCP config file path. If <paramref name="mcpConfigPathOverride"/> is non-null
+    /// and exists, use it. Otherwise check TORNADO_MCP_CONFIG env var, then ./mcp.json.
+    /// Returns null if none found.
     /// </summary>
-    public static string? ResolveMcpConfigPath(CliSettings settings)
+    public static string? ResolveMcpConfigPath(string? mcpConfigPathOverride)
     {
+        if (!string.IsNullOrEmpty(mcpConfigPathOverride) && File.Exists(mcpConfigPathOverride))
+            return Path.GetFullPath(mcpConfigPathOverride);
+
         string? envPath = Environment.GetEnvironmentVariable("TORNADO_MCP_CONFIG");
         if (!string.IsNullOrEmpty(envPath) && File.Exists(envPath))
             return Path.GetFullPath(envPath);
-
-        if (!string.IsNullOrEmpty(settings.McpConfigPath) && File.Exists(settings.McpConfigPath))
-            return Path.GetFullPath(settings.McpConfigPath);
 
         string defaultPath = Path.GetFullPath("mcp.json");
         return File.Exists(defaultPath) ? defaultPath : null;
@@ -39,12 +41,12 @@ internal sealed partial class McpConfigLoader : IAsyncDisposable
 
     /// <summary>
     /// Get the path where the mcp.json should live, whether it exists or not.
-    /// Prefers settings override, then env var, then ./mcp.json.
+    /// Prefers override, then env var, then ./mcp.json.
     /// </summary>
-    public static string ResolveDefaultMcpConfigPath(CliSettings settings)
+    public static string ResolveDefaultMcpConfigPath(string? mcpConfigPathOverride)
     {
-        if (!string.IsNullOrEmpty(settings.McpConfigPath))
-            return Path.GetFullPath(settings.McpConfigPath);
+        if (!string.IsNullOrEmpty(mcpConfigPathOverride))
+            return Path.GetFullPath(mcpConfigPathOverride);
 
         string? envPath = Environment.GetEnvironmentVariable("TORNADO_MCP_CONFIG");
         if (!string.IsNullOrEmpty(envPath))

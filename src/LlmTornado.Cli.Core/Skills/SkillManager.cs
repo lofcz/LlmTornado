@@ -1,18 +1,20 @@
 using System.Text;
 
-namespace LlmTornado.Cli.Skills;
+namespace LlmTornado.Cli.Core.Skills;
 
 /// <summary>
 /// Manages the lifecycle of skills: discover, enable/disable, activate, build context.
 /// </summary>
-internal sealed class CliSkillManager
+internal sealed class SkillManager
 {
-    private readonly CliSettings _settings;
-    private readonly Dictionary<string, CliSkill> _skills = new(StringComparer.OrdinalIgnoreCase);
+    private readonly AgentSettings _settings;
+    private readonly ISettingsPersistence _persistence;
+    private readonly Dictionary<string, Skill> _skills = new(StringComparer.OrdinalIgnoreCase);
 
-    public CliSkillManager(CliSettings settings)
+    public SkillManager(AgentSettings settings, ISettingsPersistence persistence)
     {
         _settings = settings;
+        _persistence = persistence;
     }
 
     /// <summary>
@@ -21,9 +23,9 @@ internal sealed class CliSkillManager
     public void LoadSkills(string skillsDirectory)
     {
         _skills.Clear();
-        List<CliSkill> discovered = CliSkillLoader.DiscoverSkills(skillsDirectory);
+        List<Skill> discovered = SkillLoader.DiscoverSkills(skillsDirectory);
 
-        foreach (CliSkill skill in discovered)
+        foreach (Skill skill in discovered)
         {
             if (_settings.DisabledSkills.Contains(skill.Name))
                 skill.Enabled = false;
@@ -32,33 +34,33 @@ internal sealed class CliSkillManager
         }
     }
 
-    public List<CliSkill> GetAllSkills() => [.. _skills.Values];
+    public List<Skill> GetAllSkills() => [.. _skills.Values];
 
-    public List<CliSkill> GetEnabledSkills() => [.. _skills.Values.Where(s => s.Enabled)];
+    public List<Skill> GetEnabledSkills() => [.. _skills.Values.Where(s => s.Enabled)];
 
-    public CliSkill? GetSkill(string name) =>
+    public Skill? GetSkill(string name) =>
         _skills.GetValueOrDefault(name);
 
     public bool EnableSkill(string name)
     {
-        if (!_skills.TryGetValue(name, out CliSkill? skill))
+        if (!_skills.TryGetValue(name, out Skill? skill))
             return false;
 
         skill.Enabled = true;
         _settings.DisabledSkills.Remove(name);
-        CliStorage.SaveJson(CliStorage.SettingsPath, _settings);
+        _persistence.SaveSettings(_settings);
         return true;
     }
 
     public bool DisableSkill(string name)
     {
-        if (!_skills.TryGetValue(name, out CliSkill? skill))
+        if (!_skills.TryGetValue(name, out Skill? skill))
             return false;
 
         skill.Enabled = false;
         skill.Activated = false;
         _settings.DisabledSkills.Add(name);
-        CliStorage.SaveJson(CliStorage.SettingsPath, _settings);
+        _persistence.SaveSettings(_settings);
         return true;
     }
 
@@ -67,13 +69,13 @@ internal sealed class CliSkillManager
     /// </summary>
     public string? ActivateSkill(string name)
     {
-        if (!_skills.TryGetValue(name, out CliSkill? skill))
+        if (!_skills.TryGetValue(name, out Skill? skill))
             return null;
 
         if (!skill.Enabled)
             return null;
 
-        CliSkillLoader.LoadInstructions(skill);
+        SkillLoader.LoadInstructions(skill);
         skill.Activated = true;
         return skill.Instructions;
     }
@@ -83,14 +85,14 @@ internal sealed class CliSkillManager
     /// </summary>
     public string BuildSkillsContextXml()
     {
-        List<CliSkill> enabled = GetEnabledSkills();
+        List<Skill> enabled = GetEnabledSkills();
         if (enabled.Count == 0)
             return string.Empty;
 
         StringBuilder sb = new();
         sb.AppendLine("<available_skills>");
 
-        foreach (CliSkill skill in enabled)
+        foreach (Skill skill in enabled)
         {
             sb.AppendLine("  <skill>");
             sb.AppendLine($"    <name>{skill.Name}</name>");

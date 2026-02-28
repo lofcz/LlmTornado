@@ -1,3 +1,6 @@
+using LlmTornado.Cli.Core;
+using LlmTornado.Cli.Core.Providers;
+
 namespace LlmTornado.Cli.Commands;
 
 internal sealed class ToolsCommand : ICliCommand
@@ -8,13 +11,13 @@ internal sealed class ToolsCommand : ICliCommand
 
     private readonly ToolApprovalManager _toolApproval;
     private readonly CliAgentBuilder _builder;
-    private readonly CliSettings _settings;
+    private readonly AgentSettings _settings;
     private readonly ProviderDetectionResult _providerResult;
 
     public ToolsCommand(
         ToolApprovalManager toolApproval,
         CliAgentBuilder builder,
-        CliSettings settings,
+        AgentSettings settings,
         ProviderDetectionResult providerResult)
     {
         _toolApproval = toolApproval;

@@ -1,11 +1,14 @@
 using System.Text;
 using LlmTornado.Agents.DataModels;
 using LlmTornado.Chat;
-using LlmTornado.Cli.Agents;
+using LlmTornado.Cli.Core;
+using LlmTornado.Cli.Core.Agents;
+using LlmTornado.Cli.Core.Mcp;
+using LlmTornado.Cli.Core.Providers;
+using LlmTornado.Cli.Core.Skills;
+using LlmTornado.Cli.Core.Tools;
 using LlmTornado.Cli.Commands;
-using LlmTornado.Cli.Mcp;
 using LlmTornado.Cli.Memory;
-using LlmTornado.Cli.Skills;
 using LlmTornado.Code;
 
 namespace LlmTornado.Cli;
@@ -42,8 +45,9 @@ class Program
         CliStorage.Initialize();
 
         // ─── Step 2: Settings ───
-        CliSettings settings = CliStorage.LoadJson<CliSettings>(CliStorage.SettingsPath)
-                              ?? new CliSettings();
+        AgentSettings settings = CliStorage.LoadJson<AgentSettings>(CliStorage.SettingsPath)
+                              ?? new AgentSettings();
+        CliSettingsPersistence persistence = new();
 
         // ─── Step 3: Provider Detection ───
         ConsoleRenderer.WriteInfo("Detecting providers...");
@@ -73,27 +77,27 @@ class Program
         ConsoleRenderer.WriteProviderSummary(providerResult);
 
         // ─── Step 4: Skills ───
-        CliSkillManager skillManager = new(settings);
-        string skillsDir = CliSkillLoader.ResolveSkillsDirectory(settings);
+        SkillManager skillManager = new(settings, persistence);
+        string skillsDir = SkillLoader.ResolveSkillsDirectory(settings.SkillsDirectory);
         skillManager.LoadSkills(skillsDir);
         ConsoleRenderer.WriteInfo(
             $"Skills: {skillManager.GetEnabledSkills().Count} enabled, " +
             $"{skillManager.GetAllSkills().Count} total (from {skillsDir})");
 
         // ─── Step 4b: Agent Discovery ───
-        AgentDefinitionManager agentManager = new(settings);
-        string agentsDir = AgentDefinitionLoader.ResolveAgentsDirectory(settings);
+        AgentDefinitionManager agentManager = new(settings, persistence);
+        string agentsDir = AgentDefinitionLoader.ResolveAgentsDirectory(settings.AgentsDirectory);
         string builtInDir = AgentDefinitionLoader.ResolveBuiltInDirectory();
         agentManager.LoadAll(builtInDir, agentsDir, Environment.CurrentDirectory);
 
-        CliAgentDefinition? projectContext = agentManager.GetProjectContext();
+        AgentDefinition? projectContext = agentManager.GetProjectContext();
         ConsoleRenderer.WriteInfo(
             $"Agents: {agentManager.GetAllPersonas().Count} personas available" +
             $"{(projectContext is not null ? ", project AGENTS.md detected" : "")}");
 
         // ─── Step 5: MCP ───
         _mcpLoader = new McpConfigLoader();
-        string? mcpConfigPath = McpConfigLoader.ResolveMcpConfigPath(settings);
+        string? mcpConfigPath = McpConfigLoader.ResolveMcpConfigPath(settings.McpConfigPath);
         if (mcpConfigPath is not null)
         {
             ConsoleRenderer.WriteInfo($"Loading MCP servers from {mcpConfigPath}...");

@@ -2,10 +2,11 @@ using LlmTornado.Agents.ChatRuntime;
 using LlmTornado.Agents.DataModels;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
-using LlmTornado.Cli.Mcp;
+using LlmTornado.Cli.Core;
+using LlmTornado.Cli.Core.Mcp;
 using LlmTornado.Cli.Memory;
-using LlmTornado.Cli.Agents;
-using LlmTornado.Cli.Skills;
+using LlmTornado.Cli.Core.Agents;
+using LlmTornado.Cli.Core.Skills;
 using LlmTornado.Code;
 
 namespace LlmTornado.Cli.Tests;
@@ -37,14 +38,14 @@ public class CliAgentBuilderTests
 
         TornadoApi api = new(key);
         ChatModel model = TestHelpers.CheapModel;
-        CliSettings settings = new();
-        CliSkillManager skillManager = new(settings);
+        AgentSettings settings = new();
+        SkillManager skillManager = new(settings, new NoOpPersistence());
         skillManager.LoadSkills(_tempDir); // Empty dir → no skills
         McpConfigLoader mcpLoader = new();
         ConsoleRenderer renderer = new();
         ToolApprovalManager toolApproval = new(renderer);
         ConversationMemoryManager memoryManager = new(api, model, model.ContextTokens);
-        AgentDefinitionManager agentManager = new(settings);
+        AgentDefinitionManager agentManager = new(settings, new NoOpPersistence());
 
         CliAgentBuilder builder = new(api, model, skillManager, mcpLoader, toolApproval, memoryManager, agentManager, settings, null);
         LlmTornado.Agents.ChatRuntime.ChatRuntime runtime = builder.Build();
@@ -65,14 +66,14 @@ public class CliAgentBuilderTests
 
         TornadoApi api = new(key);
         ChatModel model = TestHelpers.CheapModel;
-        CliSettings settings = new();
-        CliSkillManager skillManager = new(settings);
+        AgentSettings settings = new();
+        SkillManager skillManager = new(settings, new NoOpPersistence());
         skillManager.LoadSkills(_tempDir);
         McpConfigLoader mcpLoader = new();
         ConsoleRenderer renderer = new();
         ToolApprovalManager toolApproval = new(renderer);
         ConversationMemoryManager memoryManager = new(api, model, model.ContextTokens);
-        AgentDefinitionManager agentManager = new(settings);
+        AgentDefinitionManager agentManager = new(settings, new NoOpPersistence());
 
         CliAgentBuilder builder = new(api, model, skillManager, mcpLoader, toolApproval, memoryManager, agentManager, settings, null);
         builder.Build();
@@ -107,14 +108,14 @@ Instructions.");
 
         TornadoApi api = new(key);
         ChatModel model = TestHelpers.CheapModel;
-        CliSettings settings = new();
-        CliSkillManager skillManager = new(settings);
+        AgentSettings settings = new();
+        SkillManager skillManager = new(settings, new NoOpPersistence());
         skillManager.LoadSkills(_tempDir);
         McpConfigLoader mcpLoader = new();
         ConsoleRenderer renderer = new();
         ToolApprovalManager toolApproval = new(renderer);
         ConversationMemoryManager memoryManager = new(api, model, model.ContextTokens);
-        AgentDefinitionManager agentManager = new(settings);
+        AgentDefinitionManager agentManager = new(settings, new NoOpPersistence());
 
         CliAgentBuilder builder = new(api, model, skillManager, mcpLoader, toolApproval, memoryManager, agentManager, settings, null);
         builder.Build();
@@ -133,14 +134,14 @@ Instructions.");
 
         TornadoApi api = new(key);
         ChatModel initialModel = ChatModel.OpenAi.Gpt41.V41Nano;
-        CliSettings settings = new();
-        CliSkillManager skillManager = new(settings);
+        AgentSettings settings = new();
+        SkillManager skillManager = new(settings, new NoOpPersistence());
         skillManager.LoadSkills(_tempDir);
         McpConfigLoader mcpLoader = new();
         ConsoleRenderer renderer = new();
         ToolApprovalManager toolApproval = new(renderer);
         ConversationMemoryManager memoryManager = new(api, initialModel, initialModel.ContextTokens);
-        AgentDefinitionManager agentManager = new(settings);
+        AgentDefinitionManager agentManager = new(settings, new NoOpPersistence());
 
         CliAgentBuilder builder = new(api, initialModel, skillManager, mcpLoader, toolApproval, memoryManager, agentManager, settings, null);
         builder.Build();
@@ -165,14 +166,14 @@ Instructions.");
 
         TornadoApi api = new(key);
         ChatModel model = TestHelpers.CheapModel;
-        CliSettings settings = new();
-        CliSkillManager skillManager = new(settings);
+        AgentSettings settings = new();
+        SkillManager skillManager = new(settings, new NoOpPersistence());
         skillManager.LoadSkills(_tempDir);
         McpConfigLoader mcpLoader = new();
         ConsoleRenderer renderer = new();
         ToolApprovalManager toolApproval = new(renderer);
         ConversationMemoryManager memoryManager = new(api, model, model.ContextTokens);
-        AgentDefinitionManager agentManager = new(settings);
+        AgentDefinitionManager agentManager = new(settings, new NoOpPersistence());
 
         CliAgentBuilder builder = new(api, model, skillManager, mcpLoader, toolApproval, memoryManager, agentManager, settings, null);
 

@@ -1,3 +1,5 @@
+using LlmTornado.Cli.Core.Providers;
+
 namespace LlmTornado.Cli;
 
 /// <summary>

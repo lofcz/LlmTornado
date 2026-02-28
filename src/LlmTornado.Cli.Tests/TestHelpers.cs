@@ -1,9 +1,18 @@
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
+using LlmTornado.Cli.Core;
 using LlmTornado.Cli.Memory;
 using LlmTornado.Code;
 
 namespace LlmTornado.Cli.Tests;
+
+/// <summary>
+/// No-op persistence for tests — never writes to disk.
+/// </summary>
+internal sealed class NoOpPersistence : ISettingsPersistence
+{
+    public void SaveSettings(AgentSettings settings) { }
+}
 
 /// <summary>
 /// Shared test helpers and constants.

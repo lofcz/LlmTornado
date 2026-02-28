@@ -1,5 +1,6 @@
 using System.Text.Json;
 using LlmTornado.Cli;
+using LlmTornado.Cli.Core;
 
 namespace LlmTornado.Cli.Tests;
 
@@ -80,13 +81,13 @@ public class CliStorageTests
 
     #endregion
 
-    #region CliSettings serialization
+    #region AgentSettings serialization
 
     [Test]
     public void CliSettings_RoundTrip_AllFields()
     {
         string path = Path.Combine(_tempDir, "settings.json");
-        CliSettings settings = new()
+        AgentSettings settings = new()
         {
             ActiveModel = "gpt-4.1-nano",
             DisabledSkills = ["skill-a", "skill-b"],
@@ -96,7 +97,7 @@ public class CliStorageTests
         };
 
         CliStorage.SaveJson(path, settings);
-        CliSettings? loaded = CliStorage.LoadJson<CliSettings>(path);
+        AgentSettings? loaded = CliStorage.LoadJson<AgentSettings>(path);
 
         Assert.That(loaded, Is.Not.Null);
         Assert.That(loaded!.ActiveModel, Is.EqualTo("gpt-4.1-nano"));
@@ -110,7 +111,7 @@ public class CliStorageTests
     [Test]
     public void CliSettings_Defaults_AreCorrect()
     {
-        CliSettings settings = new();
+        AgentSettings settings = new();
 
         Assert.That(settings.ActiveModel, Is.Null);
         Assert.That(settings.DisabledSkills, Is.Empty);
@@ -123,7 +124,7 @@ public class CliStorageTests
     public void CliSettings_JsonPropertyNames_AreCamelSnakeCase()
     {
         string path = Path.Combine(_tempDir, "props.json");
-        CliSettings settings = new() { ActiveModel = "test", MaxTurnsBeforeSummary = 5 };
+        AgentSettings settings = new() { ActiveModel = "test", MaxTurnsBeforeSummary = 5 };
         CliStorage.SaveJson(path, settings);
 
         string json = File.ReadAllText(path);

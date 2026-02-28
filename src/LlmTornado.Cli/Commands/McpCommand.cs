@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using LlmTornado.Agents.DataModels;
-using LlmTornado.Cli.Mcp;
+using LlmTornado.Cli.Core;
+using LlmTornado.Cli.Core.Mcp;
 
 namespace LlmTornado.Cli.Commands;
 
@@ -12,10 +13,10 @@ internal sealed class McpCommand : ICliCommand
 
     private readonly McpConfigLoader _mcpLoader;
     private readonly CliAgentBuilder _builder;
-    private readonly CliSettings _settings;
+    private readonly AgentSettings _settings;
     private readonly Func<ChatRuntimeEvents, ValueTask> _runtimeEventHandler;
 
-    public McpCommand(McpConfigLoader mcpLoader, CliAgentBuilder builder, CliSettings settings, Func<ChatRuntimeEvents, ValueTask> runtimeEventHandler)
+    public McpCommand(McpConfigLoader mcpLoader, CliAgentBuilder builder, AgentSettings settings, Func<ChatRuntimeEvents, ValueTask> runtimeEventHandler)
     {
         _mcpLoader = mcpLoader;
         _builder = builder;
@@ -63,7 +64,7 @@ internal sealed class McpCommand : ICliCommand
 
     private void OpenConfigInEditor()
     {
-        string configPath = McpConfigLoader.ResolveDefaultMcpConfigPath(_settings);
+        string configPath = McpConfigLoader.ResolveDefaultMcpConfigPath(_settings.McpConfigPath);
         bool created = false;
 
         if (!File.Exists(configPath))

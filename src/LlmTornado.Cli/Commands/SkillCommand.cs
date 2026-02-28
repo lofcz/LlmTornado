@@ -1,5 +1,5 @@
 using LlmTornado.Agents.DataModels;
-using LlmTornado.Cli.Skills;
+using LlmTornado.Cli.Core.Skills;
 
 namespace LlmTornado.Cli.Commands;
 
@@ -9,11 +9,11 @@ internal sealed class SkillCommand : ICliCommand
     public string Description => "Manage skills (list, enable, disable, info)";
     public string Usage => "/skill [list | enable <name> | disable <name> | info <name>]";
 
-    private readonly CliSkillManager _skillManager;
+    private readonly SkillManager _skillManager;
     private readonly CliAgentBuilder _builder;
     private readonly Func<ChatRuntimeEvents, ValueTask> _runtimeEventHandler;
 
-    public SkillCommand(CliSkillManager skillManager, CliAgentBuilder builder, Func<ChatRuntimeEvents, ValueTask> runtimeEventHandler)
+    public SkillCommand(SkillManager skillManager, CliAgentBuilder builder, Func<ChatRuntimeEvents, ValueTask> runtimeEventHandler)
     {
         _skillManager = skillManager;
         _builder = builder;
@@ -24,8 +24,8 @@ internal sealed class SkillCommand : ICliCommand
     {
         if (args.Length == 0)
         {
-            List<CliSkill> enabled = _skillManager.GetEnabledSkills();
-            List<CliSkill> all = _skillManager.GetAllSkills();
+            List<Skill> enabled = _skillManager.GetEnabledSkills();
+            List<Skill> all = _skillManager.GetAllSkills();
             ConsoleRenderer.WriteInfo($"{enabled.Count}/{all.Count} skills enabled.");
             return Task.FromResult(true);
         }
@@ -33,13 +33,13 @@ internal sealed class SkillCommand : ICliCommand
         switch (args[0].ToLowerInvariant())
         {
             case "list":
-                List<CliSkill> skills = _skillManager.GetAllSkills();
+                List<Skill> skills = _skillManager.GetAllSkills();
                 if (skills.Count == 0)
                 {
                     ConsoleRenderer.WriteInfo("No skills found. Place skills in the ./skills/ directory.");
                     break;
                 }
-                foreach (CliSkill skill in skills)
+                foreach (Skill skill in skills)
                 {
                     string status = skill.Enabled ? "✓" : "✗";
                     string activated = skill.Activated ? " [active in context]" : "";
@@ -68,7 +68,7 @@ internal sealed class SkillCommand : ICliCommand
                 break;
 
             case "info" when args.Length >= 2:
-                CliSkill? info = _skillManager.GetSkill(args[1]);
+                Skill? info = _skillManager.GetSkill(args[1]);
                 if (info is null)
                 {
                     ConsoleRenderer.WriteError($"Skill '{args[1]}' not found.");

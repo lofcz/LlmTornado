@@ -1,54 +1,55 @@
 using LlmTornado.Acp;
-using LlmTornado.Acp.Server.Skills;
-using LlmTornado.Agents;
 using LlmTornado.Agents.ChatRuntime;
-using LlmTornado.Agents.ChatRuntime.RuntimeConfigurations;
-using LlmTornado.Chat;
+using LlmTornado.Agents.DataModels;
 using LlmTornado.Chat.Models;
-using LlmTornado.Code;
+using LlmTornado.Cli.Core;
+using LlmTornado.Cli.Core.Agents;
+using LlmTornado.Cli.Core.Mcp;
+using LlmTornado.Cli.Core.Providers;
+using LlmTornado.Cli.Core.Skills;
 using LlmTornado.Common;
 
 namespace LlmTornado.Acp.Server;
 
 /// <summary>
-/// Concrete ACP runtime implementation backed by LlmTornado's ChatRuntime agent system.
-/// Each session mode is driven by an <see cref="AgentSkill"/> loaded from SKILL.md definitions.
-/// Extends <see cref="BaseAcpTornadoRuntimeConfiguration"/> to leverage per-session ChatRuntime
-/// with factory-created IRuntimeConfiguration instances.
+/// Concrete ACP runtime implementation powered by the shared Cli.Core agent infrastructure.
+/// Uses <see cref="ProviderDetectionResult"/> for multi-provider support.
+/// CLI agent personas (default, architect, code-reviewer, debugger, docs-writer) become ACP modes.
+/// Filesystem tools are injected as <c>additionalTools</c> into the Core <see cref="AgentBuilder"/>.
 /// </summary>
 public class TornadoAcpRuntime : BaseAcpTornadoRuntimeConfiguration
 {
-    private readonly TornadoApi _api;
-    private readonly string _defaultModel;
+    private readonly ProviderDetectionResult _detection;
 
     /// <summary>
-    /// Loaded skills keyed by skill name (which matches the ACP mode ID).
+    /// All agent persona definitions loaded at startup (used as ACP modes).
     /// </summary>
-    private readonly Dictionary<string, AgentSkill> _skills;
-
-    private static readonly List<ModelOption> AvailableModels =
-    [
-        new("gpt-5.2", "GPT-5.2", "Newest flagship model for complex coding and reasoning"),
-        new("gpt-5.1", "GPT-5.1", "Strong coding and agentic model with configurable reasoning"),
-        new("gpt-4.1-nano", "GPT-4.1 Nano", "Fast and cheap, good for simple tasks"),
-        new("gpt-4.1-mini", "GPT-4.1 Mini", "Balanced speed and quality"),
-        new("gpt-4.1", "GPT-4.1", "High quality, best for complex coding tasks"),
-        new("o4-mini", "O4 Mini", "Reasoning model, good for hard problems"),
-        new("o3", "O3", "Advanced reasoning model")
-    ];
+    private readonly List<AgentDefinition> _personas;
 
     /// <summary>
-    /// Creates a new ACP runtime with skills loaded from built-in definitions.
-    /// External skills from <paramref name="skillsDirectory"/> override built-in skills with the same name.
+    /// Session metadata key for the stored <see cref="AgentBuilder"/>.
     /// </summary>
-    public TornadoAcpRuntime(string openAiApiKey, string model = "gpt-4.1-nano", string? skillsDirectory = null)
+    private const string MetaAgentBuilder = "agentBuilder";
+
+    /// <summary>
+    /// Session metadata key for the stored <see cref="AgentDefinitionManager"/>.
+    /// </summary>
+    private const string MetaAgentManager = "agentManager";
+
+    /// <summary>
+    /// Creates a new ACP runtime backed by Core agent infrastructure.
+    /// </summary>
+    internal TornadoAcpRuntime(ProviderDetectionResult detection)
         : base("LlmTornado", "1.0.0")
     {
-        _api = new TornadoApi(openAiApiKey, LLmProviders.OpenAi);
-        _defaultModel = model;
-        _skills = BuiltInSkills.Load(skillsDirectory);
+        _detection = detection;
 
-        Console.Error.WriteLine($"[ACP] Loaded {_skills.Count} skill(s): {string.Join(", ", _skills.Keys)}");
+        // Load persona definitions once at startup for mode discovery
+        string builtInDir = AgentDefinitionLoader.ResolveBuiltInDirectory();
+        string customDir = AgentDefinitionLoader.ResolveAgentsDirectory(null);
+
+        _personas = AgentDefinitionLoader.DiscoverPersonaAgents(builtInDir, customDir);
+        Console.Error.WriteLine($"[ACP] Loaded {_personas.Count} agent persona(s): {string.Join(", ", _personas.Select(p => p.Name))}");
     }
 
     #region BaseAcpTornadoRuntimeConfiguration overrides
@@ -56,28 +57,16 @@ public class TornadoAcpRuntime : BaseAcpTornadoRuntimeConfiguration
     /// <inheritdoc />
     protected override IRuntimeConfiguration CreateRuntimeConfiguration(AcpNewSessionRequest request, string modeId, string modelId)
     {
-        AgentSkill skill = ResolveSkill(modeId);
-
-        if (skill.Orchestrated)
-        {
-            return CreateRefactoringOrchestrationConfiguration(request, modelId, skill);
-        }
-
-        return CreateSkillConfiguration(request, modelId, skill);
+        return BuildSessionRuntime(request.Cwd, modeId, modelId, out _, out _);
     }
 
     /// <inheritdoc />
-    protected override string GetInitialMode(AcpNewSessionRequest request) => "agent";
+    protected override string GetInitialMode(AcpNewSessionRequest request) => "default";
 
     /// <inheritdoc />
     protected override string GetInitialModel(AcpNewSessionRequest request)
     {
-        if (AvailableModels.Exists(m => m.Id == _defaultModel))
-        {
-            return _defaultModel;
-        }
-
-        return AvailableModels[0].Id;
+        return _detection.ActiveModel.Name ?? _detection.AllModels.FirstOrDefault()?.Name ?? "unknown";
     }
 
     /// <inheritdoc />
@@ -103,18 +92,46 @@ public class TornadoAcpRuntime : BaseAcpTornadoRuntimeConfiguration
     /// <inheritdoc />
     public override Task<AcpNewSessionResponse> NewSessionAsync(AcpNewSessionRequest request, CancellationToken cancellationToken)
     {
-        // Let the base class create the session with ChatRuntime
-        Task<AcpNewSessionResponse> responseTask = base.NewSessionAsync(request, cancellationToken);
-        AcpNewSessionResponse response = responseTask.Result;
+        string sessionId = Guid.NewGuid().ToString("N");
+        string initialMode = GetInitialMode(request);
+        string initialModel = GetInitialModel(request);
 
-        // Build mode list from loaded skills
-        response.Modes = new AcpSessionModeState
+        IRuntimeConfiguration config = BuildSessionRuntime(
+            request.Cwd, initialMode, initialModel,
+            out AgentBuilder builder, out AgentDefinitionManager agentManager);
+
+        AcpSessionContext ctx = new(config, request.Cwd)
         {
-            CurrentModeId = "agent",
-            AvailableModes = BuildAvailableModes()
+            CurrentModeId = initialMode,
+            CurrentModelId = initialModel
         };
 
-        Console.Error.WriteLine($"[ACP] New session: {response.SessionId} (cwd: {request.Cwd}, model: {GetInitialModel(request)})");
+        // Store Core components in session metadata for mode/model changes
+        ctx.Metadata[MetaAgentBuilder] = builder;
+        ctx.Metadata[MetaAgentManager] = agentManager;
+
+        // Wire runtime events
+        string capturedSessionId = sessionId;
+        ctx.Agent.RuntimeConfiguration.OnRuntimeEvent += async (evt) =>
+        {
+            await HandleRuntimeEvent(capturedSessionId, evt);
+        };
+
+        // Register the session
+        RegisterSession(sessionId, ctx);
+
+        AcpNewSessionResponse response = new()
+        {
+            SessionId = sessionId,
+            Modes = new AcpSessionModeState
+            {
+                CurrentModeId = initialMode,
+                AvailableModes = BuildAvailableModes()
+            },
+            ConfigOptions = BuildConfigOptions(ctx)
+        };
+
+        Console.Error.WriteLine($"[ACP] New session: {sessionId} (cwd: {request.Cwd}, model: {initialModel}, mode: {initialMode})");
 
         return Task.FromResult(response);
     }
@@ -122,29 +139,63 @@ public class TornadoAcpRuntime : BaseAcpTornadoRuntimeConfiguration
     /// <inheritdoc />
     public override Task<AcpSetSessionModeResponse> SetModeAsync(AcpSetSessionModeRequest request, CancellationToken cancellationToken)
     {
-        if (!_skills.ContainsKey(request.ModeId))
-        {
+        AcpSessionContext? ctx = GetSessionContext(request.SessionId);
+        if (ctx is null)
             return Task.FromResult(new AcpSetSessionModeResponse());
+
+        // Validate mode exists
+        if (!_personas.Exists(p => string.Equals(p.Name, request.ModeId, StringComparison.OrdinalIgnoreCase)))
+            return Task.FromResult(new AcpSetSessionModeResponse());
+
+        // Get stored components
+        if (ctx.Metadata.TryGetValue(MetaAgentManager, out object? managerObj) && managerObj is AgentDefinitionManager agentManager
+            && ctx.Metadata.TryGetValue(MetaAgentBuilder, out object? builderObj) && builderObj is AgentBuilder builder)
+        {
+            // Switch persona
+            if (string.Equals(request.ModeId, "default", StringComparison.OrdinalIgnoreCase))
+                agentManager.ClearActivePersona();
+            else
+                agentManager.SetActivePersona(request.ModeId);
+
+            // Rebuild with new persona
+            ChatRuntime newRuntime = builder.RebuildForAgentChange(async evt =>
+            {
+                await HandleRuntimeEvent(request.SessionId, evt);
+            });
+
+            ctx.CurrentModeId = request.ModeId;
+            ctx.RuntimeConfig = newRuntime.RuntimeConfiguration;
+            ctx.Agent = newRuntime;
         }
 
         Console.Error.WriteLine($"[ACP] Session {request.SessionId} mode changed to: {request.ModeId}");
-        return base.SetModeAsync(request, cancellationToken);
+        return Task.FromResult(new AcpSetSessionModeResponse());
     }
 
     /// <inheritdoc />
     public override Task<AcpSetSessionConfigOptionResponse> SetConfigOptionAsync(AcpSetSessionConfigOptionRequest request, CancellationToken cancellationToken)
     {
         AcpSessionContext? ctx = GetSessionContext(request.SessionId);
-
         if (ctx is null)
-        {
             return Task.FromResult(new AcpSetSessionConfigOptionResponse());
-        }
 
-        if (request.ConfigId == "model" && AvailableModels.Exists(m => m.Id == request.Value))
+        if (request.ConfigId == "model")
         {
-            RebuildSessionRuntime(ctx, ctx.CurrentModeId, request.Value);
-            Console.Error.WriteLine($"[ACP] Session {request.SessionId} model changed to: {request.Value}");
+            // Find the model in available models
+            ChatModel? targetModel = _detection.AllModels.FirstOrDefault(m => m.Name == request.Value);
+            if (targetModel is not null && ctx.Metadata.TryGetValue(MetaAgentBuilder, out object? builderObj) && builderObj is AgentBuilder builder)
+            {
+                ChatRuntime newRuntime = builder.SetModel(targetModel, async evt =>
+                {
+                    await HandleRuntimeEvent(request.SessionId, evt);
+                });
+
+                ctx.CurrentModelId = request.Value;
+                ctx.RuntimeConfig = newRuntime.RuntimeConfiguration;
+                ctx.Agent = newRuntime;
+
+                Console.Error.WriteLine($"[ACP] Session {request.SessionId} model changed to: {request.Value}");
+            }
         }
 
         return Task.FromResult(new AcpSetSessionConfigOptionResponse
@@ -155,143 +206,151 @@ public class TornadoAcpRuntime : BaseAcpTornadoRuntimeConfiguration
 
     #endregion
 
-    #region Skill resolution
+    #region Session runtime factory
 
     /// <summary>
-    /// Resolves a skill by mode ID, falling back to the "agent" skill if the requested mode is not found.
+    /// Build a complete session runtime from Core infrastructure.
     /// </summary>
-    private AgentSkill ResolveSkill(string modeId)
+    private IRuntimeConfiguration BuildSessionRuntime(
+        string cwd, string modeId, string modelId,
+        out AgentBuilder builder, out AgentDefinitionManager agentManager)
     {
-        if (_skills.TryGetValue(modeId, out AgentSkill? skill))
-        {
-            return skill;
-        }
+        // Per-session settings (no persistence for ACP)
+        AgentSettings sessionSettings = new();
+        AcpSettingsPersistence persistence = new();
+        AcpToolApproval toolApproval = new();
 
-        if (_skills.TryGetValue("agent", out AgentSkill? fallback))
-        {
-            return fallback;
-        }
+        // Initialize skill manager (skills from CWD/skills/ if available)
+        SkillManager skillManager = new(sessionSettings, persistence);
+        string skillsDir = SkillLoader.ResolveSkillsDirectory(null);
+        skillManager.LoadSkills(skillsDir);
 
-        // Last resort: return a minimal default skill
-        return new AgentSkill
-        {
-            Name = modeId,
-            DisplayName = modeId,
-            Description = "Default assistant",
-            Instructions = "You are a helpful assistant integrated into JetBrains Rider via ACP.",
-            UseTools = true
-        };
+        // Initialize agent definition manager
+        agentManager = new AgentDefinitionManager(sessionSettings, persistence);
+        string builtInDir = AgentDefinitionLoader.ResolveBuiltInDirectory();
+        string customDir = AgentDefinitionLoader.ResolveAgentsDirectory(null);
+        agentManager.LoadAll(builtInDir, customDir, cwd);
+
+        // Apply mode as active persona
+        if (!string.Equals(modeId, "default", StringComparison.OrdinalIgnoreCase))
+            agentManager.SetActivePersona(modeId);
+
+        agentManager.ApplyCapabilityBaseline(skillManager, toolApproval);
+
+        // Resolve the model
+        ChatModel model = ResolveModel(modelId);
+
+        // MCP config loader (empty — ACP doesn't use local MCP config)
+        McpConfigLoader mcpLoader = new();
+
+        // Build filesystem tools scoped to CWD
+        List<Tool> fsTools = BuildAcpLocalTools(cwd);
+
+        // Create the builder
+        builder = new AgentBuilder(
+            _detection.Api,
+            model,
+            skillManager,
+            mcpLoader,
+            toolApproval,
+            agentManager,
+            sessionSettings,
+            _detection.OptimizerModel,
+            fsTools);
+
+        builder.WorkingDirectory = cwd;
+
+        // Build and extract the runtime configuration
+        ChatRuntime runtime = builder.Build();
+        return runtime.RuntimeConfiguration;
     }
 
     /// <summary>
-    /// Builds the ACP mode list from loaded skills.
+    /// Resolve a model ID (name string) to a <see cref="ChatModel"/> from detected providers.
+    /// Falls back to the detection's active model.
+    /// </summary>
+    private ChatModel ResolveModel(string modelId)
+    {
+        ChatModel? match = _detection.AllModels.FirstOrDefault(m => m.Name == modelId);
+        return match ?? _detection.ActiveModel;
+    }
+
+    #endregion
+
+    #region Mode / model discovery
+
+    /// <summary>
+    /// Builds the ACP mode list from loaded agent personas.
     /// </summary>
     private List<AcpSessionMode> BuildAvailableModes()
     {
-        // Maintain a stable ordering: agent, chat, plan, refactor, then any additional skills
-        string[] preferredOrder = ["agent", "chat", "plan", "refactor"];
-        List<AcpSessionMode> modes = [];
-
-        foreach (string id in preferredOrder)
-        {
-            if (_skills.TryGetValue(id, out AgentSkill? skill))
+        // Stable ordering: default first, then alphabetical
+        List<AcpSessionMode> modes =
+        [
+            new AcpSessionMode
             {
-                modes.Add(new AcpSessionMode
-                {
-                    Id = skill.Name,
-                    Name = skill.DisplayName,
-                    Description = skill.Description
-                });
+                Id = "default",
+                Name = "Agent",
+                Description = "General-purpose coding assistant with all capabilities"
             }
-        }
+        ];
 
-        foreach (KeyValuePair<string, AgentSkill> kvp in _skills)
+        foreach (AgentDefinition persona in _personas.OrderBy(p => p.Name, StringComparer.OrdinalIgnoreCase))
         {
-            if (Array.IndexOf(preferredOrder, kvp.Key) < 0)
+            if (string.Equals(persona.Name, "default", StringComparison.OrdinalIgnoreCase))
+                continue; // Already added as the first mode
+
+            modes.Add(new AcpSessionMode
             {
-                modes.Add(new AcpSessionMode
-                {
-                    Id = kvp.Value.Name,
-                    Name = kvp.Value.DisplayName,
-                    Description = kvp.Value.Description
-                });
-            }
+                Id = persona.Name,
+                Name = FormatDisplayName(persona.Name),
+                Description = persona.Description.Length > 0 ? persona.Description : $"Agent persona: {persona.Name}"
+            });
         }
 
         return modes;
     }
 
-    #endregion
-
-    #region Configuration factories
-
-    private SkillRuntimeConfiguration CreateSkillConfiguration(AcpNewSessionRequest request, string modelId, AgentSkill skill)
+    /// <summary>
+    /// Build model config options from detected providers, grouped by provider.
+    /// </summary>
+    private List<AcpSessionConfigOption> BuildConfigOptions(AcpSessionContext ctx)
     {
-        List<Tool> localTools = BuildAcpLocalTools(request.Cwd);
-        ChatModel resolvedModel = ResolveModel(modelId);
+        List<AcpSessionConfigSelectGroup> groups = [];
 
-        return new SkillRuntimeConfiguration(
-            _api,
-            resolvedModel,
-            skill,
-            request.Cwd,
-            localTools);
-    }
-
-    private IRuntimeConfiguration CreateRefactoringOrchestrationConfiguration(AcpNewSessionRequest request, string modelId, AgentSkill skill)
-    {
-        return new FileRefactoringOrchestrationConfiguration(
-            _api,
-            ResolveModel(modelId),
-            request.Cwd,
-            BuildAcpLocalTools(request.Cwd),
-            skill);
-    }
-
-    internal static ChatModel ResolveModel(string modelId)
-    {
-        return modelId switch
+        foreach (DetectedProvider provider in _detection.Providers)
         {
-            "gpt-5.2" => ChatModel.OpenAi.Gpt52.V52,
-            "gpt-5.1" => ChatModel.OpenAi.Gpt51.V51,
-            "gpt-4.1" => ChatModel.OpenAi.Gpt41.V41,
-            "gpt-4.1-mini" => ChatModel.OpenAi.Gpt41.V41Mini,
-            "o4-mini" => ChatModel.OpenAi.O4.V4Mini,
-            "o3" => ChatModel.OpenAi.O3.V3,
-            _ => ChatModel.OpenAi.Gpt41.V41Nano
-        };
-    }
+            List<AcpSessionConfigSelectOption> options = provider.Models
+                .Select(m => new AcpSessionConfigSelectOption
+                {
+                    Value = m.Name ?? m.ToString() ?? "unknown",
+                    Name = m.Name ?? m.ToString() ?? "unknown",
+                    Description = $"{provider.Provider} model"
+                })
+                .ToList();
 
-    #endregion
+            if (options.Count > 0)
+            {
+                groups.Add(new AcpSessionConfigSelectGroup
+                {
+                    Group = provider.Provider.ToString().ToLowerInvariant(),
+                    Name = provider.Provider.ToString(),
+                    Options = options
+                });
+            }
+        }
 
-    #region Config options
-
-    private static List<AcpSessionConfigOption> BuildConfigOptions(AcpSessionContext ctx)
-    {
         return
         [
             new AcpSessionConfigOption
             {
                 Id = "model",
                 Name = "Model",
-                Description = "The OpenAI model to use for completions",
+                Description = "The LLM model to use for completions",
                 Type = "select",
                 Category = "model",
                 CurrentValue = ctx.CurrentModelId,
-                Options =
-                [
-                    new AcpSessionConfigSelectGroup
-                    {
-                        Group = "models",
-                        Name = "Models",
-                        Options = AvailableModels.ConvertAll(m => new AcpSessionConfigSelectOption
-                        {
-                            Value = m.Id,
-                            Name = m.Name,
-                            Description = m.Description
-                        })
-                    }
-                ]
+                Options = groups
             }
         ];
     }
@@ -309,27 +368,27 @@ public class TornadoAcpRuntime : BaseAcpTornadoRuntimeConfiguration
             new Tool(
                 (string relativePath) => ListDirectory(acpRoot, relativePath),
                 "list_dir",
-                "Lists files and folders under the ACP directory for a relative path."
+                "Lists files and folders under the working directory for a relative path."
             ),
             new Tool(
                 (string query, string includePattern, int maxResults) => SearchFiles(acpRoot, query, includePattern, maxResults),
                 "search_files",
-                "Searches for text in files under the ACP directory. includePattern accepts globs like *.cs or *.*."
+                "Searches for text in files under the working directory. includePattern accepts globs like *.cs or *.*."
             ),
             new Tool(
                 (string relativePath, int startLine, int endLine) => ReadFileRange(acpRoot, relativePath, startLine, endLine),
                 "read_file",
-                "Reads a range of lines from a file in the ACP directory."
+                "Reads a range of lines from a file in the working directory."
             ),
             new Tool(
                 (string relativePath, string content) => WriteFile(acpRoot, relativePath, content),
                 "write_file",
-                "Writes full file content to a file in the ACP directory. Creates folders as needed."
+                "Writes full file content to a file in the working directory. Creates folders as needed."
             ),
             new Tool(
                 (string relativePath, string oldText, string newText) => ReplaceInFile(acpRoot, relativePath, oldText, newText),
                 "replace_in_file",
-                "Replaces exact text in a file in the ACP directory."
+                "Replaces exact text in a file in the working directory."
             )
         ];
     }
@@ -358,14 +417,14 @@ public class TornadoAcpRuntime : BaseAcpTornadoRuntimeConfiguration
     {
         if (Path.IsPathRooted(relativePath))
         {
-            throw new InvalidOperationException("Path must be relative to the ACP directory.");
+            throw new InvalidOperationException("Path must be relative to the working directory.");
         }
 
         string full = Path.GetFullPath(Path.Combine(root, relativePath));
 
         if (!full.StartsWith(root, StringComparison.OrdinalIgnoreCase))
         {
-            throw new InvalidOperationException("Path escapes the ACP directory.");
+            throw new InvalidOperationException("Path escapes the working directory.");
         }
 
         return full;
@@ -554,7 +613,41 @@ public class TornadoAcpRuntime : BaseAcpTornadoRuntimeConfiguration
 
     #endregion
 
+    #region Event forwarding
+
+    /// <summary>
+    /// Handles runtime events and forwards them as ACP session updates.
+    /// </summary>
+    private async ValueTask HandleRuntimeEvent(string sessionId, ChatRuntimeEvents evt)
+    {
+        List<AcpSessionUpdate>? updates = evt.ToAcpSessionUpdates();
+
+        if (updates is null || updates.Count == 0)
+            return;
+
+        foreach (AcpSessionUpdate update in updates)
+        {
+            await RaiseSessionUpdate(new AcpSessionNotification
+            {
+                SessionId = sessionId,
+                Update = update
+            });
+        }
+    }
+
+    #endregion
+
     #region Logging helpers
+
+    /// <summary>
+    /// Formats a kebab-case agent name into a title-case display name.
+    /// e.g. "code-reviewer" → "Code Reviewer"
+    /// </summary>
+    private static string FormatDisplayName(string name)
+    {
+        return string.Join(' ', name.Split('-').Select(word =>
+            word.Length > 0 ? char.ToUpperInvariant(word[0]) + word[1..] : word));
+    }
 
     internal static string ExtractTextForLogging(List<AcpContentBlock> blocks)
     {
@@ -586,7 +679,4 @@ public class TornadoAcpRuntime : BaseAcpTornadoRuntimeConfiguration
     }
 
     #endregion
-
-    private record ModelOption(string Id, string Name, string Description);
 }
-

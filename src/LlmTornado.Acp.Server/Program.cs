@@ -1,74 +1,35 @@
 using LlmTornado.Acp;
 using LlmTornado.Acp.Server;
+using LlmTornado.Cli.Core.Providers;
 
 // All diagnostic output goes to stderr so stdout stays clean for JSON-RPC
 Console.Error.WriteLine("[ACP] LlmTornado ACP Server starting...");
 
-string? apiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
-string model = Environment.GetEnvironmentVariable("OPENAI_MODEL") ?? "gpt-4.1-nano";
-string? skillsDir = Environment.GetEnvironmentVariable("ACP_SKILLS_DIR");
+ProviderDetectionResult? detection = ProviderDetector.Detect();
 
-if (string.IsNullOrWhiteSpace(apiKey))
+if (detection is null)
 {
-    // Search several locations for apiKey.json
-    string[] searchPaths =
-    [
-        Path.Combine(AppContext.BaseDirectory, "apiKey.json"),
-        Path.Combine(Directory.GetCurrentDirectory(), "apiKey.json"),
-        // When launched via "dotnet run", look relative to the project file
-        Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "LlmTornado.Demo", "apiKey.json"),
-        Path.Combine(Directory.GetCurrentDirectory(), "..", "LlmTornado.Demo", "apiKey.json")
-    ];
-
-    foreach (string candidate in searchPaths)
-    {
-        string fullPath = Path.GetFullPath(candidate);
-
-        if (!File.Exists(fullPath))
-        {
-            continue;
-        }
-
-        try
-        {
-            string json = await File.ReadAllTextAsync(fullPath);
-            using var doc = System.Text.Json.JsonDocument.Parse(json);
-
-            if (doc.RootElement.TryGetProperty("OpenAi", out var prop))
-            {
-                apiKey = prop.GetString();
-
-                if (!string.IsNullOrWhiteSpace(apiKey))
-                {
-                    Console.Error.WriteLine($"[ACP] Loaded API key from: {fullPath}");
-                    break;
-                }
-            }
-        }
-        catch
-        {
-            // Try next candidate
-        }
-    }
-}
-
-if (string.IsNullOrWhiteSpace(apiKey))
-{
-    Console.Error.WriteLine("[ACP] ERROR: No OpenAI API key found.");
-    Console.Error.WriteLine("[ACP] Set OPENAI_API_KEY environment variable, or place apiKey.json next to the executable.");
+    Console.Error.WriteLine("[ACP] ERROR: No LLM provider API keys found.");
+    Console.Error.WriteLine("[ACP] Set at least one provider environment variable:");
+    Console.Error.WriteLine("[ACP]   OPENAI_API_KEY, ANTHROPIC_API_KEY, GOOGLE_API_KEY,");
+    Console.Error.WriteLine("[ACP]   GROQ_API_KEY, COHERE_API_KEY, MISTRAL_API_KEY,");
+    Console.Error.WriteLine("[ACP]   DEEPSEEK_API_KEY, XAI_API_KEY, PERPLEXITY_API_KEY,");
+    Console.Error.WriteLine("[ACP]   OPENROUTER_API_KEY, DEEPINFRA_API_KEY");
     return 1;
 }
 
-Console.Error.WriteLine($"[ACP] Using model: {model}");
+string providers = string.Join(", ", detection.Providers.Select(p => p.Provider));
+Console.Error.WriteLine($"[ACP] Detected providers: {providers}");
+Console.Error.WriteLine($"[ACP] Active model: {detection.ActiveModel.Name}");
 
-if (!string.IsNullOrWhiteSpace(skillsDir))
+if (detection.OptimizerModel is not null)
 {
-    Console.Error.WriteLine($"[ACP] External skills directory: {skillsDir}");
+    Console.Error.WriteLine($"[ACP] Optimizer model: {detection.OptimizerModel.Name}");
 }
 
 Console.Error.WriteLine("[ACP] Listening on stdin/stdout...");
 
-TornadoAcpRuntime runtime = new(apiKey, model, skillsDir);
+TornadoAcpRuntime runtime = new(detection);
 AcpJsonRpcServer server = new(runtime, Console.OpenStandardInput(), Console.OpenStandardOutput());
 
 await server.RunAsync();

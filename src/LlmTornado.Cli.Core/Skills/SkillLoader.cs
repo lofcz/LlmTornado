@@ -1,11 +1,11 @@
 using System.Text.RegularExpressions;
 
-namespace LlmTornado.Cli.Skills;
+namespace LlmTornado.Cli.Core.Skills;
 
 /// <summary>
 /// Discovers skill directories and parses SKILL.md files per the Agent Skills standard.
 /// </summary>
-internal static partial class CliSkillLoader
+internal static partial class SkillLoader
 {
     [GeneratedRegex(@"^[a-z0-9]([a-z0-9-]*[a-z0-9])?$")]
     private static partial Regex ValidSkillNameRegex();
@@ -14,12 +14,13 @@ internal static partial class CliSkillLoader
     private static partial Regex ConsecutiveHyphensRegex();
 
     /// <summary>
-    /// Resolve the skills directory from settings or fall back to ./skills/ relative to CWD.
+    /// Resolve the skills directory. If <paramref name="skillsDirectoryOverride"/> is non-null
+    /// and exists, use it. Otherwise fall back to ./skills/ relative to CWD.
     /// </summary>
-    public static string ResolveSkillsDirectory(CliSettings settings)
+    public static string ResolveSkillsDirectory(string? skillsDirectoryOverride)
     {
-        if (!string.IsNullOrEmpty(settings.SkillsDirectory) && Directory.Exists(settings.SkillsDirectory))
-            return Path.GetFullPath(settings.SkillsDirectory);
+        if (!string.IsNullOrEmpty(skillsDirectoryOverride) && Directory.Exists(skillsDirectoryOverride))
+            return Path.GetFullPath(skillsDirectoryOverride);
 
         return Path.GetFullPath("skills");
     }
@@ -27,9 +28,9 @@ internal static partial class CliSkillLoader
     /// <summary>
     /// Discover all valid skill directories under the given path.
     /// </summary>
-    public static List<CliSkill> DiscoverSkills(string skillsRootDirectory)
+    public static List<Skill> DiscoverSkills(string skillsRootDirectory)
     {
-        List<CliSkill> skills = [];
+        List<Skill> skills = [];
 
         if (!Directory.Exists(skillsRootDirectory))
             return skills;
@@ -40,7 +41,7 @@ internal static partial class CliSkillLoader
             if (!File.Exists(skillMdPath))
                 continue;
 
-            CliSkill? skill = ParseSkillMetadata(dir);
+            Skill? skill = ParseSkillMetadata(dir);
             if (skill is not null)
                 skills.Add(skill);
         }
@@ -49,9 +50,9 @@ internal static partial class CliSkillLoader
     }
 
     /// <summary>
-    /// Parse a SKILL.md file frontmatter and return a CliSkill with metadata loaded.
+    /// Parse a SKILL.md file frontmatter and return a Skill with metadata loaded.
     /// </summary>
-    public static CliSkill? ParseSkillMetadata(string skillDirectory)
+    public static Skill? ParseSkillMetadata(string skillDirectory)
     {
         string skillMdPath = Path.Combine(skillDirectory, "SKILL.md");
         if (!File.Exists(skillMdPath))
@@ -89,7 +90,7 @@ internal static partial class CliSkillLoader
             metadata = meta;
         }
 
-        return new CliSkill
+        return new Skill
         {
             Name = name,
             Description = description,
@@ -108,7 +109,7 @@ internal static partial class CliSkillLoader
     /// <summary>
     /// Load the full instructions body of a SKILL.md file.
     /// </summary>
-    public static void LoadInstructions(CliSkill skill)
+    public static void LoadInstructions(Skill skill)
     {
         if (skill.Instructions is not null)
             return;

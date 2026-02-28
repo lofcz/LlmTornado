@@ -26,6 +26,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\LlmTornado.Cli\LlmTornado.Cli.csproj" />
+        <ProjectReference Include="..\LlmTornado.Cli.Core\LlmTornado.Cli.Core.csproj" />
         <ProjectReference Include="..\LlmTornado\LlmTornado.csproj" />
         <ProjectReference Include="..\LlmTornado.Agents\LlmTornado.Agents.csproj" />
         <ProjectReference Include="..\LlmTornado.Mcp\LlmTornado.Mcp.csproj" />

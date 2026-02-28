@@ -1,5 +1,6 @@
 using LlmTornado.Cli;
-using LlmTornado.Cli.Skills;
+using LlmTornado.Cli.Core;
+using LlmTornado.Cli.Core.Skills;
 
 namespace LlmTornado.Cli.Tests;
 
@@ -20,7 +21,7 @@ public class SkillSystemTests
         TestHelpers.CleanupTempDir(_tempDir);
     }
 
-    #region CliSkillLoader — ParseSkillMetadata
+    #region SkillLoader — ParseSkillMetadata
 
     [Test]
     public void ParseSkillMetadata_Valid_Skill_Returns_Parsed_Skill()
@@ -39,7 +40,7 @@ metadata:
 
 This is the body.");
 
-        CliSkill? skill = CliSkillLoader.ParseSkillMetadata(skillDir);
+        Skill? skill = SkillLoader.ParseSkillMetadata(skillDir);
 
         Assert.That(skill, Is.Not.Null);
         Assert.That(skill!.Name, Is.EqualTo("my-skill"));
@@ -59,7 +60,7 @@ This is the body.");
         string emptyDir = Path.Combine(_tempDir, "empty-skill");
         Directory.CreateDirectory(emptyDir);
 
-        CliSkill? skill = CliSkillLoader.ParseSkillMetadata(emptyDir);
+        Skill? skill = SkillLoader.ParseSkillMetadata(emptyDir);
         Assert.That(skill, Is.Null);
     }
 
@@ -67,7 +68,7 @@ This is the body.");
     public void ParseSkillMetadata_Rejects_Name_With_Uppercase()
     {
         string dir = CreateSkillWithFrontmatter("BadName", "name: BadName\ndescription: test");
-        CliSkill? skill = CliSkillLoader.ParseSkillMetadata(dir);
+        Skill? skill = SkillLoader.ParseSkillMetadata(dir);
         Assert.That(skill, Is.Null);
     }
 
@@ -75,7 +76,7 @@ This is the body.");
     public void ParseSkillMetadata_Rejects_Name_With_Consecutive_Hyphens()
     {
         string dir = CreateSkillWithFrontmatter("bad--name", "name: bad--name\ndescription: test");
-        CliSkill? skill = CliSkillLoader.ParseSkillMetadata(dir);
+        Skill? skill = SkillLoader.ParseSkillMetadata(dir);
         Assert.That(skill, Is.Null);
     }
 
@@ -83,7 +84,7 @@ This is the body.");
     public void ParseSkillMetadata_Rejects_Mismatched_Name_And_Directory()
     {
         string dir = CreateSkillWithFrontmatter("actual-dir", "name: different-name\ndescription: test");
-        CliSkill? skill = CliSkillLoader.ParseSkillMetadata(dir);
+        Skill? skill = SkillLoader.ParseSkillMetadata(dir);
         Assert.That(skill, Is.Null);
     }
 
@@ -96,7 +97,7 @@ description: Minimal skill
 ---
 Body here.");
 
-        CliSkill? skill = CliSkillLoader.ParseSkillMetadata(dir);
+        Skill? skill = SkillLoader.ParseSkillMetadata(dir);
         Assert.That(skill, Is.Not.Null);
         Assert.That(skill!.Name, Is.EqualTo("minimal"));
         Assert.That(skill.Description, Is.EqualTo("Minimal skill"));
@@ -106,7 +107,7 @@ Body here.");
 
     #endregion
 
-    #region CliSkillLoader — LoadInstructions
+    #region SkillLoader — LoadInstructions
 
     [Test]
     public void LoadInstructions_Extracts_Body_After_Frontmatter()
@@ -118,10 +119,10 @@ description: test
 Line one.
 Line two.");
 
-        CliSkill skill = CliSkillLoader.ParseSkillMetadata(dir)!;
+        Skill skill = SkillLoader.ParseSkillMetadata(dir)!;
         Assert.That(skill.Instructions, Is.Null); // Not loaded yet
 
-        CliSkillLoader.LoadInstructions(skill);
+        SkillLoader.LoadInstructions(skill);
         Assert.That(skill.Instructions, Is.Not.Null);
         Assert.That(skill.Instructions, Does.Contain("Line one."));
         Assert.That(skill.Instructions, Does.Contain("Line two."));
@@ -136,17 +137,17 @@ description: test
 ---
 Body.");
 
-        CliSkill skill = CliSkillLoader.ParseSkillMetadata(dir)!;
-        CliSkillLoader.LoadInstructions(skill);
+        Skill skill = SkillLoader.ParseSkillMetadata(dir)!;
+        SkillLoader.LoadInstructions(skill);
         string? firstLoad = skill.Instructions;
 
-        CliSkillLoader.LoadInstructions(skill);
+        SkillLoader.LoadInstructions(skill);
         Assert.That(skill.Instructions, Is.EqualTo(firstLoad));
     }
 
     #endregion
 
-    #region CliSkillLoader — DiscoverSkills
+    #region SkillLoader — DiscoverSkills
 
     [Test]
     public void DiscoverSkills_Finds_Multiple_Skills()
@@ -163,7 +164,7 @@ description: Second
 ---
 Beta body.");
 
-        List<CliSkill> skills = CliSkillLoader.DiscoverSkills(_tempDir);
+        List<Skill> skills = SkillLoader.DiscoverSkills(_tempDir);
 
         Assert.That(skills, Has.Count.EqualTo(2));
         Assert.That(skills.Select(s => s.Name), Does.Contain("alpha"));
@@ -182,7 +183,7 @@ Body.");
         // Create invalid skill (no SKILL.md)
         Directory.CreateDirectory(Path.Combine(_tempDir, "no-skill-md"));
 
-        List<CliSkill> skills = CliSkillLoader.DiscoverSkills(_tempDir);
+        List<Skill> skills = SkillLoader.DiscoverSkills(_tempDir);
         Assert.That(skills, Has.Count.EqualTo(1));
         Assert.That(skills[0].Name, Is.EqualTo("good-skill"));
     }
@@ -190,13 +191,13 @@ Body.");
     [Test]
     public void DiscoverSkills_Returns_Empty_For_NonexistentDir()
     {
-        List<CliSkill> skills = CliSkillLoader.DiscoverSkills(Path.Combine(_tempDir, "nope"));
+        List<Skill> skills = SkillLoader.DiscoverSkills(Path.Combine(_tempDir, "nope"));
         Assert.That(skills, Is.Empty);
     }
 
     #endregion
 
-    #region CliSkillLoader — Script Discovery
+    #region SkillLoader — Script Discovery
 
     [Test]
     public void DiscoverSkills_Finds_Scripts()
@@ -212,7 +213,7 @@ Body.");
         File.WriteAllText(Path.Combine(scriptsDir, "run.py"), "print('hello')");
         File.WriteAllText(Path.Combine(scriptsDir, "build.sh"), "echo hello");
 
-        CliSkill skill = CliSkillLoader.ParseSkillMetadata(dir)!;
+        Skill skill = SkillLoader.ParseSkillMetadata(dir)!;
         Assert.That(skill.Scripts, Has.Count.EqualTo(2));
         Assert.That(skill.Scripts.Select(s => s.Extension), Does.Contain("py"));
         Assert.That(skill.Scripts.Select(s => s.Extension), Does.Contain("sh"));
@@ -231,7 +232,7 @@ Body.");
         Directory.CreateDirectory(scriptsDir);
         File.WriteAllText(Path.Combine(scriptsDir, "main.py"), "pass");
 
-        CliSkill skill = CliSkillLoader.ParseSkillMetadata(dir)!;
+        Skill skill = SkillLoader.ParseSkillMetadata(dir)!;
         SkillScript pyScript = skill.Scripts.First(s => s.Extension == "py");
 
         string expected = OperatingSystem.IsWindows() ? "python" : "python3";
@@ -255,14 +256,14 @@ Body.");
         Directory.CreateDirectory(assetsDir);
         File.WriteAllText(Path.Combine(assetsDir, "icon.png"), "fake-png");
 
-        CliSkill skill = CliSkillLoader.ParseSkillMetadata(dir)!;
+        Skill skill = SkillLoader.ParseSkillMetadata(dir)!;
         Assert.That(skill.References, Has.Count.EqualTo(1));
         Assert.That(skill.Assets, Has.Count.EqualTo(1));
     }
 
     #endregion
 
-    #region CliSkillManager
+    #region SkillManager
 
     [Test]
     public void LoadSkills_Populates_Manager()
@@ -273,8 +274,8 @@ description: First
 ---
 First body.");
 
-        CliSettings settings = new();
-        CliSkillManager manager = new(settings);
+        AgentSettings settings = new();
+        SkillManager manager = new(settings, new NoOpPersistence());
         manager.LoadSkills(_tempDir);
 
         Assert.That(manager.GetAllSkills(), Has.Count.EqualTo(1));
@@ -290,8 +291,8 @@ description: Can be disabled
 ---
 Body.");
 
-        CliSettings settings = new();
-        CliSkillManager manager = new(settings);
+        AgentSettings settings = new();
+        SkillManager manager = new(settings, new NoOpPersistence());
         manager.LoadSkills(_tempDir);
         Assert.That(manager.GetEnabledSkills(), Has.Count.EqualTo(1));
 
@@ -310,8 +311,8 @@ description: test
 ---
 Body.");
 
-        CliSettings settings = new();
-        CliSkillManager manager = new(settings);
+        AgentSettings settings = new();
+        SkillManager manager = new(settings, new NoOpPersistence());
         manager.LoadSkills(_tempDir);
 
         manager.DisableSkill("toggleable");
@@ -325,8 +326,8 @@ Body.");
     [Test]
     public void DisableSkill_Returns_False_For_Unknown()
     {
-        CliSettings settings = new();
-        CliSkillManager manager = new(settings);
+        AgentSettings settings = new();
+        SkillManager manager = new(settings, new NoOpPersistence());
         manager.LoadSkills(_tempDir);
 
         Assert.That(manager.DisableSkill("nonexistent"), Is.False);
@@ -341,8 +342,8 @@ description: test
 ---
 These are the instructions.");
 
-        CliSettings settings = new();
-        CliSkillManager manager = new(settings);
+        AgentSettings settings = new();
+        SkillManager manager = new(settings, new NoOpPersistence());
         manager.LoadSkills(_tempDir);
 
         string? instructions = manager.ActivateSkill("activatable");
@@ -353,8 +354,8 @@ These are the instructions.");
     [Test]
     public void ActivateSkill_Returns_Null_For_Unknown()
     {
-        CliSettings settings = new();
-        CliSkillManager manager = new(settings);
+        AgentSettings settings = new();
+        SkillManager manager = new(settings, new NoOpPersistence());
         manager.LoadSkills(_tempDir);
 
         Assert.That(manager.ActivateSkill("nope"), Is.Null);
@@ -369,8 +370,8 @@ description: For XML test
 ---
 Body.");
 
-        CliSettings settings = new();
-        CliSkillManager manager = new(settings);
+        AgentSettings settings = new();
+        SkillManager manager = new(settings, new NoOpPersistence());
         manager.LoadSkills(_tempDir);
 
         string xml = manager.BuildSkillsContextXml();
@@ -389,8 +390,8 @@ description: test
 ---
 Body.");
 
-        CliSettings settings = new() { DisabledSkills = ["pre-disabled"] };
-        CliSkillManager manager = new(settings);
+        AgentSettings settings = new() { DisabledSkills = ["pre-disabled"] };
+        SkillManager manager = new(settings, new NoOpPersistence());
         manager.LoadSkills(_tempDir);
 
         Assert.That(manager.GetAllSkills(), Has.Count.EqualTo(1));
@@ -415,7 +416,7 @@ Body.");
         File.WriteAllText(Path.Combine(scriptsDir, "run.py"), "print('hi')");
         File.WriteAllText(Path.Combine(scriptsDir, "build.sh"), "echo hi");
 
-        CliSkill skill = CliSkillLoader.ParseSkillMetadata(dir)!;
+        Skill skill = SkillLoader.ParseSkillMetadata(dir)!;
         skill.Enabled = true;
 
         var tools = ScriptToolBuilder.BuildScriptTools([skill]);
@@ -435,7 +436,7 @@ description: test
 ---
 Body.");
 
-        CliSkill skill = CliSkillLoader.ParseSkillMetadata(dir)!;
+        Skill skill = SkillLoader.ParseSkillMetadata(dir)!;
         skill.Enabled = true;
 
         var tools = ScriptToolBuilder.BuildScriptTools([skill]);
@@ -470,7 +471,7 @@ Body.");
     public void BundledSkills_AllThreeDiscovered()
     {
         string skillsDir = GetBundledSkillsDir();
-        List<CliSkill> skills = CliSkillLoader.DiscoverSkills(skillsDir);
+        List<Skill> skills = SkillLoader.DiscoverSkills(skillsDir);
 
         var names = skills.Select(s => s.Name).OrderBy(n => n).ToList();
         Assert.That(names, Does.Contain("file-analyzer"));
@@ -482,7 +483,7 @@ Body.");
     public void BundledSkills_FileAnalyzer_HasExpectedScripts()
     {
         string skillsDir = GetBundledSkillsDir();
-        CliSkill? skill = CliSkillLoader.ParseSkillMetadata(Path.Combine(skillsDir, "file-analyzer"));
+        Skill? skill = SkillLoader.ParseSkillMetadata(Path.Combine(skillsDir, "file-analyzer"));
         Assert.That(skill, Is.Not.Null);
         Assert.That(skill!.Name, Is.EqualTo("file-analyzer"));
         Assert.That(skill.Description, Does.Contain("Analyze"));
@@ -503,7 +504,7 @@ Body.");
     public void BundledSkills_WebSearch_HasExpectedScripts()
     {
         string skillsDir = GetBundledSkillsDir();
-        CliSkill? skill = CliSkillLoader.ParseSkillMetadata(Path.Combine(skillsDir, "web-search"));
+        Skill? skill = SkillLoader.ParseSkillMetadata(Path.Combine(skillsDir, "web-search"));
         Assert.That(skill, Is.Not.Null);
         Assert.That(skill!.Name, Is.EqualTo("web-search"));
 
@@ -518,7 +519,7 @@ Body.");
     public void BundledSkills_NoteTaker_HasExpectedScripts()
     {
         string skillsDir = GetBundledSkillsDir();
-        CliSkill? skill = CliSkillLoader.ParseSkillMetadata(Path.Combine(skillsDir, "note-taker"));
+        Skill? skill = SkillLoader.ParseSkillMetadata(Path.Combine(skillsDir, "note-taker"));
         Assert.That(skill, Is.Not.Null);
         Assert.That(skill!.Name, Is.EqualTo("note-taker"));
 
@@ -535,12 +536,12 @@ Body.");
     public void BundledSkills_InstructionsLoad()
     {
         string skillsDir = GetBundledSkillsDir();
-        List<CliSkill> skills = CliSkillLoader.DiscoverSkills(skillsDir);
+        List<Skill> skills = SkillLoader.DiscoverSkills(skillsDir);
 
-        foreach (CliSkill skill in skills)
+        foreach (Skill skill in skills)
         {
             Assert.That(skill.Instructions, Is.Null, $"{skill.Name} instructions should be lazy-loaded");
-            CliSkillLoader.LoadInstructions(skill);
+            SkillLoader.LoadInstructions(skill);
             Assert.That(skill.Instructions, Is.Not.Null.And.Not.Empty, $"{skill.Name} should have instructions");
             Assert.That(skill.Instructions, Does.Contain("##"), $"{skill.Name} instructions should have markdown headings");
         }
@@ -550,8 +551,8 @@ Body.");
     public void BundledSkills_ScriptToolBuilder_CreatesAllTools()
     {
         string skillsDir = GetBundledSkillsDir();
-        List<CliSkill> skills = CliSkillLoader.DiscoverSkills(skillsDir);
-        foreach (CliSkill s in skills) s.Enabled = true;
+        List<Skill> skills = SkillLoader.DiscoverSkills(skillsDir);
+        foreach (Skill s in skills) s.Enabled = true;
 
         var tools = ScriptToolBuilder.BuildScriptTools(skills);
         var toolNames = tools.Select(t => t.ResolvedName).OrderBy(n => n).ToList();
@@ -566,11 +567,11 @@ Body.");
     }
 
     [Test]
-    public void BundledSkills_CliSkillManager_LoadsAll()
+    public void BundledSkills_SkillManager_LoadsAll()
     {
         string skillsDir = GetBundledSkillsDir();
-        CliSettings settings = new() { SkillsDirectory = skillsDir };
-        CliSkillManager manager = new(settings);
+        AgentSettings settings = new() { SkillsDirectory = skillsDir };
+        SkillManager manager = new(settings, new NoOpPersistence());
         manager.LoadSkills(skillsDir);
 
         Assert.That(manager.GetEnabledSkills().Count, Is.GreaterThanOrEqualTo(3));

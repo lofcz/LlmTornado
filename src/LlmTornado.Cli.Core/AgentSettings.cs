@@ -1,11 +1,11 @@
 using System.Text.Json.Serialization;
 
-namespace LlmTornado.Cli;
+namespace LlmTornado.Cli.Core;
 
 /// <summary>
-/// Serializable user settings persisted to settings.json.
+/// Serializable user settings. Shared between CLI and ACP server.
 /// </summary>
-internal sealed class CliSettings
+internal sealed class AgentSettings
 {
     [JsonPropertyName("active_model")]
     public string? ActiveModel { get; set; }

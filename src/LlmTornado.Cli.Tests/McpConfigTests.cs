@@ -1,5 +1,6 @@
 using System.Text.Json;
-using LlmTornado.Cli.Mcp;
+using LlmTornado.Cli.Core;
+using LlmTornado.Cli.Core.Mcp;
 
 namespace LlmTornado.Cli.Tests;
 
@@ -147,8 +148,8 @@ public class McpConfigTests
         string fakeConfig = Path.Combine(_tempDir, "custom-mcp.json");
         File.WriteAllText(fakeConfig, "{}");
 
-        CliSettings settings = new() { McpConfigPath = fakeConfig };
-        string? resolved = McpConfigLoader.ResolveMcpConfigPath(settings);
+        AgentSettings settings = new() { McpConfigPath = fakeConfig };
+        string? resolved = McpConfigLoader.ResolveMcpConfigPath(settings.McpConfigPath);
 
         Assert.That(resolved, Is.EqualTo(fakeConfig));
     }
@@ -156,8 +157,8 @@ public class McpConfigTests
     [Test]
     public void ResolveMcpConfigPath_Returns_Null_When_No_Config()
     {
-        CliSettings settings = new() { McpConfigPath = Path.Combine(_tempDir, "nonexistent.json") };
-        string? resolved = McpConfigLoader.ResolveMcpConfigPath(settings);
+        AgentSettings settings = new() { McpConfigPath = Path.Combine(_tempDir, "nonexistent.json") };
+        string? resolved = McpConfigLoader.ResolveMcpConfigPath(settings.McpConfigPath);
 
         // Returns null because the file doesn't exist (unless settings path is checked differently)
         // The actual behavior: if the settings path doesn't exist, it falls through

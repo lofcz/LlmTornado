@@ -117,6 +117,33 @@ public abstract class BaseAcpTornadoRuntimeConfiguration : IAcpRuntimeConfigurat
         }
     }
 
+    /// <summary>
+    /// Registers a session context in the session store. Subclasses that fully override
+    /// <see cref="NewSessionAsync"/> should use this to register their sessions so that
+    /// <see cref="GetSessionContext"/>, <see cref="PromptAsync"/> and other session-scoped
+    /// methods work correctly.
+    /// </summary>
+    protected void RegisterSession(string sessionId, AcpSessionContext ctx)
+    {
+        lock (_sessionsLock)
+        {
+            _sessions[sessionId] = ctx;
+        }
+    }
+
+    /// <summary>
+    /// Raises the <see cref="OnSessionUpdate"/> event. Subclasses that manage their own
+    /// event wiring (e.g. after rebuilding a session runtime) should use this to forward
+    /// ACP session notifications to the JSON-RPC server.
+    /// </summary>
+    protected async Task RaiseSessionUpdate(AcpSessionNotification notification)
+    {
+        if (OnSessionUpdate is not null)
+        {
+            await OnSessionUpdate.Invoke(notification);
+        }
+    }
+
     /// <inheritdoc />
     public virtual Task<AcpInitializeResponse> InitializeAsync(AcpInitializeRequest request, CancellationToken cancellationToken)
     {

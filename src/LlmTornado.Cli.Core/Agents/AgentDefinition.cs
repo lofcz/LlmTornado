@@ -1,4 +1,4 @@
-namespace LlmTornado.Cli.Agents;
+namespace LlmTornado.Cli.Core.Agents;
 
 /// <summary>
 /// Source origin of an agent definition.
@@ -6,7 +6,7 @@ namespace LlmTornado.Cli.Agents;
 internal enum AgentSource
 {
     /// <summary>
-    /// Shipped with the CLI binary (from Agents/built-in/ directory).
+    /// Shipped with the binary (from Agents/built-in/ directory).
     /// </summary>
     BuiltIn,
 
@@ -30,7 +30,7 @@ internal enum AgentSource
 /// Persona agents use YAML frontmatter for structured configuration.
 /// Project agents are pure markdown per the AGENTS.md specification.
 /// </summary>
-internal sealed class CliAgentDefinition
+internal sealed class AgentDefinition
 {
     // --- Identity ---
 

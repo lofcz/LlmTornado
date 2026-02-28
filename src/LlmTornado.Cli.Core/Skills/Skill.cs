@@ -1,9 +1,9 @@
-namespace LlmTornado.Cli.Skills;
+namespace LlmTornado.Cli.Core.Skills;
 
 /// <summary>
 /// Represents a loaded skill following the Agent Skills standard (agentskills.io).
 /// </summary>
-internal sealed class CliSkill
+internal sealed class Skill
 {
     // --- Frontmatter (always loaded) ---
     public required string Name { get; init; }

@@ -1,5 +1,6 @@
 using LlmTornado.Agents.DataModels;
 using LlmTornado.Chat.Models;
+using LlmTornado.Cli.Core.Providers;
 
 namespace LlmTornado.Cli.Commands;
 

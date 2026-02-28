@@ -1,7 +1,8 @@
 using System.Text.Json;
 using LlmTornado.Cli;
-using LlmTornado.Cli.Agents;
-using LlmTornado.Cli.Skills;
+using LlmTornado.Cli.Core;
+using LlmTornado.Cli.Core.Agents;
+using LlmTornado.Cli.Core.Skills;
 
 namespace LlmTornado.Cli.Tests;
 
@@ -47,7 +48,7 @@ public class AgentDefinitionTests
             string path = Path.Combine(_tempDir, "test-agent.md");
             File.WriteAllText(path, content);
 
-            CliAgentDefinition? result = AgentDefinitionLoader.ParsePersonaFile(
+            AgentDefinition? result = AgentDefinitionLoader.ParsePersonaFile(
                 path, AgentSource.Custom);
 
             Assert.That(result, Is.Not.Null);
@@ -79,7 +80,7 @@ public class AgentDefinitionTests
             string path = Path.Combine(_tempDir, "quick-helper.md");
             File.WriteAllText(path, content);
 
-            CliAgentDefinition? result = AgentDefinitionLoader.ParsePersonaFile(
+            AgentDefinition? result = AgentDefinitionLoader.ParsePersonaFile(
                 path, AgentSource.BuiltIn);
 
             Assert.That(result, Is.Not.Null);
@@ -105,7 +106,7 @@ public class AgentDefinitionTests
             string path = Path.Combine(_tempDir, "different-filename.md");
             File.WriteAllText(path, content);
 
-            CliAgentDefinition? result = AgentDefinitionLoader.ParsePersonaFile(
+            AgentDefinition? result = AgentDefinitionLoader.ParsePersonaFile(
                 path, AgentSource.Custom);
 
             Assert.That(result, Is.Not.Null);
@@ -118,7 +119,7 @@ public class AgentDefinitionTests
             string path = Path.Combine(_tempDir, "empty.md");
             File.WriteAllText(path, "");
 
-            CliAgentDefinition? result = AgentDefinitionLoader.ParsePersonaFile(
+            AgentDefinition? result = AgentDefinitionLoader.ParsePersonaFile(
                 path, AgentSource.Custom);
 
             Assert.That(result, Is.Null);
@@ -130,7 +131,7 @@ public class AgentDefinitionTests
             string path = Path.Combine(_tempDir, "whitespace.md");
             File.WriteAllText(path, "   \n  \n  ");
 
-            CliAgentDefinition? result = AgentDefinitionLoader.ParsePersonaFile(
+            AgentDefinition? result = AgentDefinitionLoader.ParsePersonaFile(
                 path, AgentSource.Custom);
 
             Assert.That(result, Is.Null);
@@ -142,7 +143,7 @@ public class AgentDefinitionTests
             string path = Path.Combine(_tempDir, "InvalidName.md");
             File.WriteAllText(path, "# Instructions");
 
-            CliAgentDefinition? result = AgentDefinitionLoader.ParsePersonaFile(
+            AgentDefinition? result = AgentDefinitionLoader.ParsePersonaFile(
                 path, AgentSource.Custom);
 
             // FileNameToSlug lowercases: "InvalidName" -> "invalidname"
@@ -156,7 +157,7 @@ public class AgentDefinitionTests
             string path = Path.Combine(_tempDir, "bad_name.md");
             File.WriteAllText(path, "# Instructions");
 
-            CliAgentDefinition? result = AgentDefinitionLoader.ParsePersonaFile(
+            AgentDefinition? result = AgentDefinitionLoader.ParsePersonaFile(
                 path, AgentSource.Custom);
 
             Assert.That(result, Is.Null);
@@ -168,7 +169,7 @@ public class AgentDefinitionTests
             string path = Path.Combine(_tempDir, "bad--name.md");
             File.WriteAllText(path, "# Instructions");
 
-            CliAgentDefinition? result = AgentDefinitionLoader.ParsePersonaFile(
+            AgentDefinition? result = AgentDefinitionLoader.ParsePersonaFile(
                 path, AgentSource.Custom);
 
             Assert.That(result, Is.Null);
@@ -188,7 +189,7 @@ public class AgentDefinitionTests
             string path = Path.Combine(_tempDir, "partial.md");
             File.WriteAllText(path, content);
 
-            CliAgentDefinition? result = AgentDefinitionLoader.ParsePersonaFile(
+            AgentDefinition? result = AgentDefinitionLoader.ParsePersonaFile(
                 path, AgentSource.Custom);
 
             Assert.That(result, Is.Not.Null);
@@ -215,7 +216,7 @@ public class AgentDefinitionTests
             string path = Path.Combine(_tempDir, "single-value.md");
             File.WriteAllText(path, content);
 
-            CliAgentDefinition? result = AgentDefinitionLoader.ParsePersonaFile(
+            AgentDefinition? result = AgentDefinitionLoader.ParsePersonaFile(
                 path, AgentSource.Custom);
 
             Assert.That(result!.EnabledSkills, Has.Count.EqualTo(1));
@@ -238,7 +239,7 @@ public class AgentDefinitionTests
             string path = Path.Combine(_tempDir, "tolerant.md");
             File.WriteAllText(path, content);
 
-            CliAgentDefinition? result = AgentDefinitionLoader.ParsePersonaFile(
+            AgentDefinition? result = AgentDefinitionLoader.ParsePersonaFile(
                 path, AgentSource.Custom);
 
             Assert.That(result, Is.Not.Null);
@@ -275,7 +276,7 @@ public class AgentDefinitionTests
                 Path.Combine(_tempDir, "AGENTS.md"),
                 "# Project\n\n## Build\ndotnet build");
 
-            CliAgentDefinition? result = AgentDefinitionLoader.DiscoverProjectAgents(_tempDir);
+            AgentDefinition? result = AgentDefinitionLoader.DiscoverProjectAgents(_tempDir);
 
             Assert.That(result, Is.Not.Null);
             Assert.That(result!.Source, Is.EqualTo(AgentSource.Project));
@@ -292,7 +293,7 @@ public class AgentDefinitionTests
             File.WriteAllText(Path.Combine(_tempDir, "AGENTS.md"), "# Root instructions");
             File.WriteAllText(Path.Combine(subDir, "AGENTS.md"), "# Sub instructions");
 
-            CliAgentDefinition? result = AgentDefinitionLoader.DiscoverProjectAgents(subDir);
+            AgentDefinition? result = AgentDefinitionLoader.DiscoverProjectAgents(subDir);
 
             Assert.That(result, Is.Not.Null);
             int subIndex = result!.Instructions.IndexOf("Sub instructions");
@@ -312,7 +313,7 @@ public class AgentDefinitionTests
             File.WriteAllText(Path.Combine(_tempDir, "AGENTS.md"), "Root content");
             File.WriteAllText(Path.Combine(subDir, "AGENTS.md"), "Sub content");
 
-            CliAgentDefinition? result = AgentDefinitionLoader.DiscoverProjectAgents(subDir);
+            AgentDefinition? result = AgentDefinitionLoader.DiscoverProjectAgents(subDir);
 
             Assert.That(result!.Instructions, Does.Contain("<!-- AGENTS.md from:"));
         }
@@ -322,7 +323,7 @@ public class AgentDefinitionTests
         {
             File.WriteAllText(Path.Combine(_tempDir, "AGENTS.md"), "   ");
 
-            CliAgentDefinition? result = AgentDefinitionLoader.DiscoverProjectAgents(_tempDir);
+            AgentDefinition? result = AgentDefinitionLoader.DiscoverProjectAgents(_tempDir);
 
             // The file itself is whitespace-only, so it's skipped.
             // Result may still be non-null if a parent directory has a valid AGENTS.md
@@ -335,7 +336,7 @@ public class AgentDefinitionTests
         {
             File.WriteAllText(Path.Combine(_tempDir, "AGENTS.md"), "# Instructions\nBuild stuff.");
 
-            CliAgentDefinition? result = AgentDefinitionLoader.DiscoverProjectAgents(_tempDir);
+            AgentDefinition? result = AgentDefinitionLoader.DiscoverProjectAgents(_tempDir);
 
             Assert.That(result, Is.Not.Null);
             Assert.That(result!.HasCapabilityCuration, Is.False);
@@ -379,7 +380,7 @@ public class AgentDefinitionTests
             File.WriteAllText(Path.Combine(_builtInDir, "reviewer.md"),
                 "---\nname: reviewer\ndescription: Reviews code\n---\n# Review");
 
-            List<CliAgentDefinition> result =
+            List<AgentDefinition> result =
                 AgentDefinitionLoader.DiscoverPersonaAgents(_builtInDir, _customDir);
 
             Assert.That(result, Has.Count.EqualTo(1));
@@ -395,7 +396,7 @@ public class AgentDefinitionTests
             File.WriteAllText(Path.Combine(_customDir, "reviewer.md"),
                 "---\nname: reviewer\ndescription: Custom reviewer\n---\n# Custom");
 
-            List<CliAgentDefinition> result =
+            List<AgentDefinition> result =
                 AgentDefinitionLoader.DiscoverPersonaAgents(_builtInDir, _customDir);
 
             Assert.That(result, Has.Count.EqualTo(1));
@@ -411,7 +412,7 @@ public class AgentDefinitionTests
             File.WriteAllText(Path.Combine(_customDir, "my-agent.md"),
                 "---\nname: my-agent\n---\n# Custom");
 
-            List<CliAgentDefinition> result =
+            List<AgentDefinition> result =
                 AgentDefinitionLoader.DiscoverPersonaAgents(_builtInDir, _customDir);
 
             Assert.That(result, Has.Count.EqualTo(2));
@@ -427,7 +428,7 @@ public class AgentDefinitionTests
             File.WriteAllText(Path.Combine(_builtInDir, "valid.md"),
                 "---\nname: valid\n---\n# OK");
 
-            List<CliAgentDefinition> result =
+            List<AgentDefinition> result =
                 AgentDefinitionLoader.DiscoverPersonaAgents(_builtInDir, _customDir);
 
             Assert.That(result, Has.Count.EqualTo(1));
@@ -437,7 +438,7 @@ public class AgentDefinitionTests
         [Test]
         public void EmptyDirectories_NoAgents()
         {
-            List<CliAgentDefinition> result =
+            List<AgentDefinition> result =
                 AgentDefinitionLoader.DiscoverPersonaAgents(_builtInDir, _customDir);
 
             Assert.That(result, Is.Empty);
@@ -448,7 +449,7 @@ public class AgentDefinitionTests
         {
             string fakePath = Path.Combine(_tempDir, "nonexistent");
 
-            List<CliAgentDefinition> result =
+            List<AgentDefinition> result =
                 AgentDefinitionLoader.DiscoverPersonaAgents(fakePath, fakePath);
 
             Assert.That(result, Is.Empty);
@@ -465,7 +466,7 @@ public class AgentDefinitionTests
         private string _tempDir = null!;
         private string _builtInDir = null!;
         private string _customDir = null!;
-        private CliSettings _settings = null!;
+        private AgentSettings _settings = null!;
         private AgentDefinitionManager _manager = null!;
 
         [SetUp]
@@ -482,8 +483,8 @@ public class AgentDefinitionTests
             File.WriteAllText(Path.Combine(_builtInDir, "agent-b.md"),
                 "---\nname: agent-b\ndescription: Agent B\n---\n# B");
 
-            _settings = new CliSettings();
-            _manager = new AgentDefinitionManager(_settings);
+            _settings = new AgentSettings();
+            _manager = new AgentDefinitionManager(_settings, new NoOpPersistence());
             _manager.LoadAll(_builtInDir, _customDir, _tempDir);
         }
 
@@ -502,7 +503,7 @@ public class AgentDefinitionTests
         [Test]
         public void SetActivePersona_ValidName_Succeeds()
         {
-            CliAgentDefinition? result = _manager.SetActivePersona("agent-a");
+            AgentDefinition? result = _manager.SetActivePersona("agent-a");
 
             Assert.That(result, Is.Not.Null);
             Assert.That(result!.Name, Is.EqualTo("agent-a"));
@@ -512,7 +513,7 @@ public class AgentDefinitionTests
         [Test]
         public void SetActivePersona_InvalidName_ReturnsNull()
         {
-            CliAgentDefinition? result = _manager.SetActivePersona("nonexistent");
+            AgentDefinition? result = _manager.SetActivePersona("nonexistent");
 
             Assert.That(result, Is.Null);
             Assert.That(_manager.ActivePersonaName, Is.Null);
@@ -533,7 +534,7 @@ public class AgentDefinitionTests
         {
             _manager.SetActivePersona("agent-b");
 
-            CliAgentDefinition? active = _manager.GetActivePersona();
+            AgentDefinition? active = _manager.GetActivePersona();
 
             Assert.That(active, Is.Not.Null);
             Assert.That(active!.Name, Is.EqualTo("agent-b"));
@@ -542,7 +543,7 @@ public class AgentDefinitionTests
         [Test]
         public void SetActivePersona_IsCaseInsensitive()
         {
-            CliAgentDefinition? result = _manager.SetActivePersona("Agent-A");
+            AgentDefinition? result = _manager.SetActivePersona("Agent-A");
 
             Assert.That(result, Is.Not.Null);
             Assert.That(result!.Name, Is.EqualTo("agent-a"));
@@ -552,7 +553,7 @@ public class AgentDefinitionTests
         public void LoadAll_RestoresSavedAgent()
         {
             _settings.ActiveAgent = "agent-a";
-            AgentDefinitionManager fresh = new(_settings);
+            AgentDefinitionManager fresh = new(_settings, new NoOpPersistence());
             fresh.LoadAll(_builtInDir, _customDir, _tempDir);
 
             Assert.That(fresh.ActivePersonaName, Is.EqualTo("agent-a"));
@@ -562,7 +563,7 @@ public class AgentDefinitionTests
         public void LoadAll_ClearsMissingSavedAgent()
         {
             _settings.ActiveAgent = "deleted-agent";
-            AgentDefinitionManager fresh = new(_settings);
+            AgentDefinitionManager fresh = new(_settings, new NoOpPersistence());
             fresh.LoadAll(_builtInDir, _customDir, _tempDir);
 
             Assert.That(fresh.ActivePersonaName, Is.Null);
@@ -572,7 +573,7 @@ public class AgentDefinitionTests
         [Test]
         public void GetPersona_ReturnsByName()
         {
-            CliAgentDefinition? persona = _manager.GetPersona("agent-a");
+            AgentDefinition? persona = _manager.GetPersona("agent-a");
 
             Assert.That(persona, Is.Not.Null);
             Assert.That(persona!.Name, Is.EqualTo("agent-a"));
@@ -615,8 +616,8 @@ public class AgentDefinitionTests
         [Test]
         public void NoActivePersona_AllToolsAllowed()
         {
-            CliSettings settings = new();
-            AgentDefinitionManager manager = new(settings);
+            AgentSettings settings = new();
+            AgentDefinitionManager manager = new(settings, new NoOpPersistence());
 
             Assert.That(manager.IsToolAllowed("any-tool"), Is.True);
             Assert.That(manager.IsToolAllowed("web-search:ddg-search"), Is.True);
@@ -634,13 +635,13 @@ public class AgentDefinitionTests
                 # Strict
                 """);
 
-            CliSettings settings = new();
-            AgentDefinitionManager manager = new(settings);
+            AgentSettings settings = new();
+            AgentDefinitionManager manager = new(settings, new NoOpPersistence());
             manager.LoadAll(_builtInDir, _customDir, _tempDir);
             manager.SetActivePersona("strict");
 
             // Apply baseline to compute tool filters
-            CliSkillManager skillManager = new(settings);
+            SkillManager skillManager = new(settings, new NoOpPersistence());
             ConsoleRenderer renderer = new();
             ToolApprovalManager toolApproval = new(renderer);
             manager.ApplyCapabilityBaseline(skillManager, toolApproval);
@@ -661,12 +662,12 @@ public class AgentDefinitionTests
                 # Blocker
                 """);
 
-            CliSettings settings = new();
-            AgentDefinitionManager manager = new(settings);
+            AgentSettings settings = new();
+            AgentDefinitionManager manager = new(settings, new NoOpPersistence());
             manager.LoadAll(_builtInDir, _customDir, _tempDir);
             manager.SetActivePersona("blocker");
 
-            CliSkillManager skillManager = new(settings);
+            SkillManager skillManager = new(settings, new NoOpPersistence());
             ConsoleRenderer renderer = new();
             ToolApprovalManager toolApproval = new(renderer);
             manager.ApplyCapabilityBaseline(skillManager, toolApproval);
@@ -686,12 +687,12 @@ public class AgentDefinitionTests
                 # Whitelister
                 """);
 
-            CliSettings settings = new();
-            AgentDefinitionManager manager = new(settings);
+            AgentSettings settings = new();
+            AgentDefinitionManager manager = new(settings, new NoOpPersistence());
             manager.LoadAll(_builtInDir, _customDir, _tempDir);
             manager.SetActivePersona("whitelister");
 
-            CliSkillManager skillManager = new(settings);
+            SkillManager skillManager = new(settings, new NoOpPersistence());
             ConsoleRenderer renderer = new();
             ToolApprovalManager toolApproval = new(renderer);
             manager.ApplyCapabilityBaseline(skillManager, toolApproval);
@@ -712,12 +713,12 @@ public class AgentDefinitionTests
                 # Blocker
                 """);
 
-            CliSettings settings = new();
-            AgentDefinitionManager manager = new(settings);
+            AgentSettings settings = new();
+            AgentDefinitionManager manager = new(settings, new NoOpPersistence());
             manager.LoadAll(_builtInDir, _customDir, _tempDir);
             manager.SetActivePersona("blocker2");
 
-            CliSkillManager skillManager = new(settings);
+            SkillManager skillManager = new(settings, new NoOpPersistence());
             ConsoleRenderer renderer = new();
             ToolApprovalManager toolApproval = new(renderer);
             manager.ApplyCapabilityBaseline(skillManager, toolApproval);
@@ -794,11 +795,11 @@ public class AgentDefinitionTests
         [Test]
         public void Whitelist_OnlyEnabledSkillsActive()
         {
-            CliSettings settings = new();
-            CliSkillManager skillManager = new(settings);
+            AgentSettings settings = new();
+            SkillManager skillManager = new(settings, new NoOpPersistence());
             skillManager.LoadSkills(_skillsDir);
 
-            AgentDefinitionManager manager = new(settings);
+            AgentDefinitionManager manager = new(settings, new NoOpPersistence());
             manager.LoadAll(_builtInDir, _customDir, _tempDir);
             manager.SetActivePersona("curated");
 
@@ -818,11 +819,11 @@ public class AgentDefinitionTests
         [Test]
         public void NoCuration_AllSkillsEnabled()
         {
-            CliSettings settings = new();
-            CliSkillManager skillManager = new(settings);
+            AgentSettings settings = new();
+            SkillManager skillManager = new(settings, new NoOpPersistence());
             skillManager.LoadSkills(_skillsDir);
 
-            AgentDefinitionManager manager = new(settings);
+            AgentDefinitionManager manager = new(settings, new NoOpPersistence());
             manager.LoadAll(_builtInDir, _customDir, _tempDir);
             manager.SetActivePersona("uncurated");
 
@@ -838,11 +839,11 @@ public class AgentDefinitionTests
         [Test]
         public void ClearPersona_AllSkillsRestored()
         {
-            CliSettings settings = new();
-            CliSkillManager skillManager = new(settings);
+            AgentSettings settings = new();
+            SkillManager skillManager = new(settings, new NoOpPersistence());
             skillManager.LoadSkills(_skillsDir);
 
-            AgentDefinitionManager manager = new(settings);
+            AgentDefinitionManager manager = new(settings, new NoOpPersistence());
             manager.LoadAll(_builtInDir, _customDir, _tempDir);
             manager.SetActivePersona("curated");
 
@@ -865,11 +866,11 @@ public class AgentDefinitionTests
         [Test]
         public void Baseline_IsIdempotent()
         {
-            CliSettings settings = new();
-            CliSkillManager skillManager = new(settings);
+            AgentSettings settings = new();
+            SkillManager skillManager = new(settings, new NoOpPersistence());
             skillManager.LoadSkills(_skillsDir);
 
-            AgentDefinitionManager manager = new(settings);
+            AgentDefinitionManager manager = new(settings, new NoOpPersistence());
             manager.LoadAll(_builtInDir, _customDir, _tempDir);
             manager.SetActivePersona("curated");
 
@@ -895,7 +896,7 @@ public class AgentDefinitionTests
         [Test]
         public void NewFields_SerializeAndDeserialize()
         {
-            CliSettings original = new()
+            AgentSettings original = new()
             {
                 ActiveModel = "gpt-4o",
                 ActiveAgent = "code-reviewer",
@@ -905,7 +906,7 @@ public class AgentDefinitionTests
             };
 
             string json = JsonSerializer.Serialize(original);
-            CliSettings? restored = JsonSerializer.Deserialize<CliSettings>(json);
+            AgentSettings? restored = JsonSerializer.Deserialize<AgentSettings>(json);
 
             Assert.That(restored, Is.Not.Null);
             Assert.That(restored!.ActiveAgent, Is.EqualTo("code-reviewer"));
@@ -918,7 +919,7 @@ public class AgentDefinitionTests
         {
             string oldJson = """{"active_model":"gpt-4o","disabled_skills":[]}""";
 
-            CliSettings? settings = JsonSerializer.Deserialize<CliSettings>(oldJson);
+            AgentSettings? settings = JsonSerializer.Deserialize<AgentSettings>(oldJson);
 
             Assert.That(settings, Is.Not.Null);
             Assert.That(settings!.ActiveAgent, Is.Null);
@@ -962,8 +963,8 @@ public class AgentDefinitionTests
             File.WriteAllText(Path.Combine(_tempDir, "AGENTS.md"),
                 "# Project\nBuild with dotnet.");
 
-            CliSettings settings = new();
-            AgentDefinitionManager manager = new(settings);
+            AgentSettings settings = new();
+            AgentDefinitionManager manager = new(settings, new NoOpPersistence());
             manager.LoadAll(_builtInDir, _customDir, _tempDir);
             manager.SetActivePersona("test-agent");
 
@@ -989,8 +990,8 @@ public class AgentDefinitionTests
                 "---\nname: test-agent\n---\n# Test\nBe helpful.");
 
             // No AGENTS.md in tempDir
-            CliSettings settings = new();
-            AgentDefinitionManager manager = new(settings);
+            AgentSettings settings = new();
+            AgentDefinitionManager manager = new(settings, new NoOpPersistence());
             manager.LoadAll(_builtInDir, _customDir, _tempDir);
             manager.SetActivePersona("test-agent");
 
@@ -1005,8 +1006,8 @@ public class AgentDefinitionTests
         public void NoPersonaNoProject_ReturnsEmpty()
         {
             // No agents, isolated temp directory with ProjectAgentsEnabled=false
-            CliSettings settings = new() { ProjectAgentsEnabled = false };
-            AgentDefinitionManager manager = new(settings);
+            AgentSettings settings = new() { ProjectAgentsEnabled = false };
+            AgentDefinitionManager manager = new(settings, new NoOpPersistence());
             manager.LoadAll(_builtInDir, _customDir, _tempDir);
 
             string block = manager.BuildInstructionsBlock();
@@ -1019,8 +1020,8 @@ public class AgentDefinitionTests
         {
             File.WriteAllText(Path.Combine(_tempDir, "AGENTS.md"), "# Project\nImportant.");
 
-            CliSettings settings = new() { ProjectAgentsEnabled = false };
-            AgentDefinitionManager manager = new(settings);
+            AgentSettings settings = new() { ProjectAgentsEnabled = false };
+            AgentDefinitionManager manager = new(settings, new NoOpPersistence());
             manager.LoadAll(_builtInDir, _customDir, _tempDir);
 
             string block = manager.BuildInstructionsBlock();
@@ -1053,7 +1054,7 @@ public class AgentDefinitionTests
 
             foreach (string file in files)
             {
-                CliAgentDefinition? agent = AgentDefinitionLoader.ParsePersonaFile(
+                AgentDefinition? agent = AgentDefinitionLoader.ParsePersonaFile(
                     file, AgentSource.BuiltIn);
 
                 Assert.That(agent, Is.Not.Null,
@@ -1080,7 +1081,7 @@ public class AgentDefinitionTests
                 return;
             }
 
-            CliAgentDefinition? agent = AgentDefinitionLoader.ParsePersonaFile(
+            AgentDefinition? agent = AgentDefinitionLoader.ParsePersonaFile(
                 defaultPath, AgentSource.BuiltIn);
 
             Assert.That(agent, Is.Not.Null);
@@ -1104,7 +1105,7 @@ public class AgentDefinitionTests
                 return;
             }
 
-            CliAgentDefinition? agent = AgentDefinitionLoader.ParsePersonaFile(
+            AgentDefinition? agent = AgentDefinitionLoader.ParsePersonaFile(
                 path, AgentSource.BuiltIn);
 
             Assert.That(agent, Is.Not.Null);

@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace LlmTornado.Cli.Mcp;
+namespace LlmTornado.Cli.Core.Mcp;
 
 /// <summary>
 /// Root model for mcp.json config file.

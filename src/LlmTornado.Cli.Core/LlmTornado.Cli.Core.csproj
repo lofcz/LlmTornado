@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Library</OutputType>
+        <TargetFramework>net8.0</TargetFramework>
+        <LangVersion>preview</LangVersion>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <RootNamespace>LlmTornado.Cli.Core</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="LlmTornado.Cli" />
+        <InternalsVisibleTo Include="LlmTornado.Cli.Tests" />
+        <InternalsVisibleTo Include="LlmTornado.Acp.Server" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\LlmTornado\LlmTornado.csproj" />
+        <ProjectReference Include="..\LlmTornado.Agents\LlmTornado.Agents.csproj" />
+        <ProjectReference Include="..\LlmTornado.Mcp\LlmTornado.Mcp.csproj" />
+    </ItemGroup>
+
+    <!-- Built-in agent persona files -->
+    <ItemGroup>
+        <Content Include="Agents\built-in\*.md">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
+    </ItemGroup>
+
+</Project>

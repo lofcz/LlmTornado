@@ -2,7 +2,7 @@ using System.Diagnostics;
 using System.Text;
 using LlmTornado.Common;
 
-namespace LlmTornado.Cli.Skills;
+namespace LlmTornado.Cli.Core.Skills;
 
 /// <summary>
 /// Builds LlmTornado Tool instances from skill script files.
@@ -14,11 +14,11 @@ internal static class ScriptToolBuilder
     /// <summary>
     /// Create Tool objects for all scripts in all enabled skills.
     /// </summary>
-    public static List<Tool> BuildScriptTools(List<CliSkill> enabledSkills)
+    public static List<Tool> BuildScriptTools(List<Skill> enabledSkills)
     {
         List<Tool> tools = [];
 
-        foreach (CliSkill skill in enabledSkills)
+        foreach (Skill skill in enabledSkills)
         {
             foreach (SkillScript script in skill.Scripts)
             {

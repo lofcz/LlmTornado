@@ -43,6 +43,7 @@
   </Folder>
   <Project Path="LlmTornado.Acp.Server/LlmTornado.Acp.Server.csproj" />
   <Project Path="LlmTornado.Cli/LlmTornado.Cli.csproj" />
+  <Project Path="LlmTornado.Cli.Core/LlmTornado.Cli.Core.csproj" />
   <Project Path="LlmTornado.Cli.Tests/LlmTornado.Cli.Tests.csproj" />
   <Project Path="LlmTornado.Contrib/LlmTornado.Contrib.csproj" />
   <Project Path="LlmTornado.Demo/LlmTornado.Demo.csproj" />

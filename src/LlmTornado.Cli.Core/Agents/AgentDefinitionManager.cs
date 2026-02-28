@@ -1,7 +1,6 @@
 using System.Text;
-using LlmTornado.Cli.Skills;
 
-namespace LlmTornado.Cli.Agents;
+namespace LlmTornado.Cli.Core.Agents;
 
 /// <summary>
 /// Manages the lifecycle of agent personas and project context:
@@ -9,10 +8,11 @@ namespace LlmTornado.Cli.Agents;
 /// </summary>
 internal sealed class AgentDefinitionManager
 {
-    private readonly CliSettings _settings;
+    private readonly AgentSettings _settings;
+    private readonly ISettingsPersistence _persistence;
 
-    private readonly Dictionary<string, CliAgentDefinition> _personas = new(StringComparer.OrdinalIgnoreCase);
-    private CliAgentDefinition? _projectContext;
+    private readonly Dictionary<string, AgentDefinition> _personas = new(StringComparer.OrdinalIgnoreCase);
+    private AgentDefinition? _projectContext;
 
     private string? _activePersonaName;
 
@@ -23,14 +23,15 @@ internal sealed class AgentDefinitionManager
 
     public string? ActivePersonaName => _activePersonaName;
 
-    public AgentDefinitionManager(CliSettings settings)
+    public AgentDefinitionManager(AgentSettings settings, ISettingsPersistence persistence)
     {
         _settings = settings;
+        _persistence = persistence;
     }
 
     /// <summary>
     /// Load all agent definitions from filesystem.
-    /// Call once at startup after CliSkillManager is initialized.
+    /// Call once at startup after SkillManager is initialized.
     /// </summary>
     public void LoadAll(string builtInDirectory, string customDirectory, string cwd)
     {
@@ -38,9 +39,9 @@ internal sealed class AgentDefinitionManager
         _projectContext = null;
 
         // 1. Discover persona agents (built-in + custom, custom shadows built-in)
-        List<CliAgentDefinition> personas = AgentDefinitionLoader.DiscoverPersonaAgents(
+        List<AgentDefinition> personas = AgentDefinitionLoader.DiscoverPersonaAgents(
             builtInDirectory, customDirectory);
-        foreach (CliAgentDefinition persona in personas)
+        foreach (AgentDefinition persona in personas)
             _personas[persona.Name] = persona;
 
         // 2. Discover project AGENTS.md from CWD hierarchy
@@ -56,7 +57,7 @@ internal sealed class AgentDefinitionManager
         {
             // Saved persona no longer exists — clear it
             _settings.ActiveAgent = null;
-            CliStorage.SaveJson(CliStorage.SettingsPath, _settings);
+            _persistence.SaveSettings(_settings);
         }
     }
 
@@ -64,14 +65,14 @@ internal sealed class AgentDefinitionManager
     /// Set the active persona by name. Returns the definition, or null if not found.
     /// Does NOT apply the capability baseline — caller must call <see cref="ApplyCapabilityBaseline"/>.
     /// </summary>
-    public CliAgentDefinition? SetActivePersona(string name)
+    public AgentDefinition? SetActivePersona(string name)
     {
-        if (!_personas.TryGetValue(name, out CliAgentDefinition? persona))
+        if (!_personas.TryGetValue(name, out AgentDefinition? persona))
             return null;
 
         _activePersonaName = persona.Name; // use canonical casing from definition
         _settings.ActiveAgent = persona.Name;
-        CliStorage.SaveJson(CliStorage.SettingsPath, _settings);
+        _persistence.SaveSettings(_settings);
         return persona;
     }
 
@@ -85,20 +86,20 @@ internal sealed class AgentDefinitionManager
         _blockedTools.Clear();
         _allowedToolsWhitelist.Clear();
         _hasToolWhitelist = false;
-        CliStorage.SaveJson(CliStorage.SettingsPath, _settings);
+        _persistence.SaveSettings(_settings);
     }
 
-    public CliAgentDefinition? GetActivePersona()
+    public AgentDefinition? GetActivePersona()
     {
         if (_activePersonaName is null) return null;
         return _personas.GetValueOrDefault(_activePersonaName);
     }
 
-    public CliAgentDefinition? GetProjectContext() => _projectContext;
+    public AgentDefinition? GetProjectContext() => _projectContext;
 
-    public List<CliAgentDefinition> GetAllPersonas() => [.. _personas.Values];
+    public List<AgentDefinition> GetAllPersonas() => [.. _personas.Values];
 
-    public CliAgentDefinition? GetPersona(string name) =>
+    public AgentDefinition? GetPersona(string name) =>
         _personas.GetValueOrDefault(name);
 
     /// <summary>
@@ -115,17 +116,17 @@ internal sealed class AgentDefinitionManager
     /// Apply the active persona's skill/tool curation as the baseline state.
     /// Resets all skills to enabled, then applies whitelist/blacklist.
     /// </summary>
-    public void ApplyCapabilityBaseline(CliSkillManager skillManager, ToolApprovalManager toolApproval)
+    public void ApplyCapabilityBaseline(Skills.SkillManager skillManager, IToolApproval toolApproval)
     {
         // Reset tool filtering state
         _blockedTools.Clear();
         _allowedToolsWhitelist.Clear();
         _hasToolWhitelist = false;
 
-        CliAgentDefinition? persona = GetActivePersona();
+        AgentDefinition? persona = GetActivePersona();
 
         // Step 1: Reset ALL skills to enabled (clean slate)
-        foreach (CliSkill skill in skillManager.GetAllSkills())
+        foreach (Skills.Skill skill in skillManager.GetAllSkills())
         {
             if (!skill.Enabled)
                 skillManager.EnableSkill(skill.Name);
@@ -138,7 +139,7 @@ internal sealed class AgentDefinitionManager
         if (persona.EnabledSkills.Count > 0)
         {
             HashSet<string> whitelist = new(persona.EnabledSkills, StringComparer.OrdinalIgnoreCase);
-            foreach (CliSkill skill in skillManager.GetAllSkills())
+            foreach (Skills.Skill skill in skillManager.GetAllSkills())
             {
                 if (!whitelist.Contains(skill.Name))
                     skillManager.DisableSkill(skill.Name);
@@ -196,7 +197,7 @@ internal sealed class AgentDefinitionManager
         StringBuilder sb = new();
 
         // 1. Active persona instructions
-        CliAgentDefinition? persona = GetActivePersona();
+        AgentDefinition? persona = GetActivePersona();
         if (persona is not null && !string.IsNullOrWhiteSpace(persona.Instructions))
         {
             sb.AppendLine("<agent_persona>");

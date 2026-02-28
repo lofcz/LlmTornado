@@ -6,7 +6,7 @@ using LlmTornado.Code;
 using LlmTornado.Common;
 using LlmTornado.Infra;
 
-namespace LlmTornado.Cli;
+namespace LlmTornado.Cli.Core.Tools;
 
 /// <summary>
 /// LLM-based per-turn tool optimizer.

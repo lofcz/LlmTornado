@@ -4,10 +4,12 @@ using LlmTornado.Agents.ChatRuntime.RuntimeConfigurations;
 using LlmTornado.Agents.DataModels;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
-using LlmTornado.Cli.Mcp;
+using LlmTornado.Cli.Core;
+using LlmTornado.Cli.Core.Mcp;
+using LlmTornado.Cli.Core.Providers;
 using LlmTornado.Cli.Memory;
-using LlmTornado.Cli.Agents;
-using LlmTornado.Cli.Skills;
+using LlmTornado.Cli.Core.Agents;
+using LlmTornado.Cli.Core.Skills;
 using LlmTornado.Code;
 using ChatRuntime = LlmTornado.Agents.ChatRuntime.ChatRuntime;
 
@@ -212,8 +214,8 @@ public class LiveIntegrationTests
         string tempDir = TestHelpers.CreateTempDir();
         try
         {
-            CliSettings settings = new();
-            CliSkillManager skillManager = new(settings);
+            AgentSettings settings = new();
+            SkillManager skillManager = new(settings, new NoOpPersistence());
             skillManager.LoadSkills(tempDir);
             McpConfigLoader mcpLoader = new();
             ConsoleRenderer renderer = new();
@@ -221,7 +223,7 @@ public class LiveIntegrationTests
             // Auto-approve all
             toolApproval.PreApproveSkillTools(["load_skill", "list_skills", "read_reference"]);
             ConversationMemoryManager memoryManager = new(_api!, _model, _model.ContextTokens);
-            AgentDefinitionManager agentManager = new(settings);
+            AgentDefinitionManager agentManager = new(settings, new NoOpPersistence());
 
             CliAgentBuilder builder = new(_api!, _model, skillManager, mcpLoader, toolApproval, memoryManager, agentManager, settings, null);
 

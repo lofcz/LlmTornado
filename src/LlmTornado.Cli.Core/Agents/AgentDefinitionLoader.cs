@@ -1,7 +1,7 @@
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace LlmTornado.Cli.Agents;
+namespace LlmTornado.Cli.Core.Agents;
 
 /// <summary>
 /// Stateless discovery and parsing of agent definitions from both
@@ -27,12 +27,13 @@ internal static partial class AgentDefinitionLoader
     private static partial Regex ConsecutiveHyphensRegex();
 
     /// <summary>
-    /// Resolve the custom agents directory from settings with fallback to ./agents/ relative to CWD.
+    /// Resolve the custom agents directory. If <paramref name="agentsDirectoryOverride"/> is non-null
+    /// and exists, use it. Otherwise fall back to ./agents/ relative to CWD.
     /// </summary>
-    public static string ResolveAgentsDirectory(CliSettings settings)
+    public static string ResolveAgentsDirectory(string? agentsDirectoryOverride)
     {
-        if (!string.IsNullOrEmpty(settings.AgentsDirectory) && Directory.Exists(settings.AgentsDirectory))
-            return Path.GetFullPath(settings.AgentsDirectory);
+        if (!string.IsNullOrEmpty(agentsDirectoryOverride) && Directory.Exists(agentsDirectoryOverride))
+            return Path.GetFullPath(agentsDirectoryOverride);
 
         return Path.GetFullPath("agents");
     }
@@ -47,11 +48,11 @@ internal static partial class AgentDefinitionLoader
 
     /// <summary>
     /// Walk from the given directory toward the filesystem root, collecting
-    /// every AGENTS.md file found. Returns a merged <see cref="CliAgentDefinition"/> with
+    /// every AGENTS.md file found. Returns a merged <see cref="AgentDefinition"/> with
     /// <see cref="AgentSource.Project"/>, or null if no AGENTS.md files exist.
     /// Files are ordered nearest-first (closest to startDirectory takes precedence).
     /// </summary>
-    public static CliAgentDefinition? DiscoverProjectAgents(string startDirectory)
+    public static AgentDefinition? DiscoverProjectAgents(string startDirectory)
     {
         List<(string path, string content)> found = [];
         string? current = Path.GetFullPath(startDirectory);
@@ -90,7 +91,7 @@ internal static partial class AgentDefinitionLoader
             merged.AppendLine(found[i].content.TrimEnd());
         }
 
-        return new CliAgentDefinition
+        return new AgentDefinition
         {
             Name = "project-context",
             Description = $"Project context from {found.Count} AGENTS.md file(s)",
@@ -104,17 +105,17 @@ internal static partial class AgentDefinitionLoader
     /// Scan the built-in and custom agent directories for persona .md files.
     /// Custom agents shadow built-in agents with the same name.
     /// </summary>
-    public static List<CliAgentDefinition> DiscoverPersonaAgents(
+    public static List<AgentDefinition> DiscoverPersonaAgents(
         string builtInDirectory, string customDirectory)
     {
-        Dictionary<string, CliAgentDefinition> agents = new(StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, AgentDefinition> agents = new(StringComparer.OrdinalIgnoreCase);
 
         // 1. Load built-in agents first
         if (Directory.Exists(builtInDirectory))
         {
             foreach (string file in Directory.GetFiles(builtInDirectory, "*.md"))
             {
-                CliAgentDefinition? agent = ParsePersonaFile(file, AgentSource.BuiltIn);
+                AgentDefinition? agent = ParsePersonaFile(file, AgentSource.BuiltIn);
                 if (agent is not null)
                     agents[agent.Name] = agent;
             }
@@ -125,7 +126,7 @@ internal static partial class AgentDefinitionLoader
         {
             foreach (string file in Directory.GetFiles(customDirectory, "*.md"))
             {
-                CliAgentDefinition? agent = ParsePersonaFile(file, AgentSource.Custom);
+                AgentDefinition? agent = ParsePersonaFile(file, AgentSource.Custom);
                 if (agent is not null)
                     agents[agent.Name] = agent;
             }
@@ -135,9 +136,9 @@ internal static partial class AgentDefinitionLoader
     }
 
     /// <summary>
-    /// Parse a single persona .md file into a <see cref="CliAgentDefinition"/>.
+    /// Parse a single persona .md file into a <see cref="AgentDefinition"/>.
     /// </summary>
-    internal static CliAgentDefinition? ParsePersonaFile(string filePath, AgentSource source)
+    internal static AgentDefinition? ParsePersonaFile(string filePath, AgentSource source)
     {
         string fileName = Path.GetFileName(filePath);
         string? slug = FileNameToSlug(fileName);
@@ -168,7 +169,7 @@ internal static partial class AgentDefinitionLoader
         string description = frontmatter.GetValueOrDefault("description") as string
                              ?? ExtractDescriptionFromMarkdown(instructions);
 
-        return new CliAgentDefinition
+        return new AgentDefinition
         {
             Name = name,
             Description = description,
@@ -185,9 +186,8 @@ internal static partial class AgentDefinitionLoader
 
     /// <summary>
     /// Parse YAML-like frontmatter between --- delimiters.
-    /// Same approach as <see cref="Skills.CliSkillLoader"/> with support for nested maps.
     /// </summary>
-    private static Dictionary<string, object> ParseFrontmatter(string content)
+    internal static Dictionary<string, object> ParseFrontmatter(string content)
     {
         Dictionary<string, object> result = new();
 
