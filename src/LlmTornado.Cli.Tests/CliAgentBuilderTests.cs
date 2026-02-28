@@ -4,6 +4,7 @@ using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Cli.Mcp;
 using LlmTornado.Cli.Memory;
+using LlmTornado.Cli.Agents;
 using LlmTornado.Cli.Skills;
 using LlmTornado.Code;
 
@@ -43,8 +44,9 @@ public class CliAgentBuilderTests
         ConsoleRenderer renderer = new();
         ToolApprovalManager toolApproval = new(renderer);
         ConversationMemoryManager memoryManager = new(api, model, model.ContextTokens);
+        AgentDefinitionManager agentManager = new(settings);
 
-        CliAgentBuilder builder = new(api, model, skillManager, mcpLoader, toolApproval, memoryManager);
+        CliAgentBuilder builder = new(api, model, skillManager, mcpLoader, toolApproval, memoryManager, agentManager);
         LlmTornado.Agents.ChatRuntime.ChatRuntime runtime = builder.Build();
 
         Assert.That(builder.Agent, Is.Not.Null);
@@ -70,8 +72,9 @@ public class CliAgentBuilderTests
         ConsoleRenderer renderer = new();
         ToolApprovalManager toolApproval = new(renderer);
         ConversationMemoryManager memoryManager = new(api, model, model.ContextTokens);
+        AgentDefinitionManager agentManager = new(settings);
 
-        CliAgentBuilder builder = new(api, model, skillManager, mcpLoader, toolApproval, memoryManager);
+        CliAgentBuilder builder = new(api, model, skillManager, mcpLoader, toolApproval, memoryManager, agentManager);
         builder.Build();
 
         // ToolList should contain load_skill, list_skills, read_reference
@@ -111,8 +114,9 @@ Instructions.");
         ConsoleRenderer renderer = new();
         ToolApprovalManager toolApproval = new(renderer);
         ConversationMemoryManager memoryManager = new(api, model, model.ContextTokens);
+        AgentDefinitionManager agentManager = new(settings);
 
-        CliAgentBuilder builder = new(api, model, skillManager, mcpLoader, toolApproval, memoryManager);
+        CliAgentBuilder builder = new(api, model, skillManager, mcpLoader, toolApproval, memoryManager, agentManager);
         builder.Build();
 
         var toolNames = builder.Agent.ToolList?.Select(t => t.Key).ToList() ?? [];
@@ -136,8 +140,9 @@ Instructions.");
         ConsoleRenderer renderer = new();
         ToolApprovalManager toolApproval = new(renderer);
         ConversationMemoryManager memoryManager = new(api, initialModel, initialModel.ContextTokens);
+        AgentDefinitionManager agentManager = new(settings);
 
-        CliAgentBuilder builder = new(api, initialModel, skillManager, mcpLoader, toolApproval, memoryManager);
+        CliAgentBuilder builder = new(api, initialModel, skillManager, mcpLoader, toolApproval, memoryManager, agentManager);
         builder.Build();
 
         ChatModel newModel = ChatModel.OpenAi.Gpt41.V41Mini;
@@ -167,8 +172,9 @@ Instructions.");
         ConsoleRenderer renderer = new();
         ToolApprovalManager toolApproval = new(renderer);
         ConversationMemoryManager memoryManager = new(api, model, model.ContextTokens);
+        AgentDefinitionManager agentManager = new(settings);
 
-        CliAgentBuilder builder = new(api, model, skillManager, mcpLoader, toolApproval, memoryManager);
+        CliAgentBuilder builder = new(api, model, skillManager, mcpLoader, toolApproval, memoryManager, agentManager);
 
         Assert.Throws<InvalidOperationException>(() => _ = builder.Agent);
         Assert.Throws<InvalidOperationException>(() => _ = builder.Runtime);

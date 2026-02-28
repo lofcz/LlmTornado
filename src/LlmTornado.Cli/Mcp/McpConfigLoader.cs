@@ -22,7 +22,7 @@ internal sealed partial class McpConfigLoader : IAsyncDisposable
     public IReadOnlyList<McpServerStatus> ServerStatuses => _serverStatuses;
 
     /// <summary>
-    /// Resolve the MCP config file path.
+    /// Resolve the MCP config file path. Returns null if none found.
     /// </summary>
     public static string? ResolveMcpConfigPath(CliSettings settings)
     {
@@ -35,6 +35,22 @@ internal sealed partial class McpConfigLoader : IAsyncDisposable
 
         string defaultPath = Path.GetFullPath("mcp.json");
         return File.Exists(defaultPath) ? defaultPath : null;
+    }
+
+    /// <summary>
+    /// Get the path where the mcp.json should live, whether it exists or not.
+    /// Prefers settings override, then env var, then ./mcp.json.
+    /// </summary>
+    public static string ResolveDefaultMcpConfigPath(CliSettings settings)
+    {
+        if (!string.IsNullOrEmpty(settings.McpConfigPath))
+            return Path.GetFullPath(settings.McpConfigPath);
+
+        string? envPath = Environment.GetEnvironmentVariable("TORNADO_MCP_CONFIG");
+        if (!string.IsNullOrEmpty(envPath))
+            return Path.GetFullPath(envPath);
+
+        return Path.GetFullPath("mcp.json");
     }
 
     /// <summary>

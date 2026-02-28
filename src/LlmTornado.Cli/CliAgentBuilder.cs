@@ -4,6 +4,7 @@ using LlmTornado.Agents.ChatRuntime;
 using LlmTornado.Agents.ChatRuntime.RuntimeConfigurations;
 using LlmTornado.Agents.DataModels;
 using LlmTornado.Chat.Models;
+using LlmTornado.Cli.Agents;
 using LlmTornado.Cli.Mcp;
 using LlmTornado.Cli.Memory;
 using LlmTornado.Cli.Skills;
@@ -21,6 +22,7 @@ internal sealed class CliAgentBuilder
     private readonly McpConfigLoader _mcpLoader;
     private readonly ToolApprovalManager _toolApproval;
     private readonly ConversationMemoryManager _memoryManager;
+    private readonly AgentDefinitionManager _agentManager;
 
     private ChatModel _activeModel;
     private TornadoAgent? _agent;
@@ -36,7 +38,8 @@ internal sealed class CliAgentBuilder
         CliSkillManager skillManager,
         McpConfigLoader mcpLoader,
         ToolApprovalManager toolApproval,
-        ConversationMemoryManager memoryManager)
+        ConversationMemoryManager memoryManager,
+        AgentDefinitionManager agentManager)
     {
         _api = api;
         _activeModel = activeModel;
@@ -44,6 +47,7 @@ internal sealed class CliAgentBuilder
         _mcpLoader = mcpLoader;
         _toolApproval = toolApproval;
         _memoryManager = memoryManager;
+        _agentManager = agentManager;
     }
 
     /// <summary>
@@ -103,14 +107,34 @@ internal sealed class CliAgentBuilder
         return Build(onRuntimeEvent);
     }
 
+    /// <summary>
+    /// Rebuild after agent persona switch.
+    /// Applies capability baseline before rebuilding.
+    /// </summary>
+    public ChatRuntime RebuildForAgentChange(Func<ChatRuntimeEvents, ValueTask>? onRuntimeEvent = null)
+    {
+        _agentManager.ApplyCapabilityBaseline(_skillManager, _toolApproval);
+        return Build(onRuntimeEvent);
+    }
+
     private string BuildSystemPrompt()
     {
         StringBuilder sb = new();
 
-        sb.AppendLine("You are a helpful CLI assistant with access to skills and tools.");
-        sb.AppendLine("You can activate skills to gain specialized knowledge and capabilities.");
-        sb.AppendLine();
+        // Layer 1: Agent instructions (persona + project context)
+        string agentInstructions = _agentManager.BuildInstructionsBlock();
+        if (!string.IsNullOrEmpty(agentInstructions))
+        {
+            sb.Append(agentInstructions);
+        }
+        else
+        {
+            sb.AppendLine("You are a helpful CLI assistant with access to skills and tools.");
+            sb.AppendLine("You can activate skills to gain specialized knowledge and capabilities.");
+            sb.AppendLine();
+        }
 
+        // Layer 2: Skills catalog
         List<CliSkill> enabledSkills = _skillManager.GetEnabledSkills();
         if (enabledSkills.Count > 0)
         {
@@ -141,7 +165,12 @@ internal sealed class CliAgentBuilder
         // MCP tools
         tools.AddRange(_mcpLoader.AllTools);
 
-        return tools;
+        // Filter by active agent persona's tool curation
+        return tools.Where(t =>
+        {
+            string? name = t.Function?.Name;
+            return name is null || _agentManager.IsToolAllowed(name);
+        }).ToList();
     }
 
     private Tool BuildLoadSkillTool()

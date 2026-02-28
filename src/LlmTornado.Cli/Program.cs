@@ -1,6 +1,7 @@
 using System.Text;
 using LlmTornado.Agents.DataModels;
 using LlmTornado.Chat;
+using LlmTornado.Cli.Agents;
 using LlmTornado.Cli.Commands;
 using LlmTornado.Cli.Mcp;
 using LlmTornado.Cli.Memory;
@@ -79,6 +80,17 @@ class Program
             $"Skills: {skillManager.GetEnabledSkills().Count} enabled, " +
             $"{skillManager.GetAllSkills().Count} total (from {skillsDir})");
 
+        // ─── Step 4b: Agent Discovery ───
+        AgentDefinitionManager agentManager = new(settings);
+        string agentsDir = AgentDefinitionLoader.ResolveAgentsDirectory(settings);
+        string builtInDir = AgentDefinitionLoader.ResolveBuiltInDirectory();
+        agentManager.LoadAll(builtInDir, agentsDir, Environment.CurrentDirectory);
+
+        CliAgentDefinition? projectContext = agentManager.GetProjectContext();
+        ConsoleRenderer.WriteInfo(
+            $"Agents: {agentManager.GetAllPersonas().Count} personas available" +
+            $"{(projectContext is not null ? ", project AGENTS.md detected" : "")}");
+
         // ─── Step 5: MCP ───
         _mcpLoader = new McpConfigLoader();
         string? mcpConfigPath = McpConfigLoader.ResolveMcpConfigPath(settings);
@@ -116,24 +128,39 @@ class Program
             skillManager,
             _mcpLoader,
             toolApproval,
-            _memoryManager);
+            _memoryManager,
+            agentManager);
 
         Func<ChatRuntimeEvents, ValueTask> runtimeEventHandler = HandleRuntimeEvent;
-        Agents.ChatRuntime.ChatRuntime runtime = _agentBuilder.Build(runtimeEventHandler);
+
+        // Apply saved agent baseline (if any)
+        if (agentManager.ActivePersonaName is not null)
+        {
+            agentManager.ApplyCapabilityBaseline(skillManager, toolApproval);
+            ConsoleRenderer.WriteInfo(
+                $"Restored agent: {agentManager.ActivePersonaName}");
+        }
+
+        global::LlmTornado.Agents.ChatRuntime.ChatRuntime runtime = _agentBuilder.Build(runtimeEventHandler);
 
         // ─── Step 9: Register Commands ───
         CommandDispatcher dispatcher = new();
         dispatcher.Register(new HelpCommand(dispatcher));
         dispatcher.Register(new ModelCommand(providerResult, _agentBuilder, runtimeEventHandler));
         dispatcher.Register(new SkillCommand(skillManager, _agentBuilder, runtimeEventHandler));
+        dispatcher.Register(new AgentCommand(
+            agentManager, skillManager, _agentBuilder,
+            settings, runtimeEventHandler));
         dispatcher.Register(new ConversationCommand(_memoryManager, _conversationStore, _agentBuilder));
         dispatcher.Register(new ToolsCommand(toolApproval, _agentBuilder));
-        dispatcher.Register(new McpCommand(_mcpLoader, _agentBuilder));
+        dispatcher.Register(new McpCommand(_mcpLoader, _agentBuilder, settings, runtimeEventHandler));
         dispatcher.Register(new ClearCommand());
         dispatcher.Register(new ExitCommand(_memoryManager, _conversationStore, _agentBuilder));
 
         // ─── Step 10: Banner ───
-        ConsoleRenderer.WriteInfo($"\nActive model: {providerResult.ActiveModel.Name}");
+        string agentLabel = agentManager.ActivePersonaName is not null
+            ? $" [{agentManager.ActivePersonaName}]" : "";
+        ConsoleRenderer.WriteInfo($"\nActive model: {providerResult.ActiveModel.Name}{agentLabel}");
         ConsoleRenderer.WriteInfo("Type /help for commands. Start chatting!\n");
 
         // ─── Step 11: REPL Loop ───
@@ -141,7 +168,7 @@ class Program
     }
 
     private static async Task<int> ReplLoop(
-        Agents.ChatRuntime.ChatRuntime runtime,
+        global::LlmTornado.Agents.ChatRuntime.ChatRuntime runtime,
         CommandDispatcher dispatcher,
         ConversationMemoryManager memory,
         CliAgentBuilder builder,

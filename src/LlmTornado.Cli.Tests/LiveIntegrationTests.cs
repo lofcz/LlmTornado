@@ -6,6 +6,7 @@ using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Cli.Mcp;
 using LlmTornado.Cli.Memory;
+using LlmTornado.Cli.Agents;
 using LlmTornado.Cli.Skills;
 using LlmTornado.Code;
 using ChatRuntime = LlmTornado.Agents.ChatRuntime.ChatRuntime;
@@ -220,8 +221,9 @@ public class LiveIntegrationTests
             // Auto-approve all
             toolApproval.PreApproveSkillTools(["load_skill", "list_skills", "read_reference"]);
             ConversationMemoryManager memoryManager = new(_api!, _model, _model.ContextTokens);
+            AgentDefinitionManager agentManager = new(settings);
 
-            CliAgentBuilder builder = new(_api!, _model, skillManager, mcpLoader, toolApproval, memoryManager);
+            CliAgentBuilder builder = new(_api!, _model, skillManager, mcpLoader, toolApproval, memoryManager, agentManager);
 
             List<string> streamedTokens = [];
             Func<ChatRuntimeEvents, ValueTask> handler = evt =>
