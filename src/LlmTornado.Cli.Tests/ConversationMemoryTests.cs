@@ -1,6 +1,6 @@
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
-using LlmTornado.Cli.Memory;
+using LlmTornado.Cli.Core.Memory;
 using LlmTornado.Code;
 
 namespace LlmTornado.Cli.Tests;
@@ -221,7 +221,7 @@ public class ConversationMemoryTests
     [Test]
     public void ConversationStore_List_Returns_Empty_When_NoConversations()
     {
-        ConversationStore store = new();
+        ConversationStore store = new(Path.Combine(Path.GetTempPath(), "llmtornado-test-" + Guid.NewGuid()));
         // If conversations dir doesn't exist, should return empty
         var list = store.List();
         Assert.That(list, Is.Not.Null);
@@ -230,14 +230,14 @@ public class ConversationMemoryTests
     [Test]
     public void ConversationStore_Delete_Returns_False_For_Nonexistent()
     {
-        ConversationStore store = new();
+        ConversationStore store = new(Path.Combine(Path.GetTempPath(), "llmtornado-test-" + Guid.NewGuid()));
         Assert.That(store.Delete("nonexistent_id_12345"), Is.False);
     }
 
     [Test]
     public void ConversationStore_Load_Returns_Null_For_Nonexistent()
     {
-        ConversationStore store = new();
+        ConversationStore store = new(Path.Combine(Path.GetTempPath(), "llmtornado-test-" + Guid.NewGuid()));
         Assert.That(store.Load("nonexistent_id_12345"), Is.Null);
     }
 

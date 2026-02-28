@@ -1,4 +1,4 @@
-using LlmTornado.Cli.Memory;
+using LlmTornado.Cli.Core.Memory;
 
 namespace LlmTornado.Cli.Commands;
 

@@ -7,7 +7,7 @@ using LlmTornado.Chat.Models;
 using LlmTornado.Cli.Core;
 using LlmTornado.Cli.Core.Mcp;
 using LlmTornado.Cli.Core.Providers;
-using LlmTornado.Cli.Memory;
+using LlmTornado.Cli.Core.Memory;
 using LlmTornado.Cli.Core.Agents;
 using LlmTornado.Cli.Core.Skills;
 using LlmTornado.Code;

@@ -1,7 +1,7 @@
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Cli.Core;
-using LlmTornado.Cli.Memory;
+using LlmTornado.Cli.Core.Memory;
 using LlmTornado.Code;
 
 namespace LlmTornado.Cli.Tests;

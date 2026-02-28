@@ -3,7 +3,7 @@ using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Code;
 
-namespace LlmTornado.Cli.Memory;
+namespace LlmTornado.Cli.Core.Memory;
 
 /// <summary>
 /// Uses an LLM to produce conversation summaries for context compression.

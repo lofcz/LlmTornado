@@ -8,7 +8,7 @@ using LlmTornado.Cli.Core.Providers;
 using LlmTornado.Cli.Core.Skills;
 using LlmTornado.Cli.Core.Tools;
 using LlmTornado.Cli.Commands;
-using LlmTornado.Cli.Memory;
+using LlmTornado.Cli.Core.Memory;
 using LlmTornado.Code;
 
 namespace LlmTornado.Cli;
@@ -116,8 +116,9 @@ class Program
         _memoryManager = new ConversationMemoryManager(
             providerResult.Api,
             providerResult.ActiveModel,
-            providerResult.ActiveModel.ContextTokens);
-        _conversationStore = new ConversationStore();
+            providerResult.ActiveModel.ContextTokens,
+            CliStorage.CurrentConversationPath);
+        _conversationStore = new ConversationStore(CliStorage.ConversationsDirectory);
 
         if (_memoryManager.Messages.Count > 0)
         {

@@ -6,8 +6,8 @@ using LlmTornado.Cli.Core;
 using LlmTornado.Cli.Core.Agents;
 using LlmTornado.Cli.Core.Mcp;
 using LlmTornado.Cli.Core.Skills;
+using LlmTornado.Cli.Core.Memory;
 using LlmTornado.Cli.Core.Tools;
-using LlmTornado.Cli.Memory;
 
 namespace LlmTornado.Cli;
 

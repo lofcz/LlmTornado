@@ -1,7 +1,7 @@
 using LlmTornado.Chat;
 using LlmTornado.Code;
 
-namespace LlmTornado.Cli.Memory;
+namespace LlmTornado.Cli.Core.Memory;
 
 /// <summary>
 /// Tracks compression state per message.

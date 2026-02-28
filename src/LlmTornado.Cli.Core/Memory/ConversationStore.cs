@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 using LlmTornado.Agents;
 using LlmTornado.Chat;
 
-namespace LlmTornado.Cli.Memory;
+namespace LlmTornado.Cli.Core.Memory;
 
 /// <summary>
 /// Metadata for a saved conversation.
@@ -40,6 +40,19 @@ internal sealed class ConversationMetadata
 /// </summary>
 internal sealed class ConversationStore
 {
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        WriteIndented = true,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+    };
+
+    private readonly string _conversationsDirectory;
+
+    public ConversationStore(string conversationsDirectory)
+    {
+        _conversationsDirectory = conversationsDirectory;
+    }
+
     /// <summary>
     /// Save the current conversation with a generated or specified label.
     /// </summary>
@@ -49,8 +62,8 @@ internal sealed class ConversationStore
         string slug = label is not null ? "_" + Slugify(label) : "";
         string id = $"{timestamp}{slug}";
 
-        string jsonlPath = Path.Combine(CliStorage.ConversationsDirectory, $"{id}.jsonl");
-        string metaPath = Path.Combine(CliStorage.ConversationsDirectory, $"{id}.meta.json");
+        string jsonlPath = Path.Combine(_conversationsDirectory, $"{id}.jsonl");
+        string metaPath = Path.Combine(_conversationsDirectory, $"{id}.meta.json");
 
         // Write messages as JSONL
         PersistentConversation pc = new(jsonlPath, continuousSave: true);
@@ -74,7 +87,7 @@ internal sealed class ConversationStore
             ActiveSkills = activeSkills ?? [],
         };
 
-        CliStorage.SaveJson(metaPath, meta);
+        SaveJson(metaPath, meta);
         return id;
     }
 
@@ -85,12 +98,12 @@ internal sealed class ConversationStore
     {
         List<ConversationMetadata> result = [];
 
-        if (!Directory.Exists(CliStorage.ConversationsDirectory))
+        if (!Directory.Exists(_conversationsDirectory))
             return result;
 
-        foreach (string metaFile in Directory.GetFiles(CliStorage.ConversationsDirectory, "*.meta.json"))
+        foreach (string metaFile in Directory.GetFiles(_conversationsDirectory, "*.meta.json"))
         {
-            ConversationMetadata? meta = CliStorage.LoadJson<ConversationMetadata>(metaFile);
+            ConversationMetadata? meta = LoadJson<ConversationMetadata>(metaFile);
             if (meta is not null)
                 result.Add(meta);
         }
@@ -103,7 +116,7 @@ internal sealed class ConversationStore
     /// </summary>
     public List<ChatMessage>? Load(string id)
     {
-        string jsonlPath = Path.Combine(CliStorage.ConversationsDirectory, $"{id}.jsonl");
+        string jsonlPath = Path.Combine(_conversationsDirectory, $"{id}.jsonl");
         if (!File.Exists(jsonlPath))
             return null;
 
@@ -123,8 +136,8 @@ internal sealed class ConversationStore
     /// </summary>
     public bool Delete(string id)
     {
-        string jsonlPath = Path.Combine(CliStorage.ConversationsDirectory, $"{id}.jsonl");
-        string metaPath = Path.Combine(CliStorage.ConversationsDirectory, $"{id}.meta.json");
+        string jsonlPath = Path.Combine(_conversationsDirectory, $"{id}.jsonl");
+        string metaPath = Path.Combine(_conversationsDirectory, $"{id}.meta.json");
 
         bool deleted = false;
         if (File.Exists(jsonlPath)) { File.Delete(jsonlPath); deleted = true; }
@@ -140,5 +153,34 @@ internal sealed class ConversationStore
             .ToArray()
             .ToString()!
             .Split('-', StringSplitOptions.RemoveEmptyEntries));
+    }
+
+    private static T? LoadJson<T>(string path) where T : class
+    {
+        if (!File.Exists(path))
+            return null;
+
+        try
+        {
+            string json = File.ReadAllText(path);
+            return JsonSerializer.Deserialize<T>(json, JsonOptions);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static void SaveJson<T>(string path, T data)
+    {
+        string? dir = Path.GetDirectoryName(path);
+        if (dir is not null)
+            Directory.CreateDirectory(dir);
+
+        string json = JsonSerializer.Serialize(data, JsonOptions);
+        string tmpPath = path + ".tmp";
+
+        File.WriteAllText(tmpPath, json);
+        File.Move(tmpPath, path, overwrite: true);
     }
 }

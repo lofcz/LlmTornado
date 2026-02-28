@@ -2,7 +2,7 @@ using LlmTornado.Agents;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 
-namespace LlmTornado.Cli.Memory;
+namespace LlmTornado.Cli.Core.Memory;
 
 /// <summary>
 /// Manages the active conversation with automatic summarization and persistence.
@@ -12,6 +12,7 @@ internal sealed class ConversationMemoryManager
     private readonly CompressionStrategy _compressionStrategy;
     private readonly MessageSummarizer _summarizer;
     private readonly MessageMetadataTracker _metadataTracker;
+    private readonly string? _conversationPath;
     private List<ChatMessage> _messages = [];
 
     public IReadOnlyList<ChatMessage> Messages => _messages;
@@ -19,18 +20,20 @@ internal sealed class ConversationMemoryManager
     public ConversationMemoryManager(
         TornadoApi api,
         ChatModel model,
-        int? contextWindowTokens)
+        int? contextWindowTokens,
+        string? conversationPath = null)
     {
+        _conversationPath = conversationPath;
         _compressionStrategy = new CompressionStrategy(contextWindowTokens ?? 128_000);
         _summarizer = new MessageSummarizer(api, model);
         _metadataTracker = new MessageMetadataTracker();
 
         // Try to resume existing conversation
-        if (File.Exists(CliStorage.CurrentConversationPath))
+        if (_conversationPath is not null && File.Exists(_conversationPath))
         {
             try
             {
-                PersistentConversation pc = new(CliStorage.CurrentConversationPath);
+                PersistentConversation pc = new(_conversationPath);
                 _messages = pc.GetMessages();
                 foreach (ChatMessage msg in _messages)
                     _metadataTracker.Track(msg);
@@ -48,8 +51,11 @@ internal sealed class ConversationMemoryManager
         _metadataTracker.Track(message);
 
         // Append to JSONL for crash resilience
-        PersistentConversation pc = new(CliStorage.CurrentConversationPath, continuousSave: true);
-        pc.AppendMessage(message);
+        if (_conversationPath is not null)
+        {
+            PersistentConversation pc = new(_conversationPath, continuousSave: true);
+            pc.AppendMessage(message);
+        }
     }
 
     /// <summary>
@@ -74,8 +80,11 @@ internal sealed class ConversationMemoryManager
         _messages.Clear();
         _metadataTracker.Clear();
 
-        try { File.WriteAllText(CliStorage.CurrentConversationPath, ""); }
-        catch { /* best effort */ }
+        if (_conversationPath is not null)
+        {
+            try { File.WriteAllText(_conversationPath, ""); }
+            catch { /* best effort */ }
+        }
     }
 
     public void LoadConversation(List<ChatMessage> messages)
@@ -95,10 +104,13 @@ internal sealed class ConversationMemoryManager
 
     private void RebuildPersistence()
     {
+        if (_conversationPath is null)
+            return;
+
         try
         {
-            File.WriteAllText(CliStorage.CurrentConversationPath, "");
-            PersistentConversation pc = new(CliStorage.CurrentConversationPath, continuousSave: true);
+            File.WriteAllText(_conversationPath, "");
+            PersistentConversation pc = new(_conversationPath, continuousSave: true);
             foreach (ChatMessage msg in _messages)
                 pc.AppendMessage(msg);
         }
