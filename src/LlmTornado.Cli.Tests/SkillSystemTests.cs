@@ -444,6 +444,148 @@ Body.");
 
     #endregion
 
+    #region Bundled Skills — file-analyzer, web-search, note-taker
+
+    private static string GetBundledSkillsDir()
+    {
+        // Walk up from bin/Debug/net8.0 to find the skills directory
+        string dir = AppContext.BaseDirectory;
+        // Try successive parent directories looking for LlmTornado.Cli/Skills (or skills)
+        for (int i = 0; i < 8; i++)
+        {
+            dir = Path.GetDirectoryName(dir)!;
+            string candidate = Path.Combine(dir, "LlmTornado.Cli", "skills");
+            if (Directory.Exists(candidate) && File.Exists(Path.Combine(candidate, "file-analyzer", "SKILL.md")))
+                return candidate;
+            // Also check src/ subfolder
+            candidate = Path.Combine(dir, "src", "LlmTornado.Cli", "skills");
+            if (Directory.Exists(candidate) && File.Exists(Path.Combine(candidate, "file-analyzer", "SKILL.md")))
+                return candidate;
+        }
+        Assert.Ignore("Bundled skills directory not found — skipping.");
+        return null!; // unreachable
+    }
+
+    [Test]
+    public void BundledSkills_AllThreeDiscovered()
+    {
+        string skillsDir = GetBundledSkillsDir();
+        List<CliSkill> skills = CliSkillLoader.DiscoverSkills(skillsDir);
+
+        var names = skills.Select(s => s.Name).OrderBy(n => n).ToList();
+        Assert.That(names, Does.Contain("file-analyzer"));
+        Assert.That(names, Does.Contain("web-search"));
+        Assert.That(names, Does.Contain("note-taker"));
+    }
+
+    [Test]
+    public void BundledSkills_FileAnalyzer_HasExpectedScripts()
+    {
+        string skillsDir = GetBundledSkillsDir();
+        CliSkill? skill = CliSkillLoader.ParseSkillMetadata(Path.Combine(skillsDir, "file-analyzer"));
+        Assert.That(skill, Is.Not.Null);
+        Assert.That(skill!.Name, Is.EqualTo("file-analyzer"));
+        Assert.That(skill.Description, Does.Contain("Analyze"));
+
+        var scriptNames = skill.Scripts.Select(s => Path.GetFileNameWithoutExtension(s.FileName)).ToList();
+        Assert.That(scriptNames, Does.Contain("line-count"));
+        Assert.That(scriptNames, Does.Contain("find-todos"));
+        Assert.That(scriptNames, Does.Contain("detect-encoding"));
+        Assert.That(scriptNames, Does.Contain("find-duplicates"));
+        Assert.That(scriptNames, Does.Contain("tree-summary"));
+        Assert.That(skill.Scripts.Count, Is.EqualTo(5));
+
+        Assert.That(skill.References, Is.Not.Empty, "Should have references");
+        Assert.That(skill.AllowedTools, Has.Count.EqualTo(5));
+    }
+
+    [Test]
+    public void BundledSkills_WebSearch_HasExpectedScripts()
+    {
+        string skillsDir = GetBundledSkillsDir();
+        CliSkill? skill = CliSkillLoader.ParseSkillMetadata(Path.Combine(skillsDir, "web-search"));
+        Assert.That(skill, Is.Not.Null);
+        Assert.That(skill!.Name, Is.EqualTo("web-search"));
+
+        var scriptNames = skill.Scripts.Select(s => Path.GetFileNameWithoutExtension(s.FileName)).ToList();
+        Assert.That(scriptNames, Does.Contain("ddg-search"));
+        Assert.That(scriptNames, Does.Contain("fetch-url"));
+        Assert.That(scriptNames, Does.Contain("extract-text"));
+        Assert.That(skill.Scripts.Count, Is.EqualTo(3));
+    }
+
+    [Test]
+    public void BundledSkills_NoteTaker_HasExpectedScripts()
+    {
+        string skillsDir = GetBundledSkillsDir();
+        CliSkill? skill = CliSkillLoader.ParseSkillMetadata(Path.Combine(skillsDir, "note-taker"));
+        Assert.That(skill, Is.Not.Null);
+        Assert.That(skill!.Name, Is.EqualTo("note-taker"));
+
+        var scriptNames = skill.Scripts.Select(s => Path.GetFileNameWithoutExtension(s.FileName)).ToList();
+        Assert.That(scriptNames, Does.Contain("add-note"));
+        Assert.That(scriptNames, Does.Contain("search-notes"));
+        Assert.That(scriptNames, Does.Contain("list-notes"));
+        Assert.That(scriptNames, Does.Contain("view-note"));
+        Assert.That(scriptNames, Does.Contain("delete-note"));
+        Assert.That(skill.Scripts.Count, Is.EqualTo(5));
+    }
+
+    [Test]
+    public void BundledSkills_InstructionsLoad()
+    {
+        string skillsDir = GetBundledSkillsDir();
+        List<CliSkill> skills = CliSkillLoader.DiscoverSkills(skillsDir);
+
+        foreach (CliSkill skill in skills)
+        {
+            Assert.That(skill.Instructions, Is.Null, $"{skill.Name} instructions should be lazy-loaded");
+            CliSkillLoader.LoadInstructions(skill);
+            Assert.That(skill.Instructions, Is.Not.Null.And.Not.Empty, $"{skill.Name} should have instructions");
+            Assert.That(skill.Instructions, Does.Contain("##"), $"{skill.Name} instructions should have markdown headings");
+        }
+    }
+
+    [Test]
+    public void BundledSkills_ScriptToolBuilder_CreatesAllTools()
+    {
+        string skillsDir = GetBundledSkillsDir();
+        List<CliSkill> skills = CliSkillLoader.DiscoverSkills(skillsDir);
+        foreach (CliSkill s in skills) s.Enabled = true;
+
+        var tools = ScriptToolBuilder.BuildScriptTools(skills);
+        var toolNames = tools.Select(t => t.ResolvedName).OrderBy(n => n).ToList();
+
+        // file-analyzer: 5, web-search: 3, note-taker: 5 = 13 total
+        Assert.That(tools, Has.Count.EqualTo(13));
+
+        // Spot-check naming convention {skill}:{script}
+        Assert.That(toolNames, Does.Contain("file-analyzer:line-count"));
+        Assert.That(toolNames, Does.Contain("web-search:ddg-search"));
+        Assert.That(toolNames, Does.Contain("note-taker:add-note"));
+    }
+
+    [Test]
+    public void BundledSkills_CliSkillManager_LoadsAll()
+    {
+        string skillsDir = GetBundledSkillsDir();
+        CliSettings settings = new() { SkillsDirectory = skillsDir };
+        CliSkillManager manager = new(settings);
+        manager.LoadSkills(skillsDir);
+
+        Assert.That(manager.GetEnabledSkills().Count, Is.GreaterThanOrEqualTo(3));
+        Assert.That(manager.GetEnabledSkills().Select(s => s.Name), Does.Contain("file-analyzer"));
+        Assert.That(manager.GetEnabledSkills().Select(s => s.Name), Does.Contain("web-search"));
+        Assert.That(manager.GetEnabledSkills().Select(s => s.Name), Does.Contain("note-taker"));
+
+        string xml = manager.BuildSkillsContextXml();
+        Assert.That(xml, Does.Contain("file-analyzer"));
+        Assert.That(xml, Does.Contain("web-search"));
+        Assert.That(xml, Does.Contain("note-taker"));
+    }
+
+    #endregion
+
     #region Helpers
 
     private string CreateValidSkill(string name, string skillMdContent)
