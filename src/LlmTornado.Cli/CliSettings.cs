@@ -42,4 +42,20 @@ internal sealed class CliSettings
     /// </summary>
     [JsonPropertyName("project_agents_enabled")]
     public bool ProjectAgentsEnabled { get; set; } = true;
+
+    /// <summary>
+    /// Maximum number of tools to send per LLM request.
+    /// When total tools exceed this limit, an LLM-based optimizer selects the most relevant subset.
+    /// Default: 25.
+    /// </summary>
+    [JsonPropertyName("max_tools")]
+    public int MaxTools { get; set; } = 25;
+
+    /// <summary>
+    /// Whether the LLM-based tool optimizer is enabled.
+    /// When disabled, all tools are sent regardless of count.
+    /// Default: true.
+    /// </summary>
+    [JsonPropertyName("tool_optimizer_enabled")]
+    public bool ToolOptimizerEnabled { get; set; } = true;
 }

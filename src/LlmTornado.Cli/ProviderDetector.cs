@@ -24,6 +24,12 @@ internal sealed class ProviderDetectionResult
     public required ChatModel ActiveModel { get; set; }
 
     public List<ChatModel> AllModels => Providers.SelectMany(p => p.Models).ToList();
+
+    /// <summary>
+    /// A cheap/fast model for internal tasks like tool optimization.
+    /// Auto-selected from detected providers, preferring small models.
+    /// </summary>
+    public ChatModel? OptimizerModel { get; set; }
 }
 
 /// <summary>
@@ -109,12 +115,44 @@ internal static class ProviderDetector
             }
         }
 
+        ChatModel? optimizerModel = GetOptimizerModel(detected);
+
         return new ProviderDetectionResult
         {
             Api = api,
             Providers = detected,
             ActiveModel = activeModel,
+            OptimizerModel = optimizerModel,
         };
+    }
+
+    /// <summary>
+    /// Priority order of cheap/fast models for internal optimization tasks.
+    /// </summary>
+    private static readonly (LLmProviders Provider, Func<ChatModel> Model)[] OptimizerModelPriority =
+    [
+        (LLmProviders.Google, () => ChatModel.Google.Gemini.Gemini25Flash),
+        (LLmProviders.OpenAi, () => ChatModel.OpenAi.O4.V4Mini),
+        (LLmProviders.Anthropic, () => ChatModel.Anthropic.Claude4.Sonnet250514),
+        (LLmProviders.Groq, () => ChatModel.Groq.Meta.Llama4Scout),
+        (LLmProviders.DeepSeek, () => ChatModel.DeepSeek.Models.Chat),
+        (LLmProviders.Mistral, () => ChatModel.Mistral.Free.MistralLarge2512),
+        (LLmProviders.XAi, () => ChatModel.XAi.Grok41.V41FastReasoning),
+    ];
+
+    /// <summary>
+    /// Select the cheapest/fastest available model for internal tasks like tool optimization.
+    /// </summary>
+    private static ChatModel? GetOptimizerModel(List<DetectedProvider> detected)
+    {
+        foreach ((LLmProviders provider, Func<ChatModel> modelFactory) in OptimizerModelPriority)
+        {
+            if (detected.Any(d => d.Provider == provider))
+                return modelFactory();
+        }
+
+        // Fallback: use the first detected provider's default model
+        return detected.Count > 0 ? detected[0].DefaultModel : null;
     }
 
     private static ChatModel? GetDefaultModel(LLmProviders provider) => provider switch

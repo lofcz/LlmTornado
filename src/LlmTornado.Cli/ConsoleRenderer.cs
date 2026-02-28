@@ -154,6 +154,28 @@ internal sealed class ConsoleRenderer
         }
     }
 
+    // ─── Tool Optimization ───
+
+    public static void WriteToolOptimization(int totalCount, int selectedCount)
+    {
+        lock (Lock)
+        {
+            Console.ForegroundColor = ConsoleColor.DarkYellow;
+            Console.WriteLine($"  [optimizing tools: {totalCount} → {selectedCount}]");
+            Console.ResetColor();
+        }
+    }
+
+    public static void WriteToolOptimizationSkipped(int count, string reason)
+    {
+        lock (Lock)
+        {
+            Console.ForegroundColor = ConsoleColor.DarkYellow;
+            Console.WriteLine($"  [tool optimization skipped: using all {count} tools — {reason}]");
+            Console.ResetColor();
+        }
+    }
+
     // ─── Provider Summary ───
 
     public static void WriteProviderSummary(ProviderDetectionResult result)

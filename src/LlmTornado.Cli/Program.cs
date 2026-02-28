@@ -129,7 +129,9 @@ class Program
             _mcpLoader,
             toolApproval,
             _memoryManager,
-            agentManager);
+            agentManager,
+            settings,
+            providerResult.OptimizerModel);
 
         Func<ChatRuntimeEvents, ValueTask> runtimeEventHandler = HandleRuntimeEvent;
 
@@ -152,7 +154,7 @@ class Program
             agentManager, skillManager, _agentBuilder,
             settings, runtimeEventHandler));
         dispatcher.Register(new ConversationCommand(_memoryManager, _conversationStore, _agentBuilder));
-        dispatcher.Register(new ToolsCommand(toolApproval, _agentBuilder));
+        dispatcher.Register(new ToolsCommand(toolApproval, _agentBuilder, settings, providerResult));
         dispatcher.Register(new McpCommand(_mcpLoader, _agentBuilder, settings, runtimeEventHandler));
         dispatcher.Register(new ClearCommand());
         dispatcher.Register(new ExitCommand(_memoryManager, _conversationStore, _agentBuilder));
@@ -204,10 +206,35 @@ class Program
                 ChatMessage userMessage = new(ChatMessageRoles.User, input);
                 memory.AddMessage(userMessage);
 
-                ChatMessage response = await runtime.InvokeAsync(userMessage);
-                ConsoleRenderer.EndStreamingResponse();
+                // Optimize tools for this turn if needed
+                bool optimized = false;
+                if (builder.NeedsOptimization)
+                {
+                    try
+                    {
+                        ToolOptimizationResult? optResult = await builder.OptimizeToolsForTurn(input);
+                        optimized = optResult?.WasOptimized == true;
+                    }
+                    catch (Exception ex)
+                    {
+                        ConsoleRenderer.WriteToolOptimizationSkipped(
+                            builder.TotalToolCount, ex.Message);
+                    }
+                }
 
-                memory.AddMessage(response);
+                try
+                {
+                    ChatMessage response = await runtime.InvokeAsync(userMessage);
+                    ConsoleRenderer.EndStreamingResponse();
+
+                    memory.AddMessage(response);
+                }
+                finally
+                {
+                    // Always restore full tool list after the turn
+                    if (optimized)
+                        builder.RestoreFullTools();
+                }
 
                 bool summarized = await memory.MaybeSummarize();
                 if (summarized)

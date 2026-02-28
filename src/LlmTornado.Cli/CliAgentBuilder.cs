@@ -23,14 +23,28 @@ internal sealed class CliAgentBuilder
     private readonly ToolApprovalManager _toolApproval;
     private readonly ConversationMemoryManager _memoryManager;
     private readonly AgentDefinitionManager _agentManager;
+    private readonly CliSettings _settings;
 
     private ChatModel _activeModel;
     private TornadoAgent? _agent;
     private ChatRuntime? _runtime;
+    private ToolOptimizer? _toolOptimizer;
+    private List<Tool>? _fullToolList;
 
     public TornadoAgent Agent => _agent ?? throw new InvalidOperationException("Agent not built");
     public ChatRuntime Runtime => _runtime ?? throw new InvalidOperationException("Runtime not built");
     public ChatModel ActiveModel => _activeModel;
+
+    /// <summary>
+    /// Whether the tool optimizer is active (tool count exceeds threshold and optimizer is configured).
+    /// </summary>
+    public bool NeedsOptimization => _toolOptimizer is not null && _fullToolList is not null
+                                     && _fullToolList.Count > _settings.MaxTools;
+
+    /// <summary>
+    /// Total number of tools before any optimization.
+    /// </summary>
+    public int TotalToolCount => _fullToolList?.Count ?? 0;
 
     public CliAgentBuilder(
         TornadoApi api,
@@ -39,7 +53,9 @@ internal sealed class CliAgentBuilder
         McpConfigLoader mcpLoader,
         ToolApprovalManager toolApproval,
         ConversationMemoryManager memoryManager,
-        AgentDefinitionManager agentManager)
+        AgentDefinitionManager agentManager,
+        CliSettings settings,
+        ChatModel? optimizerModel)
     {
         _api = api;
         _activeModel = activeModel;
@@ -48,6 +64,12 @@ internal sealed class CliAgentBuilder
         _toolApproval = toolApproval;
         _memoryManager = memoryManager;
         _agentManager = agentManager;
+        _settings = settings;
+
+        if (settings.ToolOptimizerEnabled && optimizerModel is not null)
+        {
+            _toolOptimizer = new ToolOptimizer(api, optimizerModel, settings.MaxTools);
+        }
     }
 
     /// <summary>
@@ -57,6 +79,9 @@ internal sealed class CliAgentBuilder
     {
         string systemPrompt = BuildSystemPrompt();
         List<Tool> allTools = CollectTools();
+
+        // Store the full tool list for optimization swap/restore
+        _fullToolList = allTools;
 
         _agent = new TornadoAgent(
             client: _api,
@@ -115,6 +140,85 @@ internal sealed class CliAgentBuilder
     {
         _agentManager.ApplyCapabilityBaseline(_skillManager, _toolApproval);
         return Build(onRuntimeEvent);
+    }
+
+    /// <summary>
+    /// Run the LLM-based tool optimizer for the current user turn.
+    /// Swaps agent.Options.Tools with the optimized subset.
+    /// Call <see cref="RestoreFullTools"/> after the turn completes.
+    /// </summary>
+    public async Task<ToolOptimizationResult?> OptimizeToolsForTurn(string userMessage, CancellationToken ct = default)
+    {
+        if (_toolOptimizer is null || _agent is null || _fullToolList is null)
+            return null;
+
+        if (_fullToolList.Count <= _settings.MaxTools)
+            return null;
+
+        ToolOptimizationResult result = await _toolOptimizer.OptimizeAsync(_fullToolList, userMessage, ct);
+
+        if (result.WasOptimized)
+        {
+            // Swap the agent's tool list to the optimized subset
+            _agent.ClearTools();
+            foreach (Tool tool in result.Tools)
+            {
+                _agent.AddTool(tool);
+            }
+
+            ConsoleRenderer.WriteToolOptimization(result.OriginalCount, result.SelectedCount);
+        }
+        else if (result.FallbackReason is not null)
+        {
+            ConsoleRenderer.WriteToolOptimizationSkipped(result.OriginalCount, result.FallbackReason);
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Restore the full tool list after an optimized turn completes.
+    /// </summary>
+    public void RestoreFullTools()
+    {
+        if (_agent is null || _fullToolList is null)
+            return;
+
+        _agent.ClearTools();
+        foreach (Tool tool in _fullToolList)
+        {
+            _agent.AddTool(tool);
+        }
+    }
+
+    /// <summary>
+    /// Enable or disable the tool optimizer at runtime.
+    /// </summary>
+    public void SetOptimizerEnabled(bool enabled, ChatModel? optimizerModel = null)
+    {
+        _settings.ToolOptimizerEnabled = enabled;
+
+        if (enabled && optimizerModel is not null)
+        {
+            _toolOptimizer = new ToolOptimizer(_api, optimizerModel, _settings.MaxTools);
+        }
+        else if (!enabled)
+        {
+            _toolOptimizer = null;
+        }
+    }
+
+    /// <summary>
+    /// Update the max tools threshold at runtime.
+    /// </summary>
+    public void SetMaxTools(int maxTools, ChatModel? optimizerModel = null)
+    {
+        _settings.MaxTools = maxTools;
+
+        if (_settings.ToolOptimizerEnabled && optimizerModel is not null)
+        {
+            _toolOptimizer = new ToolOptimizer(_api, optimizerModel, maxTools);
+        }
     }
 
     private string BuildSystemPrompt()

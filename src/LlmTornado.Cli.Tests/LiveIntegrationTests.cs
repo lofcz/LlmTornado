@@ -223,7 +223,7 @@ public class LiveIntegrationTests
             ConversationMemoryManager memoryManager = new(_api!, _model, _model.ContextTokens);
             AgentDefinitionManager agentManager = new(settings);
 
-            CliAgentBuilder builder = new(_api!, _model, skillManager, mcpLoader, toolApproval, memoryManager, agentManager);
+            CliAgentBuilder builder = new(_api!, _model, skillManager, mcpLoader, toolApproval, memoryManager, agentManager, settings, null);
 
             List<string> streamedTokens = [];
             Func<ChatRuntimeEvents, ValueTask> handler = evt =>
