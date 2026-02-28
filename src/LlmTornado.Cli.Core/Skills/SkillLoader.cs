@@ -26,9 +26,33 @@ internal static partial class SkillLoader
     }
 
     /// <summary>
+    /// Resolve the global skills directory.
+    /// Checks the <c>TORNADO_SKILLS_DIR</c> environment variable first; if set and the directory exists, uses it.
+    /// Otherwise falls back to <c>%APPDATA%/llmtornado/skills/</c> (or platform equivalent).
+    /// </summary>
+    public static string ResolveGlobalSkillsDirectory()
+    {
+        string? envDir = Environment.GetEnvironmentVariable("TORNADO_SKILLS_DIR");
+        if (!string.IsNullOrEmpty(envDir) && Directory.Exists(envDir))
+            return Path.GetFullPath(envDir);
+
+        return Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "llmtornado", "skills");
+    }
+
+    /// <summary>
     /// Discover all valid skill directories under the given path.
     /// </summary>
     public static List<Skill> DiscoverSkills(string skillsRootDirectory)
+    {
+        return DiscoverSkills(skillsRootDirectory, SkillSource.Project);
+    }
+
+    /// <summary>
+    /// Discover all valid skill directories under the given path, tagging them with the given source.
+    /// </summary>
+    public static List<Skill> DiscoverSkills(string skillsRootDirectory, SkillSource source)
     {
         List<Skill> skills = [];
 
@@ -43,10 +67,37 @@ internal static partial class SkillLoader
 
             Skill? skill = ParseSkillMetadata(dir);
             if (skill is not null)
+            {
+                skill.Source = source;
                 skills.Add(skill);
+            }
         }
 
         return skills;
+    }
+
+    /// <summary>
+    /// Discover skills from both global and project-local directories.
+    /// Project-local skills shadow global skills with the same name.
+    /// </summary>
+    public static List<Skill> DiscoverAllSkills(string projectSkillsDir, string? globalSkillsDir)
+    {
+        Dictionary<string, Skill> merged = new(StringComparer.OrdinalIgnoreCase);
+
+        // 1. Load global skills first (lower precedence)
+        if (!string.IsNullOrEmpty(globalSkillsDir))
+        {
+            List<Skill> globalSkills = DiscoverSkills(globalSkillsDir, SkillSource.Global);
+            foreach (Skill skill in globalSkills)
+                merged[skill.Name] = skill;
+        }
+
+        // 2. Load project-local skills — shadow global skills with same name
+        List<Skill> projectSkills = DiscoverSkills(projectSkillsDir, SkillSource.Project);
+        foreach (Skill skill in projectSkills)
+            merged[skill.Name] = skill;
+
+        return [.. merged.Values];
     }
 
     /// <summary>

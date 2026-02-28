@@ -11,8 +11,14 @@ internal enum AgentSource
     BuiltIn,
 
     /// <summary>
+    /// Loaded from the global agents directory (%APPDATA%/llmtornado/agents/ or TORNADO_AGENTS_DIR).
+    /// Global agents shadow built-in agents with the same name.
+    /// </summary>
+    Global,
+
+    /// <summary>
     /// User-created agent from the agents/ directory.
-    /// Custom agents shadow built-in agents with the same name.
+    /// Custom agents shadow built-in and global agents with the same name.
     /// </summary>
     Custom,
 
@@ -115,5 +121,5 @@ internal sealed class AgentDefinition
     /// <summary>
     /// Whether this is a persona agent (BuiltIn or Custom).
     /// </summary>
-    public bool IsPersona => Source is AgentSource.BuiltIn or AgentSource.Custom;
+    public bool IsPersona => Source is AgentSource.BuiltIn or AgentSource.Global or AgentSource.Custom;
 }

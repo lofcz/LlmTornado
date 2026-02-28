@@ -22,8 +22,17 @@ internal sealed class SkillManager
     /// </summary>
     public void LoadSkills(string skillsDirectory)
     {
+        LoadSkills(skillsDirectory, null);
+    }
+
+    /// <summary>
+    /// Discover and load all skill metadata from global and project-local directories.
+    /// Project-local skills shadow global skills with the same name.
+    /// </summary>
+    public void LoadSkills(string projectSkillsDirectory, string? globalSkillsDirectory)
+    {
         _skills.Clear();
-        List<Skill> discovered = SkillLoader.DiscoverSkills(skillsDirectory);
+        List<Skill> discovered = SkillLoader.DiscoverAllSkills(projectSkillsDirectory, globalSkillsDirectory);
 
         foreach (Skill skill in discovered)
         {

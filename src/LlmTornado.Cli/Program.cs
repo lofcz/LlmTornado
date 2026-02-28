@@ -79,16 +79,18 @@ class Program
         // ─── Step 4: Skills ───
         SkillManager skillManager = new(settings, persistence);
         string skillsDir = SkillLoader.ResolveSkillsDirectory(settings.SkillsDirectory);
-        skillManager.LoadSkills(skillsDir);
+        string globalSkillsDir = SkillLoader.ResolveGlobalSkillsDirectory();
+        skillManager.LoadSkills(skillsDir, globalSkillsDir);
         ConsoleRenderer.WriteInfo(
             $"Skills: {skillManager.GetEnabledSkills().Count} enabled, " +
-            $"{skillManager.GetAllSkills().Count} total (from {skillsDir})");
+            $"{skillManager.GetAllSkills().Count} total (project: {skillsDir}, global: {globalSkillsDir})");
 
         // ─── Step 4b: Agent Discovery ───
         AgentDefinitionManager agentManager = new(settings, persistence);
         string agentsDir = AgentDefinitionLoader.ResolveAgentsDirectory(settings.AgentsDirectory);
         string builtInDir = AgentDefinitionLoader.ResolveBuiltInDirectory();
-        agentManager.LoadAll(builtInDir, agentsDir, Environment.CurrentDirectory);
+        string globalAgentsDir = AgentDefinitionLoader.ResolveGlobalAgentsDirectory();
+        agentManager.LoadAll(builtInDir, globalAgentsDir, agentsDir, Environment.CurrentDirectory);
 
         AgentDefinition? projectContext = agentManager.GetProjectContext();
         ConsoleRenderer.WriteInfo(

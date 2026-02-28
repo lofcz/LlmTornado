@@ -47,8 +47,9 @@ public class TornadoAcpRuntime : BaseAcpTornadoRuntimeConfiguration
         // Load persona definitions once at startup for mode discovery
         string builtInDir = AgentDefinitionLoader.ResolveBuiltInDirectory();
         string customDir = AgentDefinitionLoader.ResolveAgentsDirectory(null);
+        string globalAgentsDir = AgentDefinitionLoader.ResolveGlobalAgentsDirectory();
 
-        _personas = AgentDefinitionLoader.DiscoverPersonaAgents(builtInDir, customDir);
+        _personas = AgentDefinitionLoader.DiscoverPersonaAgents(builtInDir, globalAgentsDir, customDir);
         Console.Error.WriteLine($"[ACP] Loaded {_personas.Count} agent persona(s): {string.Join(", ", _personas.Select(p => p.Name))}");
     }
 
@@ -220,16 +221,18 @@ public class TornadoAcpRuntime : BaseAcpTornadoRuntimeConfiguration
         AcpSettingsPersistence persistence = new();
         AcpToolApproval toolApproval = new();
 
-        // Initialize skill manager (skills from CWD/skills/ if available)
+        // Initialize skill manager (skills from global + CWD/skills/)
         SkillManager skillManager = new(sessionSettings, persistence);
         string skillsDir = SkillLoader.ResolveSkillsDirectory(null);
-        skillManager.LoadSkills(skillsDir);
+        string globalSkillsDir = SkillLoader.ResolveGlobalSkillsDirectory();
+        skillManager.LoadSkills(skillsDir, globalSkillsDir);
 
         // Initialize agent definition manager
         agentManager = new AgentDefinitionManager(sessionSettings, persistence);
         string builtInDir = AgentDefinitionLoader.ResolveBuiltInDirectory();
         string customDir = AgentDefinitionLoader.ResolveAgentsDirectory(null);
-        agentManager.LoadAll(builtInDir, customDir, cwd);
+        string globalAgentsDir = AgentDefinitionLoader.ResolveGlobalAgentsDirectory();
+        agentManager.LoadAll(builtInDir, globalAgentsDir, customDir, cwd);
 
         // Apply mode as active persona
         if (!string.Equals(modeId, "default", StringComparison.OrdinalIgnoreCase))

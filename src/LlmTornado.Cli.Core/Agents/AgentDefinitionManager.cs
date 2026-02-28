@@ -35,12 +35,22 @@ internal sealed class AgentDefinitionManager
     /// </summary>
     public void LoadAll(string builtInDirectory, string customDirectory, string cwd)
     {
+        LoadAll(builtInDirectory, null, customDirectory, cwd);
+    }
+
+    /// <summary>
+    /// Load all agent definitions from filesystem, including an optional global directory.
+    /// Call once at startup after SkillManager is initialized.
+    /// Precedence: built-in → global → custom/project-local (most specific wins).
+    /// </summary>
+    public void LoadAll(string builtInDirectory, string? globalDirectory, string customDirectory, string cwd)
+    {
         _personas.Clear();
         _projectContext = null;
 
-        // 1. Discover persona agents (built-in + custom, custom shadows built-in)
+        // 1. Discover persona agents (built-in + global + custom, each layer shadows previous)
         List<AgentDefinition> personas = AgentDefinitionLoader.DiscoverPersonaAgents(
-            builtInDirectory, customDirectory);
+            builtInDirectory, globalDirectory, customDirectory);
         foreach (AgentDefinition persona in personas)
             _personas[persona.Name] = persona;
 

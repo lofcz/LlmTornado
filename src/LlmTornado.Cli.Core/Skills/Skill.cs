@@ -1,6 +1,23 @@
 namespace LlmTornado.Cli.Core.Skills;
 
 /// <summary>
+/// Source origin of a skill.
+/// </summary>
+internal enum SkillSource
+{
+    /// <summary>
+    /// Loaded from the global skills directory (%APPDATA%/llmtornado/skills/ or TORNADO_SKILLS_DIR).
+    /// </summary>
+    Global,
+
+    /// <summary>
+    /// Loaded from the project-local skills directory (./skills/ or settings override).
+    /// Project skills shadow global skills with the same name.
+    /// </summary>
+    Project
+}
+
+/// <summary>
 /// Represents a loaded skill following the Agent Skills standard (agentskills.io).
 /// </summary>
 internal sealed class Skill
@@ -28,6 +45,11 @@ internal sealed class Skill
     // --- Runtime State ---
     public bool Enabled { get; set; } = true;
     public bool Activated { get; set; }
+
+    /// <summary>
+    /// Where this skill was loaded from (global directory vs project-local).
+    /// </summary>
+    public SkillSource Source { get; set; } = SkillSource.Project;
 }
 
 /// <summary>

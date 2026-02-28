@@ -39,6 +39,22 @@ internal static partial class AgentDefinitionLoader
     }
 
     /// <summary>
+    /// Resolve the global agents directory.
+    /// Checks the <c>TORNADO_AGENTS_DIR</c> environment variable first; if set and the directory exists, uses it.
+    /// Otherwise falls back to <c>%APPDATA%/llmtornado/agents/</c> (or platform equivalent).
+    /// </summary>
+    public static string ResolveGlobalAgentsDirectory()
+    {
+        string? envDir = Environment.GetEnvironmentVariable("TORNADO_AGENTS_DIR");
+        if (!string.IsNullOrEmpty(envDir) && Directory.Exists(envDir))
+            return Path.GetFullPath(envDir);
+
+        return Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "llmtornado", "agents");
+    }
+
+    /// <summary>
     /// Resolve the built-in agents directory relative to the application binary.
     /// </summary>
     public static string ResolveBuiltInDirectory()
@@ -108,9 +124,19 @@ internal static partial class AgentDefinitionLoader
     public static List<AgentDefinition> DiscoverPersonaAgents(
         string builtInDirectory, string customDirectory)
     {
+        return DiscoverPersonaAgents(builtInDirectory, null, customDirectory);
+    }
+
+    /// <summary>
+    /// Scan the built-in, global, and custom agent directories for persona .md files.
+    /// Precedence: built-in → global → custom/project-local (most specific wins).
+    /// </summary>
+    public static List<AgentDefinition> DiscoverPersonaAgents(
+        string builtInDirectory, string? globalDirectory, string customDirectory)
+    {
         Dictionary<string, AgentDefinition> agents = new(StringComparer.OrdinalIgnoreCase);
 
-        // 1. Load built-in agents first
+        // 1. Load built-in agents first (lowest precedence)
         if (Directory.Exists(builtInDirectory))
         {
             foreach (string file in Directory.GetFiles(builtInDirectory, "*.md"))
@@ -121,7 +147,18 @@ internal static partial class AgentDefinitionLoader
             }
         }
 
-        // 2. Load custom agents — shadow built-ins with same name
+        // 2. Load global agents — shadow built-ins with same name
+        if (!string.IsNullOrEmpty(globalDirectory) && Directory.Exists(globalDirectory))
+        {
+            foreach (string file in Directory.GetFiles(globalDirectory, "*.md"))
+            {
+                AgentDefinition? agent = ParsePersonaFile(file, AgentSource.Global);
+                if (agent is not null)
+                    agents[agent.Name] = agent;
+            }
+        }
+
+        // 3. Load custom agents — shadow both built-in and global
         if (Directory.Exists(customDirectory))
         {
             foreach (string file in Directory.GetFiles(customDirectory, "*.md"))
