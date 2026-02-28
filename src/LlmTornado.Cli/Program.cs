@@ -3,6 +3,7 @@ using LlmTornado.Agents.DataModels;
 using LlmTornado.Chat;
 using LlmTornado.Cli.Core;
 using LlmTornado.Cli.Core.Agents;
+using LlmTornado.Cli.Core.Input;
 using LlmTornado.Cli.Core.Mcp;
 using LlmTornado.Cli.Core.Providers;
 using LlmTornado.Cli.Core.Skills;
@@ -211,7 +212,23 @@ class Program
             // Chat message
             try
             {
-                ChatMessage userMessage = new(ChatMessageRoles.User, input);
+                // Parse input for inline file references (@path/to/file)
+                ParsedInput parsed = InputParser.Parse(input, builder.WorkingDirectory);
+                FileAttachmentResult attachResult = FileAttachmentResolver.Resolve(parsed);
+
+                // Report attached files
+                foreach (ResolvedAttachment att in attachResult.Attachments)
+                {
+                    ConsoleRenderer.WriteInfo($"  [attached: {att.FileName} ({att.MimeType}, {att.FormattedSize})]");
+                }
+
+                // Report any file errors
+                foreach (string err in attachResult.Errors)
+                {
+                    ConsoleRenderer.WriteError($"  {err}");
+                }
+
+                ChatMessage userMessage = attachResult.Message;
                 memory.AddMessage(userMessage);
 
                 // Optimize tools for this turn if needed

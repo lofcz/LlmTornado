@@ -4,6 +4,24 @@ using LlmTornado.Code;
 namespace LlmTornado.Cli.Core.Memory;
 
 /// <summary>
+/// Estimated token costs for various media types.
+/// Based on OpenAI's vision token formula and practical estimates.
+/// </summary>
+internal static class MediaTokenCosts
+{
+    /// <summary> Low-detail image: ~85 tokens. </summary>
+    public const int ImageLow = 85;
+    /// <summary> High-detail image: ~765 tokens (average). </summary>
+    public const int ImageHigh = 765;
+    /// <summary> Auto-detail image: use high estimate to be conservative. </summary>
+    public const int ImageDefault = 765;
+    /// <summary> PDF document: ~1000 tokens per page estimate. </summary>
+    public const int Document = 1000;
+    /// <summary> Audio: ~500 tokens per audio attachment. </summary>
+    public const int Audio = 500;
+}
+
+/// <summary>
 /// Tracks compression state per message.
 /// </summary>
 internal enum MessageCompressionState
@@ -106,7 +124,25 @@ internal sealed class CompressionStrategy
         int charCount = (message.Content?.Length ?? 0)
             + (message.Parts?.Sum(p => p.Text?.Length ?? 0) ?? 0);
 
-        return Math.Max(1, charCount / 4);
+        int textTokens = Math.Max(1, charCount / 4);
+        
+        // Add estimated token costs for media parts
+        int mediaTokens = 0;
+        if (message.Parts is not null)
+        {
+            foreach (ChatMessagePart part in message.Parts)
+            {
+                mediaTokens += part.Type switch
+                {
+                    ChatMessageTypes.Image => MediaTokenCosts.ImageDefault,
+                    ChatMessageTypes.Document => MediaTokenCosts.Document,
+                    ChatMessageTypes.Audio => MediaTokenCosts.Audio,
+                    _ => 0
+                };
+            }
+        }
+
+        return textTokens + mediaTokens;
     }
 }
 

@@ -88,6 +88,27 @@ internal sealed class MessageSummarizer
         {
             string role = msg.Role?.ToString() ?? "unknown";
             string content = msg.Content ?? msg.Parts?.FirstOrDefault()?.Text ?? "";
+            
+            // Add media placeholders so the summary knows media was present
+            if (msg.Parts is { Count: > 0 })
+            {
+                foreach (ChatMessagePart part in msg.Parts)
+                {
+                    switch (part.Type)
+                    {
+                        case ChatMessageTypes.Image:
+                            content += " [image attached]";
+                            break;
+                        case ChatMessageTypes.Audio:
+                            content += " [audio attached]";
+                            break;
+                        case ChatMessageTypes.Document:
+                            content += " [document attached]";
+                            break;
+                    }
+                }
+            }
+            
             conversationText.AppendLine($"{role}: {content}");
         }
 

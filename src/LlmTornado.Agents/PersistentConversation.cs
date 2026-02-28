@@ -1,6 +1,7 @@
 ﻿using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Code;
+using LlmTornado.Images;
 using Newtonsoft.Json;
 using System;
 using System.Collections;
@@ -26,8 +27,19 @@ public class PersistentPart
     public string Type { get; set; } = "";
     public string? Text { get; set; }
     public string? ImageUrl { get; set; }
+    public string? ImageMimeType { get; set; }
     public string? AudioData { get; set; }          // base64 if you used audio
     public string? AudioFormat { get; set; }
+    public string? AudioUrl { get; set; }            // URL-based audio
+    public string? DocumentBase64 { get; set; }      // base64 PDF
+    public string? DocumentUrl { get; set; }         // URL-based document
+    
+    /// <summary>
+    /// Relative path to externalized media file (in media/ subfolder).
+    /// When set, the actual binary data should be loaded from this file
+    /// instead of from the inline base64 fields.
+    /// </summary>
+    public string? MediaFilePath { get; set; }
 }
 
 public class PersistentConversation
@@ -189,7 +201,7 @@ public class PersistentConversation
 
             while (_unsavedMessages.TryDequeue(out ChatMessage? msg))
             {
-                PersistentMessage dto = ConversationIOUtility.ConvertChatMessageToPersistent(msg);
+                PersistentMessage dto = ConversationIOUtility.ConvertChatMessageToPersistent(msg, ConversationPath);
 
                 string json = JsonConvert.SerializeObject(dto);
                 writer.WriteLine(json);
@@ -229,7 +241,7 @@ public class PersistentConversation
             if (dto == null)
                 continue;
 
-            messages.Add(ConversationIOUtility.ConvertPersistantToChatMessage(dto));
+            messages.Add(ConversationIOUtility.ConvertPersistantToChatMessage(dto, ConversationPath));
         }
 
         return messages;
@@ -241,25 +253,113 @@ public class PersistentConversation
 public static class ConversationIOUtility
 {
 
-    public static PersistentMessage ConvertChatMessageToPersistent(ChatMessage message)
+    public static PersistentMessage ConvertChatMessageToPersistent(ChatMessage message, string? conversationFilePath = null)
     {
         return new PersistentMessage
         {
             Id = message.Id,
             Role = message.Role,
             Content = message.Content,
-            Parts = message.Parts?.Select(p => new PersistentPart
-            {
-                Type = p.Type.ToString(),
-                Text = p.Text,
-                ImageUrl = p.Image?.Url,
-                AudioData = p.Audio?.Data,
-                AudioFormat = p.Audio?.Format.ToString()
-            }).ToList()
+            Parts = message.Parts?.Select(p => ConvertPartToPersistent(p, conversationFilePath)).ToList()
         };
     }
 
-    public static ChatMessage ConvertPersistantToChatMessage(PersistentMessage persisted)
+    private static PersistentPart ConvertPartToPersistent(ChatMessagePart p, string? conversationFilePath)
+    {
+        PersistentPart result = new()
+        {
+            Type = p.Type.ToString(),
+            Text = p.Text,
+            ImageMimeType = p.Image?.MimeType,
+            AudioFormat = p.Audio?.Format?.ToString(),
+            AudioUrl = p.Audio?.Url?.AbsoluteUri,
+            DocumentUrl = p.Document?.Uri?.AbsoluteUri,
+        };
+
+        // Externalize large binary data to media files when possible
+        bool canExternalize = !string.IsNullOrEmpty(conversationFilePath);
+
+        switch (p.Type)
+        {
+            case ChatMessageTypes.Image when p.Image is not null:
+            {
+                string? imageData = p.Image.Url;
+                if (canExternalize && !string.IsNullOrEmpty(imageData) && IsBase64Content(imageData))
+                {
+                    byte[] bytes = ExtractBase64Bytes(imageData);
+                    string ext = MediaStorage.GetExtensionForMime(p.Image.MimeType);
+                    result.MediaFilePath = MediaStorage.SaveMedia(conversationFilePath!, bytes, ext);
+                    result.ImageMimeType = p.Image.MimeType;
+                    // Don't store inline base64
+                }
+                else
+                {
+                    result.ImageUrl = imageData;
+                }
+                break;
+            }
+            case ChatMessageTypes.Audio when p.Audio is not null:
+            {
+                if (canExternalize && !string.IsNullOrEmpty(p.Audio.Data))
+                {
+                    byte[] bytes = Convert.FromBase64String(p.Audio.Data);
+                    string ext = MediaStorage.GetExtensionForMime(MediaStorage.GetMimeForAudioFormat(p.Audio.Format));
+                    result.MediaFilePath = MediaStorage.SaveMedia(conversationFilePath!, bytes, ext);
+                    // Don't store inline base64
+                }
+                else
+                {
+                    result.AudioData = p.Audio.Data;
+                }
+                break;
+            }
+            case ChatMessageTypes.Document when p.Document is not null:
+            {
+                if (canExternalize && !string.IsNullOrEmpty(p.Document.Base64))
+                {
+                    byte[] bytes = Convert.FromBase64String(p.Document.Base64);
+                    result.MediaFilePath = MediaStorage.SaveMedia(conversationFilePath!, bytes, ".pdf");
+                    // Don't store inline base64
+                }
+                else
+                {
+                    result.DocumentBase64 = p.Document.Base64;
+                    result.DocumentUrl = p.Document.Uri?.AbsoluteUri;
+                }
+                break;
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Check if the string is base64 content (either raw base64 or data: URI).
+    /// </summary>
+    private static bool IsBase64Content(string value)
+    {
+        return value.StartsWith("data:", StringComparison.OrdinalIgnoreCase)
+            || (!value.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+                && !value.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+                && value.Length > 256); // raw base64 is always much longer than a URL
+    }
+
+    /// <summary>
+    /// Extract raw bytes from a base64 string or data: URI.
+    /// </summary>
+    private static byte[] ExtractBase64Bytes(string value)
+    {
+        if (value.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+        {
+            int commaIndex = value.IndexOf(',');
+            if (commaIndex >= 0)
+                return Convert.FromBase64String(value[(commaIndex + 1)..]);
+        }
+
+        return Convert.FromBase64String(value);
+    }
+
+    public static ChatMessage ConvertPersistantToChatMessage(PersistentMessage persisted, string? conversationFilePath = null)
     {
         // Rebuild parts (fallback to Content)
         List<ChatMessagePart>? parts = null;
@@ -268,24 +368,9 @@ public static class ConversationIOUtility
             parts = [];
             foreach (PersistentPart part in persisted.Parts)
             {
-                switch (part.Type)
-                {
-                    case nameof(ChatMessageTypes.Text):
-                        if (!string.IsNullOrEmpty(part.Text))
-                            parts.Add(new ChatMessagePart(part.Text));
-                        break;
-                    case nameof(ChatMessageTypes.Image):
-                        if (!string.IsNullOrEmpty(part.ImageUrl) && Uri.TryCreate(part.ImageUrl, UriKind.Absolute, out Uri? uri))
-                            parts.Add(new ChatMessagePart(uri));
-                        break;
-                    case nameof(ChatMessageTypes.Audio):
-                        if (!string.IsNullOrEmpty(part.AudioData) && Enum.TryParse<ChatAudioFormats>(part.AudioFormat, true, out ChatAudioFormats fmt))
-                            parts.Add(new ChatMessagePart(part.AudioData, fmt));
-                        break;
-                    default:
-                        // ignore unsupported types for now
-                        break;
-                }
+                ChatMessagePart? converted = ConvertPersistentPartToChat(part, conversationFilePath);
+                if (converted is not null)
+                    parts.Add(converted);
             }
         }
 
@@ -308,6 +393,91 @@ public static class ConversationIOUtility
                 ChatMessageRoles.Assistant => new ChatMessage(ChatMessageRoles.Assistant, persisted.Content ?? ""),
                 _ => new ChatMessage(ChatMessageRoles.User, persisted.Content ?? ""),
             };
+        }
+    }
+
+    private static ChatMessagePart? ConvertPersistentPartToChat(PersistentPart part, string? conversationFilePath)
+    {
+        switch (part.Type)
+        {
+            case nameof(ChatMessageTypes.Text):
+            {
+                return !string.IsNullOrEmpty(part.Text) ? new ChatMessagePart(part.Text) : null;
+            }
+            case nameof(ChatMessageTypes.Image):
+            {
+                // Try loading from externalized media file first
+                if (!string.IsNullOrEmpty(part.MediaFilePath) && !string.IsNullOrEmpty(conversationFilePath))
+                {
+                    byte[]? bytes = MediaStorage.LoadMedia(conversationFilePath, part.MediaFilePath);
+                    if (bytes is not null)
+                    {
+                        string base64 = Convert.ToBase64String(bytes);
+                        string dataUri = $"data:{part.ImageMimeType ?? "image/png"};base64,{base64}";
+                        return new ChatMessagePart(dataUri, Images.ImageDetail.Auto, part.ImageMimeType);
+                    }
+                }
+
+                // Fall back to inline ImageUrl (URL or old inline base64)
+                if (!string.IsNullOrEmpty(part.ImageUrl))
+                {
+                    // Try as URI first (handles http:// and data: URIs)
+                    if (Uri.TryCreate(part.ImageUrl, UriKind.Absolute, out Uri? uri))
+                        return new ChatMessagePart(uri);
+
+                    // Fallback: treat as raw base64 string (fixes old persistence bug)
+                    return new ChatMessagePart(part.ImageUrl, Images.ImageDetail.Auto, part.ImageMimeType);
+                }
+
+                return null;
+            }
+            case nameof(ChatMessageTypes.Audio):
+            {
+                // Try loading from externalized media file first
+                if (!string.IsNullOrEmpty(part.MediaFilePath) && !string.IsNullOrEmpty(conversationFilePath))
+                {
+                    byte[]? bytes = MediaStorage.LoadMedia(conversationFilePath, part.MediaFilePath);
+                    if (bytes is not null)
+                    {
+                        Enum.TryParse<ChatAudioFormats>(part.AudioFormat, true, out ChatAudioFormats fmt);
+                        return new ChatMessagePart(bytes, fmt);
+                    }
+                }
+
+                // Try URL-based audio
+                if (!string.IsNullOrEmpty(part.AudioUrl) && Uri.TryCreate(part.AudioUrl, UriKind.Absolute, out Uri? audioUri))
+                    return new ChatMessagePart(audioUri, ChatMessageTypes.Audio);
+
+                // Fall back to inline base64 audio
+                if (!string.IsNullOrEmpty(part.AudioData) && Enum.TryParse<ChatAudioFormats>(part.AudioFormat, true, out ChatAudioFormats audioFmt))
+                    return new ChatMessagePart(part.AudioData, audioFmt);
+
+                return null;
+            }
+            case nameof(ChatMessageTypes.Document):
+            {
+                // Try loading from externalized media file first
+                if (!string.IsNullOrEmpty(part.MediaFilePath) && !string.IsNullOrEmpty(conversationFilePath))
+                {
+                    byte[]? bytes = MediaStorage.LoadMedia(conversationFilePath, part.MediaFilePath);
+                    if (bytes is not null)
+                    {
+                        string base64 = Convert.ToBase64String(bytes);
+                        return new ChatMessagePart(new ChatDocument(base64));
+                    }
+                }
+
+                // Fall back to inline document data
+                if (!string.IsNullOrEmpty(part.DocumentBase64))
+                    return new ChatMessagePart(new ChatDocument(part.DocumentBase64));
+
+                if (!string.IsNullOrEmpty(part.DocumentUrl) && Uri.TryCreate(part.DocumentUrl, UriKind.Absolute, out Uri? docUri))
+                    return new ChatMessagePart(new ChatDocument(docUri));
+
+                return null;
+            }
+            default:
+                return null;
         }
     }
 
@@ -334,7 +504,7 @@ public static class ConversationIOUtility
             throw new FileNotFoundException("Conversation file not found", filePath);
 
         List<PersistentMessage> dto = Messages
-            .Select(m => ConvertChatMessageToPersistent(m)).ToList();
+            .Select(m => ConvertChatMessageToPersistent(m, filePath)).ToList();
 
         string json = JsonConvert.SerializeObject(dto, Formatting.Indented);
         File.WriteAllText(filePath, json);
@@ -369,7 +539,7 @@ public static class ConversationIOUtility
             if (dto == null)
                 continue;
 
-            messages.Add(ConvertPersistantToChatMessage(dto));
+            messages.Add(ConvertPersistantToChatMessage(dto, conversationPath));
         }
 
         return messages;
@@ -399,7 +569,7 @@ public static class ConversationIOUtility
 
         foreach (PersistentMessage dto in dtos)
         {
-            messages.Add(ConvertPersistantToChatMessage(dto));
+            messages.Add(ConvertPersistantToChatMessage(dto, conversationPath));
         }
 
         return messages;

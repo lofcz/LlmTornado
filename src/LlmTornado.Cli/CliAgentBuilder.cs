@@ -85,6 +85,8 @@ internal sealed class CliAgentBuilder
         return result;
     }
 
+    public string WorkingDirectory => _inner.WorkingDirectory ?? Environment.CurrentDirectory;
+
     public void RestoreFullTools() => _inner.RestoreFullTools();
 
     public void SetOptimizerEnabled(bool enabled, ChatModel? optimizerModel = null)
