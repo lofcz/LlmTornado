@@ -5,7 +5,7 @@ namespace LlmTornado.Cli.Core.Skills;
 /// <summary>
 /// Manages the lifecycle of skills: discover, enable/disable, activate, build context.
 /// </summary>
-internal sealed class SkillManager
+public sealed class SkillManager
 {
     private readonly AgentSettings _settings;
     private readonly ISettingsPersistence _persistence;

@@ -6,7 +6,7 @@ namespace LlmTornado.Cli.Core.Agents;
 /// Manages the lifecycle of agent personas and project context:
 /// discovery, selection, capability baseline application, and settings persistence.
 /// </summary>
-internal sealed class AgentDefinitionManager
+public sealed class AgentDefinitionManager
 {
     private readonly AgentSettings _settings;
     private readonly ISettingsPersistence _persistence;

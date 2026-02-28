@@ -7,7 +7,7 @@ namespace LlmTornado.Cli.Core.Skills;
 /// <summary>
 /// Builds LlmTornado Tool instances from skill script files.
 /// </summary>
-internal static class ScriptToolBuilder
+public static class ScriptToolBuilder
 {
     private const int MaxOutputChars = 30_000;
 

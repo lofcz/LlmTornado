@@ -5,7 +5,7 @@ namespace LlmTornado.Cli.Core.Skills;
 /// <summary>
 /// Discovers skill directories and parses SKILL.md files per the Agent Skills standard.
 /// </summary>
-internal static partial class SkillLoader
+public static partial class SkillLoader
 {
     [GeneratedRegex(@"^[a-z0-9]([a-z0-9-]*[a-z0-9])?$")]
     private static partial Regex ValidSkillNameRegex();

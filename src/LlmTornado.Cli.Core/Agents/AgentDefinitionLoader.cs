@@ -8,7 +8,7 @@ namespace LlmTornado.Cli.Core.Agents;
 /// the project directory hierarchy (AGENTS.md files) and the agents
 /// directory (persona .md files).
 /// </summary>
-internal static partial class AgentDefinitionLoader
+public static partial class AgentDefinitionLoader
 {
     /// <summary>
     /// Maximum number of parent directories to walk when scanning for AGENTS.md files.

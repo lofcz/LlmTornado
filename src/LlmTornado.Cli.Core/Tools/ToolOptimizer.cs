@@ -15,7 +15,7 @@ namespace LlmTornado.Cli.Core.Tools;
 /// Uses structured output with ToolParamListEnum to constrain the LLM response
 /// to only valid tool names.
 /// </summary>
-internal sealed class ToolOptimizer
+public sealed class ToolOptimizer
 {
     private static readonly HashSet<string> BuiltInToolNames =
     [
@@ -207,7 +207,7 @@ internal sealed class ToolOptimizer
 /// <summary>
 /// Result of a tool optimization pass.
 /// </summary>
-internal sealed class ToolOptimizationResult
+public sealed class ToolOptimizationResult
 {
     /// <summary>
     /// The (potentially filtered) tool list to use for this turn.

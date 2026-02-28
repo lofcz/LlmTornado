@@ -6,7 +6,7 @@ namespace LlmTornado.Cli.Core.Providers;
 /// <summary>
 /// Detected provider with its API key and available models.
 /// </summary>
-internal sealed class DetectedProvider
+public sealed class DetectedProvider
 {
     public required LLmProviders Provider { get; init; }
     public required string ApiKey { get; init; }
@@ -17,7 +17,7 @@ internal sealed class DetectedProvider
 /// <summary>
 /// Result of provider detection.
 /// </summary>
-internal sealed class ProviderDetectionResult
+public sealed class ProviderDetectionResult
 {
     public required TornadoApi Api { get; init; }
     public required List<DetectedProvider> Providers { get; init; }

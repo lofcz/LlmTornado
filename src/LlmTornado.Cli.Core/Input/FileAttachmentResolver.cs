@@ -8,7 +8,7 @@ namespace LlmTornado.Cli.Core.Input;
 /// Reads files from disk and builds multipart <see cref="ChatMessage"/> instances
 /// from parsed input.
 /// </summary>
-internal static class FileAttachmentResolver
+public static class FileAttachmentResolver
 {
     /// <summary>
     /// Build a <see cref="ChatMessage"/> from parsed input.
@@ -124,7 +124,7 @@ internal static class FileAttachmentResolver
 /// <summary>
 /// Result of resolving file attachments into a chat message.
 /// </summary>
-internal sealed class FileAttachmentResult
+public sealed class FileAttachmentResult
 {
     /// <summary>
     /// The constructed chat message (multipart if attachments present, plain text otherwise).
@@ -150,7 +150,7 @@ internal sealed class FileAttachmentResult
 /// <summary>
 /// Metadata about a successfully resolved file attachment.
 /// </summary>
-internal sealed class ResolvedAttachment
+public sealed class ResolvedAttachment
 {
     public required string FileName { get; init; }
     public required string FilePath { get; init; }

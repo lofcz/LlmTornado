@@ -16,7 +16,7 @@ namespace LlmTornado.Cli.Core;
 /// Assembles a TornadoAgent and ChatRuntime from all system components.
 /// Shared between CLI and ACP Server.
 /// </summary>
-internal sealed class AgentBuilder
+public sealed class AgentBuilder
 {
     private readonly TornadoApi _api;
     private readonly SkillManager _skillManager;

@@ -7,7 +7,7 @@ namespace LlmTornado.Cli.Core.Memory;
 /// Estimated token costs for various media types.
 /// Based on OpenAI's vision token formula and practical estimates.
 /// </summary>
-internal static class MediaTokenCosts
+public static class MediaTokenCosts
 {
     /// <summary> Low-detail image: ~85 tokens. </summary>
     public const int ImageLow = 85;
@@ -24,7 +24,7 @@ internal static class MediaTokenCosts
 /// <summary>
 /// Tracks compression state per message.
 /// </summary>
-internal enum MessageCompressionState
+public enum MessageCompressionState
 {
     Uncompressed,
     Compressed,
@@ -34,7 +34,7 @@ internal enum MessageCompressionState
 /// <summary>
 /// Determines when context compression is needed based on token utilization thresholds.
 /// </summary>
-internal sealed class CompressionStrategy
+public sealed class CompressionStrategy
 {
     private int _contextWindowTokens;
 
@@ -146,7 +146,7 @@ internal sealed class CompressionStrategy
     }
 }
 
-internal sealed class CompressionAnalysis
+public sealed class CompressionAnalysis
 {
     public required bool ShouldCompress { get; init; }
     public required bool IsReCompression { get; init; }
@@ -161,7 +161,7 @@ internal sealed class CompressionAnalysis
 /// <summary>
 /// Tracks compression state for messages by their Id.
 /// </summary>
-internal sealed class MessageMetadataTracker
+public sealed class MessageMetadataTracker
 {
     private readonly Dictionary<Guid, MessageCompressionState> _states = new();
 

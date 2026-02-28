@@ -5,7 +5,7 @@ namespace LlmTornado.Cli.Core;
 /// <summary>
 /// Serializable user settings. Shared between CLI and ACP server.
 /// </summary>
-internal sealed class AgentSettings
+public sealed class AgentSettings
 {
     [JsonPropertyName("active_model")]
     public string? ActiveModel { get; set; }

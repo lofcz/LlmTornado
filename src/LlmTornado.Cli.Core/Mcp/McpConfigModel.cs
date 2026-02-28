@@ -5,7 +5,7 @@ namespace LlmTornado.Cli.Core.Mcp;
 /// <summary>
 /// Root model for mcp.json config file.
 /// </summary>
-internal sealed class McpConfig
+public sealed class McpConfig
 {
     [JsonPropertyName("servers")]
     public List<McpServerEntry> Servers { get; set; } = [];
@@ -14,7 +14,7 @@ internal sealed class McpConfig
 /// <summary>
 /// A single MCP server definition.
 /// </summary>
-internal sealed class McpServerEntry
+public sealed class McpServerEntry
 {
     [JsonPropertyName("type")]
     public string Type { get; set; } = "stdio";
@@ -44,7 +44,7 @@ internal sealed class McpServerEntry
 /// <summary>
 /// Status of a configured MCP server.
 /// </summary>
-internal sealed class McpServerStatus
+public sealed class McpServerStatus
 {
     public required string Name { get; init; }
     public required string Type { get; init; }

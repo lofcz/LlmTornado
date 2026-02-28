@@ -7,7 +7,7 @@ namespace LlmTornado.Cli.Core.Memory;
 /// <summary>
 /// Manages the active conversation with automatic summarization and persistence.
 /// </summary>
-internal sealed class ConversationMemoryManager
+public sealed class ConversationMemoryManager
 {
     private readonly CompressionStrategy _compressionStrategy;
     private readonly MessageSummarizer _summarizer;

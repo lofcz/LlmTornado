@@ -8,7 +8,7 @@ namespace LlmTornado.Cli.Core.Memory;
 /// <summary>
 /// Uses an LLM to produce conversation summaries for context compression.
 /// </summary>
-internal sealed class MessageSummarizer
+public sealed class MessageSummarizer
 {
     private readonly TornadoApi _api;
     private ChatModel _model;

@@ -6,7 +6,7 @@ namespace LlmTornado.Cli.Core.Providers;
 /// <summary>
 /// Auto-detect LLM providers from standard environment variables.
 /// </summary>
-internal static class ProviderDetector
+public static class ProviderDetector
 {
     private static readonly (string EnvVar, LLmProviders Provider)[] ProviderEnvVars =
     [

@@ -8,7 +8,7 @@ namespace LlmTornado.Cli.Core.Mcp;
 /// <summary>
 /// Loads MCP server definitions from a JSON config file and initializes them.
 /// </summary>
-internal sealed partial class McpConfigLoader : IAsyncDisposable
+public sealed partial class McpConfigLoader : IAsyncDisposable
 {
     private readonly List<MCPServer> _servers = [];
     private readonly List<Tool> _allTools = [];

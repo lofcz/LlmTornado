@@ -8,7 +8,7 @@ namespace LlmTornado.Cli.Core.Memory;
 /// <summary>
 /// Metadata for a saved conversation.
 /// </summary>
-internal sealed class ConversationMetadata
+public sealed class ConversationMetadata
 {
     [JsonPropertyName("id")]
     public string Id { get; set; } = string.Empty;
@@ -38,7 +38,7 @@ internal sealed class ConversationMetadata
 /// <summary>
 /// Save, load, list, and delete named conversations.
 /// </summary>
-internal sealed class ConversationStore
+public sealed class ConversationStore
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {

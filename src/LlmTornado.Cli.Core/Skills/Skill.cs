@@ -3,7 +3,7 @@ namespace LlmTornado.Cli.Core.Skills;
 /// <summary>
 /// Source origin of a skill.
 /// </summary>
-internal enum SkillSource
+public enum SkillSource
 {
     /// <summary>
     /// Loaded from the global skills directory (%APPDATA%/llmtornado/skills/ or TORNADO_SKILLS_DIR).
@@ -20,7 +20,7 @@ internal enum SkillSource
 /// <summary>
 /// Represents a loaded skill following the Agent Skills standard (agentskills.io).
 /// </summary>
-internal sealed class Skill
+public sealed class Skill
 {
     // --- Frontmatter (always loaded) ---
     public required string Name { get; init; }
@@ -55,7 +55,7 @@ internal sealed class Skill
 /// <summary>
 /// A script file found in a skill's scripts/ directory.
 /// </summary>
-internal sealed class SkillScript
+public sealed class SkillScript
 {
     public required string FileName { get; init; }
     public required string AbsolutePath { get; init; }

@@ -5,7 +5,7 @@ namespace LlmTornado.Cli.Core.Input;
 /// <summary>
 /// The media category of a detected file reference.
 /// </summary>
-internal enum FileMediaType
+public enum FileMediaType
 {
     Image,
     Document,
@@ -15,7 +15,7 @@ internal enum FileMediaType
 /// <summary>
 /// A file reference detected in user input.
 /// </summary>
-internal sealed class ParsedFileReference
+public sealed class ParsedFileReference
 {
     /// <summary>
     /// The original token as it appeared in the input (e.g., <c>@"./photo.png"</c>).
@@ -46,7 +46,7 @@ internal sealed class ParsedFileReference
 /// <summary>
 /// Result of parsing user input for inline file references.
 /// </summary>
-internal sealed class ParsedInput
+public sealed class ParsedInput
 {
     /// <summary>
     /// The user's text with all <c>@path</c> tokens removed and whitespace cleaned up.
@@ -68,7 +68,7 @@ internal sealed class ParsedInput
 /// Scans user input for inline <c>@path/to/file</c> references and resolves them
 /// against the file system.
 /// </summary>
-internal static class InputParser
+public static class InputParser
 {
     // Matches @"quoted path" or @unquoted/path (no spaces unless quoted)
     // Group 1 = quoted path, Group 2 = unquoted path

@@ -3,7 +3,7 @@ namespace LlmTornado.Cli.Core;
 /// <summary>
 /// Abstraction for tool approval. CLI prompts interactively, ACP auto-approves.
 /// </summary>
-internal interface IToolApproval
+public interface IToolApproval
 {
     /// <summary>
     /// Pre-approve a set of tools (e.g. from skill allowed-tools or persona auto-approve-tools).
