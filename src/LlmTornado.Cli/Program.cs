@@ -156,6 +156,7 @@ class Program
         dispatcher.Register(new ConversationCommand(_memoryManager, _conversationStore, _agentBuilder));
         dispatcher.Register(new ToolsCommand(toolApproval, _agentBuilder, settings, providerResult));
         dispatcher.Register(new McpCommand(_mcpLoader, _agentBuilder, settings, runtimeEventHandler));
+        dispatcher.Register(new CdCommand(_agentBuilder, agentManager, runtimeEventHandler));
         dispatcher.Register(new ClearCommand());
         dispatcher.Register(new ExitCommand(_memoryManager, _conversationStore, _agentBuilder));
 
