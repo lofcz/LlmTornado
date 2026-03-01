@@ -263,9 +263,9 @@ public sealed class AgentBuilder
         tools.Add(BuildListSkillsTool());
         tools.Add(BuildReadReferenceTool());
 
-        // Script tools from enabled skills
+        // Script tools from enabled skills (gated by approval system)
         List<Skill> enabledSkills = _skillManager.GetEnabledSkills();
-        tools.AddRange(ScriptToolBuilder.BuildScriptTools(enabledSkills));
+        tools.AddRange(ScriptToolBuilder.BuildScriptTools(enabledSkills, _toolApproval));
 
         // MCP tools
         tools.AddRange(_mcpLoader.AllTools);

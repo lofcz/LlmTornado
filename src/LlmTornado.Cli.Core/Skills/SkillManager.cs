@@ -106,6 +106,7 @@ public sealed class SkillManager
             sb.AppendLine("  <skill>");
             sb.AppendLine($"    <name>{skill.Name}</name>");
             sb.AppendLine($"    <description>{skill.Description}</description>");
+            sb.AppendLine($"    <location>{skill.SkillMdPath}</location>");
 
             if (skill.Scripts.Count > 0)
             {

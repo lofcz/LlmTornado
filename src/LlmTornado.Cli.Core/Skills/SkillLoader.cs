@@ -1,4 +1,6 @@
 using System.Text.RegularExpressions;
+using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
 
 namespace LlmTornado.Cli.Core.Skills;
 
@@ -12,6 +14,23 @@ public static partial class SkillLoader
 
     [GeneratedRegex(@"--")]
     private static partial Regex ConsecutiveHyphensRegex();
+
+    /// <summary>
+    /// Matches the opening/closing <c>---</c> frontmatter delimiters on their own line.
+    /// </summary>
+    [GeneratedRegex(@"^---\s*$", RegexOptions.Multiline)]
+    private static partial Regex FrontmatterDelimiterRegex();
+
+    /// <summary>
+    /// Matches Markdown links with relative paths (not http(s):// or mailto:).
+    /// </summary>
+    [GeneratedRegex(@"\[([^\]]+)\]\((?!https?://|mailto:)([^)]+)\)")]
+    private static partial Regex RelativeLinkRegex();
+
+    private static readonly IDeserializer YamlDeserializer = new DeserializerBuilder()
+        .WithNamingConvention(HyphenatedNamingConvention.Instance)
+        .IgnoreUnmatchedProperties()
+        .Build();
 
     /// <summary>
     /// Resolve the skills directory. If <paramref name="skillsDirectoryOverride"/> is non-null
@@ -112,41 +131,49 @@ public static partial class SkillLoader
         string dirName = Path.GetFileName(skillDirectory);
         string content = File.ReadAllText(skillMdPath);
 
-        // Parse YAML frontmatter
-        Dictionary<string, object> frontmatter = ParseFrontmatter(content);
+        // Parse YAML frontmatter using YamlDotNet
+        SkillFrontmatter? frontmatter = ParseFrontmatter(content);
+        if (frontmatter is null)
+            return null;
 
-        string name = frontmatter.GetValueOrDefault("name") as string ?? dirName;
+        string name = frontmatter.Name ?? dirName;
 
-        // Validate name
+        // Validate name per spec: 1-64 chars, lowercase alphanumeric + hyphens, no leading/trailing/consecutive hyphens
         if (name.Length is < 1 or > 64)
             return null;
         if (!ValidSkillNameRegex().IsMatch(name))
             return null;
         if (ConsecutiveHyphensRegex().IsMatch(name))
             return null;
-        if (name != dirName)
+
+        // Name must match directory name (case-insensitive for OS compatibility)
+        if (!string.Equals(name, dirName, StringComparison.OrdinalIgnoreCase))
             return null;
 
-        string description = frontmatter.GetValueOrDefault("description") as string ?? "";
+        // Description is required and must be 1-1024 characters
+        string? description = frontmatter.Description;
+        if (string.IsNullOrEmpty(description) || description.Length > 1024)
+            return null;
+
+        // Compatibility, if provided, must be <= 500 characters
+        string? compatibility = frontmatter.Compatibility;
+        if (compatibility is not null && compatibility.Length > 500)
+            return null;
 
         List<string> allowedTools = [];
-        if (frontmatter.GetValueOrDefault("allowed-tools") is string toolsStr)
+        if (!string.IsNullOrEmpty(frontmatter.AllowedTools))
         {
-            allowedTools = [..toolsStr.Split(' ', StringSplitOptions.RemoveEmptyEntries)];
+            allowedTools = [..frontmatter.AllowedTools.Split(' ', StringSplitOptions.RemoveEmptyEntries)];
         }
 
-        Dictionary<string, string> metadata = new();
-        if (frontmatter.GetValueOrDefault("metadata") is Dictionary<string, string> meta)
-        {
-            metadata = meta;
-        }
+        Dictionary<string, string> metadata = frontmatter.Metadata ?? new();
 
         return new Skill
         {
             Name = name,
             Description = description,
-            License = frontmatter.GetValueOrDefault("license") as string,
-            Compatibility = frontmatter.GetValueOrDefault("compatibility") as string,
+            License = frontmatter.License,
+            Compatibility = compatibility,
             Metadata = metadata,
             AllowedTools = allowedTools,
             DirectoryPath = Path.GetFullPath(skillDirectory),
@@ -159,6 +186,7 @@ public static partial class SkillLoader
 
     /// <summary>
     /// Load the full instructions body of a SKILL.md file.
+    /// Resolves relative file links in the instructions to absolute paths.
     /// </summary>
     public static void LoadInstructions(Skill skill)
     {
@@ -166,86 +194,86 @@ public static partial class SkillLoader
             return;
 
         string content = File.ReadAllText(skill.SkillMdPath);
-        int secondDash = content.IndexOf("---", content.IndexOf("---", StringComparison.Ordinal) + 3, StringComparison.Ordinal);
+        string body = ExtractBody(content);
 
-        skill.Instructions = secondDash >= 0
-            ? content[(secondDash + 3)..].Trim()
-            : content;
+        // Normalize relative file links to absolute paths so the agent can access referenced resources
+        body = RelativeLinkRegex().Replace(body, match =>
+        {
+            string linkText = match.Groups[1].Value;
+            string relativePath = match.Groups[2].Value;
+            string absolutePath = Path.GetFullPath(Path.Combine(skill.DirectoryPath, relativePath));
+            return $"[{linkText}]({absolutePath})";
+        });
+
+        skill.Instructions = body;
     }
 
     /// <summary>
-    /// Simple YAML frontmatter parser. Handles flat key: value pairs and one level of metadata nesting.
+    /// Extract the YAML string between the first pair of <c>---</c> delimiters at the start of the file.
+    /// Returns null if no valid frontmatter block is found.
     /// </summary>
-    private static Dictionary<string, object> ParseFrontmatter(string content)
+    private static string? ExtractYamlBlock(string content)
     {
-        Dictionary<string, object> result = new();
+        MatchCollection matches = FrontmatterDelimiterRegex().Matches(content);
+        if (matches.Count < 2)
+            return null;
 
-        int firstDash = content.IndexOf("---", StringComparison.Ordinal);
-        if (firstDash < 0)
-            return result;
+        Match opening = matches[0];
+        Match closing = matches[1];
 
-        int secondDash = content.IndexOf("---", firstDash + 3, StringComparison.Ordinal);
-        if (secondDash < 0)
-            return result;
+        // The opening delimiter must be at the very start of the file (ignoring leading whitespace)
+        if (content[..opening.Index].Trim().Length > 0)
+            return null;
 
-        string yaml = content[(firstDash + 3)..secondDash].Trim();
-        string[] lines = yaml.Split('\n');
-        string? currentKey = null;
-        Dictionary<string, string>? currentMap = null;
+        int yamlStart = opening.Index + opening.Length;
+        int yamlEnd = closing.Index;
+        return content[yamlStart..yamlEnd];
+    }
 
-        foreach (string rawLine in lines)
+    /// <summary>
+    /// Extract the Markdown body after the frontmatter block.
+    /// </summary>
+    private static string ExtractBody(string content)
+    {
+        MatchCollection matches = FrontmatterDelimiterRegex().Matches(content);
+        if (matches.Count < 2)
+            return content;
+
+        Match closing = matches[1];
+        return content[(closing.Index + closing.Length)..].Trim();
+    }
+
+    /// <summary>
+    /// Parse YAML frontmatter using YamlDotNet into a strongly-typed model.
+    /// Returns null if no valid frontmatter block is found.
+    /// </summary>
+    private static SkillFrontmatter? ParseFrontmatter(string content)
+    {
+        string? yaml = ExtractYamlBlock(content);
+        if (yaml is null)
+            return null;
+
+        try
         {
-            string line = rawLine.TrimEnd('\r');
-
-            // Indented line (part of a map)
-            if (line.StartsWith("  ") && currentKey is not null && currentMap is not null)
-            {
-                string trimmed = line.TrimStart();
-                int colonIdx = trimmed.IndexOf(':');
-                if (colonIdx > 0)
-                {
-                    string key = trimmed[..colonIdx].Trim();
-                    string value = trimmed[(colonIdx + 1)..].Trim().Trim('"');
-                    currentMap[key] = value;
-                }
-                continue;
-            }
-
-            // Save previous map
-            if (currentKey is not null && currentMap is not null)
-            {
-                result[currentKey] = currentMap;
-                currentKey = null;
-                currentMap = null;
-            }
-
-            // Top-level key: value
-            int idx = line.IndexOf(':');
-            if (idx <= 0)
-                continue;
-
-            string k = line[..idx].Trim();
-            string v = line[(idx + 1)..].Trim().Trim('"');
-
-            if (string.IsNullOrEmpty(v))
-            {
-                // Map start (e.g., "metadata:")
-                currentKey = k;
-                currentMap = new Dictionary<string, string>();
-            }
-            else
-            {
-                result[k] = v;
-            }
+            return YamlDeserializer.Deserialize<SkillFrontmatter>(yaml);
         }
-
-        // Save final map if any
-        if (currentKey is not null && currentMap is not null)
+        catch
         {
-            result[currentKey] = currentMap;
+            return null;
         }
+    }
 
-        return result;
+    /// <summary>
+    /// Strongly-typed model for SKILL.md YAML frontmatter.
+    /// </summary>
+    internal sealed class SkillFrontmatter
+    {
+        public string? Name { get; set; }
+        public string? Description { get; set; }
+        public string? License { get; set; }
+        public string? Compatibility { get; set; }
+        public Dictionary<string, string>? Metadata { get; set; }
+        public string? AllowedTools { get; set; }
     }
 
     private static List<SkillScript> DiscoverScripts(string skillDirectory)

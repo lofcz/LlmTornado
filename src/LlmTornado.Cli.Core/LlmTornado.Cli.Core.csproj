@@ -7,6 +7,10 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <RootNamespace>LlmTornado.Cli.Core</RootNamespace>
+        <!-- Temporary packaging metadata for local NuGet feed -->
+        <PackageId>LlmTornado.Cli.Core</PackageId>
+        <Version>1.0.0-local</Version>
+        <IsPackable>true</IsPackable>
     </PropertyGroup>
 
     <ItemGroup>
@@ -26,6 +30,9 @@
         <Content Include="Agents\built-in\*.md">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
+    </ItemGroup>
+    <ItemGroup>
+      <PackageReference Include="YamlDotNet" Version="16.3.0" />
     </ItemGroup>
 
 </Project>
