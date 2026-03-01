@@ -538,9 +538,19 @@ public class TornadoRunner
                 }
             });
 
-            if (response.Exception != null && runnerCallback is not null)
+
+            if (response.Exception != null)
             {
-                await runnerCallback.Invoke(new AgentRunnerErrorEvent(response.Exception.Message, chat, response.Exception));
+                if(runnerCallback is not null)
+                {
+                    await runnerCallback.Invoke(new AgentRunnerErrorEvent(response.Exception.Message, chat, response.Exception));
+                }
+
+                if(runnerOptions?.ThrowOnApiError ?? true) //Default to throwing on API errors since without a response there's not much else the runner can do
+                {
+                    throw response.Exception; 
+                }
+                
                 return chat;
             }
 

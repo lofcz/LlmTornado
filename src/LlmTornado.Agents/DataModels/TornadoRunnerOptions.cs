@@ -23,8 +23,13 @@ public class TornadoRunnerOptions
     /// </summary>
     public bool ThrowOnTokenLimitExceeded { get; set; } = false;
 
-        /// <summary>
+    /// <summary>
     /// Gets or sets a value indicating whether an exception should be thrown when the operation is canceled.
     /// </summary>
     public bool ThrowOnCancelled { get; set; } = false;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether an exception should be thrown when the operation is canceled.
+    /// </summary>
+    public bool ThrowOnApiError{ get; set; } = true;
 }
