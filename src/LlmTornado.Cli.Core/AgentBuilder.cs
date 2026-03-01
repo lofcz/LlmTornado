@@ -103,12 +103,15 @@ public sealed class AgentBuilder
             _agent.AddTool(tool);
         }
 
-        // Configure tool permissions (all tools require approval)
+        // Configure tool permissions (all tools require approval).
+        // Use ResolvedName which covers MCP tools (Function.Name), delegate tools (ToolName),
+        // and any other tool variant. This ensures ToolPermissionRequired has entries for
+        // every tool the LLM might call, preventing KeyNotFoundException at runtime.
         foreach (Tool tool in allTools)
         {
-            string? toolName = tool.Function?.Name;
-            if (toolName is not null)
-                _agent.ToolPermissionRequired[toolName] = true;
+            string resolvedName = tool.ResolvedName;
+            if (!string.IsNullOrEmpty(resolvedName))
+                _agent.ToolPermissionRequired[resolvedName] = true;
         }
 
         // Pre-approve skill allowed-tools
@@ -171,6 +174,17 @@ public sealed class AgentBuilder
             {
                 _agent.AddTool(tool);
             }
+
+            // Re-populate tool permissions for the optimized subset.
+            // ClearTools() does not clear ToolPermissionRequired, but we need
+            // to ensure all optimized tools have entries (MCP tools skip
+            // SetDefaultToolPermission because ToolName is null).
+            foreach (Tool tool in result.Tools)
+            {
+                string resolvedName = tool.ResolvedName;
+                if (!string.IsNullOrEmpty(resolvedName))
+                    _agent.ToolPermissionRequired[resolvedName] = true;
+            }
         }
 
         return result;
@@ -188,6 +202,14 @@ public sealed class AgentBuilder
         foreach (Tool tool in _fullToolList)
         {
             _agent.AddTool(tool);
+        }
+
+        // Re-populate tool permissions for the full set
+        foreach (Tool tool in _fullToolList)
+        {
+            string resolvedName = tool.ResolvedName;
+            if (!string.IsNullOrEmpty(resolvedName))
+                _agent.ToolPermissionRequired[resolvedName] = true;
         }
     }
 

@@ -64,7 +64,7 @@ public static class ScriptToolBuilder
 
             foreach (SkillScript script in skill.Scripts)
             {
-                string toolName = $"{skill.Name}:{Path.GetFileNameWithoutExtension(script.FileName)}";
+                string toolName = $"{skill.Name}__{Path.GetFileNameWithoutExtension(script.FileName)}";
                 string description = $"Run script '{script.FileName}' from skill '{skill.Name}'. " +
                                      $"Extension: .{script.Extension}. Pass arguments as a single string.";
 
