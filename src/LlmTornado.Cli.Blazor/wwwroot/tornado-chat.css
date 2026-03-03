@@ -1,0 +1,103 @@
+/* =====================================================
+   tornado-chat.css — LlmTornado.Cli.Blazor theme
+   =====================================================*/
+
+/* ── Light theme (default) ── */
+:root {
+    /* Surfaces */
+    --tc-bg:              #ffffff;
+    --tc-bg-secondary:    #f5f5f5;
+    --tc-bg-sidebar:      #fafafa;
+    --tc-border:          #e0e0e0;
+    --tc-shadow:          0 1px 3px rgba(0,0,0,0.08);
+
+    /* Text */
+    --tc-text:            #1a1a1a;
+    --tc-text-secondary:  #666666;
+    --tc-text-muted:      #999999;
+
+    /* Accent */
+    --tc-accent:          #2563eb;
+    --tc-accent-hover:    #1d4ed8;
+    --tc-accent-subtle:   #eff6ff;
+
+    /* Bubbles */
+    --tc-user-bg:         #2563eb;
+    --tc-user-text:       #ffffff;
+    --tc-assistant-bg:    #f5f5f5;
+    --tc-assistant-text:  #1a1a1a;
+    --tc-system-bg:       #fefce8;
+    --tc-system-text:     #713f12;
+
+    /* Chips */
+    --tc-chip-bg:         #f0f0f0;
+    --tc-chip-border:     #d0d0d0;
+    --tc-chip-success:    #dcfce7;
+    --tc-chip-success-border: #86efac;
+    --tc-chip-fail:       #fee2e2;
+    --tc-chip-fail-border:#fca5a5;
+    --tc-chip-progress:   #dbeafe;
+    --tc-chip-progress-border: #93c5fd;
+
+    /* Approval */
+    --tc-approve-bg:      #f0fdf4;
+    --tc-approve-border:  #86efac;
+    --tc-deny-bg:         #fef2f2;
+    --tc-deny-border:     #fca5a5;
+
+    /* Inputs */
+    --tc-input-bg:        #ffffff;
+    --tc-input-border:    #d0d0d0;
+    --tc-input-focus:     #2563eb;
+
+    /* Sizing */
+    --tc-radius:          8px;
+    --tc-radius-sm:       4px;
+    --tc-radius-lg:       12px;
+    --tc-font-size:       14px;
+    --tc-font-family:     -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto、sans-serif;
+    --tc-sidebar-width:   280px;
+    --tc-max-width:       none;
+}
+
+/* ── Dark theme ── */
+[data-theme="dark"] {
+    --tc-bg:              #1a1a2e;
+    --tc-bg-secondary:    #16213e;
+    --tc-bg-sidebar:      #0f1525;
+    --tc-border:          #2a2a4a;
+    --tc-shadow:          0 1px 3px rgba(0,0,0,0.3);
+
+    --tc-text:            #e0e0e0;
+    --tc-text-secondary:  #a0a0a0;
+    --tc-text-muted:      #666680;
+
+    --tc-accent:          #60a5fa;
+    --tc-accent-hover:    #93c5fd;
+    --tc-accent-subtle:   #1e293b;
+
+    --tc-user-bg:         #2563eb;
+    --tc-user-text:       #ffffff;
+    --tc-assistant-bg:    #16213e;
+    --tc-assistant-text:  #e0e0e0;
+    --tc-system-bg:       #2a2a1e;
+    --tc-system-text:     #fbbf24;
+
+    --tc-chip-bg:         #1e293b;
+    --tc-chip-border:     #334155;
+    --tc-chip-success:    #052e16;
+    --tc-chip-success-border: #166534;
+    --tc-chip-fail:       #450a0a;
+    --tc-chip-fail-border:#991b1b;
+    --tc-chip-progress:   #0c1929;
+    --tc-chip-progress-border: #1e40af;
+
+    --tc-approve-bg:      #052e16;
+    --tc-approve-border:  #166534;
+    --tc-deny-bg:         #450a0a;
+    --tc-deny-border:     #991b1b;
+
+    --tc-input-bg:        #16213e;
+    --tc-input-border:    #2a2a4a;
+    --tc-input-focus:     #60a5fa;
+}

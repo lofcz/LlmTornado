@@ -1,0 +1,185 @@
+@using LlmTornado.Cli.Core.Agents
+
+<div class="settings-section">
+    <p class="settings-section__desc">
+        Agent personas define the AI's behavior, system prompt, and available tools.
+        Built-in agents ship with the library; custom agents can be created in the
+        <code>agents/</code> directory.
+    </p>
+
+    @if (_agents.Count == 0)
+    {
+        <p class="settings-section__empty">No agent personas found.</p>
+    }
+    else
+    {
+        <table class="settings-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Source</th>
+                    <th>Description</th>
+                    <th>Capabilities</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var agent in _agents)
+                {
+                    <tr class="@(agent.Name == _activeAgentName ? "settings-table__row--active" : "")">
+                        <td>
+                            <strong>@agent.Name</strong>
+                            @if (agent.Name == _activeAgentName)
+                            {
+                                <span class="status-badge status-badge--ok">Active</span>
+                            }
+                        </td>
+                        <td>
+                            <span class="status-badge">@agent.Source</span>
+                        </td>
+                        <td>@agent.Description</td>
+                        <td>
+                            @if (agent.HasCapabilityCuration)
+                            {
+                                <span title="This agent curates available tools">⚙ Curated</span>
+                            }
+                            else
+                            {
+                                <span>All tools</span>
+                            }
+                        </td>
+                        <td>
+                            @if (agent.Name != _activeAgentName)
+                            {
+                                <button class="tornado-chat__btn"
+                                        @onclick="() => ActivateAgent(agent.Name)">
+                                    Activate
+                                </button>
+                            }
+                            else
+                            {
+                                <button class="tornado-chat__btn"
+                                        @onclick="DeactivateAgent">
+                                    Deactivate
+                                </button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+
+    <div class="settings-section__actions">
+        <button class="tornado-chat__btn" @onclick="RefreshAgents">
+            ↻ Refresh Agents
+        </button>
+        <button class="tornado-chat__btn" @onclick="CreateNewAgent">
+            + New Agent
+        </button>
+    </div>
+
+    @if (_showCreateForm)
+    {
+        <div class="settings-form">
+            <h3>Create New Agent</h3>
+            <div class="settings-form__field">
+                <label>Name</label>
+                <input type="text" @bind="_newAgentName" placeholder="my-agent" />
+            </div>
+            <div class="settings-form__field">
+                <label>Description</label>
+                <input type="text" @bind="_newAgentDescription" placeholder="A helpful assistant..." />
+            </div>
+            <div class="settings-form__field">
+                <label>System Prompt</label>
+                <textarea @bind="_newAgentPrompt" rows="6"
+                          placeholder="You are a helpful AI assistant..."></textarea>
+            </div>
+            <div class="settings-form__actions">
+                <button class="tornado-chat__btn tornado-chat__btn--primary"
+                        @onclick="SaveNewAgent">
+                    Save
+                </button>
+                <button class="tornado-chat__btn"
+                        @onclick="() => _showCreateForm = false">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Inject] public IChatUiController Controller { get; set; } = default!;
+
+    private List<AgentRow> _agents = [];
+    private string? _activeAgentName;
+
+    // Create form state
+    private bool _showCreateForm;
+    private string _newAgentName = "";
+    private string _newAgentDescription = "";
+    private string _newAgentPrompt = "";
+
+    protected override void OnInitialized()
+    {
+        LoadAgents();
+    }
+
+    private void LoadAgents()
+    {
+        // Controller wraps AgentDefinitionManager; get all personas
+        // var manager = Controller.GetAgentManager();
+        // _agents = manager.GetAllPersonas().Select(AgentRow.From).ToList();
+        // _activeAgentName = manager.ActivePersonaName;
+        _agents = [];
+        _activeAgentName = null;
+    }
+
+    private async Task ActivateAgent(string name)
+    {
+        await Controller.SelectAgentAsync(name);
+        _activeAgentName = name;
+        StateHasChanged();
+    }
+
+    private async Task DeactivateAgent()
+    {
+        await Controller.SelectAgentAsync(null);
+        _activeAgentName = null;
+        StateHasChanged();
+    }
+
+    private void CreateNewAgent()
+    {
+        _showCreateForm = true;
+        _newAgentName = "";
+        _newAgentDescription = "";
+        _newAgentPrompt = "";
+    }
+
+    private void SaveNewAgent()
+    {
+        if (string.IsNullOrWhiteSpace(_newAgentName)) return;
+
+        // Write AGENT.md to agents directory
+        // Controller.CreateAgent(_newAgentName, _newAgentDescription, _newAgentPrompt);
+        _showCreateForm = false;
+        LoadAgents();
+    }
+
+    private void RefreshAgents()
+    {
+        LoadAgents();
+        StateHasChanged();
+    }
+
+    private sealed class AgentRow
+    {
+        public string Name { get; init; } = "";
+        public string Source { get; init; } = "";
+        public string Description { get; init; } = "";
+        public bool HasCapabilityCuration { get; init; }
+    }
+}

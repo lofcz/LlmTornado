@@ -1,0 +1,34 @@
+<div class="tool-approval">
+    <div class="tool-approval__header">
+        <span class="tool-approval__icon">🔒</span>
+        <span class="tool-approval__title">
+            Tool <strong>@Request.ToolName</strong> requires permission
+        </span>
+    </div>
+
+    <p class="tool-approval__message">@Request.RequestMessage</p>
+
+    @if (!string.IsNullOrEmpty(Request.Arguments))
+    {
+        <details class="tool-approval__args">
+            <summary>Arguments</summary>
+            <pre>@Request.Arguments</pre>
+        </details>
+    }
+
+    <div class="tool-approval__actions">
+        <button class="tornado-chat__btn tornado-chat__btn--approve"
+                @onclick="() => OnRespond.InvokeAsync(true)">
+            ✓ Allow
+        </button>
+        <button class="tornado-chat__btn tornado-chat__btn--deny"
+                @onclick="() => OnRespond.InvokeAsync(false)">
+            ✗ Deny
+        </button>
+    </div>
+</div>
+
+@code {
+    [Parameter] public ToolApprovalRequest Request { get; set; } = default!;
+    [Parameter] public EventCallback<bool> OnRespond { get; set; }
+}

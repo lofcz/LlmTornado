@@ -1,0 +1,42 @@
+<aside class="conversation-sidebar @(Visible ? "" : "conversation-sidebar--hidden")">
+    <button class="tornado-chat__btn tornado-chat__btn--primary conversation-sidebar__new-btn"
+            @onclick="OnNewChat">
+        + New Chat
+    </button>
+
+    <div class="conversation-sidebar__list">
+        @foreach (var convo in Conversations)
+        {
+            <div class="conversation-sidebar__item @(convo.Id == ActiveConversationId ? "conversation-sidebar__item--active" : "")"
+                 @onclick="() => OnSelectConversation.InvokeAsync(convo.Id)">
+                <div class="conversation-sidebar__title">@convo.DisplayTitle</div>
+                <div class="conversation-sidebar__meta">
+                    @convo.UpdatedAt.ToLocalTime().ToString("MMM d, HH:mm")
+                    · @convo.MessageCount msgs
+                </div>
+                <button class="conversation-sidebar__delete"
+                        @onclick:stopPropagation="true"
+                        @onclick="() => OnDeleteConversation.InvokeAsync(convo.Id)"
+                        title="Delete conversation">
+                    🗑
+                </button>
+            </div>
+        }
+
+        @if (Conversations.Count == 0)
+        {
+            <div class="conversation-sidebar__empty">
+                <p>No conversations yet</p>
+            </div>
+        }
+    </div>
+</aside>
+
+@code {
+    [Parameter] public List<ChatUiConversation> Conversations { get; set; } = [];
+    [Parameter] public string? ActiveConversationId { get; set; }
+    [Parameter] public bool Visible { get; set; } = true;
+    [Parameter] public EventCallback OnNewChat { get; set; }
+    [Parameter] public EventCallback<string> OnSelectConversation { get; set; }
+    [Parameter] public EventCallback<string> OnDeleteConversation { get; set; }
+}

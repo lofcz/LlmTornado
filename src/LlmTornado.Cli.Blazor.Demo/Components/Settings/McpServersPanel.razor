@@ -1,0 +1,95 @@
+@using LlmTornado.Cli.Core.Mcp
+
+<div class="settings-section">
+    <p class="settings-section__desc">
+        MCP servers are loaded from <code>mcp.json</code>. Edit the file to add or remove servers.
+    </p>
+
+    @if (_servers.Count == 0)
+    {
+        <p class="settings-section__empty">No MCP servers configured.</p>
+    }
+    else
+    {
+        <table class="settings-table">
+            <thead>
+                <tr>
+                    <th>Server</th>
+                    <th>Type</th>
+                    <th>Command / URL</th>
+                    <th>Status</th>
+                    <th>Tools</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var server in _servers)
+                {
+                    <tr>
+                        <td><strong>@server.Name</strong></td>
+                        <td>
+                            <span class="status-badge">
+                                @(server.IsStdio ? "stdio" : "http")
+                            </span>
+                        </td>
+                        <td class="settings-table__mono">
+                            @(server.IsStdio ? server.Command : server.Url)
+                        </td>
+                        <td>
+                            @if (server.IsConnected)
+                            {
+                                <span class="status-badge status-badge--ok">Connected</span>
+                            }
+                            else
+                            {
+                                <span class="status-badge status-badge--missing">Disconnected</span>
+                            }
+                        </td>
+                        <td>@server.ToolCount</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+
+    <div class="settings-section__actions">
+        <button class="tornado-chat__btn" @onclick="ReloadConfig">
+            ↻ Reload mcp.json
+        </button>
+    </div>
+</div>
+
+@code {
+    [Inject] public IChatUiController Controller { get; set; } = default!;
+
+    private List<McpServerRow> _servers = [];
+
+    protected override void OnInitialized()
+    {
+        LoadServers();
+    }
+
+    private void LoadServers()
+    {
+        // The controller exposes the underlying runtime state; for now
+        // we can get MCP info from the controller's GetMcpServers() method
+        // (to be added to IChatUiController or a separate ISettingsProvider).
+        // For the demo, we illustrate the expected data shape:
+        _servers = [];
+    }
+
+    private void ReloadConfig()
+    {
+        LoadServers();
+        StateHasChanged();
+    }
+
+    private sealed class McpServerRow
+    {
+        public string Name { get; init; } = "";
+        public bool IsStdio { get; init; }
+        public string? Command { get; init; }
+        public string? Url { get; init; }
+        public bool IsConnected { get; set; }
+        public int ToolCount { get; set; }
+    }
+}

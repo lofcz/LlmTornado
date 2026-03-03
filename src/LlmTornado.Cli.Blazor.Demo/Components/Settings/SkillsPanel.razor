@@ -1,0 +1,96 @@
+@using LlmTornado.Cli.Core.Skills
+
+<div class="settings-section">
+    <p class="settings-section__desc">
+        Skills are loaded from the global (<code>%APPDATA%/llmtornado/skills/</code>) and
+        project-local (<code>./skills/</code>) directories.
+    </p>
+
+    @if (_skills.Count == 0)
+    {
+        <p class="settings-section__empty">No skills found.</p>
+    }
+    else
+    {
+        <table class="settings-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Source</th>
+                    <th>Description</th>
+                    <th>Tools</th>
+                    <th>Enabled</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var skill in _skills)
+                {
+                    <tr class="@(!skill.Enabled ? "settings-table__row--disabled" : "")">
+                        <td><strong>@skill.Name</strong></td>
+                        <td>
+                            <span class="status-badge">@skill.Source</span>
+                        </td>
+                        <td>@skill.Description</td>
+                        <td>@skill.AllowedTools.Count</td>
+                        <td>
+                            <label class="toggle">
+                                <input type="checkbox"
+                                       checked="@skill.Enabled"
+                                       @onchange="e => HandleToggle(skill, (bool)(e.Value ?? false))" />
+                                <span class="toggle__slider"></span>
+                            </label>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+
+    <div class="settings-section__actions">
+        <button class="tornado-chat__btn" @onclick="RefreshSkills">
+            ↻ Refresh Skills
+        </button>
+        <label class="tornado-chat__btn">
+            📂 Import Skill
+            <InputFile OnChange="HandleImport" style="display:none" accept=".md,.zip" />
+        </label>
+    </div>
+</div>
+
+@code {
+    [Inject] public IChatUiController Controller { get; set; } = default!;
+
+    private List<Skill> _skills = [];
+
+    protected override void OnInitialized()
+    {
+        LoadSkills();
+    }
+
+    private void LoadSkills()
+    {
+        // Controller wraps SkillManager; get all skills
+        // _skills = Controller.GetSkills();
+        _skills = [];
+    }
+
+    private void HandleToggle(Skill skill, bool enabled)
+    {
+        skill.Enabled = enabled;
+        // Controller.SetSkillEnabled(skill.Name, enabled);
+        StateHasChanged();
+    }
+
+    private async Task HandleImport(InputFileChangeEventArgs e)
+    {
+        // Copy uploaded .md or .zip to skills directory, then refresh
+        // await Controller.ImportSkill(e.File);
+        LoadSkills();
+    }
+
+    private void RefreshSkills()
+    {
+        LoadSkills();
+        StateHasChanged();
+    }
+}

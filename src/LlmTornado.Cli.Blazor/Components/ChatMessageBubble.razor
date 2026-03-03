@@ -1,0 +1,64 @@
+@using Markdig
+
+<div class="chat-bubble @RoleClass @(Message.IsError ? "chat-bubble--error" : "")">
+    <div class="chat-bubble__content">
+        @if (Message.Role == ChatUiRole.User)
+        {
+            <p>@Message.Content</p>
+
+            @if (Message.Files.Count > 0)
+            {
+                <div class="chat-bubble__files">
+                    @foreach (var file in Message.Files)
+                    {
+                        <span class="chat-bubble__file-chip">
+                            @FileIcon(file) @file.FileName
+                            <span class="chat-bubble__file-size">(@file.FormattedSize)</span>
+                        </span>
+                    }
+                </div>
+            }
+        }
+        else
+        {
+            @* Assistant messages rendered as markdown *@
+            <div class="chat-bubble__markdown">
+                @((MarkupString)Markdown.ToHtml(Message.Content, Pipeline))
+            </div>
+
+            @if (Message.IsStreaming)
+            {
+                <span class="chat-bubble__cursor">▊</span>
+            }
+        }
+    </div>
+
+    <div class="chat-bubble__meta">
+        <span class="chat-bubble__time">
+            @Message.Timestamp.ToLocalTime().ToString("HH:mm")
+        </span>
+    </div>
+</div>
+
+@code {
+    [Parameter] public ChatUiMessage Message { get; set; } = default!;
+
+    private static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder()
+        .UseAdvancedExtensions()
+        .Build();
+
+    private string RoleClass => Message.Role switch
+    {
+        ChatUiRole.User => "chat-bubble--user",
+        ChatUiRole.System => "chat-bubble--system",
+        _ => "chat-bubble--assistant"
+    };
+
+    private static string FileIcon(ChatUiFile file) => file switch
+    {
+        { IsImage: true } => "🖼",
+        { IsDocument: true } => "📄",
+        { IsAudio: true } => "🎵",
+        _ => "📎"
+    };
+}

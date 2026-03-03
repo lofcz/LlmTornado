@@ -140,7 +140,7 @@ public static class ProviderDetector
         _ => null,
     };
 
-    private static List<ChatModel> GetModelsForProvider(LLmProviders provider) => provider switch
+    public static List<ChatModel> GetModelsForProvider(LLmProviders provider) => provider switch
     {
         LLmProviders.OpenAi =>
         [

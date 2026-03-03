@@ -1,0 +1,40 @@
+@page "/settings"
+@using LlmTornado.Cli.Blazor
+@using LlmTornado.Cli.Core.Providers
+@using LlmTornado.Cli.Core.Skills
+@using LlmTornado.Cli.Core.Agents
+
+<h1>Settings</h1>
+
+<div class="settings-tabs">
+    <button class="settings-tab @(_tab == 0 ? "settings-tab--active" : "")"
+            @onclick="() => _tab = 0">Providers</button>
+    <button class="settings-tab @(_tab == 1 ? "settings-tab--active" : "")"
+            @onclick="() => _tab = 1">MCP Servers</button>
+    <button class="settings-tab @(_tab == 2 ? "settings-tab--active" : "")"
+            @onclick="() => _tab = 2">Skills</button>
+    <button class="settings-tab @(_tab == 3 ? "settings-tab--active" : "")"
+            @onclick="() => _tab = 3">Agents</button>
+</div>
+
+<div class="settings-content">
+    @switch (_tab)
+    {
+        case 0:
+            <ProvidersPanel />
+            break;
+        case 1:
+            <McpServersPanel />
+            break;
+        case 2:
+            <SkillsPanel />
+            break;
+        case 3:
+            <AgentsPanel />
+            break;
+    }
+</div>
+
+@code {
+    private int _tab;
+}

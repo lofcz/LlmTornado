@@ -1,0 +1,133 @@
+@using LlmTornado.Cli.Core.Providers
+@using LlmTornado.Code
+
+<div class="settings-section">
+    <p class="settings-section__desc">
+        API keys are detected from environment variables. You can override them here
+        for this session (changes are not persisted to the OS environment).
+    </p>
+
+    <table class="settings-table">
+        <thead>
+            <tr>
+                <th>Provider</th>
+                <th>Environment Variable</th>
+                <th>Status</th>
+                <th>API Key</th>
+                <th>Models</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var provider in _providers)
+            {
+                <tr>
+                    <td><strong>@provider.Name</strong></td>
+                    <td><code>@provider.EnvVar</code></td>
+                    <td>
+                        @if (provider.IsDetected)
+                        {
+                            <span class="status-badge status-badge--ok">✓ Active</span>
+                        }
+                        else
+                        {
+                            <span class="status-badge status-badge--missing">✗ Not set</span>
+                        }
+                    </td>
+                    <td>
+                        <div class="settings-key-input">
+                            <input type="@(provider.ShowKey ? "text" : "password")"
+                                   value="@provider.MaskedKey"
+                                   placeholder="sk-..."
+                                   @onchange="e => HandleKeyChange(provider, e.Value?.ToString())" />
+                            <button class="tornado-chat__btn tornado-chat__btn--icon"
+                                    @onclick="() => provider.ShowKey = !provider.ShowKey"
+                                    title="Toggle visibility">
+                                @(provider.ShowKey ? "🙈" : "👁")
+                            </button>
+                        </div>
+                    </td>
+                    <td>@provider.ModelCount models</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    [Inject] public IChatUiController Controller { get; set; } = default!;
+
+    private List<ProviderRow> _providers = [];
+
+    protected override void OnInitialized()
+    {
+        // Build rows from the 12 known providers
+        _providers =
+        [
+            Row("OpenAI",       "OPENAI_API_KEY",      LLmProviders.OpenAi),
+            Row("Anthropic",    "ANTHROPIC_API_KEY",    LLmProviders.Anthropic),
+            Row("Google",       "GOOGLE_API_KEY",       LLmProviders.Google),
+            Row("Groq",         "GROQ_API_KEY",         LLmProviders.Groq),
+            Row("Cohere",       "COHERE_API_KEY",       LLmProviders.Cohere),
+            Row("Mistral",      "MISTRAL_API_KEY",      LLmProviders.Mistral),
+            Row("DeepSeek",     "DEEPSEEK_API_KEY",     LLmProviders.DeepSeek),
+            Row("xAI",          "XAI_API_KEY",          LLmProviders.XAi),
+            Row("Perplexity",   "PERPLEXITY_API_KEY",   LLmProviders.Perplexity),
+            Row("OpenRouter",   "OPENROUTER_API_KEY",   LLmProviders.OpenRouter),
+            Row("DeepInfra",    "DEEPINFRA_API_KEY",    LLmProviders.DeepInfra),
+            Row("Voyage",       "VOYAGE_API_KEY",       LLmProviders.Voyage),
+        ];
+    }
+
+    private ProviderRow Row(string name, string envVar, LLmProviders provider)
+    {
+        string? key = Environment.GetEnvironmentVariable(envVar);
+        bool detected = !string.IsNullOrWhiteSpace(key);
+        int modelCount = detected
+            ? ProviderDetector.GetModelsForProvider(provider).Count
+            : 0;
+
+        return new ProviderRow
+        {
+            Name = name,
+            EnvVar = envVar,
+            Provider = provider,
+            IsDetected = detected,
+            RawKey = key,
+            ModelCount = modelCount,
+        };
+    }
+
+    private void HandleKeyChange(ProviderRow row, string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            Environment.SetEnvironmentVariable(row.EnvVar, null);
+            row.IsDetected = false;
+            row.RawKey = null;
+        }
+        else
+        {
+            Environment.SetEnvironmentVariable(row.EnvVar, value);
+            row.IsDetected = true;
+            row.RawKey = value;
+            row.ModelCount = ProviderDetector.GetModelsForProvider(row.Provider).Count;
+        }
+        StateHasChanged();
+    }
+
+    private sealed class ProviderRow
+    {
+        public string Name { get; init; } = "";
+        public string EnvVar { get; init; } = "";
+        public LLmProviders Provider { get; init; }
+        public bool IsDetected { get; set; }
+        public string? RawKey { get; set; }
+        public bool ShowKey { get; set; }
+        public int ModelCount { get; set; }
+        public string MaskedKey => ShowKey
+            ? (RawKey ?? "")
+            : (RawKey is { Length: > 8 }
+                ? RawKey[..4] + "•••" + RawKey[^4..]
+                : (RawKey is not null ? "••••••" : ""));
+    }
+}
