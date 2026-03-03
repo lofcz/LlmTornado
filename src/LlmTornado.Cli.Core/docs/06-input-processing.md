@@ -52,7 +52,6 @@ classDiagram
 
 ```mermaid
 flowchart TD
-    Input["User types:<br/>'Analyze @photo.png and compare with @\"./docs/spec.pdf\"'"]
     Input --> Scan["InputParser.Parse()"]
     Scan --> Regex["Regex scan for @tokens"]
     Regex --> Resolve["Resolve paths relative to CWD"]
