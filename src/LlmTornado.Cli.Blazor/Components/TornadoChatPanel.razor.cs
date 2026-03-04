@@ -260,11 +260,11 @@ namespace LlmTornado.Cli.Blazor.Components
             await Controller.DeleteConversationAsync(conversationId);
         }
 
-        private void HandleToolApprovalResponse(bool approved)
+        private void HandleToolApprovalResponse((bool Approved, bool AlwaysAllow) response)
         {
             if (_pendingApproval is not null)
             {
-                _ = Controller.RespondToToolApprovalAsync(_pendingApproval.Id, approved);
+                _ = Controller.RespondToToolApprovalAsync(_pendingApproval.Id, response.Approved, response.AlwaysAllow);
                 _pendingApproval = null;
                 StateHasChanged();
             }

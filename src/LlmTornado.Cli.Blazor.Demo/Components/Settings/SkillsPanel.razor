@@ -1,5 +1,6 @@
 @using LlmTornado.Cli.Core.Skills
 @using LlmTornado.Cli.Blazor
+@using Microsoft.AspNetCore.Components.Forms
 
 <div class="settings-section">
     <p class="settings-section__desc">
@@ -11,6 +12,10 @@
         <button class="tornado-chat__btn" @onclick="RefreshSkills">
             ↻ Refresh Skills
         </button>
+        <label class="tornado-chat__btn tornado-chat__btn--primary" style="cursor: pointer;">
+            📂 Import Skill
+            <InputFile OnChange="HandleImport" style="display:none" accept=".md,.zip" />
+        </label>
     </div>
 
     @if (_skills.Count == 0)
@@ -105,6 +110,13 @@
             </div>
         }
     }
+
+    @if (_importMessage is not null)
+    {
+        <div class="settings-card__test-result settings-card__test-result--ok" style="margin-top: 12px;">
+            @_importMessage
+        </div>
+    }
 </div>
 
 @code {
@@ -189,6 +201,29 @@
     {
         Settings.RefreshSkills();
         LoadSkills();
+        _importMessage = null;
+        StateHasChanged();
+    }
+
+    private string? _importMessage;
+
+    private async Task HandleImport(InputFileChangeEventArgs e)
+    {
+        _importMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            await using Stream stream = e.File.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
+            await Settings.ImportSkillAsync(e.File.Name, stream);
+            LoadSkills();
+            _importMessage = $"Imported '{e.File.Name}' successfully.";
+        }
+        catch (Exception ex)
+        {
+            _importMessage = $"Import failed: {ex.Message}";
+        }
+
         StateHasChanged();
     }
 }

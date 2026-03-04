@@ -18,11 +18,15 @@
 
     <div class="tool-approval__actions">
         <button class="tornado-chat__btn tornado-chat__btn--approve"
-                @onclick="() => OnRespond.InvokeAsync(true)">
+                @onclick="() => OnRespond.InvokeAsync((true, false))">
             ✓ Allow
         </button>
+        <button class="tornado-chat__btn tornado-chat__btn--approve"
+                @onclick="() => OnRespond.InvokeAsync((true, true))">
+            ✓ Always Allow
+        </button>
         <button class="tornado-chat__btn tornado-chat__btn--deny"
-                @onclick="() => OnRespond.InvokeAsync(false)">
+                @onclick="() => OnRespond.InvokeAsync((false, false))">
             ✗ Deny
         </button>
     </div>
@@ -30,5 +34,5 @@
 
 @code {
     [Parameter] public ToolApprovalRequest Request { get; set; } = default!;
-    [Parameter] public EventCallback<bool> OnRespond { get; set; }
+    [Parameter] public EventCallback<(bool Approved, bool AlwaysAllow)> OnRespond { get; set; }
 }

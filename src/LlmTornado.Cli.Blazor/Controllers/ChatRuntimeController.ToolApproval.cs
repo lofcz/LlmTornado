@@ -9,10 +9,15 @@ public sealed partial class ChatRuntimeController
     // Tool approval (UI-facing)
     // ─────────────────────────────────────────────
 
-    public Task RespondToToolApprovalAsync(string requestId, bool approved)
+    public Task RespondToToolApprovalAsync(string requestId, bool approved, bool alwaysAllow = false)
     {
         if (_pendingApprovals.TryRemove(requestId, out ToolApprovalRequest? request))
         {
+            if (approved && alwaysAllow && !string.IsNullOrEmpty(request.ToolName))
+            {
+                _preApprovedTools.Add(request.ToolName);
+            }
+
             request.Completion.SetResult(approved);
         }
         return Task.CompletedTask;

@@ -104,5 +104,6 @@ public interface IChatUiController : IAsyncDisposable
     /// </summary>
     /// <param name="requestId">The approval request ID.</param>
     /// <param name="approved">True if approved, false if denied.</param>
-    Task RespondToToolApprovalAsync(string requestId, bool approved);
+    /// <param name="alwaysAllow">True if the tool should be auto-approved in the future.</param>
+    Task RespondToToolApprovalAsync(string requestId, bool approved, bool alwaysAllow = false);
 }

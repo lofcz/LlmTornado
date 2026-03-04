@@ -45,6 +45,7 @@ public sealed partial class ChatRuntimeController
         _currentConversationId = null;
         _runtime?.Clear();
         Ui?.Clear();
+        RefreshConversationList();
         return Task.CompletedTask;
     }
 

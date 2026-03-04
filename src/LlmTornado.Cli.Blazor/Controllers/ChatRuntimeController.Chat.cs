@@ -60,15 +60,7 @@ public sealed partial class ChatRuntimeController
             List<string> activeSkills = _skillManager?.GetEnabledSkills()
                 .Select(s => s.Name).ToList() ?? [];
 
-            if (_conversationStore!.Exists(_currentConversationId))
-            {
-                _conversationStore.Update(_currentConversationId, allMessages, modelName);
-            }
-            else
-            {
-                _conversationStore.Save(_currentConversationId, allMessages,
-                    null, modelName, activeSkills);
-            }
+            _currentConversationId = _conversationStore!.Save(allMessages, modelName, activeSkills, null, _currentConversationId);
 
             RefreshConversationList();
         }

@@ -56,14 +56,33 @@ public sealed class ConversationStore
     /// <summary>
     /// Save the current conversation with a generated or specified label.
     /// </summary>
-    public string Save(List<ChatMessage> messages, string? model, List<string>? activeSkills, string? label = null)
+    public string Save(List<ChatMessage> messages, string? model, List<string>? activeSkills, string? label = null, string? existingId = null)
     {
-        string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-        string slug = label is not null ? "_" + Slugify(label) : "";
-        string id = $"{timestamp}{slug}";
+        string id;
+        DateTime createdAt = DateTime.UtcNow;
+
+        if (!string.IsNullOrEmpty(existingId))
+        {
+            id = existingId;
+            string existingMetaPath = Path.Combine(_conversationsDirectory, $"{id}.meta.json");
+            ConversationMetadata? existingMeta = LoadJson<ConversationMetadata>(existingMetaPath);
+            if (existingMeta is not null)
+            {
+                createdAt = existingMeta.CreatedAt;
+                if (label == null) label = existingMeta.Label;
+            }
+        }
+        else
+        {
+            string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            string slug = label is not null ? "_" + Slugify(label) : "";
+            id = $"{timestamp}{slug}";
+        }
 
         string jsonlPath = Path.Combine(_conversationsDirectory, $"{id}.jsonl");
         string metaPath = Path.Combine(_conversationsDirectory, $"{id}.meta.json");
+
+        if (File.Exists(jsonlPath)) File.Delete(jsonlPath);
 
         // Write messages as JSONL
         PersistentConversation pc = new(jsonlPath, continuousSave: true);
@@ -79,7 +98,7 @@ public sealed class ConversationStore
         {
             Id = id,
             Label = label,
-            CreatedAt = DateTime.UtcNow,
+            CreatedAt = createdAt,
             UpdatedAt = DateTime.UtcNow,
             Model = model,
             MessageCount = messages.Count,

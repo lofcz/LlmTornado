@@ -109,6 +109,14 @@ public interface ISettingsController
     /// </summary>
     void RefreshSkills();
 
+    /// <summary>
+    /// Import a skill from an uploaded file (.md or .zip) into the project-local skills directory.
+    /// For .md files, creates a new skill folder with the file as SKILL.md.
+    /// For .zip files, extracts the archive into the skills directory.
+    /// Refreshes skills after import.
+    /// </summary>
+    Task ImportSkillAsync(string fileName, Stream content);
+
     // ─────────────────────────────────────────────
     // Agents
     // ─────────────────────────────────────────────

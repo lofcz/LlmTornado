@@ -297,6 +297,7 @@ body {
     gap: 6px;
     border: 1px solid var(--tc-chip-border);
     background: var(--tc-chip-bg);
+    color: var(--tc-text);
     border-radius: 999px;
     padding: 3px 8px;
     font-size: 12px;

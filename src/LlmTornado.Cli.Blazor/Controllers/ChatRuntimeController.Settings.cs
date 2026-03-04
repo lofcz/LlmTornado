@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.IO.Compression;
 using System.Text.Json;
 using LlmTornado.Cli.Blazor.Models;
 using LlmTornado.Cli.Core.Agents;
@@ -171,6 +172,43 @@ public sealed partial class ChatRuntimeController : ISettingsController
         // Rebuild agent tools
         if (_agentBuilder is not null)
             _runtime = _agentBuilder.RebuildForSkillChange(HandleRuntimeEvent);
+    }
+
+    public async Task ImportSkillAsync(string fileName, Stream content)
+    {
+        string skillsDir = _options.SkillsDirectory ?? Path.GetFullPath("skills");
+        Directory.CreateDirectory(skillsDir);
+
+        if (fileName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+        {
+            // Extract zip into skills directory
+            string tempPath = Path.GetTempFileName();
+            try
+            {
+                await using (FileStream fs = new(tempPath, FileMode.Create))
+                {
+                    await content.CopyToAsync(fs);
+                }
+                System.IO.Compression.ZipFile.ExtractToDirectory(tempPath, skillsDir, overwriteFiles: true);
+            }
+            finally
+            {
+                File.Delete(tempPath);
+            }
+        }
+        else
+        {
+            // Treat as SKILL.md — create a folder named after the file (minus extension)
+            string skillName = Path.GetFileNameWithoutExtension(fileName);
+            string skillFolder = Path.Combine(skillsDir, skillName);
+            Directory.CreateDirectory(skillFolder);
+
+            string destPath = Path.Combine(skillFolder, "SKILL.md");
+            await using FileStream fs = new(destPath, FileMode.Create);
+            await content.CopyToAsync(fs);
+        }
+
+        RefreshSkills();
     }
 
     // ─────────────────────────────────────────────
