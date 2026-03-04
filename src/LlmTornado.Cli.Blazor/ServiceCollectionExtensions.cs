@@ -9,12 +9,15 @@ public static class ServiceCollectionExtensions
         this IServiceCollection services, 
         Action<ChatRuntimeControllerOptions>? configure = null)
     {
-        services.AddScoped<IChatUiController>(sp =>
+        services.AddScoped<ChatRuntimeController>(sp =>
         {
             var options = new ChatRuntimeControllerOptions();
             configure?.Invoke(options);
             return new ChatRuntimeController(options);
         });
+
+        services.AddScoped<IChatUiController>(sp => sp.GetRequiredService<ChatRuntimeController>());
+        services.AddScoped<ISettingsController>(sp => sp.GetRequiredService<ChatRuntimeController>());
 
         return services;
     }

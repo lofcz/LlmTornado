@@ -8,14 +8,26 @@
 
             @if (Message.Files.Count > 0)
             {
-                <div class="chat-bubble__files">
-                    @foreach (var file in Message.Files)
+                <div class="chat-bubble__files" style="display: flex; flex-direction: column; gap: 8px;">
+                    @if (Message.Files.Any(f => f.IsImage))
                     {
-                        <span class="chat-bubble__file-chip">
-                            @FileIcon(file) @file.FileName
-                            <span class="chat-bubble__file-size">(@file.FormattedSize)</span>
-                        </span>
+                        <div class="chat-bubble__images" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                            @foreach (var file in Message.Files.Where(f => f.IsImage))
+                            {
+                                <img src="data:@file.MimeType;base64,@file.Base64" alt="@file.FileName" class="chat-bubble__image-preview" style="max-width: 400px; max-height: 600px; width: 100%; object-fit: contain; border-radius: 8px; display: block;" />
+                            }
+                        </div>
                     }
+
+                    <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                        @foreach (var file in Message.Files)
+                        {
+                            <span class="chat-bubble__file-chip">
+                                @FileIcon(file) @file.FileName
+                                <span class="chat-bubble__file-size">(@file.FormattedSize)</span>
+                            </span>
+                        }
+                    </div>
                 </div>
             }
         }

@@ -1,95 +1,448 @@
 @using LlmTornado.Cli.Core.Mcp
+@using LlmTornado.Cli.Blazor
 
 <div class="settings-section">
     <p class="settings-section__desc">
-        MCP servers are loaded from <code>mcp.json</code>. Edit the file to add or remove servers.
+        MCP servers are loaded from <code>mcp.json</code>.
+        Path: <code>@_configPath</code>
     </p>
 
-    @if (_servers.Count == 0)
+    <div class="settings-section__actions" style="margin-bottom: 16px;">
+        <button class="tornado-chat__btn" @onclick="OpenInEditor">
+            📄 Open mcp.json
+        </button>
+        <button class="tornado-chat__btn" @onclick="ReloadConfig" disabled="@_isLoading">
+            ↻ Reload
+        </button>
+        <button class="tornado-chat__btn tornado-chat__btn--primary" @onclick="ShowAddForm">
+            + Add Server
+        </button>
+    </div>
+
+    @if (_isLoading)
+    {
+        <p class="settings-section__empty">Loading...</p>
+    }
+    else if (_showAddForm)
+    {
+        <div class="settings-card settings-card--expanded">
+            <div class="settings-card__header">
+                <strong>New MCP Server</strong>
+            </div>
+            <div class="settings-card__body">
+                @RenderServerForm(_editEntry, false)
+                <div class="settings-card__actions">
+                    <button class="tornado-chat__btn tornado-chat__btn--primary"
+                            @onclick="SaveNewServer" disabled="@_isSaving">
+                        @(_isSaving ? "Saving..." : "Save")
+                    </button>
+                    <button class="tornado-chat__btn" @onclick="TestNewConnection" disabled="@_isTesting">
+                        @(_isTesting ? "Testing..." : "🔌 Test Connection")
+                    </button>
+                    <button class="tornado-chat__btn" @onclick="CancelAdd">Cancel</button>
+                </div>
+                @if (_testResult is not null)
+                {
+                    <div class="settings-card__test-result @(_testResult.Connected ? "settings-card__test-result--ok" : "settings-card__test-result--fail")">
+                        @if (_testResult.Connected)
+                        {
+                            <span>✓ Connected — @_testResult.ToolCount tools available</span>
+                        }
+                        else
+                        {
+                            <span>✗ Failed: @_testResult.Error</span>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    @if (_servers.Count == 0 && !_showAddForm)
     {
         <p class="settings-section__empty">No MCP servers configured.</p>
     }
     else
     {
-        <table class="settings-table">
-            <thead>
-                <tr>
-                    <th>Server</th>
-                    <th>Type</th>
-                    <th>Command / URL</th>
-                    <th>Status</th>
-                    <th>Tools</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var server in _servers)
-                {
-                    <tr>
-                        <td><strong>@server.Name</strong></td>
-                        <td>
-                            <span class="status-badge">
-                                @(server.IsStdio ? "stdio" : "http")
-                            </span>
-                        </td>
-                        <td class="settings-table__mono">
-                            @(server.IsStdio ? server.Command : server.Url)
-                        </td>
-                        <td>
-                            @if (server.IsConnected)
-                            {
-                                <span class="status-badge status-badge--ok">Connected</span>
-                            }
-                            else
-                            {
-                                <span class="status-badge status-badge--missing">Disconnected</span>
-                            }
-                        </td>
-                        <td>@server.ToolCount</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    }
+        @foreach (var server in _servers)
+        {
+            bool isExpanded = _expandedServer == server.Name;
+            McpServerEntry? entry = _configEntries.FirstOrDefault(e =>
+                e.Name.Equals(server.Name, StringComparison.OrdinalIgnoreCase));
 
-    <div class="settings-section__actions">
-        <button class="tornado-chat__btn" @onclick="ReloadConfig">
-            ↻ Reload mcp.json
-        </button>
-    </div>
+            <div class="settings-card @(isExpanded ? "settings-card--expanded" : "")">
+                <div class="settings-card__header" @onclick="() => ToggleExpand(server.Name)">
+                    <div class="settings-card__header-left">
+                        <strong>@server.Name</strong>
+                        <span class="status-badge">@server.Type</span>
+                        @if (server.Connected)
+                        {
+                            <span class="status-badge status-badge--ok">Connected</span>
+                        }
+                        else
+                        {
+                            <span class="status-badge status-badge--missing"
+                                  title="@server.Error">Disconnected</span>
+                        }
+                        <span class="settings-card__tool-count">@server.ToolCount tools</span>
+                    </div>
+                    <div class="settings-card__header-right">
+                        <span class="settings-card__chevron">@(isExpanded ? "▾" : "▸")</span>
+                    </div>
+                </div>
+
+                @if (isExpanded && entry is not null)
+                {
+                    <div class="settings-card__body">
+                        @RenderServerForm(_editEntry, true)
+                        <div class="settings-card__actions">
+                            <button class="tornado-chat__btn tornado-chat__btn--primary"
+                                    @onclick="() => SaveEditedServer(server.Name)" disabled="@_isSaving">
+                                @(_isSaving ? "Saving..." : "Save")
+                            </button>
+                            <button class="tornado-chat__btn" @onclick="() => TestEditConnection()" disabled="@_isTesting">
+                                @(_isTesting ? "Testing..." : "🔌 Test")
+                            </button>
+                            <button class="tornado-chat__btn settings-card__btn--danger"
+                                    @onclick="() => DeleteServer(server.Name)">
+                                🗑 Delete
+                            </button>
+                            <button class="tornado-chat__btn" @onclick="CancelEdit">Cancel</button>
+                        </div>
+                        @if (_testResult is not null)
+                        {
+                            <div class="settings-card__test-result @(_testResult.Connected ? "settings-card__test-result--ok" : "settings-card__test-result--fail")">
+                                @if (_testResult.Connected)
+                                {
+                                    <span>✓ Connected — @_testResult.ToolCount tools available</span>
+                                }
+                                else
+                                {
+                                    <span>✗ Failed: @_testResult.Error</span>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    }
 </div>
 
 @code {
-    [Inject] public IChatUiController Controller { get; set; } = default!;
+    [Inject] public ISettingsController Settings { get; set; } = default!;
 
-    private List<McpServerRow> _servers = [];
+    private List<McpServerStatus> _servers = [];
+    private List<McpServerEntry> _configEntries = [];
+    private string _configPath = "";
+    private string? _expandedServer;
+    private bool _showAddForm;
+    private bool _isLoading;
+    private bool _isSaving;
+    private bool _isTesting;
+    private McpServerStatus? _testResult;
+
+    // Edit state
+    private McpServerEntry _editEntry = CreateDefaultEntry();
 
     protected override void OnInitialized()
     {
+        _configPath = Settings.GetMcpConfigPath();
         LoadServers();
     }
 
     private void LoadServers()
     {
-        // The controller exposes the underlying runtime state; for now
-        // we can get MCP info from the controller's GetMcpServers() method
-        // (to be added to IChatUiController or a separate ISettingsProvider).
-        // For the demo, we illustrate the expected data shape:
-        _servers = [];
+        _servers = [.. Settings.GetMcpServerStatuses()];
+        McpConfig? config = Settings.GetMcpConfig();
+        _configEntries = config?.Servers ?? [];
     }
 
-    private void ReloadConfig()
+    private async Task ReloadConfig()
     {
+        _isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            await Settings.ReloadMcpConfigAsync();
+            LoadServers();
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task OpenInEditor()
+    {
+        await Settings.OpenMcpConfigInEditorAsync();
+    }
+
+    // ── Expand / Collapse ──
+
+    private void ToggleExpand(string name)
+    {
+        if (_expandedServer == name)
+        {
+            _expandedServer = null;
+            _testResult = null;
+        }
+        else
+        {
+            _expandedServer = name;
+            _testResult = null;
+            _showAddForm = false;
+
+            // Populate edit entry from config
+            McpServerEntry? source = _configEntries.FirstOrDefault(e =>
+                e.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+            _editEntry = CloneEntry(source ?? CreateDefaultEntry());
+        }
+    }
+
+    private void CancelEdit()
+    {
+        _expandedServer = null;
+        _testResult = null;
+    }
+
+    // ── Add Server ──
+
+    private void ShowAddForm()
+    {
+        _showAddForm = true;
+        _expandedServer = null;
+        _testResult = null;
+        _editEntry = CreateDefaultEntry();
+    }
+
+    private void CancelAdd()
+    {
+        _showAddForm = false;
+        _testResult = null;
+    }
+
+    private async Task SaveNewServer()
+    {
+        if (string.IsNullOrWhiteSpace(_editEntry.Name)) return;
+        _isSaving = true;
+        StateHasChanged();
+
+        try
+        {
+            await Settings.AddMcpServerAsync(CloneEntry(_editEntry));
+            _showAddForm = false;
+            _testResult = null;
+            LoadServers();
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task TestNewConnection()
+    {
+        _isTesting = true;
+        _testResult = null;
+        StateHasChanged();
+
+        try
+        {
+            _testResult = await Settings.TestMcpConnectionAsync(CloneEntry(_editEntry));
+        }
+        finally
+        {
+            _isTesting = false;
+            StateHasChanged();
+        }
+    }
+
+    // ── Edit / Delete Server ──
+
+    private async Task SaveEditedServer(string originalName)
+    {
+        if (string.IsNullOrWhiteSpace(_editEntry.Name)) return;
+        _isSaving = true;
+        StateHasChanged();
+
+        try
+        {
+            await Settings.UpdateMcpServerAsync(originalName, CloneEntry(_editEntry));
+            _expandedServer = null;
+            _testResult = null;
+            LoadServers();
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task TestEditConnection()
+    {
+        _isTesting = true;
+        _testResult = null;
+        StateHasChanged();
+
+        try
+        {
+            _testResult = await Settings.TestMcpConnectionAsync(CloneEntry(_editEntry));
+        }
+        finally
+        {
+            _isTesting = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task DeleteServer(string name)
+    {
+        await Settings.RemoveMcpServerAsync(name);
+        _expandedServer = null;
+        _testResult = null;
         LoadServers();
         StateHasChanged();
     }
 
-    private sealed class McpServerRow
+    // ── Form rendering ──
+
+    private RenderFragment RenderServerForm(McpServerEntry entry, bool isEdit) => __builder =>
     {
-        public string Name { get; init; } = "";
-        public bool IsStdio { get; init; }
-        public string? Command { get; init; }
-        public string? Url { get; init; }
-        public bool IsConnected { get; set; }
-        public int ToolCount { get; set; }
+        <div class="settings-form__field">
+            <label>Type</label>
+            <select @bind="entry.Type" class="settings-form__select">
+                <option value="stdio">stdio</option>
+                <option value="http">http</option>
+            </select>
+        </div>
+
+        <div class="settings-form__field">
+            <label>Name</label>
+            <input type="text" @bind="entry.Name" placeholder="my-mcp-server" />
+        </div>
+
+        @if (entry.Type.Equals("stdio", StringComparison.OrdinalIgnoreCase))
+        {
+            <div class="settings-form__field">
+                <label>Command</label>
+                <input type="text" @bind="entry.Command" placeholder="npx" />
+            </div>
+
+            <div class="settings-form__field">
+                <label>Arguments (one per line)</label>
+                <textarea rows="3"
+                          value="@ArgsToText(entry)"
+                          @onchange="e => entry.Args = ParseArgLines(e)"
+                          placeholder="-y&#10;@@modelcontextprotocol/server-everything"></textarea>
+            </div>
+
+            <div class="settings-form__field">
+                <label>Environment Variables (KEY=VALUE, one per line)</label>
+                <textarea rows="2"
+                          value="@EnvToText(entry)"
+                          @onchange="e => entry.Env = ParseKeyValueFromEvent(e)"
+                          placeholder="API_KEY=sk-abc123"></textarea>
+            </div>
+        }
+        else
+        {
+            <div class="settings-form__field">
+                <label>URL</label>
+                <input type="text" @bind="entry.Url" placeholder="https://mcp.example.com/sse" />
+            </div>
+
+            <div class="settings-form__field">
+                <label>Headers (KEY=VALUE, one per line)</label>
+                <textarea rows="2"
+                          value="@HeadersToText(entry)"
+                          @onchange="e => entry.Headers = ParseKeyValueFromEvent(e)"
+                          placeholder="Authorization=Bearer sk-xxx"></textarea>
+            </div>
+        }
+
+        <div class="settings-form__field">
+            <label>Allowed Tools (comma-separated, leave empty for all)</label>
+            <input type="text"
+                   value="@AllowedToolsToText(entry)"
+                   @onchange="e => entry.AllowedTools = ParseAllowedToolsFromEvent(e)"
+                   placeholder="tool-a, tool-b" />
+        </div>
+    };
+
+    // ── Helpers ──
+
+    private static McpServerEntry CreateDefaultEntry() => new()
+    {
+        Type = "stdio",
+        Name = "",
+        Command = "",
+        Args = [],
+        Env = new(),
+    };
+
+    private static McpServerEntry CloneEntry(McpServerEntry src) => new()
+    {
+        Type = src.Type,
+        Name = src.Name,
+        Command = src.Command,
+        Args = src.Args is not null ? [.. src.Args] : null,
+        Env = src.Env is not null ? new(src.Env) : null,
+        Url = src.Url,
+        Headers = src.Headers is not null ? new(src.Headers) : null,
+        AllowedTools = src.AllowedTools is not null ? [.. src.AllowedTools] : null,
+    };
+
+    private static string ArgsToText(McpServerEntry entry)
+        => entry.Args is not null ? string.Join("\n", entry.Args) : string.Empty;
+
+    private static string EnvToText(McpServerEntry entry)
+        => entry.Env is not null ? string.Join("\n", entry.Env.Select(kv => kv.Key + "=" + kv.Value)) : string.Empty;
+
+    private static string HeadersToText(McpServerEntry entry)
+        => entry.Headers is not null ? string.Join("\n", entry.Headers.Select(kv => kv.Key + "=" + kv.Value)) : string.Empty;
+
+    private static string AllowedToolsToText(McpServerEntry entry)
+        => entry.AllowedTools is not null ? string.Join(", ", entry.AllowedTools) : string.Empty;
+
+    private static List<string> ParseArgLines(ChangeEventArgs e)
+    {
+        string text = (string?)e.Value ?? string.Empty;
+        return text.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+            .Select(a => a.Trim()).Where(a => a.Length > 0).ToList();
+    }
+
+    private static Dictionary<string, string>? ParseKeyValueFromEvent(ChangeEventArgs e)
+    {
+        string text = (string?)e.Value ?? string.Empty;
+        return ParseKeyValueLines(text);
+    }
+
+    private static List<string> ParseAllowedToolsFromEvent(ChangeEventArgs e)
+    {
+        string text = (string?)e.Value ?? string.Empty;
+        return text.Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .Select(t => t.Trim()).Where(t => t.Length > 0).ToList();
+    }
+
+    private static Dictionary<string, string>? ParseKeyValueLines(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return null;
+
+        Dictionary<string, string> result = new();
+        foreach (string line in text.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+        {
+            int eqIdx = line.IndexOf('=');
+            if (eqIdx <= 0) continue;
+            string key = line[..eqIdx].Trim();
+            string value = line[(eqIdx + 1)..].Trim();
+            if (key.Length > 0)
+                result[key] = value;
+        }
+        return result.Count > 0 ? result : null;
     }
 }

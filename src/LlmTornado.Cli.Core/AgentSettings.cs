@@ -13,6 +13,9 @@ public sealed class AgentSettings
     [JsonPropertyName("disabled_skills")]
     public HashSet<string> DisabledSkills { get; set; } = [];
 
+    [JsonPropertyName("disabled_mcp_servers")]
+    public HashSet<string> DisabledMcpServers { get; set; } = [];
+
     [JsonPropertyName("skills_directory")]
     public string? SkillsDirectory { get; set; }
 

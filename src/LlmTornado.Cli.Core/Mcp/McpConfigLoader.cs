@@ -177,6 +177,117 @@ public sealed partial class McpConfigLoader : IAsyncDisposable
         return resolved;
     }
 
+    /// <summary>
+    /// Get the config path (set after <see cref="LoadAsync"/> is called).
+    /// </summary>
+    public string? ConfigPath => _configPath;
+
+    /// <summary>
+    /// Read and deserialize the current mcp.json config from disk.
+    /// Returns null if the file doesn't exist or can't be parsed.
+    /// </summary>
+    public McpConfig? ReadConfig()
+    {
+        if (_configPath is null || !File.Exists(_configPath))
+            return null;
+
+        try
+        {
+            string json = File.ReadAllText(_configPath);
+            return JsonSerializer.Deserialize<McpConfig>(json);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Serialize and write a config to the current config path.
+    /// </summary>
+    public async Task SaveConfigAsync(McpConfig config)
+    {
+        string path = _configPath ?? ResolveDefaultMcpConfigPath(null);
+        string? dir = Path.GetDirectoryName(path);
+        if (dir is not null) Directory.CreateDirectory(dir);
+
+        string json = JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true });
+        await File.WriteAllTextAsync(path, json);
+        _configPath = path;
+    }
+
+    /// <summary>
+    /// Create a default empty mcp.json at the given path if it doesn't exist.
+    /// </summary>
+    public static async Task CreateDefaultConfigIfMissingAsync(string path)
+    {
+        if (File.Exists(path)) return;
+
+        string? dir = Path.GetDirectoryName(path);
+        if (dir is not null) Directory.CreateDirectory(dir);
+
+        McpConfig empty = new() { Servers = [] };
+        string json = JsonSerializer.Serialize(empty, new JsonSerializerOptions { WriteIndented = true });
+        await File.WriteAllTextAsync(path, json);
+    }
+
+    /// <summary>
+    /// Test connectivity to a single MCP server entry without persisting it.
+    /// Returns a <see cref="McpServerStatus"/> with the result.
+    /// </summary>
+    public static async Task<McpServerStatus> TestConnectionAsync(McpServerEntry entry)
+    {
+        try
+        {
+            MCPServer server;
+            string[] allowedTools = entry.AllowedTools?.ToArray() ?? [];
+            string[]? allowed = allowedTools.Length > 0 ? allowedTools : null;
+
+            if (entry.Type.Equals("http", StringComparison.OrdinalIgnoreCase))
+            {
+                Dictionary<string, string>? headers = ResolveEnvVars(entry.Headers);
+                string url = ResolveEnvVarString(entry.Url ?? "");
+                server = new MCPServer(entry.Name, url, allowed, headers);
+            }
+            else
+            {
+                string command = ResolveEnvVarString(entry.Command ?? "");
+                string[]? args = entry.Args?.Select(ResolveEnvVarString).ToArray();
+                Dictionary<string, string>? env = ResolveEnvVars(entry.Env);
+                server = new MCPServer(entry.Name, command, args, environmentVariables: env, allowedTools: allowed);
+            }
+
+            await server.InitializeAsync();
+            int toolCount = server.AllowedTornadoTools.Count;
+
+            try
+            {
+                if (server.McpClient is not null)
+                    await server.McpClient.DisposeAsync();
+            }
+            catch { }
+
+            return new McpServerStatus
+            {
+                Name = entry.Name,
+                Type = entry.Type,
+                Connected = true,
+                ToolCount = toolCount,
+            };
+        }
+        catch (Exception ex)
+        {
+            return new McpServerStatus
+            {
+                Name = entry.Name,
+                Type = entry.Type,
+                Connected = false,
+                ToolCount = 0,
+                Error = ex.Message,
+            };
+        }
+    }
+
     public async ValueTask DisposeAsync()
     {
         foreach (MCPServer server in _servers)

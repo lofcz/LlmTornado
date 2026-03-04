@@ -423,8 +423,8 @@ Body.");
         Assert.That(tools, Has.Count.EqualTo(2));
 
         var toolNames = tools.Select(t => t.ResolvedName).ToList();
-        Assert.That(toolNames, Does.Contain("tooled__run"));
-        Assert.That(toolNames, Does.Contain("tooled__build"));
+        Assert.That(toolNames, Does.Contain("tooled:run"));
+        Assert.That(toolNames, Does.Contain("tooled:build"));
     }
 
     [Test]
@@ -560,10 +560,10 @@ Body.");
         // file-analyzer: 5, web-search: 3, note-taker: 5 = 13 total
         Assert.That(tools, Has.Count.EqualTo(13));
 
-        // Spot-check naming convention {skill}__{script}
-        Assert.That(toolNames, Does.Contain("file-analyzer__line-count"));
-        Assert.That(toolNames, Does.Contain("web-search__ddg-search"));
-        Assert.That(toolNames, Does.Contain("note-taker__add-note"));
+        // Spot-check naming convention {skill}:{script}
+        Assert.That(toolNames, Does.Contain("file-analyzer:line-count"));
+        Assert.That(toolNames, Does.Contain("web-search:ddg-search"));
+        Assert.That(toolNames, Does.Contain("note-taker:add-note"));
     }
 
     [Test]

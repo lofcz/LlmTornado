@@ -121,7 +121,7 @@ Instructions.");
         builder.Build();
 
         var toolNames = builder.Agent.ToolList?.Select(t => t.Key).ToList() ?? [];
-        Assert.That(toolNames, Does.Contain("test-skill__hello"));
+        Assert.That(toolNames, Does.Contain("test-skill:hello"));
 
         await mcpLoader.DisposeAsync();
     }

@@ -227,4 +227,69 @@ public sealed class AgentDefinitionManager
 
         return sb.ToString();
     }
+
+    /// <summary>
+    /// Create a new custom agent .md file in the given directory and reload.
+    /// </summary>
+    public void CreateAgent(string agentsDirectory, string name, string description,
+        string instructions, List<string>? enabledSkills = null, List<string>? disabledSkills = null,
+        List<string>? enabledTools = null, List<string>? disabledTools = null)
+    {
+        string slug = name.ToLowerInvariant().Replace(' ', '-');
+        string filePath = Path.Combine(agentsDirectory, $"{slug}.md");
+        AgentDefinitionLoader.WriteAgentMd(filePath, name, description, instructions,
+            enabledSkills, disabledSkills, enabledTools, disabledTools);
+    }
+
+    /// <summary>
+    /// Update an existing custom agent .md file and reload.
+    /// Returns false if the agent is not found or is not custom (i.e., built-in).
+    /// </summary>
+    public bool UpdateAgent(string name, string description, string instructions,
+        List<string>? enabledSkills = null, List<string>? disabledSkills = null,
+        List<string>? enabledTools = null, List<string>? disabledTools = null)
+    {
+        if (!_personas.TryGetValue(name, out AgentDefinition? existing))
+            return false;
+
+        if (existing.Source is AgentSource.BuiltIn)
+            return false; // Cannot modify built-in agents
+
+        AgentDefinitionLoader.WriteAgentMd(existing.FilePath, name, description, instructions,
+            enabledSkills, disabledSkills, enabledTools, disabledTools);
+        return true;
+    }
+
+    /// <summary>
+    /// Delete a custom agent .md file. Returns false if not found or built-in.
+    /// </summary>
+    public bool DeleteAgent(string name)
+    {
+        if (!_personas.TryGetValue(name, out AgentDefinition? existing))
+            return false;
+
+        if (existing.Source is AgentSource.BuiltIn)
+            return false;
+
+        try
+        {
+            if (File.Exists(existing.FilePath))
+                File.Delete(existing.FilePath);
+
+            _personas.Remove(name);
+
+            // If this was the active persona, clear it
+            if (_activePersonaName is not null &&
+                _activePersonaName.Equals(name, StringComparison.OrdinalIgnoreCase))
+            {
+                ClearActivePersona();
+            }
+
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
 }

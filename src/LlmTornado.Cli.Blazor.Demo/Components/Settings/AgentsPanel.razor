@@ -1,141 +1,186 @@
 @using LlmTornado.Cli.Core.Agents
+@using LlmTornado.Cli.Core.Skills
+@using LlmTornado.Cli.Blazor
 
 <div class="settings-section">
     <p class="settings-section__desc">
         Agent personas define the AI's behavior, system prompt, and available tools.
         Built-in agents ship with the library; custom agents can be created in the
-        <code>agents/</code> directory.
+        <code>@_agentsDir</code> directory.
     </p>
 
-    @if (_agents.Count == 0)
+    <div class="settings-section__actions" style="margin-bottom: 16px;">
+        <button class="tornado-chat__btn" @onclick="RefreshAgents">
+            ↻ Refresh Agents
+        </button>
+        <button class="tornado-chat__btn tornado-chat__btn--primary" @onclick="ShowCreateForm">
+            + New Agent
+        </button>
+    </div>
+
+    @* ── Create New Agent Form ── *@
+    @if (_showCreateForm)
+    {
+        <div class="settings-card settings-card--expanded">
+            <div class="settings-card__header">
+                <strong>New Agent</strong>
+            </div>
+            <div class="settings-card__body">
+                @RenderAgentForm(_form, false)
+                <div class="settings-card__actions">
+                    <button class="tornado-chat__btn tornado-chat__btn--primary"
+                            @onclick="SaveNewAgent" disabled="@_isSaving">
+                        @(_isSaving ? "Saving..." : "Create Agent")
+                    </button>
+                    <button class="tornado-chat__btn" @onclick="CancelCreate">Cancel</button>
+                </div>
+            </div>
+        </div>
+    }
+
+    @* ── Agent List ── *@
+    @if (_agents.Count == 0 && !_showCreateForm)
     {
         <p class="settings-section__empty">No agent personas found.</p>
     }
     else
     {
-        <table class="settings-table">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Source</th>
-                    <th>Description</th>
-                    <th>Capabilities</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var agent in _agents)
+        @foreach (var agent in _agents)
+        {
+            bool isExpanded = _expandedAgent == agent.Name;
+            bool isActive = agent.Name == _activeAgentName;
+            bool isCustom = agent.Source is AgentSource.Custom or AgentSource.Global;
+
+            <div class="settings-card @(isExpanded ? "settings-card--expanded" : "") @(isActive ? "settings-card--active" : "")">
+                <div class="settings-card__header" @onclick="() => ToggleExpand(agent)">
+                    <div class="settings-card__header-left">
+                        <strong>@agent.Name</strong>
+                        <span class="status-badge">@agent.Source</span>
+                        @if (isActive)
+                        {
+                            <span class="status-badge status-badge--ok">Active</span>
+                        }
+                        @if (agent.HasCapabilityCuration)
+                        {
+                            <span class="status-badge">⚙ Curated</span>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(agent.Description))
+                        {
+                            <span class="settings-card__desc">@agent.Description</span>
+                        }
+                    </div>
+                    <div class="settings-card__header-right">
+                        @if (!isActive)
+                        {
+                            <button class="tornado-chat__btn tornado-chat__btn--sm"
+                                    @onclick="() => ActivateAgent(agent.Name)"
+                                    @onclick:stopPropagation="true">
+                                Activate
+                            </button>
+                        }
+                        else
+                        {
+                            <button class="tornado-chat__btn tornado-chat__btn--sm"
+                                    @onclick="DeactivateAgent"
+                                    @onclick:stopPropagation="true">
+                                Deactivate
+                            </button>
+                        }
+                        <span class="settings-card__chevron">@(isExpanded ? "▾" : "▸")</span>
+                    </div>
+                </div>
+
+                @if (isExpanded)
                 {
-                    <tr class="@(agent.Name == _activeAgentName ? "settings-table__row--active" : "")">
-                        <td>
-                            <strong>@agent.Name</strong>
-                            @if (agent.Name == _activeAgentName)
-                            {
-                                <span class="status-badge status-badge--ok">Active</span>
-                            }
-                        </td>
-                        <td>
-                            <span class="status-badge">@agent.Source</span>
-                        </td>
-                        <td>@agent.Description</td>
-                        <td>
-                            @if (agent.HasCapabilityCuration)
-                            {
-                                <span title="This agent curates available tools">⚙ Curated</span>
-                            }
-                            else
-                            {
-                                <span>All tools</span>
-                            }
-                        </td>
-                        <td>
-                            @if (agent.Name != _activeAgentName)
-                            {
-                                <button class="tornado-chat__btn"
-                                        @onclick="() => ActivateAgent(agent.Name)">
-                                    Activate
+                    <div class="settings-card__body">
+                        @if (isCustom)
+                        {
+                            @RenderAgentForm(_form, true)
+                            <div class="settings-card__actions">
+                                <button class="tornado-chat__btn tornado-chat__btn--primary"
+                                        @onclick="() => SaveEditedAgent(agent.Name)" disabled="@_isSaving">
+                                    @(_isSaving ? "Saving..." : "Save")
                                 </button>
-                            }
-                            else
-                            {
-                                <button class="tornado-chat__btn"
-                                        @onclick="DeactivateAgent">
-                                    Deactivate
+                                <button class="tornado-chat__btn settings-card__btn--danger"
+                                        @onclick="() => DeleteAgent(agent.Name)">
+                                    🗑 Delete
                                 </button>
-                            }
-                        </td>
-                    </tr>
+                                <button class="tornado-chat__btn" @onclick="CancelExpand">Cancel</button>
+                            </div>
+                        }
+                        else
+                        {
+                            @* Built-in agents: read-only view *@
+                            <div class="settings-form__field">
+                                <label>Description</label>
+                                <p>@agent.Description</p>
+                            </div>
+                            <div class="settings-form__field">
+                                <label>Instructions (read-only)</label>
+                                <pre class="settings-form__pre">@agent.Instructions</pre>
+                            </div>
+                            @RenderCapabilitySummary(agent)
+                            <div class="settings-card__actions">
+                                <button class="tornado-chat__btn" @onclick="CancelExpand">Close</button>
+                            </div>
+                        }
+                    </div>
                 }
-            </tbody>
-        </table>
+            </div>
+        }
     }
 
-    <div class="settings-section__actions">
-        <button class="tornado-chat__btn" @onclick="RefreshAgents">
-            ↻ Refresh Agents
-        </button>
-        <button class="tornado-chat__btn" @onclick="CreateNewAgent">
-            + New Agent
-        </button>
-    </div>
-
-    @if (_showCreateForm)
+    @if (_statusMessage is not null)
     {
-        <div class="settings-form">
-            <h3>Create New Agent</h3>
-            <div class="settings-form__field">
-                <label>Name</label>
-                <input type="text" @bind="_newAgentName" placeholder="my-agent" />
-            </div>
-            <div class="settings-form__field">
-                <label>Description</label>
-                <input type="text" @bind="_newAgentDescription" placeholder="A helpful assistant..." />
-            </div>
-            <div class="settings-form__field">
-                <label>System Prompt</label>
-                <textarea @bind="_newAgentPrompt" rows="6"
-                          placeholder="You are a helpful AI assistant..."></textarea>
-            </div>
-            <div class="settings-form__actions">
-                <button class="tornado-chat__btn tornado-chat__btn--primary"
-                        @onclick="SaveNewAgent">
-                    Save
-                </button>
-                <button class="tornado-chat__btn"
-                        @onclick="() => _showCreateForm = false">
-                    Cancel
-                </button>
-            </div>
+        <div class="settings-card__test-result settings-card__test-result--ok" style="margin-top: 12px;">
+            @_statusMessage
         </div>
     }
 </div>
 
 @code {
+    [Inject] public ISettingsController Settings { get; set; } = default!;
     [Inject] public IChatUiController Controller { get; set; } = default!;
 
-    private List<AgentRow> _agents = [];
+    private List<AgentDefinition> _agents = [];
     private string? _activeAgentName;
-
-    // Create form state
+    private string _agentsDir = "";
+    private string? _expandedAgent;
     private bool _showCreateForm;
-    private string _newAgentName = "";
-    private string _newAgentDescription = "";
-    private string _newAgentPrompt = "";
+    private bool _isSaving;
+    private string? _statusMessage;
+
+    // Available tools and skills for the pickers
+    private List<ToolInfo> _mcpTools = [];
+    private List<Skill> _availableSkills = [];
+
+    // Form state
+    private AgentFormModel _form = new();
 
     protected override void OnInitialized()
     {
+        _agentsDir = Settings.GetAgentsDirectory();
         LoadAgents();
     }
 
     private void LoadAgents()
     {
-        // Controller wraps AgentDefinitionManager; get all personas
-        // var manager = Controller.GetAgentManager();
-        // _agents = manager.GetAllPersonas().Select(AgentRow.From).ToList();
-        // _activeAgentName = manager.ActivePersonaName;
-        _agents = [];
-        _activeAgentName = null;
+        _agents = Settings.GetAllAgentDefinitions();
+        _activeAgentName = Settings.GetActiveAgentName();
+        _availableSkills = Settings.GetAllSkills();
+
+        // MCP tools that are NOT owned by any skill
+        HashSet<string> skillToolNames = new(StringComparer.OrdinalIgnoreCase);
+        foreach (var skill in _availableSkills)
+            foreach (var t in skill.AllowedTools)
+                skillToolNames.Add(t);
+
+        _mcpTools = Settings.GetAvailableTools()
+            .Where(t => !skillToolNames.Contains(t.Name))
+            .ToList();
     }
+
+    // ── Activate / Deactivate ──
 
     private async Task ActivateAgent(string name)
     {
@@ -151,35 +196,272 @@
         StateHasChanged();
     }
 
-    private void CreateNewAgent()
+    // ── Expand / Collapse ──
+
+    private void ToggleExpand(AgentDefinition agent)
+    {
+        if (_expandedAgent == agent.Name)
+        {
+            _expandedAgent = null;
+            _statusMessage = null;
+        }
+        else
+        {
+            _expandedAgent = agent.Name;
+            _showCreateForm = false;
+            _statusMessage = null;
+            PopulateForm(agent);
+        }
+    }
+
+    private void CancelExpand()
+    {
+        _expandedAgent = null;
+        _statusMessage = null;
+    }
+
+    // ── Create ──
+
+    private void ShowCreateForm()
     {
         _showCreateForm = true;
-        _newAgentName = "";
-        _newAgentDescription = "";
-        _newAgentPrompt = "";
+        _expandedAgent = null;
+        _statusMessage = null;
+        _form = new AgentFormModel();
     }
 
-    private void SaveNewAgent()
+    private void CancelCreate()
     {
-        if (string.IsNullOrWhiteSpace(_newAgentName)) return;
-
-        // Write AGENT.md to agents directory
-        // Controller.CreateAgent(_newAgentName, _newAgentDescription, _newAgentPrompt);
         _showCreateForm = false;
-        LoadAgents();
+        _statusMessage = null;
     }
 
-    private void RefreshAgents()
+    private async Task SaveNewAgent()
     {
+        if (string.IsNullOrWhiteSpace(_form.Name)) return;
+        _isSaving = true;
+        StateHasChanged();
+
+        try
+        {
+            await Settings.CreateAgentAsync(
+                _form.Name, _form.Description, _form.Instructions,
+                GetSelectedList(_form.EnabledSkills),
+                disabledSkills: null,
+                GetSelectedList(_form.EnabledTools),
+                disabledTools: null);
+
+            _showCreateForm = false;
+            _statusMessage = $"Agent '{_form.Name}' created.";
+            LoadAgents();
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    // ── Edit / Delete ──
+
+    private async Task SaveEditedAgent(string name)
+    {
+        _isSaving = true;
+        StateHasChanged();
+
+        try
+        {
+            await Settings.UpdateAgentAsync(
+                name, _form.Description, _form.Instructions,
+                GetSelectedList(_form.EnabledSkills),
+                disabledSkills: null,
+                GetSelectedList(_form.EnabledTools),
+                disabledTools: null);
+
+            _expandedAgent = null;
+            _statusMessage = $"Agent '{name}' saved.";
+            LoadAgents();
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task DeleteAgent(string name)
+    {
+        await Settings.DeleteAgentAsync(name);
+        _expandedAgent = null;
+        _statusMessage = $"Agent '{name}' deleted.";
         LoadAgents();
         StateHasChanged();
     }
 
-    private sealed class AgentRow
+    private void RefreshAgents()
     {
-        public string Name { get; init; } = "";
-        public string Source { get; init; } = "";
-        public string Description { get; init; } = "";
-        public bool HasCapabilityCuration { get; init; }
+        Settings.RefreshAgents();
+        LoadAgents();
+        StateHasChanged();
+    }
+
+    // ── Form rendering ──
+
+    private RenderFragment RenderAgentForm(AgentFormModel form, bool isEdit) => __builder =>
+    {
+        <div class="settings-form__field">
+            <label>Name</label>
+            <input type="text" @bind="form.Name" placeholder="my-agent"
+                   disabled="@isEdit" />
+        </div>
+
+        <div class="settings-form__field">
+            <label>Description</label>
+            <input type="text" @bind="form.Description"
+                   placeholder="A helpful assistant..." />
+        </div>
+
+        <div class="settings-form__field">
+            <label>Instructions</label>
+            <textarea @bind="form.Instructions" rows="8"
+                      placeholder="You are a helpful AI assistant..."></textarea>
+        </div>
+
+        @* ── Skills + per-skill tools ── *@
+        @if (_availableSkills.Count > 0)
+        {
+            <div class="settings-form__field">
+                <label>Skills <span class="settings-form__hint">— check to enable, then pick tools</span></label>
+                <div class="settings-card__skill-list">
+                    @foreach (var skill in _availableSkills)
+                    {
+                        bool isEnabled = form.EnabledSkills.Contains(skill.Name);
+                        <div class="settings-card__skill-group @(isEnabled ? "settings-card__skill-group--active" : "")">
+                            <label class="settings-card__picker-item">
+                                <input type="checkbox" checked="@isEnabled"
+                                       @onchange="e => ToggleSkill(form, skill, (bool)(e.Value ?? false))" />
+                                <strong>@skill.Name</strong>
+                                @if (!string.IsNullOrWhiteSpace(skill.Description))
+                                {
+                                    <span class="settings-card__picker-tool-desc">@skill.Description</span>
+                                }
+                            </label>
+
+                            @if (isEnabled && skill.AllowedTools.Count > 0)
+                            {
+                                <div class="settings-card__skill-tools">
+                                    @foreach (var toolName in skill.AllowedTools)
+                                    {
+                                        bool toolEnabled = form.EnabledTools.Contains(toolName);
+                                        <label class="settings-card__picker-item">
+                                            <input type="checkbox" checked="@toolEnabled"
+                                                   @onchange="e => ToggleInSet(form.EnabledTools, toolName, (bool)(e.Value ?? false))" />
+                                            <span class="settings-card__picker-tool-name">@toolName</span>
+                                        </label>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        @* ── MCP Tools (not owned by any skill) ── *@
+        @if (_mcpTools.Count > 0)
+        {
+            <div class="settings-form__field">
+                <label>MCP Tools <span class="settings-form__hint">— check to enable</span></label>
+                <div class="settings-card__picker settings-card__picker--tools">
+                    @foreach (var tool in _mcpTools)
+                    {
+                        bool isEnabled = form.EnabledTools.Contains(tool.Name);
+                        <label class="settings-card__picker-item">
+                            <input type="checkbox" checked="@isEnabled"
+                                   @onchange="e => ToggleInSet(form.EnabledTools, tool.Name, (bool)(e.Value ?? false))" />
+                            <span class="settings-card__picker-tool-name">@tool.Name</span>
+                            @if (!string.IsNullOrWhiteSpace(tool.Description))
+                            {
+                                <span class="settings-card__picker-tool-desc">@tool.Description</span>
+                            }
+                        </label>
+                    }
+                </div>
+            </div>
+        }
+    };
+
+    private RenderFragment RenderCapabilitySummary(AgentDefinition agent) => __builder =>
+    {
+        @if (agent.EnabledSkills.Count > 0)
+        {
+            <div class="settings-form__field">
+                <label>Enabled Skills</label>
+                <div class="settings-card__tag-list">
+                    @foreach (var s in agent.EnabledSkills) { <span class="status-badge">@s</span> }
+                </div>
+            </div>
+        }
+        @if (agent.EnabledTools.Count > 0)
+        {
+            <div class="settings-form__field">
+                <label>Enabled Tools</label>
+                <div class="settings-card__tag-list">
+                    @foreach (var t in agent.EnabledTools) { <span class="status-badge">@t</span> }
+                </div>
+            </div>
+        }
+    };
+
+    // ── Helpers ──
+
+    private void PopulateForm(AgentDefinition agent)
+    {
+        _form = new AgentFormModel
+        {
+            Name = agent.Name,
+            Description = agent.Description,
+            Instructions = agent.Instructions,
+            EnabledSkills = [.. agent.EnabledSkills],
+            EnabledTools = [.. agent.EnabledTools],
+        };
+    }
+
+    private static void ToggleInSet(HashSet<string> set, string item, bool add)
+    {
+        if (add) set.Add(item);
+        else set.Remove(item);
+    }
+
+    /// <summary>
+    /// When a skill is enabled, auto-whitelist all its tools.
+    /// When disabled, remove its tools from the whitelist.
+    /// </summary>
+    private static void ToggleSkill(AgentFormModel form, Skill skill, bool enabled)
+    {
+        if (enabled)
+        {
+            form.EnabledSkills.Add(skill.Name);
+            foreach (var t in skill.AllowedTools)
+                form.EnabledTools.Add(t);
+        }
+        else
+        {
+            form.EnabledSkills.Remove(skill.Name);
+            foreach (var t in skill.AllowedTools)
+                form.EnabledTools.Remove(t);
+        }
+    }
+
+    private static List<string>? GetSelectedList(HashSet<string> set)
+        => set.Count > 0 ? [.. set] : null;
+
+    private sealed class AgentFormModel
+    {
+        public string Name { get; set; } = "";
+        public string Description { get; set; } = "";
+        public string Instructions { get; set; } = "";
+        public HashSet<string> EnabledSkills { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+        public HashSet<string> EnabledTools { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     }
 }

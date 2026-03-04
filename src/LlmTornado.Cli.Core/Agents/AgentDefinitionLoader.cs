@@ -355,4 +355,36 @@ public static partial class AgentDefinitionLoader
             content = content[..MaxFileSize] + "\n[TRUNCATED]";
         return content;
     }
+
+    /// <summary>
+    /// Write an agent .md file with YAML frontmatter and markdown body.
+    /// </summary>
+    public static void WriteAgentMd(string filePath, string name, string description,
+        string instructions, List<string>? enabledSkills = null, List<string>? disabledSkills = null,
+        List<string>? enabledTools = null, List<string>? disabledTools = null)
+    {
+        StringBuilder sb = new();
+        sb.AppendLine("---");
+        sb.AppendLine($"name: {name}");
+        sb.AppendLine($"description: \"{description.Replace("\"", "\\\"")}\"");
+
+        if (enabledSkills is { Count: > 0 })
+            sb.AppendLine($"enabled-skills: {string.Join(' ', enabledSkills)}");
+        if (disabledSkills is { Count: > 0 })
+            sb.AppendLine($"disabled-skills: {string.Join(' ', disabledSkills)}");
+        if (enabledTools is { Count: > 0 })
+            sb.AppendLine($"enabled-tools: {string.Join(' ', enabledTools)}");
+        if (disabledTools is { Count: > 0 })
+            sb.AppendLine($"disabled-tools: {string.Join(' ', disabledTools)}");
+
+        sb.AppendLine("---");
+        sb.AppendLine();
+        sb.AppendLine(instructions.TrimEnd());
+        sb.AppendLine();
+
+        string? dir = Path.GetDirectoryName(filePath);
+        if (dir is not null) Directory.CreateDirectory(dir);
+
+        File.WriteAllText(filePath, sb.ToString());
+    }
 }
