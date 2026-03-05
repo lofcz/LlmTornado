@@ -334,6 +334,11 @@
             </div>
 
             <div class="settings-form__field">
+                <label>Working Directory (cwd)</label>
+                <input type="text" @bind="entry.Cwd" placeholder="/path/to/server/dir" />
+            </div>
+
+            <div class="settings-form__field">
                 <label>Arguments (one per line)</label>
                 <textarea rows="3"
                           value="@ArgsToText(entry)"
@@ -381,6 +386,7 @@
         Type = "stdio",
         Name = "",
         Command = "",
+        Cwd = "",
         Args = [],
         Env = new(),
     };
@@ -390,6 +396,7 @@
         Type = src.Type,
         Name = src.Name,
         Command = src.Command,
+        Cwd = src.Cwd,
         Args = src.Args is not null ? [.. src.Args] : null,
         Env = src.Env is not null ? new(src.Env) : null,
         Url = src.Url,

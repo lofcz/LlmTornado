@@ -31,6 +31,9 @@ public sealed class McpServerEntry
     [JsonPropertyName("env")]
     public Dictionary<string, string>? Env { get; set; }
 
+    [JsonPropertyName("cwd")]
+    public string? Cwd { get; set; }
+
     [JsonPropertyName("url")]
     public string? Url { get; set; }
 

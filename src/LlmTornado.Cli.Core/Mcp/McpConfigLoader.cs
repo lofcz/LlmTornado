@@ -119,7 +119,8 @@ public sealed partial class McpConfigLoader : IAsyncDisposable
                 string command = ResolveEnvVarString(entry.Command ?? "");
                 string[]? args = entry.Args?.Select(ResolveEnvVarString).ToArray();
                 Dictionary<string, string>? env = ResolveEnvVars(entry.Env);
-                server = new MCPServer(entry.Name, command, args, environmentVariables: env, allowedTools: allowed);
+                string workingDirectory = ResolveEnvVarString(entry.Cwd ?? "");
+                server = new MCPServer(entry.Name, command, args, workingDirectory: workingDirectory, environmentVariables: env, allowedTools: allowed);
             }
 
             await server.InitializeAsync();
@@ -254,7 +255,8 @@ public sealed partial class McpConfigLoader : IAsyncDisposable
                 string command = ResolveEnvVarString(entry.Command ?? "");
                 string[]? args = entry.Args?.Select(ResolveEnvVarString).ToArray();
                 Dictionary<string, string>? env = ResolveEnvVars(entry.Env);
-                server = new MCPServer(entry.Name, command, args, environmentVariables: env, allowedTools: allowed);
+                string workingDirectory = ResolveEnvVarString(entry.Cwd ?? "");
+                server = new MCPServer(entry.Name, command, args, workingDirectory: workingDirectory, environmentVariables: env, allowedTools: allowed);
             }
 
             await server.InitializeAsync();
