@@ -3,8 +3,8 @@
 
 <div class="settings-section">
     <p class="settings-section__desc">
-        MCP servers are loaded from <code>mcp.json</code>.
-        Path: <code>@_configPath</code>
+        MCP servers are loaded from local (<code>@_configPath</code>) and
+        global (<code>@_globalConfigPath</code>) config files.
     </p>
 
     <div class="settings-section__actions" style="margin-bottom: 16px;">
@@ -29,8 +29,13 @@
             <div class="settings-card__header">
                 <strong>New MCP Server</strong>
             </div>
-            <div class="settings-card__body">
-                @RenderServerForm(_editEntry, false)
+            <div class="settings-card__body">                <div class="settings-form__field">
+                    <label>Scope</label>
+                    <select class="settings-form__select" @bind="_addScope">
+                        <option value="@McpServerSource.Local">Local (project)</option>
+                        <option value="@McpServerSource.Global">Global (shared)</option>
+                    </select>
+                </div>                @RenderServerForm(_editEntry, false)
                 <div class="settings-card__actions">
                     <button class="tornado-chat__btn tornado-chat__btn--primary"
                             @onclick="SaveNewServer" disabled="@_isSaving">
@@ -74,6 +79,7 @@
                 <div class="settings-card__header" @onclick="() => ToggleExpand(server.Name)">
                     <div class="settings-card__header-left">
                         <strong>@server.Name</strong>
+                        <span class="status-badge @(server.Source == McpServerSource.Global ? "status-badge--global" : "status-badge--local")">@server.Source</span>
                         <span class="status-badge">@server.Type</span>
                         @if (server.Connected)
                         {
@@ -107,6 +113,18 @@
                                     @onclick="() => DeleteServer(server.Name)">
                                 🗑 Delete
                             </button>
+                            @if (server.Source == McpServerSource.Local)
+                            {
+                                <button class="tornado-chat__btn" @onclick="() => MoveServer(server.Name, McpServerSource.Global)">
+                                    ↗ Move to Global
+                                </button>
+                            }
+                            else if (server.Source == McpServerSource.Global)
+                            {
+                                <button class="tornado-chat__btn" @onclick="() => MoveServer(server.Name, McpServerSource.Local)">
+                                    ↙ Move to Local
+                                </button>
+                            }
                             <button class="tornado-chat__btn" @onclick="CancelEdit">Cancel</button>
                         </div>
                         @if (_testResult is not null)
@@ -135,6 +153,8 @@
     private List<McpServerStatus> _servers = [];
     private List<McpServerEntry> _configEntries = [];
     private string _configPath = "";
+    private string _globalConfigPath = "";
+    private McpServerSource _addScope = McpServerSource.Local;
     private string? _expandedServer;
     private bool _showAddForm;
     private bool _isLoading;
@@ -148,14 +168,19 @@
     protected override void OnInitialized()
     {
         _configPath = Settings.GetMcpConfigPath();
+        _globalConfigPath = Settings.GetGlobalMcpConfigPath() ?? "(not configured)";
         LoadServers();
     }
 
     private void LoadServers()
     {
         _servers = [.. Settings.GetMcpServerStatuses()];
-        McpConfig? config = Settings.GetMcpConfig();
-        _configEntries = config?.Servers ?? [];
+        List<McpServerEntry> entries = [];
+        McpConfig? localConfig = Settings.GetMcpConfig(McpServerSource.Local);
+        if (localConfig?.Servers is not null) entries.AddRange(localConfig.Servers);
+        McpConfig? globalConfig = Settings.GetMcpConfig(McpServerSource.Global);
+        if (globalConfig?.Servers is not null) entries.AddRange(globalConfig.Servers);
+        _configEntries = entries;
     }
 
     private async Task ReloadConfig()
@@ -232,7 +257,7 @@
 
         try
         {
-            await Settings.AddMcpServerAsync(CloneEntry(_editEntry));
+            await Settings.AddMcpServerAsync(CloneEntry(_editEntry), _addScope);
             _showAddForm = false;
             _testResult = null;
             LoadServers();
@@ -451,5 +476,21 @@
                 result[key] = value;
         }
         return result.Count > 0 ? result : null;
+    }
+
+    private async Task MoveServer(string serverName, McpServerSource targetScope)
+    {
+        try
+        {
+            await Settings.MoveMcpServerAsync(serverName, targetScope);
+            _expandedServer = null;
+            _testResult = null;
+            LoadServers();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to move MCP server: {ex.Message}");
+        }
     }
 }

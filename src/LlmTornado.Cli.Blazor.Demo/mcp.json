@@ -1,32 +1,3 @@
 {
-  "servers": [
-    {
-      "type": "stdio",
-      "name": "microsoft/playwright-mcp",
-      "command": "npx",
-      "args": [
-        "@playwright/mcp@latest"
-      ],
-      "env": {},
-      "url": null,
-      "headers": null,
-      "allowed_tools": null
-    },
-    {
-      "type": "stdio",
-      "name": "filesystemindexer",
-      "command": "dotnet",
-      "args": [
-        "run",
-        "--project",
-        "D:/Projects/FileSystemIndexer/src/FileSystemIndexer.Service",
-        "--",
-        "--mcp-stdio"
-      ],
-      "env": {},
-      "url": null,
-      "headers": null,
-      "allowed_tools": null
-    }
-  ]
+  "servers": []
 }

@@ -43,7 +43,7 @@ public sealed partial class ChatRuntimeController : ISettingsController
             _skillManager.LoadSkills(_options.SkillsDirectory!, _options.GlobalSkillsDirectory);
         }
 
-        // 2. Reload MCP servers from new config path
+        // 2. Reload MCP servers — switch local path, keep global stable
         if (_mcpLoader is not null)
         {
             await _mcpLoader.LoadFromPathAsync(_options.McpConfigPath);
@@ -53,7 +53,8 @@ public sealed partial class ChatRuntimeController : ISettingsController
         if (_agentManager is not null)
         {
             string builtInDir = Path.Combine(AppContext.BaseDirectory, "Agents", "built-in");
-            string? globalDir = AgentDefinitionLoader.ResolveGlobalAgentsDirectory();
+            string? globalDir = _options.GlobalAgentsDirectory
+                ?? AgentDefinitionLoader.ResolveGlobalAgentsDirectory();
             _agentManager.LoadAll(builtInDir, globalDir, _options.AgentsDirectory!, path);
 
             List<ChatUiAgent> uiAgents = _agentManager.GetAllPersonas()
@@ -82,6 +83,10 @@ public sealed partial class ChatRuntimeController : ISettingsController
     public string GetMcpConfigPath()
         => _mcpLoader?.ConfigPath
            ?? McpConfigLoader.ResolveDefaultMcpConfigPath(_options.McpConfigPath);
+
+    public string GetGlobalMcpConfigPath()
+        => _mcpLoader?.GlobalConfigPath
+           ?? McpConfigLoader.ResolveDefaultGlobalMcpConfigPath();
 
     public async Task OpenMcpConfigInEditorAsync()
     {
@@ -113,57 +118,112 @@ public sealed partial class ChatRuntimeController : ISettingsController
             _runtime = _agentBuilder.RebuildForSkillChange(HandleRuntimeEvent);
     }
 
-    public McpConfig? GetMcpConfig()
-        => _mcpLoader?.ReadConfig();
+    public McpConfig? GetMcpConfig(McpServerSource scope = McpServerSource.Local)
+        => _mcpLoader?.ReadConfig(scope);
 
-    public async Task SaveMcpConfigAsync(McpConfig config)
+    public async Task SaveMcpConfigAsync(McpConfig config, McpServerSource scope = McpServerSource.Local)
     {
         if (_mcpLoader is null)
         {
             // Create a temporary loader just to save
-            McpConfigLoader loader = new();
-            string path = McpConfigLoader.ResolveDefaultMcpConfigPath(_options.McpConfigPath);
-            string json = JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true });
+            string path = scope == McpServerSource.Global
+                ? McpConfigLoader.ResolveDefaultGlobalMcpConfigPath()
+                : McpConfigLoader.ResolveDefaultMcpConfigPath(_options.McpConfigPath);
             string? dir = Path.GetDirectoryName(path);
             if (dir is not null) Directory.CreateDirectory(dir);
+            string json = JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true });
             await File.WriteAllTextAsync(path, json);
             return;
         }
 
-        await _mcpLoader.SaveConfigAsync(config);
+        await _mcpLoader.SaveConfigAsync(config, scope);
     }
 
-    public async Task AddMcpServerAsync(McpServerEntry entry)
+    public async Task AddMcpServerAsync(McpServerEntry entry, McpServerSource scope = McpServerSource.Local)
     {
-        McpConfig config = GetMcpConfig() ?? new McpConfig { Servers = [] };
+        // Remove any existing entry with the same name from both scopes to prevent duplicates
+        await RemoveFromBothScopesAsync(entry.Name);
+
+        McpConfig config = GetMcpConfig(scope) ?? new McpConfig { Servers = [] };
         config.Servers.Add(entry);
-        await SaveMcpConfigAsync(config);
+        await SaveMcpConfigAsync(config, scope);
         await ReloadMcpConfigAsync();
     }
 
-    public async Task UpdateMcpServerAsync(string originalName, McpServerEntry entry)
+    public async Task UpdateMcpServerAsync(string originalName, McpServerEntry entry, McpServerSource? newScope = null)
     {
-        McpConfig? config = GetMcpConfig();
-        if (config is null) return;
+        McpServerSource originalScope = FindServerScope(originalName);
+        McpServerSource targetScope = newScope ?? originalScope;
 
-        int idx = config.Servers.FindIndex(s =>
-            s.Name.Equals(originalName, StringComparison.OrdinalIgnoreCase));
-        if (idx < 0) return;
+        // Always remove the old entry from both scopes first to prevent duplicates
+        await RemoveFromBothScopesAsync(originalName);
 
-        config.Servers[idx] = entry;
-        await SaveMcpConfigAsync(config);
+        // Write the updated entry to the target scope
+        McpConfig config = GetMcpConfig(targetScope) ?? new McpConfig { Servers = [] };
+        config.Servers.Add(entry);
+        await SaveMcpConfigAsync(config, targetScope);
+
         await ReloadMcpConfigAsync();
     }
 
     public async Task RemoveMcpServerAsync(string serverName)
     {
-        McpConfig? config = GetMcpConfig();
-        if (config is null) return;
-
-        config.Servers.RemoveAll(s =>
-            s.Name.Equals(serverName, StringComparison.OrdinalIgnoreCase));
-        await SaveMcpConfigAsync(config);
+        // Remove from both scopes to ensure no orphaned entries
+        await RemoveFromBothScopesAsync(serverName);
         await ReloadMcpConfigAsync();
+    }
+
+    public async Task MoveMcpServerAsync(string serverName, McpServerSource targetScope)
+    {
+        McpServerSource currentScope = FindServerScope(serverName);
+
+        // Find the entry before removing
+        McpConfig? sourceConfig = GetMcpConfig(currentScope);
+        McpServerEntry? entry = sourceConfig?.Servers.FirstOrDefault(s =>
+            s.Name.Equals(serverName, StringComparison.OrdinalIgnoreCase));
+        if (entry is null) return;
+
+        // Remove from both scopes first to ensure clean state
+        await RemoveFromBothScopesAsync(serverName);
+
+        // Add to target scope
+        McpConfig targetConfig = GetMcpConfig(targetScope) ?? new McpConfig { Servers = [] };
+        targetConfig.Servers.Add(entry);
+        await SaveMcpConfigAsync(targetConfig, targetScope);
+
+        await ReloadMcpConfigAsync();
+    }
+
+    /// <summary>
+    /// Remove a server entry by name from both local and global config files.
+    /// </summary>
+    private async Task RemoveFromBothScopesAsync(string serverName)
+    {
+        foreach (McpServerSource scope in new[] { McpServerSource.Local, McpServerSource.Global })
+        {
+            McpConfig? config = GetMcpConfig(scope);
+            if (config is null) continue;
+
+            int removed = config.Servers.RemoveAll(s =>
+                s.Name.Equals(serverName, StringComparison.OrdinalIgnoreCase));
+            if (removed > 0)
+                await SaveMcpConfigAsync(config, scope);
+        }
+    }
+
+    private McpServerSource FindServerScope(string serverName)
+    {
+        // Check runtime statuses for the server's actual source
+        McpServerStatus? status = _mcpLoader?.ServerStatuses
+            .FirstOrDefault(s => s.Name.Equals(serverName, StringComparison.OrdinalIgnoreCase));
+        if (status is not null) return status.Source;
+
+        // Fallback: check which config file has it
+        McpConfig? local = GetMcpConfig(McpServerSource.Local);
+        if (local?.Servers.Any(s => s.Name.Equals(serverName, StringComparison.OrdinalIgnoreCase)) == true)
+            return McpServerSource.Local;
+
+        return McpServerSource.Global;
     }
 
     public Task<McpServerStatus> TestMcpConnectionAsync(McpServerEntry entry)
@@ -233,9 +293,11 @@ public sealed partial class ChatRuntimeController : ISettingsController
             _runtime = _agentBuilder.RebuildForSkillChange(HandleRuntimeEvent);
     }
 
-    public async Task ImportSkillAsync(string fileName, Stream content)
+    public async Task ImportSkillAsync(string fileName, Stream content, SkillSource scope = SkillSource.Project)
     {
-        string skillsDir = _options.SkillsDirectory ?? Path.GetFullPath("skills");
+        string skillsDir = scope == SkillSource.Global
+            ? (_options.GlobalSkillsDirectory ?? SkillLoader.ResolveGlobalSkillsDirectory())
+            : (_options.SkillsDirectory ?? Path.GetFullPath("skills"));
         Directory.CreateDirectory(skillsDir);
 
         if (fileName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
@@ -270,6 +332,46 @@ public sealed partial class ChatRuntimeController : ISettingsController
         RefreshSkills();
     }
 
+    public async Task MoveSkillAsync(string skillName, SkillSource targetScope)
+    {
+        Skill? skill = _skillManager?.GetSkill(skillName);
+        if (skill is null || skill.Source == targetScope) return;
+
+        string targetDir = targetScope == SkillSource.Global
+            ? (_options.GlobalSkillsDirectory ?? SkillLoader.ResolveGlobalSkillsDirectory())
+            : (_options.SkillsDirectory ?? Path.GetFullPath("skills"));
+
+        string targetSkillDir = Path.Combine(targetDir, skillName);
+        Directory.CreateDirectory(targetDir);
+
+        // Copy entire skill directory to target
+        CopyDirectory(skill.DirectoryPath, targetSkillDir);
+
+        // Remove source directory
+        if (Directory.Exists(skill.DirectoryPath))
+            Directory.Delete(skill.DirectoryPath, recursive: true);
+
+        RefreshSkills();
+        await Task.CompletedTask;
+    }
+
+    private static void CopyDirectory(string sourceDir, string targetDir)
+    {
+        Directory.CreateDirectory(targetDir);
+
+        foreach (string file in Directory.GetFiles(sourceDir))
+        {
+            string destFile = Path.Combine(targetDir, Path.GetFileName(file));
+            File.Copy(file, destFile, overwrite: true);
+        }
+
+        foreach (string dir in Directory.GetDirectories(sourceDir))
+        {
+            string destDir = Path.Combine(targetDir, Path.GetFileName(dir));
+            CopyDirectory(dir, destDir);
+        }
+    }
+
     // ─────────────────────────────────────────────
     // Agents
     // ─────────────────────────────────────────────
@@ -282,11 +384,15 @@ public sealed partial class ChatRuntimeController : ISettingsController
 
     public async Task CreateAgentAsync(string name, string description, string instructions,
         List<string>? enabledSkills = null, List<string>? disabledSkills = null,
-        List<string>? enabledTools = null, List<string>? disabledTools = null)
+        List<string>? enabledTools = null, List<string>? disabledTools = null,
+        AgentSource scope = AgentSource.Custom)
     {
         if (_agentManager is null) return;
 
-        string agentsDir = _options.AgentsDirectory ?? Path.GetFullPath("agents");
+        string agentsDir = scope == AgentSource.Global
+            ? (_options.GlobalAgentsDirectory ?? AgentDefinitionLoader.ResolveGlobalAgentsDirectory())
+            : (_options.AgentsDirectory ?? Path.GetFullPath("agents"));
+
         _agentManager.CreateAgent(agentsDir, name, description, instructions,
             enabledSkills, disabledSkills, enabledTools, disabledTools);
 
@@ -320,6 +426,36 @@ public sealed partial class ChatRuntimeController : ISettingsController
     public string GetAgentsDirectory()
         => _options.AgentsDirectory ?? Path.GetFullPath("agents");
 
+    public string GetGlobalAgentsDirectory()
+        => _options.GlobalAgentsDirectory ?? AgentDefinitionLoader.ResolveGlobalAgentsDirectory();
+
+    public async Task MoveAgentAsync(string agentName, AgentSource targetScope)
+    {
+        AgentDefinition? agent = _agentManager?.GetPersona(agentName);
+        if (agent is null) return;
+        if (agent.Source == AgentSource.BuiltIn) return; // can't move built-ins
+        if ((agent.Source == AgentSource.Custom && targetScope == AgentSource.Custom)
+            || (agent.Source == AgentSource.Global && targetScope == AgentSource.Global))
+            return; // already in target scope
+
+        string targetDir = targetScope == AgentSource.Global
+            ? GetGlobalAgentsDirectory()
+            : GetAgentsDirectory();
+
+        Directory.CreateDirectory(targetDir);
+
+        string fileName = Path.GetFileName(agent.FilePath);
+        string targetPath = Path.Combine(targetDir, fileName);
+
+        File.Copy(agent.FilePath, targetPath, overwrite: true);
+
+        if (File.Exists(agent.FilePath))
+            File.Delete(agent.FilePath);
+
+        RefreshAgents();
+        await Task.CompletedTask;
+    }
+
     public void RefreshAgents()
     {
         if (_agentManager is null) return;
@@ -327,7 +463,8 @@ public sealed partial class ChatRuntimeController : ISettingsController
         string builtInDir = Path.Combine(AppContext.BaseDirectory, "Agents", "built-in");
         string agentsDir = _options.AgentsDirectory ?? Path.GetFullPath("agents");
         string cwd = _options.WorkingDirectory ?? Environment.CurrentDirectory;
-        string? globalDir = AgentDefinitionLoader.ResolveGlobalAgentsDirectory();
+        string? globalDir = _options.GlobalAgentsDirectory
+            ?? AgentDefinitionLoader.ResolveGlobalAgentsDirectory();
 
         _agentManager.LoadAll(builtInDir, globalDir, agentsDir, cwd);
 

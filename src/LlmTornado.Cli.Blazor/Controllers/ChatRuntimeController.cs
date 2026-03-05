@@ -140,19 +140,21 @@ public sealed partial class ChatRuntimeController : IChatUiController, ISettings
             _skillManager = new SkillManager(_settings, this);
             _skillManager.LoadSkills(skillsDir, _options.GlobalSkillsDirectory);
 
-            // 7. Initialize MCP
+            // 7. Initialize MCP (global + local)
             _mcpLoader = new McpConfigLoader();
             string? mcpPath = McpConfigLoader.ResolveMcpConfigPath(_options.McpConfigPath);
-            if (mcpPath is not null)
-            {
-                await _mcpLoader.LoadAsync(mcpPath);
-            }
+            string? globalMcpPath = _options.GlobalMcpConfigPath is not null
+                ? (File.Exists(_options.GlobalMcpConfigPath) ? _options.GlobalMcpConfigPath : null)
+                : McpConfigLoader.ResolveGlobalMcpConfigPath();
+            await _mcpLoader.LoadAsync(mcpPath, globalMcpPath);
 
-            // 8. Initialize agents
+            // 8. Initialize agents (built-in + global + local)
             _agentManager = new AgentDefinitionManager(_settings, this);
             string builtInDir = Path.Combine(AppContext.BaseDirectory, "Agents", "built-in");
             string cwd = _options.WorkingDirectory ?? Environment.CurrentDirectory;
-            _agentManager.LoadAll(builtInDir, agentsDir, cwd);
+            string? globalAgentsDir = _options.GlobalAgentsDirectory
+                ?? AgentDefinitionLoader.ResolveGlobalAgentsDirectory();
+            _agentManager.LoadAll(builtInDir, globalAgentsDir, agentsDir, cwd);
 
             List<ChatUiAgent> uiAgents = _agentManager.GetAllPersonas()
                 .Where(a => a.IsPersona)

@@ -16,6 +16,10 @@
             📂 Import Skill
             <InputFile OnChange="HandleImport" style="display:none" accept=".md,.zip" />
         </label>
+        <select class="settings-form__select" style="width: auto; padding: 6px 10px;" @bind="_importScope">
+            <option value="@SkillSource.Project">Import to: Local</option>
+            <option value="@SkillSource.Global">Import to: Global</option>
+        </select>
     </div>
 
     @if (_skills.Count == 0)
@@ -32,7 +36,7 @@
                 <div class="settings-card__header" @onclick="() => ToggleExpand(skill)">
                     <div class="settings-card__header-left">
                         <strong>@skill.Name</strong>
-                        <span class="status-badge">@skill.Source</span>
+                        <span class="status-badge @(skill.Source == SkillSource.Global ? "status-badge--global" : "status-badge--local")">@skill.Source</span>
                         @if (!string.IsNullOrWhiteSpace(skill.Description))
                         {
                             <span class="settings-card__desc">@skill.Description</span>
@@ -96,6 +100,18 @@
                                     @onclick="SaveSkillFile" disabled="@_isSaving">
                                 @(_isSaving ? "Saving..." : "Save")
                             </button>
+                            @if (skill.Source == SkillSource.Project)
+                            {
+                                <button class="tornado-chat__btn" @onclick="() => MoveSkill(skill.Name, SkillSource.Global)">
+                                    ↗ Move to Global
+                                </button>
+                            }
+                            else if (skill.Source == SkillSource.Global)
+                            {
+                                <button class="tornado-chat__btn" @onclick="() => MoveSkill(skill.Name, SkillSource.Project)">
+                                    ↙ Move to Local
+                                </button>
+                            }
                             <button class="tornado-chat__btn" @onclick="CancelEdit">Cancel</button>
                         </div>
 
@@ -129,6 +145,7 @@
     private string _editContent = "";
     private bool _isSaving;
     private string? _saveMessage;
+    private SkillSource _importScope = SkillSource.Project;
 
     protected override void OnInitialized()
     {
@@ -215,7 +232,7 @@
         try
         {
             await using Stream stream = e.File.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
-            await Settings.ImportSkillAsync(e.File.Name, stream);
+            await Settings.ImportSkillAsync(e.File.Name, stream, _importScope);
             LoadSkills();
             _importMessage = $"Imported '{e.File.Name}' successfully.";
         }
@@ -224,6 +241,22 @@
             _importMessage = $"Import failed: {ex.Message}";
         }
 
+        StateHasChanged();
+    }
+
+    private async Task MoveSkill(string skillName, SkillSource targetScope)
+    {
+        try
+        {
+            await Settings.MoveSkillAsync(skillName, targetScope);
+            _expandedSkill = null;
+            LoadSkills();
+            _importMessage = $"Moved '{skillName}' to {targetScope}.";
+        }
+        catch (Exception ex)
+        {
+            _importMessage = $"Move failed: {ex.Message}";
+        }
         StateHasChanged();
     }
 }

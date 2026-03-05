@@ -263,6 +263,18 @@
     color: #991b1b;
 }
 
+.status-badge--global {
+    background: var(--tc-chip-global, #dbeafe);
+    border-color: var(--tc-chip-global-border, #93c5fd);
+    color: #1e40af;
+}
+
+.status-badge--local {
+    background: var(--tc-chip-local, #f0fdf4);
+    border-color: var(--tc-chip-local-border, #86efac);
+    color: #166534;
+}
+
 /* ── Key input ── */
 .settings-key-input {
     display: flex;

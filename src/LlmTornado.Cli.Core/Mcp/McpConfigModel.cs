@@ -3,6 +3,23 @@ using System.Text.Json.Serialization;
 namespace LlmTornado.Cli.Core.Mcp;
 
 /// <summary>
+/// Source origin of an MCP server entry (global vs project-local).
+/// </summary>
+public enum McpServerSource
+{
+    /// <summary>
+    /// Loaded from the global MCP config (%APPDATA%/llmtornado/mcp.json or TORNADO_MCP_GLOBAL_CONFIG).
+    /// </summary>
+    Global,
+
+    /// <summary>
+    /// Loaded from the project-local MCP config (./mcp.json or settings override).
+    /// Local servers shadow global servers with the same name.
+    /// </summary>
+    Local
+}
+
+/// <summary>
 /// Root model for mcp.json config file.
 /// </summary>
 public sealed class McpConfig
@@ -42,6 +59,13 @@ public sealed class McpServerEntry
 
     [JsonPropertyName("allowed_tools")]
     public List<string>? AllowedTools { get; set; }
+
+    /// <summary>
+    /// Runtime-only: whether this entry came from the global or local config.
+    /// Not serialized to JSON.
+    /// </summary>
+    [JsonIgnore]
+    public McpServerSource Source { get; set; }
 }
 
 /// <summary>
@@ -54,4 +78,9 @@ public sealed class McpServerStatus
     public required bool Connected { get; init; }
     public required int ToolCount { get; init; }
     public string? Error { get; init; }
+
+    /// <summary>
+    /// Whether this server came from the global or local config.
+    /// </summary>
+    public McpServerSource Source { get; init; }
 }

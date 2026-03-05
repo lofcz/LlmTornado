@@ -152,6 +152,63 @@
             </tbody>
         </table>
     </div>
+
+    <div style="margin-top: 20px;">
+        <h3 style="font-size: 14px; margin: 0 0 12px;">Global Paths</h3>
+        <table class="settings-table">
+            <thead>
+                <tr>
+                    <th>Resource</th>
+                    <th>Path</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Global Skills Directory</td>
+                    <td class="settings-table__mono">@_globalSkillsDir</td>
+                    <td>
+                        @if (Directory.Exists(_globalSkillsDir))
+                        {
+                            <span class="status-badge status-badge--ok">exists</span>
+                        }
+                        else
+                        {
+                            <span class="status-badge status-badge--missing">not found</span>
+                        }
+                    </td>
+                </tr>
+                <tr>
+                    <td>Global Agents Directory</td>
+                    <td class="settings-table__mono">@_globalAgentsDir</td>
+                    <td>
+                        @if (Directory.Exists(_globalAgentsDir))
+                        {
+                            <span class="status-badge status-badge--ok">exists</span>
+                        }
+                        else
+                        {
+                            <span class="status-badge status-badge--missing">not found</span>
+                        }
+                    </td>
+                </tr>
+                <tr>
+                    <td>Global MCP Config</td>
+                    <td class="settings-table__mono">@_globalMcpPath</td>
+                    <td>
+                        @if (File.Exists(_globalMcpPath))
+                        {
+                            <span class="status-badge status-badge--ok">exists</span>
+                        }
+                        else
+                        {
+                            <span class="status-badge status-badge--missing">not found</span>
+                        }
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 </div>
 
 @code {
@@ -161,6 +218,9 @@
     private string _skillsDir = "";
     private string _agentsDir = "";
     private string _mcpPath = "";
+    private string _globalSkillsDir = "";
+    private string _globalAgentsDir = "";
+    private string _globalMcpPath = "";
     private string? _statusMessage;
     private bool _isError;
     private bool _isApplying;
@@ -307,5 +367,8 @@
         _skillsDir = Settings.GetSkillsDirectory();
         _agentsDir = Settings.GetAgentsDirectory();
         _mcpPath = Settings.GetMcpConfigPath();
+        _globalSkillsDir = Settings.GetGlobalSkillsDirectory();
+        _globalAgentsDir = Settings.GetGlobalAgentsDirectory();
+        _globalMcpPath = Settings.GetGlobalMcpConfigPath();
     }
 }

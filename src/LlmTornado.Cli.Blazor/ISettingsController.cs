@@ -8,6 +8,7 @@ namespace LlmTornado.Cli.Blazor;
 /// Interface for settings management operations.
 /// Implemented alongside <see cref="IChatUiController"/> by the runtime controller.
 /// Provides read/write access to MCP servers, skills, and agent definitions.
+/// Supports both global and project-local (scoped) operations.
 /// </summary>
 public interface ISettingsController
 {
@@ -35,14 +36,19 @@ public interface ISettingsController
     // ─────────────────────────────────────────────
 
     /// <summary>
-    /// Get current status of all configured MCP servers (name, type, connected, tool count).
+    /// Get current status of all configured MCP servers (name, type, connected, tool count, scope).
     /// </summary>
     IReadOnlyList<McpServerStatus> GetMcpServerStatuses();
 
     /// <summary>
-    /// Get the resolved path to the mcp.json config file (whether it exists or not).
+    /// Get the resolved path to the project-local mcp.json config file (whether it exists or not).
     /// </summary>
     string GetMcpConfigPath();
+
+    /// <summary>
+    /// Get the resolved path to the global mcp.json config file (whether it exists or not).
+    /// </summary>
+    string GetGlobalMcpConfigPath();
 
     /// <summary>
     /// Open the mcp.json file in the system's default text editor.
@@ -51,36 +57,42 @@ public interface ISettingsController
     Task OpenMcpConfigInEditorAsync();
 
     /// <summary>
-    /// Reload MCP servers from the config file and rebuild the agent's tool set.
+    /// Reload MCP servers from both config files and rebuild the agent's tool set.
     /// Call this after the user edits the config file externally.
     /// </summary>
     Task ReloadMcpConfigAsync();
 
     /// <summary>
-    /// Get the deserialized MCP config for in-app editing.
+    /// Get the deserialized MCP config for a given scope.
     /// Returns null if the file doesn't exist or can't be parsed.
     /// </summary>
-    McpConfig? GetMcpConfig();
+    McpConfig? GetMcpConfig(McpServerSource scope = McpServerSource.Local);
 
     /// <summary>
-    /// Save the MCP config to disk.
+    /// Save the MCP config to disk for the specified scope.
     /// </summary>
-    Task SaveMcpConfigAsync(McpConfig config);
+    Task SaveMcpConfigAsync(McpConfig config, McpServerSource scope = McpServerSource.Local);
 
     /// <summary>
-    /// Add a new MCP server entry to the config, save, and reload.
+    /// Add a new MCP server entry to the config for the specified scope, save, and reload.
     /// </summary>
-    Task AddMcpServerAsync(McpServerEntry entry);
+    Task AddMcpServerAsync(McpServerEntry entry, McpServerSource scope = McpServerSource.Local);
 
     /// <summary>
     /// Update an existing MCP server entry (matched by original name), save, and reload.
+    /// Optionally move it to a different scope.
     /// </summary>
-    Task UpdateMcpServerAsync(string originalName, McpServerEntry entry);
+    Task UpdateMcpServerAsync(string originalName, McpServerEntry entry, McpServerSource? newScope = null);
 
     /// <summary>
-    /// Remove an MCP server entry by name, save, and reload.
+    /// Remove an MCP server entry by name from whichever config it belongs to, save, and reload.
     /// </summary>
     Task RemoveMcpServerAsync(string serverName);
+
+    /// <summary>
+    /// Move an MCP server entry between global and local scope.
+    /// </summary>
+    Task MoveMcpServerAsync(string serverName, McpServerSource targetScope);
 
     /// <summary>
     /// Test connectivity to an MCP server entry without adding it to the config.
@@ -129,12 +141,18 @@ public interface ISettingsController
     void RefreshSkills();
 
     /// <summary>
-    /// Import a skill from an uploaded file (.md or .zip) into the project-local skills directory.
+    /// Import a skill from an uploaded file (.md or .zip) into the specified scope directory.
     /// For .md files, creates a new skill folder with the file as SKILL.md.
     /// For .zip files, extracts the archive into the skills directory.
     /// Refreshes skills after import.
     /// </summary>
-    Task ImportSkillAsync(string fileName, Stream content);
+    Task ImportSkillAsync(string fileName, Stream content, SkillSource scope = SkillSource.Project);
+
+    /// <summary>
+    /// Move a skill between project-local and global scope.
+    /// Copies the skill directory to the target location and removes the source.
+    /// </summary>
+    Task MoveSkillAsync(string skillName, SkillSource targetScope);
 
     // ─────────────────────────────────────────────
     // Agents
@@ -151,23 +169,24 @@ public interface ISettingsController
     string? GetActiveAgentName();
 
     /// <summary>
-    /// Create a new custom agent .md file, save to disk, and reload.
+    /// Create a new agent .md file in the specified scope directory, save to disk, and reload.
     /// </summary>
     Task CreateAgentAsync(string name, string description, string instructions,
         List<string>? enabledSkills = null, List<string>? disabledSkills = null,
-        List<string>? enabledTools = null, List<string>? disabledTools = null);
+        List<string>? enabledTools = null, List<string>? disabledTools = null,
+        AgentSource scope = AgentSource.Custom);
 
     /// <summary>
-    /// Update an existing custom agent .md file and reload.
-    /// Only custom agents can be updated.
+    /// Update an existing custom/global agent .md file and reload.
+    /// Only custom and global agents can be updated.
     /// </summary>
     Task UpdateAgentAsync(string name, string description, string instructions,
         List<string>? enabledSkills = null, List<string>? disabledSkills = null,
         List<string>? enabledTools = null, List<string>? disabledTools = null);
 
     /// <summary>
-    /// Delete a custom agent .md file and reload.
-    /// Only custom agents can be deleted.
+    /// Delete a custom/global agent .md file and reload.
+    /// Only custom and global agents can be deleted.
     /// </summary>
     Task DeleteAgentAsync(string name);
 
@@ -175,6 +194,17 @@ public interface ISettingsController
     /// Get the resolved custom agents directory path.
     /// </summary>
     string GetAgentsDirectory();
+
+    /// <summary>
+    /// Get the resolved global agents directory path.
+    /// </summary>
+    string GetGlobalAgentsDirectory();
+
+    /// <summary>
+    /// Move an agent between project-local and global scope.
+    /// Copies the .md file to the target location and removes the source.
+    /// </summary>
+    Task MoveAgentAsync(string agentName, AgentSource targetScope);
 
     /// <summary>
     /// Re-discover agents from disk and update the UI agent list.

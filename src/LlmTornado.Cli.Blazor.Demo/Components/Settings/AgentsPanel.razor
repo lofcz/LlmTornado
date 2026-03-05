@@ -26,6 +26,13 @@
                 <strong>New Agent</strong>
             </div>
             <div class="settings-card__body">
+                <div class="settings-form__field">
+                    <label>Scope</label>
+                    <select class="settings-form__select" @bind="_createScope">
+                        <option value="@AgentSource.Custom">Local (project)</option>
+                        <option value="@AgentSource.Global">Global (shared)</option>
+                    </select>
+                </div>
                 @RenderAgentForm(_form, false)
                 <div class="settings-card__actions">
                     <button class="tornado-chat__btn tornado-chat__btn--primary"
@@ -55,7 +62,7 @@
                 <div class="settings-card__header" @onclick="() => ToggleExpand(agent)">
                     <div class="settings-card__header-left">
                         <strong>@agent.Name</strong>
-                        <span class="status-badge">@agent.Source</span>
+                        <span class="status-badge @(agent.Source == AgentSource.Global ? "status-badge--global" : agent.Source == AgentSource.Custom ? "status-badge--local" : "")">@agent.Source</span>
                         @if (isActive)
                         {
                             <span class="status-badge status-badge--ok">Active</span>
@@ -105,6 +112,18 @@
                                         @onclick="() => DeleteAgent(agent.Name)">
                                     🗑 Delete
                                 </button>
+                                @if (agent.Source == AgentSource.Custom)
+                                {
+                                    <button class="tornado-chat__btn" @onclick="() => MoveAgent(agent.Name, AgentSource.Global)">
+                                        ↗ Move to Global
+                                    </button>
+                                }
+                                else if (agent.Source == AgentSource.Global)
+                                {
+                                    <button class="tornado-chat__btn" @onclick="() => MoveAgent(agent.Name, AgentSource.Custom)">
+                                        ↙ Move to Local
+                                    </button>
+                                }
                                 <button class="tornado-chat__btn" @onclick="CancelExpand">Cancel</button>
                             </div>
                         }
@@ -149,6 +168,7 @@
     private bool _showCreateForm;
     private bool _isSaving;
     private string? _statusMessage;
+    private AgentSource _createScope = AgentSource.Custom;
 
     // Available tools and skills for the pickers
     private List<ToolInfo> _mcpTools = [];
@@ -249,7 +269,8 @@
                 GetSelectedList(_form.EnabledSkills),
                 disabledSkills: null,
                 GetSelectedList(_form.EnabledTools),
-                disabledTools: null);
+                disabledTools: null,
+                _createScope);
 
             _showCreateForm = false;
             _statusMessage = $"Agent '{_form.Name}' created.";
@@ -455,6 +476,23 @@
 
     private static List<string>? GetSelectedList(HashSet<string> set)
         => set.Count > 0 ? [.. set] : null;
+
+    private async Task MoveAgent(string agentName, AgentSource targetScope)
+    {
+        try
+        {
+            await Settings.MoveAgentAsync(agentName, targetScope);
+            _expandedAgent = null;
+            _statusMessage = $"Agent '{agentName}' moved to {targetScope}.";
+            LoadAgents();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = $"Failed to move agent: {ex.Message}";
+            StateHasChanged();
+        }
+    }
 
     private sealed class AgentFormModel
     {

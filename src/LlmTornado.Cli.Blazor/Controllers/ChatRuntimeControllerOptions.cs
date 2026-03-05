@@ -32,10 +32,22 @@ public sealed class ChatRuntimeControllerOptions
     public string? AgentsDirectory { get; set; }
 
     /// <summary>
-    /// Path to mcp.json config file.
+    /// Directory for global agent persona .md files.
+    /// Default: TORNADO_AGENTS_DIR env var → {AppData}/llmtornado/agents/
+    /// </summary>
+    public string? GlobalAgentsDirectory { get; set; }
+
+    /// <summary>
+    /// Path to project-local mcp.json config file.
     /// Default: TORNADO_MCP_CONFIG env var → ./mcp.json (from CWD)
     /// </summary>
     public string? McpConfigPath { get; set; }
+
+    /// <summary>
+    /// Path to global mcp.json config file.
+    /// Default: TORNADO_MCP_GLOBAL_CONFIG env var → {AppData}/llmtornado/mcp.json
+    /// </summary>
+    public string? GlobalMcpConfigPath { get; set; }
 
     /// <summary>
     /// Override working directory for the agent's system prompt.
