@@ -9,28 +9,33 @@
 
 <div class="settings-tabs">
     <button class="settings-tab @(_tab == 0 ? "settings-tab--active" : "")"
-            @onclick="() => _tab = 0">Providers</button>
+            @onclick="() => _tab = 0">General</button>
     <button class="settings-tab @(_tab == 1 ? "settings-tab--active" : "")"
-            @onclick="() => _tab = 1">MCP Servers</button>
+            @onclick="() => _tab = 1">Providers</button>
     <button class="settings-tab @(_tab == 2 ? "settings-tab--active" : "")"
-            @onclick="() => _tab = 2">Skills</button>
+            @onclick="() => _tab = 2">MCP Servers</button>
     <button class="settings-tab @(_tab == 3 ? "settings-tab--active" : "")"
-            @onclick="() => _tab = 3">Agents</button>
+            @onclick="() => _tab = 3">Skills</button>
+    <button class="settings-tab @(_tab == 4 ? "settings-tab--active" : "")"
+            @onclick="() => _tab = 4">Agents</button>
 </div>
 
 <div class="settings-content">
     @switch (_tab)
     {
         case 0:
-            <ProvidersPanel />
+            <GeneralPanel />
             break;
         case 1:
-            <McpServersPanel />
+            <ProvidersPanel />
             break;
         case 2:
-            <SkillsPanel />
+            <McpServersPanel />
             break;
         case 3:
+            <SkillsPanel />
+            break;
+        case 4:
             <AgentsPanel />
             break;
     }

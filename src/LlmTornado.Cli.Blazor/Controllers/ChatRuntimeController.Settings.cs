@@ -14,6 +14,65 @@ namespace LlmTornado.Cli.Blazor.Controllers;
 public sealed partial class ChatRuntimeController : ISettingsController
 {
     // ─────────────────────────────────────────────
+    // Working Directory
+    // ─────────────────────────────────────────────
+
+    public string GetWorkingDirectory()
+        => _options.WorkingDirectory ?? Environment.CurrentDirectory;
+
+    public async Task ChangeWorkingDirectoryAsync(string path)
+    {
+        if (!Directory.Exists(path))
+            throw new DirectoryNotFoundException($"Directory not found: {path}");
+
+        path = Path.GetFullPath(path);
+        _options.WorkingDirectory = path;
+
+        // Re-resolve paths that were not explicitly set at startup.
+        // Update _options so that RefreshSkills/RefreshAgents/GetSkillsDirectory etc. stay consistent.
+        if (!_skillsDirExplicit)
+            _options.SkillsDirectory = Path.Combine(path, "skills");
+        if (!_agentsDirExplicit)
+            _options.AgentsDirectory = Path.Combine(path, "agents");
+        if (!_mcpPathExplicit)
+            _options.McpConfigPath = Path.Combine(path, "mcp.json");
+
+        // 1. Reload skills
+        if (_skillManager is not null)
+        {
+            _skillManager.LoadSkills(_options.SkillsDirectory!, _options.GlobalSkillsDirectory);
+        }
+
+        // 2. Reload MCP servers from new config path
+        if (_mcpLoader is not null)
+        {
+            await _mcpLoader.LoadFromPathAsync(_options.McpConfigPath);
+        }
+
+        // 3. Reload agents
+        if (_agentManager is not null)
+        {
+            string builtInDir = Path.Combine(AppContext.BaseDirectory, "Agents", "built-in");
+            string? globalDir = AgentDefinitionLoader.ResolveGlobalAgentsDirectory();
+            _agentManager.LoadAll(builtInDir, globalDir, _options.AgentsDirectory!, path);
+
+            List<ChatUiAgent> uiAgents = _agentManager.GetAllPersonas()
+                .Where(a => a.IsPersona)
+                .Select(MapAgent)
+                .ToList();
+            Ui?.SetAgents(uiAgents);
+            Ui?.SetSelectedAgent(_agentManager.ActivePersonaName);
+        }
+
+        // 4. Rebuild the agent runtime with updated tools and system prompt
+        if (_agentBuilder is not null)
+        {
+            _agentBuilder.WorkingDirectory = path;
+            _runtime = _agentBuilder.Build(HandleRuntimeEvent);
+        }
+    }
+
+    // ─────────────────────────────────────────────
     // MCP Servers
     // ─────────────────────────────────────────────
 

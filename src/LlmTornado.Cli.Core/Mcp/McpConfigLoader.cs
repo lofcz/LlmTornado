@@ -100,6 +100,21 @@ public sealed partial class McpConfigLoader : IAsyncDisposable
             await LoadAsync(_configPath, log);
     }
 
+    /// <summary>
+    /// Switch to a new config file path, disposing existing servers first.
+    /// If the new path does not exist, the loader ends up empty (no servers, no tools).
+    /// </summary>
+    public async Task LoadFromPathAsync(string? newConfigPath, Action<string>? log = null)
+    {
+        await DisposeAsync();
+        _servers.Clear();
+        _allTools.Clear();
+        _serverStatuses.Clear();
+
+        if (newConfigPath is not null && File.Exists(newConfigPath))
+            await LoadAsync(newConfigPath, log);
+    }
+
     private async Task InitializeServer(McpServerEntry entry, Action<string>? log)
     {
         try

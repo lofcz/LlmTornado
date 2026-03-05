@@ -12,6 +12,25 @@ namespace LlmTornado.Cli.Blazor;
 public interface ISettingsController
 {
     // ─────────────────────────────────────────────
+    // Working Directory
+    // ─────────────────────────────────────────────
+
+    /// <summary>
+    /// Get the current effective working directory.
+    /// Returns the explicitly configured working directory, or Environment.CurrentDirectory if none.
+    /// </summary>
+    string GetWorkingDirectory();
+
+    /// <summary>
+    /// Change the agent's working directory and reload all CWD-dependent resources.
+    /// This re-resolves project-local skills, custom agents, MCP config, and the agent's
+    /// system prompt CWD context — but only for paths that were not explicitly overridden
+    /// via ChatRuntimeControllerOptions at startup.
+    /// Throws DirectoryNotFoundException if the path does not exist.
+    /// </summary>
+    Task ChangeWorkingDirectoryAsync(string path);
+
+    // ─────────────────────────────────────────────
     // MCP Servers
     // ─────────────────────────────────────────────
 

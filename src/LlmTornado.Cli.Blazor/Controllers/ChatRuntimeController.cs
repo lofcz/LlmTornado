@@ -55,6 +55,12 @@ public sealed partial class ChatRuntimeController : IChatUiController, ISettings
     // Settings persistence path
     private string _settingsPath = string.Empty;
 
+    // Track whether paths were explicitly set (vs. defaulting to CWD-relative).
+    // When changing working directory, only re-resolve paths that were not explicit.
+    private bool _skillsDirExplicit;
+    private bool _agentsDirExplicit;
+    private bool _mcpPathExplicit;
+
     public IChatUi? Ui { get; set; }
 
     public ChatRuntimeController(ChatRuntimeControllerOptions? options = null)
@@ -81,6 +87,12 @@ public sealed partial class ChatRuntimeController : IChatUiController, ISettings
             string appData = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
                 "llmtornado");
+
+            // Track which paths were explicitly configured (not defaulting to CWD-relative)
+            _skillsDirExplicit = _options.SkillsDirectory is not null;
+            _agentsDirExplicit = _options.AgentsDirectory is not null;
+            _mcpPathExplicit = _options.McpConfigPath is not null;
+
             string conversationsDir = _options.ConversationsDirectory
                 ?? Path.Combine(appData, "conversations");
             string skillsDir = _options.SkillsDirectory ?? Path.GetFullPath("skills");
