@@ -486,6 +486,7 @@ public sealed partial class ChatRuntimeController : ISettingsController
     public List<ToolInfo> GetAvailableTools()
     {
         Dictionary<string, ToolInfo> tools = new(StringComparer.OrdinalIgnoreCase);
+        IReadOnlyDictionary<string, string>? toolServerMap = _mcpLoader?.ToolServerMap;
 
         // MCP tools — have both name and description
         if (_mcpLoader is not null)
@@ -494,7 +495,12 @@ public sealed partial class ChatRuntimeController : ISettingsController
             {
                 string name = tool.ResolvedName;
                 if (!string.IsNullOrEmpty(name) && !tools.ContainsKey(name))
-                    tools[name] = new ToolInfo(name, tool.ResolvedDescription ?? "");
+                {
+                    string? serverName = null;
+                    if (toolServerMap is not null)
+                        toolServerMap.TryGetValue(name, out serverName);
+                    tools[name] = new ToolInfo(name, tool.ResolvedDescription ?? "", serverName);
+                }
             }
         }
 

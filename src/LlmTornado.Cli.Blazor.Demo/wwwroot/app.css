@@ -621,10 +621,73 @@
     padding: 3px 0;
 }
 
+.settings-card__picker-item--grow {
+    flex: 1;
+    min-width: 0;
+}
+
+.settings-card__picker-item--tool {
+    padding: 4px 0;
+}
+
 .settings-form__hint {
     font-weight: 400;
     font-size: 12px;
     color: var(--tc-text-secondary, #888);
+}
+
+.settings-card__mcp-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    padding: 8px 10px;
+    border: 1px solid var(--tc-border, #333);
+    border-radius: 6px;
+    background: var(--tc-bg-secondary, #1a1a1a);
+}
+
+.settings-card__mcp-group-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.settings-card__mcp-group {
+    border: 1px solid var(--tc-border, #333);
+    border-radius: 6px;
+    background: var(--tc-bg-secondary, #1a1a1a);
+}
+
+.settings-card__mcp-group--active {
+    border-color: var(--tc-accent, #2563eb);
+    background: color-mix(in srgb, var(--tc-accent, #2563eb) 4%, var(--tc-bg-secondary, #1a1a1a));
+}
+
+.settings-card__mcp-group-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+}
+
+.settings-card__mcp-group-toggle {
+    border: none;
+    background: transparent;
+    color: var(--tc-text, inherit);
+    cursor: pointer;
+    padding: 0 2px;
+    font-size: 14px;
+    line-height: 1;
+}
+
+.settings-card__mcp-group-tools {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 4px 10px;
+    padding: 0 10px 10px 32px;
+    border-top: 1px solid color-mix(in srgb, var(--tc-border, #333) 70%, transparent);
 }
 
 /* ── Skill group with nested tools ── */

@@ -205,7 +205,9 @@
 
     // Available tools and skills for the pickers
     private List<ToolInfo> _mcpTools = [];
+    private List<McpToolGroup> _mcpToolGroups = [];
     private List<Skill> _availableSkills = [];
+    private HashSet<string> _expandedMcpGroups = new(StringComparer.OrdinalIgnoreCase);
 
     // Form state
     private AgentFormModel _form = new();
@@ -231,6 +233,20 @@
         _mcpTools = Settings.GetAvailableTools()
             .Where(t => !skillToolNames.Contains(t.Name))
             .ToList();
+
+        _mcpToolGroups = _mcpTools
+            .GroupBy(tool => string.IsNullOrWhiteSpace(tool.McpServerName) ? "Other MCP Tools" : tool.McpServerName!, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(group => group.Key, StringComparer.OrdinalIgnoreCase)
+            .Select(group => new McpToolGroup
+            {
+                Name = group.Key,
+                Tools = group.OrderBy(tool => tool.Name, StringComparer.OrdinalIgnoreCase).ToList()
+            })
+            .ToList();
+
+        _expandedMcpGroups = _mcpToolGroups
+            .Select(group => group.Name)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
     }
 
     // ── Activate / Deactivate ──
@@ -432,19 +448,54 @@
         {
             <div class="settings-form__field">
                 <label>MCP Tools <span class="settings-form__hint">— check to enable</span></label>
-                <div class="settings-card__picker settings-card__picker--tools">
-                    @foreach (var tool in _mcpTools)
+                <div class="settings-card__mcp-controls">
+                    <label class="settings-card__picker-item settings-card__picker-item--grow">
+                        <input type="checkbox" checked="@AreAllMcpToolsSelected(form)"
+                               @onchange="e => SetAllMcpTools(form, (bool)(e.Value ?? false))" />
+                        <strong>Select all MCP tools</strong>
+                        <span class="settings-card__picker-tool-desc">@GetMcpSelectionSummary(form)</span>
+                    </label>
+                </div>
+                <div class="settings-card__mcp-group-list">
+                    @foreach (var group in _mcpToolGroups)
                     {
-                        bool isEnabled = form.EnabledTools.Contains(tool.Name);
-                        <label class="settings-card__picker-item">
-                            <input type="checkbox" checked="@isEnabled"
-                                   @onchange="e => ToggleInSet(form.EnabledTools, tool.Name, (bool)(e.Value ?? false))" />
-                            <span class="settings-card__picker-tool-name">@tool.Name</span>
-                            @if (!string.IsNullOrWhiteSpace(tool.Description))
+                        bool isExpanded = _expandedMcpGroups.Contains(group.Name);
+                        int selectedCount = CountSelectedTools(form, group.Tools);
+                        bool allSelected = selectedCount == group.Tools.Count;
+
+                        <div class="settings-card__mcp-group @(selectedCount > 0 ? "settings-card__mcp-group--active" : "")">
+                            <div class="settings-card__mcp-group-header">
+                                <button type="button" class="settings-card__mcp-group-toggle"
+                                        @onclick="() => ToggleMcpGroup(group.Name)">
+                                    @(isExpanded ? "▾" : "▸")
+                                </button>
+                                <label class="settings-card__picker-item settings-card__picker-item--grow">
+                                    <input type="checkbox" checked="@allSelected"
+                                           @onchange="e => SetToolSelection(form.EnabledTools, group.Tools.Select(tool => tool.Name), (bool)(e.Value ?? false))" />
+                                    <strong>@group.Name</strong>
+                                    <span class="settings-card__picker-tool-desc">@GetGroupSelectionSummary(selectedCount, group.Tools.Count)</span>
+                                </label>
+                            </div>
+
+                            @if (isExpanded)
                             {
-                                <span class="settings-card__picker-tool-desc">@tool.Description</span>
+                                <div class="settings-card__mcp-group-tools">
+                                    @foreach (var tool in group.Tools)
+                                    {
+                                        bool isEnabled = form.EnabledTools.Contains(tool.Name);
+                                        <label class="settings-card__picker-item settings-card__picker-item--tool">
+                                            <input type="checkbox" checked="@isEnabled"
+                                                   @onchange="e => ToggleInSet(form.EnabledTools, tool.Name, (bool)(e.Value ?? false))" />
+                                            <span class="settings-card__picker-tool-name">@tool.Name</span>
+                                            @if (!string.IsNullOrWhiteSpace(tool.Description))
+                                            {
+                                                <span class="settings-card__picker-tool-desc">@tool.Description</span>
+                                            }
+                                        </label>
+                                    }
+                                </div>
                             }
-                        </label>
+                        </div>
                     }
                 </div>
             </div>
@@ -492,6 +543,33 @@
         if (add) set.Add(item);
         else set.Remove(item);
     }
+
+    private void ToggleMcpGroup(string groupName)
+    {
+        if (!_expandedMcpGroups.Add(groupName))
+            _expandedMcpGroups.Remove(groupName);
+    }
+
+    private void SetAllMcpTools(AgentFormModel form, bool enabled)
+        => SetToolSelection(form.EnabledTools, _mcpTools.Select(tool => tool.Name), enabled);
+
+    private static void SetToolSelection(HashSet<string> set, IEnumerable<string> toolNames, bool enabled)
+    {
+        foreach (string toolName in toolNames)
+            ToggleInSet(set, toolName, enabled);
+    }
+
+    private bool AreAllMcpToolsSelected(AgentFormModel form)
+        => _mcpTools.Count > 0 && _mcpTools.All(tool => form.EnabledTools.Contains(tool.Name));
+
+    private int CountSelectedTools(AgentFormModel form, IEnumerable<ToolInfo> tools)
+        => tools.Count(tool => form.EnabledTools.Contains(tool.Name));
+
+    private string GetMcpSelectionSummary(AgentFormModel form)
+        => _mcpTools.Count == 0 ? "No MCP tools available" : GetGroupSelectionSummary(CountSelectedTools(form, _mcpTools), _mcpTools.Count);
+
+    private static string GetGroupSelectionSummary(int selectedCount, int totalCount)
+        => $"{selectedCount} of {totalCount} selected";
 
     /// <summary>
     /// When a skill is enabled, auto-whitelist all its tools.
@@ -595,5 +673,11 @@
         public string Instructions { get; set; } = "";
         public HashSet<string> EnabledSkills { get; set; } = new(StringComparer.OrdinalIgnoreCase);
         public HashSet<string> EnabledTools { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    }
+
+    private sealed class McpToolGroup
+    {
+        public string Name { get; init; } = "";
+        public List<ToolInfo> Tools { get; init; } = [];
     }
 }

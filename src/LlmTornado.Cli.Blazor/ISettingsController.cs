@@ -212,7 +212,7 @@ public interface ISettingsController
     void RefreshAgents();
 
     /// <summary>
-    /// Get all currently available tools (MCP + skill tools) with name and description.
+    /// Get all currently available tools (MCP + skill tools) with name, description, and optional MCP server metadata.
     /// Useful for the agent capability curation tool picker.
     /// </summary>
     List<ToolInfo> GetAvailableTools();
@@ -229,4 +229,5 @@ public interface ISettingsController
 /// </summary>
 /// <param name="Name">Tool function name.</param>
 /// <param name="Description">Human-readable description (may be empty).</param>
-public sealed record ToolInfo(string Name, string Description);
+/// <param name="McpServerName">MCP server label when the tool originates from MCP; otherwise null.</param>
+public sealed record ToolInfo(string Name, string Description, string? McpServerName = null);

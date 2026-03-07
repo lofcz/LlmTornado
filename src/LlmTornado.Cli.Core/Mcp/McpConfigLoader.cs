@@ -15,6 +15,7 @@ public sealed partial class McpConfigLoader : IAsyncDisposable
     private readonly List<Tool> _allTools = [];
     private readonly List<McpServerStatus> _serverStatuses = [];
     private readonly Dictionary<string, McpServerSource> _toolSourceMap = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, string> _toolServerMap = new(StringComparer.OrdinalIgnoreCase);
     private string? _localConfigPath;
     private string? _globalConfigPath;
 
@@ -28,6 +29,11 @@ public sealed partial class McpConfigLoader : IAsyncDisposable
     /// Maps each tool name to the MCP server source (Global/Local) it came from.
     /// </summary>
     public IReadOnlyDictionary<string, McpServerSource> ToolSourceMap => _toolSourceMap;
+
+    /// <summary>
+    /// Maps each tool name to the MCP server label it came from.
+    /// </summary>
+    public IReadOnlyDictionary<string, string> ToolServerMap => _toolServerMap;
 
     /// <summary>
     /// Resolve the project-local MCP config file path.
@@ -123,6 +129,7 @@ public sealed partial class McpConfigLoader : IAsyncDisposable
         _allTools.Clear();
         _serverStatuses.Clear();
         _toolSourceMap.Clear();
+        _toolServerMap.Clear();
         await LoadMergedAsync(log);
     }
 
@@ -137,6 +144,7 @@ public sealed partial class McpConfigLoader : IAsyncDisposable
         _allTools.Clear();
         _serverStatuses.Clear();
         _toolSourceMap.Clear();
+        _toolServerMap.Clear();
 
         _localConfigPath = newLocalConfigPath;
         await LoadMergedAsync(log);
@@ -235,7 +243,10 @@ public sealed partial class McpConfigLoader : IAsyncDisposable
                 _allTools.Add(tool);
                 string toolName = tool.ResolvedName;
                 if (!string.IsNullOrEmpty(toolName))
+                {
                     _toolSourceMap.TryAdd(toolName, source);
+                    _toolServerMap.TryAdd(toolName, entry.Name);
+                }
             }
 
             _serverStatuses.Add(new McpServerStatus
