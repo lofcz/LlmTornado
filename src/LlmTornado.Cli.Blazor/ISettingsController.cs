@@ -100,6 +100,31 @@ public interface ISettingsController
     /// </summary>
     Task<McpServerStatus> TestMcpConnectionAsync(McpServerEntry entry);
 
+    /// <summary>
+    /// Enable or disable an MCP server without deleting it.
+    /// </summary>
+    Task SetMcpServerEnabledAsync(string serverName, bool enabled);
+
+    /// <summary>
+    /// Get the tool-level enablement state for one MCP server.
+    /// </summary>
+    IReadOnlyList<McpToolStatus> GetMcpToolStatuses(string serverName);
+
+    /// <summary>
+    /// Enable or disable a specific MCP tool without deleting it.
+    /// </summary>
+    Task SetMcpToolEnabledAsync(string serverName, string toolName, bool enabled);
+
+    /// <summary>
+    /// Get the persisted sandbox defaults used to seed the current session policy.
+    /// </summary>
+    McpSandboxSettings GetMcpSandboxSettings();
+
+    /// <summary>
+    /// Update sandbox defaults and rebuild the current session runtime.
+    /// </summary>
+    Task UpdateMcpSandboxSettingsAsync(McpSandboxSettings settings);
+
     // ─────────────────────────────────────────────
     // Skills
     // ─────────────────────────────────────────────
@@ -231,3 +256,17 @@ public interface ISettingsController
 /// <param name="Description">Human-readable description (may be empty).</param>
 /// <param name="McpServerName">MCP server label when the tool originates from MCP; otherwise null.</param>
 public sealed record ToolInfo(string Name, string Description, string? McpServerName = null);
+
+/// <summary>
+/// Tool-level enablement state for an MCP server.
+/// </summary>
+public sealed record McpToolStatus(string Name, string Description, bool Enabled);
+
+/// <summary>
+/// Persisted sandbox defaults for MCP and local execution.
+/// </summary>
+public sealed record McpSandboxSettings(
+    List<string> FilesystemWhitelist,
+    List<string> TerminalDirectoryWhitelist,
+    List<string> AllowedCommands,
+    List<string> BlockedCommands);

@@ -113,6 +113,7 @@ public class McpConfigTests
             Type = "stdio",
             Connected = true,
             ToolCount = 5,
+            Enabled = true,
             Error = null,
         };
 
@@ -131,6 +132,7 @@ public class McpConfigTests
             Type = "http",
             Connected = false,
             ToolCount = 0,
+            Enabled = false,
             Error = "Connection refused",
         };
 
@@ -186,10 +188,15 @@ public class McpConfigTests
         File.WriteAllText(configPath, """{"servers":[]}""");
 
         McpConfigLoader loader = new();
+        loader.Configure(new AgentSettings { DisabledMcpServers = [BuiltInMcpServerCatalog.DesktopCommanderServerName] },
+            McpSessionPolicy.FromSettings(new AgentSettings(), _tempDir));
         await loader.LoadAsync(configPath);
 
         Assert.That(loader.AllTools, Is.Empty);
-        Assert.That(loader.ServerStatuses, Is.Empty);
+        Assert.That(loader.ServerStatuses, Has.Count.EqualTo(1));
+        Assert.That(loader.ServerStatuses[0].Name, Is.EqualTo(BuiltInMcpServerCatalog.DesktopCommanderServerName));
+        Assert.That(loader.ServerStatuses[0].Source, Is.EqualTo(McpServerSource.BuiltIn));
+        Assert.That(loader.ServerStatuses[0].Enabled, Is.False);
         await loader.DisposeAsync();
     }
 
@@ -200,6 +207,8 @@ public class McpConfigTests
         File.WriteAllText(configPath, "not json at all!!!");
 
         McpConfigLoader loader = new();
+        loader.Configure(new AgentSettings { DisabledMcpServers = [BuiltInMcpServerCatalog.DesktopCommanderServerName] },
+            McpSessionPolicy.FromSettings(new AgentSettings(), _tempDir));
         // Should not throw
         await loader.LoadAsync(configPath);
 

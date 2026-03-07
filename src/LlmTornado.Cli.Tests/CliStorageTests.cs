@@ -91,8 +91,13 @@ public class CliStorageTests
         {
             ActiveModel = "gpt-4.1-nano",
             DisabledSkills = ["skill-a", "skill-b"],
+            DisabledMcpServers = ["desktop-commander"],
             SkillsDirectory = "/custom/skills",
             McpConfigPath = "/custom/mcp.json",
+            FilesystemWhitelist = ["src", "tests"],
+            TerminalDirectoryWhitelist = ["src"],
+            AllowedCommands = ["dotnet", "npm"],
+            BlockedCommands = ["rm"],
             MaxTurnsBeforeSummary = 10,
         };
 
@@ -103,8 +108,13 @@ public class CliStorageTests
         Assert.That(loaded!.ActiveModel, Is.EqualTo("gpt-4.1-nano"));
         Assert.That(loaded.DisabledSkills, Has.Count.EqualTo(2));
         Assert.That(loaded.DisabledSkills, Does.Contain("skill-a"));
+        Assert.That(loaded.DisabledMcpServers, Does.Contain("desktop-commander"));
         Assert.That(loaded.SkillsDirectory, Is.EqualTo("/custom/skills"));
         Assert.That(loaded.McpConfigPath, Is.EqualTo("/custom/mcp.json"));
+        Assert.That(loaded.FilesystemWhitelist, Does.Contain("src"));
+        Assert.That(loaded.TerminalDirectoryWhitelist, Does.Contain("src"));
+        Assert.That(loaded.AllowedCommands, Does.Contain("dotnet"));
+        Assert.That(loaded.BlockedCommands, Does.Contain("rm"));
         Assert.That(loaded.MaxTurnsBeforeSummary, Is.EqualTo(10));
     }
 
@@ -115,8 +125,13 @@ public class CliStorageTests
 
         Assert.That(settings.ActiveModel, Is.Null);
         Assert.That(settings.DisabledSkills, Is.Empty);
+        Assert.That(settings.DisabledMcpServers, Is.Empty);
         Assert.That(settings.SkillsDirectory, Is.Null);
         Assert.That(settings.McpConfigPath, Is.Null);
+        Assert.That(settings.FilesystemWhitelist, Is.Empty);
+        Assert.That(settings.TerminalDirectoryWhitelist, Is.Empty);
+        Assert.That(settings.AllowedCommands, Is.Empty);
+        Assert.That(settings.BlockedCommands, Is.Empty);
         Assert.That(settings.MaxTurnsBeforeSummary, Is.EqualTo(0));
     }
 
@@ -130,6 +145,11 @@ public class CliStorageTests
         string json = File.ReadAllText(path);
         Assert.That(json, Does.Contain("active_model"));
         Assert.That(json, Does.Contain("disabled_skills"));
+        Assert.That(json, Does.Contain("disabled_mcp_servers"));
+        Assert.That(json, Does.Contain("filesystem_whitelist"));
+        Assert.That(json, Does.Contain("terminal_directory_whitelist"));
+        Assert.That(json, Does.Contain("allowed_commands"));
+        Assert.That(json, Does.Contain("blocked_commands"));
         Assert.That(json, Does.Contain("max_turns_before_summary"));
     }
 

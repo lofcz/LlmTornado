@@ -16,6 +16,8 @@ public sealed partial class McpConfigLoader : IAsyncDisposable
     private readonly List<McpServerStatus> _serverStatuses = [];
     private readonly Dictionary<string, McpServerSource> _toolSourceMap = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, string> _toolServerMap = new(StringComparer.OrdinalIgnoreCase);
+    private AgentSettings _settings = new();
+    private McpSessionPolicy? _sessionPolicy;
     private string? _localConfigPath;
     private string? _globalConfigPath;
 
@@ -39,6 +41,12 @@ public sealed partial class McpConfigLoader : IAsyncDisposable
     /// Resolve the project-local MCP config file path.
     /// Returns null if none found.
     /// </summary>
+    public void Configure(AgentSettings settings, McpSessionPolicy? sessionPolicy)
+    {
+        _settings = settings;
+        _sessionPolicy = sessionPolicy;
+    }
+
     public static string? ResolveMcpConfigPath(string? mcpConfigPathOverride)
     {
         if (!string.IsNullOrEmpty(mcpConfigPathOverride) && File.Exists(mcpConfigPathOverride))
@@ -156,6 +164,13 @@ public sealed partial class McpConfigLoader : IAsyncDisposable
     private async Task LoadMergedAsync(Action<string>? log = null)
     {
         Dictionary<string, (McpServerEntry Entry, McpServerSource Source)> merged = new(StringComparer.OrdinalIgnoreCase);
+        HashSet<string> reservedNames = new(StringComparer.OrdinalIgnoreCase);
+
+        foreach (BuiltInMcpServerDefinition builtIn in BuiltInMcpServerCatalog.GetDefinitions(_sessionPolicy?.WorkingDirectory))
+        {
+            reservedNames.Add(builtIn.Name);
+            merged[builtIn.Name] = (CloneEntry(builtIn.Entry), McpServerSource.BuiltIn);
+        }
 
         // 1. Load global config first (lower precedence)
         if (_globalConfigPath is not null && File.Exists(_globalConfigPath))
@@ -165,6 +180,12 @@ public sealed partial class McpConfigLoader : IAsyncDisposable
             {
                 foreach (McpServerEntry entry in globalConfig.Servers)
                 {
+                    if (reservedNames.Contains(entry.Name))
+                    {
+                        log?.Invoke($"  Skipping global MCP server '{entry.Name}' because the name is reserved by a built-in server.");
+                        continue;
+                    }
+
                     entry.Source = McpServerSource.Global;
                     merged[entry.Name] = (entry, McpServerSource.Global);
                 }
@@ -179,6 +200,12 @@ public sealed partial class McpConfigLoader : IAsyncDisposable
             {
                 foreach (McpServerEntry entry in localConfig.Servers)
                 {
+                    if (reservedNames.Contains(entry.Name))
+                    {
+                        log?.Invoke($"  Skipping local MCP server '{entry.Name}' because the name is reserved by a built-in server.");
+                        continue;
+                    }
+
                     entry.Source = McpServerSource.Local;
                     merged[entry.Name] = (entry, McpServerSource.Local);
                 }
@@ -194,6 +221,13 @@ public sealed partial class McpConfigLoader : IAsyncDisposable
         // 3. Initialize all merged servers
         foreach ((McpServerEntry entry, McpServerSource source) in merged.Values)
         {
+            if (_settings.DisabledMcpServers.Contains(entry.Name))
+            {
+                _serverStatuses.Add(BuildStatus(entry, source, connected: false, toolCount: 0,
+                    enabled: false, error: "Disabled in session settings."));
+                continue;
+            }
+
             await InitializeServer(entry, source, log);
         }
     }
@@ -217,7 +251,8 @@ public sealed partial class McpConfigLoader : IAsyncDisposable
         try
         {
             MCPServer server;
-            string[] allowedTools = entry.AllowedTools?.ToArray() ?? [];
+            List<Tool> filteredTools;
+            string[] allowedTools = ApplyDisabledToolFilter(entry).ToArray();
             string[]? allowed = allowedTools.Length > 0 ? allowedTools : null;
 
             if (entry.Type.Equals("http", StringComparison.OrdinalIgnoreCase))
@@ -231,14 +266,19 @@ public sealed partial class McpConfigLoader : IAsyncDisposable
                 string command = ResolveEnvVarString(entry.Command ?? "");
                 string[]? args = entry.Args?.Select(ResolveEnvVarString).ToArray();
                 Dictionary<string, string>? env = ResolveEnvVars(entry.Env);
-                string workingDirectory = ResolveEnvVarString(entry.Cwd ?? "");
+                string workingDirectory = ResolveWorkingDirectory(entry.Cwd);
                 server = new MCPServer(entry.Name, command, args, workingDirectory: workingDirectory, environmentVariables: env, allowedTools: allowed);
             }
 
             await server.InitializeAsync();
-            _servers.Add(server);
 
-            foreach (Tool tool in server.AllowedTornadoTools)
+            if (source == McpServerSource.BuiltIn)
+                await ConfigureBuiltInServerAsync(server, entry.Name, log);
+
+            _servers.Add(server);
+            filteredTools = FilterAndWrapTools(server.AllowedTornadoTools, entry.Name);
+
+            foreach (Tool tool in filteredTools)
             {
                 _allTools.Add(tool);
                 string toolName = tool.ResolvedName;
@@ -249,30 +289,185 @@ public sealed partial class McpConfigLoader : IAsyncDisposable
                 }
             }
 
-            _serverStatuses.Add(new McpServerStatus
-            {
-                Name = entry.Name,
-                Type = entry.Type,
-                Connected = true,
-                ToolCount = server.AllowedTornadoTools.Count,
-                Source = source,
-            });
+            _serverStatuses.Add(BuildStatus(entry, source, connected: true, toolCount: filteredTools.Count, enabled: true));
 
-            log?.Invoke($"  ✓ {entry.Name} ({entry.Type}, {source}) — {server.AllowedTornadoTools.Count} tools");
+            log?.Invoke($"  ✓ {entry.Name} ({entry.Type}, {source}) — {filteredTools.Count} tools");
         }
         catch (Exception ex)
         {
-            _serverStatuses.Add(new McpServerStatus
-            {
-                Name = entry.Name,
-                Type = entry.Type,
-                Connected = false,
-                ToolCount = 0,
-                Error = ex.Message,
-                Source = source,
-            });
+            _serverStatuses.Add(BuildStatus(entry, source, connected: false, toolCount: 0, enabled: true, error: ex.Message));
 
             log?.Invoke($"  ✗ {entry.Name} ({entry.Type}, {source}) — {ex.Message}");
+        }
+    }
+
+    private static McpServerEntry CloneEntry(McpServerEntry entry)
+    {
+        return new McpServerEntry
+        {
+            Type = entry.Type,
+            Name = entry.Name,
+            Command = entry.Command,
+            Args = entry.Args is null ? null : [.. entry.Args],
+            Env = entry.Env is null ? null : new Dictionary<string, string>(entry.Env, StringComparer.OrdinalIgnoreCase),
+            Cwd = entry.Cwd,
+            Url = entry.Url,
+            Headers = entry.Headers is null ? null : new Dictionary<string, string>(entry.Headers, StringComparer.OrdinalIgnoreCase),
+            AllowedTools = entry.AllowedTools is null ? null : [.. entry.AllowedTools],
+            Source = entry.Source
+        };
+    }
+
+    private McpServerStatus BuildStatus(McpServerEntry entry, McpServerSource source, bool connected, int toolCount, bool enabled, string? error = null)
+    {
+        BuiltInMcpServerDefinition? builtIn = source == McpServerSource.BuiltIn
+            ? BuiltInMcpServerCatalog.GetDefinition(entry.Name, _sessionPolicy?.WorkingDirectory)
+            : null;
+
+        return new McpServerStatus
+        {
+            Name = entry.Name,
+            Type = entry.Type,
+            Description = builtIn?.Description,
+            Connected = connected,
+            ToolCount = toolCount,
+            Enabled = enabled,
+            Error = error,
+            Source = source,
+        };
+    }
+
+    private List<string> ApplyDisabledToolFilter(McpServerEntry entry)
+    {
+        List<string> allowedTools = entry.AllowedTools is null ? [] : [.. entry.AllowedTools];
+        if (!_settings.DisabledMcpTools.TryGetValue(entry.Name, out HashSet<string>? disabledTools) || disabledTools.Count == 0)
+            return allowedTools;
+
+        if (allowedTools.Count == 0)
+            return allowedTools;
+
+        return [.. allowedTools.Where(tool => !disabledTools.Contains(tool))];
+    }
+
+    private string ResolveWorkingDirectory(string? configuredWorkingDirectory)
+    {
+        string candidate = ResolveEnvVarString(configuredWorkingDirectory ?? string.Empty);
+        if (string.IsNullOrWhiteSpace(candidate))
+            candidate = _sessionPolicy?.WorkingDirectory ?? Directory.GetCurrentDirectory();
+
+        if (!Path.IsPathRooted(candidate))
+            candidate = Path.Combine(_sessionPolicy?.WorkingDirectory ?? Directory.GetCurrentDirectory(), candidate);
+
+        return Path.GetFullPath(candidate);
+    }
+
+    private List<Tool> FilterAndWrapTools(List<Tool> tools, string serverName)
+    {
+        HashSet<string> disabled = _settings.DisabledMcpTools.TryGetValue(serverName, out HashSet<string>? names)
+            ? names
+            : [];
+
+        List<Tool> filtered = [];
+        foreach (Tool tool in tools)
+        {
+            if (disabled.Contains(tool.ResolvedName))
+                continue;
+
+            filtered.Add(WrapToolForPolicy(tool, serverName));
+        }
+
+        return filtered;
+    }
+
+    private Tool WrapToolForPolicy(Tool tool, string serverName)
+    {
+        if (_sessionPolicy is null || tool.RemoteTool is null)
+            return tool;
+
+        if (!serverName.Equals(BuiltInMcpServerCatalog.DesktopCommanderServerName, StringComparison.OrdinalIgnoreCase))
+            return tool;
+
+        string toolName = tool.ResolvedName;
+        if (!toolName.Equals("start_process", StringComparison.OrdinalIgnoreCase))
+            return tool;
+
+        ToolFunction function = tool.Function is null
+            ? new ToolFunction(toolName, tool.ResolvedDescription)
+            : new ToolFunction(tool.Function.Name, tool.Function.Description, tool.Function.Parameters ?? new { });
+
+        McpTool remote = new()
+        {
+            CallAsync = async (args, progress, serializer, fillContent, ct) =>
+            {
+                string? command = TryGetStringArg(args, "command", "cmd");
+                if (!_sessionPolicy.IsCommandAllowed(command))
+                {
+                    return new FunctionResult(toolName,
+                        $"Command '{command}' is blocked by the current session policy.",
+                        FunctionResultSetContentModes.Passthrough,
+                        false);
+                }
+
+                string? workingDirectory = TryGetStringArg(args, "workingDirectory", "working_directory", "cwd", "directory");
+                if (!_sessionPolicy.IsTerminalDirectoryAllowed(workingDirectory))
+                {
+                    return new FunctionResult(toolName,
+                        $"Working directory '{workingDirectory}' is outside the allowed terminal sandbox.",
+                        FunctionResultSetContentModes.Passthrough,
+                        false);
+                }
+
+                return await tool.RemoteTool.CallAsync(args, progress, serializer, fillContent, ct);
+            }
+        };
+
+        return new Tool(function)
+        {
+            RemoteTool = remote,
+            Strict = tool.Strict,
+            VendorExtensions = tool.VendorExtensions
+        };
+    }
+
+    private static string? TryGetStringArg(Dictionary<string, object?>? args, params string[] keys)
+    {
+        if (args is null)
+            return null;
+
+        foreach (string key in keys)
+        {
+            if (args.TryGetValue(key, out object? value) && value is not null)
+                return value.ToString();
+        }
+
+        return null;
+    }
+
+    private async Task ConfigureBuiltInServerAsync(MCPServer server, string serverName, Action<string>? log)
+    {
+        if (_sessionPolicy is null || server.McpClient is null)
+            return;
+
+        if (!serverName.Equals(BuiltInMcpServerCatalog.DesktopCommanderServerName, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        try
+        {
+            await server.McpClient.CallToolAsync("set_config_value", new Dictionary<string, object?>
+            {
+                ["key"] = "allowedDirectories",
+                ["value"] = _sessionPolicy.GetAllowedFilesystemDirectories().ToArray()
+            });
+
+            await server.McpClient.CallToolAsync("set_config_value", new Dictionary<string, object?>
+            {
+                ["key"] = "blockedCommands",
+                ["value"] = _sessionPolicy.BlockedCommands.ToArray()
+            });
+        }
+        catch (Exception ex)
+        {
+            log?.Invoke($"  ! Failed to push built-in MCP policy to '{serverName}': {ex.Message}");
         }
     }
 
@@ -444,6 +639,7 @@ public sealed partial class McpConfigLoader : IAsyncDisposable
                 Type = entry.Type,
                 Connected = true,
                 ToolCount = toolCount,
+                Enabled = true,
             };
         }
         catch (Exception ex)
@@ -454,6 +650,7 @@ public sealed partial class McpConfigLoader : IAsyncDisposable
                 Type = entry.Type,
                 Connected = false,
                 ToolCount = 0,
+                Enabled = true,
                 Error = ex.Message,
             };
         }

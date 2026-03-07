@@ -8,6 +8,11 @@ namespace LlmTornado.Cli.Core.Mcp;
 public enum McpServerSource
 {
     /// <summary>
+    /// Built-in runtime-provided MCP server.
+    /// </summary>
+    BuiltIn,
+
+    /// <summary>
     /// Loaded from the global MCP config (%APPDATA%/llmtornado/mcp.json or TORNADO_MCP_GLOBAL_CONFIG).
     /// </summary>
     Global,
@@ -75,12 +80,16 @@ public sealed class McpServerStatus
 {
     public required string Name { get; init; }
     public required string Type { get; init; }
+    public string? Description { get; init; }
     public required bool Connected { get; init; }
     public required int ToolCount { get; init; }
+    public bool Enabled { get; init; } = true;
     public string? Error { get; init; }
 
     /// <summary>
     /// Whether this server came from the global or local config.
     /// </summary>
     public McpServerSource Source { get; init; }
+
+    public bool IsReadOnly => Source == McpServerSource.BuiltIn;
 }

@@ -37,25 +37,32 @@ public sealed partial class ChatRuntimeController : ISettingsController
         if (!_mcpPathExplicit)
             _options.McpConfigPath = Path.Combine(path, "mcp.json");
 
-        // 1. Reload skills
-        if (_skillManager is not null)
+        await ReconfigureSessionAsync(reloadSkills: true, reloadAgents: true, reloadMcp: true);
+    }
+
+    private async Task ReconfigureSessionAsync(bool reloadSkills, bool reloadAgents, bool reloadMcp)
+    {
+        string cwd = _options.WorkingDirectory ?? Environment.CurrentDirectory;
+        _sessionPolicy = McpSessionPolicy.FromSettings(_settings, cwd);
+
+        if (_skillManager is not null && reloadSkills)
         {
             _skillManager.LoadSkills(_options.SkillsDirectory!, _options.GlobalSkillsDirectory);
         }
 
-        // 2. Reload MCP servers — switch local path, keep global stable
         if (_mcpLoader is not null)
         {
-            await _mcpLoader.LoadFromPathAsync(_options.McpConfigPath);
+            _mcpLoader.Configure(_settings, _sessionPolicy);
+            if (reloadMcp)
+                await _mcpLoader.LoadFromPathAsync(_options.McpConfigPath);
         }
 
-        // 3. Reload agents
-        if (_agentManager is not null)
+        if (_agentManager is not null && reloadAgents)
         {
             string builtInDir = Path.Combine(AppContext.BaseDirectory, "Agents", "built-in");
             string? globalDir = _options.GlobalAgentsDirectory
                 ?? AgentDefinitionLoader.ResolveGlobalAgentsDirectory();
-            _agentManager.LoadAll(builtInDir, globalDir, _options.AgentsDirectory!, path);
+            _agentManager.LoadAll(builtInDir, globalDir, _options.AgentsDirectory!, cwd);
 
             List<ChatUiAgent> uiAgents = _agentManager.GetAllPersonas()
                 .Where(a => a.IsPersona)
@@ -65,10 +72,9 @@ public sealed partial class ChatRuntimeController : ISettingsController
             Ui?.SetSelectedAgent(_agentManager.ActivePersonaName);
         }
 
-        // 4. Rebuild the agent runtime with updated tools and system prompt
         if (_agentBuilder is not null)
         {
-            _agentBuilder.WorkingDirectory = path;
+            _agentBuilder.WorkingDirectory = cwd;
             _runtime = _agentBuilder.Build(HandleRuntimeEvent);
         }
     }
@@ -110,12 +116,7 @@ public sealed partial class ChatRuntimeController : ISettingsController
     public async Task ReloadMcpConfigAsync()
     {
         if (_mcpLoader is null) return;
-
-        await _mcpLoader.ReloadAsync();
-
-        // Rebuild agent tools to pick up any changes
-        if (_agentBuilder is not null)
-            _runtime = _agentBuilder.RebuildForSkillChange(HandleRuntimeEvent);
+        await ReconfigureSessionAsync(reloadSkills: false, reloadAgents: false, reloadMcp: true);
     }
 
     public McpConfig? GetMcpConfig(McpServerSource scope = McpServerSource.Local)
@@ -228,6 +229,98 @@ public sealed partial class ChatRuntimeController : ISettingsController
 
     public Task<McpServerStatus> TestMcpConnectionAsync(McpServerEntry entry)
         => McpConfigLoader.TestConnectionAsync(entry);
+
+    public async Task SetMcpServerEnabledAsync(string serverName, bool enabled)
+    {
+        if (enabled)
+            _settings.DisabledMcpServers.Remove(serverName);
+        else
+            _settings.DisabledMcpServers.Add(serverName);
+
+        SaveSettings(_settings);
+        await ReconfigureSessionAsync(reloadSkills: false, reloadAgents: false, reloadMcp: true);
+    }
+
+    public IReadOnlyList<McpToolStatus> GetMcpToolStatuses(string serverName)
+    {
+        Dictionary<string, string> knownTools = new(StringComparer.OrdinalIgnoreCase);
+
+        BuiltInMcpServerDefinition? builtIn = BuiltInMcpServerCatalog.GetDefinition(serverName, _sessionPolicy?.WorkingDirectory);
+        if (builtIn is not null)
+        {
+            foreach (BuiltInMcpToolDefinition tool in builtIn.Tools)
+                knownTools[tool.Name] = tool.Description;
+        }
+
+        if (_mcpLoader is not null)
+        {
+            foreach (var tool in _mcpLoader.AllTools)
+            {
+                if (_mcpLoader.ToolServerMap.TryGetValue(tool.ResolvedName, out string? mappedServer)
+                    && mappedServer.Equals(serverName, StringComparison.OrdinalIgnoreCase))
+                {
+                    knownTools[tool.ResolvedName] = tool.ResolvedDescription;
+                }
+            }
+        }
+
+        if (_settings.DisabledMcpTools.TryGetValue(serverName, out HashSet<string>? disabledTools))
+        {
+            foreach (string toolName in disabledTools)
+            {
+                if (!knownTools.ContainsKey(toolName))
+                    knownTools[toolName] = "Disabled MCP tool";
+            }
+        }
+
+        HashSet<string> disabled = _settings.DisabledMcpTools.TryGetValue(serverName, out HashSet<string>? names)
+            ? names
+            : [];
+
+        return [.. knownTools
+            .OrderBy(x => x.Key, StringComparer.OrdinalIgnoreCase)
+            .Select(x => new McpToolStatus(x.Key, x.Value, !disabled.Contains(x.Key)))];
+    }
+
+    public async Task SetMcpToolEnabledAsync(string serverName, string toolName, bool enabled)
+    {
+        if (!_settings.DisabledMcpTools.TryGetValue(serverName, out HashSet<string>? disabledTools))
+        {
+            disabledTools = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            _settings.DisabledMcpTools[serverName] = disabledTools;
+        }
+
+        if (enabled)
+            disabledTools.Remove(toolName);
+        else
+            disabledTools.Add(toolName);
+
+        if (disabledTools.Count == 0)
+            _settings.DisabledMcpTools.Remove(serverName);
+
+        SaveSettings(_settings);
+        await ReconfigureSessionAsync(reloadSkills: false, reloadAgents: false, reloadMcp: true);
+    }
+
+    public McpSandboxSettings GetMcpSandboxSettings()
+    {
+        return new McpSandboxSettings(
+            [.. _settings.FilesystemWhitelist.OrderBy(x => x, StringComparer.OrdinalIgnoreCase)],
+            [.. _settings.TerminalDirectoryWhitelist.OrderBy(x => x, StringComparer.OrdinalIgnoreCase)],
+            [.. _settings.AllowedCommands.OrderBy(x => x, StringComparer.OrdinalIgnoreCase)],
+            [.. _settings.BlockedCommands.OrderBy(x => x, StringComparer.OrdinalIgnoreCase)]);
+    }
+
+    public async Task UpdateMcpSandboxSettingsAsync(McpSandboxSettings settings)
+    {
+        _settings.FilesystemWhitelist = [.. settings.FilesystemWhitelist.Where(x => !string.IsNullOrWhiteSpace(x))];
+        _settings.TerminalDirectoryWhitelist = [.. settings.TerminalDirectoryWhitelist.Where(x => !string.IsNullOrWhiteSpace(x))];
+        _settings.AllowedCommands = [.. settings.AllowedCommands.Where(x => !string.IsNullOrWhiteSpace(x))];
+        _settings.BlockedCommands = [.. settings.BlockedCommands.Where(x => !string.IsNullOrWhiteSpace(x))];
+
+        SaveSettings(_settings);
+        await ReconfigureSessionAsync(reloadSkills: false, reloadAgents: false, reloadMcp: true);
+    }
 
     // ─────────────────────────────────────────────
     // Skills

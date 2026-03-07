@@ -39,6 +39,7 @@ public sealed partial class ChatRuntimeController : IChatUiController, ISettings
     private AgentBuilder? _agentBuilder;
     private ChatRuntime? _runtime;
     private ConversationStore? _conversationStore;
+    private McpSessionPolicy? _sessionPolicy;
 
     // Provider state
     private ProviderDetectionResult? _detectionResult;
@@ -144,6 +145,8 @@ public sealed partial class ChatRuntimeController : IChatUiController, ISettings
 
             // 7. Initialize MCP (global + local)
             _mcpLoader = new McpConfigLoader();
+            _sessionPolicy = McpSessionPolicy.FromSettings(_settings, _options.WorkingDirectory ?? Environment.CurrentDirectory);
+            _mcpLoader.Configure(_settings, _sessionPolicy);
             string? mcpPath = McpConfigLoader.ResolveMcpConfigPath(_options.McpConfigPath);
             string? globalMcpPath = _options.GlobalMcpConfigPath is not null
                 ? (File.Exists(_options.GlobalMcpConfigPath) ? _options.GlobalMcpConfigPath : null)

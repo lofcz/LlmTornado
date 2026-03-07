@@ -7,6 +7,12 @@
         directory-dependent resources.
     </p>
 
+    <p class="settings-section__desc" style="margin-top: 8px;">
+        The selected working directory is automatically allowed for filesystem and terminal access,
+        including all subfolders. Use the sandbox defaults below to add extra allowed roots or
+        command rules for each rebuilt session.
+    </p>
+
     <div class="settings-form">
         <div class="settings-form__field">
             <label>Working Directory</label>
@@ -95,6 +101,55 @@
             @_statusMessage
         </p>
     }
+
+    <div style="margin-top: 20px;">
+        <h3 style="font-size: 14px; margin: 0 0 12px;">Sandbox Defaults</h3>
+        <div class="settings-form">
+            <div class="settings-form__field">
+                <label>Filesystem Whitelist</label>
+                <textarea rows="4"
+                          @bind="_filesystemWhitelistText"
+                          @bind:event="oninput"
+                          placeholder="One absolute path per line"></textarea>
+                <small>Extra directories allowed for file tools in addition to the working directory subtree.</small>
+            </div>
+
+            <div class="settings-form__field">
+                <label>Terminal Directory Whitelist</label>
+                <textarea rows="4"
+                          @bind="_terminalWhitelistText"
+                          @bind:event="oninput"
+                          placeholder="One absolute path per line"></textarea>
+                <small>Extra directories where terminal commands may start, beyond the working directory subtree.</small>
+            </div>
+
+            <div class="settings-form__field">
+                <label>Allowed Commands</label>
+                <textarea rows="3"
+                          @bind="_allowedCommandsText"
+                          @bind:event="oninput"
+                          placeholder="git&#10;dotnet&#10;npm"></textarea>
+                <small>Optional allow-list. Leave empty to allow any command not explicitly blocked.</small>
+            </div>
+
+            <div class="settings-form__field">
+                <label>Blocked Commands</label>
+                <textarea rows="3"
+                          @bind="_blockedCommandsText"
+                          @bind:event="oninput"
+                          placeholder="rm&#10;del"></textarea>
+                <small>Blocked commands always win over the allow-list.</small>
+            </div>
+
+            <div class="settings-card__actions">
+                <button class="tornado-chat__btn tornado-chat__btn--primary"
+                        @onclick="ApplySandboxAsync"
+                        disabled="@_isApplyingSandbox">
+                    @(_isApplyingSandbox ? "Saving…" : "Save Sandbox Defaults")
+                </button>
+            </div>
+        </div>
+    </div>
 
     <div style="margin-top: 20px;">
         <h3 style="font-size: 14px; margin: 0 0 12px;">Resolved Paths</h3>
@@ -224,6 +279,11 @@
     private string? _statusMessage;
     private bool _isError;
     private bool _isApplying;
+    private bool _isApplyingSandbox;
+    private string _filesystemWhitelistText = "";
+    private string _terminalWhitelistText = "";
+    private string _allowedCommandsText = "";
+    private string _blockedCommandsText = "";
 
     // Folder browser state
     private bool _showBrowser;
@@ -236,6 +296,7 @@
     {
         _inputPath = Settings.GetWorkingDirectory();
         RefreshResolvedPaths();
+        RefreshSandboxSettings();
     }
 
     private void ToggleBrowser()
@@ -362,6 +423,35 @@
         }
     }
 
+    private async Task ApplySandboxAsync()
+    {
+        _isApplyingSandbox = true;
+        _statusMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            await Settings.UpdateMcpSandboxSettingsAsync(new McpSandboxSettings(
+                ParseLines(_filesystemWhitelistText),
+                ParseLines(_terminalWhitelistText),
+                ParseLines(_allowedCommandsText),
+                ParseLines(_blockedCommandsText)));
+
+            RefreshSandboxSettings();
+            _statusMessage = "Sandbox defaults updated.";
+            _isError = false;
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = $"Error: {ex.Message}";
+            _isError = true;
+        }
+        finally
+        {
+            _isApplyingSandbox = false;
+        }
+    }
+
     private void RefreshResolvedPaths()
     {
         _skillsDir = Settings.GetSkillsDirectory();
@@ -371,4 +461,24 @@
         _globalAgentsDir = Settings.GetGlobalAgentsDirectory();
         _globalMcpPath = Settings.GetGlobalMcpConfigPath();
     }
+
+    private void RefreshSandboxSettings()
+    {
+        McpSandboxSettings sandbox = Settings.GetMcpSandboxSettings();
+        _filesystemWhitelistText = JoinLines(sandbox.FilesystemWhitelist);
+        _terminalWhitelistText = JoinLines(sandbox.TerminalDirectoryWhitelist);
+        _allowedCommandsText = JoinLines(sandbox.AllowedCommands);
+        _blockedCommandsText = JoinLines(sandbox.BlockedCommands);
+    }
+
+    private static List<string> ParseLines(string? text)
+        => (text ?? string.Empty)
+            .Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(line => line.Trim())
+            .Where(line => line.Length > 0)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+    private static string JoinLines(IEnumerable<string>? values)
+        => values is null ? string.Empty : string.Join(Environment.NewLine, values);
 }

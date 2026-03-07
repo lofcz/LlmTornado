@@ -16,6 +16,21 @@ public sealed class AgentSettings
     [JsonPropertyName("disabled_mcp_servers")]
     public HashSet<string> DisabledMcpServers { get; set; } = [];
 
+    [JsonPropertyName("disabled_mcp_tools")]
+    public Dictionary<string, HashSet<string>> DisabledMcpTools { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+    [JsonPropertyName("filesystem_whitelist")]
+    public HashSet<string> FilesystemWhitelist { get; set; } = [];
+
+    [JsonPropertyName("terminal_directory_whitelist")]
+    public HashSet<string> TerminalDirectoryWhitelist { get; set; } = [];
+
+    [JsonPropertyName("allowed_commands")]
+    public HashSet<string> AllowedCommands { get; set; } = [];
+
+    [JsonPropertyName("blocked_commands")]
+    public HashSet<string> BlockedCommands { get; set; } = [];
+
     [JsonPropertyName("skills_directory")]
     public string? SkillsDirectory { get; set; }
 
