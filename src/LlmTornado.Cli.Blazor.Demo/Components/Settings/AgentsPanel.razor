@@ -155,6 +155,33 @@
             @_statusMessage
         </div>
     }
+
+    @if (_activationWarning is not null)
+    {
+        <div class="settings-card__test-result settings-card__test-result--fail" style="margin-top: 12px;">
+            <strong>⚠ Dependency warnings for '@_activeAgentName':</strong>
+            @((MarkupString)FormatDependencyWarning(_activationWarning))
+        </div>
+    }
+
+    @if (_pendingMoveReport is not null)
+    {
+        <div class="settings-card" style="margin-top: 12px; border-color: #f59e0b;">
+            <div class="settings-card__body">
+                <strong>⚠ Moving '@_pendingMoveName' to @_pendingMoveScope</strong>
+                <p style="margin: 8px 0; font-size: 13px;">This agent references resources that may not be available in the target scope:</p>
+                @((MarkupString)FormatDependencyWarning(_pendingMoveReport))
+                <div class="settings-card__actions" style="margin-top: 12px;">
+                    <button class="tornado-chat__btn tornado-chat__btn--primary" @onclick="ConfirmMove">
+                        Move Anyway
+                    </button>
+                    <button class="tornado-chat__btn" @onclick="CancelMove">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
 </div>
 
 @code {
@@ -169,6 +196,12 @@
     private bool _isSaving;
     private string? _statusMessage;
     private AgentSource _createScope = AgentSource.Custom;
+    private AgentDependencyReport? _activationWarning;
+
+    // Pending move confirmation state
+    private AgentDependencyReport? _pendingMoveReport;
+    private string? _pendingMoveName;
+    private AgentSource _pendingMoveScope;
 
     // Available tools and skills for the pickers
     private List<ToolInfo> _mcpTools = [];
@@ -206,6 +239,11 @@
     {
         await Controller.SelectAgentAsync(name);
         _activeAgentName = name;
+
+        // Check for missing dependencies and surface warnings
+        AgentDependencyReport report = Settings.AnalyzeAgentDependencies(name);
+        _activationWarning = report.HasMissingDependencies ? report : null;
+
         StateHasChanged();
     }
 
@@ -213,6 +251,7 @@
     {
         await Controller.SelectAgentAsync(null);
         _activeAgentName = null;
+        _activationWarning = null;
         StateHasChanged();
     }
 
@@ -481,17 +520,72 @@
     {
         try
         {
-            await Settings.MoveAgentAsync(agentName, targetScope);
-            _expandedAgent = null;
-            _statusMessage = $"Agent '{agentName}' moved to {targetScope}.";
-            LoadAgents();
-            StateHasChanged();
+            // Check dependencies before moving
+            if (targetScope == AgentSource.Global)
+            {
+                AgentDependencyReport report = Settings.AnalyzeAgentDependencies(agentName);
+                if (report.HasLocalOnlyDependencies || report.HasMissingDependencies)
+                {
+                    _pendingMoveReport = report;
+                    _pendingMoveName = agentName;
+                    _pendingMoveScope = targetScope;
+                    StateHasChanged();
+                    return;
+                }
+            }
+
+            await ExecuteMove(agentName, targetScope);
         }
         catch (Exception ex)
         {
             _statusMessage = $"Failed to move agent: {ex.Message}";
             StateHasChanged();
         }
+    }
+
+    private async Task ConfirmMove()
+    {
+        if (_pendingMoveName is not null)
+        {
+            await ExecuteMove(_pendingMoveName, _pendingMoveScope);
+        }
+        ClearPendingMove();
+    }
+
+    private void CancelMove()
+    {
+        ClearPendingMove();
+        StateHasChanged();
+    }
+
+    private void ClearPendingMove()
+    {
+        _pendingMoveReport = null;
+        _pendingMoveName = null;
+    }
+
+    private async Task ExecuteMove(string agentName, AgentSource targetScope)
+    {
+        await Settings.MoveAgentAsync(agentName, targetScope);
+        _expandedAgent = null;
+        _statusMessage = $"Agent '{agentName}' moved to {targetScope}.";
+        ClearPendingMove();
+        LoadAgents();
+        StateHasChanged();
+    }
+
+    private static string FormatDependencyWarning(AgentDependencyReport report)
+    {
+        List<string> parts = [];
+        if (report.LocalOnlySkills.Count > 0)
+            parts.Add($"<br/>• <strong>Local-only skills:</strong> {string.Join(", ", report.LocalOnlySkills)}");
+        if (report.MissingSkills.Count > 0)
+            parts.Add($"<br/>• <strong>Missing skills:</strong> {string.Join(", ", report.MissingSkills)}");
+        if (report.LocalOnlyTools.Count > 0)
+            parts.Add($"<br/>• <strong>Local-only MCP tools:</strong> {string.Join(", ", report.LocalOnlyTools)}");
+        if (report.MissingTools.Count > 0)
+            parts.Add($"<br/>• <strong>Missing MCP tools:</strong> {string.Join(", ", report.MissingTools)}");
+        return string.Concat(parts);
     }
 
     private sealed class AgentFormModel

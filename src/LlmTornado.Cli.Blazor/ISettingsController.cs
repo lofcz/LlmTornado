@@ -216,6 +216,12 @@ public interface ISettingsController
     /// Useful for the agent capability curation tool picker.
     /// </summary>
     List<ToolInfo> GetAvailableTools();
+
+    /// <summary>
+    /// Analyze an agent's skill and tool dependencies against currently loaded resources.
+    /// Useful for warning users about broken references before moving an agent or after activation.
+    /// </summary>
+    AgentDependencyReport AnalyzeAgentDependencies(string agentName);
 }
 
 /// <summary>

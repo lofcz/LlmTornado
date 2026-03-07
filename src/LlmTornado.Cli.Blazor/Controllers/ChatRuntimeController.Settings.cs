@@ -286,7 +286,9 @@ public sealed partial class ChatRuntimeController : ISettingsController
         if (_skillManager is null) return;
 
         string skillsDir = _options.SkillsDirectory ?? Path.GetFullPath("skills");
-        _skillManager.LoadSkills(skillsDir, _options.GlobalSkillsDirectory);
+        string? globalSkillsDir = _options.GlobalSkillsDirectory
+            ?? SkillLoader.ResolveGlobalSkillsDirectory();
+        _skillManager.LoadSkills(skillsDir, globalSkillsDir);
 
         // Rebuild agent tools
         if (_agentBuilder is not null)
@@ -510,5 +512,78 @@ public sealed partial class ChatRuntimeController : ISettingsController
         }
 
         return tools.Values.OrderBy(t => t.Name, StringComparer.OrdinalIgnoreCase).ToList();
+    }
+
+    public AgentDependencyReport AnalyzeAgentDependencies(string agentName)
+    {
+        AgentDefinition? agent = _agentManager?.GetPersona(agentName);
+        if (agent is null || !agent.HasCapabilityCuration)
+            return new AgentDependencyReport();
+
+        List<string> localOnlySkills = [];
+        List<string> missingSkills = [];
+        List<string> localOnlyTools = [];
+        List<string> missingTools = [];
+
+        // Build skill lookup: name → source
+        Dictionary<string, SkillSource> skillSources = new(StringComparer.OrdinalIgnoreCase);
+        if (_skillManager is not null)
+        {
+            foreach (Skill skill in _skillManager.GetAllSkills())
+                skillSources[skill.Name] = skill.Source;
+        }
+
+        // Check referenced skills (from both enabled and disabled lists)
+        HashSet<string> seen = new(StringComparer.OrdinalIgnoreCase);
+        foreach (string skillName in agent.EnabledSkills.Concat(agent.DisabledSkills))
+        {
+            if (!seen.Add(skillName)) continue;
+            if (skillSources.TryGetValue(skillName, out SkillSource source))
+            {
+                if (source == SkillSource.Project)
+                    localOnlySkills.Add(skillName);
+            }
+            else
+            {
+                missingSkills.Add(skillName);
+            }
+        }
+
+        // Build tool lookup from McpConfigLoader's ToolSourceMap
+        IReadOnlyDictionary<string, McpServerSource>? toolSources = _mcpLoader?.ToolSourceMap;
+
+        // Also collect skill-owned tool names
+        HashSet<string> skillToolNames = new(StringComparer.OrdinalIgnoreCase);
+        if (_skillManager is not null)
+        {
+            foreach (Skill skill in _skillManager.GetAllSkills())
+                foreach (string t in skill.AllowedTools)
+                    skillToolNames.Add(t);
+        }
+
+        // Check referenced tools
+        seen.Clear();
+        foreach (string toolName in agent.EnabledTools.Concat(agent.DisabledTools).Concat(agent.AutoApproveTools))
+        {
+            if (!seen.Add(toolName)) continue;
+
+            if (toolSources is not null && toolSources.TryGetValue(toolName, out McpServerSource mcpSource))
+            {
+                if (mcpSource == McpServerSource.Local)
+                    localOnlyTools.Add(toolName);
+            }
+            else if (!skillToolNames.Contains(toolName))
+            {
+                missingTools.Add(toolName);
+            }
+        }
+
+        return new AgentDependencyReport
+        {
+            LocalOnlySkills = localOnlySkills,
+            MissingSkills = missingSkills,
+            LocalOnlyTools = localOnlyTools,
+            MissingTools = missingTools,
+        };
     }
 }

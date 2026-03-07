@@ -14,6 +14,7 @@ public sealed partial class McpConfigLoader : IAsyncDisposable
     private readonly List<MCPServer> _servers = [];
     private readonly List<Tool> _allTools = [];
     private readonly List<McpServerStatus> _serverStatuses = [];
+    private readonly Dictionary<string, McpServerSource> _toolSourceMap = new(StringComparer.OrdinalIgnoreCase);
     private string? _localConfigPath;
     private string? _globalConfigPath;
 
@@ -22,6 +23,11 @@ public sealed partial class McpConfigLoader : IAsyncDisposable
 
     public IReadOnlyList<Tool> AllTools => _allTools;
     public IReadOnlyList<McpServerStatus> ServerStatuses => _serverStatuses;
+
+    /// <summary>
+    /// Maps each tool name to the MCP server source (Global/Local) it came from.
+    /// </summary>
+    public IReadOnlyDictionary<string, McpServerSource> ToolSourceMap => _toolSourceMap;
 
     /// <summary>
     /// Resolve the project-local MCP config file path.
@@ -116,6 +122,7 @@ public sealed partial class McpConfigLoader : IAsyncDisposable
         _servers.Clear();
         _allTools.Clear();
         _serverStatuses.Clear();
+        _toolSourceMap.Clear();
         await LoadMergedAsync(log);
     }
 
@@ -129,6 +136,7 @@ public sealed partial class McpConfigLoader : IAsyncDisposable
         _servers.Clear();
         _allTools.Clear();
         _serverStatuses.Clear();
+        _toolSourceMap.Clear();
 
         _localConfigPath = newLocalConfigPath;
         await LoadMergedAsync(log);
@@ -225,6 +233,9 @@ public sealed partial class McpConfigLoader : IAsyncDisposable
             foreach (Tool tool in server.AllowedTornadoTools)
             {
                 _allTools.Add(tool);
+                string toolName = tool.ResolvedName;
+                if (!string.IsNullOrEmpty(toolName))
+                    _toolSourceMap.TryAdd(toolName, source);
             }
 
             _serverStatuses.Add(new McpServerStatus

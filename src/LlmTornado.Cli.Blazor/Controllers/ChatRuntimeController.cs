@@ -138,7 +138,9 @@ public sealed partial class ChatRuntimeController : IChatUiController, ISettings
 
             // 6. Initialize skills
             _skillManager = new SkillManager(_settings, this);
-            _skillManager.LoadSkills(skillsDir, _options.GlobalSkillsDirectory);
+            string? globalSkillsDir = _options.GlobalSkillsDirectory
+                ?? SkillLoader.ResolveGlobalSkillsDirectory();
+            _skillManager.LoadSkills(skillsDir, globalSkillsDir);
 
             // 7. Initialize MCP (global + local)
             _mcpLoader = new McpConfigLoader();
