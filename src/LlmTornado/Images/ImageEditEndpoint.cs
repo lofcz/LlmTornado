@@ -44,6 +44,12 @@ public class ImageEditEndpoint : EndpointBase
             return await EditImageJson(request, provider).ConfigureAwait(false);
         }
         
+        // OpenAI GPT image models support JSON body when UseJsonBody is set
+        if (provider.Provider == LLmProviders.OpenAi && request.UseJsonBody == true)
+        {
+            return await EditImageJson(request, provider).ConfigureAwait(false);
+        }
+        
         // OpenAI and other providers use multipart form
         return await EditImageMultipart(request, provider).ConfigureAwait(false);
     }

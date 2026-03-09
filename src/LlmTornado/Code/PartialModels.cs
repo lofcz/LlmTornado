@@ -336,11 +336,18 @@ internal class ChatMessageFinishReasonsConverter : JsonConverter<ChatMessageFini
         { "spii", ChatMessageFinishReasons.SensitivePersonalInformation },
         { "malformed_function_call", ChatMessageFinishReasons.MalformedToolCall },
         { "image_safety", ChatMessageFinishReasons.ImageSafety },
+        { "image_prohibited_content", ChatMessageFinishReasons.ImageProhibitedContent },
+        { "image_other", ChatMessageFinishReasons.ImageOther },
+        { "no_image", ChatMessageFinishReasons.NoImage },
+        { "image_recitation", ChatMessageFinishReasons.ImageRecitation },
         { "error", ChatMessageFinishReasons.Error },
+        { "other", ChatMessageFinishReasons.Error },
 
         { "tool_use", ChatMessageFinishReasons.ToolCalls },
         { "tool_calls", ChatMessageFinishReasons.ToolCalls },
         { "function_call", ChatMessageFinishReasons.ToolCalls },
+        { "unexpected_tool_call", ChatMessageFinishReasons.UnexpectedToolCall },
+        { "too_many_tool_calls", ChatMessageFinishReasons.TooManyToolCalls },
         
         { "model_context_window_exceeded", ChatMessageFinishReasons.ContextWindowExceeded },
         
@@ -444,6 +451,36 @@ public enum ChatMessageFinishReasons
     /// Token generation stopped because generated images contain safety violations.
     /// </summary>
     ImageSafety,
+    
+    /// <summary>
+    /// Image generation stopped because generated images contain prohibited content.
+    /// </summary>
+    ImageProhibitedContent,
+    
+    /// <summary>
+    /// Image generation stopped due to a miscellaneous issue.
+    /// </summary>
+    ImageOther,
+    
+    /// <summary>
+    /// The model was expected to generate an image but none was produced.
+    /// </summary>
+    NoImage,
+    
+    /// <summary>
+    /// Image generation stopped due to recitation.
+    /// </summary>
+    ImageRecitation,
+    
+    /// <summary>
+    /// The model generated a tool call but no tools were enabled in the request.
+    /// </summary>
+    UnexpectedToolCall,
+    
+    /// <summary>
+    /// The model called too many tools consecutively, causing the system to exit execution.
+    /// </summary>
+    TooManyToolCalls,
     
     /// <summary>
     /// The request was canceled/aborted.
@@ -647,6 +684,12 @@ public enum ChatRequestServiceTiers
     /// </summary>
     [EnumMember(Value = "flex")]
     Flex,
+    
+    /// <summary>
+    /// Scale tier processing with higher rate limits and guaranteed latency SLA.
+    /// </summary>
+    [EnumMember(Value = "scale")]
+    Scale,
 
     /// <summary>
     /// Additional option for service_tier supported by Groq
@@ -664,7 +707,35 @@ public enum ChatRequestServiceTiers
     ///  Only use standard tier capacity, useful if you don't want to use your Priority Tier capacity, supported only by Anthropic.
     /// </summary>
     [EnumMember(Value = "standard_only")]
-    StandardOnly
+    StandardOnly,
+    
+    /// <summary>
+    /// The request was served using priority tier capacity. This is a response-only value returned by Anthropic.
+    /// </summary>
+    [EnumMember(Value = "priority")]
+    Priority
+}
+
+/// <summary>
+/// Controls the inference speed tier for supported models. Currently supported by Anthropic (Claude Opus 4.6+).
+/// Fast mode provides significantly faster output token generation at premium pricing.
+/// </summary>
+[JsonConverter(typeof(StringEnumConverter))]
+public enum ChatRequestSpeeds
+{
+    /// <summary>
+    /// Standard inference speed. This is the default when no speed is specified.
+    /// This value is returned in responses to indicate standard speed was used.
+    /// </summary>
+    [EnumMember(Value = "standard")]
+    Standard,
+
+    /// <summary>
+    /// Fast mode. Up to 2.5x higher output tokens per second compared to standard speed. Premium pricing applies.
+    /// Supported by Anthropic on Claude Opus 4.6.
+    /// </summary>
+    [EnumMember(Value = "fast")]
+    Fast
 }
 
 /// <summary>
@@ -724,6 +795,12 @@ public enum ChatReasoningFormats
 public enum PromptCacheRetention
 {
     /// <summary>
+    /// In-memory cache retention.
+    /// </summary>
+    [EnumMember(Value = "in-memory")]
+    InMemory,
+    
+    /// <summary>
     /// 24-hour cache retention. Keeps cached prefixes active for up to 24 hours.
     /// </summary>
     [EnumMember(Value = "24h")]
@@ -767,7 +844,7 @@ public enum ChatReasoningEfforts
     High,
     
     /// <summary>
-    ///     Extra high reasoning. Available for GPT-5.2 and GPT-5.1-Codex-Max.
+    ///     Extra high reasoning. Available for GPT-5.2, GPT-5.4, and GPT-5.1-Codex-Max.
     /// </summary>
     [EnumMember(Value = "xhigh")]
     XHigh,
@@ -1198,6 +1275,11 @@ public enum ChatImageAspectRatios
 public enum ChatImageResolutions
 {
     /// <summary>
+    ///     512px resolution (smallest, lowest cost per image).
+    /// </summary>
+    [EnumMember(Value = "512")]
+    Resolution512,
+    /// <summary>
     ///     1K resolution (default for most models).
     /// </summary>
     [EnumMember(Value = "1K")]
@@ -1586,6 +1668,10 @@ public enum LLmProviders
     /// </summary>
     Upstage,
     /// <summary>
+    /// MiniMax.
+    /// </summary>
+    MiniMax,
+    /// <summary>
     /// Internal value.
     /// </summary>
     Length
@@ -1784,7 +1870,15 @@ public enum CapabilityEndpoints
     /// <summary>
     /// OCR endpoint.
     /// </summary>
-    Ocr
+    Ocr,
+    /// <summary>
+    /// Music generation endpoint.
+    /// </summary>
+    Music,
+    /// <summary>
+    /// Lyrics generation endpoint.
+    /// </summary>
+    Lyrics
 }
 
 /// <summary>

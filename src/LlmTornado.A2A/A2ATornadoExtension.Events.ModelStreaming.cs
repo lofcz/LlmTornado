@@ -1,13 +1,5 @@
 ﻿using A2A;
 using LlmTornado.Agents.DataModels;
-using LlmTornado.Chat;
-using LlmTornado.Code;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace LlmTornado.A2A;
 /// <summary>
@@ -27,14 +19,14 @@ public static partial class A2ATornadoExtension
 
     public static Artifact ToArtifact(this ModelStreamingOutputTextDeltaEvent e)
     {
-        Artifact artifact = new Artifact()
+        Artifact artifact = new Artifact
         {
             Description = e.EventType.ToString(),
-            Parts = new List<Part>(),
+            Parts = [],
             Name = e.EventType.ToString(),
         };
         artifact.Description = e.GetType().Name;
-        artifact.Parts.Add(new TextPart()
+        artifact.Parts.Add(new TextPart
         {
             Text = e.DeltaText ?? ""
         });

@@ -94,7 +94,7 @@ internal class VendorCohereChatRequest
         if (request.Tools is { Count: > 0 })
         {
             // Optimize: single loop instead of Where().Select().ToList() to avoid intermediate enumerable allocations
-            List<VendorCohereTool> tools = new List<VendorCohereTool>();
+            List<VendorCohereTool> tools = [];
             foreach (var t in request.Tools)
             {
                 if (t.Function is not null)

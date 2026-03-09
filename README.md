@@ -4,7 +4,7 @@
 
 # LLM Tornado
 
-**Build AI agents and workflows in minutes with one toolkit and built-in connectors to 25+ API Providers & Vector Databases.**    
+**Build AI agents and workflows in minutes with one toolkit and built-in connectors to 30+ API Providers & Vector Databases.**    
 
 **[Official Website](https://llmtornado.ai)**
 
@@ -23,7 +23,7 @@ LLM Tornado is a .NET provider-agnostic SDK that empowers developers to build, o
 </div>
 
 ## ✨ Features
--  **Use Any Provider**: Built-in connectors to: [Alibaba](https://modelstudio.console.alibabacloud.com), [Anthropic](https://docs.anthropic.com/en/docs/intro), [Azure](https://azure.microsoft.com/en-us/products/ai-services/openai-service), [Blablador](https://sdlaml.pages.jsc.fz-juelich.de/ai/guides/blablador_api_access), [Cohere](https://docs.cohere.com/changelog), [DeepInfra](https://deepinfra.com/docs/), [DeepSeek](https://api-docs.deepseek.com/), [Google](https://ai.google.dev/gemini-api/docs), [Groq](https://console.groq.com/docs/overview), [Mistral](https://docs.mistral.ai/getting-started), [MoonshotAI](https://platform.moonshot.ai/docs/overview), [OpenAI](https://platform.openai.com/docs), [OpenRouter](https://openrouter.ai/docs/quickstart), [Perplexity](https://docs.perplexity.ai/home), [Requesty](https://www.requesty.ai), [Upstage](https://www.upstage.ai), [Voyage](https://www.voyageai.com/), [xAI](https://docs.x.ai/docs), [Z.ai](https://docs.z.ai/guides/overview/quick-start), and more. Connectors expose all niche/unique features via strongly typed code and are up-to-date with the latest AI development. No dependencies on first-party SDKs. [Feature Matrix](https://github.com/lofcz/LlmTornado/blob/master/FeatureMatrix.md) tracks detailed endpoint support.
+-  **Use Any Provider**: Built-in connectors to: [Alibaba](https://modelstudio.console.alibabacloud.com), [Anthropic](https://docs.anthropic.com/en/docs/intro), [Azure](https://azure.microsoft.com/en-us/products/ai-services/openai-service), [Blablador](https://sdlaml.pages.jsc.fz-juelich.de/ai/guides/blablador_api_access), [Cohere](https://docs.cohere.com/changelog), [DeepInfra](https://deepinfra.com/docs/), [DeepSeek](https://api-docs.deepseek.com/), [Google](https://ai.google.dev/gemini-api/docs), [Groq](https://console.groq.com/docs/overview), [MiniMax](https://platform.minimax.io/docs/guides/models-intro), [Mistral](https://docs.mistral.ai/getting-started), [MoonshotAI](https://platform.moonshot.ai/docs/overview), [OpenAI](https://platform.openai.com/docs), [OpenRouter](https://openrouter.ai/docs/quickstart), [Perplexity](https://docs.perplexity.ai/home), [Requesty](https://www.requesty.ai), [Upstage](https://www.upstage.ai), [Voyage](https://www.voyageai.com/), [xAI](https://docs.x.ai/docs), [Z.ai](https://docs.z.ai/guides/overview/quick-start), and more. Connectors expose all niche/unique features via strongly typed code and are up-to-date with the latest AI development. No dependencies on first-party SDKs. [Feature Matrix](https://github.com/lofcz/LlmTornado/blob/master/FeatureMatrix.md) tracks detailed endpoint support.
 - **First-class Local Deployments**: Run with [vLLM](https://docs.vllm.ai/en/latest), [Ollama](https://ollama.com/), or [LocalAI](https://localai.io/) with integrated support for request transformations.
 - **Agents Orchestration**: [Coordinate specialist agents](https://llmtornado.ai/agents/getting-started) that can autonomously perform complex tasks with three core concepts: `Orchestrator` (graph), `Runner` (node), and `Advancer` (edge). Comes with [handoffs](https://llmtornado.ai/agents/agent-orchestration/basics), [parallel execution](https://llmtornado.ai/agents/chat-runtime), [Mermaid](https://mermaid.js.org) export, and [builder pattern](https://llmtornado.ai/agents/agent-orchestration/orchestration#using-the-builder) to keep it simple.
 - **Rapid Development**: Write pipelines once, execute with any Provider by changing the model's name. Connect your editor to [Context7](https://context7.com/lofcz/llmtornado) or [FSKB](https://github.com/lofcz/LlmTornado/tree/master/src/LlmTornado.FsKb/LlmTornado.FsKb) to accelerate coding with instant access to vectorized documentation.
@@ -41,6 +41,7 @@ LLM Tornado is a .NET provider-agnostic SDK that empowers developers to build, o
 </div>
 
 ## 🔥 News 2026
+- 26/02 - [MiniMax](https://www.minimax.io) connector is implemented. Compaction endpoint is added, and can be used along the compaction built-in to LLM Tornado. Started work on ACP.
 - 26/01 - [Ivy Framework](https://ivy.app) uses `LlmTornado.Agents` to build their [AI Components](https://github.com/Ivy-Interactive/Ivy-Examples/pull/362). `/ocr` endpoint is implemented for Mistral. `/files` endpoint support is extended to all supported providers.
 
 ## News 2025
@@ -126,7 +127,7 @@ foreach (ChatModel model in models)
 }
 ```
 
-💡 Instead of passing in a strongly typed model, you can pass a string instead: `await api.Chat.CreateConversation("gpt-4o")`, Tornado will automatically resolve the provider.
+💡 Instead of passing in a strongly typed model, you can pass a string instead: `await api.Chat.CreateConversation("gpt-5-mini")`, Tornado will automatically resolve the provider.
 
 ## ❄️ Vendor Extensions
 
@@ -488,7 +489,7 @@ orange: 2
 
 - 100,000+ installs on [NuGet](https://www.nuget.org/packages/LlmTornado).
 - Used in [award-winning](https://www-aiawards-cz.translate.goog/?_x_tr_sl=cs&_x_tr_tl=en&_x_tr_hl=cs) commercial projects, processing > 100B tokens monthly.
-- Covered by 350+ tests.
+- Covered by 500+ tests.
 - Great performance.
 - The license will never change.
 

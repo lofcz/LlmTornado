@@ -26,26 +26,6 @@ public class ChatModelAnthropicClaude35 : IVendorModelClassProvider
     public static readonly ChatModel ModelSonnetLatest = new ChatModel("claude-3-5-sonnet-latest", LLmProviders.Anthropic, 200_000);
 
     /// <summary>
-    /// Fastest and most compact model, designed for near-instant responsiveness and seamless AI experiences that mimic human interactions. 4x pricier than Haiku 3.
-    /// </summary>
-    public static readonly ChatModel ModelHaiku = new ChatModel("claude-3-5-haiku-20241022", LLmProviders.Anthropic, 200_000);
-    
-    /// <summary>
-    /// Fastest and most compact model, designed for near-instant responsiveness and seamless AI experiences that mimic human interactions. 4x pricier than Haiku 3.
-    /// </summary>
-    public static readonly ChatModel ModelHaikuLatest = new ChatModel("claude-3-5-haiku-latest", LLmProviders.Anthropic, 200_000);
-
-    /// <summary>
-    /// <inheritdoc cref="ModelHaiku"/>
-    /// </summary>
-    public readonly ChatModel Haiku = ModelHaiku;
-    
-    /// <summary>
-    /// <inheritdoc cref="ModelHaikuLatest"/>
-    /// </summary>
-    public readonly ChatModel HaikuLatest = ModelHaikuLatest;
-    
-    /// <summary>
     /// <inheritdoc cref="ModelSonnet"/>
     /// </summary>
     public readonly ChatModel Sonnet = ModelSonnet;
@@ -65,7 +45,7 @@ public class ChatModelAnthropicClaude35 : IVendorModelClassProvider
     /// </summary>
     public static List<IModel> ModelsAll => LazyModelsAll.Value;
 
-    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [ModelSonnet, ModelSonnet241022, ModelSonnetLatest, ModelHaiku, ModelHaikuLatest]);
+    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [ModelSonnet, ModelSonnet241022, ModelSonnetLatest]);
 
     /// <summary>
     /// <inheritdoc cref="ModelsAll"/>

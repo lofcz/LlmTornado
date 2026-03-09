@@ -99,6 +99,21 @@ public class ChatModelOpenAiGpt5 : IVendorModelClassProvider
     public readonly ChatModel V5Nano = ModelV5Nano;
 
     /// <summary>
+    /// GPT-Audio-1.5 is the best voice model for audio in, audio out with Chat Completions.
+    /// Accepts text and audio inputs, produces text and audio outputs.
+    /// 128,000 context window, 16,384 max output tokens, Sep 30, 2024 knowledge cutoff.
+    /// </summary>
+    public static readonly ChatModel ModelAudio15 = new ChatModel("gpt-audio-1.5", LLmProviders.OpenAi, 128_000)
+    {
+        EndpointCapabilities = [ ChatModelEndpointCapabilities.Chat ]
+    };
+
+    /// <summary>
+    /// <inheritdoc cref="ModelAudio15"/>
+    /// </summary>
+    public readonly ChatModel Audio15 = ModelAudio15;
+    
+    /// <summary>
     /// Realtime Mini - optimized for low-latency, real-time interactions.
     /// </summary>
     public static readonly ChatModel ModelRealtimeMini = new ChatModel("gpt-realtime-mini", LLmProviders.OpenAi, 128_000, ["gpt-realtime-mini-2025-12-15", "gpt-realtime-mini-2025-10-06"])
@@ -117,7 +132,7 @@ public class ChatModelOpenAiGpt5 : IVendorModelClassProvider
     public static List<IModel> ModelsAll => LazyModelsAll.Value;
 
     private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [
-        ModelV5, ModelV5Mini, ModelV5Nano, ModelV5Codex, ModelV5Pro, ModelAudioMini, ModelRealtimeMini
+        ModelV5, ModelV5Mini, ModelV5Nano, ModelV5Codex, ModelV5Pro, ModelAudio, ModelAudioMini, ModelAudio15, ModelRealtimeMini
     ]);
     
     /// <summary>

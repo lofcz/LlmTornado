@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Frozen;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 using LlmTornado.Code;
 using LlmTornado.Images.Models;
 using LlmTornado.Images.Vendors.XAi;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace LlmTornado.Images;
 
@@ -165,6 +167,28 @@ public class ImageEditRequest
 	public ImageEditRequestVendorExtensions? VendorExtensions { get; set; }
 	
 	/// <summary>
+	/// When set to true, the request will be sent as a JSON body instead of multipart form data.
+	/// Only supported for GPT image models (gpt-image-1, gpt-image-1.5, gpt-image-1-mini, chatgpt-image-latest).
+	/// In JSON mode, images are referenced via <see cref="ImageReferences"/> using <c>image_url</c> or <c>file_id</c>.
+	/// </summary>
+	[JsonIgnore]
+	public bool? UseJsonBody { get; set; }
+	
+	/// <summary>
+	/// Image references for JSON body mode. Each reference specifies an image via <c>image_url</c> or <c>file_id</c>.
+	/// Used when <see cref="UseJsonBody"/> is true. This replaces the binary <see cref="Image"/>/<see cref="Images"/> properties.
+	/// </summary>
+	[JsonIgnore]
+	public List<ImageEditReference>? ImageReferences { get; set; }
+	
+	/// <summary>
+	/// Mask reference for JSON body mode. Specifies a mask via <c>image_url</c> or <c>file_id</c>.
+	/// Used when <see cref="UseJsonBody"/> is true. This replaces the binary <see cref="Mask"/> property.
+	/// </summary>
+	[JsonIgnore]
+	public ImageEditReference? MaskReference { get; set; }
+	
+	/// <summary>
 	///		Serializes the image edit request into the request body, based on the conventions used by the LLM provider.
 	/// </summary>
 	/// <param name="provider"></param>
@@ -178,6 +202,220 @@ public class ImageEditRequest
 	
 	private static readonly FrozenDictionary<LLmProviders, Func<ImageEditRequest, IEndpointProvider, string>> SerializeMap = new Dictionary<LLmProviders, Func<ImageEditRequest, IEndpointProvider, string>>
 	{
-		{ LLmProviders.XAi, (x, y) => JsonConvert.SerializeObject(new VendorXAiImageEditRequest(x, y), EndpointBase.NullSettings) }
+		{ LLmProviders.XAi, (x, y) => JsonConvert.SerializeObject(new VendorXAiImageEditRequest(x, y), EndpointBase.NullSettings) },
+		{ LLmProviders.OpenAi, (x, y) => JsonConvert.SerializeObject(new VendorOpenAiImageEditJsonRequest(x), EndpointBase.NullSettings) }
 	}.ToFrozenDictionary();
+}
+
+/// <summary>
+/// An image reference for JSON body image edit requests. Specifies an image via URL or file ID.
+/// </summary>
+public class ImageEditReference
+{
+	/// <summary>
+	/// The type of reference. One of "image_url" or "file_id".
+	/// </summary>
+	[JsonProperty("type")]
+	[JsonConverter(typeof(StringEnumConverter))]
+	public ImageEditReferenceType Type { get; set; }
+	
+	/// <summary>
+	/// The URL of the image. Used when <see cref="Type"/> is <see cref="ImageEditReferenceType.ImageUrl"/>.
+	/// Can be a fully qualified URL or a base64-encoded data URI.
+	/// </summary>
+	[JsonProperty("image_url")]
+	public string? ImageUrl { get; set; }
+	
+	/// <summary>
+	/// The file ID of the image. Used when <see cref="Type"/> is <see cref="ImageEditReferenceType.FileId"/>.
+	/// </summary>
+	[JsonProperty("file_id")]
+	public string? FileId { get; set; }
+
+	/// <summary>
+	/// Creates an empty image reference.
+	/// </summary>
+	public ImageEditReference()
+	{
+	}
+
+	/// <summary>
+	/// Creates an image reference from a URL.
+	/// </summary>
+	/// <param name="imageUrl">The URL or data URI of the image.</param>
+	public static ImageEditReference FromUrl(string imageUrl)
+	{
+		return new ImageEditReference
+		{
+			Type = ImageEditReferenceType.ImageUrl,
+			ImageUrl = imageUrl
+		};
+	}
+
+	/// <summary>
+	/// Creates an image reference from a file ID.
+	/// </summary>
+	/// <param name="fileId">The file ID of the image.</param>
+	public static ImageEditReference FromFileId(string fileId)
+	{
+		return new ImageEditReference
+		{
+			Type = ImageEditReferenceType.FileId,
+			FileId = fileId
+		};
+	}
+}
+
+/// <summary>
+/// The type of image reference for JSON body image edit requests.
+/// </summary>
+[JsonConverter(typeof(StringEnumConverter))]
+public enum ImageEditReferenceType
+{
+	/// <summary>
+	/// Reference by URL (fully qualified URL or base64 data URI).
+	/// </summary>
+	[EnumMember(Value = "image_url")]
+	ImageUrl,
+
+	/// <summary>
+	/// Reference by file ID (previously uploaded file).
+	/// </summary>
+	[EnumMember(Value = "file_id")]
+	FileId
+}
+
+/// <summary>
+/// OpenAI-specific JSON body format for image edit requests (GPT image models only).
+/// </summary>
+internal class VendorOpenAiImageEditJsonRequest
+{
+	[JsonProperty("model")]
+	public string? Model { get; set; }
+	
+	[JsonProperty("prompt")]
+	public string? Prompt { get; set; }
+	
+	[JsonProperty("image")]
+	public object? Image { get; set; }
+	
+	[JsonProperty("mask")]
+	public ImageEditReference? Mask { get; set; }
+	
+	[JsonProperty("n")]
+	public int? N { get; set; }
+	
+	[JsonProperty("size")]
+	public string? Size { get; set; }
+	
+	[JsonProperty("quality")]
+	public string? Quality { get; set; }
+	
+	[JsonProperty("background")]
+	public string? Background { get; set; }
+	
+	[JsonProperty("input_fidelity")]
+	public string? InputFidelity { get; set; }
+	
+	[JsonProperty("output_format")]
+	public string? OutputFormat { get; set; }
+	
+	[JsonProperty("output_compression")]
+	public int? OutputCompression { get; set; }
+	
+	[JsonProperty("response_format")]
+	public string? ResponseFormat { get; set; }
+	
+	[JsonProperty("user")]
+	public string? User { get; set; }
+
+	public VendorOpenAiImageEditJsonRequest(ImageEditRequest request)
+	{
+		Model = request.Model?.GetApiName;
+		Prompt = request.Prompt;
+		N = request.NumOfImages;
+		User = request.User;
+		OutputCompression = request.OutputCompression;
+		
+		// Map image references
+		if (request.ImageReferences is { Count: > 0 })
+		{
+			Image = request.ImageReferences.Count == 1 ? request.ImageReferences[0] : (object)request.ImageReferences;
+		}
+		
+		// Map mask reference
+		Mask = request.MaskReference;
+		
+		// Map size
+		if (request.Size.HasValue)
+		{
+			Size = request.Size.Value switch
+			{
+				TornadoImageSizes.Auto => "auto",
+				TornadoImageSizes.Size1024x1024 => "1024x1024",
+				TornadoImageSizes.Size1024x1536 => "1024x1536",
+				TornadoImageSizes.Size1536x1024 => "1536x1024",
+				_ => "auto"
+			};
+		}
+		
+		// Map quality
+		if (request.Quality.HasValue)
+		{
+			Quality = request.Quality.Value switch
+			{
+				TornadoImageQualities.Low => "low",
+				TornadoImageQualities.Medium => "medium",
+				TornadoImageQualities.High or TornadoImageQualities.Hd => "high",
+				TornadoImageQualities.Auto => "auto",
+				_ => "auto"
+			};
+		}
+		
+		// Map background
+		if (request.Background.HasValue)
+		{
+			Background = request.Background.Value switch
+			{
+				TornadoImageBackgrounds.Transparent => "transparent",
+				TornadoImageBackgrounds.Opaque => "opaque",
+				TornadoImageBackgrounds.Auto => "auto",
+				_ => "auto"
+			};
+		}
+		
+		// Map input fidelity
+		if (request.InputFidelity.HasValue)
+		{
+			InputFidelity = request.InputFidelity.Value switch
+			{
+				TornadoImageInputFidelity.Low => "low",
+				TornadoImageInputFidelity.High => "high",
+				_ => "low"
+			};
+		}
+		
+		// Map output format
+		if (request.OutputFormat.HasValue)
+		{
+			OutputFormat = request.OutputFormat.Value switch
+			{
+				TornadoImageOutputFormats.Png => "png",
+				TornadoImageOutputFormats.Jpeg => "jpeg",
+				TornadoImageOutputFormats.Webp => "webp",
+				_ => "png"
+			};
+		}
+		
+		// Map response format
+		if (request.ResponseFormat.HasValue)
+		{
+			ResponseFormat = request.ResponseFormat.Value switch
+			{
+				TornadoImageResponseFormats.Base64 => "b64_json",
+				TornadoImageResponseFormats.Url => "url",
+				_ => "b64_json"
+			};
+		}
+	}
 }

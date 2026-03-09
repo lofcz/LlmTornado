@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using Newtonsoft.Json;
 
@@ -87,6 +87,20 @@ public class AudioFile
         AudioFileTypes.Ogg => "audio/ogg",
         AudioFileTypes.Webm => "audio/webm",
         _ => string.Empty
+    };
+
+    internal string GetFileExtension => ContentType switch
+    {
+        AudioFileTypes.Wav => "wav",
+        AudioFileTypes.Mp3 => "mp3",
+        AudioFileTypes.Flac => "flac",
+        AudioFileTypes.Mp4 => "mp4",
+        AudioFileTypes.Mpeg => "mpeg",
+        AudioFileTypes.Mpga => "mpga",
+        AudioFileTypes.M4a => "m4a",
+        AudioFileTypes.Ogg => "ogg",
+        AudioFileTypes.Webm => "webm",
+        _ => ContentType.ToString().ToLowerInvariant()
     };
     
     /// <summary>

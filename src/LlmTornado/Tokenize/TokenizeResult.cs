@@ -26,6 +26,7 @@ public class TokenizeResult
     {
         return provider switch
         {
+            LLmProviders.OpenAi => JsonConvert.DeserializeObject<VendorOpenAiTokenizeResult>(jsonData)?.ToResult(),
             LLmProviders.MoonshotAi => JsonConvert.DeserializeObject<VendorMoonshotAiTokenizeResult>(jsonData)?.ToResult(),
             LLmProviders.Anthropic => JsonConvert.DeserializeObject<VendorAnthropicTokenizeResult>(jsonData)?.ToResult(),
             LLmProviders.Google => JsonConvert.DeserializeObject<VendorGoogleTokenizeResult>(jsonData)?.ToResult(),

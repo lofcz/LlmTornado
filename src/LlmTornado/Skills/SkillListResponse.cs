@@ -12,7 +12,7 @@ public class SkillListResponse
     /// The list of skills.
     /// </summary>
     [JsonProperty("data")]
-    public List<Skill> Data { get; set; } = new();
+    public List<Skill> Data { get; set; } = [];
     
     /// <summary>
     /// Whether there are more results available.

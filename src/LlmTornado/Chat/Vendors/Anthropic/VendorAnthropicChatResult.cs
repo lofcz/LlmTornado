@@ -297,6 +297,20 @@ internal class VendorAnthropicChatResult : VendorChatResult
 
     public override ChatResult ToChatResult(string? postData, object? chatRequest)
     {
+        ChatRequestServiceTiers? resolvedServiceTier = Usage?.ServiceTier switch
+        {
+            "priority" => ChatRequestServiceTiers.Priority,
+            "standard" => null,
+            _ => null
+        };
+        
+        ChatRequestSpeeds? resolvedSpeed = Usage?.Speed switch
+        {
+            "fast" => ChatRequestSpeeds.Fast,
+            "standard" => ChatRequestSpeeds.Standard,
+            _ => null
+        };
+        
         ChatResult result = new ChatResult
         {
             Id = Id,
@@ -305,7 +319,9 @@ internal class VendorAnthropicChatResult : VendorChatResult
             Usage = new ChatUsage(Usage),
             Model = Model,
             ProcessingTime = TimeSpan.Zero,
-            Object = JsonConvert.SerializeObject(Content, EndpointBase.NullSettings)
+            Object = JsonConvert.SerializeObject(Content, EndpointBase.NullSettings),
+            ServiceTier = resolvedServiceTier,
+            Speed = resolvedSpeed
         };
 
         ChatMessage? toolsMsg = null;

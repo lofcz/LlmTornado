@@ -1,11 +1,7 @@
 using Qdrant.Client;
 using Qdrant.Client.Grpc;
-using LlmTornado.VectorDatabases;
 using static Qdrant.Client.Grpc.Conditions;
 using QdrantRange = Qdrant.Client.Grpc.Range;
-using Grpc.Net.Client;
-using System.Net.Http;
-using Grpc.Core.Interceptors;
 
 namespace LlmTornado.VectorDatabases.Qdrant;
 
@@ -15,9 +11,9 @@ namespace LlmTornado.VectorDatabases.Qdrant;
 /// </summary>
 public class QdrantVectorDatabase : IVectorDatabase
 {
-    private readonly QdrantClient _client;
-    private string _collectionName = "";
-    private readonly int _vectorDimension;
+    private readonly QdrantClient client;
+    private string collectionName = "";
+    private readonly int vectorDimension;
 
     /// <summary>
     /// Initializes a new instance of the QdrantVectorDatabase class.
@@ -34,9 +30,9 @@ public class QdrantVectorDatabase : IVectorDatabase
         bool https = false,
         string? apiKey = null)
     {
-        _vectorDimension = vectorDimension;
+        this.vectorDimension = vectorDimension;
 
-        _client = new QdrantClient(host, https: https, apiKey: apiKey);
+        client = new QdrantClient(host, https: https, apiKey: apiKey);
     }
 
     /// <summary>
@@ -45,27 +41,27 @@ public class QdrantVectorDatabase : IVectorDatabase
     /// <param name="collectionName">Name of the collection</param>
     public async Task InitializeCollectionAsync(string collectionName)
     {
-        _collectionName = collectionName;
+        this.collectionName = collectionName;
         
         // Check if collection exists
-        var collections = await _client.ListCollectionsAsync();
+        IReadOnlyList<string> collections = await client.ListCollectionsAsync();
         bool exists = collections.Any(c => c == collectionName);
 
         if (!exists)
         {
             // Create collection with vector configuration
-            await _client.CreateCollectionAsync(
+            await client.CreateCollectionAsync(
                 collectionName,
-                new VectorParams { Size = (ulong)_vectorDimension, Distance = Distance.Cosine }
+                new VectorParams { Size = (ulong)vectorDimension, Distance = Distance.Cosine }
             );
         }
     }
 
     public async Task<List<VectorCollection>> GetCollectionList()
     {
-        var collections = await _client.ListCollectionsAsync();
-        var result = new List<VectorCollection>();
-        foreach (var collection in collections)
+        IReadOnlyList<string> collections = await client.ListCollectionsAsync();
+        List<VectorCollection> result = [];
+        foreach (string collection in collections)
         {
            result.Add(new VectorCollection(collection));
         }
@@ -79,17 +75,17 @@ public class QdrantVectorDatabase : IVectorDatabase
     /// <param name="collectionName">Name of the collection to delete</param>
     public async Task DeleteCollectionAsync(string collectionName)
     {
-        await _client.DeleteCollectionAsync(collectionName);
+        await client.DeleteCollectionAsync(collectionName);
         
-        if (_collectionName == collectionName)
+        if (this.collectionName == collectionName)
         {
-            _collectionName = "";
+            this.collectionName = "";
         }
     }
 
     private void ThrowIfCollectionNotInitialized()
     {
-        if (string.IsNullOrEmpty(_collectionName))
+        if (string.IsNullOrEmpty(collectionName))
         {
             throw new InvalidOperationException(
                 "Collection is not initialized. Please call InitializeCollectionAsync first.");
@@ -99,7 +95,7 @@ public class QdrantVectorDatabase : IVectorDatabase
     /// <summary>
     /// Gets the current collection name.
     /// </summary>
-    public string GetCollectionName() => _collectionName;
+    public string GetCollectionName() => collectionName;
 
     /// <summary>
     /// Adds documents to the vector database.
@@ -116,14 +112,14 @@ public class QdrantVectorDatabase : IVectorDatabase
     {
         ThrowIfCollectionNotInitialized();
 
-        var points = new List<PointStruct>();
+        List<PointStruct> points = [];
         
-        foreach (var doc in documents)
+        foreach (VectorDocument doc in documents)
         {
-            var point = new PointStruct
+            PointStruct point = new PointStruct
             {
                 Id = new PointId { Uuid = doc.Id },
-                Vectors = doc.Embedding ?? Array.Empty<float>(),
+                Vectors = doc.Embedding ?? [],
                 Payload = { }
             };
 
@@ -136,7 +132,7 @@ public class QdrantVectorDatabase : IVectorDatabase
             // Add metadata to payload
             if (doc.Metadata != null)
             {
-                foreach (var kvp in doc.Metadata)
+                foreach (KeyValuePair<string, object> kvp in doc.Metadata)
                 {
                     point.Payload.Add(kvp.Key, ConvertToValue(kvp.Value));
                 }
@@ -145,7 +141,7 @@ public class QdrantVectorDatabase : IVectorDatabase
             points.Add(point);
         }
 
-        await _client.UpsertAsync(_collectionName, points);
+        await client.UpsertAsync(collectionName, points);
     }
 
     /// <summary>
@@ -163,9 +159,9 @@ public class QdrantVectorDatabase : IVectorDatabase
     {
         ThrowIfCollectionNotInitialized();
 
-        var pointIds = ids.Select(id => new PointId { Uuid = id }).ToList();
-        var points = await _client.RetrieveAsync(
-            _collectionName,
+        List<PointId> pointIds = ids.Select(id => new PointId { Uuid = id }).ToList();
+        IReadOnlyList<RetrievedPoint> points = await client.RetrieveAsync(
+            collectionName,
             pointIds,
             true, // with payload
             true  // with vectors
@@ -206,14 +202,14 @@ public class QdrantVectorDatabase : IVectorDatabase
     {
         ThrowIfCollectionNotInitialized();
 
-        var points = new List<PointStruct>();
+        List<PointStruct> points = [];
 
-        foreach (var doc in documents)
+        foreach (VectorDocument doc in documents)
         {
-            var point = new PointStruct
+            PointStruct point = new PointStruct
             {
                 Id = new PointId { Uuid = doc.Id },
-                Vectors = doc.Embedding ?? Array.Empty<float>(),
+                Vectors = doc.Embedding ?? [],
                 Payload = { }
             };
 
@@ -226,7 +222,7 @@ public class QdrantVectorDatabase : IVectorDatabase
             // Add metadata to payload
             if (doc.Metadata != null)
             {
-                foreach (var kvp in doc.Metadata)
+                foreach (KeyValuePair<string, object> kvp in doc.Metadata)
                 {
                     point.Payload.Add(kvp.Key, ConvertToValue(kvp.Value));
                 }
@@ -235,7 +231,7 @@ public class QdrantVectorDatabase : IVectorDatabase
             points.Add(point);
         }
 
-        await _client.UpsertAsync(_collectionName, points);
+        await client.UpsertAsync(collectionName, points);
     }
 
     /// <summary>
@@ -253,8 +249,8 @@ public class QdrantVectorDatabase : IVectorDatabase
     {
         ThrowIfCollectionNotInitialized();
 
-        var pointIds = ids.Select(id => new PointId { Uuid = id }).ToList();
-        await _client.DeleteAsync(_collectionName, pointIds);
+        List<PointId> pointIds = ids.Select(id => new PointId { Uuid = id }).ToList();
+        await client.DeleteAsync(collectionName, pointIds);
     }
 
     public Task DeleteAllDocumentsAsync()
@@ -292,8 +288,8 @@ public class QdrantVectorDatabase : IVectorDatabase
             filter = ConvertToQdrantFilter(where);
         }
 
-        var searchResults = await _client.SearchAsync(
-            _collectionName,
+        IReadOnlyList<ScoredPoint> searchResults = await client.SearchAsync(
+            collectionName,
             embedding,
             filter: filter,
             limit: (ulong)topK,
@@ -304,8 +300,6 @@ public class QdrantVectorDatabase : IVectorDatabase
         return searchResults.Select(result => ConvertToVectorDocument(result, includeScore))
             .ToArray();
     }
-
-
 
     /// <summary>
     /// Performs a similarity search using an embedding vector asynchronously.
@@ -322,8 +316,8 @@ public class QdrantVectorDatabase : IVectorDatabase
             filter = ConvertToQdrantFilter(where);
         }
 
-        var searchResults = await _client.ScrollAsync(
-            _collectionName,
+        ScrollResponse searchResults = await client.ScrollAsync(
+            collectionName,
             filter: filter,
             limit: limit,
             payloadSelector: true,
@@ -333,20 +327,19 @@ public class QdrantVectorDatabase : IVectorDatabase
         return searchResults.Result.Select(ConvertToVectorDocument).ToArray();
     }
 
-
     /// <summary>
     /// Converts a Qdrant ScoredPoint to a VectorDocument.
     /// </summary>
-    private VectorDocument ConvertToVectorDocument(ScoredPoint scoredPoint, bool includeScore = true)
+    private static VectorDocument ConvertToVectorDocument(ScoredPoint scoredPoint, bool includeScore = true)
     {
-        var id = scoredPoint.Id.Uuid;
-        var embedding = scoredPoint.Vectors?.Vector?.Data?.ToArray() ?? Array.Empty<float>();
-        var content = scoredPoint.Payload.ContainsKey("content")
-            ? scoredPoint.Payload["content"].StringValue
+        string? id = scoredPoint.Id.Uuid;
+        float[] embedding = scoredPoint.Vectors?.Vector?.Data?.ToArray() ?? [];
+        string? content = scoredPoint.Payload.TryGetValue("content", out Value? value)
+            ? value.StringValue
             : string.Empty;
 
-        var metadata = new Dictionary<string, object>();
-        foreach (var kvp in scoredPoint.Payload)
+        Dictionary<string, object> metadata = new Dictionary<string, object>();
+        foreach (KeyValuePair<string, Value> kvp in scoredPoint.Payload)
         {
             if (kvp.Key != "content")
             {
@@ -362,16 +355,16 @@ public class QdrantVectorDatabase : IVectorDatabase
     /// <summary>
     /// Converts a Qdrant RetrievedPoint to a VectorDocument.
     /// </summary>
-    private VectorDocument ConvertToVectorDocument(RetrievedPoint retrievedPoint)
+    private static VectorDocument ConvertToVectorDocument(RetrievedPoint retrievedPoint)
     {
-        var id = retrievedPoint.Id.Uuid;
-        var embedding = retrievedPoint.Vectors?.Vector?.Data?.ToArray() ?? Array.Empty<float>();
-        var content = retrievedPoint.Payload.ContainsKey("content")
-            ? retrievedPoint.Payload["content"].StringValue
+        string? id = retrievedPoint.Id.Uuid;
+        float[] embedding = retrievedPoint.Vectors?.Vector?.Data?.ToArray() ?? [];
+        string? content = retrievedPoint.Payload.TryGetValue("content", out Value? value)
+            ? value.StringValue
             : string.Empty;
 
-        var metadata = new Dictionary<string, object>();
-        foreach (var kvp in retrievedPoint.Payload)
+        Dictionary<string, object> metadata = new Dictionary<string, object>();
+        foreach (KeyValuePair<string, Value> kvp in retrievedPoint.Payload)
         {
             if (kvp.Key != "content")
             {
@@ -385,24 +378,24 @@ public class QdrantVectorDatabase : IVectorDatabase
     /// <summary>
     /// Converts a TornadoWhereOperator to a Qdrant Filter.
     /// </summary>
-    private Filter? ConvertToQdrantFilter(TornadoWhereOperator whereOperator)
+    private static Filter? ConvertToQdrantFilter(TornadoWhereOperator whereOperator)
     {
-        var whereDict = whereOperator.ToWhere();
+        Dictionary<string, object>? whereDict = whereOperator.ToWhere();
         if (whereDict == null || whereDict.Count == 0)
         {
             return null;
         }
 
-        var filter = new Filter();
-        var conditions = new List<Condition>();
+        Filter filter = new Filter();
+        List<Condition> conditions = [];
 
-        foreach (var kvp in whereDict)
+        foreach (KeyValuePair<string, object> kvp in whereDict)
         {
-            if (kvp.Key == "$and" && kvp.Value is object[] andValues)
+            if (kvp is { Key: "$and", Value: object[] andValues })
             {
                 // Handle AND operator
-                var must = new List<Condition>();
-                foreach (var item in andValues)
+                List<Condition> must = [];
+                foreach (object item in andValues)
                 {
                     if (item is Dictionary<string, object> dict)
                     {
@@ -411,11 +404,11 @@ public class QdrantVectorDatabase : IVectorDatabase
                 }
                 filter.Must.AddRange(must);
             }
-            else if (kvp.Key == "$or" && kvp.Value is object[] orValues)
+            else if (kvp is { Key: "$or", Value: object[] orValues })
             {
                 // Handle OR operator
-                var should = new List<Condition>();
-                foreach (var item in orValues)
+                List<Condition> should = [];
+                foreach (object item in orValues)
                 {
                     if (item is Dictionary<string, object> dict)
                     {
@@ -443,15 +436,15 @@ public class QdrantVectorDatabase : IVectorDatabase
     /// <summary>
     /// Converts a dictionary to Qdrant conditions.
     /// </summary>
-    private List<Condition> ConvertDictionaryToConditions(Dictionary<string, object> dict)
+    private static List<Condition> ConvertDictionaryToConditions(Dictionary<string, object> dict)
     {
-        var conditions = new List<Condition>();
+        List<Condition> conditions = [];
 
-        foreach (var kvp in dict)
+        foreach (KeyValuePair<string, object> kvp in dict)
         {
             if (kvp.Value is Dictionary<string, object> opDict)
             {
-                foreach (var op in opDict)
+                foreach (KeyValuePair<string, object> op in opDict)
                 {
                     Condition? condition = null;
 
@@ -488,17 +481,15 @@ public class QdrantVectorDatabase : IVectorDatabase
                             });
                             break;
                         case "$in":
-                            if (op.Value is object[] values && values.Length > 0)
+                            if (op.Value is object[] { Length: > 0 } values)
                             {
-                                // Try to match strings or integers
-                                if (values[0] is string)
+                                condition = values[0] switch
                                 {
-                                    condition = Match(kvp.Key, values.Select(v => v.ToString() ?? string.Empty).ToList());
-                                }
-                                else if (values[0] is int || values[0] is long)
-                                {
-                                    condition = Match(kvp.Key, values.Select(v => Convert.ToInt64(v)).ToList());
-                                }
+                                    // Try to match strings or integers
+                                    string => Match(kvp.Key, values.Select(v => v.ToString() ?? string.Empty).ToList()),
+                                    int or long => Match(kvp.Key, values.Select(Convert.ToInt64).ToList()),
+                                    _ => condition
+                                };
                             }
                             break;
                     }
@@ -517,12 +508,12 @@ public class QdrantVectorDatabase : IVectorDatabase
     /// <summary>
     /// Creates a Match condition based on the value type.
     /// </summary>
-    private Condition CreateMatchCondition(string key, object value)
+    private static Condition CreateMatchCondition(string key, object value)
     {
         return value switch
         {
             string str => MatchKeyword(key, str),
-            int i => Match(key, (long)i),
+            int i => Match(key, i),
             long l => Match(key, l),
             bool b => Match(key, b),
             _ => MatchKeyword(key, value.ToString() ?? string.Empty)
@@ -534,7 +525,7 @@ public class QdrantVectorDatabase : IVectorDatabase
     /// </summary>
     private static Value ConvertToValue(object obj)
     {
-        var value = new Value();
+        Value value = new Value();
 
         switch (obj)
         {

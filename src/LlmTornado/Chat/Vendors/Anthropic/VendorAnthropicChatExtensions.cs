@@ -20,7 +20,7 @@ public class AnthropicCacheSettings
     /// <summary>
     /// "ephemeral" type of cache, with variable time to live.
     /// </summary>
-    public static AnthropicCacheSettings EphemeralWithTtl(AnthropicCacheTtlOptions ttl)
+    public static AnthropicCacheSettings EphemeralWithTtl(ChatRequestCacheTtl ttl)
     {
         return new AnthropicCacheSettings
         {
@@ -39,7 +39,7 @@ public class AnthropicCacheSettings
     /// Time to live. Increasing this increases the price multiplier.
     /// </summary>
     [JsonProperty("ttl")]
-    public AnthropicCacheTtlOptions? Ttl { get; set; }
+    public ChatRequestCacheTtl? Ttl { get; set; }
 
     private AnthropicCacheSettings()
     {
@@ -60,23 +60,6 @@ public enum AnthropicCacheTypes
     Ephemeral
 }
 
-/// <summary>
-/// Time to live cache optins.
-/// </summary>
-[JsonConverter(typeof(StringEnumConverter))]
-public enum AnthropicCacheTtlOptions
-{
-    /// <summary>
-    /// 5m
-    /// </summary>
-    [EnumMember(Value = "5m")]
-    FiveMinutes,
-    /// <summary>
-    /// 1h
-    /// </summary>
-    [EnumMember(Value = "1h")]
-    OneHour
-}
 
 /// <summary>
 /// Thinking settings for Claude 3.7+ models.

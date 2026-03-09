@@ -1,13 +1,6 @@
 ﻿using A2A;
 using LlmTornado.Agents.DataModels;
-using LlmTornado.Chat;
-using LlmTornado.Code;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace LlmTornado.A2A;
 /// <summary>
@@ -36,9 +29,11 @@ public static partial class A2ATornadoExtension
 
     public static Artifact DefaultOrchestrationEventArtifact(this OrchestrationEvent e)
     {
-        Artifact artifact = new Artifact();
-        artifact.Description = "Agent Orchestration Event";
-        artifact.Parts.Add(new TextPart()
+        Artifact artifact = new Artifact
+        {
+            Description = "Agent Orchestration Event"
+        };
+        artifact.Parts.Add(new TextPart
         {
             Text = $"An orchestration event of type {e.Type} occurred."
         });
@@ -47,9 +42,11 @@ public static partial class A2ATornadoExtension
 
     public static Artifact ToArtifact(this OnVerboseOrchestrationEvent e)
     {
-        Artifact artifact = new Artifact();
-        artifact.Description = "Agent Verbose Orchestration Event";
-        artifact.Parts.Add(new TextPart()
+        Artifact artifact = new Artifact
+        {
+            Description = "Agent Verbose Orchestration Event"
+        };
+        artifact.Parts.Add(new TextPart
         {
             Text = e.Message ?? ""
         });
@@ -59,9 +56,11 @@ public static partial class A2ATornadoExtension
 
     public static Artifact ToArtifact(this OnErrorOrchestrationEvent e)
     {
-        Artifact artifact = new Artifact();
-        artifact.Description = "Agent Orchestration Error";
-        artifact.Parts.Add(new TextPart()
+        Artifact artifact = new Artifact
+        {
+            Description = "Agent Orchestration Error"
+        };
+        artifact.Parts.Add(new TextPart
         {
             Text = e.Exception?.ToString() ?? "Unknown error"
         });
@@ -71,9 +70,11 @@ public static partial class A2ATornadoExtension
 
     public static Artifact ToArtifact(this OnCancelledOrchestrationEvent e)
     {
-        Artifact artifact = new Artifact();
-        artifact.Description = "Agent Orchestration Cancelled";
-        artifact.Parts.Add(new TextPart()
+        Artifact artifact = new Artifact
+        {
+            Description = "Agent Orchestration Cancelled"
+        };
+        artifact.Parts.Add(new TextPart
         {
             Text = "The orchestration was cancelled."
         });
@@ -82,9 +83,11 @@ public static partial class A2ATornadoExtension
 
     public static Artifact ToArtifact(this OnBeginOrchestrationEvent e)
     {
-        Artifact artifact = new Artifact();
-        artifact.Description = "Agent Orchestration Started";
-        artifact.Parts.Add(new TextPart()
+        Artifact artifact = new Artifact
+        {
+            Description = "Agent Orchestration Started"
+        };
+        artifact.Parts.Add(new TextPart
         {
             Text = "The orchestration has started."
         });
@@ -93,9 +96,11 @@ public static partial class A2ATornadoExtension
 
     public static Artifact ToArtifact(this OnFinishedOrchestrationEvent e)
     {
-        Artifact artifact = new Artifact();
-        artifact.Description = "Agent Orchestration Completed";
-        artifact.Parts.Add(new TextPart()
+        Artifact artifact = new Artifact
+        {
+            Description = "Agent Orchestration Completed"
+        };
+        artifact.Parts.Add(new TextPart
         {
             Text = "The orchestration has completed."
         });
@@ -105,9 +110,11 @@ public static partial class A2ATornadoExtension
 
     public static Artifact ToArtifact(this OnInitializedOrchestrationEvent e)
     {
-        Artifact artifact = new Artifact();
-        artifact.Description = "Agent Orchestration Initialized";
-        artifact.Parts.Add(new TextPart()
+        Artifact artifact = new Artifact
+        {
+            Description = "Agent Orchestration Initialized"
+        };
+        artifact.Parts.Add(new TextPart
         {
             Text = "The orchestration has been initialized."
         });
@@ -116,9 +123,11 @@ public static partial class A2ATornadoExtension
 
     public static Artifact ToArtifact(this OnStartedRunnableEvent e)
     {
-        Artifact artifact = new Artifact();
-        artifact.Description = "Agent Orchestration Started Runnable";
-        artifact.Parts.Add(new TextPart()
+        Artifact artifact = new Artifact
+        {
+            Description = "Agent Orchestration Started Runnable"
+        };
+        artifact.Parts.Add(new TextPart
         {
             Text = $"The orchestration has started runnable: {e.RunnableBase.RunnableName}"
         });
@@ -127,9 +136,11 @@ public static partial class A2ATornadoExtension
 
     public static Artifact ToArtifact(this OnFinishedRunnableEvent e)
     {
-        Artifact artifact = new Artifact();
-        artifact.Description = "Agent Orchestration Completed Runnable";
-        artifact.Parts.Add(new TextPart()
+        Artifact artifact = new Artifact
+        {
+            Description = "Agent Orchestration Completed Runnable"
+        };
+        artifact.Parts.Add(new TextPart
         {
             Text = $"The orchestration has completed runnable: {e.Runnable.RunnableName}"
         });
@@ -138,33 +149,37 @@ public static partial class A2ATornadoExtension
 
     public static Artifact ToArtifact(this OnStartedRunnableProcessEvent e)
     {
-        Artifact artifact = new Artifact();
-        artifact.Description = "Agent Started Runnable with process";
-        artifact.Parts.Add(new TextPart()
+        Artifact artifact = new Artifact
         {
-            Text = $@"
-Agent Has Started Runnable {e.RunnableProcess.Runner.RunnableName} with process ID: {e.RunnableProcess.Id}  
-Input Variables: {JsonSerializer.Serialize(e.RunnableProcess.BaseInput)}
-"
+            Description = "Agent Started Runnable with process"
+        };
+        artifact.Parts.Add(new TextPart
+        {
+            Text = $"""
+                    Agent Has Started Runnable {e.RunnableProcess.Runner.RunnableName} with process ID: {e.RunnableProcess.Id}  
+                    Input Variables: {JsonSerializer.Serialize(e.RunnableProcess.BaseInput)}
+                    """
         });
         return artifact;
     }
 
     public static Artifact ToArtifact(this OnFinishedRunnableProcessEvent e)
     {
-        Artifact artifact = new Artifact();
-        artifact.Description = "Agent Finished Runnable with process";
-        artifact.Parts.Add(new TextPart()
+        Artifact artifact = new Artifact
         {
-            Text = $@"
-Agent Has Finished Runnable {e.RunnableProcess.Runner.RunnableName} with process ID: {e.RunnableProcess.Id}  
+            Description = "Agent Finished Runnable with process"
+        };
+        artifact.Parts.Add(new TextPart
+        {
+            Text = $"""
+                    Agent Has Finished Runnable {e.RunnableProcess.Runner.RunnableName} with process ID: {e.RunnableProcess.Id}  
 
-Process Duration: {e.RunnableProcess.RunnableExecutionTime.TotalSeconds} seconds
+                    Process Duration: {e.RunnableProcess.RunnableExecutionTime.TotalSeconds} seconds
 
-Token Usage: {e.RunnableProcess.TokenUsage}
+                    Token Usage: {e.RunnableProcess.TokenUsage}
 
-Result Variables: {JsonSerializer.Serialize(e.RunnableProcess.BaseResult)}
-"
+                    Result Variables: {JsonSerializer.Serialize(e.RunnableProcess.BaseResult)}
+                    """
         });
         return artifact;
     }

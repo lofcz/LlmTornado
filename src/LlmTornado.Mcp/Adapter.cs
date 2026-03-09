@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Common;
 using ModelContextProtocol;
@@ -11,14 +11,23 @@ namespace LlmTornado.Mcp;
 
 public static class McpExtensions
 {
+    private static string ToBase64(ReadOnlyMemory<byte> data)
+    {
+#if MODERN
+        return Convert.ToBase64String(data.Span);
+#else
+        return Convert.ToBase64String(data.ToArray());
+#endif
+    }
+    
     public static AnthropicMcpServer ToAnthropicMcpServerAsync(this MCPServer client)
     {
-        return new AnthropicMcpServer()
+        return new AnthropicMcpServer
         {
             Name = client.ServerLabel,
             Url = client.ServerUrl,
             AuthorizationToken = client.AdditionalConnectionHeaders?.FirstOrDefault(key => key.Key.ToLower().Contains("auth")).Value ?? string.Empty,
-            Configuration = new AnthropicMcpConfiguration()
+            Configuration = new AnthropicMcpConfiguration
             {
                 Enabled = true,
                 AllowedTools = client.AllowedTools ?? []
@@ -115,8 +124,8 @@ public static class McpExtensions
                         result = firstBlock switch
                         {
                             TextContentBlock textBlock => textBlock.Text,
-                            ImageContentBlock imageBlock => imageBlock.Data,
-                            AudioContentBlock audioBlock => audioBlock.Data,
+                            ImageContentBlock imageBlock => ToBase64(imageBlock.Data),
+                            AudioContentBlock audioBlock => ToBase64(audioBlock.Data),
                             EmbeddedResourceBlock embeddedResourceBlock => embeddedResourceBlock.Resource.Uri,
                             ResourceLinkBlock resourceLinkBlock => resourceLinkBlock.Uri,
                             _ => result
@@ -150,7 +159,7 @@ public static class McpExtensions
                                     blockToAdd = new McpContentBlockImage
                                     {
                                         Annotations = x.Annotations?.ToMcpAnnotations(),
-                                        Data = imageBlock.Data,
+                                        Data = ToBase64(imageBlock.Data),
                                         MimeType = imageBlock.MimeType,
                                         Type = x.Type,
                                         NativeBlock = x.ToNativeBlock()
@@ -163,7 +172,7 @@ public static class McpExtensions
                                     blockToAdd = new McpContentBlockAudio
                                     {
                                         Annotations = x.Annotations?.ToMcpAnnotations(),
-                                        Data = audioBlock.Data,
+                                        Data = ToBase64(audioBlock.Data),
                                         MimeType = audioBlock.MimeType,
                                         Type = x.Type,
                                         NativeBlock = x.ToNativeBlock()
@@ -176,7 +185,7 @@ public static class McpExtensions
                                     McpContentBlockEmbeddedResourceContents content = embeddedResourceBlock.Resource switch
                                     {
                                         TextResourceContents textResource => new McpContentBlockEmbeddedResourceContentsText { Text = textResource.Text },
-                                        BlobResourceContents blobResource => new McpContentBlockEmbeddedResourceContentsBlob { Blob = blobResource.Blob },
+                                        BlobResourceContents blobResource => new McpContentBlockEmbeddedResourceContentsBlob { Blob = ToBase64(blobResource.Blob) },
                                         _ => new McpContentBlockEmbeddedResourceContentsUnknown { Native = x }
                                     };
 

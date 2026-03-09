@@ -21,6 +21,11 @@ public class ChatModelAlibabaFlagship : IVendorModelClassProvider
     public readonly ChatModel Qwen3Max = ModelQwen3Max;
 
     /// <summary>
+    /// Qwen3.5-Plus - Native vision-language model
+    /// </summary>
+    public static readonly ChatModel ModelQwen35Plus = new ChatModel("qwen3.5-plus", LLmProviders.Alibaba, 1_000_000);
+
+    /// <summary>
     /// Qwen3-Max-Preview - Preview version with state-of-the-art performance
     /// </summary>
     public static readonly ChatModel ModelQwen3MaxPreview = new ChatModel("qwen3-max-preview", LLmProviders.Alibaba, 1_000_000);
@@ -240,7 +245,8 @@ public class ChatModelAlibabaFlagship : IVendorModelClassProvider
         ModelQwenPlusLatest, ModelQwenPlusCharacterJapanese, ModelQwen3Max20250923, ModelQwen3CoderPlus20250923,
         ModelQwenPlus20250911, ModelQwenPlus20250728, ModelQwen3CoderPlus20250722, ModelQwenPlus20250714,
         ModelQwenPlus20250428, ModelQwen3Next80BA3BInstruct, ModelQwen3Next80BA3BThinking, ModelQwen3Coder480BA35BInstruct,
-        ModelQwen3235BA22BInstruct2507, ModelQwen3235BA22BThinking2507, ModelQwen3235BA22B, ModelQwen332B, ModelQwenPlus20250125
+        ModelQwen3235BA22BInstruct2507, ModelQwen3235BA22BThinking2507, ModelQwen3235BA22B, ModelQwen332B, ModelQwenPlus20250125,
+        ModelQwen35Plus
     ]);
 
     /// <summary>

@@ -2,6 +2,7 @@ using LlmTornado.Code;
 using LlmTornado.Images;
 using LlmTornado.Images.Models;
 using LlmTornado.Images.Vendors.Google;
+using LlmTornado.Images.Vendors.MiniMax;
 using LlmTornado.Images.Vendors.XAi;
 using LlmTornado.Models;
 using PuppeteerSharp;
@@ -303,6 +304,49 @@ public class ImagesDemo : DemoBase
         await SaveImages("logo", edited);
     }
 
+    [TornadoTest]
+    [Flaky("expensive")]
+    public static async Task GenerateMiniMaxImage()
+    {
+        ImageGenerationResult? generatedImg = await Program.ConnectMulti().ImageGenerations.CreateImage(new ImageGenerationRequest
+        {
+            Prompt = "A futuristic city skyline at sunset with flying cars and neon signs, photorealistic",
+            Model = ImageModel.MiniMax.Image01.V1,
+            NumOfImages = 1,
+            ResponseFormat = TornadoImageResponseFormats.Url,
+            VendorExtensions = new ImageGenerationRequestVendorExtensions(new ImageGenerationRequestMiniMaxExtensions
+            {
+                AspectRatio = ImageAspectRatio.Landscape16x9,
+                PromptOptimizer = true
+            })
+        });
+
+        await DisplayImage(generatedImg);
+    }
+    
+    [TornadoTest]
+    [Flaky("expensive")]
+    public static async Task GenerateMiniMaxImageToImage()
+    {
+        ImageGenerationResult? generatedImg = await Program.ConnectMulti().ImageGenerations.CreateImage(new ImageGenerationRequest
+        {
+            Prompt = "A girl looking into the distance from a library window",
+            Model = ImageModel.MiniMax.Image01.V1,
+            NumOfImages = 1,
+            ResponseFormat = TornadoImageResponseFormats.Url,
+            VendorExtensions = new ImageGenerationRequestVendorExtensions(new ImageGenerationRequestMiniMaxExtensions
+            {
+                AspectRatio = ImageAspectRatio.Landscape16x9,
+                SubjectReferences =
+                [
+                    new ImageMiniMaxSubjectReference("https://cdn.hailuoai.com/prod/2025-08-12-17/video_cover/1754990600020238321-411603868533342214-cover.jpg")
+                ]
+            })
+        });
+
+        await DisplayImage(generatedImg);
+    }
+    
     public static async Task SaveImages(string imageName, ImageGenerationResult generatedImg)
     {
         if (generatedImg?.Data == null || generatedImg.Data.Count == 0)

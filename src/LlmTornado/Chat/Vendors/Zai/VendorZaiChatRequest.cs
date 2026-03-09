@@ -29,10 +29,11 @@ internal class VendorZaiChatRequest
         SourceRequest = request;
         ChatRequestVendorZaiExtensions? extensions = request.VendorExtensions?.Zai;
 
+        // Always create extended request to handle ZAI-specific field mappings (user_id, thinking, tools)
+        ExtendedRequest = new VendorZaiChatRequestData(request);
+        
         if (extensions is not null)
         {
-            ExtendedRequest = new VendorZaiChatRequestData(request);
-            
             if (extensions.DoSample is not null)
             {
                 ExtendedRequest.DoSample = extensions.DoSample;
@@ -52,10 +53,6 @@ internal class VendorZaiChatRequest
             {
                 ExtendedRequest.Thinking = extensions.Thinking;
             }
-        }
-        else
-        {
-            NativeRequest = request;
         }
     }
 }

@@ -556,7 +556,7 @@ internal static class ResponseHelpers
         return null;
     }
     
-    private static List<ResponseTool> ConvertTools(List<Tool> tools)
+    internal static List<ResponseTool> ConvertTools(List<Tool> tools)
     {
         List<ResponseTool> result = new List<ResponseTool>(tools.Count);
         

@@ -11,17 +11,47 @@ namespace LlmTornado.Chat.Models.Zai;
 public class ChatModelZaiGlm : IVendorModelClassProvider
 {
     /// <summary>
-    /// GLM-4.7 - Highest Performance, Strong Coding, More Versatile
+    /// GLM-5 - Flagship Foundation Model designed for Agentic Engineering, capable of complex system engineering and long-range Agent tasks. 200K context, 128K max output.
+    /// </summary>
+    public static readonly ChatModel ModelGlm5 = new ChatModel("glm-5", LLmProviders.Zai, 200_000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelGlm5"/>
+    /// </summary>
+    public readonly ChatModel Glm5 = ModelGlm5;
+    
+    /// <summary>
+    /// GLM-4.7 - Highest Performance, Strong Coding, More Versatile. 200K context, 128K max output.
     /// </summary>
     public static readonly ChatModel ModelGlm47 = new ChatModel("glm-4.7", LLmProviders.Zai, 200_000);
 
     /// <summary>
-    /// <inheritdoc cref="ModelGlm46"/>
+    /// <inheritdoc cref="ModelGlm47"/>
     /// </summary>
     public readonly ChatModel Glm47 = ModelGlm47;
     
     /// <summary>
-    /// GLM-4.6 - Highest Performance, Strong Coding, More Versatile
+    /// GLM-4.7-Flash - Lightweight and efficient model, free-tier version of GLM-4.7 with strong coding, reasoning, and generative task performance. 200K context, 128K max output.
+    /// </summary>
+    public static readonly ChatModel ModelGlm47Flash = new ChatModel("glm-4.7-flash", LLmProviders.Zai, 200_000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelGlm47Flash"/>
+    /// </summary>
+    public readonly ChatModel Glm47Flash = ModelGlm47Flash;
+    
+    /// <summary>
+    /// GLM-4.7-FlashX - Ultra-fast response variant of GLM-4.7. 200K context, 128K max output.
+    /// </summary>
+    public static readonly ChatModel ModelGlm47FlashX = new ChatModel("glm-4.7-flashx", LLmProviders.Zai, 200_000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelGlm47FlashX"/>
+    /// </summary>
+    public readonly ChatModel Glm47FlashX = ModelGlm47FlashX;
+    
+    /// <summary>
+    /// GLM-4.6 - Highest Performance, Strong Coding, More Versatile. 200K context, 128K max output.
     /// </summary>
     public static readonly ChatModel ModelGlm46 = new ChatModel("glm-4.6", LLmProviders.Zai, 200_000);
 
@@ -49,6 +79,16 @@ public class ChatModelZaiGlm : IVendorModelClassProvider
     /// <inheritdoc cref="ModelGlm46VFlash"/>
     /// </summary>
     public readonly ChatModel Glm46VFlash = ModelGlm46VFlash;
+
+    /// <summary>
+    /// GLM-4.6V-FlashX - Ultra-fast multimodal (Video/Image/Text/File) vision model. 128K context.
+    /// </summary>
+    public static readonly ChatModel ModelGlm46VFlashX = new ChatModel("glm-4.6v-flashx", LLmProviders.Zai, 128_000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelGlm46VFlashX"/>
+    /// </summary>
+    public readonly ChatModel Glm46VFlashX = ModelGlm46VFlashX;
 
     /// <summary>
     /// GLM-4.5 - Better Performance, Strong Reasoning, More Versatile
@@ -121,6 +161,16 @@ public class ChatModelZaiGlm : IVendorModelClassProvider
     public readonly ChatModel Glm45Flash = ModelGlm45Flash;
 
     /// <summary>
+    /// AutoGLM-Phone-Multilingual - Mobile intelligent assistant model. 4K max output.
+    /// </summary>
+    public static readonly ChatModel ModelAutoGlmPhone = new ChatModel("autoglm-phone-multilingual", LLmProviders.Zai, 128_000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelAutoGlmPhone"/>
+    /// </summary>
+    public readonly ChatModel AutoGlmPhone = ModelAutoGlmPhone;
+
+    /// <summary>
     /// All GLM models from ZAI.
     /// </summary>
     public List<IModel> AllModels => ModelsAll;
@@ -131,17 +181,22 @@ public class ChatModelZaiGlm : IVendorModelClassProvider
     public static List<IModel> ModelsAll => LazyModelsAll.Value;
 
     private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [
+        ModelGlm5,
         ModelGlm47,
+        ModelGlm47Flash,
+        ModelGlm47FlashX,
         ModelGlm46,
         ModelGlm46V,
         ModelGlm46VFlash,
+        ModelGlm46VFlashX,
         ModelGlm45,
         ModelGlm45V,
         ModelGlm45X,
         ModelGlm45Air,
         ModelGlm45AirX,
         ModelGlm432B,
-        ModelGlm45Flash
+        ModelGlm45Flash,
+        ModelAutoGlmPhone
     ]);
 
     internal ChatModelZaiGlm()

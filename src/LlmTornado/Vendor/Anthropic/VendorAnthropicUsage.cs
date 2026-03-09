@@ -40,6 +40,12 @@ public class VendorAnthropicUsage : IChatUsage
 
     [JsonProperty("service_tier")]
     public string? ServiceTier { get; set; }
+    
+    /// <summary>
+    /// Speed tier used for the request. Returns <c>"fast"</c> or <c>"standard"</c>.
+    /// </summary>
+    [JsonProperty("speed")]
+    public string? Speed { get; set; }
 
     [JsonProperty("server_tool_use")]
     public VendorAnthropicServerUsage? ServerToolUsage { get; set; }

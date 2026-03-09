@@ -196,6 +196,12 @@ public class ResponseInputContentFile : ResponseInputContent
     public string? FileData { get; set; }
 
     /// <summary>
+    /// The URL of the file to be sent to the model.
+    /// </summary>
+    [JsonProperty("file_url")]
+    public string? FileUrl { get; set; }
+
+    /// <summary>
     /// Creates a new, empty <see cref="ResponseInputContentFile"/>.
     /// </summary>
     public ResponseInputContentFile() { }
@@ -218,6 +224,30 @@ public class ResponseInputContentFile : ResponseInputContent
     {
         Filename = filename;
         FileData = fileData;
+    }
+
+    /// <summary>
+    /// Creates a <see cref="ResponseInputContentFile"/> referencing an external URL.
+    /// </summary>
+    public static ResponseInputContentFile CreateFromUrl(string fileUrl)
+    {
+        return new ResponseInputContentFile { FileUrl = fileUrl };
+    }
+
+    /// <summary>
+    /// Creates a <see cref="ResponseInputContentFile"/> referencing a file uploaded via the Files API.
+    /// </summary>
+    public static ResponseInputContentFile CreateFromFileId(string fileId)
+    {
+        return new ResponseInputContentFile { FileId = fileId };
+    }
+
+    /// <summary>
+    /// Creates a <see cref="ResponseInputContentFile"/> with Base64-encoded file data.
+    /// </summary>
+    public static ResponseInputContentFile CreateFromBase64(string filename, string fileData)
+    {
+        return new ResponseInputContentFile { Filename = filename, FileData = fileData };
     }
 }
 
@@ -285,6 +315,11 @@ internal class InputContentJsonConverter : JsonConverter<ResponseInputContent>
                     writer.WritePropertyName("file_data");
                     writer.WriteValue(fileContent.FileData);
                 }
+                if (!string.IsNullOrEmpty(fileContent.FileUrl))
+                {
+                    writer.WritePropertyName("file_url");
+                    writer.WriteValue(fileContent.FileUrl);
+                }
                 break;
             }
             default:
@@ -330,7 +365,8 @@ internal class InputContentJsonConverter : JsonConverter<ResponseInputContent>
                 {
                     FileId = jo["file_id"]?.ToString(),
                     Filename = jo["filename"]?.ToString(),
-                    FileData = jo["file_data"]?.ToString()
+                    FileData = jo["file_data"]?.ToString(),
+                    FileUrl = jo["file_url"]?.ToString()
                 };
                 return fileContent;
             }

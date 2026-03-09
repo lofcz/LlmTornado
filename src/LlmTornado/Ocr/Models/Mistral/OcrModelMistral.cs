@@ -17,7 +17,7 @@ public class OcrModelMistral : BaseVendorModelProvider
     /// OCR 3 (mistral-ocr-2512) - Released December 2024.
     /// Features: table_format (markdown/html), extract_header, extract_footer, hyperlinks output.
     /// </summary>
-    public static readonly OcrModel ModelOcr2512 = new OcrModel("mistral-ocr-2512", LLmProviders.Mistral, new List<string> { "mistral-ocr-latest" });
+    public static readonly OcrModel ModelOcr2512 = new OcrModel("mistral-ocr-2512", LLmProviders.Mistral, ["mistral-ocr-latest"]);
 
     /// <summary>
     /// <inheritdoc cref="ModelOcr2512"/>

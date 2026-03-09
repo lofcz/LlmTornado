@@ -66,6 +66,12 @@ public enum ResponseReasoningEfforts
     None,
     
     /// <summary>
+    /// Minimal reasoning effort.
+    /// </summary>
+    [EnumMember(Value = "minimal")]
+    Minimal,
+    
+    /// <summary>
     /// Low reasoning effort.
     /// </summary>
     [EnumMember(Value = "low")]
@@ -84,7 +90,7 @@ public enum ResponseReasoningEfforts
     High,
     
     /// <summary>
-    /// Extra high reasoning effort. Available for GPT-5.2 and GPT-5.1-Codex-Max.
+    /// Extra high reasoning effort. Available for GPT-5.2, GPT-5.4, and GPT-5.1-Codex-Max.
     /// </summary>
     [EnumMember(Value = "xhigh")]
     XHigh
@@ -187,7 +193,35 @@ public enum ResponseIncludeFields
     /// Includes an encrypted version of reasoning tokens in reasoning item outputs.
     /// </summary>
     [EnumMember(Value = "reasoning.encrypted_content")]
-    ReasoningEncryptedContent
+    ReasoningEncryptedContent,
+
+    /// <summary>
+    /// Include the search results of the web search tool call.
+    /// </summary>
+    [EnumMember(Value = "web_search_call.results")]
+    WebSearchCallResults
+}
+
+/// <summary>
+/// Labels an assistant message as intermediate commentary or the final answer.
+/// For models like gpt-5.3-codex and beyond, when sending follow-up requests,
+/// preserve and resend phase on all assistant messages — dropping it can degrade performance.
+/// Not used for user messages.
+/// </summary>
+[JsonConverter(typeof(StringEnumConverter))]
+public enum ResponsePhases
+{
+    /// <summary>
+    /// Intermediate assistant commentary.
+    /// </summary>
+    [EnumMember(Value = "commentary")]
+    Commentary,
+    
+    /// <summary>
+    /// The final assistant answer.
+    /// </summary>
+    [EnumMember(Value = "final_answer")]
+    FinalAnswer
 }
 
 /// <summary>

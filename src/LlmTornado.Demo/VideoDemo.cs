@@ -2,6 +2,7 @@ using LlmTornado.Code;
 using LlmTornado.Common;
 using LlmTornado.Videos;
 using LlmTornado.Videos.Models;
+using LlmTornado.Videos.Vendors.MiniMax;
 using LlmTornado.Videos.Vendors.Zai;
 
 namespace LlmTornado.Demo;
@@ -323,6 +324,88 @@ public class VideoDemo : DemoBase
             OnFinished = async (job, videoStream) =>
             {
                 Console.WriteLine($"Video generation completed!");
+                string savedTo = await videoStream.SaveToFileAsync(outputPath);
+                Console.WriteLine($"Video saved to: {savedTo}");
+            }
+        });
+
+        Console.WriteLine(result.Data?.Done == true ? $"Process completed. Check {outputPath} for the video." : "Video generation failed or returned no results.");
+    }
+    
+    [TornadoTest, Flaky("expensive")]
+    public static async Task GenerateSimpleVideoMiniMax()
+    {
+        TornadoApi api = Program.Connect();
+        
+        VideoGenerationRequest request = new VideoGenerationRequest(
+            "A cat playing with a ball in a sunlit garden. [Tracking shot]",
+            VideoModel.MiniMax.Hailuo.Hailuo23,
+            duration: VideoDuration.Seconds6
+        )
+        {
+            MiniMaxExtensions = new VideoMiniMaxExtensions
+            {
+                Resolution = VideoMiniMaxResolution.P1080,
+                PromptOptimizer = true
+            }
+        };
+        
+        const string outputPath = "output/generated_video_minimax.mp4";
+        
+        Console.WriteLine("Starting MiniMax Hailuo video generation...");
+        HttpCallResult<VideoJob>? result = await api.Videos.CreateAndWait(request, new VideoJobEvents
+        {
+            OnPoll = async (job, index, elapsed) =>
+            {
+                Console.WriteLine($"[Poll #{index}] Status: {job.Status} - Elapsed: {elapsed.TotalSeconds:F1}s");
+                await ValueTask.CompletedTask;
+            },
+            OnFinished = async (job, videoStream) =>
+            {
+                Console.WriteLine($"Video generation completed! Size: {job.Size}");
+                string savedTo = await videoStream.SaveToFileAsync(outputPath);
+                Console.WriteLine($"Video saved to: {savedTo}");
+            }
+        });
+
+        Console.WriteLine(result.Data?.Done == true ? $"Process completed. Check {outputPath} for the video." : "Video generation failed or returned no results.");
+    }
+    
+    [TornadoTest, Flaky("expensive")]
+    public static async Task GenerateImageToVideoMiniMax()
+    {
+        TornadoApi api = Program.Connect();
+        
+        byte[] bytes = await File.ReadAllBytesAsync("Static/Images/bull.jpeg");
+        string base64 = $"data:image/jpeg;base64,{Convert.ToBase64String(bytes)}";
+        
+        VideoGenerationRequest request = new VideoGenerationRequest(
+            "A majestic bull walks forward confidently through a green meadow.",
+            VideoModel.MiniMax.Hailuo.Hailuo23,
+            duration: VideoDuration.Seconds6
+        )
+        {
+            Image = new VideoImage(base64, "image/jpeg"),
+            MiniMaxExtensions = new VideoMiniMaxExtensions
+            {
+                Resolution = VideoMiniMaxResolution.P768,
+                PromptOptimizer = false
+            }
+        };
+        
+        const string outputPath = "output/generated_video_minimax_i2v.mp4";
+        
+        Console.WriteLine("Starting MiniMax Hailuo image-to-video generation...");
+        HttpCallResult<VideoJob>? result = await api.Videos.CreateAndWait(request, new VideoJobEvents
+        {
+            OnPoll = async (job, index, elapsed) =>
+            {
+                Console.WriteLine($"[Poll #{index}] Status: {job.Status} - Elapsed: {elapsed.TotalSeconds:F1}s");
+                await ValueTask.CompletedTask;
+            },
+            OnFinished = async (job, videoStream) =>
+            {
+                Console.WriteLine($"Video generation completed! Size: {job.Size}");
                 string savedTo = await videoStream.SaveToFileAsync(outputPath);
                 Console.WriteLine($"Video saved to: {savedTo}");
             }

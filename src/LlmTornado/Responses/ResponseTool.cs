@@ -942,11 +942,23 @@ public class ResponseApplyPatchTool : ResponseTool
 }
 
 /// <summary>
-/// Represents the remote shell tool.
+/// Represents the remote shell tool. Supports hosted container-based execution
+/// and local execution with optional skills and network policy configuration.
 /// </summary>
 public class ResponseShellTool : ResponseTool
 {
+    /// <summary>
+    /// The type of the shell tool. Always "shell".
+    /// </summary>
     public override string Type => "shell";
+
+    /// <summary>
+    /// The execution environment for the shell tool. Controls where commands run
+    /// (local, auto-provisioned container, or referenced container) and what
+    /// skills and network access are available.
+    /// </summary>
+    [JsonProperty("environment")]
+    public ResponseShellEnvironment? Environment { get; set; }
 }
 /// <summary>
 /// Custom converter for polymorphic deserialization of response tools.
@@ -1078,7 +1090,15 @@ internal class ResponseToolConverter : JsonConverter
             case "apply_patch":
                 return new ResponseApplyPatchTool();
             case "shell":
-                return new ResponseShellTool();
+                ResponseShellEnvironment? shellEnv = null;
+                if (jo["environment"] is JObject envObj)
+                {
+                    shellEnv = envObj.ToObject<ResponseShellEnvironment>(serializer);
+                }
+                return new ResponseShellTool
+                {
+                    Environment = shellEnv
+                };
             default:
                 throw new JsonSerializationException($"Unknown tool type: {type}");
         }
@@ -1315,6 +1335,11 @@ internal class ResponseToolConverter : JsonConverter
             case ResponseShellTool shell:
                 writer.WritePropertyName("type");
                 writer.WriteValue(shell.Type);
+                if (shell.Environment is not null)
+                {
+                    writer.WritePropertyName("environment");
+                    serializer.Serialize(writer, shell.Environment);
+                }
                 break;
         }
         writer.WriteEndObject();

@@ -433,7 +433,7 @@ public partial class ChatDemo : DemoBase
             new ChatMessagePart("You are an assistant answering queries about the following text"),
             new ChatMessagePart(longPrompt, new ChatMessagePartAnthropicExtensions
             {
-                Cache = AnthropicCacheSettings.EphemeralWithTtl(AnthropicCacheTtlOptions.OneHour)
+                Cache = AnthropicCacheSettings.EphemeralWithTtl(ChatRequestCacheTtl.OneHour)
             }) 
         ]);
         
@@ -960,6 +960,71 @@ public partial class ChatDemo : DemoBase
     }
     
     [TornadoTest]
+    public static async Task AudioInGptAudioMp3()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.OpenAi.Gpt5.Audio,
+            Modalities = [ ChatModelModalities.Text ],
+            MaxTokens = 2000
+        });
+
+        byte[] audioData = await File.ReadAllBytesAsync("Static/Audio/sample.mp3");
+        
+        chat.AppendUserInput([
+            new ChatMessagePart("What is being said in this audio?"),
+            new ChatMessagePart(audioData, ChatAudioFormats.Mp3)
+        ]);
+        
+        string? str = await chat.GetResponse();
+        Console.WriteLine(str);
+    }
+    
+    [TornadoTest]
+    public static async Task AudioInGptAudioWav()
+    {
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = ChatModel.OpenAi.Gpt5.Audio,
+            Modalities = [ ChatModelModalities.Text ],
+            MaxTokens = 2000
+        });
+
+        byte[] audioData = await File.ReadAllBytesAsync("Static/Audio/sample.wav");
+        
+        chat.AppendUserInput([
+            new ChatMessagePart(audioData, ChatAudioFormats.Wav)
+        ]);
+        
+        string? str = await chat.GetResponse();
+        Console.WriteLine(str);
+    }
+    
+    [TornadoTest]
+    public static async Task AudioInGptAudioDirect()
+    {
+        TornadoApi api = Program.Connect();
+        
+        byte[] audioData = await File.ReadAllBytesAsync("Static/Audio/sample.mp3");
+        
+        List<ChatMessagePart> parts =
+        [
+            new ChatMessagePart("What is being said in this audio?"),
+            new ChatMessagePart(audioData, ChatAudioFormats.Mp3)
+        ];
+
+        ChatResult? result = await api.Chat.CreateChatCompletion(new ChatRequest
+        {
+            Model = ChatModel.OpenAi.Gpt5.Audio,
+            Modalities = [ ChatModelModalities.Text ],
+            MaxTokens = 2000,
+            Messages = [new ChatMessage(ChatMessageRoles.User, parts)]
+        });
+        
+        Console.WriteLine(result?.Choices?.FirstOrDefault()?.Message?.Content);
+    }
+    
+    [TornadoTest]
     public static async Task AudioInAudioOutMultiturn()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
@@ -1050,7 +1115,7 @@ public partial class ChatDemo : DemoBase
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.Anthropic.Claude35.Haiku,
+            Model = ChatModel.Anthropic.Claude45.Haiku251001,
             MaxTokens = 2000
         });
         chat.AppendUserInput("Who are you?");
@@ -1221,7 +1286,7 @@ public partial class ChatDemo : DemoBase
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.Anthropic.Claude37.Sonnet
+            Model = ChatModel.Anthropic.Claude46.Sonnet
         });
         
         chat.AppendSystemMessage("Pretend you are a dog. Sound authentic.");
@@ -1238,7 +1303,7 @@ public partial class ChatDemo : DemoBase
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.Anthropic.Claude37.Sonnet,
+            Model = ChatModel.Anthropic.Claude46.Sonnet,
             VendorExtensions = new ChatRequestVendorExtensions(new ChatRequestVendorAnthropicExtensions
             {
                 Thinking = new AnthropicThinkingSettings
@@ -1274,7 +1339,7 @@ public partial class ChatDemo : DemoBase
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.Anthropic.Claude37.Sonnet,
+            Model = ChatModel.Anthropic.Claude46.Sonnet,
             VendorExtensions = new ChatRequestVendorExtensions(new ChatRequestVendorAnthropicExtensions
             {
                 Thinking = new AnthropicThinkingSettings
@@ -1325,7 +1390,7 @@ public partial class ChatDemo : DemoBase
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.Anthropic.Claude37.Sonnet,
+            Model = ChatModel.Anthropic.Claude46.Sonnet,
             Stream = true,
             VendorExtensions = new ChatRequestVendorExtensions(new ChatRequestVendorAnthropicExtensions
             {
@@ -1409,7 +1474,7 @@ public partial class ChatDemo : DemoBase
     {
         Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.Anthropic.Claude37.Sonnet
+            Model = ChatModel.Anthropic.Claude46.Sonnet
         });
       
         chat2.AppendUserInput([
@@ -1428,7 +1493,7 @@ public partial class ChatDemo : DemoBase
     {
         Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.Anthropic.Claude37.Sonnet
+            Model = ChatModel.Anthropic.Claude46.Sonnet
         });
 
         byte[] bytes = await File.ReadAllBytesAsync("Static/Images/catBoi.jpg");
@@ -1450,7 +1515,7 @@ public partial class ChatDemo : DemoBase
     {
         Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.Anthropic.Claude37.Sonnet
+            Model = ChatModel.Anthropic.Claude46.Sonnet
         });
 
         byte[] bytes = await File.ReadAllBytesAsync("Static/Files/sample.pdf");
@@ -1472,7 +1537,7 @@ public partial class ChatDemo : DemoBase
     {
         Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.Anthropic.Claude37.Sonnet
+            Model = ChatModel.Anthropic.Claude46.Sonnet
         });
         
         chat2.AppendUserInput([

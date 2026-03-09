@@ -38,11 +38,26 @@ public class ChatModelOpenAiCodex : IVendorModelClassProvider
     public readonly ChatModel MiniLatest = ModelMiniLatest;
 
     /// <summary>
+    /// GPT-5.3-Codex is OpenAI's most capable agentic coding model to date.
+    /// Supports low, medium, high, and xhigh reasoning effort settings.
+    /// 400,000 context window, 128,000 max output tokens, Aug 31, 2025 knowledge cutoff.
+    /// </summary>
+    public static readonly ChatModel ModelGpt53Codex = new ChatModel("gpt-5.3-codex", LLmProviders.OpenAi, 400_000)
+    {
+        EndpointCapabilities = [ ChatModelEndpointCapabilities.Responses, ChatModelEndpointCapabilities.Chat, ChatModelEndpointCapabilities.Batch ]
+    };
+
+    /// <summary>
+    /// <inheritdoc cref="ModelGpt53Codex"/>
+    /// </summary>
+    public readonly ChatModel Gpt53Codex = ModelGpt53Codex;
+
+    /// <summary>
     /// All known Codex models from OpenAI.
     /// </summary>
     public static List<IModel> ModelsAll => LazyModelsAll.Value;
 
-    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [ModelMiniLatest, ModelComputerUsePreview]);
+    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [ModelMiniLatest, ModelComputerUsePreview, ModelGpt53Codex]);
     
     /// <summary>
     /// <inheritdoc cref="ModelsAll"/>

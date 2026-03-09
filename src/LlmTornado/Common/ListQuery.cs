@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using LlmTornado.Code;
+using LlmTornado.Files;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Common;
@@ -75,6 +76,12 @@ public sealed class ListQuery
     public string? PageToken { get; set; }
 
     /// <summary>
+    /// File purpose filter. Required by MiniMax when listing files.
+    /// </summary>
+    [JsonIgnore]
+    public FilePurpose? Purpose { get; set; }
+
+    /// <summary>
     /// Transforms the <see cref="ListQuery"/> into a series of <see cref="Uri" /> query parameters.
     /// </summary>
     /// <param name="provider"></param>
@@ -135,6 +142,21 @@ public sealed class ListQuery
                 if (query.PageToken is not null)
                 {
                     parameters["after_id"] = query.PageToken;
+                }
+
+                return parameters;
+            }
+            case LLmProviders.MiniMax:
+            {
+                if (query.Purpose is not null)
+                {
+                    parameters["purpose"] = query.Purpose.Value switch
+                    {
+                        FilePurpose.VoiceClone => "voice_clone",
+                        FilePurpose.PromptAudio => "prompt_audio",
+                        FilePurpose.TextToAudioAsyncInput => "t2a_async_input",
+                        _ => "voice_clone"
+                    };
                 }
 
                 return parameters;

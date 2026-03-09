@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Runtime.Serialization;
+using LlmTornado.Vendor.Anthropic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
@@ -87,6 +88,34 @@ public enum VendorAnthropicChatRequestBuiltInToolTypes
     /// </summary>
     [EnumMember(Value = "tool_search_tool_bm25_20251119")]
     ToolSearchBm2520251119,
+    
+    /// <summary>
+    /// Web search tool (standard). Gives Claude access to real-time web content with automatic citations.
+    /// </summary>
+    [EnumMember(Value = "web_search_20250305")]
+    WebSearch20250305,
+    
+    /// <summary>
+    /// Web search tool with dynamic filtering (Claude Opus 4.6 and Sonnet 4.6).
+    /// Claude can write and execute code to filter search results before they reach the context window.
+    /// Requires the <c>code-execution-web-tools-2026-02-09</c> beta header (added automatically).
+    /// </summary>
+    [EnumMember(Value = "web_search_20260209")]
+    WebSearch20260209,
+    
+    /// <summary>
+    /// Web fetch tool (standard). Allows Claude to retrieve full content from specified URLs and PDFs.
+    /// </summary>
+    [EnumMember(Value = "web_fetch_20250910")]
+    WebFetch20250910,
+    
+    /// <summary>
+    /// Web fetch tool with dynamic filtering (Claude Opus 4.6 and Sonnet 4.6).
+    /// Claude can write and execute code to filter fetched content before it reaches the context window.
+    /// Requires the <c>code-execution-web-tools-2026-02-09</c> beta header (added automatically).
+    /// </summary>
+    [EnumMember(Value = "web_fetch_20260209")]
+    WebFetch20260209,
 }
 
 /// <summary>
@@ -294,4 +323,192 @@ public class VendorAnthropicChatRequestBuiltInToolSearchBm2520251119 : IVendorAn
     /// </summary>
     [JsonProperty("cache_control")]
     public AnthropicCacheSettings? Cache { get; set; }
+}
+
+/// <summary>
+/// Standard web search tool. Gives Claude access to real-time web content with automatic citations.
+/// </summary>
+public class VendorAnthropicChatRequestBuiltInToolWebSearch20250305 : IVendorAnthropicChatRequestBuiltInTool
+{
+    /// <summary>
+    /// The type of the tool.
+    /// </summary>
+    public VendorAnthropicChatRequestBuiltInToolTypes Type => VendorAnthropicChatRequestBuiltInToolTypes.WebSearch20250305;
+
+    /// <summary>
+    /// The name of the tool.
+    /// </summary>
+    [JsonProperty("name")]
+    public string Name => "web_search";
+
+    /// <summary>
+    /// Cache control settings for the tool.
+    /// </summary>
+    [JsonProperty("cache_control")]
+    public AnthropicCacheSettings? Cache { get; set; }
+
+    /// <summary>
+    /// Maximum number of searches Claude may perform per request. Must be greater than 0.
+    /// </summary>
+    public int? MaxUses { get; set; }
+
+    /// <summary>
+    /// If set, only results from these domains are included. Cannot be used with <see cref="BlockedDomains"/>.
+    /// </summary>
+    public List<string>? AllowedDomains { get; set; }
+
+    /// <summary>
+    /// If set, results from these domains are excluded. Cannot be used with <see cref="AllowedDomains"/>.
+    /// </summary>
+    public List<string>? BlockedDomains { get; set; }
+
+    /// <summary>
+    /// Optional user location used to localise search results.
+    /// </summary>
+    public VendorAnthropicToolFunctionUserLocation? UserLocation { get; set; }
+}
+
+/// <summary>
+/// Web search tool with dynamic filtering. Available on Claude Opus 4.6 and Sonnet 4.6.
+/// Claude writes and executes code to filter search results before they reach the context window,
+/// improving accuracy while reducing token consumption.
+/// The <c>code-execution-web-tools-2026-02-09</c> beta header is added automatically.
+/// </summary>
+public class VendorAnthropicChatRequestBuiltInToolWebSearch20260209 : IVendorAnthropicChatRequestBuiltInTool
+{
+    /// <summary>
+    /// The type of the tool.
+    /// </summary>
+    public VendorAnthropicChatRequestBuiltInToolTypes Type => VendorAnthropicChatRequestBuiltInToolTypes.WebSearch20260209;
+
+    /// <summary>
+    /// The name of the tool.
+    /// </summary>
+    [JsonProperty("name")]
+    public string Name => "web_search";
+
+    /// <summary>
+    /// Cache control settings for the tool.
+    /// </summary>
+    [JsonProperty("cache_control")]
+    public AnthropicCacheSettings? Cache { get; set; }
+
+    /// <summary>
+    /// Maximum number of searches Claude may perform per request. Must be greater than 0.
+    /// </summary>
+    public int? MaxUses { get; set; }
+
+    /// <summary>
+    /// If set, only results from these domains are included. Cannot be used with <see cref="BlockedDomains"/>.
+    /// </summary>
+    public List<string>? AllowedDomains { get; set; }
+
+    /// <summary>
+    /// If set, results from these domains are excluded. Cannot be used with <see cref="AllowedDomains"/>.
+    /// </summary>
+    public List<string>? BlockedDomains { get; set; }
+
+    /// <summary>
+    /// Optional user location used to localise search results.
+    /// </summary>
+    public VendorAnthropicToolFunctionUserLocation? UserLocation { get; set; }
+}
+
+/// <summary>
+/// Standard web fetch tool. Allows Claude to retrieve full content from specified URLs and PDFs.
+/// </summary>
+public class VendorAnthropicChatRequestBuiltInToolWebFetch20250910 : IVendorAnthropicChatRequestBuiltInTool
+{
+    /// <summary>
+    /// The type of the tool.
+    /// </summary>
+    public VendorAnthropicChatRequestBuiltInToolTypes Type => VendorAnthropicChatRequestBuiltInToolTypes.WebFetch20250910;
+
+    /// <summary>
+    /// The name of the tool.
+    /// </summary>
+    [JsonProperty("name")]
+    public string Name => "web_fetch";
+
+    /// <summary>
+    /// Cache control settings for the tool.
+    /// </summary>
+    [JsonProperty("cache_control")]
+    public AnthropicCacheSettings? Cache { get; set; }
+
+    /// <summary>
+    /// Maximum number of fetches Claude may perform per request. Must be greater than 0.
+    /// </summary>
+    public int? MaxUses { get; set; }
+
+    /// <summary>
+    /// If set, only these domains may be fetched. Cannot be used with <see cref="BlockedDomains"/>.
+    /// </summary>
+    public List<string>? AllowedDomains { get; set; }
+
+    /// <summary>
+    /// If set, these domains will never be fetched. Cannot be used with <see cref="AllowedDomains"/>.
+    /// </summary>
+    public List<string>? BlockedDomains { get; set; }
+
+    /// <summary>
+    /// When enabled, Claude cites specific passages from fetched documents.
+    /// </summary>
+    public bool? CitationsEnabled { get; set; }
+
+    /// <summary>
+    /// Maximum number of content tokens to include from fetched pages. Content is truncated when exceeded.
+    /// </summary>
+    public int? MaxContentTokens { get; set; }
+}
+
+/// <summary>
+/// Web fetch tool with dynamic filtering. Available on Claude Opus 4.6 and Sonnet 4.6.
+/// Claude writes and executes code to filter fetched content before it reaches the context window,
+/// reducing token consumption while maintaining response quality.
+/// The <c>code-execution-web-tools-2026-02-09</c> beta header is added automatically.
+/// </summary>
+public class VendorAnthropicChatRequestBuiltInToolWebFetch20260209 : IVendorAnthropicChatRequestBuiltInTool
+{
+    /// <summary>
+    /// The type of the tool.
+    /// </summary>
+    public VendorAnthropicChatRequestBuiltInToolTypes Type => VendorAnthropicChatRequestBuiltInToolTypes.WebFetch20260209;
+
+    /// <summary>
+    /// The name of the tool.
+    /// </summary>
+    [JsonProperty("name")]
+    public string Name => "web_fetch";
+
+    /// <summary>
+    /// Cache control settings for the tool.
+    /// </summary>
+    [JsonProperty("cache_control")]
+    public AnthropicCacheSettings? Cache { get; set; }
+
+    /// <summary>
+    /// Maximum number of fetches Claude may perform per request. Must be greater than 0.
+    /// </summary>
+    public int? MaxUses { get; set; }
+
+    /// <summary>
+    /// If set, only these domains may be fetched. Cannot be used with <see cref="BlockedDomains"/>.
+    /// </summary>
+    public List<string>? AllowedDomains { get; set; }
+
+    /// <summary>
+    /// If set, these domains will never be fetched. Cannot be used with <see cref="AllowedDomains"/>.
+    /// </summary>
+    public List<string>? BlockedDomains { get; set; }
+
+    /// <summary>
+    /// When enabled, Claude cites specific passages from fetched documents.
+    /// </summary>
+    public bool? CitationsEnabled { get; set; }
+
+    /// <summary>
+    /// Maximum number of content tokens to include from fetched pages. Content is truncated when exceeded.
+    /// </summary>
+    public int? MaxContentTokens { get; set; }
 }

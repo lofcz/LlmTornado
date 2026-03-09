@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using LlmTornado.Code;
@@ -24,6 +24,7 @@ public class ChatResult : ApiResultBase
 		Choices = basedOn.Choices;
 		Usage = basedOn.Usage;
 		ServiceTier = basedOn.ServiceTier;
+		Speed = basedOn.Speed;
 		SystemFingerprint = basedOn.SystemFingerprint;
 		RawResponse = basedOn.RawResponse;
 		VendorExtensions = basedOn.VendorExtensions;
@@ -59,6 +60,12 @@ public class ChatResult : ApiResultBase
 	/// </summary>
 	[JsonProperty("service_tier")]
 	public ChatRequestServiceTiers? ServiceTier { get; set; }
+	
+	/// <summary>
+	///     The speed tier used for the request. Returned by Anthropic when fast mode is used.
+	/// </summary>
+	[JsonIgnore]
+	public ChatRequestSpeeds? Speed { get; set; }
 	
 	/// <summary>
 	///     Fingerprint of the system used to resolve the request. Currently supported only by OpenAI.

@@ -104,10 +104,10 @@ public class ContextWindowSummarizerOrderTests
 
         var summarizer = CreateSummarizer(store);
 
-        // Small chunk size to force splits between U1/U2/U3
+        // Small token-based chunk size to force splits between U1/U2/U3
         var options = new MessageCompressionOptions
         {
-            ChunkSize = 250, // each ~200, so each becomes its own summary
+            ChunkSize = 75, // each 200-char message is ~50 tokens, so contiguous messages split into separate summaries
             PreserveSystemmessages = true,
             CompressToolCallmessages = true,
             SummaryModel = TestModel,

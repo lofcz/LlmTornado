@@ -6,6 +6,7 @@ using System.Runtime.Serialization;
 using LlmTornado.Code;
 using LlmTornado.Images.Models;
 using LlmTornado.Images.Vendors.Google;
+using LlmTornado.Images.Vendors.MiniMax;
 using LlmTornado.Images.Vendors.XAi;
 using Newtonsoft.Json;
 
@@ -220,6 +221,31 @@ public class ImageGenerationRequest
 		UrlOverride = url;
 	}
 	
+	internal ImageGenerationRequest(ImageGenerationRequest basedOn)
+	{
+		CopyData(basedOn);
+	}
+	
+	private void CopyData(ImageGenerationRequest basedOn)
+	{
+		Prompt = basedOn.Prompt;
+		NumOfImages = basedOn.NumOfImages;
+		User = basedOn.User;
+		Background = basedOn.Background;
+		OutputFormat = basedOn.OutputFormat;
+		Moderation = basedOn.Moderation;
+		OutputCompression = basedOn.OutputCompression;
+		Size = basedOn.Size;
+		Width = basedOn.Width;
+		Height = basedOn.Height;
+		ResponseFormat = basedOn.ResponseFormat;
+		Model = basedOn.Model;
+		Quality = basedOn.Quality;
+		Style = basedOn.Style;
+		VendorExtensions = basedOn.VendorExtensions;
+		UrlOverride = basedOn.UrlOverride;
+	}
+	
 	/// <summary>
 	///		Serializes the chat request into the request body, based on the conventions used by the LLM provider.
 	/// </summary>
@@ -230,11 +256,27 @@ public class ImageGenerationRequest
 		return SerializeMap.TryGetValue(provider.Provider, out Func<ImageGenerationRequest, IEndpointProvider, string>? serializerFn) ? new TornadoRequestContent(serializerFn.Invoke(this, provider), Model, UrlOverride, provider, CapabilityEndpoints.ImageGeneration) : new TornadoRequestContent(string.Empty, Model, UrlOverride, provider, CapabilityEndpoints.ImageGeneration);
 	}
 	
+	private static bool IsGptImageModel(ImageModel? model)
+	{
+		string? name = model?.GetApiName;
+		return name is not null && (name.StartsWith("gpt-image", StringComparison.OrdinalIgnoreCase) || name.StartsWith("chatgpt-image", StringComparison.OrdinalIgnoreCase));
+	}
+	
 	private static readonly FrozenDictionary<LLmProviders, Func<ImageGenerationRequest, IEndpointProvider, string>> SerializeMap = new Dictionary<LLmProviders, Func<ImageGenerationRequest, IEndpointProvider, string>>
 	{
-		{ LLmProviders.OpenAi, (x, y) => JsonConvert.SerializeObject(x, EndpointBase.NullSettings)},
+		{ LLmProviders.OpenAi, (x, y) =>
+		{
+			if (IsGptImageModel(x.Model) && x.ResponseFormat is not null)
+			{
+				x = new ImageGenerationRequest(x);
+				x.ResponseFormat = null;
+			}
+			
+			return JsonConvert.SerializeObject(x, EndpointBase.NullSettings);
+		}},
 		{ LLmProviders.XAi, (x, y) => JsonConvert.SerializeObject(new VendorXAiImageRequest(x, y), EndpointBase.NullSettings) },
-		{ LLmProviders.Google, (x, y) => JsonConvert.SerializeObject(new VendorGoogleImageRequest(x, y), EndpointBase.NullSettings) }
+		{ LLmProviders.Google, (x, y) => JsonConvert.SerializeObject(new VendorGoogleImageRequest(x, y), EndpointBase.NullSettings) },
+		{ LLmProviders.MiniMax, (x, y) => JsonConvert.SerializeObject(new VendorMiniMaxImageRequest(x, y), EndpointBase.NullSettings) }
 	}.ToFrozenDictionary();
 }
 

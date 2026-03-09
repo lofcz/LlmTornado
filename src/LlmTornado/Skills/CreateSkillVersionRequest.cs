@@ -24,7 +24,7 @@ public class CreateSkillVersionRequest
     /// </summary>
     public CreateSkillVersionRequest()
     {
-        Files = Array.Empty<FileUploadRequest>();
+        Files = [];
     }
 
     /// <summary>
@@ -33,7 +33,7 @@ public class CreateSkillVersionRequest
     /// <param name="files">Files to upload for the skill version</param>
     public CreateSkillVersionRequest(FileUploadRequest[]? files = null)
     {
-        Files = files ?? Array.Empty<FileUploadRequest>();
+        Files = files ?? [];
     }
 
     /// <summary>

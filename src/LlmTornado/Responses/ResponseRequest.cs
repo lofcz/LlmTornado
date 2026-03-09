@@ -27,6 +27,16 @@ public class ResponseRequest
     public bool? Background { get; set; }
 
     /// <summary>
+    /// The conversation that this response belongs to. Items from this conversation are prepended
+    /// to <c>input</c> for this response request. Input items and output items from this response
+    /// are automatically added to this conversation after this response completes.
+    /// Can be a plain conversation ID string or an object with an <c>id</c> field.
+    /// Cannot be used in conjunction with <see cref="PreviousResponseId"/>.
+    /// </summary>
+    [JsonProperty("conversation")]
+    public IResponseConversation? Conversation { get; set; }
+
+    /// <summary>
     /// Specify additional output data to include in the model response. 
     /// See <see cref="ResponseIncludeFields"/> for supported values.
     /// </summary>
@@ -138,6 +148,12 @@ public class ResponseRequest
     public bool? Stream { get; set; }
     
     /// <summary>
+    /// Options for streaming responses. Only set this when <see cref="Stream"/> is <c>true</c>.
+    /// </summary>
+    [JsonProperty("stream_options")]
+    public ResponseStreamOptions? StreamOptions { get; set; }
+    
+    /// <summary>
     /// What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic. We generally recommend altering this or top_p but not both.
     /// </summary>
     [JsonProperty("temperature")]
@@ -216,13 +232,21 @@ public class ResponseRequest
     /// </summary>
     [JsonProperty("verbosity")]
     public ChatRequestVerbosities? Verbosity { get; set; }
+    
+    /// <summary>
+    /// Configuration for server-side context management. When set, the server can automatically compact the conversation
+    /// when the rendered token count crosses the configured threshold. The compaction item is emitted in the response stream
+    /// and carries forward key prior state using fewer tokens.
+    /// </summary>
+    [JsonProperty("context_management")]
+    public List<ResponseContextManagementItem>? ContextManagement { get; set; }
 
     /// <summary>
     ///	Serializes the chat request into the request body, based on the conventions used by the LLM provider.
     /// </summary>
     public TornadoRequestContent Serialize(IEndpointProvider provider, ResponseRequestSerializeOptions? options = null)
     {
-        // GPT-5.2 parameter compatibility
+        // GPT-5.2 and GPT-5.4 parameter compatibility
         if (provider.Provider is LLmProviders.OpenAi)
         {
             bool hasNonNoneReasoning = Reasoning?.Effort is not null && Reasoning.Effort != ResponseReasoningEfforts.None;
@@ -265,5 +289,54 @@ public class ResponseRequest
     /// </summary>
     public ResponseRequest()
     {
+    }
+
+    /// <summary>
+    /// Creates a shallow copy of the given request, optionally stripping generation-only fields.
+    /// </summary>
+    internal ResponseRequest(ResponseRequest basedOn, bool forTokenization = false)
+    {
+        Background = basedOn.Background;
+        Conversation = basedOn.Conversation;
+        Include = basedOn.Include;
+        InputString = basedOn.InputString;
+        InputItems = basedOn.InputItems;
+        Instructions = basedOn.Instructions;
+        MaxOutputTokens = basedOn.MaxOutputTokens;
+        MaxToolCalls = basedOn.MaxToolCalls;
+        Metadata = basedOn.Metadata;
+        Model = basedOn.Model;
+        ParallelToolCalls = basedOn.ParallelToolCalls;
+        PreviousResponseId = basedOn.PreviousResponseId;
+        Prompt = basedOn.Prompt;
+        Reasoning = basedOn.Reasoning;
+        ServiceTier = basedOn.ServiceTier;
+        Store = basedOn.Store;
+        Temperature = basedOn.Temperature;
+        Text = basedOn.Text;
+        ToolChoice = basedOn.ToolChoice;
+        Tools = basedOn.Tools;
+        TopLogprobs = basedOn.TopLogprobs;
+        TopP = basedOn.TopP;
+        Truncation = basedOn.Truncation;
+        PromptCacheKey = basedOn.PromptCacheKey;
+        PromptCacheRetention = basedOn.PromptCacheRetention;
+        SafetyIdentifier = basedOn.SafetyIdentifier;
+        User = basedOn.User;
+        Verbosity = basedOn.Verbosity;
+        ContextManagement = basedOn.ContextManagement;
+
+        if (forTokenization)
+        {
+            Stream = null;
+            StreamOptions = null;
+            Store = null;
+            Background = null;
+        }
+        else
+        {
+            Stream = basedOn.Stream;
+            StreamOptions = basedOn.StreamOptions;
+        }
     }
 }

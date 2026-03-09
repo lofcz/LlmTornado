@@ -1,6 +1,7 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using LlmTornado.Code;
 using LlmTornado.Images.Vendors.Google;
+using LlmTornado.Images.Vendors.MiniMax;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Images;
@@ -42,6 +43,7 @@ public class ImageGenerationResult : ApiResultBase
 		{
 			LLmProviders.OpenAi => JsonConvert.DeserializeObject<ImageGenerationResult>(jsonData),
 			LLmProviders.Google => JsonConvert.DeserializeObject<VendorGoogleImageResult>(jsonData)?.ToChatResult(postData),
+			LLmProviders.MiniMax => JsonConvert.DeserializeObject<VendorMiniMaxImageResult>(jsonData)?.ToChatResult(postData),
 			_ => JsonConvert.DeserializeObject<ImageGenerationResult>(jsonData)
 		};
 	}

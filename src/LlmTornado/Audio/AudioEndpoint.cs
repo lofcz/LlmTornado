@@ -7,7 +7,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using LlmTornado.Code;
 using LlmTornado.Audio.Models;
+using LlmTornado.Audio.Models;
 using LlmTornado.Audio.Models.OpenAi;
+using LlmTornado.Audio.Vendors.MiniMax;
 using LlmTornado.Audio.Vendors.Zai;
 using Newtonsoft.Json;
 
@@ -63,6 +65,36 @@ public class AudioEndpoint : EndpointBase
     {
         return PostSpeech(request);
     }
+    
+    /// <summary>
+    /// Generates music from lyrics and an optional style/mood prompt.
+    /// Currently supported by MiniMax.
+    /// </summary>
+    /// <param name="request">The music generation request containing lyrics and style description.</param>
+    /// <returns>The generated music result with audio data and metadata.</returns>
+    public async Task<MusicGenerationResult?> GenerateMusic(MusicGenerationRequest request)
+    {
+        IEndpointProvider provider = Api.GetProvider(request.Model ?? AudioModel.MiniMax.Music.Music25);
+        string url = provider.ApiUrl(CapabilityEndpoints.Music, null);
+        string json = JsonConvert.SerializeObject(new VendorMiniMaxMusicRequest(request), EndpointBase.NullSettings);
+        
+        return await HttpPost1<MusicGenerationResult>(provider, CapabilityEndpoints.Music, url, postData: json);
+    }
+    
+    /// <summary>
+    /// Generates lyrics for a song, supporting full song creation and lyrics editing/continuation.
+    /// Currently supported by MiniMax.
+    /// </summary>
+    /// <param name="request">The lyrics generation request with mode, prompt, and optional existing lyrics.</param>
+    /// <returns>The generated lyrics with song title and style tags.</returns>
+    public async Task<LyricsGenerationResult?> GenerateLyrics(LyricsGenerationRequest request)
+    {
+        IEndpointProvider provider = Api.ResolveProvider(LLmProviders.MiniMax);
+        string url = provider.ApiUrl(CapabilityEndpoints.Lyrics, null);
+        string json = JsonConvert.SerializeObject(new VendorMiniMaxLyricsRequest(request), EndpointBase.NullSettings);
+        
+        return await HttpPost1<LyricsGenerationResult>(provider, CapabilityEndpoints.Lyrics, url, postData: json);
+    }
 
     private async Task<SpeechTtsResult?> PostSpeech(SpeechRequest request)
     {
@@ -92,7 +124,7 @@ public class AudioEndpoint : EndpointBase
             }
         }
         
-        if (request.Include?.Count > 0 && AudioModelOpenAi.IncludeCompatibleModels.Contains(request.Model) && request.ResponseFormat is AudioTranscriptionResponseFormats.Json && request.Model != AudioModel.OpenAi.Gpt4.Gpt4OTranscribeDiarize)
+        if (request.Include?.Count > 0 && AudioModelOpenAi.IncludeCompatibleModels.Contains(request.Model ?? string.Empty) && request.ResponseFormat is AudioTranscriptionResponseFormats.Json && request.Model != AudioModel.OpenAi.Gpt4.Gpt4OTranscribeDiarize)
         {
             foreach (TranscriptionRequestIncludeItems item in request.Include)
             {
@@ -102,21 +134,26 @@ public class AudioEndpoint : EndpointBase
         
         if (request.ChunkingStrategy is not null)
         {
-             if (request.ChunkingStrategy.Type == TranscriptionChunkingStrategyType.Auto)
-             {
-                 serializedRequest.Content.Add(new StringContent("auto"), "chunking_strategy");
-             }
-             else if (request.ChunkingStrategy.Type == TranscriptionChunkingStrategyType.ServerVad)
-             {
-                 var strategy = new 
-                 {
-                     type = "server_vad",
-                     prefix_padding_ms = request.ChunkingStrategy.PrefixPaddingMs,
-                     silence_duration_ms = request.ChunkingStrategy.SilenceDurationMs,
-                     threshold = request.ChunkingStrategy.Threshold
-                 };
-                 serializedRequest.Content.Add(new StringContent(JsonConvert.SerializeObject(strategy, EndpointBase.NullSettings)), "chunking_strategy");
-             }
+            switch (request.ChunkingStrategy.Type)
+            {
+                case TranscriptionChunkingStrategyType.Auto:
+                {
+                    serializedRequest.Content.Add(new StringContent("auto"), "chunking_strategy");
+                    break;
+                }
+                case TranscriptionChunkingStrategyType.ServerVad:
+                {
+                    var strategy = new 
+                    {
+                        type = "server_vad",
+                        prefix_padding_ms = request.ChunkingStrategy.PrefixPaddingMs,
+                        silence_duration_ms = request.ChunkingStrategy.SilenceDurationMs,
+                        threshold = request.ChunkingStrategy.Threshold
+                    };
+                    serializedRequest.Content.Add(new StringContent(JsonConvert.SerializeObject(strategy, EndpointBase.NullSettings)), "chunking_strategy");
+                    break;
+                }
+            }
         }
 
         if (request.KnownSpeakerNames?.Count > 0)
@@ -142,16 +179,18 @@ public class AudioEndpoint : EndpointBase
             
             serializedRequest.Sc.Headers.ContentLength = request.File.Data.Length;
             serializedRequest.Sc.Headers.ContentType = new MediaTypeHeaderValue(request.File.GetContentType);
-        
-            serializedRequest.Content.Add(serializedRequest.Sc, "file", "test.wav");
+
+            string fileName = $"audio.{request.File.GetFileExtension}";
+            serializedRequest.Content.Add(serializedRequest.Sc, "file", fileName);
         }
         else if (request.File?.File is not null)
         {
             serializedRequest.Sc = new StreamContent(request.File.File);
             serializedRequest.Sc.Headers.ContentLength = request.File.File.Length;
             serializedRequest.Sc.Headers.ContentType = new MediaTypeHeaderValue(request.File.GetContentType);
-        
-            serializedRequest.Content.Add(serializedRequest.Sc, "file", "test.wav");
+
+            string fileName = $"audio.{request.File.GetFileExtension}";
+            serializedRequest.Content.Add(serializedRequest.Sc, "file", fileName);
         }
         
         // URL parameter for audio URL (Groq supports this as alternative to file)
@@ -160,7 +199,7 @@ public class AudioEndpoint : EndpointBase
             serializedRequest.Content.Add(new StringContent(request.Url), "url");
         }
         
-        serializedRequest.Content.Add(new StringContent(request.Model.GetApiName), "model");
+        serializedRequest.Content.Add(new StringContent(request.Model?.GetApiName), "model");
 
         if (!request.Prompt.IsNullOrWhiteSpace())
         {

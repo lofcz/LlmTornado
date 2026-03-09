@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -749,6 +749,48 @@ public abstract class EndpointBase
     internal Task<StreamResponse?> HttpGetStream(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, Dictionary<string, object>? queryParams = null, IModel? model = null, object? requestObj = null, CancellationToken ct = default)
     {
         return HttpRequestStream(provider, endpoint, url, queryParams, HttpVerbs.Get, null, model, requestObj, ct);
+    }
+    
+    /// <summary>
+    ///     Downloads content from an arbitrary URL as a stream, using the provider's pooled HttpClient
+    ///     but without adding provider-specific auth headers. Useful for downloading from CDN URLs
+    ///     returned by provider APIs (e.g. video download URLs).
+    /// </summary>
+    /// <param name="provider">The provider whose pooled HttpClient to reuse</param>
+    /// <param name="url">The fully-qualified URL to download from</param>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns>A StreamResponse containing the download stream, or null on failure</returns>
+    internal async Task<StreamResponse?> HttpGetRawStream(IEndpointProvider provider, string url, Dictionary<string, string>? headers = null, CancellationToken ct = default)
+    {
+        HttpClient client = await GetClient(provider);
+        HttpRequestMessage req = new HttpRequestMessage(HttpMethod.Get, url);
+        req.Headers.Add("User-Agent", ResolveUserAgent(provider.Api));
+        
+        if (headers is not null)
+        {
+            foreach (KeyValuePair<string, string> header in headers)
+            {
+                req.Headers.TryAddWithoutValidation(header.Key, header.Value);
+            }
+        }
+        
+        try
+        {
+            HttpResponseMessage response = await client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                response.Dispose();
+                return null;
+            }
+            
+            Stream stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
+            return new StreamResponse { Stream = stream, Response = response };
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     /// <summary>

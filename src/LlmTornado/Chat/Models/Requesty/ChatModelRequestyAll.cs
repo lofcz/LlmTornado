@@ -84,34 +84,14 @@ public class ChatModelRequestyAll : IVendorModelClassProvider
     public readonly ChatModel Alibaba_Qwen3_Max = ModelAlibaba_Qwen3_Max;
 
     /// <summary>
-    /// anthropic/claude-3-5-haiku
+    /// alibaba/qwen3.5
     /// </summary>
-    public static readonly ChatModel ModelAnthropic_Claude_3_5_Haiku = new ChatModel("anthropic/claude-3-5-haiku", "anthropic/claude-3-5-haiku", LLmProviders.Requesty, 200000);
+    public static readonly ChatModel ModelAlibaba_Qwen3_5 = new ChatModel("alibaba/qwen3.5", "alibaba/qwen3.5", LLmProviders.Requesty, 256000);
 
     /// <summary>
-    /// <inheritdoc cref="ModelAnthropic_Claude_3_5_Haiku"/>
+    /// <inheritdoc cref="ModelAlibaba_Qwen3_5"/>
     /// </summary>
-    public readonly ChatModel Anthropic_Claude_3_5_Haiku = ModelAnthropic_Claude_3_5_Haiku;
-
-    /// <summary>
-    /// anthropic/claude-3-7-sonnet
-    /// </summary>
-    public static readonly ChatModel ModelAnthropic_Claude_3_7_Sonnet = new ChatModel("anthropic/claude-3-7-sonnet", "anthropic/claude-3-7-sonnet", LLmProviders.Requesty, 200000);
-
-    /// <summary>
-    /// <inheritdoc cref="ModelAnthropic_Claude_3_7_Sonnet"/>
-    /// </summary>
-    public readonly ChatModel Anthropic_Claude_3_7_Sonnet = ModelAnthropic_Claude_3_7_Sonnet;
-
-    /// <summary>
-    /// anthropic/claude-3-haiku
-    /// </summary>
-    public static readonly ChatModel ModelAnthropic_Claude_3_Haiku = new ChatModel("anthropic/claude-3-haiku", "anthropic/claude-3-haiku", LLmProviders.Requesty, 200000);
-
-    /// <summary>
-    /// <inheritdoc cref="ModelAnthropic_Claude_3_Haiku"/>
-    /// </summary>
-    public readonly ChatModel Anthropic_Claude_3_Haiku = ModelAnthropic_Claude_3_Haiku;
+    public readonly ChatModel Alibaba_Qwen3_5 = ModelAlibaba_Qwen3_5;
 
     /// <summary>
     /// anthropic/claude-haiku-4-5
@@ -154,6 +134,16 @@ public class ChatModelRequestyAll : IVendorModelClassProvider
     public readonly ChatModel Anthropic_Claude_Opus_4_5 = ModelAnthropic_Claude_Opus_4_5;
 
     /// <summary>
+    /// anthropic/claude-opus-4-6
+    /// </summary>
+    public static readonly ChatModel ModelAnthropic_Claude_Opus_4_6 = new ChatModel("anthropic/claude-opus-4-6", "anthropic/claude-opus-4-6", LLmProviders.Requesty, 1000000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelAnthropic_Claude_Opus_4_6"/>
+    /// </summary>
+    public readonly ChatModel Anthropic_Claude_Opus_4_6 = ModelAnthropic_Claude_Opus_4_6;
+
+    /// <summary>
     /// anthropic/claude-sonnet-4
     /// </summary>
     public static readonly ChatModel ModelAnthropic_Claude_Sonnet_4 = new ChatModel("anthropic/claude-sonnet-4", "anthropic/claude-sonnet-4", LLmProviders.Requesty, 1000000);
@@ -172,6 +162,16 @@ public class ChatModelRequestyAll : IVendorModelClassProvider
     /// <inheritdoc cref="ModelAnthropic_Claude_Sonnet_4_5"/>
     /// </summary>
     public readonly ChatModel Anthropic_Claude_Sonnet_4_5 = ModelAnthropic_Claude_Sonnet_4_5;
+
+    /// <summary>
+    /// anthropic/claude-sonnet-4-6
+    /// </summary>
+    public static readonly ChatModel ModelAnthropic_Claude_Sonnet_4_6 = new ChatModel("anthropic/claude-sonnet-4-6", "anthropic/claude-sonnet-4-6", LLmProviders.Requesty, 1000000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelAnthropic_Claude_Sonnet_4_6"/>
+    /// </summary>
+    public readonly ChatModel Anthropic_Claude_Sonnet_4_6 = ModelAnthropic_Claude_Sonnet_4_6;
 
     /// <summary>
     /// azure/gpt-4.1
@@ -384,6 +384,16 @@ public class ChatModelRequestyAll : IVendorModelClassProvider
     public readonly ChatModel Azure_Gpt_5_Mini_Eastus2 = ModelAzure_Gpt_5_Mini_Eastus2;
 
     /// <summary>
+    /// azure/gpt-5-mini@francecentral
+    /// </summary>
+    public static readonly ChatModel ModelAzure_Gpt_5_Mini_Francecentral = new ChatModel("azure/gpt-5-mini@francecentral", "azure/gpt-5-mini@francecentral", LLmProviders.Requesty, 200000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelAzure_Gpt_5_Mini_Francecentral"/>
+    /// </summary>
+    public readonly ChatModel Azure_Gpt_5_Mini_Francecentral = ModelAzure_Gpt_5_Mini_Francecentral;
+
+    /// <summary>
     /// azure/gpt-5-mini@swedencentral
     /// </summary>
     public static readonly ChatModel ModelAzure_Gpt_5_Mini_Swedencentral = new ChatModel("azure/gpt-5-mini@swedencentral", "azure/gpt-5-mini@swedencentral", LLmProviders.Requesty, 200000);
@@ -424,6 +434,16 @@ public class ChatModelRequestyAll : IVendorModelClassProvider
     public readonly ChatModel Azure_Gpt_5_Nano_Eastus2 = ModelAzure_Gpt_5_Nano_Eastus2;
 
     /// <summary>
+    /// azure/gpt-5-nano@francecentral
+    /// </summary>
+    public static readonly ChatModel ModelAzure_Gpt_5_Nano_Francecentral = new ChatModel("azure/gpt-5-nano@francecentral", "azure/gpt-5-nano@francecentral", LLmProviders.Requesty, 200000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelAzure_Gpt_5_Nano_Francecentral"/>
+    /// </summary>
+    public readonly ChatModel Azure_Gpt_5_Nano_Francecentral = ModelAzure_Gpt_5_Nano_Francecentral;
+
+    /// <summary>
     /// azure/gpt-5-nano@swedencentral
     /// </summary>
     public static readonly ChatModel ModelAzure_Gpt_5_Nano_Swedencentral = new ChatModel("azure/gpt-5-nano@swedencentral", "azure/gpt-5-nano@swedencentral", LLmProviders.Requesty, 200000);
@@ -444,6 +464,26 @@ public class ChatModelRequestyAll : IVendorModelClassProvider
     public readonly ChatModel Azure_Gpt_5_1 = ModelAzure_Gpt_5_1;
 
     /// <summary>
+    /// azure/gpt-5.1@eastus2
+    /// </summary>
+    public static readonly ChatModel ModelAzure_Gpt_5_1_Eastus2 = new ChatModel("azure/gpt-5.1@eastus2", "azure/gpt-5.1@eastus2", LLmProviders.Requesty, 200000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelAzure_Gpt_5_1_Eastus2"/>
+    /// </summary>
+    public readonly ChatModel Azure_Gpt_5_1_Eastus2 = ModelAzure_Gpt_5_1_Eastus2;
+
+    /// <summary>
+    /// azure/gpt-5.1@francecentral
+    /// </summary>
+    public static readonly ChatModel ModelAzure_Gpt_5_1_Francecentral = new ChatModel("azure/gpt-5.1@francecentral", "azure/gpt-5.1@francecentral", LLmProviders.Requesty, 200000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelAzure_Gpt_5_1_Francecentral"/>
+    /// </summary>
+    public readonly ChatModel Azure_Gpt_5_1_Francecentral = ModelAzure_Gpt_5_1_Francecentral;
+
+    /// <summary>
     /// azure/gpt-5.1@swedencentral
     /// </summary>
     public static readonly ChatModel ModelAzure_Gpt_5_1_Swedencentral = new ChatModel("azure/gpt-5.1@swedencentral", "azure/gpt-5.1@swedencentral", LLmProviders.Requesty, 200000);
@@ -454,6 +494,36 @@ public class ChatModelRequestyAll : IVendorModelClassProvider
     public readonly ChatModel Azure_Gpt_5_1_Swedencentral = ModelAzure_Gpt_5_1_Swedencentral;
 
     /// <summary>
+    /// azure/gpt-5.2
+    /// </summary>
+    public static readonly ChatModel ModelAzure_Gpt_5_2 = new ChatModel("azure/gpt-5.2", "azure/gpt-5.2", LLmProviders.Requesty, 200000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelAzure_Gpt_5_2"/>
+    /// </summary>
+    public readonly ChatModel Azure_Gpt_5_2 = ModelAzure_Gpt_5_2;
+
+    /// <summary>
+    /// azure/gpt-5.2@eastus2
+    /// </summary>
+    public static readonly ChatModel ModelAzure_Gpt_5_2_Eastus2 = new ChatModel("azure/gpt-5.2@eastus2", "azure/gpt-5.2@eastus2", LLmProviders.Requesty, 200000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelAzure_Gpt_5_2_Eastus2"/>
+    /// </summary>
+    public readonly ChatModel Azure_Gpt_5_2_Eastus2 = ModelAzure_Gpt_5_2_Eastus2;
+
+    /// <summary>
+    /// azure/gpt-5.3-codex@eastus2
+    /// </summary>
+    public static readonly ChatModel ModelAzure_Gpt_5_3_Codex_Eastus2 = new ChatModel("azure/gpt-5.3-codex@eastus2", "azure/gpt-5.3-codex@eastus2", LLmProviders.Requesty, 400000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelAzure_Gpt_5_3_Codex_Eastus2"/>
+    /// </summary>
+    public readonly ChatModel Azure_Gpt_5_3_Codex_Eastus2 = ModelAzure_Gpt_5_3_Codex_Eastus2;
+
+    /// <summary>
     /// azure/gpt-5@eastus2
     /// </summary>
     public static readonly ChatModel ModelAzure_Gpt_5_Eastus2 = new ChatModel("azure/gpt-5@eastus2", "azure/gpt-5@eastus2", LLmProviders.Requesty, 200000);
@@ -462,6 +532,16 @@ public class ChatModelRequestyAll : IVendorModelClassProvider
     /// <inheritdoc cref="ModelAzure_Gpt_5_Eastus2"/>
     /// </summary>
     public readonly ChatModel Azure_Gpt_5_Eastus2 = ModelAzure_Gpt_5_Eastus2;
+
+    /// <summary>
+    /// azure/gpt-5@francecentral
+    /// </summary>
+    public static readonly ChatModel ModelAzure_Gpt_5_Francecentral = new ChatModel("azure/gpt-5@francecentral", "azure/gpt-5@francecentral", LLmProviders.Requesty, 200000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelAzure_Gpt_5_Francecentral"/>
+    /// </summary>
+    public readonly ChatModel Azure_Gpt_5_Francecentral = ModelAzure_Gpt_5_Francecentral;
 
     /// <summary>
     /// azure/gpt-5@swedencentral
@@ -694,6 +774,26 @@ public class ChatModelRequestyAll : IVendorModelClassProvider
     public readonly ChatModel Azure_Openai_Responses_Gpt_4_1_Westus3 = ModelAzure_Openai_Responses_Gpt_4_1_Westus3;
 
     /// <summary>
+    /// azure/openai-responses/gpt-5.2-codex
+    /// </summary>
+    public static readonly ChatModel ModelAzure_Openai_Responses_Gpt_5_2_Codex = new ChatModel("azure/openai-responses/gpt-5.2-codex", "azure/openai-responses/gpt-5.2-codex", LLmProviders.Requesty, 400000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelAzure_Openai_Responses_Gpt_5_2_Codex"/>
+    /// </summary>
+    public readonly ChatModel Azure_Openai_Responses_Gpt_5_2_Codex = ModelAzure_Openai_Responses_Gpt_5_2_Codex;
+
+    /// <summary>
+    /// azure/openai-responses/gpt-5.2-codex@eastus2
+    /// </summary>
+    public static readonly ChatModel ModelAzure_Openai_Responses_Gpt_5_2_Codex_Eastus2 = new ChatModel("azure/openai-responses/gpt-5.2-codex@eastus2", "azure/openai-responses/gpt-5.2-codex@eastus2", LLmProviders.Requesty, 400000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelAzure_Openai_Responses_Gpt_5_2_Codex_Eastus2"/>
+    /// </summary>
+    public readonly ChatModel Azure_Openai_Responses_Gpt_5_2_Codex_Eastus2 = ModelAzure_Openai_Responses_Gpt_5_2_Codex_Eastus2;
+
+    /// <summary>
     /// bedrock/claude-3-7-sonnet
     /// </summary>
     public static readonly ChatModel ModelBedrock_Claude_3_7_Sonnet = new ChatModel("bedrock/claude-3-7-sonnet", "bedrock/claude-3-7-sonnet", LLmProviders.Requesty, 200000);
@@ -874,6 +974,86 @@ public class ChatModelRequestyAll : IVendorModelClassProvider
     public readonly ChatModel Bedrock_Claude_Opus_4_5 = ModelBedrock_Claude_Opus_4_5;
 
     /// <summary>
+    /// bedrock/claude-opus-4-5@eu-central-1
+    /// </summary>
+    public static readonly ChatModel ModelBedrock_Claude_Opus_4_5_Eu_Central_1 = new ChatModel("bedrock/claude-opus-4-5@eu-central-1", "bedrock/claude-opus-4-5@eu-central-1", LLmProviders.Requesty, 200000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelBedrock_Claude_Opus_4_5_Eu_Central_1"/>
+    /// </summary>
+    public readonly ChatModel Bedrock_Claude_Opus_4_5_Eu_Central_1 = ModelBedrock_Claude_Opus_4_5_Eu_Central_1;
+
+    /// <summary>
+    /// bedrock/claude-opus-4-5@eu-north-1
+    /// </summary>
+    public static readonly ChatModel ModelBedrock_Claude_Opus_4_5_Eu_North_1 = new ChatModel("bedrock/claude-opus-4-5@eu-north-1", "bedrock/claude-opus-4-5@eu-north-1", LLmProviders.Requesty, 200000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelBedrock_Claude_Opus_4_5_Eu_North_1"/>
+    /// </summary>
+    public readonly ChatModel Bedrock_Claude_Opus_4_5_Eu_North_1 = ModelBedrock_Claude_Opus_4_5_Eu_North_1;
+
+    /// <summary>
+    /// bedrock/claude-opus-4-5@eu-west-1
+    /// </summary>
+    public static readonly ChatModel ModelBedrock_Claude_Opus_4_5_Eu_West_1 = new ChatModel("bedrock/claude-opus-4-5@eu-west-1", "bedrock/claude-opus-4-5@eu-west-1", LLmProviders.Requesty, 200000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelBedrock_Claude_Opus_4_5_Eu_West_1"/>
+    /// </summary>
+    public readonly ChatModel Bedrock_Claude_Opus_4_5_Eu_West_1 = ModelBedrock_Claude_Opus_4_5_Eu_West_1;
+
+    /// <summary>
+    /// bedrock/claude-opus-4-5@eu-west-3
+    /// </summary>
+    public static readonly ChatModel ModelBedrock_Claude_Opus_4_5_Eu_West_3 = new ChatModel("bedrock/claude-opus-4-5@eu-west-3", "bedrock/claude-opus-4-5@eu-west-3", LLmProviders.Requesty, 200000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelBedrock_Claude_Opus_4_5_Eu_West_3"/>
+    /// </summary>
+    public readonly ChatModel Bedrock_Claude_Opus_4_5_Eu_West_3 = ModelBedrock_Claude_Opus_4_5_Eu_West_3;
+
+    /// <summary>
+    /// bedrock/claude-opus-4-5@us-east-1
+    /// </summary>
+    public static readonly ChatModel ModelBedrock_Claude_Opus_4_5_Us_East_1 = new ChatModel("bedrock/claude-opus-4-5@us-east-1", "bedrock/claude-opus-4-5@us-east-1", LLmProviders.Requesty, 200000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelBedrock_Claude_Opus_4_5_Us_East_1"/>
+    /// </summary>
+    public readonly ChatModel Bedrock_Claude_Opus_4_5_Us_East_1 = ModelBedrock_Claude_Opus_4_5_Us_East_1;
+
+    /// <summary>
+    /// bedrock/claude-opus-4-5@us-east-2
+    /// </summary>
+    public static readonly ChatModel ModelBedrock_Claude_Opus_4_5_Us_East_2 = new ChatModel("bedrock/claude-opus-4-5@us-east-2", "bedrock/claude-opus-4-5@us-east-2", LLmProviders.Requesty, 200000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelBedrock_Claude_Opus_4_5_Us_East_2"/>
+    /// </summary>
+    public readonly ChatModel Bedrock_Claude_Opus_4_5_Us_East_2 = ModelBedrock_Claude_Opus_4_5_Us_East_2;
+
+    /// <summary>
+    /// bedrock/claude-opus-4-5@us-west-2
+    /// </summary>
+    public static readonly ChatModel ModelBedrock_Claude_Opus_4_5_Us_West_2 = new ChatModel("bedrock/claude-opus-4-5@us-west-2", "bedrock/claude-opus-4-5@us-west-2", LLmProviders.Requesty, 200000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelBedrock_Claude_Opus_4_5_Us_West_2"/>
+    /// </summary>
+    public readonly ChatModel Bedrock_Claude_Opus_4_5_Us_West_2 = ModelBedrock_Claude_Opus_4_5_Us_West_2;
+
+    /// <summary>
+    /// bedrock/claude-opus-4-6
+    /// </summary>
+    public static readonly ChatModel ModelBedrock_Claude_Opus_4_6 = new ChatModel("bedrock/claude-opus-4-6", "bedrock/claude-opus-4-6", LLmProviders.Requesty, 1000000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelBedrock_Claude_Opus_4_6"/>
+    /// </summary>
+    public readonly ChatModel Bedrock_Claude_Opus_4_6 = ModelBedrock_Claude_Opus_4_6;
+
+    /// <summary>
     /// bedrock/claude-opus-4@us-east-1
     /// </summary>
     public static readonly ChatModel ModelBedrock_Claude_Opus_4_Us_East_1 = new ChatModel("bedrock/claude-opus-4@us-east-1", "bedrock/claude-opus-4@us-east-1", LLmProviders.Requesty, 200000);
@@ -992,6 +1172,86 @@ public class ChatModelRequestyAll : IVendorModelClassProvider
     /// <inheritdoc cref="ModelBedrock_Claude_Sonnet_4_5_Us_West_2"/>
     /// </summary>
     public readonly ChatModel Bedrock_Claude_Sonnet_4_5_Us_West_2 = ModelBedrock_Claude_Sonnet_4_5_Us_West_2;
+
+    /// <summary>
+    /// bedrock/claude-sonnet-4-6
+    /// </summary>
+    public static readonly ChatModel ModelBedrock_Claude_Sonnet_4_6 = new ChatModel("bedrock/claude-sonnet-4-6", "bedrock/claude-sonnet-4-6", LLmProviders.Requesty, 1000000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelBedrock_Claude_Sonnet_4_6"/>
+    /// </summary>
+    public readonly ChatModel Bedrock_Claude_Sonnet_4_6 = ModelBedrock_Claude_Sonnet_4_6;
+
+    /// <summary>
+    /// bedrock/claude-sonnet-4-6@eu-central-1
+    /// </summary>
+    public static readonly ChatModel ModelBedrock_Claude_Sonnet_4_6_Eu_Central_1 = new ChatModel("bedrock/claude-sonnet-4-6@eu-central-1", "bedrock/claude-sonnet-4-6@eu-central-1", LLmProviders.Requesty, 1000000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelBedrock_Claude_Sonnet_4_6_Eu_Central_1"/>
+    /// </summary>
+    public readonly ChatModel Bedrock_Claude_Sonnet_4_6_Eu_Central_1 = ModelBedrock_Claude_Sonnet_4_6_Eu_Central_1;
+
+    /// <summary>
+    /// bedrock/claude-sonnet-4-6@eu-north-1
+    /// </summary>
+    public static readonly ChatModel ModelBedrock_Claude_Sonnet_4_6_Eu_North_1 = new ChatModel("bedrock/claude-sonnet-4-6@eu-north-1", "bedrock/claude-sonnet-4-6@eu-north-1", LLmProviders.Requesty, 1000000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelBedrock_Claude_Sonnet_4_6_Eu_North_1"/>
+    /// </summary>
+    public readonly ChatModel Bedrock_Claude_Sonnet_4_6_Eu_North_1 = ModelBedrock_Claude_Sonnet_4_6_Eu_North_1;
+
+    /// <summary>
+    /// bedrock/claude-sonnet-4-6@eu-west-1
+    /// </summary>
+    public static readonly ChatModel ModelBedrock_Claude_Sonnet_4_6_Eu_West_1 = new ChatModel("bedrock/claude-sonnet-4-6@eu-west-1", "bedrock/claude-sonnet-4-6@eu-west-1", LLmProviders.Requesty, 1000000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelBedrock_Claude_Sonnet_4_6_Eu_West_1"/>
+    /// </summary>
+    public readonly ChatModel Bedrock_Claude_Sonnet_4_6_Eu_West_1 = ModelBedrock_Claude_Sonnet_4_6_Eu_West_1;
+
+    /// <summary>
+    /// bedrock/claude-sonnet-4-6@eu-west-3
+    /// </summary>
+    public static readonly ChatModel ModelBedrock_Claude_Sonnet_4_6_Eu_West_3 = new ChatModel("bedrock/claude-sonnet-4-6@eu-west-3", "bedrock/claude-sonnet-4-6@eu-west-3", LLmProviders.Requesty, 1000000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelBedrock_Claude_Sonnet_4_6_Eu_West_3"/>
+    /// </summary>
+    public readonly ChatModel Bedrock_Claude_Sonnet_4_6_Eu_West_3 = ModelBedrock_Claude_Sonnet_4_6_Eu_West_3;
+
+    /// <summary>
+    /// bedrock/claude-sonnet-4-6@us-east-1
+    /// </summary>
+    public static readonly ChatModel ModelBedrock_Claude_Sonnet_4_6_Us_East_1 = new ChatModel("bedrock/claude-sonnet-4-6@us-east-1", "bedrock/claude-sonnet-4-6@us-east-1", LLmProviders.Requesty, 1000000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelBedrock_Claude_Sonnet_4_6_Us_East_1"/>
+    /// </summary>
+    public readonly ChatModel Bedrock_Claude_Sonnet_4_6_Us_East_1 = ModelBedrock_Claude_Sonnet_4_6_Us_East_1;
+
+    /// <summary>
+    /// bedrock/claude-sonnet-4-6@us-east-2
+    /// </summary>
+    public static readonly ChatModel ModelBedrock_Claude_Sonnet_4_6_Us_East_2 = new ChatModel("bedrock/claude-sonnet-4-6@us-east-2", "bedrock/claude-sonnet-4-6@us-east-2", LLmProviders.Requesty, 1000000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelBedrock_Claude_Sonnet_4_6_Us_East_2"/>
+    /// </summary>
+    public readonly ChatModel Bedrock_Claude_Sonnet_4_6_Us_East_2 = ModelBedrock_Claude_Sonnet_4_6_Us_East_2;
+
+    /// <summary>
+    /// bedrock/claude-sonnet-4-6@us-west-2
+    /// </summary>
+    public static readonly ChatModel ModelBedrock_Claude_Sonnet_4_6_Us_West_2 = new ChatModel("bedrock/claude-sonnet-4-6@us-west-2", "bedrock/claude-sonnet-4-6@us-west-2", LLmProviders.Requesty, 1000000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelBedrock_Claude_Sonnet_4_6_Us_West_2"/>
+    /// </summary>
+    public readonly ChatModel Bedrock_Claude_Sonnet_4_6_Us_West_2 = ModelBedrock_Claude_Sonnet_4_6_Us_West_2;
 
     /// <summary>
     /// bedrock/claude-sonnet-4@eu-central-1
@@ -1654,6 +1914,116 @@ public class ChatModelRequestyAll : IVendorModelClassProvider
     public readonly ChatModel Google_Gemini_3_Pro_Preview = ModelGoogle_Gemini_3_Pro_Preview;
 
     /// <summary>
+    /// google/gemini-3.1-pro-preview
+    /// </summary>
+    public static readonly ChatModel ModelGoogle_Gemini_3_1_Pro_Preview = new ChatModel("google/gemini-3.1-pro-preview", "google/gemini-3.1-pro-preview", LLmProviders.Requesty, 1048576);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelGoogle_Gemini_3_1_Pro_Preview"/>
+    /// </summary>
+    public readonly ChatModel Google_Gemini_3_1_Pro_Preview = ModelGoogle_Gemini_3_1_Pro_Preview;
+
+    /// <summary>
+    /// google/gemini-3.1-pro-preview@europe-central2
+    /// </summary>
+    public static readonly ChatModel ModelGoogle_Gemini_3_1_Pro_Preview_Europe_Central2 = new ChatModel("google/gemini-3.1-pro-preview@europe-central2", "google/gemini-3.1-pro-preview@europe-central2", LLmProviders.Requesty, 1048576);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelGoogle_Gemini_3_1_Pro_Preview_Europe_Central2"/>
+    /// </summary>
+    public readonly ChatModel Google_Gemini_3_1_Pro_Preview_Europe_Central2 = ModelGoogle_Gemini_3_1_Pro_Preview_Europe_Central2;
+
+    /// <summary>
+    /// google/gemini-3.1-pro-preview@europe-north1
+    /// </summary>
+    public static readonly ChatModel ModelGoogle_Gemini_3_1_Pro_Preview_Europe_North1 = new ChatModel("google/gemini-3.1-pro-preview@europe-north1", "google/gemini-3.1-pro-preview@europe-north1", LLmProviders.Requesty, 1048576);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelGoogle_Gemini_3_1_Pro_Preview_Europe_North1"/>
+    /// </summary>
+    public readonly ChatModel Google_Gemini_3_1_Pro_Preview_Europe_North1 = ModelGoogle_Gemini_3_1_Pro_Preview_Europe_North1;
+
+    /// <summary>
+    /// google/gemini-3.1-pro-preview@europe-west1
+    /// </summary>
+    public static readonly ChatModel ModelGoogle_Gemini_3_1_Pro_Preview_Europe_West1 = new ChatModel("google/gemini-3.1-pro-preview@europe-west1", "google/gemini-3.1-pro-preview@europe-west1", LLmProviders.Requesty, 1048576);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelGoogle_Gemini_3_1_Pro_Preview_Europe_West1"/>
+    /// </summary>
+    public readonly ChatModel Google_Gemini_3_1_Pro_Preview_Europe_West1 = ModelGoogle_Gemini_3_1_Pro_Preview_Europe_West1;
+
+    /// <summary>
+    /// google/gemini-3.1-pro-preview@europe-west4
+    /// </summary>
+    public static readonly ChatModel ModelGoogle_Gemini_3_1_Pro_Preview_Europe_West4 = new ChatModel("google/gemini-3.1-pro-preview@europe-west4", "google/gemini-3.1-pro-preview@europe-west4", LLmProviders.Requesty, 1048576);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelGoogle_Gemini_3_1_Pro_Preview_Europe_West4"/>
+    /// </summary>
+    public readonly ChatModel Google_Gemini_3_1_Pro_Preview_Europe_West4 = ModelGoogle_Gemini_3_1_Pro_Preview_Europe_West4;
+
+    /// <summary>
+    /// google/gemini-3.1-pro-preview@europe-west8
+    /// </summary>
+    public static readonly ChatModel ModelGoogle_Gemini_3_1_Pro_Preview_Europe_West8 = new ChatModel("google/gemini-3.1-pro-preview@europe-west8", "google/gemini-3.1-pro-preview@europe-west8", LLmProviders.Requesty, 1048576);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelGoogle_Gemini_3_1_Pro_Preview_Europe_West8"/>
+    /// </summary>
+    public readonly ChatModel Google_Gemini_3_1_Pro_Preview_Europe_West8 = ModelGoogle_Gemini_3_1_Pro_Preview_Europe_West8;
+
+    /// <summary>
+    /// google/gemini-3.1-pro-preview@us-central1
+    /// </summary>
+    public static readonly ChatModel ModelGoogle_Gemini_3_1_Pro_Preview_Us_Central1 = new ChatModel("google/gemini-3.1-pro-preview@us-central1", "google/gemini-3.1-pro-preview@us-central1", LLmProviders.Requesty, 1048576);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelGoogle_Gemini_3_1_Pro_Preview_Us_Central1"/>
+    /// </summary>
+    public readonly ChatModel Google_Gemini_3_1_Pro_Preview_Us_Central1 = ModelGoogle_Gemini_3_1_Pro_Preview_Us_Central1;
+
+    /// <summary>
+    /// google/gemini-3.1-pro-preview@us-east1
+    /// </summary>
+    public static readonly ChatModel ModelGoogle_Gemini_3_1_Pro_Preview_Us_East1 = new ChatModel("google/gemini-3.1-pro-preview@us-east1", "google/gemini-3.1-pro-preview@us-east1", LLmProviders.Requesty, 1048576);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelGoogle_Gemini_3_1_Pro_Preview_Us_East1"/>
+    /// </summary>
+    public readonly ChatModel Google_Gemini_3_1_Pro_Preview_Us_East1 = ModelGoogle_Gemini_3_1_Pro_Preview_Us_East1;
+
+    /// <summary>
+    /// google/gemini-3.1-pro-preview@us-east5
+    /// </summary>
+    public static readonly ChatModel ModelGoogle_Gemini_3_1_Pro_Preview_Us_East5 = new ChatModel("google/gemini-3.1-pro-preview@us-east5", "google/gemini-3.1-pro-preview@us-east5", LLmProviders.Requesty, 1048576);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelGoogle_Gemini_3_1_Pro_Preview_Us_East5"/>
+    /// </summary>
+    public readonly ChatModel Google_Gemini_3_1_Pro_Preview_Us_East5 = ModelGoogle_Gemini_3_1_Pro_Preview_Us_East5;
+
+    /// <summary>
+    /// google/gemini-3.1-pro-preview@us-south1
+    /// </summary>
+    public static readonly ChatModel ModelGoogle_Gemini_3_1_Pro_Preview_Us_South1 = new ChatModel("google/gemini-3.1-pro-preview@us-south1", "google/gemini-3.1-pro-preview@us-south1", LLmProviders.Requesty, 1048576);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelGoogle_Gemini_3_1_Pro_Preview_Us_South1"/>
+    /// </summary>
+    public readonly ChatModel Google_Gemini_3_1_Pro_Preview_Us_South1 = ModelGoogle_Gemini_3_1_Pro_Preview_Us_South1;
+
+    /// <summary>
+    /// google/gemini-3.1-pro-preview@us-west1
+    /// </summary>
+    public static readonly ChatModel ModelGoogle_Gemini_3_1_Pro_Preview_Us_West1 = new ChatModel("google/gemini-3.1-pro-preview@us-west1", "google/gemini-3.1-pro-preview@us-west1", LLmProviders.Requesty, 1048576);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelGoogle_Gemini_3_1_Pro_Preview_Us_West1"/>
+    /// </summary>
+    public readonly ChatModel Google_Gemini_3_1_Pro_Preview_Us_West1 = ModelGoogle_Gemini_3_1_Pro_Preview_Us_West1;
+
+    /// <summary>
     /// groq/moonshotai/Kimi-K2-Instruct-0905
     /// </summary>
     public static readonly ChatModel ModelGroq_Moonshotai_Kimi_K2_Instruct_0905 = new ChatModel("groq/moonshotai/Kimi-K2-Instruct-0905", "groq/moonshotai/Kimi-K2-Instruct-0905", LLmProviders.Requesty, 256000);
@@ -1702,6 +2072,26 @@ public class ChatModelRequestyAll : IVendorModelClassProvider
     /// <inheritdoc cref="ModelMinimaxi_Minimax_M2"/>
     /// </summary>
     public readonly ChatModel Minimaxi_Minimax_M2 = ModelMinimaxi_Minimax_M2;
+
+    /// <summary>
+    /// minimaxi/MiniMax-M2.5
+    /// </summary>
+    public static readonly ChatModel ModelMinimaxi_Minimax_M2_5 = new ChatModel("minimaxi/MiniMax-M2.5", "minimaxi/MiniMax-M2.5", LLmProviders.Requesty, 200000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelMinimaxi_Minimax_M2_5"/>
+    /// </summary>
+    public readonly ChatModel Minimaxi_Minimax_M2_5 = ModelMinimaxi_Minimax_M2_5;
+
+    /// <summary>
+    /// minimaxi/MiniMax-M2.5-highspeed
+    /// </summary>
+    public static readonly ChatModel ModelMinimaxi_Minimax_M2_5_Highspeed = new ChatModel("minimaxi/MiniMax-M2.5-highspeed", "minimaxi/MiniMax-M2.5-highspeed", LLmProviders.Requesty, 200000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelMinimaxi_Minimax_M2_5_Highspeed"/>
+    /// </summary>
+    public readonly ChatModel Minimaxi_Minimax_M2_5_Highspeed = ModelMinimaxi_Minimax_M2_5_Highspeed;
 
     /// <summary>
     /// mistral/codestral-latest
@@ -1854,6 +2244,16 @@ public class ChatModelRequestyAll : IVendorModelClassProvider
     public readonly ChatModel Moonshot_Kimi_K2_Turbo_Preview = ModelMoonshot_Kimi_K2_Turbo_Preview;
 
     /// <summary>
+    /// moonshot/kimi-k2.5
+    /// </summary>
+    public static readonly ChatModel ModelMoonshot_Kimi_K2_5 = new ChatModel("moonshot/kimi-k2.5", "moonshot/kimi-k2.5", LLmProviders.Requesty, 262144);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelMoonshot_Kimi_K2_5"/>
+    /// </summary>
+    public readonly ChatModel Moonshot_Kimi_K2_5 = ModelMoonshot_Kimi_K2_5;
+
+    /// <summary>
     /// nebius/Qwen/Qwen3-Coder-480B-A35B-Instruct
     /// </summary>
     public static readonly ChatModel ModelNebius_Qwen_Qwen3_Coder_480B_A35b_Instruct = new ChatModel("nebius/Qwen/Qwen3-Coder-480B-A35B-Instruct", "nebius/Qwen/Qwen3-Coder-480B-A35B-Instruct", LLmProviders.Requesty, 262000);
@@ -1904,6 +2304,16 @@ public class ChatModelRequestyAll : IVendorModelClassProvider
     public readonly ChatModel Nebius_Meta_Llama_Llama_3_3_70B_Instruct = ModelNebius_Meta_Llama_Llama_3_3_70B_Instruct;
 
     /// <summary>
+    /// nebius/minimax/minimax-m2.1
+    /// </summary>
+    public static readonly ChatModel ModelNebius_Minimax_Minimax_M2_1 = new ChatModel("nebius/minimax/minimax-m2.1", "nebius/minimax/minimax-m2.1", LLmProviders.Requesty, 200000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelNebius_Minimax_Minimax_M2_1"/>
+    /// </summary>
+    public readonly ChatModel Nebius_Minimax_Minimax_M2_1 = ModelNebius_Minimax_Minimax_M2_1;
+
+    /// <summary>
     /// nebius/moonshotai/Kimi-K2-Instruct
     /// </summary>
     public static readonly ChatModel ModelNebius_Moonshotai_Kimi_K2_Instruct = new ChatModel("nebius/moonshotai/Kimi-K2-Instruct", "nebius/moonshotai/Kimi-K2-Instruct", LLmProviders.Requesty, 131000);
@@ -1914,6 +2324,16 @@ public class ChatModelRequestyAll : IVendorModelClassProvider
     public readonly ChatModel Nebius_Moonshotai_Kimi_K2_Instruct = ModelNebius_Moonshotai_Kimi_K2_Instruct;
 
     /// <summary>
+    /// nebius/moonshotai/kimi-k2.5
+    /// </summary>
+    public static readonly ChatModel ModelNebius_Moonshotai_Kimi_K2_5 = new ChatModel("nebius/moonshotai/kimi-k2.5", "nebius/moonshotai/kimi-k2.5", LLmProviders.Requesty, 256000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelNebius_Moonshotai_Kimi_K2_5"/>
+    /// </summary>
+    public readonly ChatModel Nebius_Moonshotai_Kimi_K2_5 = ModelNebius_Moonshotai_Kimi_K2_5;
+
+    /// <summary>
     /// nebius/zai-org/GLM-4.5
     /// </summary>
     public static readonly ChatModel ModelNebius_Zai_Org_Glm_4_5 = new ChatModel("nebius/zai-org/GLM-4.5", "nebius/zai-org/GLM-4.5", LLmProviders.Requesty, 128000);
@@ -1922,6 +2342,16 @@ public class ChatModelRequestyAll : IVendorModelClassProvider
     /// <inheritdoc cref="ModelNebius_Zai_Org_Glm_4_5"/>
     /// </summary>
     public readonly ChatModel Nebius_Zai_Org_Glm_4_5 = ModelNebius_Zai_Org_Glm_4_5;
+
+    /// <summary>
+    /// nebius/zai-org/GLM-4.7
+    /// </summary>
+    public static readonly ChatModel ModelNebius_Zai_Org_Glm_4_7 = new ChatModel("nebius/zai-org/GLM-4.7", "nebius/zai-org/GLM-4.7", LLmProviders.Requesty, 200000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelNebius_Zai_Org_Glm_4_7"/>
+    /// </summary>
+    public readonly ChatModel Nebius_Zai_Org_Glm_4_7 = ModelNebius_Zai_Org_Glm_4_7;
 
     /// <summary>
     /// novita/Sao10K/L3-8B-Stheno-v3.2
@@ -2314,6 +2744,36 @@ public class ChatModelRequestyAll : IVendorModelClassProvider
     public readonly ChatModel Openai_Responses_Gpt_5_1_Codex = ModelOpenai_Responses_Gpt_5_1_Codex;
 
     /// <summary>
+    /// openai-responses/gpt-5.2
+    /// </summary>
+    public static readonly ChatModel ModelOpenai_Responses_Gpt_5_2 = new ChatModel("openai-responses/gpt-5.2", "openai-responses/gpt-5.2", LLmProviders.Requesty, 400000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelOpenai_Responses_Gpt_5_2"/>
+    /// </summary>
+    public readonly ChatModel Openai_Responses_Gpt_5_2 = ModelOpenai_Responses_Gpt_5_2;
+
+    /// <summary>
+    /// openai-responses/gpt-5.2-codex
+    /// </summary>
+    public static readonly ChatModel ModelOpenai_Responses_Gpt_5_2_Codex = new ChatModel("openai-responses/gpt-5.2-codex", "openai-responses/gpt-5.2-codex", LLmProviders.Requesty, 400000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelOpenai_Responses_Gpt_5_2_Codex"/>
+    /// </summary>
+    public readonly ChatModel Openai_Responses_Gpt_5_2_Codex = ModelOpenai_Responses_Gpt_5_2_Codex;
+
+    /// <summary>
+    /// openai-responses/gpt-5.3-codex
+    /// </summary>
+    public static readonly ChatModel ModelOpenai_Responses_Gpt_5_3_Codex = new ChatModel("openai-responses/gpt-5.3-codex", "openai-responses/gpt-5.3-codex", LLmProviders.Requesty, 400000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelOpenai_Responses_Gpt_5_3_Codex"/>
+    /// </summary>
+    public readonly ChatModel Openai_Responses_Gpt_5_3_Codex = ModelOpenai_Responses_Gpt_5_3_Codex;
+
+    /// <summary>
     /// openai-responses/o3-mini
     /// </summary>
     public static readonly ChatModel ModelOpenai_Responses_O3_Mini = new ChatModel("openai-responses/o3-mini", "openai-responses/o3-mini", LLmProviders.Requesty, 200000);
@@ -2542,6 +3002,26 @@ public class ChatModelRequestyAll : IVendorModelClassProvider
     /// <inheritdoc cref="ModelOpenai_Gpt_5_2_Chat"/>
     /// </summary>
     public readonly ChatModel Openai_Gpt_5_2_Chat = ModelOpenai_Gpt_5_2_Chat;
+
+    /// <summary>
+    /// openai/gpt-5.4
+    /// </summary>
+    public static readonly ChatModel ModelOpenai_Gpt_5_4 = new ChatModel("openai/gpt-5.4", "openai/gpt-5.4", LLmProviders.Requesty, 400000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelOpenai_Gpt_5_4"/>
+    /// </summary>
+    public readonly ChatModel Openai_Gpt_5_4 = ModelOpenai_Gpt_5_4;
+
+    /// <summary>
+    /// openai/gpt-5.4-pro
+    /// </summary>
+    public static readonly ChatModel ModelOpenai_Gpt_5_4_Pro = new ChatModel("openai/gpt-5.4-pro", "openai/gpt-5.4-pro", LLmProviders.Requesty, 400000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelOpenai_Gpt_5_4_Pro"/>
+    /// </summary>
+    public readonly ChatModel Openai_Gpt_5_4_Pro = ModelOpenai_Gpt_5_4_Pro;
 
     /// <summary>
     /// openai/gpt-5:flex
@@ -3084,6 +3564,36 @@ public class ChatModelRequestyAll : IVendorModelClassProvider
     public readonly ChatModel Vertex_Claude_Opus_4_5_Us_East5 = ModelVertex_Claude_Opus_4_5_Us_East5;
 
     /// <summary>
+    /// vertex/claude-opus-4-6
+    /// </summary>
+    public static readonly ChatModel ModelVertex_Claude_Opus_4_6 = new ChatModel("vertex/claude-opus-4-6", "vertex/claude-opus-4-6", LLmProviders.Requesty, 1000000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelVertex_Claude_Opus_4_6"/>
+    /// </summary>
+    public readonly ChatModel Vertex_Claude_Opus_4_6 = ModelVertex_Claude_Opus_4_6;
+
+    /// <summary>
+    /// vertex/claude-opus-4-6@europe-west1
+    /// </summary>
+    public static readonly ChatModel ModelVertex_Claude_Opus_4_6_Europe_West1 = new ChatModel("vertex/claude-opus-4-6@europe-west1", "vertex/claude-opus-4-6@europe-west1", LLmProviders.Requesty, 1000000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelVertex_Claude_Opus_4_6_Europe_West1"/>
+    /// </summary>
+    public readonly ChatModel Vertex_Claude_Opus_4_6_Europe_West1 = ModelVertex_Claude_Opus_4_6_Europe_West1;
+
+    /// <summary>
+    /// vertex/claude-opus-4-6@us-east5
+    /// </summary>
+    public static readonly ChatModel ModelVertex_Claude_Opus_4_6_Us_East5 = new ChatModel("vertex/claude-opus-4-6@us-east5", "vertex/claude-opus-4-6@us-east5", LLmProviders.Requesty, 1000000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelVertex_Claude_Opus_4_6_Us_East5"/>
+    /// </summary>
+    public readonly ChatModel Vertex_Claude_Opus_4_6_Us_East5 = ModelVertex_Claude_Opus_4_6_Us_East5;
+
+    /// <summary>
     /// vertex/claude-opus-4@europe-west1
     /// </summary>
     public static readonly ChatModel ModelVertex_Claude_Opus_4_Europe_West1 = new ChatModel("vertex/claude-opus-4@europe-west1", "vertex/claude-opus-4@europe-west1", LLmProviders.Requesty, 200000);
@@ -3534,6 +4044,16 @@ public class ChatModelRequestyAll : IVendorModelClassProvider
     public readonly ChatModel Vertex_Gemini_3_Pro_Preview = ModelVertex_Gemini_3_Pro_Preview;
 
     /// <summary>
+    /// vertex/gemini-3.1-pro-preview
+    /// </summary>
+    public static readonly ChatModel ModelVertex_Gemini_3_1_Pro_Preview = new ChatModel("vertex/gemini-3.1-pro-preview", "vertex/gemini-3.1-pro-preview", LLmProviders.Requesty, 1048576);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelVertex_Gemini_3_1_Pro_Preview"/>
+    /// </summary>
+    public readonly ChatModel Vertex_Gemini_3_1_Pro_Preview = ModelVertex_Gemini_3_1_Pro_Preview;
+
+    /// <summary>
     /// xai/grok-2-1212
     /// </summary>
     public static readonly ChatModel ModelXai_Grok_2_1212 = new ChatModel("xai/grok-2-1212", "xai/grok-2-1212", LLmProviders.Requesty, 131072);
@@ -3674,11 +4194,21 @@ public class ChatModelRequestyAll : IVendorModelClassProvider
     public readonly ChatModel Zai_Glm_4_7 = ModelZai_Glm_4_7;
 
     /// <summary>
+    /// zai/GLM-5
+    /// </summary>
+    public static readonly ChatModel ModelZai_Glm_5 = new ChatModel("zai/GLM-5", "zai/GLM-5", LLmProviders.Requesty, 200000);
+
+    /// <summary>
+    /// <inheritdoc cref="ModelZai_Glm_5"/>
+    /// </summary>
+    public readonly ChatModel Zai_Glm_5 = ModelZai_Glm_5;
+
+    /// <summary>
     /// All known models from Requesty.
     /// </summary>
     public static List<IModel> ModelsAll => LazyModelsAll.Value;
 
-    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [ModelAlibaba_Qwen_Max, ModelAlibaba_Qwen_Plus, ModelAlibaba_Qwen_Turbo, ModelAlibaba_Qwen3_30B_A3b_Instruct_2507, ModelAlibaba_Qwen3_Coder_Flash, ModelAlibaba_Qwen3_Coder_Plus, ModelAlibaba_Qwen3_Max, ModelAnthropic_Claude_3_5_Haiku, ModelAnthropic_Claude_3_7_Sonnet, ModelAnthropic_Claude_3_Haiku, ModelAnthropic_Claude_Haiku_4_5, ModelAnthropic_Claude_Opus_4, ModelAnthropic_Claude_Opus_4_1, ModelAnthropic_Claude_Opus_4_5, ModelAnthropic_Claude_Sonnet_4, ModelAnthropic_Claude_Sonnet_4_5, ModelAzure_Gpt_4_1, ModelAzure_Gpt_4_1_Mini, ModelAzure_Gpt_4_1_Mini_Eastus2, ModelAzure_Gpt_4_1_Mini_Francecentral, ModelAzure_Gpt_4_1_Mini_Swedencentral, ModelAzure_Gpt_4_1_Mini_Uksouth, ModelAzure_Gpt_4_1_Mini_Westus3, ModelAzure_Gpt_4_1_Nano, ModelAzure_Gpt_4_1_Nano_Eastus2, ModelAzure_Gpt_4_1_Nano_Francecentral, ModelAzure_Gpt_4_1_Nano_Swedencentral, ModelAzure_Gpt_4_1_Nano_Uksouth, ModelAzure_Gpt_4_1_Nano_Westus3, ModelAzure_Gpt_4_1_Eastus2, ModelAzure_Gpt_4_1_Francecentral, ModelAzure_Gpt_4_1_Swedencentral, ModelAzure_Gpt_4_1_Uksouth, ModelAzure_Gpt_4_1_Westus3, ModelAzure_Gpt_5, ModelAzure_Gpt_5_Mini, ModelAzure_Gpt_5_Mini_Eastus2, ModelAzure_Gpt_5_Mini_Swedencentral, ModelAzure_Gpt_5_Mini_Uksouth, ModelAzure_Gpt_5_Nano, ModelAzure_Gpt_5_Nano_Eastus2, ModelAzure_Gpt_5_Nano_Swedencentral, ModelAzure_Gpt_5_1, ModelAzure_Gpt_5_1_Swedencentral, ModelAzure_Gpt_5_Eastus2, ModelAzure_Gpt_5_Swedencentral, ModelAzure_Gpt_5_Uksouth, ModelAzure_O4_Mini, ModelAzure_O4_Mini_Eastus2, ModelAzure_O4_Mini_Francecentral, ModelAzure_O4_Mini_Swedencentral, ModelAzure_O4_Mini_Uksouth, ModelAzure_O4_Mini_Westus3, ModelAzure_Openai_Responses_Gpt_4_1, ModelAzure_Openai_Responses_Gpt_4_1_Mini, ModelAzure_Openai_Responses_Gpt_4_1_Mini_Eastus2, ModelAzure_Openai_Responses_Gpt_4_1_Mini_Francecentral, ModelAzure_Openai_Responses_Gpt_4_1_Mini_Swedencentral, ModelAzure_Openai_Responses_Gpt_4_1_Mini_Westus3, ModelAzure_Openai_Responses_Gpt_4_1_Nano, ModelAzure_Openai_Responses_Gpt_4_1_Nano_Eastus2, ModelAzure_Openai_Responses_Gpt_4_1_Nano_Francecentral, ModelAzure_Openai_Responses_Gpt_4_1_Nano_Swedencentral, ModelAzure_Openai_Responses_Gpt_4_1_Nano_Westus3, ModelAzure_Openai_Responses_Gpt_4_1_Eastus2, ModelAzure_Openai_Responses_Gpt_4_1_Francecentral, ModelAzure_Openai_Responses_Gpt_4_1_Swedencentral, ModelAzure_Openai_Responses_Gpt_4_1_Westus3, ModelBedrock_Claude_3_7_Sonnet, ModelBedrock_Claude_3_7_Sonnet_Eu_Central_1, ModelBedrock_Claude_3_7_Sonnet_Eu_North_1, ModelBedrock_Claude_3_7_Sonnet_Eu_West_1, ModelBedrock_Claude_3_7_Sonnet_Eu_West_3, ModelBedrock_Claude_3_7_Sonnet_Us_East_1, ModelBedrock_Claude_3_7_Sonnet_Us_East_2, ModelBedrock_Claude_3_7_Sonnet_Us_West_2, ModelBedrock_Claude_Haiku_4_5, ModelBedrock_Claude_Haiku_4_5_Eu_Central_1, ModelBedrock_Claude_Haiku_4_5_Eu_North_1, ModelBedrock_Claude_Haiku_4_5_Eu_West_1, ModelBedrock_Claude_Haiku_4_5_Eu_West_3, ModelBedrock_Claude_Haiku_4_5_Us_East_1, ModelBedrock_Claude_Haiku_4_5_Us_East_2, ModelBedrock_Claude_Haiku_4_5_Us_West_2, ModelBedrock_Claude_Opus_4, ModelBedrock_Claude_Opus_4_5, ModelBedrock_Claude_Opus_4_Us_East_1, ModelBedrock_Claude_Opus_4_Us_East_2, ModelBedrock_Claude_Opus_4_Us_West_2, ModelBedrock_Claude_Sonnet_4, ModelBedrock_Claude_Sonnet_4_5, ModelBedrock_Claude_Sonnet_4_5_Eu_Central_1, ModelBedrock_Claude_Sonnet_4_5_Eu_North_1, ModelBedrock_Claude_Sonnet_4_5_Eu_West_1, ModelBedrock_Claude_Sonnet_4_5_Eu_West_3, ModelBedrock_Claude_Sonnet_4_5_Us_East_1, ModelBedrock_Claude_Sonnet_4_5_Us_East_2, ModelBedrock_Claude_Sonnet_4_5_Us_West_2, ModelBedrock_Claude_Sonnet_4_Eu_Central_1, ModelBedrock_Claude_Sonnet_4_Eu_North_1, ModelBedrock_Claude_Sonnet_4_Eu_West_1, ModelBedrock_Claude_Sonnet_4_Eu_West_3, ModelBedrock_Claude_Sonnet_4_Us_East_1, ModelBedrock_Claude_Sonnet_4_Us_East_2, ModelBedrock_Claude_Sonnet_4_Us_West_2, ModelCoding_Claude_3_7_Sonnet_20250219, ModelCoding_Claude_3_7_Sonnet_20250219_1024, ModelCoding_Claude_3_7_Sonnet_20250219_16384, ModelCoding_Claude_3_7_Sonnet_20250219_64000, ModelCoding_Claude_3_7_Sonnet_20250219_8192, ModelCoding_Claude_3_7_Sonnet_20250219_High, ModelCoding_Claude_3_7_Sonnet_20250219_Low, ModelCoding_Claude_3_7_Sonnet_20250219_Max, ModelCoding_Claude_3_7_Sonnet_20250219_Medium, ModelCoding_Claude_Opus_4_20250514, ModelCoding_Claude_Sonnet_4_20250514, ModelCoding_Gemini_2_5_Flash, ModelCoding_Gemini_2_5_Flash_Europe_Central2, ModelCoding_Gemini_2_5_Flash_Europe_North1, ModelCoding_Gemini_2_5_Flash_Europe_West1, ModelCoding_Gemini_2_5_Flash_Europe_West4, ModelCoding_Gemini_2_5_Flash_Europe_West8, ModelCoding_Gemini_2_5_Flash_Us_Central1, ModelCoding_Gemini_2_5_Flash_Us_East1, ModelCoding_Gemini_2_5_Flash_Us_East5, ModelCoding_Gemini_2_5_Flash_Us_South1, ModelCoding_Gemini_2_5_Flash_Us_West1, ModelCoding_Gemini_2_5_Pro, ModelCoding_Gemini_2_5_Pro_Europe_Central2, ModelCoding_Gemini_2_5_Pro_Europe_North1, ModelCoding_Gemini_2_5_Pro_Europe_West1, ModelCoding_Gemini_2_5_Pro_Europe_West4, ModelCoding_Gemini_2_5_Pro_Europe_West8, ModelCoding_Gemini_2_5_Pro_Us_Central1, ModelCoding_Gemini_2_5_Pro_Us_East1, ModelCoding_Gemini_2_5_Pro_Us_East5, ModelCoding_Gemini_2_5_Pro_Us_South1, ModelCoding_Gemini_2_5_Pro_Us_West1, ModelDeepinfra_Qwen_Qwen2_5_72B_Instruct, ModelDeepinfra_Qwen_Qwen2_5_Coder_32B_Instruct, ModelDeepinfra_Qwen_Qwen3_235B_A22b, ModelDeepinfra_Qwen_Qwen3_32B, ModelDeepinfra_Qwen_Qwen3_Coder_480B_A35b_Instruct, ModelDeepinfra_Deepseek_Ai_Deepseek_R1, ModelDeepinfra_Deepseek_Ai_Deepseek_R1_Distill_Llama_70B, ModelDeepinfra_Deepseek_Ai_Deepseek_V3, ModelDeepinfra_Deepseek_Ai_Deepseek_V3_1, ModelDeepinfra_Meta_Llama_Llama_3_2_90B_Vision_Instruct, ModelDeepinfra_Meta_Llama_Llama_3_3_70B_Instruct, ModelDeepinfra_Meta_Llama_Llama_3_3_70B_Instruct_Turbo, ModelDeepinfra_Meta_Llama_Meta_Llama_3_1_405B_Instruct, ModelDeepinfra_Meta_Llama_Meta_Llama_3_1_70B_Instruct, ModelDeepinfra_Meta_Llama_Meta_Llama_3_1_8B_Instruct_Turbo, ModelDeepinfra_Microsoft_Phi_4, ModelDeepinfra_Zai_Org_Glm_4_5, ModelDeepinfra_Zai_Org_Glm_4_5_Air, ModelDeepseek_Deepseek_Chat, ModelDeepseek_Deepseek_Reasoner, ModelGoogle_Gemini_2_0_Flash_001, ModelGoogle_Gemini_2_5_Flash, ModelGoogle_Gemini_2_5_Flash_Lite, ModelGoogle_Gemini_2_5_Pro, ModelGoogle_Gemini_3_Flash_Preview, ModelGoogle_Gemini_3_Pro_Preview, ModelGroq_Moonshotai_Kimi_K2_Instruct_0905, ModelGroq_Moonshotai_Kimi_K2_Instruct, ModelGroq_Openai_Gpt_Oss_120B, ModelGroq_Openai_Gpt_Oss_20B, ModelMinimaxi_Minimax_M2, ModelMistral_Codestral_Latest, ModelMistral_Devstral_Latest, ModelMistral_Devstral_Medium_2507, ModelMistral_Devstral_Small_2507, ModelMistral_Devstral_Small_Latest, ModelMistral_Mistral_Large_Latest, ModelMistral_Mistral_Medium_Latest, ModelMistral_Mistral_Small_Latest, ModelMistral_Open_Mistral_7B, ModelMistral_Pixtral_Large_Latest, ModelMoonshot_Kimi_K2_0711_Preview, ModelMoonshot_Kimi_K2_0905_Preview, ModelMoonshot_Kimi_K2_Thinking, ModelMoonshot_Kimi_K2_Thinking_Turbo, ModelMoonshot_Kimi_K2_Turbo_Preview, ModelNebius_Qwen_Qwen3_Coder_480B_A35b_Instruct, ModelNebius_Deepseek_Ai_Deepseek_R1_0528, ModelNebius_Deepseek_Ai_Deepseek_V3_0324, ModelNebius_Deepseek_Ai_Deepseek_V3_0324_Fast, ModelNebius_Meta_Llama_Llama_3_3_70B_Instruct, ModelNebius_Moonshotai_Kimi_K2_Instruct, ModelNebius_Zai_Org_Glm_4_5, ModelNovita_Sao10k_L3_8B_Stheno_V3_2, ModelNovita_Deepseek_Deepseek_Prover_V2_671B, ModelNovita_Deepseek_Deepseek_R1, ModelNovita_Deepseek_Deepseek_R1_Distill_Llama_70B, ModelNovita_Deepseek_Deepseek_R1_Distill_Qwen_14B, ModelNovita_Deepseek_Deepseek_R1_Distill_Qwen_32B, ModelNovita_Deepseek_Deepseek_R1_Turbo, ModelNovita_Deepseek_Deepseek_V3_0324, ModelNovita_Deepseek_Deepseek_V3_Turbo, ModelNovita_Deepseek_Deepseek_V3, ModelNovita_Gryphe_Mythomax_L2_13B, ModelNovita_Meta_Llama_Llama_3_70B_Instruct, ModelNovita_Meta_Llama_Llama_3_8B_Instruct, ModelNovita_Meta_Llama_Llama_3_1_8B_Instruct, ModelNovita_Meta_Llama_Llama_3_2_1B_Instruct, ModelNovita_Meta_Llama_Llama_3_2_3B_Instruct, ModelNovita_Meta_Llama_Llama_3_3_70B_Instruct, ModelNovita_Meta_Llama_Llama_4_Maverick_17B_128E_Instruct_Fp8, ModelNovita_Microsoft_Wizardlm_2_8X22b, ModelNovita_Mistralai_Mistral_Nemo, ModelNovita_Moonshotai_Kimi_K2_Instruct, ModelNovita_Nousresearch_Hermes_2_Pro_Llama_3_8B, ModelNovita_Qwen_Qwen_2_5_72B_Instruct, ModelNovita_Qwen_Qwen2_5_Vl_72B_Instruct, ModelNovita_Qwen_Qwen3_235B_A22b_Fp8, ModelNovita_Sao10k_L3_70B_Euryale_V2_1, ModelNovita_Sao10k_L3_8B_Lunaris, ModelNovita_Sao10k_L31_70B_Euryale_V2_2, ModelNovita_Zai_Org_Glm_4_5, ModelNovita_Zai_Org_Glm_4_6, ModelOpenai_Responses_Gpt_4_1, ModelOpenai_Responses_Gpt_4_1_Mini, ModelOpenai_Responses_Gpt_4_1_Nano, ModelOpenai_Responses_Gpt_5, ModelOpenai_Responses_Gpt_5_Codex, ModelOpenai_Responses_Gpt_5_Mini, ModelOpenai_Responses_Gpt_5_Nano, ModelOpenai_Responses_Gpt_5_Pro, ModelOpenai_Responses_Gpt_5_1_Codex, ModelOpenai_Responses_O3_Mini, ModelOpenai_Responses_O3_Pro, ModelOpenai_Responses_O4_Mini, ModelOpenai_Chatgpt_4O, ModelOpenai_Gpt_4_1, ModelOpenai_Gpt_4_1_Mini, ModelOpenai_Gpt_4_1_Nano, ModelOpenai_Gpt_4O, ModelOpenai_Gpt_4O_2024_05_13, ModelOpenai_Gpt_4O_2024_08_06, ModelOpenai_Gpt_4O_2024_11_20, ModelOpenai_Gpt_4O_Mini, ModelOpenai_Gpt_5, ModelOpenai_Gpt_5_Chat, ModelOpenai_Gpt_5_Mini, ModelOpenai_Gpt_5_Mini_Flex, ModelOpenai_Gpt_5_Mini_Priority, ModelOpenai_Gpt_5_Nano, ModelOpenai_Gpt_5_Nano_Flex, ModelOpenai_Gpt_5_1, ModelOpenai_Gpt_5_1_Chat, ModelOpenai_Gpt_5_2, ModelOpenai_Gpt_5_2_Chat, ModelOpenai_Gpt_5_Flex, ModelOpenai_Gpt_5_Priority, ModelOpenai_O1, ModelOpenai_O1_Pro, ModelOpenai_O1_High, ModelOpenai_O1_Low, ModelOpenai_O1_Medium, ModelOpenai_O3, ModelOpenai_O3_Deep_Research, ModelOpenai_O3_Mini, ModelOpenai_O3_Mini_High, ModelOpenai_O3_Mini_Low, ModelOpenai_O3_Mini_Medium, ModelOpenai_O3_Flex, ModelOpenai_O4_Mini, ModelOpenai_O4_Mini_Deep_Research, ModelOpenai_O4_Mini_Flex, ModelOpenai_O4_Mini_High, ModelOpenai_O4_Mini_Low, ModelOpenai_O4_Mini_Medium, ModelParasail_Parasail_Gemma3_27B_It, ModelParasail_Parasail_Kimi_K2_Instruct, ModelParasail_Parasail_Qwen25_Vl_72B_Instruct, ModelParasail_Parasail_Qwen3_235B_A22b_Instruct_2507, ModelPerplexity_Sonar, ModelPerplexity_Sonar_Pro, ModelPerplexity_Sonar_Reasoning_Pro, ModelSmart_Task, ModelTogether_Qwen_Qwen2_5_72B_Instruct_Turbo, ModelTogether_Qwen_Qwen2_5_7B_Instruct_Turbo, ModelTogether_Deepseek_Ai_Deepseek_R1, ModelTogether_Deepseek_Ai_Deepseek_V3, ModelTogether_Meta_Llama_Llama_3_2_3B_Instruct_Turbo, ModelTogether_Meta_Llama_Llama_3_3_70B_Instruct_Turbo, ModelTogether_Meta_Llama_Llamaguard_2_8B, ModelTogether_Meta_Llama_Meta_Llama_3_8B_Instruct_Lite, ModelTogether_Meta_Llama_Meta_Llama_3_1_70B_Instruct_Turbo, ModelTogether_Meta_Llama_Meta_Llama_3_1_8B_Instruct_Turbo, ModelVertex_Claude_3_5_Sonnet, ModelVertex_Claude_3_5_Sonnet_Europe_West1, ModelVertex_Claude_3_5_Sonnet_Us_East5, ModelVertex_Claude_3_7_Sonnet, ModelVertex_Claude_3_7_Sonnet_Europe_West1, ModelVertex_Claude_3_7_Sonnet_Us_East5, ModelVertex_Claude_Haiku_4_5, ModelVertex_Claude_Haiku_4_5_Europe_West1, ModelVertex_Claude_Haiku_4_5_Us_East5, ModelVertex_Claude_Opus_4, ModelVertex_Claude_Opus_4_1, ModelVertex_Claude_Opus_4_1_Europe_West1, ModelVertex_Claude_Opus_4_1_Us_East5, ModelVertex_Claude_Opus_4_5, ModelVertex_Claude_Opus_4_5_Europe_West1, ModelVertex_Claude_Opus_4_5_Us_East5, ModelVertex_Claude_Opus_4_Europe_West1, ModelVertex_Claude_Opus_4_Us_East5, ModelVertex_Claude_Sonnet_4, ModelVertex_Claude_Sonnet_4_5, ModelVertex_Claude_Sonnet_4_5_Europe_West1, ModelVertex_Claude_Sonnet_4_5_Us_East5, ModelVertex_Claude_Sonnet_4_Europe_West1, ModelVertex_Claude_Sonnet_4_Us_East5, ModelVertex_Gemini_2_5_Flash, ModelVertex_Gemini_2_5_Flash_Image_Preview, ModelVertex_Gemini_2_5_Flash_Lite, ModelVertex_Gemini_2_5_Flash_Lite_Europe_Central2, ModelVertex_Gemini_2_5_Flash_Lite_Europe_North1, ModelVertex_Gemini_2_5_Flash_Lite_Europe_West1, ModelVertex_Gemini_2_5_Flash_Lite_Europe_West4, ModelVertex_Gemini_2_5_Flash_Lite_Europe_West8, ModelVertex_Gemini_2_5_Flash_Lite_Us_Central1, ModelVertex_Gemini_2_5_Flash_Lite_Us_East1, ModelVertex_Gemini_2_5_Flash_Lite_Us_East5, ModelVertex_Gemini_2_5_Flash_Lite_Us_South1, ModelVertex_Gemini_2_5_Flash_Lite_Us_West1, ModelVertex_Gemini_2_5_Flash_Europe_Central2, ModelVertex_Gemini_2_5_Flash_Europe_North1, ModelVertex_Gemini_2_5_Flash_Europe_West1, ModelVertex_Gemini_2_5_Flash_Europe_West4, ModelVertex_Gemini_2_5_Flash_Europe_West8, ModelVertex_Gemini_2_5_Flash_Us_Central1, ModelVertex_Gemini_2_5_Flash_Us_East1, ModelVertex_Gemini_2_5_Flash_Us_East5, ModelVertex_Gemini_2_5_Flash_Us_South1, ModelVertex_Gemini_2_5_Flash_Us_West1, ModelVertex_Gemini_2_5_Pro, ModelVertex_Gemini_2_5_Pro_Europe_Central2, ModelVertex_Gemini_2_5_Pro_Europe_North1, ModelVertex_Gemini_2_5_Pro_Europe_West1, ModelVertex_Gemini_2_5_Pro_Europe_West4, ModelVertex_Gemini_2_5_Pro_Europe_West8, ModelVertex_Gemini_2_5_Pro_Us_Central1, ModelVertex_Gemini_2_5_Pro_Us_East1, ModelVertex_Gemini_2_5_Pro_Us_East5, ModelVertex_Gemini_2_5_Pro_Us_South1, ModelVertex_Gemini_2_5_Pro_Us_West1, ModelVertex_Gemini_3_Flash_Preview, ModelVertex_Gemini_3_Pro_Image_Preview, ModelVertex_Gemini_3_Pro_Preview, ModelXai_Grok_2_1212, ModelXai_Grok_3, ModelXai_Grok_3_Mini, ModelXai_Grok_3_Mini_High, ModelXai_Grok_3_Mini_Low, ModelXai_Grok_4, ModelXai_Grok_4_1_Fast_Non_Reasoning, ModelXai_Grok_4_1_Fast_Reasoning, ModelXai_Grok_4_Fast, ModelXai_Grok_4_Fast_Non_Reasoning, ModelXai_Grok_Code_Fast_1, ModelZai_Glm_4_5, ModelZai_Glm_4_6, ModelZai_Glm_4_7]);
+    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [ModelAlibaba_Qwen_Max, ModelAlibaba_Qwen_Plus, ModelAlibaba_Qwen_Turbo, ModelAlibaba_Qwen3_30B_A3b_Instruct_2507, ModelAlibaba_Qwen3_Coder_Flash, ModelAlibaba_Qwen3_Coder_Plus, ModelAlibaba_Qwen3_Max, ModelAlibaba_Qwen3_5, ModelAnthropic_Claude_Haiku_4_5, ModelAnthropic_Claude_Opus_4, ModelAnthropic_Claude_Opus_4_1, ModelAnthropic_Claude_Opus_4_5, ModelAnthropic_Claude_Opus_4_6, ModelAnthropic_Claude_Sonnet_4, ModelAnthropic_Claude_Sonnet_4_5, ModelAnthropic_Claude_Sonnet_4_6, ModelAzure_Gpt_4_1, ModelAzure_Gpt_4_1_Mini, ModelAzure_Gpt_4_1_Mini_Eastus2, ModelAzure_Gpt_4_1_Mini_Francecentral, ModelAzure_Gpt_4_1_Mini_Swedencentral, ModelAzure_Gpt_4_1_Mini_Uksouth, ModelAzure_Gpt_4_1_Mini_Westus3, ModelAzure_Gpt_4_1_Nano, ModelAzure_Gpt_4_1_Nano_Eastus2, ModelAzure_Gpt_4_1_Nano_Francecentral, ModelAzure_Gpt_4_1_Nano_Swedencentral, ModelAzure_Gpt_4_1_Nano_Uksouth, ModelAzure_Gpt_4_1_Nano_Westus3, ModelAzure_Gpt_4_1_Eastus2, ModelAzure_Gpt_4_1_Francecentral, ModelAzure_Gpt_4_1_Swedencentral, ModelAzure_Gpt_4_1_Uksouth, ModelAzure_Gpt_4_1_Westus3, ModelAzure_Gpt_5, ModelAzure_Gpt_5_Mini, ModelAzure_Gpt_5_Mini_Eastus2, ModelAzure_Gpt_5_Mini_Francecentral, ModelAzure_Gpt_5_Mini_Swedencentral, ModelAzure_Gpt_5_Mini_Uksouth, ModelAzure_Gpt_5_Nano, ModelAzure_Gpt_5_Nano_Eastus2, ModelAzure_Gpt_5_Nano_Francecentral, ModelAzure_Gpt_5_Nano_Swedencentral, ModelAzure_Gpt_5_1, ModelAzure_Gpt_5_1_Eastus2, ModelAzure_Gpt_5_1_Francecentral, ModelAzure_Gpt_5_1_Swedencentral, ModelAzure_Gpt_5_2, ModelAzure_Gpt_5_2_Eastus2, ModelAzure_Gpt_5_3_Codex_Eastus2, ModelAzure_Gpt_5_Eastus2, ModelAzure_Gpt_5_Francecentral, ModelAzure_Gpt_5_Swedencentral, ModelAzure_Gpt_5_Uksouth, ModelAzure_O4_Mini, ModelAzure_O4_Mini_Eastus2, ModelAzure_O4_Mini_Francecentral, ModelAzure_O4_Mini_Swedencentral, ModelAzure_O4_Mini_Uksouth, ModelAzure_O4_Mini_Westus3, ModelAzure_Openai_Responses_Gpt_4_1, ModelAzure_Openai_Responses_Gpt_4_1_Mini, ModelAzure_Openai_Responses_Gpt_4_1_Mini_Eastus2, ModelAzure_Openai_Responses_Gpt_4_1_Mini_Francecentral, ModelAzure_Openai_Responses_Gpt_4_1_Mini_Swedencentral, ModelAzure_Openai_Responses_Gpt_4_1_Mini_Westus3, ModelAzure_Openai_Responses_Gpt_4_1_Nano, ModelAzure_Openai_Responses_Gpt_4_1_Nano_Eastus2, ModelAzure_Openai_Responses_Gpt_4_1_Nano_Francecentral, ModelAzure_Openai_Responses_Gpt_4_1_Nano_Swedencentral, ModelAzure_Openai_Responses_Gpt_4_1_Nano_Westus3, ModelAzure_Openai_Responses_Gpt_4_1_Eastus2, ModelAzure_Openai_Responses_Gpt_4_1_Francecentral, ModelAzure_Openai_Responses_Gpt_4_1_Swedencentral, ModelAzure_Openai_Responses_Gpt_4_1_Westus3, ModelAzure_Openai_Responses_Gpt_5_2_Codex, ModelAzure_Openai_Responses_Gpt_5_2_Codex_Eastus2, ModelBedrock_Claude_3_7_Sonnet, ModelBedrock_Claude_3_7_Sonnet_Eu_Central_1, ModelBedrock_Claude_3_7_Sonnet_Eu_North_1, ModelBedrock_Claude_3_7_Sonnet_Eu_West_1, ModelBedrock_Claude_3_7_Sonnet_Eu_West_3, ModelBedrock_Claude_3_7_Sonnet_Us_East_1, ModelBedrock_Claude_3_7_Sonnet_Us_East_2, ModelBedrock_Claude_3_7_Sonnet_Us_West_2, ModelBedrock_Claude_Haiku_4_5, ModelBedrock_Claude_Haiku_4_5_Eu_Central_1, ModelBedrock_Claude_Haiku_4_5_Eu_North_1, ModelBedrock_Claude_Haiku_4_5_Eu_West_1, ModelBedrock_Claude_Haiku_4_5_Eu_West_3, ModelBedrock_Claude_Haiku_4_5_Us_East_1, ModelBedrock_Claude_Haiku_4_5_Us_East_2, ModelBedrock_Claude_Haiku_4_5_Us_West_2, ModelBedrock_Claude_Opus_4, ModelBedrock_Claude_Opus_4_5, ModelBedrock_Claude_Opus_4_5_Eu_Central_1, ModelBedrock_Claude_Opus_4_5_Eu_North_1, ModelBedrock_Claude_Opus_4_5_Eu_West_1, ModelBedrock_Claude_Opus_4_5_Eu_West_3, ModelBedrock_Claude_Opus_4_5_Us_East_1, ModelBedrock_Claude_Opus_4_5_Us_East_2, ModelBedrock_Claude_Opus_4_5_Us_West_2, ModelBedrock_Claude_Opus_4_6, ModelBedrock_Claude_Opus_4_Us_East_1, ModelBedrock_Claude_Opus_4_Us_East_2, ModelBedrock_Claude_Opus_4_Us_West_2, ModelBedrock_Claude_Sonnet_4, ModelBedrock_Claude_Sonnet_4_5, ModelBedrock_Claude_Sonnet_4_5_Eu_Central_1, ModelBedrock_Claude_Sonnet_4_5_Eu_North_1, ModelBedrock_Claude_Sonnet_4_5_Eu_West_1, ModelBedrock_Claude_Sonnet_4_5_Eu_West_3, ModelBedrock_Claude_Sonnet_4_5_Us_East_1, ModelBedrock_Claude_Sonnet_4_5_Us_East_2, ModelBedrock_Claude_Sonnet_4_5_Us_West_2, ModelBedrock_Claude_Sonnet_4_6, ModelBedrock_Claude_Sonnet_4_6_Eu_Central_1, ModelBedrock_Claude_Sonnet_4_6_Eu_North_1, ModelBedrock_Claude_Sonnet_4_6_Eu_West_1, ModelBedrock_Claude_Sonnet_4_6_Eu_West_3, ModelBedrock_Claude_Sonnet_4_6_Us_East_1, ModelBedrock_Claude_Sonnet_4_6_Us_East_2, ModelBedrock_Claude_Sonnet_4_6_Us_West_2, ModelBedrock_Claude_Sonnet_4_Eu_Central_1, ModelBedrock_Claude_Sonnet_4_Eu_North_1, ModelBedrock_Claude_Sonnet_4_Eu_West_1, ModelBedrock_Claude_Sonnet_4_Eu_West_3, ModelBedrock_Claude_Sonnet_4_Us_East_1, ModelBedrock_Claude_Sonnet_4_Us_East_2, ModelBedrock_Claude_Sonnet_4_Us_West_2, ModelCoding_Claude_3_7_Sonnet_20250219, ModelCoding_Claude_3_7_Sonnet_20250219_1024, ModelCoding_Claude_3_7_Sonnet_20250219_16384, ModelCoding_Claude_3_7_Sonnet_20250219_64000, ModelCoding_Claude_3_7_Sonnet_20250219_8192, ModelCoding_Claude_3_7_Sonnet_20250219_High, ModelCoding_Claude_3_7_Sonnet_20250219_Low, ModelCoding_Claude_3_7_Sonnet_20250219_Max, ModelCoding_Claude_3_7_Sonnet_20250219_Medium, ModelCoding_Claude_Opus_4_20250514, ModelCoding_Claude_Sonnet_4_20250514, ModelCoding_Gemini_2_5_Flash, ModelCoding_Gemini_2_5_Flash_Europe_Central2, ModelCoding_Gemini_2_5_Flash_Europe_North1, ModelCoding_Gemini_2_5_Flash_Europe_West1, ModelCoding_Gemini_2_5_Flash_Europe_West4, ModelCoding_Gemini_2_5_Flash_Europe_West8, ModelCoding_Gemini_2_5_Flash_Us_Central1, ModelCoding_Gemini_2_5_Flash_Us_East1, ModelCoding_Gemini_2_5_Flash_Us_East5, ModelCoding_Gemini_2_5_Flash_Us_South1, ModelCoding_Gemini_2_5_Flash_Us_West1, ModelCoding_Gemini_2_5_Pro, ModelCoding_Gemini_2_5_Pro_Europe_Central2, ModelCoding_Gemini_2_5_Pro_Europe_North1, ModelCoding_Gemini_2_5_Pro_Europe_West1, ModelCoding_Gemini_2_5_Pro_Europe_West4, ModelCoding_Gemini_2_5_Pro_Europe_West8, ModelCoding_Gemini_2_5_Pro_Us_Central1, ModelCoding_Gemini_2_5_Pro_Us_East1, ModelCoding_Gemini_2_5_Pro_Us_East5, ModelCoding_Gemini_2_5_Pro_Us_South1, ModelCoding_Gemini_2_5_Pro_Us_West1, ModelDeepinfra_Qwen_Qwen2_5_72B_Instruct, ModelDeepinfra_Qwen_Qwen2_5_Coder_32B_Instruct, ModelDeepinfra_Qwen_Qwen3_235B_A22b, ModelDeepinfra_Qwen_Qwen3_32B, ModelDeepinfra_Qwen_Qwen3_Coder_480B_A35b_Instruct, ModelDeepinfra_Deepseek_Ai_Deepseek_R1, ModelDeepinfra_Deepseek_Ai_Deepseek_R1_Distill_Llama_70B, ModelDeepinfra_Deepseek_Ai_Deepseek_V3, ModelDeepinfra_Deepseek_Ai_Deepseek_V3_1, ModelDeepinfra_Meta_Llama_Llama_3_2_90B_Vision_Instruct, ModelDeepinfra_Meta_Llama_Llama_3_3_70B_Instruct, ModelDeepinfra_Meta_Llama_Llama_3_3_70B_Instruct_Turbo, ModelDeepinfra_Meta_Llama_Meta_Llama_3_1_405B_Instruct, ModelDeepinfra_Meta_Llama_Meta_Llama_3_1_70B_Instruct, ModelDeepinfra_Meta_Llama_Meta_Llama_3_1_8B_Instruct_Turbo, ModelDeepinfra_Microsoft_Phi_4, ModelDeepinfra_Zai_Org_Glm_4_5, ModelDeepinfra_Zai_Org_Glm_4_5_Air, ModelDeepseek_Deepseek_Chat, ModelDeepseek_Deepseek_Reasoner, ModelGoogle_Gemini_2_0_Flash_001, ModelGoogle_Gemini_2_5_Flash, ModelGoogle_Gemini_2_5_Flash_Lite, ModelGoogle_Gemini_2_5_Pro, ModelGoogle_Gemini_3_Flash_Preview, ModelGoogle_Gemini_3_Pro_Preview, ModelGoogle_Gemini_3_1_Pro_Preview, ModelGoogle_Gemini_3_1_Pro_Preview_Europe_Central2, ModelGoogle_Gemini_3_1_Pro_Preview_Europe_North1, ModelGoogle_Gemini_3_1_Pro_Preview_Europe_West1, ModelGoogle_Gemini_3_1_Pro_Preview_Europe_West4, ModelGoogle_Gemini_3_1_Pro_Preview_Europe_West8, ModelGoogle_Gemini_3_1_Pro_Preview_Us_Central1, ModelGoogle_Gemini_3_1_Pro_Preview_Us_East1, ModelGoogle_Gemini_3_1_Pro_Preview_Us_East5, ModelGoogle_Gemini_3_1_Pro_Preview_Us_South1, ModelGoogle_Gemini_3_1_Pro_Preview_Us_West1, ModelGroq_Moonshotai_Kimi_K2_Instruct_0905, ModelGroq_Moonshotai_Kimi_K2_Instruct, ModelGroq_Openai_Gpt_Oss_120B, ModelGroq_Openai_Gpt_Oss_20B, ModelMinimaxi_Minimax_M2, ModelMinimaxi_Minimax_M2_5, ModelMinimaxi_Minimax_M2_5_Highspeed, ModelMistral_Codestral_Latest, ModelMistral_Devstral_Latest, ModelMistral_Devstral_Medium_2507, ModelMistral_Devstral_Small_2507, ModelMistral_Devstral_Small_Latest, ModelMistral_Mistral_Large_Latest, ModelMistral_Mistral_Medium_Latest, ModelMistral_Mistral_Small_Latest, ModelMistral_Open_Mistral_7B, ModelMistral_Pixtral_Large_Latest, ModelMoonshot_Kimi_K2_0711_Preview, ModelMoonshot_Kimi_K2_0905_Preview, ModelMoonshot_Kimi_K2_Thinking, ModelMoonshot_Kimi_K2_Thinking_Turbo, ModelMoonshot_Kimi_K2_Turbo_Preview, ModelMoonshot_Kimi_K2_5, ModelNebius_Qwen_Qwen3_Coder_480B_A35b_Instruct, ModelNebius_Deepseek_Ai_Deepseek_R1_0528, ModelNebius_Deepseek_Ai_Deepseek_V3_0324, ModelNebius_Deepseek_Ai_Deepseek_V3_0324_Fast, ModelNebius_Meta_Llama_Llama_3_3_70B_Instruct, ModelNebius_Minimax_Minimax_M2_1, ModelNebius_Moonshotai_Kimi_K2_Instruct, ModelNebius_Moonshotai_Kimi_K2_5, ModelNebius_Zai_Org_Glm_4_5, ModelNebius_Zai_Org_Glm_4_7, ModelNovita_Sao10k_L3_8B_Stheno_V3_2, ModelNovita_Deepseek_Deepseek_Prover_V2_671B, ModelNovita_Deepseek_Deepseek_R1, ModelNovita_Deepseek_Deepseek_R1_Distill_Llama_70B, ModelNovita_Deepseek_Deepseek_R1_Distill_Qwen_14B, ModelNovita_Deepseek_Deepseek_R1_Distill_Qwen_32B, ModelNovita_Deepseek_Deepseek_R1_Turbo, ModelNovita_Deepseek_Deepseek_V3_0324, ModelNovita_Deepseek_Deepseek_V3_Turbo, ModelNovita_Deepseek_Deepseek_V3, ModelNovita_Gryphe_Mythomax_L2_13B, ModelNovita_Meta_Llama_Llama_3_70B_Instruct, ModelNovita_Meta_Llama_Llama_3_8B_Instruct, ModelNovita_Meta_Llama_Llama_3_1_8B_Instruct, ModelNovita_Meta_Llama_Llama_3_2_1B_Instruct, ModelNovita_Meta_Llama_Llama_3_2_3B_Instruct, ModelNovita_Meta_Llama_Llama_3_3_70B_Instruct, ModelNovita_Meta_Llama_Llama_4_Maverick_17B_128E_Instruct_Fp8, ModelNovita_Microsoft_Wizardlm_2_8X22b, ModelNovita_Mistralai_Mistral_Nemo, ModelNovita_Moonshotai_Kimi_K2_Instruct, ModelNovita_Nousresearch_Hermes_2_Pro_Llama_3_8B, ModelNovita_Qwen_Qwen_2_5_72B_Instruct, ModelNovita_Qwen_Qwen2_5_Vl_72B_Instruct, ModelNovita_Qwen_Qwen3_235B_A22b_Fp8, ModelNovita_Sao10k_L3_70B_Euryale_V2_1, ModelNovita_Sao10k_L3_8B_Lunaris, ModelNovita_Sao10k_L31_70B_Euryale_V2_2, ModelNovita_Zai_Org_Glm_4_5, ModelNovita_Zai_Org_Glm_4_6, ModelOpenai_Responses_Gpt_4_1, ModelOpenai_Responses_Gpt_4_1_Mini, ModelOpenai_Responses_Gpt_4_1_Nano, ModelOpenai_Responses_Gpt_5, ModelOpenai_Responses_Gpt_5_Codex, ModelOpenai_Responses_Gpt_5_Mini, ModelOpenai_Responses_Gpt_5_Nano, ModelOpenai_Responses_Gpt_5_Pro, ModelOpenai_Responses_Gpt_5_1_Codex, ModelOpenai_Responses_Gpt_5_2, ModelOpenai_Responses_Gpt_5_2_Codex, ModelOpenai_Responses_Gpt_5_3_Codex, ModelOpenai_Responses_O3_Mini, ModelOpenai_Responses_O3_Pro, ModelOpenai_Responses_O4_Mini, ModelOpenai_Chatgpt_4O, ModelOpenai_Gpt_4_1, ModelOpenai_Gpt_4_1_Mini, ModelOpenai_Gpt_4_1_Nano, ModelOpenai_Gpt_4O, ModelOpenai_Gpt_4O_2024_05_13, ModelOpenai_Gpt_4O_2024_08_06, ModelOpenai_Gpt_4O_2024_11_20, ModelOpenai_Gpt_4O_Mini, ModelOpenai_Gpt_5, ModelOpenai_Gpt_5_Chat, ModelOpenai_Gpt_5_Mini, ModelOpenai_Gpt_5_Mini_Flex, ModelOpenai_Gpt_5_Mini_Priority, ModelOpenai_Gpt_5_Nano, ModelOpenai_Gpt_5_Nano_Flex, ModelOpenai_Gpt_5_1, ModelOpenai_Gpt_5_1_Chat, ModelOpenai_Gpt_5_2, ModelOpenai_Gpt_5_2_Chat, ModelOpenai_Gpt_5_4, ModelOpenai_Gpt_5_4_Pro, ModelOpenai_Gpt_5_Flex, ModelOpenai_Gpt_5_Priority, ModelOpenai_O1, ModelOpenai_O1_Pro, ModelOpenai_O1_High, ModelOpenai_O1_Low, ModelOpenai_O1_Medium, ModelOpenai_O3, ModelOpenai_O3_Deep_Research, ModelOpenai_O3_Mini, ModelOpenai_O3_Mini_High, ModelOpenai_O3_Mini_Low, ModelOpenai_O3_Mini_Medium, ModelOpenai_O3_Flex, ModelOpenai_O4_Mini, ModelOpenai_O4_Mini_Deep_Research, ModelOpenai_O4_Mini_Flex, ModelOpenai_O4_Mini_High, ModelOpenai_O4_Mini_Low, ModelOpenai_O4_Mini_Medium, ModelParasail_Parasail_Gemma3_27B_It, ModelParasail_Parasail_Kimi_K2_Instruct, ModelParasail_Parasail_Qwen25_Vl_72B_Instruct, ModelParasail_Parasail_Qwen3_235B_A22b_Instruct_2507, ModelPerplexity_Sonar, ModelPerplexity_Sonar_Pro, ModelPerplexity_Sonar_Reasoning_Pro, ModelSmart_Task, ModelTogether_Qwen_Qwen2_5_72B_Instruct_Turbo, ModelTogether_Qwen_Qwen2_5_7B_Instruct_Turbo, ModelTogether_Deepseek_Ai_Deepseek_R1, ModelTogether_Deepseek_Ai_Deepseek_V3, ModelTogether_Meta_Llama_Llama_3_2_3B_Instruct_Turbo, ModelTogether_Meta_Llama_Llama_3_3_70B_Instruct_Turbo, ModelTogether_Meta_Llama_Llamaguard_2_8B, ModelTogether_Meta_Llama_Meta_Llama_3_8B_Instruct_Lite, ModelTogether_Meta_Llama_Meta_Llama_3_1_70B_Instruct_Turbo, ModelTogether_Meta_Llama_Meta_Llama_3_1_8B_Instruct_Turbo, ModelVertex_Claude_3_5_Sonnet, ModelVertex_Claude_3_5_Sonnet_Europe_West1, ModelVertex_Claude_3_5_Sonnet_Us_East5, ModelVertex_Claude_3_7_Sonnet, ModelVertex_Claude_3_7_Sonnet_Europe_West1, ModelVertex_Claude_3_7_Sonnet_Us_East5, ModelVertex_Claude_Haiku_4_5, ModelVertex_Claude_Haiku_4_5_Europe_West1, ModelVertex_Claude_Haiku_4_5_Us_East5, ModelVertex_Claude_Opus_4, ModelVertex_Claude_Opus_4_1, ModelVertex_Claude_Opus_4_1_Europe_West1, ModelVertex_Claude_Opus_4_1_Us_East5, ModelVertex_Claude_Opus_4_5, ModelVertex_Claude_Opus_4_5_Europe_West1, ModelVertex_Claude_Opus_4_5_Us_East5, ModelVertex_Claude_Opus_4_6, ModelVertex_Claude_Opus_4_6_Europe_West1, ModelVertex_Claude_Opus_4_6_Us_East5, ModelVertex_Claude_Opus_4_Europe_West1, ModelVertex_Claude_Opus_4_Us_East5, ModelVertex_Claude_Sonnet_4, ModelVertex_Claude_Sonnet_4_5, ModelVertex_Claude_Sonnet_4_5_Europe_West1, ModelVertex_Claude_Sonnet_4_5_Us_East5, ModelVertex_Claude_Sonnet_4_Europe_West1, ModelVertex_Claude_Sonnet_4_Us_East5, ModelVertex_Gemini_2_5_Flash, ModelVertex_Gemini_2_5_Flash_Image_Preview, ModelVertex_Gemini_2_5_Flash_Lite, ModelVertex_Gemini_2_5_Flash_Lite_Europe_Central2, ModelVertex_Gemini_2_5_Flash_Lite_Europe_North1, ModelVertex_Gemini_2_5_Flash_Lite_Europe_West1, ModelVertex_Gemini_2_5_Flash_Lite_Europe_West4, ModelVertex_Gemini_2_5_Flash_Lite_Europe_West8, ModelVertex_Gemini_2_5_Flash_Lite_Us_Central1, ModelVertex_Gemini_2_5_Flash_Lite_Us_East1, ModelVertex_Gemini_2_5_Flash_Lite_Us_East5, ModelVertex_Gemini_2_5_Flash_Lite_Us_South1, ModelVertex_Gemini_2_5_Flash_Lite_Us_West1, ModelVertex_Gemini_2_5_Flash_Europe_Central2, ModelVertex_Gemini_2_5_Flash_Europe_North1, ModelVertex_Gemini_2_5_Flash_Europe_West1, ModelVertex_Gemini_2_5_Flash_Europe_West4, ModelVertex_Gemini_2_5_Flash_Europe_West8, ModelVertex_Gemini_2_5_Flash_Us_Central1, ModelVertex_Gemini_2_5_Flash_Us_East1, ModelVertex_Gemini_2_5_Flash_Us_East5, ModelVertex_Gemini_2_5_Flash_Us_South1, ModelVertex_Gemini_2_5_Flash_Us_West1, ModelVertex_Gemini_2_5_Pro, ModelVertex_Gemini_2_5_Pro_Europe_Central2, ModelVertex_Gemini_2_5_Pro_Europe_North1, ModelVertex_Gemini_2_5_Pro_Europe_West1, ModelVertex_Gemini_2_5_Pro_Europe_West4, ModelVertex_Gemini_2_5_Pro_Europe_West8, ModelVertex_Gemini_2_5_Pro_Us_Central1, ModelVertex_Gemini_2_5_Pro_Us_East1, ModelVertex_Gemini_2_5_Pro_Us_East5, ModelVertex_Gemini_2_5_Pro_Us_South1, ModelVertex_Gemini_2_5_Pro_Us_West1, ModelVertex_Gemini_3_Flash_Preview, ModelVertex_Gemini_3_Pro_Image_Preview, ModelVertex_Gemini_3_Pro_Preview, ModelVertex_Gemini_3_1_Pro_Preview, ModelXai_Grok_2_1212, ModelXai_Grok_3, ModelXai_Grok_3_Mini, ModelXai_Grok_3_Mini_High, ModelXai_Grok_3_Mini_Low, ModelXai_Grok_4, ModelXai_Grok_4_1_Fast_Non_Reasoning, ModelXai_Grok_4_1_Fast_Reasoning, ModelXai_Grok_4_Fast, ModelXai_Grok_4_Fast_Non_Reasoning, ModelXai_Grok_Code_Fast_1, ModelZai_Glm_4_5, ModelZai_Glm_4_6, ModelZai_Glm_4_7, ModelZai_Glm_5]);
 
     /// <summary>
     /// <inheritdoc cref="ModelsAll"/>

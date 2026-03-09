@@ -1,12 +1,7 @@
-﻿using A2A;
+using A2A;
 using LlmTornado.Chat;
 using LlmTornado.Code;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace LlmTornado.A2A;
 /// <summary>
@@ -17,11 +12,11 @@ public static partial class A2ATornadoExtension
 {
     public static ChatMessage ToTornadoMessage(this AgentMessage agentMessage)
     {
-        List<ChatMessagePart> parts = new List<ChatMessagePart>();
+        List<ChatMessagePart> parts = [];
 
         if (agentMessage.Parts != null)
         {
-            foreach (var part in agentMessage.Parts)
+            foreach (Part part in agentMessage.Parts)
             {
                 if(part is TextPart text)
                 {
@@ -29,7 +24,7 @@ public static partial class A2ATornadoExtension
                 }
                 else if(part is FilePart file)
                 {
-                    var tornadoPart = file.ToTornadoMessagePart();
+                    ChatMessagePart? tornadoPart = file.ToTornadoMessagePart();
                     if(tornadoPart != null)
                     {
                         parts.Add(tornadoPart);
@@ -53,7 +48,7 @@ public static partial class A2ATornadoExtension
         string[]? extensions = null
         )
     {
-        List<Part> parts = new List<Part>();
+        List<Part> parts = [];
         if (chatMessage.Content != null)
         {
             parts.Add(chatMessage.Content.ToA2ATextPart());
@@ -72,9 +67,10 @@ public static partial class A2ATornadoExtension
         }
         else if (chatMessage.Parts != null)
         {
-            foreach (var part in chatMessage.Parts)
+            foreach (ChatMessagePart part in chatMessage.Parts)
             {
-                parts.Add(part.ToA2APart());
+                Part? a2aPart = part.ToA2APart();
+                if (a2aPart is not null) parts.Add(a2aPart);
             }
         }
 
@@ -101,9 +97,8 @@ public static partial class A2ATornadoExtension
     /// </summary>
     /// <param name="chatMessage"></param>
     /// <param name="metadata"></param>
-    /// <param name="contextId"></param>
-    /// <param name="taskId"></param>
-    /// <param name="referenceTaskIds"></param>
+    /// <param name="description"></param>
+    /// <param name="name"></param>
     /// <param name="extensions"></param>
     /// <returns></returns>
     public static Artifact ToA2AArtifact(this ChatMessage chatMessage,
@@ -113,7 +108,7 @@ public static partial class A2ATornadoExtension
        string[]? extensions = null
        )
     {
-        List<Part> parts = new List<Part>();
+        List<Part> parts = [];
         if (chatMessage.Content != null)
         {
             parts.Add(chatMessage.Content.ToA2ATextPart());
@@ -132,9 +127,10 @@ public static partial class A2ATornadoExtension
         }
         else if (chatMessage.Parts != null)
         {
-            foreach (var part in chatMessage.Parts)
+            foreach (ChatMessagePart part in chatMessage.Parts)
             {
-                parts.Add(part.ToA2APart());
+                Part? a2aPart = part.ToA2APart();
+                if (a2aPart is not null) parts.Add(a2aPart);
             }
         }
 
@@ -146,7 +142,7 @@ public static partial class A2ATornadoExtension
         return new Artifact
         {
             Metadata = metadata,
-            Parts = new List<Part>(),
+            Parts = [],
             ArtifactId = chatMessage.Id.ToString(),
             Description = description,
             Name = name,

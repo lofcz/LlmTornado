@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using LlmTornado.Audio.Models.Groq;
+using LlmTornado.Audio.Models.MiniMax;
 using LlmTornado.Audio.Models.Mistral;
 using LlmTornado.Audio.Models.OpenAi;
 using LlmTornado.Audio.Models.Zai;
@@ -38,6 +39,11 @@ public class AudioModel : ModelBase
     public static readonly AudioModelZai Zai = new AudioModelZai();
     
     /// <summary>
+    /// Models provided by MiniMax.
+    /// </summary>
+    public static readonly AudioModelMiniMax MiniMax = new AudioModelMiniMax();
+    
+    /// <summary>
     /// All known models keyed by name.
     /// </summary>
     public static Dictionary<string, IModel> AllModelsMap => LazyAllModelsMap.Value;
@@ -67,7 +73,7 @@ public class AudioModel : ModelBase
     public static List<BaseVendorModelProvider> AllProviders => LazyAllProviders.Value;
 
     private static readonly Lazy<List<BaseVendorModelProvider>> LazyAllProviders = new Lazy<List<BaseVendorModelProvider>>(() => [
-        OpenAi, Groq, Mistral, Zai
+        OpenAi, Groq, Mistral, Zai, MiniMax
     ]);
     
     /// <summary>

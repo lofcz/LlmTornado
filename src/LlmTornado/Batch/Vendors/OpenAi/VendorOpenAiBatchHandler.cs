@@ -42,10 +42,23 @@ internal static class VendorOpenAiBatchHandler
             };
         }
         
+        // Determine the endpoint based on the batch request items
+        // All items in a batch must target the same endpoint
+        string batchEndpoint = "/v1/chat/completions";
+        if (request.Requests.Count > 0)
+        {
+            batchEndpoint = request.Requests[0].Endpoint switch
+            {
+                BatchRequestEndpoint.ImageGenerations => "/v1/images/generations",
+                BatchRequestEndpoint.ImageEdits => "/v1/images/edits",
+                _ => "/v1/chat/completions"
+            };
+        }
+        
         VendorOpenAiBatchCreateRequest createRequest = new VendorOpenAiBatchCreateRequest
         {
             InputFileId = uploadResult.Data.Id,
-            Endpoint = "/v1/chat/completions",
+            Endpoint = batchEndpoint,
             CompletionWindow = request.CompletionWindow.Value,
             Metadata = request.VendorExtensions?.OpenAi?.Metadata
         };

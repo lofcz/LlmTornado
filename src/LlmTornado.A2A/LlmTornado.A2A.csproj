@@ -3,7 +3,7 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Version>1.0.33</Version>
+    <Version>1.0.41</Version>
     <Nullable>enable</Nullable>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <LangVersion>preview</LangVersion>
@@ -18,8 +18,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="A2A" Version="[0.3.1-preview, )" />
-    <PackageReference Include="A2A.AspNetCore" Version="[0.3.1-preview, )" />
+    <PackageReference Include="A2A" Version="[0.3.3-preview, )" />
+    <PackageReference Include="A2A.AspNetCore" Version="[0.3.3-preview, )" />
     <PackageReference Include="Microsoft.AspNetCore.Http" Version="[2.3.0, )" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="[9.0.9, )" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="[1.22.1, )" />

@@ -63,7 +63,37 @@ public enum RetrievedFilePurpose
     ///     OCR.
     /// </summary>
     [EnumMember(Value = "ocr")]
-    Ocr
+    Ocr,
+    
+    /// <summary>
+    ///     Voice clone audio file. MiniMax only.
+    /// </summary>
+    [EnumMember(Value = "voice_clone")]
+    VoiceClone,
+    
+    /// <summary>
+    ///     Sample audio for voice cloning. MiniMax only.
+    /// </summary>
+    [EnumMember(Value = "prompt_audio")]
+    PromptAudio,
+    
+    /// <summary>
+    ///     Text file for async TTS. MiniMax only.
+    /// </summary>
+    [EnumMember(Value = "t2a_async_input")]
+    TextToAudioAsyncInput,
+    
+    /// <summary>
+    ///     Async TTS output. MiniMax only.
+    /// </summary>
+    [EnumMember(Value = "t2a_async")]
+    TextToAudioAsync,
+    
+    /// <summary>
+    ///     Video generation output. MiniMax only.
+    /// </summary>
+    [EnumMember(Value = "video_generation")]
+    VideoGeneration
 }
 
 /// <summary>
@@ -84,6 +114,9 @@ public static class RetrievedFilePurposeExtensions
             FilePurpose.Agent => RetrievedFilePurpose.Agent,
             FilePurpose.Batch => RetrievedFilePurpose.Batch,
             FilePurpose.Ocr => RetrievedFilePurpose.Ocr,
+            FilePurpose.VoiceClone => RetrievedFilePurpose.VoiceClone,
+            FilePurpose.PromptAudio => RetrievedFilePurpose.PromptAudio,
+            FilePurpose.TextToAudioAsyncInput => RetrievedFilePurpose.TextToAudioAsyncInput,
             _ => RetrievedFilePurpose.Finetune
         };
     }

@@ -57,5 +57,23 @@ public enum FilePurpose
     ///     OCR.
     /// </summary>
     [EnumMember(Value = "ocr")]
-    Ocr
+    Ocr,
+    
+    /// <summary>
+    ///     Voice clone audio file. MiniMax only. Supports mp3, m4a, wav.
+    /// </summary>
+    [EnumMember(Value = "voice_clone")]
+    VoiceClone,
+    
+    /// <summary>
+    ///     Sample audio for voice cloning. MiniMax only. Supports mp3, m4a, wav.
+    /// </summary>
+    [EnumMember(Value = "prompt_audio")]
+    PromptAudio,
+    
+    /// <summary>
+    ///     Text file for asynchronous long-text-to-speech synthesis. MiniMax only.
+    /// </summary>
+    [EnumMember(Value = "t2a_async_input")]
+    TextToAudioAsyncInput
 }

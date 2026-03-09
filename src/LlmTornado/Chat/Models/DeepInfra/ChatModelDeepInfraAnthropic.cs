@@ -31,21 +31,11 @@ public class ChatModelDeepInfraAnthropic : IVendorModelClassProvider
     public readonly ChatModel Claude4Sonnet = ModelClaude4Sonnet;
     
     /// <summary>
-    /// Claude 3.7 Sonnet is an advanced model with strong reasoning and language understanding capabilities.
-    /// </summary>
-    public static readonly ChatModel ModelClaude37SonnetLatest = new ChatModel("deepinfra-anthropic/claude-3-7-sonnet-latest", "anthropic/claude-3-7-sonnet-latest", LLmProviders.DeepInfra, 195_000);
-    
-    /// <summary>
-    /// <inheritdoc cref="ModelClaude37SonnetLatest"/>
-    /// </summary>
-    public readonly ChatModel Claude37SonnetLatest = ModelClaude37SonnetLatest;
-    
-    /// <summary>
     /// Known models.
     /// </summary>
     public static List<IModel> ModelsAll => LazyModelsAll.Value;
 
-    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [ModelClaude4Opus, ModelClaude4Sonnet, ModelClaude37SonnetLatest]);
+    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [ModelClaude4Opus, ModelClaude4Sonnet]);
 
     /// <summary>
     /// <inheritdoc cref="ModelsAll"/>

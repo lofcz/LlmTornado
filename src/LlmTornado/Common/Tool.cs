@@ -358,7 +358,7 @@ public class McpContent : IRemoteContent
     /// <summary>
     /// Optional JSON object representing the structured result of the tool call.
     /// </summary>
-    public JsonNode? StructuredContent { get; set; }
+    public JsonElement? StructuredContent { get; set; }
 }
 
 /// <summary>

@@ -47,6 +47,16 @@ internal static class TypeConverters
                         }
                         break;
 
+                    case TextReasoningContent reasoningContent:
+                        if (!string.IsNullOrEmpty(reasoningContent.Text))
+                        {
+                            parts.Add(new ChatMessagePart(new ChatMessageReasoningData()
+                            {
+                                Content = reasoningContent.Text
+                            }));
+                        }
+                        break;
+
                     case UriContent imageContent:
                         if (!string.IsNullOrEmpty(imageContent.Uri.AbsolutePath))
                         {
@@ -132,6 +142,12 @@ internal static class TypeConverters
             contents.Add(new TextContent(message.Content));
         }
 
+        // Add reasoning content
+        if (!string.IsNullOrEmpty(message.ReasoningTokens))
+        {
+            contents.Add(new TextReasoningContent(message.ReasoningTokens));
+        }
+
         // Add parts if available
         if (message.Parts != null)
         {
@@ -143,6 +159,13 @@ internal static class TypeConverters
                         if (!string.IsNullOrEmpty(part.Text))
                         {
                             contents.Add(new TextContent(part.Text));
+                        }
+                        break;
+
+                    case ChatMessageTypes.Reasoning:
+                        if (!string.IsNullOrEmpty(part.Text))
+                        {
+                            contents.Add(new TextReasoningContent(part.Text));
                         }
                         break;
 

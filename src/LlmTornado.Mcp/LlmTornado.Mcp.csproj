@@ -5,7 +5,7 @@
         <Nullable>enable</Nullable>
         <TargetFrameworks>net10.0;net8.0;netstandard2.0</TargetFrameworks>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-        <Version>1.1.43</Version>
+        <Version>1.1.51</Version>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <PackageProjectUrl>https://github.com/lofcz/LlmTornado</PackageProjectUrl>
         <RepositoryUrl>https://github.com/lofcz/LlmTornado</RepositoryUrl>
@@ -14,11 +14,14 @@
         <Description>Connect agents to data sources, tools, and workflows via Model Context Protocol (MCP).</Description>
         <PackageTags>mcp;sdk;agent;workflow;orchestration;multi-agent;agents;rag</PackageTags>
     </PropertyGroup>
+    <PropertyGroup>
+        <DefineConstants Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">$(DefineConstants);MODERN</DefineConstants>
+    </PropertyGroup>
     <ItemGroup>
       <ProjectReference Include="..\LlmTornado\LlmTornado.csproj" />
     </ItemGroup>
     <ItemGroup>
-      <PackageReference Include="ModelContextProtocol" Version="[0.7.0-preview.1, )" />
+      <PackageReference Include="ModelContextProtocol" Version="[1.0.0, )" />
     </ItemGroup>
 
     <ItemGroup>

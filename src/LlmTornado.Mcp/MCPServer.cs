@@ -1,4 +1,4 @@
-﻿using LlmTornado.Common;
+using LlmTornado.Common;
 using ModelContextProtocol.Authentication;
 using ModelContextProtocol.Client;
 using ModelContextProtocol.Protocol;
@@ -64,7 +64,7 @@ public class MCPServer
     /// <summary>
     /// Tornado Tools available from the MCP server.
     /// </summary>
-    public List<LlmTornado.Common.Tool> AllowedTornadoTools { get; set; } = [];
+    public List<Common.Tool> AllowedTornadoTools { get; set; } = [];
 
     /// <summary>
     /// Setup the MCP server connection and auto-load tools.
@@ -97,6 +97,7 @@ public class MCPServer
        )
     {
         ServerLabel = serverLabel;
+        ServerUrl = string.Empty;
         AllowedTools = allowedTools;
         Command = command;
         Arguments = arguments ?? [];
@@ -116,8 +117,8 @@ public class MCPServer
                 {
                     clientTransport = new HttpClientTransport(new HttpClientTransportOptions
                     {
-                        Name = this.ServerLabel,
-                        Endpoint = new Uri(this.ServerUrl),
+                        Name = ServerLabel,
+                        Endpoint = new Uri(ServerUrl),
                         AdditionalHeaders = AdditionalConnectionHeaders,
                         OAuth = OAuthOptions
                     });
@@ -126,19 +127,19 @@ public class MCPServer
                 {
                     clientTransport = new HttpClientTransport(new HttpClientTransportOptions
                     {
-                        Name = this.ServerLabel,
-                        Endpoint = new Uri(this.ServerUrl),
+                        Name = ServerLabel,
+                        Endpoint = new Uri(ServerUrl),
                         AdditionalHeaders = AdditionalConnectionHeaders
                     });
                 }
 
-                Console.WriteLine($"Connecting to MCP server at {this.ServerUrl} via HTTP...");
+                Console.WriteLine($"Connecting to MCP server at {ServerUrl} via HTTP...");
             }
             else
             {
                if (string.IsNullOrEmpty(Command) || Arguments == null || Arguments.Length == 0)
                {
-                   (Command, Arguments) = TryGetCommandAndArguments([this.ServerUrl]);
+                   (Command, Arguments) = TryGetCommandAndArguments([ServerUrl]);
                }
 
                // Create MCP client to connect to the server
@@ -149,7 +150,7 @@ public class MCPServer
                    Command = Command,
                    Arguments = Arguments,
                    WorkingDirectory = WorkingDirectory,
-                   EnvironmentVariables = EnvironmentVariables
+                   EnvironmentVariables = EnvironmentVariables.ToDictionary(kvp => kvp.Key, kvp => (string?)kvp.Value)
                });
             }
 
@@ -161,7 +162,7 @@ public class MCPServer
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Failed to connect to MCP server at {this.ServerUrl}: {ex.Message}");
+            Console.WriteLine($"Failed to connect to MCP server at {ServerUrl}: {ex.Message}");
             return false;
         }
     }
@@ -203,7 +204,7 @@ public class MCPServer
 
     public McpClientTool? GetToolByName(string toolName)
     {
-        return AllTools.DefaultIfEmpty(null).FirstOrDefault(t => t.Name.Equals(toolName, StringComparison.OrdinalIgnoreCase));
+        return AllTools.FirstOrDefault(t => t.Name.Equals(toolName, StringComparison.OrdinalIgnoreCase));
     }
 
     internal static (string command, string[] arguments) TryGetCommandAndArguments(string[] args)

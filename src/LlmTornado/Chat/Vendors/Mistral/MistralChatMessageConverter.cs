@@ -32,7 +32,7 @@ internal class MistralChatMessageConverter : JsonConverter<ChatMessage>
         {
             StringBuilder reasoningBuilder = new StringBuilder();
             StringBuilder textBuilder = new StringBuilder();
-            List<ChatMessagePart> parts = new List<ChatMessagePart>();
+            List<ChatMessagePart> parts = [];
 
             foreach (JToken block in contentArr)
             {
@@ -170,7 +170,7 @@ internal class MistralChatMessageConverter : JsonConverter<ChatMessage>
             return null;
         }
 
-        List<ToolCall> toolCalls = new List<ToolCall>();
+        List<ToolCall> toolCalls = [];
 
         foreach (JToken tc in toolCallsArray)
         {

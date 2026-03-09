@@ -187,7 +187,7 @@ internal static partial class PatchList
 
     private static Patch? ParseHeaderlessPatch(IReadOnlyList<string> lines, ref int index)
     {
-        List<string> body = new();
+        List<string> body = [];
 
         while (index < lines.Count)
         {

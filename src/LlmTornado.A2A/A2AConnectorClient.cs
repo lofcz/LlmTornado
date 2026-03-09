@@ -1,11 +1,6 @@
-﻿using A2A;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using A2A;
 using System.Net.ServerSentEvents;
-using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace LlmTornado.A2A;
 
@@ -18,11 +13,11 @@ public class A2AConnectorClient
 
     public async Task<A2AResponse> SendMessageAsync(string endPoint, List<Part> parts)
     {
-        A2ACardResolver cardResolver = new(new Uri(endPoint));
+        A2ACardResolver cardResolver = new A2ACardResolver(new Uri(endPoint));
         AgentCard agentCard = await cardResolver.GetAgentCardAsync();
         A2AClient client = new A2AClient(new Uri(agentCard.Url));
 
-        AgentMessage message = new()
+        AgentMessage message = new AgentMessage
         {
             Role = MessageRole.User,
             Parts = parts
@@ -38,11 +33,11 @@ public class A2AConnectorClient
 
     public async Task SendMessageStreamingAsync(string endPoint, List<Part> parts, Func<SseItem<A2AEvent>, Task>? onStreamingEventReceived)
     {
-        A2ACardResolver cardResolver = new(new Uri(endPoint));
+        A2ACardResolver cardResolver = new A2ACardResolver(new Uri(endPoint));
         AgentCard agentCard = await cardResolver.GetAgentCardAsync();
         A2AClient client = new A2AClient(new Uri(agentCard.Url));
 
-        AgentMessage userMessage = new()
+        AgentMessage userMessage = new AgentMessage
         {
             Role = MessageRole.User,
             Parts = parts
@@ -50,7 +45,7 @@ public class A2AConnectorClient
 
         await foreach (SseItem<A2AEvent> sseItem in client.SendMessageStreamingAsync(new MessageSendParams { Message = userMessage }))
         {
-            await onStreamingEventReceived?.Invoke(sseItem);
+            if (onStreamingEventReceived is not null) await onStreamingEventReceived.Invoke(sseItem);
         }
 
         Console.WriteLine(" Streaming completed.");
@@ -64,7 +59,7 @@ public class A2AConnectorClient
             return;
         }
 
-        A2ACardResolver cardResolver = new(new Uri(endPoint));
+        A2ACardResolver cardResolver = new A2ACardResolver(new Uri(endPoint));
         AgentCard agentCard = await cardResolver.GetAgentCardAsync();
         A2AClient client = new A2AClient(new Uri(agentCard.Url));
 
@@ -78,10 +73,10 @@ public class A2AConnectorClient
 
     public async Task SetPushNotifications(string endPoint, PushNotificationConfig config)
     {
-        A2ACardResolver cardResolver = new(new Uri(endPoint));
+        A2ACardResolver cardResolver = new A2ACardResolver(new Uri(endPoint));
         AgentCard agentCard = await cardResolver.GetAgentCardAsync();
         A2AClient client = new A2AClient(new Uri(agentCard.Url));
-        await client.SetPushNotificationAsync(new TaskPushNotificationConfig()
+        await client.SetPushNotificationAsync(new TaskPushNotificationConfig
         {
             PushNotificationConfig = config
         });
@@ -89,7 +84,7 @@ public class A2AConnectorClient
 
     public async Task<AgentTask> CancelTaskAsync(string endPoint, string taskId)
     {
-        A2ACardResolver cardResolver = new(new Uri(endPoint));
+        A2ACardResolver cardResolver = new A2ACardResolver(new Uri(endPoint));
         AgentCard agentCard = await cardResolver.GetAgentCardAsync();
         A2AClient client = new A2AClient(new Uri(agentCard.Url));
         return await client.CancelTaskAsync(taskId);
@@ -97,7 +92,7 @@ public class A2AConnectorClient
 
     public async Task<AgentTask> GetTaskAsync(string endPoint, string taskId)
     {
-        A2ACardResolver cardResolver = new(new Uri(endPoint));
+        A2ACardResolver cardResolver = new A2ACardResolver(new Uri(endPoint));
         AgentCard agentCard = await cardResolver.GetAgentCardAsync();
         A2AClient client = new A2AClient(new Uri(agentCard.Url));
         return await client.GetTaskAsync(taskId);

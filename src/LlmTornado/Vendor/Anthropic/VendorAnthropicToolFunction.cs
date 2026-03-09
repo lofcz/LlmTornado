@@ -42,8 +42,10 @@ public class VendorAnthropicToolFunction : IVendorAnthropicChatRequestTool
         
         switch (builtInTool)
         {
-            case VendorAnthropicChatRequestBuiltInToolBash20250124 bash:
-            case VendorAnthropicChatRequestBuiltInToolCodeExecution20250522 code:
+            case VendorAnthropicChatRequestBuiltInToolBash20250124:
+            case VendorAnthropicChatRequestBuiltInToolCodeExecution20250522:
+            case VendorAnthropicChatRequestBuiltInToolCodeExecution20250825:
+            case VendorAnthropicChatRequestBuiltInToolMemory20250825:
                 // nothing specific
                 break;
             case VendorAnthropicChatRequestBuiltInToolComputer20250124 computer:
@@ -53,6 +55,34 @@ public class VendorAnthropicToolFunction : IVendorAnthropicChatRequestTool
                 break;
             case VendorAnthropicChatRequestBuiltInToolTextEditor20250728 textEditor:
                 MaxCharacters = textEditor.MaxCharacters;
+                break;
+            case VendorAnthropicChatRequestBuiltInToolWebSearch20250305 webSearch:
+                MaxUses = webSearch.MaxUses;
+                AllowedDomains = webSearch.AllowedDomains;
+                BlockedDomains = webSearch.BlockedDomains;
+                UserLocation = webSearch.UserLocation;
+                break;
+            case VendorAnthropicChatRequestBuiltInToolWebSearch20260209 webSearch2:
+                MaxUses = webSearch2.MaxUses;
+                AllowedDomains = webSearch2.AllowedDomains;
+                BlockedDomains = webSearch2.BlockedDomains;
+                UserLocation = webSearch2.UserLocation;
+                break;
+            case VendorAnthropicChatRequestBuiltInToolWebFetch20250910 webFetch:
+                MaxUses = webFetch.MaxUses;
+                AllowedDomains = webFetch.AllowedDomains;
+                BlockedDomains = webFetch.BlockedDomains;
+                MaxContentTokens = webFetch.MaxContentTokens;
+                if (webFetch.CitationsEnabled.HasValue)
+                    Citations = new VendorAnthropicWebFetchCitations { Enabled = webFetch.CitationsEnabled.Value };
+                break;
+            case VendorAnthropicChatRequestBuiltInToolWebFetch20260209 webFetch2:
+                MaxUses = webFetch2.MaxUses;
+                AllowedDomains = webFetch2.AllowedDomains;
+                BlockedDomains = webFetch2.BlockedDomains;
+                MaxContentTokens = webFetch2.MaxContentTokens;
+                if (webFetch2.CitationsEnabled.HasValue)
+                    Citations = new VendorAnthropicWebFetchCitations { Enabled = webFetch2.CitationsEnabled.Value };
                 break;
         }
     }
@@ -119,6 +149,18 @@ public class VendorAnthropicToolFunction : IVendorAnthropicChatRequestTool
     /// </summary>
     [JsonProperty("user_location")]
     public VendorAnthropicToolFunctionUserLocation? UserLocation { get; set; }
+
+    /// <summary>
+    /// Citation settings for web fetch tools. When enabled, Claude cites specific passages from fetched documents.
+    /// </summary>
+    [JsonProperty("citations")]
+    public VendorAnthropicWebFetchCitations? Citations { get; set; }
+
+    /// <summary>
+    /// Maximum number of content tokens to include from fetched pages. Content is truncated when the limit is exceeded.
+    /// </summary>
+    [JsonProperty("max_content_tokens")]
+    public int? MaxContentTokens { get; set; }
     
     /// <summary>
     /// The height of the display in pixels. Required range: x > 1
@@ -198,4 +240,16 @@ public class VendorAnthropicToolFunctionUserLocation
     /// </summary>
     [JsonProperty("timezone")]
     public string? Timezone { get; set; }
+}
+
+/// <summary>
+/// Citation settings for web fetch tools.
+/// </summary>
+public class VendorAnthropicWebFetchCitations
+{
+    /// <summary>
+    /// When true, Claude cites specific passages from fetched documents in its responses.
+    /// </summary>
+    [JsonProperty("enabled")]
+    public bool Enabled { get; set; }
 }

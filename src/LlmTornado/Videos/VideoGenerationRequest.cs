@@ -8,6 +8,7 @@ using LlmTornado.Videos.Models;
 using LlmTornado.Videos.Vendors.Google;
 using LlmTornado.Videos.Vendors.OpenAi;
 using LlmTornado.Videos.Vendors.XAi;
+using LlmTornado.Videos.Vendors.MiniMax;
 using LlmTornado.Videos.Vendors.Zai;
 using LlmTornado.Vendor.Google;
 using Newtonsoft.Json;
@@ -151,6 +152,12 @@ public class VideoGenerationRequest
     /// </summary>
     [JsonIgnore]
     public VideoZaiExtensions? ZaiExtensions { get; set; }
+    
+    /// <summary>
+    ///     MiniMax-specific extensions for video generation.
+    /// </summary>
+    [JsonIgnore]
+    public VideoMiniMaxExtensions? MiniMaxExtensions { get; set; }
 
     private static readonly Dictionary<LLmProviders, Func<VideoGenerationRequest, IEndpointProvider, JsonSerializerSettings?, TornadoRequestContent>> serializeMap = new Dictionary<LLmProviders, Func<VideoGenerationRequest, IEndpointProvider, JsonSerializerSettings?, TornadoRequestContent>>
     {

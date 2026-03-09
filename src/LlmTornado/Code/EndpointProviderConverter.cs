@@ -68,6 +68,10 @@ internal static class EndpointProviderConverter
             {
                 UrlResolver = (endpoint, url, ctx) => $"{string.Format(api.ApiUrlFormat ?? "https://api.upstage.ai/v1/{0}", OpenAiEndpointProvider.GetEndpointUrlFragment(endpoint, LLmProviders.Upstage))}{url}"
             },
+            LLmProviders.MiniMax => new OpenAiEndpointProvider(LLmProviders.MiniMax)
+            {
+                UrlResolver = (endpoint, url, ctx) => $"{string.Format(api.ApiUrlFormat ?? "https://api.minimax.io/{0}/{1}", api.ResolveApiVersion(), OpenAiEndpointProvider.GetEndpointUrlFragment(endpoint, LLmProviders.MiniMax))}{url}"
+            },
             _ => new OpenAiEndpointProvider()
         };
 

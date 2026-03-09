@@ -241,6 +241,12 @@ public enum ImageAspectRatio
     Landscape2x1,
     
     /// <summary>
+    /// 21:9 ultrawide landscape aspect ratio. Supported by: MiniMax.
+    /// </summary>
+    [EnumMember(Value = "21:9")]
+    Landscape21x9,
+    
+    /// <summary>
     /// Automatic aspect ratio selection. Supported by: xAI.
     /// </summary>
     [EnumMember(Value = "auto")]

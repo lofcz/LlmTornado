@@ -1,6 +1,7 @@
 using LlmTornado.Chat.Vendors.Cohere;
 using LlmTornado.Chat.Vendors.Google;
 using LlmTornado.Chat.Vendors.XAi;
+using LlmTornado.Chat.Vendors.Zai;
 
 namespace LlmTornado.Chat;
 
@@ -23,6 +24,11 @@ public class ChatResponseVendorExtensions
     ///     Google extensions.
     /// </summary>
     public ChatResponseVendorGoogleExtensions? Google { get; set; }
+
+    /// <summary>
+    ///     ZAI extensions.
+    /// </summary>
+    public ChatResponseVendorZaiExtensions? Zai { get; set; }
 
     /// <summary>
     ///     Empty extensions.

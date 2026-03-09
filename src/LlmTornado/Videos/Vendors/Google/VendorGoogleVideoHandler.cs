@@ -1,7 +1,6 @@
 using System;
-using System.IO;
+using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using LlmTornado.Code;
@@ -96,35 +95,15 @@ internal static class VendorGoogleVideoHandler
             downloadUrl = $"https://generativelanguage.googleapis.com/download/v1beta/files/{fileId}:download?alt=media";
         }
         
+        Dictionary<string, string>? headers = null;
         ProviderAuthentication? auth = provider.Auth;
-        HttpClientHandler handler = new HttpClientHandler();
-        HttpClient client = new HttpClient(handler);
-        HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, downloadUrl);
         
-        // Add API key as header
         if (auth?.ApiKey is not null)
         {
-            request.Headers.Add("x-goog-api-key", auth.ApiKey.Trim());
+            headers = new Dictionary<string, string> { { "x-goog-api-key", auth.ApiKey.Trim() } };
         }
         
-        request.Headers.Add("User-Agent", EndpointBase.ResolveUserAgent(provider.Api));
-        
-        try
-        {
-            HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-            
-            if (!response.IsSuccessStatusCode)
-            {
-                return null;
-            }
-            
-            Stream stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-            return new StreamResponse { Stream = stream, Response = response };
-        }
-        catch
-        {
-            return null;
-        }
+        return await endpoint.HttpGetRawStream(provider, downloadUrl, headers, cancellationToken).ConfigureAwait(false);
     }
     
     /// <summary>

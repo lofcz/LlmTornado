@@ -1,20 +1,8 @@
-﻿using A2A;
-using A2A.AspNetCore;
-using LlmTornado.Agents;
+using A2A;
 using LlmTornado.Agents.ChatRuntime;
-using LlmTornado.Agents.ChatRuntime.RuntimeConfigurations;
 using LlmTornado.Agents.DataModels;
 using LlmTornado.Chat;
-using Microsoft.AspNetCore.Mvc.ApplicationModels;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
-using System.Collections.Concurrent;
-using System.ComponentModel;
 using System.Diagnostics;
-using System.IO;
-using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace LlmTornado.A2A;
 
@@ -31,7 +19,7 @@ public abstract class BaseA2ATornadoRuntimeConfiguration : IA2ARuntimeConfigurat
     protected readonly ChatRuntime _agent;
     protected ITaskManager? _taskManager;
     protected IRuntimeConfiguration _runtimeConfig;
-    protected AgentTask _currentTask;
+    protected AgentTask? _currentTask;
     protected CancellationToken _cancellationToken;
     protected string AgentName { get; set; }
     protected string AgentVersion { get; set; }
@@ -41,7 +29,7 @@ public abstract class BaseA2ATornadoRuntimeConfiguration : IA2ARuntimeConfigurat
     /// </summary>
     public BaseA2ATornadoRuntimeConfiguration(IRuntimeConfiguration runtimeConfig, string name, string version = "1.0.0")
     {
-        ActivitySource = new(name, version);
+        ActivitySource = new ActivitySource(name, version);
         AgentName = name;
         AgentVersion = version;
         //_logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -82,16 +70,16 @@ public abstract class BaseA2ATornadoRuntimeConfiguration : IA2ARuntimeConfigurat
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     /// <exception cref="InvalidOperationException"></exception>
-    public async virtual Task StartAgentTaskAsync(AgentTask task, CancellationToken cancellationToken)
+    public virtual async Task StartAgentTaskAsync(AgentTask task, CancellationToken cancellationToken)
     {
         if (_taskManager == null)
         {
             throw new InvalidOperationException("TaskManager is not attached.");
         }
 
-        using var activity = ActivitySource.StartActivity("Invoke", ActivityKind.Server);
+        using Activity? activity = ActivitySource.StartActivity("Invoke", ActivityKind.Server);
         activity?.SetTag("task.id", task.Id);
-        activity?.SetTag("message", task.History.Last().ToString());
+        activity?.SetTag("message", task.History?.Last().ToString());
         activity?.SetTag("state", "working");
 
         //Shared for the event handler
@@ -104,11 +92,11 @@ public abstract class BaseA2ATornadoRuntimeConfiguration : IA2ARuntimeConfigurat
         if (cancellationToken.IsCancellationRequested)
         {
             await _taskManager.UpdateStatusAsync(task.Id, TaskState.Canceled,
-                message: new AgentMessage()
+                message: new AgentMessage
                 {
                     Role = MessageRole.Agent,
                     MessageId = Guid.NewGuid().ToString(),
-                    Parts = [new TextPart() {
+                    Parts = [new TextPart {
                     Text = "Operation cancelled."
                 }]
                 },
@@ -121,7 +109,7 @@ public abstract class BaseA2ATornadoRuntimeConfiguration : IA2ARuntimeConfigurat
         await _taskManager.UpdateStatusAsync(task.Id, TaskState.Working, cancellationToken: cancellationToken);
 
         // Get message from the user
-        var userMessage = task.History!.Last().ToTornadoMessage();
+        ChatMessage userMessage = task.History!.Last().ToTornadoMessage();
 
         // Get the response from the agent
         ChatMessage response = await _agent.InvokeAsync(userMessage);
@@ -152,18 +140,19 @@ public abstract class BaseA2ATornadoRuntimeConfiguration : IA2ARuntimeConfigurat
 
     public virtual async ValueTask<bool> HandleRuntimePermissionRequest(string request)
     {
-        Artifact artifact = new Artifact()
+        Artifact artifact = new Artifact
         {
             Description = "Permission Request Event",
-            Parts = new List<Part>()
+            Parts =
+            [
+                new TextPart
+                {
+                    Text = request
+                }
+
+            ]
         };
-        artifact.Parts.Add(new TextPart()
-        {
-            Text = request
-        });
-
-
-
+        
         await _taskManager?.ReturnArtifactAsync(_currentTask.Id, artifact, _cancellationToken)!;
         await _taskManager?.UpdateStatusAsync(_currentTask.Id, TaskState.InputRequired, cancellationToken: _cancellationToken)!;
 
@@ -176,18 +165,18 @@ public abstract class BaseA2ATornadoRuntimeConfiguration : IA2ARuntimeConfigurat
 
         if (artifact.Description == "Guardrail Triggered")
         {
-            await _taskManager.ReturnArtifactAsync(_currentTask.Id, artifact, _cancellationToken);
+            await _taskManager!.ReturnArtifactAsync(_currentTask!.Id, artifact, _cancellationToken);
             await _taskManager.UpdateStatusAsync(_currentTask.Id, TaskState.Rejected, final: true, cancellationToken: _cancellationToken);
-            await Task.Delay(100); // Adjust the delay as needed
+            await Task.Delay(100, _cancellationToken); // Adjust the delay as needed
             return;
         }
 
-        using var activity = ActivitySource.StartActivity("Invoke", ActivityKind.Server);
+        using Activity? activity = ActivitySource.StartActivity("Invoke", ActivityKind.Server);
         activity?.SetTag("task.id", _currentTask.Id);
         activity?.SetTag("event", artifact.Description);
 
-        await _taskManager.ReturnArtifactAsync(_currentTask.Id, artifact, _cancellationToken);
-        await Task.Delay(100); // Adjust the delay as needed
+        await _taskManager!.ReturnArtifactAsync(_currentTask!.Id, artifact, _cancellationToken);
+        await Task.Delay(100, _cancellationToken); // Adjust the delay as needed
     }
 
     /// <summary>
@@ -198,12 +187,7 @@ public abstract class BaseA2ATornadoRuntimeConfiguration : IA2ARuntimeConfigurat
     /// <returns></returns>
     public Task<AgentCard> GetAgentCardAsync(string agentUrl, CancellationToken cancellationToken)
     {
-        if (cancellationToken.IsCancellationRequested)
-        {
-            return Task.FromCanceled<AgentCard>(cancellationToken);
-        }
-
-        return Task.FromResult(DescribeAgentCard(agentUrl));
+        return cancellationToken.IsCancellationRequested ? Task.FromCanceled<AgentCard>(cancellationToken) : Task.FromResult(DescribeAgentCard(agentUrl));
     }
 }
 

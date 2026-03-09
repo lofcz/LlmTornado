@@ -112,7 +112,7 @@ public class ConversationCompressor : IConversationCompressor
         Task<string>[] summaryTasks = chunks.Select(chunk => SummarizeChunk(api, chunk, options, context, token)).ToArray();
         string[] summaries = await Task.WhenAll(summaryTasks);
 
-        List<ChatMessage> conversation = new List<ChatMessage>();
+        List<ChatMessage> conversation = [];
 
         foreach (string summary in summaries)
         {
@@ -203,8 +203,8 @@ public class ConversationCompressor : IConversationCompressor
 
 public class ConversationContent
 {
-    public List<ChatMessage> SystemMessages { get; set; } = new List<ChatMessage>();
-    public List<ChatMessage> MessagesToCompress { get; set; } = new List<ChatMessage>();
+    public List<ChatMessage> SystemMessages { get; set; } = [];
+    public List<ChatMessage> MessagesToCompress { get; set; } = [];
 
     /// <summary>
     ///  Get the content of the conversation based on the compression options

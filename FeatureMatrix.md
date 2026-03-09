@@ -27,6 +27,7 @@ _Empty field means the feature is unsupported by the provider._
 | **Z.ai** | ✅ | | | ✅ | | ✅ | | | | ✅ | | | | |
 | **Alibaba** | ✅ | ✅ | ✅ | | | | | | | | | | | ❌ |
 | **Blablador** | ✅ | ✅ | ✅ | | | | | | | | | | | |
+| **MiniMax** | ✅ | ✅ | | ✅ | ✅ | ✅ | | | | ✅ | | | | |
 | **Custom*** | ✅ | ✅ | | | | | | | | | | | | |
 
 _*Custom means any OpenAI compatible provider, such as Azure OpenAI, Ollama, KoboldCpp, etc._  
@@ -60,6 +61,12 @@ Conversations | Assistants | Threads | Messages | Runs | Run steps | Vector stor
 | Rerank |
 |-----------|
 | ❌ |
+
+## MiniMax Specific
+
+| Music Generation | Lyrics Generation |
+|-----------|-----------|
+| ✅ | ✅ |
 
 ## Mistral Specific
 

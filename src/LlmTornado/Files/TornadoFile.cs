@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using LlmTornado.Chat;
 using Newtonsoft.Json;
 
@@ -94,6 +94,12 @@ public class TornadoFile
 	[JsonIgnore]
 	public FileLinkStates? State { get; set; }
 
+    /// <summary>
+    /// Download URL for the file. Returned by MiniMax, typically valid for 1 hour.
+    /// </summary>
+    [JsonIgnore]
+    public string? DownloadUrl { get; set; }
+    
     /// <summary>
     /// Returns <see cref="Uri"/> or <see cref="Id"/> - this property should be used for cross-provider referencing of the file.
     /// </summary>

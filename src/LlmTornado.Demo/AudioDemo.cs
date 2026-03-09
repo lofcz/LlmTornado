@@ -575,4 +575,62 @@ public class AudioDemo : DemoBase
             Console.WriteLine("Speech saved to openai_speech_output.mp3");
         }
     }
+    
+    /// <summary>
+    /// Generates lyrics for a song using MiniMax.
+    /// </summary>
+    [TornadoTest]
+    [Flaky("expensive")]
+    public static async Task GenerateLyricsMiniMax()
+    {
+        LyricsGenerationResult? result = await Program.ConnectMulti().Audio.GenerateLyrics(new LyricsGenerationRequest
+        {
+            Mode = LyricsGenerationMode.WriteFullSong,
+            Prompt = "A cheerful love song about a summer day at the beach"
+        });
+
+        if (result is not null)
+        {
+            Console.WriteLine($"Title: {result.SongTitle}");
+            Console.WriteLine($"Style: {result.StyleTags}");
+            Console.WriteLine();
+            Console.WriteLine(result.Lyrics);
+        }
+    }
+    
+    /// <summary>
+    /// Generates music from lyrics using MiniMax.
+    /// </summary>
+    [TornadoTest]
+    [Flaky("expensive")]
+    public static async Task GenerateMusicMiniMax()
+    {
+        MusicGenerationResult? result = await Program.ConnectMulti().Audio.GenerateMusic(new MusicGenerationRequest
+        {
+            Model = AudioModel.MiniMax.Music.Music25,
+            Prompt = "Indie folk, melancholic, introspective, longing, solitary walk, coffee shop",
+            Lyrics = "[verse]\nStreetlights flicker, the night breeze sighs\nShadows stretch as I walk alone\nAn old coat wraps my silent sorrow\nWandering, longing, where should I go\n[chorus]\nPushing the wooden door, the aroma spreads\nIn a familiar corner, a stranger gazes",
+            OutputFormat = MusicOutputFormat.Url,
+            AudioSetting = new MusicAudioSetting
+            {
+                SampleRate = 44100,
+                Bitrate = 256000,
+                Format = MusicAudioFormat.Mp3
+            }
+        });
+
+        if (result is not null)
+        {
+            Console.WriteLine($"Status: {(result.IsCompleted ? "Completed" : "In Progress")}");
+            Console.WriteLine($"Duration: {result.DurationMs}ms");
+            Console.WriteLine($"Sample Rate: {result.SampleRate}");
+            Console.WriteLine($"Size: {result.Size} bytes");
+            
+            if (!string.IsNullOrEmpty(result.Audio))
+            {
+                Console.WriteLine($"Audio URL/Data length: {result.Audio.Length} chars");
+                Console.WriteLine(result.Audio);
+            }
+        }
+    }
 }

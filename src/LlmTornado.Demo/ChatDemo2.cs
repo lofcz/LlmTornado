@@ -1138,7 +1138,7 @@ public partial class ChatDemo : DemoBase
     {
         Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.Anthropic.Claude37.Sonnet
+            Model = ChatModel.Anthropic.Claude46.Sonnet
         });
         
         chat2.AppendUserInput("Explain quadratic equations, briefly");
@@ -1192,7 +1192,7 @@ public partial class ChatDemo : DemoBase
     {
         Conversation chat2 = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.Anthropic.Claude37.Sonnet
+            Model = ChatModel.Anthropic.Claude46.Sonnet
         });
         
         chat2.AppendUserInput("Explain quadratic equations");

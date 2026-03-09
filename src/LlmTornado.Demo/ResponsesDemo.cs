@@ -976,6 +976,25 @@ public class ResponsesDemo : DemoBase
         int z = 0;
     }
 
+    [TornadoTest]
+    public static async Task ResponseCountInputTokens()
+    {
+        TornadoApi api = Program.Connect();
+        
+        ResponseInputTokensResult result = await api.Responses.CountInputTokens(new ResponseRequest
+        {
+            Model = ChatModel.OpenAi.Gpt41.V41Mini,
+            Instructions = "You are a helpful assistant",
+            InputItems = [
+                new ResponseInputMessage(ChatMessageRoles.User, "What is the capital of France?")
+            ]
+        });
+
+        Console.WriteLine($"Input tokens: {result.InputTokens}");
+        Assert.That(result.InputTokens, Is.GreaterThan(0));
+        Assert.That(result.Object, Is.EqualTo("response.input_tokens"));
+    }
+
     [TornadoTest, Flaky("only for dev")]
     public static async Task Deserialize()
     {

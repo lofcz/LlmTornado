@@ -70,8 +70,8 @@ internal class TornadoWhereLogicalOperator : TornadoWhereOperator
         Rhs = rhs;
     }
 
-    public override Dictionary<string, object> ToWhere()
-        => new()
+    public override Dictionary<string, object> ToWhere() =>
+        new Dictionary<string, object>
         {
         { Operator, new object[] { Lhs.ToWhere(), Rhs.ToWhere() } }
         };
@@ -89,8 +89,8 @@ internal class TornadoWhereValueOperator : TornadoWhereOperator
         Value = value;
     }
 
-    public override Dictionary<string, object> ToWhere()
-        => new()
+    public override Dictionary<string, object> ToWhere() =>
+        new Dictionary<string, object>
         {
         { Key, new Dictionary<string, object> { { Operator, Value } } }
         };

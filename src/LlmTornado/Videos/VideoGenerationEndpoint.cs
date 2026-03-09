@@ -8,6 +8,7 @@ using LlmTornado.Videos.Models;
 using LlmTornado.Videos.Vendors.Google;
 using LlmTornado.Videos.Vendors.OpenAi;
 using LlmTornado.Videos.Vendors.XAi;
+using LlmTornado.Videos.Vendors.MiniMax;
 using LlmTornado.Videos.Vendors.Zai;
 
 namespace LlmTornado.Videos;
@@ -48,6 +49,7 @@ public class VideoGenerationEndpoint : EndpointBase
             LLmProviders.Google => await VendorGoogleVideoHandler.Create(request, resolvedProvider, this, cancellationToken).ConfigureAwait(false),
             LLmProviders.XAi => await VendorXAiVideoHandler.Create(request, resolvedProvider, this, cancellationToken).ConfigureAwait(false),
             LLmProviders.Zai => await VendorZaiVideoHandler.Create(request, resolvedProvider, this, cancellationToken).ConfigureAwait(false),
+            LLmProviders.MiniMax => await VendorMiniMaxVideoHandler.Create(request, resolvedProvider, this, cancellationToken).ConfigureAwait(false),
             _ => throw new NotSupportedException($"Video API is not supported for provider {resolvedProvider.Provider}")
         };
     }
@@ -70,6 +72,7 @@ public class VideoGenerationEndpoint : EndpointBase
             LLmProviders.Google => await VendorGoogleVideoHandler.Get(videoId, resolvedProvider, this, model?.Name, cancellationToken).ConfigureAwait(false),
             LLmProviders.XAi => await VendorXAiVideoHandler.Get(videoId, resolvedProvider, this, cancellationToken).ConfigureAwait(false),
             LLmProviders.Zai => await VendorZaiVideoHandler.Get(videoId, resolvedProvider, this, cancellationToken).ConfigureAwait(false),
+            LLmProviders.MiniMax => await VendorMiniMaxVideoHandler.Get(videoId, resolvedProvider, this, cancellationToken).ConfigureAwait(false),
             _ => throw new NotSupportedException($"Video API is not supported for provider {resolvedProvider.Provider}")
         };
     }
@@ -125,6 +128,7 @@ public class VideoGenerationEndpoint : EndpointBase
             LLmProviders.Google => await DownloadContentGoogle(job, cancellationToken).ConfigureAwait(false),
             LLmProviders.XAi => await DownloadContentXAi(job, cancellationToken).ConfigureAwait(false),
             LLmProviders.Zai => await DownloadContentZai(job, cancellationToken).ConfigureAwait(false),
+            LLmProviders.MiniMax => await DownloadContentMiniMax(job, cancellationToken).ConfigureAwait(false),
             _ => throw new NotSupportedException($"Video API DownloadContent is not supported for provider {job.SourceProvider}")
         };
     }
@@ -185,6 +189,17 @@ public class VideoGenerationEndpoint : EndpointBase
         
         IEndpointProvider resolvedProvider = Api.ResolveProvider(LLmProviders.Zai);
         return await VendorZaiVideoHandler.GetContent(job.VideoUri, resolvedProvider, this, cancellationToken).ConfigureAwait(false);
+    }
+    
+    private async Task<StreamResponse?> DownloadContentMiniMax(VideoJob job, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(job.VideoUri))
+        {
+            return null;
+        }
+        
+        IEndpointProvider resolvedProvider = Api.ResolveProvider(LLmProviders.MiniMax);
+        return await VendorMiniMaxVideoHandler.GetContent(job.VideoUri, resolvedProvider, this, cancellationToken).ConfigureAwait(false);
     }
     
     /// <summary>

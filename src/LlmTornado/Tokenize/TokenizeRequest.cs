@@ -6,6 +6,7 @@ using LlmTornado.Chat.Models;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Common;
+using LlmTornado.Responses;
 using LlmTornado.Tokenize.Vendors;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -60,11 +61,33 @@ public class TokenizeRequest : ISerializableRequest
     }
 
     /// <summary>
-    ///     The model to use for tokenization
+    ///     Creates a tokenize request from a chat request.
+    /// </summary>
+    /// <param name="chatRequest">The chat request to tokenize</param>
+    public TokenizeRequest(ChatRequest chatRequest)
+    {
+        SourceChatRequest = chatRequest;
+    }
+
+    /// <summary>
+    ///     Creates a tokenize request from a response request.
+    /// </summary>
+    /// <param name="responseRequest">The response request to tokenize</param>
+    public TokenizeRequest(ResponseRequest responseRequest)
+    {
+        SourceResponseRequest = responseRequest;
+    }
+
+    /// <summary>
+    ///     The model to use for tokenization. Resolved from <see cref="SourceChatRequest"/> or <see cref="SourceResponseRequest"/> when set.
     /// </summary>
     [JsonProperty("model")]
     [JsonConverter(typeof(Chat.Models.ChatModelJsonConverter))]
-    public ChatModel? Model { get; set; }
+    public ChatModel? Model
+    {
+        get => model ?? SourceChatRequest?.Model ?? SourceResponseRequest?.Model;
+        set => model = value;
+    }
 
     /// <summary>
     ///     The text to tokenize (for simple text tokenization, e.g., Cohere)
@@ -73,16 +96,34 @@ public class TokenizeRequest : ISerializableRequest
     public string? Text { get; set; }
 
     /// <summary>
-    ///     The messages to tokenize (for chat-based tokenization)
+    ///     The messages to tokenize (for chat-based tokenization). Resolved from <see cref="SourceChatRequest"/> when set.
     /// </summary>
     [JsonProperty("messages")]
-    public List<ChatMessage>? Messages { get; set; }
+    public List<ChatMessage>? Messages
+    {
+        get => messages ?? SourceChatRequest?.Messages;
+        set => messages = value;
+    }
 
     /// <summary>
-    ///     The tools to include in tokenization (for Anthropic)
+    ///     The tools to include in tokenization. Resolved from <see cref="SourceChatRequest"/> when set.
     /// </summary>
     [JsonProperty("tools")]
-    public List<Tool>? Tools { get; set; }
+    public List<Tool>? Tools
+    {
+        get => tools ?? SourceChatRequest?.Tools;
+        set => tools = value;
+    }
+
+    [JsonIgnore]
+    internal ChatRequest? SourceChatRequest { get; set; }
+
+    [JsonIgnore]
+    internal ResponseRequest? SourceResponseRequest { get; set; }
+
+    private ChatModel? model;
+    private List<ChatMessage>? messages;
+    private List<Tool>? tools;
 
     [JsonIgnore]
     internal string? UrlOverride { get; set; }
@@ -101,6 +142,7 @@ public class TokenizeRequest : ISerializableRequest
     {
         string content = provider.Provider switch
         {
+            LLmProviders.OpenAi => SerializeOpenAi(provider),
             LLmProviders.MoonshotAi => PreparePayload(new VendorMoonshotAiTokenizeRequest(this, provider), this, provider, EndpointBase.NullSettings),
             LLmProviders.Anthropic => PreparePayload(new VendorAnthropicTokenizeRequest(this, provider), this, provider, EndpointBase.NullSettings),
             LLmProviders.Google => PreparePayload(new VendorGoogleTokenizeRequest(this, provider), this, provider, EndpointBase.NullSettings),
@@ -120,6 +162,27 @@ public class TokenizeRequest : ISerializableRequest
     public TornadoRequestContent Serialize(IEndpointProvider provider, RequestSerializeOptions options)
     {
         return Serialize(provider);
+    }
+
+    private string SerializeOpenAi(IEndpointProvider provider)
+    {
+        OverrideUrl($"{provider.ApiUrl(CapabilityEndpoints.Responses, null)}/input_tokens");
+
+        if (SourceResponseRequest is not null)
+        {
+            ResponseRequest copy = new ResponseRequest(SourceResponseRequest, forTokenization: true);
+            copy.Model ??= Model;
+            return PreparePayload(copy, this, provider, EndpointBase.NullSettings);
+        }
+
+        if (SourceChatRequest is not null)
+        {
+            ResponseRequest resolved = ResponseHelpers.ToResponseRequest(provider, SourceChatRequest.ResponseRequestParameters, SourceChatRequest);
+            ResponseRequest copy = new ResponseRequest(resolved, forTokenization: true);
+            return PreparePayload(copy, this, provider, EndpointBase.NullSettings);
+        }
+
+        return PreparePayload(new VendorOpenAiTokenizeRequest(this, provider), this, provider, EndpointBase.NullSettings);
     }
 
     private static string PreparePayload(object sourceObject, TokenizeRequest context, IEndpointProvider provider, JsonSerializerSettings? settings)

@@ -239,9 +239,9 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
             return false;
         }
         
-        // Effort is GA on Claude 4.6+, no beta header needed
+        // Effort is GA on Claude Opus 4.6+ and Sonnet 4.6, no beta header needed
         string? modelName = chatRequest.Model?.Name;
-        if (IsOpus46OrNewer(modelName))
+        if (IsOpus46OrNewer(modelName) || IsSonnet46OrNewer(modelName))
         {
             return false;
         }
@@ -253,6 +253,16 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
         }
         
         return modelName?.StartsWith("claude-opus-4-5", StringComparison.OrdinalIgnoreCase) == true;
+    }
+    
+    private static bool IsSonnet46OrNewer(string? modelName)
+    {
+        if (modelName is null)
+        {
+            return false;
+        }
+        
+        return modelName.StartsWith("claude-sonnet-4-6", StringComparison.OrdinalIgnoreCase);
     }
     
     private static bool RequiresCompactionHeader(object? data)
@@ -273,6 +283,28 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
         }
         
         return modelName.StartsWith("claude-opus-4-6", StringComparison.OrdinalIgnoreCase);
+    }
+    
+    private static bool RequiresFastModeHeader(object? data)
+    {
+        if (data is not ChatRequest chatRequest)
+        {
+            return false;
+        }
+        
+        return chatRequest.Speed is ChatRequestSpeeds.Fast;
+    }
+    
+    private static bool RequiresDynamicWebToolsHeader(object? data)
+    {
+        if (data is not ChatRequest chatRequest)
+        {
+            return false;
+        }
+        
+        return chatRequest.VendorExtensions?.Anthropic?.BuiltInTools?.Any(x => 
+            x.Type is VendorAnthropicChatRequestBuiltInToolTypes.WebSearch20260209 
+                or VendorAnthropicChatRequestBuiltInToolTypes.WebFetch20260209) == true;
     }
     
     private static bool RequiresAdvancedToolUseHeader(object? data)
@@ -333,6 +365,8 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
         ChatMessageFinishReasons finishReason = ChatMessageFinishReasons.Unknown;
         ChatMessagePart? currentPart = null;
         StringBuilder currentPartTextBuilder = new StringBuilder();
+        ChatRequestServiceTiers? serviceTier = null;
+        ChatRequestSpeeds? speed = null;
         
         #if DEBUG
         List<string> items = [];
@@ -713,6 +747,19 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
                             CacheCreationTokens = res.Message.Usage.CacheCreationInputTokens,
                             CacheReadTokens = res.Message.Usage.CacheReadInputTokens
                         };
+                        
+                        serviceTier = res.Message.Usage.ServiceTier switch
+                        {
+                            "priority" => ChatRequestServiceTiers.Priority,
+                            _ => null
+                        };
+                        
+                        speed = res.Message.Usage.Speed switch
+                        {
+                            "fast" => ChatRequestSpeeds.Fast,
+                            "standard" => ChatRequestSpeeds.Standard,
+                            _ => null
+                        };
                     }
                     
                     break;
@@ -742,7 +789,9 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
                 }
             ],
             StreamInternalKind = ChatResultStreamInternalKinds.AppendAssistantMessage,
-            Usage = plaintextUsage
+            Usage = plaintextUsage,
+            ServiceTier = serviceTier,
+            Speed = speed
         };
         
         yield return new ChatResult
@@ -754,7 +803,9 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
                     FinishReason = finishReason
                 }
             ],
-            StreamInternalKind = ChatResultStreamInternalKinds.FinishData
+            StreamInternalKind = ChatResultStreamInternalKinds.FinishData,
+            ServiceTier = serviceTier,
+            Speed = speed
         };
     }
     
@@ -827,6 +878,18 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
             if (RequiresAdvancedToolUseHeader(sourceObject))
             {
                 betaHeaders.Add("advanced-tool-use-2025-11-20");
+            }
+            
+            // Add fast mode beta header if applicable
+            if (RequiresFastModeHeader(sourceObject))
+            {
+                betaHeaders.Add("fast-mode-2026-02-01");
+            }
+            
+            // Add dynamic web tools beta header when web_search_20260209 or web_fetch_20260209 are used
+            if (RequiresDynamicWebToolsHeader(sourceObject))
+            {
+                betaHeaders.Add("code-execution-web-tools-2026-02-09");
             }
             
             req.Headers.Add("anthropic-beta", AccumulateHeaders(betaHeaders, sourceObject));

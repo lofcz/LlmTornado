@@ -1,12 +1,6 @@
-﻿using A2A;
+using A2A;
 using LlmTornado.Chat;
 using LlmTornado.Code;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace LlmTornado.A2A;
 /// <summary>
@@ -16,28 +10,36 @@ namespace LlmTornado.A2A;
 public static partial class A2ATornadoExtension
 {
     public static ChatMessagePart ToTornadoMessagePart(this TextPart textPart) => new ChatMessagePart { Text = textPart.Text };
-    public static ChatMessagePart ToTornadoMessagePart(this FilePart filePart)
+    public static ChatMessagePart? ToTornadoMessagePart(this FilePart filePart)
     {
-        if (filePart.File is FileWithUri fileWithUri)
+        FileContent file = filePart.File;
+
+        if (file.Uri is not null)
         {
-            return ChatMessagePart.Create(new Uri(fileWithUri.Uri), ChatMessageTypes.Image);
+            return ChatMessagePart.Create(file.Uri, ChatMessageTypes.Image);
         }
-        else if (filePart.File is FileWithBytes fileWithBytes)
+        
+        if (file.Bytes is not null)
         {
-            if (fileWithBytes.Bytes.Contains("image"))
+            if (file.MimeType?.Contains("image") == true)
             {
-                return new ChatMessagePart(fileWithBytes.Bytes, Images.ImageDetail.Auto);
+                return new ChatMessagePart(file.Bytes, Images.ImageDetail.Auto);
             }
-            else if (fileWithBytes.Bytes.Contains("audio"))
+            
+            if (file.MimeType?.Contains("audio") == true)
             {
-                if (fileWithBytes.MimeType == "audio/wav" || fileWithBytes.MimeType == "audio/x-wav")
-                    return ChatMessagePart.Create(fileWithBytes.Bytes, ChatAudioFormats.Wav);
-                else if (fileWithBytes.MimeType == "audio/mpeg" || fileWithBytes.MimeType == "audio/mp3" || fileWithBytes.MimeType == "audio/x-mp3")
-                    return ChatMessagePart.Create(fileWithBytes.Bytes, ChatAudioFormats.Mp3);
+                switch (file.MimeType)
+                {
+                    case "audio/wav" or "audio/x-wav":
+                        return ChatMessagePart.Create(file.Bytes, ChatAudioFormats.Wav);
+                    case "audio/mpeg" or "audio/mp3" or "audio/x-mp3":
+                        return ChatMessagePart.Create(file.Bytes, ChatAudioFormats.Mp3);
+                }
             }
-            //ToDo - handle other types
-            return new ChatMessagePart(fileWithBytes.Bytes, DocumentLinkTypes.Base64);
+
+            return new ChatMessagePart(file.Bytes, DocumentLinkTypes.Base64);
         }
+        
         return null;
     }
 }

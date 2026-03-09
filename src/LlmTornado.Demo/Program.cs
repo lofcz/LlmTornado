@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using LlmTornado.Code;
@@ -40,6 +40,7 @@ public class Program
         public string Pinecone { get; set; }
         public string Requesty { get; set; }
         public string Upstage { get; set; }
+        public string MiniMax { get; set; }
     }
 
     public static TornadoApi ConnectMulti(bool httpStrict = true)
@@ -62,7 +63,8 @@ public class Program
             new ProviderAuthentication(LLmProviders.Blablador, ApiKeys.Blablador),
             new ProviderAuthentication(LLmProviders.Alibaba, ApiKeys.Alibaba),
             new ProviderAuthentication(LLmProviders.Requesty, ApiKeys.Requesty),
-            new ProviderAuthentication(LLmProviders.Upstage, ApiKeys.Upstage)
+            new ProviderAuthentication(LLmProviders.Upstage, ApiKeys.Upstage),
+            new ProviderAuthentication(LLmProviders.MiniMax, ApiKeys.MiniMax)
         ])
         {
             HttpStrict = httpStrict

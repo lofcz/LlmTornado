@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
 using LlmTornado.Videos.Models.Google;
+using LlmTornado.Videos.Models.MiniMax;
 using LlmTornado.Videos.Models.OpenAi;
 using LlmTornado.Videos.Models.XAi;
 using LlmTornado.Videos.Models.Zai;
@@ -34,6 +35,11 @@ public class VideoModel : ModelBase
     public static readonly VideoModelZai Zai = new VideoModelZai();
     
     /// <summary>
+    /// Models from MiniMax.
+    /// </summary>
+    public static readonly VideoModelMiniMax MiniMax = new VideoModelMiniMax();
+    
+    /// <summary>
     /// All known models keyed by name.
     /// </summary>
     public static readonly Dictionary<string, IModel> AllModelsMap = [];
@@ -49,7 +55,8 @@ public class VideoModel : ModelBase
             ..Google.AllModels,
             ..OpenAi.AllModels,
             ..XAi.AllModels,
-            ..Zai.AllModels
+            ..Zai.AllModels,
+            ..MiniMax.AllModels
         ];
         
         AllModels.ForEach(x =>

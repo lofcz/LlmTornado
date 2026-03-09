@@ -10,7 +10,10 @@ using System.Text;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Vendors.Cohere;
 using LlmTornado.Chat.Vendors.Perplexity;
+using LlmTornado.Audio;
+using LlmTornado.Audio.Vendors.MiniMax;
 using LlmTornado.Chat.Vendors.XAi;
+using LlmTornado.Images;
 using LlmTornado.Code.Models;
 using LlmTornado.Code.Sse;
 using LlmTornado.Infra;
@@ -72,6 +75,10 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
             // variant providers overrides
             CapabilityEndpoints.Chat when provider is LLmProviders.Cohere => "chat",
             CapabilityEndpoints.Tokenize when provider is LLmProviders.MoonshotAi => "tokenizers/estimate-token-count",
+            CapabilityEndpoints.Videos when provider is LLmProviders.MiniMax => "video_generation",
+            CapabilityEndpoints.ImageGeneration when provider is LLmProviders.MiniMax => "image_generation",
+            CapabilityEndpoints.Music when provider is LLmProviders.MiniMax => "music_generation",
+            CapabilityEndpoints.Lyrics when provider is LLmProviders.MiniMax => "lyrics_generation",
             // default endpoints
             CapabilityEndpoints.Audio => "audio",
             CapabilityEndpoints.Chat => "chat/completions",
@@ -194,12 +201,17 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
     {
         return Provider switch
         {
+            LLmProviders.OpenAi when typeof(T) == typeof(Tokenize.TokenizeResult) => (T?)(object?)Tokenize.TokenizeResult.Deserialize(LLmProviders.OpenAi, jsonData, postData),
             LLmProviders.OpenAi => JsonConvert.DeserializeObject<T>(jsonData),
             LLmProviders.XAi => InboundMessageVariantProviderXAi<T>(jsonData, postData),
             LLmProviders.Cohere => InboundMessageVariantProviderCohere<T>(jsonData, postData),
             LLmProviders.Mistral => InboundMessageVariantProviderMistral<T>(jsonData, postData),
             LLmProviders.Perplexity => InboundMessageVariantProviderPerplexity<T>(jsonData, postData),
+            LLmProviders.Zai => InboundMessageVariantProviderZai<T>(jsonData, postData),
             LLmProviders.MoonshotAi when typeof(T) == typeof(Tokenize.TokenizeResult) => (T?)(object?)Tokenize.TokenizeResult.Deserialize(LLmProviders.MoonshotAi, jsonData, postData),
+            LLmProviders.MiniMax when typeof(T) == typeof(ImageGenerationResult) => (T?)(object?)ImageGenerationResult.Deserialize(LLmProviders.MiniMax, jsonData, postData),
+            LLmProviders.MiniMax when typeof(T) == typeof(MusicGenerationResult) => (T?)(object?)JsonConvert.DeserializeObject<VendorMiniMaxMusicResponse>(jsonData)?.ToResult(),
+            LLmProviders.MiniMax when typeof(T) == typeof(LyricsGenerationResult) => (T?)(object?)JsonConvert.DeserializeObject<VendorMiniMaxLyricsResponse>(jsonData)?.ToResult(),
             _ => JsonConvert.DeserializeObject<T>(jsonData)
         };
     }
@@ -229,6 +241,16 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
         if (typeof(T) == typeof(ChatResult))
         {
             return (T?)(object?)ChatResultVendorPerplexity.Deserialize(jsonData);
+        }
+        
+        return JsonConvert.DeserializeObject<T>(jsonData);
+    }
+    
+    static T? InboundMessageVariantProviderZai<T>(string jsonData, string? postData)
+    {
+        if (typeof(T) == typeof(ChatResult))
+        {
+            return (T?)(object?)Chat.Vendors.Zai.ChatResultVendorZai.Deserialize(jsonData);
         }
         
         return JsonConvert.DeserializeObject<T>(jsonData);
@@ -289,6 +311,7 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
                 LLmProviders.XAi => InboundMessageVariantProviderXAi<ChatResult>(item.Data, null),
                 LLmProviders.Cohere => InboundMessageVariantProviderCohere<ChatResult>(item.Data, null),
                 LLmProviders.Mistral => InboundMessageVariantProviderMistral<ChatResult>(item.Data, null),
+                LLmProviders.Zai => InboundMessageVariantProviderZai<ChatResult>(item.Data, null),
                 _ => JsonConvert.DeserializeObject<ChatResult>(item.Data)
             };
      
@@ -313,6 +336,21 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
                             XAi = new ChatResponseVendorXAiExtensions
                             {
                                 Citations = xAiRes.Citations
+                            }
+                        };
+                    }
+
+                    break;
+                }
+                case LLmProviders.Zai:
+                {
+                    if (res is Chat.Vendors.Zai.ChatResultVendorZai { WebSearch.Count: > 0 } zaiRes)
+                    {
+                        vendorExtensions = new ChatResponseVendorExtensions
+                        {
+                            Zai = new Chat.Vendors.Zai.ChatResponseVendorZaiExtensions
+                            {
+                                WebSearchResults = zaiRes.WebSearch
                             }
                         };
                     }

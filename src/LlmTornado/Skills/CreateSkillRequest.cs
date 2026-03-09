@@ -30,7 +30,7 @@ public class CreateSkillRequest
     /// </summary>
     public CreateSkillRequest()
     {
-        Files = Array.Empty<FileUploadRequest>();
+        Files = [];
     }
 
     /// <summary>
@@ -41,7 +41,7 @@ public class CreateSkillRequest
     public CreateSkillRequest(string displayTitle, FileUploadRequest[]? files = null)
     {
         DisplayTitle = displayTitle;
-        Files = files ?? Array.Empty<FileUploadRequest>();
+        Files = files ?? [];
     }
 
     /// <summary>

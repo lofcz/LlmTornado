@@ -138,6 +138,20 @@ public class ResponseResult
     public bool? Background { get; set; }
 
     /// <summary>
+    /// Unix timestamp (in seconds) of when this Response was completed.
+    /// Only present when the status is <c>completed</c>.
+    /// </summary>
+    [JsonProperty("completed_at")]
+    public int? CompletedAtUnixTimeSeconds { get; set; }
+
+    /// <summary>
+    /// The conversation that this response belonged to. Input items and output items from this response
+    /// were automatically added to this conversation.
+    /// </summary>
+    [JsonProperty("conversation")]
+    public IResponseConversation? Conversation { get; set; }
+
+    /// <summary>
     /// Specifies the processing type used for serving the request.
     /// </summary>
     [JsonProperty("service_tier")]
@@ -203,6 +217,24 @@ public class ResponseResult
     /// </summary>
     [JsonProperty("user")]
     public string? User { get; set; }
+
+    /// <summary>
+    /// A stable identifier used to help detect users of your application that may be violating OpenAI's usage policies.
+    /// </summary>
+    [JsonProperty("safety_identifier")]
+    public string? SafetyIdentifier { get; set; }
+
+    /// <summary>
+    /// Used by OpenAI to cache responses for similar requests to optimize your cache hit rates.
+    /// </summary>
+    [JsonProperty("prompt_cache_key")]
+    public string? PromptCacheKey { get; set; }
+
+    /// <summary>
+    /// The retention policy for the prompt cache.
+    /// </summary>
+    [JsonProperty("prompt_cache_retention")]
+    public PromptCacheRetention? PromptCacheRetention { get; set; }
 }
 
 /// <summary>

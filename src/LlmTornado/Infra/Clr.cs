@@ -67,7 +67,7 @@ internal static class Clr
     
     private static MethodInfo? GetCachedMethod(Type type, string methodName, BindingFlags bindingFlags, Type[]? parameterTypes)
     {
-        Type[] paramTypes = parameterTypes ?? Array.Empty<Type>();
+        Type[] paramTypes = parameterTypes ?? [];
         return methodInfoCache.GetOrAdd((type, methodName, paramTypes), key => 
             key.Type.GetMethod(key.MethodName, bindingFlags, null, key.ParameterTypes, null));
     }

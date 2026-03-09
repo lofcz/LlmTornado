@@ -1,16 +1,12 @@
 ﻿using A2A;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace LlmTornado.A2A;
 
 public class A2ATornadoConnector
 {
-    private List<string> a2AServersEndpoints { get; set; } = new List<string> ();
+    private List<string> a2AServersEndpoints { get; set; } = [];
     public Dictionary<string, AgentCard> A2ACards { get; set; } = new Dictionary<string, AgentCard>();
 
     private A2AConnectorClient connectorClient { get; set; } = new A2AConnectorClient();
@@ -27,11 +23,11 @@ public class A2ATornadoConnector
 
     private async Task SetupClientInfo() 
     {         
-        foreach (var endpoint in a2AServersEndpoints)
+        foreach (string endpoint in a2AServersEndpoints)
         {
             try
             {
-                var agentCard = await connectorClient.GetAgentCardAsync(endpoint);
+                AgentCard agentCard = await connectorClient.GetAgentCardAsync(endpoint);
                 A2ACards[agentCard.Name] = agentCard;
             }
             catch (Exception ex)
@@ -53,7 +49,7 @@ public class A2ATornadoConnector
     {
         StringBuilder sb = new StringBuilder();
         sb.AppendLine("Available Agents:");
-        foreach (var agent in A2ACards.Values)
+        foreach (AgentCard agent in A2ACards.Values)
         {
             sb.AppendLine($"- {agent.Name}: {agent.Description} (Endpoint: {agent.Url})");
         }
@@ -75,27 +71,25 @@ public class A2ATornadoConnector
         [Description("The name of the agent to send the message to.")] string agentName, 
         [Description("The message to send to the agent.")] string message)
     {
-        if (!A2ACards.ContainsKey(agentName))
+        if (!A2ACards.TryGetValue(agentName, out AgentCard? agentCard))
         {
             return $"Agent '{agentName}' not found.";
         }
 
-        var agentCard = A2ACards[agentName];
-        var parts = new List<Part> { new TextPart { Text = message } };
+        List<Part> parts = [new TextPart { Text = message }];
         A2AResponse response = await connectorClient.SendMessageAsync(agentCard.Url, parts);
 
-        if (response is AgentMessage amessage)
+        switch (response)
         {
-            var responseText = string.Join("\n", amessage.Parts.OfType<TextPart>().Select(p => p.Text));
-            return responseText;
-        }
-        else if (response is AgentTask atask)
-        {
-            return $"Task created with ID: {atask.Id}, Status: {atask.Status}";
-        }
-        else
-        {
-            return "Unexpected response type.";
+            case AgentMessage amessage:
+            {
+                string responseText = string.Join("\n", amessage.Parts.OfType<TextPart>().Select(p => p.Text));
+                return responseText;
+            }
+            case AgentTask atask:
+                return $"Task created with ID: {atask.Id}, Status: {atask.Status}";
+            default:
+                return "Unexpected response type.";
         }
     }
 

@@ -13,6 +13,7 @@ using LlmTornado.Common;
 using LlmTornado.Files.Vendors;
 using LlmTornado.Files.Vendors.Anthropic;
 using LlmTornado.Files.Vendors.Google;
+using LlmTornado.Files.Vendors.MiniMax;
 using LlmTornado.Files.Vendors.Zai;
 using Newtonsoft.Json;
 
@@ -68,6 +69,7 @@ public class FilesEndpoint : EndpointBase
 			{
 				Items = (await HttpGet<TornadoFiles>(resolvedProvider, Endpoint, queryParams: query?.ToQueryParams(resolvedProvider), ct: token).ConfigureAwait(false)).Data?.Data ?? []
 			},
+			LLmProviders.MiniMax => (await HttpGet<VendorMiniMaxListFilesResponse>(resolvedProvider, Endpoint, GetUrl(resolvedProvider, "/list"), queryParams: query?.ToQueryParams(resolvedProvider), ct: token).ConfigureAwait(false)).Data?.ToList(),
 			_ => null
 		};
 	}
@@ -153,6 +155,11 @@ public class FilesEndpoint : EndpointBase
 				// z-ai doesn't implement this feature yet
 				return null;
 			}
+			case LLmProviders.MiniMax:
+			{
+				VendorMiniMaxRetrieveFileResponse? result = (await HttpGet<VendorMiniMaxRetrieveFileResponse>(resolvedProvider, Endpoint, GetUrl(resolvedProvider, "/retrieve"), queryParams: new Dictionary<string, object> { { "file_id", fileId } }).ConfigureAwait(false)).Data;
+				return result?.File?.ToFile();
+			}
 		}
 	    
         return (await HttpGet<TornadoFile>(resolvedProvider, Endpoint, GetUrl(resolvedProvider, $"/{fileId}")).ConfigureAwait(false)).Data;
@@ -174,11 +181,39 @@ public class FilesEndpoint : EndpointBase
 	///     Deletes given file.
 	/// </summary>
 	/// <param name="fileId">The ID of the file to use for this request</param>
+	/// <param name="purpose">Required by MiniMax. The purpose of the file being deleted.</param>
 	/// <param name="provider">Which provider will be used</param>
 	/// <returns></returns>
-	public async Task<HttpCallResult<DeletedTornadoFile>> Delete(string fileId, LLmProviders? provider = null)
+	public async Task<HttpCallResult<DeletedTornadoFile>> Delete(string fileId, FilePurpose? purpose = null, LLmProviders? provider = null)
     {
 	    IEndpointProvider resolvedProvider = Api.ResolveProvider(provider);
+
+	    if (resolvedProvider.Provider is LLmProviders.MiniMax)
+	    {
+		    string deleteUrl = GetUrl(resolvedProvider, "/delete");
+		    
+		    VendorMiniMaxDeleteFileRequest deleteRequest = new VendorMiniMaxDeleteFileRequest
+		    {
+			    FileId = long.TryParse(fileId, out long parsedId) ? parsedId : 0,
+			    Purpose = purpose switch
+			    {
+				    FilePurpose.VoiceClone => "voice_clone",
+				    FilePurpose.PromptAudio => "prompt_audio",
+				    FilePurpose.TextToAudioAsyncInput => "t2a_async_input",
+				    _ => purpose?.ToString()?.ToLowerInvariant()
+			    }
+		    };
+		    
+		    HttpCallResult<VendorMiniMaxDeleteFileResponse> miniMaxResult = await HttpPost<VendorMiniMaxDeleteFileResponse>(resolvedProvider, Endpoint, deleteUrl, deleteRequest).ConfigureAwait(false);
+		    
+		    DeletedTornadoFile? deletedFile = miniMaxResult.Data is not null ? new DeletedTornadoFile
+		    {
+			    Deleted = miniMaxResult.Data.BaseResp?.StatusCode == 0,
+			    Id = miniMaxResult.Data.FileId.ToString()
+		    } : null;
+		    
+		    return new HttpCallResult<DeletedTornadoFile>(miniMaxResult.Code, miniMaxResult.Response, deletedFile, miniMaxResult.Ok, miniMaxResult.Request);
+	    }
 
 	    string url = resolvedProvider.Provider switch
 	    {
@@ -293,6 +328,7 @@ public class FilesEndpoint : EndpointBase
 		string url = resolvedProvider.Provider switch
 		{
 			LLmProviders.Google => resolvedProvider.ApiUrl(CapabilityEndpoints.BaseUrlStripped, "upload/v1beta/files"),
+			LLmProviders.MiniMax => GetUrl(resolvedProvider, "/upload"),
 			_ => GetUrl(resolvedProvider)
 		};
 
@@ -311,6 +347,17 @@ public class FilesEndpoint : EndpointBase
 				}
 
 				return file;
+			}
+			case LLmProviders.MiniMax:
+			{
+				HttpCallResult<VendorMiniMaxUploadResponse> file = await HttpPost<VendorMiniMaxUploadResponse>(resolvedProvider, CapabilityEndpoints.Files, url, content.Body).ConfigureAwait(false);
+
+				if (content.Body is IDisposable disposableMiniMaxBody)
+				{
+					disposableMiniMaxBody.Dispose();
+				}
+
+				return new HttpCallResult<TornadoFile>(file.Code, file.Response, file.Data?.File?.ToFile(), file.Ok, file.Request);
 			}
 			case LLmProviders.Anthropic:
 			{

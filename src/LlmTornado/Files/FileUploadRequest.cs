@@ -9,6 +9,7 @@ using LlmTornado.Chat.Vendors.Cohere;
 using LlmTornado.Code;
 using LlmTornado.Files.Vendors;
 using LlmTornado.Files.Vendors.Google;
+using LlmTornado.Files.Vendors.MiniMax;
 using LlmTornado.Files.Vendors.Zai;
 using Newtonsoft.Json;
 
@@ -140,6 +141,18 @@ public class FileUploadRequest
             return "batch";
         }
         
+        // MiniMax-specific purposes
+        if (provider is LLmProviders.MiniMax)
+        {
+            return purpose switch
+            {
+                FilePurpose.VoiceClone => "voice_clone",
+                FilePurpose.PromptAudio => "prompt_audio",
+                FilePurpose.TextToAudioAsyncInput => "t2a_async_input",
+                _ => "voice_clone"
+            };
+        }
+        
         // general fallback
         return purpose switch
         {
@@ -169,6 +182,7 @@ public class FileUploadRequest
         {
             LLmProviders.Google => JsonConvert.DeserializeObject<VendorGoogleTornadoFile>(jsonData)?.ToFile(postData),
             LLmProviders.Zai => JsonConvert.DeserializeObject<VendorZaiTornadoFile>(jsonData)?.ToFile(),
+            LLmProviders.MiniMax => JsonConvert.DeserializeObject<VendorMiniMaxUploadResponse>(jsonData)?.File?.ToFile(),
             _ => JsonConvert.DeserializeObject<TornadoFile>(jsonData)
         };
     }
@@ -246,6 +260,19 @@ public class FileUploadRequest
             {
                 ByteArrayContent bc = new ByteArrayContent(x.Bytes);
                 StringContent sc = new StringContent(x.Purpose is null ? "agent" : GetPurpose(x.Purpose.Value, y.Provider));
+                
+                MultipartFormDataContent content = new MultipartFormDataContent();
+                content.Add(sc, "purpose");
+                content.Add(bc, "file", x.Name);
+
+                return content;
+            }
+        },
+        { 
+            LLmProviders.MiniMax, (x, y) =>
+            {
+                ByteArrayContent bc = new ByteArrayContent(x.Bytes);
+                StringContent sc = new StringContent(x.Purpose is null ? "voice_clone" : GetPurpose(x.Purpose.Value, y.Provider));
                 
                 MultipartFormDataContent content = new MultipartFormDataContent();
                 content.Add(sc, "purpose");
