@@ -1,4 +1,5 @@
 using LlmTornado.Cli.Core.Memory;
+using LlmTornado.Cli.Core.Storage;
 
 namespace LlmTornado.Cli.Commands;
 
@@ -9,10 +10,10 @@ internal sealed class ConversationCommand : ICliCommand
     public string Usage => "/conversation [save [label] | load <id> | list | delete <id> | new]";
 
     private readonly ConversationMemoryManager _memoryManager;
-    private readonly ConversationStore _store;
+    private readonly SqliteConversationStore _store;
     private readonly CliAgentBuilder _builder;
 
-    public ConversationCommand(ConversationMemoryManager memoryManager, ConversationStore store, CliAgentBuilder builder)
+    public ConversationCommand(ConversationMemoryManager memoryManager, SqliteConversationStore store, CliAgentBuilder builder)
     {
         _memoryManager = memoryManager;
         _store = store;

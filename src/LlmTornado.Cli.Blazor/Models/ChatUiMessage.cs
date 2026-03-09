@@ -57,6 +57,30 @@ public sealed class ChatUiMessage
     public bool IsError { get; set; }
 
     /// <summary>
+    /// Accumulated reasoning/thinking text from the model's chain-of-thought.
+    /// Grows during streaming as thinking tokens arrive.
+    /// </summary>
+    public string ThinkingContent { get; set; } = string.Empty;
+
+    /// <summary>
+    /// True while the model is actively streaming thinking/reasoning tokens.
+    /// The UI shows a pulsing "Thinking..." block when this is true.
+    /// </summary>
+    public bool IsThinking { get; set; }
+
+    /// <summary>
+    /// When the thinking phase started (first thinking token received).
+    /// Used to compute thinking duration for the collapsed pill.
+    /// </summary>
+    public DateTime? ThinkingStartedAt { get; set; }
+
+    /// <summary>
+    /// When the thinking phase completed (thinking done event received or first text token after thinking).
+    /// Used to compute thinking duration for the collapsed pill.
+    /// </summary>
+    public DateTime? ThinkingCompletedAt { get; set; }
+
+    /// <summary>
     /// Inline event chips (tool calls, reasoning, etc.) that belong to this message.
     /// Displayed inline within the assistant message bubble.
     /// </summary>

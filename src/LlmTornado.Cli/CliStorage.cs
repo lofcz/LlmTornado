@@ -15,6 +15,8 @@ internal static class CliStorage
     public static readonly string SettingsPath = Path.Combine(RootDirectory, "settings.json");
     public static readonly string ToolApprovalsPath = Path.Combine(RootDirectory, "tool-approvals.json");
     public static readonly string CurrentConversationPath = Path.Combine(ConversationsDirectory, "current.jsonl");
+    public static readonly string DatabasePath = Path.Combine(RootDirectory, "conversations.db");
+    public static readonly string AttachmentsDirectory = Path.Combine(RootDirectory, "attachments");
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {

@@ -10,6 +10,7 @@ using LlmTornado.Cli.Core.Skills;
 using LlmTornado.Cli.Core.Tools;
 using LlmTornado.Cli.Commands;
 using LlmTornado.Cli.Core.Memory;
+using LlmTornado.Cli.Core.Storage;
 using LlmTornado.Code;
 
 namespace LlmTornado.Cli;
@@ -18,7 +19,7 @@ class Program
 {
     private static McpConfigLoader? _mcpLoader;
     private static ConversationMemoryManager? _memoryManager;
-    private static ConversationStore? _conversationStore;
+    private static SqliteConversationStore? _conversationStore;
     private static CliAgentBuilder? _agentBuilder;
 
     static async Task<int> Main(string[] args)
@@ -115,13 +116,32 @@ class Program
         ConsoleRenderer renderer = new();
         ToolApprovalManager toolApproval = new(renderer);
 
-        // ─── Step 7: Conversation Memory ───
-        _memoryManager = new ConversationMemoryManager(
-            providerResult.Api,
-            providerResult.ActiveModel,
-            providerResult.ActiveModel.ContextTokens,
-            CliStorage.CurrentConversationPath);
-        _conversationStore = new ConversationStore(CliStorage.ConversationsDirectory);
+        // ─── Step 7: Conversation Memory (SQLite) ───
+        _conversationStore = new SqliteConversationStore(CliStorage.DatabasePath, CliStorage.AttachmentsDirectory);
+
+        // Migrate existing file-based conversations on first run
+        if (Directory.Exists(CliStorage.ConversationsDirectory))
+        {
+            int migrated = ConversationMigrator.MigrateAll(CliStorage.ConversationsDirectory, _conversationStore);
+            if (migrated > 0)
+                ConsoleRenderer.WriteInfo($"Migrated {migrated} conversation(s) from file storage to SQLite.");
+
+            string? currentId = ConversationMigrator.MigrateCurrent(CliStorage.CurrentConversationPath, _conversationStore);
+            _memoryManager = new ConversationMemoryManager(
+                providerResult.Api,
+                providerResult.ActiveModel,
+                providerResult.ActiveModel.ContextTokens,
+                _conversationStore,
+                currentId);
+        }
+        else
+        {
+            _memoryManager = new ConversationMemoryManager(
+                providerResult.Api,
+                providerResult.ActiveModel,
+                providerResult.ActiveModel.ContextTokens,
+                _conversationStore);
+        }
 
         if (_memoryManager.Messages.Count > 0)
         {

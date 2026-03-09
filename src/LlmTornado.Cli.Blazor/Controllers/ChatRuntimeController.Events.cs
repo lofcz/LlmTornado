@@ -115,16 +115,26 @@ public sealed partial class ChatRuntimeController
         switch (streaming.ModelStreamingEvent)
         {
             case ModelStreamingOutputTextDeltaEvent delta:
+                // If we were thinking and now text is arriving, finalize thinking
+                if (_thinkingInProgress)
+                {
+                    _thinkingInProgress = false;
+                    Ui!.CompleteStreamingThinking(_currentStreamingId!);
+                }
                 Ui!.AppendStreamingToken(_currentStreamingId!, delta.DeltaText ?? "");
                 break;
 
-            case ModelStreamingReasoningPartAddedEvent:
-                Ui!.AddEventChip(new ChatUiEventChip
+            case ModelStreamingReasoningPartAddedEvent reasoningAdded:
+                _thinkingInProgress = true;
+                Ui!.AppendStreamingThinkingToken(_currentStreamingId!, reasoningAdded.DeltaText ?? "");
+                break;
+
+            case ModelStreamingReasoningPartDoneEvent:
+                if (_thinkingInProgress)
                 {
-                    Type = ChatUiChipType.Reasoning,
-                    Title = "Thinking",
-                    Status = ChatUiChipStatus.InProgress
-                });
+                    _thinkingInProgress = false;
+                    Ui!.CompleteStreamingThinking(_currentStreamingId!);
+                }
                 break;
 
             case ModelStreamingFailedEvent failed:

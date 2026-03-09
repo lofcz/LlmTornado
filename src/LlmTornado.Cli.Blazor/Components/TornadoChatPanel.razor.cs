@@ -34,6 +34,7 @@ namespace LlmTornado.Cli.Blazor.Components
         private ToolApprovalRequest? _pendingApproval;
         private ChatUiContextWindowStatus _contextWindowStatus = new();
         private ElementReference _messageContainer;
+        private string? _selectedReasoningEffort;
 
         // Streaming debounce
         private DateTime _lastRender = DateTime.MinValue;
@@ -198,6 +199,60 @@ namespace LlmTornado.Cli.Blazor.Components
             InvokeAsync(() => { _selectedModelId = modelId; StateHasChanged(); });
         }
 
+        public void AppendStreamingThinkingToken(string messageId, string token)
+        {
+            InvokeAsync(() =>
+            {
+                if (_streamingMessages.TryGetValue(messageId, out var msg))
+                {
+                    if (!msg.IsThinking)
+                    {
+                        msg.IsThinking = true;
+                        msg.ThinkingStartedAt = DateTime.UtcNow;
+                    }
+
+                    msg.ThinkingContent += token;
+
+                    if ((DateTime.UtcNow - _lastRender).TotalMilliseconds >= StreamingRenderIntervalMs)
+                    {
+                        _lastRender = DateTime.UtcNow;
+                        StateHasChanged();
+                    }
+                    else if (!_renderPending)
+                    {
+                        _renderPending = true;
+                        _ = Task.Delay(StreamingRenderIntervalMs).ContinueWith(_ =>
+                        {
+                            InvokeAsync(() =>
+                            {
+                                _renderPending = false;
+                                _lastRender = DateTime.UtcNow;
+                                StateHasChanged();
+                            });
+                        });
+                    }
+                }
+            });
+        }
+
+        public void CompleteStreamingThinking(string messageId)
+        {
+            InvokeAsync(() =>
+            {
+                if (_streamingMessages.TryGetValue(messageId, out var msg))
+                {
+                    msg.IsThinking = false;
+                    msg.ThinkingCompletedAt = DateTime.UtcNow;
+                    StateHasChanged();
+                }
+            });
+        }
+
+        public void SetSelectedReasoningEffort(string? effort)
+        {
+            InvokeAsync(() => { _selectedReasoningEffort = effort; StateHasChanged(); });
+        }
+
         public void SetAgents(List<ChatUiAgent> agents)
         {
             InvokeAsync(() => { _agents = agents; StateHasChanged(); });
@@ -268,6 +323,13 @@ namespace LlmTornado.Cli.Blazor.Components
             string? agentName = e.Value?.ToString();
             await Controller.SelectAgentAsync(
                 string.IsNullOrEmpty(agentName) ? null : agentName);
+        }
+
+        private async Task HandleReasoningEffortChange(ChangeEventArgs e)
+        {
+            string? effort = e.Value?.ToString();
+            await Controller.SelectReasoningEffortAsync(
+                string.IsNullOrEmpty(effort) ? null : effort);
         }
 
         private async Task HandleNewChat()

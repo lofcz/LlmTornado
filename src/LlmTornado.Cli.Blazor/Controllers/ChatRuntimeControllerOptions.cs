@@ -14,6 +14,12 @@ public sealed class ChatRuntimeControllerOptions
     public string? ConversationsDirectory { get; set; }
 
     /// <summary>
+    /// Path to the SQLite database for conversation storage.
+    /// Default: {AppData}/llmtornado/conversations.db
+    /// </summary>
+    public string? DatabasePath { get; set; }
+
+    /// <summary>
     /// Directory for project-local skills.
     /// Default: ./skills/ (from CWD)
     /// </summary>

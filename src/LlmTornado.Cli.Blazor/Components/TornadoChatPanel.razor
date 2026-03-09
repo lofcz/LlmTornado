@@ -39,6 +39,19 @@
             </div>
 
             <div class="tornado-chat__header-right">
+                <select class="tornado-chat__select tornado-chat__select--sm"
+                        value="@_selectedReasoningEffort"
+                        @onchange="HandleReasoningEffortChange"
+                        title="Reasoning effort">
+                    <option value="">Auto</option>
+                    <option value="none">None</option>
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="xhigh">X-High</option>
+                    <option value="max">Max</option>
+                </select>
+
                 <select class="tornado-chat__select"
                         value="@_selectedAgentName"
                         @onchange="HandleAgentChange">

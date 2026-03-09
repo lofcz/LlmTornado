@@ -115,6 +115,13 @@ public sealed partial class ChatRuntimeController
                         });
                     }
                 }
+                else if (part.Type == ChatMessageTypes.Reasoning && part.Reasoning is not null)
+                {
+                    if (!string.IsNullOrEmpty(part.Reasoning.Content))
+                    {
+                        uiMsg.ThinkingContent = part.Reasoning.Content;
+                    }
+                }
             }
         }
 

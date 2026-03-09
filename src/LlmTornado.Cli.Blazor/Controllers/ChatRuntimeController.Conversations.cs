@@ -17,7 +17,7 @@ public sealed partial class ChatRuntimeController
         Ui.SetLoading(true);
         Ui.Clear();
 
-        List<ChatMessage>? messages = _conversationStore.Load(conversationId);
+        List<ChatMessage>? messages = _conversationStore.LoadFull(conversationId);
         if (messages is null)
         {
             Ui.SetLoading(false);

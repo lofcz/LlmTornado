@@ -76,4 +76,13 @@ public sealed class AgentSettings
     /// </summary>
     [JsonPropertyName("tool_optimizer_enabled")]
     public bool ToolOptimizerEnabled { get; set; } = true;
+
+    /// <summary>
+    /// Reasoning effort level for models that support extended thinking.
+    /// Null = provider/model default. Valid values match <c>ChatReasoningEfforts</c> enum:
+    /// "none", "minimal", "low", "medium", "high", "xhigh", "max", "default".
+    /// Persisted across sessions.
+    /// </summary>
+    [JsonPropertyName("reasoning_effort")]
+    public string? ReasoningEffort { get; set; }
 }

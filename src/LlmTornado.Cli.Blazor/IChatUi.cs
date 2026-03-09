@@ -48,6 +48,25 @@ public interface IChatUi
     void CompleteStreamingMessage(string messageId);
 
     // ─────────────────────────────────────────────
+    // Thinking / reasoning
+    // ─────────────────────────────────────────────
+
+    /// <summary>
+    /// Append a reasoning/thinking text delta to an active streaming message.
+    /// Called many times during the thinking phase — typically once per reasoning token.
+    /// </summary>
+    /// <param name="messageId">The ID of the streaming message.</param>
+    /// <param name="token">The reasoning text delta to append.</param>
+    void AppendStreamingThinkingToken(string messageId, string token);
+
+    /// <summary>
+    /// Mark the thinking phase of a streaming message as complete.
+    /// The UI transitions from the active thinking indicator to a collapsed summary pill.
+    /// </summary>
+    /// <param name="messageId">The ID of the streaming message.</param>
+    void CompleteStreamingThinking(string messageId);
+
+    // ─────────────────────────────────────────────
     // Event chips (tool calls, reasoning, etc.)
     // ─────────────────────────────────────────────
 
@@ -119,6 +138,13 @@ public interface IChatUi
     /// </summary>
     /// <param name="agentName">The agent name to select, or null for default.</param>
     void SetSelectedAgent(string? agentName);
+
+    /// <summary>
+    /// Set the currently selected reasoning effort level in the UI.
+    /// Null means "auto" (provider/model default).
+    /// </summary>
+    /// <param name="effort">The reasoning effort string, or null for auto.</param>
+    void SetSelectedReasoningEffort(string? effort);
 
     // ─────────────────────────────────────────────
     // Conversation sidebar

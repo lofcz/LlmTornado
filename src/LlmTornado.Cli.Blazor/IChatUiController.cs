@@ -70,6 +70,13 @@ public interface IChatUiController : IAsyncDisposable
     /// <param name="agentName">The agent name, or null for default.</param>
     Task SelectAgentAsync(string? agentName);
 
+    /// <summary>
+    /// Change the reasoning effort level for models that support extended thinking.
+    /// Pass null to revert to the provider/model default.
+    /// </summary>
+    /// <param name="effort">The reasoning effort string ("none", "low", "medium", "high", etc.), or null for auto.</param>
+    Task SelectReasoningEffortAsync(string? effort);
+
     // ─────────────────────────────────────────────
     // Conversation management
     // ─────────────────────────────────────────────

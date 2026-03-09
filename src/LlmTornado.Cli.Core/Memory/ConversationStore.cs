@@ -38,6 +38,7 @@ public sealed class ConversationMetadata
 /// <summary>
 /// Save, load, list, and delete named conversations.
 /// </summary>
+[Obsolete("Use SqliteConversationStore from LlmTornado.Cli.Core.Storage instead.")]
 public sealed class ConversationStore
 {
     private static readonly JsonSerializerOptions JsonOptions = new()

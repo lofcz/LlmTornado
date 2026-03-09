@@ -33,6 +33,38 @@
         }
         else
         {
+            @* Thinking / reasoning block *@
+            @if (Message.IsThinking || !string.IsNullOrEmpty(Message.ThinkingContent))
+            {
+                <div class="thinking-block @(Message.IsThinking ? "thinking-block--active" : "")">
+                    <button class="thinking-block__toggle" @onclick="() => _thinkingExpanded = !_thinkingExpanded">
+                        @if (Message.IsThinking)
+                        {
+                            <span class="thinking-block__spinner"></span>
+                            <span>Thinking…</span>
+                        }
+                        else
+                        {
+                            <span class="thinking-block__icon">💭</span>
+                            <span>Thought@(ThinkingDuration is not null ? $" for {ThinkingDuration}" : "")</span>
+
+                            @if (Message.TokenTelemetry?.CompletionReasoningTokens is { } reasoningTokens)
+                            {
+                                <span class="thinking-block__tokens">· @reasoningTokens tokens</span>
+                            }
+                        }
+                        <span class="thinking-block__chevron @(_thinkingExpanded ? "thinking-block__chevron--open" : "")">▸</span>
+                    </button>
+
+                    @if (_thinkingExpanded || Message.IsThinking)
+                    {
+                        <div class="thinking-block__content">
+                            <pre>@Message.ThinkingContent</pre>
+                        </div>
+                    }
+                </div>
+            }
+
             @* Assistant messages rendered as markdown *@
             <div class="chat-bubble__markdown">
                 @((MarkupString)Markdown.ToHtml(Message.Content, Pipeline))
@@ -107,9 +139,26 @@
 @code {
     [Parameter] public ChatUiMessage Message { get; set; } = default!;
 
+    private bool _thinkingExpanded;
+
     private static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder()
         .UseAdvancedExtensions()
         .Build();
+
+    private string? ThinkingDuration
+    {
+        get
+        {
+            if (Message.ThinkingStartedAt is not { } start) return null;
+            var end = Message.ThinkingCompletedAt ?? DateTime.UtcNow;
+            var elapsed = end - start;
+            return elapsed.TotalSeconds < 1
+                ? "<1s"
+                : elapsed.TotalSeconds < 60
+                    ? $"{elapsed.TotalSeconds:F0}s"
+                    : $"{elapsed.TotalMinutes:F0}m {elapsed.Seconds}s";
+        }
+    }
 
     private string RoleClass => Message.Role switch
     {

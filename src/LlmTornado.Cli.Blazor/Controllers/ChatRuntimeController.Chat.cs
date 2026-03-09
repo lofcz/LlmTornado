@@ -32,6 +32,7 @@ public sealed partial class ChatRuntimeController
         // 3. Start streaming response
         string streamingId = Guid.NewGuid().ToString();
         _currentStreamingId = streamingId;
+        _thinkingInProgress = false;
         Ui.StartStreamingMessage(streamingId);
 
         try

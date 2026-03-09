@@ -8,6 +8,7 @@ using LlmTornado.Cli.Core.Mcp;
 using LlmTornado.Cli.Core.Memory;
 using LlmTornado.Cli.Core.Providers;
 using LlmTornado.Cli.Core.Skills;
+using LlmTornado.Cli.Core.Storage;
 using LlmTornado.Agents;
 
 namespace LlmTornado.Cli.Blazor.Controllers;
@@ -39,7 +40,8 @@ public sealed partial class ChatRuntimeController : IChatUiController, ISettings
     private AgentDefinitionManager? _agentManager;
     private AgentBuilder? _agentBuilder;
     private ChatRuntime? _runtime;
-    private ConversationStore? _conversationStore;
+    private ConversationStore? _legacyConversationStore;
+    private SqliteConversationStore? _conversationStore;
     private McpSessionPolicy? _sessionPolicy;
 
     // Provider state
@@ -54,6 +56,7 @@ public sealed partial class ChatRuntimeController : IChatUiController, ISettings
     private string? _currentConversationId;
     private string? _currentUserMessageId;
     private string? _currentStreamingId;
+    private bool _thinkingInProgress;
 
     // Settings persistence path
     private string _settingsPath = string.Empty;
@@ -170,6 +173,7 @@ public sealed partial class ChatRuntimeController : IChatUiController, ISettings
                 .ToList();
             Ui.SetAgents(uiAgents);
             Ui.SetSelectedAgent(_agentManager.ActivePersonaName);
+            Ui.SetSelectedReasoningEffort(_settings.ReasoningEffort);
 
             // 9. Build the agent
             _agentBuilder = new AgentBuilder(
@@ -182,8 +186,18 @@ public sealed partial class ChatRuntimeController : IChatUiController, ISettings
 
             _runtime = _agentBuilder.Build(HandleRuntimeEvent);
 
-            // 10. Load conversations
-            _conversationStore = new ConversationStore(conversationsDir);
+            // 10. Load conversations (SQLite)
+            string dbPath = _options.DatabasePath
+                ?? Path.Combine(appData, "conversations.db");
+            string attachDir = Path.Combine(Path.GetDirectoryName(dbPath)!, "attachments");
+            _conversationStore = new SqliteConversationStore(dbPath, attachDir);
+
+            // Migrate file-based conversations on first run
+            if (Directory.Exists(conversationsDir))
+            {
+                ConversationMigrator.MigrateAll(conversationsDir, _conversationStore);
+            }
+
             RefreshConversationList();
         }
         finally
@@ -226,6 +240,20 @@ public sealed partial class ChatRuntimeController : IChatUiController, ISettings
         return Task.CompletedTask;
     }
 
+    public Task SelectReasoningEffortAsync(string? effort)
+    {
+        if (_agentBuilder is null) return Task.CompletedTask;
+
+        _settings.ReasoningEffort = string.IsNullOrWhiteSpace(effort) ? null : effort;
+        SaveSettings(_settings);
+
+        // Rebuild the agent to apply the new reasoning effort
+        _runtime = _agentBuilder.Build(HandleRuntimeEvent);
+        Ui?.SetSelectedReasoningEffort(_settings.ReasoningEffort);
+
+        return Task.CompletedTask;
+    }
+
     // ─────────────────────────────────────────────
     // Disposal
     // ─────────────────────────────────────────────
@@ -234,5 +262,6 @@ public sealed partial class ChatRuntimeController : IChatUiController, ISettings
     {
         if (_mcpLoader is not null)
             await _mcpLoader.DisposeAsync();
+        _conversationStore?.Dispose();
     }
 }

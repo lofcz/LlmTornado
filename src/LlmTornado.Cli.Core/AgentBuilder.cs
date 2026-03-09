@@ -8,6 +8,7 @@ using LlmTornado.Cli.Core.Agents;
 using LlmTornado.Cli.Core.Mcp;
 using LlmTornado.Cli.Core.Skills;
 using LlmTornado.Cli.Core.Tools;
+using LlmTornado.Code;
 using LlmTornado.Common;
 
 namespace LlmTornado.Cli.Core;
@@ -96,6 +97,9 @@ public sealed class AgentBuilder
             name: "Agent",
             instructions: systemPrompt,
             streaming: true);
+
+        // Apply reasoning effort if configured
+        ApplyReasoningEffort(_agent);
 
         // Add tools
         foreach (Tool tool in allTools)
@@ -241,6 +245,33 @@ public sealed class AgentBuilder
         {
             _toolOptimizer = new ToolOptimizer(_api, optimizerModel, maxTools);
         }
+    }
+
+    /// <summary>
+    /// Parse and apply the reasoning effort from settings to the agent's request options.
+    /// </summary>
+    private void ApplyReasoningEffort(TornadoAgent agent)
+    {
+        if (string.IsNullOrWhiteSpace(_settings.ReasoningEffort))
+        {
+            agent.Options.ReasoningEffort = null;
+            return;
+        }
+
+        ChatReasoningEfforts? parsed = _settings.ReasoningEffort.ToLowerInvariant() switch
+        {
+            "none" => ChatReasoningEfforts.None,
+            "minimal" => ChatReasoningEfforts.Minimal,
+            "low" => ChatReasoningEfforts.Low,
+            "medium" => ChatReasoningEfforts.Medium,
+            "high" => ChatReasoningEfforts.High,
+            "xhigh" => ChatReasoningEfforts.XHigh,
+            "max" => ChatReasoningEfforts.Max,
+            "default" => ChatReasoningEfforts.Default,
+            _ => null
+        };
+
+        agent.Options.ReasoningEffort = parsed;
     }
 
     private string BuildSystemPrompt()
