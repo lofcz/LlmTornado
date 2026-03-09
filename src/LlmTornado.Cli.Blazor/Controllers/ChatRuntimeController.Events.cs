@@ -17,6 +17,10 @@ public sealed partial class ChatRuntimeController
         {
             switch (agentEvt.AgentRunnerEvent)
             {
+                case AgentRunnerRequestPreparedEvent prepared:
+                    ApplyPreflightTokenTelemetry(prepared);
+                    break;
+
                 case AgentRunnerStreamingEvent streaming:
                     HandleStreamingEvent(streaming);
                     break;
@@ -59,11 +63,13 @@ public sealed partial class ChatRuntimeController
                     break;
 
                 case AgentRunnerUsageReceivedEvent usage:
+                    ApplyUsageTokenTelemetry(usage);
+
                     Ui.AddEventChip(new ChatUiEventChip
                     {
                         Type = ChatUiChipType.Info,
                         Title = "Usage",
-                        Detail = $"Input: {usage.InputTokens} | Output: {usage.OutputTokens} | Total: {usage.TokenUsageAmount}",
+                        Detail = BuildUsageDetail(usage),
                         Status = ChatUiChipStatus.Completed
                     });
                     break;
@@ -81,6 +87,27 @@ public sealed partial class ChatRuntimeController
         }
 
         return ValueTask.CompletedTask;
+    }
+
+    private static string BuildUsageDetail(AgentRunnerUsageReceivedEvent usage)
+    {
+        List<string> lines =
+        [
+            $"Input: {usage.InputTokens}",
+            $"Output: {usage.OutputTokens}",
+            $"Total: {usage.TokenUsageAmount}"
+        ];
+
+        if (usage.Usage.CacheReadTokens is not null)
+            lines.Add($"Cache read: {usage.Usage.CacheReadTokens}");
+        if (usage.Usage.CacheCreationTokens is not null)
+            lines.Add($"Cache write: {usage.Usage.CacheCreationTokens}");
+        if (usage.Usage.CompletionReasoningTokens is not null)
+            lines.Add($"Reasoning: {usage.Usage.CompletionReasoningTokens}");
+        if (usage.Usage.ToolUseTokens is not null)
+            lines.Add($"Tool-use: {usage.Usage.ToolUseTokens}");
+
+        return string.Join("\n", lines);
     }
 
     private void HandleStreamingEvent(AgentRunnerStreamingEvent streaming)

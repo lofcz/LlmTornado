@@ -14,6 +14,8 @@ public sealed partial class ChatRuntimeController
     {
         if (_runtime is null || Ui is null) return;
 
+        ResetCurrentTurnTokenTelemetry();
+
         // 1. Display user message
         var userMsg = new ChatUiMessage
         {
@@ -21,6 +23,7 @@ public sealed partial class ChatRuntimeController
             Content = text,
             Files = files ?? []
         };
+        _currentUserMessageId = userMsg.Id;
         Ui.AddMessage(userMsg);
 
         // 2. Build internal ChatMessage (with file attachments if any)
@@ -76,6 +79,7 @@ public sealed partial class ChatRuntimeController
         }
         finally
         {
+            _currentUserMessageId = null;
             _currentStreamingId = null;
         }
     }

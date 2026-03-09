@@ -66,6 +66,19 @@ public interface IChatUi
     /// <param name="updated">The updated chip data. The ID must match <paramref name="chipId"/>.</param>
     void UpdateEventChip(string chipId, ChatUiEventChip updated);
 
+    /// <summary>
+    /// Updates token telemetry for a specific message.
+    /// </summary>
+    /// <param name="messageId">The target assistant message ID.</param>
+    /// <param name="telemetry">The latest merged token telemetry.</param>
+    void UpdateMessageTokenTelemetry(string messageId, ChatUiTokenTelemetry telemetry);
+
+    /// <summary>
+    /// Updates the persistent context window footer for the active model.
+    /// </summary>
+    /// <param name="status">The latest context window status.</param>
+    void SetContextWindowStatus(ChatUiContextWindowStatus status);
+
     // ─────────────────────────────────────────────
     // Tool approval
     // ─────────────────────────────────────────────

@@ -50,6 +50,58 @@
             @Message.Timestamp.ToLocalTime().ToString("HH:mm")
         </span>
     </div>
+
+    @if (Message.Role == ChatUiRole.User && Message.TokenTelemetry is { } userTokens && userTokens.HasPreflight)
+    {
+        <div class="chat-bubble__meta" style="margin-top: 6px; display: flex; flex-wrap: wrap; gap: 8px; font-size: 12px; opacity: 0.8;">
+            @if (userTokens.ContextTokensBeforeInput is not null)
+            {
+                <span title="Tokens already in context before this input was added.">Context: @userTokens.ContextTokensBeforeInput</span>
+            }
+
+            @if (userTokens.RequestTokensBeforeSend is not null)
+            {
+                <span title="Total request tokens before the model call.">Request: @userTokens.RequestTokensBeforeSend</span>
+            }
+
+            @if (userTokens.ContextWindowTokens is not null && userTokens.ContextWindowUtilization is not null)
+            {
+                <span title="Context window utilization before the request was sent.">Window: @userTokens.RequestTokensBeforeSend / @userTokens.ContextWindowTokens (@FormatPercent(userTokens.ContextWindowUtilization.Value))</span>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(userTokens.CountingMethod))
+            {
+                <span title="How the preflight count was computed.">@userTokens.CountingMethod</span>
+            }
+        </div>
+    }
+
+    @if (Message.Role == ChatUiRole.Assistant && Message.TokenTelemetry is { } assistantTokens && assistantTokens.HasUsage)
+    {
+        <div class="chat-bubble__meta" style="margin-top: 6px; display: flex; flex-wrap: wrap; gap: 8px; font-size: 12px; opacity: 0.8;">
+            <span title="Accumulated provider-reported usage for this assistant turn.">Usage: @assistantTokens.ActualInputTokens in / @assistantTokens.ActualOutputTokens out / @assistantTokens.ActualTotalTokens total</span>
+
+            @if (assistantTokens.ActualRequestCount > 1)
+            {
+                <span title="Number of model requests made while processing this turn.">Requests: @assistantTokens.ActualRequestCount</span>
+            }
+
+            @if (assistantTokens.CompletionReasoningTokens is not null)
+            {
+                <span title="Reasoning tokens reported for this turn.">Reasoning: @assistantTokens.CompletionReasoningTokens</span>
+            }
+
+            @if (assistantTokens.CacheReadTokens is not null)
+            {
+                <span title="Prompt tokens served from provider cache.">Cache read: @assistantTokens.CacheReadTokens</span>
+            }
+
+            @if (assistantTokens.CacheCreationTokens is not null)
+            {
+                <span title="Prompt tokens written into provider cache.">Cache write: @assistantTokens.CacheCreationTokens</span>
+            }
+        </div>
+    }
 </div>
 
 @code {
@@ -73,4 +125,9 @@
         { IsAudio: true } => "🎵",
         _ => "📎"
     };
+
+    private static string FormatPercent(double value)
+    {
+        return value.ToString("P0");
+    }
 }

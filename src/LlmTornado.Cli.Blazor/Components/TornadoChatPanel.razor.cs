@@ -32,6 +32,7 @@ namespace LlmTornado.Cli.Blazor.Components
         private bool _isSending;
         private bool _showSidebar = true;
         private ToolApprovalRequest? _pendingApproval;
+        private ChatUiContextWindowStatus _contextWindowStatus = new();
         private ElementReference _messageContainer;
 
         // Streaming debounce
@@ -149,6 +150,32 @@ namespace LlmTornado.Cli.Blazor.Components
                         return;
                     }
                 }
+            });
+        }
+
+        public void UpdateMessageTokenTelemetry(string messageId, ChatUiTokenTelemetry telemetry)
+        {
+            InvokeAsync(() =>
+            {
+                ChatUiMessage? target = _streamingMessages.TryGetValue(messageId, out var streaming)
+                    ? streaming
+                    : _messages.LastOrDefault(m => m.Id == messageId)
+                      ?? _messages.LastOrDefault(m => m.Role == ChatUiRole.Assistant);
+
+                if (target is not null)
+                {
+                    target.TokenTelemetry = telemetry;
+                    StateHasChanged();
+                }
+            });
+        }
+
+        public void SetContextWindowStatus(ChatUiContextWindowStatus status)
+        {
+            InvokeAsync(() =>
+            {
+                _contextWindowStatus = status;
+                StateHasChanged();
             });
         }
 

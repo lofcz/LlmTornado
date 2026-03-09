@@ -4,6 +4,7 @@ using LlmTornado.Chat.Models;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Common;
+using LlmTornado.Agents.Utility;
 
 namespace LlmTornado.Agents;
 
@@ -106,6 +107,18 @@ public class TornadoRunner
         {
             runnerOptions ??= new TornadoRunnerOptions();
             Conversation conversation = SetupConversation(agent, input, messagesToAppend, responseId, cancellationToken);
+
+            if (runnerCallback is not null)
+            {
+                AgentRequestTokenTelemetry telemetry = await AgentTokenTelemetryCalculator.CalculatePreflightAsync(
+                    agent,
+                    conversation,
+                    messagesToAppend,
+                    responseId,
+                    cancellationToken).ConfigureAwait(false);
+
+                await runnerCallback.Invoke(new AgentRunnerRequestPreparedEvent(telemetry, conversation));
+            }
         
             // check if the input triggers a guardrail to stop the agent from continuing
             await CheckInputGuardrail(conversation, input, guardRail);
@@ -556,7 +569,7 @@ public class TornadoRunner
 
             if (runnerCallback is not null && response is { Exception: null })
             {
-                await runnerCallback.Invoke(new AgentRunnerUsageReceivedEvent(response.Data?.Usage?.PromptTokens ?? 0, response.Data?.Usage?.CompletionTokens ?? 0, response.Data?.Usage?.TotalTokens ?? 0, chat));
+                await runnerCallback.Invoke(new AgentRunnerUsageReceivedEvent(response.Data?.Usage, chat));
             }
         }
         catch (Exception ex)
@@ -652,7 +665,7 @@ public class TornadoRunner
             {
                 if (runnerCallback is not null)
                 {
-                    await runnerCallback.Invoke(new AgentRunnerUsageReceivedEvent(usage.PromptTokens, usage.CompletionTokens, usage.TotalTokens, chat));   
+                    await runnerCallback.Invoke(new AgentRunnerUsageReceivedEvent(usage, chat));   
                 }
             },
             OutboundHttpRequestHandler = (http) =>

@@ -36,6 +36,8 @@ public sealed partial class ChatRuntimeController
             Ui.AddMessage(MapToChatUiMessage(msg));
         }
 
+        UpdateContextWindowStatus(_agentBuilder?.ActiveModel);
+
         Ui.SetLoading(false);
         return Task.CompletedTask;
     }
@@ -45,6 +47,8 @@ public sealed partial class ChatRuntimeController
         _currentConversationId = null;
         _runtime?.Clear();
         Ui?.Clear();
+        ResetCurrentTurnTokenTelemetry();
+        UpdateContextWindowStatus(_agentBuilder?.ActiveModel);
         RefreshConversationList();
         return Task.CompletedTask;
     }
@@ -58,6 +62,8 @@ public sealed partial class ChatRuntimeController
             _currentConversationId = null;
             _runtime?.Clear();
             Ui?.Clear();
+            ResetCurrentTurnTokenTelemetry();
+            UpdateContextWindowStatus(_agentBuilder?.ActiveModel);
         }
 
         RefreshConversationList();

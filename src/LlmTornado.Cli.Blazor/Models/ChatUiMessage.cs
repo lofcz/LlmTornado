@@ -61,4 +61,10 @@ public sealed class ChatUiMessage
     /// Displayed inline within the assistant message bubble.
     /// </summary>
     public List<ChatUiEventChip> EventChips { get; set; } = [];
+
+    /// <summary>
+    /// Token telemetry for this assistant turn.
+    /// Includes preflight context/request counts and accumulated actual usage.
+    /// </summary>
+    public ChatUiTokenTelemetry? TokenTelemetry { get; set; }
 }

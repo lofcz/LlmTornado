@@ -144,24 +144,20 @@ public static class ProviderDetector
     {
         LLmProviders.OpenAi =>
         [
-            ChatModel.OpenAi.Gpt52.V52,
-            ChatModel.OpenAi.Gpt52.V52Pro,
-            ChatModel.OpenAi.Gpt51.V51,
-            ChatModel.OpenAi.Gpt51.V51CodexMax,
-            ChatModel.OpenAi.O4.V4Mini,
-            ChatModel.OpenAi.O3.V3,
+            ChatModel.OpenAi.Gpt54.V54,
+            ChatModel.OpenAi.Codex.Gpt53Codex,
         ],
         LLmProviders.Anthropic =>
         [
             ChatModel.Anthropic.Claude46.Opus,
-            ChatModel.Anthropic.Claude45.Opus251101,
-            ChatModel.Anthropic.Claude45.Sonnet250929,
-            ChatModel.Anthropic.Claude4.Sonnet250514,
+            ChatModel.Anthropic.Claude46.Sonnet,
+            ChatModel.Anthropic.Claude45.Haiku251001
         ],
         LLmProviders.Google =>
         [
             ChatModel.Google.GeminiPreview.Gemini3ProPreview,
             ChatModel.Google.GeminiPreview.Gemini3FlashPreview,
+            ChatModel.Google.GeminiPreview.Gemini31ProPreview,
             ChatModel.Google.Gemini.Gemini25Pro,
             ChatModel.Google.Gemini.Gemini25Flash,
         ],

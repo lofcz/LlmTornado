@@ -8,6 +8,7 @@ using LlmTornado.Cli.Core.Mcp;
 using LlmTornado.Cli.Core.Memory;
 using LlmTornado.Cli.Core.Providers;
 using LlmTornado.Cli.Core.Skills;
+using LlmTornado.Agents;
 
 namespace LlmTornado.Cli.Blazor.Controllers;
 
@@ -51,6 +52,7 @@ public sealed partial class ChatRuntimeController : IChatUiController, ISettings
 
     // Conversation state
     private string? _currentConversationId;
+    private string? _currentUserMessageId;
     private string? _currentStreamingId;
 
     // Settings persistence path
@@ -136,6 +138,7 @@ public sealed partial class ChatRuntimeController : IChatUiController, ISettings
                 if (saved is not null) activeModel = saved;
             }
             Ui.SetSelectedModel(activeModel.Name);
+            UpdateContextWindowStatus(activeModel);
 
             // 6. Initialize skills
             _skillManager = new SkillManager(_settings, this);
@@ -202,6 +205,8 @@ public sealed partial class ChatRuntimeController : IChatUiController, ISettings
         _settings.ActiveModel = modelId;
         SaveSettings(_settings);
         Ui?.SetSelectedModel(modelId);
+        ResetCurrentTurnTokenTelemetry();
+        UpdateContextWindowStatus(model);
 
         return Task.CompletedTask;
     }

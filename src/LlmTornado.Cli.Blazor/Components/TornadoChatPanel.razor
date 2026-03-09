@@ -104,6 +104,31 @@
                                OnRemoveFile="HandleRemoveFile" />
         }
 
+        <div class="tornado-chat__meta" style="padding: 8px 12px; border-top: 1px solid rgba(0,0,0,0.08); display: flex; flex-wrap: wrap; gap: 10px; font-size: 12px; opacity: 0.82;">
+            <span>Model: @_contextWindowStatus.ModelName</span>
+            <span>Max window: @_contextWindowStatus.MaxTokens</span>
+
+            @if (_contextWindowStatus.HasTelemetry)
+            {
+                <span>Used: @_contextWindowStatus.UsedTokens</span>
+                <span>Remaining: @_contextWindowStatus.RemainingTokens</span>
+
+                @if (_contextWindowStatus.Utilization is not null)
+                {
+                    <span>Utilization: @FormatWindowPercent(_contextWindowStatus.Utilization.Value)</span>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(_contextWindowStatus.CountingMethod))
+                {
+                    <span>@_contextWindowStatus.CountingMethod</span>
+                }
+            }
+            else
+            {
+                <span>No request telemetry yet</span>
+            }
+        </div>
+
         @* ── Input area ── *@
         <div class="tornado-chat__input-area">
             <label class="tornado-chat__btn tornado-chat__btn--icon"
@@ -143,3 +168,10 @@
         </div>
     </div>
 </div>
+
+@code {
+    private static string FormatWindowPercent(double value)
+    {
+        return value.ToString("P0");
+    }
+}

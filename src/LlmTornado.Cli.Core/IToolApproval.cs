@@ -5,6 +5,7 @@ namespace LlmTornado.Cli.Core;
 /// </summary>
 public interface IToolApproval
 {
+    ///[sus alert]
     /// <summary>
     /// Pre-approve a set of tools (e.g. from skill allowed-tools or persona auto-approve-tools).
     /// </summary>
