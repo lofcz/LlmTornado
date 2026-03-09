@@ -40,7 +40,6 @@ public sealed partial class ChatRuntimeController : IChatUiController, ISettings
     private AgentDefinitionManager? _agentManager;
     private AgentBuilder? _agentBuilder;
     private ChatRuntime? _runtime;
-    private ConversationStore? _legacyConversationStore;
     private SqliteConversationStore? _conversationStore;
     private McpSessionPolicy? _sessionPolicy;
 
@@ -191,12 +190,6 @@ public sealed partial class ChatRuntimeController : IChatUiController, ISettings
                 ?? Path.Combine(appData, "conversations.db");
             string attachDir = Path.Combine(Path.GetDirectoryName(dbPath)!, "attachments");
             _conversationStore = new SqliteConversationStore(dbPath, attachDir);
-
-            // Migrate file-based conversations on first run
-            if (Directory.Exists(conversationsDir))
-            {
-                ConversationMigrator.MigrateAll(conversationsDir, _conversationStore);
-            }
 
             RefreshConversationList();
         }

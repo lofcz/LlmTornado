@@ -118,30 +118,11 @@ class Program
 
         // ─── Step 7: Conversation Memory (SQLite) ───
         _conversationStore = new SqliteConversationStore(CliStorage.DatabasePath, CliStorage.AttachmentsDirectory);
-
-        // Migrate existing file-based conversations on first run
-        if (Directory.Exists(CliStorage.ConversationsDirectory))
-        {
-            int migrated = ConversationMigrator.MigrateAll(CliStorage.ConversationsDirectory, _conversationStore);
-            if (migrated > 0)
-                ConsoleRenderer.WriteInfo($"Migrated {migrated} conversation(s) from file storage to SQLite.");
-
-            string? currentId = ConversationMigrator.MigrateCurrent(CliStorage.CurrentConversationPath, _conversationStore);
-            _memoryManager = new ConversationMemoryManager(
-                providerResult.Api,
-                providerResult.ActiveModel,
-                providerResult.ActiveModel.ContextTokens,
-                _conversationStore,
-                currentId);
-        }
-        else
-        {
-            _memoryManager = new ConversationMemoryManager(
-                providerResult.Api,
-                providerResult.ActiveModel,
-                providerResult.ActiveModel.ContextTokens,
-                _conversationStore);
-        }
+        _memoryManager = new ConversationMemoryManager(
+            providerResult.Api,
+            providerResult.ActiveModel,
+            providerResult.ActiveModel.ContextTokens,
+            _conversationStore);
 
         if (_memoryManager.Messages.Count > 0)
         {
