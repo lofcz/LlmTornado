@@ -108,6 +108,12 @@
                 <ToolApprovalBanner Request="_pendingApproval"
                                     OnRespond="HandleToolApprovalResponse" />
             }
+
+            @if (_pendingQuestionInteraction is not null)
+            {
+                <AskQuestionWizard Request="_pendingQuestionInteraction"
+                                   OnSubmit="HandleQuestionInteractionResponseAsync" />
+            }
         </div>
 
         @* ── File attachment bar ── *@

@@ -1,4 +1,5 @@
 using LlmTornado.Cli.Core.Providers;
+using LlmTornado.Cli.Core.Interactions;
 
 namespace LlmTornado.Cli;
 
@@ -100,6 +101,69 @@ internal sealed class ConsoleRenderer
             Console.WriteLine();
             Console.ForegroundColor = ConsoleColor.Yellow;
             Console.Write("Choice [1-4]: ");
+            Console.ResetColor();
+        }
+    }
+
+    public void WriteQuestionWorkflowStart(AskQuestionsInteractionRequest request)
+    {
+        lock (Lock)
+        {
+            if (_isStreaming)
+            {
+                Console.ResetColor();
+                Console.WriteLine();
+                _isStreaming = false;
+            }
+
+            Console.WriteLine();
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.WriteLine($"=== {request.Title} ===");
+            Console.ResetColor();
+            if (!string.IsNullOrWhiteSpace(request.Message))
+                Console.WriteLine(request.Message);
+            Console.WriteLine();
+        }
+    }
+
+    public void WriteQuestionPrompt(InteractiveQuestionDefinition question, int index, int total)
+    {
+        lock (Lock)
+        {
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.WriteLine($"[{index}/{total}] {question.Prompt}");
+            Console.ResetColor();
+
+            if (!string.IsNullOrWhiteSpace(question.Description))
+                Console.WriteLine(question.Description);
+
+            for (int optionIndex = 0; optionIndex < question.Options.Count; optionIndex++)
+            {
+                InteractiveQuestionOption option = question.Options[optionIndex];
+                Console.WriteLine($"  [{optionIndex + 1}] {option.Label}");
+            }
+
+            if (question.AllowCustomAnswer)
+                Console.WriteLine("  [0] Enter a custom answer");
+
+            Console.WriteLine();
+        }
+    }
+
+    public void WriteQuestionInputHint(InteractiveQuestionDefinition question)
+    {
+        lock (Lock)
+        {
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            string prompt = question.Type switch
+            {
+                InteractiveQuestionInputType.SingleChoice => question.Required ? "Select one option: " : "Select one option or press Enter to skip: ",
+                InteractiveQuestionInputType.MultiSelect => question.Required ? "Select one or more options (comma-separated): " : "Select options (comma-separated) or press Enter to skip: ",
+                InteractiveQuestionInputType.YesNo => question.Required ? "Answer [y/n]: " : "Answer [y/n] or press Enter to skip: ",
+                InteractiveQuestionInputType.Number => question.Required ? "Enter a number: " : "Enter a number or press Enter to skip: ",
+                _ => question.Required ? "Answer: " : "Answer (press Enter to skip): ",
+            };
+            Console.Write(prompt);
             Console.ResetColor();
         }
     }

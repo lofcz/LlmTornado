@@ -182,7 +182,7 @@ public sealed class AgentDefinitionManager
     public bool IsToolAllowed(string toolName)
     {
         // Built-in agent management tools are always allowed
-        if (toolName is "load_skill" or "list_skills" or "read_reference")
+        if (toolName is "load_skill" or "list_skills" or "read_reference" or "ask_question")
             return true;
 
         if (_activePersonaName is null) return true;

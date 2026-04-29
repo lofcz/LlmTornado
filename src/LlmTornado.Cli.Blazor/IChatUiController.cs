@@ -1,4 +1,5 @@
 using LlmTornado.Cli.Blazor.Models;
+using LlmTornado.Cli.Core.Interactions;
 
 namespace LlmTornado.Cli.Blazor;
 
@@ -113,4 +114,11 @@ public interface IChatUiController : IAsyncDisposable
     /// <param name="approved">True if approved, false if denied.</param>
     /// <param name="alwaysAllow">True if the tool should be auto-approved in the future.</param>
     Task RespondToToolApprovalAsync(string requestId, bool approved, bool alwaysAllow = false);
+
+    /// <summary>
+    /// Respond to a pending interactive question request.
+    /// </summary>
+    /// <param name="requestId">The request ID.</param>
+    /// <param name="response">The collected answers.</param>
+    Task RespondToQuestionInteractionAsync(string requestId, AskQuestionsInteractionResponse response);
 }

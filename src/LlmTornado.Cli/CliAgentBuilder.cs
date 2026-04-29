@@ -4,6 +4,7 @@ using LlmTornado.Agents.DataModels;
 using LlmTornado.Chat.Models;
 using LlmTornado.Cli.Core;
 using LlmTornado.Cli.Core.Agents;
+using LlmTornado.Cli.Core.Interactions;
 using LlmTornado.Cli.Core.Mcp;
 using LlmTornado.Cli.Core.Skills;
 using LlmTornado.Cli.Core.Memory;
@@ -43,6 +44,7 @@ internal sealed class CliAgentBuilder
             activeModel,
             skillManager,
             mcpLoader,
+            toolApproval,
             toolApproval,
             agentManager,
             settings,

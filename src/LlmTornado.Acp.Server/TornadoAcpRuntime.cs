@@ -256,6 +256,7 @@ public class TornadoAcpRuntime : BaseAcpTornadoRuntimeConfiguration
             skillManager,
             mcpLoader,
             toolApproval,
+            null,
             agentManager,
             sessionSettings,
             _detection.OptimizerModel,

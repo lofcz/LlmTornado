@@ -1,5 +1,6 @@
 using LlmTornado.Cli.Blazor.Models;
 using LlmTornado.Cli.Core;
+using LlmTornado.Cli.Core.Interactions;
 
 namespace LlmTornado.Cli.Blazor.Controllers;
 
@@ -20,6 +21,14 @@ public sealed partial class ChatRuntimeController
 
             request.Completion.SetResult(approved);
         }
+        return Task.CompletedTask;
+    }
+
+    public Task RespondToQuestionInteractionAsync(string requestId, AskQuestionsInteractionResponse response)
+    {
+        if (_pendingQuestionInteractions.TryRemove(requestId, out QuestionInteractionRequest? request))
+            request.Completion.SetResult(response);
+
         return Task.CompletedTask;
     }
 
@@ -59,5 +68,22 @@ public sealed partial class ChatRuntimeController
 
         // Await user's decision (blocks this async flow until approved/denied)
         return await request.Completion.Task;
+    }
+
+    async ValueTask<AskQuestionsInteractionResponse> IUserInteractionHandler.AskQuestionsAsync(AskQuestionsInteractionRequest request, CancellationToken cancellationToken)
+    {
+        if (Ui is null)
+            return new AskQuestionsInteractionResponse();
+
+        var pendingRequest = new QuestionInteractionRequest
+        {
+            Interaction = request,
+        };
+
+        _pendingQuestionInteractions[pendingRequest.Id] = pendingRequest;
+        Ui.ShowQuestionInteraction(pendingRequest);
+
+        using CancellationTokenRegistration registration = cancellationToken.Register(() => pendingRequest.Completion.TrySetCanceled(cancellationToken));
+        return await pendingRequest.Completion.Task;
     }
 }

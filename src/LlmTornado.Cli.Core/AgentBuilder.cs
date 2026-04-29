@@ -1,10 +1,12 @@
 using System.Text;
+using System.Text.Json;
 using LlmTornado.Agents;
 using LlmTornado.Agents.ChatRuntime;
 using LlmTornado.Agents.ChatRuntime.RuntimeConfigurations;
 using LlmTornado.Agents.DataModels;
 using LlmTornado.Chat.Models;
 using LlmTornado.Cli.Core.Agents;
+using LlmTornado.Cli.Core.Interactions;
 using LlmTornado.Cli.Core.Mcp;
 using LlmTornado.Cli.Core.Skills;
 using LlmTornado.Cli.Core.Tools;
@@ -23,6 +25,7 @@ public sealed class AgentBuilder
     private readonly SkillManager _skillManager;
     private readonly McpConfigLoader _mcpLoader;
     private readonly IToolApproval _toolApproval;
+    private readonly IUserInteractionHandler? _userInteraction;
     private readonly AgentDefinitionManager _agentManager;
     private readonly AgentSettings _settings;
     private readonly List<Tool>? _additionalTools;
@@ -60,6 +63,7 @@ public sealed class AgentBuilder
         SkillManager skillManager,
         McpConfigLoader mcpLoader,
         IToolApproval toolApproval,
+        IUserInteractionHandler? userInteraction,
         AgentDefinitionManager agentManager,
         AgentSettings settings,
         ChatModel? optimizerModel,
@@ -70,6 +74,7 @@ public sealed class AgentBuilder
         _skillManager = skillManager;
         _mcpLoader = mcpLoader;
         _toolApproval = toolApproval;
+        _userInteraction = userInteraction;
         _agentManager = agentManager;
         _settings = settings;
         _additionalTools = additionalTools;
@@ -300,6 +305,9 @@ public sealed class AgentBuilder
             sb.AppendLine("When a user's task matches a skill, use the `load_skill` tool to activate it.");
             sb.AppendLine("The skill's full instructions will be returned and you should follow them.");
             sb.AppendLine();
+            sb.AppendLine("When you need structured clarification from the user, use the `ask_question` tool.");
+            sb.AppendLine("It supports asking multiple follow-up questions in one tool call.");
+            sb.AppendLine();
         }
 
         string cwd = WorkingDirectory ?? Environment.CurrentDirectory;
@@ -315,6 +323,8 @@ public sealed class AgentBuilder
         tools.Add(BuildLoadSkillTool());
         tools.Add(BuildListSkillsTool());
         tools.Add(BuildReadReferenceTool());
+        if (_userInteraction is not null)
+            tools.Add(BuildAskQuestionTool());
 
         // Script tools from enabled skills (gated by approval system)
         List<Skill> enabledSkills = _skillManager.GetEnabledSkills();
@@ -396,5 +406,180 @@ public sealed class AgentBuilder
             }),
             "read_reference",
             "Read a reference file from a skill's directory. Provide the skill name and relative path.");
+    }
+
+    private Tool BuildAskQuestionTool()
+    {
+        return new Tool(
+            new Func<AskQuestionToolRequest, Task<string>>(request => AskQuestionAsync(request, CancellationToken.None)),
+            "ask_question",
+            "Ask the user one or more follow-up questions. Supports single choice, multi-select, free text, yes/no, numeric input, and optional custom answers.");
+    }
+
+    private async Task<string> AskQuestionAsync(AskQuestionToolRequest request, CancellationToken cancellationToken)
+    {
+        if (_userInteraction is null)
+            return "Interactive question handling is not available in this host.";
+
+        List<string> validationErrors = [];
+        AskQuestionsInteractionRequest interactionRequest = BuildInteractionRequest(request, validationErrors);
+
+        if (validationErrors.Count > 0)
+            return string.Join("\n", validationErrors);
+
+        AskQuestionsInteractionResponse response = await _userInteraction.AskQuestionsAsync(interactionRequest, cancellationToken);
+
+        Dictionary<string, object?> answerMap = new(StringComparer.OrdinalIgnoreCase);
+        List<object> detailedAnswers = [];
+
+        foreach (InteractiveQuestionAnswer answer in response.Answers)
+        {
+            object? value = answer.Type switch
+            {
+                InteractiveQuestionInputType.MultiSelect => answer.SelectedValues,
+                InteractiveQuestionInputType.YesNo => answer.BooleanValue,
+                InteractiveQuestionInputType.Number => answer.NumberValue,
+                _ => answer.TextValue,
+            };
+
+            answerMap[answer.Key] = value;
+            detailedAnswers.Add(new
+            {
+                key = answer.Key,
+                type = ToToolTypeString(answer.Type),
+                value,
+                usedCustomAnswer = answer.UsedCustomAnswer,
+            });
+        }
+
+        return JsonSerializer.Serialize(new
+        {
+            answers = answerMap,
+            detailedAnswers,
+        }, new JsonSerializerOptions
+        {
+            WriteIndented = true,
+        });
+    }
+
+    private static AskQuestionsInteractionRequest BuildInteractionRequest(AskQuestionToolRequest request, List<string> validationErrors)
+    {
+        AskQuestionsInteractionRequest interactionRequest = new()
+        {
+            Title = string.IsNullOrWhiteSpace(request.Title) ? "Questions" : request.Title.Trim(),
+            Message = string.IsNullOrWhiteSpace(request.Message) ? null : request.Message.Trim(),
+        };
+
+        if (request.Questions.Count == 0)
+        {
+            validationErrors.Add("ask_question requires at least one question.");
+            return interactionRequest;
+        }
+
+        HashSet<string> keys = new(StringComparer.OrdinalIgnoreCase);
+        foreach (AskQuestionToolQuestion question in request.Questions)
+        {
+            if (string.IsNullOrWhiteSpace(question.Key))
+            {
+                validationErrors.Add("Each ask_question item requires a non-empty key.");
+                continue;
+            }
+
+            if (!keys.Add(question.Key))
+            {
+                validationErrors.Add($"Duplicate ask_question key '{question.Key}'.");
+                continue;
+            }
+
+            if (string.IsNullOrWhiteSpace(question.Prompt))
+            {
+                validationErrors.Add($"Question '{question.Key}' requires a prompt.");
+                continue;
+            }
+
+            if (!TryParseQuestionType(question.Type, out InteractiveQuestionInputType inputType))
+            {
+                validationErrors.Add($"Question '{question.Key}' has unsupported type '{question.Type}'. Use single_choice, multi_select, text, yes_no, or number.");
+                continue;
+            }
+
+            List<InteractiveQuestionOption> options = question.Options
+                .Where(option => !string.IsNullOrWhiteSpace(option))
+                .Select(option => new InteractiveQuestionOption
+                {
+                    Value = option.Trim(),
+                    Label = option.Trim(),
+                })
+                .ToList();
+
+            if ((inputType is InteractiveQuestionInputType.SingleChoice or InteractiveQuestionInputType.MultiSelect) && options.Count == 0)
+            {
+                validationErrors.Add($"Question '{question.Key}' requires at least one option for type '{question.Type}'.");
+                continue;
+            }
+
+            interactionRequest.Questions.Add(new InteractiveQuestionDefinition
+            {
+                Key = question.Key.Trim(),
+                Prompt = question.Prompt.Trim(),
+                Description = string.IsNullOrWhiteSpace(question.Description) ? null : question.Description.Trim(),
+                Type = inputType,
+                Required = question.Required,
+                AllowCustomAnswer = question.AllowCustomAnswer,
+                Placeholder = string.IsNullOrWhiteSpace(question.Placeholder) ? null : question.Placeholder.Trim(),
+                Options = options,
+                MinValue = question.MinValue,
+                MaxValue = question.MaxValue,
+            });
+        }
+
+        if (interactionRequest.Questions.Count == 0 && validationErrors.Count == 0)
+            validationErrors.Add("ask_question did not contain any valid questions.");
+
+        return interactionRequest;
+    }
+
+    private static bool TryParseQuestionType(string? rawType, out InteractiveQuestionInputType inputType)
+    {
+        switch (rawType?.Trim().ToLowerInvariant())
+        {
+            case "single_choice":
+            case "singlechoice":
+            case "choice":
+                inputType = InteractiveQuestionInputType.SingleChoice;
+                return true;
+            case "multi_select":
+            case "multiselect":
+                inputType = InteractiveQuestionInputType.MultiSelect;
+                return true;
+            case "text":
+                inputType = InteractiveQuestionInputType.Text;
+                return true;
+            case "yes_no":
+            case "yesno":
+            case "boolean":
+            case "bool":
+                inputType = InteractiveQuestionInputType.YesNo;
+                return true;
+            case "number":
+            case "numeric":
+                inputType = InteractiveQuestionInputType.Number;
+                return true;
+            default:
+                inputType = InteractiveQuestionInputType.Text;
+                return false;
+        }
+    }
+
+    private static string ToToolTypeString(InteractiveQuestionInputType type)
+    {
+        return type switch
+        {
+            InteractiveQuestionInputType.SingleChoice => "single_choice",
+            InteractiveQuestionInputType.MultiSelect => "multi_select",
+            InteractiveQuestionInputType.YesNo => "yes_no",
+            InteractiveQuestionInputType.Number => "number",
+            _ => "text",
+        };
     }
 }

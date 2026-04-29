@@ -4,6 +4,7 @@ using LlmTornado.Chat.Models;
 using LlmTornado.Cli.Blazor.Models;
 using LlmTornado.Cli.Core;
 using LlmTornado.Cli.Core.Agents;
+using LlmTornado.Cli.Core.Interactions;
 using LlmTornado.Cli.Core.Mcp;
 using LlmTornado.Cli.Core.Memory;
 using LlmTornado.Cli.Core.Providers;
@@ -28,7 +29,7 @@ namespace LlmTornado.Cli.Blazor.Controllers;
 ///   - ChatRuntimeController.ToolApproval.cs  → IToolApproval + approval UI flow
 ///   - ChatRuntimeController.Helpers.cs  → settings, mapping, utilities
 /// </summary>
-public sealed partial class ChatRuntimeController : IChatUiController, ISettingsController, IToolApproval, ISettingsPersistence
+public sealed partial class ChatRuntimeController : IChatUiController, ISettingsController, IToolApproval, IUserInteractionHandler, ISettingsPersistence
 {
     private readonly ChatRuntimeControllerOptions _options;
 
@@ -49,6 +50,7 @@ public sealed partial class ChatRuntimeController : IChatUiController, ISettings
 
     // Tool approval
     private readonly ConcurrentDictionary<string, ToolApprovalRequest> _pendingApprovals = new();
+    private readonly ConcurrentDictionary<string, QuestionInteractionRequest> _pendingQuestionInteractions = new();
     private readonly HashSet<string> _preApprovedTools = new(StringComparer.OrdinalIgnoreCase);
 
     // Conversation state
@@ -177,7 +179,7 @@ public sealed partial class ChatRuntimeController : IChatUiController, ISettings
             // 9. Build the agent
             _agentBuilder = new AgentBuilder(
                 _api, activeModel, _skillManager, _mcpLoader,
-                this, _agentManager, _settings,
+                this, this, _agentManager, _settings,
                 _detectionResult.OptimizerModel,
                 _options.AdditionalTools);
             if (_options.WorkingDirectory is not null)

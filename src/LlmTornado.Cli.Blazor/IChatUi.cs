@@ -109,6 +109,13 @@ public interface IChatUi
     /// <param name="request">The approval request containing tool details and the completion source.</param>
     void ShowToolApproval(ToolApprovalRequest request);
 
+    /// <summary>
+    /// Display an interactive question workflow to the user.
+    /// The controller awaits <see cref="QuestionInteractionRequest.Completion"/> for the user's answers.
+    /// </summary>
+    /// <param name="request">The question interaction request.</param>
+    void ShowQuestionInteraction(QuestionInteractionRequest request);
+
     // ─────────────────────────────────────────────
     // Configuration dropdowns
     // ─────────────────────────────────────────────

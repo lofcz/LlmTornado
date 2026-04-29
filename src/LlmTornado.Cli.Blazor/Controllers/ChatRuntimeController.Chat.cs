@@ -102,6 +102,12 @@ public sealed partial class ChatRuntimeController
         }
         _pendingApprovals.Clear();
 
+        foreach (var kvp in _pendingQuestionInteractions)
+        {
+            kvp.Value.Completion.TrySetResult(new LlmTornado.Cli.Core.Interactions.AskQuestionsInteractionResponse());
+        }
+        _pendingQuestionInteractions.Clear();
+
         return Task.CompletedTask;
     }
 

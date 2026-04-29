@@ -1,17 +1,29 @@
 using LlmTornado.Cli;
+using LlmTornado.Cli.Core.Interactions;
 
 namespace LlmTornado.Cli.Tests;
 
 [TestFixture]
 public class ToolApprovalManagerTests
 {
+    private TextReader? _originalIn;
+
     [SetUp]
     public void SetUp()
     {
+        _originalIn = Console.In;
+
         // Delete persisted approvals to ensure test isolation
         string path = CliStorage.ToolApprovalsPath;
         if (File.Exists(path))
             File.Delete(path);
+    }
+
+    [TearDown]
+    public void TearDown()
+    {
+        if (_originalIn is not null)
+            Console.SetIn(_originalIn);
     }
 
     #region ParseToolName (tested via HandleToolPermissionRequest behavior)
@@ -112,6 +124,119 @@ public class ToolApprovalManagerTests
         string requestMessage = "Tool: my-tool\nArguments: {\"arg\": \"value\"}";
         bool allowed = await manager.HandleToolPermissionRequest(requestMessage);
         Assert.That(allowed, Is.True);
+    }
+
+    #endregion
+
+    #region AskQuestionsAsync
+
+    [Test]
+    public async Task AskQuestionsAsync_Collects_SingleChoice_And_Text_Answers()
+    {
+        Console.SetIn(new StringReader("2" + Environment.NewLine + "Needs approval" + Environment.NewLine));
+
+        ConsoleRenderer renderer = new();
+        ToolApprovalManager manager = new(renderer);
+
+        AskQuestionsInteractionResponse response = await manager.AskQuestionsAsync(new AskQuestionsInteractionRequest
+        {
+            Title = "Follow up",
+            Questions =
+            [
+                new InteractiveQuestionDefinition
+                {
+                    Key = "priority",
+                    Prompt = "Choose priority",
+                    Type = InteractiveQuestionInputType.SingleChoice,
+                    Options =
+                    [
+                        new InteractiveQuestionOption { Value = "low", Label = "Low" },
+                        new InteractiveQuestionOption { Value = "high", Label = "High" },
+                    ],
+                },
+                new InteractiveQuestionDefinition
+                {
+                    Key = "note",
+                    Prompt = "Add a note",
+                    Type = InteractiveQuestionInputType.Text,
+                },
+            ],
+        });
+
+        Assert.That(response.Answers, Has.Count.EqualTo(2));
+        Assert.That(response.Answers[0].TextValue, Is.EqualTo("high"));
+        Assert.That(response.Answers[1].TextValue, Is.EqualTo("Needs approval"));
+    }
+
+    [Test]
+    public async Task AskQuestionsAsync_Allows_Custom_And_MultiSelect_Answers()
+    {
+        Console.SetIn(new StringReader("0" + Environment.NewLine + "orange" + Environment.NewLine + "1,0" + Environment.NewLine + "other" + Environment.NewLine));
+
+        ConsoleRenderer renderer = new();
+        ToolApprovalManager manager = new(renderer);
+
+        AskQuestionsInteractionResponse response = await manager.AskQuestionsAsync(new AskQuestionsInteractionRequest
+        {
+            Title = "Follow up",
+            Questions =
+            [
+                new InteractiveQuestionDefinition
+                {
+                    Key = "color",
+                    Prompt = "Pick one color",
+                    Type = InteractiveQuestionInputType.SingleChoice,
+                    AllowCustomAnswer = true,
+                    Options =
+                    [
+                        new InteractiveQuestionOption { Value = "blue", Label = "Blue" },
+                        new InteractiveQuestionOption { Value = "green", Label = "Green" },
+                    ],
+                },
+                new InteractiveQuestionDefinition
+                {
+                    Key = "labels",
+                    Prompt = "Pick labels",
+                    Type = InteractiveQuestionInputType.MultiSelect,
+                    AllowCustomAnswer = true,
+                    Options =
+                    [
+                        new InteractiveQuestionOption { Value = "alpha", Label = "Alpha" },
+                        new InteractiveQuestionOption { Value = "beta", Label = "Beta" },
+                    ],
+                },
+            ],
+        });
+
+        Assert.That(response.Answers[0].TextValue, Is.EqualTo("orange"));
+        Assert.That(response.Answers[0].UsedCustomAnswer, Is.True);
+        Assert.That(response.Answers[1].SelectedValues, Is.EquivalentTo(new[] { "alpha", "other" }));
+        Assert.That(response.Answers[1].UsedCustomAnswer, Is.True);
+    }
+
+    [Test]
+    public async Task AskQuestionsAsync_Retries_Invalid_Number_Input()
+    {
+        Console.SetIn(new StringReader("abc" + Environment.NewLine + "42" + Environment.NewLine));
+
+        ConsoleRenderer renderer = new();
+        ToolApprovalManager manager = new(renderer);
+
+        AskQuestionsInteractionResponse response = await manager.AskQuestionsAsync(new AskQuestionsInteractionRequest
+        {
+            Title = "Numbers",
+            Questions =
+            [
+                new InteractiveQuestionDefinition
+                {
+                    Key = "count",
+                    Prompt = "Enter a number",
+                    Type = InteractiveQuestionInputType.Number,
+                },
+            ],
+        });
+
+        Assert.That(response.Answers[0].NumberValue, Is.EqualTo(42));
     }
 
     #endregion

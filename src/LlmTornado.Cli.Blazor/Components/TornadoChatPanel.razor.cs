@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Components.Web;
 using LlmTornado.Cli.Blazor.Models;
+using LlmTornado.Cli.Core.Interactions;
 
 namespace LlmTornado.Cli.Blazor.Components
 {
@@ -32,6 +33,7 @@ namespace LlmTornado.Cli.Blazor.Components
         private bool _isSending;
         private bool _showSidebar = true;
         private ToolApprovalRequest? _pendingApproval;
+        private QuestionInteractionRequest? _pendingQuestionInteraction;
         private ChatUiContextWindowStatus _contextWindowStatus = new();
         private ElementReference _messageContainer;
         private string? _selectedReasoningEffort;
@@ -189,6 +191,15 @@ namespace LlmTornado.Cli.Blazor.Components
             });
         }
 
+        public void ShowQuestionInteraction(QuestionInteractionRequest request)
+        {
+            InvokeAsync(() =>
+            {
+                _pendingQuestionInteraction = request;
+                StateHasChanged();
+            });
+        }
+
         public void SetModels(List<ChatUiModel> models)
         {
             InvokeAsync(() => { _models = models; StateHasChanged(); });
@@ -280,6 +291,7 @@ namespace LlmTornado.Cli.Blazor.Components
                 _messages.Clear();
                 _streamingMessages.Clear();
                 _pendingApproval = null;
+                _pendingQuestionInteraction = null;
                 StateHasChanged();
             });
         }
@@ -355,6 +367,16 @@ namespace LlmTornado.Cli.Blazor.Components
             {
                 _ = Controller.RespondToToolApprovalAsync(_pendingApproval.Id, response.Approved, response.AlwaysAllow);
                 _pendingApproval = null;
+                StateHasChanged();
+            }
+        }
+
+        private async Task HandleQuestionInteractionResponseAsync(AskQuestionsInteractionResponse response)
+        {
+            if (_pendingQuestionInteraction is not null)
+            {
+                await Controller.RespondToQuestionInteractionAsync(_pendingQuestionInteraction.Id, response);
+                _pendingQuestionInteraction = null;
                 StateHasChanged();
             }
         }
