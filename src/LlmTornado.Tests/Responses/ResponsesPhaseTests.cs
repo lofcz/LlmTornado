@@ -1,5 +1,6 @@
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
+using LlmTornado.Code;
 using LlmTornado.Demo;
 using LlmTornado.Responses;
 using LlmTornado.Responses.Events;

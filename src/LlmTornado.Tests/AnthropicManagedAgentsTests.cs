@@ -1,3 +1,4 @@
+using System.Linq;
 using LlmTornado.Code;
 using LlmTornado.Common;
 using LlmTornado.ManagedAgents.Anthropic;
@@ -62,16 +63,16 @@ public class AnthropicManagedAgentsTests
     [Test]
     public void DefineOutcomeEvent_SerializesTextRubric()
     {
-        AnthropicManagedAgentSessionEventsSendRequest request = new AnthropicManagedAgentSessionEventsSendRequest
+        AnthropicManagedAgentSendEventsRequest request = new AnthropicManagedAgentSendEventsRequest
         {
             Events =
             [
-                AnthropicManagedAgentSessionEvent.DefineOutcome(new AnthropicManagedAgentUserDefineOutcomeEvent
+                new AnthropicManagedAgentUserDefineOutcomeEvent
                 {
                     Description = "Write summary.md",
                     Rubric = AnthropicManagedAgentRubric.Text("# Rubric\n- Has title"),
                     MaxIterations = 5
-                })
+                }
             ]
         };
 
@@ -90,7 +91,7 @@ public class AnthropicManagedAgentsTests
     {
         AnthropicManagedAgentSessionCreateRequest request = new AnthropicManagedAgentSessionCreateRequest
         {
-            Agent = "agent_abc",
+            Agent = AnthropicManagedAgentSessionAgent.FromId("agent_abc"),
             EnvironmentId = "env_xyz",
             Title = "Test session"
         };
@@ -113,14 +114,14 @@ public class AnthropicManagedAgentsTests
 
         string suffix = Guid.NewGuid().ToString("N")[..8];
 
-        HttpCallResult<AnthropicManagedAgentEnvironment> envResult = await _api.AnthropicManagedAgentSessions.Environments.Create(
+        HttpCallResult<AnthropicManagedAgentEnvironment> envResult = await _api.AnthropicManagedAgentEnvironments.Create(
             new AnthropicManagedAgentEnvironmentCreateRequest
             {
                 Name = $"tornado-test-env-{suffix}",
                 Description = "LlmTornado managed agents integration test"
             });
 
-        Assert.That(envResult.Ok, Is.True, envResult.Exception?.Message ?? envResult.Error?.Message);
+        Assert.That(envResult.Ok, Is.True, envResult.Exception?.Message ?? envResult.Response);
         Assert.That(envResult.Data?.Id, Is.Not.Null.And.Not.Empty);
 
         HttpCallResult<AnthropicManagedAgent> workerResult = await _api.AnthropicManagedAgents.Create(new AnthropicManagedAgentCreateRequest
@@ -131,7 +132,7 @@ public class AnthropicManagedAgentsTests
             Tools = [new AnthropicManagedAgentToolset()]
         });
 
-        Assert.That(workerResult.Ok, Is.True, workerResult.Exception?.Message ?? workerResult.Error?.Message);
+        Assert.That(workerResult.Ok, Is.True, workerResult.Exception?.Message ?? workerResult.Response);
 
         HttpCallResult<AnthropicManagedAgent> coordinatorResult = await _api.AnthropicManagedAgents.Create(new AnthropicManagedAgentCreateRequest
         {
@@ -152,29 +153,36 @@ public class AnthropicManagedAgentsTests
         HttpCallResult<AnthropicManagedAgentSession> sessionResult = await _api.AnthropicManagedAgentSessions.Create(
             new AnthropicManagedAgentSessionCreateRequest
             {
-                Agent = coordinatorResult.Data!.Id!,
+                Agent = AnthropicManagedAgentSessionAgent.FromId(coordinatorResult.Data!.Id!),
                 EnvironmentId = envResult.Data!.Id!,
                 Title = $"multiagent-outcome-{suffix}"
             });
 
-        Assert.That(sessionResult.Ok, Is.True, sessionResult.Exception?.Message ?? sessionResult.Error?.Message);
+        Assert.That(sessionResult.Ok, Is.True, sessionResult.Exception?.Message ?? sessionResult.Response);
         string sessionId = sessionResult.Data!.Id!;
 
-        HttpCallResult<AnthropicManagedAgentSessionEventsSendResponse> outcomeResult =
-            await _api.AnthropicManagedAgentSessions.DefineOutcome(sessionId, new AnthropicManagedAgentUserDefineOutcomeEvent
+        HttpCallResult<object> outcomeResult = await _api.AnthropicManagedAgentSessions.SendEvents(
+            sessionId,
+            new AnthropicManagedAgentSendEventsRequest
             {
-                Description = "Create a one-line text file named result.txt containing exactly: OUTCOME_OK",
-                Rubric = AnthropicManagedAgentRubric.Text("- result.txt exists\n- Content is exactly OUTCOME_OK"),
-                MaxIterations = 3
+                Events =
+                [
+                    new AnthropicManagedAgentUserDefineOutcomeEvent
+                    {
+                        Description = "Create a one-line text file named result.txt containing exactly: OUTCOME_OK",
+                        Rubric = AnthropicManagedAgentRubric.Text("- result.txt exists\n- Content is exactly OUTCOME_OK"),
+                        MaxIterations = 3
+                    }
+                ]
             });
 
-        Assert.That(outcomeResult.Ok, Is.True, outcomeResult.Exception?.Message ?? outcomeResult.Error?.Message);
+        Assert.That(outcomeResult.Ok, Is.True, outcomeResult.Exception?.Message ?? outcomeResult.Response);
 
-        HttpCallResult<AnthropicManagedAgentSessionThreadsListResponse> threadsResult =
-            await _api.AnthropicManagedAgentSessions.ListThreads(sessionId);
+        HttpCallResult<ListResponse<AnthropicManagedAgentEvent>> eventsResult =
+            await _api.AnthropicManagedAgentSessions.ListEvents(sessionId);
 
-        Assert.That(threadsResult.Ok, Is.True);
-        Assert.That(threadsResult.Data?.Data, Is.Not.Null);
+        Assert.That(eventsResult.Ok, Is.True);
+        Assert.That(eventsResult.Data?.Items, Is.Not.Null);
 
         // Poll session until idle or timeout
         AnthropicManagedAgentSession? session = null;
@@ -192,7 +200,14 @@ public class AnthropicManagedAgentsTests
 
         Assert.That(session, Is.Not.Null);
         Assert.That(session!.Status, Is.AnyOf("idle", "terminated", "running"));
-        Assert.That(session.OutcomeEvaluations, Is.Not.Null.And.Not.Empty);
+
+        HttpCallResult<ListResponse<AnthropicManagedAgentEvent>> finalEvents =
+            await _api.AnthropicManagedAgentSessions.ListEvents(sessionId);
+        Assert.That(finalEvents.Ok, Is.True);
+        Assert.That(
+            finalEvents.Data?.Items.Any(e => e.Type?.Contains("outcome") == true),
+            Is.True,
+            "Expected at least one outcome-related session event.");
     }
 
     [Test]
@@ -206,9 +221,9 @@ public class AnthropicManagedAgentsTests
 
         string suffix = Guid.NewGuid().ToString("N")[..8];
 
-        HttpCallResult<AnthropicManagedAgentEnvironment> envResult = await _api.AnthropicManagedAgentSessions.Environments.Create(
+        HttpCallResult<AnthropicManagedAgentEnvironment> envResult = await _api.AnthropicManagedAgentEnvironments.Create(
             new AnthropicManagedAgentEnvironmentCreateRequest { Name = $"tornado-msg-env-{suffix}" });
-        Assert.That(envResult.Ok, Is.True, envResult.Error?.Message);
+        Assert.That(envResult.Ok, Is.True, envResult.Exception?.Message ?? envResult.Response);
 
         HttpCallResult<AnthropicManagedAgent> agentResult = await _api.AnthropicManagedAgents.Create(new AnthropicManagedAgentCreateRequest
         {
@@ -222,13 +237,14 @@ public class AnthropicManagedAgentsTests
         HttpCallResult<AnthropicManagedAgentSession> sessionResult = await _api.AnthropicManagedAgentSessions.Create(
             new AnthropicManagedAgentSessionCreateRequest
             {
-                Agent = agentResult.Data!.Id!,
+                Agent = AnthropicManagedAgentSessionAgent.FromId(agentResult.Data!.Id!),
                 EnvironmentId = envResult.Data!.Id!
             });
         Assert.That(sessionResult.Ok, Is.True);
 
-        HttpCallResult<AnthropicManagedAgentSessionEventsSendResponse> msgResult =
-            await _api.AnthropicManagedAgentSessions.SendMessage(sessionResult.Data!.Id!, "Say hello in one word.");
+        HttpCallResult<object> msgResult = await _api.AnthropicManagedAgentSessions.SendEvents(
+            sessionResult.Data!.Id!,
+            AnthropicManagedAgentSendEventsRequest.UserMessage("Say hello in one word."));
         Assert.That(msgResult.Ok, Is.True);
     }
 }

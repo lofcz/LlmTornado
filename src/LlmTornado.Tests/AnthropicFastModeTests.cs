@@ -2,7 +2,9 @@ using System.Net.Http;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Code;
+using LlmTornado.Code.Models;
 using LlmTornado.Code.Vendor;
+using LlmTornado.Common;
 using LlmTornado.Demo;
 using Newtonsoft.Json.Linq;
 
@@ -228,7 +230,7 @@ public class AnthropicFastModeIntegrationTests
     [Explicit("Requires API key, fast mode access, and makes real API calls")]
     public async Task NextOpus_FastMode_ReturnsResponse()
     {
-        ChatResult result = await _api!.Chat.CreateChatCompletion(new ChatRequest
+        HttpCallResult<ChatResult> result = await _api!.Chat.CreateChatCompletionSafe(new ChatRequest
         {
             Model = ChatModel.Anthropic.Claude47.NextOpus,
             Messages = [new ChatMessage(ChatMessageRoles.User, "Reply with exactly: next-opus-fast-ok")],
@@ -236,10 +238,9 @@ public class AnthropicFastModeIntegrationTests
             Speed = ChatRequestSpeeds.Fast
         });
 
-        Assert.That(result, Is.Not.Null);
-        Assert.That(result.Ok, Is.True, result.Exception?.Message);
-        Assert.That(result.Choices, Is.Not.Empty);
-        Assert.That(result.Choices![0].Message?.Content, Does.Contain("next-opus-fast-ok").IgnoreCase);
-        Assert.That(result.Speed, Is.EqualTo(ChatRequestSpeeds.Fast));
+        Assert.That(result.Ok, Is.True, result.Response);
+        Assert.That(result.Data?.Choices, Is.Not.Empty);
+        Assert.That(result.Data!.Choices![0].Message?.Content, Does.Contain("next-opus-fast-ok").IgnoreCase);
+        Assert.That(result.Data.Speed, Is.EqualTo(ChatRequestSpeeds.Fast));
     }
 }

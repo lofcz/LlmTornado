@@ -1,3 +1,4 @@
+using LlmTornado;
 using LlmTornado.Chat.Models;
 using LlmTornado.Code;
 using LlmTornado.Common;
@@ -13,10 +14,7 @@ namespace LlmTornado.Tests;
 [TestFixture]
 public class ComputerToolTests
 {
-    private static readonly JsonSerializer Serializer = JsonSerializer.Create(new JsonSerializerSettings
-    {
-        NullValueHandling = NullValueHandling.Ignore
-    });
+    private static readonly JsonSerializer Serializer = JsonSerializer.Create(EndpointBase.NullSettings);
 
     [Test]
     public void ResponseComputerTool_SerializesAsComputerType()
@@ -50,10 +48,10 @@ public class ComputerToolTests
     [Test]
     public void ResponseToolConverter_DeserializesComputerAndPreviewTools()
     {
-        ResponseTool gaTool = JsonConvert.DeserializeObject<ResponseTool>("{\"type\":\"computer\"}", Serializer)!;
+        ResponseTool gaTool = JsonConvert.DeserializeObject<ResponseTool>("{\"type\":\"computer\"}", EndpointBase.NullSettings)!;
         ResponseTool previewTool = JsonConvert.DeserializeObject<ResponseTool>(
             "{\"type\":\"computer_use_preview\",\"display_width\":1024,\"display_height\":768,\"environment\":\"mac\"}",
-            Serializer)!;
+            EndpointBase.NullSettings)!;
 
         Assert.That(gaTool, Is.InstanceOf<ResponseComputerTool>());
         Assert.That(gaTool.Type, Is.EqualTo("computer"));
@@ -83,7 +81,7 @@ public class ComputerToolTests
             }
             """;
 
-        ResponseComputerToolCallItem call = JsonConvert.DeserializeObject<ResponseComputerToolCallItem>(json, Serializer)!;
+        ResponseComputerToolCallItem call = JsonConvert.DeserializeObject<ResponseComputerToolCallItem>(json, EndpointBase.NullSettings)!;
 
         Assert.That(call.Type, Is.EqualTo("computer_call"));
         Assert.That(call.Action, Is.Null);
@@ -112,7 +110,7 @@ public class ComputerToolTests
             }
             """;
 
-        ResponseComputerToolCallItem call = JsonConvert.DeserializeObject<ResponseComputerToolCallItem>(json, Serializer)!;
+        ResponseComputerToolCallItem call = JsonConvert.DeserializeObject<ResponseComputerToolCallItem>(json, EndpointBase.NullSettings)!;
 
         Assert.That(call.Actions, Is.Null.Or.Empty);
         Assert.That(call.Action, Is.InstanceOf<ScreenshotAction>());
@@ -131,8 +129,8 @@ public class ComputerToolTests
             Status = ResponseMessageStatuses.Completed
         };
 
-        string json = JsonConvert.SerializeObject(output, Serializer);
-        ResponseInputItem? roundTripped = JsonConvert.DeserializeObject<ResponseInputItem>(json, Serializer);
+        string json = JsonConvert.SerializeObject(output, EndpointBase.NullSettings);
+        ResponseInputItem? roundTripped = JsonConvert.DeserializeObject<ResponseInputItem>(json, EndpointBase.NullSettings);
 
         Assert.That(roundTripped, Is.InstanceOf<ComputerToolCallOutput>());
         ComputerToolCallOutput restored = (ComputerToolCallOutput)roundTripped!;

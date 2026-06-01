@@ -1,6 +1,7 @@
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Code;
+using LlmTornado.Common;
 using LlmTornado.Demo;
 using LlmTornado.Files;
 using LlmTornado.Responses;
@@ -111,7 +112,7 @@ public class OpenAiInputFileIntegrationTests
 
         Assert.That(upload.Ok, Is.True);
 
-        ChatResult chat = await _api.Chat.CreateChatCompletion(new ChatRequest
+        HttpCallResult<ChatResult> chat = await _api.Chat.CreateChatCompletionSafe(new ChatRequest
         {
             Model = ChatModel.OpenAi.Gpt5.V5Mini,
             Messages =
@@ -124,8 +125,8 @@ public class OpenAiInputFileIntegrationTests
         });
 
         Assert.That(chat.Ok, Is.True, () => chat.Exception?.Message ?? "Chat failed");
-        Assert.That(chat.Choices?[0].Message?.Content, Is.Not.Null.And.Not.Empty);
-        TestContext.WriteLine($"Chat PDF => {chat.Choices![0].Message!.Content}");
+        Assert.That(chat.Data?.Choices?[0].Message?.Content, Is.Not.Null.And.Not.Empty);
+        TestContext.WriteLine($"Chat PDF => {chat.Data!.Choices![0].Message!.Content}");
     }
 
     [Test]

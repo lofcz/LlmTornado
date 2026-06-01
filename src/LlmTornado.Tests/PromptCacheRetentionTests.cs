@@ -205,14 +205,14 @@ public class PromptCacheRetentionTests
     [Explicit("Calls OpenAI production APIs")]
     public async Task Integration_ExtendedCaching_Responses_SecondRequestUsesCache()
     {
-        RequireOpenAiApi(out TornadoApi api);
+        TornadoApi api = await RequireOpenAiApiAsync();
 
         string prefix = BuildCacheablePrefix();
         string cacheKey = $"llmtornado-responses-cache-{Guid.NewGuid():N}";
 
         ResponseRequest warmRequest = new ResponseRequest(ChatModel.OpenAi.Gpt54.V54, prefix + "\n\nReply with exactly: warm")
         {
-            Reasoning = new ResponseReasoningConfiguration { Effort = ResponseReasoningEfforts.None },
+            Reasoning = new ReasoningConfiguration { Effort = ResponseReasoningEfforts.None },
             PromptCacheKey = cacheKey,
             PromptCacheRetention = PromptCacheRetention.TwentyFourHours,
             MaxOutputTokens = 16
@@ -220,7 +220,7 @@ public class PromptCacheRetentionTests
 
         ResponseRequest hitRequest = new ResponseRequest(ChatModel.OpenAi.Gpt54.V54, prefix + "\n\nReply with exactly: hit")
         {
-            Reasoning = new ResponseReasoningConfiguration { Effort = ResponseReasoningEfforts.None },
+            Reasoning = new ReasoningConfiguration { Effort = ResponseReasoningEfforts.None },
             PromptCacheKey = cacheKey,
             PromptCacheRetention = PromptCacheRetention.TwentyFourHours,
             MaxOutputTokens = 16

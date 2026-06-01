@@ -110,12 +110,12 @@ public class ResponsesWebSocketTests
 
         Assert.That(connection.State, Is.EqualTo(System.Net.WebSockets.WebSocketState.Open));
 
-        List<string> eventTypes = [];
+        List<ResponseEventTypes> eventTypes = [];
         ResponseStreamEventHandler handler = new ResponseStreamEventHandler
         {
             OnEvent = evt =>
             {
-                eventTypes.Add(evt.Type);
+                eventTypes.Add(evt.EventType);
                 return ValueTask.CompletedTask;
             }
         };
@@ -132,7 +132,7 @@ public class ResponsesWebSocketTests
 
         Assert.That(first, Is.Not.Null);
         Assert.That(first!.OutputText, Does.Contain("websocket-ok").IgnoreCase);
-        Assert.That(eventTypes, Does.Contain("response.completed"));
+        Assert.That(eventTypes, Does.Contain(ResponseEventTypes.ResponseCompleted));
 
         ResponseResult? second = await connection.CreateResponseAsync(new ResponseRequest
         {

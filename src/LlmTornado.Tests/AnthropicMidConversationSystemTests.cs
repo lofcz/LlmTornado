@@ -1,6 +1,7 @@
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Code;
+using LlmTornado.Common;
 using LlmTornado.Demo;
 using LlmTornado.Tokenize;
 using Newtonsoft.Json.Linq;
@@ -128,7 +129,7 @@ public class AnthropicMidConversationSystemTests
             Assert.Ignore("Anthropic API key not configured. Set ANTHROPIC_API_KEY or provide apiKey.json.");
         }
 
-        ChatResult result = await api!.Chat.CreateChatCompletion(new ChatRequest
+        HttpCallResult<ChatResult> result = await api!.Chat.CreateChatCompletionSafe(new ChatRequest
         {
             Model = ChatModel.Anthropic.Claude46.Opus,
             MaxTokens = 256,
@@ -142,10 +143,10 @@ public class AnthropicMidConversationSystemTests
             ]
         });
 
-        Assert.That(result.Ok, Is.True, () => result.Exception?.Message ?? "Request failed");
-        Assert.That(result.Choices, Is.Not.Null.And.Not.Empty);
+        Assert.That(result.Ok, Is.True, () => result.Exception?.Message ?? result.Response ?? "Request failed");
+        Assert.That(result.Data?.Choices, Is.Not.Null.And.Not.Empty);
 
-        string? content = result.Choices![0].Message?.Content;
+        string? content = result.Data!.Choices![0].Message?.Content;
         Assert.That(content, Is.Not.Null.And.Not.Empty);
         Assert.That(content, Does.Contain("mid-system-ok").IgnoreCase);
         TestContext.WriteLine($"Anthropic mid-conversation system response: {content}");

@@ -2,6 +2,7 @@ using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Code;
+using LlmTornado.Common;
 using LlmTornado.Demo;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -260,7 +261,7 @@ public class AnthropicAdaptiveThinkingTests
             Assert.Ignore("Anthropic API key not configured.");
         }
 
-        ChatResult result = await _api.Chat.CreateChatCompletion(new ChatRequest
+        HttpCallResult<ChatResult> result = await _api.Chat.CreateChatCompletionSafe(new ChatRequest
         {
             Model = ChatModel.Anthropic.Claude46.Opus,
             MaxTokens = 256,
@@ -268,10 +269,9 @@ public class AnthropicAdaptiveThinkingTests
             Messages = [new ChatMessage(ChatMessageRoles.User, "Reply with exactly: adaptive-ok")]
         });
 
-        Assert.That(result, Is.Not.Null);
-        Assert.That(result.Ok, Is.True, result.Exception?.Message);
-        Assert.That(result.Choices, Is.Not.Empty);
-        Assert.That(result.Choices![0].Message?.Content, Does.Contain("adaptive-ok").IgnoreCase);
+        Assert.That(result.Ok, Is.True, result.Exception?.Message ?? result.Response);
+        Assert.That(result.Data?.Choices, Is.Not.Empty);
+        Assert.That(result.Data!.Choices![0].Message?.Content, Does.Contain("adaptive-ok").IgnoreCase);
     }
 
     [Test]
@@ -283,7 +283,7 @@ public class AnthropicAdaptiveThinkingTests
             Assert.Ignore("Anthropic API key not configured.");
         }
 
-        ChatResult result = await _api.Chat.CreateChatCompletion(new ChatRequest
+        HttpCallResult<ChatResult> result = await _api.Chat.CreateChatCompletionSafe(new ChatRequest
         {
             Model = ChatModel.Anthropic.Claude47.Opus,
             MaxTokens = 256,
@@ -297,10 +297,9 @@ public class AnthropicAdaptiveThinkingTests
             Messages = [new ChatMessage(ChatMessageRoles.User, "Reply with exactly: next-opus-ok")]
         });
 
-        Assert.That(result, Is.Not.Null);
-        Assert.That(result.Ok, Is.True, result.Exception?.Message);
-        Assert.That(result.Choices, Is.Not.Empty);
-        Assert.That(result.Choices![0].Message?.Content, Does.Contain("next-opus-ok").IgnoreCase);
+        Assert.That(result.Ok, Is.True, result.Exception?.Message ?? result.Response);
+        Assert.That(result.Data?.Choices, Is.Not.Empty);
+        Assert.That(result.Data!.Choices![0].Message?.Content, Does.Contain("next-opus-ok").IgnoreCase);
     }
 
     private JObject ParseBody(ChatRequest request)

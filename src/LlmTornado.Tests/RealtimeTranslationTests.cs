@@ -1,5 +1,7 @@
+using System.IO;
 using System.Text;
 using LlmTornado.Audio;
+using LlmTornado.Audio.Models;
 using LlmTornado.Chat.Models;
 using LlmTornado.Demo;
 using LlmTornado.Realtime;
@@ -123,9 +125,14 @@ public class RealtimeTranslationTests
         });
 
         Assert.That(speech, Is.Not.Null);
-        Assert.That(speech!.Data, Is.Not.Empty);
 
-        return ExtractPcm16FromWav(speech.Data);
+        await using MemoryStream wavStream = new MemoryStream();
+        await speech!.AudioStream.CopyToAsync(wavStream);
+        byte[] wavData = wavStream.ToArray();
+
+        Assert.That(wavData, Is.Not.Empty);
+
+        return ExtractPcm16FromWav(wavData);
     }
 
     private static byte[] ExtractPcm16FromWav(byte[] wavData)

@@ -163,6 +163,6 @@ public class Gpt54IntegrationTests
         });
 
         Assert.That(result, Is.Not.Null);
-        Assert.That(result.Status, Is.EqualTo(ResponseStatuses.Completed).Or.EqualTo(ResponseStatuses.Incomplete));
+        Assert.That(result.Status, Is.EqualTo(ResponseMessageStatuses.Completed).Or.EqualTo(ResponseMessageStatuses.Incomplete));
     }
 }

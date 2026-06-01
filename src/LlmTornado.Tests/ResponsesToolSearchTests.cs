@@ -254,6 +254,6 @@ public class ResponsesToolSearchTests
         Console.WriteLine($"Final response text: {finalText}");
 
         Assert.That(finalText, Is.Not.Null.And.Not.Empty);
-        StringAssert.Contains("customer_42", finalText!, StringComparison.OrdinalIgnoreCase);
+        Assert.That(finalText, Does.Contain("customer_42").IgnoreCase);
     }
 }

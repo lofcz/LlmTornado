@@ -30,6 +30,8 @@ public class ChatResult : ApiResultBase
 		VendorExtensions = basedOn.VendorExtensions;
 		StreamInternalKind = basedOn.StreamInternalKind;
 		InvocationResult = basedOn.InvocationResult;
+		Ok = basedOn.Ok;
+		Exception = basedOn.Exception;
 	}
 
 	public ChatResult()

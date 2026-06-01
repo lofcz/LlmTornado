@@ -2,6 +2,7 @@ using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Code;
+using LlmTornado.Common;
 using LlmTornado.Demo;
 using LlmTornado.Vendor.Anthropic;
 using Newtonsoft.Json.Linq;
@@ -154,7 +155,7 @@ public class AnthropicInferenceGeoIntegrationTests
             Assert.Ignore("Anthropic API key not configured. Set ANTHROPIC_API_KEY or provide apiKey.json.");
         }
 
-        ChatResult result = await _api.Chat.CreateChatCompletion(new ChatRequest
+        HttpCallResult<ChatResult> result = await _api.Chat.CreateChatCompletionSafe(new ChatRequest
         {
             Model = ChatModel.Anthropic.Claude46.Sonnet,
             MaxTokens = 32,
@@ -169,9 +170,9 @@ public class AnthropicInferenceGeoIntegrationTests
         });
 
         Assert.That(result.Ok, Is.True, () => result.Exception?.Message ?? "Request failed");
-        Assert.That(result.Usage, Is.Not.Null);
+        Assert.That(result.Data?.Usage, Is.Not.Null);
 
-        VendorAnthropicUsage? vendorUsage = result.Usage!.VendorUsageObject as VendorAnthropicUsage;
+        VendorAnthropicUsage? vendorUsage = result.Data!.Usage!.VendorUsageObject as VendorAnthropicUsage;
         Assert.That(vendorUsage, Is.Not.Null);
         Assert.That(vendorUsage!.InferenceGeo, Is.EqualTo(AnthropicInferenceGeoOptions.Us),
             "API should report inference_geo=us in usage when US-only inference is requested");

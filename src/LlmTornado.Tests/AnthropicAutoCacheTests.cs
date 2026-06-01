@@ -194,8 +194,8 @@ public class AnthropicAutoCacheTests
             ]
         });
 
-        Assert.That(result.Ok, Is.True, () => result.Exception?.Message ?? "Request failed");
-        Assert.That(result.Usage, Is.Not.Null);
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result!.Usage, Is.Not.Null);
         Assert.That(result.Usage!.CacheCreationTokens, Is.GreaterThan(0),
             "Expected cache_creation_input_tokens on the first cached request.");
         Assert.That(result.Usage.CacheReadTokens.GetValueOrDefault(), Is.EqualTo(0));
@@ -231,8 +231,8 @@ public class AnthropicAutoCacheTests
         };
 
         ChatResult first = await _api!.Chat.CreateChatCompletion(request);
-        Assert.That(first.Ok, Is.True, () => first.Exception?.Message ?? "First request failed");
-        Assert.That(first.Usage?.CacheCreationTokens, Is.GreaterThan(0), "First request should create cache.");
+        Assert.That(first, Is.Not.Null);
+        Assert.That(first!.Usage?.CacheCreationTokens, Is.GreaterThan(0), "First request should create cache.");
 
         messages.Add(new ChatMessage(ChatMessageRoles.Assistant, first.Choices![0].Message?.Content ?? string.Empty));
         messages.Add(new ChatMessage(ChatMessageRoles.User, "What is the first name of that character? Reply with one word."));
@@ -242,8 +242,8 @@ public class AnthropicAutoCacheTests
             Messages = messages
         });
 
-        Assert.That(second.Ok, Is.True, () => second.Exception?.Message ?? "Second request failed");
-        Assert.That(second.Usage, Is.Not.Null);
+        Assert.That(second, Is.Not.Null);
+        Assert.That(second!.Usage, Is.Not.Null);
         Assert.That(second.Usage!.CacheReadTokens, Is.GreaterThan(0),
             "Expected cache_read_input_tokens when reusing the cached prefix.");
     }
@@ -275,8 +275,8 @@ public class AnthropicAutoCacheTests
             ]
         });
 
-        Assert.That(result.Ok, Is.True, () => result.Exception?.Message ?? "Request failed");
-        Assert.That(result.Usage?.VendorUsageObject, Is.InstanceOf<VendorAnthropicUsage>());
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result!.Usage?.VendorUsageObject, Is.InstanceOf<VendorAnthropicUsage>());
 
         VendorAnthropicUsage vendorUsage = (VendorAnthropicUsage)result.Usage!.VendorUsageObject!;
         Assert.That(vendorUsage.CacheCreationInputTokens.GetValueOrDefault() + vendorUsage.CacheReadInputTokens.GetValueOrDefault(),

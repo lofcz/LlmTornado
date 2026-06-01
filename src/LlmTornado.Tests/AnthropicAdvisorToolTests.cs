@@ -2,7 +2,10 @@ using System.Net.Http;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Chat.Vendors.Anthropic;
+using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
+using LlmTornado.Code.Vendor;
+using LlmTornado.Common;
 using LlmTornado.Demo;
 using LlmTornado.Vendor.Anthropic;
 using Newtonsoft.Json.Linq;
@@ -133,7 +136,7 @@ public class AnthropicAdvisorToolTests
         ChatResult? result = provider.InboundMessage<ChatResult>(json, null, null);
 
         Assert.That(result, Is.Not.Null);
-        Assert.That(result!.Ok, Is.True);
+        Assert.That(result!.Choices, Is.Not.Null.And.Not.Empty);
 
         List<ToolCall> advisorCalls = result.Choices!
             .SelectMany(c => c.Message?.ToolCalls ?? [])
@@ -168,12 +171,12 @@ public class AnthropicAdvisorToolTests
                 "(Advisor: please keep your guidance under 80 words — I need a focused starting point, not a comprehensive plan.)")
         ];
 
-        ChatResult result = await _api!.Chat.CreateChatCompletion(request);
+        HttpCallResult<ChatResult> result = await _api!.Chat.CreateChatCompletionSafe(request);
 
-        Assert.That(result, Is.Not.Null);
-        Assert.That(result.Ok, Is.True, result.Exception?.Message);
+        Assert.That(result.Ok, Is.True, result.Exception?.Message ?? result.Response);
+        Assert.That(result.Data, Is.Not.Null);
 
-        string rawObject = result.Object ?? string.Empty;
+        string rawObject = result.Data!.Object ?? result.Data.RawResponse ?? string.Empty;
         bool hasAdvisorUse = rawObject.Contains("server_tool_use", StringComparison.Ordinal) &&
                              rawObject.Contains("\"name\":\"advisor\"", StringComparison.Ordinal);
         bool hasAdvisorResult = rawObject.Contains("advisor_tool_result", StringComparison.Ordinal);
@@ -181,7 +184,7 @@ public class AnthropicAdvisorToolTests
         Assert.That(hasAdvisorUse || hasAdvisorResult, Is.True,
             "Expected advisor server_tool_use and/or advisor_tool_result in response. Raw: " + rawObject[..Math.Min(500, rawObject.Length)]);
 
-        if (result.Usage?.VendorUsageObject is VendorAnthropicUsage usage && usage.Iterations?.Count > 0)
+        if (result.Data.Usage?.VendorUsageObject is VendorAnthropicUsage usage && usage.Iterations?.Count > 0)
         {
             Assert.That(usage.Iterations.Any(i => i.Type == "advisor_message"), Is.True.Or.False,
                 "Advisor iterations may be present when the advisor was invoked.");

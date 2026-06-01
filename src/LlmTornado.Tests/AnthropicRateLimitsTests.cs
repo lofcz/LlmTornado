@@ -1,3 +1,4 @@
+using LlmTornado.Common;
 using LlmTornado.Code;
 using LlmTornado.Code.Vendor;
 using LlmTornado.Demo;
@@ -140,7 +141,7 @@ public class AnthropicRateLimitsTests
 
         HttpCallResult<AnthropicRateLimitsListResponse> result = await api!.RateLimits.ListOrganizationRateLimits();
 
-        Assert.That(result.Ok, Is.True, () => result.Exception?.Message ?? result.Error?.Message ?? "Request failed");
+        Assert.That(result.Ok, Is.True, () => result.Exception?.Message ?? result.Response ?? "Request failed");
         Assert.That(result.Data, Is.Not.Null);
         Assert.That(result.Data!.Data, Is.Not.Empty);
 
@@ -166,7 +167,7 @@ public class AnthropicRateLimitsTests
         HttpCallResult<AnthropicRateLimitsListResponse> result = await api!.RateLimits.ListOrganizationRateLimits(
             new AnthropicRateLimitsListQuery { GroupType = AnthropicRateLimitGroupType.Batch });
 
-        Assert.That(result.Ok, Is.True, () => result.Exception?.Message ?? result.Error?.Message ?? "Request failed");
+        Assert.That(result.Ok, Is.True, () => result.Exception?.Message ?? result.Response ?? "Request failed");
         Assert.That(result.Data!.Data, Is.Not.Empty);
         Assert.That(result.Data.Data.All(x => x.GroupType == AnthropicRateLimitGroupType.Batch), Is.True);
     }
@@ -191,7 +192,7 @@ public class AnthropicRateLimitsTests
 
         HttpCallResult<AnthropicRateLimitsListResponse> result = await api!.RateLimits.ListWorkspaceRateLimits(workspaceId!);
 
-        Assert.That(result.Ok, Is.True, () => result.Exception?.Message ?? result.Error?.Message ?? "Request failed");
+        Assert.That(result.Ok, Is.True, () => result.Exception?.Message ?? result.Response ?? "Request failed");
         Assert.That(result.Data, Is.Not.Null);
 
         foreach (AnthropicRateLimitEntry entry in result.Data!.Data)

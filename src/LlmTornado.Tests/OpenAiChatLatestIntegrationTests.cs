@@ -54,8 +54,8 @@ public class OpenAiChatLatestIntegrationTests
             Messages = [new ChatMessage(ChatMessageRoles.User, "Reply with exactly: pong")]
         });
 
-        Assert.That(result.Ok, Is.True, () => result.Exception?.Message ?? "Request failed");
-        Assert.That(result.Choices, Is.Not.Null.And.Not.Empty);
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result!.Choices, Is.Not.Null.And.Not.Empty);
 
         string? content = result.Choices![0].Message?.Content;
         Assert.That(content, Is.Not.Null.And.Not.Empty);

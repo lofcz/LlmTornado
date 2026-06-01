@@ -3,8 +3,9 @@ using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Code;
+using LlmTornado.Code.Vendor;
+using LlmTornado.Common;
 using LlmTornado.Demo;
-using LlmTornado.Vendor.Anthropic;
 using Newtonsoft.Json.Linq;
 
 namespace LlmTornado.Tests;
@@ -218,7 +219,7 @@ public class AnthropicMcpTunnelTests
 
         TornadoApi api = new TornadoApi(LLmProviders.Anthropic, apiKey);
 
-        ChatResult result = await api.Chat.CreateChatCompletion(new ChatRequest
+        HttpCallResult<ChatResult> result = await api.Chat.CreateChatCompletionSafe(new ChatRequest
         {
             Model = ChatModel.Anthropic.Claude48.Opus,
             MaxTokens = 256,
@@ -235,9 +236,9 @@ public class AnthropicMcpTunnelTests
             }
         });
 
-        Assert.That(result.Ok, Is.True, () => result.Exception?.Message ?? "Request failed");
-        Assert.That(result.Choices, Is.Not.Empty);
-        Assert.That(result.Choices![0].Message?.Content, Is.Not.Null.And.Not.Empty);
+        Assert.That(result.Ok, Is.True, () => result.Exception?.Message ?? result.Response ?? "Request failed");
+        Assert.That(result.Data?.Choices, Is.Not.Empty);
+        Assert.That(result.Data!.Choices![0].Message?.Content, Is.Not.Null.And.Not.Empty);
     }
 
     private static JObject ParseBody(ChatRequest request)

@@ -1,7 +1,9 @@
+using System.Text;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Code;
+using LlmTornado.Common;
 using LlmTornado.Demo;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -32,7 +34,7 @@ public class AnthropicThinkingDisplayTests
             })
         };
 
-        string json = request.Serialize(Provider).Content;
+        string json = request.Serialize(Provider).Body.ToString()!;
         JObject payload = JObject.Parse(json);
 
         Assert.That(payload["thinking"]?["type"]?.Value<string>(), Is.EqualTo("enabled"));
@@ -170,7 +172,7 @@ public class AnthropicThinkingDisplayIntegrationTests
             Assert.Ignore("Anthropic API key not configured. Set ANTHROPIC_API_KEY or provide apiKey.json.");
         }
 
-        ChatResult result = await _api.Chat.CreateChatCompletion(new ChatRequest
+        HttpCallResult<ChatResult> result = await _api.Chat.CreateChatCompletionSafe(new ChatRequest
         {
             Model = ChatModel.Anthropic.Claude46.Sonnet,
             MaxTokens = 4096,
@@ -186,10 +188,10 @@ public class AnthropicThinkingDisplayIntegrationTests
             })
         });
 
-        Assert.That(result.Ok, Is.True, () => result.Exception?.Message ?? "Request failed");
-        Assert.That(result.Choices, Is.Not.Null.And.Not.Empty);
+        Assert.That(result.Ok, Is.True, () => result.Exception?.Message ?? result.Response ?? "Request failed");
+        Assert.That(result.Data?.Choices, Is.Not.Null.And.Not.Empty);
 
-        ChatMessage? assistantMessage = result.Choices!
+        ChatMessage? assistantMessage = result.Data!.Choices!
             .Select(x => x.Message)
             .FirstOrDefault(x => x?.Parts?.Any(p => p.Type == ChatMessageTypes.Text) == true);
 

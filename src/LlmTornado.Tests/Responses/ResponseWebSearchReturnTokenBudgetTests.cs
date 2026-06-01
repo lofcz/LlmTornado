@@ -118,7 +118,7 @@ public class ResponseWebSearchReturnTokenBudgetTests
 
         HttpCallResult<ResponseResult> result = await api.Responses.CreateResponseSafe(request);
 
-        Assert.That(result.Ok, Is.False, result.Exception?.Message ?? result.ResponseError?.Error?.Message);
+        Assert.That(result.Ok, Is.False, result.Exception?.Message ?? result.Response);
     }
 
     private static async Task RunWebSearchIntegrationAsync(ResponseWebSearchReturnTokenBudget budget)
@@ -152,9 +152,9 @@ public class ResponseWebSearchReturnTokenBudgetTests
 
         HttpCallResult<ResponseResult> result = await api.Responses.CreateResponseSafe(request);
 
-        Assert.That(result.Ok, Is.True, result.Exception?.Message ?? result.ResponseError?.Error?.Message);
+        Assert.That(result.Ok, Is.True, result.Exception?.Message ?? result.Response);
         Assert.That(result.Data, Is.Not.Null);
-        Assert.That(result.Data!.Status, Is.EqualTo("completed").Or.EqualTo("incomplete"));
+        Assert.That(result.Data!.Status, Is.EqualTo(ResponseMessageStatuses.Completed).Or.EqualTo(ResponseMessageStatuses.Incomplete));
 
         bool hasWebSearchCall = result.Data.Output?.Any(item => item is ResponseWebSearchToolCallItem) == true;
         Assert.That(hasWebSearchCall, Is.True, "Expected a web_search_call output item.");

@@ -3,6 +3,8 @@ using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Code;
+using LlmTornado.Code.Vendor;
+using LlmTornado.Common;
 using LlmTornado.Demo;
 using LlmTornado.Vendor.Anthropic;
 using Newtonsoft.Json.Linq;
@@ -205,11 +207,11 @@ public class AnthropicCacheDiagnosticsTests
             })
         };
 
-        ChatResult turn1 = await _api!.Chat.CreateChatCompletion(turn1Request);
+        HttpCallResult<ChatResult> turn1 = await _api!.Chat.CreateChatCompletionSafe(turn1Request);
         Assert.That(turn1.Ok, Is.True, () => turn1.Exception?.Message ?? "Turn 1 failed");
-        Assert.That(turn1.Id, Is.Not.Null.And.Not.Empty);
+        Assert.That(turn1.Data?.Id, Is.Not.Null.And.Not.Empty);
 
-        string assistantText = turn1.Choices?.FirstOrDefault()?.Message?.Content ?? "Section 1 summary.";
+        string assistantText = turn1.Data?.Choices?.FirstOrDefault()?.Message?.Content ?? "Section 1 summary.";
         messages.Add(new ChatMessage(ChatMessageRoles.Assistant, assistantText));
         messages.Add(new ChatMessage(ChatMessageRoles.User, "Now summarize section 2."));
 
@@ -221,14 +223,14 @@ public class AnthropicCacheDiagnosticsTests
             Messages = messages,
             VendorExtensions = new ChatRequestVendorExtensions(new ChatRequestVendorAnthropicExtensions
             {
-                CacheDiagnostics = new AnthropicCacheDiagnosticsRequest { PreviousMessageId = turn1.Id }
+                CacheDiagnostics = new AnthropicCacheDiagnosticsRequest { PreviousMessageId = turn1.Data!.Id }
             })
         };
 
-        ChatResult turn2 = await _api.Chat.CreateChatCompletion(turn2Request);
+        HttpCallResult<ChatResult> turn2 = await _api.Chat.CreateChatCompletionSafe(turn2Request);
         Assert.That(turn2.Ok, Is.True, () => turn2.Exception?.Message ?? "Turn 2 failed");
 
-        AnthropicCacheDiagnosticsResponse? diagnostics = turn2.VendorExtensions?.Anthropic?.CacheDiagnostics;
+        AnthropicCacheDiagnosticsResponse? diagnostics = turn2.Data?.VendorExtensions?.Anthropic?.CacheDiagnostics;
         if (diagnostics?.CacheMissReason is not null)
         {
             TestContext.WriteLine($"Turn 2 cache_miss_reason: {diagnostics.CacheMissReason.Type}");
@@ -242,7 +244,7 @@ public class AnthropicCacheDiagnosticsTests
         }
 
         TestContext.WriteLine(
-            $"Turn 2 usage: input={turn2.Usage?.PromptTokens}, cache_read={turn2.Usage?.CacheReadTokens}, cache_create={turn2.Usage?.CacheCreationTokens}");
+            $"Turn 2 usage: input={turn2.Data?.Usage?.PromptTokens}, cache_read={turn2.Data?.Usage?.CacheReadTokens}, cache_create={turn2.Data?.Usage?.CacheCreationTokens}");
     }
 
     [Test]
@@ -261,7 +263,7 @@ public class AnthropicCacheDiagnosticsTests
             new ChatMessage(ChatMessageRoles.User, "Summarize section 1.")
         ];
 
-        ChatResult turn1 = await _api!.Chat.CreateChatCompletion(new ChatRequest
+        HttpCallResult<ChatResult> turn1 = await _api!.Chat.CreateChatCompletionSafe(new ChatRequest
         {
             Model = ChatModel.Anthropic.Claude46.Sonnet,
             MaxTokens = 256,
@@ -275,7 +277,7 @@ public class AnthropicCacheDiagnosticsTests
 
         Assert.That(turn1.Ok, Is.True, () => turn1.Exception?.Message ?? "Turn 1 failed");
 
-        messages.Add(new ChatMessage(ChatMessageRoles.Assistant, turn1.Choices?.FirstOrDefault()?.Message?.Content ?? "Section 1 summary."));
+        messages.Add(new ChatMessage(ChatMessageRoles.Assistant, turn1.Data?.Choices?.FirstOrDefault()?.Message?.Content ?? "Section 1 summary."));
         messages.Add(new ChatMessage(ChatMessageRoles.User, "Now summarize section 2."));
 
         ChatRequest streamRequest = new ChatRequest
@@ -287,7 +289,7 @@ public class AnthropicCacheDiagnosticsTests
             Messages = messages,
             VendorExtensions = new ChatRequestVendorExtensions(new ChatRequestVendorAnthropicExtensions
             {
-                CacheDiagnostics = new AnthropicCacheDiagnosticsRequest { PreviousMessageId = turn1.Id }
+                CacheDiagnostics = new AnthropicCacheDiagnosticsRequest { PreviousMessageId = turn1.Data!.Id }
             })
         };
 

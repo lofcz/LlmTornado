@@ -598,6 +598,11 @@ public class TornadoApi
     public AnthropicManagedAgentSessionsEndpoint AnthropicManagedAgentSessions => anthropicManagedAgentSessions.Value;
 
     /// <summary>
+    ///     Claude Managed Agent environments API — isolated execution environments for agent sessions.
+    /// </summary>
+    public AnthropicManagedAgentEnvironmentsEndpoint AnthropicManagedAgentEnvironments => anthropicManagedAgentEnvironments.Value;
+
+    /// <summary>
     ///     Anthropic Admin API for querying organization and workspace rate limits.
     ///     Requires an Admin API key (<c>sk-ant-admin...</c>).
     /// </summary>
