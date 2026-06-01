@@ -172,6 +172,9 @@ public class AnthropicThinkingSettings
 
     /// <summary>
     /// Creates adaptive thinking settings (<c>thinking: {"type":"adaptive"}</c>).
+    /// Combine with <see cref="ChatRequestVendorAnthropicExtensions.Effort"/> to guide thinking depth.
+    /// On Claude Opus 4.7/4.8, API responses default to <c>display: "omitted"</c> unless you set
+    /// <see cref="Display"/> to <see cref="AnthropicThinkingDisplay.Summarized"/>.
     /// </summary>
     public static AnthropicThinkingSettings CreateAdaptive() => new AnthropicThinkingSettings
     {
@@ -581,8 +584,10 @@ public class ChatRequestVendorAnthropicExtensions
     public Action<VendorAnthropicChatRequestMessageContent?, List<VendorAnthropicChatRequestMessageContent>, List<VendorAnthropicToolFunction>?>? OutboundRequest;
     
     /// <summary>
-    /// Effort level for <c>output_config.effort</c> (GA on Claude Opus 4.6+, Sonnet 4.6).
-    /// Takes precedence over <see cref="ChatRequest.ReasoningEffort"/> when both are set.
+    /// Effort level for <c>output_config.effort</c>. Use with
+    /// <see cref="AnthropicThinkingSettings.CreateAdaptive"/> or <see cref="ChatRequest.ReasoningBudget"/> = -1 on
+    /// Claude Opus 4.6+, Sonnet 4.6, Opus 4.7, and Opus 4.8. Takes precedence over
+    /// <see cref="ChatRequest.ReasoningEffort"/> when both are set. No beta header on GA models.
     /// </summary>
     public AnthropicEffortLevels? Effort { get; set; }
     

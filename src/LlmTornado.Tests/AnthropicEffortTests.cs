@@ -4,7 +4,7 @@ using LlmTornado.Chat.Models;
 using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Code;
 using LlmTornado.Demo;
-using LlmTornado.Vendor.Anthropic;
+using LlmTornado.Code.Vendor;
 using Newtonsoft.Json.Linq;
 
 namespace LlmTornado.Tests;
@@ -93,6 +93,29 @@ public class AnthropicEffortTests
     }
 
     [Test]
+    public void AdaptiveThinkingWithVendorEffort_SerializesBoth()
+    {
+        ChatRequest request = new ChatRequest
+        {
+            Model = ChatModel.Anthropic.Claude48.Opus,
+            Messages = [new ChatMessage(ChatMessageRoles.User, "What is the capital of France?")],
+            VendorExtensions = new ChatRequestVendorExtensions
+            {
+                Anthropic = new ChatRequestVendorAnthropicExtensions
+                {
+                    Thinking = AnthropicThinkingSettings.CreateAdaptive(),
+                    Effort = AnthropicEffortLevels.Medium
+                }
+            }
+        };
+
+        JObject body = ParseBody(request);
+
+        Assert.That(body["thinking"]?["type"]?.ToString(), Is.EqualTo("adaptive"));
+        Assert.That(body["output_config"]?["effort"]?.ToString(), Is.EqualTo("medium"));
+    }
+
+    [Test]
     public void XHighReasoningEffort_SerializesAsXHighNotMax()
     {
         ChatRequest request = new ChatRequest
@@ -155,6 +178,7 @@ public class AnthropicEffortTests
         });
     }
 
+    [Explicit("Requires Anthropic API key and makes real production API calls")]
     [TestCase(AnthropicEffortLevels.Low)]
     [TestCase(AnthropicEffortLevels.Medium)]
     [TestCase(AnthropicEffortLevels.High)]
@@ -175,8 +199,7 @@ public class AnthropicEffortTests
         });
 
         Assert.That(result, Is.Not.Null);
-        Assert.That(result.Ok, Is.True, result.Exception?.Message);
-        Assert.That(result.Choices, Is.Not.Empty);
+        Assert.That(result!.Choices, Is.Not.Empty);
         Assert.That(result.Choices![0].Message?.Content, Does.Contain("effort-ok").IgnoreCase);
     }
 

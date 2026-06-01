@@ -63,6 +63,22 @@ public static class ChatModelAnthropicHelper
     }
 
     /// <summary>
+    /// Returns true when <c>thinking.type = "adaptive"</c> is supported (Opus 4.6+, Sonnet 4.6, Opus 4.7/4.8).
+    /// On Opus 4.7+ manual <c>thinking.type = "enabled"</c> is upgraded to adaptive automatically.
+    /// </summary>
+    public static bool SupportsAdaptiveThinking(string? modelName)
+    {
+        if (modelName is null)
+        {
+            return false;
+        }
+
+        return modelName.StartsWith("claude-opus-4-6", StringComparison.OrdinalIgnoreCase)
+            || modelName.StartsWith("claude-sonnet-4-6", StringComparison.OrdinalIgnoreCase)
+            || IsOpus47OrNewer(modelName);
+    }
+
+    /// <summary>
     /// Returns true when the effort parameter is supported (serialized to <c>output_config.effort</c>).
     /// </summary>
     public static bool IsEffortCompatibleModel(string? modelName)

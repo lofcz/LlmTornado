@@ -7,28 +7,30 @@ using Newtonsoft.Json.Converters;
 namespace LlmTornado.Chat.Vendors.Anthropic;
 
 /// <summary>
-/// Anthropic <c>output_config.effort</c> levels (GA on Claude Opus 4.6+, Sonnet 4.6, and beta on Opus 4.5).
+/// Anthropic <c>output_config.effort</c> levels. Pair with
+/// <see cref="AnthropicThinkingTypes.Adaptive"/> (<c>thinking.type = "adaptive"</c>) on supported models.
+/// GA on Claude Opus 4.6+, Sonnet 4.6, Opus 4.7/4.8; beta on Opus 4.5.
 /// </summary>
 [JsonConverter(typeof(StringEnumConverter))]
 public enum AnthropicEffortLevels
 {
-    /// <summary>Low effort — faster, lower latency.</summary>
+    /// <summary>Minimizes thinking; skips thinking for simple tasks when using adaptive mode.</summary>
     [EnumMember(Value = "low")]
     Low,
 
-    /// <summary>Medium effort — balanced.</summary>
+    /// <summary>Moderate thinking; may skip thinking for very simple queries.</summary>
     [EnumMember(Value = "medium")]
     Medium,
 
-    /// <summary>High effort — more thorough reasoning.</summary>
+    /// <summary>Default API behavior — Claude almost always thinks on complex tasks.</summary>
     [EnumMember(Value = "high")]
     High,
 
-    /// <summary>Extra-high effort (Opus 4.6+).</summary>
+    /// <summary>Deep extended exploration. Claude Opus 4.7+ and Opus 4.8.</summary>
     [EnumMember(Value = "xhigh")]
     XHigh,
 
-    /// <summary>Maximum effort (Opus 4.6+).</summary>
+    /// <summary>Maximum thinking depth with no constraints. Opus 4.6+, Sonnet 4.6, Opus 4.7/4.8.</summary>
     [EnumMember(Value = "max")]
     Max
 }
