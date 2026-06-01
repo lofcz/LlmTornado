@@ -847,7 +847,6 @@ internal class VendorAnthropicChatRequest
         
         if (ChatModelAnthropicHelper.IsEffortCompatibleModel(Model))
         {
-            {
             string? effortValue = request.VendorExtensions?.Anthropic?.Effort is AnthropicEffortLevels vendorEffort
                 ? AnthropicEffortHelper.ToApiValue(vendorEffort)
                 : request.ReasoningEffort is ChatReasoningEfforts reasoningEffort
