@@ -128,7 +128,7 @@ public class AnthropicThinkingDisplayTests
             })
         };
 
-        string json = request.Serialize(Provider).Content;
+        string json = request.Serialize(Provider).Body.ToString()!;
         JArray assistantContent = (JArray)JObject.Parse(json)["messages"]![1]!["content"]!;
 
         JObject? thinkingBlock = assistantContent
