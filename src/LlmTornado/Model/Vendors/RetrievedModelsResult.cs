@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using LlmTornado.Code;
+using LlmTornado.Models.Vendors.Anthropic;
 using LlmTornado.Models.Vendors.Cohere;
 using LlmTornado.Models.Vendors.Google;
 using Newtonsoft.Json;
@@ -20,6 +21,7 @@ internal class RetrievedModelsResult
         {
             LLmProviders.Google => JsonConvert.DeserializeObject<VendorGoogleRetrievedModelsResult>(jsonData)?.ToResult(postData),
             LLmProviders.Cohere => JsonConvert.DeserializeObject<VendorCohereRetrievedModelsResult>(jsonData)?.ToResult(postData),
+            LLmProviders.Anthropic => VendorAnthropicRetrievedModelsDeserializer.DeserializeList(jsonData, postData),
             _ => JsonConvert.DeserializeObject<RetrievedModelsResult>(jsonData)
         };
     }

@@ -84,6 +84,11 @@ public class VendorAnthropicToolFunction : IVendorAnthropicChatRequestTool
                 if (webFetch2.CitationsEnabled.HasValue)
                     Citations = new VendorAnthropicWebFetchCitations { Enabled = webFetch2.CitationsEnabled.Value };
                 break;
+            case VendorAnthropicChatRequestBuiltInToolAdvisor20260301 advisor:
+                Model = advisor.AdvisorModel;
+                MaxUses = advisor.MaxUses;
+                Caching = advisor.Caching;
+                break;
         }
     }
     
@@ -204,6 +209,18 @@ public class VendorAnthropicToolFunction : IVendorAnthropicChatRequestTool
     /// </summary>
     [JsonProperty("eager_input_streaming")]
     public bool? EagerInputStreaming { get; set; }
+
+    /// <summary>
+    /// Advisor model ID for <c>advisor_20260301</c> tools.
+    /// </summary>
+    [JsonProperty("model")]
+    public string? Model { get; set; }
+
+    /// <summary>
+    /// Advisor-side prompt caching for <c>advisor_20260301</c> tools.
+    /// </summary>
+    [JsonProperty("caching")]
+    public AnthropicCacheSettings? Caching { get; set; }
 }
 
 /// <summary>

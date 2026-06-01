@@ -3,6 +3,7 @@ using System.IO;
 using LlmTornado.Chat.Models;
 using LlmTornado.Embedding.Models;
 using LlmTornado.Images.Models;
+using LlmTornado.Images.Models.OpenAi;
 using LlmTornado.Microsoft.Extensions.AI;
 using Microsoft.Extensions.AI;
 #pragma warning disable MEAI001
@@ -159,7 +160,7 @@ public class MicrosoftExtensionsAiDemo
     public static async Task ImageGenerationOpenAiExample()
     {
         TornadoApi api = Program.Connect();
-        IImageGenerator imageGenerator = api.AsImageGenerator(ImageModel.OpenAi.Dalle.V3);
+        IImageGenerator imageGenerator = api.AsImageGenerator(ImageModel.OpenAi.Gpt.V2);
         
         ImageGenerationRequest request = new ImageGenerationRequest("A serene mountain landscape at sunset with a crystal clear lake reflecting the mountains");
         ImageGenerationResponse response = await imageGenerator.GenerateAsync(request);

@@ -3,6 +3,8 @@ using System.Text;
 using LlmTornado.Chat;
 using LlmTornado.Code;
 using LlmTornado.Images;
+using LlmTornado.Videos;
+using LlmTornado.Videos.Vendors.OpenAi;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -46,6 +48,15 @@ internal class VendorOpenAiBatchRequestLine
                 ImageEditRequest editRequest = item.ImageEditParams!;
                 TornadoRequestContent serialized = editRequest.Serialize(provider);
                 string bodyJson = serialized.Body as string ?? JsonConvert.SerializeObject(serialized.Body, EndpointBase.NullSettings);
+                Body = JObject.Parse(bodyJson);
+                break;
+            }
+            case BatchRequestEndpoint.Videos:
+            {
+                Url = "/v1/videos";
+                VideoGenerationRequest videoRequest = item.VideoGenerationParams!;
+                object bodyObject = VendorOpenAiVideoRequest.SerializeJson(videoRequest);
+                string bodyJson = JsonConvert.SerializeObject(bodyObject, EndpointBase.NullSettings);
                 Body = JObject.Parse(bodyJson);
                 break;
             }

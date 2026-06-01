@@ -5,6 +5,8 @@ using System.Reflection;
 using System.Runtime.Serialization;
 using LlmTornado.Code;
 using LlmTornado.Images.Models;
+using LlmTornado.Images.Models.OpenAi;
+using LlmTornado.Images.Models.Google;
 using LlmTornado.Images.Vendors.Google;
 using LlmTornado.Images.Vendors.MiniMax;
 using LlmTornado.Images.Vendors.XAi;
@@ -52,7 +54,7 @@ public class ImageGenerationRequest
         User = user;
         Size = size;
         ResponseFormat = responseFormat;
-        Model = model ?? ImageModel.OpenAi.Dalle.V3;
+        Model = model ?? ImageModelOpenAiGpt.Default;
         Quality = quality;
         Style = style;
     }
@@ -193,7 +195,7 @@ public class ImageGenerationRequest
 	/// </summary>
 	[JsonProperty("model")]
 	[JsonConverter(typeof(ImageModelJsonConverter))]
-	public ImageModel? Model { get; set; } = ImageModel.OpenAi.Dalle.V3;
+	public ImageModel? Model { get; set; } = ImageModelOpenAiGpt.Default;
 
 	/// <summary>
 	///     Either empty or "hd" for dalle3.
@@ -207,6 +209,13 @@ public class ImageGenerationRequest
 	[JsonProperty("style")]
     public TornadoImageStyles? Style { get; set; }
 	
+	/// <summary>
+	///		Video context for Gemini video-to-image generation (<c>gemini-3.1-flash-image</c>).
+	///		Pass a public YouTube URL or a file uploaded via the Files API.
+	/// </summary>
+	[JsonIgnore]
+	public ImageGenerationVideoContext? VideoContext { get; set; }
+
 	/// <summary>
 	///		Features supported only by a single/few providers with no shared equivalent.
 	/// </summary>
@@ -256,26 +265,23 @@ public class ImageGenerationRequest
 		return SerializeMap.TryGetValue(provider.Provider, out Func<ImageGenerationRequest, IEndpointProvider, string>? serializerFn) ? new TornadoRequestContent(serializerFn.Invoke(this, provider), Model, UrlOverride, provider, CapabilityEndpoints.ImageGeneration) : new TornadoRequestContent(string.Empty, Model, UrlOverride, provider, CapabilityEndpoints.ImageGeneration);
 	}
 	
-	private static bool IsGptImageModel(ImageModel? model)
-	{
-		string? name = model?.GetApiName;
-		return name is not null && (name.StartsWith("gpt-image", StringComparison.OrdinalIgnoreCase) || name.StartsWith("chatgpt-image", StringComparison.OrdinalIgnoreCase));
-	}
-	
 	private static readonly FrozenDictionary<LLmProviders, Func<ImageGenerationRequest, IEndpointProvider, string>> SerializeMap = new Dictionary<LLmProviders, Func<ImageGenerationRequest, IEndpointProvider, string>>
 	{
 		{ LLmProviders.OpenAi, (x, y) =>
 		{
-			if (IsGptImageModel(x.Model) && x.ResponseFormat is not null)
-			{
-				x = new ImageGenerationRequest(x);
-				x.ResponseFormat = null;
-			}
-			
+			x = GptImageModelHelper.SanitizeGenerationRequest(x);
 			return JsonConvert.SerializeObject(x, EndpointBase.NullSettings);
 		}},
 		{ LLmProviders.XAi, (x, y) => JsonConvert.SerializeObject(new VendorXAiImageRequest(x, y), EndpointBase.NullSettings) },
-		{ LLmProviders.Google, (x, y) => JsonConvert.SerializeObject(new VendorGoogleImageRequest(x, y), EndpointBase.NullSettings) },
+		{ LLmProviders.Google, (x, y) =>
+		{
+			if (ImageModelGoogleGemini.SupportsVideoToImage(x.Model?.Name) && x.VideoContext is not null)
+			{
+				return JsonConvert.SerializeObject(new VendorGoogleGeminiVideoToImageRequest(x, y), EndpointBase.NullSettings);
+			}
+
+			return JsonConvert.SerializeObject(new VendorGoogleImageRequest(x, y), EndpointBase.NullSettings);
+		}},
 		{ LLmProviders.MiniMax, (x, y) => JsonConvert.SerializeObject(new VendorMiniMaxImageRequest(x, y), EndpointBase.NullSettings) }
 	}.ToFrozenDictionary();
 }

@@ -879,7 +879,7 @@ public class Tool
     
     /// <summary>
     /// When true, this tool is deferred and only loaded when discovered via tool search.
-    /// Anthropic-specific feature for the tool search tool.
+    /// Supported by Anthropic and OpenAI GPT-5.4+ (Responses API).
     /// </summary>
     [JsonIgnore]
     public bool? DeferLoading { get; set; }

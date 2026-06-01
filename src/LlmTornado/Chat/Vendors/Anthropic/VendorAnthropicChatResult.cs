@@ -171,11 +171,17 @@ internal class VendorAnthropicChatResult : VendorChatResult
         public string? ToolUseId { get; set; }
         
         /// <summary>
-        /// Tool out response.
+        /// Tool out response or compaction summary content.
         /// </summary>
         [JsonProperty("content")]
         [JsonConverter(typeof(StringOrObjectConverter))]
         public string? Content { get; set; }
+        
+        /// <summary>
+        /// Opaque metadata from prior compaction, to be round-tripped verbatim.
+        /// </summary>
+        [JsonProperty("encrypted_content")]
+        public string? EncryptedContent { get; set; }
         
         /// <summary>
         /// Tool out invocation failed flag.
@@ -289,11 +295,17 @@ internal class VendorAnthropicChatResult : VendorChatResult
     [JsonProperty("stop_sequence")]
     public string? StopSequence { get; set; }
     
+    [JsonProperty("stop_details")]
+    public VendorAnthropicStopDetails? StopDetails { get; set; }
+    
     [JsonProperty("usage")]
     public VendorAnthropicUsage Usage { get; set; }
 
     [JsonProperty("container")]
-    public VendorAnthropicChatResultContainer? Container { get; set; }  
+    public VendorAnthropicChatResultContainer? Container { get; set; }
+    
+    [JsonProperty("diagnostics")]
+    public AnthropicCacheDiagnosticsResponse? Diagnostics { get; set; }
 
     public override ChatResult ToChatResult(string? postData, object? chatRequest)
     {
@@ -323,6 +335,17 @@ internal class VendorAnthropicChatResult : VendorChatResult
             ServiceTier = resolvedServiceTier,
             Speed = resolvedSpeed
         };
+
+        if (Diagnostics is not null)
+        {
+            result.VendorExtensions = new ChatResponseVendorExtensions
+            {
+                Anthropic = new ChatResponseVendorAnthropicExtensions
+                {
+                    CacheDiagnostics = Diagnostics
+                }
+            };
+        }
 
         ChatMessage? toolsMsg = null;
         List<ChatChoiceAnthropicThinkingBlock>? thinkingBlocks = null;
@@ -386,7 +409,8 @@ internal class VendorAnthropicChatResult : VendorChatResult
                     thinkingBlocks.Add(new ChatChoiceAnthropicThinkingBlock
                     {
                         Content = contentBlock.Thinking ?? string.Empty,
-                        Signature = contentBlock.Signature ?? string.Empty
+                        Signature = contentBlock.Signature ?? string.Empty,
+                        Omitted = string.IsNullOrEmpty(contentBlock.Thinking) && !string.IsNullOrEmpty(contentBlock.Signature)
                     });
                     break;
                 }
@@ -441,7 +465,34 @@ internal class VendorAnthropicChatResult : VendorChatResult
                 }
                 case VendorAnthropicChatMessageTypes.ServerToolUse:
                 {
-                    // Server tool use - convert to text representation
+                    if (string.Equals(contentBlock.Name, "advisor", StringComparison.OrdinalIgnoreCase))
+                    {
+                        toolsMsg ??= new ChatMessage(ChatMessageRoles.Assistant)
+                        {
+                            ToolCalls = []
+                        };
+
+                        ToolCall advisorCall = new ToolCall
+                        {
+                            Id = contentBlock.Id ?? string.Empty,
+                            Type = "server_tool_use",
+                            BuiltInToolCall = new BuiltInToolCall(
+                                false,
+                                "advisor",
+                                new AnthropicAdvisorToolUseData
+                                {
+                                    Id = contentBlock.Id ?? string.Empty,
+                                    Name = "advisor",
+                                    InputJson = contentBlock.Input?.ToString() ?? "{}"
+                                },
+                                null!,
+                                contentBlock.Input?.ToString() ?? "{}")
+                        };
+                        advisorCall.BuiltInToolCall.ToolCall = advisorCall;
+                        toolsMsg.ToolCalls?.Add(advisorCall);
+                        break;
+                    }
+
                     string serverToolContent = $"[Server Tool Use: {contentBlock.ServerName ?? contentBlock.Name ?? "unknown"}]";
                     if (contentBlock.Input != null)
                     {
@@ -458,6 +509,30 @@ internal class VendorAnthropicChatResult : VendorChatResult
                         Index = result.Choices.Count + 1,
                         Message = serverToolMsg,
                         Delta = serverToolMsg
+                    });
+                    break;
+                }
+                case VendorAnthropicChatMessageTypes.AdvisorToolResult:
+                {
+                    AnthropicAdvisorToolResultData? advisorResult = TryParseAdvisorToolResult(contentBlock);
+                    string displayText = FormatAdvisorToolResult(advisorResult);
+
+                    ChatMessagePart advisorPart = new ChatMessagePart(displayText)
+                    {
+                        VendorExtensions = advisorResult is not null
+                            ? new ChatMessagePartAnthropicExtensions { AdvisorToolResult = advisorResult }
+                            : null
+                    };
+
+                    ChatMessage advisorResultMsg = new ChatMessage(ChatMessageRoles.Assistant, [advisorPart]);
+
+                    result.Choices.Add(new ChatChoice
+                    {
+                        FinishReason = ChatMessageFinishReasonsConverter.Map.GetValueOrDefault(StopReason, ChatMessageFinishReasons.Unknown),
+                        StopReason = StopSequence,
+                        Index = result.Choices.Count + 1,
+                        Message = advisorResultMsg,
+                        Delta = advisorResultMsg
                     });
                     break;
                 }
@@ -619,8 +694,14 @@ internal class VendorAnthropicChatResult : VendorChatResult
                     // Compaction block - server-generated summary of earlier conversation context
                     string compactionContent = contentBlock.Content ?? string.Empty;
                     
-                    ChatMessage compactionMsg = new ChatMessage(ChatMessageRoles.Assistant, 
-                        [ new ChatMessagePart { Type = ChatMessageTypes.Compaction, Text = compactionContent } ]);
+                    ChatMessagePart compactionPart = new ChatMessagePart
+                    {
+                        Type = ChatMessageTypes.Compaction,
+                        Text = compactionContent,
+                        EncryptedContent = contentBlock.EncryptedContent
+                    };
+                    
+                    ChatMessage compactionMsg = new ChatMessage(ChatMessageRoles.Assistant, [ compactionPart ]);
                     
                     result.Choices.Add(new ChatChoice
                     {
@@ -678,7 +759,8 @@ internal class VendorAnthropicChatResult : VendorChatResult
                         Reasoning = new ChatMessageReasoningData
                         {
                             Content = x.Content,
-                            Signature = x.Signature
+                            Signature = x.Signature,
+                            Provider = LLmProviders.Anthropic
                         }
                     });
                 }
@@ -699,6 +781,15 @@ internal class VendorAnthropicChatResult : VendorChatResult
                 Message = toolsMsg,
                 Delta = toolsMsg
             });
+        }
+
+        ChatStopDetails? stopDetails = StopDetails?.ToChatStopDetails();
+        if (stopDetails is not null)
+        {
+            foreach (ChatChoice choice in result.Choices)
+            {
+                choice.StopDetails = stopDetails;
+            }
         }
 
         ChatResult = result;
@@ -797,5 +888,103 @@ internal class VendorAnthropicChatResult : VendorChatResult
         }
 
         return true;
+    }
+
+    private static AnthropicAdvisorToolResultData? TryParseAdvisorToolResult(VendorAnthropicChatResultContentBlock contentBlock)
+    {
+        if (string.IsNullOrWhiteSpace(contentBlock.Content))
+        {
+            return null;
+        }
+
+        try
+        {
+            JObject contentObj = JObject.Parse(contentBlock.Content);
+            string? variantType = contentObj["type"]?.ToString();
+            AnthropicAdvisorToolResultData data = new AnthropicAdvisorToolResultData
+            {
+                ToolUseId = contentBlock.ToolUseId ?? string.Empty,
+                RawContentJson = contentBlock.Content
+            };
+
+            switch (variantType)
+            {
+                case "advisor_result":
+                    data.ContentType = AnthropicAdvisorToolResultContentTypes.AdvisorResult;
+                    data.Text = contentObj["text"]?.ToString();
+                    break;
+                case "advisor_redacted_result":
+                    data.ContentType = AnthropicAdvisorToolResultContentTypes.AdvisorRedactedResult;
+                    data.EncryptedContent = contentObj["encrypted_content"]?.ToString();
+                    break;
+                case "advisor_tool_result_error":
+                    data.ContentType = AnthropicAdvisorToolResultContentTypes.AdvisorToolResultError;
+                    string? errorCode = contentObj["error_code"]?.ToString();
+                    if (errorCode is not null && Enum.TryParse(errorCode, true, out AnthropicAdvisorToolResultErrorCodes parsed))
+                    {
+                        data.ErrorCode = parsed;
+                    }
+                    break;
+                default:
+                    return null;
+            }
+
+            return data;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static string FormatAdvisorToolResult(AnthropicAdvisorToolResultData? advisorResult)
+    {
+        if (advisorResult is null)
+        {
+            return "[ADVISOR TOOL RESULT]";
+        }
+
+        return advisorResult.ContentType switch
+        {
+            AnthropicAdvisorToolResultContentTypes.AdvisorResult =>
+                string.IsNullOrWhiteSpace(advisorResult.Text) ? "[ADVISOR ADVICE]" : $"[ADVISOR ADVICE]\n{advisorResult.Text}",
+            AnthropicAdvisorToolResultContentTypes.AdvisorRedactedResult =>
+                $"[ADVISOR REDACTED RESULT]\n{advisorResult.EncryptedContent ?? string.Empty}",
+            AnthropicAdvisorToolResultContentTypes.AdvisorToolResultError =>
+                $"[ADVISOR ERROR: {advisorResult.ErrorCode?.ToString() ?? "unknown"}]",
+            _ => "[ADVISOR TOOL RESULT]"
+        };
+    }
+}
+
+internal class VendorAnthropicStopDetails
+{
+    [JsonProperty("type")]
+    public string? Type { get; set; }
+    
+    [JsonProperty("category")]
+    public string? Category { get; set; }
+    
+    [JsonProperty("explanation")]
+    public string? Explanation { get; set; }
+    
+    internal ChatStopDetails? ToChatStopDetails()
+    {
+        if (Type is null && Category is null && Explanation is null)
+        {
+            return null;
+        }
+        
+        return new ChatStopDetails
+        {
+            Type = Type ?? "refusal",
+            Category = Category switch
+            {
+                "cyber" => ChatRefusalCategory.Cyber,
+                "bio" => ChatRefusalCategory.Bio,
+                _ => null
+            },
+            Explanation = Explanation
+        };
     }
 }

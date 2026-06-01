@@ -138,7 +138,7 @@ public class ImageGenerationConfiguration
     public bool Enabled { get; set; } = true;
 
     [JsonProperty("model")]
-    public string Model { get; set; } = "dall-e-3";
+    public string Model { get; set; } = "gpt-image-2";
 
     [JsonProperty("imageStyleHints")]
     public int ImageStyleHints { get; set; } = 2;

@@ -464,11 +464,35 @@ public class ResponseComputerToolCallItem : IResponseOutputItem, IBuiltInToolCal
     public string CallId { get; set; } = string.Empty;
 
     /// <summary>
-    /// The action taken in this computer call.
+    /// The legacy single action taken in this computer call (preview API).
     /// </summary>
-    [JsonProperty("action")]
+    [JsonProperty("action", NullValueHandling = NullValueHandling.Ignore)]
     [JsonConverter(typeof(ComputerActionConverter))]
-    public IComputerAction Action { get; set; } = null!;
+    public IComputerAction? Action { get; set; }
+
+    /// <summary>
+    /// Batched actions to execute for this computer call (GA API).
+    /// </summary>
+    [JsonProperty("actions", NullValueHandling = NullValueHandling.Ignore, ItemConverterType = typeof(ComputerActionConverter))]
+    public List<IComputerAction>? Actions { get; set; }
+
+    /// <summary>
+    /// Returns the actions to execute, preferring the GA batched <see cref="Actions"/> list when present.
+    /// </summary>
+    public IReadOnlyList<IComputerAction> GetExecutableActions()
+    {
+        if (Actions is { Count: > 0 })
+        {
+            return Actions;
+        }
+
+        if (Action is not null)
+        {
+            return [Action];
+        }
+
+        return [];
+    }
 
     /// <summary>
     /// The pending safety checks for the computer call.
@@ -687,6 +711,12 @@ public class ClickAction : IComputerAction
     /// </summary>
     [JsonProperty("y")]
     public int Y { get; set; }
+
+    /// <summary>
+    /// Modifier keys held during the click (e.g. CTRL, SHIFT, META).
+    /// </summary>
+    [JsonProperty("keys", NullValueHandling = NullValueHandling.Ignore)]
+    public List<string>? Keys { get; set; }
 }
 
 /// <summary>
@@ -711,6 +741,12 @@ public class DoubleClickAction : IComputerAction
     /// </summary>
     [JsonProperty("y")]
     public int Y { get; set; }
+
+    /// <summary>
+    /// Modifier keys held during the double click.
+    /// </summary>
+    [JsonProperty("keys", NullValueHandling = NullValueHandling.Ignore)]
+    public List<string>? Keys { get; set; }
 }
 
 /// <summary>
@@ -729,6 +765,12 @@ public class DragAction : IComputerAction
     /// </summary>
     [JsonProperty("path")]
     public List<Coordinate> Path { get; set; } = [];
+
+    /// <summary>
+    /// Modifier keys held during the drag.
+    /// </summary>
+    [JsonProperty("keys", NullValueHandling = NullValueHandling.Ignore)]
+    public List<string>? Keys { get; set; }
 
     /// <summary>
     /// A series of x/y coordinate pairs in the drag path.
@@ -789,6 +831,12 @@ public class MoveAction : IComputerAction
     /// </summary>
     [JsonProperty("y")]
     public int Y { get; set; }
+
+    /// <summary>
+    /// Modifier keys held during the move.
+    /// </summary>
+    [JsonProperty("keys", NullValueHandling = NullValueHandling.Ignore)]
+    public List<string>? Keys { get; set; }
 }
 
 /// <summary>
@@ -837,6 +885,12 @@ public class ScrollAction : IComputerAction
     /// </summary>
     [JsonProperty("scroll_y")]
     public int ScrollY { get; set; }
+
+    /// <summary>
+    /// Modifier keys held during the scroll.
+    /// </summary>
+    [JsonProperty("keys", NullValueHandling = NullValueHandling.Ignore)]
+    public List<string>? Keys { get; set; }
 }
 
 /// <summary>
@@ -1476,6 +1530,8 @@ internal class ResponseOutputItemConverter : JsonConverter<IResponseOutputItem>
             "mcp_approval_request" => jsonObject.ToObject<ResponseMcpApprovalRequestItem>(serializer),
             "compaction" => jsonObject.ToObject<ResponseCompactionOutputItem>(serializer),
             "custom_tool_call" => jsonObject.ToObject<ResponseCustomToolCallItem>(serializer),
+            ResponseOutputTypes.ToolSearchCall => jsonObject.ToObject<ResponseToolSearchCallItem>(serializer),
+            ResponseOutputTypes.ToolSearchOutput => jsonObject.ToObject<ResponseToolSearchOutputItem>(serializer),
             _ => null
         };
     }
@@ -1519,6 +1575,8 @@ internal class ResponseOutputItemListConverter : JsonConverter<List<IResponseOut
                 "mcp_approval_request" => token.ToObject<ResponseMcpApprovalRequestItem>(serializer),
                 "compaction" => token.ToObject<ResponseCompactionOutputItem>(serializer),
                 "custom_tool_call" => token.ToObject<ResponseCustomToolCallItem>(serializer),
+                ResponseOutputTypes.ToolSearchCall => token.ToObject<ResponseToolSearchCallItem>(serializer),
+                ResponseOutputTypes.ToolSearchOutput => token.ToObject<ResponseToolSearchOutputItem>(serializer),
                 _ => null
             };
             if (item != null)
@@ -1557,6 +1615,29 @@ internal class WebSearchActionConverter : JsonConverter<IWebSearchAction>
 /// </summary>
 internal class ComputerActionConverter : JsonConverter<IComputerAction>
 {
+    internal static List<IComputerAction> ReadActions(JArray array, JsonSerializer serializer)
+    {
+        ComputerActionConverter converter = new ComputerActionConverter();
+        List<IComputerAction> result = new List<IComputerAction>(array.Count);
+
+        foreach (JToken token in array)
+        {
+            if (token is not JObject obj)
+            {
+                continue;
+            }
+
+            using JsonReader reader = obj.CreateReader();
+            IComputerAction? action = converter.ReadJson(reader, typeof(IComputerAction), null, false, serializer);
+            if (action is not null)
+            {
+                result.Add(action);
+            }
+        }
+
+        return result;
+    }
+
     public override IComputerAction? ReadJson(JsonReader reader, Type objectType, IComputerAction? existingValue, bool hasExistingValue, JsonSerializer serializer)
     {
         JObject jo = JObject.Load(reader);

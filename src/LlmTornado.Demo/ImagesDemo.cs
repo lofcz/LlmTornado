@@ -240,6 +240,19 @@ public class ImagesDemo : DemoBase
     
     [TornadoTest]
     [Flaky("expensive")]
+    public static async Task GenerateGpt2()
+    {
+        ImageGenerationResult? generatedImg = await Program.Connect().ImageGenerations.CreateImage(new ImageGenerationRequest("a cute cat", quality: TornadoImageQualities.Medium, model: ImageModel.OpenAi.Gpt.V2)
+        {
+            Size = TornadoImageSizes.Size1024x1024
+        });
+        
+        await DisplayImage(generatedImg);
+    }
+    
+    [TornadoTest]
+    [Flaky("expensive")]
+    [Obsolete("DALL·E 3 was removed from the OpenAI API on May 12, 2026. Use GenerateGpt2 instead.")]
     public static async Task GenerateDalle3()
     {
         ImageGenerationResult? generatedImg = await Program.Connect().ImageGenerations.CreateImage(new ImageGenerationRequest("a cute cat", quality: TornadoImageQualities.Hd, responseFormat: TornadoImageResponseFormats.Url, model: ImageModel.OpenAi.Dalle.V3));
@@ -248,6 +261,7 @@ public class ImagesDemo : DemoBase
     
     [TornadoTest]
     [Flaky("expensive")]
+    [Obsolete("DALL·E 3 was removed from the OpenAI API on May 12, 2026. Use GenerateGpt2 instead.")]
     public static async Task GenerateDalle3Base64()
     {
         ImageGenerationResult? generatedImg = await Program.Connect().ImageGenerations.CreateImage(new ImageGenerationRequest("a cute cat", quality: TornadoImageQualities.Hd, responseFormat: TornadoImageResponseFormats.Base64, model: ImageModel.OpenAi.Dalle.V3));

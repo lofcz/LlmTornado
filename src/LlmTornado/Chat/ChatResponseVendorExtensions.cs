@@ -1,3 +1,4 @@
+using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Chat.Vendors.Cohere;
 using LlmTornado.Chat.Vendors.Google;
 using LlmTornado.Chat.Vendors.XAi;
@@ -10,6 +11,11 @@ namespace LlmTornado.Chat;
 /// </summary>
 public class ChatResponseVendorExtensions
 {
+    /// <summary>
+    ///     Anthropic extensions.
+    /// </summary>
+    public ChatResponseVendorAnthropicExtensions? Anthropic { get; set; }
+
     /// <summary>
     ///     Cohere extensions.
     /// </summary>

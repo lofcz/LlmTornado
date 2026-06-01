@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Text;
 using LlmTornado.Chat.Vendors.Google;
 using LlmTornado.Code;
+using LlmTornado.Webhooks;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Batch.Vendors.Google;
@@ -52,6 +53,9 @@ internal class VendorGoogleBatchConfig
     [JsonProperty("priority")]
     public string? Priority { get; set; }
 
+    [JsonProperty("webhook_config")]
+    public GeminiWebhookConfig? WebhookConfig { get; set; }
+
     public VendorGoogleBatchConfig(VendorGoogleBatchInputConfig inputConfig)
     {
         InputConfig = inputConfig;
@@ -77,6 +81,11 @@ internal class VendorGoogleBatchRequest
         if (request.VendorExtensions?.Google?.Priority is not null)
         {
             Batch.Priority = request.VendorExtensions.Google.Priority.Value.ToString();
+        }
+
+        if (request.VendorExtensions?.Google?.WebhookConfig is not null)
+        {
+            Batch.WebhookConfig = request.VendorExtensions.Google.WebhookConfig;
         }
     }
     

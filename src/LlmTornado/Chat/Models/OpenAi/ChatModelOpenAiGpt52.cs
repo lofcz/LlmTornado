@@ -40,6 +40,8 @@ public class ChatModelOpenAiGpt52 : IVendorModelClassProvider
     
     /// <summary>
     /// GPT-5.2-Codex is a version of GPT-5.2 optimized for agentic coding tasks in Codex or similar environments.
+    /// Supports low, medium, high, and xhigh reasoning effort settings.
+    /// 400,000 context window, 128,000 max output tokens.
     /// </summary>
     public static readonly ChatModel ModelV52Codex = new ChatModel("gpt-5.2-codex", LLmProviders.OpenAi, 400_000, [])
     {
@@ -52,7 +54,8 @@ public class ChatModelOpenAiGpt52 : IVendorModelClassProvider
     public readonly ChatModel V52Codex = ModelV52Codex;
     
     /// <summary>
-    /// Latest snapshot of GPT-5.2 chat model. The model powering ChatGPT.
+    /// Latest snapshot of GPT-5.2 Instant chat model. Snapshot updated Feb 10, 2026.
+    /// 400,000 context window, 128,000 max output tokens.
     /// </summary>
     public static readonly ChatModel ModelV52ChatLatest = new ChatModel("gpt-5.2-chat-latest", LLmProviders.OpenAi, 400_000, [])
     {

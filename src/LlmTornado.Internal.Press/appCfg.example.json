@@ -30,7 +30,7 @@
   },
   "imageGeneration": {
     "enabled": true,
-    "model": "dall-e-3",
+    "model": "gpt-image-2",
     "imageStyleHints": 2
   },
   "imageUpload": {

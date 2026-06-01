@@ -108,7 +108,7 @@ public class FileUploadRequest
     public FilePurpose? Purpose { get; set; }
     
     /// <summary>
-    /// MIME type
+    /// MIME type. For OpenAI <c>user_data</c> uploads, must be an <see cref="OpenAiInputFileTypes"/>-supported type when set.
     /// </summary>
     public string? MimeType { get; set; }
     

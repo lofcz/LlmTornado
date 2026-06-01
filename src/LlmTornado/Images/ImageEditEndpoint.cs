@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using LlmTornado.Code;
 using LlmTornado.Code.MimeTypeMap;
 using LlmTornado.Images.Models;
+using LlmTornado.Images.Models.OpenAi;
 
 namespace LlmTornado.Images;
 
@@ -36,7 +37,7 @@ public class ImageEditEndpoint : EndpointBase
     /// <returns>Asynchronously returns the image result. Look in its <see cref="TornadoGeneratedImage.Url" /> </returns>
     public async Task<ImageGenerationResult?> EditImage(ImageEditRequest request)
     {
-        IEndpointProvider provider = Api.GetProvider(request.Model ?? ImageModel.OpenAi.Dalle.V2);
+        IEndpointProvider provider = Api.GetProvider(request.Model ?? ImageModelOpenAiGpt.Default);
         
         // xAI uses JSON body instead of multipart form
         if (provider.Provider == LLmProviders.XAi)
@@ -144,18 +145,13 @@ public class ImageEditEndpoint : EndpointBase
             content.Add(maskSc, "mask", "mask.png");
         }
 
-        if (request.Size is not null)
+        if (request.Size is not null || request.Width is not null || request.Height is not null)
         {
-            string size = request.Size.Value switch
-            { 
-                TornadoImageSizes.Auto => "auto",
-                TornadoImageSizes.Size1024x1024 => "1024x1024",
-                TornadoImageSizes.Size1024x1536 => "1024x1536",
-                TornadoImageSizes.Size1536x1024 => "1536x1024",
-                _ => "auto"
-            };
-            
-            content.Add(new StringContent(size), "size");   
+            string? size = ImageGenerationRequest.GetSizeString(request.Size, request.Width, request.Height);
+            if (size is not null)
+            {
+                content.Add(new StringContent(size), "size");
+            }
         }
 
         if (request.User is not null)

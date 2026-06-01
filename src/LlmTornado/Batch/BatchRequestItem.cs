@@ -1,5 +1,6 @@
 using LlmTornado.Chat;
 using LlmTornado.Images;
+using LlmTornado.Videos;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Batch;
@@ -22,7 +23,12 @@ public enum BatchRequestEndpoint
     /// <summary>
     /// The /v1/images/edits endpoint.
     /// </summary>
-    ImageEdits
+    ImageEdits,
+
+    /// <summary>
+    /// The /v1/videos endpoint.
+    /// </summary>
+    Videos
 }
 
 /// <summary>
@@ -57,6 +63,13 @@ public class BatchRequestItem
     /// </summary>
     [JsonIgnore]
     public ImageEditRequest? ImageEditParams { get; set; }
+
+    /// <summary>
+    /// The video generation request parameters for this batch item.
+    /// Used when <see cref="Endpoint"/> is <see cref="BatchRequestEndpoint.Videos"/>.
+    /// </summary>
+    [JsonIgnore]
+    public VideoGenerationRequest? VideoGenerationParams { get; set; }
     
     /// <summary>
     /// The target API endpoint for this batch request item.
@@ -106,5 +119,17 @@ public class BatchRequestItem
         CustomId = customId;
         ImageEditParams = imageEditRequest;
         Endpoint = BatchRequestEndpoint.ImageEdits;
+    }
+
+    /// <summary>
+    /// Creates a batch request item with the specified custom ID and video generation parameters.
+    /// </summary>
+    /// <param name="customId">Developer-provided ID for matching results</param>
+    /// <param name="videoGenerationRequest">The video generation request parameters</param>
+    public BatchRequestItem(string customId, VideoGenerationRequest videoGenerationRequest)
+    {
+        CustomId = customId;
+        VideoGenerationParams = videoGenerationRequest;
+        Endpoint = BatchRequestEndpoint.Videos;
     }
 }

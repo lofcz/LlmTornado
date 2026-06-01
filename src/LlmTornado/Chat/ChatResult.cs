@@ -283,6 +283,12 @@ public class ChatChoice
     public string? StopReason { get; set; }
 	
 	/// <summary>
+	///     Additional details for refusal stop reasons. Currently returned by Anthropic Claude Opus 4.7+ models.
+	/// </summary>
+	[JsonIgnore]
+	public ChatStopDetails? StopDetails { get; set; }
+	
+	/// <summary>
 	///     Partial message "delta" from a stream. If this result object is not from a stream, this will be null.
 	/// </summary>
 	[JsonProperty("delta")]
@@ -432,6 +438,8 @@ public class ChatUsage : Usage
 		CompletionTokens = usage.OutputTokens;
 		PromptTokens = usage.InputTokens;
 		TotalTokens = CompletionTokens + PromptTokens;
+		CacheCreationTokens = usage.CacheCreationInputTokens;
+		CacheReadTokens = usage.CacheReadInputTokens;
 		VendorUsageObject = usage;
 		Provider = LLmProviders.Anthropic;
 	}

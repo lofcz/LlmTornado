@@ -18,6 +18,7 @@ public enum TornadoImageInputFidelity
 	
 	/// <summary>
 	/// High fidelity - more effort to match input image style and facial features (supported by gpt-image-1, not gpt-image-1-mini).
+	/// gpt-image-2 always uses high fidelity; omit this parameter for that model.
 	/// </summary>
 	[EnumMember(Value = "high")]
 	High

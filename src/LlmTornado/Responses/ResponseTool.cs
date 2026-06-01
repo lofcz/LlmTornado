@@ -57,6 +57,13 @@ public class ResponseFunctionTool : ResponseTool
     /// </summary>
     [JsonProperty("strict")]
     public bool? Strict { get; set; }
+
+    /// <summary>
+    /// When true, this function is deferred and loaded via tool search at runtime.
+    /// Requires a <see cref="ResponseToolSearchTool"/> in the same request. GPT-5.4+ only.
+    /// </summary>
+    [JsonProperty("defer_loading")]
+    public bool? DeferLoading { get; set; }
     
     [JsonIgnore]
     internal Delegate? Delegate { get; set; }
@@ -119,6 +126,51 @@ public class ResponseCustomTool : ResponseTool
     /// </summary>
     [JsonProperty("format")]
     public ToolCustomFormat? Format { get; set; }
+
+    /// <summary>
+    /// When true, this custom tool is deferred and loaded via tool search at runtime.
+    /// Requires a <see cref="ResponseToolSearchTool"/> in the same request. GPT-5.4+ only.
+    /// </summary>
+    [JsonProperty("defer_loading")]
+    public bool? DeferLoading { get; set; }
+
+    internal static ResponseCustomTool FromJson(JObject jo)
+    {
+        ResponseCustomTool tool = new ResponseCustomTool
+        {
+            Name = (string)jo["name"]!,
+            Description = (string?)jo["description"],
+            DeferLoading = (bool?)jo["defer_loading"]
+        };
+
+        ApplyFormatFromJson(tool, jo["format"]);
+        return tool;
+    }
+
+    internal static void ApplyFormatFromJson(ResponseCustomTool tool, JToken? formatToken)
+    {
+        if (formatToken is null || formatToken.Type == JTokenType.Null)
+        {
+            return;
+        }
+
+        string? formatType = formatToken["type"]?.ToString();
+        if (string.Equals(formatType, ToolCustomFormat.GrammarType, StringComparison.OrdinalIgnoreCase))
+        {
+            string? def = formatToken["definition"]?.ToString();
+            string? syntaxStr = formatToken["syntax"]?.ToString();
+            ToolCustomGrammarSyntaxes syntax = string.Equals(syntaxStr, "regex", StringComparison.OrdinalIgnoreCase)
+                ? ToolCustomGrammarSyntaxes.Regex
+                : ToolCustomGrammarSyntaxes.Lark;
+            tool.Format = def is not null
+                ? ToolCustomFormat.Grammar(def, syntax)
+                : new ToolCustomFormat { Type = ToolCustomFormat.GrammarType };
+        }
+        else
+        {
+            tool.Format = ToolCustomFormat.Text();
+        }
+    }
 }
 
 /// <summary>
@@ -186,6 +238,12 @@ public class ResponseWebSearchTool : ResponseTool
     /// </summary>
     [JsonProperty("user_location")]
     public ResponseUserLocation? UserLocation { get; set; }
+
+    /// <summary>
+    /// Returned-token budget for hosted <c>web_search</c> tool runs with GPT-5+ reasoning models.
+    /// </summary>
+    [JsonProperty("return_token_budget")]
+    public ResponseWebSearchReturnTokenBudget? ReturnTokenBudget { get; set; }
 }
 
 /// <summary>
@@ -195,16 +253,47 @@ public class ResponseWebSearchTool : ResponseTool
 public enum ResponseWebSearchToolType
 {
     /// <summary>
-    /// Web search preview
+    /// Hosted Responses API web search tool (recommended for new integrations).
+    /// </summary>
+    [EnumMember(Value = "web_search")]
+    WebSearch,
+
+    /// <summary>
+    /// Hosted web search tool snapshot 2025-08-26.
+    /// </summary>
+    [EnumMember(Value = "web_search_2025_08_26")]
+    WebSearch20250826,
+
+    /// <summary>
+    /// Legacy web search preview tool.
     /// </summary>
     [EnumMember(Value = "web_search_preview")]
     WebSearchPreview,
 
     /// <summary>
-    /// Web search preview 2025-03-11
+    /// Legacy web search preview 2025-03-11.
     /// </summary>
     [EnumMember(Value = "web_search_preview_2025_03_11")]
     WebSearchPreview20250311
+}
+
+/// <summary>
+/// Returned-token budget for hosted Responses API <c>web_search</c> tool runs with GPT-5+ reasoning models.
+/// </summary>
+[JsonConverter(typeof(StringEnumConverter))]
+public enum ResponseWebSearchReturnTokenBudget
+{
+    /// <summary>
+    /// Standard returned-token budget (same as omitting the parameter).
+    /// </summary>
+    [EnumMember(Value = "default")]
+    Default,
+
+    /// <summary>
+    /// Removes the default returned-token cap for high-effort research runs.
+    /// </summary>
+    [EnumMember(Value = "unlimited")]
+    Unlimited
 }
 
 /// <summary>
@@ -269,6 +358,20 @@ public class ResponseUserLocation
 }
 
 /// <summary>
+/// Built-in computer use tool for GPT-5.4+ (Responses API).
+/// </summary>
+public class ResponseComputerTool : ResponseTool
+{
+    /// <summary>
+    /// Default GA computer tool for GPT-5.4+ Responses API requests.
+    /// </summary>
+    public static readonly ResponseComputerTool Default = new ResponseComputerTool();
+
+    /// <inheritdoc />
+    public override string Type => "computer";
+}
+
+/// <summary>
 /// Represents a computer use tool.
 /// </summary>
 public class ResponseComputerUseTool : ResponseTool
@@ -316,7 +419,13 @@ public enum ResponseComputerEnvironment
     /// Ubuntu Linux environment.
     /// </summary>
     [EnumMember(Value = "ubuntu")]
-    Ubuntu
+    Ubuntu,
+
+    /// <summary>
+    /// Generic Linux environment.
+    /// </summary>
+    [EnumMember(Value = "linux")]
+    Linux
 }
 
 /// <summary>
@@ -379,6 +488,12 @@ public class ResponseMcpTool : ResponseTool
     /// </summary>
     [JsonProperty("require_approval")]
     public ResponseMcpRequireApproval? RequireApproval { get; set; }
+
+    /// <summary>
+    /// When true, MCP tools are deferred and discovered via tool search (GPT-5.4+).
+    /// </summary>
+    [JsonProperty("defer_loading")]
+    public bool? DeferLoading { get; set; }
 }
 
 /// <summary>
@@ -981,39 +1096,11 @@ internal class ResponseToolConverter : JsonConverter
                     Name = (string)jo["name"]!,
                     Description = (string?)jo["description"],
                     Parameters = (JObject)jo["parameters"]!,
-                    Strict = (bool?)jo["strict"]
+                    Strict = (bool?)jo["strict"],
+                    DeferLoading = (bool?)jo["defer_loading"]
                 };
             case "custom":
-                {
-                    ResponseCustomTool tool = new ResponseCustomTool
-                    {
-                        Name = (string)jo["name"]!,
-                        Description = (string?)jo["description"]
-                    };
-
-                    JToken? formatToken = jo["format"];
-                    if (formatToken != null && formatToken.Type != JTokenType.Null)
-                    {
-                        string? formatType = formatToken["type"]?.ToString();
-                        if (string.Equals(formatType, ToolCustomFormat.GrammarType, StringComparison.OrdinalIgnoreCase))
-                        {
-                            string? def = formatToken["definition"]?.ToString();
-                            string? syntaxStr = formatToken["syntax"]?.ToString();
-                            ToolCustomGrammarSyntaxes syntax = string.Equals(syntaxStr, "regex", StringComparison.OrdinalIgnoreCase)
-                                ? ToolCustomGrammarSyntaxes.Regex
-                                : ToolCustomGrammarSyntaxes.Lark;
-                            tool.Format = def is not null
-                                ? ToolCustomFormat.Grammar(def, syntax)
-                                : new ToolCustomFormat { Type = ToolCustomFormat.GrammarType };
-                        }
-                        else
-                        {
-                            tool.Format = ToolCustomFormat.Text();
-                        }
-                    }
-
-                    return tool;
-                }
+                return ResponseCustomTool.FromJson(jo);
             case "file_search":
                 return new ResponseFileSearchTool
                 {
@@ -1022,17 +1109,24 @@ internal class ResponseToolConverter : JsonConverter
                     MaxNumResults = (int?)jo["max_num_results"],
                     RankingOptions = jo["ranking_options"]?.ToObject<RankingOptions>(serializer)
                 };
+            case "web_search":
+            case "web_search_2025_08_26":
             case "web_search_preview":
             case "web_search_preview_2025_03_11":
-                ResponseWebSearchToolType webSearchType = type == "web_search_preview_2025_03_11" 
-                    ? ResponseWebSearchToolType.WebSearchPreview20250311 
-                    : ResponseWebSearchToolType.WebSearchPreview;
+                ResponseWebSearchToolType webSearchType = type switch
+                {
+                    "web_search_preview_2025_03_11" => ResponseWebSearchToolType.WebSearchPreview20250311,
+                    "web_search_preview" => ResponseWebSearchToolType.WebSearchPreview,
+                    "web_search_2025_08_26" => ResponseWebSearchToolType.WebSearch20250826,
+                    _ => ResponseWebSearchToolType.WebSearch
+                };
                 
                 return new ResponseWebSearchTool
                 {
                     WebSearchToolType = webSearchType,
                     SearchContextSize = jo["search_context_size"]?.ToObject<ResponseSearchContextSize>(serializer),
-                    UserLocation = jo["user_location"]?.ToObject<ResponseUserLocation>(serializer)
+                    UserLocation = jo["user_location"]?.ToObject<ResponseUserLocation>(serializer),
+                    ReturnTokenBudget = jo["return_token_budget"]?.ToObject<ResponseWebSearchReturnTokenBudget>(serializer)
                 };
             case "code_interpreter":
                 ResponseCodeInterpreterContainer? container = null;
@@ -1075,8 +1169,11 @@ internal class ResponseToolConverter : JsonConverter
                     RequireApproval = jo["require_approval"]?.ToObject<ResponseMcpRequireApproval>(serializer),
                     Connector = jo["connector_id"]?.ToObject<McpConnectors?>(serializer),
                     ServerDescription = (string?)jo["server_description"],
-                    Authorization = (string?)jo["authorization"]
+                    Authorization = (string?)jo["authorization"],
+                    DeferLoading = (bool?)jo["defer_loading"]
                 };
+            case "computer":
+                return new ResponseComputerTool();
             case "computer_use_preview":
             case "computer_use":
                 return new ResponseComputerUseTool
@@ -1099,6 +1196,30 @@ internal class ResponseToolConverter : JsonConverter
                 {
                     Environment = shellEnv
                 };
+            case "tool_search":
+                return new ResponseToolSearchTool
+                {
+                    Execution = jo["execution"]?.ToObject<ResponseToolSearchExecution?>(serializer),
+                    Description = (string?)jo["description"],
+                    Parameters = jo["parameters"] as JObject
+                };
+            case "namespace":
+            {
+                List<ResponseTool> nestedTools = [];
+                if (jo["tools"] is JArray toolsArray)
+                {
+                    ResponseNamespaceNestedToolListConverter nestedConverter = new ResponseNamespaceNestedToolListConverter();
+                    using JsonReader toolsReader = toolsArray.CreateReader();
+                    nestedTools = nestedConverter.ReadJson(toolsReader, typeof(List<ResponseTool>), null, false, serializer) ?? [];
+                }
+
+                return new ResponseToolNamespace
+                {
+                    Name = (string)jo["name"]!,
+                    Description = (string)jo["description"]!,
+                    Tools = nestedTools
+                };
+            }
             default:
                 throw new JsonSerializationException($"Unknown tool type: {type}");
         }
@@ -1160,6 +1281,11 @@ internal class ResponseToolConverter : JsonConverter
                     
                     writer.WriteEndObject();
                 }
+                if (custom.DeferLoading != null)
+                {
+                    writer.WritePropertyName("defer_loading");
+                    writer.WriteValue(custom.DeferLoading);
+                }
                 break;
             case ResponseFileSearchTool file:
                 writer.WritePropertyName("type");
@@ -1197,6 +1323,11 @@ internal class ResponseToolConverter : JsonConverter
                 {
                     writer.WritePropertyName("user_location");
                     serializer.Serialize(writer, web.UserLocation);
+                }
+                if (web.ReturnTokenBudget != null)
+                {
+                    writer.WritePropertyName("return_token_budget");
+                    serializer.Serialize(writer, web.ReturnTokenBudget);
                 }
                 break;
             case ResponseCodeInterpreterTool code:
@@ -1304,6 +1435,15 @@ internal class ResponseToolConverter : JsonConverter
                     writer.WritePropertyName("require_approval");
                     serializer.Serialize(writer, mcp.RequireApproval);
                 }
+                if (mcp.DeferLoading != null)
+                {
+                    writer.WritePropertyName("defer_loading");
+                    writer.WriteValue(mcp.DeferLoading);
+                }
+                break;
+            case ResponseComputerTool computer:
+                writer.WritePropertyName("type");
+                writer.WriteValue(computer.Type);
                 break;
             case ResponseComputerUseTool comp:
                 writer.WritePropertyName("type");
@@ -1340,6 +1480,35 @@ internal class ResponseToolConverter : JsonConverter
                     writer.WritePropertyName("environment");
                     serializer.Serialize(writer, shell.Environment);
                 }
+                break;
+            case ResponseToolSearchTool toolSearch:
+                writer.WritePropertyName("type");
+                writer.WriteValue(toolSearch.Type);
+                if (toolSearch.Execution is not null)
+                {
+                    writer.WritePropertyName("execution");
+                    serializer.Serialize(writer, toolSearch.Execution);
+                }
+                if (toolSearch.Description is not null)
+                {
+                    writer.WritePropertyName("description");
+                    writer.WriteValue(toolSearch.Description);
+                }
+                if (toolSearch.Parameters is not null)
+                {
+                    writer.WritePropertyName("parameters");
+                    serializer.Serialize(writer, toolSearch.Parameters);
+                }
+                break;
+            case ResponseToolNamespace ns:
+                writer.WritePropertyName("type");
+                writer.WriteValue(ns.Type);
+                writer.WritePropertyName("name");
+                writer.WriteValue(ns.Name);
+                writer.WritePropertyName("description");
+                writer.WriteValue(ns.Description);
+                writer.WritePropertyName("tools");
+                new ResponseNamespaceNestedToolListConverter().WriteJson(writer, ns.Tools, serializer);
                 break;
         }
         writer.WriteEndObject();

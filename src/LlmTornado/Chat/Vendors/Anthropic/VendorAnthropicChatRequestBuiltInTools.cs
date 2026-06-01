@@ -116,6 +116,13 @@ public enum VendorAnthropicChatRequestBuiltInToolTypes
     /// </summary>
     [EnumMember(Value = "web_fetch_20260209")]
     WebFetch20260209,
+
+    /// <summary>
+    /// Advisor tool. Pairs a faster executor with a higher-intelligence advisor model.
+    /// Requires the <c>advisor-tool-2026-03-01</c> beta header (added automatically).
+    /// </summary>
+    [EnumMember(Value = "advisor_20260301")]
+    Advisor20260301,
 }
 
 /// <summary>
@@ -511,4 +518,42 @@ public class VendorAnthropicChatRequestBuiltInToolWebFetch20260209 : IVendorAnth
     /// Maximum number of content tokens to include from fetched pages. Content is truncated when exceeded.
     /// </summary>
     public int? MaxContentTokens { get; set; }
+}
+
+/// <summary>
+/// Advisor server tool (beta). The executor consults a stronger advisor model mid-generation.
+/// Requires beta header <c>advisor-tool-2026-03-01</c> (added automatically).
+/// </summary>
+public class VendorAnthropicChatRequestBuiltInToolAdvisor20260301 : IVendorAnthropicChatRequestBuiltInTool
+{
+    /// <inheritdoc />
+    public VendorAnthropicChatRequestBuiltInToolTypes Type => VendorAnthropicChatRequestBuiltInToolTypes.Advisor20260301;
+
+    /// <inheritdoc />
+    [JsonProperty("name")]
+    public string Name => "advisor";
+
+    /// <summary>
+    /// Not used for the advisor tool (use <see cref="Caching"/> instead).
+    /// </summary>
+    [JsonIgnore]
+    public AnthropicCacheSettings? Cache { get; set; }
+
+    /// <summary>
+    /// Advisor model ID, e.g. <c>claude-opus-4-8</c>. Billed at this model's rates for the sub-inference.
+    /// </summary>
+    [JsonProperty("model")]
+    public string AdvisorModel { get; set; } = null!;
+
+    /// <summary>
+    /// Maximum number of advisor calls allowed in a single request.
+    /// </summary>
+    [JsonProperty("max_uses")]
+    public int? MaxUses { get; set; }
+
+    /// <summary>
+    /// Enables prompt caching for the advisor's transcript across calls within a conversation.
+    /// </summary>
+    [JsonProperty("caching")]
+    public AnthropicCacheSettings? Caching { get; set; }
 }

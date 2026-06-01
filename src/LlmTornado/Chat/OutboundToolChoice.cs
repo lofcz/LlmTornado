@@ -450,6 +450,8 @@ public class OutboundToolChoice
         return type switch
         {
             HostedToolTypes.FileSearch => "file_search",
+            HostedToolTypes.WebSearch => "web_search",
+            HostedToolTypes.WebSearch20250826 => "web_search_2025_08_26",
             HostedToolTypes.WebSearchPreview => "web_search_preview",
             HostedToolTypes.ComputerUsePreview => "computer_use_preview",
             HostedToolTypes.CodeInterpreter => "code_interpreter",
@@ -466,6 +468,8 @@ public class OutboundToolChoice
         switch (type)
         {
             case "file_search": value = HostedToolTypes.FileSearch; return true;
+            case "web_search": value = HostedToolTypes.WebSearch; return true;
+            case "web_search_2025_08_26": value = HostedToolTypes.WebSearch20250826; return true;
             case "web_search_preview": value = HostedToolTypes.WebSearchPreview; return true;
             case "computer_use_preview": value = HostedToolTypes.ComputerUsePreview; return true;
             case "code_interpreter": value = HostedToolTypes.CodeInterpreter; return true;
@@ -538,6 +542,8 @@ public class AllowedToolReference
         string typeString = type switch
         {
             HostedToolTypes.FileSearch => "file_search",
+            HostedToolTypes.WebSearch => "web_search",
+            HostedToolTypes.WebSearch20250826 => "web_search_2025_08_26",
             HostedToolTypes.WebSearchPreview => "web_search_preview",
             HostedToolTypes.ComputerUsePreview => "computer_use_preview",
             HostedToolTypes.CodeInterpreter => "code_interpreter",
@@ -582,7 +588,19 @@ public enum HostedToolTypes
     FileSearch,
     
     /// <summary>
-    /// Include data from the Internet in model response generation.
+    /// Hosted Responses API web search tool (recommended).
+    /// </summary>
+    [EnumMember(Value = "web_search")]
+    WebSearch,
+
+    /// <summary>
+    /// Hosted web search tool snapshot 2025-08-26.
+    /// </summary>
+    [EnumMember(Value = "web_search_2025_08_26")]
+    WebSearch20250826,
+
+    /// <summary>
+    /// Legacy web search preview tool.
     /// </summary>
     [EnumMember(Value = "web_search_preview")] 
     WebSearchPreview,

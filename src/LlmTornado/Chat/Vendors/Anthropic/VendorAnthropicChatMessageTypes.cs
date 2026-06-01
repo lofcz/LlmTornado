@@ -21,7 +21,8 @@ internal enum VendorAnthropicChatMessageTypes
     McpToolResult,
     ContainerUpload,
     TextEditorCodeExecutionViewResult,
-    Compaction
+    Compaction,
+    AdvisorToolResult
 }
 
 internal static class VendorAnthropicChatMessageTypesCls
@@ -43,6 +44,7 @@ internal static class VendorAnthropicChatMessageTypesCls
         {"mcp_tool_result", VendorAnthropicChatMessageTypes.McpToolResult },
         {"container_upload", VendorAnthropicChatMessageTypes.ContainerUpload },
         {"text_editor_code_execution_view_result", VendorAnthropicChatMessageTypes.TextEditorCodeExecutionViewResult },
-        {"compaction", VendorAnthropicChatMessageTypes.Compaction }
+        {"compaction", VendorAnthropicChatMessageTypes.Compaction },
+        {"advisor_tool_result", VendorAnthropicChatMessageTypes.AdvisorToolResult }
     } .ToFrozenDictionary();
 }

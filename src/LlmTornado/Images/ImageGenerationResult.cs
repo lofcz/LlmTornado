@@ -18,7 +18,7 @@ public class ImageGenerationResult : ApiResultBase
     public List<TornadoGeneratedImage>? Data { get; set; }
 
 	/// <summary>
-	/// For gpt-image-1 only, the token usage information for the image generation.
+	/// For GPT image models, the token usage information for the image generation.
 	/// </summary>
 	[JsonProperty("usage")]
 	public TornadoImageUsage? Usage { get; set; }
@@ -50,7 +50,7 @@ public class ImageGenerationResult : ApiResultBase
 }
 
 /// <summary>
-/// For gpt-image-1 only, the token usage information for the image generation.
+/// Token usage information for GPT image model image generation.
 /// </summary>
 public class TornadoImageUsage
 {
@@ -71,6 +71,12 @@ public class TornadoImageUsage
 	/// </summary>
 	[JsonProperty("output_tokens")]
 	public int OutputTokens { get; set; }
+	
+	/// <summary>
+	/// The output token details for the image generation (gpt-image-2 and later).
+	/// </summary>
+	[JsonProperty("output_tokens_details")]
+	public TornadoImageUsageDetails? OutputTokenDetails { get; set; }
 	
 	/// <summary>
 	/// The total number of tokens (images and text) used for the image generation.

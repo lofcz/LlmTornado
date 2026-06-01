@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Runtime.Serialization;
 using LlmTornado.Code;
 using LlmTornado.Videos.Models;
+using LlmTornado.Webhooks;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Videos.Vendors.Google;
@@ -115,6 +116,21 @@ internal class VendorGoogleVideoRequest
             {
                 parameters.SafetySetting = request.GoogleExtensions.SafetySetting.Value.ToString().ToLowerInvariant();
             }
+            
+            if (request.GoogleExtensions.Seed.HasValue)
+            {
+                parameters.Seed = request.GoogleExtensions.Seed.Value;
+            }
+            
+            if (request.GoogleExtensions.NumberOfVideos.HasValue)
+            {
+                parameters.NumberOfVideos = request.GoogleExtensions.NumberOfVideos.Value;
+            }
+            
+            if (request.GoogleExtensions.WebhookConfig is not null)
+            {
+                parameters.WebhookConfig = request.GoogleExtensions.WebhookConfig;
+            }
         }
         
         Parameters = parameters;
@@ -225,5 +241,23 @@ internal class VendorGoogleVideoRequest
         /// </summary>
         [JsonProperty("safetySetting")]
         public string? SafetySetting { get; set; }
+        
+        /// <summary>
+        /// Seed used in decoding for Veo 3 models.
+        /// </summary>
+        [JsonProperty("seed", NullValueHandling = NullValueHandling.Ignore)]
+        public int? Seed { get; set; }
+        
+        /// <summary>
+        /// Number of videos to generate. Used for video extension.
+        /// </summary>
+        [JsonProperty("numberOfVideos", NullValueHandling = NullValueHandling.Ignore)]
+        public int? NumberOfVideos { get; set; }
+
+        /// <summary>
+        /// Per-request dynamic webhook configuration.
+        /// </summary>
+        [JsonProperty("webhook_config")]
+        public GeminiWebhookConfig? WebhookConfig { get; set; }
     }
 }

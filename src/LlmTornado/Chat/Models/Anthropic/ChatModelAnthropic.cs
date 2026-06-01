@@ -40,11 +40,16 @@ public class ChatModelAnthropic : BaseVendorModelProvider
     /// Claude 4.6 models.
     /// </summary>
     public readonly ChatModelAnthropicClaude46 Claude46 = new ChatModelAnthropicClaude46();
-
+    
     /// <summary>
-    /// Claude 4.7 models.
+    /// Claude 4.7+ models (NextOpus generation).
     /// </summary>
     public readonly ChatModelAnthropicClaude47 Claude47 = new ChatModelAnthropicClaude47();
+
+    /// <summary>
+    /// Claude 4.8 models.
+    /// </summary>
+    public readonly ChatModelAnthropicClaude48 Claude48 = new ChatModelAnthropicClaude48();
 
     /// <inheritdoc cref="BaseVendorModelProvider.Provider"/>
     public override LLmProviders Provider => LLmProviders.Anthropic;
@@ -83,7 +88,7 @@ public class ChatModelAnthropic : BaseVendorModelProvider
     /// </summary>
     public static List<IModel> ModelsAll => LazyModelsAll.Value;
 
-    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [..ChatModelAnthropicClaude3.ModelsAll, ..ChatModelAnthropicClaude35.ModelsAll, ..ChatModelAnthropicClaude4.ModelsAll, ..ChatModelAnthropicClaude41.ModelsAll, ..ChatModelAnthropicClaude45.ModelsAll, ..ChatModelAnthropicClaude46.ModelsAll, ..ChatModelAnthropicClaude47.ModelsAll]);
+    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [..ChatModelAnthropicClaude3.ModelsAll, ..ChatModelAnthropicClaude35.ModelsAll, ..ChatModelAnthropicClaude4.ModelsAll, ..ChatModelAnthropicClaude41.ModelsAll, ..ChatModelAnthropicClaude45.ModelsAll, ..ChatModelAnthropicClaude46.ModelsAll, ..ChatModelAnthropicClaude47.ModelsAll, ..ChatModelAnthropicClaude48.ModelsAll]);
     
     internal ChatModelAnthropic()
     {

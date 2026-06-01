@@ -36,6 +36,17 @@ public class VideoModelGoogleVeo : BaseVendorModelProvider
     public readonly VideoModel V31Fast = ModelV31Fast;
     
     /// <summary>
+    /// Veo 3.1 Lite Preview model. Supports text-to-video and image-to-video at 720p/1080p.
+    /// Does not support video extension, reference images, or 4k output.
+    /// </summary>
+    public static readonly VideoModel ModelV31Lite = new VideoModel("veo-3.1-lite-generate-preview", "google", LLmProviders.Google);
+    
+    /// <summary>
+    /// <inheritdoc cref="ModelV31Lite"/>
+    /// </summary>
+    public readonly VideoModel V31Lite = ModelV31Lite;
+    
+    /// <summary>
     /// Veo 3.0 model.
     /// </summary>
     public static readonly VideoModel ModelV3 = new VideoModel("veo-3.0-generate-001", "google", LLmProviders.Google);
@@ -71,7 +82,7 @@ public class VideoModelGoogleVeo : BaseVendorModelProvider
     public static List<IModel> ModelsAll => LazyModelsAll.Value;
 
     private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [
-        ModelV31, ModelV31Fast, ModelV3, ModelV3Fast, ModelV2
+        ModelV31, ModelV31Fast, ModelV31Lite, ModelV3, ModelV3Fast, ModelV2
     ]);
     
     /// <summary>

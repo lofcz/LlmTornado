@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
+using LlmTornado.Code;
 using LlmTornado.Vendor.Anthropic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -62,29 +63,129 @@ public enum AnthropicCacheTypes
 
 
 /// <summary>
+/// Anthropic extended thinking modes sent as <c>thinking.type</c>.
+/// </summary>
+[JsonConverter(typeof(StringEnumConverter))]
+public enum AnthropicThinkingTypes
+{
+    /// <summary>
+    /// Manual extended thinking with a fixed <c>budget_tokens</c> limit.
+    /// Deprecated on Claude Opus 4.6+, Sonnet 4.6, and rejected on Opus 4.7+.
+    /// </summary>
+    [EnumMember(Value = "enabled")]
+    Enabled,
+
+    /// <summary>
+    /// Thinking disabled.
+    /// </summary>
+    [EnumMember(Value = "disabled")]
+    Disabled,
+
+    /// <summary>
+    /// Adaptive thinking. Claude decides when and how much to think.
+    /// Recommended for Claude Opus 4.6+, Sonnet 4.6, and required on Opus 4.7+ (NextOpus).
+    /// </summary>
+    [EnumMember(Value = "adaptive")]
+    Adaptive
+}
+
+/// <summary>
+/// Controls how extended thinking content is returned in Anthropic API responses.
+/// </summary>
+[JsonConverter(typeof(StringEnumConverter))]
+public enum AnthropicThinkingDisplay
+{
+    /// <summary>
+    /// Thinking blocks contain summarized thinking text. Default on Claude Opus 4.6, Sonnet 4.6, and earlier Claude 4 models.
+    /// </summary>
+    [EnumMember(Value = "summarized")]
+    Summarized,
+
+    /// <summary>
+    /// Thinking blocks are returned with an empty <c>thinking</c> field while preserving the <c>signature</c> for multi-turn continuity.
+    /// </summary>
+    [EnumMember(Value = "omitted")]
+    Omitted
+}
+
+/// <summary>
 /// Thinking settings for Claude 3.7+ models.
 /// </summary>
 public class AnthropicThinkingSettings
 {
     /// <summary>
+    /// Thinking mode sent as <c>thinking.type</c>.
+    /// When unset, legacy <see cref="Adaptive"/> / <see cref="Enabled"/> flags are used.
+    /// </summary>
+    public AnthropicThinkingTypes? Type { get; set; }
+
+    /// <summary>
     /// The budget_tokens parameter determines the maximum number of tokens Claude is allowed use for its internal reasoning process. Larger budgets can improve response quality by enabling more thorough analysis for complex problems, although Claude may not use the entire budget allocated, especially at ranges above 32K.
     /// <br/><b>Note: budget_tokens must always be less than the max_tokens specified.</b>
-    /// <br/><b>Deprecated on Claude 4.6+:</b> Use <see cref="Adaptive"/> with the effort parameter instead.
+    /// <br/><b>Deprecated on Claude 4.6+:</b> Use <see cref="AnthropicThinkingTypes.Adaptive"/> with the effort parameter instead.
     /// </summary>
     public int? BudgetTokens { get; set; }
     
     /// <summary>
     /// Whether thinking is enabled with manual budget control (type: "enabled").
-    /// <br/><b>Deprecated on Claude 4.6+:</b> Use <see cref="Adaptive"/> instead.
+    /// <br/><b>Deprecated:</b> Prefer <see cref="Type"/> = <see cref="AnthropicThinkingTypes.Enabled"/>.
     /// </summary>
     public bool Enabled { get; set; }
     
     /// <summary>
-    /// Whether adaptive thinking is enabled (type: "adaptive"). Recommended for Claude 4.6+.
-    /// Claude dynamically decides when and how much to think. Use the effort parameter to control thinking depth.
-    /// When set to true, <see cref="BudgetTokens"/> and <see cref="Enabled"/> are ignored.
+    /// Whether adaptive thinking is enabled (type: "adaptive").
+    /// <br/><b>Deprecated:</b> Prefer <see cref="Type"/> = <see cref="AnthropicThinkingTypes.Adaptive"/>.
     /// </summary>
     public bool Adaptive { get; set; }
+
+    /// <summary>
+    /// Controls whether thinking content is returned in responses.
+    /// Use <see cref="AnthropicThinkingDisplay.Omitted"/> to preserve signatures without streaming thinking text.
+    /// </summary>
+    public AnthropicThinkingDisplay? Display { get; set; }
+
+    /// <summary>
+    /// Resolves the effective thinking mode from explicit <see cref="Type"/> or legacy flags.
+    /// </summary>
+    internal AnthropicThinkingTypes ResolvedType
+    {
+        get
+        {
+            if (Type is not null)
+            {
+                return Type.Value;
+            }
+
+            if (Adaptive)
+            {
+                return AnthropicThinkingTypes.Adaptive;
+            }
+
+            if (Enabled || BudgetTokens > 0)
+            {
+                return AnthropicThinkingTypes.Enabled;
+            }
+
+            return AnthropicThinkingTypes.Disabled;
+        }
+    }
+
+    /// <summary>
+    /// Creates adaptive thinking settings (<c>thinking: {"type":"adaptive"}</c>).
+    /// </summary>
+    public static AnthropicThinkingSettings CreateAdaptive() => new AnthropicThinkingSettings
+    {
+        Type = AnthropicThinkingTypes.Adaptive
+    };
+
+    /// <summary>
+    /// Creates manual extended thinking settings with a token budget.
+    /// </summary>
+    public static AnthropicThinkingSettings CreateEnabled(int budgetTokens) => new AnthropicThinkingSettings
+    {
+        Type = AnthropicThinkingTypes.Enabled,
+        BudgetTokens = budgetTokens
+    };
 }
 
 /// <summary>
@@ -151,35 +252,89 @@ public class AnthropicContainer
 }
 
 /// <summary>
-/// MCP servers to be utilized in this request max 20
+/// MCP servers to be utilized in this request (max 20).
 /// </summary>
 public class AnthropicMcpServer
 {
     /// <summary>
-    /// Type of the skill (typically "anthropic" for built-in skills).
+    /// Connection type. Currently only <c>url</c> is supported.
     /// </summary>
     [JsonProperty("type")]
     public string Type { get; } = "url";
 
+    /// <summary>
+    /// Unique identifier for this MCP server. Referenced by an <see cref="AnthropicMcpToolset"/>.
+    /// </summary>
     [JsonProperty("name")]
-    public string Name { get; set; }
+    public string Name { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Remote MCP server URL, or a routed tunnel URL such as <c>https://echo.example.tunnel.anthropic.com/mcp</c>.
+    /// When <see cref="Tunnel"/> is set and this is empty, the URL is resolved automatically during serialization.
+    /// </summary>
     [JsonProperty("url")]
-    public string Url { get; set; }
+    public string Url { get; set; } = string.Empty;
 
+    /// <summary>
+    /// OAuth authorization token for the upstream MCP server, if required.
+    /// </summary>
     [JsonProperty("authorization_token")]
     public string? AuthorizationToken { get; set; }
 
-    [JsonProperty("tool_configuration")]
+    /// <summary>
+    /// Optional tunnel routing configuration for private-network MCP servers.
+    /// </summary>
+    [JsonIgnore]
+    public AnthropicMcpTunnelConfig? Tunnel { get; set; }
+
+    /// <summary>
+    /// Deprecated MCP server tool configuration (mcp-client-2025-04-04).
+    /// Migrated automatically to <see cref="AnthropicMcpToolset"/> entries in the outbound <c>tools</c> array.
+    /// </summary>
+    [JsonIgnore]
     public AnthropicMcpConfiguration? Configuration { get; set; }
+
+    /// <summary>
+    /// Resolves the effective MCP server URL, building it from <see cref="Tunnel"/> when needed.
+    /// </summary>
+    public string ResolveUrl() =>
+        !string.IsNullOrWhiteSpace(Url) ? Url : Tunnel?.BuildUrl()
+        ?? throw new InvalidOperationException($"MCP server '{Name}' requires Url or Tunnel configuration.");
+
+    /// <summary>
+    /// Creates an MCP server definition for a tunneled private-network server.
+    /// </summary>
+    public static AnthropicMcpServer ForTunnel(string name, AnthropicMcpTunnelConfig tunnel, string? authorizationToken = null) =>
+        new()
+        {
+            Name = name,
+            Tunnel = tunnel,
+            Url = tunnel.BuildUrl(),
+            AuthorizationToken = authorizationToken
+        };
+
+    /// <summary>
+    /// Creates an MCP server definition for a tunneled private-network server.
+    /// </summary>
+    public static AnthropicMcpServer ForTunnel(string name, string subdomain, string tunnelDomain, string path = "/mcp", string? authorizationToken = null) =>
+        ForTunnel(name, AnthropicMcpTunnelConfig.Create(subdomain, tunnelDomain, path), authorizationToken);
 }
 
+/// <summary>
+/// Deprecated MCP server tool configuration from mcp-client-2025-04-04.
+/// Prefer configuring tools with <see cref="AnthropicMcpToolset"/>.
+/// </summary>
 public class AnthropicMcpConfiguration
 {
+    /// <summary>
+    /// Allowlisted tool names.
+    /// </summary>
     [JsonProperty("allowed_tools")]
     public string[]? AllowedTools { get; set; }
 
-
+    /// <summary>
+    /// Whether MCP tools are enabled for this server.
+    /// </summary>
     [JsonProperty("enabled")]
     public bool? Enabled { get; set; } = true;
 }
@@ -332,6 +487,89 @@ public class AnthropicContextManagement
 }
 
 /// <summary>
+/// Task budget types for Anthropic agentic loops.
+/// </summary>
+[JsonConverter(typeof(StringEnumConverter))]
+public enum AnthropicTaskBudgetTypes
+{
+    /// <summary>
+    /// Token-based task budget.
+    /// </summary>
+    [EnumMember(Value = "tokens")]
+    Tokens
+}
+
+/// <summary>
+/// Advisory token budget for a full agentic loop (thinking, tool calls, tool results, and output).
+/// Requires the task-budgets-2026-03-13 beta header (added automatically).
+/// Supported on Claude Opus 4.7+.
+/// </summary>
+public class AnthropicTaskBudget
+{
+    /// <summary>
+    /// Budget type. Currently only <see cref="AnthropicTaskBudgetTypes.Tokens"/> is supported.
+    /// </summary>
+    [JsonProperty("type")]
+    public AnthropicTaskBudgetTypes Type { get; set; } = AnthropicTaskBudgetTypes.Tokens;
+    
+    /// <summary>
+    /// Total tokens Claude can spend across the agentic loop.
+    /// Minimum accepted value is 20,000.
+    /// </summary>
+    [JsonProperty("total")]
+    public int Total { get; set; }
+    
+    /// <summary>
+    /// Budget remainder carried over from a prior request (e.g. after compaction).
+    /// Defaults to <see cref="Total"/> when omitted.
+    /// </summary>
+    [JsonProperty("remaining")]
+    public int? Remaining { get; set; }
+    
+    /// <summary>
+    /// Creates a token-based task budget.
+    /// </summary>
+    /// <param name="total">Total token budget (minimum 20,000).</param>
+    public AnthropicTaskBudget(int total)
+    {
+        Total = total;
+    }
+    
+    /// <summary>
+    /// Creates a token-based task budget with an explicit remaining value.
+    /// </summary>
+    /// <param name="total">Total token budget (minimum 20,000).</param>
+    /// <param name="remaining">Remaining budget after prior turns.</param>
+    public AnthropicTaskBudget(int total, int remaining)
+    {
+        Total = total;
+        Remaining = remaining;
+    }
+    
+    /// <summary>
+    /// Creates an empty task budget for deserialization.
+    /// </summary>
+    public AnthropicTaskBudget()
+    {
+    }
+    
+    /// <summary>
+    /// Creates a token-based task budget.
+    /// </summary>
+    /// <param name="total">Total token budget (minimum 20,000).</param>
+    /// <param name="remaining">Optional remaining budget after prior turns.</param>
+    public static AnthropicTaskBudget Tokens(int total, int? remaining = null)
+    {
+        return new AnthropicTaskBudget
+        {
+            Type = AnthropicTaskBudgetTypes.Tokens,
+            Total = total,
+            Remaining = remaining
+        };
+    }
+}
+
+/// <summary>
 ///     Chat features supported only by Anthropic.
 /// </summary>
 public class ChatRequestVendorAnthropicExtensions
@@ -363,6 +601,12 @@ public class ChatRequestVendorAnthropicExtensions
     /// List of MCP servers to be utilized in this request. (Max length 20)
     /// </summary>
     public List<AnthropicMcpServer>? McpServers { get; set; }
+
+    /// <summary>
+    /// MCP toolset definitions for the Messages API <c>tools</c> array.
+    /// When omitted, toolsets are generated automatically from <see cref="McpServers"/>.
+    /// </summary>
+    public List<AnthropicMcpToolset>? McpToolsets { get; set; }
     
     /// <summary>
     /// Server-side context management configuration for automatic compaction.
@@ -377,4 +621,113 @@ public class ChatRequestVendorAnthropicExtensions
     /// Available on Claude Opus 4.6 and newer models only.
     /// </summary>
     public AnthropicInferenceGeoOptions? InferenceGeo { get; set; }
+    
+    /// <summary>
+    /// Advisory token budget for the full agentic loop.
+    /// Requires the task-budgets-2026-03-13 beta header (added automatically).
+    /// Supported on Claude Opus 4.7+.
+    /// </summary>
+    public AnthropicTaskBudget? TaskBudget { get; set; }
+    
+    /// <summary>
+    /// Cache diagnostics configuration. When set, enables cache miss diagnosis via the
+    /// <c>cache-diagnosis-2026-04-07</c> beta header. Pass <see cref="AnthropicCacheDiagnosticsRequest.PreviousMessageId"/> as
+    /// <c>null</c> on the first turn to opt in without a prior message to compare against; on subsequent turns pass the
+    /// <c>id</c> from the previous response.
+    /// </summary>
+    public AnthropicCacheDiagnosticsRequest? CacheDiagnostics { get; set; }
+
+    /// <summary>
+    /// Advisor tool configuration. Pairs <see cref="ChatRequest.Model"/> (executor) with a stronger advisor model.
+    /// Requires the <c>advisor-tool-2026-03-01</c> beta header (added automatically).
+    /// </summary>
+    public AnthropicAdvisorToolRequest? AdvisorTool { get; set; }
+}
+
+/// <summary>
+/// Request-side cache diagnostics configuration for Anthropic Messages API.
+/// </summary>
+public class AnthropicCacheDiagnosticsRequest
+{
+    /// <summary>
+    /// The response <c>id</c> from the previous turn to compare against. Pass <c>null</c> on the first turn to opt in
+    /// without a prior message to compare against.
+    /// </summary>
+    [JsonProperty("previous_message_id")]
+    public string? PreviousMessageId { get; set; }
+}
+
+/// <summary>
+/// Response-side cache diagnostics from Anthropic Messages API.
+/// </summary>
+public class AnthropicCacheDiagnosticsResponse
+{
+    /// <summary>
+    /// When non-null, identifies the first point of divergence from the previous request. When null on a non-null
+    /// diagnostics object, the comparison was still running when the response was serialized.
+    /// </summary>
+    [JsonProperty("cache_miss_reason")]
+    public AnthropicCacheMissReason? CacheMissReason { get; set; }
+}
+
+/// <summary>
+/// Describes why a prompt cache miss occurred relative to the previous request.
+/// </summary>
+public class AnthropicCacheMissReason
+{
+    /// <summary>
+    /// The type of divergence detected.
+    /// </summary>
+    [JsonProperty("type")]
+    [JsonConverter(typeof(StringEnumConverter))]
+    public AnthropicCacheMissReasonTypes Type { get; set; }
+    
+    /// <summary>
+    /// Estimate of input tokens after the divergence point. Present for <c>*_changed</c> types only.
+    /// </summary>
+    [JsonProperty("cache_missed_input_tokens")]
+    public int? CacheMissedInputTokens { get; set; }
+}
+
+/// <summary>
+/// Cache miss reason types returned by Anthropic cache diagnostics.
+/// </summary>
+[JsonConverter(typeof(StringEnumConverter))]
+public enum AnthropicCacheMissReasonTypes
+{
+    /// <summary>
+    /// The model differs from the previous request.
+    /// </summary>
+    [EnumMember(Value = "model_changed")]
+    ModelChanged,
+    
+    /// <summary>
+    /// The system prompt differs from the previous request.
+    /// </summary>
+    [EnumMember(Value = "system_changed")]
+    SystemChanged,
+    
+    /// <summary>
+    /// The tools array differs from the previous request.
+    /// </summary>
+    [EnumMember(Value = "tools_changed")]
+    ToolsChanged,
+    
+    /// <summary>
+    /// An earlier message was altered, reordered, or removed rather than appended to.
+    /// </summary>
+    [EnumMember(Value = "messages_changed")]
+    MessagesChanged,
+    
+    /// <summary>
+    /// No stored fingerprint exists for the supplied previous message id.
+    /// </summary>
+    [EnumMember(Value = "previous_message_not_found")]
+    PreviousMessageNotFound,
+    
+    /// <summary>
+    /// Diagnostic information was not available for this request.
+    /// </summary>
+    [EnumMember(Value = "unavailable")]
+    Unavailable
 }

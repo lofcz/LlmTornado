@@ -1,5 +1,7 @@
 using System.Collections.Frozen;
 using System.Collections.Generic;
+using System.Linq;
+using LlmTornado.Chat;
 using LlmTornado.Chat.Vendors.Google;
 using LlmTornado.Code;
 using Newtonsoft.Json;
@@ -65,20 +67,8 @@ internal class VendorGoogleEmbeddingRequest
         { EmbeddingRequestVendorGoogleExtensionsTaskTypes.FactVerification, "FACT_VERIFICATION" }
     }.ToFrozenDictionary();
     
-    static void Setup(EmbeddingRequest request, string input, VendorGoogleEmbeddingRequest dest)
+    static void ApplyExtensions(EmbeddingRequest request, VendorGoogleEmbeddingRequest dest)
     {
-        dest.Model = $"models/{request.Model}";
-        dest.Content = new VendorGoogleChatRequest.VendorGoogleChatRequestMessage
-        {
-            Parts =
-            [
-                new VendorGoogleChatRequestMessagePart
-                {
-                    Text = input
-                }
-            ]
-        };
-
         if (request.VendorExtensions?.Google is not null)
         {
             EmbeddingRequestVendorGoogleExtensions extensions = request.VendorExtensions.Google;
@@ -95,6 +85,54 @@ internal class VendorGoogleEmbeddingRequest
                 dest.TaskType = taskTypeSerialized;
             }
         }
+        else if (request.Dimensions is > 0)
+        {
+            dest.OutputDimensionality = request.Dimensions;
+        }
+    }
+
+    static VendorGoogleChatRequest.VendorGoogleChatRequestMessage ContentFromParts(EmbeddingRequest request, IEnumerable<ChatMessagePart> parts)
+    {
+        List<ChatMessagePart> resolvedParts = [];
+
+        foreach (ChatMessagePart part in parts)
+        {
+            if (part.Type == ChatMessageTypes.Text && request.VendorExtensions?.Google?.FormatEmbedding2Text(part.Text ?? string.Empty) is { } formatted)
+            {
+                resolvedParts.Add(new ChatMessagePart(formatted));
+            }
+            else
+            {
+                resolvedParts.Add(part);
+            }
+        }
+
+        return new VendorGoogleChatRequest.VendorGoogleChatRequestMessage
+        {
+            Parts = resolvedParts.Select(p => new VendorGoogleChatRequestMessagePart(p)).ToList()
+        };
+    }
+
+    static void Setup(EmbeddingRequest request, string input, VendorGoogleEmbeddingRequest dest)
+    {
+        dest.Model = $"models/{request.Model}";
+
+        if (request.VendorExtensions?.Google?.FormatEmbedding2Text(input) is { } formatted)
+        {
+            input = formatted;
+        }
+
+        dest.Content = ContentFromParts(request, [
+            new ChatMessagePart(input)
+        ]);
+        ApplyExtensions(request, dest);
+    }
+
+    static void Setup(EmbeddingRequest request, IList<ChatMessagePart> parts, VendorGoogleEmbeddingRequest dest)
+    {
+        dest.Model = $"models/{request.Model}";
+        dest.Content = ContentFromParts(request, parts);
+        ApplyExtensions(request, dest);
     }
     
     public VendorGoogleEmbeddingRequest(EmbeddingRequest request, string input)
@@ -104,7 +142,20 @@ internal class VendorGoogleEmbeddingRequest
 
     public VendorGoogleEmbeddingRequest(EmbeddingRequest request, IEndpointProvider provider)
     {
-        if (request.InputVector?.Count > 0)
+        if (request.MultimodalInput?.Count > 0)
+        {
+            if (request.MultimodalInput.Count == 1)
+            {
+                request.OverrideUrl($"{provider.ApiUrl(CapabilityEndpoints.Embeddings, null)}/{request.Model.Name}:embedContent");
+                Setup(request, request.MultimodalInput[0], this);
+            }
+            else
+            {
+                request.OverrideUrl($"{provider.ApiUrl(CapabilityEndpoints.Embeddings, null)}/{request.Model.Name}:batchEmbedContents");
+                Requests = request.MultimodalInput.Select(parts => new VendorGoogleEmbeddingRequest(request, parts)).ToList();
+            }
+        }
+        else if (request.InputVector?.Count > 0)
         {
             request.OverrideUrl($"{provider.ApiUrl(CapabilityEndpoints.Embeddings, null)}/{request.Model.Name}:batchEmbedContents");
 
@@ -120,5 +171,10 @@ internal class VendorGoogleEmbeddingRequest
             request.OverrideUrl($"{provider.ApiUrl(CapabilityEndpoints.Embeddings, null)}/{request.Model.Name}:embedContent");
             Setup(request, request.InputScalar, this);
         }
+    }
+
+    public VendorGoogleEmbeddingRequest(EmbeddingRequest request, IList<ChatMessagePart> parts)
+    {
+        Setup(request, parts, this);
     }
 }

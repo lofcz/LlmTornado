@@ -6,6 +6,7 @@ using Newtonsoft.Json.Linq;
 using System.IO;
 using System.Runtime.Serialization;
 using LlmTornado.Chat;
+using LlmTornado.Files;
 using Newtonsoft.Json.Converters;
 
 namespace LlmTornado.Responses;
@@ -220,8 +221,14 @@ public class ResponseInputContentFile : ResponseInputContent
     /// </summary>
     /// <param name="filename"></param>
     /// <param name="fileData"></param>
-    public ResponseInputContentFile(string filename, string fileData)
+    /// <param name="validate">When true, validates <paramref name="filename"/> against <see cref="OpenAiInputFileTypes"/>.</param>
+    public ResponseInputContentFile(string filename, string fileData, bool validate = true)
     {
+        if (validate)
+        {
+            OpenAiInputFileTypes.ValidateOrThrow(filename);
+        }
+
         Filename = filename;
         FileData = fileData;
     }
@@ -229,24 +236,61 @@ public class ResponseInputContentFile : ResponseInputContent
     /// <summary>
     /// Creates a <see cref="ResponseInputContentFile"/> referencing an external URL.
     /// </summary>
-    public static ResponseInputContentFile CreateFromUrl(string fileUrl)
+    /// <param name="fileUrl">Public URL to a file in a supported format.</param>
+    /// <param name="filename">Optional filename hint used for MIME validation.</param>
+    /// <param name="validate">When true and <paramref name="filename"/> is set, validates against <see cref="OpenAiInputFileTypes"/>.</param>
+    public static ResponseInputContentFile CreateFromUrl(string fileUrl, string? filename = null, bool validate = true)
     {
-        return new ResponseInputContentFile { FileUrl = fileUrl };
+        if (validate && !string.IsNullOrWhiteSpace(filename))
+        {
+            OpenAiInputFileTypes.ValidateOrThrow(filename);
+        }
+
+        return new ResponseInputContentFile { FileUrl = fileUrl, Filename = filename };
     }
 
     /// <summary>
     /// Creates a <see cref="ResponseInputContentFile"/> referencing a file uploaded via the Files API.
     /// </summary>
-    public static ResponseInputContentFile CreateFromFileId(string fileId)
+    /// <param name="fileId">OpenAI file id (e.g. <c>file-...</c>).</param>
+    /// <param name="filename">Optional filename used for client-side validation.</param>
+    /// <param name="validate">When true and <paramref name="filename"/> is set, validates against <see cref="OpenAiInputFileTypes"/>.</param>
+    public static ResponseInputContentFile CreateFromFileId(string fileId, string? filename = null, bool validate = true)
     {
-        return new ResponseInputContentFile { FileId = fileId };
+        if (validate && !string.IsNullOrWhiteSpace(filename))
+        {
+            OpenAiInputFileTypes.ValidateOrThrow(filename);
+        }
+
+        return new ResponseInputContentFile { FileId = fileId, Filename = filename };
+    }
+
+    /// <summary>
+    /// Creates a <see cref="ResponseInputContentFile"/> from an uploaded <see cref="TornadoFile"/>.
+    /// </summary>
+    public static ResponseInputContentFile CreateFromFile(TornadoFile file, bool validate = true)
+    {
+        if (validate && !string.IsNullOrWhiteSpace(file.Name))
+        {
+            OpenAiInputFileTypes.ValidateOrThrow(file.Name, file.MimeType);
+        }
+
+        return new ResponseInputContentFile { FileId = file.Id, Filename = file.Name };
     }
 
     /// <summary>
     /// Creates a <see cref="ResponseInputContentFile"/> with Base64-encoded file data.
     /// </summary>
-    public static ResponseInputContentFile CreateFromBase64(string filename, string fileData)
+    /// <param name="filename">Filename including extension (used for MIME validation).</param>
+    /// <param name="fileData">Base64 payload or <c>data:&lt;mime&gt;;base64,...</c> URI.</param>
+    /// <param name="validate">When true, validates <paramref name="filename"/> against <see cref="OpenAiInputFileTypes"/>.</param>
+    public static ResponseInputContentFile CreateFromBase64(string filename, string fileData, bool validate = true)
     {
+        if (validate)
+        {
+            OpenAiInputFileTypes.ValidateOrThrow(filename);
+        }
+
         return new ResponseInputContentFile { Filename = filename, FileData = fileData };
     }
 }

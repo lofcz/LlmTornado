@@ -6,12 +6,34 @@ using LlmTornado.Chat;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Common;
+using LlmTornado.Files;
 using Newtonsoft.Json.Linq;
 
 namespace LlmTornado.Responses;
 
 internal static class ResponseHelpers
 {
+    /// <summary>
+    /// Maps a response output assistant message to an input item for manual history replay.
+    /// Preserves <see cref="ResponsePhases"/> when present.
+    /// </summary>
+    public static OutputMessageInput ToOutputMessageInput(ResponseOutputMessageItem message)
+    {
+        ResponseMessageStatuses? status = message.Status is null
+            ? null
+            : Enum.TryParse(message.Status.ToString(), true, out ResponseMessageStatuses parsed)
+                ? parsed
+                : null;
+
+        return new OutputMessageInput
+        {
+            Id = message.Id ?? string.Empty,
+            Status = status,
+            Phase = message.Phase,
+            Content = message.Content.ToList()
+        };
+    }
+
     /// <summary>
     /// Converts a list of <see cref="ChatMessage"/> objects into a list of <see cref="ResponseInputItem"/> objects.
     /// Maps input and output message properties based on the role and content of each <see cref="ChatMessage"/> in the list.
@@ -125,7 +147,19 @@ internal static class ResponseHelpers
                                 
                                         break;
                                     case ChatMessageTypes.FileLink:
-                                        //TODO: Does the file work across all providers?
+                                        if (part.FileLinkData is not null)
+                                        {
+                                            string? fileRef = part.FileLinkData.File?.Reference ?? part.FileLinkData.FileUri;
+                                            if (!string.IsNullOrWhiteSpace(fileRef))
+                                            {
+                                                string? fileName = part.FileLinkData.File?.Name;
+                                                inputMessage.Content.Add(
+                                                    string.IsNullOrWhiteSpace(fileName)
+                                                        ? new ResponseInputContentFile(fileRef)
+                                                        : ResponseInputContentFile.CreateFromFileId(fileRef, fileName, validate: false));
+                                            }
+                                        }
+
                                         break;
                                 }
                             }
@@ -203,8 +237,10 @@ internal static class ResponseHelpers
             Reasoning = request.Reasoning,
             Stream = false,
             Verbosity = request.Verbosity,
-            PromptCacheKey = request.PromptCacheKey,
-            SafetyIdentifier = request.SafetyIdentifier
+            PromptCacheKey = request.PromptCacheKey ?? chatRequest.PromptCacheKey,
+            PromptCacheRetention = request.PromptCacheRetention ?? chatRequest.PromptCacheRetention,
+            SafetyIdentifier = request.SafetyIdentifier,
+            ContextManagement = request.ContextManagement
         };
     }
 
@@ -453,6 +489,7 @@ internal static class ResponseHelpers
                     tc.BuiltInToolCall = new BuiltInToolCall(true, computerToolCallItem.CallId, computerToolCallItem, tc, new
                     {
                         action = computerToolCallItem.Action,
+                        actions = computerToolCallItem.Actions,
                         status = computerToolCallItem.Status,
                         pendingSafetyChecks = computerToolCallItem.PendingSafetyChecks
                     }.ToJson());
@@ -499,6 +536,15 @@ internal static class ResponseHelpers
                     choice.Message.ToolCalls.Add(tc);
                     break;
                 }
+                case ResponseCompactionOutputItem compactionItem:
+                {
+                    choice.Message.Parts.Add(new ChatMessagePart(ChatMessageTypes.Compaction)
+                    {
+                        Text = compactionItem.EncryptedContent,
+                        NativeObject = compactionItem
+                    });
+                    break;
+                }
             }
         }
         
@@ -537,6 +583,7 @@ internal static class ResponseHelpers
                 Description = tool.ToolDescription ?? tool.Function.Description,
                 Parameters = tool.Function.Parameters is null ? null : JObject.FromObject(tool.Function.Parameters),
                 Strict = tool.Strict,
+                DeferLoading = tool.DeferLoading,
                 Delegate = tool.Delegate,
                 DelegateMetadata = tool.DelegateMetadata,
                 Metadata = tool.Metadata
@@ -549,7 +596,8 @@ internal static class ResponseHelpers
             {
                 Name = tool.ToolName ?? tool.Custom.Name,
                 Description = tool.ToolDescription ?? tool.Custom.Description,
-                Format = tool.Custom.Format
+                Format = tool.Custom.Format,
+                DeferLoading = tool.DeferLoading
             };
         }
 

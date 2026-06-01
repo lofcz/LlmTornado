@@ -44,7 +44,7 @@ public class ChatMessagePartContainerUpload
 public class ChatMessagePartFileLinkData
 {
     /// <summary>
-    /// MIME type of the file.
+    /// MIME type of the file. For OpenAI <c>input_file</c>, use types listed in <see cref="OpenAiInputFileTypes"/>.
     /// </summary>
     [JsonProperty("mimeType")]
     public string? MimeType { get; set; }
@@ -69,7 +69,9 @@ public class ChatMessagePartFileLinkData
 
     /// <summary>
     /// Creates a new file link data, which can be used for constructing a message part.<br/>
-    /// Note: For Gemini 2.0+ this can be a YouTube url too
+    /// Supported URIs for Gemini: Files API upload URIs, registered GCS objects (<c>gs://</c> via register),
+    /// public HTTPS URLs, and pre-signed URLs (S3 presigned, Azure SAS, etc.) up to 100 MB per request.
+    /// YouTube URLs are supported on Gemini 2.0+.
     /// </summary>
     /// <param name="fileUri"></param>
     /// <param name="mimeType"></param>
@@ -81,12 +83,13 @@ public class ChatMessagePartFileLinkData
     
     /// <summary>
     /// Creates a new file link data from a file. This passes the state of the file, as well as the link and mime type.
-    /// Note: For Gemini 2.0+ this can be a YouTube url too
+    /// Supported URIs for Gemini: Files API upload URIs, registered GCS objects, public HTTPS URLs, and pre-signed URLs up to 100 MB per request.
+    /// YouTube URLs are supported on Gemini 2.0+.
     /// </summary>
     /// <param name="file"></param>
     public ChatMessagePartFileLinkData(TornadoFile file)
     {
-        FileUri = file.Uri ?? string.Empty;
+        FileUri = file.Reference;
         MimeType = file.MimeType ?? string.Empty;
         State = file.State;
         File = file;

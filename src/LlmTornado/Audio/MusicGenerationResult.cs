@@ -8,10 +8,20 @@ namespace LlmTornado.Audio;
 public class MusicGenerationResult : ApiResultBase
 {
     /// <summary>
-    /// The generated audio data. Contains hex-encoded audio when OutputFormat is Hex,
-    /// or a download URL when OutputFormat is Url.
+    /// The generated audio data. Contains hex-encoded audio for MiniMax when OutputFormat is Hex,
+    /// a download URL when OutputFormat is Url, or base64-encoded audio for Google Lyria 3.
     /// </summary>
     public string? Audio { get; set; }
+    
+    /// <summary>
+    /// Generated lyrics and/or song structure text (Google Lyria 3).
+    /// </summary>
+    public string? Lyrics { get; set; }
+    
+    /// <summary>
+    /// MIME type of the generated audio (e.g. audio/mpeg, audio/wav).
+    /// </summary>
+    public string? MimeType { get; set; }
     
     /// <summary>
     /// Generation status: 1 = in progress, 2 = completed.

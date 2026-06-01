@@ -1,6 +1,7 @@
 ﻿using System.Threading.Tasks;
 using LlmTornado.Code;
 using LlmTornado.Images.Models;
+using LlmTornado.Images.Models.OpenAi;
 
 namespace LlmTornado.Images;
 
@@ -41,7 +42,7 @@ public class ImageGenerationEndpoint : EndpointBase
 	/// <returns>Asynchronously returns the image result. Look in its <see cref="ImageGenerationResult"/></returns>
 	public Task<ImageGenerationResult?> CreateImage(ImageGenerationRequest request)
     {
-	    IEndpointProvider provider = Api.GetProvider(request.Model ?? ImageModel.OpenAi.Dalle.V3);
+	    IEndpointProvider provider = Api.GetProvider(request.Model ?? ImageModelOpenAiGpt.Default);
 	    TornadoRequestContent requestBody = request.Serialize(provider);
 	    
         return HttpPost1<ImageGenerationResult>(provider, Endpoint, requestBody.Url, postData: requestBody.Body);

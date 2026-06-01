@@ -24,6 +24,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\LlmTornado\LlmTornado.csproj" />
       <ProjectReference Include="..\LlmTornado.A2A.AgentServer\LlmTornado.A2A.AgentServer.csproj" />
       <ProjectReference Include="..\LlmTornado.A2A\LlmTornado.A2A.csproj" />
       <ProjectReference Include="..\LlmTornado.Agents\LlmTornado.Agents.csproj" />
@@ -85,6 +86,9 @@
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
       <None Update="Static\Files\sample.pdf">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="Static\Files\sample.csv">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
       <None Update="Static\Files\Skills\ability-generator\SKILL.md">

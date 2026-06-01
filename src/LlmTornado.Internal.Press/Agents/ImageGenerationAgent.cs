@@ -115,14 +115,14 @@ public class ImageGenerationRunnable : OrchestrationRunnable<ArticleOutput, Imag
 
         // Agent to generate image prompts
         string instructions = $"""
-            You are an expert at creating DALL-E image generation prompts for technical blog articles.
+            You are an expert at creating GPT Image generation prompts for technical blog articles.
             Your role is to generate descriptive, specific prompts that will create professional hero images.
             
             Guidelines for image prompts:
             1. Be specific and descriptive
             2. Include style guidance (e.g., "modern", "professional", "technical illustration")
             3. Specify composition and perspective
-            4. Avoid text in images (DALL-E struggles with text)
+            4. Avoid text in images (GPT Image models can struggle with text)
             5. Focus on visual metaphors for technical concepts
             6. Keep prompts under 400 characters
             
@@ -132,7 +132,7 @@ public class ImageGenerationRunnable : OrchestrationRunnable<ArticleOutput, Imag
             - Suitable for blog hero images
             - Avoid cluttered or overly complex compositions
             
-            Given an article title and description, generate a compelling DALL-E prompt
+            Given an article title and description, generate a compelling GPT Image prompt
             that creates an appropriate hero image.
             """;
 
@@ -193,7 +193,7 @@ public class ImageGenerationRunnable : OrchestrationRunnable<ArticleOutput, Imag
             }
             
             string promptRequest = $"""
-                                    Generate a DALL-E 3 image prompt for an article with:
+                                    Generate a GPT Image prompt for an article with:
                 Title: {article.Title}
                 Description: {article.Description}
                 {styleHintsSection}

@@ -1745,7 +1745,8 @@ public class Conversation
                                 await eventsHandler.OnFinished.Invoke(new ChatStreamFinishedData(
                                     res.Usage ?? new ChatUsage(provider.Provider),
                                     finishChoice?.FinishReason ?? ChatMessageFinishReasons.Unknown,
-                                    finishChoice?.StopReason));
+                                    finishChoice?.StopReason,
+                                    finishChoice?.StopDetails));
                             }
 
                             break;

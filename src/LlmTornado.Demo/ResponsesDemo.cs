@@ -616,7 +616,43 @@ public class ResponsesDemo : DemoBase
     }
     
     [TornadoTest]
-    public static async Task ResponseComputerTool()
+    public static async Task ResponseBuiltInComputerTool()
+    {
+        EndpointBase.SetRequestsTimeout(20000);
+        
+        byte[] bytes = await File.ReadAllBytesAsync("Static/Images/empty.jpg");
+        string base64 = $"data:image/jpeg;base64,{Convert.ToBase64String(bytes)}";
+        
+        ResponseResult result = await Program.Connect().Responses.CreateResponse(new ResponseRequest
+        {
+            Model = ChatModel.OpenAi.Gpt54.V54,
+            Background = false,
+            InputItems = [
+                new ResponseInputMessage(ChatMessageRoles.User, [
+                    new ResponseInputContentText("Use the computer tool to inspect the UI. Start by taking a screenshot."),
+                    ResponseInputContentImage.CreateImageUrl(base64),
+                ])
+            ],
+            Tools = [
+                ResponseComputerTool.Default
+            ],
+            Reasoning = new ReasoningConfiguration
+            {
+                Summary = ResponseReasoningSummaries.Concise
+            }
+        });
+
+        ResponseComputerToolCallItem? computerCall = result.Output
+            .OfType<ResponseComputerToolCallItem>()
+            .FirstOrDefault();
+
+        Console.WriteLine(computerCall is null
+            ? "No computer_call returned"
+            : $"Computer call: {computerCall.CallId}, actions: {computerCall.GetExecutableActions().Count}");
+    }
+
+    [TornadoTest, Flaky("deprecated preview tool")]
+    public static async Task ResponseComputerUsePreviewTool()
     {
         EndpointBase.SetRequestsTimeout(20000);
         
@@ -939,6 +975,38 @@ public class ResponsesDemo : DemoBase
         Assert.That(followup.Output.OfType<ResponseOutputMessageItem>().Any(), Is.True);
     }
     
+    [TornadoTest]
+    public static async Task ResponseWebSocketMultiTurn()
+    {
+        TornadoApi api = Program.Connect();
+        await using ResponsesWebSocketConnection connection = await api.Responses.ConnectWebSocketAsync();
+
+        ResponseResult? first = await connection.CreateResponseAsync(new ResponseRequest
+        {
+            Model = ChatModel.OpenAi.Gpt41.V41Mini,
+            Store = false,
+            InputItems =
+            [
+                new ResponseInputMessage(ChatMessageRoles.User, "Reply with exactly: ws-demo-1")
+            ]
+        });
+
+        AssertTrue(first?.OutputText?.Contains("ws-demo-1", StringComparison.OrdinalIgnoreCase) == true);
+
+        ResponseResult? second = await connection.CreateResponseAsync(new ResponseRequest
+        {
+            Model = ChatModel.OpenAi.Gpt41.V41Mini,
+            Store = false,
+            InputItems =
+            [
+                new ResponseInputMessage(ChatMessageRoles.User, "Reply with exactly: ws-demo-2")
+            ]
+        });
+
+        AssertTrue(second?.OutputText?.Contains("ws-demo-2", StringComparison.OrdinalIgnoreCase) == true);
+        Assert.That(connection.CurrentResponseId, Is.EqualTo(second!.Id));
+    }
+
     [TornadoTest]
     public static async Task ResponseLocalShellTool()
     {
@@ -1620,5 +1688,170 @@ public class ResponsesDemo : DemoBase
         Assert.That(workspace["app.py"].Contains("Hello, World!"), Is.True);
 
         Console.WriteLine("\n=== Batch Processing Test Passed ===");
+    }
+
+    [TornadoTest]
+    public static async Task ResponseGpt53Codex()
+    {
+        ResponseResult result = await Program.Connect().Responses.CreateResponse(new ResponseRequest
+        {
+            Model = ChatModel.OpenAi.Codex.Gpt53Codex,
+            Reasoning = new ReasoningConfiguration(ResponseReasoningEfforts.Low),
+            InputItems =
+            [
+                new ResponseInputMessage(ChatMessageRoles.User, "Write a one-line Python function named add that returns the sum of two integers.")
+            ],
+            MaxOutputTokens = 512
+        });
+
+        Assert.That(result.Status, Is.EqualTo(ResponseMessageStatuses.Completed));
+        Assert.That(result.Model?.Name, Is.EqualTo("gpt-5.3-codex"));
+
+        ResponseOutputMessageItem message = result.Output.OfType<ResponseOutputMessageItem>().First();
+        ResponseOutputTextContent text = message.Content.OfType<ResponseOutputTextContent>().First();
+        AssertTrue(text.Text.Contains("def add", StringComparison.Ordinal));
+        Console.WriteLine(text.Text);
+    }
+
+    [TornadoTest]
+    public static async Task ResponseGpt52Codex()
+    {
+        ResponseResult result = await Program.Connect().Responses.CreateResponse(new ResponseRequest
+        {
+            Model = ChatModel.OpenAi.Gpt52.V52Codex,
+            Reasoning = new ReasoningConfiguration(ResponseReasoningEfforts.Low),
+            InputItems =
+            [
+                new ResponseInputMessage(ChatMessageRoles.User, "Write a one-line Python function named multiply that returns the product of two integers.")
+            ],
+            MaxOutputTokens = 512
+        });
+
+        Assert.That(result.Status, Is.EqualTo(ResponseMessageStatuses.Completed));
+        Assert.That(result.Model?.Name, Is.EqualTo("gpt-5.2-codex"));
+
+        ResponseOutputMessageItem message = result.Output.OfType<ResponseOutputMessageItem>().First();
+        ResponseOutputTextContent text = message.Content.OfType<ResponseOutputTextContent>().First();
+        AssertTrue(text.Text.Contains("def multiply", StringComparison.Ordinal));
+        Console.WriteLine(text.Text);
+    }
+
+    [TornadoTest]
+    public static async Task ResponseGpt53CodexPhaseFollowUp()
+    {
+        TornadoApi api = Program.Connect();
+
+        ResponseResult first = await api.Responses.CreateResponse(new ResponseRequest
+        {
+            Model = ChatModel.OpenAi.Codex.Gpt53Codex,
+            Reasoning = new ReasoningConfiguration(ResponseReasoningEfforts.Low),
+            InputItems =
+            [
+                new ResponseInputMessage(ChatMessageRoles.User, "Reply with exactly two short sentences about C#. Do not use tools.")
+            ],
+            MaxOutputTokens = 256
+        });
+
+        ResponseOutputMessageItem firstMessage = first.Output.OfType<ResponseOutputMessageItem>().First();
+        AssertTrue(!string.IsNullOrEmpty(firstMessage.Content.OfType<ResponseOutputTextContent>().First().Text));
+
+        ResponseResult followUp = await api.Responses.CreateResponse(new ResponseRequest
+        {
+            Model = ChatModel.OpenAi.Codex.Gpt53Codex,
+            PreviousResponseId = first.Id,
+            Reasoning = new ReasoningConfiguration(ResponseReasoningEfforts.Low),
+            InputItems =
+            [
+                new ResponseInputMessage(ChatMessageRoles.User, "Now reply with one sentence about F#.")
+            ],
+            MaxOutputTokens = 256
+        });
+
+        ResponseOutputMessageItem followUpMessage = followUp.Output.OfType<ResponseOutputMessageItem>().First();
+        string followUpText = followUpMessage.Content.OfType<ResponseOutputTextContent>().First().Text;
+        AssertTrue(!string.IsNullOrEmpty(followUpText));
+        Console.WriteLine($"First phase: {firstMessage.Phase}, follow-up phase: {followUpMessage.Phase}");
+        Console.WriteLine(followUpText);
+    }
+
+    [TornadoTest]
+    public static async Task ResponseCompactEndpoint()
+    {
+        TornadoApi api = Program.Connect();
+        ChatModel model = ChatModel.OpenAi.Gpt5.V5Mini;
+
+        List<ResponseInputItem> conversation =
+        [
+            new ResponseInputMessage(ChatMessageRoles.User, "Let's begin a long coding task."),
+            new ResponseInputMessage(ChatMessageRoles.User, new string('x', 8_000))
+        ];
+
+        ResponseResult first = await api.Responses.CreateResponse(new ResponseRequest
+        {
+            Model = model,
+            InputItems = conversation,
+            Store = false,
+            MaxOutputTokens = 256
+        });
+
+        conversation.AddRange(first.Output.ToInputItems());
+        conversation.Add(new ResponseInputMessage(ChatMessageRoles.User, "Summarize in one sentence."));
+
+        ResponseCompactResult compacted = await api.Responses.CompactResponse(new ResponseCompactRequest(model, conversation));
+
+        Assert.That(compacted.Object, Is.EqualTo("response.compaction"));
+        AssertNotNull(compacted.GetLatestCompaction()?.EncryptedContent);
+        AssertTrue(!string.IsNullOrEmpty(compacted.GetLatestCompaction()!.EncryptedContent));
+
+        List<ResponseInputItem> nextInput = compacted.Output.ToInputItems();
+        nextInput.Add(new ResponseInputMessage(ChatMessageRoles.User, "What was the original task about?"));
+
+        ResponseResult followUp = await api.Responses.CreateResponse(new ResponseRequest
+        {
+            Model = model,
+            InputItems = nextInput,
+            Store = false,
+            MaxOutputTokens = 256
+        });
+
+        AssertNotNull(followUp.OutputText);
+        AssertTrue(!string.IsNullOrEmpty(followUp.OutputText));
+        Console.WriteLine($"Compact usage: {compacted.Usage?.TotalTokens} tokens");
+        Console.WriteLine(followUp.OutputText);
+    }
+
+    [TornadoTest]
+    public static async Task ResponseServerSideCompaction()
+    {
+        TornadoApi api = Program.Connect();
+        ChatModel model = ChatModel.OpenAi.Gpt5.V5Mini;
+
+        ResponseResult response = await api.Responses.CreateResponse(new ResponseRequest
+        {
+            Model = model,
+            InputItems =
+            [
+                new ResponseInputMessage(ChatMessageRoles.User, "Track a multi-step refactor for a billing service."),
+                new ResponseInputMessage(ChatMessageRoles.User, new string('y', 12_000))
+            ],
+            Store = false,
+            MaxOutputTokens = 256
+        }.WithServerSideCompaction(1_000));
+
+        AssertNotNull(response.OutputText);
+        AssertTrue(!string.IsNullOrEmpty(response.OutputText));
+
+        ResponseCompactionOutputItem? compaction = response.GetLatestCompaction();
+        if (compaction is not null)
+        {
+            Console.WriteLine($"Server-side compaction emitted item {compaction.Id}");
+            AssertTrue(!string.IsNullOrEmpty(compaction.EncryptedContent));
+        }
+        else
+        {
+            Console.WriteLine("Server-side compaction not triggered for this request size.");
+        }
+
+        Console.WriteLine(response.OutputText);
     }
 }

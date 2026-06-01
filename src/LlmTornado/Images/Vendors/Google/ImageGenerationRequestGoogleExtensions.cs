@@ -34,6 +34,16 @@ public class ImageGenerationRequestGoogleExtensions
     /// A setting that controls safety filter thresholds for generated images.
     /// </summary>
     public ImageGenerationRequestGoogleExtensionsSafetySettings? SafetySetting { get; set; }
+
+    /// <summary>
+    /// Output resolution for Gemini native image models (<c>gemini-3.1-flash-image</c>).
+    /// </summary>
+    public ImageGenerationRequestGoogleExtensionsImageSizes? ImageSize { get; set; }
+
+    /// <summary>
+    /// Output aspect ratio for Gemini native image models (<c>gemini-3.1-flash-image</c>).
+    /// </summary>
+    public ImageGenerationRequestGoogleExtensionsAspectRatios? AspectRatio { get; set; }
 }
 
 /// <summary>
@@ -112,4 +122,51 @@ public enum ImageGenerationRequestGoogleExtensionsMimeTypes
     /// image/vnd.microsoft.icon
     /// </summary>
     Icon
+}
+
+/// <summary>
+/// Output resolution for Gemini native image models.
+/// </summary>
+public enum ImageGenerationRequestGoogleExtensionsImageSizes
+{
+    /// <summary>
+    /// 512 (0.5K) — Gemini 3.1 Flash Image only.
+    /// </summary>
+    Resolution512,
+
+    /// <summary>
+    /// 1K resolution.
+    /// </summary>
+    Resolution1K,
+
+    /// <summary>
+    /// 2K resolution.
+    /// </summary>
+    Resolution2K,
+
+    /// <summary>
+    /// 4K resolution.
+    /// </summary>
+    Resolution4K
+}
+
+/// <summary>
+/// Output aspect ratio for Gemini native image models.
+/// </summary>
+public enum ImageGenerationRequestGoogleExtensionsAspectRatios
+{
+    Square,
+    Portrait2x3,
+    Landscape3x2,
+    Portrait3x4,
+    Landscape4x3,
+    Portrait4x5,
+    Landscape5x4,
+    Portrait9x16,
+    Landscape16x9,
+    Ultrawide21x9,
+    Portrait1x4,
+    Landscape4x1,
+    Portrait1x8,
+    Landscape8x1
 }

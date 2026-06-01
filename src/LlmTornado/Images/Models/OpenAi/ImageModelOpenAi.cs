@@ -15,8 +15,9 @@ public class ImageModelOpenAi : BaseVendorModelProvider
     public override LLmProviders Provider => LLmProviders.OpenAi;
     
     /// <summary>
-    /// Dalle models.
+    /// DALL·E models (removed from the OpenAI API on May 12, 2026).
     /// </summary>
+    [Obsolete("DALL·E models were removed from the OpenAI API on May 12, 2026. Use Gpt instead.")]
     public readonly ImageModelOpenAiDalle Dalle = new ImageModelOpenAiDalle();
 
     /// <summary>

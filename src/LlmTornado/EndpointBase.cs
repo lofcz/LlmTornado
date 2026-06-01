@@ -18,7 +18,6 @@ using LlmTornado.Chat;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
 using LlmTornado.Common;
-using LlmTornado.Common;
 using Newtonsoft.Json;
 #if !MODERN
 using HttpUtility = LlmTornado.Code.HttpUtility;
@@ -693,9 +692,9 @@ public abstract class EndpointBase
     ///     Throws an exception if a non-success HTTP response was returned or if the result
     ///     couldn't be parsed.
     /// </exception>
-    internal Task<HttpCallResult<T>> HttpGet<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, Dictionary<string, object>? queryParams = null, CancellationToken? ct = null)
+    internal Task<HttpCallResult<T>> HttpGet<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, Dictionary<string, object>? queryParams = null, CancellationToken? ct = null, Dictionary<string, object?>? headers = null)
     {
-        return HttpRequestRaw<T>(provider, endpoint, url, queryParams, HttpVerbs.Get, ct: ct);
+        return HttpRequestRaw<T>(provider, endpoint, url, queryParams, HttpVerbs.Get, ct: ct, headers: headers);
     }
 
     internal Task<HttpCallResult<T>> HttpGetRaw<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, Dictionary<string, object>? queryParams = null, CancellationToken? ct = null, bool allowNon200Codes = false)
@@ -815,9 +814,9 @@ public abstract class EndpointBase
         return HttpRequestRaw<T>(provider, endpoint, url, queryParams, HttpVerbs.Delete, postData, model, requestObject, ct);
     }
 
-    internal Task<HttpCallResult<T>> HttpDeleteRaw<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, Dictionary<string, object>? queryParams = null, object? postData = null, IModel? model = null, object? requestObject = null, CancellationToken? ct = null)
+    internal Task<HttpCallResult<T>> HttpDeleteRaw<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, Dictionary<string, object>? queryParams = null, object? postData = null, IModel? model = null, object? requestObject = null, CancellationToken? ct = null, Dictionary<string, object?>? headers = null)
     {
-        return HttpRequestRaw<T>(provider, endpoint, url, queryParams, HttpVerbs.Delete, postData, model, requestObject, ct);
+        return HttpRequestRaw<T>(provider, endpoint, url, queryParams, HttpVerbs.Delete, postData, model, requestObject, ct, headers);
     }
     
     internal Task<HttpCallResult<T>> HttpAtomic<T>(IEndpointProvider provider, CapabilityEndpoints endpoint, HttpVerbs method, string? url = null, Dictionary<string, object>? queryParams = null, object? postData = null, IModel? model = null, object? requestObject = null, CancellationToken? ct = null, bool allowNon200Codes = false)
@@ -891,9 +890,9 @@ public abstract class EndpointBase
     /// <summary>
     /// Gets data as a series of server sent events (SSE).
     /// </summary>
-    internal async Task<TornadoStreamRequest> HttpStreamingRequestData(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, Dictionary<string, object>? queryParams = null, HttpVerbs? verb = null, object? postData = null, IModel? model = null, object? requestObj = null, CancellationToken token = default)
+    internal async Task<TornadoStreamRequest> HttpStreamingRequestData(IEndpointProvider provider, CapabilityEndpoints endpoint, string? url = null, Dictionary<string, object>? queryParams = null, HttpVerbs? verb = null, object? postData = null, IModel? model = null, object? requestObj = null, CancellationToken token = default, Dictionary<string, object?>? headers = null)
     {
-        RestDataOrException<HttpResponseMessage> response = await HttpRequestRawWithAllCodes(provider, endpoint, url, queryParams, verb, postData, model, true, token, null, requestObj).ConfigureAwait(false);
+        RestDataOrException<HttpResponseMessage> response = await HttpRequestRawWithAllCodes(provider, endpoint, url, queryParams, verb, postData, model, true, token, headers, requestObj).ConfigureAwait(false);
 
         if (response.Exception is not null || response.Data is null)
         {

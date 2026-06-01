@@ -22,7 +22,7 @@ public static class McpExtensions
     
     public static AnthropicMcpServer ToAnthropicMcpServerAsync(this MCPServer client)
     {
-        return new AnthropicMcpServer
+        AnthropicMcpServer server = new AnthropicMcpServer
         {
             Name = client.ServerLabel,
             Url = client.ServerUrl,
@@ -33,6 +33,17 @@ public static class McpExtensions
                 AllowedTools = client.AllowedTools ?? []
             }
         };
+
+        return server;
+    }
+
+    /// <summary>
+    /// Creates the MCP toolset for a server produced by <see cref="ToAnthropicMcpServerAsync"/>.
+    /// </summary>
+    public static AnthropicMcpToolset ToAnthropicMcpToolset(this MCPServer client)
+    {
+        AnthropicMcpServer server = client.ToAnthropicMcpServerAsync();
+        return AnthropicMcpToolset.FromLegacyConfiguration(server.Name, server.Configuration);
     }
 
     public static async ValueTask<List<Tool>> ListTornadoToolsAsync(this McpClient client)

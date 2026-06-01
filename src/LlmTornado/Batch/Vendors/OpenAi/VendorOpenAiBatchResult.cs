@@ -1,4 +1,6 @@
+using LlmTornado.Videos;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace LlmTornado.Batch.Vendors.OpenAi;
 
@@ -14,11 +16,22 @@ internal static class VendorOpenAiBatchResult
     /// <returns>The deserialized batch result.</returns>
     public static BatchResult? Deserialize(string jsonData)
     {
-        BatchResult? result = JsonConvert.DeserializeObject<BatchResult>(jsonData);
-        if (result is not null)
+        JObject root = JObject.Parse(jsonData);
+        BatchResult? result = root.ToObject<BatchResult>();
+        if (result is null)
         {
-            result.RawResponse = jsonData;
+            return null;
         }
+
+        result.RawResponse = jsonData;
+
+        JToken? bodyToken = root.SelectToken("response.body");
+        if (bodyToken is JObject bodyObject && bodyObject.Value<string>("object") == "video")
+        {
+            result.ResponseInternal ??= new BatchResultResponse();
+            result.ResponseInternal.VideoBody = bodyObject.ToObject<VideoJob>();
+        }
+
         return result;
     }
 }
