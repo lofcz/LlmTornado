@@ -845,18 +845,15 @@ internal class VendorAnthropicChatRequest
                 : AnthropicCacheSettings.Ephemeral;
         }
         
-        if (request.ReasoningEffort is not null && IsEffortCompatibleModel(Model))
+        if (ChatModelAnthropicHelper.IsEffortCompatibleModel(Model))
         {
-            string? effortValue = request.ReasoningEffort switch
             {
-                ChatReasoningEfforts.XHigh => "max",
-                ChatReasoningEfforts.Max => "max",
-                ChatReasoningEfforts.High => "high",
-                ChatReasoningEfforts.Medium => "medium",
-                ChatReasoningEfforts.Low => "low",
-                _ => null
-            };
-            
+            string? effortValue = request.VendorExtensions?.Anthropic?.Effort is AnthropicEffortLevels vendorEffort
+                ? AnthropicEffortHelper.ToApiValue(vendorEffort)
+                : request.ReasoningEffort is ChatReasoningEfforts reasoningEffort
+                    ? AnthropicEffortHelper.ToApiValue(reasoningEffort)
+                    : null;
+
             if (effortValue is not null)
             {
                 OutputConfig ??= new VendorAnthropicChatRequestOutputConfig();
@@ -933,19 +930,6 @@ internal class VendorAnthropicChatRequest
             || modelName.StartsWith("claude-opus-4-8", StringComparison.OrdinalIgnoreCase);
     }
     
-    private static bool IsEffortCompatibleModel(string? modelName)
-    {
-        if (modelName is null)
-        {
-            return false;
-        }
-        
-        return modelName.StartsWith("claude-opus-4-5", StringComparison.OrdinalIgnoreCase)
-            || modelName.StartsWith("claude-opus-4-6", StringComparison.OrdinalIgnoreCase)
-            || modelName.StartsWith("claude-opus-4-7", StringComparison.OrdinalIgnoreCase)
-            || modelName.StartsWith("claude-opus-4-8", StringComparison.OrdinalIgnoreCase)
-            || modelName.StartsWith("claude-sonnet-4-6", StringComparison.OrdinalIgnoreCase);
-    }
     
     private static bool IsExtendedThinkingModel(string? modelName)
     {

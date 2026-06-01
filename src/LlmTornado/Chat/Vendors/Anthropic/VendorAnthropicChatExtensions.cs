@@ -581,6 +581,12 @@ public class ChatRequestVendorAnthropicExtensions
     public Action<VendorAnthropicChatRequestMessageContent?, List<VendorAnthropicChatRequestMessageContent>, List<VendorAnthropicToolFunction>?>? OutboundRequest;
     
     /// <summary>
+    /// Effort level for <c>output_config.effort</c> (GA on Claude Opus 4.6+, Sonnet 4.6).
+    /// Takes precedence over <see cref="ChatRequest.ReasoningEffort"/> when both are set.
+    /// </summary>
+    public AnthropicEffortLevels? Effort { get; set; }
+    
+    /// <summary>
     /// Thinking settings for Claude 3.7+ models.<br/>
     /// Important: while supported, please use <see cref="ChatRequest.ReasoningBudget"/> instead.
     /// </summary>
