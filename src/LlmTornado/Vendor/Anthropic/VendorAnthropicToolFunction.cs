@@ -87,6 +87,7 @@ public class VendorAnthropicToolFunction : IVendorAnthropicChatRequestTool
             case VendorAnthropicChatRequestBuiltInToolAdvisor20260301 advisor:
                 Model = advisor.AdvisorModel;
                 MaxUses = advisor.MaxUses;
+                MaxTokens = advisor.MaxTokens;
                 Caching = advisor.Caching;
                 break;
         }
@@ -221,6 +222,12 @@ public class VendorAnthropicToolFunction : IVendorAnthropicChatRequestTool
     /// </summary>
     [JsonProperty("caching")]
     public AnthropicCacheSettings? Caching { get; set; }
+
+    /// <summary>
+    /// Caps the advisor's total output (thinking plus text) per call for <c>advisor_20260301</c> tools. Minimum 1024.
+    /// </summary>
+    [JsonProperty("max_tokens")]
+    public int? MaxTokens { get; set; }
 }
 
 /// <summary>

@@ -552,6 +552,12 @@ public class VendorAnthropicChatRequestBuiltInToolAdvisor20260301 : IVendorAnthr
     public int? MaxUses { get; set; }
 
     /// <summary>
+    /// Caps the advisor's total output (thinking plus text) per call. Minimum 1024.
+    /// </summary>
+    [JsonProperty("max_tokens")]
+    public int? MaxTokens { get; set; }
+
+    /// <summary>
     /// Enables prompt caching for the advisor's transcript across calls within a conversation.
     /// </summary>
     [JsonProperty("caching")]

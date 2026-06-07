@@ -907,15 +907,19 @@ internal class VendorAnthropicChatResult : VendorChatResult
                 RawContentJson = contentBlock.Content
             };
 
+            string? stopReason = contentObj["stop_reason"]?.ToString();
+
             switch (variantType)
             {
                 case "advisor_result":
                     data.ContentType = AnthropicAdvisorToolResultContentTypes.AdvisorResult;
                     data.Text = contentObj["text"]?.ToString();
+                    data.StopReason = stopReason;
                     break;
                 case "advisor_redacted_result":
                     data.ContentType = AnthropicAdvisorToolResultContentTypes.AdvisorRedactedResult;
                     data.EncryptedContent = contentObj["encrypted_content"]?.ToString();
+                    data.StopReason = stopReason;
                     break;
                 case "advisor_tool_result_error":
                     data.ContentType = AnthropicAdvisorToolResultContentTypes.AdvisorToolResultError;

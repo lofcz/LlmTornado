@@ -1,6 +1,9 @@
+using System.IO;
+using System.Text;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Code;
+using LlmTornado.Code.Vendor;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Tests;
@@ -228,5 +231,128 @@ public class AnthropicStopDetailsTests
         Assert.That(stopDetails, Is.Not.Null);
         Assert.That(stopDetails!.Category, Is.EqualTo("bio"));
         Assert.That(stopDetails.ToChatStopDetails()!.Category, Is.EqualTo(ChatRefusalCategory.Bio));
+    }
+
+    [Test]
+    public async Task InboundStream_MapsRefusalStopReasonFromMessageDelta()
+    {
+        const string sse = """
+            event: message_start
+            data: {"type":"message_start","message":{"id":"msg_stream_refusal","type":"message","role":"assistant","content":[],"model":"claude-opus-4-8","stop_reason":null,"stop_sequence":null,"usage":{"input_tokens":42,"output_tokens":0}}}
+
+            event: message_delta
+            data: {"type":"message_delta","delta":{"stop_reason":"refusal","stop_sequence":null,"stop_details":{"type":"refusal","category":"cyber","explanation":"Unauthorized access techniques."}},"usage":{"output_tokens":0}}
+
+            event: message_stop
+            data: {"type":"message_stop"}
+
+            """;
+
+        ChatResult? finishChunk = await CollectFinishChunk(sse);
+
+        Assert.That(finishChunk, Is.Not.Null);
+        Assert.That(finishChunk!.Choices![0].FinishReason, Is.EqualTo(ChatMessageFinishReasons.Refusal));
+        Assert.That(finishChunk.Choices[0].StopDetails, Is.Not.Null);
+        Assert.That(finishChunk.Choices[0].StopDetails!.Category, Is.EqualTo(ChatRefusalCategory.Cyber));
+        Assert.That(finishChunk.Usage?.CompletionTokens, Is.EqualTo(0));
+        Assert.That(finishChunk.IsRefusalWithoutBillableOutput, Is.True);
+    }
+
+    [Test]
+    public async Task InboundStream_RefusalAfterPartialOutput_IsBillable()
+    {
+        const string sse = """
+            event: message_start
+            data: {"type":"message_start","message":{"id":"msg_stream_refusal_partial","type":"message","role":"assistant","content":[],"model":"claude-opus-4-8","stop_reason":null,"stop_sequence":null,"usage":{"input_tokens":42,"output_tokens":0}}}
+
+            event: content_block_start
+            data: {"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}
+
+            event: content_block_delta
+            data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"Hello.."}}
+
+            event: content_block_stop
+            data: {"type":"content_block_stop","index":0}
+
+            event: message_delta
+            data: {"type":"message_delta","delta":{"stop_reason":"refusal","stop_sequence":null},"usage":{"output_tokens":3}}
+
+            event: message_stop
+            data: {"type":"message_stop"}
+
+            """;
+
+        List<ChatResult?> chunks = await CollectStreamChunks(sse);
+        ChatResult? finishChunk = chunks.LastOrDefault(x => x?.StreamInternalKind is ChatResultStreamInternalKinds.FinishData);
+
+        Assert.That(finishChunk, Is.Not.Null);
+        Assert.That(finishChunk!.Choices![0].FinishReason, Is.EqualTo(ChatMessageFinishReasons.Refusal));
+        Assert.That(finishChunk.Usage?.CompletionTokens, Is.EqualTo(3));
+        Assert.That(finishChunk.IsRefusalWithoutBillableOutput, Is.False);
+
+        ChatResult? appendChunk = chunks.LastOrDefault(x => x?.StreamInternalKind is ChatResultStreamInternalKinds.AppendAssistantMessage);
+        Assert.That(appendChunk?.Choices?[0].Delta?.Content, Is.EqualTo("Hello.."));
+    }
+
+    [Test]
+    public void IsRefusalWithoutBillableOutput_NonStreamingRefusalWithOutput_IsFalse()
+    {
+        ChatResult chatResult = new ChatResult
+        {
+            Choices =
+            [
+                new ChatChoice
+                {
+                    FinishReason = ChatMessageFinishReasons.Refusal
+                }
+            ],
+            Usage = new ChatUsage(LLmProviders.Anthropic) { CompletionTokens = 12 }
+        };
+
+        Assert.That(chatResult.IsRefusalWithoutBillableOutput, Is.False);
+    }
+
+    [Test]
+    public void IsRefusalWithoutBillableOutput_EndTurn_IsFalse()
+    {
+        ChatResult chatResult = new ChatResult
+        {
+            Choices =
+            [
+                new ChatChoice
+                {
+                    FinishReason = ChatMessageFinishReasons.EndTurn
+                }
+            ],
+            Usage = new ChatUsage(LLmProviders.Anthropic) { CompletionTokens = 0 }
+        };
+
+        Assert.That(chatResult.IsRefusalWithoutBillableOutput, Is.False);
+    }
+
+    private static async Task<ChatResult?> CollectFinishChunk(string sse)
+    {
+        return (await CollectStreamChunks(sse))
+            .LastOrDefault(x => x?.StreamInternalKind is ChatResultStreamInternalKinds.FinishData);
+    }
+
+    private static async Task<List<ChatResult?>> CollectStreamChunks(string sse)
+    {
+        AnthropicEndpointProvider provider = new AnthropicEndpointProvider();
+        MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(sse));
+        StreamReader reader = new StreamReader(stream);
+        ChatRequest request = new ChatRequest
+        {
+            Stream = true,
+            Messages = [new ChatMessage(ChatMessageRoles.User, "test")]
+        };
+
+        List<ChatResult?> chunks = [];
+        await foreach (ChatResult? chunk in provider.InboundStream(reader, request, null))
+        {
+            chunks.Add(chunk);
+        }
+
+        return chunks;
     }
 }

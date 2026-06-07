@@ -234,6 +234,9 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
         
         [JsonProperty("stop_sequence")]
         public string? StopSequence { get; set; }
+        
+        [JsonProperty("stop_details")]
+        public VendorAnthropicStopDetails? StopDetails { get; set; }
     }
     
     private static bool RequiresCompactionHeader(object? data)
@@ -777,6 +780,11 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
                         if (res.Delta.StopReason is not null)
                         {
                             finishReason = ChatMessageFinishReasonsConverter.Map.GetValueOrDefault(res.Delta.StopReason, ChatMessageFinishReasons.Unknown);
+                        }
+
+                        if (res.Delta.StopDetails is not null)
+                        {
+                            stopDetails = res.Delta.StopDetails.ToChatStopDetails();
                         }
                         
                         // todo: propagate stop_sequence from res.Delta

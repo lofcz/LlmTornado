@@ -122,6 +122,31 @@ internal sealed class AnthropicManagedAgentRubricConverter : JsonConverter<Anthr
 
     public override void WriteJson(JsonWriter writer, AnthropicManagedAgentRubric? value, JsonSerializer serializer)
     {
-        serializer.Serialize(writer, value);
+        if (value is null)
+        {
+            writer.WriteNull();
+            return;
+        }
+
+        writer.WriteStartObject();
+        if (value.Type is not null)
+        {
+            writer.WritePropertyName("type");
+            writer.WriteValue(value.Type);
+        }
+
+        if (value.Content is not null)
+        {
+            writer.WritePropertyName("content");
+            writer.WriteValue(value.Content);
+        }
+
+        if (value.FileId is not null)
+        {
+            writer.WritePropertyName("file_id");
+            writer.WriteValue(value.FileId);
+        }
+
+        writer.WriteEndObject();
     }
 }

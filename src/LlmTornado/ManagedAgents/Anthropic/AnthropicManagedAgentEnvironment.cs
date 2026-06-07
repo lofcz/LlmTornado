@@ -59,19 +59,76 @@ public class AnthropicManagedAgentEnvironmentCreateRequest
 }
 
 /// <summary>
-/// Environment sandbox configuration.
+/// Environment config type discriminator values.
+/// </summary>
+public static class AnthropicManagedAgentEnvironmentConfigTypes
+{
+    public const string Cloud = "cloud";
+    public const string SelfHosted = "self_hosted";
+}
+
+/// <summary>
+/// Visibility scope for self-hosted environments.
+/// </summary>
+public static class AnthropicManagedAgentEnvironmentScopes
+{
+    public const string Organization = "organization";
+    public const string Account = "account";
+}
+
+/// <summary>
+/// Environment sandbox configuration for create/update requests.
+/// Use <see cref="CloudDefault"/> or <see cref="SelfHostedDefault"/> factories.
 /// </summary>
 public class AnthropicManagedAgentEnvironmentConfig
 {
     [JsonProperty("type")]
-    public string Type { get; set; } = "cloud";
+    public string Type { get; set; } = AnthropicManagedAgentEnvironmentConfigTypes.Cloud;
 
     [JsonProperty("networking", NullValueHandling = NullValueHandling.Ignore)]
     public JObject? Networking { get; set; }
 
+    /// <summary>
+    /// Self-hosted visibility scope: <c>organization</c> or <c>account</c>. Only applicable when <see cref="Type"/> is <c>self_hosted</c>.
+    /// </summary>
+    [JsonProperty("scope", NullValueHandling = NullValueHandling.Ignore)]
+    public string? Scope { get; set; }
+
     public static AnthropicManagedAgentEnvironmentConfig CloudDefault() => new()
     {
-        Type = "cloud",
+        Type = AnthropicManagedAgentEnvironmentConfigTypes.Cloud,
         Networking = new JObject { ["type"] = "unrestricted" }
     };
+
+    /// <summary>
+    /// Self-hosted environment with default scope (server-assigned based on organization type).
+    /// </summary>
+    public static AnthropicManagedAgentEnvironmentConfig SelfHostedDefault() => new()
+    {
+        Type = AnthropicManagedAgentEnvironmentConfigTypes.SelfHosted
+    };
+
+    /// <summary>
+    /// Self-hosted environment with an explicit visibility scope.
+    /// </summary>
+    public static AnthropicManagedAgentEnvironmentConfig SelfHosted(string? scope = null) => new()
+    {
+        Type = AnthropicManagedAgentEnvironmentConfigTypes.SelfHosted,
+        Scope = scope
+    };
+}
+
+/// <summary>
+/// Resolved self-hosted environment configuration on an environment resource.
+/// </summary>
+public class AnthropicManagedAgentSelfHostedEnvironmentConfig
+{
+    [JsonProperty("type")]
+    public string? Type { get; set; }
+
+    /// <summary>
+    /// <c>organization</c> or <c>account</c>.
+    /// </summary>
+    [JsonProperty("scope", NullValueHandling = NullValueHandling.Ignore)]
+    public string? Scope { get; set; }
 }

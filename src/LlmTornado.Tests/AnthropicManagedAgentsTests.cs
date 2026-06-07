@@ -2,6 +2,7 @@ using System.Linq;
 using LlmTornado.Code;
 using LlmTornado.Common;
 using LlmTornado.ManagedAgents.Anthropic;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace LlmTornado.Tests;
@@ -101,6 +102,134 @@ public class AnthropicManagedAgentsTests
 
         Assert.That(body["agent"]?.ToString(), Is.EqualTo("agent_abc"));
         Assert.That(body["environment_id"]?.ToString(), Is.EqualTo("env_xyz"));
+    }
+
+    [Test]
+    public void SelfHostedEnvironmentConfig_SerializesMinimalType()
+    {
+        AnthropicManagedAgentEnvironmentCreateRequest request = new AnthropicManagedAgentEnvironmentCreateRequest
+        {
+            Name = "self-hosted",
+            Config = AnthropicManagedAgentEnvironmentConfig.SelfHostedDefault()
+        };
+
+        string json = request.Serialize();
+        JObject body = JObject.Parse(json);
+
+        Assert.That(body["config"]?["type"]?.ToString(), Is.EqualTo("self_hosted"));
+        Assert.That(body["config"]?["networking"], Is.Null);
+        Assert.That(body["config"]?["scope"], Is.Null);
+    }
+
+    [Test]
+    public void SelfHostedEnvironmentConfig_SerializesOrganizationScope()
+    {
+        AnthropicManagedAgentEnvironmentCreateRequest request = new AnthropicManagedAgentEnvironmentCreateRequest
+        {
+            Name = "self-hosted-scoped",
+            Config = AnthropicManagedAgentEnvironmentConfig.SelfHosted(AnthropicManagedAgentEnvironmentScopes.Organization)
+        };
+
+        string json = request.Serialize();
+        JObject body = JObject.Parse(json);
+
+        Assert.That(body["config"]?["type"]?.ToString(), Is.EqualTo("self_hosted"));
+        Assert.That(body["config"]?["scope"]?.ToString(), Is.EqualTo("organization"));
+    }
+
+    [Test]
+    public void SelfHostedEnvironmentConfig_DeserializesFromResponse()
+    {
+        const string json = """
+            {
+              "type": "self_hosted",
+              "scope": "account"
+            }
+            """;
+
+        AnthropicManagedAgentSelfHostedEnvironmentConfig? config =
+            JsonConvert.DeserializeObject<AnthropicManagedAgentSelfHostedEnvironmentConfig>(json, VendorAnthropicManagedAgentsJson.Settings);
+
+        Assert.That(config, Is.Not.Null);
+        Assert.That(config!.Type, Is.EqualTo("self_hosted"));
+        Assert.That(config.Scope, Is.EqualTo("account"));
+    }
+
+    [Test]
+    public void WebhookEvent_DeserializesSessionStatusRunStarted()
+    {
+        const string json = """
+            {
+              "type": "event",
+              "id": "event_01ABC",
+              "created_at": "2026-03-18T14:05:22Z",
+              "data": {
+                "type": "session.status_run_started",
+                "id": "sesn_01XYZ",
+                "organization_id": "org-123",
+                "workspace_id": "ws-456"
+              }
+            }
+            """;
+
+        AnthropicManagedAgentWebhookEvent? webhook = AnthropicManagedAgentWebhookEvent.Parse(json);
+
+        Assert.That(webhook, Is.Not.Null);
+        Assert.That(webhook!.Type, Is.EqualTo("event"));
+        Assert.That(webhook.Id, Is.EqualTo("event_01ABC"));
+        Assert.That(webhook.Data?.Type, Is.EqualTo(AnthropicManagedAgentWebhookEventTypes.SessionStatusRunStarted));
+        Assert.That(webhook.Data?.Id, Is.EqualTo("sesn_01XYZ"));
+        Assert.That(webhook.Data?.OrganizationId, Is.EqualTo("org-123"));
+        Assert.That(webhook.Data?.WorkspaceId, Is.EqualTo("ws-456"));
+    }
+
+    [Test]
+    public void WebhookEvent_DeserializesVaultCredentialWithVaultId()
+    {
+        const string json = """
+            {
+              "type": "event",
+              "id": "event_02DEF",
+              "created_at": "2026-03-18T14:06:00Z",
+              "data": {
+                "type": "vault_credential.refresh_failed",
+                "id": "vcred_01ABC",
+                "organization_id": "org-123",
+                "workspace_id": "ws-456",
+                "vault_id": "vault_01XYZ"
+              }
+            }
+            """;
+
+        AnthropicManagedAgentWebhookEvent? webhook = AnthropicManagedAgentWebhookEvent.Parse(json);
+
+        Assert.That(webhook?.Data?.Type, Is.EqualTo(AnthropicManagedAgentWebhookEventTypes.VaultCredentialRefreshFailed));
+        Assert.That(webhook?.Data?.VaultId, Is.EqualTo("vault_01XYZ"));
+    }
+
+    [Test]
+    public void MultiagentResponse_DeserializesResolvedCoordinatorRoster()
+    {
+        const string json = """
+            {
+              "type": "agent",
+              "id": "agent_coord",
+              "multiagent": {
+                "type": "coordinator",
+                "agents": [
+                  {"type": "agent", "id": "agent_sub", "version": 3}
+                ]
+              }
+            }
+            """;
+
+        AnthropicManagedAgent? agent = JsonConvert.DeserializeObject<AnthropicManagedAgent>(json, VendorAnthropicManagedAgentsJson.Settings);
+
+        Assert.That(agent?.Multiagent?.Type, Is.EqualTo("coordinator"));
+        Assert.That(agent?.Multiagent?.Agents, Has.Count.EqualTo(1));
+        Assert.That(agent?.Multiagent?.Agents?[0].Type, Is.EqualTo("agent"));
+        Assert.That(agent?.Multiagent?.Agents?[0].Id, Is.EqualTo("agent_sub"));
+        Assert.That(agent?.Multiagent?.Agents?[0].Version, Is.EqualTo(3));
     }
 
     [Test]

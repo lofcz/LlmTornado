@@ -107,6 +107,25 @@ internal sealed class AnthropicManagedAgentRosterEntryConverter : JsonConverter<
             return;
         }
 
-        JObject.FromObject(value ?? new AnthropicManagedAgentRosterEntry(), serializer).WriteTo(writer);
+        writer.WriteStartObject();
+        if (value?.Type is not null)
+        {
+            writer.WritePropertyName("type");
+            writer.WriteValue(value.Type);
+        }
+
+        if (value?.Id is not null)
+        {
+            writer.WritePropertyName("id");
+            writer.WriteValue(value.Id);
+        }
+
+        if (value?.Version is not null)
+        {
+            writer.WritePropertyName("version");
+            writer.WriteValue(value.Version);
+        }
+
+        writer.WriteEndObject();
     }
 }

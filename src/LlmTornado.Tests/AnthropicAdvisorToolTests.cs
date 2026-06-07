@@ -87,6 +87,17 @@ public class AnthropicAdvisorToolTests
     }
 
     [Test]
+    public void AdvisorToolRequest_WithMaxTokens_SerializesMaxTokensOnToolDefinition()
+    {
+        ChatRequest request = CreateAdvisorRequest(maxTokens: 2048);
+
+        JObject body = ParseBody(request);
+        JToken? advisorTool = body["tools"]?.FirstOrDefault(t => t["type"]?.ToString() == "advisor_20260301");
+
+        Assert.That(advisorTool?["max_tokens"]?.Value<int>(), Is.EqualTo(2048));
+    }
+
+    [Test]
     public void AdvisorToolResultResponse_ParsesServerToolUseAndAdvice()
     {
         const string json = """
@@ -159,6 +170,55 @@ public class AnthropicAdvisorToolTests
     }
 
     [Test]
+    public void AdvisorToolResultResponse_ParsesStopReasonMaxTokens()
+    {
+        const string json = """
+            {
+              "id": "msg_test",
+              "type": "message",
+              "role": "assistant",
+              "model": "claude-sonnet-4-6",
+              "stop_reason": "end_turn",
+              "content": [
+                {
+                  "type": "server_tool_use",
+                  "id": "srvtoolu_cap123",
+                  "name": "advisor",
+                  "input": {}
+                },
+                {
+                  "type": "advisor_tool_result",
+                  "tool_use_id": "srvtoolu_cap123",
+                  "content": {
+                    "type": "advisor_result",
+                    "text": "Partial guidance before truncation.",
+                    "stop_reason": "max_tokens"
+                  }
+                }
+              ],
+              "usage": {
+                "input_tokens": 100,
+                "output_tokens": 200
+              }
+            }
+            """;
+
+        AnthropicEndpointProvider provider = new AnthropicEndpointProvider { Api = _api };
+        ChatResult? result = provider.InboundMessage<ChatResult>(json, null, null);
+
+        Assert.That(result, Is.Not.Null);
+
+        ChatMessagePart? advisorPart = result!.Choices!
+            .SelectMany(c => c.Message?.Parts ?? [])
+            .FirstOrDefault(p => p.VendorExtensions is ChatMessagePartAnthropicExtensions ext && ext.AdvisorToolResult is not null);
+
+        Assert.That(advisorPart, Is.Not.Null);
+        ChatMessagePartAnthropicExtensions anthropicExt = (ChatMessagePartAnthropicExtensions)advisorPart!.VendorExtensions!;
+        Assert.That(anthropicExt.AdvisorToolResult!.ContentType, Is.EqualTo(AnthropicAdvisorToolResultContentTypes.AdvisorResult));
+        Assert.That(anthropicExt.AdvisorToolResult.StopReason, Is.EqualTo("max_tokens"));
+    }
+
+    [Test]
     [Category("Integration")]
     public async Task Integration_AdvisorTool_ReturnsResponseWithAdvisorBlocks()
     {
@@ -191,7 +251,7 @@ public class AnthropicAdvisorToolTests
         }
     }
 
-    private static ChatRequest CreateAdvisorRequest(int? maxUses = null, AnthropicCacheSettings? caching = null)
+    private static ChatRequest CreateAdvisorRequest(int? maxUses = null, int? maxTokens = null, AnthropicCacheSettings? caching = null)
     {
         return new ChatRequest
         {
@@ -206,6 +266,7 @@ public class AnthropicAdvisorToolTests
                         ExecutorModel = ChatModel.Anthropic.Claude46.Sonnet,
                         AdvisorModel = ChatModel.Anthropic.Claude48.Opus,
                         MaxUses = maxUses,
+                        MaxTokens = maxTokens,
                         Caching = caching
                     }
                 }

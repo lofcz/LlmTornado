@@ -31,6 +31,12 @@ public class AnthropicAdvisorToolRequest
     public int? MaxUses { get; set; }
 
     /// <summary>
+    /// Caps the advisor's total output (thinking plus text) per call. Minimum 1024.
+    /// </summary>
+    [JsonProperty("max_tokens")]
+    public int? MaxTokens { get; set; }
+
+    /// <summary>
     /// Enables prompt caching for the advisor's transcript across calls within a conversation.
     /// Shape: <c>{"type": "ephemeral", "ttl": "5m" | "1h"}</c>.
     /// </summary>
@@ -45,6 +51,7 @@ public class AnthropicAdvisorToolRequest
         {
             AdvisorModel = AdvisorModel.Name,
             MaxUses = MaxUses,
+            MaxTokens = MaxTokens,
             Caching = Caching
         };
     }
@@ -151,6 +158,12 @@ public class AnthropicAdvisorToolResultData
     /// Error code when <see cref="ContentType"/> is <see cref="AnthropicAdvisorToolResultContentTypes.AdvisorToolResultError"/>.
     /// </summary>
     public AnthropicAdvisorToolResultErrorCodes? ErrorCode { get; set; }
+
+    /// <summary>
+    /// Advisor sub-call stop reason when <c>max_tokens</c> is set on the tool definition
+    /// (e.g. <c>end_turn</c> or <c>max_tokens</c> when the cap is hit).
+    /// </summary>
+    public string? StopReason { get; set; }
 
     /// <summary>
     /// Raw JSON of the <c>content</c> object for multi-turn passthrough.

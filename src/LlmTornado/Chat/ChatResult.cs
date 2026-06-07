@@ -100,6 +100,15 @@ public class ChatResult : ApiResultBase
 	internal object? InvocationResult { get; set; }
 	
 	/// <summary>
+	/// Whether this response is an Anthropic streaming-classifier refusal with no billable output.
+	/// Per Claude API policy, requests that return <c>stop_reason: "refusal"</c> before any model output
+	/// are not billed; reported usage tokens are informational only.
+	/// </summary>
+	public bool IsRefusalWithoutBillableOutput =>
+		Choices?.FirstOrDefault()?.FinishReason is ChatMessageFinishReasons.Refusal
+		&& (Usage?.CompletionTokens ?? 0) == 0;
+
+	/// <summary>
 	///     A convenience method to return the content of the message in the first choice of this response
 	/// </summary>
 	/// <returns>The content of the message, not including <see cref="ChatMessageRoles" />.</returns>
