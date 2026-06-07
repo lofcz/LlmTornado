@@ -384,7 +384,13 @@ public enum AnthropicInferenceGeoOptions
     /// US-only inference. Priced at 1.1x on Claude Opus 4.6 and newer models.
     /// </summary>
     [EnumMember(Value = "us")]
-    Us
+    Us,
+    
+    /// <summary>
+    /// Inference geography was not reported for this response.
+    /// </summary>
+    [EnumMember(Value = "not_available")]
+    NotAvailable
 }
 
 /// <summary>

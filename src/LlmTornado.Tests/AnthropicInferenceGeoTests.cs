@@ -119,6 +119,24 @@ public class AnthropicInferenceGeoTests
         Assert.That(usage.InputTokens, Is.EqualTo(10));
         Assert.That(usage.OutputTokens, Is.EqualTo(5));
     }
+
+    [Test]
+    public void InferenceGeo_Usage_DeserializesNotAvailable_FromResponse()
+    {
+        const string json = """
+            {
+              "input_tokens": 10,
+              "output_tokens": 5,
+              "inference_geo": "not_available"
+            }
+            """;
+
+        VendorAnthropicUsage? usage = Newtonsoft.Json.JsonConvert.DeserializeObject<VendorAnthropicUsage>(json);
+
+        Assert.That(usage, Is.Not.Null);
+        Assert.That(usage!.InferenceGeo, Is.EqualTo(AnthropicInferenceGeoOptions.NotAvailable));
+    }
+
 }
 
 /// <summary>
