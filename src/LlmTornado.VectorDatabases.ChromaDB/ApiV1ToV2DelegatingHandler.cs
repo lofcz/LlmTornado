@@ -24,7 +24,14 @@ public class ApiV1ToV2DelegatingHandler : DelegatingHandler
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        var baseAddress = new Uri($"{request.RequestUri.Scheme}://{request.RequestUri.Host}:{request.RequestUri.Port}/api/v2/");
+        var absolutePath = request.RequestUri.AbsolutePath;
+        var apiV2Idx = absolutePath.IndexOf("/api/v2/", StringComparison.OrdinalIgnoreCase);
+        var apiV1Idx = absolutePath.IndexOf("/api/v1/", StringComparison.OrdinalIgnoreCase);
+        var pathPrefix = apiV2Idx >= 0 ? absolutePath.Substring(0, apiV2Idx)
+                       : apiV1Idx >= 0 ? absolutePath.Substring(0, apiV1Idx)
+                       : string.Empty; 
+
+        var baseAddress = new Uri($"{request.RequestUri.Scheme}://{request.RequestUri.Host}:{request.RequestUri.Port}{pathPrefix}/api/v2/");
 
         var queries = HttpUtility.ParseQueryString(request.RequestUri.Query);
 
