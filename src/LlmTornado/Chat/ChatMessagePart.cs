@@ -35,7 +35,7 @@ public class ChatMessagePart
     }
     
     /// <summary>
-    /// Sets the part to <see cref="ChatMessageTypes.FileLink"/>. Supported only by Google.
+    /// Sets the part to <see cref="ChatMessageTypes.FileLink"/>. Supported by Google (URI) and OpenAI (file id via Files API; see <see cref="OpenAiInputFileTypes"/>).
     /// </summary>
     /// <param name="fileLinkData"></param>
     public ChatMessagePart(ChatMessagePartFileLinkData fileLinkData)
@@ -244,6 +244,12 @@ public class ChatMessagePart
     /// </summary>
     [JsonProperty("text")]
     public string? Text { get; set; }
+
+    /// <summary>
+    ///     Opaque metadata from prior compaction blocks. Used by Anthropic compaction round-trips.
+    /// </summary>
+    [JsonProperty("encrypted_content")]
+    public string? EncryptedContent { get; set; }
 
     /// <summary>
     ///     Image of the message part if type is <see cref="ChatMessageTypes.Image" />.

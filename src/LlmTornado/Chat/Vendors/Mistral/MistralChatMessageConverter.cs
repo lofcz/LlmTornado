@@ -178,7 +178,7 @@ internal class MistralChatMessageConverter : JsonConverter<ChatMessage>
             {
                 Id = tc["id"]?.ToString(),
                 Type = tc["type"]?.ToString(),
-                FunctionCall = tc["function_call"] is JObject fn
+                FunctionCall = tc["function"] is JObject fn
                     ? new FunctionCall
                     {
                         Name = fn["name"]?.ToString(),

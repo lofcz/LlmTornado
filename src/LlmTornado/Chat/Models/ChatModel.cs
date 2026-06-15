@@ -17,6 +17,7 @@ using LlmTornado.Chat.Models.Requesty;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
 using LlmTornado.Models;
+using LlmTornado.Models.Vendors.Google;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Chat.Models;
@@ -191,6 +192,13 @@ public class ChatModel : ModelBase
     public HashSet<ChatModelEndpointCapabilities>? EndpointCapabilities { get; set; }
 
     /// <summary>
+    /// Known Gemini model lifecycle metadata for catalog models. API responses may also include
+    /// <see cref="GoogleModelStatus"/> on generateContent and models list calls.
+    /// </summary>
+    [JsonIgnore]
+    public GoogleModelLifecycleInfo? GoogleLifecycle { get; set; }
+
+    /// <summary>
     /// Clamps the preferred reasoning tokens so that they are compatible with the model.
     /// </summary>
     internal int? ClampReasoningTokens(int? preferred)
@@ -349,6 +357,7 @@ public class ChatModel : ModelBase
         ReasoningTokensMax = basedOn.ReasoningTokensMax;
         ReasoningTokensMin = basedOn.ReasoningTokensMin;
         ReasoningTokensSpecialValues = basedOn.ReasoningTokensSpecialValues;
+        GoogleLifecycle = basedOn.GoogleLifecycle;
         CreatedUnixTime = basedOn.CreatedUnixTime;
         Object = basedOn.Object;
         OwnedBy = basedOn.OwnedBy;

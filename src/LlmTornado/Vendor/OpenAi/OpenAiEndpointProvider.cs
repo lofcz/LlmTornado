@@ -96,13 +96,16 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
             CapabilityEndpoints.VectorStores => "vector_stores",
             CapabilityEndpoints.Responses => "responses",
             CapabilityEndpoints.ResponsesConversation => "conversations",
+            CapabilityEndpoints.Skills => "skills",
             CapabilityEndpoints.Batch => "batches",
             CapabilityEndpoints.Videos => "videos",
+            CapabilityEndpoints.RealtimeTranslations => "realtime/translations",
             // conditionally supported
             CapabilityEndpoints.ContextualEmbeddings when provider is LLmProviders.Voyage => "contextualizedembeddings",
             CapabilityEndpoints.MultimodalEmbeddings when provider is LLmProviders.Voyage => "multimodalembeddings",
             CapabilityEndpoints.Rerank when provider is LLmProviders.Voyage => "rerank",
             CapabilityEndpoints.Ocr when provider is LLmProviders.Mistral => "ocr",
+            CapabilityEndpoints.Realtime => "realtime",
             _ => throw new Exception($"{provider} doesn't support endpoint {endpoint}")
         };
     }

@@ -51,6 +51,7 @@ internal static class VendorOpenAiBatchHandler
             {
                 BatchRequestEndpoint.ImageGenerations => "/v1/images/generations",
                 BatchRequestEndpoint.ImageEdits => "/v1/images/edits",
+                BatchRequestEndpoint.Videos => "/v1/videos",
                 _ => "/v1/chat/completions"
             };
         }

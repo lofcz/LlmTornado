@@ -1,5 +1,8 @@
+using System.Collections.Generic;
+using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Code;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace LlmTornado.Vendor.Anthropic;
 
@@ -49,6 +52,19 @@ public class VendorAnthropicUsage : IChatUsage
 
     [JsonProperty("server_tool_use")]
     public VendorAnthropicServerUsage? ServerToolUsage { get; set; }
+
+    /// <summary>
+    /// Geographic region where inference ran for this request.
+    /// </summary>
+    [JsonProperty("inference_geo")]
+    [JsonConverter(typeof(StringEnumConverter))]
+    public AnthropicInferenceGeoOptions? InferenceGeo { get; set; }
+
+    /// <summary>
+    /// Per-iteration usage breakdown, including <c>advisor_message</c> sub-inferences.
+    /// </summary>
+    [JsonProperty("iterations")]
+    public List<VendorAnthropicUsageIteration>? Iterations { get; set; }
 
 }
 

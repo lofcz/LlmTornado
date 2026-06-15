@@ -1,47 +1,28 @@
 using System.Collections.Generic;
+using System.Text;
 using LlmTornado.Chat.Vendors.Google;
 using LlmTornado.Code;
+using LlmTornado.Webhooks;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Batch.Vendors.Google;
 
 /// <summary>
-/// Google/Gemini-specific batch request metadata for each inlined request.
+/// Google/Gemini-specific JSONL batch request line.
 /// </summary>
-internal class VendorGoogleBatchRequestMetadata
+internal class VendorGoogleBatchRequestLine
 {
     [JsonProperty("key")]
     public string Key { get; set; } = string.Empty;
-}
 
-/// <summary>
-/// Google/Gemini-specific inlined request item.
-/// </summary>
-internal class VendorGoogleBatchInlinedRequest
-{
     [JsonProperty("request")]
     public VendorGoogleChatRequest Request { get; set; }
-    
-    [JsonProperty("metadata")]
-    public VendorGoogleBatchRequestMetadata Metadata { get; set; }
-    
-    public VendorGoogleBatchInlinedRequest(BatchRequestItem item, IEndpointProvider provider)
-    {
-        Request = new VendorGoogleChatRequest(item.Params, provider);
-        Metadata = new VendorGoogleBatchRequestMetadata
-        {
-            Key = item.CustomId
-        };
-    }
-}
 
-/// <summary>
-/// Wrapper for inlined requests array.
-/// </summary>
-internal class VendorGoogleBatchInlinedRequestsWrapper
-{
-    [JsonProperty("requests")]
-    public List<VendorGoogleBatchInlinedRequest> Requests { get; set; } = [];
+    public VendorGoogleBatchRequestLine(BatchRequestItem item, IEndpointProvider provider)
+    {
+        Key = item.CustomId;
+        Request = new VendorGoogleChatRequest(item.Params, provider);
+    }
 }
 
 /// <summary>
@@ -49,11 +30,13 @@ internal class VendorGoogleBatchInlinedRequestsWrapper
 /// </summary>
 internal class VendorGoogleBatchInputConfig
 {
-    [JsonProperty("requests")]
-    public VendorGoogleBatchInlinedRequestsWrapper? Requests { get; set; }
-    
     [JsonProperty("file_name")]
-    public string? FileName { get; set; }
+    public string FileName { get; set; }
+
+    public VendorGoogleBatchInputConfig(string fileName)
+    {
+        FileName = fileName;
+    }
 }
 
 /// <summary>
@@ -65,10 +48,18 @@ internal class VendorGoogleBatchConfig
     public string? DisplayName { get; set; }
     
     [JsonProperty("input_config")]
-    public VendorGoogleBatchInputConfig InputConfig { get; set; } = new();
+    public VendorGoogleBatchInputConfig InputConfig { get; set; }
     
     [JsonProperty("priority")]
     public string? Priority { get; set; }
+
+    [JsonProperty("webhook_config")]
+    public GeminiWebhookConfig? WebhookConfig { get; set; }
+
+    public VendorGoogleBatchConfig(VendorGoogleBatchInputConfig inputConfig)
+    {
+        InputConfig = inputConfig;
+    }
 }
 
 /// <summary>
@@ -77,24 +68,24 @@ internal class VendorGoogleBatchConfig
 internal class VendorGoogleBatchRequest
 {
     [JsonProperty("batch")]
-    public VendorGoogleBatchConfig Batch { get; set; } = new();
-    
-    public VendorGoogleBatchRequest(BatchRequest request, IEndpointProvider provider)
+    public VendorGoogleBatchConfig Batch { get; set; }
+
+    public VendorGoogleBatchRequest(BatchRequest request, string inputFileId)
     {
-        Batch.InputConfig.Requests = new VendorGoogleBatchInlinedRequestsWrapper();
-        
-        foreach (BatchRequestItem item in request.Requests)
-        {
-            Batch.InputConfig.Requests.Requests.Add(new VendorGoogleBatchInlinedRequest(item, provider));
-        }
-        
+        Batch = new VendorGoogleBatchConfig(new VendorGoogleBatchInputConfig(inputFileId));
+
         // Set display name from vendor extensions if provided
         Batch.DisplayName = request.VendorExtensions?.Google?.DisplayName ?? $"batch_{System.Guid.NewGuid():N}";
-        
+
         // Set priority if provided
         if (request.VendorExtensions?.Google?.Priority is not null)
         {
             Batch.Priority = request.VendorExtensions.Google.Priority.Value.ToString();
+        }
+
+        if (request.VendorExtensions?.Google?.WebhookConfig is not null)
+        {
+            Batch.WebhookConfig = request.VendorExtensions.Google.WebhookConfig;
         }
     }
     
@@ -104,5 +95,30 @@ internal class VendorGoogleBatchRequest
     public string Serialize()
     {
         return JsonConvert.SerializeObject(this, EndpointBase.NullSettings);
+    }
+
+    /// <summary>
+    /// Serializes batch request items to JSONL format for Gemini file uploads.
+    /// </summary>
+    public static string SerializeToJsonl(BatchRequest request, IEndpointProvider provider)
+    {
+        StringBuilder sb = new StringBuilder();
+
+        foreach (BatchRequestItem item in request.Requests)
+        {
+            VendorGoogleBatchRequestLine line = new VendorGoogleBatchRequestLine(item, provider);
+            string json = JsonConvert.SerializeObject(line, EndpointBase.NullSettings);
+            sb.AppendLine(json);
+        }
+
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// Serializes batch request items to JSONL bytes for Gemini file uploads.
+    /// </summary>
+    public static byte[] SerializeToJsonlBytes(BatchRequest request, IEndpointProvider provider)
+    {
+        return Encoding.UTF8.GetBytes(SerializeToJsonl(request, provider));
     }
 }

@@ -17,17 +17,25 @@ using LlmTornado.Embedding;
 using LlmTornado.Files;
 using LlmTornado.Images;
 using LlmTornado.Videos;
+using LlmTornado.Interactions;
+using LlmTornado.Live;
+using LlmTornado.Webhooks;
 using LlmTornado.Models;
 using LlmTornado.Moderation;
 using LlmTornado.Ocr;
 using LlmTornado.Rerank;
+using LlmTornado.Realtime;
 using LlmTornado.Responses;
 using LlmTornado.Threads;
 using LlmTornado.VectorStores;
 using LlmTornado.Uploads;
 using LlmTornado.Skills;
 using LlmTornado.Tokenize;
+using LlmTornado.ManagedAgents;
+using LlmTornado.ManagedAgents.Anthropic;
+using LlmTornado.RateLimits;
 using LlmTornado.Common;
+using LlmTornado.Compaction;
 
 namespace LlmTornado;
 
@@ -62,10 +70,21 @@ public class TornadoApi
     private readonly Lazy<RerankEndpoint> rerank;
     private readonly Lazy<ResponsesConversationEndpoint> responsesConversation;
     private readonly Lazy<SkillsEndpoint> skills;
+    private readonly Lazy<OpenAiSkillsEndpoint> openAiSkills;
     private readonly Lazy<TokenizeEndpoint> tokenize;
     private readonly Lazy<VideoGenerationEndpoint> videos;
     private readonly Lazy<BatchEndpoint> batch;
+    private readonly Lazy<WebhooksEndpoint> webhooks;
+    private readonly Lazy<InteractionsEndpoint> interactions;
     private readonly Lazy<OcrEndpoint> ocr;
+    private readonly Lazy<RealtimeEndpoint> realtime;
+    private readonly Lazy<LiveEndpoint> live;
+    private readonly Lazy<ManagedAgentsEndpoint> managedAgents;
+    private readonly Lazy<AnthropicManagedAgentsEndpoint> anthropicManagedAgents;
+    private readonly Lazy<AnthropicManagedAgentSessionsEndpoint> anthropicManagedAgentSessions;
+    private readonly Lazy<AnthropicManagedAgentEnvironmentsEndpoint> anthropicManagedAgentEnvironments;
+    private readonly Lazy<RateLimitsEndpoint> rateLimits;
+    private readonly Lazy<CompactionEndpoint> compaction;
 
     /// <summary>
     ///     If true, the API will throw exceptions for non-200 responses.
@@ -108,10 +127,21 @@ public class TornadoApi
         rerank = new Lazy<RerankEndpoint>(() => new RerankEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
         responsesConversation = new Lazy<ResponsesConversationEndpoint>(() => new ResponsesConversationEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
         skills = new Lazy<SkillsEndpoint>(() => new SkillsEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
+        openAiSkills = new Lazy<OpenAiSkillsEndpoint>(() => new OpenAiSkillsEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
         tokenize = new Lazy<TokenizeEndpoint>(() => new TokenizeEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
         videos = new Lazy<VideoGenerationEndpoint>(() => new VideoGenerationEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
         batch = new Lazy<BatchEndpoint>(() => new BatchEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
+        webhooks = new Lazy<WebhooksEndpoint>(() => new WebhooksEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
+        interactions = new Lazy<InteractionsEndpoint>(() => new InteractionsEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
         ocr = new Lazy<OcrEndpoint>(() => new OcrEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
+        managedAgents = new Lazy<ManagedAgentsEndpoint>(() => new ManagedAgentsEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
+        anthropicManagedAgents = new Lazy<AnthropicManagedAgentsEndpoint>(() => new AnthropicManagedAgentsEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
+        anthropicManagedAgentSessions = new Lazy<AnthropicManagedAgentSessionsEndpoint>(() => new AnthropicManagedAgentSessionsEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
+        anthropicManagedAgentEnvironments = new Lazy<AnthropicManagedAgentEnvironmentsEndpoint>(() => new AnthropicManagedAgentEnvironmentsEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
+        realtime = new Lazy<RealtimeEndpoint>(() => new RealtimeEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
+        live = new Lazy<LiveEndpoint>(() => new LiveEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
+        rateLimits = new Lazy<RateLimitsEndpoint>(() => new RateLimitsEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
+        compaction = new Lazy<CompactionEndpoint>(() => new CompactionEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
     }
 
     /// <summary>
@@ -511,6 +541,12 @@ public class TornadoApi
     ///     Only available with Anthropic provider.
     /// </summary>
     public SkillsEndpoint Skills => skills.Value;
+
+    /// <summary>
+    ///     OpenAI Skills API for uploading skills referenced by the Responses shell tool (<c>/v1/skills</c>).
+    ///     Only available with OpenAI provider.
+    /// </summary>
+    public OpenAiSkillsEndpoint OpenAiSkills => openAiSkills.Value;
     
     /// <summary>
     ///     The API lets you count tokens in text or messages.
@@ -527,10 +563,59 @@ public class TornadoApi
     ///     The Batch API allows you to create asynchronous jobs to process multiple requests at once.
     /// </summary>
     public BatchEndpoint Batch => batch.Value;
+
+    /// <summary>
+    ///     Gemini Webhooks API for project-level webhook registration and event-driven completion of async jobs.
+    /// </summary>
+    public WebhooksEndpoint Webhooks => webhooks.Value;
+
+    /// <summary>
+    ///     Gemini Interactions API for stateful model and managed-agent conversations (May 2026 steps schema by default).
+    ///     Only available with Google provider.
+    /// </summary>
+    public InteractionsEndpoint Interactions => interactions.Value;
     
     /// <summary>
     ///     The OCR API allows you to extract text, layout, and other information from documents.
     ///     Only available with Mistral provider.
     /// </summary>
     public OcrEndpoint Ocr => ocr.Value;
+
+    /// <summary>
+    ///     Gemini Managed Agents API for saved Antigravity-based agent configurations.
+    ///     Only available with Google provider.
+    /// </summary>
+    public ManagedAgentsEndpoint ManagedAgents => managedAgents.Value;
+
+    /// <summary>
+    ///     Claude Managed Agents API (<c>/v1/agents</c>) — agent definitions and multiagent coordinator configuration.
+    /// </summary>
+    public AnthropicManagedAgentsEndpoint AnthropicManagedAgents => anthropicManagedAgents.Value;
+
+    /// <summary>
+    ///     Claude Managed Agent sessions API — multiagent orchestration, outcomes, threads, and environments.
+    /// </summary>
+    public AnthropicManagedAgentSessionsEndpoint AnthropicManagedAgentSessions => anthropicManagedAgentSessions.Value;
+
+    /// <summary>
+    ///     Claude Managed Agent environments API — isolated execution environments for agent sessions.
+    /// </summary>
+    public AnthropicManagedAgentEnvironmentsEndpoint AnthropicManagedAgentEnvironments => anthropicManagedAgentEnvironments.Value;
+
+    /// <summary>
+    ///     Anthropic Admin API for querying organization and workspace rate limits.
+    ///     Requires an Admin API key (<c>sk-ant-admin...</c>).
+    /// </summary>
+    public RateLimitsEndpoint RateLimits => rateLimits.Value;
+
+    /// <summary>
+    ///     OpenAI Realtime API (GA): client secrets, legacy sessions, and WebSocket voice/translation/transcription.
+    /// </summary>
+    public RealtimeEndpoint Realtime => realtime.Value;
+
+    /// <summary>
+    ///     Anthropic Compaction API for server-side context summarization (beta).
+    ///     Only available with Anthropic provider on Claude Opus 4.6+ and Sonnet 4.6+.
+    /// </summary>
+    public CompactionEndpoint Compaction => compaction.Value;
 }

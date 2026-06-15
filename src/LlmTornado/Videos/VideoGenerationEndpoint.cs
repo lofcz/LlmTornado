@@ -204,21 +204,122 @@ public class VideoGenerationEndpoint : EndpointBase
     
     /// <summary>
     ///     Creates a remix of a completed video. Works with OpenAI only.
+    ///     Prefer <see cref="Edit(VideoEditRequest, LLmProviders?, CancellationToken)"/> for new integrations; remix is being deprecated by OpenAI.
     /// </summary>
     /// <param name="videoId">The video job identifier to remix</param>
     /// <param name="prompt">Updated text prompt for the remix</param>
     /// <param name="provider">Optional provider override</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>The new remix video job</returns>
-    public async Task<HttpCallResult<VideoJob>> Remix(string videoId, string prompt, LLmProviders? provider = null, CancellationToken cancellationToken = default)
+    [Obsolete("POST /v1/videos/{video_id}/remix is deprecated. Use Edit instead.")]
+    public Task<HttpCallResult<VideoJob>> Remix(string videoId, string prompt, LLmProviders? provider = null, CancellationToken cancellationToken = default)
+    {
+        return Edit(new VideoEditRequest
+        {
+            VideoId = videoId,
+            Prompt = prompt
+        }, provider, cancellationToken);
+    }
+
+    /// <summary>
+    ///     Creates a reusable Sora character from an uploaded video clip. OpenAI only.
+    /// </summary>
+    /// <param name="name">Display name for the character; mention verbatim in prompts.</param>
+    /// <param name="videoBytes">Short MP4 clip (2-4 seconds recommended).</param>
+    /// <param name="mimeType">MIME type of the video. Defaults to video/mp4.</param>
+    /// <param name="provider">Optional provider override.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    public async Task<HttpCallResult<VideoCharacter>> CreateCharacter(
+        string name,
+        byte[] videoBytes,
+        string mimeType = "video/mp4",
+        LLmProviders? provider = null,
+        CancellationToken cancellationToken = default)
     {
         IEndpointProvider resolvedProvider = Api.ResolveProvider(provider);
-        
+
         return resolvedProvider.Provider switch
         {
-            LLmProviders.OpenAi or LLmProviders.Custom => await VendorOpenAiVideoHandler.Remix(videoId, prompt, resolvedProvider, this, cancellationToken).ConfigureAwait(false),
-            _ => throw new NotSupportedException($"Video API Remix is not supported for provider {resolvedProvider.Provider}")
+            LLmProviders.OpenAi or LLmProviders.Custom => await VendorOpenAiVideoHandler.CreateCharacter(name, videoBytes, mimeType, resolvedProvider, this, cancellationToken).ConfigureAwait(false),
+            _ => throw new NotSupportedException($"Video API CreateCharacter is not supported for provider {resolvedProvider.Provider}")
         };
+    }
+
+    /// <summary>
+    ///     Retrieves a Sora character by ID. OpenAI only.
+    /// </summary>
+    public async Task<HttpCallResult<VideoCharacter>> GetCharacter(
+        string characterId,
+        LLmProviders? provider = null,
+        CancellationToken cancellationToken = default)
+    {
+        IEndpointProvider resolvedProvider = Api.ResolveProvider(provider);
+
+        return resolvedProvider.Provider switch
+        {
+            LLmProviders.OpenAi or LLmProviders.Custom => await VendorOpenAiVideoHandler.GetCharacter(characterId, resolvedProvider, this, cancellationToken).ConfigureAwait(false),
+            _ => throw new NotSupportedException($"Video API GetCharacter is not supported for provider {resolvedProvider.Provider}")
+        };
+    }
+
+    /// <summary>
+    ///     Extends a completed Sora video with a new segment. OpenAI only.
+    ///     Each extension can add up to 20 seconds; a video can be extended up to 6 times.
+    /// </summary>
+    public async Task<HttpCallResult<VideoJob>> Extend(
+        VideoExtensionRequest request,
+        LLmProviders? provider = null,
+        CancellationToken cancellationToken = default)
+    {
+        IEndpointProvider resolvedProvider = Api.ResolveProvider(provider);
+
+        return resolvedProvider.Provider switch
+        {
+            LLmProviders.OpenAi or LLmProviders.Custom => await VendorOpenAiVideoHandler.Extend(request, resolvedProvider, this, cancellationToken).ConfigureAwait(false),
+            _ => throw new NotSupportedException($"Video API Extend is not supported for provider {resolvedProvider.Provider}")
+        };
+    }
+
+    /// <summary>
+    ///     Edits an existing Sora video with a targeted prompt change. OpenAI only.
+    /// </summary>
+    public async Task<HttpCallResult<VideoJob>> Edit(
+        VideoEditRequest request,
+        LLmProviders? provider = null,
+        CancellationToken cancellationToken = default)
+    {
+        IEndpointProvider resolvedProvider = Api.ResolveProvider(provider ?? request.Model?.Provider);
+
+        return resolvedProvider.Provider switch
+        {
+            LLmProviders.OpenAi or LLmProviders.Custom => await VendorOpenAiVideoHandler.Edit(request, resolvedProvider, this, cancellationToken).ConfigureAwait(false),
+            _ => throw new NotSupportedException($"Video API Edit is not supported for provider {resolvedProvider.Provider}")
+        };
+    }
+
+    /// <summary>
+    ///     Edits an existing Sora video by ID and waits for completion. OpenAI only.
+    /// </summary>
+    public async Task<HttpCallResult<VideoJob>> EditAndWait(
+        string videoId,
+        string prompt,
+        int pollingIntervalMs = 10000,
+        int maxWaitMs = 86400000,
+        LLmProviders? provider = null,
+        CancellationToken cancellationToken = default)
+    {
+        HttpCallResult<VideoJob> editResult = await Edit(new VideoEditRequest
+        {
+            VideoId = videoId,
+            Prompt = prompt
+        }, provider, cancellationToken).ConfigureAwait(false);
+
+        if (!editResult.Ok || editResult.Data is null)
+        {
+            return editResult;
+        }
+
+        return await WaitForCompletion(editResult.Data.Id, pollingIntervalMs, maxWaitMs, LLmProviders.OpenAi, null, cancellationToken).ConfigureAwait(false);
     }
     
     /// <summary>

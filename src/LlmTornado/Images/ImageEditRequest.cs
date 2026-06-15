@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Runtime.Serialization;
 using LlmTornado.Code;
 using LlmTornado.Images.Models;
+using LlmTornado.Images.Models.OpenAi;
 using LlmTornado.Images.Vendors.XAi;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -58,7 +59,7 @@ public class ImageEditRequest
 	/// </summary>
 	[JsonProperty("model")]
 	[JsonConverter(typeof(ImageModelJsonConverter))]
-	public ImageModel? Model { get; set; } = ImageModel.OpenAi.Dalle.V2;
+	public ImageModel? Model { get; set; } = ImageModelOpenAiGpt.Default;
 
 	/// <summary>
 	/// The image(s) to edit. Must be a supported image file or an array of images. For gpt-image-1, each image should be a png, webp, or jpg file less than 25MB.
@@ -101,10 +102,30 @@ public class ImageEditRequest
     public int? NumOfImages { get; set; }
 
 	/// <summary>
-	///     The size of the generated images. Must be one of 256x256, 512x512, or 1024x1024. Defauls to 1024x1024
+	///     The size of the generated images. Defaults to auto/1024x1024 depending on the model.
+	///     For gpt-image-2, any resolution satisfying API constraints can be set via <see cref="Width"/> and <see cref="Height"/>.
+	/// </summary>
+	[JsonIgnore]
+    public TornadoImageSizes? Size { get; set; }
+	
+	/// <summary>
+	///     Custom width for the generated image. Used when <see cref="Size"/> is <see cref="TornadoImageSizes.Custom"/> or unset with height set.
+	///     Supported by gpt-image-2 (width and height must be divisible by 16, aspect ratio between 1:3 and 3:1).
+	/// </summary>
+	[JsonIgnore]
+	public int? Width { get; set; }
+	
+	/// <summary>
+	///     Custom height for the generated image. Used when <see cref="Size"/> is <see cref="TornadoImageSizes.Custom"/> or unset with width set.
+	/// </summary>
+	[JsonIgnore]
+	public int? Height { get; set; }
+	
+	/// <summary>
+	///     Internal property for JSON serialization of the size parameter.
 	/// </summary>
 	[JsonProperty("size")]
-    public TornadoImageSizes? Size { get; set; }
+	internal string? InternalSize => ImageGenerationRequest.GetSizeString(Size, Width, Height);
 	
 	/// <summary>
 	///     Either empty or "hd" for dalle3.
@@ -131,7 +152,8 @@ public class ImageEditRequest
 	public TornadoImageBackgrounds? Background { get; set; }
 	
 	/// <summary>
-	///     Control how much effort the model will exert to match the style and features of input images. Only supported for gpt-image-1 (not gpt-image-1-mini). Supports high and low. Defaults to low.
+	///     Control how much effort the model will exert to match the style and features of input images.
+	///     Supported by gpt-image-1 (not gpt-image-1-mini). Omit for gpt-image-2, which always uses high fidelity.
 	/// </summary>
 	[JsonProperty("input_fidelity")]
 	public TornadoImageInputFidelity? InputFidelity { get; set; }
@@ -168,11 +190,37 @@ public class ImageEditRequest
 	
 	/// <summary>
 	/// When set to true, the request will be sent as a JSON body instead of multipart form data.
-	/// Only supported for GPT image models (gpt-image-1, gpt-image-1.5, gpt-image-1-mini, chatgpt-image-latest).
+	/// Only supported for GPT image models (gpt-image-1, gpt-image-1.5, gpt-image-1-mini, gpt-image-2, chatgpt-image-latest).
 	/// In JSON mode, images are referenced via <see cref="ImageReferences"/> using <c>image_url</c> or <c>file_id</c>.
 	/// </summary>
 	[JsonIgnore]
 	public bool? UseJsonBody { get; set; }
+	
+	internal ImageEditRequest(ImageEditRequest basedOn)
+	{
+		Model = basedOn.Model;
+		Image = basedOn.Image;
+		Images = basedOn.Images;
+		Mask = basedOn.Mask;
+		Prompt = basedOn.Prompt;
+		NumOfImages = basedOn.NumOfImages;
+		Size = basedOn.Size;
+		Width = basedOn.Width;
+		Height = basedOn.Height;
+		Quality = basedOn.Quality;
+		ResponseFormat = basedOn.ResponseFormat;
+		User = basedOn.User;
+		Background = basedOn.Background;
+		InputFidelity = basedOn.InputFidelity;
+		OutputFormat = basedOn.OutputFormat;
+		OutputCompression = basedOn.OutputCompression;
+		PartialImages = basedOn.PartialImages;
+		Stream = basedOn.Stream;
+		VendorExtensions = basedOn.VendorExtensions;
+		UseJsonBody = basedOn.UseJsonBody;
+		ImageReferences = basedOn.ImageReferences;
+		MaskReference = basedOn.MaskReference;
+	}
 	
 	/// <summary>
 	/// Image references for JSON body mode. Each reference specifies an image via <c>image_url</c> or <c>file_id</c>.
@@ -346,18 +394,7 @@ internal class VendorOpenAiImageEditJsonRequest
 		// Map mask reference
 		Mask = request.MaskReference;
 		
-		// Map size
-		if (request.Size.HasValue)
-		{
-			Size = request.Size.Value switch
-			{
-				TornadoImageSizes.Auto => "auto",
-				TornadoImageSizes.Size1024x1024 => "1024x1024",
-				TornadoImageSizes.Size1024x1536 => "1024x1536",
-				TornadoImageSizes.Size1536x1024 => "1536x1024",
-				_ => "auto"
-			};
-		}
+		Size = ImageGenerationRequest.GetSizeString(request.Size, request.Width, request.Height);
 		
 		// Map quality
 		if (request.Quality.HasValue)

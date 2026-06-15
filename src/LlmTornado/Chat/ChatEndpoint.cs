@@ -139,6 +139,12 @@ public class ChatEndpoint : EndpointBase
 
     private static void NormalizeChatResult(HttpCallResult<ChatResult> result)
     {
+        if (result.Data is not null)
+        {
+            result.Data.Ok = result.Ok;
+            result.Data.Exception = result.Exception;
+        }
+        
         if (result.Response is not null && result.Data is not null)
         {
             result.Data.RawResponse = result.Response;

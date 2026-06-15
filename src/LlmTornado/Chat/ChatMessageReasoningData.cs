@@ -28,6 +28,15 @@ public class ChatMessageReasoningData
         LLmProviders.Anthropic => Signature is not null && Content is null,
         _ => null
     };
+
+    /// <summary>
+    /// Returns whether Anthropic omitted thinking text while preserving the signature for multi-turn continuity.
+    /// </summary>
+    public bool? IsOmitted => Provider switch
+    {
+        LLmProviders.Anthropic => Signature is not null && Content == string.Empty,
+        _ => null
+    };
     
     internal LLmProviders Provider { get; set; }
 }

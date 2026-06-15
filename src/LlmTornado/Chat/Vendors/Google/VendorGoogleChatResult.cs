@@ -8,6 +8,7 @@ using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Vendor.Anthropic;
 using LlmTornado.Vendor.Google;
+using LlmTornado.Models.Vendors.Google;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using System.Runtime.Serialization;
@@ -100,6 +101,9 @@ internal class VendorGoogleChatResult : VendorChatResult
     
     [JsonProperty("responseId")]
     public string? ResponseId { get; set; }
+
+    [JsonProperty("modelStatus")]
+    public GoogleModelStatus? ModelStatus { get; set; }
     
     public override ChatResult ToChatResult(string? postData, object? requestObject)
     {
@@ -162,7 +166,6 @@ internal class VendorGoogleChatResult : VendorChatResult
                 googleExtensions ??= new ChatResponseVendorGoogleExtensions();
                 googleExtensions.GoogleMapsWidgetContextToken = candidate.GroundingMetadata.GoogleMapsWidgetContextToken;
             }
-            
             ChatMessage msg = requestObject is ChatRequest cr ? candidate.Content.ToChatMessage(request, cr, candidate) : candidate.Content.ToChatMessage(request, null, candidate);
             
             result.Choices.Add(new ChatChoice
@@ -173,9 +176,11 @@ internal class VendorGoogleChatResult : VendorChatResult
             });
         }
         
-        if (googleExtensions is not null)
+        if (googleExtensions is not null || ModelStatus is not null)
         {
             result.VendorExtensions ??= new ChatResponseVendorExtensions();
+            googleExtensions ??= new ChatResponseVendorGoogleExtensions();
+            googleExtensions.ModelStatus = ModelStatus;
             result.VendorExtensions.Google = googleExtensions;
         }
         
@@ -379,19 +384,58 @@ internal class VendorGoogleChatResultRetrievedContext
     /// URI reference of the chunk.
     /// </summary>
     [JsonProperty("uri")]
-    public string Uri { get; set; }
+    public string? Uri { get; set; }
 
     /// <summary>
     /// Title of the chunk.
     /// </summary>
     [JsonProperty("title")]
-    public string Title { get; set; }
+    public string? Title { get; set; }
 
     /// <summary>
     /// Text of the chunk.
     /// </summary>
     [JsonProperty("text")]
-    public string Text { get; set; }
+    public string? Text { get; set; }
+
+    /// <summary>
+    /// File Search store that contained this chunk.
+    /// </summary>
+    [JsonProperty("fileSearchStore")]
+    public string? FileSearchStore { get; set; }
+
+    /// <summary>
+    /// Page number where the cited content was found (e.g. PDF documents).
+    /// </summary>
+    [JsonProperty("pageNumber")]
+    public int? PageNumber { get; set; }
+
+    /// <summary>
+    /// Persistent media resource ID for cited image chunks. Use with File Search media download APIs.
+    /// </summary>
+    [JsonProperty("mediaId")]
+    public string? MediaId { get; set; }
+
+    /// <summary>
+    /// Custom metadata attached when the file was imported into the File Search store.
+    /// </summary>
+    [JsonProperty("customMetadata")]
+    public List<VendorGoogleChatResultCustomMetadata>? CustomMetadata { get; set; }
+}
+
+/// <summary>
+/// Custom metadata key-value pair on a File Search grounding chunk.
+/// </summary>
+internal class VendorGoogleChatResultCustomMetadata
+{
+    [JsonProperty("key")]
+    public string? Key { get; set; }
+
+    [JsonProperty("stringValue")]
+    public string? StringValue { get; set; }
+
+    [JsonProperty("numericValue")]
+    public double? NumericValue { get; set; }
 }
 
 /// <summary>

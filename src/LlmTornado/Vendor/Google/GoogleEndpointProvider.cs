@@ -6,6 +6,8 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Web;
+using LlmTornado.Audio;
+using LlmTornado.Audio.Vendors.Google;
 using LlmTornado.Batch;
 using LlmTornado.Batch.Vendors.Google;
 using LlmTornado.Caching;
@@ -17,8 +19,11 @@ using LlmTornado.Code.Models;
 using LlmTornado.Embedding;
 using LlmTornado.Files;
 using LlmTornado.Images;
+using LlmTornado.Interactions;
+using LlmTornado.ManagedAgents;
 using LlmTornado.Models.Vendors;
 using LlmTornado.Threads;
+using LlmTornado.Webhooks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using FunctionCall = LlmTornado.ChatFunctions.FunctionCall;
@@ -61,6 +66,11 @@ public class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
             CapabilityEndpoints.Models => "models",
             CapabilityEndpoints.Tokenize => "models",
             CapabilityEndpoints.Batch => "batches",
+            CapabilityEndpoints.Webhooks => "webhooks",
+            CapabilityEndpoints.Interactions => "interactions",
+            CapabilityEndpoints.ManagedAgents => "agents",
+            CapabilityEndpoints.Music => "models",
+            CapabilityEndpoints.Live => "live",
             _ => throw new Exception($"Google doesn't support endpoint {endpoint}")
         };
     }
@@ -87,6 +97,13 @@ public class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
             case CapabilityEndpoints.BaseUrl:
             {
                 return $"{baseUrlVersion}{url}";
+            }
+            case CapabilityEndpoints.Webhooks:
+            {
+                string path = string.IsNullOrEmpty(url) ? string.Empty : (url.StartsWith('/') ? url : $"/{url}");
+                return UrlResolver is not null
+                    ? UrlResolver.Invoke(endpoint, url, new RequestUrlContext("webhooks", url, model))
+                    : $"{BaseUrl}v1/webhooks{path}";
             }
             default:
             {
@@ -316,6 +333,30 @@ public class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
 
         req.Headers.Add("User-Agent", EndpointBase.ResolveUserAgent(Api));
 
+        if (sourceObject is ChatRequest chatRequest)
+        {
+            int? serverTimeoutSeconds = chatRequest.VendorExtensions?.Google?.ServerTimeoutSeconds;
+
+            if (serverTimeoutSeconds is null && chatRequest.ServiceTier is ChatRequestServiceTiers.Flex)
+            {
+                serverTimeoutSeconds = 600;
+            }
+
+            if (serverTimeoutSeconds is > 0)
+            {
+                req.Headers.TryAddWithoutValidation("X-Server-Timeout", serverTimeoutSeconds.Value.ToString());
+            }
+        }
+
+        if (sourceObject is InteractionCreateRequest interactionRequest)
+        {
+            string? apiRevision = interactionRequest.ApiRevision.ToHeaderValue();
+            if (apiRevision is not null)
+            {
+                req.Headers.TryAddWithoutValidation("Api-Revision", apiRevision);
+            }
+        }
+
         RequestResolver?.Invoke(req, data, streaming);
 
         return req;
@@ -324,11 +365,32 @@ public class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
     public override void ParseInboundHeaders<T>(T res, HttpResponseMessage response)
     {
         res.Provider = this;
+        ApplyServiceTierHeader(res, response);
     }
     
     public override void ParseInboundHeaders(object? res, HttpResponseMessage response)
     {
-        
+        ApplyServiceTierHeader(res, response);
+    }
+
+    private static void ApplyServiceTierHeader(object? res, HttpResponseMessage response)
+    {
+        if (res is not ChatResult chatResult)
+        {
+            return;
+        }
+
+        if (!response.Headers.TryGetValues("x-gemini-service-tier", out IEnumerable<string>? values))
+        {
+            return;
+        }
+
+        chatResult.ServiceTier = values.FirstOrDefault() switch
+        {
+            "flex" => ChatRequestServiceTiers.Flex,
+            "priority" => ChatRequestServiceTiers.Priority,
+            _ => null
+        };
     }
 
     private static readonly Dictionary<Type, Func<string, string?, object?, object?>> InboundMap = new Dictionary<Type, Func<string, string?, object?, object?>>
@@ -342,7 +404,12 @@ public class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
         { typeof(RetrievedModelsResult), (s, s1, req) => RetrievedModelsResult.Deserialize(LLmProviders.Google, s, s1) },
         { typeof(Tokenize.TokenizeResult), (s, s1, req) => Tokenize.TokenizeResult.Deserialize(LLmProviders.Google, s, s1) },
         { typeof(BatchItem), (s, s1, req) => VendorGoogleBatchItem.Deserialize(s) },
-        { typeof(BatchResult), (s, s1, req) => BatchResult.Deserialize(LLmProviders.Google, s) }
+        { typeof(BatchResult), (s, s1, req) => BatchResult.Deserialize(LLmProviders.Google, s) },
+        { typeof(GeminiWebhook), (s, s1, req) => JsonConvert.DeserializeObject<GeminiWebhook>(s) },
+        { typeof(GeminiWebhookList), (s, s1, req) => JsonConvert.DeserializeObject<GeminiWebhookList>(s) },
+        { typeof(RotateGeminiWebhookSigningSecretResponse), (s, s1, req) => JsonConvert.DeserializeObject<RotateGeminiWebhookSigningSecretResponse>(s) },
+        { typeof(MusicGenerationResult), (s, s1, req) => VendorGoogleMusicResult.Deserialize(s) },
+        { typeof(Interaction), (s, s1, req) => VendorGoogleInteractionsJson.DeserializeInteraction(s) }
     };
     
     public override T? InboundMessage<T>(string jsonData, string? postData, object? request) where T : default

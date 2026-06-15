@@ -22,6 +22,11 @@ public class ImageModelGoogle : BaseVendorModelProvider
     /// Imagen preview models.
     /// </summary>
     public readonly ImageModelGoogleImagenPreview ImagenPreview = new ImageModelGoogleImagenPreview();
+
+    /// <summary>
+    /// Gemini native image models (generateContent-based).
+    /// </summary>
+    public readonly ImageModelGoogleGemini Gemini = new ImageModelGoogleGemini();
     
     /// <summary>
     /// All known image models from OpenAI.
@@ -57,7 +62,8 @@ public class ImageModelGoogle : BaseVendorModelProvider
     
     private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [
         ..ImageModelGoogleImagen.ModelsAll,
-        ..ImageModelGoogleImagenPreview.ModelsAll
+        ..ImageModelGoogleImagenPreview.ModelsAll,
+        ..ImageModelGoogleGemini.ModelsAll
     ]);
     
     internal ImageModelGoogle()

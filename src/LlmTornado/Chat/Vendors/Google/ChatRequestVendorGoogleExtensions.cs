@@ -56,6 +56,13 @@ public class ChatRequestVendorGoogleExtensions
     public bool? AutoInjectThoughtSignature { get; set; }
     
     /// <summary>
+    /// Optional server-side timeout hint in seconds, sent via the <c>X-Server-Timeout</c> header.
+    /// Recommended for Flex tier requests (600+ seconds) where responses may queue for several minutes.
+    /// </summary>
+    [JsonIgnore]
+    public int? ServerTimeoutSeconds { get; set; }
+    
+    /// <summary>
     /// Tool to support URL context retrieval.
     /// </summary>
     [JsonIgnore]
@@ -93,9 +100,19 @@ public class ChatRequestVendorGoogleExtensions
     
     /// <summary>
     /// Google Maps tool type. Tool to support Google Maps grounding in Model. Powered by Google.
+    /// Supported models: see <see cref="ChatModelGoogle.GoogleMapsGroundingModels"/>.
+    /// Gemini 3+ models support combining this built-in tool with custom function calling tools.
     /// </summary>
     [JsonIgnore]
     public ChatRequestVendorGoogleMaps? GoogleMaps { get; set; }
+
+    /// <summary>
+    /// When true, the API includes server-side tool calls and responses in model content for tool context circulation.
+    /// Required for combining built-in tools (Google Search, Maps, etc.) with custom function calling on Gemini 3 models.
+    /// When null and both built-in and custom tools are configured, Tornado enables this automatically.
+    /// </summary>
+    [JsonIgnore]
+    public bool? IncludeServerSideToolInvocations { get; set; }
     
     /// <summary>
     /// Empty Google extensions.
@@ -347,6 +364,7 @@ public class ChatRequestVendorGoogleSearch
 
 /// <summary>
 /// GoogleMaps tool type. Tool to support Google Maps grounding in Model. Powered by Google.
+/// Location context is passed via <see cref="RetrievalConfig"/> (serialized to <c>toolConfig.retrievalConfig</c>).
 /// </summary>
 public class ChatRequestVendorGoogleMaps
 {
@@ -627,7 +645,7 @@ public enum GoogleSafetyFilterTypes
 }
 
 /// <summary>
-/// Configuration of speech.
+/// Configuration of speech for Gemini TTS models.
 /// </summary>
 public class ChatRequestVendorGoogleSpeechConfig
 {
@@ -637,14 +655,34 @@ public class ChatRequestVendorGoogleSpeechConfig
     public ChatRequestVendorGoogleSpeechConfigPrebuiltVoice? VoiceName { get; set; }
     
     /// <summary>
-    /// One of: de-DE, en-AU, en-GB, en-IN, en-US, es-US, fr-FR<br/>
-    /// hi-IN, pt-BR, ar-XA, es-ES, fr-CA, id-ID, it-IT<br/>
-    /// ja-JP, tr-TR, vi-VN, bn-IN, gu-IN, kn-IN, ml-IN<br/>
-    /// mr-IN, ta-IN, te-IN, nl-NL, ko-KR, cmn-CN, pl-PL, ru-RU, and th-TH.
+    /// Optional BCP-47 language code (e.g. "en-US"). When omitted, Gemini TTS auto-detects the input language.
     /// </summary>
     public string? LanguageCode { get; set; }
     
+    /// <summary>
+    /// Multi-speaker configuration (up to 2 speakers).
+    /// </summary>
     public ChatRequestVendorGoogleSpeechConfigMultiSpeaker? MultiSpeaker { get; set; }
+
+    /// <summary>
+    /// Creates single-speaker speech configuration.
+    /// </summary>
+    /// <param name="voice">Prebuilt voice to use.</param>
+    public static ChatRequestVendorGoogleSpeechConfig FromVoice(ChatRequestVendorGoogleSpeakerVoices voice) =>
+        new()
+        {
+            VoiceName = new ChatRequestVendorGoogleSpeechConfigPrebuiltVoice { VoiceName = voice }
+        };
+
+    /// <summary>
+    /// Creates multi-speaker speech configuration.
+    /// </summary>
+    /// <param name="speakers">Speaker voice assignments (up to 2).</param>
+    public static ChatRequestVendorGoogleSpeechConfig FromSpeakers(params ChatRequestVendorGoogleSpeechConfigMultiSpeakerSpeaker[] speakers) =>
+        new()
+        {
+            MultiSpeaker = new ChatRequestVendorGoogleSpeechConfigMultiSpeaker { Speakers = [..speakers] }
+        };
 }
 
 /// <summary>
@@ -859,7 +897,9 @@ public enum ChatRequestVendorGoogleSpeakerVoices
 }
 
 /// <summary>
-/// Tool to support file search.
+/// Tool to support File Search (RAG over File Search stores).
+/// For multimodal stores (text + images), create stores with
+/// <see cref="LlmTornado.Embedding.Models.Google.EmbeddingModelGoogleGemini.FileSearchMultimodalEmbeddingModelResource"/>.
 /// </summary>
 public class ChatRequestVendorGoogleFileSearch
 {

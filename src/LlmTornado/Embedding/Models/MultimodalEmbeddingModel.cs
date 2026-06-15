@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
+using LlmTornado.Embedding.Models.Google;
 using LlmTornado.Embedding.Models.Voyage;
 using LlmTornado.Models;
 
@@ -18,6 +19,11 @@ public class MultimodalEmbeddingModel : ModelEmbeddingBase
     /// Models from Voyage.
     /// </summary>
     public static readonly EmbeddingModelVoyageMultimodal Voyage = new EmbeddingModelVoyageMultimodal();
+
+    /// <summary>
+    /// Models from Google.
+    /// </summary>
+    public static readonly EmbeddingModelGoogleMultimodal Google = new EmbeddingModelGoogleMultimodal();
     
     /// <summary>
     /// All known models keyed by name.
@@ -36,7 +42,8 @@ public class MultimodalEmbeddingModel : ModelEmbeddingBase
     
     private static readonly Lazy<List<IModel>> AllModelsLazy = new Lazy<List<IModel>>(() =>
     [
-        ..Voyage.AllModels
+        ..Voyage.AllModels,
+        ..Google.AllModels
     ]);
 
     /// <summary>

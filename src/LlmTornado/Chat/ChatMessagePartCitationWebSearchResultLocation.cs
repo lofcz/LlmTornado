@@ -87,7 +87,7 @@ public sealed class ChatMessagePartCitationWebSearchResultLocation : IChatMessag
         /// URL of the source.
         /// </summary>
         [JsonProperty("url")]
-        public string Url { get; set; }
+        public string? Url { get; set; }
         
         /// <summary>
         /// Title of the source.
@@ -100,5 +100,44 @@ public sealed class ChatMessagePartCitationWebSearchResultLocation : IChatMessag
         /// </summary>
         [JsonProperty("content")]
         public string? Content { get; set; }
+
+        /// <summary>
+        /// File Search store resource name (e.g. fileSearchStores/my-store-123).
+        /// </summary>
+        [JsonProperty("file_search_store")]
+        public string? FileSearchStore { get; set; }
+
+        /// <summary>
+        /// Page number for PDF and paginated document citations.
+        /// </summary>
+        [JsonProperty("page_number")]
+        public int? PageNumber { get; set; }
+
+        /// <summary>
+        /// Persistent media resource ID for cited image chunks (e.g. fileSearchStores/my-store-123/media/BlobId-456).
+        /// </summary>
+        [JsonProperty("media_id")]
+        public string? MediaId { get; set; }
+
+        /// <summary>
+        /// Custom metadata from the imported File Search document.
+        /// </summary>
+        [JsonProperty("custom_metadata")]
+        public List<ChatMessagePartCitationFileSearchMetadata>? CustomMetadata { get; set; }
+    }
+
+    /// <summary>
+    /// Custom metadata on a File Search grounding citation.
+    /// </summary>
+    public class ChatMessagePartCitationFileSearchMetadata
+    {
+        [JsonProperty("key")]
+        public string? Key { get; set; }
+
+        [JsonProperty("string_value")]
+        public string? StringValue { get; set; }
+
+        [JsonProperty("numeric_value")]
+        public double? NumericValue { get; set; }
     }
 } 

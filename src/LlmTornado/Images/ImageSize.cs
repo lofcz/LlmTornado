@@ -64,19 +64,19 @@ public enum TornadoImageSizes
     Size1280x896,
     
     /// <summary>
-    /// Supported by gpt-image-1
+    /// Supported by gpt-image-1 and gpt-image-2
     /// </summary>
     [EnumMember(Value = "auto")]
     Auto,
     
     /// <summary>
-    /// Landscape, supported by gpt-image-1
+    /// Landscape, supported by gpt-image-1 and gpt-image-2
     /// </summary>
     [EnumMember(Value = "1536x1024")]
     Size1536x1024,
     
     /// <summary>
-    /// Portrait, supported by gpt-image-1
+    /// Portrait, supported by gpt-image-1 and gpt-image-2
     /// </summary>
     [EnumMember(Value = "1024x1536")]
     Size1024x1536,

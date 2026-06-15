@@ -323,6 +323,19 @@ public class FilesEndpoint : EndpointBase
 	public async Task<HttpCallResult<TornadoFile>> Upload(FileUploadRequest request, LLmProviders? provider = null)
 	{
 		IEndpointProvider resolvedProvider = Api.ResolveProvider(provider);
+
+		if (resolvedProvider.Provider is LLmProviders.OpenAi &&
+		    (request.Purpose is null or FilePurpose.UserData) &&
+		    !OpenAiInputFileTypes.TryValidate(request.Name, request.MimeType, out string? validationError))
+		{
+			return new HttpCallResult<TornadoFile>(
+				HttpStatusCode.BadRequest,
+				null,
+				null,
+				false,
+				new RestDataOrException<HttpResponseData>(new ArgumentException(validationError)));
+		}
+
 		TornadoRequestContent content = request.Serialize(resolvedProvider);
 		
 		string url = resolvedProvider.Provider switch
@@ -432,6 +445,58 @@ public class FilesEndpoint : EndpointBase
 		}
 
 		return result;
+	}
+
+	/// <summary>
+	/// Registers objects already stored in Google Cloud Storage with the Gemini File API.
+	/// Returns file references that can be passed to <see cref="ChatMessagePartFileLinkData"/>.
+	/// Requires an OAuth access token with Storage Object Viewer on the target buckets; API keys are not supported for this endpoint.
+	/// </summary>
+	/// <param name="request">GCS URIs and OAuth credentials.</param>
+	/// <param name="provider">Must be <see cref="LLmProviders.Google"/>.</param>
+	public async Task<HttpCallResult<List<TornadoFile>>> RegisterGcsFiles(GeminiRegisterGcsFilesRequest request, LLmProviders? provider = null)
+	{
+		if (request.Uris is null || request.Uris.Count == 0)
+		{
+			return new HttpCallResult<List<TornadoFile>>(HttpStatusCode.BadRequest, null, null, false, new RestDataOrException<HttpResponseData>(new Exception("At least one GCS URI is required.")));
+		}
+
+		if (request.AccessToken.IsNullOrWhiteSpace())
+		{
+			return new HttpCallResult<List<TornadoFile>>(HttpStatusCode.BadRequest, null, null, false, new RestDataOrException<HttpResponseData>(new Exception("An OAuth access token is required to register GCS files.")));
+		}
+
+		IEndpointProvider resolvedProvider = Api.ResolveProvider(provider ?? LLmProviders.Google);
+
+		if (resolvedProvider.Provider is not LLmProviders.Google)
+		{
+			return new HttpCallResult<List<TornadoFile>>(HttpStatusCode.BadRequest, null, null, false, new RestDataOrException<HttpResponseData>(new Exception("GCS file registration is supported only by Google.")));
+		}
+
+		string url = resolvedProvider.ApiUrl(CapabilityEndpoints.BaseUrl, "files:register");
+		Dictionary<string, object?> headers = new Dictionary<string, object?>
+		{
+			{ "Authorization", $"Bearer {request.AccessToken}" }
+		};
+
+		if (!request.GoogleCloudProject.IsNullOrWhiteSpace())
+		{
+			headers["x-goog-user-project"] = request.GoogleCloudProject;
+		}
+
+		VendorGoogleRegisterFilesRequest body = new VendorGoogleRegisterFilesRequest
+		{
+			Uris = request.Uris
+		};
+
+		HttpCallResult<VendorGoogleRegisterFilesResult> result = await HttpPost<VendorGoogleRegisterFilesResult>(
+			resolvedProvider,
+			CapabilityEndpoints.Files,
+			url,
+			body,
+			headers: headers).ConfigureAwait(false);
+
+		return new HttpCallResult<List<TornadoFile>>(result.Code, result.Response, result.Data?.ToFiles(), result.Ok, result.Request);
 	}
 
 	/// <summary>

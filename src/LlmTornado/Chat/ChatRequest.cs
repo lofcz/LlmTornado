@@ -19,6 +19,7 @@ using LlmTornado.Chat.Vendors.XAi;
 using LlmTornado.Chat.Vendors.Zai;
 using LlmTornado.Chat.Vendors.MoonshotAi;
 using LlmTornado.Code.Models;
+using LlmTornado.Images;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
 using LlmTornado.Chat.Vendors.Google;
@@ -115,6 +116,7 @@ public class ChatRequest : IModelRequest, ISerializableRequest, IHeaderProvider
 		Verbosity = basedOn.Verbosity;
 		SafetyIdentifier = basedOn.SafetyIdentifier;
 		PromptCacheKey = basedOn.PromptCacheKey;
+		PromptCacheRetention = basedOn.PromptCacheRetention;
 		AutoCache = basedOn.AutoCache;
 		CancellationToken = basedOn.CancellationToken;
 		InvokeClrToolsAutomatically = basedOn.InvokeClrToolsAutomatically;
@@ -208,7 +210,8 @@ public class ChatRequest : IModelRequest, ISerializableRequest, IHeaderProvider
     public int? NumChoicesPerMessage { get; set; }
 	
 	/// <summary>
-	///     Balance option between response time and cost/latency. Currently supported only by O1, O1 Mini, Grok 3 series, Sonar Deep Research, and Qwen.
+	///     Balance option between response time and cost/latency. Supported by O1, O1 Mini, Grok 3 series, Sonar Deep Research, Qwen, and Anthropic (maps to <c>output_config.effort</c>).
+	///     For Anthropic-specific control, prefer <see cref="ChatRequestVendorAnthropicExtensions.Effort"/>.
 	/// </summary>
 	[JsonProperty("reasoning_effort")]
 	public ChatReasoningEfforts? ReasoningEffort { get; set; }
@@ -223,7 +226,7 @@ public class ChatRequest : IModelRequest, ISerializableRequest, IHeaderProvider
 	///		Sets a token limit on reasoning. 0 disables reasoning. Currently supported by Google (natively "thinkingBudget") and Anthropic (natively "budget_tokens").<br/>
 	///		Note: Some providers (Google) don't guarantee this limit is honored without under/over-flowing.<br/>
 	///		Google: 2.5 pro: 128-32768; 2.5 flash: 0-24576; 2.5 flash lite: 512-24576; dynamic thinking for any model: -1;<br/>
-	///		Anthropic: 0,1024+
+	///		Anthropic: 0 disables; 1024+ manual budget (deprecated on Opus/Sonnet 4.6+); -1 adaptive thinking (recommended on Opus 4.6+, Sonnet 4.6, required on Opus 4.7+)
 	/// </summary>
 	[JsonIgnore]
 	public int? ReasoningBudget { get; set; }
@@ -243,13 +246,15 @@ public class ChatRequest : IModelRequest, ISerializableRequest, IHeaderProvider
 	/// <summary>
 	///     Specifies the latency tier to use for processing the request. This parameter is relevant for customers subscribed to the OpenAI scale tier service.
 	///     For Anthropic, controls Priority Tier usage with values <see cref="ChatRequestServiceTiers.Auto"/> (default) and <see cref="ChatRequestServiceTiers.StandardOnly"/>.
+	///     For Google Gemini, use <see cref="ChatRequestServiceTiers.Flex"/> (50% cost discount, best-effort latency) or <see cref="ChatRequestServiceTiers.Priority"/> (lower latency, premium pricing).
 	/// </summary>
 	[JsonProperty("service_tier")]
 	public ChatRequestServiceTiers? ServiceTier { get; set; }
 
 	/// <summary>
-	///     Controls the inference speed tier. Currently supported by Anthropic on Claude Opus 4.6.
+	///     Controls the inference speed tier. Currently supported by Anthropic on Claude Opus 4.6, Opus 4.7, and NextOpus (Opus 4.8).
 	///     Set to <see cref="ChatRequestSpeeds.Fast"/> for up to 2.5x faster output token generation at premium pricing.
+	///     Requires the <c>fast-mode-2026-02-01</c> beta header (added automatically).
 	/// </summary>
 	[JsonIgnore]
 	public ChatRequestSpeeds? Speed { get; set; }
@@ -568,7 +573,7 @@ public class ChatRequest : IModelRequest, ISerializableRequest, IHeaderProvider
 						x.Temperature = null;
 					}
 					
-					// GPT-5.2 and GPT-5.4 parameter compatibility
+					// GPT-5.2, GPT-5.4, and GPT-5.5 parameter compatibility
 					bool hasNonNoneReasoning = x.ReasoningEffort is not null && x.ReasoningEffort != ChatReasoningEfforts.None;
 					if (ChatModelOpenAi.ShouldClearSamplingParams(x.Model, hasNonNoneReasoning))
 					{
@@ -577,6 +582,10 @@ public class ChatRequest : IModelRequest, ISerializableRequest, IHeaderProvider
 						x.Logprobs = null;
 						x.TopLogprobs = null;
 					}
+
+					PromptCacheRetention? retention = x.PromptCacheRetention;
+					ChatModelOpenAi.ApplyPromptCacheRetentionPolicy(x.Model, ref retention);
+					x.PromptCacheRetention = retention;
 
 					if ((x.Modalities?.Contains(ChatModelModalities.Audio) ?? false) && ChatModelOpenAi.AudioModelsAllSet.Contains(x.Model))
 					{
@@ -905,7 +914,7 @@ public class ChatRequest : IModelRequest, ISerializableRequest, IHeaderProvider
 			{
 				if (VendorExtensions.Anthropic.McpServers is not null)
 				{
-					yield return "mcp-client-2025-04-04";
+					yield return AnthropicMcpBetaHeaders.McpClient;
 				}
 			
 				if (VendorExtensions.Anthropic.Container is not null)
@@ -1188,6 +1197,18 @@ public class ChatRequest : IModelRequest, ISerializableRequest, IHeaderProvider
 		                        writer.WritePropertyName("url");
 		                        writer.WriteValue(part.Image?.Url);
 
+		                        if (part.Image?.Detail is not null)
+		                        {
+			                        writer.WritePropertyName("detail");
+			                        writer.WriteValue(part.Image.Detail switch
+			                        {
+				                        ImageDetail.Auto => "auto",
+				                        ImageDetail.High => "high",
+				                        ImageDetail.Low => "low",
+				                        _ => "auto"
+			                        });
+		                        }
+
 		                        writer.WriteEndObject();
 		                        break;
 	                        }
@@ -1257,12 +1278,13 @@ public class ChatRequest : IModelRequest, ISerializableRequest, IHeaderProvider
 		                        // writer.WriteValue(part.Video?.Url);
 		                        
 		                        writer.WritePropertyName("file_id");
-		                        writer.WriteValue(part.FileLinkData?.File?.Uri ?? part.FileLinkData?.FileUri);
+		                        writer.WriteValue(part.FileLinkData?.File?.Reference ?? part.FileLinkData?.FileUri);
 
-		                        if (part.FileLinkData?.File?.Name is not null)
+		                        string? fileName = part.FileLinkData?.File?.Name;
+		                        if (!string.IsNullOrWhiteSpace(fileName))
 		                        {
 			                        writer.WritePropertyName("filename");
-			                        writer.WriteValue(part.FileLinkData?.File?.Name);   
+			                        writer.WriteValue(fileName);   
 		                        }
 		                        
 		                        writer.WriteEndObject();

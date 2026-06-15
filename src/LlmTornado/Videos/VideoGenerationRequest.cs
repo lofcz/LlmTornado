@@ -80,13 +80,13 @@ public class VideoGenerationRequest
     public VideoImage? LastFrame { get; set; }
     
     /// <summary>
-    ///     Up to three images to be used as style and content references (Veo 3.1 only).
+    ///     Up to three images to be used as style and content references (Veo 3.1 and Veo 3.1 Fast only, not Veo 3.1 Lite).
     /// </summary>
     [JsonIgnore]
     public List<VideoReferenceImage>? ReferenceImages { get; set; }
     
     /// <summary>
-    ///     Video to be used for video extension (Veo 3.1 only).
+    ///     Video to be used for video extension (Veo 3.1 and Veo 3.1 Fast only, not Veo 3.1 Lite).
     /// </summary>
     [JsonIgnore]
     public VideoInput? Video { get; set; }
@@ -105,7 +105,7 @@ public class VideoGenerationRequest
     
     /// <summary>
     ///     Length of the generated video. Valid values depend on the model.
-    ///     Must be Seconds8 when using extension, interpolation, or referenceImages.
+    ///     Must be Seconds8 when using extension, interpolation, reference images, 1080p, or 4k resolution.
     /// </summary>
     [JsonIgnore]
     public VideoDuration? Duration { get; set; }

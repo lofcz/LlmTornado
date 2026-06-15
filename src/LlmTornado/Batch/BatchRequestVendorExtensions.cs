@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using LlmTornado.Webhooks;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Batch;
@@ -51,4 +52,9 @@ public class BatchRequestVendorGoogleExtensions
     /// Default is 0.
     /// </summary>
     public int? Priority { get; set; }
+
+    /// <summary>
+    /// Per-request dynamic webhook configuration. When set, Gemini POSTs completion events to the given URIs instead of requiring polling.
+    /// </summary>
+    public GeminiWebhookConfig? WebhookConfig { get; set; }
 }

@@ -2356,7 +2356,7 @@ public partial class ChatDemo : DemoBase
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.Google.Gemini.Gemini25Flash,
+            Model = ChatModel.Google.Gemini.Gemini35Flash,
             VendorExtensions = new ChatRequestVendorExtensions(new ChatRequestVendorGoogleExtensions
             {
                 GoogleMaps = new ChatRequestVendorGoogleMaps(50.0850774, 14.5493792) // prague
@@ -2394,7 +2394,7 @@ public partial class ChatDemo : DemoBase
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
         {
-            Model = ChatModel.Google.Gemini.Gemini25Flash,
+            Model = ChatModel.Google.Gemini.Gemini35Flash,
             VendorExtensions = new ChatRequestVendorExtensions(new ChatRequestVendorGoogleExtensions
             {
                 GoogleMaps = new ChatRequestVendorGoogleMaps(true, 50.0850774, 14.5493792) // prague

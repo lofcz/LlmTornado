@@ -617,10 +617,35 @@ public class ComputerToolCallInput : ResponseInputItem
     public override string Type => "computer_call";
 
     /// <summary>
-    /// The computer action being performed.
+    /// The legacy single computer action being performed (preview API).
     /// </summary>
-    [JsonProperty("action")]
-    public IComputerAction Action { get; set; } = new ScreenshotAction();
+    [JsonProperty("action", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonConverter(typeof(ComputerActionConverter))]
+    public IComputerAction? Action { get; set; }
+
+    /// <summary>
+    /// Batched actions to execute for this computer call (GA API).
+    /// </summary>
+    [JsonProperty("actions", NullValueHandling = NullValueHandling.Ignore, ItemConverterType = typeof(ComputerActionConverter))]
+    public List<IComputerAction>? Actions { get; set; }
+
+    /// <summary>
+    /// Returns the actions to execute, preferring the GA batched <see cref="Actions"/> list when present.
+    /// </summary>
+    public IReadOnlyList<IComputerAction> GetExecutableActions()
+    {
+        if (Actions is { Count: > 0 })
+        {
+            return Actions;
+        }
+
+        if (Action is not null)
+        {
+            return [Action];
+        }
+
+        return [];
+    }
 
     /// <summary>
     /// An identifier used when responding to the tool call with output.
@@ -653,6 +678,14 @@ public class ComputerToolCallInput : ResponseInputItem
         Id = id;
         CallId = callId;
         Action = action;
+        Status = status;
+    }
+
+    public ComputerToolCallInput(string id, string callId, IEnumerable<IComputerAction> actions, ResponseMessageStatuses status)
+    {
+        Id = id;
+        CallId = callId;
+        Actions = actions.ToList();
         Status = status;
     }
 }
@@ -1370,8 +1403,8 @@ internal class InputItemJsonConverter : JsonConverter<ResponseInputItem>
                     writer.WritePropertyName("status");
                     serializer.Serialize(writer, msg.Status);
                 }
-                
-                if (msg.Phase != null)
+
+                if (msg.Phase is not null)
                 {
                     writer.WritePropertyName("phase");
                     serializer.Serialize(writer, msg.Phase);
@@ -1545,8 +1578,17 @@ internal class InputItemJsonConverter : JsonConverter<ResponseInputItem>
             }
             case ComputerToolCallInput computerToolCall:
             {
-                writer.WritePropertyName("action");
-                serializer.Serialize(writer, computerToolCall.Action);
+                if (computerToolCall.Actions is { Count: > 0 })
+                {
+                    writer.WritePropertyName("actions");
+                    serializer.Serialize(writer, computerToolCall.Actions);
+                }
+                else if (computerToolCall.Action is not null)
+                {
+                    writer.WritePropertyName("action");
+                    serializer.Serialize(writer, computerToolCall.Action);
+                }
+
                 writer.WritePropertyName("call_id");
                 writer.WriteValue(computerToolCall.CallId);
                 writer.WritePropertyName("id");
@@ -1737,6 +1779,52 @@ internal class InputItemJsonConverter : JsonConverter<ResponseInputItem>
                 }
                 break;
             }
+            case ToolSearchCallInput toolSearchCall:
+            {
+                writer.WritePropertyName("id");
+                writer.WriteValue(toolSearchCall.Id);
+                if (toolSearchCall.CallId is not null)
+                {
+                    writer.WritePropertyName("call_id");
+                    writer.WriteValue(toolSearchCall.CallId);
+                }
+                if (toolSearchCall.Arguments is not null)
+                {
+                    writer.WritePropertyName("arguments");
+                    serializer.Serialize(writer, toolSearchCall.Arguments);
+                }
+                writer.WritePropertyName("execution");
+                serializer.Serialize(writer, toolSearchCall.Execution);
+                if (toolSearchCall.Status is not null)
+                {
+                    writer.WritePropertyName("status");
+                    serializer.Serialize(writer, toolSearchCall.Status);
+                }
+                break;
+            }
+            case ToolSearchOutputInput toolSearchOutput:
+            {
+                if (toolSearchOutput.Id is not null)
+                {
+                    writer.WritePropertyName("id");
+                    writer.WriteValue(toolSearchOutput.Id);
+                }
+                if (toolSearchOutput.CallId is not null)
+                {
+                    writer.WritePropertyName("call_id");
+                    writer.WriteValue(toolSearchOutput.CallId);
+                }
+                writer.WritePropertyName("execution");
+                serializer.Serialize(writer, toolSearchOutput.Execution);
+                if (toolSearchOutput.Status is not null)
+                {
+                    writer.WritePropertyName("status");
+                    serializer.Serialize(writer, toolSearchOutput.Status);
+                }
+                writer.WritePropertyName("tools");
+                serializer.Serialize(writer, toolSearchOutput.Tools);
+                break;
+            }
             case CompactionInputItem compaction:
             {
                 writer.WritePropertyName("encrypted_content");
@@ -1825,6 +1913,8 @@ internal class InputItemJsonConverter : JsonConverter<ResponseInputItem>
             "compaction" => DeserializeCompaction(jo, serializer),
             "custom_tool_call" => DeserializeCustomToolCall(jo),
             "custom_tool_call_output" => DeserializeCustomToolCallOutput(jo),
+            "tool_search_call" => jo.ToObject<ToolSearchCallInput>(serializer),
+            "tool_search_output" => jo.ToObject<ToolSearchOutputInput>(serializer),
             _ => throw new JsonSerializationException($"Unknown input item type: {type}")
         };
     }
@@ -1845,7 +1935,7 @@ internal class InputItemJsonConverter : JsonConverter<ResponseInputItem>
         
         if (jo["status"]?.ToString() is { } statusStr && Enum.TryParse(statusStr, true, out ResponseMessageStatuses status))
             message.Status = status;
-        
+
         if (jo["phase"]?.ToString() is { } phaseStr && Enum.TryParse(phaseStr.Replace("_", ""), true, out ResponsePhases phase))
             message.Phase = phase;
         
@@ -2094,8 +2184,14 @@ internal class InputItemJsonConverter : JsonConverter<ResponseInputItem>
         if (jo["call_id"]?.ToString() is { } callId)
             input.CallId = callId;
         
-        if (jo["action"] is JObject actionObj && actionObj.ToObject<IComputerAction>() is { } action)
+        if (jo["actions"] is JArray actionsArray)
+        {
+            input.Actions = ComputerActionConverter.ReadActions(actionsArray, serializer);
+        }
+        else if (jo["action"] is JObject actionObj && actionObj.ToObject<IComputerAction>(serializer) is { } action)
+        {
             input.Action = action;
+        }
         
         if (jo["status"]?.ToString() is { } statusStr && Enum.TryParse(statusStr, true, out ResponseMessageStatuses status))
             input.Status = status;
@@ -2409,6 +2505,42 @@ internal class InputItemJsonConverter : JsonConverter<ResponseInputItem>
 
         if (jo["id"]?.ToString() is { } id)
             item.Id = id;
+
+        return item;
+    }
+
+    private static ToolSearchCallInput DeserializeToolSearchCall(JObject jo, JsonSerializer serializer)
+    {
+        ToolSearchCallInput item = new ToolSearchCallInput
+        {
+            Id = jo["id"]?.ToString() ?? string.Empty,
+            CallId = jo["call_id"]?.ToString(),
+            Arguments = jo["arguments"],
+            Execution = jo["execution"]?.ToObject<ResponseToolSearchExecution>(serializer) ?? ResponseToolSearchExecution.Server
+        };
+
+        if (jo["status"]?.ToString() is { } statusStr && Enum.TryParse(statusStr, true, out ResponseMessageStatuses status))
+        {
+            item.Status = status;
+        }
+
+        return item;
+    }
+
+    private static ToolSearchOutputInput DeserializeToolSearchOutput(JObject jo, JsonSerializer serializer)
+    {
+        ToolSearchOutputInput item = new ToolSearchOutputInput
+        {
+            Id = jo["id"]?.ToString(),
+            CallId = jo["call_id"]?.ToString(),
+            Execution = jo["execution"]?.ToObject<ResponseToolSearchExecution>(serializer) ?? ResponseToolSearchExecution.Server,
+            Tools = jo["tools"]?.ToObject<List<ResponseTool>>(serializer) ?? []
+        };
+
+        if (jo["status"]?.ToString() is { } statusStr && Enum.TryParse(statusStr, true, out ResponseMessageStatuses status))
+        {
+            item.Status = status;
+        }
 
         return item;
     }

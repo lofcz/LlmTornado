@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using LlmTornado.Code;
 using LlmTornado.Common;
+using LlmTornado.Files;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -18,6 +19,7 @@ internal static class VendorGoogleBatchHandler
 {
     public static async Task<HttpCallResult<BatchItem>> Create(BatchRequest request, IEndpointProvider provider, EndpointBase endpoint, CancellationToken cancellationToken)
     {
+        TornadoApi api = provider.Api!;
         string? model = request.Requests.FirstOrDefault()?.Params.Model?.Name;
         if (string.IsNullOrEmpty(model))
         {
@@ -26,12 +28,35 @@ internal static class VendorGoogleBatchHandler
                 Exception = new ArgumentException("Model must be specified in batch request items for Google/Gemini")
             };
         }
-        
-        VendorGoogleBatchRequest googleRequest = new VendorGoogleBatchRequest(request, provider);
+
+        byte[] jsonlBytes = VendorGoogleBatchRequest.SerializeToJsonlBytes(request, provider);
+
+        HttpCallResult<TornadoFile> uploadResult = await api.Files.Upload(new FileUploadRequest
+        {
+            Bytes = jsonlBytes,
+            Name = $"batch_{Guid.NewGuid():N}.jsonl",
+            MimeType = "application/jsonl"
+        }, provider.Provider).ConfigureAwait(false);
+
+        if (!uploadResult.Ok || string.IsNullOrEmpty(uploadResult.Data?.Id))
+        {
+            return new HttpCallResult<BatchItem>(
+                uploadResult.Code,
+                uploadResult.Response,
+                null,
+                false,
+                uploadResult.Request
+            )
+            {
+                Exception = uploadResult.Exception ?? new Exception("Failed to upload Gemini batch input file")
+            };
+        }
+
+        VendorGoogleBatchRequest googleRequest = new VendorGoogleBatchRequest(request, uploadResult.Data.Id);
         string body = googleRequest.Serialize();
-        
+
         string url = provider.ApiUrl(CapabilityEndpoints.BaseUrl, $"models/{model}:batchGenerateContent");
-        
+
         return await endpoint.HttpPost<BatchItem>(provider, CapabilityEndpoints.Batch, url, body, ct: cancellationToken).ConfigureAwait(false);
     }
     

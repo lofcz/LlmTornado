@@ -70,4 +70,16 @@ public class ApiResultBase
     
     [JsonIgnore]
     internal HttpCallRequest? Request { get; set; }
+    
+    /// <summary>
+    ///     Whether the API call succeeded. Mirrors <see cref="HttpCallResult{T}.Ok" /> when populated from an HTTP call.
+    /// </summary>
+    [JsonIgnore]
+    public bool Ok { get; set; }
+    
+    /// <summary>
+    ///     Network or transport exception from the API call, if any. Mirrors <see cref="HttpCallResult{T}.Exception" /> when populated from an HTTP call.
+    /// </summary>
+    [JsonIgnore]
+    public Exception? Exception { get; set; }
 }

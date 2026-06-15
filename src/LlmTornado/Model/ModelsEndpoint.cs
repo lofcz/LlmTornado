@@ -40,6 +40,17 @@ public class ModelsEndpoint : EndpointBase
     }
 
 	/// <summary>
+	///     Get details about a particular model from the provider Models API, including Anthropic capability metadata.
+	/// </summary>
+	/// <param name="id">The id/name of the model to get more details about</param>
+	/// <param name="provider">The provider to query</param>
+	/// <returns>Asynchronously returns the <see cref="RetrievedModel" /> with all available properties</returns>
+	public async Task<RetrievedModel?> GetRetrievedModelDetails(string? id, LLmProviders provider = LLmProviders.OpenAi)
+	{
+		return (await HttpGet<RetrievedModel>(Api.GetProvider(provider), Endpoint, $"/{id}")).Data;
+	}
+
+	/// <summary>
 	///     List all models of a given Provider.
 	/// </summary>
 	/// <returns>Asynchronously returns the list of all <see cref="Model" />s</returns>
@@ -49,6 +60,7 @@ public class ModelsEndpoint : EndpointBase
 		{
 			LLmProviders.Google => new Dictionary<string, object> { { "pageSize", 1000 } },
 			LLmProviders.Cohere => new Dictionary<string, object> { { "page_size", 1000 } },
+			LLmProviders.Anthropic => new Dictionary<string, object> { { "limit", 1000 } },
 			_ => null
 		};
 

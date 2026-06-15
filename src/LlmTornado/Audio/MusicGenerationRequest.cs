@@ -1,5 +1,7 @@
+using System.Collections.Generic;
 using System.Runtime.Serialization;
 using LlmTornado.Audio.Models;
+using LlmTornado.Code;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
@@ -27,9 +29,17 @@ public class MusicGenerationRequest
     /// Lyrics of the song. Use \n to separate lines.
     /// Structure tags can be used: [Intro], [Verse], [Pre Chorus], [Chorus], [Interlude],
     /// [Bridge], [Outro], [Post Chorus], [Transition], [Break], [Hook], [Build Up], [Inst], [Solo].
+    /// Required for MiniMax. Optional for Google Lyria 3 when <see cref="Prompt"/> is provided.
     /// Max 3500 characters.
     /// </summary>
-    public string Lyrics { get; set; } = null!;
+    public string? Lyrics { get; set; }
+    
+    /// <summary>
+    /// Reference images for multimodal music generation (Google Lyria 3, up to 10 images).
+    /// Each image must have <see cref="ChatImage.MimeType"/> set (image/png or image/jpeg).
+    /// </summary>
+    [JsonIgnore]
+    public List<ChatImage>? Images { get; set; }
     
     /// <summary>
     /// Output format of the audio. Default: Hex.

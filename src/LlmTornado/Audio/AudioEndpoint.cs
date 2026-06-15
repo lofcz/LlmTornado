@@ -7,8 +7,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using LlmTornado.Code;
 using LlmTornado.Audio.Models;
-using LlmTornado.Audio.Models;
 using LlmTornado.Audio.Models.OpenAi;
+using LlmTornado.Audio.Vendors.Google;
 using LlmTornado.Audio.Vendors.MiniMax;
 using LlmTornado.Audio.Vendors.Zai;
 using Newtonsoft.Json;
@@ -68,13 +68,20 @@ public class AudioEndpoint : EndpointBase
     
     /// <summary>
     /// Generates music from lyrics and an optional style/mood prompt.
-    /// Currently supported by MiniMax.
+    /// Supported by MiniMax and Google Lyria 3.
     /// </summary>
     /// <param name="request">The music generation request containing lyrics and style description.</param>
     /// <returns>The generated music result with audio data and metadata.</returns>
     public async Task<MusicGenerationResult?> GenerateMusic(MusicGenerationRequest request)
     {
-        IEndpointProvider provider = Api.GetProvider(request.Model ?? AudioModel.MiniMax.Music.Music25);
+        AudioModel model = request.Model ?? AudioModel.MiniMax.Music.Music25;
+        IEndpointProvider provider = Api.GetProvider(model);
+        
+        if (provider.Provider is LLmProviders.Google)
+        {
+            return await VendorGoogleMusicHandler.Generate(request, provider, this);
+        }
+        
         string url = provider.ApiUrl(CapabilityEndpoints.Music, null);
         string json = JsonConvert.SerializeObject(new VendorMiniMaxMusicRequest(request), EndpointBase.NullSettings);
         

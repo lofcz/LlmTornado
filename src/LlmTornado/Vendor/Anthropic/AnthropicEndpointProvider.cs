@@ -12,6 +12,9 @@ using LlmTornado.Chat.Models;
 using LlmTornado.Chat.Vendors.Anthropic;
 using LlmTornado.Code.Models;
 using LlmTornado.Code.Sse;
+using LlmTornado.Models;
+using LlmTornado.Models.Vendors;
+using LlmTornado.Models.Vendors.Anthropic;
 using LlmTornado.Threads;
 using LlmTornado.Tokenize;
 using LlmTornado.Vendor.Anthropic;
@@ -89,6 +92,7 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
         Unknown,
         Text,
         ToolUse,
+        Thinking,
         RedactedThinking,
         Compaction
     }
@@ -230,49 +234,50 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
         
         [JsonProperty("stop_sequence")]
         public string? StopSequence { get; set; }
-    }
-    
-    private static bool RequiresEffortHeader(object? data)
-    {
-        if (data is not ChatRequest chatRequest)
-        {
-            return false;
-        }
         
-        // Effort is GA on Claude Opus 4.6+ and Sonnet 4.6, no beta header needed
-        string? modelName = chatRequest.Model?.Name;
-        if (IsOpus46OrNewer(modelName) || IsSonnet46OrNewer(modelName))
-        {
-            return false;
-        }
-        
-        // Effort parameter requires beta header for older models (Claude Opus 4.5)
-        if (chatRequest.ReasoningEffort is null)
-        {
-            return false;
-        }
-        
-        return modelName?.StartsWith("claude-opus-4-5", StringComparison.OrdinalIgnoreCase) == true;
-    }
-    
-    private static bool IsSonnet46OrNewer(string? modelName)
-    {
-        if (modelName is null)
-        {
-            return false;
-        }
-        
-        return modelName.StartsWith("claude-sonnet-4-6", StringComparison.OrdinalIgnoreCase);
+        [JsonProperty("stop_details")]
+        public VendorAnthropicStopDetails? StopDetails { get; set; }
     }
     
     private static bool RequiresCompactionHeader(object? data)
     {
+        if (data is Compaction.CompactionRequest)
+        {
+            return true;
+        }
+        
         if (data is not ChatRequest chatRequest)
         {
             return false;
         }
         
         return chatRequest.VendorExtensions?.Anthropic?.ContextManagement is not null;
+    }
+    
+    private static bool RequiresTaskBudgetHeader(object? data)
+    {
+        if (data is not ChatRequest chatRequest)
+        {
+            return false;
+        }
+        
+        return chatRequest.VendorExtensions?.Anthropic?.TaskBudget is not null;
+    }
+
+    private static bool RequiresAdvisorToolHeader(object? data)
+    {
+        if (data is not ChatRequest chatRequest)
+        {
+            return false;
+        }
+
+        if (chatRequest.VendorExtensions?.Anthropic?.AdvisorTool is not null)
+        {
+            return true;
+        }
+
+        return chatRequest.VendorExtensions?.Anthropic?.BuiltInTools?.Any(x =>
+            x.Type is VendorAnthropicChatRequestBuiltInToolTypes.Advisor20260301) == true;
     }
     
     private static bool IsOpus46OrNewer(string? modelName)
@@ -282,7 +287,9 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
             return false;
         }
         
-        return modelName.StartsWith("claude-opus-4-6", StringComparison.OrdinalIgnoreCase);
+        return modelName.StartsWith("claude-opus-4-6", StringComparison.OrdinalIgnoreCase)
+            || modelName.StartsWith("claude-opus-4-7", StringComparison.OrdinalIgnoreCase)
+            || modelName.StartsWith("claude-opus-4-8", StringComparison.OrdinalIgnoreCase);
     }
     
     private static bool RequiresFastModeHeader(object? data)
@@ -307,6 +314,28 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
                 or VendorAnthropicChatRequestBuiltInToolTypes.WebFetch20260209) == true;
     }
     
+    private static bool RequiresEffortHeader(object? data)
+    {
+        if (data is not ChatRequest chatRequest || chatRequest.ReasoningEffort is null)
+        {
+            return false;
+        }
+
+        string? modelName = chatRequest.Model?.Name;
+        return modelName is not null
+            && modelName.StartsWith("claude-opus-4-5", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool RequiresCacheDiagnosticsHeader(object? data)
+    {
+        if (data is not ChatRequest chatRequest)
+        {
+            return false;
+        }
+
+        return chatRequest.VendorExtensions?.Anthropic?.CacheDiagnostics is not null;
+    }
+
     private static bool RequiresAdvancedToolUseHeader(object? data)
     {
         if (data is not ChatRequest chatRequest)
@@ -344,13 +373,28 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
             CapabilityEndpoints.Files => "files",
             CapabilityEndpoints.Skills => "skills",
             CapabilityEndpoints.Tokenize => "messages/count_tokens",
+            CapabilityEndpoints.Compaction => "messages",
             CapabilityEndpoints.Batch => "messages/batches",
+            CapabilityEndpoints.AnthropicManagedAgents => "agents",
+            CapabilityEndpoints.AnthropicManagedAgentSessions => "sessions",
+            CapabilityEndpoints.AnthropicManagedAgentEnvironments => "environments",
             _ => throw new Exception($"Anthropic doesn't support endpoint {endpoint}")
         };
     }
     
     public override string ApiUrl(CapabilityEndpoints endpoint, string? url, IModel? model = null)
     {
+        if (endpoint is CapabilityEndpoints.RateLimits)
+        {
+            string path = string.IsNullOrWhiteSpace(url)
+                ? "organizations/rate_limits"
+                : $"organizations/workspaces/{url.Trim('/')}/rate_limits";
+
+            return UrlResolver is not null
+                ? UrlResolver.Invoke(endpoint, url, new RequestUrlContext(path, url, model))
+                : $"https://api.anthropic.com/v1/{path}";
+        }
+
         string eStr = GetEndpointUrlFragment(endpoint);
         return UrlResolver is not null ? string.Format(UrlResolver.Invoke(endpoint, url, new RequestUrlContext(eStr, url, model)), eStr, url, model?.Name) : $"https://api.anthropic.com/v1/{eStr}{url}";
     }
@@ -363,10 +407,13 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
         ChatMessage? accuThinking = null;
         List<ChatMessagePart>? thinkingParts = null;
         ChatMessageFinishReasons finishReason = ChatMessageFinishReasons.Unknown;
+        ChatStopDetails? stopDetails = null;
         ChatMessagePart? currentPart = null;
         StringBuilder currentPartTextBuilder = new StringBuilder();
         ChatRequestServiceTiers? serviceTier = null;
         ChatRequestSpeeds? speed = null;
+        ChatResponseVendorExtensions? vendorExtensions = null;
+        string? messageId = null;
         
         #if DEBUG
         List<string> items = [];
@@ -454,6 +501,13 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
                         
                             accuToolsMessage.ContentBuilder ??= new StringBuilder();
                             accuToolsMessage.ContentBuilder.Clear();
+                            break;
+                        }
+                        case AnthropicStreamBlockStartTypes.Thinking:
+                        {
+                            accuThinking ??= new ChatMessage(ChatMessageRoles.Assistant);
+                            accuThinking.ContentBuilder ??= new StringBuilder();
+                            accuThinking.ContentBuilder.Clear();
                             break;
                         }
                         case AnthropicStreamBlockStartTypes.RedactedThinking:
@@ -727,6 +781,11 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
                         {
                             finishReason = ChatMessageFinishReasonsConverter.Map.GetValueOrDefault(res.Delta.StopReason, ChatMessageFinishReasons.Unknown);
                         }
+
+                        if (res.Delta.StopDetails is not null)
+                        {
+                            stopDetails = res.Delta.StopDetails.ToChatStopDetails();
+                        }
                         
                         // todo: propagate stop_sequence from res.Delta
                     }
@@ -737,29 +796,45 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
                 {
                     AnthropicStreamMsgStart? res = JsonConvert.DeserializeObject<AnthropicStreamMsgStart>(line);
   
-                    if (res is not null && res.Message.Usage.InputTokens + res.Message.Usage.OutputTokens > 0)
+                    if (res is not null)
                     {
-                        plaintextUsage = new ChatUsage(LLmProviders.Anthropic)
-                        {
-                            TotalTokens = res.Message.Usage.InputTokens + res.Message.Usage.OutputTokens,
-                            CompletionTokens = res.Message.Usage.OutputTokens,
-                            PromptTokens = res.Message.Usage.InputTokens,
-                            CacheCreationTokens = res.Message.Usage.CacheCreationInputTokens,
-                            CacheReadTokens = res.Message.Usage.CacheReadInputTokens
-                        };
+                        messageId = res.Message.Id;
                         
-                        serviceTier = res.Message.Usage.ServiceTier switch
+                        if (res.Message.Diagnostics is not null)
                         {
-                            "priority" => ChatRequestServiceTiers.Priority,
-                            _ => null
-                        };
+                            vendorExtensions = new ChatResponseVendorExtensions
+                            {
+                                Anthropic = new ChatResponseVendorAnthropicExtensions
+                                {
+                                    CacheDiagnostics = res.Message.Diagnostics
+                                }
+                            };
+                        }
                         
-                        speed = res.Message.Usage.Speed switch
+                        if (res.Message.Usage.InputTokens + res.Message.Usage.OutputTokens > 0)
                         {
-                            "fast" => ChatRequestSpeeds.Fast,
-                            "standard" => ChatRequestSpeeds.Standard,
-                            _ => null
-                        };
+                            plaintextUsage = new ChatUsage(LLmProviders.Anthropic)
+                            {
+                                TotalTokens = res.Message.Usage.InputTokens + res.Message.Usage.OutputTokens,
+                                CompletionTokens = res.Message.Usage.OutputTokens,
+                                PromptTokens = res.Message.Usage.InputTokens,
+                                CacheCreationTokens = res.Message.Usage.CacheCreationInputTokens,
+                                CacheReadTokens = res.Message.Usage.CacheReadInputTokens
+                            };
+                            
+                            serviceTier = res.Message.Usage.ServiceTier switch
+                            {
+                                "priority" => ChatRequestServiceTiers.Priority,
+                                _ => null
+                            };
+                            
+                            speed = res.Message.Usage.Speed switch
+                            {
+                                "fast" => ChatRequestSpeeds.Fast,
+                                "standard" => ChatRequestSpeeds.Standard,
+                                _ => null
+                            };
+                        }
                     }
                     
                     break;
@@ -781,6 +856,7 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
         
         yield return new ChatResult
         {
+            Id = messageId,
             Choices =
             [
                 new ChatChoice
@@ -791,21 +867,25 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
             StreamInternalKind = ChatResultStreamInternalKinds.AppendAssistantMessage,
             Usage = plaintextUsage,
             ServiceTier = serviceTier,
-            Speed = speed
+            Speed = speed,
+            VendorExtensions = vendorExtensions
         };
         
         yield return new ChatResult
         {
+            Id = messageId,
             Usage = plaintextUsage,
             Choices = [
                 new ChatChoice
                 {
-                    FinishReason = finishReason
+                    FinishReason = finishReason,
+                    StopDetails = stopDetails
                 }
             ],
             StreamInternalKind = ChatResultStreamInternalKinds.FinishData,
             ServiceTier = serviceTier,
-            Speed = speed
+            Speed = speed,
+            VendorExtensions = vendorExtensions
         };
     }
     
@@ -845,7 +925,7 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
         {
             RequestResolver.Invoke(req, data, streaming);
         }
-        else
+        else if (!url.Contains("/organizations/", StringComparison.OrdinalIgnoreCase))
         {
             string? currentModel = (sourceObject as ChatRequest)?.Model?.Name;
             bool isOpus46Plus = IsOpus46OrNewer(currentModel);
@@ -874,6 +954,12 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
                 betaHeaders.Add("compact-2026-01-12");
             }
             
+            // Add task budget beta header if task budget is configured
+            if (RequiresTaskBudgetHeader(sourceObject))
+            {
+                betaHeaders.Add("task-budgets-2026-03-13");
+            }
+            
             // Add advanced tool use beta header if applicable (programmatic tool calling, tool search)
             if (RequiresAdvancedToolUseHeader(sourceObject))
             {
@@ -892,6 +978,16 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
                 betaHeaders.Add("code-execution-web-tools-2026-02-09");
             }
             
+            if (RequiresCacheDiagnosticsHeader(sourceObject))
+            {
+                betaHeaders.Add("cache-diagnosis-2026-04-07");
+            }
+
+            if (RequiresAdvisorToolHeader(sourceObject))
+            {
+                betaHeaders.Add("advisor-tool-2026-03-01");
+            }
+            
             req.Headers.Add("anthropic-beta", AccumulateHeaders(betaHeaders, sourceObject));
         }
 
@@ -907,10 +1003,21 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
     {
         
     }
+
+    private static readonly Dictionary<Type, Func<string, string?, object?, object?>> InboundMap = new Dictionary<Type, Func<string, string?, object?, object?>>
+    {
+        { typeof(RetrievedModelsResult), (jsonData, postData, req) => VendorAnthropicRetrievedModelsDeserializer.DeserializeList(jsonData, postData) },
+        { typeof(RetrievedModel), (jsonData, postData, req) => VendorAnthropicRetrievedModelsDeserializer.DeserializeModel(jsonData, postData) }
+    };
     
     public override T? InboundMessage<T>(string jsonData, string? postData, object? requestObject) where T : default
     {
         Type type = typeof(T);
+
+        if (InboundMap.TryGetValue(type, out Func<string, string?, object?, object?>? fn))
+        {
+            return (T?)fn.Invoke(jsonData, postData, requestObject);
+        }
     
         return type switch
         {
@@ -920,12 +1027,19 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
                 (T?)(dynamic)TokenizeResult.Deserialize(LLmProviders.Anthropic, jsonData, postData),
             _ when type == typeof(BatchResult) => 
                 (T?)(dynamic)BatchResult.Deserialize(LLmProviders.Anthropic, jsonData),
+            _ when type == typeof(Compaction.CompactionResult) =>
+                (T?)(dynamic)Compaction.CompactionResult.Deserialize(LLmProviders.Anthropic, jsonData, postData, requestObject),
             _ => JsonConvert.DeserializeObject<T>(jsonData)
         };
     }
     
     public override object? InboundMessage(Type type, string jsonData, string? postData, object? requestObject)
     {
+        if (InboundMap.TryGetValue(type, out Func<string, string?, object?, object?>? fn))
+        {
+            return fn.Invoke(jsonData, postData, requestObject);
+        }
+
         return JsonConvert.DeserializeObject(jsonData, type);
     }
 }

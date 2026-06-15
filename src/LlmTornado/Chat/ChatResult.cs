@@ -30,6 +30,8 @@ public class ChatResult : ApiResultBase
 		VendorExtensions = basedOn.VendorExtensions;
 		StreamInternalKind = basedOn.StreamInternalKind;
 		InvocationResult = basedOn.InvocationResult;
+		Ok = basedOn.Ok;
+		Exception = basedOn.Exception;
 	}
 
 	public ChatResult()
@@ -97,6 +99,15 @@ public class ChatResult : ApiResultBase
 	[JsonIgnore]
 	internal object? InvocationResult { get; set; }
 	
+	/// <summary>
+	/// Whether this response is an Anthropic streaming-classifier refusal with no billable output.
+	/// Per Claude API policy, requests that return <c>stop_reason: "refusal"</c> before any model output
+	/// are not billed; reported usage tokens are informational only.
+	/// </summary>
+	public bool IsRefusalWithoutBillableOutput =>
+		Choices?.FirstOrDefault()?.FinishReason is ChatMessageFinishReasons.Refusal
+		&& (Usage?.CompletionTokens ?? 0) == 0;
+
 	/// <summary>
 	///     A convenience method to return the content of the message in the first choice of this response
 	/// </summary>
@@ -283,6 +294,12 @@ public class ChatChoice
     public string? StopReason { get; set; }
 	
 	/// <summary>
+	///     Additional details for refusal stop reasons. Currently returned by Anthropic Claude Opus 4.7+ models.
+	/// </summary>
+	[JsonIgnore]
+	public ChatStopDetails? StopDetails { get; set; }
+	
+	/// <summary>
 	///     Partial message "delta" from a stream. If this result object is not from a stream, this will be null.
 	/// </summary>
 	[JsonProperty("delta")]
@@ -432,6 +449,8 @@ public class ChatUsage : Usage
 		CompletionTokens = usage.OutputTokens;
 		PromptTokens = usage.InputTokens;
 		TotalTokens = CompletionTokens + PromptTokens;
+		CacheCreationTokens = usage.CacheCreationInputTokens;
+		CacheReadTokens = usage.CacheReadInputTokens;
 		VendorUsageObject = usage;
 		Provider = LLmProviders.Anthropic;
 	}

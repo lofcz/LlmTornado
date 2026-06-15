@@ -210,7 +210,9 @@ public class ResponseRequest
     public string? PromptCacheKey { get; set; }
     
     /// <summary>
-    /// The retention policy for the prompt cache. Set to 24h to enable extended prompt caching, which keeps cached prefixes active for longer, up to a maximum of 24 hours. Supported by GPT-5.1 and newer models.
+    /// The retention policy for the prompt cache. Set to <see cref="PromptCacheRetention.TwentyFourHours"/> for extended caching (up to 24 hours).
+    /// When omitted, OpenAI defaults to extended retention for non-ZDR organizations (since 2026-05-29) and in-memory retention for ZDR organizations.
+    /// GPT-5.5 models only support extended retention; serialization coerces <see cref="PromptCacheRetention.InMemory"/> to <see cref="PromptCacheRetention.TwentyFourHours"/> for those models.
     /// </summary>
     [JsonProperty("prompt_cache_retention")]
     public PromptCacheRetention? PromptCacheRetention { get; set; }
@@ -246,7 +248,7 @@ public class ResponseRequest
     /// </summary>
     public TornadoRequestContent Serialize(IEndpointProvider provider, ResponseRequestSerializeOptions? options = null)
     {
-        // GPT-5.2 and GPT-5.4 parameter compatibility
+        // GPT-5.2, GPT-5.4, and GPT-5.5 parameter compatibility
         if (provider.Provider is LLmProviders.OpenAi)
         {
             bool hasNonNoneReasoning = Reasoning?.Effort is not null && Reasoning.Effort != ResponseReasoningEfforts.None;
@@ -256,6 +258,10 @@ public class ResponseRequest
                 TopP = null;
                 TopLogprobs = null;
             }
+
+            PromptCacheRetention? retention = PromptCacheRetention;
+            ChatModelOpenAi.ApplyPromptCacheRetentionPolicy(Model, ref retention);
+            PromptCacheRetention = retention;
         }
         
         string body = this.ToJson(options?.Pretty ?? false);

@@ -40,7 +40,12 @@ public class TornadoAgent
     /// Returns whether the agent is currently running.
     /// </summary>
     public bool Running { get; internal set; }
-    
+
+    /// <summary>
+    /// Get the latest exit reason for the agent runner, which indicates why the most recent execution of the agent runner concluded. This property can provide insights into whether the runner completed successfully, encountered an error, was cancelled, or exited for another reason as defined by the <see cref="AgentRunnerExitReason"/> enumeration.
+    /// </summary>
+    public AgentRunnerExitReason LastRunExitReason { get; set; }
+
     /// <summary>
     /// Gets or sets the options used to configure the response behavior of the request.
     /// </summary>

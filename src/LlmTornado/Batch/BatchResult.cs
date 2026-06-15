@@ -3,6 +3,7 @@ using LlmTornado.Batch.Vendors.Google;
 using LlmTornado.Batch.Vendors.OpenAi;
 using LlmTornado.Chat;
 using LlmTornado.Code;
+using LlmTornado.Videos;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Batch;
@@ -55,6 +56,29 @@ public class BatchResult
     /// </summary>
     [JsonIgnore]
     public ChatResult? ChatResult => ResultInternal?.Message ?? ResponseInternal?.Body;
+
+    /// <summary>
+    /// The video generation result if the batch item targeted /v1/videos.
+    /// </summary>
+    [JsonIgnore]
+    public VideoJob? VideoResult
+    {
+        get
+        {
+            if (ResponseInternal?.Body is not null)
+            {
+                return null;
+            }
+
+            if (ResponseInternal?.VideoBody is not null)
+            {
+                ResponseInternal.VideoBody.SourceProvider = LLmProviders.OpenAi;
+                return ResponseInternal.VideoBody;
+            }
+
+            return null;
+        }
+    }
     
     /// <summary>
     /// HTTP status code of the response.
@@ -121,6 +145,12 @@ internal class BatchResultResponse
     /// </summary>
     [JsonProperty("body")]
     public ChatResult? Body { get; set; }
+
+    /// <summary>
+    /// Parsed video result when the batch item targeted /v1/videos.
+    /// </summary>
+    [JsonIgnore]
+    public VideoJob? VideoBody { get; set; }
 }
 
 /// <summary>

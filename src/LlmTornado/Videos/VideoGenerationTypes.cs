@@ -184,10 +184,16 @@ public enum VideoResolution
     HD,
 
     /// <summary>
-    /// 1080p resolution (1920x1080). Supported by Google Veo (only 8s duration for Veo 3.1).
+    /// 1080p resolution (1920x1080). Supported by Google Veo (only 8s duration for Veo 3.1) and sora-2-pro.
     /// </summary>
     [EnumMember(Value = "1080p")]
-    FullHD
+    FullHD,
+
+    /// <summary>
+    /// 4k resolution. Supported by Google Veo 3.1 and Veo 3 (8s duration only). Not available for Veo 3.1 Lite.
+    /// </summary>
+    [EnumMember(Value = "4k")]
+    UltraHD4K
 }
 
 /// <summary>
@@ -238,7 +244,7 @@ public enum VideoReferenceType
 public enum VideoDuration
 {
     /// <summary>
-    /// 4 seconds - Supported by Veo 3.1, Veo 3.1 Fast, Veo 3, Veo 3 Fast
+    /// 4 seconds - Supported by Veo 3.1, Veo 3.1 Fast, Veo 3.1 Lite, Veo 3, Veo 3 Fast
     /// </summary>
     Seconds4 = 4,
 
@@ -248,13 +254,13 @@ public enum VideoDuration
     Seconds5 = 5,
 
     /// <summary>
-    /// 6 seconds - Supported by Veo 3.1, Veo 3.1 Fast, Veo 3, Veo 3 Fast, Veo 2
+    /// 6 seconds - Supported by Veo 3.1, Veo 3.1 Fast, Veo 3.1 Lite, Veo 3, Veo 3 Fast, Veo 2
     /// </summary>
     Seconds6 = 6,
 
     /// <summary>
-    /// 8 seconds - Supported by Veo 3.1, Veo 3.1 Fast, Veo 3, Veo 3 Fast, Veo 2
-    /// Required when using extension, interpolation, or referenceImages
+    /// 8 seconds - Supported by Veo 3.1, Veo 3.1 Fast, Veo 3.1 Lite, Veo 3, Veo 3 Fast, Veo 2
+    /// Required when using extension, interpolation, reference images, 1080p, or 4k resolution
     /// </summary>
     Seconds8 = 8,
     
@@ -267,6 +273,16 @@ public enum VideoDuration
     /// 12 seconds - Supported by sora-2 and sora-2-pro
     /// </summary>
     Seconds12 = 12,
+
+    /// <summary>
+    /// 16 seconds - Supported by sora-2 and sora-2-pro
+    /// </summary>
+    Seconds16 = 16,
+
+    /// <summary>
+    /// 20 seconds - Supported by sora-2 and sora-2-pro
+    /// </summary>
+    Seconds20 = 20,
 
     /// <summary>
     /// Custom duration - Use DurationSecondsCustom property to specify

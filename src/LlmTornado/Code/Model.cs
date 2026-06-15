@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using LlmTornado.Chat.Models;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
+using LlmTornado.Models.Vendors.Google;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Models;
@@ -116,6 +117,24 @@ public class RetrievedModel
     public int? ContextLength { get; set; }
 
     /// <summary>
+    /// Maximum input tokens reported by the Gemini models API.
+    /// </summary>
+    [JsonProperty("inputTokenLimit")]
+    public int? InputTokenLimit { get; set; }
+
+    /// <summary>
+    /// Maximum output tokens reported by the Gemini models API.
+    /// </summary>
+    [JsonProperty("outputTokenLimit")]
+    public int? OutputTokenLimit { get; set; }
+
+    /// <summary>
+    /// Lifecycle status reported by the Gemini API (<c>modelStatus</c>).
+    /// </summary>
+    [JsonProperty("modelStatus")]
+    public GoogleModelStatus? ModelStatus { get; set; }
+
+    /// <summary>
     /// Context lengthy, reported by Requesty.
     /// </summary>
     [JsonProperty("context_window")]
@@ -141,6 +160,24 @@ public class RetrievedModel
     /// </summary>
     [JsonProperty("architecture")]
     public RetrievedModelArchitecture? Architecture { get; set; }
+
+    /// <summary>
+    /// Maximum input context window size in tokens. Reported by Anthropic Models API.
+    /// </summary>
+    [JsonProperty("max_input_tokens")]
+    public int? MaxInputTokens { get; set; }
+
+    /// <summary>
+    /// Maximum value for the max_tokens parameter. Reported by Anthropic Models API.
+    /// </summary>
+    [JsonProperty("max_tokens")]
+    public int? MaxTokens { get; set; }
+
+    /// <summary>
+    /// Model capability information. Reported by Anthropic Models API.
+    /// </summary>
+    [JsonProperty("capabilities")]
+    public RetrievedModelCapabilities? Capabilities { get; set; }
     
     /// <summary>
     ///     The time when the model was created.
@@ -152,7 +189,22 @@ public class RetrievedModel
     ///     The time when the model was created in unix epoch format.
     /// </summary>
     [JsonProperty("created")]
-    public long? CreatedUnixTime { get; init; }
+    public long? CreatedUnixTime { get; set; }
+
+    /// <summary>
+    /// RFC 3339 release timestamp from Anthropic Models API.
+    /// </summary>
+    [JsonProperty("created_at")]
+    private string? AnthropicCreatedAt
+    {
+        set
+        {
+            if (value is not null && DateTimeOffset.TryParse(value, out DateTimeOffset createdAt))
+            {
+                CreatedUnixTime = createdAt.ToUnixTimeSeconds();
+            }
+        }
+    }
 
     /// <summary>
     /// Id/name of the model
@@ -405,14 +457,31 @@ public class Model : ModelBase
     public static Model TTS_1_HD => new Model("tts-1-hd");
 
     /// <summary>
-    ///     Dalle2 model. This model generates images.
+    ///     DALL·E 2 model. Removed from the OpenAI API on May 12, 2026.
     /// </summary>
+    [Obsolete("Removed from the OpenAI API on May 12, 2026. Use gpt-image-2, gpt-image-1, or gpt-image-1-mini instead.")]
     public static Model Dalle2 => new Model("dall-e-2");
 
     /// <summary>
-    ///     Dalle2 model. This model generates images.
+    ///     DALL·E 3 model. Removed from the OpenAI API on May 12, 2026.
     /// </summary>
+    [Obsolete("Removed from the OpenAI API on May 12, 2026. Use gpt-image-2, gpt-image-1, or gpt-image-1-mini instead.")]
     public static Model Dalle3 => new Model("dall-e-3");
+    
+    /// <summary>
+    ///     GPT Image 2 model. Latest OpenAI image generation model.
+    /// </summary>
+    public static Model GptImage2 => new Model("gpt-image-2");
+
+    /// <summary>
+    ///     GPT Image 1 model.
+    /// </summary>
+    public static Model GptImage1 => new Model("gpt-image-1");
+
+    /// <summary>
+    ///     GPT Image 1 Mini model.
+    /// </summary>
+    public static Model GptImage1Mini => new Model("gpt-image-1-mini");
     
     /// <summary>
     ///     Dalle2 model. This model generates images.

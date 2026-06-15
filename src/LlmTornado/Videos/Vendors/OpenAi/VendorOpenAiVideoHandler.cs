@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading;
@@ -21,15 +22,117 @@ internal static class VendorOpenAiVideoHandler
         EndpointBase endpoint, 
         CancellationToken cancellationToken)
     {
-        MultipartFormDataContent content = VendorOpenAiVideoRequest.Serialize(request);
+        object postData = VendorOpenAiVideoRequest.RequiresJsonContent(request)
+            ? VendorOpenAiVideoRequest.SerializeJson(request)
+            : VendorOpenAiVideoRequest.SerializeMultipart(request);
         
         HttpCallResult<VideoJob> result = await endpoint.HttpPost<VideoJob>(
             provider, 
             CapabilityEndpoints.Videos, 
-            postData: content,
+            postData: postData,
             ct: cancellationToken
         ).ConfigureAwait(false);
         
+        SetSourceProvider(result);
+        return result;
+    }
+
+    /// <summary>
+    /// Creates a character from an uploaded video clip.
+    /// </summary>
+    public static async Task<HttpCallResult<VideoCharacter>> CreateCharacter(
+        string name,
+        byte[] videoBytes,
+        string mimeType,
+        IEndpointProvider provider,
+        EndpointBase endpoint,
+        CancellationToken cancellationToken)
+    {
+        MultipartFormDataContent content = new MultipartFormDataContent();
+        content.Add(new StringContent(name), "name");
+
+        ByteArrayContent videoContent = new ByteArrayContent(videoBytes);
+        videoContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(mimeType);
+        content.Add(videoContent, "video", "character.mp4");
+
+        string url = endpoint.GetUrl(provider, "/characters");
+
+        HttpCallResult<VideoCharacter> result = await endpoint.HttpPost<VideoCharacter>(
+            provider,
+            CapabilityEndpoints.Videos,
+            url,
+            postData: content,
+            ct: cancellationToken
+        ).ConfigureAwait(false);
+
+        return result;
+    }
+
+    /// <summary>
+    /// Retrieves a character by ID.
+    /// </summary>
+    public static async Task<HttpCallResult<VideoCharacter>> GetCharacter(
+        string characterId,
+        IEndpointProvider provider,
+        EndpointBase endpoint,
+        CancellationToken cancellationToken)
+    {
+        string url = endpoint.GetUrl(provider, $"/characters/{characterId}");
+
+        return await endpoint.HttpGet<VideoCharacter>(
+            provider,
+            CapabilityEndpoints.Videos,
+            url,
+            ct: cancellationToken
+        ).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Extends a completed video with a new segment.
+    /// </summary>
+    public static async Task<HttpCallResult<VideoJob>> Extend(
+        VideoExtensionRequest request,
+        IEndpointProvider provider,
+        EndpointBase endpoint,
+        CancellationToken cancellationToken)
+    {
+        string url = endpoint.GetUrl(provider, "/extensions");
+        object requestBody = VendorOpenAiVideoRequest.SerializeExtension(request);
+
+        HttpCallResult<VideoJob> result = await endpoint.HttpPost<VideoJob>(
+            provider,
+            CapabilityEndpoints.Videos,
+            url,
+            postData: requestBody,
+            ct: cancellationToken
+        ).ConfigureAwait(false);
+
+        SetSourceProvider(result);
+        return result;
+    }
+
+    /// <summary>
+    /// Edits an existing video via POST /v1/videos/edits.
+    /// </summary>
+    public static async Task<HttpCallResult<VideoJob>> Edit(
+        VideoEditRequest request,
+        IEndpointProvider provider,
+        EndpointBase endpoint,
+        CancellationToken cancellationToken)
+    {
+        string url = endpoint.GetUrl(provider, "/edits");
+        object postData = request.VideoBytes is not null
+            ? VendorOpenAiVideoRequest.SerializeEditMultipart(request)
+            : VendorOpenAiVideoRequest.SerializeEditJson(request);
+
+        HttpCallResult<VideoJob> result = await endpoint.HttpPost<VideoJob>(
+            provider,
+            CapabilityEndpoints.Videos,
+            url,
+            postData: postData,
+            ct: cancellationToken
+        ).ConfigureAwait(false);
+
         SetSourceProvider(result);
         return result;
     }
@@ -75,7 +178,6 @@ internal static class VendorOpenAiVideoHandler
             ct: cancellationToken
         ).ConfigureAwait(false);
         
-        // Set source provider for all items in the list
         if (result.Data?.Items is not null)
         {
             foreach (VideoJob job in result.Data.Items)
@@ -139,36 +241,25 @@ internal static class VendorOpenAiVideoHandler
             ct: cancellationToken
         ).ConfigureAwait(false);
     }
-    
+
     /// <summary>
     /// Creates a remix of a completed video.
     /// </summary>
-    public static async Task<HttpCallResult<VideoJob>> Remix(
+    [Obsolete("POST /v1/videos/{video_id}/remix is deprecated. Use Edit instead.")]
+    public static Task<HttpCallResult<VideoJob>> Remix(
         string videoId,
         string prompt,
-        IEndpointProvider provider, 
-        EndpointBase endpoint, 
+        IEndpointProvider provider,
+        EndpointBase endpoint,
         CancellationToken cancellationToken)
     {
-        string url = endpoint.GetUrl(provider, $"/{videoId}/remix");
-        
-        object requestBody = new { prompt };
-        
-        HttpCallResult<VideoJob> result = await endpoint.HttpPost<VideoJob>(
-            provider, 
-            CapabilityEndpoints.Videos, 
-            url,
-            postData: requestBody,
-            ct: cancellationToken
-        ).ConfigureAwait(false);
-        
-        SetSourceProvider(result);
-        return result;
+        return Edit(new VideoEditRequest
+        {
+            VideoId = videoId,
+            Prompt = prompt
+        }, provider, endpoint, cancellationToken);
     }
     
-    /// <summary>
-    /// Sets the SourceProvider on the VideoJob result.
-    /// </summary>
     private static void SetSourceProvider(HttpCallResult<VideoJob> result)
     {
         if (result.Data is not null)

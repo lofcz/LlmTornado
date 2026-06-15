@@ -78,4 +78,22 @@ public enum ChatMessageTypes
     /// <b>Supported only by Anthropic (Claude Opus 4.6+).</b>
     /// </summary>
     Compaction,
+
+    /// <summary>
+    /// Server-side tool call part returned by Google Gemini built-in tools during tool context circulation.<br/>
+    /// <b>Supported only by Google Gemini 3+ tool combination.</b>
+    /// </summary>
+    ServerSideToolCall,
+
+    /// <summary>
+    /// Server-side tool response part returned by Google Gemini built-in tools during tool context circulation.<br/>
+    /// <b>Supported only by Google Gemini 3+ tool combination.</b>
+    /// </summary>
+    ServerSideToolResponse,
+
+    /// <summary>
+    /// Native Google API part preserved for round-trip when combined with server-side tool parts.<br/>
+    /// <b>Supported only by Google Gemini 3+ tool combination.</b>
+    /// </summary>
+    GoogleVendorPart,
 }

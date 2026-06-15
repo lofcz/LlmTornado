@@ -29,13 +29,33 @@ public class ChatModelGoogleGemma : IVendorModelClassProvider
     /// <inheritdoc cref="ModelV327B"/>
     /// </summary>
     public readonly ChatModel V327B = ModelV327B;
+
+    /// <summary>
+    /// Highly efficient 26B Mixture-of-Experts model designed for high-throughput, advanced reasoning. Supports text and image input with a 256K context window.
+    /// </summary>
+    public static readonly ChatModel Model426BA4BIt = new ChatModel("gemma-4-26b-a4b-it", LLmProviders.Google, 256_000);
+
+    /// <summary>
+    /// <inheritdoc cref="Model426BA4BIt"/>
+    /// </summary>
+    public readonly ChatModel V426BA4BIt = Model426BA4BIt;
+
+    /// <summary>
+    /// Powerful 31B dense model bridging server-grade performance and local execution. Supports text and image input with a 256K context window.
+    /// </summary>
+    public static readonly ChatModel Model431BIt = new ChatModel("gemma-4-31b-it", LLmProviders.Google, 256_000);
+
+    /// <summary>
+    /// <inheritdoc cref="Model431BIt"/>
+    /// </summary>
+    public readonly ChatModel V431BIt = Model431BIt;
     
     /// <summary>
     /// All known Gemma models from Google.
     /// </summary>
     public static List<IModel> ModelsAll => LazyModelsAll.Value;
 
-    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [ModelV327B, Model3Ne4B]);
+    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [ModelV327B, Model3Ne4B, Model426BA4BIt, Model431BIt]);
 
     /// <summary>
     /// <inheritdoc cref="ModelsAll"/>

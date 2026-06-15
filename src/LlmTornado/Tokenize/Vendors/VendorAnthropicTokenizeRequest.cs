@@ -35,7 +35,14 @@ internal class VendorAnthropicTokenizeRequest
             {
                 if (msg.Role is ChatMessageRoles.System)
                 {
-                    System = new VendorAnthropicChatRequestMessageContent(msg);
+                    if (Messages.Count == 0)
+                    {
+                        System = new VendorAnthropicChatRequestMessageContent(msg);
+                    }
+                    else
+                    {
+                        Messages.Add(new VendorAnthropicChatRequestMessage(ChatMessageRoles.System, msg));
+                    }
                 }
                 else
                 {

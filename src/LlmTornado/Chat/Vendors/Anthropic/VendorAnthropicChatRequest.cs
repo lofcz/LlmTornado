@@ -50,6 +50,11 @@ public class ChatMessagePartAnthropicExtensions : IChatMessagePartVendorExtensio
     /// Cache settings.
     /// </summary>
     public AnthropicCacheSettings? Cache { get; set; }
+
+    /// <summary>
+    /// Parsed advisor tool result payload when the part type is <c>advisor_tool_result</c>.
+    /// </summary>
+    public AnthropicAdvisorToolResultData? AdvisorToolResult { get; set; }
 }
 
 public partial class VendorAnthropicChatRequestMessageContent
@@ -553,6 +558,9 @@ internal class VendorAnthropicChatRequest
         public string Type { get; set; }
         [JsonProperty("budget_tokens")]
         public int? BudgetTokens { get; set; }
+        [JsonProperty("display")]
+        [JsonConverter(typeof(StringEnumConverter))]
+        public AnthropicThinkingDisplay? Display { get; set; }
     }
     
     internal class VendorAnthropicChatRequestOutputConfigFormat
@@ -571,6 +579,9 @@ internal class VendorAnthropicChatRequest
         
         [JsonProperty("format")]
         public VendorAnthropicChatRequestOutputConfigFormat? Format { get; set; }
+        
+        [JsonProperty("task_budget")]
+        public AnthropicTaskBudget? TaskBudget { get; set; }
     }
     
     [JsonProperty("messages")]
@@ -599,7 +610,8 @@ internal class VendorAnthropicChatRequest
     [JsonProperty("tool_choice")]
     public VendorAnthropicChatRequestToolChoice? ToolChoice { get; set; }
     [JsonProperty("tools")]
-    public List<VendorAnthropicToolFunction>? Tools { get; set; }
+    [JsonConverter(typeof(VendorAnthropicToolsJsonConverter))]
+    public List<IVendorAnthropicChatRequestTool>? Tools { get; set; }
 
     [JsonProperty("container")]
     public AnthropicContainer? Container { get; set; }
@@ -627,6 +639,9 @@ internal class VendorAnthropicChatRequest
 
     [JsonProperty("cache_control")]
     public AnthropicCacheSettings? CacheControl { get; set; }
+    
+    [JsonProperty("diagnostics")]
+    public AnthropicCacheDiagnosticsRequest? Diagnostics { get; set; }
     
     public VendorAnthropicChatRequest(ChatRequest request, IEndpointProvider provider)
     {
@@ -716,7 +731,10 @@ internal class VendorAnthropicChatRequest
 
         if (request.Tools is not null)
         {
-            Tools = request.Tools.Where(x => x.Function is not null).Select(t => new VendorAnthropicToolFunction(t)).ToList();
+            Tools = request.Tools
+                .Where(x => x.Function is not null)
+                .Select(t => (IVendorAnthropicChatRequestTool)new VendorAnthropicToolFunction(t))
+                .ToList();
         }
         
         if (request.ResponseFormat?.Type is ChatRequestResponseFormatTypes.StructuredJson && request.ResponseFormat.Schema?.Schema is not null)
@@ -729,56 +747,22 @@ internal class VendorAnthropicChatRequest
             };
         }
 
-        if (request.ReasoningBudget is -1)
-        {
-            Thinking = new VendorAnthropicThinkingSettings
-            {
-                Type = "adaptive"
-            };
-        }
-        else if (request.ReasoningBudget > 0)
-        {
-            Thinking = new VendorAnthropicThinkingSettings
-            {
-                BudgetTokens = request.ReasoningBudget,
-                Type = "enabled"
-            };
-        }
-
         if (request.VendorExtensions?.Anthropic is not null)
         {
             if (request.VendorExtensions.Anthropic.BuiltInTools is not null)
             {
                 Tools ??= [];
-                Tools.AddRange(request.VendorExtensions.Anthropic.BuiltInTools.Select(x => new VendorAnthropicToolFunction(x)));
+                Tools.AddRange(request.VendorExtensions.Anthropic.BuiltInTools
+                    .Select(x => (IVendorAnthropicChatRequestTool)new VendorAnthropicToolFunction(x)));
             }
-            
-            if (request.VendorExtensions.Anthropic.Thinking is not null)
-            {
-                if (request.VendorExtensions.Anthropic.Thinking.Adaptive)
-                {
-                    Thinking = new VendorAnthropicThinkingSettings
-                    {
-                        Type = "adaptive"
-                    };
-                }
-                else if (request.VendorExtensions.Anthropic.Thinking.Enabled)
-                {
-                    Thinking = new VendorAnthropicThinkingSettings
-                    {
-                        BudgetTokens = request.VendorExtensions.Anthropic.Thinking.BudgetTokens,
-                        Type = "enabled"
-                    };
 
-                    // if budget tokens are set, max tokens must also be set
-                    if (MaxTokens < Thinking.BudgetTokens)
-                    {
-                        MaxTokens = Thinking.BudgetTokens.Value + 4_096;
-                    }
-                }
+            if (request.VendorExtensions.Anthropic.AdvisorTool is not null)
+            {
+                Tools ??= [];
+                Tools.Add((IVendorAnthropicChatRequestTool)new VendorAnthropicToolFunction(
+                    request.VendorExtensions.Anthropic.AdvisorTool.ToBuiltInTool()));
             }
             
-            // Add container if specified
             if (request.VendorExtensions.Anthropic.Container is not null)
             {
                 Container = request.VendorExtensions.Anthropic.Container;
@@ -786,38 +770,74 @@ internal class VendorAnthropicChatRequest
 
             if (request.VendorExtensions.Anthropic.McpServers is not null)
             {
-                McpServers = request.VendorExtensions.Anthropic.McpServers.ToArray();
+                List<AnthropicMcpServer> resolvedServers = request.VendorExtensions.Anthropic.McpServers.Select(server =>
+                {
+                    if (string.IsNullOrWhiteSpace(server.Url))
+                    {
+                        server.Url = server.ResolveUrl();
+                    }
+
+                    return server;
+                }).ToList();
+
+                McpServers = resolvedServers.ToArray();
+
+                List<AnthropicMcpToolset> toolsets = request.VendorExtensions.Anthropic.McpToolsets?.ToList() ?? [];
+
+                foreach (AnthropicMcpServer server in resolvedServers)
+                {
+                    if (toolsets.Any(t => t.McpServerName == server.Name))
+                    {
+                        continue;
+                    }
+
+                    toolsets.Add(AnthropicMcpToolset.FromLegacyConfiguration(server.Name, server.Configuration));
+                }
+
+                if (toolsets.Count > 0)
+                {
+                    Tools ??= [];
+                    Tools.AddRange(toolsets);
+                }
             }
             
-            // Add context management (compaction) if specified
             if (request.VendorExtensions.Anthropic.ContextManagement is not null)
             {
                 ContextManagement = request.VendorExtensions.Anthropic.ContextManagement;
             }
             
-            // Add inference geo (data residency) if specified
             if (request.VendorExtensions.Anthropic.InferenceGeo is not null)
             {
                 InferenceGeo = request.VendorExtensions.Anthropic.InferenceGeo;
             }
+            
+            if (request.VendorExtensions.Anthropic.TaskBudget is not null)
+            {
+                OutputConfig ??= new VendorAnthropicChatRequestOutputConfig();
+                OutputConfig.TaskBudget = request.VendorExtensions.Anthropic.TaskBudget;
+            }
 
-            request.VendorExtensions.Anthropic.OutboundRequest?.Invoke(System, Messages.Select(x => x.Content).ToList(), Tools);
+            if (request.VendorExtensions.Anthropic.CacheDiagnostics is not null)
+            {
+                Diagnostics = request.VendorExtensions.Anthropic.CacheDiagnostics;
+            }
+
+            request.VendorExtensions.Anthropic.OutboundRequest?.Invoke(
+                System,
+                Messages.Select(x => x.Content).ToList(),
+                Tools?.OfType<VendorAnthropicToolFunction>().ToList());
         }
         
-        // Handle service tier (Anthropic supports "auto" and "standard_only")
         if (request.ServiceTier is ChatRequestServiceTiers.Auto or ChatRequestServiceTiers.StandardOnly)
         {
             ServiceTier = request.ServiceTier;
         }
         
-        // Handle fast mode using harmonized Speed
         if (request.Speed is ChatRequestSpeeds.Fast)
         {
             Speed = ChatRequestSpeeds.Fast;
         }
 
-        // Automatic caching: top-level cache_control causes the system to automatically apply a cache
-        // breakpoint to the last cacheable block and move it forward as conversations grow
         if (request.AutoCache is not null)
         {
             CacheControl = request.AutoCache.Ttl.HasValue
@@ -825,39 +845,90 @@ internal class VendorAnthropicChatRequest
                 : AnthropicCacheSettings.Ephemeral;
         }
         
-        // Handle effort parameter using harmonized ReasoningEffort (Claude Opus 4.5+)
-        if (request.ReasoningEffort is not null && IsEffortCompatibleModel(Model))
+        if (ChatModelAnthropicHelper.IsEffortCompatibleModel(Model))
         {
-            string? effortValue = request.ReasoningEffort switch
-            {
-                ChatReasoningEfforts.XHigh => "max",
-                ChatReasoningEfforts.Max => "max",
-                ChatReasoningEfforts.High => "high",
-                ChatReasoningEfforts.Medium => "medium",
-                ChatReasoningEfforts.Low => "low",
-                _ => null
-            };
-            
+            string? effortValue = request.VendorExtensions?.Anthropic?.Effort is AnthropicEffortLevels vendorEffort
+                ? AnthropicEffortHelper.ToApiValue(vendorEffort)
+                : request.ReasoningEffort is ChatReasoningEfforts reasoningEffort
+                    ? AnthropicEffortHelper.ToApiValue(reasoningEffort)
+                    : null;
+
             if (effortValue is not null)
             {
                 OutputConfig ??= new VendorAnthropicChatRequestOutputConfig();
                 OutputConfig.Effort = effortValue;
             }
         }
+
+        Thinking = BuildThinkingSettings(request);
     }
-    
-    private static bool IsEffortCompatibleModel(string? modelName)
+
+    private VendorAnthropicThinkingSettings? BuildThinkingSettings(ChatRequest request)
+    {
+        AnthropicThinkingSettings? vendorThinking = request.VendorExtensions?.Anthropic?.Thinking;
+        AnthropicThinkingTypes? mode = null;
+        int? budgetTokens = null;
+
+        if (vendorThinking is not null)
+        {
+            mode = vendorThinking.ResolvedType;
+            budgetTokens = vendorThinking.BudgetTokens;
+        }
+        else if (request.ReasoningBudget is -1)
+        {
+            mode = AnthropicThinkingTypes.Adaptive;
+        }
+        else if (request.ReasoningBudget > 0)
+        {
+            mode = AnthropicThinkingTypes.Enabled;
+            budgetTokens = request.ReasoningBudget;
+        }
+
+        if (mode is null or AnthropicThinkingTypes.Disabled)
+        {
+            return null;
+        }
+
+        if (mode == AnthropicThinkingTypes.Enabled && RequiresAdaptiveThinkingOnly(Model))
+        {
+            mode = AnthropicThinkingTypes.Adaptive;
+            budgetTokens = null;
+        }
+
+        VendorAnthropicThinkingSettings settings = new VendorAnthropicThinkingSettings
+        {
+            Type = ToApiThinkingType(mode.Value),
+            BudgetTokens = mode == AnthropicThinkingTypes.Enabled ? budgetTokens : null,
+            Display = vendorThinking?.Display
+        };
+
+        if (mode == AnthropicThinkingTypes.Enabled && settings.BudgetTokens is int budget && MaxTokens < budget)
+        {
+            MaxTokens = budget + 4_096;
+        }
+
+        return settings;
+    }
+
+    private static string ToApiThinkingType(AnthropicThinkingTypes type) => type switch
+    {
+        AnthropicThinkingTypes.Adaptive => "adaptive",
+        AnthropicThinkingTypes.Enabled => "enabled",
+        AnthropicThinkingTypes.Disabled => "disabled",
+        _ => throw new ArgumentOutOfRangeException(nameof(type), type, "Unsupported Anthropic thinking type.")
+    };
+
+    private static bool RequiresAdaptiveThinkingOnly(string? modelName)
     {
         if (modelName is null)
         {
             return false;
         }
-        
-        // Effort parameter is supported by Claude Opus 4.5+, Opus 4.6, and Sonnet 4.6
-        return modelName.StartsWith("claude-opus-4-5", StringComparison.OrdinalIgnoreCase)
-            || modelName.StartsWith("claude-opus-4-6", StringComparison.OrdinalIgnoreCase)
-            || modelName.StartsWith("claude-sonnet-4-6", StringComparison.OrdinalIgnoreCase);
+
+        return modelName.StartsWith("claude-opus-4-7", StringComparison.OrdinalIgnoreCase)
+            || modelName.StartsWith("claude-opus-4-8", StringComparison.OrdinalIgnoreCase);
     }
+    
     
     private static bool IsExtendedThinkingModel(string? modelName)
     {

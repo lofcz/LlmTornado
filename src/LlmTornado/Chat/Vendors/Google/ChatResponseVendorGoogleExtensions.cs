@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using LlmTornado.Models.Vendors.Google;
 using Newtonsoft.Json;
 
 namespace LlmTornado.Chat.Vendors.Google;
@@ -13,6 +14,12 @@ public class ChatResponseVendorGoogleExtensions
     /// </summary>
     [JsonProperty("googleMapsWidgetContextToken")]
     public string? GoogleMapsWidgetContextToken { get; set; }
+
+    /// <summary>
+    /// Output-only lifecycle status of the model that served this response.
+    /// </summary>
+    [JsonProperty("modelStatus")]
+    public GoogleModelStatus? ModelStatus { get; set; }
     
     /// <summary>
     /// Empty Google response extensions.

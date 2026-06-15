@@ -153,14 +153,14 @@ internal class VendorGoogleChatRequestImageConfig
 {
     /// <summary>
     /// The aspect ratio of the generated image.
-    /// Supported values: "1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"
+    /// Supported values: "1:1", "1:4", "1:8", "2:3", "3:2", "3:4", "4:1", "4:3", "4:5", "5:4", "8:1", "9:16", "16:9", "21:9"
     /// </summary>
     [JsonProperty("aspectRatio")]
     public string? AspectRatio { get; set; }
     
     /// <summary>
     /// The resolution of the generated image.
-    /// Supported values: "1K", "2K", "4K" (only for Gemini 3 Pro Image Preview).
+    /// Supported values: "512" (Gemini 3.1 Flash Image only), "1K", "2K", "4K" (Gemini 3 Pro Image and Gemini 3.1 Flash Image).
     /// </summary>
     [JsonProperty("imageSize")]
     public string? ImageSize { get; set; }
@@ -171,22 +171,16 @@ internal class VendorGoogleChatRequestVoiceConfig
     /// <summary>
     /// The configuration for the prebuilt speaker to use.
     /// </summary>
-    [JsonIgnore]
+    [JsonProperty("prebuiltVoiceConfig")]
     public VendorGoogleChatRequestPrebuiltVoiceConfig? PrebuiltVoiceConfig { get; set; }
-
-    /// <summary>
-    /// The configuration for the speaker to use.
-    /// </summary>
-    [JsonProperty("voice_config")]
-    public object? VoiceConfig => PrebuiltVoiceConfig;
 }
 
 internal class VendorGoogleChatRequestMultiSpeakerVoiceConfig
 {
     /// <summary>
-    /// todo: documentation, once released
+    /// Speaker voice assignments for multi-speaker TTS.
     /// </summary>
-    [JsonProperty("speaker_voice_configs")]
+    [JsonProperty("speakerVoiceConfigs")]
     public List<VendorGoogleChatRequestMultiSpeakerVoiceConfigSpeaker>? SpeakerVoiceConfigs { get; set; }
 }
 
@@ -195,14 +189,8 @@ internal class VendorGoogleChatRequestMultiSpeakerVoiceConfigSpeaker
     [JsonProperty("speaker")]
     public string Speaker { get; set; }
     
-    [JsonProperty("voice_config")]
-    public VendorGoogleChatRequestPrebuiltVoiceConfigWrapper? PrebuiltVoiceConfig { get; set; }
-}
-
-internal class VendorGoogleChatRequestPrebuiltVoiceConfigWrapper
-{
-    [JsonProperty("prebuilt_voice_config")]
-    public VendorGoogleChatRequestPrebuiltVoiceConfig? VoiceConfig { get; set; }
+    [JsonProperty("voiceConfig")]
+    public VendorGoogleChatRequestVoiceConfig? VoiceConfig { get; set; }
 }
 
 internal class VendorGoogleChatRequestPrebuiltVoiceConfig
@@ -304,6 +292,12 @@ internal class VendorGoogleChatRequestMessagePart
     
     [JsonProperty("codeExecutionResult")]
     public VendorGoogleChatRequest.VendorGoogleChatRequestMessagePartCodeExecutionResult? CodeExecutionResult { get; set; }
+
+    [JsonProperty("toolCall")]
+    public VendorGoogleChatRequest.VendorGoogleChatRequestMessagePartServerSideToolCall? ToolCall { get; set; }
+
+    [JsonProperty("toolResponse")]
+    public VendorGoogleChatRequest.VendorGoogleChatRequestMessagePartServerSideToolResponse? ToolResponse { get; set; }
     
     [JsonProperty("videoMetadata")]
     public VendorGoogleChatRequest.VendorGoogleChatRequestMetadataVideo? VideoMetadata { get; set; }
@@ -435,7 +429,68 @@ internal class VendorGoogleChatRequestMessagePart
                 
                 break;
             }
+            case ChatMessageTypes.ServerSideToolCall:
+            case ChatMessageTypes.ServerSideToolResponse:
+            case ChatMessageTypes.GoogleVendorPart:
+            {
+                if (part.NativeObject is VendorGoogleChatRequestMessagePart nativePart)
+                {
+                    Thought = nativePart.Thought;
+                    ThoughtSignature = nativePart.ThoughtSignature;
+                    Text = nativePart.Text;
+                    FunctionCall = nativePart.FunctionCall;
+                    FunctionResponse = nativePart.FunctionResponse;
+                    ToolCall = nativePart.ToolCall;
+                    ToolResponse = nativePart.ToolResponse;
+                    ExecutableCode = nativePart.ExecutableCode;
+                    CodeExecutionResult = nativePart.CodeExecutionResult;
+                    InlineData = nativePart.InlineData;
+                    FileData = nativePart.FileData;
+                    MediaResolution = nativePart.MediaResolution;
+                }
+
+                break;
+            }
         }
+    }
+
+    void SetInlinePayload(string content, string? mimeType, string defaultMimeType)
+    {
+        (string resolvedMimeType, string resolvedData) = ResolveInlinePayload(content, mimeType, defaultMimeType);
+        InlineData = new VendorGoogleChatRequest.VendorGoogleChatRequestMessagePartInlineData
+        {
+            MimeType = resolvedMimeType,
+            Data = resolvedData
+        };
+    }
+
+    void SetFilePayload(string fileUri, string? mimeType)
+    {
+        FileData = new VendorGoogleChatRequest.VendorGoogleChatRequestMessagePartFileData
+        {
+            FileUri = fileUri,
+            MimeType = mimeType
+        };
+    }
+
+    static (string MimeType, string Data) ResolveInlinePayload(string content, string? mimeType, string defaultMimeType)
+    {
+        if (content.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+        {
+            int semicolonIndex = content.IndexOf(';', 5);
+            int commaIndex = content.IndexOf(',', 5);
+
+            if (commaIndex > 0)
+            {
+                string parsedMimeType = semicolonIndex > 5 && semicolonIndex < commaIndex
+                    ? content[5..semicolonIndex]
+                    : defaultMimeType;
+
+                return (parsedMimeType, content[(commaIndex + 1)..]);
+            }
+        }
+
+        return (mimeType ?? defaultMimeType, content.StripDataUriPrefix());
     }
 
     public ChatMessagePart ToMessagePart(StringBuilder sb)
@@ -509,7 +564,17 @@ internal class VendorGoogleChatRequestMessagePart
             }
         }
 
-        if (Thought ?? false)
+        if (ToolCall is not null)
+        {
+            part.Type = ChatMessageTypes.ServerSideToolCall;
+            part.NativeObject = this;
+        }
+        else if (ToolResponse is not null)
+        {
+            part.Type = ChatMessageTypes.ServerSideToolResponse;
+            part.NativeObject = this;
+        }
+        else if (Thought ?? false)
         {
             part.Type = ChatMessageTypes.Reasoning;
             part.Reasoning = new ChatMessageReasoningData
@@ -537,7 +602,7 @@ internal class VendorGoogleChatRequestMessagePart
 
         ToolCall tc = new ToolCall
         {
-            Id = FunctionCall.Name,
+            Id = FunctionCall.Id ?? FunctionCall.Name,
             FunctionCall = fc,
             ThoughtSignature = ThoughtSignature
         };
@@ -572,11 +637,38 @@ internal class VendorGoogleChatRequest
 
     internal class VendorGoogleChatRequestMessagePartFunctionCall
     {
+        [JsonProperty("id")]
+        public string? Id { get; set; }
+
         [JsonProperty("name")]
         public string Name { get; set; }
 
         [JsonProperty("args")]
         public Dictionary<string, object?> Args { get; set; } = [];
+    }
+
+    internal class VendorGoogleChatRequestMessagePartServerSideToolCall
+    {
+        [JsonProperty("id")]
+        public string? Id { get; set; }
+
+        [JsonProperty("toolType")]
+        public string? ToolType { get; set; }
+
+        [JsonProperty("args")]
+        public Dictionary<string, object?>? Args { get; set; }
+    }
+
+    internal class VendorGoogleChatRequestMessagePartServerSideToolResponse
+    {
+        [JsonProperty("id")]
+        public string? Id { get; set; }
+
+        [JsonProperty("toolType")]
+        public string? ToolType { get; set; }
+
+        [JsonProperty("response")]
+        public object? Response { get; set; }
     }
 
     internal class VendorGoogleChatRequestMessagePartFunctionResponse
@@ -845,13 +937,31 @@ internal class VendorGoogleChatRequest
 
         public VendorGoogleChatRequestMessage(ChatMessage msg, VendorGoogleChatRequest? request)
         {
-            if (msg is { Role: ChatMessageRoles.Assistant, ToolCalls.Count: > 0 })
+            if (msg.Role is ChatMessageRoles.Assistant && HasGoogleToolCombinationParts(msg))
+            {
+                Parts ??= [];
+
+                foreach (ChatMessagePart part in msg.Parts!)
+                {
+                    if (part.NativeObject is VendorGoogleChatRequestMessagePart nativePart)
+                    {
+                        Parts.Add(nativePart);
+                    }
+                    else
+                    {
+                        Parts.Add(new VendorGoogleChatRequestMessagePart(part));
+                    }
+                }
+
+                Role = "model";
+            }
+            else if (msg is { Role: ChatMessageRoles.Assistant, ToolCalls.Count: > 0 })
             {
                 foreach (ToolCall call in msg.ToolCalls)
                 {
                     string? thoughtSignature = call.ThoughtSignature;
 
-                    if (thoughtSignature is null && request?.Model is not null && ChatModelGoogle.Gemini3Models.Contains(request.Model) && (request.VendorExtensions?.Google?.AutoInjectThoughtSignature ?? true))
+                    if (thoughtSignature is null && request?.Model is not null && (ChatModelGoogle.Gemini3Models.Contains(request.Model) || ChatModelGoogle.Gemini35Models.Contains(request.Model)) && (request.VendorExtensions?.Google?.AutoInjectThoughtSignature ?? true))
                     {
                         thoughtSignature = "context_engineering_is_the_way_to_go";
                     }
@@ -861,6 +971,7 @@ internal class VendorGoogleChatRequest
                     {
                         FunctionCall = new VendorGoogleChatRequestMessagePartFunctionCall
                         {
+                            Id = call.Id,
                             Name = call.FunctionCall?.Name ?? call.Id ?? string.Empty,
                             Args = call.FunctionCall?.GetArguments() ?? []
                         },
@@ -960,7 +1071,8 @@ internal class VendorGoogleChatRequest
                 {
                     FunctionResponse = new VendorGoogleChatRequestMessagePartFunctionResponse
                     {
-                        Name = msg.ToolCallId ?? string.Empty,
+                        Id = msg.ToolCallId,
+                        Name = msg.FunctionCall?.Name ?? msg.Name ?? msg.ToolCallId ?? string.Empty,
                         Response = response,
                         Parts = responseParts
                     }
@@ -1002,6 +1114,7 @@ internal class VendorGoogleChatRequest
             StringBuilder sb = new StringBuilder();
             bool roleSolved = false;
             bool contentSolved = false;
+            bool preservePartOrder = Parts?.Any(p => p.ToolCall is not null || p.ToolResponse is not null) == true;
             
             foreach (VendorGoogleChatRequestMessagePart x in Parts ?? [])
             {
@@ -1009,6 +1122,15 @@ internal class VendorGoogleChatRequest
                 {
                     msg.ToolCalls ??= [];
                     msg.ToolCalls.Add(x.ToToolCall());
+
+                    if (preservePartOrder)
+                    {
+                        msg.Parts.Add(new ChatMessagePart(ChatMessageTypes.GoogleVendorPart) { NativeObject = x });
+                    }
+                }
+                else if (x.ToolCall is not null || x.ToolResponse is not null)
+                {
+                    msg.Parts.Add(x.ToMessagePart(sb));
                 }
                 else
                 {
@@ -1228,6 +1350,7 @@ internal class VendorGoogleChatRequest
         /// AUTO - Default model behavior, model decides to predict either a function call or a natural language response.
         /// ANY - Model is constrained to always predicting a function call only. If "allowedFunctionNames" are set, the predicted function call will be limited to any one of "allowedFunctionNames", else the predicted function call will be any one of the provided "functionDeclarations".
         /// NONE - Model will not predict any function call. Model behavior is same as when not passing any function declarations.
+        /// VALIDATED - Like AUTO but validates function calls with constrained decoding. Required when combining built-in and custom tools.
         /// </summary>
         [JsonProperty("mode")]
         public string? Mode { get; set; } = "AUTO";
@@ -1249,6 +1372,13 @@ internal class VendorGoogleChatRequest
         /// </summary>
         [JsonProperty("retrievalConfig")]
         public ChatRequestVendorGoogleMapsRetrievalConfig? RetrievalConfig { get; set; }
+
+        /// <summary>
+        /// When true, server-side tool calls and responses are included in model content for tool context circulation.
+        /// Required for combining built-in tools with custom function calling on Gemini 3 models.
+        /// </summary>
+        [JsonProperty("includeServerSideToolInvocations")]
+        public bool? IncludeServerSideToolInvocations { get; set; }
 
         public static VendorGoogleChatToolConfig Default => new VendorGoogleChatToolConfig
         {
@@ -1279,6 +1409,12 @@ internal class VendorGoogleChatRequest
     
     [JsonProperty("cachedContent")]
     public string? CachedContent { get; set; }
+    
+    /// <summary>
+    /// Optional. Inference tier for cost/latency optimization. Supported values: flex, priority. Defaults to standard when omitted.
+    /// </summary>
+    [JsonProperty("service_tier")]
+    public ChatRequestServiceTiers? ServiceTier { get; set; }
     
     public VendorGoogleChatRequest()
     {
@@ -1467,7 +1603,33 @@ internal class VendorGoogleChatRequest
             int? clamped = request.Model.ClampReasoningTokens(request.ReasoningBudget);
             string? thinkingLevel = null;
 
-            if (ChatModelGoogle.Gemini31Models.Contains(request.Model))
+            if (ChatModelGoogle.Gemini35Models.Contains(request.Model))
+            {
+                // Gemini 3.5 Flash supports: minimal, low, medium, high (default: medium)
+                thinkingLevel = request.ReasoningEffort switch
+                {
+                    ChatReasoningEfforts.Minimal => "minimal",
+                    ChatReasoningEfforts.Low => "low",
+                    ChatReasoningEfforts.Medium => "medium",
+                    ChatReasoningEfforts.High or ChatReasoningEfforts.XHigh => "high",
+                    ChatReasoningEfforts.Default => "medium",
+                    _ => null
+                };
+            }
+            else if (ChatModelGoogle.Gemini31FlashLiteModels.Contains(request.Model))
+            {
+                // Gemini 3.1 Flash-Lite supports: minimal, low, medium, high
+                thinkingLevel = request.ReasoningEffort switch
+                {
+                    ChatReasoningEfforts.Minimal => "minimal",
+                    ChatReasoningEfforts.Low => "low",
+                    ChatReasoningEfforts.Medium => "medium",
+                    ChatReasoningEfforts.High or ChatReasoningEfforts.XHigh => "high",
+                    ChatReasoningEfforts.Default => "minimal",
+                    _ => null
+                };
+            }
+            else if (ChatModelGoogle.Gemini31Models.Contains(request.Model))
             {
                 // Gemini 3.1 Pro supports: low, medium, high (not minimal)
                 thinkingLevel = request.ReasoningEffort switch
@@ -1543,6 +1705,10 @@ internal class VendorGoogleChatRequest
                             ChatImageAspectRatios.Portrait9x16 => "9:16",
                             ChatImageAspectRatios.Landscape16x9 => "16:9",
                             ChatImageAspectRatios.Ultrawide21x9 => "21:9",
+                            ChatImageAspectRatios.Portrait1x4 => "1:4",
+                            ChatImageAspectRatios.Landscape4x1 => "4:1",
+                            ChatImageAspectRatios.Portrait1x8 => "1:8",
+                            ChatImageAspectRatios.Landscape8x1 => "8:1",
                             _ => null
                         };
                     }
@@ -1615,6 +1781,11 @@ internal class VendorGoogleChatRequest
                     GenerationConfig.ResponseSchema = configUpdate.Item3.ResponseSchema;
                 }
             }
+        }
+
+        if (request.ServiceTier is ChatRequestServiceTiers.Flex or ChatRequestServiceTiers.Priority)
+        {
+            ServiceTier = request.ServiceTier;
         }
 
         if (request.VendorExtensions?.Google is not null)
@@ -1706,11 +1877,11 @@ internal class VendorGoogleChatRequest
                             SpeakerVoiceConfigs = request.VendorExtensions.Google.SpeechConfig.MultiSpeaker.Speakers.Select(x => new VendorGoogleChatRequestMultiSpeakerVoiceConfigSpeaker
                             {
                                 Speaker = x.Speaker,
-                                PrebuiltVoiceConfig = x.Voice is null ? null : new VendorGoogleChatRequestPrebuiltVoiceConfigWrapper
+                                VoiceConfig = x.Voice is null ? null : new VendorGoogleChatRequestVoiceConfig
                                 {
-                                    VoiceConfig = new VendorGoogleChatRequestPrebuiltVoiceConfig
+                                    PrebuiltVoiceConfig = new VendorGoogleChatRequestPrebuiltVoiceConfig
                                     {
-                                        VoiceName = x.Voice.VoiceName?.ToString().ToLowerInvariant()   
+                                        VoiceName = x.Voice.VoiceName?.ToString().ToLowerInvariant()
                                     }
                                 }
                             }).ToList()
@@ -1781,6 +1952,72 @@ internal class VendorGoogleChatRequest
         }
 
         request.OverrideUrl($"{baseUrl}/{request.Model?.Name}:{(request.StreamResolved ? "streamGenerateContent" : "generateContent")}");
+    }
+
+    static bool HasGoogleToolCombinationParts(ChatMessage msg) =>
+        msg.Parts?.Any(p => p.Type is ChatMessageTypes.ServerSideToolCall
+            or ChatMessageTypes.ServerSideToolResponse
+            or ChatMessageTypes.GoogleVendorPart) == true;
+
+    static bool HasBuiltInGoogleTools(ChatRequestVendorGoogleExtensions google) =>
+        google.GoogleSearch is not null
+        || google.GoogleSearchRetrieval is not null
+        || google.GoogleMaps is not null
+        || google.UrlContext is not null
+        || google.FileSearch is not null
+        || google.CodeExecution is not null;
+
+    static bool HasCustomFunctionTools(List<VendorGoogleChatTool>? tools) =>
+        tools?.Any(t => t.FunctionDeclarations?.Count > 0) == true;
+
+    static void ApplyCombinedToolConfiguration(VendorGoogleChatRequest vendorRequest, ChatRequest request)
+    {
+        ChatRequestVendorGoogleExtensions? google = request.VendorExtensions?.Google;
+        if (google is null)
+        {
+            return;
+        }
+
+        bool isGemini3Family = request.Model is not null && (
+            ChatModelGoogle.Gemini3Models.Contains(request.Model) ||
+            ChatModelGoogle.Gemini31Models.Contains(request.Model) ||
+            ChatModelGoogle.Gemini35Models.Contains(request.Model));
+
+        bool hasBuiltInTools = HasBuiltInGoogleTools(google);
+        bool hasCustomTools = HasCustomFunctionTools(vendorRequest.Tools);
+        bool? includeServerSide = google.IncludeServerSideToolInvocations;
+
+        if (google.IncludeServerSideToolInvocations == true)
+        {
+            includeServerSide = true;
+        }
+        else if (includeServerSide is not false && hasBuiltInTools && hasCustomTools && isGemini3Family)
+        {
+            includeServerSide = true;
+        }
+
+        if (includeServerSide is not true)
+        {
+            return;
+        }
+
+        vendorRequest.ToolConfig ??= new VendorGoogleChatToolConfig();
+        vendorRequest.ToolConfig.IncludeServerSideToolInvocations = true;
+
+        if (vendorRequest.ToolConfig.FunctionConfig is null && hasCustomTools)
+        {
+            vendorRequest.ToolConfig.FunctionConfig = new VendorGoogleChatToolConfigFunctionConfig
+            {
+                Mode = "VALIDATED"
+            };
+            return;
+        }
+
+        if (vendorRequest.ToolConfig.FunctionConfig?.Mode is "AUTO" or null)
+        {
+            vendorRequest.ToolConfig.FunctionConfig ??= new VendorGoogleChatToolConfigFunctionConfig();
+            vendorRequest.ToolConfig.FunctionConfig.Mode = "VALIDATED";
+        }
     }
 
     static string HarmFilter(GoogleSafetyFilterTypes? val)
