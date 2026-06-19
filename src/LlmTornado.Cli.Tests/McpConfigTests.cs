@@ -42,12 +42,11 @@ public class McpConfigTests
             ],
         };
 
-        string json = JsonSerializer.Serialize(config, new JsonSerializerOptions
-        {
-            WriteIndented = true,
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        });
-        File.WriteAllText(path, json);
+        CliStorage.SaveJson(path, config);
+
+        string json = File.ReadAllText(path);
+        Assert.That(json, Does.Contain("\"mcpServers\""));
+        Assert.That(json, Does.Not.Contain("\"servers\""));
 
         McpConfig? loaded = CliStorage.LoadJson<McpConfig>(path);
         Assert.That(loaded, Is.Not.Null);
@@ -83,6 +82,10 @@ public class McpConfigTests
         };
 
         CliStorage.SaveJson(path, config);
+
+        string json = File.ReadAllText(path);
+        Assert.That(json, Does.Contain("\"mcpServers\""));
+
         McpConfig? loaded = CliStorage.LoadJson<McpConfig>(path);
 
         Assert.That(loaded, Is.Not.Null);
@@ -99,6 +102,49 @@ public class McpConfigTests
         McpConfig config = new();
         Assert.That(config.Servers, Is.Empty);
     }
+
+        [Test]
+        public void McpConfig_Deserialize_LegacyServersArray_Throws()
+        {
+                string json = """
+                        {
+                            "servers": []
+                        }
+                        """;
+
+                JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<McpConfig>(json))!;
+                Assert.That(ex.Message, Does.Contain("mcpServers"));
+        }
+
+        [Test]
+        public void McpConfig_Deserialize_MissingType_InfersTransportType()
+        {
+                string json = """
+                        {
+                            "mcpServers": {
+                                "stdio-server": {
+                                    "command": "npx"
+                                },
+                                "http-server": {
+                                    "url": "https://example.com/mcp"
+                                }
+                            }
+                        }
+                        """;
+
+                McpConfig? config = JsonSerializer.Deserialize<McpConfig>(json);
+
+                Assert.That(config, Is.Not.Null);
+                Assert.That(config!.Servers, Has.Count.EqualTo(2));
+
+                McpServerEntry? stdioServer = config.Servers.Find(s => s.Name == "stdio-server");
+                McpServerEntry? httpServer = config.Servers.Find(s => s.Name == "http-server");
+
+                Assert.That(stdioServer, Is.Not.Null);
+                Assert.That(httpServer, Is.Not.Null);
+                Assert.That(stdioServer!.Type, Is.EqualTo("stdio"));
+                Assert.That(httpServer!.Type, Is.EqualTo("http"));
+        }
 
     #endregion
 
@@ -185,7 +231,7 @@ public class McpConfigTests
     public async Task McpConfigLoader_LoadAsync_EmptyConfig_NoServers()
     {
         string configPath = Path.Combine(_tempDir, "empty-mcp.json");
-        File.WriteAllText(configPath, """{"servers":[]}""");
+        File.WriteAllText(configPath, """{"mcpServers":{}}""");
 
         McpConfigLoader loader = new();
         loader.Configure(new AgentSettings { DisabledMcpServers = [BuiltInMcpServerCatalog.DesktopCommanderServerName] },
@@ -213,6 +259,24 @@ public class McpConfigTests
         await loader.LoadAsync(configPath);
 
         Assert.That(loader.AllTools, Is.Empty);
+        await loader.DisposeAsync();
+    }
+
+    [Test]
+    public async Task McpConfigLoader_LoadAsync_LegacyServersArray_IsRejected()
+    {
+        string configPath = Path.Combine(_tempDir, "legacy-mcp.json");
+        File.WriteAllText(configPath, """{"servers":[{"name":"legacy","command":"npx"}]}""");
+
+        McpConfigLoader loader = new();
+        loader.Configure(new AgentSettings { DisabledMcpServers = [BuiltInMcpServerCatalog.DesktopCommanderServerName] },
+            McpSessionPolicy.FromSettings(new AgentSettings(), _tempDir));
+
+        await loader.LoadAsync(configPath);
+
+        Assert.That(loader.AllTools, Is.Empty);
+        Assert.That(loader.ServerStatuses, Has.Count.EqualTo(1));
+        Assert.That(loader.ServerStatuses[0].Name, Is.EqualTo(BuiltInMcpServerCatalog.DesktopCommanderServerName));
         await loader.DisposeAsync();
     }
 

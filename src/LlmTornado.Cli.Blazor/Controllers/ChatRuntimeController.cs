@@ -67,6 +67,7 @@ public sealed partial class ChatRuntimeController : IChatUiController, ISettings
     private bool _skillsDirExplicit;
     private bool _agentsDirExplicit;
     private bool _mcpPathExplicit;
+    private readonly SemaphoreSlim _reconfigureGate = new(1, 1);
 
     public IChatUi? Ui { get; set; }
 

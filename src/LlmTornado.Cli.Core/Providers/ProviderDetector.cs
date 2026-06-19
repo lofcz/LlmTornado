@@ -102,13 +102,13 @@ public static class ProviderDetector
     /// </summary>
     private static readonly (LLmProviders Provider, Func<ChatModel> Model)[] OptimizerModelPriority =
     [
-        (LLmProviders.Google, () => ChatModel.Google.Gemini.Gemini25Flash),
-        (LLmProviders.OpenAi, () => ChatModel.OpenAi.O4.V4Mini),
-        (LLmProviders.Anthropic, () => ChatModel.Anthropic.Claude4.Sonnet250514),
-        (LLmProviders.Groq, () => ChatModel.Groq.Meta.Llama4Scout),
+        (LLmProviders.Google, () => ChatModel.Google.Gemini.Gemini31FlashLite),
+        (LLmProviders.OpenAi, () => ChatModel.OpenAi.Gpt54.V54Mini),
+        (LLmProviders.Anthropic, () => ChatModel.Anthropic.Claude46.Sonnet),
+        (LLmProviders.Groq, () => ChatModel.Groq.OpenAi.GptOss120B),
         (LLmProviders.DeepSeek, () => ChatModel.DeepSeek.Models.Chat),
-        (LLmProviders.Mistral, () => ChatModel.Mistral.Free.MistralLarge2512),
-        (LLmProviders.XAi, () => ChatModel.XAi.Grok41.V41FastReasoning),
+        (LLmProviders.Mistral, () => ChatModel.Mistral.Free.Ministral14b2512),
+        (LLmProviders.XAi, () => ChatModel.XAi.Grok41.V41FastNonReasoning),
     ];
 
     /// <summary>
@@ -128,15 +128,15 @@ public static class ProviderDetector
 
     private static ChatModel? GetDefaultModel(LLmProviders provider) => provider switch
     {
-        LLmProviders.Anthropic => ChatModel.Anthropic.Claude46.Opus,
-        LLmProviders.OpenAi => ChatModel.OpenAi.Gpt52.V52,
-        LLmProviders.Google => ChatModel.Google.GeminiPreview.Gemini3ProPreview,
-        LLmProviders.XAi => ChatModel.XAi.Grok4.V4,
-        LLmProviders.DeepSeek => ChatModel.DeepSeek.Models.Chat,
-        LLmProviders.Groq => ChatModel.Groq.Meta.Llama4Maverick,
-        LLmProviders.Mistral => ChatModel.Mistral.Premier.MistralMedium2508,
-        LLmProviders.Cohere => ChatModel.Cohere.Command.A0325,
-        LLmProviders.Perplexity => ChatModel.Perplexity.Sonar.Pro,
+        LLmProviders.Anthropic => ChatModel.Anthropic.Claude48.Opus,
+        LLmProviders.OpenAi => ChatModel.OpenAi.Gpt55.V55,
+        LLmProviders.Google => ChatModel.Google.Gemini.GeminiProLatest,
+        LLmProviders.XAi => ChatModel.XAi.Grok41.V41FastReasoning,
+        LLmProviders.DeepSeek => ChatModel.DeepSeek.Models.Reasoner,
+        LLmProviders.Groq => ChatModel.Groq.Meta.Llama3370BVersatile,
+        LLmProviders.Mistral => ChatModel.Mistral.Premier.MistralSaba,
+        LLmProviders.Cohere => ChatModel.Cohere.Aya.Expanse32B,
+        LLmProviders.Perplexity => ChatModel.Perplexity.Sonar.Reasoning,
         _ => null,
     };
 
@@ -145,19 +145,20 @@ public static class ProviderDetector
         LLmProviders.OpenAi =>
         [
             ChatModel.OpenAi.Gpt54.V54,
+            ChatModel.OpenAi.Gpt55.V55,
             ChatModel.OpenAi.Codex.Gpt53Codex,
         ],
         LLmProviders.Anthropic =>
         [
-            ChatModel.Anthropic.Claude46.Opus,
+            ChatModel.Anthropic.Claude48.Opus,
             ChatModel.Anthropic.Claude46.Sonnet,
             ChatModel.Anthropic.Claude45.Haiku251001
         ],
         LLmProviders.Google =>
         [
-            ChatModel.Google.GeminiPreview.Gemini3ProPreview,
-            ChatModel.Google.GeminiPreview.Gemini3FlashPreview,
-            ChatModel.Google.GeminiPreview.Gemini31ProPreview,
+            ChatModel.Google.Gemini.Gemini35Flash,
+            ChatModel.Google.Gemini.Gemini31FlashLite,
+            ChatModel.Google.Gemini.GeminiProLatest,
             ChatModel.Google.Gemini.Gemini25Pro,
             ChatModel.Google.Gemini.Gemini25Flash,
         ],

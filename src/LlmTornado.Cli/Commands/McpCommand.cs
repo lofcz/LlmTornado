@@ -71,22 +71,21 @@ internal sealed class McpCommand : ICliCommand
         {
             try
             {
-                string? dir = Path.GetDirectoryName(configPath);
-                if (dir is not null && !Directory.Exists(dir))
-                    Directory.CreateDirectory(dir);
+                                string? dir = Path.GetDirectoryName(configPath);
+                                if (dir is not null && !Directory.Exists(dir))
+                                        Directory.CreateDirectory(dir);
 
-                string template = """
-                    {
-                      "servers": [
-                        {
-                          "type": "stdio",
-                          "name": "example-server",
-                          "command": "npx",
-                          "args": ["-y", "@example/mcp-server"]
-                        }
-                      ]
-                    }
-                    """;
+                                string template = """
+                                        {
+                                            "mcpServers": {
+                                                "example-server": {
+                                                    "command": "npx",
+                                                    "args": ["-y", "@example/mcp-server"],
+                                                    "env": {}
+                                                }
+                                            }
+                                        }
+                                        """;
                 File.WriteAllText(configPath, template);
                 created = true;
             }

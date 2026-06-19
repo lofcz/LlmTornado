@@ -213,7 +213,7 @@
         LoadServers();
     }
 
-    private RenderFragment RenderEditorFields() => @<>
+    private RenderFragment RenderEditorFields() => @<text>
         <div class="settings-form__field">
             <label>Type</label>
             <select class="settings-form__select" @bind="_editEntry.Type">
@@ -266,9 +266,9 @@
             <label>Allowed Tools (comma-separated, leave empty for all)</label>
             <input type="text" @bind="_allowedToolsText" @bind:event="oninput" placeholder="tool-a, tool-b" />
         </div>
-    </>;
+    </text>;
 
-    private RenderFragment RenderTestResult() => @<>
+    private RenderFragment RenderTestResult() => @<text>
         @if (_testResult is not null)
         {
             <div class="settings-card__test-result @(_testResult.Connected ? "settings-card__test-result--ok" : "settings-card__test-result--fail")">
@@ -282,7 +282,7 @@
                 }
             </div>
         }
-    </>;
+    </text>;
 
     private void LoadServers()
     {

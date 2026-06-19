@@ -42,40 +42,51 @@ public sealed partial class ChatRuntimeController : ISettingsController
 
     private async Task ReconfigureSessionAsync(bool reloadSkills, bool reloadAgents, bool reloadMcp)
     {
-        string cwd = _options.WorkingDirectory ?? Environment.CurrentDirectory;
-        _sessionPolicy = McpSessionPolicy.FromSettings(_settings, cwd);
-
-        if (_skillManager is not null && reloadSkills)
+        await _reconfigureGate.WaitAsync();
+        try
         {
-            _skillManager.LoadSkills(_options.SkillsDirectory!, _options.GlobalSkillsDirectory);
+            string cwd = _options.WorkingDirectory ?? Environment.CurrentDirectory;
+            _sessionPolicy = McpSessionPolicy.FromSettings(_settings, cwd);
+
+            if (_skillManager is not null && reloadSkills)
+            {
+                _skillManager.LoadSkills(_options.SkillsDirectory!, _options.GlobalSkillsDirectory);
+            }
+
+            if (_mcpLoader is not null)
+            {
+                _mcpLoader.Configure(_settings, _sessionPolicy);
+                if (reloadMcp)
+                {
+                    string? resolvedMcpPath = McpConfigLoader.ResolveMcpConfigPath(_options.McpConfigPath);
+                    await _mcpLoader.LoadFromPathAsync(resolvedMcpPath);
+                }
+            }
+
+            if (_agentManager is not null && reloadAgents)
+            {
+                string builtInDir = Path.Combine(AppContext.BaseDirectory, "Agents", "built-in");
+                string? globalDir = _options.GlobalAgentsDirectory
+                    ?? AgentDefinitionLoader.ResolveGlobalAgentsDirectory();
+                _agentManager.LoadAll(builtInDir, globalDir, _options.AgentsDirectory!, cwd);
+
+                List<ChatUiAgent> uiAgents = _agentManager.GetAllPersonas()
+                    .Where(a => a.IsPersona)
+                    .Select(MapAgent)
+                    .ToList();
+                Ui?.SetAgents(uiAgents);
+                Ui?.SetSelectedAgent(_agentManager.ActivePersonaName);
+            }
+
+            if (_agentBuilder is not null)
+            {
+                _agentBuilder.WorkingDirectory = cwd;
+                _runtime = _agentBuilder.Build(HandleRuntimeEvent);
+            }
         }
-
-        if (_mcpLoader is not null)
+        finally
         {
-            _mcpLoader.Configure(_settings, _sessionPolicy);
-            if (reloadMcp)
-                await _mcpLoader.LoadFromPathAsync(_options.McpConfigPath);
-        }
-
-        if (_agentManager is not null && reloadAgents)
-        {
-            string builtInDir = Path.Combine(AppContext.BaseDirectory, "Agents", "built-in");
-            string? globalDir = _options.GlobalAgentsDirectory
-                ?? AgentDefinitionLoader.ResolveGlobalAgentsDirectory();
-            _agentManager.LoadAll(builtInDir, globalDir, _options.AgentsDirectory!, cwd);
-
-            List<ChatUiAgent> uiAgents = _agentManager.GetAllPersonas()
-                .Where(a => a.IsPersona)
-                .Select(MapAgent)
-                .ToList();
-            Ui?.SetAgents(uiAgents);
-            Ui?.SetSelectedAgent(_agentManager.ActivePersonaName);
-        }
-
-        if (_agentBuilder is not null)
-        {
-            _agentBuilder.WorkingDirectory = cwd;
-            _runtime = _agentBuilder.Build(HandleRuntimeEvent);
+            _reconfigureGate.Release();
         }
     }
 

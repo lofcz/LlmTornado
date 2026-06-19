@@ -40,44 +40,36 @@ internal static string? ResolveMcpConfigPath(CliSettings settings)
 
 ## Config File Format — `mcp.json`
 
-Uses the same schema as `AcpMcpServerConfig` from the existing codebase, wrapped in a `servers` array:
+Uses an MCP-style `mcpServers` object keyed by server name:
 
 ```json
 {
-    "servers": [
-        {
-            "type": "stdio",
-            "name": "filesystem",
+    "mcpServers": {
+        "filesystem": {
             "command": "npx",
             "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"],
             "env": {
                 "NODE_ENV": "production"
             }
         },
-        {
-            "type": "stdio",
-            "name": "playwright",
+        "playwright": {
             "command": "npx",
             "args": ["@playwright/mcp@latest"]
         },
-        {
-            "type": "http",
-            "name": "github",
+        "github": {
             "url": "https://api.githubcopilot.com/mcp",
             "headers": {
                 "Authorization": "Bearer ghp_xxxxxxxxxxxxx"
             }
         },
-        {
-            "type": "stdio",
-            "name": "custom-tools",
+        "custom-tools": {
             "command": "python",
             "args": ["my_tools_server.py"],
             "env": {
                 "API_KEY": "${CUSTOM_API_KEY}"
             }
         }
-    ]
+    }
 }
 ```
 
@@ -92,7 +84,7 @@ using System.Text.Json.Serialization;
 
 internal sealed class McpConfig
 {
-    [JsonPropertyName("servers")]
+    [JsonPropertyName("mcpServers")]
     public List<McpServerEntry> Servers { get; set; } = [];
 }
 
@@ -103,12 +95,6 @@ internal sealed class McpServerEntry
     /// </summary>
     [JsonPropertyName("type")]
     public string Type { get; set; } = "stdio";
-
-    /// <summary>
-    /// Unique server label (used for tool namespacing and display).
-    /// </summary>
-    [JsonPropertyName("name")]
-    public string Name { get; set; } = string.Empty;
 
     /// <summary>
     /// For stdio: the command to run (e.g., "npx", "python", "docker").
