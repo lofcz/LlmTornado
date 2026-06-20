@@ -15,9 +15,6 @@
     <Project Path="LlmTornado.A2A.AgentServer/LlmTornado.A2A.AgentServer.csproj" />
     <Project Path="LlmTornado.A2A/LlmTornado.A2A.csproj" />
   </Folder>
-  <Folder Name="/ACP/">
-    <Project Path="LlmTornado.Acp/LlmTornado.Acp.csproj" />
-  </Folder>
   <Folder Name="/MCP/">
     <Project Path="LlmTornado.Mcp.Sample.Server/LlmTornado.Mcp.Sample.Server.csproj" />
     <Project Path="LlmTornado.Mcp.Sample/LlmTornado.Mcp.Sample.csproj" />
@@ -44,8 +41,6 @@
   <Project Path="LlmTornado.Acp.Server/LlmTornado.Acp.Server.csproj" />
   <Project Path="LlmTornado.Cli/LlmTornado.Cli.csproj" />
   <Project Path="LlmTornado.Cli.Core/LlmTornado.Cli.Core.csproj" />
-  <Project Path="LlmTornado.Cli.Blazor/LlmTornado.Cli.Blazor.csproj" />
-  <Project Path="LlmTornado.Cli.Blazor.Demo/LlmTornado.Cli.Blazor.Demo.csproj" />
   <Project Path="LlmTornado.Cli.Tests/LlmTornado.Cli.Tests.csproj" />
   <Project Path="LlmTornado.Contrib/LlmTornado.Contrib.csproj" />
   <Project Path="LlmTornado.Demo/LlmTornado.Demo.csproj" />

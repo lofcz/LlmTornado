@@ -34,7 +34,6 @@
       <ProjectReference Include="..\LlmTornado.VectorDatabases.Faiss\LlmTornado.VectorDatabases.Faiss.csproj" />
       <ProjectReference Include="..\LlmTornado.VectorDatabases.Qdrant\LlmTornado.VectorDatabases.Qdrant.csproj" />
       <ProjectReference Include="..\LlmTornado.VectorDatabases\LlmTornado.VectorDatabases.csproj" />
-      <ProjectReference Include="..\LlmTornado.Acp\LlmTornado.Acp.csproj" />
     </ItemGroup>
 
     <ItemGroup>
