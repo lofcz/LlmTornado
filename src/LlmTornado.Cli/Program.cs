@@ -164,10 +164,11 @@ class Program
         CommandDispatcher dispatcher = new();
         dispatcher.Register(new HelpCommand(dispatcher));
         dispatcher.Register(new ModelCommand(providerResult, _agentBuilder, runtimeEventHandler));
-        dispatcher.Register(new SkillCommand(skillManager, _agentBuilder, runtimeEventHandler));
+        dispatcher.Register(new SkillCommand(
+            skillManager, _agentBuilder, settings, providerResult, toolApproval, runtimeEventHandler));
         dispatcher.Register(new AgentCommand(
             agentManager, skillManager, _agentBuilder,
-            settings, runtimeEventHandler));
+            settings, providerResult, toolApproval, runtimeEventHandler));
         dispatcher.Register(new ConversationCommand(_memoryManager, _conversationStore, _agentBuilder));
         dispatcher.Register(new ToolsCommand(toolApproval, _agentBuilder, settings, providerResult));
         dispatcher.Register(new McpCommand(_mcpLoader, _agentBuilder, settings, runtimeEventHandler));

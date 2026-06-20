@@ -90,6 +90,65 @@ public sealed class SkillManager
     }
 
     /// <summary>
+    /// Create a new skill on disk under <paramref name="rootDirectory"/> (project or global skills dir).
+    /// Does NOT reload the in-memory catalog — the caller is expected to re-run <see cref="LoadSkills(string, string?)"/>.
+    /// Returns the absolute path to the written SKILL.md.
+    /// </summary>
+    public string CreateSkill(string rootDirectory, string name, string description, string instructions,
+        string? license = null, string? compatibility = null, List<string>? allowedTools = null,
+        bool fullSkeleton = true)
+    {
+        return SkillLoader.WriteSkillMd(rootDirectory, name, description, instructions,
+            license, compatibility, allowedTools, fullSkeleton);
+    }
+
+    /// <summary>
+    /// Rewrite an existing skill's SKILL.md in place, preserving its directory/slug and skeleton.
+    /// Returns the SKILL.md path, or null if no skill with the given name is loaded.
+    /// Does NOT reload the in-memory catalog.
+    /// </summary>
+    public string? UpdateSkill(string name, string description, string instructions,
+        string? license = null, string? compatibility = null, List<string>? allowedTools = null)
+    {
+        if (!_skills.TryGetValue(name, out Skill? existing))
+            return null;
+
+        string? root = Directory.GetParent(existing.DirectoryPath)?.FullName;
+        if (root is null)
+            return null;
+
+        return SkillLoader.WriteSkillMd(root, existing.Name, description, instructions,
+            license, compatibility, allowedTools, fullSkeleton: false);
+    }
+
+    /// <summary>
+    /// Delete a skill's directory from disk and drop it from the in-memory catalog.
+    /// Returns false if no skill with the given name is loaded or the directory could not be removed.
+    /// Does NOT rebuild the runtime — the caller is expected to do that.
+    /// </summary>
+    public bool DeleteSkill(string name)
+    {
+        if (!_skills.TryGetValue(name, out Skill? skill))
+            return false;
+
+        try
+        {
+            if (Directory.Exists(skill.DirectoryPath))
+                Directory.Delete(skill.DirectoryPath, recursive: true);
+
+            _skills.Remove(name);
+            if (_settings.DisabledSkills.Remove(name))
+                _persistence.SaveSettings(_settings);
+
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
     /// Build XML context for the system prompt listing available skills (metadata only).
     /// </summary>
     public string BuildSkillsContextXml()

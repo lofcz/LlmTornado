@@ -185,6 +185,19 @@ internal sealed class ToolApprovalManager : IToolApproval, IUserInteractionHandl
 
     private InteractiveQuestionAnswer PromptForQuestion(InteractiveQuestionDefinition question)
     {
+        // On a real terminal, multi-select uses the interactive arrow/space picker.
+        if (ConsoleRenderer.IsInteractiveMultiSelect(question))
+        {
+            ConsoleRenderer.MultiSelectResult result = _renderer.RunMultiSelect(question);
+            return new InteractiveQuestionAnswer
+            {
+                Key = question.Key,
+                Type = question.Type,
+                SelectedValues = result.Values,
+                UsedCustomAnswer = result.UsedCustom,
+            };
+        }
+
         while (true)
         {
             _renderer.WriteQuestionInputHint(question);

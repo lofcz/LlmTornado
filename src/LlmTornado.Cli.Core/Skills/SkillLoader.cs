@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.RegularExpressions;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
@@ -182,6 +183,90 @@ public static partial class SkillLoader
             References = DiscoverReferences(skillDirectory),
             Assets = DiscoverAssets(skillDirectory),
         };
+    }
+
+    /// <summary>
+    /// Convert an arbitrary display name into a valid skill slug per the Agent Skills spec:
+    /// lowercase, alphanumeric + single hyphens, no leading/trailing/consecutive hyphens, max 64 chars.
+    /// Returns an empty string if nothing usable remains.
+    /// </summary>
+    public static string Slugify(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return string.Empty;
+
+        string lowered = name.Trim().ToLowerInvariant();
+        char[] chars = lowered.Select(c => char.IsLetterOrDigit(c) ? c : '-').ToArray();
+        string collapsed = ConsecutiveHyphensRegex().Replace(new string(chars), "-");
+        // ConsecutiveHyphensRegex only matches exactly "--"; collapse any remaining runs as well.
+        while (collapsed.Contains("--"))
+            collapsed = collapsed.Replace("--", "-");
+
+        collapsed = collapsed.Trim('-');
+        if (collapsed.Length > 64)
+            collapsed = collapsed[..64].Trim('-');
+
+        return collapsed;
+    }
+
+    /// <summary>
+    /// Validate a skill name/slug against the Agent Skills spec rules.
+    /// </summary>
+    public static bool IsValidSkillName(string name) =>
+        name.Length is >= 1 and <= 64
+        && ValidSkillNameRegex().IsMatch(name)
+        && !ConsecutiveHyphensRegex().IsMatch(name);
+
+    /// <summary>
+    /// Write a SKILL.md file (and, optionally, the standard skeleton subfolders) for a new or updated skill.
+    /// The skill is created at <c>&lt;rootDirectory&gt;/&lt;slug&gt;/SKILL.md</c> where the slug is derived from
+    /// <paramref name="name"/>. The frontmatter <c>name</c> is set to the slug so it matches the directory name,
+    /// as required by <see cref="ParseSkillMetadata"/>. Returns the absolute path to the written SKILL.md.
+    /// </summary>
+    public static string WriteSkillMd(
+        string rootDirectory,
+        string name,
+        string description,
+        string instructions,
+        string? license = null,
+        string? compatibility = null,
+        List<string>? allowedTools = null,
+        bool fullSkeleton = true)
+    {
+        string slug = Slugify(name);
+        if (!IsValidSkillName(slug))
+            throw new ArgumentException($"'{name}' cannot be converted into a valid skill name.", nameof(name));
+
+        string skillDir = Path.Combine(rootDirectory, slug);
+        Directory.CreateDirectory(skillDir);
+
+        if (fullSkeleton)
+        {
+            Directory.CreateDirectory(Path.Combine(skillDir, "scripts"));
+            Directory.CreateDirectory(Path.Combine(skillDir, "references"));
+            Directory.CreateDirectory(Path.Combine(skillDir, "assets"));
+        }
+
+        StringBuilder sb = new();
+        sb.AppendLine("---");
+        sb.AppendLine($"name: {slug}");
+        sb.AppendLine($"description: \"{description.Replace("\\", "\\\\").Replace("\"", "\\\"")}\"");
+
+        if (!string.IsNullOrWhiteSpace(license))
+            sb.AppendLine($"license: {license}");
+        if (!string.IsNullOrWhiteSpace(compatibility))
+            sb.AppendLine($"compatibility: \"{compatibility.Replace("\"", "\\\"")}\"");
+        if (allowedTools is { Count: > 0 })
+            sb.AppendLine($"allowed-tools: {string.Join(' ', allowedTools)}");
+
+        sb.AppendLine("---");
+        sb.AppendLine();
+        sb.AppendLine(instructions.TrimEnd());
+        sb.AppendLine();
+
+        string skillMdPath = Path.Combine(skillDir, "SKILL.md");
+        File.WriteAllText(skillMdPath, sb.ToString());
+        return Path.GetFullPath(skillMdPath);
     }
 
     /// <summary>

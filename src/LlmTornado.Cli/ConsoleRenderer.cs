@@ -126,6 +126,13 @@ internal sealed class ConsoleRenderer
         }
     }
 
+    /// <summary>
+    /// A multi-select question is rendered with the interactive arrow/space picker only on a real
+    /// terminal. When input is redirected (tests, pipes) we fall back to the numbered line-based UI.
+    /// </summary>
+    public static bool IsInteractiveMultiSelect(InteractiveQuestionDefinition question) =>
+        question.Type == InteractiveQuestionInputType.MultiSelect && !Console.IsInputRedirected;
+
     public void WriteQuestionPrompt(InteractiveQuestionDefinition question, int index, int total)
     {
         lock (Lock)
@@ -136,6 +143,10 @@ internal sealed class ConsoleRenderer
 
             if (!string.IsNullOrWhiteSpace(question.Description))
                 Console.WriteLine(question.Description);
+
+            // The interactive picker draws (and owns) its own option list.
+            if (IsInteractiveMultiSelect(question))
+                return;
 
             for (int optionIndex = 0; optionIndex < question.Options.Count; optionIndex++)
             {
@@ -148,6 +159,201 @@ internal sealed class ConsoleRenderer
 
             Console.WriteLine();
         }
+    }
+
+    /// <summary>Result of an interactive multi-select: chosen values and whether any was custom-entered.</summary>
+    public readonly record struct MultiSelectResult(List<string> Values, bool UsedCustom);
+
+    /// <summary>
+    /// Run an interactive multi-select picker: ↑/↓ to move, Space to toggle, Enter to confirm,
+    /// C to add a custom value (when allowed), Esc to skip (when not required).
+    /// Only call on an interactive terminal — see <see cref="IsInteractiveMultiSelect"/>.
+    /// </summary>
+    public MultiSelectResult RunMultiSelect(InteractiveQuestionDefinition question)
+    {
+        List<InteractiveQuestionOption> options = question.Options;
+        bool[] selected = new bool[options.Count];
+        List<string> customs = [];
+        int cursor = 0;
+
+        Console.ForegroundColor = ConsoleColor.DarkGray;
+        Console.WriteLine("  ↑/↓ move · Space toggle · Enter confirm"
+            + (question.AllowCustomAnswer ? " · C custom" : "")
+            + (question.Required ? "" : " · Esc skip"));
+        Console.ResetColor();
+
+        int listTop = Console.CursorTop;
+        int drawn = 0;
+        string? message = null;
+
+        bool? wasVisible = null;
+        try { wasVisible = Console.CursorVisible; Console.CursorVisible = false; } catch { /* not supported */ }
+
+        try
+        {
+            while (true)
+            {
+                drawn = DrawMultiSelect(options, selected, customs, cursor, listTop, drawn, message);
+                message = null;
+
+                ConsoleKeyInfo key = Console.ReadKey(intercept: true);
+                int totalRows = options.Count + customs.Count;
+
+                switch (key.Key)
+                {
+                    case ConsoleKey.UpArrow when totalRows > 0:
+                        cursor = (cursor - 1 + totalRows) % totalRows;
+                        break;
+
+                    case ConsoleKey.DownArrow when totalRows > 0:
+                        cursor = (cursor + 1) % totalRows;
+                        break;
+
+                    case ConsoleKey.Spacebar:
+                        if (cursor < options.Count)
+                        {
+                            selected[cursor] = !selected[cursor];
+                        }
+                        else if (cursor < totalRows)
+                        {
+                            customs.RemoveAt(cursor - options.Count);
+                            if (cursor >= options.Count + customs.Count && cursor > 0)
+                                cursor--;
+                        }
+                        break;
+
+                    case ConsoleKey.C when question.AllowCustomAnswer:
+                        string? custom = PromptCustomInline(listTop, drawn);
+                        if (!string.IsNullOrWhiteSpace(custom))
+                        {
+                            customs.Add(custom.Trim());
+                            cursor = options.Count + customs.Count - 1;
+                        }
+                        drawn = 2; // force the prompt line(s) to be cleared on next draw
+                        break;
+
+                    case ConsoleKey.Enter:
+                        List<string> values =
+                        [
+                            .. options.Where((_, i) => selected[i]).Select(o => o.Value),
+                            .. customs,
+                        ];
+                        if (question.Required && values.Count == 0)
+                        {
+                            message = "Select at least one option.";
+                            break;
+                        }
+                        return new MultiSelectResult(values, customs.Count > 0);
+
+                    case ConsoleKey.Escape when !question.Required:
+                        return new MultiSelectResult([], false);
+                }
+            }
+        }
+        finally
+        {
+            if (wasVisible is not null)
+            {
+                try { Console.CursorVisible = wasVisible.Value; } catch { /* ignore */ }
+            }
+            try { Console.SetCursorPosition(0, listTop + drawn); } catch { /* ignore */ }
+            Console.WriteLine();
+        }
+    }
+
+    private int DrawMultiSelect(
+        List<InteractiveQuestionOption> options, bool[] selected, List<string> customs,
+        int cursor, int listTop, int prevLineCount, string? message)
+    {
+        lock (Lock)
+        {
+            int width = SafeWidth();
+
+            // Clear the region drawn last time so shrinking lists don't leave stragglers.
+            for (int i = 0; i < prevLineCount; i++)
+            {
+                try { Console.SetCursorPosition(0, listTop + i); } catch { /* ignore */ }
+                Console.Write(new string(' ', width));
+            }
+            try { Console.SetCursorPosition(0, listTop); } catch { /* ignore */ }
+
+            int line = 0;
+            if (options.Count + customs.Count == 0)
+            {
+                Console.WriteLine("  (no options — press C to add a custom value)");
+                line++;
+            }
+
+            for (int i = 0; i < options.Count; i++)
+            {
+                DrawRow(i == cursor, selected[i], options[i].Label, options[i].Description, width);
+                line++;
+            }
+            for (int i = 0; i < customs.Count; i++)
+            {
+                DrawRow(options.Count + i == cursor, true, $"{customs[i]}  (custom)", null, width);
+                line++;
+            }
+
+            if (message is not null)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"  {message}");
+                Console.ResetColor();
+                line++;
+            }
+
+            return line;
+        }
+    }
+
+    private static void DrawRow(bool isCursor, bool isSelected, string label, string? description, int width)
+    {
+        if (isCursor)
+            Console.ForegroundColor = ConsoleColor.Cyan;
+
+        string text = $"  {(isCursor ? ">" : " ")} [{(isSelected ? "x" : " ")}] {label}";
+        if (!string.IsNullOrWhiteSpace(description))
+            text += $"  — {description}";
+        if (text.Length > width - 1)
+            text = text[..(width - 2)] + "…";
+
+        Console.WriteLine(text);
+
+        if (isCursor)
+            Console.ResetColor();
+    }
+
+    private string? PromptCustomInline(int listTop, int prevLineCount)
+    {
+        lock (Lock)
+        {
+            int width = SafeWidth();
+            for (int i = 0; i < prevLineCount; i++)
+            {
+                try { Console.SetCursorPosition(0, listTop + i); } catch { /* ignore */ }
+                Console.Write(new string(' ', width));
+            }
+            try { Console.SetCursorPosition(0, listTop); } catch { /* ignore */ }
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.Write("  Custom value: ");
+            Console.ResetColor();
+        }
+
+        bool? wasVisible = null;
+        try { wasVisible = Console.CursorVisible; Console.CursorVisible = true; } catch { /* ignore */ }
+        string? value = Console.ReadLine();
+        if (wasVisible is not null)
+        {
+            try { Console.CursorVisible = wasVisible.Value; } catch { /* ignore */ }
+        }
+        return value;
+    }
+
+    private static int SafeWidth()
+    {
+        try { return Math.Max(20, Console.WindowWidth); }
+        catch { return 80; }
     }
 
     public void WriteQuestionInputHint(InteractiveQuestionDefinition question)
