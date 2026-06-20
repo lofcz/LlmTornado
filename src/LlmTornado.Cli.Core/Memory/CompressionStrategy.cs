@@ -51,6 +51,9 @@ public sealed class CompressionStrategy
 
     public void UpdateContextWindow(int tokens) => _contextWindowTokens = Math.Max(tokens, 4096);
 
+    /// <summary> Effective context window size in tokens (floored at 4096). </summary>
+    public int ContextWindowTokens => _contextWindowTokens;
+
     public CompressionAnalysis Analyze(
         List<ChatMessage> messages,
         MessageMetadataTracker metadata)

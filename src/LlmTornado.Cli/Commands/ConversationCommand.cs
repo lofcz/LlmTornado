@@ -50,7 +50,12 @@ internal sealed class ConversationCommand : ICliCommand
                     ConsoleRenderer.WriteError($"Conversation '{loadId}' not found.");
                     break;
                 }
-                _memoryManager.LoadConversation(messages);
+                // Delegate to the managed config so the id is bound (incremental persistence) and the
+                // loaded history is pushed into the runtime conversation (so the model sees it).
+                if (_builder.ConversationConfig is not null)
+                    _builder.ConversationConfig.LoadConversation(loadId);
+                else
+                    _memoryManager.LoadConversation(loadId);
                 ConsoleRenderer.WriteSuccess($"Loaded conversation: {loadId} ({messages.Count} messages)");
                 break;
 
@@ -77,7 +82,11 @@ internal sealed class ConversationCommand : ICliCommand
                 break;
 
             case "new":
-                _memoryManager.NewConversation();
+                // Delegate to the managed config so the runtime conversation is cleared too.
+                if (_builder.ConversationConfig is not null)
+                    _builder.ConversationConfig.NewConversation();
+                else
+                    _memoryManager.NewConversation();
                 ConsoleRenderer.WriteSuccess("Started new conversation.");
                 break;
 

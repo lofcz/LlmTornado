@@ -54,8 +54,12 @@ public sealed class MessageSummarizer
         // Build summary prompt
         string summaryText = await GenerateSummary(toSummarize, cancellationToken);
 
-        // Create a summary message
-        ChatMessage summaryMessage = new(ChatMessageRoles.System,
+        // Create a summary message.
+        // NOTE: role is User (not System) on purpose — the runner strips System-role history messages
+        // from outbound requests (TornadoRunner.AddMessagesToConversation), so a System summary would
+        // never reach the model and summarized context would be silently lost. The Compressed metadata
+        // mark keeps the compression strategy from re-summarizing it.
+        ChatMessage summaryMessage = new(ChatMessageRoles.User,
             $"[Conversation Summary]\n{summaryText}");
         metadata.MarkCompressed(summaryMessage.Id);
 

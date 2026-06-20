@@ -29,6 +29,7 @@ public sealed class AgentBuilder
     private readonly AgentDefinitionManager _agentManager;
     private readonly AgentSettings _settings;
     private readonly List<Tool>? _additionalTools;
+    private readonly Memory.ConversationMemoryManager? _memoryManager;
 
     private ChatModel _activeModel;
     private TornadoAgent? _agent;
@@ -39,6 +40,13 @@ public sealed class AgentBuilder
     public TornadoAgent Agent => _agent ?? throw new InvalidOperationException("Agent not built");
     public ChatRuntime Runtime => _runtime ?? throw new InvalidOperationException("Runtime not built");
     public ChatModel ActiveModel => _activeModel;
+
+    /// <summary>
+    /// The managed conversation config when a memory manager is in use (CLI). Null otherwise (e.g. Blazor),
+    /// in which case a plain <see cref="SingletonRuntimeConfiguration"/> is used.
+    /// </summary>
+    public Memory.ManagedConversationRuntimeConfiguration? ConversationConfig =>
+        _runtime?.RuntimeConfiguration as Memory.ManagedConversationRuntimeConfiguration;
 
     /// <summary>
     /// Whether the tool optimizer is active (tool count exceeds threshold and optimizer is configured).
@@ -67,7 +75,8 @@ public sealed class AgentBuilder
         AgentDefinitionManager agentManager,
         AgentSettings settings,
         ChatModel? optimizerModel,
-        List<Tool>? additionalTools = null)
+        List<Tool>? additionalTools = null,
+        Memory.ConversationMemoryManager? memoryManager = null)
     {
         _api = api;
         _activeModel = activeModel;
@@ -78,6 +87,7 @@ public sealed class AgentBuilder
         _agentManager = agentManager;
         _settings = settings;
         _additionalTools = additionalTools;
+        _memoryManager = memoryManager;
 
         if (settings.ToolOptimizerEnabled && optimizerModel is not null)
         {
@@ -130,8 +140,12 @@ public sealed class AgentBuilder
                 _toolApproval.PreApproveSkillTools(skill.AllowedTools);
         }
 
-        // Create runtime
-        SingletonRuntimeConfiguration runtimeConfig = new(_agent);
+        // Create runtime. When a memory manager is supplied (CLI), use the managed config so the
+        // conversation lifecycle (sync → compress → budget → persist) is owned in one place; otherwise
+        // fall back to the plain singleton config.
+        SingletonRuntimeConfiguration runtimeConfig = _memoryManager is not null
+            ? new Memory.ManagedConversationRuntimeConfiguration(_agent, _memoryManager)
+            : new SingletonRuntimeConfiguration(_agent);
         runtimeConfig.OnRuntimeEvent = onRuntimeEvent;
         runtimeConfig.OnRuntimeRequestEvent = _toolApproval.HandleToolPermissionRequest;
 

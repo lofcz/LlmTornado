@@ -27,6 +27,11 @@ internal sealed class CliAgentBuilder
     public bool NeedsOptimization => _inner.NeedsOptimization;
     public int TotalToolCount => _inner.TotalToolCount;
 
+    /// <summary>
+    /// The managed conversation config that owns the per-turn sync/compress/persist lifecycle.
+    /// </summary>
+    public ManagedConversationRuntimeConfiguration? ConversationConfig => _inner.ConversationConfig;
+
     public CliAgentBuilder(
         TornadoApi api,
         ChatModel activeModel,
@@ -48,7 +53,9 @@ internal sealed class CliAgentBuilder
             toolApproval,
             agentManager,
             settings,
-            optimizerModel);
+            optimizerModel,
+            additionalTools: null,
+            memoryManager: memoryManager);
     }
 
     public ChatRuntime Build(Func<ChatRuntimeEvents, ValueTask>? onRuntimeEvent = null)

@@ -24,10 +24,13 @@ internal sealed class ExitCommand : ICliCommand
     {
         if (_memoryManager.Messages.Count > 0)
         {
+            // Final flush. Upsert under the active id (the managed config has been persisting each turn)
+            // so we update the existing row rather than creating a duplicate conversation.
             _store.Save(
                 [.. _memoryManager.Messages],
                 _builder.ActiveModel.Name,
-                null);
+                null,
+                existingId: _memoryManager.ConversationId);
             ConsoleRenderer.WriteInfo("Conversation auto-saved.");
         }
         ConsoleRenderer.WriteInfo("Goodbye.");

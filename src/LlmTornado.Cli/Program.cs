@@ -130,6 +130,10 @@ class Program
                 $"Resuming previous conversation ({_memoryManager.Messages.Count} messages).");
         }
 
+        // Surface hard-budget trims so context loss is never silent.
+        _memoryManager.ContextTrimmed += dropped =>
+            ConsoleRenderer.WriteInfo($"[context trimmed: {dropped} message(s) dropped to fit the token budget]");
+
         // ─── Step 8: Build Agent ───
         _agentBuilder = new CliAgentBuilder(
             providerResult.Api,
@@ -230,7 +234,6 @@ class Program
                 }
 
                 ChatMessage userMessage = attachResult.Message;
-                memory.AddMessage(userMessage);
 
                 // Optimize tools for this turn if needed
                 bool optimized = false;
@@ -250,10 +253,11 @@ class Program
 
                 try
                 {
-                    ChatMessage response = await runtime.InvokeAsync(userMessage);
+                    // The managed runtime config records the user message + full response (including tool
+                    // messages) into memory, then runs compression/budget enforcement and persists — all
+                    // inside InvokeAsync, so the next request reflects the compressed canonical set.
+                    await runtime.InvokeAsync(userMessage);
                     ConsoleRenderer.EndStreamingResponse();
-
-                    memory.AddMessage(response);
                 }
                 finally
                 {
@@ -262,8 +266,7 @@ class Program
                         builder.RestoreFullTools();
                 }
 
-                bool summarized = await memory.MaybeSummarize();
-                if (summarized)
+                if (builder.ConversationConfig?.LastTurnCompressed == true)
                     ConsoleRenderer.WriteInfo("[context compressed]");
             }
             catch (OperationCanceledException)

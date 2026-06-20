@@ -24,8 +24,20 @@ public sealed class ConversationMemoryManager
 
     private List<ChatMessage> _messages = [];
 
+    /// <summary>
+    /// Hard ceiling for the request payload as a fraction of the model context window.
+    /// Applied after summarization as a deterministic safety net.
+    /// </summary>
+    private const double HardBudgetFraction = 0.90;
+
     public IReadOnlyList<ChatMessage> Messages => _messages;
     public string? ConversationId => _conversationId;
+
+    /// <summary>
+    /// Raised when the hard budget guard drops messages from the request payload.
+    /// Argument is the number of messages dropped. Surfaced so trimming is never silent.
+    /// </summary>
+    public event Action<int>? ContextTrimmed;
 
     /// <summary>
     /// Legacy constructor — file-based persistence.
@@ -106,47 +118,149 @@ public sealed class ConversationMemoryManager
     }
 
     /// <summary>
-    /// Check if summarization is needed and run it if so.
+    /// Run summarization if the context is over threshold, then enforce a hard token budget.
+    /// Returns true if the message set changed (so the caller can sync the runtime conversation).
     /// </summary>
     public async Task<bool> MaybeSummarize(CancellationToken cancellationToken = default)
     {
+        bool changed = false;
+
         CompressionAnalysis analysis = _compressionStrategy.Analyze(_messages, _metadataTracker);
-
-        if (!analysis.ShouldCompress)
-            return false;
-
-        int messageCountBefore = _messages.Count;
-        _messages = await _summarizer.Summarize(_messages, analysis, _metadataTracker, cancellationToken);
-
-        if (_store is not null && _conversationId is not null)
+        if (analysis.ShouldCompress)
         {
-            // Persist summary to DB
-            string summaryText = _messages
-                .Where(m => m.Role == LlmTornado.Code.ChatMessageRoles.System)
-                .Select(m => m.Content)
-                .LastOrDefault() ?? "";
+            int messageCountBefore = _messages.Count;
+            List<ChatMessage> before = _messages;
+            List<ChatMessage> summarized = await _summarizer.Summarize(_messages, analysis, _metadataTracker, cancellationToken);
 
-            int tokenEstimate = summaryText.Length / 4;
-            long summaryId = _store.SaveSummary(_conversationId, summaryText, messageCountBefore - 1, tokenEstimate);
+            // Summarize returns the SAME list reference when it is a no-op (too few messages to compress);
+            // only treat it as a real change when a new list comes back.
+            bool didSummarize = !ReferenceEquals(summarized, before);
+            _messages = summarized;
+            changed |= didSummarize;
 
-            // Mark old messages as compressed
-            _store.MarkMessagesCompressed(_conversationId, messageCountBefore - 1);
+            if (didSummarize && _store is not null && _conversationId is not null)
+            {
+                // Persist summary bookkeeping to DB. The newest compressed-state message is the summary
+                // just produced (it is a User-role message, so we locate it by metadata state, not role).
+                string summaryText = _messages
+                    .Where(m => _metadataTracker.GetState(m.Id) != MessageCompressionState.Uncompressed)
+                    .Select(m => m.Content)
+                    .LastOrDefault() ?? "";
 
-            // Auto-create snapshot
-            _store.CreateSnapshot(_conversationId, $"auto-summary-{DateTime.UtcNow:yyyyMMdd_HHmmss}");
-
-            // Re-save the compressed message set
-            _store.Save(_messages, null, null, existingId: _conversationId);
-        }
-        else
-        {
-            RebuildPersistence();
+                int tokenEstimate = summaryText.Length / 4;
+                _store.SaveSummary(_conversationId, summaryText, messageCountBefore - 1, tokenEstimate);
+                _store.MarkMessagesCompressed(_conversationId, messageCountBefore - 1);
+                _store.CreateSnapshot(_conversationId, $"auto-summary-{DateTime.UtcNow:yyyyMMdd_HHmmss}");
+            }
         }
 
-        return true;
+        // Hard budget guard — deterministic safety net, runs regardless of ShouldCompress.
+        if (EnforceHardBudget())
+            changed = true;
+
+        if (changed)
+            PersistFull();
+
+        return changed;
     }
 
     public List<ChatMessage> GetMessagesForAgent() => [.. _messages];
+
+    /// <summary>
+    /// Replace the tracked message set with the authoritative runtime conversation (which includes
+    /// tool-call/tool-result messages), then persist it. This is the single sync point that keeps
+    /// memory and the runtime conversation from diverging.
+    /// </summary>
+    public void SyncFrom(IReadOnlyList<ChatMessage> fullMessages)
+    {
+        _messages = [.. fullMessages];
+
+        // Track NEW messages only (TryAdd) — do NOT clear, so summaries keep their Compressed mark
+        // across turns and the compression strategy does not re-summarize them.
+        foreach (ChatMessage msg in _messages)
+            _metadataTracker.Track(msg);
+
+        PersistFull();
+    }
+
+    /// <summary>
+    /// Ensure there is an active conversation id so per-turn persistence is live from the first turn.
+    /// No-op if an id is already bound (e.g. after a rebuild or load).
+    /// </summary>
+    public void EnsureActiveConversation()
+    {
+        if (_store is null || _conversationId is not null)
+            return;
+
+        _conversationId = $"{DateTime.Now:yyyyMMdd_HHmmss}";
+        _store.EnsureConversation(_conversationId);
+    }
+
+    /// <summary>
+    /// Persist the full current message set under the active conversation id (upsert), or to the
+    /// legacy file path when no store/id is configured.
+    /// </summary>
+    private void PersistFull()
+    {
+        if (_store is not null && _conversationId is not null)
+            _store.Save(_messages, null, null, existingId: _conversationId);
+        else if (_conversationPath is not null)
+            RebuildPersistence();
+    }
+
+    /// <summary>
+    /// Deterministic last-resort trim so the request payload never exceeds the model budget. Fires only
+    /// when even the post-summarization set is over the hard ceiling. Keep priority: the most recent
+    /// message (current turn) is always kept; then summaries (which encode dropped context); then the
+    /// remaining messages newest-first. Anything that does not fit is dropped, preserving original order.
+    /// </summary>
+    private bool EnforceHardBudget()
+    {
+        if (_messages.Count == 0)
+            return false;
+
+        int budget = Math.Max(2048, (int)(_compressionStrategy.ContextWindowTokens * HardBudgetFraction));
+
+        int total = _messages.Sum(CompressionStrategy.EstimateTokens);
+        if (total <= budget)
+            return false;
+
+        HashSet<Guid> keepIds = [];
+        int used = 0;
+
+        void TryKeep(ChatMessage m)
+        {
+            if (keepIds.Contains(m.Id))
+                return;
+            if (keepIds.Count > 0 && used + CompressionStrategy.EstimateTokens(m) > budget)
+                return;
+            keepIds.Add(m.Id);
+            used += CompressionStrategy.EstimateTokens(m);
+        }
+
+        bool IsCompressed(ChatMessage m) =>
+            _metadataTracker.GetState(m.Id) != MessageCompressionState.Uncompressed;
+
+        // 1. Always keep the most recent message (the current user turn).
+        TryKeep(_messages[^1]);
+
+        // 2. Keep summaries newest-first (they encode already-dropped context).
+        for (int i = _messages.Count - 1; i >= 0; i--)
+            if (IsCompressed(_messages[i]))
+                TryKeep(_messages[i]);
+
+        // 3. Fill remaining budget with the rest, newest-first.
+        for (int i = _messages.Count - 1; i >= 0; i--)
+            TryKeep(_messages[i]);
+
+        int droppedCount = _messages.Count - keepIds.Count;
+        if (droppedCount <= 0)
+            return false;
+
+        _messages = _messages.Where(m => keepIds.Contains(m.Id)).ToList();
+        ContextTrimmed?.Invoke(droppedCount);
+        return true;
+    }
 
     public void NewConversation(string? newConversationId = null)
     {

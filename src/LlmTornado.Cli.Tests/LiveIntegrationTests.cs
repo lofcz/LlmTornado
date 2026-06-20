@@ -298,9 +298,14 @@ public class LiveIntegrationTests
 
         // Should have fewer messages after summarization
         Assert.That(result.Count, Is.LessThan(messages.Count));
-        // Should contain a summary system message
-        Assert.That(result.Any(m => m.Role == ChatMessageRoles.System && m.Content?.Contains("Summary") == true),
-            Is.True, "Should contain a summary message");
+        // Should contain a summary message. NOTE: the summary is a User-role message (not System):
+        // the runner strips System-role history messages from outbound requests, so a System summary
+        // would never reach the model. It is tracked as compressed via metadata instead.
+        ChatMessage? summary = result.FirstOrDefault(m => m.Content?.Contains("Summary") == true);
+        Assert.That(summary, Is.Not.Null, "Should contain a summary message");
+        Assert.That(summary!.Role, Is.EqualTo(ChatMessageRoles.User), "Summary must be a non-System message to survive request assembly");
+        Assert.That(tracker.GetState(summary.Id), Is.Not.EqualTo(MessageCompressionState.Uncompressed),
+            "Summary should be marked compressed so it is not re-summarized");
     }
 
     #endregion

@@ -46,7 +46,7 @@ public class SingletonRuntimeConfiguration : IRuntimeConfiguration
         OnRuntimeEvent?.Invoke(new ChatRuntimeCancelledEvent(Runtime.Id));
     }
 
-    public async ValueTask<ChatMessage> AddToChatAsync(ChatMessage message, CancellationToken cancellationToken = default)
+    public virtual async ValueTask<ChatMessage> AddToChatAsync(ChatMessage message, CancellationToken cancellationToken = default)
     {
         OnRuntimeEvent?.Invoke(new ChatRuntimeStartedEvent(Runtime.Id));
 
