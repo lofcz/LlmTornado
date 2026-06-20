@@ -64,6 +64,8 @@ class Program
                 "  COHERE_API_KEY, MISTRAL_API_KEY, DEEPSEEK_API_KEY, XAI_API_KEY,");
             ConsoleRenderer.WriteError(
                 "  PERPLEXITY_API_KEY, OPENROUTER_API_KEY, DEEPINFRA_API_KEY, VOYAGE_API_KEY");
+            ConsoleRenderer.WriteError(
+                "  ...or run a local Ollama server (set OLLAMA_HOST, default http://localhost:11434).");
             return 1;
         }
 

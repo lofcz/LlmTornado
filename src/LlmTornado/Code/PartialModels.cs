@@ -2046,6 +2046,12 @@ public class ProviderAuthentication
     public string? Organization { get; set; }
 
     /// <summary>
+    /// Base URL for self-hosted / custom providers (e.g. Ollama "http://localhost:11434").
+    /// Only used by <see cref="LLmProviders.Custom"/>.
+    /// </summary>
+    public string? BaseUrl { get; set; }
+
+    /// <summary>
     /// Crates a new authentication.
     /// </summary>
     public ProviderAuthentication(LLmProviders provider, string apiKey, string? organization = null)

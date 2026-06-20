@@ -1,3 +1,4 @@
+using System.Text.Json;
 using LlmTornado.Chat.Models;
 using LlmTornado.Code;
 
@@ -38,9 +39,15 @@ public static class ProviderDetector
         LLmProviders.Mistral,
     ];
 
+    /// <summary>
+    /// Default Ollama endpoint when <c>OLLAMA_HOST</c> is not set.
+    /// </summary>
+    private const string DefaultOllamaHost = "http://localhost:11434";
+
     public static ProviderDetectionResult? Detect()
     {
         List<DetectedProvider> detected = [];
+        string? ollamaHost = null;
 
         foreach ((string envVar, LLmProviders provider) in ProviderEnvVars)
         {
@@ -65,11 +72,29 @@ public static class ProviderDetector
             });
         }
 
+        // Local (self-hosted) Ollama, via LLmProviders.Custom. Models are user-installed, so
+        // discover them from the running server rather than a hardcoded list.
+        string host = NormalizeHost(Environment.GetEnvironmentVariable("OLLAMA_HOST") ?? DefaultOllamaHost);
+        List<ChatModel> ollamaModels = GetOllamaModels(host);
+        if (ollamaModels.Count > 0)
+        {
+            ollamaHost = host;
+            detected.Add(new DetectedProvider
+            {
+                Provider = LLmProviders.Custom,
+                ApiKey = string.Empty,
+                Models = ollamaModels,
+                DefaultModel = ollamaModels[0],
+            });
+        }
+
         if (detected.Count == 0)
             return null;
 
         List<ProviderAuthentication> providerAuths = detected
-            .Select(p => new ProviderAuthentication(p.Provider, p.ApiKey))
+            .Select(p => p.Provider == LLmProviders.Custom
+                ? new ProviderAuthentication(p.Provider, p.ApiKey) { BaseUrl = ollamaHost }
+                : new ProviderAuthentication(p.Provider, p.ApiKey))
             .ToList();
 
         TornadoApi api = new(providerAuths);
@@ -199,4 +224,99 @@ public static class ProviderDetector
         ],
         _ => [],
     };
+
+    /// <summary>
+    /// Normalizes an <c>OLLAMA_HOST</c> value into a connectable client base URL: supplies a
+    /// scheme and the default port when missing, and rewrites bind-all addresses (0.0.0.0, ::)
+    /// to loopback — those are valid for the server to listen on but cannot be connected to.
+    /// </summary>
+    private static string NormalizeHost(string host)
+    {
+        host = host.Trim();
+        if (host.Length == 0)
+            return DefaultOllamaHost;
+
+        string scheme = "http";
+        if (host.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            scheme = "https";
+            host = host["https://".Length..];
+        }
+        else if (host.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
+        {
+            host = host["http://".Length..];
+        }
+
+        host = host.TrimEnd('/');
+
+        // IPv6 literal in bracket form — assume the user gave a complete authority.
+        if (host.Contains(']'))
+            return $"{scheme}://{host}";
+
+        string hostPart = host;
+        string? portPart = null;
+        int colon = host.LastIndexOf(':');
+        if (colon > -1)
+        {
+            hostPart = host[..colon];
+            portPart = host[(colon + 1)..];
+        }
+
+        if (hostPart is "0.0.0.0" or "::" or "")
+            hostPart = "127.0.0.1";
+
+        if (string.IsNullOrEmpty(portPart))
+            portPart = "11434";
+
+        return $"{scheme}://{hostPart}:{portPart}";
+    }
+
+    /// <summary>
+    /// Discovers installed Ollama models by probing the native <c>/api/tags</c> endpoint.
+    /// Falls back to the <c>OLLAMA_MODELS</c> / <c>OLLAMA_MODEL</c> environment variables when the
+    /// server is unreachable, so an absent local server simply yields no Ollama provider.
+    /// </summary>
+    private static List<ChatModel> GetOllamaModels(string host)
+    {
+        List<ChatModel> models = [];
+
+        try
+        {
+            using HttpClient client = new() { Timeout = TimeSpan.FromSeconds(2) };
+            string json = client.GetStringAsync($"{host}/api/tags").GetAwaiter().GetResult();
+
+            using JsonDocument doc = JsonDocument.Parse(json);
+            if (doc.RootElement.TryGetProperty("models", out JsonElement modelsElement) &&
+                modelsElement.ValueKind == JsonValueKind.Array)
+            {
+                foreach (JsonElement model in modelsElement.EnumerateArray())
+                {
+                    if (model.TryGetProperty("name", out JsonElement nameElement) &&
+                        nameElement.GetString() is { Length: > 0 } name)
+                    {
+                        models.Add(new ChatModel(name, LLmProviders.Custom));
+                    }
+                }
+            }
+        }
+        catch
+        {
+            // Server down / unreachable - fall through to env-var fallback.
+        }
+
+        if (models.Count > 0)
+            return models;
+
+        string? envModels = Environment.GetEnvironmentVariable("OLLAMA_MODELS")
+                            ?? Environment.GetEnvironmentVariable("OLLAMA_MODEL");
+        if (!string.IsNullOrWhiteSpace(envModels))
+        {
+            foreach (string name in envModels.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                models.Add(new ChatModel(name, LLmProviders.Custom));
+            }
+        }
+
+        return models;
+    }
 }

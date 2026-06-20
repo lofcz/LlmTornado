@@ -718,6 +718,10 @@ public class ChatRequest : IModelRequest, ISerializableRequest, IHeaderProvider
 				x.PresencePenalty = null;
 				return PreparePayload(x, x, y, z, GetSerializer(EndpointBase.NullSettings, a));
 			}
+		},
+		{
+			// Self-hosted / OpenAI-compatible endpoints (Ollama, vLLM, KoboldCpp, ...).
+			LLmProviders.Custom, (x, y, z, a) => PreparePayload(x, x, y, z, GetSerializer(EndpointBase.NullSettings, a))
 		}
 	};
 
