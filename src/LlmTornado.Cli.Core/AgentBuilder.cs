@@ -60,6 +60,13 @@ public sealed class AgentBuilder
     public int TotalToolCount => _fullToolList?.Count ?? 0;
 
     /// <summary>
+    /// The full set of tools registered on the agent, before any per-turn optimization.
+    /// Use this (rather than <see cref="Agent"/>.ToolList) to enumerate every available tool,
+    /// since the agent's live list may hold an optimized subset during a turn.
+    /// </summary>
+    public IReadOnlyList<Tool> FullToolList => _fullToolList ?? [];
+
+    /// <summary>
     /// Optional override for the current working directory in the system prompt.
     /// If null, uses Environment.CurrentDirectory.
     /// </summary>

@@ -9,7 +9,7 @@ internal sealed class McpCommand : ICliCommand
 {
     public string Name => "mcp";
     public string Description => "View, reload, and edit MCP server configuration";
-    public string Usage => "/mcp [status | reload | edit]";
+    public string Usage => "/mcp [list | reload | edit]";
 
     private readonly McpConfigLoader _mcpLoader;
     private readonly CliAgentBuilder _builder;
@@ -26,7 +26,10 @@ internal sealed class McpCommand : ICliCommand
 
     public async Task<bool> ExecuteAsync(string[] args)
     {
-        if (args.Length == 0 || args[0].Equals("status", StringComparison.OrdinalIgnoreCase))
+        // "list" is the canonical subcommand; "status" is kept as an alias for backward compatibility.
+        if (args.Length == 0
+            || args[0].Equals("list", StringComparison.OrdinalIgnoreCase)
+            || args[0].Equals("status", StringComparison.OrdinalIgnoreCase))
         {
             if (_mcpLoader.ServerStatuses.Count == 0)
             {
@@ -36,9 +39,15 @@ internal sealed class McpCommand : ICliCommand
             foreach (McpServerStatus status in _mcpLoader.ServerStatuses)
             {
                 if (status.Connected)
+                {
                     ConsoleRenderer.WriteInfo($"  ✓ {status.Name} ({status.Type}) — {status.ToolCount} tools");
+                    foreach (string toolName in status.ToolNames)
+                        ConsoleRenderer.WriteInfo($"      - {toolName}");
+                }
                 else
+                {
                     ConsoleRenderer.WriteError($"  ✗ {status.Name} ({status.Type}) — {status.Error}");
+                }
             }
             return true;
         }

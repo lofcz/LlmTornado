@@ -28,6 +28,11 @@ internal sealed class CliAgentBuilder
     public int TotalToolCount => _inner.TotalToolCount;
 
     /// <summary>
+    /// The full set of registered tools, before any per-turn optimization.
+    /// </summary>
+    public IReadOnlyList<Common.Tool> FullToolList => _inner.FullToolList;
+
+    /// <summary>
     /// The managed conversation config that owns the per-turn sync/compress/persist lifecycle.
     /// </summary>
     public ManagedConversationRuntimeConfiguration? ConversationConfig => _inner.ConversationConfig;

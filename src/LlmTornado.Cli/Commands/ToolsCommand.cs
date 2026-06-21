@@ -7,7 +7,7 @@ internal sealed class ToolsCommand : ICliCommand
 {
     public string Name => "tools";
     public string Description => "View tool approvals, reset permissions, and manage tool optimization";
-    public string Usage => "/tools [list | reset [tool-name] | optimize [on|off|threshold <n>|status]]";
+    public string Usage => "/tools [list | approvals | reset [tool-name] | optimize [on|off|threshold <n>|status]]";
 
     private readonly ToolApprovalManager _toolApproval;
     private readonly CliAgentBuilder _builder;
@@ -42,28 +42,18 @@ internal sealed class ToolsCommand : ICliCommand
             else
                 ConsoleRenderer.WriteInfo($"  Tool optimizer: not needed (tools within limit of {_settings.MaxTools})");
 
+            ConsoleRenderer.WriteInfo("Run /tools list to see every tool, or /tools approvals for recorded decisions.");
             return Task.FromResult(true);
         }
 
         switch (args[0].ToLowerInvariant())
         {
             case "list":
-                Dictionary<string, ToolApprovalState> approvals = _toolApproval.GetAllApprovals();
-                if (approvals.Count == 0)
-                {
-                    ConsoleRenderer.WriteInfo("No tool approval decisions recorded yet.");
-                    break;
-                }
-                foreach ((string tool, ToolApprovalState state) in approvals.OrderBy(x => x.Key))
-                {
-                    string stateStr = state switch
-                    {
-                        ToolApprovalState.AlwaysAllow => "✓ always allow",
-                        ToolApprovalState.AlwaysDeny => "✗ always deny",
-                        _ => "? unknown",
-                    };
-                    ConsoleRenderer.WriteInfo($"  {tool,-40} {stateStr}");
-                }
+                ListAllTools();
+                break;
+
+            case "approvals":
+                ListApprovals();
                 break;
 
             case "reset" when args.Length >= 2:
@@ -89,6 +79,55 @@ internal sealed class ToolsCommand : ICliCommand
 
         return Task.FromResult(true);
     }
+
+    /// <summary>List every registered tool (the full set, before optimization) with its approval state.</summary>
+    private void ListAllTools()
+    {
+        IReadOnlyList<Common.Tool> tools = _builder.FullToolList;
+        if (tools.Count == 0)
+        {
+            ConsoleRenderer.WriteInfo("No tools registered.");
+            return;
+        }
+
+        Dictionary<string, ToolApprovalState> approvals = _toolApproval.GetAllApprovals();
+
+        List<string> names = tools
+            .Select(t => t.ResolvedName)
+            .Where(n => !string.IsNullOrEmpty(n))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        ConsoleRenderer.WriteInfo($"{names.Count} tools available:");
+        foreach (string name in names)
+        {
+            string stateStr = approvals.TryGetValue(name, out ToolApprovalState state)
+                ? FormatState(state)
+                : "· ask each time";
+            ConsoleRenderer.WriteInfo($"  {name,-44} {stateStr}");
+        }
+    }
+
+    /// <summary>List only the tools that have a recorded approval decision.</summary>
+    private void ListApprovals()
+    {
+        Dictionary<string, ToolApprovalState> approvals = _toolApproval.GetAllApprovals();
+        if (approvals.Count == 0)
+        {
+            ConsoleRenderer.WriteInfo("No tool approval decisions recorded yet.");
+            return;
+        }
+        foreach ((string tool, ToolApprovalState state) in approvals.OrderBy(x => x.Key, StringComparer.OrdinalIgnoreCase))
+            ConsoleRenderer.WriteInfo($"  {tool,-44} {FormatState(state)}");
+    }
+
+    private static string FormatState(ToolApprovalState state) => state switch
+    {
+        ToolApprovalState.AlwaysAllow => "✓ always allow",
+        ToolApprovalState.AlwaysDeny => "✗ always deny",
+        _ => "· ask each time",
+    };
 
     private void HandleOptimizeSubcommand(string[] args)
     {

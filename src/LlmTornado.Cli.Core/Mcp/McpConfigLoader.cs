@@ -289,7 +289,13 @@ public sealed partial class McpConfigLoader : IAsyncDisposable
                 }
             }
 
-            _serverStatuses.Add(BuildStatus(entry, source, connected: true, toolCount: filteredTools.Count, enabled: true));
+            List<string> toolNames = filteredTools
+                .Select(t => t.ResolvedName)
+                .Where(n => !string.IsNullOrEmpty(n))
+                .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            _serverStatuses.Add(BuildStatus(entry, source, connected: true, toolCount: filteredTools.Count, enabled: true, toolNames: toolNames));
 
             log?.Invoke($"  ✓ {entry.Name} ({entry.Type}, {source}) — {filteredTools.Count} tools");
         }
@@ -318,7 +324,7 @@ public sealed partial class McpConfigLoader : IAsyncDisposable
         };
     }
 
-    private McpServerStatus BuildStatus(McpServerEntry entry, McpServerSource source, bool connected, int toolCount, bool enabled, string? error = null)
+    private McpServerStatus BuildStatus(McpServerEntry entry, McpServerSource source, bool connected, int toolCount, bool enabled, string? error = null, IReadOnlyList<string>? toolNames = null)
     {
         BuiltInMcpServerDefinition? builtIn = source == McpServerSource.BuiltIn
             ? BuiltInMcpServerCatalog.GetDefinition(entry.Name, _sessionPolicy?.WorkingDirectory)
@@ -334,6 +340,7 @@ public sealed partial class McpConfigLoader : IAsyncDisposable
             Enabled = enabled,
             Error = error,
             Source = source,
+            ToolNames = toolNames ?? [],
         };
     }
 

@@ -4,6 +4,7 @@ using LlmTornado.Chat;
 using LlmTornado.Cli.Core;
 using LlmTornado.Cli.Core.Agents;
 using LlmTornado.Cli.Core.Input;
+using LlmTornado.Cli.Input;
 using LlmTornado.Cli.Core.Mcp;
 using LlmTornado.Cli.Core.Providers;
 using LlmTornado.Cli.Core.Skills;
@@ -193,11 +194,17 @@ class Program
         CliAgentBuilder builder,
         Func<ChatRuntimeEvents, ValueTask> runtimeEventHandler)
     {
+        // Live autocomplete: /commands from the dispatcher, @documents scanned from the
+        // (dynamically read) working directory so /cd is reflected automatically.
+        FileSuggestionProvider fileProvider = new();
+        LineEditor editor = new(
+            dispatcher.Commands,
+            partial => fileProvider.Suggest(
+                builder.WorkingDirectory ?? Directory.GetCurrentDirectory(), partial));
+
         while (true)
         {
-            ConsoleRenderer.WritePrompt(builder.ActiveModel.Name);
-
-            string? input = Console.ReadLine();
+            string? input = editor.ReadLine(builder.ActiveModel.Name);
             if (input is null) // EOF
                 break;
 

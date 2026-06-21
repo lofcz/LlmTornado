@@ -89,6 +89,11 @@ public sealed class McpServerStatus
     public string? Error { get; init; }
 
     /// <summary>
+    /// Names of the tools exposed by this server (empty when not connected or unavailable).
+    /// </summary>
+    public IReadOnlyList<string> ToolNames { get; init; } = [];
+
+    /// <summary>
     /// Whether this server came from the global or local config.
     /// </summary>
     public McpServerSource Source { get; init; }
