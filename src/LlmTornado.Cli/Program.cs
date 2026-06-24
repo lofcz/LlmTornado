@@ -79,6 +79,33 @@ class Program
                 providerResult.ActiveModel = savedModel;
         }
 
+        if (providerResult.ActiveModel.Provider == LLmProviders.Custom)
+        {
+            string ollamaHost = OllamaContextInspector.ResolveHost(Environment.GetEnvironmentVariable("OLLAMA_HOST"));
+            int? runtimeContext = await OllamaContextInspector.TryGetRuntimeContextTokens(providerResult.ActiveModel.Name, ollamaHost);
+            int? modelCardContext = runtimeContext is > 0
+                ? null
+                : await OllamaContextInspector.TryGetModelCardContextTokens(providerResult.ActiveModel.Name, ollamaHost);
+            int? detectedContext = runtimeContext ?? modelCardContext;
+
+            if (detectedContext is > 0)
+            {
+                providerResult.ActiveModel = new Chat.Models.ChatModel(
+                    providerResult.ActiveModel.Name,
+                    providerResult.ActiveModel.Provider,
+                    detectedContext.Value);
+
+                string sourceLabel = runtimeContext is > 0 ? "runtime" : "model metadata";
+                ConsoleRenderer.WriteInfo(
+                    $"Detected Ollama context ({sourceLabel}): {detectedContext:N0} tokens for {providerResult.ActiveModel.Name}");
+            }
+            else
+            {
+                ConsoleRenderer.WriteInfo(
+                    "Could not detect Ollama context size for the active model; using default compression budget.");
+            }
+        }
+
         ConsoleRenderer.WriteProviderSummary(providerResult);
 
         // ─── Step 4: Skills ───
@@ -171,6 +198,7 @@ class Program
             agentManager, skillManager, _agentBuilder,
             settings, providerResult, toolApproval, runtimeEventHandler));
         dispatcher.Register(new ConversationCommand(_memoryManager, _conversationStore, _agentBuilder));
+        dispatcher.Register(new ContextCommand(_memoryManager, _conversationStore, CliStorage.ContextDumpsDirectory));
         dispatcher.Register(new ToolsCommand(toolApproval, _agentBuilder, settings, providerResult));
         dispatcher.Register(new McpCommand(_mcpLoader, _agentBuilder, settings, runtimeEventHandler));
         dispatcher.Register(new CdCommand(_agentBuilder, agentManager, runtimeEventHandler));

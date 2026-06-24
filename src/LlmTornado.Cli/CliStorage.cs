@@ -17,6 +17,7 @@ internal static class CliStorage
     public static readonly string CurrentConversationPath = Path.Combine(ConversationsDirectory, "current.jsonl");
     public static readonly string DatabasePath = Path.Combine(RootDirectory, "conversations.db");
     public static readonly string AttachmentsDirectory = Path.Combine(RootDirectory, "attachments");
+    public static readonly string ContextDumpsDirectory = Path.Combine(RootDirectory, "context-dumps");
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -31,6 +32,7 @@ internal static class CliStorage
     {
         Directory.CreateDirectory(RootDirectory);
         Directory.CreateDirectory(ConversationsDirectory);
+        Directory.CreateDirectory(ContextDumpsDirectory);
     }
 
     /// <summary>
