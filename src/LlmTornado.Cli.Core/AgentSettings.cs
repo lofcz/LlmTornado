@@ -85,4 +85,11 @@ public sealed class AgentSettings
     /// </summary>
     [JsonPropertyName("reasoning_effort")]
     public string? ReasoningEffort { get; set; }
+
+    /// <summary>
+    /// Whether streamed reasoning/thinking tokens should be shown in CLI output.
+    /// Default: true.
+    /// </summary>
+    [JsonPropertyName("show_thinking")]
+    public bool ShowThinking { get; set; } = true;
 }

@@ -37,6 +37,17 @@ public class ConsoleRendererTests
     }
 
     [Test]
+    public void WriteReasoningToken_Text_DoesNotThrow()
+    {
+        Assert.DoesNotThrow(() =>
+        {
+            ConsoleRenderer.WriteReasoningToken("thinking...");
+            ConsoleRenderer.WriteStreamingToken("answer");
+            ConsoleRenderer.EndStreamingResponse();
+        });
+    }
+
+    [Test]
     public void EndStreamingResponse_NoStream_DoesNotThrow()
     {
         // Should be safe to call even when not streaming

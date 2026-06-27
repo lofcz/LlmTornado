@@ -22,6 +22,7 @@ class Program
     private static ConversationMemoryManager? _memoryManager;
     private static SqliteConversationStore? _conversationStore;
     private static CliAgentBuilder? _agentBuilder;
+    private static bool _showThinking = true;
 
     static async Task<int> Main(string[] args)
     {
@@ -50,6 +51,7 @@ class Program
         // ─── Step 2: Settings ───
         AgentSettings settings = CliStorage.LoadJson<AgentSettings>(CliStorage.SettingsPath)
                               ?? new AgentSettings();
+        _showThinking = settings.ShowThinking;
         CliSettingsPersistence persistence = new();
 
         // ─── Step 3: Provider Detection ───
@@ -202,6 +204,7 @@ class Program
         dispatcher.Register(new ToolsCommand(toolApproval, _agentBuilder, settings, providerResult));
         dispatcher.Register(new McpCommand(_mcpLoader, _agentBuilder, settings, runtimeEventHandler));
         dispatcher.Register(new CdCommand(_agentBuilder, agentManager, runtimeEventHandler));
+        dispatcher.Register(new ThinkingCommand(settings, () => _showThinking, value => _showThinking = value));
         dispatcher.Register(new ClearCommand());
         dispatcher.Register(new ExitCommand(_memoryManager, _conversationStore, _agentBuilder));
 
@@ -337,6 +340,10 @@ class Program
                 if (streamEvt.ModelStreamingEvent is ModelStreamingOutputTextDeltaEvent delta)
                 {
                     ConsoleRenderer.WriteStreamingToken(delta.DeltaText);
+                }
+                else if (_showThinking && streamEvt.ModelStreamingEvent is ModelStreamingReasoningPartAddedEvent reasoning)
+                {
+                    ConsoleRenderer.WriteReasoningToken(reasoning.DeltaText);
                 }
             }
             else if (runnerEvt.AgentRunnerEvent is AgentRunnerToolInvokedEvent toolEvt)

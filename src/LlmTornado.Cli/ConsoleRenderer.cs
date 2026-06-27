@@ -10,6 +10,14 @@ internal sealed class ConsoleRenderer
 {
     private static readonly object Lock = new();
     private static bool _isStreaming;
+    private static StreamTokenType _streamTokenType = StreamTokenType.None;
+
+    private enum StreamTokenType
+    {
+        None,
+        Output,
+        Reasoning,
+    }
 
     // ─── Banner ───
 
@@ -46,10 +54,27 @@ internal sealed class ConsoleRenderer
 
         lock (Lock)
         {
-            if (!_isStreaming)
+            if (!_isStreaming || _streamTokenType != StreamTokenType.Output)
             {
                 _isStreaming = true;
                 Console.ForegroundColor = ConsoleColor.White;
+                _streamTokenType = StreamTokenType.Output;
+            }
+            Console.Write(token);
+        }
+    }
+
+    public static void WriteReasoningToken(string? token)
+    {
+        if (token is null) return;
+
+        lock (Lock)
+        {
+            if (!_isStreaming || _streamTokenType != StreamTokenType.Reasoning)
+            {
+                _isStreaming = true;
+                Console.ForegroundColor = ConsoleColor.Gray;
+                _streamTokenType = StreamTokenType.Reasoning;
             }
             Console.Write(token);
         }
@@ -62,6 +87,7 @@ internal sealed class ConsoleRenderer
             if (_isStreaming)
             {
                 _isStreaming = false;
+                _streamTokenType = StreamTokenType.None;
                 Console.ResetColor();
                 Console.WriteLine();
             }
@@ -79,6 +105,7 @@ internal sealed class ConsoleRenderer
                 Console.ResetColor();
                 Console.WriteLine();
                 _isStreaming = false;
+                _streamTokenType = StreamTokenType.None;
             }
 
             Console.WriteLine();
@@ -114,6 +141,7 @@ internal sealed class ConsoleRenderer
                 Console.ResetColor();
                 Console.WriteLine();
                 _isStreaming = false;
+                _streamTokenType = StreamTokenType.None;
             }
 
             Console.WriteLine();
