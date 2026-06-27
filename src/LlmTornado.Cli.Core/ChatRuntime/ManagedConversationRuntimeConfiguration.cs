@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using LlmTornado.Agents;
 using LlmTornado.Agents.ChatRuntime.RuntimeConfigurations;
 using LlmTornado.Chat;
+using LlmTornado.Code;
 
 namespace LlmTornado.Cli.Core.Memory;
 
@@ -38,6 +39,14 @@ public sealed class ManagedConversationRuntimeConfiguration : SingletonRuntimeCo
     public override async ValueTask<ChatMessage> AddToChatAsync(ChatMessage message, CancellationToken cancellationToken = default)
     {
         ChatMessage result = await base.AddToChatAsync(message, cancellationToken);
+
+        // Prefix this assistant result after generation but before memory sync so future turns see when it happened.
+        DateTimeOffset completedAt = DateTimeOffset.Now;
+        MessageTimestampPrefixer.Prefix(result, "assistant", completedAt);
+        ChatMessage? storedResult = Conversation.Messages.LastOrDefault(msg => msg.Id == result.Id)
+                                  ?? Conversation.Messages.LastOrDefault(msg => msg.Role == ChatMessageRoles.Assistant);
+        if (storedResult is not null && !ReferenceEquals(storedResult, result))
+            MessageTimestampPrefixer.Prefix(storedResult, "assistant", completedAt);
 
         // Capture the complete runtime set (user + tool calls/results + assistant) into memory and persist it.
         _memory.SyncFrom(Conversation.Messages);

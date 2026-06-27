@@ -8,6 +8,7 @@ using LlmTornado.Cli.Core.Interactions;
 using LlmTornado.Cli.Core.Mcp;
 using LlmTornado.Cli.Core.Skills;
 using LlmTornado.Cli.Core.Memory;
+using LlmTornado.Cli.Core.State;
 using LlmTornado.Cli.Core.Tools;
 
 namespace LlmTornado.Cli;
@@ -46,7 +47,8 @@ internal sealed class CliAgentBuilder
         ConversationMemoryManager memoryManager,
         AgentDefinitionManager agentManager,
         AgentSettings settings,
-        ChatModel? optimizerModel)
+        ChatModel? optimizerModel,
+        IAgentStateStore? agentStateStore = null)
     {
         _memoryManager = memoryManager;
         _inner = new AgentBuilder(
@@ -60,7 +62,8 @@ internal sealed class CliAgentBuilder
             settings,
             optimizerModel,
             additionalTools: null,
-            memoryManager: memoryManager);
+            memoryManager: memoryManager,
+            agentStateStore: agentStateStore);
     }
 
     public ChatRuntime Build(Func<ChatRuntimeEvents, ValueTask>? onRuntimeEvent = null)

@@ -9,6 +9,7 @@ using LlmTornado.Cli.Core.Agents;
 using LlmTornado.Cli.Core.Interactions;
 using LlmTornado.Cli.Core.Mcp;
 using LlmTornado.Cli.Core.Skills;
+using LlmTornado.Cli.Core.State;
 using LlmTornado.Cli.Core.Tools;
 using LlmTornado.Code;
 using LlmTornado.Common;
@@ -30,6 +31,7 @@ public sealed class AgentBuilder
     private readonly AgentSettings _settings;
     private readonly List<Tool>? _additionalTools;
     private readonly Memory.ConversationMemoryManager? _memoryManager;
+    private readonly IAgentStateStore? _agentStateStore;
 
     private ChatModel _activeModel;
     private TornadoAgent? _agent;
@@ -83,7 +85,8 @@ public sealed class AgentBuilder
         AgentSettings settings,
         ChatModel? optimizerModel,
         List<Tool>? additionalTools = null,
-        Memory.ConversationMemoryManager? memoryManager = null)
+        Memory.ConversationMemoryManager? memoryManager = null,
+        IAgentStateStore? agentStateStore = null)
     {
         _api = api;
         _activeModel = activeModel;
@@ -95,6 +98,7 @@ public sealed class AgentBuilder
         _settings = settings;
         _additionalTools = additionalTools;
         _memoryManager = memoryManager;
+        _agentStateStore = agentStateStore;
 
         if (settings.ToolOptimizerEnabled && optimizerModel is not null)
         {
@@ -331,6 +335,14 @@ public sealed class AgentBuilder
             sb.AppendLine();
         }
 
+        if (_agentStateStore is not null)
+        {
+            sb.AppendLine("You have built-in CLI-local memory and state tools.");
+            sb.AppendLine("Use memory tools for durable notes, user/project preferences, and facts worth retaining.");
+            sb.AppendLine("Use state tools for current task state, checkpoints, and inspecting or restoring past state snapshots.");
+            sb.AppendLine();
+        }
+
         string cwd = WorkingDirectory ?? Environment.CurrentDirectory;
         sb.AppendLine($"The user's current working directory is: {cwd}");
         return sb.ToString();
@@ -346,6 +358,9 @@ public sealed class AgentBuilder
         tools.Add(BuildReadReferenceTool());
         if (_userInteraction is not null)
             tools.Add(BuildAskQuestionTool());
+
+        if (_agentStateStore is not null)
+            tools.AddRange(BuildAgentStateTools());
 
         // Script tools from enabled skills (gated by approval system)
         List<Skill> enabledSkills = _skillManager.GetEnabledSkills();
@@ -436,6 +451,153 @@ public sealed class AgentBuilder
             "ask_question",
             "Ask the user one or more follow-up questions. Supports single choice, multi-select, free text, yes/no, numeric input, and optional custom answers.");
     }
+
+    private List<Tool> BuildAgentStateTools()
+    {
+        if (_agentStateStore is null)
+            return [];
+
+        return
+        [
+            new Tool(new Func<MemoryStoreToolRequest, string>(MemoryStore), "memory_store",
+                "Store a durable CLI-local memory note. Use for user preferences, project facts, and important decisions."),
+            new Tool(new Func<MemorySearchToolRequest, string>(MemorySearch), "memory_search",
+                "Search durable CLI-local memories by text query and/or tag."),
+            new Tool(new Func<MemoryListToolRequest, string>(MemoryList), "memory_list",
+                "List recent durable CLI-local memories, optionally filtered by tag."),
+            new Tool(new Func<MemoryGetToolRequest, string>(MemoryGet), "memory_get",
+                "Get a durable CLI-local memory by id."),
+            new Tool(new Func<MemoryDeleteToolRequest, string>(MemoryDelete), "memory_delete",
+                "Delete a durable CLI-local memory by id."),
+
+            new Tool(new Func<StateSetToolRequest, string>(StateSet), "state_set",
+                "Set a CLI-local key-value state entry for current task state."),
+            new Tool(new Func<StateGetToolRequest, string>(StateGet), "state_get",
+                "Get a CLI-local state entry by key."),
+            new Tool(new Func<StateListToolRequest, string>(StateList), "state_list",
+                "List CLI-local state entries, optionally filtered by key prefix."),
+            new Tool(new Func<StateDeleteToolRequest, string>(StateDelete), "state_delete",
+                "Delete a CLI-local state entry by key."),
+
+            new Tool(new Func<StateSnapshotCreateToolRequest, string>(StateSnapshotCreate), "state_snapshot_create",
+                "Create a point-in-time snapshot of all CLI-local state entries."),
+            new Tool(new Func<StateSnapshotListToolRequest, string>(StateSnapshotList), "state_snapshot_list",
+                "List CLI-local state snapshots."),
+            new Tool(new Func<StateSnapshotGetToolRequest, string>(StateSnapshotGet), "state_snapshot_get",
+                "Get a CLI-local state snapshot by id."),
+            new Tool(new Func<StateSnapshotRestoreToolRequest, string>(StateSnapshotRestore), "state_snapshot_restore",
+                "Restore CLI-local state entries from a snapshot id.")
+        ];
+    }
+
+    private string MemoryStore(MemoryStoreToolRequest request)
+    {
+        if (_agentStateStore is null)
+            return "Memory tools are not available.";
+        if (string.IsNullOrWhiteSpace(request.Content))
+            return "ERROR: content is required.";
+
+        AgentMemoryRecord record = _agentStateStore.StoreMemory(
+            request.Key,
+            request.Content,
+            request.Tags ?? [],
+            _memoryManager?.ConversationId);
+        return SerializeToolResult(record);
+    }
+
+    private string MemorySearch(MemorySearchToolRequest request)
+    {
+        if (_agentStateStore is null)
+            return "Memory tools are not available.";
+        return SerializeToolResult(_agentStateStore.SearchMemories(request.Query, request.Tag, request.Limit));
+    }
+
+    private string MemoryList(MemoryListToolRequest request)
+    {
+        if (_agentStateStore is null)
+            return "Memory tools are not available.";
+        return SerializeToolResult(_agentStateStore.SearchMemories(null, request.Tag, request.Limit));
+    }
+
+    private string MemoryGet(MemoryGetToolRequest request)
+    {
+        if (_agentStateStore is null)
+            return "Memory tools are not available.";
+        AgentMemoryRecord? record = _agentStateStore.GetMemory(request.Id);
+        return record is null ? $"Memory '{request.Id}' not found." : SerializeToolResult(record);
+    }
+
+    private string MemoryDelete(MemoryDeleteToolRequest request)
+    {
+        if (_agentStateStore is null)
+            return "Memory tools are not available.";
+        return SerializeToolResult(new { deleted = _agentStateStore.DeleteMemory(request.Id), id = request.Id });
+    }
+
+    private string StateSet(StateSetToolRequest request)
+    {
+        if (_agentStateStore is null)
+            return "State tools are not available.";
+        if (string.IsNullOrWhiteSpace(request.Key))
+            return "ERROR: key is required.";
+
+        AgentStateRecord record = _agentStateStore.SetState(request.Key, request.Value ?? "", request.ContentType);
+        return SerializeToolResult(record);
+    }
+
+    private string StateGet(StateGetToolRequest request)
+    {
+        if (_agentStateStore is null)
+            return "State tools are not available.";
+        AgentStateRecord? record = _agentStateStore.GetState(request.Key);
+        return record is null ? $"State key '{request.Key}' not found." : SerializeToolResult(record);
+    }
+
+    private string StateList(StateListToolRequest request)
+    {
+        if (_agentStateStore is null)
+            return "State tools are not available.";
+        return SerializeToolResult(_agentStateStore.ListState(request.Prefix, request.Limit));
+    }
+
+    private string StateDelete(StateDeleteToolRequest request)
+    {
+        if (_agentStateStore is null)
+            return "State tools are not available.";
+        return SerializeToolResult(new { deleted = _agentStateStore.DeleteState(request.Key), key = request.Key });
+    }
+
+    private string StateSnapshotCreate(StateSnapshotCreateToolRequest request)
+    {
+        if (_agentStateStore is null)
+            return "State tools are not available.";
+        return SerializeToolResult(_agentStateStore.CreateSnapshot(request.Label));
+    }
+
+    private string StateSnapshotList(StateSnapshotListToolRequest request)
+    {
+        if (_agentStateStore is null)
+            return "State tools are not available.";
+        return SerializeToolResult(_agentStateStore.ListSnapshots(request.Limit));
+    }
+
+    private string StateSnapshotGet(StateSnapshotGetToolRequest request)
+    {
+        if (_agentStateStore is null)
+            return "State tools are not available.";
+        AgentStateSnapshotRecord? snapshot = _agentStateStore.GetSnapshot(request.Id);
+        return snapshot is null ? $"State snapshot '{request.Id}' not found." : SerializeToolResult(snapshot);
+    }
+
+    private string StateSnapshotRestore(StateSnapshotRestoreToolRequest request)
+    {
+        if (_agentStateStore is null)
+            return "State tools are not available.";
+        return SerializeToolResult(new { restored = _agentStateStore.RestoreSnapshot(request.Id), id = request.Id });
+    }
+
+    private static string SerializeToolResult(object value) =>
+        JsonSerializer.Serialize(value, new JsonSerializerOptions { WriteIndented = false });
 
     private async Task<string> AskQuestionAsync(AskQuestionToolRequest request, CancellationToken cancellationToken)
     {
@@ -603,4 +765,77 @@ public sealed class AgentBuilder
             _ => "text",
         };
     }
+}
+
+public sealed class MemoryStoreToolRequest
+{
+    public string? Key { get; set; }
+    public string Content { get; set; } = "";
+    public List<string>? Tags { get; set; }
+}
+
+public sealed class MemorySearchToolRequest
+{
+    public string? Query { get; set; }
+    public string? Tag { get; set; }
+    public int Limit { get; set; } = 20;
+}
+
+public sealed class MemoryListToolRequest
+{
+    public string? Tag { get; set; }
+    public int Limit { get; set; } = 20;
+}
+
+public sealed class MemoryGetToolRequest
+{
+    public long Id { get; set; }
+}
+
+public sealed class MemoryDeleteToolRequest
+{
+    public long Id { get; set; }
+}
+
+public sealed class StateSetToolRequest
+{
+    public string Key { get; set; } = "";
+    public string? Value { get; set; }
+    public string? ContentType { get; set; }
+}
+
+public sealed class StateGetToolRequest
+{
+    public string Key { get; set; } = "";
+}
+
+public sealed class StateListToolRequest
+{
+    public string? Prefix { get; set; }
+    public int Limit { get; set; } = 50;
+}
+
+public sealed class StateDeleteToolRequest
+{
+    public string Key { get; set; } = "";
+}
+
+public sealed class StateSnapshotCreateToolRequest
+{
+    public string? Label { get; set; }
+}
+
+public sealed class StateSnapshotListToolRequest
+{
+    public int Limit { get; set; } = 20;
+}
+
+public sealed class StateSnapshotGetToolRequest
+{
+    public long Id { get; set; }
+}
+
+public sealed class StateSnapshotRestoreToolRequest
+{
+    public long Id { get; set; }
 }

@@ -12,6 +12,7 @@ using LlmTornado.Cli.Core.Tools;
 using LlmTornado.Cli.Commands;
 using LlmTornado.Cli.Core.Memory;
 using LlmTornado.Cli.Core.Storage;
+using LlmTornado.Cli.Core.State;
 using LlmTornado.Code;
 
 namespace LlmTornado.Cli;
@@ -21,6 +22,7 @@ class Program
     private static McpConfigLoader? _mcpLoader;
     private static ConversationMemoryManager? _memoryManager;
     private static SqliteConversationStore? _conversationStore;
+    private static SqliteAgentStateStore? _agentStateStore;
     private static CliAgentBuilder? _agentBuilder;
     private static bool _showThinking = true;
 
@@ -164,6 +166,7 @@ class Program
 
         // ─── Step 7: Conversation Memory (SQLite) ───
         _conversationStore = new SqliteConversationStore(CliStorage.DatabasePath, CliStorage.AttachmentsDirectory);
+        _agentStateStore = new SqliteAgentStateStore(CliStorage.DatabasePath);
         _memoryManager = new ConversationMemoryManager(
             providerResult.Api,
             providerResult.ActiveModel,
@@ -191,7 +194,8 @@ class Program
             _memoryManager,
             agentManager,
             settings,
-            providerResult.OptimizerModel);
+            providerResult.OptimizerModel,
+            _agentStateStore);
 
         Func<ChatRuntimeEvents, ValueTask> runtimeEventHandler = HandleRuntimeEvent;
 
@@ -290,6 +294,15 @@ class Program
                 }
 
                 ChatMessage userMessage = attachResult.Message;
+                int currentTokens = memory.GetMessagesForAgent().Sum(CompressionStrategy.EstimateTokens)
+                                    + CompressionStrategy.EstimateTokens(userMessage);
+                int contextUsedPercent = memory.EffectiveCompressionContextTokens > 0
+                    ? (int)Math.Ceiling(currentTokens * 100.0 / memory.EffectiveCompressionContextTokens)
+                    : 0;
+                MessageTimestampPrefixer.Prefix(
+                    userMessage,
+                    "user",
+                    contextUsedPercent: contextUsedPercent);
 
                 // Optimize tools for this turn if needed
                 bool optimized = false;
@@ -342,6 +355,9 @@ class Program
         // Cleanup
         if (_mcpLoader is not null)
             await _mcpLoader.DisposeAsync();
+
+        _agentStateStore?.Dispose();
+        _conversationStore?.Dispose();
 
         return 0;
     }
