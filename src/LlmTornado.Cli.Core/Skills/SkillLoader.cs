@@ -56,9 +56,23 @@ public static partial class SkillLoader
         if (!string.IsNullOrEmpty(envDir) && Directory.Exists(envDir))
             return Path.GetFullPath(envDir);
 
-        return Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "llmtornado", "skills");
+        string configRoot = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+
+        // Some container/minimal Linux setups can return an empty ApplicationData path.
+        if (string.IsNullOrWhiteSpace(configRoot))
+            configRoot = Environment.GetEnvironmentVariable("XDG_CONFIG_HOME") ?? string.Empty;
+
+        if (string.IsNullOrWhiteSpace(configRoot))
+        {
+            string profileRoot = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            if (!string.IsNullOrWhiteSpace(profileRoot))
+                configRoot = Path.Combine(profileRoot, ".config");
+        }
+
+        if (string.IsNullOrWhiteSpace(configRoot))
+            configRoot = Path.GetFullPath(".config");
+
+        return Path.GetFullPath(Path.Combine(configRoot, "llmtornado", "skills"));
     }
 
     /// <summary>

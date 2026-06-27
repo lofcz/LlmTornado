@@ -133,16 +133,30 @@ class Program
 
         // ─── Step 5: MCP ───
         _mcpLoader = new McpConfigLoader();
-        string? mcpConfigPath = McpConfigLoader.ResolveMcpConfigPath(settings.McpConfigPath);
-        if (mcpConfigPath is not null)
+        McpSessionPolicy sessionPolicy = McpSessionPolicy.FromSettings(settings, Environment.CurrentDirectory);
+        _mcpLoader.Configure(settings, sessionPolicy);
+
+        string? localMcpConfigPath = McpConfigLoader.ResolveMcpConfigPath(settings.McpConfigPath);
+        string? globalMcpConfigPath = McpConfigLoader.ResolveGlobalMcpConfigPath();
+
+        if (localMcpConfigPath is null && globalMcpConfigPath is null)
         {
-            ConsoleRenderer.WriteInfo($"Loading MCP servers from {mcpConfigPath}...");
-            await _mcpLoader.LoadAsync(mcpConfigPath, ConsoleRenderer.WriteInfo);
+            ConsoleRenderer.WriteInfo("No mcp.json found. Loading built-in MCP servers only.");
+        }
+        else if (localMcpConfigPath is not null && globalMcpConfigPath is not null)
+        {
+            ConsoleRenderer.WriteInfo($"Loading MCP servers from local {localMcpConfigPath} and global {globalMcpConfigPath}...");
+        }
+        else if (localMcpConfigPath is not null)
+        {
+            ConsoleRenderer.WriteInfo($"Loading MCP servers from local {localMcpConfigPath}...");
         }
         else
         {
-            ConsoleRenderer.WriteInfo("No mcp.json found. MCP tools not loaded.");
+            ConsoleRenderer.WriteInfo($"Loading MCP servers from global {globalMcpConfigPath}...");
         }
+
+        await _mcpLoader.LoadAsync(localMcpConfigPath, globalMcpConfigPath, ConsoleRenderer.WriteInfo);
 
         // ─── Step 6: Tool Approval ───
         ConsoleRenderer renderer = new();
@@ -203,7 +217,7 @@ class Program
         dispatcher.Register(new ContextCommand(_memoryManager, _conversationStore, CliStorage.ContextDumpsDirectory));
         dispatcher.Register(new ToolsCommand(toolApproval, _agentBuilder, settings, providerResult));
         dispatcher.Register(new McpCommand(_mcpLoader, _agentBuilder, settings, runtimeEventHandler));
-        dispatcher.Register(new CdCommand(_agentBuilder, agentManager, runtimeEventHandler));
+        dispatcher.Register(new CdCommand(_agentBuilder, agentManager, skillManager, _mcpLoader, settings, runtimeEventHandler));
         dispatcher.Register(new ThinkingCommand(settings, () => _showThinking, value => _showThinking = value));
         dispatcher.Register(new ClearCommand());
         dispatcher.Register(new ExitCommand(_memoryManager, _conversationStore, _agentBuilder));

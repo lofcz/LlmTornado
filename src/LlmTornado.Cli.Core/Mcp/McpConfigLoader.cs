@@ -159,6 +159,24 @@ public sealed partial class McpConfigLoader : IAsyncDisposable
     }
 
     /// <summary>
+    /// Switch to new local/global config paths and reload all servers.
+    /// Disposes existing servers first.
+    /// </summary>
+    public async Task LoadFromPathsAsync(string? newLocalConfigPath, string? newGlobalConfigPath, Action<string>? log = null)
+    {
+        await DisposeAsync();
+        _servers.Clear();
+        _allTools.Clear();
+        _serverStatuses.Clear();
+        _toolSourceMap.Clear();
+        _toolServerMap.Clear();
+
+        _localConfigPath = newLocalConfigPath;
+        _globalConfigPath = newGlobalConfigPath;
+        await LoadMergedAsync(log);
+    }
+
+    /// <summary>
     /// Core merge logic: load global config first, then local; local shadows by name.
     /// </summary>
     private async Task LoadMergedAsync(Action<string>? log = null)

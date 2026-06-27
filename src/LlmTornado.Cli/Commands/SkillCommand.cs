@@ -52,7 +52,10 @@ internal sealed class SkillCommand : ICliCommand
                 List<Skill> skills = _skillManager.GetAllSkills();
                 if (skills.Count == 0)
                 {
-                    ConsoleRenderer.WriteInfo("No skills found. Place skills in the ./skills/ directory or run /skill create.");
+                    string projectDir = SkillLoader.ResolveSkillsDirectory(_settings.SkillsDirectory);
+                    string globalDir = SkillLoader.ResolveGlobalSkillsDirectory();
+                    ConsoleRenderer.WriteInfo($"No skills found. Checked project: {projectDir} and global: {globalDir}.");
+                    ConsoleRenderer.WriteInfo("Add skills there (folder-name/SKILL.md) or run /skill create.");
                     break;
                 }
                 foreach (Skill skill in skills)
