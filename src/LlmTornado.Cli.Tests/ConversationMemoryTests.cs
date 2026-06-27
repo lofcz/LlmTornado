@@ -28,12 +28,21 @@ public class ConversationMemoryTests
     }
 
     [Test]
-    public void EstimateTokens_Uses_Tokens_Property_When_Set()
+    public void EstimateTokens_Uses_Tokens_Property_For_Assistant_Message()
     {
-        ChatMessage msg = new(ChatMessageRoles.User, "short text");
+        ChatMessage msg = new(ChatMessageRoles.Assistant, "short text");
         msg.Tokens = 42;
         int estimated = CompressionStrategy.EstimateTokens(msg);
         Assert.That(estimated, Is.EqualTo(42));
+    }
+
+    [Test]
+    public void EstimateTokens_Ignores_Tokens_Property_For_User_Message()
+    {
+        ChatMessage msg = new(ChatMessageRoles.User, new string('a', 400));
+        msg.Tokens = 10_023;
+        int estimated = CompressionStrategy.EstimateTokens(msg);
+        Assert.That(estimated, Is.EqualTo(100));
     }
 
     #endregion

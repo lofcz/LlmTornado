@@ -119,6 +119,55 @@ public class AutocompleteTests
 
     #endregion
 
+    #region InputViewport
+
+    [Test]
+    public void Viewport_Fits_Whole_Buffer_When_Within_Width()
+    {
+        InputViewport viewport = LineEditor.ComputeViewport("hello", cursor: 5, width: 10);
+        Assert.That(viewport.StartIndex, Is.EqualTo(0));
+        Assert.That(viewport.Text, Is.EqualTo("hello"));
+        Assert.That(viewport.CursorColumn, Is.EqualTo(5));
+    }
+
+    [Test]
+    public void Viewport_Shows_Tail_When_Cursor_At_End_And_Buffer_Overflows()
+    {
+        InputViewport viewport = LineEditor.ComputeViewport("abcdefghij", cursor: 10, width: 4);
+        Assert.That(viewport.StartIndex, Is.EqualTo(6));
+        Assert.That(viewport.Text, Is.EqualTo("ghij"));
+        Assert.That(viewport.CursorColumn, Is.EqualTo(4));
+    }
+
+    [Test]
+    public void Viewport_Keeps_Cursor_Visible_When_Editing_Middle_Of_Long_Buffer()
+    {
+        InputViewport viewport = LineEditor.ComputeViewport("abcdefghij", cursor: 6, width: 4);
+        Assert.That(viewport.StartIndex, Is.EqualTo(3));
+        Assert.That(viewport.Text, Is.EqualTo("defg"));
+        Assert.That(viewport.CursorColumn, Is.EqualTo(3));
+    }
+
+    [Test]
+    public void Viewport_Clamps_Cursor_Beyond_Buffer_Length()
+    {
+        InputViewport viewport = LineEditor.ComputeViewport("abc", cursor: 99, width: 2);
+        Assert.That(viewport.StartIndex, Is.EqualTo(1));
+        Assert.That(viewport.Text, Is.EqualTo("bc"));
+        Assert.That(viewport.CursorColumn, Is.EqualTo(2));
+    }
+
+    [Test]
+    public void Viewport_Zero_Width_Returns_Empty_Visible_Text()
+    {
+        InputViewport viewport = LineEditor.ComputeViewport("abcdef", cursor: 3, width: 0);
+        Assert.That(viewport.StartIndex, Is.EqualTo(0));
+        Assert.That(viewport.Text, Is.EqualTo(string.Empty));
+        Assert.That(viewport.CursorColumn, Is.EqualTo(0));
+    }
+
+    #endregion
+
     #region FileSuggestionProvider
 
     [Test]

@@ -271,7 +271,7 @@ public class TornadoRunner
         //Set the cancellation token for the agent client
         chat.RequestParameters.CancellationToken = cancellationToken;
 
-        bool sysMesageAtStart = runnerOptions?.SystemMessageAtStart ?? false; // Default false for system message at the end.
+        bool sysMesageAtStart = runnerOptions?.SystemMessageAtStart ?? true; // Default true for system message at the start.
 
         if (sysMesageAtStart)
         {

@@ -41,10 +41,12 @@ public class ChatModelOpenAiCodex : IVendorModelClassProvider
     /// GPT-5.3-Codex is OpenAI's most capable agentic coding model to date.
     /// Supports low, medium, high, and xhigh reasoning effort settings.
     /// 400,000 context window, 128,000 max output tokens, Aug 31, 2025 knowledge cutoff.
+    /// Like the other Codex models, it is served only via the Responses (and Batch) endpoints,
+    /// not via /v1/chat/completions.
     /// </summary>
     public static readonly ChatModel ModelGpt53Codex = new ChatModel("gpt-5.3-codex", LLmProviders.OpenAi, 400_000)
     {
-        EndpointCapabilities = [ ChatModelEndpointCapabilities.Responses, ChatModelEndpointCapabilities.Chat, ChatModelEndpointCapabilities.Batch ]
+        EndpointCapabilities = [ ChatModelEndpointCapabilities.Responses, ChatModelEndpointCapabilities.Batch ]
     };
 
     /// <summary>

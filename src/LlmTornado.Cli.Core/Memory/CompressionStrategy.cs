@@ -121,7 +121,10 @@ public sealed class CompressionStrategy
 
     internal static int EstimateTokens(ChatMessage message)
     {
-        if (message.Tokens is > 0)
+        // In the streaming conversation pipeline, user messages can carry prompt_tokens
+        // from the full request usage. That value is request-level, not per-message,
+        // so using it here would dramatically overcount individual user entries.
+        if (message.Tokens is > 0 && message.Role == ChatMessageRoles.Assistant)
             return message.Tokens.Value;
 
         int charCount = (message.Content?.Length ?? 0)

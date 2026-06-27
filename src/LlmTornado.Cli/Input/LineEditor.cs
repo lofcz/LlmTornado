@@ -28,6 +28,11 @@ internal readonly record struct CompletionContext(CompletionKind Kind, int Token
 internal readonly record struct EditorSuggestion(string Display, string Detail, string Value);
 
 /// <summary>
+/// The visible slice of the input buffer for the current terminal width.
+/// </summary>
+internal readonly record struct InputViewport(int StartIndex, string Text, int CursorColumn);
+
+/// <summary>
 /// A custom single-line input reader (replacement for <see cref="Console.ReadLine"/>) that
 /// renders live autocomplete suggestions below the prompt: <c>/commands</c> when the line
 /// starts with <c>/</c>, and <c>@documents</c> when the current token starts with <c>@</c>.
@@ -64,7 +69,6 @@ internal sealed class LineEditor
         }
 
         string promptText = $"{modelName}> ";
-        int promptLen = promptText.Length;
 
         StringBuilder buffer = new();
         int cursor = 0;
@@ -93,6 +97,10 @@ internal sealed class LineEditor
         void Draw()
         {
             int width = SafeWidth();
+            int safeLineWidth = Math.Max(1, width - 1);
+            string promptDisplay = FitPrompt(promptText, safeLineWidth);
+            int inputWidth = Math.Max(0, safeLineWidth - promptDisplay.Length);
+            InputViewport viewport = ComputeViewport(buffer.ToString(), cursor, inputWidth);
 
             try { Console.CursorVisible = false; } catch { /* ignore */ }
 
@@ -107,9 +115,9 @@ internal sealed class LineEditor
             // Input line: prompt + buffer.
             TrySetCursor(0, inputTop);
             Console.ForegroundColor = ConsoleColor.DarkCyan;
-            Console.Write(promptText);
+            Console.Write(promptDisplay);
             Console.ResetColor();
-            Console.Write(buffer.ToString());
+            Console.Write(viewport.Text);
 
             // Menu rows.
             int drawnRows = 0;
@@ -122,7 +130,7 @@ internal sealed class LineEditor
             lastMenuRows = drawnRows;
 
             // Place the cursor within the input line (single-line assumption).
-            int col = Math.Min(promptLen + cursor, width - 1);
+            int col = Math.Min(promptDisplay.Length + viewport.CursorColumn, width - 1);
             TrySetCursor(col, inputTop);
             try { Console.CursorVisible = true; } catch { /* ignore */ }
         }
@@ -261,7 +269,11 @@ internal sealed class LineEditor
             suppressMenu = true;
             Draw();
             int width = SafeWidth();
-            int endCol = Math.Min(promptLen + buffer.Length, width - 1);
+            int safeLineWidth = Math.Max(1, width - 1);
+            string promptDisplay = FitPrompt(promptText, safeLineWidth);
+            int inputWidth = Math.Max(0, safeLineWidth - promptDisplay.Length);
+            InputViewport endViewport = ComputeViewport(buffer.ToString(), buffer.Length, inputWidth);
+            int endCol = Math.Min(promptDisplay.Length + endViewport.CursorColumn, width - 1);
             TrySetCursor(endCol, inputTop);
             Console.ResetColor();
             Console.WriteLine();
@@ -429,6 +441,42 @@ internal sealed class LineEditor
     {
         try { return Console.CursorTop; }
         catch { return 0; }
+    }
+
+    /// <summary>
+    /// Keep input rendering inside a single terminal row by exposing only the visible window.
+    /// </summary>
+    internal static InputViewport ComputeViewport(string buffer, int cursor, int width)
+    {
+        string value = buffer ?? string.Empty;
+        int clampedCursor = Math.Clamp(cursor, 0, value.Length);
+
+        if (width <= 0)
+            return new InputViewport(0, string.Empty, 0);
+
+        if (value.Length <= width)
+            return new InputViewport(0, value, clampedCursor);
+
+        int maxStart = value.Length - width;
+        int start = Math.Clamp(clampedCursor - width + 1, 0, maxStart);
+        int length = Math.Min(width, value.Length - start);
+        string visible = value.Substring(start, length);
+        int cursorColumn = Math.Clamp(clampedCursor - start, 0, visible.Length);
+
+        return new InputViewport(start, visible, cursorColumn);
+    }
+
+    private static string FitPrompt(string prompt, int safeWidth)
+    {
+        string value = prompt ?? string.Empty;
+        if (safeWidth <= 0)
+            return string.Empty;
+
+        if (value.Length <= safeWidth)
+            return value;
+
+        // Keep the right side so the "> " marker stays visible on narrow terminals.
+        return value[^safeWidth..];
     }
 
     private static bool TrySetCursor(int left, int top)
