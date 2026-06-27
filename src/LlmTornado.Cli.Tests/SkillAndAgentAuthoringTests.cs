@@ -134,6 +134,45 @@ public class SkillAndAgentAuthoringTests
 
     #endregion
 
+    #region AgentDefinitionManager create
+
+    [Test]
+    public void AgentDefinitionManager_CreateAgent_Normalizes_Name_And_Writes_File()
+    {
+        AgentSettings settings = new();
+        AgentDefinitionManager manager = new(settings, new NoOpPersistence());
+
+        string path = manager.CreateAgent(
+            _tempDir,
+            "My Reviewer",
+            "Reviews code carefully",
+            "You are a careful reviewer.");
+
+        Assert.That(Path.GetFileName(path), Is.EqualTo("my-reviewer.md"));
+        Assert.That(File.Exists(path), Is.True);
+
+        List<AgentDefinition> agents = AgentDefinitionLoader.DiscoverPersonaAgents(
+            builtInDirectory: Path.Combine(_tempDir, "no-builtin"),
+            globalDirectory: null,
+            customDirectory: _tempDir);
+
+        AgentDefinition? agent = agents.FirstOrDefault(a => a.Name == "my-reviewer");
+        Assert.That(agent, Is.Not.Null);
+        Assert.That(agent!.Description, Is.EqualTo("Reviews code carefully"));
+    }
+
+    [Test]
+    public void AgentDefinitionManager_CreateAgent_Throws_On_Invalid_Name()
+    {
+        AgentSettings settings = new();
+        AgentDefinitionManager manager = new(settings, new NoOpPersistence());
+
+        Assert.Throws<ArgumentException>(() =>
+            manager.CreateAgent(_tempDir, "!!!", "desc", "instructions"));
+    }
+
+    #endregion
+
     #region AuthoringAssistant.CleanBody
 
     [Test]

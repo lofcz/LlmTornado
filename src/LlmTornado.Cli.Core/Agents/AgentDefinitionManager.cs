@@ -229,16 +229,21 @@ public sealed class AgentDefinitionManager
     }
 
     /// <summary>
-    /// Create a new custom agent .md file in the given directory and reload.
+    /// Create a new custom agent .md file in the given directory.
+    /// Returns the written file path.
     /// </summary>
-    public void CreateAgent(string agentsDirectory, string name, string description,
+    public string CreateAgent(string agentsDirectory, string name, string description,
         string instructions, List<string>? enabledSkills = null, List<string>? disabledSkills = null,
         List<string>? enabledTools = null, List<string>? disabledTools = null)
     {
-        string slug = name.ToLowerInvariant().Replace(' ', '-');
+        string slug = AgentDefinitionLoader.Slugify(name);
+        if (!AgentDefinitionLoader.IsValidAgentName(slug))
+            throw new ArgumentException("Agent name must contain at least one letter or number.", nameof(name));
+
         string filePath = Path.Combine(agentsDirectory, $"{slug}.md");
-        AgentDefinitionLoader.WriteAgentMd(filePath, name, description, instructions,
+        AgentDefinitionLoader.WriteAgentMd(filePath, slug, description, instructions,
             enabledSkills, disabledSkills, enabledTools, disabledTools);
+        return filePath;
     }
 
     /// <summary>

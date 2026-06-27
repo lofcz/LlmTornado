@@ -187,6 +187,63 @@ public class ConversationMemoryTests
 
     #endregion
 
+    #region ConversationMemoryManager — Context Cap
+
+    [Test]
+    public void ContextCap_Applies_To_EffectiveCompressionWindow()
+    {
+        TornadoApi api = new("fake-key");
+        ConversationMemoryManager manager = new(
+            api,
+            ChatModel.OpenAi.Gpt41.V41Nano,
+            262_144,
+            conversationPath: null,
+            compressionContextTokenCap: 65_536);
+
+        Assert.That(manager.ModelContextWindowTokens, Is.EqualTo(262_144));
+        Assert.That(manager.CompressionContextTokenCap, Is.EqualTo(65_536));
+        Assert.That(manager.EffectiveCompressionContextTokens, Is.EqualTo(65_536));
+    }
+
+    [Test]
+    public void ContextCap_Can_Be_Cleared()
+    {
+        TornadoApi api = new("fake-key");
+        ConversationMemoryManager manager = new(
+            api,
+            ChatModel.OpenAi.Gpt41.V41Nano,
+            200_000,
+            conversationPath: null,
+            compressionContextTokenCap: 32_000);
+
+        Assert.That(manager.EffectiveCompressionContextTokens, Is.EqualTo(32_000));
+
+        manager.SetCompressionContextTokenCap(null);
+
+        Assert.That(manager.CompressionContextTokenCap, Is.Null);
+        Assert.That(manager.EffectiveCompressionContextTokens, Is.EqualTo(200_000));
+    }
+
+    [Test]
+    public void UpdateModel_Respects_ContextCap()
+    {
+        TornadoApi api = new("fake-key");
+        ConversationMemoryManager manager = new(
+            api,
+            ChatModel.OpenAi.Gpt41.V41Nano,
+            128_000,
+            conversationPath: null,
+            compressionContextTokenCap: 64_000);
+
+        manager.UpdateModel(ChatModel.OpenAi.Gpt41.V41Nano, 32_768);
+        Assert.That(manager.EffectiveCompressionContextTokens, Is.EqualTo(32_768));
+
+        manager.UpdateModel(ChatModel.OpenAi.Gpt41.V41Nano, 200_000);
+        Assert.That(manager.EffectiveCompressionContextTokens, Is.EqualTo(64_000));
+    }
+
+    #endregion
+
     #region MessageSummarizer — Summarize (offline logic)
 
     [Test]

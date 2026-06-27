@@ -114,6 +114,27 @@ public class AgentDefinitionTests
         }
 
         [Test]
+        public void FrontmatterName_WithSpaces_IsNormalizedToSlug()
+        {
+            string content = """
+                ---
+                name: My Reviewer Agent
+                description: Uses non-slug frontmatter name
+                ---
+
+                Instructions here.
+                """;
+            string path = Path.Combine(_tempDir, "my-reviewer-agent.md");
+            File.WriteAllText(path, content);
+
+            AgentDefinition? result = AgentDefinitionLoader.ParsePersonaFile(
+                path, AgentSource.Custom);
+
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result!.Name, Is.EqualTo("my-reviewer-agent"));
+        }
+
+        [Test]
         public void EmptyFile_ReturnsNull()
         {
             string path = Path.Combine(_tempDir, "empty.md");
@@ -245,6 +266,16 @@ public class AgentDefinitionTests
             Assert.That(result, Is.Not.Null);
             Assert.That(result!.Name, Is.EqualTo("tolerant"));
             Assert.That(result.EnabledSkills, Is.EqualTo(new[] { "file-analyzer" }));
+        }
+
+        [TestCase("My Reviewer", "my-reviewer")]
+        [TestCase("  weird__NAME!!  ", "weird-name")]
+        [TestCase("agent", "agent")]
+        public void Slugify_Produces_Valid_Agent_Names(string input, string expected)
+        {
+            string slug = AgentDefinitionLoader.Slugify(input);
+            Assert.That(slug, Is.EqualTo(expected));
+            Assert.That(AgentDefinitionLoader.IsValidAgentName(slug), Is.True);
         }
     }
 

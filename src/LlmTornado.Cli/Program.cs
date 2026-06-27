@@ -168,7 +168,8 @@ class Program
             providerResult.Api,
             providerResult.ActiveModel,
             providerResult.ActiveModel.ContextTokens,
-            _conversationStore);
+            _conversationStore,
+            compressionContextTokenCap: settings.CompressionContextTokenCap);
 
         if (_memoryManager.Messages.Count > 0)
         {
@@ -214,7 +215,7 @@ class Program
             agentManager, skillManager, _agentBuilder,
             settings, providerResult, toolApproval, runtimeEventHandler));
         dispatcher.Register(new ConversationCommand(_memoryManager, _conversationStore, _agentBuilder));
-        dispatcher.Register(new ContextCommand(_memoryManager, _conversationStore, CliStorage.ContextDumpsDirectory));
+        dispatcher.Register(new ContextCommand(_memoryManager, _conversationStore, CliStorage.ContextDumpsDirectory, settings, persistence));
         dispatcher.Register(new ToolsCommand(toolApproval, _agentBuilder, settings, providerResult));
         dispatcher.Register(new McpCommand(_mcpLoader, _agentBuilder, settings, runtimeEventHandler));
         dispatcher.Register(new CdCommand(_agentBuilder, agentManager, skillManager, _mcpLoader, settings, runtimeEventHandler));

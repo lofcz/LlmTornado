@@ -28,30 +28,93 @@ public static partial class AgentDefinitionLoader
 
     /// <summary>
     /// Resolve the custom agents directory. If <paramref name="agentsDirectoryOverride"/> is non-null
-    /// and exists, use it. Otherwise fall back to ./agents/ relative to CWD.
+    /// and non-empty, use it. Otherwise fall back to ./agents/ relative to CWD.
     /// </summary>
     public static string ResolveAgentsDirectory(string? agentsDirectoryOverride)
     {
-        if (!string.IsNullOrEmpty(agentsDirectoryOverride) && Directory.Exists(agentsDirectoryOverride))
-            return Path.GetFullPath(agentsDirectoryOverride);
+        if (!string.IsNullOrWhiteSpace(agentsDirectoryOverride))
+            return Path.GetFullPath(Environment.ExpandEnvironmentVariables(agentsDirectoryOverride));
 
         return Path.GetFullPath("agents");
     }
 
     /// <summary>
     /// Resolve the global agents directory.
-    /// Checks the <c>TORNADO_AGENTS_DIR</c> environment variable first; if set and the directory exists, uses it.
+    /// Checks the <c>TORNADO_AGENTS_DIR</c> environment variable first; if set, uses it.
     /// Otherwise falls back to <c>%APPDATA%/llmtornado/agents/</c> (or platform equivalent).
     /// </summary>
     public static string ResolveGlobalAgentsDirectory()
     {
         string? envDir = Environment.GetEnvironmentVariable("TORNADO_AGENTS_DIR");
-        if (!string.IsNullOrEmpty(envDir) && Directory.Exists(envDir))
-            return Path.GetFullPath(envDir);
+        if (!string.IsNullOrWhiteSpace(envDir))
+            return Path.GetFullPath(Environment.ExpandEnvironmentVariables(envDir));
 
-        return Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "llmtornado", "agents");
+        string configRoot = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+
+        // Some container/minimal Linux setups can return an empty ApplicationData path.
+        if (string.IsNullOrWhiteSpace(configRoot))
+            configRoot = Environment.GetEnvironmentVariable("XDG_CONFIG_HOME") ?? string.Empty;
+
+        if (string.IsNullOrWhiteSpace(configRoot))
+        {
+            string profileRoot = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            if (!string.IsNullOrWhiteSpace(profileRoot))
+                configRoot = Path.Combine(profileRoot, ".config");
+        }
+
+        if (string.IsNullOrWhiteSpace(configRoot))
+            configRoot = Path.GetFullPath(".config");
+
+        return Path.GetFullPath(Path.Combine(configRoot, "llmtornado", "agents"));
+    }
+
+    /// <summary>
+    /// Convert an arbitrary agent display name into a valid slug:
+    /// lowercase, alphanumeric + single hyphens, no leading/trailing/consecutive hyphens, max 64 chars.
+    /// Returns an empty string if nothing usable remains.
+    /// </summary>
+    public static string Slugify(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return string.Empty;
+
+        string lowered = name.Trim().ToLowerInvariant();
+        StringBuilder sb = new(lowered.Length);
+        bool previousWasHyphen = false;
+
+        foreach (char c in lowered)
+        {
+            bool isAlphaNum = (c is >= 'a' and <= 'z') || (c is >= '0' and <= '9');
+            if (isAlphaNum)
+            {
+                sb.Append(c);
+                previousWasHyphen = false;
+                continue;
+            }
+
+            if (!previousWasHyphen)
+            {
+                sb.Append('-');
+                previousWasHyphen = true;
+            }
+        }
+
+        string slug = sb.ToString().Trim('-');
+        if (slug.Length > 64)
+            slug = slug[..64].Trim('-');
+
+        return slug;
+    }
+
+    /// <summary>
+    /// Validate an agent name slug.
+    /// </summary>
+    public static bool IsValidAgentName(string name)
+    {
+        if (name.Length is < 1 or > 64) return false;
+        if (!ValidNameRegex().IsMatch(name)) return false;
+        if (ConsecutiveHyphensRegex().IsMatch(name)) return false;
+        return true;
     }
 
     /// <summary>
@@ -196,12 +259,15 @@ public static partial class AgentDefinitionLoader
         Dictionary<string, object> frontmatter = ParseFrontmatter(content);
         string instructions = ExtractBody(content);
 
-        string name = frontmatter.GetValueOrDefault("name") as string ?? slug;
-
-        // Validate the name from frontmatter too
-        if (name.Length is < 1 or > 64) return null;
-        if (!ValidNameRegex().IsMatch(name)) return null;
-        if (ConsecutiveHyphensRegex().IsMatch(name)) return null;
+        // Be tolerant of legacy/non-canonical frontmatter names by normalizing to a slug.
+        string name = slug;
+        if (frontmatter.GetValueOrDefault("name") is string frontmatterName &&
+            !string.IsNullOrWhiteSpace(frontmatterName))
+        {
+            string normalized = Slugify(frontmatterName);
+            if (IsValidAgentName(normalized))
+                name = normalized;
+        }
 
         string description = frontmatter.GetValueOrDefault("description") as string
                              ?? ExtractDescriptionFromMarkdown(instructions);

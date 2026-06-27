@@ -41,6 +41,13 @@ public sealed class AgentSettings
     public int MaxTurnsBeforeSummary { get; set; }
 
     /// <summary>
+    /// Optional absolute cap for the context window used by compression/budget enforcement.
+    /// Null = use the active model's full context window.
+    /// </summary>
+    [JsonPropertyName("compression_context_token_cap")]
+    public int? CompressionContextTokenCap { get; set; }
+
+    /// <summary>
     /// Currently selected agent persona name. Null = default (no persona).
     /// Persisted across sessions. Restored on startup if the persona still exists.
     /// </summary>

@@ -1,5 +1,6 @@
 using LlmTornado.Cli.Core.Memory;
 using LlmTornado.Cli.Core.Storage;
+using LlmTornado.Cli.Core;
 
 namespace LlmTornado.Cli.Commands;
 
@@ -8,19 +9,25 @@ internal sealed class ContextCommand : ICliCommand
     private readonly ConversationMemoryManager _memoryManager;
     private readonly SqliteConversationStore _store;
     private readonly string _defaultExportDirectory;
+    private readonly AgentSettings _settings;
+    private readonly ISettingsPersistence _persistence;
 
     public string Name => "context";
     public string Description => "Inspect or export the active model context";
-    public string Usage => "/context [stats | export [path] [--format markdown|json] [--full] | compress]";
+    public string Usage => "/context [stats | export [path] [--format markdown|json] [--full] | compress | cap [status|off|<tokens>]]";
 
     public ContextCommand(
         ConversationMemoryManager memoryManager,
         SqliteConversationStore store,
-        string defaultExportDirectory)
+        string defaultExportDirectory,
+        AgentSettings? settings = null,
+        ISettingsPersistence? persistence = null)
     {
         _memoryManager = memoryManager;
         _store = store;
         _defaultExportDirectory = defaultExportDirectory;
+        _settings = settings ?? new AgentSettings();
+        _persistence = persistence ?? NoOpSettingsPersistence.Instance;
     }
 
     public async Task<bool> ExecuteAsync(string[] args)
@@ -44,6 +51,10 @@ internal sealed class ContextCommand : ICliCommand
                 await Compress();
                 break;
 
+            case "cap":
+                HandleCap(rest);
+                break;
+
             default:
                 ConsoleRenderer.WriteError($"Usage: {Usage}");
                 break;
@@ -58,8 +69,60 @@ internal sealed class ContextCommand : ICliCommand
         int tokens = messages.Sum(CompressionStrategy.EstimateTokens);
         ConsoleRenderer.WriteInfo($"Context messages: {messages.Count}");
         ConsoleRenderer.WriteInfo($"Estimated tokens: {tokens}");
+        ConsoleRenderer.WriteInfo($"Compression context window: {_memoryManager.EffectiveCompressionContextTokens:N0}");
+        ConsoleRenderer.WriteInfo(_memoryManager.CompressionContextTokenCap is > 0
+            ? $"Compression cap: {_memoryManager.CompressionContextTokenCap.Value:N0}"
+            : "Compression cap: none (uses model context)");
         ConsoleRenderer.WriteInfo($"Conversation id: {_memoryManager.ConversationId ?? "<none>"}");
         ConsoleRenderer.WriteInfo("Use /context export to review the full context in a file.");
+    }
+
+    private void HandleCap(string[] args)
+    {
+        if (args.Length == 0 || args[0].Equals("status", StringComparison.OrdinalIgnoreCase))
+        {
+            WriteCapStatus();
+            return;
+        }
+
+        string value = args[0].ToLowerInvariant();
+        if (value is "off" or "none" or "0")
+        {
+            ApplyCap(null);
+            return;
+        }
+
+        if (!int.TryParse(args[0], out int capTokens) || capTokens < 4096)
+        {
+            ConsoleRenderer.WriteError("Usage: /context cap [status|off|<tokens>=4096+]");
+            return;
+        }
+
+        ApplyCap(capTokens);
+    }
+
+    private void ApplyCap(int? capTokens)
+    {
+        _memoryManager.SetCompressionContextTokenCap(capTokens);
+        _settings.CompressionContextTokenCap = capTokens;
+        _persistence.SaveSettings(_settings);
+
+        ConsoleRenderer.WriteSuccess(capTokens is > 0
+            ? $"Compression context cap set to {capTokens.Value:N0} tokens."
+            : "Compression context cap disabled.");
+
+        WriteCapStatus();
+    }
+
+    private void WriteCapStatus()
+    {
+        string cap = _memoryManager.CompressionContextTokenCap is > 0
+            ? _memoryManager.CompressionContextTokenCap.Value.ToString("N0")
+            : "none";
+
+        ConsoleRenderer.WriteInfo($"Model context window: {_memoryManager.ModelContextWindowTokens:N0} tokens");
+        ConsoleRenderer.WriteInfo($"Compression cap: {cap}");
+        ConsoleRenderer.WriteInfo($"Effective compression window: {_memoryManager.EffectiveCompressionContextTokens:N0} tokens");
     }
 
     private void Export(string[] args)
@@ -203,5 +266,15 @@ internal sealed class ContextCommand : ICliCommand
     {
         Markdown,
         Json,
+    }
+
+    private sealed class NoOpSettingsPersistence : ISettingsPersistence
+    {
+        public static readonly ISettingsPersistence Instance = new NoOpSettingsPersistence();
+
+        public void SaveSettings(AgentSettings settings)
+        {
+            // no-op for hosts/tests that do not persist settings through this command.
+        }
     }
 }

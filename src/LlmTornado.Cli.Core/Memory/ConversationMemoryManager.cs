@@ -23,6 +23,8 @@ public sealed class ConversationMemoryManager
     private string? _conversationId;
 
     private List<ChatMessage> _messages = [];
+    private int _modelContextWindowTokens;
+    private int? _compressionContextTokenCap;
 
     /// <summary>
     /// Hard ceiling for the request payload as a fraction of the model context window.
@@ -32,6 +34,9 @@ public sealed class ConversationMemoryManager
 
     public IReadOnlyList<ChatMessage> Messages => _messages;
     public string? ConversationId => _conversationId;
+    public int ModelContextWindowTokens => _modelContextWindowTokens;
+    public int EffectiveCompressionContextTokens => _compressionStrategy.ContextWindowTokens;
+    public int? CompressionContextTokenCap => _compressionContextTokenCap;
 
     /// <summary>
     /// Raised when the hard budget guard drops messages from the request payload.
@@ -47,10 +52,13 @@ public sealed class ConversationMemoryManager
         TornadoApi api,
         ChatModel model,
         int? contextWindowTokens,
-        string? conversationPath = null)
+        string? conversationPath = null,
+        int? compressionContextTokenCap = null)
     {
         _conversationPath = conversationPath;
-        _compressionStrategy = new CompressionStrategy(contextWindowTokens ?? 128_000);
+        _modelContextWindowTokens = contextWindowTokens ?? 128_000;
+        _compressionContextTokenCap = compressionContextTokenCap is > 0 ? compressionContextTokenCap : null;
+        _compressionStrategy = new CompressionStrategy(GetEffectiveContextWindowTokens());
         _summarizer = new MessageSummarizer(api, model);
         _metadataTracker = new MessageMetadataTracker();
 
@@ -79,11 +87,14 @@ public sealed class ConversationMemoryManager
         ChatModel model,
         int? contextWindowTokens,
         SqliteConversationStore store,
-        string? conversationId = null)
+        string? conversationId = null,
+        int? compressionContextTokenCap = null)
     {
         _store = store;
         _conversationId = conversationId;
-        _compressionStrategy = new CompressionStrategy(contextWindowTokens ?? 128_000);
+        _modelContextWindowTokens = contextWindowTokens ?? 128_000;
+        _compressionContextTokenCap = compressionContextTokenCap is > 0 ? compressionContextTokenCap : null;
+        _compressionStrategy = new CompressionStrategy(GetEffectiveContextWindowTokens());
         _summarizer = new MessageSummarizer(api, model);
         _metadataTracker = new MessageMetadataTracker();
 
@@ -309,7 +320,29 @@ public sealed class ConversationMemoryManager
     public void UpdateModel(ChatModel model, int? contextWindowTokens)
     {
         _summarizer.UpdateModel(model);
-        _compressionStrategy.UpdateContextWindow(contextWindowTokens ?? 128_000);
+        _modelContextWindowTokens = contextWindowTokens ?? 128_000;
+        ApplyEffectiveContextWindow();
+    }
+
+    /// <summary>
+    /// Set or clear an absolute cap for the context window used by compression/budget enforcement.
+    /// Null or non-positive values clear the cap.
+    /// </summary>
+    public void SetCompressionContextTokenCap(int? capTokens)
+    {
+        _compressionContextTokenCap = capTokens is > 0 ? capTokens : null;
+        ApplyEffectiveContextWindow();
+    }
+
+    private void ApplyEffectiveContextWindow()
+        => _compressionStrategy.UpdateContextWindow(GetEffectiveContextWindowTokens());
+
+    private int GetEffectiveContextWindowTokens()
+    {
+        if (_compressionContextTokenCap is > 0)
+            return Math.Min(_modelContextWindowTokens, _compressionContextTokenCap.Value);
+
+        return _modelContextWindowTokens;
     }
 
     private void RebuildPersistence()

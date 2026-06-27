@@ -307,15 +307,21 @@ internal sealed class AgentCommand : ICliCommand
         string location = answers.Choice("location", WizardSupport.LocationProject);
         List<string> enabledSkills = answers.Selected("skills");
         List<string> disabledTools = answers.Selected("disabled-tools");
+        string normalizedName = AgentDefinitionLoader.Slugify(name);
 
         if (string.IsNullOrWhiteSpace(name))
         {
             ConsoleRenderer.WriteError("Agent name is required.");
             return;
         }
-        if (_agentManager.GetPersona(name) is not null)
+        if (!AgentDefinitionLoader.IsValidAgentName(normalizedName))
         {
-            ConsoleRenderer.WriteError($"An agent named '{name}' already exists. Use /agent edit {name} instead.");
+            ConsoleRenderer.WriteError("Agent name must contain at least one letter or number.");
+            return;
+        }
+        if (_agentManager.GetPersona(normalizedName) is not null)
+        {
+            ConsoleRenderer.WriteError($"An agent named '{normalizedName}' already exists. Use /agent edit {normalizedName} instead.");
             return;
         }
 
@@ -324,11 +330,13 @@ internal sealed class AgentCommand : ICliCommand
         ConsoleRenderer.WriteInfo("Drafting persona instructions with the authoring assistant...");
         string body = await AuthoringAssistant.DraftAsync(
             _providers.Api, _providers.ActiveModel, AuthoringAssistant.AgentAuthorPrompt,
-            BuildAgentBrief(name, description, brief, enabledSkills, disabledTools));
+            BuildAgentBrief(normalizedName, description, brief, enabledSkills, disabledTools));
+
+        string? createdPath = null;
 
         try
         {
-            _agentManager.CreateAgent(agentsDir, name, description, body,
+            createdPath = _agentManager.CreateAgent(agentsDir, normalizedName, description, body,
                 enabledSkills: enabledSkills.Count > 0 ? enabledSkills : null,
                 disabledTools: disabledTools.Count > 0 ? disabledTools : null);
         }
@@ -339,8 +347,8 @@ internal sealed class AgentCommand : ICliCommand
         }
 
         ReloadAgents();
-        ConsoleRenderer.WriteSuccess($"Created agent '{name}' ({location}). Activate it with /agent set {name}.");
-        PreviewAgent(name, body);
+        ConsoleRenderer.WriteSuccess($"Created agent '{normalizedName}' ({location}) at {createdPath}. Activate it with /agent set {normalizedName}.");
+        PreviewAgent(normalizedName, body);
     }
 
     private async Task EditAgentAsync(string name)

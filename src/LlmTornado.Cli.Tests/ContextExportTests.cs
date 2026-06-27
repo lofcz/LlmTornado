@@ -1,6 +1,7 @@
 using System.Text.Json;
 using LlmTornado.Chat;
 using LlmTornado.Cli.Commands;
+using LlmTornado.Cli.Core;
 using LlmTornado.Cli.Core.Memory;
 using LlmTornado.Cli.Core.Storage;
 using LlmTornado.Code;
@@ -129,6 +130,33 @@ public class ContextExportTests
         Assert.That(json, Does.Contain(nameof(ContextExportSnapshot.FullHistory)));
     }
 
+    [Test]
+    public async Task ContextCommand_Cap_Updates_Manager_And_Persists_Settings()
+    {
+        ConversationMemoryManager manager = NewManager();
+        AgentSettings settings = new();
+        TestSettingsPersistence persistence = new();
+        ContextCommand command = new(manager, _store, Path.Combine(_tempDir, "exports"), settings, persistence);
+
+        bool result = await command.ExecuteAsync(["cap", "8192"]);
+
+        Assert.That(result, Is.True);
+        Assert.That(manager.CompressionContextTokenCap, Is.EqualTo(8192));
+        Assert.That(manager.EffectiveCompressionContextTokens, Is.EqualTo(8192));
+        Assert.That(settings.CompressionContextTokenCap, Is.EqualTo(8192));
+        Assert.That(persistence.SaveCalls, Is.EqualTo(1));
+    }
+
     private ConversationMemoryManager NewManager(string? conversationId = null) =>
         new(new TornadoApi("fake-key"), TestHelpers.CheapModel, 128_000, _store, conversationId);
+
+    private sealed class TestSettingsPersistence : ISettingsPersistence
+    {
+        public int SaveCalls { get; private set; }
+
+        public void SaveSettings(AgentSettings settings)
+        {
+            SaveCalls++;
+        }
+    }
 }
