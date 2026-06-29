@@ -4,6 +4,8 @@ public interface IAgentStateStore
 {
     AgentMemoryRecord StoreMemory(string? key, string content, IReadOnlyList<string> tags, string? sourceConversationId);
     IReadOnlyList<AgentMemoryRecord> SearchMemories(string? query, string? tag, int limit);
+    IReadOnlyList<AgentMemoryRecallRecord> RecallMemories(string query, string? tag, int limit, int maxTokens);
+    int ReindexMemoryVectors();
     AgentMemoryRecord? GetMemory(long id);
     bool DeleteMemory(long id);
 
@@ -26,6 +28,20 @@ public sealed record AgentMemoryRecord(
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt,
     string? SourceConversationId);
+
+public sealed record AgentMemoryRecallRecord(
+    long Id,
+    string? Key,
+    string Content,
+    IReadOnlyList<string> Tags,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset UpdatedAt,
+    string? SourceConversationId,
+    double Score,
+    double VectorScore,
+    double TextScore,
+    double RecencyScore,
+    string MatchReason);
 
 public sealed record AgentStateRecord(
     string Key,

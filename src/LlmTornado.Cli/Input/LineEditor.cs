@@ -117,7 +117,7 @@ internal sealed class LineEditor
             Console.ForegroundColor = ConsoleColor.DarkCyan;
             Console.Write(promptDisplay);
             Console.ResetColor();
-            Console.Write(viewport.Text);
+            Console.Write(SanitizeForDisplay(viewport.Text));
 
             // Menu rows.
             int drawnRows = 0;
@@ -144,15 +144,31 @@ internal sealed class LineEditor
             {
                 ConsoleKeyInfo key = Console.ReadKey(intercept: true);
 
+                // True when more keystrokes are already queued behind this one — i.e. we are in
+                // the middle of a paste (or very fast typing). Used to coalesce redraws and to
+                // tell a pasted newline (a line break) apart from a deliberate Enter (submit).
+                bool moreBuffered = SafeKeyAvailable();
+                bool needRecompute = false;
+
                 switch (key.Key)
                 {
                     case ConsoleKey.Enter:
                         if (MenuOpen())
                         {
                             cursor = Accept(buffer, suggestions[menuIndex], cursor);
-                            Recompute(resetIndex: true);
                             suppressMenu = true; // keep closed until next edit
-                            Draw();
+                            needRecompute = true;
+                            break;
+                        }
+                        // During a paste, newlines arrive with more input queued behind them;
+                        // keep them as line breaks so the whole block becomes one message
+                        // instead of submitting (and running an agent turn) line by line.
+                        if (moreBuffered)
+                        {
+                            buffer.Insert(cursor, '\n');
+                            cursor++;
+                            suppressMenu = true;
+                            needRecompute = true;
                             break;
                         }
                         Finish();
@@ -162,10 +178,15 @@ internal sealed class LineEditor
                         if (MenuOpen())
                         {
                             cursor = Accept(buffer, suggestions[menuIndex], cursor);
-                            Recompute(resetIndex: true);
                             suppressMenu = true;
-                            Draw();
+                            needRecompute = true;
+                            break;
                         }
+                        // Preserve literal tabs (e.g. indented code pasted into the prompt).
+                        buffer.Insert(cursor, '\t');
+                        cursor++;
+                        suppressMenu = false;
+                        needRecompute = true;
                         break;
 
                     case ConsoleKey.Escape:
@@ -175,49 +196,38 @@ internal sealed class LineEditor
                         {
                             buffer.Clear();
                             cursor = 0;
-                            Recompute(resetIndex: true);
+                            needRecompute = true;
                         }
-                        Draw();
                         break;
 
                     case ConsoleKey.UpArrow:
                         if (MenuOpen())
-                        {
                             menuIndex = (menuIndex - 1 + suggestions.Count) % suggestions.Count;
-                            Draw();
-                        }
                         break;
 
                     case ConsoleKey.DownArrow:
                         if (MenuOpen())
-                        {
                             menuIndex = (menuIndex + 1) % suggestions.Count;
-                            Draw();
-                        }
                         break;
 
                     case ConsoleKey.LeftArrow:
                         if (cursor > 0) cursor--;
-                        Recompute(resetIndex: true);
-                        Draw();
+                        needRecompute = true;
                         break;
 
                     case ConsoleKey.RightArrow:
                         if (cursor < buffer.Length) cursor++;
-                        Recompute(resetIndex: true);
-                        Draw();
+                        needRecompute = true;
                         break;
 
                     case ConsoleKey.Home:
                         cursor = 0;
-                        Recompute(resetIndex: true);
-                        Draw();
+                        needRecompute = true;
                         break;
 
                     case ConsoleKey.End:
                         cursor = buffer.Length;
-                        Recompute(resetIndex: true);
-                        Draw();
+                        needRecompute = true;
                         break;
 
                     case ConsoleKey.Backspace:
@@ -226,9 +236,8 @@ internal sealed class LineEditor
                             buffer.Remove(cursor - 1, 1);
                             cursor--;
                             suppressMenu = false;
-                            Recompute(resetIndex: true);
+                            needRecompute = true;
                         }
-                        Draw();
                         break;
 
                     case ConsoleKey.Delete:
@@ -236,9 +245,8 @@ internal sealed class LineEditor
                         {
                             buffer.Remove(cursor, 1);
                             suppressMenu = false;
-                            Recompute(resetIndex: true);
+                            needRecompute = true;
                         }
-                        Draw();
                         break;
 
                     default:
@@ -247,10 +255,20 @@ internal sealed class LineEditor
                             buffer.Insert(cursor, key.KeyChar);
                             cursor++;
                             suppressMenu = false;
-                            Recompute(resetIndex: true);
-                            Draw();
+                            needRecompute = true;
                         }
                         break;
+                }
+
+                // Coalesce a burst of buffered input (a paste) into a single recompute + redraw.
+                // Recomputing/redrawing per character makes pastes crawl: every redraw repositions
+                // the cursor (slow on the Windows console) and rescans the working directory for
+                // @-completions. We only touch the screen once the burst has fully drained.
+                if (!SafeKeyAvailable())
+                {
+                    if (needRecompute)
+                        Recompute(resetIndex: true);
+                    Draw();
                 }
             }
         }
@@ -477,6 +495,34 @@ internal sealed class LineEditor
 
         // Keep the right side so the "> " marker stays visible on narrow terminals.
         return value[^safeWidth..];
+    }
+
+    private static bool SafeKeyAvailable()
+    {
+        try { return Console.KeyAvailable; }
+        catch { return false; }
+    }
+
+    /// <summary>
+    /// Render embedded control characters (newlines/tabs from a pasted block) as single-column
+    /// glyphs so the single-line viewport math stays correct while the raw buffer — returned to
+    /// the caller — keeps the real characters.
+    /// </summary>
+    private static string SanitizeForDisplay(string text)
+    {
+        if (string.IsNullOrEmpty(text) || !text.Any(char.IsControl))
+            return text;
+
+        StringBuilder sb = new(text.Length);
+        foreach (char c in text)
+        {
+            sb.Append(c switch
+            {
+                '\n' => '↵',
+                _ => char.IsControl(c) ? ' ' : c,
+            });
+        }
+        return sb.ToString();
     }
 
     private static bool TrySetCursor(int left, int top)

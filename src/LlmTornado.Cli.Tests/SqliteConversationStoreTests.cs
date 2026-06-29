@@ -179,6 +179,26 @@ public class SqliteConversationStoreTests
         }
 
         [Test]
+        public void Save_With_ExistingId_Preserves_Hidden_Raw_History()
+        {
+            ChatMessage oldTurn = new(ChatMessageRoles.User, "raw old turn");
+            string id = _store.Save([oldTurn], "gpt-4", null, "convo");
+
+            ChatMessage summary = new(ChatMessageRoles.User, "[Conversation Summary]\n- raw old turn happened");
+            ChatMessage recent = new(ChatMessageRoles.Assistant, "recent visible answer");
+            _store.Save([summary, recent], "gpt-4", null, existingId: id);
+
+            List<ChatMessage>? visible = _store.Load(id);
+            List<ChatMessage>? full = _store.LoadFull(id);
+
+            Assert.That(visible, Has.Count.EqualTo(2));
+            Assert.That(visible!.Select(m => m.Content), Does.Not.Contain("raw old turn"));
+            Assert.That(full, Is.Not.Null);
+            Assert.That(full!.Select(m => m.Content), Does.Contain("raw old turn"));
+            Assert.That(full.Select(m => m.Content), Does.Contain("[Conversation Summary]\n- raw old turn happened"));
+        }
+
+        [Test]
         public void Save_With_ExistingId_Preserves_CreatedAt()
         {
             List<ChatMessage> messages = [new(ChatMessageRoles.User, "test")];

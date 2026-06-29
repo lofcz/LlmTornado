@@ -50,6 +50,45 @@ public class SqliteAgentStateStoreTests
     }
 
     [Test]
+    public void Memory_Recall_Uses_Local_Vector_Index_And_Token_Budget()
+    {
+        AgentMemoryRecord ui = _store.StoreMemory(
+            "ui-preference",
+            "User prefers compact green dashboards with dense tables.",
+            ["preference", "ui"],
+            "conv-1");
+        _store.StoreMemory(
+            "backend-note",
+            "The service retries failed jobs with exponential backoff.",
+            ["backend"],
+            "conv-2");
+
+        IReadOnlyList<AgentMemoryRecallRecord> recalled = _store.RecallMemories(
+            "green dashboard layout preferences",
+            "ui",
+            limit: 5,
+            maxTokens: 200);
+
+        Assert.That(recalled, Is.Not.Empty);
+        Assert.That(recalled[0].Id, Is.EqualTo(ui.Id));
+        Assert.That(recalled[0].VectorScore, Is.GreaterThan(0));
+        Assert.That(recalled[0].Score, Is.GreaterThan(0));
+        Assert.That(recalled[0].MatchReason, Is.Not.Empty);
+    }
+
+    [Test]
+    public void Memory_Reindex_Backfills_Vector_Rows()
+    {
+        _store.StoreMemory("one", "Remember the project uses SQLite memory.", ["project"], null);
+        _store.StoreMemory("two", "User likes concise context budget displays.", ["preference"], null);
+
+        int reindexed = _store.ReindexMemoryVectors();
+
+        Assert.That(reindexed, Is.EqualTo(2));
+        Assert.That(_store.RecallMemories("context budget", null, 5, 500), Is.Not.Empty);
+    }
+
+    [Test]
     public void State_Set_Get_List_Delete_RoundTrips()
     {
         AgentStateRecord first = _store.SetState("task.phase", "planning", "text/plain");

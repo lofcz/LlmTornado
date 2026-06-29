@@ -79,8 +79,8 @@ public sealed class SqliteConversationStore : IDisposable
                     label = getLabel.ExecuteScalar() as string;
                 }
 
-                // Delete existing messages and attachments for this conversation (will re-insert)
-                DeleteMessages(conn, tx, id);
+                // Preserve the raw transcript rows; only reset which rows make up the active model context.
+                HideMessages(conn, tx, id);
             }
             else
             {
@@ -651,12 +651,11 @@ public sealed class SqliteConversationStore : IDisposable
         cmd.ExecuteNonQuery();
     }
 
-    private static void DeleteMessages(SqliteConnection conn, SqliteTransaction tx, string conversationId)
+    private static void HideMessages(SqliteConnection conn, SqliteTransaction tx, string conversationId)
     {
-        // FK cascade will handle attachments
         using SqliteCommand cmd = conn.CreateCommand();
         cmd.Transaction = tx;
-        cmd.CommandText = "DELETE FROM messages WHERE conversation_id = @conv";
+        cmd.CommandText = "UPDATE messages SET visible = 0 WHERE conversation_id = @conv";
         cmd.Parameters.AddWithValue("@conv", conversationId);
         cmd.ExecuteNonQuery();
     }

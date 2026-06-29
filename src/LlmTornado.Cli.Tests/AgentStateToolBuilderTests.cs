@@ -36,8 +36,11 @@ public class AgentStateToolBuilderTests
         builder.Build();
 
         List<string> toolNames = builder.FullToolList.Select(t => t.ResolvedName).ToList();
+        Assert.That(toolNames, Does.Contain("web_search"));
         Assert.That(toolNames, Does.Contain("memory_store"));
         Assert.That(toolNames, Does.Contain("memory_search"));
+        Assert.That(toolNames, Does.Contain("memory_recall"));
+        Assert.That(toolNames, Does.Contain("memory_reindex"));
         Assert.That(toolNames, Does.Contain("state_set"));
         Assert.That(toolNames, Does.Contain("state_snapshot_restore"));
 
@@ -53,6 +56,7 @@ public class AgentStateToolBuilderTests
         builder.Build();
 
         List<string> toolNames = builder.FullToolList.Select(t => t.ResolvedName).ToList();
+        Assert.That(toolNames, Does.Contain("web_search"));
         Assert.That(toolNames, Does.Not.Contain("memory_store"));
         Assert.That(toolNames, Does.Not.Contain("state_set"));
 

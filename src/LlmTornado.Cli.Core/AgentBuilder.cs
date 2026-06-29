@@ -335,10 +335,15 @@ public sealed class AgentBuilder
             sb.AppendLine();
         }
 
+        sb.AppendLine("You have a built-in `web_search` tool for internet searches.");
+        sb.AppendLine("Use it when current or external information is needed, and cite source URLs from the results.");
+        sb.AppendLine();
+
         if (_agentStateStore is not null)
         {
             sb.AppendLine("You have built-in CLI-local memory and state tools.");
             sb.AppendLine("Use memory tools for durable notes, user/project preferences, and facts worth retaining.");
+            sb.AppendLine("Use `memory_recall` for semantic/hybrid recall and keep its max_tokens small; use `memory_search` for exact keyword lookup.");
             sb.AppendLine("Use state tools for current task state, checkpoints, and inspecting or restoring past state snapshots.");
             sb.AppendLine();
         }
@@ -358,6 +363,7 @@ public sealed class AgentBuilder
         tools.Add(BuildReadReferenceTool());
         if (_userInteraction is not null)
             tools.Add(BuildAskQuestionTool());
+        tools.Add(BuiltInWebSearchTool.Build());
 
         if (_agentStateStore is not null)
             tools.AddRange(BuildAgentStateTools());
@@ -463,6 +469,10 @@ public sealed class AgentBuilder
                 "Store a durable CLI-local memory note. Use for user preferences, project facts, and important decisions."),
             new Tool(new Func<MemorySearchToolRequest, string>(MemorySearch), "memory_search",
                 "Search durable CLI-local memories by text query and/or tag."),
+            new Tool(new Func<MemoryRecallToolRequest, string>(MemoryRecall), "memory_recall",
+                "Hybrid vector/keyword recall over durable CLI-local memories. Use for semantic recall with a token budget."),
+            new Tool(new Func<string>(MemoryReindex), "memory_reindex",
+                "Rebuild local vectors for all durable CLI-local memories."),
             new Tool(new Func<MemoryListToolRequest, string>(MemoryList), "memory_list",
                 "List recent durable CLI-local memories, optionally filtered by tag."),
             new Tool(new Func<MemoryGetToolRequest, string>(MemoryGet), "memory_get",
@@ -510,6 +520,32 @@ public sealed class AgentBuilder
         if (_agentStateStore is null)
             return "Memory tools are not available.";
         return SerializeToolResult(_agentStateStore.SearchMemories(request.Query, request.Tag, request.Limit));
+    }
+
+    private string MemoryRecall(MemoryRecallToolRequest request)
+    {
+        if (_agentStateStore is null)
+            return "Memory tools are not available.";
+        if (string.IsNullOrWhiteSpace(request.Query))
+            return "ERROR: query is required.";
+
+        return SerializeToolResult(_agentStateStore.RecallMemories(
+            request.Query,
+            request.Tag,
+            request.Limit,
+            request.MaxTokens));
+    }
+
+    private string MemoryReindex()
+    {
+        if (_agentStateStore is null)
+            return "Memory tools are not available.";
+
+        return SerializeToolResult(new
+        {
+            reindexed = _agentStateStore.ReindexMemoryVectors(),
+            provider = LocalMemoryVectorizer.Provider
+        });
     }
 
     private string MemoryList(MemoryListToolRequest request)
@@ -779,6 +815,14 @@ public sealed class MemorySearchToolRequest
     public string? Query { get; set; }
     public string? Tag { get; set; }
     public int Limit { get; set; } = 20;
+}
+
+public sealed class MemoryRecallToolRequest
+{
+    public string Query { get; set; } = "";
+    public string? Tag { get; set; }
+    public int Limit { get; set; } = 8;
+    public int MaxTokens { get; set; } = 1_500;
 }
 
 public sealed class MemoryListToolRequest

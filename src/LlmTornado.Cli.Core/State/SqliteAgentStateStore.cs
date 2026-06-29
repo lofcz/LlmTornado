@@ -6,6 +6,7 @@ namespace LlmTornado.Cli.Core.State;
 public sealed class SqliteAgentStateStore : IAgentStateStore, IDisposable
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = false };
+    private const int DefaultRecallTokenBudget = 1_500;
     private readonly string _connectionString;
     private SqliteConnection? _connection;
 
@@ -45,7 +46,9 @@ public sealed class SqliteAgentStateStore : IAgentStateStore, IDisposable
         cmd.Parameters.AddWithValue("@source", DbValue(Normalize(sourceConversationId)));
 
         long id = (long)cmd.ExecuteScalar()!;
-        return GetMemory(id)!;
+        AgentMemoryRecord record = GetMemory(id)!;
+        UpsertMemoryVector(record);
+        return record;
     }
 
     public IReadOnlyList<AgentMemoryRecord> SearchMemories(string? query, string? tag, int limit)
@@ -100,12 +103,103 @@ public sealed class SqliteAgentStateStore : IAgentStateStore, IDisposable
         return ReadMemories(cmd).FirstOrDefault();
     }
 
+    public IReadOnlyList<AgentMemoryRecallRecord> RecallMemories(string query, string? tag, int limit, int maxTokens)
+    {
+        string normalizedQuery = Normalize(query) ?? throw new ArgumentException("Recall query is required.", nameof(query));
+        int cappedLimit = NormalizeLimit(limit);
+        int tokenBudget = maxTokens <= 0 ? DefaultRecallTokenBudget : Math.Clamp(maxTokens, 128, 16_000);
+        string? normalizedTag = Normalize(tag);
+
+        List<AgentMemoryRecord> records = LoadAllMemories();
+        if (normalizedTag is not null)
+        {
+            records = records
+                .Where(record => record.Tags.Any(t => t.Equals(normalizedTag, StringComparison.OrdinalIgnoreCase)))
+                .ToList();
+        }
+
+        Dictionary<long, float[]> vectors = LoadMemoryVectors();
+        float[] queryVector = LocalMemoryVectorizer.Embed(normalizedQuery);
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+
+        List<AgentMemoryRecallRecord> ranked = [];
+        foreach (AgentMemoryRecord record in records)
+        {
+            if (!vectors.TryGetValue(record.Id, out float[]? vector))
+            {
+                vector = UpsertMemoryVector(record);
+                vectors[record.Id] = vector;
+            }
+
+            double vectorScore = LocalMemoryVectorizer.CosineSimilarity(queryVector, vector);
+            double textScore = LocalMemoryVectorizer.LexicalScore(normalizedQuery, record);
+            double recencyScore = CalculateRecencyScore(record.UpdatedAt, now);
+            double score = (vectorScore * 0.65) + (textScore * 0.25) + (recencyScore * 0.10);
+
+            if (score <= 0)
+                continue;
+
+            ranked.Add(ToRecallRecord(record, score, vectorScore, textScore, recencyScore));
+        }
+
+        List<AgentMemoryRecallRecord> result = [];
+        int usedTokens = 0;
+        foreach (AgentMemoryRecallRecord record in ranked
+                     .OrderByDescending(record => record.Score)
+                     .ThenByDescending(record => record.UpdatedAt))
+        {
+            int tokenEstimate = EstimateTokens(record.Content);
+            if (result.Count > 0 && usedTokens + tokenEstimate > tokenBudget)
+                continue;
+
+            result.Add(record);
+            usedTokens += tokenEstimate;
+
+            if (result.Count >= cappedLimit)
+                break;
+        }
+
+        return result;
+    }
+
+    public int ReindexMemoryVectors()
+    {
+        int count = 0;
+        foreach (AgentMemoryRecord record in LoadAllMemories())
+        {
+            UpsertMemoryVector(record);
+            count++;
+        }
+
+        return count;
+    }
+
     public bool DeleteMemory(long id)
     {
-        using SqliteCommand cmd = Connection.CreateCommand();
-        cmd.CommandText = "DELETE FROM agent_memories WHERE id = @id";
-        cmd.Parameters.AddWithValue("@id", id);
-        return cmd.ExecuteNonQuery() > 0;
+        using SqliteTransaction tx = Connection.BeginTransaction();
+        try
+        {
+            using (SqliteCommand vector = Connection.CreateCommand())
+            {
+                vector.Transaction = tx;
+                vector.CommandText = "DELETE FROM agent_memory_vectors WHERE memory_id = @id";
+                vector.Parameters.AddWithValue("@id", id);
+                vector.ExecuteNonQuery();
+            }
+
+            using SqliteCommand cmd = Connection.CreateCommand();
+            cmd.Transaction = tx;
+            cmd.CommandText = "DELETE FROM agent_memories WHERE id = @id";
+            cmd.Parameters.AddWithValue("@id", id);
+            bool deleted = cmd.ExecuteNonQuery() > 0;
+            tx.Commit();
+            return deleted;
+        }
+        catch
+        {
+            tx.Rollback();
+            throw;
+        }
     }
 
     public AgentStateRecord SetState(string key, string value, string? contentType)
@@ -315,6 +409,15 @@ public sealed class SqliteAgentStateStore : IAgentStateStore, IDisposable
             CREATE INDEX IF NOT EXISTS idx_agent_memories_updated
                 ON agent_memories(updated_at);
 
+            CREATE TABLE IF NOT EXISTS agent_memory_vectors (
+                memory_id       INTEGER PRIMARY KEY,
+                provider        TEXT NOT NULL,
+                dimensions      INTEGER NOT NULL,
+                vector_json     TEXT NOT NULL,
+                embedded_at     TEXT NOT NULL,
+                FOREIGN KEY (memory_id) REFERENCES agent_memories(id) ON DELETE CASCADE
+            );
+
             CREATE TABLE IF NOT EXISTS agent_state (
                 state_key       TEXT PRIMARY KEY,
                 value           TEXT NOT NULL,
@@ -332,6 +435,111 @@ public sealed class SqliteAgentStateStore : IAgentStateStore, IDisposable
             """;
         cmd.ExecuteNonQuery();
     }
+
+    private List<AgentMemoryRecord> LoadAllMemories()
+    {
+        using SqliteCommand cmd = Connection.CreateCommand();
+        cmd.CommandText = """
+            SELECT id, memory_key, content, tags_json, created_at, updated_at, source_conversation_id
+            FROM agent_memories
+            ORDER BY updated_at DESC, id DESC
+            """;
+        return ReadMemories(cmd);
+    }
+
+    private Dictionary<long, float[]> LoadMemoryVectors()
+    {
+        using SqliteCommand cmd = Connection.CreateCommand();
+        cmd.CommandText = """
+            SELECT memory_id, vector_json
+            FROM agent_memory_vectors
+            WHERE provider = @provider AND dimensions = @dimensions
+            """;
+        cmd.Parameters.AddWithValue("@provider", LocalMemoryVectorizer.Provider);
+        cmd.Parameters.AddWithValue("@dimensions", LocalMemoryVectorizer.Dimensions);
+
+        Dictionary<long, float[]> result = [];
+        using SqliteDataReader reader = cmd.ExecuteReader();
+        while (reader.Read())
+        {
+            float[]? vector = DeserializeVector(reader.GetString(1));
+            if (vector is not null)
+                result[reader.GetInt64(0)] = vector;
+        }
+
+        return result;
+    }
+
+    private float[] UpsertMemoryVector(AgentMemoryRecord record)
+    {
+        float[] vector = LocalMemoryVectorizer.Embed(record.Content, record.Tags, record.Key);
+        using SqliteCommand cmd = Connection.CreateCommand();
+        cmd.CommandText = """
+            INSERT INTO agent_memory_vectors (memory_id, provider, dimensions, vector_json, embedded_at)
+            VALUES (@id, @provider, @dimensions, @vector, @embedded)
+            ON CONFLICT(memory_id) DO UPDATE SET
+                provider = @provider,
+                dimensions = @dimensions,
+                vector_json = @vector,
+                embedded_at = @embedded
+            """;
+        cmd.Parameters.AddWithValue("@id", record.Id);
+        cmd.Parameters.AddWithValue("@provider", LocalMemoryVectorizer.Provider);
+        cmd.Parameters.AddWithValue("@dimensions", LocalMemoryVectorizer.Dimensions);
+        cmd.Parameters.AddWithValue("@vector", JsonSerializer.Serialize(vector, JsonOptions));
+        cmd.Parameters.AddWithValue("@embedded", DateTimeOffset.UtcNow.ToString("O"));
+        cmd.ExecuteNonQuery();
+        return vector;
+    }
+
+    private static float[]? DeserializeVector(string vectorJson)
+    {
+        try
+        {
+            float[]? vector = JsonSerializer.Deserialize<float[]>(vectorJson, JsonOptions);
+            return vector is { Length: LocalMemoryVectorizer.Dimensions } ? vector : null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static AgentMemoryRecallRecord ToRecallRecord(
+        AgentMemoryRecord memory,
+        double score,
+        double vectorScore,
+        double textScore,
+        double recencyScore)
+    {
+        string reason = textScore >= 0.5
+            ? "keyword+vector"
+            : vectorScore >= 0.15
+                ? "vector"
+                : "recency";
+
+        return new AgentMemoryRecallRecord(
+            memory.Id,
+            memory.Key,
+            memory.Content,
+            memory.Tags,
+            memory.CreatedAt,
+            memory.UpdatedAt,
+            memory.SourceConversationId,
+            Math.Round(score, 4),
+            Math.Round(vectorScore, 4),
+            Math.Round(textScore, 4),
+            Math.Round(recencyScore, 4),
+            reason);
+    }
+
+    private static double CalculateRecencyScore(DateTimeOffset updatedAt, DateTimeOffset now)
+    {
+        double ageDays = Math.Max(0, (now - updatedAt).TotalDays);
+        return 1.0 / (1.0 + ageDays / 30.0);
+    }
+
+    private static int EstimateTokens(string text) => Math.Max(1, text.Length / 4);
 
     private static List<AgentMemoryRecord> ReadMemories(SqliteCommand cmd)
     {
