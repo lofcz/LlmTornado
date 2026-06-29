@@ -1,7 +1,7 @@
 namespace LlmTornado.Cli.Input;
 
 /// <summary>
-/// Tracks in-session slash-command history and supports readline-style navigation.
+/// Tracks in-session input history and supports readline-style navigation.
 /// </summary>
 internal sealed class CommandHistoryNavigator
 {
@@ -19,17 +19,23 @@ internal sealed class CommandHistoryNavigator
 
     internal void AddSubmitted(string input)
     {
-        if (!IsSlashCommand(input))
+        // Record any non-blank submission so the user can recall whatever they typed,
+        // not just slash commands. Always re-arm navigation afterwards.
+        string command = (input ?? string.Empty).Trim();
+        if (command.Length == 0)
         {
             ResetNavigation();
             return;
         }
 
-        string command = input.Trim();
-        _entries.Add(command);
+        // Skip consecutive duplicates so holding Up doesn't crawl through repeats.
+        if (_entries.Count == 0 || _entries[^1] != command)
+        {
+            _entries.Add(command);
 
-        if (_entries.Count > _maxEntries)
-            _entries.RemoveAt(0);
+            if (_entries.Count > _maxEntries)
+                _entries.RemoveAt(0);
+        }
 
         ResetNavigation();
     }
@@ -78,13 +84,5 @@ internal sealed class CommandHistoryNavigator
     {
         _index = -1;
         _draft = null;
-    }
-
-    internal static bool IsSlashCommand(string input)
-    {
-        if (string.IsNullOrWhiteSpace(input))
-            return false;
-
-        return input.TrimStart().StartsWith('/');
     }
 }

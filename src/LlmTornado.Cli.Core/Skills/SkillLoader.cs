@@ -34,59 +34,91 @@ public static partial class SkillLoader
         .Build();
 
     /// <summary>
-    /// Resolve the skills directory. If <paramref name="skillsDirectoryOverride"/> is non-null
-    /// and exists, use it. Otherwise fall back to ./skills/ relative to CWD.
+    /// Resolve the project skills directory. If <paramref name="skillsDirectoryOverride"/> is non-empty,
+    /// use it. Otherwise use <c>&lt;cwd&gt;/llmtornado/skills</c> (see <see cref="TornadoPaths"/>).
     /// </summary>
     public static string ResolveSkillsDirectory(string? skillsDirectoryOverride)
     {
-        if (!string.IsNullOrEmpty(skillsDirectoryOverride) && Directory.Exists(skillsDirectoryOverride))
-            return Path.GetFullPath(skillsDirectoryOverride);
+        if (!string.IsNullOrWhiteSpace(skillsDirectoryOverride))
+            return Path.GetFullPath(Environment.ExpandEnvironmentVariables(skillsDirectoryOverride));
 
-        return Path.GetFullPath("skills");
+        return TornadoPaths.ProjectSkillsDirectory();
     }
 
     /// <summary>
-    /// Resolve the global skills directory.
-    /// Checks the <c>TORNADO_SKILLS_DIR</c> environment variable first; if set and the directory exists, uses it.
-    /// Otherwise falls back to <c>%APPDATA%/llmtornado/skills/</c> (or platform equivalent).
+    /// Resolve the global skills directory — a per-user folder that lives outside the source tree, so
+    /// the built CLI never depends on shipped source files. Uses the universal <c>TORNADO_HOME</c> root
+    /// (else <c>&lt;app-data&gt;/llmtornado</c>) with the <c>skills</c> subfolder.
     /// </summary>
-    public static string ResolveGlobalSkillsDirectory()
+    public static string ResolveGlobalSkillsDirectory() => TornadoPaths.GlobalSkillsDirectory();
+
+    /// <summary>
+    /// Seed the built-in skills that ship alongside the binary (under <c>&lt;app&gt;/skills</c>) into the
+    /// global user folder, so a published build never reads skills from the source tree. Existing skill
+    /// folders are left untouched — user edits are never overwritten.
+    /// </summary>
+    /// <param name="globalSkillsDirectory">The destination global skills folder (created if missing).</param>
+    /// <param name="onSeeded">Optional sink invoked with the name of each skill that was seeded.</param>
+    public static void SeedBuiltInSkills(string globalSkillsDirectory, Action<string>? onSeeded = null)
     {
-        string? envDir = Environment.GetEnvironmentVariable("TORNADO_SKILLS_DIR");
-        if (!string.IsNullOrEmpty(envDir) && Directory.Exists(envDir))
-            return Path.GetFullPath(envDir);
+        SeedBuiltInSkills(Path.Combine(AppContext.BaseDirectory, "skills"), globalSkillsDirectory, onSeeded);
+    }
 
-        string configRoot = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+    /// <summary>
+    /// Seed skills from <paramref name="bundledDir"/> into <paramref name="globalSkillsDirectory"/>,
+    /// skipping any skill folder that already exists at the destination. Exposed for testing the
+    /// seed source explicitly; production code uses the parameterless-source overload.
+    /// </summary>
+    public static void SeedBuiltInSkills(string bundledDir, string globalSkillsDirectory, Action<string>? onSeeded)
+    {
+        if (!Directory.Exists(bundledDir))
+            return;
 
-        // Some container/minimal Linux setups can return an empty ApplicationData path.
-        if (string.IsNullOrWhiteSpace(configRoot))
-            configRoot = Environment.GetEnvironmentVariable("XDG_CONFIG_HOME") ?? string.Empty;
+        Directory.CreateDirectory(globalSkillsDirectory);
 
-        if (string.IsNullOrWhiteSpace(configRoot))
+        foreach (string sourceDir in Directory.GetDirectories(bundledDir))
         {
-            string profileRoot = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-            if (!string.IsNullOrWhiteSpace(profileRoot))
-                configRoot = Path.Combine(profileRoot, ".config");
+            // Only treat folders that actually contain a SKILL.md as seedable skills.
+            if (!File.Exists(Path.Combine(sourceDir, "SKILL.md")))
+                continue;
+
+            string name = Path.GetFileName(sourceDir);
+            string destDir = Path.Combine(globalSkillsDirectory, name);
+
+            // Never clobber a skill the user already has (seeded earlier or hand-authored).
+            if (Directory.Exists(destDir))
+                continue;
+
+            CopyDirectory(sourceDir, destDir);
+            onSeeded?.Invoke(name);
         }
+    }
 
-        if (string.IsNullOrWhiteSpace(configRoot))
-            configRoot = Path.GetFullPath(".config");
+    private static void CopyDirectory(string sourceDir, string destDir)
+    {
+        Directory.CreateDirectory(destDir);
 
-        return Path.GetFullPath(Path.Combine(configRoot, "llmtornado", "skills"));
+        foreach (string file in Directory.GetFiles(sourceDir))
+            File.Copy(file, Path.Combine(destDir, Path.GetFileName(file)), overwrite: false);
+
+        foreach (string subDir in Directory.GetDirectories(sourceDir))
+            CopyDirectory(subDir, Path.Combine(destDir, Path.GetFileName(subDir)));
     }
 
     /// <summary>
     /// Discover all valid skill directories under the given path.
     /// </summary>
-    public static List<Skill> DiscoverSkills(string skillsRootDirectory)
+    /// <param name="onWarning">Optional sink invoked with a human-readable reason whenever a skill folder is skipped.</param>
+    public static List<Skill> DiscoverSkills(string skillsRootDirectory, Action<string>? onWarning = null)
     {
-        return DiscoverSkills(skillsRootDirectory, SkillSource.Project);
+        return DiscoverSkills(skillsRootDirectory, SkillSource.Project, onWarning);
     }
 
     /// <summary>
     /// Discover all valid skill directories under the given path, tagging them with the given source.
     /// </summary>
-    public static List<Skill> DiscoverSkills(string skillsRootDirectory, SkillSource source)
+    /// <param name="onWarning">Optional sink invoked with a human-readable reason whenever a skill folder is skipped.</param>
+    public static List<Skill> DiscoverSkills(string skillsRootDirectory, SkillSource source, Action<string>? onWarning = null)
     {
         List<Skill> skills = [];
 
@@ -97,9 +129,12 @@ public static partial class SkillLoader
         {
             string skillMdPath = Path.Combine(dir, "SKILL.md");
             if (!File.Exists(skillMdPath))
+            {
+                onWarning?.Invoke($"Skipped '{dir}': no SKILL.md file.");
                 continue;
+            }
 
-            Skill? skill = ParseSkillMetadata(dir);
+            Skill? skill = ParseSkillMetadata(dir, onWarning);
             if (skill is not null)
             {
                 skill.Source = source;
@@ -114,20 +149,21 @@ public static partial class SkillLoader
     /// Discover skills from both global and project-local directories.
     /// Project-local skills shadow global skills with the same name.
     /// </summary>
-    public static List<Skill> DiscoverAllSkills(string projectSkillsDir, string? globalSkillsDir)
+    /// <param name="onWarning">Optional sink invoked with a human-readable reason whenever a skill folder is skipped.</param>
+    public static List<Skill> DiscoverAllSkills(string projectSkillsDir, string? globalSkillsDir, Action<string>? onWarning = null)
     {
         Dictionary<string, Skill> merged = new(StringComparer.OrdinalIgnoreCase);
 
         // 1. Load global skills first (lower precedence)
         if (!string.IsNullOrEmpty(globalSkillsDir))
         {
-            List<Skill> globalSkills = DiscoverSkills(globalSkillsDir, SkillSource.Global);
+            List<Skill> globalSkills = DiscoverSkills(globalSkillsDir, SkillSource.Global, onWarning);
             foreach (Skill skill in globalSkills)
                 merged[skill.Name] = skill;
         }
 
         // 2. Load project-local skills — shadow global skills with same name
-        List<Skill> projectSkills = DiscoverSkills(projectSkillsDir, SkillSource.Project);
+        List<Skill> projectSkills = DiscoverSkills(projectSkillsDir, SkillSource.Project, onWarning);
         foreach (Skill skill in projectSkills)
             merged[skill.Name] = skill;
 
@@ -137,43 +173,60 @@ public static partial class SkillLoader
     /// <summary>
     /// Parse a SKILL.md file frontmatter and return a Skill with metadata loaded.
     /// </summary>
-    public static Skill? ParseSkillMetadata(string skillDirectory)
+    /// <param name="onWarning">Optional sink invoked with a human-readable reason when the skill is rejected.</param>
+    public static Skill? ParseSkillMetadata(string skillDirectory, Action<string>? onWarning = null)
     {
         string skillMdPath = Path.Combine(skillDirectory, "SKILL.md");
         if (!File.Exists(skillMdPath))
+        {
+            onWarning?.Invoke($"Skipped '{skillDirectory}': no SKILL.md file.");
             return null;
+        }
 
         string dirName = Path.GetFileName(skillDirectory);
         string content = File.ReadAllText(skillMdPath);
 
         // Parse YAML frontmatter using YamlDotNet
-        SkillFrontmatter? frontmatter = ParseFrontmatter(content);
+        SkillFrontmatter? frontmatter = ParseFrontmatter(content, out string? parseError);
         if (frontmatter is null)
+        {
+            onWarning?.Invoke($"Skipped '{dirName}': {parseError ?? "no valid YAML frontmatter (missing or malformed --- block)."}");
             return null;
+        }
 
         string name = frontmatter.Name ?? dirName;
 
         // Validate name per spec: 1-64 chars, lowercase alphanumeric + hyphens, no leading/trailing/consecutive hyphens
-        if (name.Length is < 1 or > 64)
+        if (name.Length is < 1 or > 64
+            || !ValidSkillNameRegex().IsMatch(name)
+            || ConsecutiveHyphensRegex().IsMatch(name))
+        {
+            onWarning?.Invoke($"Skipped '{dirName}': invalid skill name '{name}' (use 1-64 lowercase letters, digits, and single hyphens).");
             return null;
-        if (!ValidSkillNameRegex().IsMatch(name))
-            return null;
-        if (ConsecutiveHyphensRegex().IsMatch(name))
-            return null;
+        }
 
         // Name must match directory name (case-insensitive for OS compatibility)
         if (!string.Equals(name, dirName, StringComparison.OrdinalIgnoreCase))
+        {
+            onWarning?.Invoke($"Skipped '{dirName}': frontmatter name '{name}' must match the directory name '{dirName}'.");
             return null;
+        }
 
         // Description is required and must be 1-1024 characters
         string? description = frontmatter.Description;
         if (string.IsNullOrEmpty(description) || description.Length > 1024)
+        {
+            onWarning?.Invoke($"Skipped '{dirName}': description is required and must be 1-1024 characters.");
             return null;
+        }
 
         // Compatibility, if provided, must be <= 500 characters
         string? compatibility = frontmatter.Compatibility;
         if (compatibility is not null && compatibility.Length > 500)
+        {
+            onWarning?.Invoke($"Skipped '{dirName}': compatibility must be <= 500 characters.");
             return null;
+        }
 
         List<string> allowedTools = [];
         if (!string.IsNullOrEmpty(frontmatter.AllowedTools))
@@ -346,8 +399,9 @@ public static partial class SkillLoader
     /// Parse YAML frontmatter using YamlDotNet into a strongly-typed model.
     /// Returns null if no valid frontmatter block is found.
     /// </summary>
-    private static SkillFrontmatter? ParseFrontmatter(string content)
+    private static SkillFrontmatter? ParseFrontmatter(string content, out string? error)
     {
+        error = null;
         string? yaml = ExtractYamlBlock(content);
         if (yaml is null)
             return null;
@@ -356,8 +410,9 @@ public static partial class SkillLoader
         {
             return YamlDeserializer.Deserialize<SkillFrontmatter>(yaml);
         }
-        catch
+        catch (Exception ex)
         {
+            error = $"YAML frontmatter could not be parsed: {ex.Message}";
             return null;
         }
     }

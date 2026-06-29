@@ -7,7 +7,7 @@ namespace LlmTornado.Cli.Core.Mcp;
 
 /// <summary>
 /// Loads MCP server definitions from JSON config files and initializes them.
-/// Supports both a global config (%APPDATA%/llmtornado/mcp.json) and a project-local config.
+/// Supports both a global config (&lt;app-data&gt;/llmtornado/mcp.json) and a project-local config (&lt;cwd&gt;/llmtornado/mcp.json).
 /// </summary>
 public sealed partial class McpConfigLoader : IAsyncDisposable
 {
@@ -56,30 +56,31 @@ public sealed partial class McpConfigLoader : IAsyncDisposable
         if (!string.IsNullOrEmpty(envPath) && File.Exists(envPath))
             return Path.GetFullPath(envPath);
 
-        string defaultPath = Path.GetFullPath("mcp.json");
+        string defaultPath = ResolveDefaultMcpConfigPath(null);
         return File.Exists(defaultPath) ? defaultPath : null;
     }
 
     /// <summary>
-    /// Get the path where the local mcp.json should live, whether it exists or not.
+    /// Get the path where the local mcp.json should live, whether it exists or not:
+    /// <c>&lt;cwd&gt;/llmtornado/mcp.json</c> (see <see cref="TornadoPaths"/>), unless overridden.
     /// </summary>
     public static string ResolveDefaultMcpConfigPath(string? mcpConfigPathOverride)
     {
         if (!string.IsNullOrEmpty(mcpConfigPathOverride))
-            return Path.GetFullPath(mcpConfigPathOverride);
+            return Path.GetFullPath(Environment.ExpandEnvironmentVariables(mcpConfigPathOverride));
 
         string? envPath = Environment.GetEnvironmentVariable("TORNADO_MCP_CONFIG");
         if (!string.IsNullOrEmpty(envPath))
-            return Path.GetFullPath(envPath);
+            return Path.GetFullPath(Environment.ExpandEnvironmentVariables(envPath));
 
-        return Path.GetFullPath("mcp.json");
+        return TornadoPaths.ProjectMcpConfig();
     }
 
     /// <summary>
     /// Resolve the global MCP config path.
     /// Checks <c>TORNADO_MCP_GLOBAL_CONFIG</c> env var first; if set and the file exists, uses it.
-    /// Otherwise falls back to <c>%APPDATA%/llmtornado/mcp.json</c>.
-    /// Returns null if neither exists.
+    /// Otherwise falls back to the universal global root: <c>&lt;TORNADO_HOME&gt;/mcp.json</c>
+    /// (else <c>&lt;app-data&gt;/llmtornado/mcp.json</c>). Returns null if neither exists.
     /// </summary>
     public static string? ResolveGlobalMcpConfigPath()
     {
@@ -87,24 +88,21 @@ public sealed partial class McpConfigLoader : IAsyncDisposable
         if (!string.IsNullOrEmpty(envPath) && File.Exists(envPath))
             return Path.GetFullPath(envPath);
 
-        string defaultPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "llmtornado", "mcp.json");
+        string defaultPath = ResolveDefaultGlobalMcpConfigPath();
         return File.Exists(defaultPath) ? defaultPath : null;
     }
 
     /// <summary>
-    /// Get the path where the global mcp.json should live, whether it exists or not.
+    /// Get the path where the global mcp.json should live, whether it exists or not:
+    /// <c>&lt;TORNADO_HOME&gt;/mcp.json</c> (else <c>&lt;app-data&gt;/llmtornado/mcp.json</c>).
     /// </summary>
     public static string ResolveDefaultGlobalMcpConfigPath()
     {
         string? envPath = Environment.GetEnvironmentVariable("TORNADO_MCP_GLOBAL_CONFIG");
         if (!string.IsNullOrEmpty(envPath))
-            return Path.GetFullPath(envPath);
+            return Path.GetFullPath(Environment.ExpandEnvironmentVariables(envPath));
 
-        return Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "llmtornado", "mcp.json");
+        return TornadoPaths.GlobalMcpConfig();
     }
 
     /// <summary>

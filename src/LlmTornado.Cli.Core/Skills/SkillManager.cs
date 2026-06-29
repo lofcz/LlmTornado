@@ -29,10 +29,11 @@ public sealed class SkillManager
     /// Discover and load all skill metadata from global and project-local directories.
     /// Project-local skills shadow global skills with the same name.
     /// </summary>
-    public void LoadSkills(string projectSkillsDirectory, string? globalSkillsDirectory)
+    /// <param name="onWarning">Optional sink invoked with a human-readable reason whenever a skill folder is skipped.</param>
+    public void LoadSkills(string projectSkillsDirectory, string? globalSkillsDirectory, Action<string>? onWarning = null)
     {
         _skills.Clear();
-        List<Skill> discovered = SkillLoader.DiscoverAllSkills(projectSkillsDirectory, globalSkillsDirectory);
+        List<Skill> discovered = SkillLoader.DiscoverAllSkills(projectSkillsDirectory, globalSkillsDirectory, onWarning);
 
         foreach (Skill skill in discovered)
         {

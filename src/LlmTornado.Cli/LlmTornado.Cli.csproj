@@ -17,4 +17,22 @@
         <ProjectReference Include="..\LlmTornado.Cli.Core\LlmTornado.Cli.Core.csproj" />
     </ItemGroup>
 
+    <!-- Ship the built-in skills alongside the binary so the CLI can seed them into the user's
+         global skills folder on first run, without depending on the source tree at runtime. -->
+    <ItemGroup>
+        <Content Include="skills\**\*">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <Link>skills\%(RecursiveDir)%(Filename)%(Extension)</Link>
+        </Content>
+    </ItemGroup>
+
+    <!-- Ship the built-in agent personas alongside the binary; they are discovered at runtime from
+         <app>/Agents/built-in and never read from the source tree. -->
+    <ItemGroup>
+        <Content Include="Agents\built-in\**\*">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <Link>Agents\built-in\%(RecursiveDir)%(Filename)%(Extension)</Link>
+        </Content>
+    </ItemGroup>
+
 </Project>

@@ -14,12 +14,12 @@ public enum McpServerSource
     BuiltIn,
 
     /// <summary>
-    /// Loaded from the global MCP config (%APPDATA%/llmtornado/mcp.json or TORNADO_MCP_GLOBAL_CONFIG).
+    /// Loaded from the global MCP config (&lt;app-data&gt;/llmtornado/mcp.json or TORNADO_MCP_GLOBAL_CONFIG).
     /// </summary>
     Global,
 
     /// <summary>
-    /// Loaded from the project-local MCP config (./mcp.json or settings override).
+    /// Loaded from the project-local MCP config (&lt;cwd&gt;/llmtornado/mcp.json or settings override).
     /// Local servers shadow global servers with the same name.
     /// </summary>
     Local

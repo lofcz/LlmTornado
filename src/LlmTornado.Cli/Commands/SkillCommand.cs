@@ -49,13 +49,19 @@ internal sealed class SkillCommand : ICliCommand
         switch (args[0].ToLowerInvariant())
         {
             case "list":
+                string projectDir = SkillLoader.ResolveSkillsDirectory(_settings.SkillsDirectory);
+                string globalDir = SkillLoader.ResolveGlobalSkillsDirectory();
+                ConsoleRenderer.WriteInfo($"Scanning project: {projectDir}");
+                ConsoleRenderer.WriteInfo($"Scanning global:  {globalDir}");
+
+                // Diagnostic-only re-scan: surface why any on-disk folder is being skipped, without
+                // mutating the loaded catalog (which preserves enabled/activated state from this session).
+                SkillLoader.DiscoverAllSkills(projectDir, globalDir, ConsoleRenderer.WriteWarning);
+
                 List<Skill> skills = _skillManager.GetAllSkills();
                 if (skills.Count == 0)
                 {
-                    string projectDir = SkillLoader.ResolveSkillsDirectory(_settings.SkillsDirectory);
-                    string globalDir = SkillLoader.ResolveGlobalSkillsDirectory();
-                    ConsoleRenderer.WriteInfo($"No skills found. Checked project: {projectDir} and global: {globalDir}.");
-                    ConsoleRenderer.WriteInfo("Add skills there (folder-name/SKILL.md) or run /skill create.");
+                    ConsoleRenderer.WriteInfo("No skills found. Add skills (folder-name/SKILL.md) or run /skill create.");
                     break;
                 }
                 foreach (Skill skill in skills)
@@ -145,7 +151,10 @@ internal sealed class SkillCommand : ICliCommand
                     Key = "description", Prompt = "One-line description", Required = true,
                     Description = "What it does and when the agent should use it (used for triggering).",
                 },
-                WizardSupport.SaveLocationQuestion(projectDir, globalDir),
+                WizardSupport.SaveLocationQuestion(
+                    projectHint: $"This launch directory only: {projectDir}",
+                    globalHint: $"Available everywhere: {globalDir}",
+                    defaultToGlobal: true),
                 WizardSupport.ToolSelectQuestion("tools", "Allowed tools (optional)",
                     "Select tools to pre-approve for this skill. Pick numbers, add a custom id, or leave blank for none.",
                     _builder.Agent.ToolList.Keys),
@@ -163,7 +172,7 @@ internal sealed class SkillCommand : ICliCommand
         string description = answers.Text("description");
         string brief = answers.Text("brief");
         List<string> tools = answers.Selected("tools");
-        string location = answers.Choice("location", WizardSupport.LocationProject);
+        string location = answers.Choice("location", WizardSupport.LocationGlobal);
 
         string slug = SkillLoader.Slugify(name);
         if (!SkillLoader.IsValidSkillName(slug))

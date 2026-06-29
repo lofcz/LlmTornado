@@ -6,7 +6,7 @@ namespace LlmTornado.Cli.Tests;
 public class CommandHistoryNavigatorTests
 {
     [Test]
-    public void AddSubmitted_Stores_Only_Slash_Commands()
+    public void AddSubmitted_Stores_All_NonBlank_Input_Trimmed()
     {
         CommandHistoryNavigator history = new();
 
@@ -15,9 +15,27 @@ public class CommandHistoryNavigatorTests
         history.AddSubmitted("/help");
         history.AddSubmitted("  /model list  ");
 
-        Assert.That(history.Entries, Has.Count.EqualTo(2));
-        Assert.That(history.Entries[0], Is.EqualTo("/help"));
-        Assert.That(history.Entries[1], Is.EqualTo("/model list"));
+        Assert.That(history.Entries, Has.Count.EqualTo(3));
+        Assert.That(history.Entries[0], Is.EqualTo("hello world"));
+        Assert.That(history.Entries[1], Is.EqualTo("/help"));
+        Assert.That(history.Entries[2], Is.EqualTo("/model list"));
+    }
+
+    [Test]
+    public void AddSubmitted_Skips_Consecutive_Duplicates()
+    {
+        CommandHistoryNavigator history = new();
+
+        history.AddSubmitted("ls");
+        history.AddSubmitted("ls");
+        history.AddSubmitted("  ls  ");
+        history.AddSubmitted("pwd");
+        history.AddSubmitted("ls");
+
+        Assert.That(history.Entries, Has.Count.EqualTo(3));
+        Assert.That(history.Entries[0], Is.EqualTo("ls"));
+        Assert.That(history.Entries[1], Is.EqualTo("pwd"));
+        Assert.That(history.Entries[2], Is.EqualTo("ls"));
     }
 
     [Test]
@@ -86,15 +104,5 @@ public class CommandHistoryNavigatorTests
         Assert.That(history.Entries, Has.Count.EqualTo(2));
         Assert.That(history.Entries[0], Is.EqualTo("/two"));
         Assert.That(history.Entries[1], Is.EqualTo("/three"));
-    }
-
-    [TestCase("/help", true)]
-    [TestCase(" /help", true)]
-    [TestCase("hello", false)]
-    [TestCase("", false)]
-    [TestCase("   ", false)]
-    public void IsSlashCommand_Matches_Expected(string value, bool expected)
-    {
-        Assert.That(CommandHistoryNavigator.IsSlashCommand(value), Is.EqualTo(expected));
     }
 }

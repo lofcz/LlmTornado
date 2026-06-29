@@ -214,6 +214,42 @@ public class McpConfigTests
         Assert.That(resolved is null || File.Exists(resolved), Is.True);
     }
 
+    [Test]
+    public void ResolveDefault_Mcp_Paths_Use_Unified_Scheme()
+    {
+        string? home = Environment.GetEnvironmentVariable(TornadoPaths.HomeEnvVar);
+        string? globalCfg = Environment.GetEnvironmentVariable("TORNADO_MCP_GLOBAL_CONFIG");
+        string? localCfg = Environment.GetEnvironmentVariable("TORNADO_MCP_CONFIG");
+        try
+        {
+            Environment.SetEnvironmentVariable(TornadoPaths.HomeEnvVar, null);
+            Environment.SetEnvironmentVariable("TORNADO_MCP_GLOBAL_CONFIG", null);
+            Environment.SetEnvironmentVariable("TORNADO_MCP_CONFIG", null);
+
+            // Global mcp.json lives at <home>/.llmtornado/mcp.json
+            Assert.That(McpConfigLoader.ResolveDefaultGlobalMcpConfigPath(),
+                Is.EqualTo(Path.Combine(TornadoPaths.GlobalRoot(), "mcp.json")));
+            Assert.That(McpConfigLoader.ResolveDefaultGlobalMcpConfigPath(),
+                Does.EndWith(Path.Combine("llmtornado", "mcp.json")));
+
+            // Local mcp.json lives at <cwd>/llmtornado/mcp.json
+            Assert.That(McpConfigLoader.ResolveDefaultMcpConfigPath(null),
+                Is.EqualTo(Path.Combine(Directory.GetCurrentDirectory(), "llmtornado", "mcp.json")));
+
+            // TORNADO_HOME relocates the global config too
+            string customHome = Path.Combine(_tempDir, "home");
+            Environment.SetEnvironmentVariable(TornadoPaths.HomeEnvVar, customHome);
+            Assert.That(McpConfigLoader.ResolveDefaultGlobalMcpConfigPath(),
+                Is.EqualTo(Path.Combine(Path.GetFullPath(customHome), "mcp.json")));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(TornadoPaths.HomeEnvVar, home);
+            Environment.SetEnvironmentVariable("TORNADO_MCP_GLOBAL_CONFIG", globalCfg);
+            Environment.SetEnvironmentVariable("TORNADO_MCP_CONFIG", localCfg);
+        }
+    }
+
     #endregion
 
     #region McpConfigLoader — Initialization

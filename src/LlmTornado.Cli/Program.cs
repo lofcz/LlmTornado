@@ -116,7 +116,13 @@ class Program
         SkillManager skillManager = new(settings, persistence);
         string skillsDir = SkillLoader.ResolveSkillsDirectory(settings.SkillsDirectory);
         string globalSkillsDir = SkillLoader.ResolveGlobalSkillsDirectory();
-        skillManager.LoadSkills(skillsDir, globalSkillsDir);
+
+        // Seed the built-in skills (shipped alongside the binary) into the global user folder on first
+        // run, so the built CLI never depends on source-tree skill files. Existing skills are preserved.
+        SkillLoader.SeedBuiltInSkills(globalSkillsDir,
+            name => ConsoleRenderer.WriteInfo($"Installed built-in skill '{name}' to {globalSkillsDir}"));
+
+        skillManager.LoadSkills(skillsDir, globalSkillsDir, ConsoleRenderer.WriteWarning);
         ConsoleRenderer.WriteInfo(
             $"Skills: {skillManager.GetEnabledSkills().Count} enabled, " +
             $"{skillManager.GetAllSkills().Count} total (project: {skillsDir}, global: {globalSkillsDir})");
@@ -126,7 +132,7 @@ class Program
         string agentsDir = AgentDefinitionLoader.ResolveAgentsDirectory(settings.AgentsDirectory);
         string builtInDir = AgentDefinitionLoader.ResolveBuiltInDirectory();
         string globalAgentsDir = AgentDefinitionLoader.ResolveGlobalAgentsDirectory();
-        agentManager.LoadAll(builtInDir, globalAgentsDir, agentsDir, Environment.CurrentDirectory);
+        agentManager.LoadAll(builtInDir, globalAgentsDir, agentsDir, Environment.CurrentDirectory, ConsoleRenderer.WriteWarning);
 
         AgentDefinition? projectContext = agentManager.GetProjectContext();
         ConsoleRenderer.WriteInfo(

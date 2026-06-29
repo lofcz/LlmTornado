@@ -43,14 +43,15 @@ public sealed class AgentDefinitionManager
     /// Call once at startup after SkillManager is initialized.
     /// Precedence: built-in → global → custom/project-local (most specific wins).
     /// </summary>
-    public void LoadAll(string builtInDirectory, string? globalDirectory, string customDirectory, string cwd)
+    /// <param name="onWarning">Optional sink invoked with a human-readable reason whenever a persona file is skipped.</param>
+    public void LoadAll(string builtInDirectory, string? globalDirectory, string customDirectory, string cwd, Action<string>? onWarning = null)
     {
         _personas.Clear();
         _projectContext = null;
 
         // 1. Discover persona agents (built-in + global + custom, each layer shadows previous)
         List<AgentDefinition> personas = AgentDefinitionLoader.DiscoverPersonaAgents(
-            builtInDirectory, globalDirectory, customDirectory);
+            builtInDirectory, globalDirectory, customDirectory, onWarning);
         foreach (AgentDefinition persona in personas)
             _personas[persona.Name] = persona;
 

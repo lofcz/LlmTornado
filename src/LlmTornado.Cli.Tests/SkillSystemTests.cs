@@ -1,5 +1,6 @@
 using LlmTornado.Cli;
 using LlmTornado.Cli.Core;
+using LlmTornado.Cli.Core.Agents;
 using LlmTornado.Cli.Core.Skills;
 
 namespace LlmTornado.Cli.Tests;
@@ -423,8 +424,8 @@ Body.");
         Assert.That(tools, Has.Count.EqualTo(2));
 
         var toolNames = tools.Select(t => t.ResolvedName).ToList();
-        Assert.That(toolNames, Does.Contain("tooled:run"));
-        Assert.That(toolNames, Does.Contain("tooled:build"));
+        Assert.That(toolNames, Does.Contain("tooled__run"));
+        Assert.That(toolNames, Does.Contain("tooled__build"));
     }
 
     [Test]
@@ -561,9 +562,9 @@ Body.");
         Assert.That(tools, Has.Count.EqualTo(13));
 
         // Spot-check naming convention {skill}:{script}
-        Assert.That(toolNames, Does.Contain("file-analyzer:line-count"));
-        Assert.That(toolNames, Does.Contain("web-search:ddg-search"));
-        Assert.That(toolNames, Does.Contain("note-taker:add-note"));
+        Assert.That(toolNames, Does.Contain("file-analyzer__line-count"));
+        Assert.That(toolNames, Does.Contain("web-search__ddg-search"));
+        Assert.That(toolNames, Does.Contain("note-taker__add-note"));
     }
 
     [Test]
@@ -583,6 +584,145 @@ Body.");
         Assert.That(xml, Does.Contain("file-analyzer"));
         Assert.That(xml, Does.Contain("web-search"));
         Assert.That(xml, Does.Contain("note-taker"));
+    }
+
+    #endregion
+
+    #region Global directory resolution
+
+    [Test]
+    public void ResolveGlobalSkillsDirectory_Uses_TornadoHome_Subfolder_When_Set()
+    {
+        string? original = Environment.GetEnvironmentVariable(TornadoPaths.HomeEnvVar);
+        try
+        {
+            string customRoot = Path.Combine(_tempDir, "custom-home");
+            Environment.SetEnvironmentVariable(TornadoPaths.HomeEnvVar, customRoot);
+
+            Assert.That(SkillLoader.ResolveGlobalSkillsDirectory(),
+                Is.EqualTo(Path.Combine(Path.GetFullPath(customRoot), "skills")));
+            Assert.That(AgentDefinitionLoader.ResolveGlobalAgentsDirectory(),
+                Is.EqualTo(Path.Combine(Path.GetFullPath(customRoot), "agents")));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(TornadoPaths.HomeEnvVar, original);
+        }
+    }
+
+    [Test]
+    public void ResolveGlobalDirectories_Default_To_AppData_Llmtornado()
+    {
+        string? original = Environment.GetEnvironmentVariable(TornadoPaths.HomeEnvVar);
+        try
+        {
+            Environment.SetEnvironmentVariable(TornadoPaths.HomeEnvVar, null);
+
+            Assert.That(SkillLoader.ResolveGlobalSkillsDirectory(),
+                Does.EndWith(Path.Combine("llmtornado", "skills")));
+            Assert.That(AgentDefinitionLoader.ResolveGlobalAgentsDirectory(),
+                Does.EndWith(Path.Combine("llmtornado", "agents")));
+            // Never resolves into the source tree.
+            Assert.That(SkillLoader.ResolveGlobalSkillsDirectory(),
+                Does.Not.Contain(Path.Combine("LlmTornado.Cli", "skills")));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(TornadoPaths.HomeEnvVar, original);
+        }
+    }
+
+    [Test]
+    public void ResolveProjectDirectories_Use_Cwd_Llmtornado_Subfolder()
+    {
+        // Override is honored verbatim.
+        string overridden = Path.Combine(_tempDir, "explicit");
+        Assert.That(SkillLoader.ResolveSkillsDirectory(overridden), Is.EqualTo(Path.GetFullPath(overridden)));
+
+        // No override → <cwd>/llmtornado/{skills,agents}.
+        string cwd = Directory.GetCurrentDirectory();
+        Assert.That(SkillLoader.ResolveSkillsDirectory(null),
+            Is.EqualTo(Path.Combine(cwd, "llmtornado", "skills")));
+        Assert.That(AgentDefinitionLoader.ResolveAgentsDirectory(null),
+            Is.EqualTo(Path.Combine(cwd, "llmtornado", "agents")));
+    }
+
+    #endregion
+
+    #region Seeding built-in skills
+
+    [Test]
+    public void SeedBuiltInSkills_Copies_When_Absent()
+    {
+        string bundled = Path.Combine(_tempDir, "bundled");
+        string skillDir = Path.Combine(bundled, "seeded-skill");
+        Directory.CreateDirectory(skillDir);
+        File.WriteAllText(Path.Combine(skillDir, "SKILL.md"), "---\nname: seeded-skill\ndescription: test\n---\nBody.");
+
+        string global = Path.Combine(_tempDir, "global");
+        List<string> seeded = [];
+        SkillLoader.SeedBuiltInSkills(bundled, global, seeded.Add);
+
+        Assert.That(seeded, Does.Contain("seeded-skill"));
+        Assert.That(File.Exists(Path.Combine(global, "seeded-skill", "SKILL.md")), Is.True);
+    }
+
+    [Test]
+    public void SeedBuiltInSkills_Preserves_Existing_User_Edits()
+    {
+        string bundled = Path.Combine(_tempDir, "bundled");
+        string skillDir = Path.Combine(bundled, "shared");
+        Directory.CreateDirectory(skillDir);
+        File.WriteAllText(Path.Combine(skillDir, "SKILL.md"), "---\nname: shared\ndescription: bundled\n---\nBundled body.");
+
+        string global = Path.Combine(_tempDir, "global");
+        string destSkill = Path.Combine(global, "shared");
+        Directory.CreateDirectory(destSkill);
+        File.WriteAllText(Path.Combine(destSkill, "SKILL.md"), "user-edited");
+
+        List<string> seeded = [];
+        SkillLoader.SeedBuiltInSkills(bundled, global, seeded.Add);
+
+        Assert.That(seeded, Is.Empty, "Existing skill folders must not be re-seeded.");
+        Assert.That(File.ReadAllText(Path.Combine(destSkill, "SKILL.md")), Is.EqualTo("user-edited"));
+    }
+
+    [Test]
+    public void SeedBuiltInSkills_NoOp_When_No_Bundled_Dir()
+    {
+        string global = Path.Combine(_tempDir, "global");
+        Assert.DoesNotThrow(() =>
+            SkillLoader.SeedBuiltInSkills(Path.Combine(_tempDir, "missing"), global, null));
+    }
+
+    #endregion
+
+    #region Discovery diagnostics
+
+    [Test]
+    public void ParseSkillMetadata_Warns_On_Name_Directory_Mismatch()
+    {
+        string dir = CreateSkillWithFrontmatter("actual-dir", "name: different-name\ndescription: test");
+
+        List<string> warnings = [];
+        Skill? skill = SkillLoader.ParseSkillMetadata(dir, warnings.Add);
+
+        Assert.That(skill, Is.Null);
+        Assert.That(warnings, Has.Count.EqualTo(1));
+        Assert.That(warnings[0], Does.Contain("different-name").And.Contain("actual-dir"));
+    }
+
+    [Test]
+    public void ParseSkillMetadata_Warns_On_Missing_Description()
+    {
+        string dir = CreateValidSkill("nodesc", "---\nname: nodesc\n---\nBody.");
+
+        List<string> warnings = [];
+        Skill? skill = SkillLoader.ParseSkillMetadata(dir, warnings.Add);
+
+        Assert.That(skill, Is.Null);
+        Assert.That(warnings, Has.Count.EqualTo(1));
+        Assert.That(warnings[0], Does.Contain("description"));
     }
 
     #endregion

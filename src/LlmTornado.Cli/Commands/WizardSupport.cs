@@ -12,20 +12,23 @@ internal static class WizardSupport
     public const string LocationGlobal = "global";
 
     /// <summary>
-    /// Build the standard project-vs-global save-location question.
+    /// Build the standard project-vs-global save-location question. The first option is presented as the
+    /// default; pass <paramref name="defaultToGlobal"/> to list Global first (e.g. for skills, whose
+    /// global folder is launch-directory independent).
     /// </summary>
-    public static InteractiveQuestionDefinition SaveLocationQuestion(string projectHint, string globalHint) => new()
+    public static InteractiveQuestionDefinition SaveLocationQuestion(string projectHint, string globalHint, bool defaultToGlobal = false)
     {
-        Key = "location",
-        Prompt = "Where should this be saved?",
-        Type = InteractiveQuestionInputType.SingleChoice,
-        Required = true,
-        Options =
-        [
-            new InteractiveQuestionOption { Value = LocationProject, Label = "Project", Description = projectHint },
-            new InteractiveQuestionOption { Value = LocationGlobal, Label = "Global", Description = globalHint },
-        ],
-    };
+        InteractiveQuestionOption project = new() { Value = LocationProject, Label = "Project", Description = projectHint };
+        InteractiveQuestionOption global = new() { Value = LocationGlobal, Label = "Global", Description = globalHint };
+        return new InteractiveQuestionDefinition
+        {
+            Key = "location",
+            Prompt = "Where should this be saved?",
+            Type = InteractiveQuestionInputType.SingleChoice,
+            Required = true,
+            Options = defaultToGlobal ? [global, project] : [project, global],
+        };
+    }
 
     /// <summary>
     /// Build a multi-select question from pre-built options (sorted by label) with a custom-answer escape

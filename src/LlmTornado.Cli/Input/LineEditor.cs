@@ -48,6 +48,9 @@ internal sealed class LineEditor
     private readonly IReadOnlyDictionary<string, ICliCommand> _commands;
     private readonly Func<string, IReadOnlyList<string>> _fileSuggester;
 
+    // Persists across REPL iterations because the editor is constructed once and reused.
+    private readonly CommandHistoryNavigator _history = new();
+
     public LineEditor(
         IReadOnlyDictionary<string, ICliCommand> commands,
         Func<string, IReadOnlyList<string>> fileSuggester)
@@ -65,8 +68,13 @@ internal sealed class LineEditor
         if (Console.IsInputRedirected)
         {
             ConsoleRenderer.WritePrompt(modelName);
-            return Console.ReadLine();
+            string? piped = Console.ReadLine();
+            if (piped is not null)
+                _history.AddSubmitted(piped);
+            return piped;
         }
+
+        _history.ResetNavigation();
 
         string promptText = $"{modelName}> ";
 
@@ -172,7 +180,9 @@ internal sealed class LineEditor
                             break;
                         }
                         Finish();
-                        return buffer.ToString();
+                        string submitted = buffer.ToString();
+                        _history.AddSubmitted(submitted);
+                        return submitted;
 
                     case ConsoleKey.Tab:
                         if (MenuOpen())
@@ -203,11 +213,27 @@ internal sealed class LineEditor
                     case ConsoleKey.UpArrow:
                         if (MenuOpen())
                             menuIndex = (menuIndex - 1 + suggestions.Count) % suggestions.Count;
+                        else if (_history.TryMovePrevious(buffer.ToString(), out string prev))
+                        {
+                            buffer.Clear();
+                            buffer.Append(prev);
+                            cursor = buffer.Length;
+                            suppressMenu = true;
+                            needRecompute = true;
+                        }
                         break;
 
                     case ConsoleKey.DownArrow:
                         if (MenuOpen())
                             menuIndex = (menuIndex + 1) % suggestions.Count;
+                        else if (_history.TryMoveNext(buffer.ToString(), out string next))
+                        {
+                            buffer.Clear();
+                            buffer.Append(next);
+                            cursor = buffer.Length;
+                            suppressMenu = true;
+                            needRecompute = true;
+                        }
                         break;
 
                     case ConsoleKey.LeftArrow:

@@ -27,46 +27,22 @@ public static partial class AgentDefinitionLoader
     private static partial Regex ConsecutiveHyphensRegex();
 
     /// <summary>
-    /// Resolve the custom agents directory. If <paramref name="agentsDirectoryOverride"/> is non-null
-    /// and non-empty, use it. Otherwise fall back to ./agents/ relative to CWD.
+    /// Resolve the project agents directory. If <paramref name="agentsDirectoryOverride"/> is non-empty,
+    /// use it. Otherwise use <c>&lt;cwd&gt;/llmtornado/agents</c> (see <see cref="TornadoPaths"/>).
     /// </summary>
     public static string ResolveAgentsDirectory(string? agentsDirectoryOverride)
     {
         if (!string.IsNullOrWhiteSpace(agentsDirectoryOverride))
             return Path.GetFullPath(Environment.ExpandEnvironmentVariables(agentsDirectoryOverride));
 
-        return Path.GetFullPath("agents");
+        return TornadoPaths.ProjectAgentsDirectory();
     }
 
     /// <summary>
-    /// Resolve the global agents directory.
-    /// Checks the <c>TORNADO_AGENTS_DIR</c> environment variable first; if set, uses it.
-    /// Otherwise falls back to <c>%APPDATA%/llmtornado/agents/</c> (or platform equivalent).
+    /// Resolve the global agents directory — a per-user folder using the universal <c>TORNADO_HOME</c>
+    /// root (else <c>&lt;app-data&gt;/llmtornado</c>) with the <c>agents</c> subfolder.
     /// </summary>
-    public static string ResolveGlobalAgentsDirectory()
-    {
-        string? envDir = Environment.GetEnvironmentVariable("TORNADO_AGENTS_DIR");
-        if (!string.IsNullOrWhiteSpace(envDir))
-            return Path.GetFullPath(Environment.ExpandEnvironmentVariables(envDir));
-
-        string configRoot = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-
-        // Some container/minimal Linux setups can return an empty ApplicationData path.
-        if (string.IsNullOrWhiteSpace(configRoot))
-            configRoot = Environment.GetEnvironmentVariable("XDG_CONFIG_HOME") ?? string.Empty;
-
-        if (string.IsNullOrWhiteSpace(configRoot))
-        {
-            string profileRoot = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-            if (!string.IsNullOrWhiteSpace(profileRoot))
-                configRoot = Path.Combine(profileRoot, ".config");
-        }
-
-        if (string.IsNullOrWhiteSpace(configRoot))
-            configRoot = Path.GetFullPath(".config");
-
-        return Path.GetFullPath(Path.Combine(configRoot, "llmtornado", "agents"));
-    }
+    public static string ResolveGlobalAgentsDirectory() => TornadoPaths.GlobalAgentsDirectory();
 
     /// <summary>
     /// Convert an arbitrary agent display name into a valid slug:
@@ -194,8 +170,9 @@ public static partial class AgentDefinitionLoader
     /// Scan the built-in, global, and custom agent directories for persona .md files.
     /// Precedence: built-in → global → custom/project-local (most specific wins).
     /// </summary>
+    /// <param name="onWarning">Optional sink invoked with a human-readable reason whenever a persona file is skipped.</param>
     public static List<AgentDefinition> DiscoverPersonaAgents(
-        string builtInDirectory, string? globalDirectory, string customDirectory)
+        string builtInDirectory, string? globalDirectory, string customDirectory, Action<string>? onWarning = null)
     {
         Dictionary<string, AgentDefinition> agents = new(StringComparer.OrdinalIgnoreCase);
 
@@ -204,7 +181,7 @@ public static partial class AgentDefinitionLoader
         {
             foreach (string file in Directory.GetFiles(builtInDirectory, "*.md"))
             {
-                AgentDefinition? agent = ParsePersonaFile(file, AgentSource.BuiltIn);
+                AgentDefinition? agent = ParsePersonaFile(file, AgentSource.BuiltIn, onWarning);
                 if (agent is not null)
                     agents[agent.Name] = agent;
             }
@@ -215,7 +192,7 @@ public static partial class AgentDefinitionLoader
         {
             foreach (string file in Directory.GetFiles(globalDirectory, "*.md"))
             {
-                AgentDefinition? agent = ParsePersonaFile(file, AgentSource.Global);
+                AgentDefinition? agent = ParsePersonaFile(file, AgentSource.Global, onWarning);
                 if (agent is not null)
                     agents[agent.Name] = agent;
             }
@@ -226,7 +203,7 @@ public static partial class AgentDefinitionLoader
         {
             foreach (string file in Directory.GetFiles(customDirectory, "*.md"))
             {
-                AgentDefinition? agent = ParsePersonaFile(file, AgentSource.Custom);
+                AgentDefinition? agent = ParsePersonaFile(file, AgentSource.Custom, onWarning);
                 if (agent is not null)
                     agents[agent.Name] = agent;
             }
@@ -238,23 +215,33 @@ public static partial class AgentDefinitionLoader
     /// <summary>
     /// Parse a single persona .md file into a <see cref="AgentDefinition"/>.
     /// </summary>
-    internal static AgentDefinition? ParsePersonaFile(string filePath, AgentSource source)
+    /// <param name="onWarning">Optional sink invoked with a human-readable reason when the file is rejected.</param>
+    internal static AgentDefinition? ParsePersonaFile(string filePath, AgentSource source, Action<string>? onWarning = null)
     {
         string fileName = Path.GetFileName(filePath);
         string? slug = FileNameToSlug(fileName);
-        if (slug is null) return null;
+        if (slug is null)
+        {
+            onWarning?.Invoke($"Skipped agent '{fileName}': filename is not a valid agent name (use 1-64 lowercase letters, digits, and single hyphens).");
+            return null;
+        }
 
         string content;
         try
         {
             content = ReadFileSafe(filePath);
         }
-        catch (IOException)
+        catch (IOException ex)
         {
+            onWarning?.Invoke($"Skipped agent '{fileName}': could not be read: {ex.Message}");
             return null;
         }
 
-        if (string.IsNullOrWhiteSpace(content)) return null;
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            onWarning?.Invoke($"Skipped agent '{fileName}': file is empty.");
+            return null;
+        }
 
         Dictionary<string, object> frontmatter = ParseFrontmatter(content);
         string instructions = ExtractBody(content);

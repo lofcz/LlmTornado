@@ -64,13 +64,16 @@ internal sealed class CdCommand : ICliCommand
 
         Environment.CurrentDirectory = resolvedPath;
 
-        // Re-scan for AGENTS.md in the new directory hierarchy
-        _agentManager.RefreshProjectContext(resolvedPath);
-
-        // Re-scan skills from project/global directories resolved for the new CWD
+        // Re-scan skills from project/global directories resolved for the new CWD (cwd/llmtornado/skills)
         string projectSkillsDir = SkillLoader.ResolveSkillsDirectory(_settings.SkillsDirectory);
         string globalSkillsDir = SkillLoader.ResolveGlobalSkillsDirectory();
-        _skillManager.LoadSkills(projectSkillsDir, globalSkillsDir);
+        _skillManager.LoadSkills(projectSkillsDir, globalSkillsDir, ConsoleRenderer.WriteWarning);
+
+        // Re-discover agent personas (cwd/llmtornado/agents) and AGENTS.md context for the new CWD
+        string builtInAgentsDir = AgentDefinitionLoader.ResolveBuiltInDirectory();
+        string globalAgentsDir = AgentDefinitionLoader.ResolveGlobalAgentsDirectory();
+        string projectAgentsDir = AgentDefinitionLoader.ResolveAgentsDirectory(_settings.AgentsDirectory);
+        _agentManager.LoadAll(builtInAgentsDir, globalAgentsDir, projectAgentsDir, resolvedPath, ConsoleRenderer.WriteWarning);
 
         // Reload MCP using config resolution from the new CWD and refreshed policy sandbox
         McpSessionPolicy sessionPolicy = McpSessionPolicy.FromSettings(_settings, resolvedPath);
