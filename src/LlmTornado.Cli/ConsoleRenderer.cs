@@ -203,6 +203,7 @@ internal sealed class ConsoleRenderer
         bool[] selected = new bool[options.Count];
         List<string> customs = [];
         int cursor = 0;
+        int scroll = 0;
 
         Console.ForegroundColor = ConsoleColor.DarkGray;
         Console.WriteLine("  ↑/↓ move · Space toggle · Enter confirm"
@@ -210,8 +211,18 @@ internal sealed class ConsoleRenderer
             + (question.Required ? "" : " · Esc skip"));
         Console.ResetColor();
 
-        int listTop = Console.CursorTop;
-        int drawn = 0;
+        // Size the picker to a viewport that fits the window so a long list scrolls in place
+        // instead of overflowing the terminal — overflow scrolls the buffer, which would
+        // invalidate the absolute row positions we redraw against and duplicate the list.
+        int maxRows = Math.Max(3, SafeHeight() - 4); // leave room for the status line + a spare
+        int windowRows = Math.Min(Math.Max(options.Count, 1), maxRows);
+        int blockHeight = windowRows + 1; // option rows + one status/footer line
+
+        // Reserve the block (scrolling the buffer up if needed), then anchor to a top row that is
+        // guaranteed to have the whole block below it inside the window.
+        for (int i = 0; i <= blockHeight; i++) Console.WriteLine();
+        int listTop = Math.Max(0, Console.CursorTop - blockHeight - 1);
+
         string? message = null;
 
         bool? wasVisible = null;
@@ -221,11 +232,17 @@ internal sealed class ConsoleRenderer
         {
             while (true)
             {
-                drawn = DrawMultiSelect(options, selected, customs, cursor, listTop, drawn, message);
+                int totalRows = options.Count + customs.Count;
+
+                // Keep the cursor within the visible viewport.
+                if (cursor < scroll) scroll = cursor;
+                else if (cursor >= scroll + windowRows) scroll = cursor - windowRows + 1;
+                if (scroll < 0) scroll = 0;
+
+                DrawMultiSelect(options, selected, customs, cursor, scroll, windowRows, listTop, message);
                 message = null;
 
                 ConsoleKeyInfo key = Console.ReadKey(intercept: true);
-                int totalRows = options.Count + customs.Count;
 
                 switch (key.Key)
                 {
@@ -251,13 +268,12 @@ internal sealed class ConsoleRenderer
                         break;
 
                     case ConsoleKey.C when question.AllowCustomAnswer:
-                        string? custom = PromptCustomInline(listTop, drawn);
+                        string? custom = PromptCustomInline(listTop, blockHeight);
                         if (!string.IsNullOrWhiteSpace(custom))
                         {
                             customs.Add(custom.Trim());
                             cursor = options.Count + customs.Count - 1;
                         }
-                        drawn = 2; // force the prompt line(s) to be cleared on next draw
                         break;
 
                     case ConsoleKey.Enter:
@@ -284,84 +300,93 @@ internal sealed class ConsoleRenderer
             {
                 try { Console.CursorVisible = wasVisible.Value; } catch { /* ignore */ }
             }
-            try { Console.SetCursorPosition(0, listTop + drawn); } catch { /* ignore */ }
+            try { Console.SetCursorPosition(0, Math.Min(listTop + blockHeight, SafeHeight() - 1)); } catch { /* ignore */ }
             Console.WriteLine();
         }
     }
 
-    private int DrawMultiSelect(
+    /// <summary>
+    /// Repaint the fixed-height viewport in place. Every row is written with absolute positioning
+    /// and padded to the window width so stale content is overwritten; nothing is emitted with a
+    /// trailing newline, so the buffer never scrolls and <paramref name="listTop"/> stays valid.
+    /// </summary>
+    private void DrawMultiSelect(
         List<InteractiveQuestionOption> options, bool[] selected, List<string> customs,
-        int cursor, int listTop, int prevLineCount, string? message)
+        int cursor, int scroll, int windowRows, int listTop, string? message)
     {
         lock (Lock)
         {
             int width = SafeWidth();
+            int totalRows = options.Count + customs.Count;
 
-            // Clear the region drawn last time so shrinking lists don't leave stragglers.
-            for (int i = 0; i < prevLineCount; i++)
+            for (int v = 0; v < windowRows; v++)
             {
-                try { Console.SetCursorPosition(0, listTop + i); } catch { /* ignore */ }
-                Console.Write(new string(' ', width));
-            }
-            try { Console.SetCursorPosition(0, listTop); } catch { /* ignore */ }
+                int row = listTop + v;
+                int i = scroll + v;
 
-            int line = 0;
-            if (options.Count + customs.Count == 0)
-            {
-                Console.WriteLine("  (no options — press C to add a custom value)");
-                line++;
-            }
+                if (i >= totalRows)
+                {
+                    if (totalRows == 0 && v == 0)
+                        DrawRowText(row, "  (no options — press C to add a custom value)", width, ConsoleColor.DarkGray);
+                    else
+                        DrawRowText(row, "", width, null);
+                    continue;
+                }
 
-            for (int i = 0; i < options.Count; i++)
-            {
-                DrawRow(i == cursor, selected[i], options[i].Label, options[i].Description, width);
-                line++;
-            }
-            for (int i = 0; i < customs.Count; i++)
-            {
-                DrawRow(options.Count + i == cursor, true, $"{customs[i]}  (custom)", null, width);
-                line++;
+                bool isCursor = i == cursor;
+                if (i < options.Count)
+                    DrawRow(row, isCursor, selected[i], options[i].Label, options[i].Description, width);
+                else
+                    DrawRow(row, isCursor, true, $"{customs[i - options.Count]}  (custom)", null, width);
             }
 
+            // Status / footer line: validation message, or a scroll indicator when the list overflows.
+            int footerRow = listTop + windowRows;
             if (message is not null)
             {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine($"  {message}");
-                Console.ResetColor();
-                line++;
+                DrawRowText(footerRow, $"  {message}", width, ConsoleColor.Red);
             }
-
-            return line;
+            else if (totalRows > windowRows)
+            {
+                int first = scroll + 1;
+                int last = Math.Min(scroll + windowRows, totalRows);
+                DrawRowText(footerRow, $"  ── {first}-{last} of {totalRows} ── ↑/↓ for more ──", width, ConsoleColor.DarkGray);
+            }
+            else
+            {
+                DrawRowText(footerRow, "", width, null);
+            }
         }
     }
 
-    private static void DrawRow(bool isCursor, bool isSelected, string label, string? description, int width)
+    private static void DrawRow(int row, bool isCursor, bool isSelected, string label, string? description, int width)
     {
-        if (isCursor)
-            Console.ForegroundColor = ConsoleColor.Cyan;
-
         string text = $"  {(isCursor ? ">" : " ")} [{(isSelected ? "x" : " ")}] {label}";
         if (!string.IsNullOrWhiteSpace(description))
             text += $"  — {description}";
-        if (text.Length > width - 1)
-            text = text[..(width - 2)] + "…";
-
-        Console.WriteLine(text);
-
-        if (isCursor)
-            Console.ResetColor();
+        DrawRowText(row, text, width, isCursor ? ConsoleColor.Cyan : null);
     }
 
-    private string? PromptCustomInline(int listTop, int prevLineCount)
+    /// <summary>Write a single line at an absolute row, truncated/padded to the window width, no newline.</summary>
+    private static void DrawRowText(int row, string text, int width, ConsoleColor? color)
+    {
+        // Leave the last column untouched so writing the final char can't trigger an auto-wrap/scroll.
+        int max = Math.Max(1, width - 1);
+        text = text.Length > max ? text[..(max - 1)] + "…" : text.PadRight(max);
+
+        try { Console.SetCursorPosition(0, row); } catch { /* ignore */ }
+        if (color is not null) Console.ForegroundColor = color.Value;
+        Console.Write(text);
+        if (color is not null) Console.ResetColor();
+    }
+
+    private string? PromptCustomInline(int listTop, int blockHeight)
     {
         lock (Lock)
         {
             int width = SafeWidth();
-            for (int i = 0; i < prevLineCount; i++)
-            {
-                try { Console.SetCursorPosition(0, listTop + i); } catch { /* ignore */ }
-                Console.Write(new string(' ', width));
-            }
+            for (int i = 0; i < blockHeight; i++)
+                DrawRowText(listTop + i, "", width, null);
             try { Console.SetCursorPosition(0, listTop); } catch { /* ignore */ }
             Console.ForegroundColor = ConsoleColor.Yellow;
             Console.Write("  Custom value: ");
@@ -382,6 +407,12 @@ internal sealed class ConsoleRenderer
     {
         try { return Math.Max(20, Console.WindowWidth); }
         catch { return 80; }
+    }
+
+    private static int SafeHeight()
+    {
+        try { return Math.Max(6, Console.WindowHeight); }
+        catch { return 24; }
     }
 
     public void WriteQuestionInputHint(InteractiveQuestionDefinition question)
