@@ -9,12 +9,21 @@ public static partial class MessageTimestampPrefixer
 {
     private const string TimestampPrefixStart = "[timestamp role=";
 
+    /// <summary>
+    /// When false, <see cref="Prefix"/> is a no-op so no <c>[timestamp ...]</c> line is added to any
+    /// message. Toggled at runtime by the <c>/timestamp</c> command and initialized from settings.
+    /// </summary>
+    public static bool Enabled { get; set; } = true;
+
     public static bool Prefix(
         ChatMessage message,
         string role,
         DateTimeOffset? timestamp = null,
         int? contextUsedPercent = null)
     {
+        if (!Enabled)
+            return false;
+
         if (message.Role == ChatMessageRoles.Tool)
             return false;
 

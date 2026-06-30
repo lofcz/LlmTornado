@@ -54,6 +54,7 @@ class Program
         AgentSettings settings = CliStorage.LoadJson<AgentSettings>(CliStorage.SettingsPath)
                               ?? new AgentSettings();
         _showThinking = settings.ShowThinking;
+        MessageTimestampPrefixer.Enabled = settings.ShowTimestamps;
         CliSettingsPersistence persistence = new();
 
         // ─── Step 3: Provider Detection ───
@@ -230,6 +231,9 @@ class Program
         dispatcher.Register(new McpCommand(_mcpLoader, _agentBuilder, settings, runtimeEventHandler));
         dispatcher.Register(new CdCommand(_agentBuilder, agentManager, skillManager, _mcpLoader, settings, runtimeEventHandler));
         dispatcher.Register(new ThinkingCommand(settings, () => _showThinking, value => _showThinking = value));
+        dispatcher.Register(new TimestampCommand(settings,
+            () => MessageTimestampPrefixer.Enabled,
+            value => MessageTimestampPrefixer.Enabled = value));
         dispatcher.Register(new ClearCommand());
         dispatcher.Register(new ExitCommand(_memoryManager, _conversationStore, _agentBuilder));
 

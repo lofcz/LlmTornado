@@ -99,4 +99,11 @@ public sealed class AgentSettings
     /// </summary>
     [JsonPropertyName("show_thinking")]
     public bool ShowThinking { get; set; } = true;
+
+    /// <summary>
+    /// Whether a [timestamp ...] line is prefixed onto every user and assistant message.
+    /// Default: true.
+    /// </summary>
+    [JsonPropertyName("show_timestamps")]
+    public bool ShowTimestamps { get; set; } = true;
 }

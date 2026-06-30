@@ -78,11 +78,13 @@ public class CliAgentBuilderTests
         CliAgentBuilder builder = new(api, model, skillManager, mcpLoader, toolApproval, memoryManager, agentManager, settings, null);
         builder.Build();
 
-        // ToolList should contain load_skill, list_skills, read_reference
+        // ToolList should contain the built-in management + tool-discovery tools
         var toolNames = builder.Agent.ToolList?.Select(t => t.Key).ToList() ?? [];
         Assert.That(toolNames, Does.Contain("load_skill"));
         Assert.That(toolNames, Does.Contain("list_skills"));
         Assert.That(toolNames, Does.Contain("read_reference"));
+        Assert.That(toolNames, Does.Contain("list_all_tools"));
+        Assert.That(toolNames, Does.Contain("select_tools"));
 
         await mcpLoader.DisposeAsync();
     }

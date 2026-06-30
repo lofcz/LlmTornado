@@ -201,25 +201,7 @@ public sealed class AgentBuilder
         ToolOptimizationResult result = await _toolOptimizer.OptimizeAsync(_fullToolList, userMessage, ct);
 
         if (result.WasOptimized)
-        {
-            // Swap the agent's tool list to the optimized subset
-            _agent.ClearTools();
-            foreach (Tool tool in result.Tools)
-            {
-                _agent.AddTool(tool);
-            }
-
-            // Re-populate tool permissions for the optimized subset.
-            // ClearTools() does not clear ToolPermissionRequired, but we need
-            // to ensure all optimized tools have entries (MCP tools skip
-            // SetDefaultToolPermission because ToolName is null).
-            foreach (Tool tool in result.Tools)
-            {
-                string resolvedName = tool.ResolvedName;
-                if (!string.IsNullOrEmpty(resolvedName))
-                    _agent.ToolPermissionRequired[resolvedName] = true;
-            }
-        }
+            ApplyToolSet(result.Tools);
 
         return result;
     }
@@ -229,22 +211,89 @@ public sealed class AgentBuilder
     /// </summary>
     public void RestoreFullTools()
     {
-        if (_agent is null || _fullToolList is null)
+        if (_fullToolList is not null)
+            ApplyToolSet(_fullToolList);
+    }
+
+    /// <summary>
+    /// Swap the agent's live tool list to <paramref name="tools"/> and (re)register their permissions.
+    /// <see cref="TornadoAgent.ClearTools"/> does not clear <c>ToolPermissionRequired</c>, but we still
+    /// re-populate it so every tool (including MCP tools, which skip default permission registration
+    /// because their ToolName is null) has an entry and never throws at call time.
+    /// </summary>
+    private void ApplyToolSet(IReadOnlyList<Tool> tools)
+    {
+        if (_agent is null)
             return;
 
         _agent.ClearTools();
-        foreach (Tool tool in _fullToolList)
-        {
+        foreach (Tool tool in tools)
             _agent.AddTool(tool);
-        }
 
-        // Re-populate tool permissions for the full set
-        foreach (Tool tool in _fullToolList)
+        foreach (Tool tool in tools)
         {
             string resolvedName = tool.ResolvedName;
             if (!string.IsNullOrEmpty(resolvedName))
                 _agent.ToolPermissionRequired[resolvedName] = true;
         }
+    }
+
+    /// <summary>
+    /// Describe the full tool catalog (every tool registered before per-turn optimization), marking
+    /// which are currently loaded. Backs the <c>list_all_tools</c> built-in tool so the agent can
+    /// discover capabilities that optimization may have left out of the current turn.
+    /// </summary>
+    public string DescribeAllTools()
+    {
+        if (_fullToolList is null || _fullToolList.Count == 0)
+            return "No tools are registered.";
+
+        HashSet<string> loaded = new(
+            _agent?.ToolList.Keys ?? Enumerable.Empty<string>(), StringComparer.OrdinalIgnoreCase);
+
+        StringBuilder sb = new();
+        sb.AppendLine($"All {_fullToolList.Count} tools (✓ = loaded this turn, otherwise call select_tools to load it):");
+        foreach (Tool tool in _fullToolList.OrderBy(t => t.ResolvedName, StringComparer.OrdinalIgnoreCase))
+        {
+            string name = tool.ResolvedName;
+            if (string.IsNullOrEmpty(name))
+                continue;
+            string mark = loaded.Contains(name) ? "✓" : " ";
+            string desc = tool.ResolvedDescription ?? string.Empty;
+            sb.AppendLine(string.IsNullOrEmpty(desc) ? $"  {mark} {name}" : $"  {mark} {name}: {desc}");
+        }
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// Run the tool selector with an agent-authored <paramref name="query"/> and load the matching
+    /// tools into the live tool set. Backs the <c>select_tools</c> built-in tool. When optimization is
+    /// inactive (no optimizer, or the catalog already fits the budget) all tools are simply (re)loaded.
+    /// </summary>
+    public async Task<string> SelectToolsForQueryAsync(string query, CancellationToken ct = default)
+    {
+        if (_agent is null || _fullToolList is null)
+            return "No tools are available.";
+        if (string.IsNullOrWhiteSpace(query))
+            return "ERROR: provide a short query describing the capability you need.";
+
+        if (_toolOptimizer is null || _fullToolList.Count <= _settings.MaxTools)
+        {
+            ApplyToolSet(_fullToolList);
+            return $"All {_fullToolList.Count} tools are already available — nothing to narrow.";
+        }
+
+        ToolOptimizationResult result = await _toolOptimizer.OptimizeAsync(_fullToolList, query, ct);
+        ApplyToolSet(result.Tools);
+
+        IEnumerable<string> names = result.Tools
+            .Select(t => t.ResolvedName)
+            .Where(n => !string.IsNullOrEmpty(n))
+            .OrderBy(n => n, StringComparer.OrdinalIgnoreCase);
+
+        return $"Loaded {result.Tools.Count} tool(s) for query \"{query}\":\n"
+               + string.Join("\n", names.Select(n => $"  - {n}"))
+               + "\nCall list_all_tools to see everything, or select_tools again with a different query.";
     }
 
     /// <summary>
@@ -339,12 +388,20 @@ public sealed class AgentBuilder
         sb.AppendLine("Use it when current or external information is needed, and cite source URLs from the results.");
         sb.AppendLine();
 
+        if (_toolOptimizer is not null)
+        {
+            sb.AppendLine("To save context, only a subset of tools may be loaded on any given turn.");
+            sb.AppendLine("Call `list_all_tools` to see the full catalog, and `select_tools` with a short query");
+            sb.AppendLine("describing what you need (e.g. \"read and edit files\") to load the relevant tools before calling them.");
+            sb.AppendLine();
+        }
+
         if (_agentStateStore is not null)
         {
-            sb.AppendLine("You have built-in CLI-local memory and state tools.");
-            sb.AppendLine("Use memory tools for durable notes, user/project preferences, and facts worth retaining.");
-            sb.AppendLine("Use `memory_recall` for semantic/hybrid recall and keep its max_tokens small; use `memory_search` for exact keyword lookup.");
-            sb.AppendLine("Use state tools for current task state, checkpoints, and inspecting or restoring past state snapshots.");
+            sb.AppendLine("You have built-in CLI-local `memory`, `state`, and `state_snapshot` tools (each takes an `action`).");
+            sb.AppendLine("Use `memory` for durable notes, user/project preferences, and facts worth retaining:");
+            sb.AppendLine("action=recall for semantic/hybrid recall (keep max_tokens small), action=search for exact keyword lookup, action=store to save.");
+            sb.AppendLine("Use `state` for current task state and `state_snapshot` for checkpoints and restoring past state.");
             sb.AppendLine();
         }
 
@@ -364,6 +421,11 @@ public sealed class AgentBuilder
         if (_userInteraction is not null)
             tools.Add(BuildAskQuestionTool());
         tools.Add(BuiltInWebSearchTool.Build());
+
+        // Built-in tool-discovery tools (so the agent can see and pull in tools that per-turn
+        // optimization left out of the current turn).
+        tools.Add(BuildListAllToolsTool());
+        tools.Add(BuildSelectToolsTool());
 
         if (_agentStateStore is not null)
             tools.AddRange(BuildAgentStateTools());
@@ -424,6 +486,28 @@ public sealed class AgentBuilder
             "List all enabled skills with their descriptions and available scripts.");
     }
 
+    private Tool BuildListAllToolsTool()
+    {
+        return new Tool(
+            new Func<string>(DescribeAllTools),
+            "list_all_tools",
+            "List the full catalog of available tools (name + description), including tools not currently " +
+            "loaded because per-turn tool optimization narrowed the set. Use this to discover what exists, " +
+            "then call select_tools to load the ones you need.");
+    }
+
+    private Tool BuildSelectToolsTool()
+    {
+        return new Tool(
+            new Func<string, Task<string>>(query => SelectToolsForQueryAsync(query, CancellationToken.None)),
+            "select_tools",
+            "Load the tools most relevant to a query you write. When tool optimization is active only a " +
+            "subset of tools is loaded each turn; if you need a capability that isn't loaded, call this with " +
+            "a short description of what you need (e.g. \"read and edit files\", \"search the web\", " +
+            "\"query the database\"). The matching tools are loaded so you can call them. This replaces the " +
+            "current optimized set, so include everything you need for the next steps in one query.");
+    }
+
     private Tool BuildReadReferenceTool()
     {
         return new Tool(
@@ -465,172 +549,144 @@ public sealed class AgentBuilder
 
         return
         [
-            new Tool(new Func<MemoryStoreToolRequest, string>(MemoryStore), "memory_store",
-                "Store a durable CLI-local memory note. Use for user preferences, project facts, and important decisions."),
-            new Tool(new Func<MemorySearchToolRequest, string>(MemorySearch), "memory_search",
-                "Search durable CLI-local memories by text query and/or tag."),
-            new Tool(new Func<MemoryRecallToolRequest, string>(MemoryRecall), "memory_recall",
-                "Hybrid vector/keyword recall over durable CLI-local memories. Use for semantic recall with a token budget."),
-            new Tool(new Func<string>(MemoryReindex), "memory_reindex",
-                "Rebuild local vectors for all durable CLI-local memories."),
-            new Tool(new Func<MemoryListToolRequest, string>(MemoryList), "memory_list",
-                "List recent durable CLI-local memories, optionally filtered by tag."),
-            new Tool(new Func<MemoryGetToolRequest, string>(MemoryGet), "memory_get",
-                "Get a durable CLI-local memory by id."),
-            new Tool(new Func<MemoryDeleteToolRequest, string>(MemoryDelete), "memory_delete",
-                "Delete a durable CLI-local memory by id."),
+            new Tool(new Func<MemoryToolRequest, string>(Memory), "memory",
+                "Durable CLI-local memory of notes (user preferences, project facts, important decisions). " +
+                "Set `action` to one of: " +
+                "store (requires content; optional key, tags), " +
+                "recall (semantic/hybrid recall; requires query; optional tag, limit, max_tokens — keep small), " +
+                "search (exact keyword/tag lookup; optional query, tag, limit), " +
+                "list (optional tag, limit), " +
+                "get (requires id), " +
+                "delete (requires id), " +
+                "reindex (rebuild local vectors)."),
 
-            new Tool(new Func<StateSetToolRequest, string>(StateSet), "state_set",
-                "Set a CLI-local key-value state entry for current task state."),
-            new Tool(new Func<StateGetToolRequest, string>(StateGet), "state_get",
-                "Get a CLI-local state entry by key."),
-            new Tool(new Func<StateListToolRequest, string>(StateList), "state_list",
-                "List CLI-local state entries, optionally filtered by key prefix."),
-            new Tool(new Func<StateDeleteToolRequest, string>(StateDelete), "state_delete",
-                "Delete a CLI-local state entry by key."),
+            new Tool(new Func<StateToolRequest, string>(State), "state",
+                "CLI-local key/value task state. Set `action` to one of: " +
+                "set (requires key; optional value, content_type), " +
+                "get (requires key), " +
+                "list (optional prefix, limit), " +
+                "delete (requires key)."),
 
-            new Tool(new Func<StateSnapshotCreateToolRequest, string>(StateSnapshotCreate), "state_snapshot_create",
-                "Create a point-in-time snapshot of all CLI-local state entries."),
-            new Tool(new Func<StateSnapshotListToolRequest, string>(StateSnapshotList), "state_snapshot_list",
-                "List CLI-local state snapshots."),
-            new Tool(new Func<StateSnapshotGetToolRequest, string>(StateSnapshotGet), "state_snapshot_get",
-                "Get a CLI-local state snapshot by id."),
-            new Tool(new Func<StateSnapshotRestoreToolRequest, string>(StateSnapshotRestore), "state_snapshot_restore",
-                "Restore CLI-local state entries from a snapshot id.")
+            new Tool(new Func<StateSnapshotToolRequest, string>(StateSnapshot), "state_snapshot",
+                "Point-in-time snapshots of all CLI-local state. Set `action` to one of: " +
+                "create (optional label), " +
+                "list (optional limit), " +
+                "get (requires id), " +
+                "restore (requires id).")
         ];
     }
 
-    private string MemoryStore(MemoryStoreToolRequest request)
-    {
-        if (_agentStateStore is null)
-            return "Memory tools are not available.";
-        if (string.IsNullOrWhiteSpace(request.Content))
-            return "ERROR: content is required.";
-
-        AgentMemoryRecord record = _agentStateStore.StoreMemory(
-            request.Key,
-            request.Content,
-            request.Tags ?? [],
-            _memoryManager?.ConversationId);
-        return SerializeToolResult(record);
-    }
-
-    private string MemorySearch(MemorySearchToolRequest request)
-    {
-        if (_agentStateStore is null)
-            return "Memory tools are not available.";
-        return SerializeToolResult(_agentStateStore.SearchMemories(request.Query, request.Tag, request.Limit));
-    }
-
-    private string MemoryRecall(MemoryRecallToolRequest request)
-    {
-        if (_agentStateStore is null)
-            return "Memory tools are not available.";
-        if (string.IsNullOrWhiteSpace(request.Query))
-            return "ERROR: query is required.";
-
-        return SerializeToolResult(_agentStateStore.RecallMemories(
-            request.Query,
-            request.Tag,
-            request.Limit,
-            request.MaxTokens));
-    }
-
-    private string MemoryReindex()
+    private string Memory(MemoryToolRequest request)
     {
         if (_agentStateStore is null)
             return "Memory tools are not available.";
 
-        return SerializeToolResult(new
+        switch (NormalizeAction(request.Action))
         {
-            reindexed = _agentStateStore.ReindexMemoryVectors(),
-            provider = LocalMemoryVectorizer.Provider
-        });
+            case "store":
+                if (string.IsNullOrWhiteSpace(request.Content))
+                    return "ERROR: 'content' is required for action 'store'.";
+                return SerializeToolResult(_agentStateStore.StoreMemory(
+                    request.Key, request.Content, request.Tags ?? [], _memoryManager?.ConversationId));
+
+            case "recall":
+                if (string.IsNullOrWhiteSpace(request.Query))
+                    return "ERROR: 'query' is required for action 'recall'.";
+                return SerializeToolResult(_agentStateStore.RecallMemories(
+                    request.Query, request.Tag, request.Limit ?? 8, request.MaxTokens ?? 1_500));
+
+            case "search":
+                return SerializeToolResult(_agentStateStore.SearchMemories(
+                    request.Query, request.Tag, request.Limit ?? 20));
+
+            case "list":
+                return SerializeToolResult(_agentStateStore.SearchMemories(
+                    null, request.Tag, request.Limit ?? 20));
+
+            case "get":
+                if (request.Id is null)
+                    return "ERROR: 'id' is required for action 'get'.";
+                AgentMemoryRecord? record = _agentStateStore.GetMemory(request.Id.Value);
+                return record is null ? $"Memory '{request.Id}' not found." : SerializeToolResult(record);
+
+            case "delete":
+                if (request.Id is null)
+                    return "ERROR: 'id' is required for action 'delete'.";
+                return SerializeToolResult(new { deleted = _agentStateStore.DeleteMemory(request.Id.Value), id = request.Id.Value });
+
+            case "reindex":
+                return SerializeToolResult(new
+                {
+                    reindexed = _agentStateStore.ReindexMemoryVectors(),
+                    provider = LocalMemoryVectorizer.Provider
+                });
+
+            default:
+                return "ERROR: unknown action. Use store, recall, search, list, get, delete, or reindex.";
+        }
     }
 
-    private string MemoryList(MemoryListToolRequest request)
-    {
-        if (_agentStateStore is null)
-            return "Memory tools are not available.";
-        return SerializeToolResult(_agentStateStore.SearchMemories(null, request.Tag, request.Limit));
-    }
-
-    private string MemoryGet(MemoryGetToolRequest request)
-    {
-        if (_agentStateStore is null)
-            return "Memory tools are not available.";
-        AgentMemoryRecord? record = _agentStateStore.GetMemory(request.Id);
-        return record is null ? $"Memory '{request.Id}' not found." : SerializeToolResult(record);
-    }
-
-    private string MemoryDelete(MemoryDeleteToolRequest request)
-    {
-        if (_agentStateStore is null)
-            return "Memory tools are not available.";
-        return SerializeToolResult(new { deleted = _agentStateStore.DeleteMemory(request.Id), id = request.Id });
-    }
-
-    private string StateSet(StateSetToolRequest request)
-    {
-        if (_agentStateStore is null)
-            return "State tools are not available.";
-        if (string.IsNullOrWhiteSpace(request.Key))
-            return "ERROR: key is required.";
-
-        AgentStateRecord record = _agentStateStore.SetState(request.Key, request.Value ?? "", request.ContentType);
-        return SerializeToolResult(record);
-    }
-
-    private string StateGet(StateGetToolRequest request)
-    {
-        if (_agentStateStore is null)
-            return "State tools are not available.";
-        AgentStateRecord? record = _agentStateStore.GetState(request.Key);
-        return record is null ? $"State key '{request.Key}' not found." : SerializeToolResult(record);
-    }
-
-    private string StateList(StateListToolRequest request)
+    private string State(StateToolRequest request)
     {
         if (_agentStateStore is null)
             return "State tools are not available.";
-        return SerializeToolResult(_agentStateStore.ListState(request.Prefix, request.Limit));
+
+        switch (NormalizeAction(request.Action))
+        {
+            case "set":
+                if (string.IsNullOrWhiteSpace(request.Key))
+                    return "ERROR: 'key' is required for action 'set'.";
+                return SerializeToolResult(_agentStateStore.SetState(request.Key, request.Value ?? "", request.ContentType));
+
+            case "get":
+                if (string.IsNullOrWhiteSpace(request.Key))
+                    return "ERROR: 'key' is required for action 'get'.";
+                AgentStateRecord? record = _agentStateStore.GetState(request.Key);
+                return record is null ? $"State key '{request.Key}' not found." : SerializeToolResult(record);
+
+            case "list":
+                return SerializeToolResult(_agentStateStore.ListState(request.Prefix, request.Limit ?? 50));
+
+            case "delete":
+                if (string.IsNullOrWhiteSpace(request.Key))
+                    return "ERROR: 'key' is required for action 'delete'.";
+                return SerializeToolResult(new { deleted = _agentStateStore.DeleteState(request.Key), key = request.Key });
+
+            default:
+                return "ERROR: unknown action. Use set, get, list, or delete.";
+        }
     }
 
-    private string StateDelete(StateDeleteToolRequest request)
+    private string StateSnapshot(StateSnapshotToolRequest request)
     {
         if (_agentStateStore is null)
             return "State tools are not available.";
-        return SerializeToolResult(new { deleted = _agentStateStore.DeleteState(request.Key), key = request.Key });
+
+        switch (NormalizeAction(request.Action))
+        {
+            case "create":
+                return SerializeToolResult(_agentStateStore.CreateSnapshot(request.Label));
+
+            case "list":
+                return SerializeToolResult(_agentStateStore.ListSnapshots(request.Limit ?? 20));
+
+            case "get":
+                if (request.Id is null)
+                    return "ERROR: 'id' is required for action 'get'.";
+                AgentStateSnapshotRecord? snapshot = _agentStateStore.GetSnapshot(request.Id.Value);
+                return snapshot is null ? $"State snapshot '{request.Id}' not found." : SerializeToolResult(snapshot);
+
+            case "restore":
+                if (request.Id is null)
+                    return "ERROR: 'id' is required for action 'restore'.";
+                return SerializeToolResult(new { restored = _agentStateStore.RestoreSnapshot(request.Id.Value), id = request.Id.Value });
+
+            default:
+                return "ERROR: unknown action. Use create, list, get, or restore.";
+        }
     }
 
-    private string StateSnapshotCreate(StateSnapshotCreateToolRequest request)
-    {
-        if (_agentStateStore is null)
-            return "State tools are not available.";
-        return SerializeToolResult(_agentStateStore.CreateSnapshot(request.Label));
-    }
-
-    private string StateSnapshotList(StateSnapshotListToolRequest request)
-    {
-        if (_agentStateStore is null)
-            return "State tools are not available.";
-        return SerializeToolResult(_agentStateStore.ListSnapshots(request.Limit));
-    }
-
-    private string StateSnapshotGet(StateSnapshotGetToolRequest request)
-    {
-        if (_agentStateStore is null)
-            return "State tools are not available.";
-        AgentStateSnapshotRecord? snapshot = _agentStateStore.GetSnapshot(request.Id);
-        return snapshot is null ? $"State snapshot '{request.Id}' not found." : SerializeToolResult(snapshot);
-    }
-
-    private string StateSnapshotRestore(StateSnapshotRestoreToolRequest request)
-    {
-        if (_agentStateStore is null)
-            return "State tools are not available.";
-        return SerializeToolResult(new { restored = _agentStateStore.RestoreSnapshot(request.Id), id = request.Id });
-    }
+    private static string NormalizeAction(string? action) => (action ?? string.Empty).Trim().ToLowerInvariant();
 
     private static string SerializeToolResult(object value) =>
         JsonSerializer.Serialize(value, new JsonSerializerOptions { WriteIndented = false });
@@ -803,83 +859,39 @@ public sealed class AgentBuilder
     }
 }
 
-public sealed class MemoryStoreToolRequest
+/// <summary>Unified request for the consolidated <c>memory</c> tool. <see cref="Action"/> selects the operation.</summary>
+public sealed class MemoryToolRequest
 {
+    /// <summary>store | recall | search | list | get | delete | reindex.</summary>
+    public string Action { get; set; } = "";
     public string? Key { get; set; }
-    public string Content { get; set; } = "";
+    public string? Content { get; set; }
     public List<string>? Tags { get; set; }
-}
-
-public sealed class MemorySearchToolRequest
-{
     public string? Query { get; set; }
     public string? Tag { get; set; }
-    public int Limit { get; set; } = 20;
+    public long? Id { get; set; }
+    public int? Limit { get; set; }
+    public int? MaxTokens { get; set; }
 }
 
-public sealed class MemoryRecallToolRequest
+/// <summary>Unified request for the consolidated <c>state</c> tool. <see cref="Action"/> selects the operation.</summary>
+public sealed class StateToolRequest
 {
-    public string Query { get; set; } = "";
-    public string? Tag { get; set; }
-    public int Limit { get; set; } = 8;
-    public int MaxTokens { get; set; } = 1_500;
-}
-
-public sealed class MemoryListToolRequest
-{
-    public string? Tag { get; set; }
-    public int Limit { get; set; } = 20;
-}
-
-public sealed class MemoryGetToolRequest
-{
-    public long Id { get; set; }
-}
-
-public sealed class MemoryDeleteToolRequest
-{
-    public long Id { get; set; }
-}
-
-public sealed class StateSetToolRequest
-{
-    public string Key { get; set; } = "";
+    /// <summary>set | get | list | delete.</summary>
+    public string Action { get; set; } = "";
+    public string? Key { get; set; }
     public string? Value { get; set; }
     public string? ContentType { get; set; }
-}
-
-public sealed class StateGetToolRequest
-{
-    public string Key { get; set; } = "";
-}
-
-public sealed class StateListToolRequest
-{
     public string? Prefix { get; set; }
-    public int Limit { get; set; } = 50;
+    public int? Limit { get; set; }
 }
 
-public sealed class StateDeleteToolRequest
+/// <summary>Unified request for the consolidated <c>state_snapshot</c> tool. <see cref="Action"/> selects the operation.</summary>
+public sealed class StateSnapshotToolRequest
 {
-    public string Key { get; set; } = "";
-}
-
-public sealed class StateSnapshotCreateToolRequest
-{
+    /// <summary>create | list | get | restore.</summary>
+    public string Action { get; set; } = "";
     public string? Label { get; set; }
-}
-
-public sealed class StateSnapshotListToolRequest
-{
-    public int Limit { get; set; } = 20;
-}
-
-public sealed class StateSnapshotGetToolRequest
-{
-    public long Id { get; set; }
-}
-
-public sealed class StateSnapshotRestoreToolRequest
-{
-    public long Id { get; set; }
+    public long? Id { get; set; }
+    public int? Limit { get; set; }
 }

@@ -37,12 +37,12 @@ public class AgentStateToolBuilderTests
 
         List<string> toolNames = builder.FullToolList.Select(t => t.ResolvedName).ToList();
         Assert.That(toolNames, Does.Contain("web_search"));
-        Assert.That(toolNames, Does.Contain("memory_store"));
-        Assert.That(toolNames, Does.Contain("memory_search"));
-        Assert.That(toolNames, Does.Contain("memory_recall"));
-        Assert.That(toolNames, Does.Contain("memory_reindex"));
-        Assert.That(toolNames, Does.Contain("state_set"));
-        Assert.That(toolNames, Does.Contain("state_snapshot_restore"));
+        Assert.That(toolNames, Does.Contain("memory"));
+        Assert.That(toolNames, Does.Contain("state"));
+        Assert.That(toolNames, Does.Contain("state_snapshot"));
+        // The 15 prior per-operation tools are consolidated into 3 action-dispatch tools.
+        Assert.That(toolNames, Does.Not.Contain("memory_store"));
+        Assert.That(toolNames, Does.Not.Contain("state_snapshot_restore"));
 
         await mcpLoader.DisposeAsync();
     }
@@ -57,8 +57,9 @@ public class AgentStateToolBuilderTests
 
         List<string> toolNames = builder.FullToolList.Select(t => t.ResolvedName).ToList();
         Assert.That(toolNames, Does.Contain("web_search"));
-        Assert.That(toolNames, Does.Not.Contain("memory_store"));
-        Assert.That(toolNames, Does.Not.Contain("state_set"));
+        Assert.That(toolNames, Does.Not.Contain("memory"));
+        Assert.That(toolNames, Does.Not.Contain("state"));
+        Assert.That(toolNames, Does.Not.Contain("state_snapshot"));
 
         await mcpLoader.DisposeAsync();
     }

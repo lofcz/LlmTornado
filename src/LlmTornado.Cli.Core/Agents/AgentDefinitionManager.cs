@@ -184,10 +184,8 @@ public sealed class AgentDefinitionManager
     {
         // Built-in agent management tools are always allowed
         if (toolName is "load_skill" or "list_skills" or "read_reference" or "ask_question" or "web_search"
-            or "memory_store" or "memory_search" or "memory_recall" or "memory_reindex"
-            or "memory_list" or "memory_get" or "memory_delete"
-            or "state_set" or "state_get" or "state_list" or "state_delete"
-            or "state_snapshot_create" or "state_snapshot_list" or "state_snapshot_get" or "state_snapshot_restore")
+            or "list_all_tools" or "select_tools"
+            or "memory" or "state" or "state_snapshot")
             return true;
 
         if (_activePersonaName is null) return true;

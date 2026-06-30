@@ -23,6 +23,8 @@ public sealed class ToolOptimizer
         "list_skills",
         "read_reference",
         "ask_question",
+        "list_all_tools",
+        "select_tools",
     ];
 
     private readonly TornadoApi _api;
