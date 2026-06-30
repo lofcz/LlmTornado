@@ -160,6 +160,10 @@ public sealed class AgentBuilder
         runtimeConfig.OnRuntimeEvent = onRuntimeEvent;
         runtimeConfig.OnRuntimeRequestEvent = _toolApproval.HandleToolPermissionRequest;
 
+        // The CLI is interactive (the user can cancel at any time), so don't cap the agent loop at the
+        // library default of 10 turns — let it run as long as the task needs.
+        runtimeConfig.MaxTurns = int.MaxValue;
+
         _runtime = new ChatRuntime(runtimeConfig);
         return _runtime;
     }

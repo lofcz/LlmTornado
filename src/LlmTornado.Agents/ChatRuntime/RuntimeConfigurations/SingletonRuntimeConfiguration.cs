@@ -26,6 +26,12 @@ public class SingletonRuntimeConfiguration : IRuntimeConfiguration
     public TornadoAgent Agent { get; set; }
 
     /// <summary>
+    /// Maximum agent loop turns per request. Defaults to 10 (the library default); set higher (e.g.
+    /// <see cref="int.MaxValue"/>) to let the agent run effectively unbounded.
+    /// </summary>
+    public int MaxTurns { get; set; } = 10;
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="SequentialRuntimeConfiguration"/> class with the specified agents.
     /// </summary>
     /// <param name="agents">Agents to run in order</param>
@@ -54,6 +60,7 @@ public class SingletonRuntimeConfiguration : IRuntimeConfiguration
 
         Conversation = await Agent.Run(
             appendMessages: Conversation.Messages.ToList(),
+            maxTurns: MaxTurns,
             streaming: Agent.Streaming,
             onAgentRunnerEvent: (sEvent) =>
             {
