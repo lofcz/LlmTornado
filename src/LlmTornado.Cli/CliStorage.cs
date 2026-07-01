@@ -1,4 +1,5 @@
 using System.Text.Json;
+using LlmTornado.Cli.Core;
 
 namespace LlmTornado.Cli;
 
@@ -7,17 +8,16 @@ namespace LlmTornado.Cli;
 /// </summary>
 internal static class CliStorage
 {
-    public static readonly string RootDirectory = OperatingSystem.IsWindows()
-        ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "LlmTornado")
-        : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".llmtornado");
+    private static string? _rootDirectory;
 
-    public static readonly string ConversationsDirectory = Path.Combine(RootDirectory, "conversations");
-    public static readonly string SettingsPath = Path.Combine(RootDirectory, "settings.json");
-    public static readonly string ToolApprovalsPath = Path.Combine(RootDirectory, "tool-approvals.json");
-    public static readonly string CurrentConversationPath = Path.Combine(ConversationsDirectory, "current.jsonl");
-    public static readonly string DatabasePath = Path.Combine(RootDirectory, "conversations.db");
-    public static readonly string AttachmentsDirectory = Path.Combine(RootDirectory, "attachments");
-    public static readonly string ContextDumpsDirectory = Path.Combine(RootDirectory, "context-dumps");
+    public static string RootDirectory => _rootDirectory ?? ResolveRootDirectory();
+    public static string ConversationsDirectory => Path.Combine(RootDirectory, "conversations");
+    public static string SettingsPath => Path.Combine(RootDirectory, "settings.json");
+    public static string ToolApprovalsPath => Path.Combine(RootDirectory, "tool-approvals.json");
+    public static string CurrentConversationPath => Path.Combine(ConversationsDirectory, "current.jsonl");
+    public static string DatabasePath => Path.Combine(RootDirectory, "conversations.db");
+    public static string AttachmentsDirectory => Path.Combine(RootDirectory, "attachments");
+    public static string ContextDumpsDirectory => Path.Combine(RootDirectory, "context-dumps");
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -26,14 +26,22 @@ internal static class CliStorage
     };
 
     /// <summary>
-    /// Ensure all directories exist.
+    /// Bind storage to the shared CLI root for this run and ensure all directories exist.
     /// </summary>
     public static void Initialize()
     {
+        _rootDirectory = ResolveRootDirectory();
+
         Directory.CreateDirectory(RootDirectory);
         Directory.CreateDirectory(ConversationsDirectory);
         Directory.CreateDirectory(ContextDumpsDirectory);
     }
+
+    internal static string ResolveRootDirectory()
+        => TornadoPaths.GlobalRoot();
+
+    internal static void ResetForTesting()
+        => _rootDirectory = null;
 
     /// <summary>
     /// Read and deserialize a JSON file, or return null if not found.

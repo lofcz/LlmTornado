@@ -8,18 +8,38 @@ namespace LlmTornado.Cli.Tests;
 public class CliStorageTests
 {
     private string _tempDir = null!;
-    private string _originalRoot = null!;
+    private string? _originalTornadoHome;
 
     [SetUp]
     public void SetUp()
     {
         _tempDir = TestHelpers.CreateTempDir();
+        _originalTornadoHome = Environment.GetEnvironmentVariable(TornadoPaths.HomeEnvVar);
+        CliStorage.ResetForTesting();
     }
 
     [TearDown]
     public void TearDown()
     {
+        Environment.SetEnvironmentVariable(TornadoPaths.HomeEnvVar, _originalTornadoHome);
+        CliStorage.ResetForTesting();
         TestHelpers.CleanupTempDir(_tempDir);
+    }
+
+    [Test]
+    public void Initialize_BindsStorageRoot_ToGlobalRoot()
+    {
+        string expectedRoot = Path.Combine(_tempDir, "network-share");
+        Environment.SetEnvironmentVariable(TornadoPaths.HomeEnvVar, expectedRoot);
+
+        CliStorage.Initialize();
+
+        Assert.That(CliStorage.RootDirectory, Is.EqualTo(Path.GetFullPath(expectedRoot)));
+        Assert.That(CliStorage.DatabasePath, Is.EqualTo(Path.Combine(expectedRoot, "conversations.db")));
+        Assert.That(CliStorage.AttachmentsDirectory, Is.EqualTo(Path.Combine(expectedRoot, "attachments")));
+        Assert.That(Directory.Exists(expectedRoot), Is.True);
+        Assert.That(Directory.Exists(CliStorage.ConversationsDirectory), Is.True);
+        Assert.That(Directory.Exists(CliStorage.ContextDumpsDirectory), Is.True);
     }
 
     #region SaveJson / LoadJson round-trip
