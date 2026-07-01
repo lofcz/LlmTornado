@@ -452,6 +452,39 @@ public class ModelStreamingOutputTextDoneEvent : ModelStreamingEvents
 }
 
 /// <summary>
+/// Provides incremental function-call argument data during model streaming.
+/// </summary>
+public class ModelStreamingFunctionCallDeltaEvent : ModelStreamingEvents
+{
+    public string? ToolName { get; set; }
+    public string? ArgumentsDelta { get; set; }
+    public string? ArgumentsSnapshot { get; set; }
+    public string? ToolCallId { get; set; }
+    public int? ToolCallIndex { get; set; }
+    public bool IsComplete { get; set; }
+
+    public ModelStreamingFunctionCallDeltaEvent(
+        int seqNum,
+        string? toolName,
+        string? argumentsDelta,
+        string? argumentsSnapshot = null,
+        string? toolCallId = null,
+        int? toolCallIndex = null,
+        bool isComplete = false,
+        string responseID = "")
+        : base(seqNum, responseID, isComplete ? ModelStreamingEventType.FunctionCallDone : ModelStreamingEventType.FunctionCallDelta,
+            isComplete ? ModelStreamingStatus.Completed : ModelStreamingStatus.InProgress)
+    {
+        ToolName = toolName;
+        ArgumentsDelta = argumentsDelta;
+        ArgumentsSnapshot = argumentsSnapshot;
+        ToolCallId = toolCallId;
+        ToolCallIndex = toolCallIndex;
+        IsComplete = isComplete;
+    }
+}
+
+/// <summary>
 /// Represents a streaming model item containing information about the current state and content of a streaming response.
 /// </summary>
 public class StreamingModelItem

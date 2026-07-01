@@ -181,6 +181,17 @@ public class GoogleEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
                                         {
                                             plaintextAccu ??= new StringBuilder();
                                             plaintextAccu.Append(part.Text);
+
+                                            if (isBufferingTool && eventHandler?.FunctionCallDeltaHandler is not null)
+                                            {
+                                                await eventHandler.FunctionCallDeltaHandler.Invoke(new FunctionCallStreamUpdate
+                                                {
+                                                    Name = request.Tools?.FirstOrDefault(x => x.Strict ?? false)?.Function?.Name
+                                                           ?? request.VendorExtensions?.Google?.ResponseSchema?.Function?.Name,
+                                                    ArgumentsDelta = part.Text,
+                                                    ArgumentsSnapshot = plaintextAccu.ToString()
+                                                });
+                                            }
                                         }
                                         else
                                         {

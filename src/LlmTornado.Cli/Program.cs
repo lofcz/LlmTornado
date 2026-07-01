@@ -386,6 +386,10 @@ class Program
                 {
                     ConsoleRenderer.WriteReasoningToken(reasoning.DeltaText);
                 }
+                else if (streamEvt.ModelStreamingEvent is ModelStreamingFunctionCallDeltaEvent functionDelta)
+                {
+                    ConsoleRenderer.WriteToolCallArgumentDelta(functionDelta.ToolName, functionDelta.ArgumentsDelta);
+                }
             }
             else if (runnerEvt.AgentRunnerEvent is AgentRunnerToolInvokedEvent toolEvt)
             {

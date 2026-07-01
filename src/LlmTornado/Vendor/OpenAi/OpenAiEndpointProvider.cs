@@ -410,11 +410,24 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
                         {
                             foreach (ToolCall toolCall in toolsMessage.ToolCalls)
                             {
+                                string? argumentsDelta = toolCall.FunctionCall is not null ? toolCall.FunctionCall.Arguments : toolCall.CustomCall?.Input;
                                 toolsMessage.ToolCallsDict.TryAdd(toolCall.Index?.ToString() ?? toolCall.Id ?? string.Empty, new ToolCallInboundAccumulator
                                 {
-                                    ArgumentsBuilder = new StringBuilder(toolCall.FunctionCall is not null ? toolCall.FunctionCall.Arguments : toolCall.CustomCall?.Input),
+                                    ArgumentsBuilder = new StringBuilder(argumentsDelta),
                                     ToolCall = toolCall
                                 });
+
+                                if (!string.IsNullOrEmpty(argumentsDelta) && eventHandler?.FunctionCallDeltaHandler is not null)
+                                {
+                                    await eventHandler.FunctionCallDeltaHandler.Invoke(new FunctionCallStreamUpdate
+                                    {
+                                        Name = toolCall.FunctionCall?.Name ?? toolCall.CustomCall?.Name,
+                                        ArgumentsDelta = argumentsDelta,
+                                        ArgumentsSnapshot = argumentsDelta,
+                                        CallId = toolCall.Id,
+                                        Index = toolCall.Index
+                                    });
+                                }
                             }   
                         }
                     }
@@ -468,20 +481,45 @@ public class OpenAiEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
                             foreach (ToolCall toolCall in choice.Delta.ToolCalls)
                             {
                                 string key = toolCall.Index?.ToString() ?? toolCall.Id ?? string.Empty;
+                                string? argumentsDelta = toolCall.FunctionCall is not null ? toolCall.FunctionCall.Arguments : toolCall.CustomCall?.Input;
                                 
                                 // we can either encounter a new function or we get a new arguments token
                                 if (toolsMessage.ToolCallsDict.TryGetValue(key, out ToolCallInboundAccumulator? accu))
                                 {
-                                    accu.ArgumentsBuilder.Append(toolCall.FunctionCall is not null ? toolCall.FunctionCall.Arguments : toolCall.CustomCall?.Input);
+                                    accu.ArgumentsBuilder.Append(argumentsDelta);
+
+                                    if (!string.IsNullOrEmpty(argumentsDelta) && eventHandler?.FunctionCallDeltaHandler is not null)
+                                    {
+                                        await eventHandler.FunctionCallDeltaHandler.Invoke(new FunctionCallStreamUpdate
+                                        {
+                                            Name = accu.ToolCall.FunctionCall?.Name ?? accu.ToolCall.CustomCall?.Name,
+                                            ArgumentsDelta = argumentsDelta,
+                                            ArgumentsSnapshot = accu.ArgumentsBuilder.ToString(),
+                                            CallId = accu.ToolCall.Id,
+                                            Index = accu.ToolCall.Index
+                                        });
+                                    }
                                 }
                                 else
                                 {
                                     toolsMessage.ToolCalls.Add(toolCall);
                                     toolsMessage.ToolCallsDict.Add(key, new ToolCallInboundAccumulator
                                     {
-                                        ArgumentsBuilder = new StringBuilder(toolCall.FunctionCall is not null ? toolCall.FunctionCall.Arguments : toolCall.CustomCall?.Input),
+                                        ArgumentsBuilder = new StringBuilder(argumentsDelta),
                                         ToolCall = toolCall
                                     });
+
+                                    if (!string.IsNullOrEmpty(argumentsDelta) && eventHandler?.FunctionCallDeltaHandler is not null)
+                                    {
+                                        await eventHandler.FunctionCallDeltaHandler.Invoke(new FunctionCallStreamUpdate
+                                        {
+                                            Name = toolCall.FunctionCall?.Name ?? toolCall.CustomCall?.Name,
+                                            ArgumentsDelta = argumentsDelta,
+                                            ArgumentsSnapshot = argumentsDelta,
+                                            CallId = toolCall.Id,
+                                            Index = toolCall.Index
+                                        });
+                                    }
                                 }
                             }
                         }

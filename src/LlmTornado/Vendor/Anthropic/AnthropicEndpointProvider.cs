@@ -561,7 +561,22 @@ public class AnthropicEndpointProvider : BaseEndpointProvider, IEndpointProvider
                     if (accuToolsMessage is not null)
                     {
                         accuToolsMessage.ContentBuilder ??= new StringBuilder();
-                        accuToolsMessage.ContentBuilder.Append(res?.Delta?.PartialJson);
+                        string? argumentsDelta = res?.Delta?.PartialJson;
+                        accuToolsMessage.ContentBuilder.Append(argumentsDelta);
+
+                        if (!string.IsNullOrEmpty(argumentsDelta) && eventHandler?.FunctionCallDeltaHandler is not null)
+                        {
+                            ToolCall? call = accuToolsMessage.ToolCalls?.FirstOrDefault(x => x.Index == res?.Index)
+                                             ?? accuToolsMessage.ToolCalls?.LastOrDefault();
+                            await eventHandler.FunctionCallDeltaHandler.Invoke(new FunctionCallStreamUpdate
+                            {
+                                Name = call?.FunctionCall?.Name,
+                                ArgumentsDelta = argumentsDelta,
+                                ArgumentsSnapshot = accuToolsMessage.ContentBuilder.ToString(),
+                                CallId = call?.Id,
+                                Index = call?.Index
+                            });
+                        }
                     }
                     else if (res?.Delta is not null)
                     {

@@ -662,6 +662,22 @@ public class TornadoRunner
                     await runnerCallback.Invoke(new AgentRunnerStreamingEvent(new ModelStreamingReasoningPartAddedEvent(1, 1, 1, reasoningText: reasoning.Content ?? string.Empty), chat));
                 }
             },
+            FunctionCallDeltaHandler = async (update) =>
+            {
+                if (runnerCallback is not null)
+                {
+                    await runnerCallback.Invoke(new AgentRunnerStreamingEvent(
+                        new ModelStreamingFunctionCallDeltaEvent(
+                            1,
+                            update.Name,
+                            update.ArgumentsDelta,
+                            update.ArgumentsSnapshot,
+                            update.CallId,
+                            update.Index,
+                            update.IsComplete),
+                        chat));
+                }
+            },
             BlockFinishedHandler = (message) =>
             {
                 //Call the streaming callback for completion

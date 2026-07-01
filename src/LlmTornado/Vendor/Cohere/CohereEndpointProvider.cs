@@ -350,7 +350,20 @@ public class CohereEndpointProvider : BaseEndpointProvider, IEndpointProvider, I
                     {
                         if (toolCallAccumulators.TryGetValue(toolCallDeltaEvent.Index.Value, out ToolCallInboundAccumulator? accumulator))
                         {
-                            accumulator.ArgumentsBuilder.Append(toolCallDeltaEvent.Delta?.Message?.ToolCalls?.Function?.Arguments);
+                            string? argumentsDelta = toolCallDeltaEvent.Delta?.Message?.ToolCalls?.Function?.Arguments;
+                            accumulator.ArgumentsBuilder.Append(argumentsDelta);
+
+                            if (!string.IsNullOrEmpty(argumentsDelta) && eventHandler?.FunctionCallDeltaHandler is not null)
+                            {
+                                await eventHandler.FunctionCallDeltaHandler.Invoke(new FunctionCallStreamUpdate
+                                {
+                                    Name = accumulator.ToolCall.FunctionCall?.Name,
+                                    ArgumentsDelta = argumentsDelta,
+                                    ArgumentsSnapshot = accumulator.ArgumentsBuilder.ToString(),
+                                    CallId = accumulator.ToolCall.Id,
+                                    Index = accumulator.ToolCall.Index
+                                });
+                            }
                         }
                     }
                     break;

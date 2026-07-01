@@ -17,6 +17,7 @@ internal sealed class ConsoleRenderer
         None,
         Output,
         Reasoning,
+        ToolArguments,
     }
 
     // ─── Banner ───
@@ -77,6 +78,31 @@ internal sealed class ConsoleRenderer
                 _streamTokenType = StreamTokenType.Reasoning;
             }
             Console.Write(token);
+        }
+    }
+
+    public static void WriteToolCallArgumentDelta(string? toolName, string? delta)
+    {
+        if (string.IsNullOrEmpty(delta)) return;
+
+        lock (Lock)
+        {
+            if (!_isStreaming || _streamTokenType != StreamTokenType.ToolArguments)
+            {
+                if (_isStreaming)
+                {
+                    Console.ResetColor();
+                    Console.WriteLine();
+                }
+
+                _isStreaming = true;
+                _streamTokenType = StreamTokenType.ToolArguments;
+                Console.ForegroundColor = ConsoleColor.DarkYellow;
+                Console.WriteLine($"[drafting tool call: {toolName ?? "tool"}]");
+                Console.ForegroundColor = ConsoleColor.DarkGray;
+            }
+
+            Console.Write(delta);
         }
     }
 
