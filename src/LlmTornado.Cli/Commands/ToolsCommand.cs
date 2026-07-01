@@ -7,7 +7,7 @@ internal sealed class ToolsCommand : ICliCommand
 {
     public string Name => "tools";
     public string Description => "View tool approvals, reset permissions, and manage tool optimization";
-    public string Usage => "/tools [list | approvals | reset [tool-name] | optimize [on|off|threshold <n>|status]]";
+    public string Usage => "/tools [list | approvals | reset [tool-name] | optimize [on|off|threshold <n>|status]] (shortcut: /max-tools [n])";
 
     private readonly ToolApprovalManager _toolApproval;
     private readonly CliAgentBuilder _builder;
@@ -35,12 +35,14 @@ internal sealed class ToolsCommand : ICliCommand
             int totalTools = _builder.TotalToolCount;
             ConsoleRenderer.WriteInfo($"{toolList.Count} tools registered (total before optimization: {totalTools}).");
 
-            if (_builder.NeedsOptimization)
-                ConsoleRenderer.WriteInfo($"  Tool optimizer: active (threshold: {_settings.MaxTools})");
-            else if (!_settings.ToolOptimizerEnabled)
+            if (!_settings.ToolOptimizerEnabled)
                 ConsoleRenderer.WriteInfo("  Tool optimizer: disabled");
-            else
+            else if (totalTools <= _settings.MaxTools)
                 ConsoleRenderer.WriteInfo($"  Tool optimizer: not needed (tools within limit of {_settings.MaxTools})");
+            else if (_builder.NeedsOptimization)
+                ConsoleRenderer.WriteInfo($"  Tool optimizer: pending first-run selection (threshold: {_settings.MaxTools})");
+            else
+                ConsoleRenderer.WriteInfo($"  Tool optimizer: active subset loaded (threshold: {_settings.MaxTools})");
 
             ConsoleRenderer.WriteInfo("Run /tools list to see every tool, or /tools approvals for recorded decisions.");
             return Task.FromResult(true);
@@ -183,7 +185,8 @@ internal sealed class ToolsCommand : ICliCommand
         ConsoleRenderer.WriteInfo($"  Enabled:    {_settings.ToolOptimizerEnabled}");
         ConsoleRenderer.WriteInfo($"  Threshold:  {_settings.MaxTools}");
         ConsoleRenderer.WriteInfo($"  Total tools: {_builder.TotalToolCount}");
-        ConsoleRenderer.WriteInfo($"  Active:     {_builder.NeedsOptimization}");
+        ConsoleRenderer.WriteInfo($"  Active tools: {_builder.Agent.ToolList.Count}");
+        ConsoleRenderer.WriteInfo($"  First-run selection pending: {_builder.NeedsOptimization}");
 
         if (_providerResult.OptimizerModel is not null)
             ConsoleRenderer.WriteInfo($"  Model:      {_providerResult.OptimizerModel.Name}");

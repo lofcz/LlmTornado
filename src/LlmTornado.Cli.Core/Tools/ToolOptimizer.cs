@@ -9,13 +9,21 @@ using LlmTornado.Infra;
 namespace LlmTornado.Cli.Core.Tools;
 
 /// <summary>
-/// LLM-based per-turn tool optimizer.
+/// LLM-based tool optimizer.
 /// When total tool count exceeds the configured threshold, uses a cheap/fast LLM
-/// to select the most relevant tools for the current user message.
+/// to select an active subset of tools for the current user message.
 /// Uses structured output with ToolParamListEnum to constrain the LLM response
 /// to only valid tool names.
 /// </summary>
-public sealed class ToolOptimizer
+public interface IToolOptimizer
+{
+    Task<ToolOptimizationResult> OptimizeAsync(
+        List<Tool> allTools,
+        string userMessage,
+        CancellationToken ct = default);
+}
+
+public sealed class ToolOptimizer : IToolOptimizer
 {
     private static readonly HashSet<string> BuiltInToolNames =
     [

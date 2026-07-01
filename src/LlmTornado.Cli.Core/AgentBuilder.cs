@@ -36,8 +36,9 @@ public sealed class AgentBuilder
     private ChatModel _activeModel;
     private TornadoAgent? _agent;
     private ChatRuntime? _runtime;
-    private ToolOptimizer? _toolOptimizer;
+    private IToolOptimizer? _toolOptimizer;
     private List<Tool>? _fullToolList;
+    private bool _automaticToolOptimizationCompleted;
 
     public TornadoAgent Agent => _agent ?? throw new InvalidOperationException("Agent not built");
     public ChatRuntime Runtime => _runtime ?? throw new InvalidOperationException("Runtime not built");
@@ -51,10 +52,11 @@ public sealed class AgentBuilder
         _runtime?.RuntimeConfiguration as Memory.ManagedConversationRuntimeConfiguration;
 
     /// <summary>
-    /// Whether the tool optimizer is active (tool count exceeds threshold and optimizer is configured).
+    /// Whether automatic first-run tool optimization is pending.
     /// </summary>
     public bool NeedsOptimization => _toolOptimizer is not null && _fullToolList is not null
-                                     && _fullToolList.Count > _settings.MaxTools;
+                                     && _fullToolList.Count > _settings.MaxTools
+                                     && !_automaticToolOptimizationCompleted;
 
     /// <summary>
     /// Total number of tools before any optimization.
@@ -64,7 +66,7 @@ public sealed class AgentBuilder
     /// <summary>
     /// The full set of tools registered on the agent, before any per-turn optimization.
     /// Use this (rather than <see cref="Agent"/>.ToolList) to enumerate every available tool,
-    /// since the agent's live list may hold an optimized subset during a turn.
+    /// since the agent's live list may hold an optimized active subset.
     /// </summary>
     public IReadOnlyList<Tool> FullToolList => _fullToolList ?? [];
 
@@ -86,7 +88,8 @@ public sealed class AgentBuilder
         ChatModel? optimizerModel,
         List<Tool>? additionalTools = null,
         Memory.ConversationMemoryManager? memoryManager = null,
-        IAgentStateStore? agentStateStore = null)
+        IAgentStateStore? agentStateStore = null,
+        IToolOptimizer? toolOptimizer = null)
     {
         _api = api;
         _activeModel = activeModel;
@@ -100,7 +103,11 @@ public sealed class AgentBuilder
         _memoryManager = memoryManager;
         _agentStateStore = agentStateStore;
 
-        if (settings.ToolOptimizerEnabled && optimizerModel is not null)
+        if (toolOptimizer is not null)
+        {
+            _toolOptimizer = toolOptimizer;
+        }
+        else if (settings.ToolOptimizerEnabled && optimizerModel is not null)
         {
             _toolOptimizer = new ToolOptimizer(api, optimizerModel, settings.MaxTools);
         }
@@ -116,6 +123,7 @@ public sealed class AgentBuilder
 
         // Store the full tool list for optimization swap/restore
         _fullToolList = allTools;
+        _automaticToolOptimizationCompleted = false;
 
         _agent = new TornadoAgent(
             client: _api,
@@ -190,9 +198,9 @@ public sealed class AgentBuilder
     }
 
     /// <summary>
-    /// Run the LLM-based tool optimizer for the current user turn.
-    /// Swaps agent.Options.Tools with the optimized subset.
-    /// Call <see cref="RestoreFullTools"/> after the turn completes.
+    /// Run the LLM-based tool optimizer once for the current built agent/tool catalog.
+    /// The optimized subset remains the active tool set until the agent is rebuilt,
+    /// the max-tools threshold changes, or the model calls select_tools.
     /// </summary>
     public async Task<ToolOptimizationResult?> OptimizeToolsForTurn(string userMessage, CancellationToken ct = default)
     {
@@ -202,7 +210,11 @@ public sealed class AgentBuilder
         if (_fullToolList.Count <= _settings.MaxTools)
             return null;
 
+        if (_automaticToolOptimizationCompleted)
+            return null;
+
         ToolOptimizationResult result = await _toolOptimizer.OptimizeAsync(_fullToolList, userMessage, ct);
+        _automaticToolOptimizationCompleted = true;
 
         if (result.WasOptimized)
             ApplyToolSet(result.Tools);
@@ -211,7 +223,7 @@ public sealed class AgentBuilder
     }
 
     /// <summary>
-    /// Restore the full tool list after an optimized turn completes.
+    /// Restore the full tool list when optimization is disabled or the threshold no longer requires narrowing.
     /// </summary>
     public void RestoreFullTools()
     {
@@ -245,7 +257,7 @@ public sealed class AgentBuilder
     /// <summary>
     /// Describe the full tool catalog (every tool registered before per-turn optimization), marking
     /// which are currently loaded. Backs the <c>list_all_tools</c> built-in tool so the agent can
-    /// discover capabilities that optimization may have left out of the current turn.
+    /// discover capabilities that optimization may have left out of the active set.
     /// </summary>
     public string DescribeAllTools()
     {
@@ -256,7 +268,7 @@ public sealed class AgentBuilder
             _agent?.ToolList.Keys ?? Enumerable.Empty<string>(), StringComparer.OrdinalIgnoreCase);
 
         StringBuilder sb = new();
-        sb.AppendLine($"All {_fullToolList.Count} tools (✓ = loaded this turn, otherwise call select_tools to load it):");
+        sb.AppendLine($"All {_fullToolList.Count} tools (✓ = active, otherwise call select_tools to load it):");
         foreach (Tool tool in _fullToolList.OrderBy(t => t.ResolvedName, StringComparer.OrdinalIgnoreCase))
         {
             string name = tool.ResolvedName;
@@ -310,10 +322,13 @@ public sealed class AgentBuilder
         if (enabled && optimizerModel is not null)
         {
             _toolOptimizer = new ToolOptimizer(_api, optimizerModel, _settings.MaxTools);
+            _automaticToolOptimizationCompleted = false;
         }
         else if (!enabled)
         {
             _toolOptimizer = null;
+            _automaticToolOptimizationCompleted = false;
+            RestoreFullTools();
         }
     }
 
@@ -328,6 +343,11 @@ public sealed class AgentBuilder
         {
             _toolOptimizer = new ToolOptimizer(_api, optimizerModel, maxTools);
         }
+
+        _automaticToolOptimizationCompleted = false;
+
+        if (_fullToolList is not null && _fullToolList.Count <= maxTools)
+            RestoreFullTools();
     }
 
     /// <summary>
@@ -394,7 +414,7 @@ public sealed class AgentBuilder
 
         if (_toolOptimizer is not null)
         {
-            sb.AppendLine("To save context, only a subset of tools may be loaded on any given turn.");
+            sb.AppendLine("To save context, only an active subset of tools may be loaded.");
             sb.AppendLine("Call `list_all_tools` to see the full catalog, and `select_tools` with a short query");
             sb.AppendLine("describing what you need (e.g. \"read and edit files\") to load the relevant tools before calling them.");
             sb.AppendLine();
@@ -496,7 +516,7 @@ public sealed class AgentBuilder
             new Func<string>(DescribeAllTools),
             "list_all_tools",
             "List the full catalog of available tools (name + description), including tools not currently " +
-            "loaded because per-turn tool optimization narrowed the set. Use this to discover what exists, " +
+            "loaded because tool optimization narrowed the active set. Use this to discover what exists, " +
             "then call select_tools to load the ones you need.");
     }
 
@@ -506,7 +526,7 @@ public sealed class AgentBuilder
             new Func<string, Task<string>>(query => SelectToolsForQueryAsync(query, CancellationToken.None)),
             "select_tools",
             "Load the tools most relevant to a query you write. When tool optimization is active only a " +
-            "subset of tools is loaded each turn; if you need a capability that isn't loaded, call this with " +
+            "subset of tools is loaded; if you need a capability that isn't loaded, call this with " +
             "a short description of what you need (e.g. \"read and edit files\", \"search the web\", " +
             "\"query the database\"). The matching tools are loaded so you can call them. This replaces the " +
             "current optimized set, so include everything you need for the next steps in one query.");

@@ -228,6 +228,11 @@ class Program
         dispatcher.Register(new ConversationCommand(_memoryManager, _conversationStore, _agentBuilder));
         dispatcher.Register(new ContextCommand(_memoryManager, _conversationStore, CliStorage.ContextDumpsDirectory, settings, persistence));
         dispatcher.Register(new ToolsCommand(toolApproval, _agentBuilder, settings, providerResult));
+        dispatcher.Register(new MaxToolsCommand(
+            settings,
+            maxTools => _agentBuilder.SetMaxTools(maxTools, providerResult.OptimizerModel),
+            () => _agentBuilder.TotalToolCount,
+            () => _agentBuilder.NeedsOptimization));
         dispatcher.Register(new McpCommand(_mcpLoader, _agentBuilder, settings, runtimeEventHandler));
         dispatcher.Register(new CdCommand(_agentBuilder, agentManager, skillManager, _mcpLoader, settings, runtimeEventHandler));
         dispatcher.Register(new ThinkingCommand(settings, () => _showThinking, value => _showThinking = value));
@@ -314,14 +319,13 @@ class Program
                     "user",
                     contextUsedPercent: contextUsedPercent);
 
-                // Optimize tools for this turn if needed
-                bool optimized = false;
+                // Optimize tools once for this built agent/tool catalog if needed. The selected set stays
+                // active across turns; the model can call select_tools later if it needs a different set.
                 if (builder.NeedsOptimization)
                 {
                     try
                     {
-                        ToolOptimizationResult? optResult = await builder.OptimizeToolsForTurn(input);
-                        optimized = optResult?.WasOptimized == true;
+                        await builder.OptimizeToolsForTurn(input);
                     }
                     catch (Exception ex)
                     {
@@ -330,21 +334,11 @@ class Program
                     }
                 }
 
-                try
-                {
                     // The managed runtime config records the user message + full response (including tool
                     // messages) into memory, then runs compression/budget enforcement and persists — all
                     // inside InvokeAsync, so the next request reflects the compressed canonical set.
-                    await runtime.InvokeAsync(userMessage);
-                    ConsoleRenderer.EndStreamingResponse();
-                }
-                finally
-                {
-                    // Always restore full tool list after the turn
-                    if (optimized)
-                        builder.RestoreFullTools();
-                }
-
+                await runtime.InvokeAsync(userMessage);
+                ConsoleRenderer.EndStreamingResponse();
                 if (builder.ConversationConfig?.LastTurnCompressed == true)
                     ConsoleRenderer.WriteInfo("[context compressed]");
             }
