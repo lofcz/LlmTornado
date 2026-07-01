@@ -69,6 +69,19 @@ public class CommandSystemTests
     }
 
     [Test]
+    public async Task DispatchAsync_Passes_Raw_Arguments_To_Raw_Command()
+    {
+        CommandDispatcher dispatcher = new();
+        RawTestCliCommand cmd = new();
+        dispatcher.Register(cmd);
+
+        await dispatcher.DispatchAsync("/raw keep going until finished");
+
+        Assert.That(cmd.WasExecuted, Is.True);
+        Assert.That(cmd.LastRawArgs, Is.EqualTo("keep going until finished"));
+    }
+
+    [Test]
     public async Task DispatchAsync_Unknown_Command_Returns_True()
     {
         CommandDispatcher dispatcher = new();
@@ -183,6 +196,25 @@ public class CommandSystemTests
         {
             WasExecuted = true;
             LastArgs = args;
+            return Task.FromResult(true);
+        }
+    }
+
+    private sealed class RawTestCliCommand : IRawCliCommand
+    {
+        public string Name => "raw";
+        public string Description => "Raw test command";
+        public string Usage => "/raw <text>";
+        public bool WasExecuted { get; private set; }
+        public string? LastRawArgs { get; private set; }
+
+        public Task<bool> ExecuteAsync(string[] args) =>
+            ExecuteRawAsync(string.Join(' ', args));
+
+        public Task<bool> ExecuteRawAsync(string rawArgs)
+        {
+            WasExecuted = true;
+            LastRawArgs = rawArgs;
             return Task.FromResult(true);
         }
     }

@@ -11,6 +11,11 @@ internal interface ICliCommand
     Task<bool> ExecuteAsync(string[] args);
 }
 
+internal interface IRawCliCommand : ICliCommand
+{
+    Task<bool> ExecuteRawAsync(string rawArgs);
+}
+
 /// <summary>
 /// Dispatches /commands to their handlers.
 /// </summary>
@@ -34,7 +39,17 @@ internal sealed class CommandDispatcher
         string[] args = parts.Length > 1 ? parts[1..] : [];
 
         if (_commands.TryGetValue(commandName, out ICliCommand? command))
+        {
+            if (command is IRawCliCommand rawCommand)
+            {
+                int commandStart = trimmed.IndexOf(commandName, StringComparison.OrdinalIgnoreCase);
+                int argsStart = commandStart + commandName.Length;
+                string rawArgs = argsStart < trimmed.Length ? trimmed[argsStart..].TrimStart() : string.Empty;
+                return await rawCommand.ExecuteRawAsync(rawArgs);
+            }
+
             return await command.ExecuteAsync(args);
+        }
 
         ConsoleRenderer.WriteError($"Unknown command: /{commandName}. Type /help for available commands.");
         return true;

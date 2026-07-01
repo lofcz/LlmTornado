@@ -24,6 +24,7 @@ class Program
     private static SqliteConversationStore? _conversationStore;
     private static SqliteAgentStateStore? _agentStateStore;
     private static CliAgentBuilder? _agentBuilder;
+    private static AutoLoopController? _autoLoopController;
     private static bool _showThinking = true;
 
     static async Task<int> Main(string[] args)
@@ -218,6 +219,7 @@ class Program
 
         // ─── Step 9: Register Commands ───
         CommandDispatcher dispatcher = new();
+        _autoLoopController = new AutoLoopController();
         dispatcher.Register(new HelpCommand(dispatcher));
         dispatcher.Register(new ModelCommand(providerResult, _agentBuilder, runtimeEventHandler));
         dispatcher.Register(new SkillCommand(
@@ -239,6 +241,14 @@ class Program
         dispatcher.Register(new TimestampCommand(settings,
             () => MessageTimestampPrefixer.Enabled,
             value => MessageTimestampPrefixer.Enabled = value));
+        dispatcher.Register(new AutoLoopCommand(
+            _autoLoopController,
+            async (statement, cancellationToken) =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                await RunChatTurnAsync(statement, _agentBuilder!.Runtime, _memoryManager!, _agentBuilder!);
+                cancellationToken.ThrowIfCancellationRequested();
+            }));
         dispatcher.Register(new ClearCommand());
         dispatcher.Register(new ExitCommand(_memoryManager, _conversationStore, _agentBuilder));
 
@@ -366,6 +376,62 @@ class Program
         return 0;
     }
 
+    private static async Task RunChatTurnAsync(
+        string input,
+        global::LlmTornado.Agents.ChatRuntime.ChatRuntime runtime,
+        ConversationMemoryManager memory,
+        CliAgentBuilder builder)
+    {
+        // Parse input for inline file references (@path/to/file)
+        ParsedInput parsed = InputParser.Parse(input, builder.WorkingDirectory);
+        FileAttachmentResult attachResult = FileAttachmentResolver.Resolve(parsed);
+
+        // Report attached files
+        foreach (ResolvedAttachment att in attachResult.Attachments)
+        {
+            ConsoleRenderer.WriteInfo($"  [attached: {att.FileName} ({att.MimeType}, {att.FormattedSize})]");
+        }
+
+        // Report any file errors
+        foreach (string err in attachResult.Errors)
+        {
+            ConsoleRenderer.WriteError($"  {err}");
+        }
+
+        ChatMessage userMessage = attachResult.Message;
+        int currentTokens = memory.GetMessagesForAgent().Sum(CompressionStrategy.EstimateTokens)
+                            + CompressionStrategy.EstimateTokens(userMessage);
+        int contextUsedPercent = memory.EffectiveCompressionContextTokens > 0
+            ? (int)Math.Ceiling(currentTokens * 100.0 / memory.EffectiveCompressionContextTokens)
+            : 0;
+        MessageTimestampPrefixer.Prefix(
+            userMessage,
+            "user",
+            contextUsedPercent: contextUsedPercent);
+
+        // Optimize tools once for this built agent/tool catalog if needed. The selected set stays
+        // active across turns; the model can call select_tools later if it needs a different set.
+        if (builder.NeedsOptimization)
+        {
+            try
+            {
+                await builder.OptimizeToolsForTurn(input);
+            }
+            catch (Exception ex)
+            {
+                ConsoleRenderer.WriteToolOptimizationSkipped(
+                    builder.TotalToolCount, ex.Message);
+            }
+        }
+
+        // The managed runtime config records the user message and full response into memory, then
+        // runs compression/budget enforcement and persists inside InvokeAsync.
+        await runtime.InvokeAsync(userMessage);
+        ConsoleRenderer.EndStreamingResponse();
+        if (builder.ConversationConfig?.LastTurnCompressed == true)
+            ConsoleRenderer.WriteInfo("[context compressed]");
+    }
+
     private static ValueTask HandleRuntimeEvent(ChatRuntimeEvents evt)
     {
         if (evt is ChatRuntimeAgentRunnerEvents runnerEvt)
@@ -405,6 +471,7 @@ class Program
     private static void OnCancelKeyPress(object? sender, ConsoleCancelEventArgs e)
     {
         e.Cancel = true;
+        _autoLoopController?.Stop();
         try
         {
             _agentBuilder?.Runtime.CancelExecution();
