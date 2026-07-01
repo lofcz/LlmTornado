@@ -136,15 +136,34 @@ internal sealed class ConsoleRenderer
 
             Console.WriteLine();
             Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine("╭─ Tool Call Request ────────────────────────╮");
+            int consoleWidth = SafeWidth();
+            int contentWidth = ToolApprovalContentWidth(consoleWidth);
 
-            foreach (string line in requestMessage.Split('\n'))
+            if (contentWidth < 8)
             {
-                string padded = line.Length > 42 ? line[..42] : line.PadRight(42);
-                Console.WriteLine($"│ {padded} │");
+                Console.WriteLine("Tool Call Request");
+                foreach (string line in requestMessage.Split('\n'))
+                {
+                    foreach (string wrapped in WrapConsoleLine(line.TrimEnd('\r'), Math.Max(1, consoleWidth - 1)))
+                    {
+                        Console.WriteLine(wrapped);
+                    }
+                }
             }
+            else
+            {
+                Console.WriteLine(BuildToolApprovalTopBorder(contentWidth));
 
-            Console.WriteLine("╰────────────────────────────────────────────╯");
+                foreach (string line in requestMessage.Split('\n'))
+                {
+                    foreach (string wrapped in WrapConsoleLine(line.TrimEnd('\r'), contentWidth))
+                    {
+                        Console.WriteLine($"│ {wrapped.PadRight(contentWidth)} │");
+                    }
+                }
+
+                Console.WriteLine($"╰{new string('─', contentWidth + 2)}╯");
+            }
             Console.WriteLine();
             Console.ForegroundColor = ConsoleColor.White;
             Console.WriteLine("[1] Allow once");
@@ -156,6 +175,43 @@ internal sealed class ConsoleRenderer
             Console.Write("Choice [1-4]: ");
             Console.ResetColor();
         }
+    }
+
+    internal static int ToolApprovalContentWidth(int consoleWidth)
+    {
+        // Leave one spare terminal column so WriteLine cannot auto-wrap before writing the newline.
+        int maxContentWidth = Math.Max(1, consoleWidth - 5);
+        return Math.Min(100, maxContentWidth);
+    }
+
+    private static string BuildToolApprovalTopBorder(int contentWidth)
+    {
+        const string title = "─ Tool Call Request ";
+        int innerWidth = contentWidth + 2;
+        string visibleTitle = title.Length > innerWidth ? title[..innerWidth] : title;
+        return $"╭{visibleTitle}{new string('─', innerWidth - visibleTitle.Length)}╮";
+    }
+
+    private static IEnumerable<string> WrapConsoleLine(string line, int width)
+    {
+        if (string.IsNullOrEmpty(line))
+        {
+            yield return "";
+            yield break;
+        }
+
+        string remaining = line;
+        while (remaining.Length > width)
+        {
+            int breakAt = remaining.LastIndexOf(' ', width);
+            if (breakAt <= 0)
+                breakAt = width;
+
+            yield return remaining[..breakAt];
+            remaining = remaining[breakAt..].TrimStart();
+        }
+
+        yield return remaining;
     }
 
     public void WriteQuestionWorkflowStart(AskQuestionsInteractionRequest request)
@@ -431,7 +487,7 @@ internal sealed class ConsoleRenderer
 
     private static int SafeWidth()
     {
-        try { return Math.Max(20, Console.WindowWidth); }
+        try { return Math.Max(1, Console.WindowWidth); }
         catch { return 80; }
     }
 

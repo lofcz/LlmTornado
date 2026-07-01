@@ -108,6 +108,37 @@ public class ConsoleRendererTests
         Assert.DoesNotThrow(() => renderer.WriteToolApprovalPrompt("Tool: test\nArguments: {}"));
     }
 
+    [Test]
+    public void WriteToolApprovalPrompt_Wraps_Long_Argument_Line()
+    {
+        TextWriter originalOut = Console.Out;
+        using StringWriter writer = new();
+        try
+        {
+            Console.SetOut(writer);
+            ConsoleRenderer renderer = new();
+            string argumentTail = "TAIL_SHOULD_STILL_BE_VISIBLE";
+            renderer.WriteToolApprovalPrompt("Tool: write_file\nArguments: " + new string('a', 180) + argumentTail);
+
+            Assert.That(writer.ToString(), Does.Contain(argumentTail));
+        }
+        finally
+        {
+            Console.SetOut(originalOut);
+        }
+    }
+
+    [Test]
+    public void ToolApprovalContentWidth_Leaves_Spare_Console_Column()
+    {
+        foreach (int consoleWidth in new[] { 12, 20, 80, 160 })
+        {
+            int contentWidth = ConsoleRenderer.ToolApprovalContentWidth(consoleWidth);
+
+            Assert.That(contentWidth + 4, Is.LessThan(consoleWidth));
+        }
+    }
+
     #endregion
 
     #region Thread Safety
