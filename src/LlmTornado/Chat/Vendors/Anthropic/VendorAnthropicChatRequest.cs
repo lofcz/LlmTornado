@@ -926,7 +926,8 @@ internal class VendorAnthropicChatRequest
         }
 
         return modelName.StartsWith("claude-opus-4-7", StringComparison.OrdinalIgnoreCase)
-            || modelName.StartsWith("claude-opus-4-8", StringComparison.OrdinalIgnoreCase);
+            || modelName.StartsWith("claude-opus-4-8", StringComparison.OrdinalIgnoreCase)
+            || ChatModelAnthropicHelper.IsClaude5Model(modelName);
     }
     
     
