@@ -22,6 +22,12 @@ public class RerankResult : ApiResultBase
     public List<RerankData> Data { get; set; }
 
     /// <summary>
+    /// Alias of <see cref="Data"/>, some models return this.
+    /// </summary>
+    [JsonProperty("results")]
+    public List<RerankData> Results { get; set; }
+
+    /// <summary>
     /// Name of the model.
     /// </summary>
     [JsonProperty("model")]
