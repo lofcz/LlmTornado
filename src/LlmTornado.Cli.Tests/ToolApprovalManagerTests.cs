@@ -71,6 +71,41 @@ public class ToolApprovalManagerTests
 
     #endregion
 
+    #region ApproveTools
+
+    [Test]
+    public void ApproveTools_Adds_AlwaysAllow_Approvals()
+    {
+        ConsoleRenderer renderer = new();
+        ToolApprovalManager manager = new(renderer);
+
+        int count = manager.ApproveTools(["tool-a", "tool-b", "tool-a"]);
+
+        var approvals = manager.GetAllApprovals();
+        Assert.That(count, Is.EqualTo(2));
+        Assert.That(approvals, Has.Count.EqualTo(2));
+        Assert.That(approvals["tool-a"], Is.EqualTo(ToolApprovalState.AlwaysAllow));
+        Assert.That(approvals["tool-b"], Is.EqualTo(ToolApprovalState.AlwaysAllow));
+    }
+
+    [Test]
+    public void ApproveTools_Overrides_Existing_Deny_By_Default()
+    {
+        ConsoleRenderer renderer = new();
+        ToolApprovalManager manager = new(renderer);
+
+        Console.SetIn(new StringReader("4" + Environment.NewLine));
+        bool allowed = manager.HandleToolPermissionRequest("Tool: tool-a\nArguments: {}").GetAwaiter().GetResult();
+        Assert.That(allowed, Is.False);
+        Assert.That(manager.GetAllApprovals()["tool-a"], Is.EqualTo(ToolApprovalState.AlwaysDeny));
+
+        manager.ApproveTools(["tool-a"]);
+
+        Assert.That(manager.GetAllApprovals()["tool-a"], Is.EqualTo(ToolApprovalState.AlwaysAllow));
+    }
+
+    #endregion
+
     #region ResetAll / ResetTool
 
     [Test]

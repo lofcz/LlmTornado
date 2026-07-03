@@ -7,7 +7,7 @@ internal sealed class ToolsCommand : ICliCommand
 {
     public string Name => "tools";
     public string Description => "View tool approvals, reset permissions, and manage tool optimization";
-    public string Usage => "/tools [list | approvals | reset [tool-name] | optimize [on|off|threshold <n>|status]] (shortcut: /max-tools [n])";
+    public string Usage => "/tools [list | approvals | allow-all | reset [tool-name] | optimize [on|off|threshold <n>|status]] (shortcut: /max-tools [n])";
 
     private readonly ToolApprovalManager _toolApproval;
     private readonly CliAgentBuilder _builder;
@@ -56,6 +56,12 @@ internal sealed class ToolsCommand : ICliCommand
 
             case "approvals":
                 ListApprovals();
+                break;
+
+            case "allow-all":
+            case "approve-all":
+            case "auto-approve-all":
+                AllowAllTools();
                 break;
 
             case "reset" when args.Length >= 2:
@@ -122,6 +128,25 @@ internal sealed class ToolsCommand : ICliCommand
         }
         foreach ((string tool, ToolApprovalState state) in approvals.OrderBy(x => x.Key, StringComparer.OrdinalIgnoreCase))
             ConsoleRenderer.WriteInfo($"  {tool,-44} {FormatState(state)}");
+    }
+
+    private void AllowAllTools()
+    {
+        List<string> names = _builder.FullToolList
+            .Select(t => t.ResolvedName)
+            .Where(n => !string.IsNullOrWhiteSpace(n))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (names.Count == 0)
+        {
+            ConsoleRenderer.WriteError("No tools are registered.");
+            return;
+        }
+
+        int count = _toolApproval.ApproveTools(names);
+        ConsoleRenderer.WriteSuccess($"Auto-approved {count} tool(s).");
+        ConsoleRenderer.WriteInfo("Run /tools reset to clear these approvals.");
     }
 
     private static string FormatState(ToolApprovalState state) => state switch

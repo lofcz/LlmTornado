@@ -137,6 +137,26 @@ internal sealed class ToolApprovalManager : IToolApproval, IUserInteractionHandl
         SaveToDisk();
     }
 
+    public int ApproveTools(IEnumerable<string> toolNames, bool overwriteExisting = true)
+    {
+        int count = 0;
+        HashSet<string> seen = new(StringComparer.OrdinalIgnoreCase);
+
+        foreach (string name in toolNames)
+        {
+            if (string.IsNullOrWhiteSpace(name) || !seen.Add(name))
+                continue;
+
+            if (overwriteExisting || !_approvals.ContainsKey(name))
+                _approvals[name] = ToolApprovalState.AlwaysAllow;
+
+            count++;
+        }
+
+        SaveToDisk();
+        return count;
+    }
+
     private static string ParseToolName(string requestMessage)
     {
         // requestMessage format: "Tool: {name}\nArguments: {args}"
