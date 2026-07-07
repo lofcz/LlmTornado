@@ -13,6 +13,7 @@ using LlmTornado.Cli.Commands;
 using LlmTornado.Cli.Core.Memory;
 using LlmTornado.Cli.Core.Storage;
 using LlmTornado.Cli.Core.State;
+using LlmTornado.Cli.Rendering;
 using LlmTornado.Code;
 
 namespace LlmTornado.Cli;
@@ -31,6 +32,14 @@ class Program
     {
         Console.OutputEncoding = Encoding.UTF8;
         Console.InputEncoding = Encoding.UTF8;
+
+        AnsiSupport.TryEnableVirtualTerminal();
+        RenderContext.Initialize(AnsiSupport.Detect());
+        ConsoleRenderer.InitializeRendering(
+            RenderContext.Capabilities,
+            toolName => _mcpLoader is not null && _mcpLoader.ToolServerMap.TryGetValue(toolName, out string? server)
+                ? server
+                : null);
 
         Console.CancelKeyPress += OnCancelKeyPress;
 
@@ -250,6 +259,7 @@ class Program
                 cancellationToken.ThrowIfCancellationRequested();
             }));
         dispatcher.Register(new ClearCommand());
+        dispatcher.Register(new MarkdownDemoCommand());
         dispatcher.Register(new ExitCommand(_memoryManager, _conversationStore, _agentBuilder));
 
         // ─── Step 10: Banner ───
@@ -453,7 +463,11 @@ class Program
             }
             else if (runnerEvt.AgentRunnerEvent is AgentRunnerToolInvokedEvent toolEvt)
             {
-                ConsoleRenderer.WriteInfo($"  [calling tool: {toolEvt.ToolCalled.Name}]");
+                ConsoleRenderer.OnToolInvoked(toolEvt.ToolCalled);
+            }
+            else if (runnerEvt.AgentRunnerEvent is AgentRunnerToolCompletedEvent toolCompletedEvt)
+            {
+                ConsoleRenderer.OnToolCompleted(toolCompletedEvt.ToolCall, toolCompletedEvt.ToolResult);
             }
             else if (runnerEvt.AgentRunnerEvent is AgentRunnerErrorEvent errorEvt)
             {

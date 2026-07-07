@@ -1,23 +1,55 @@
+using LlmTornado.ChatFunctions;
 using LlmTornado.Cli.Core.Providers;
 using LlmTornado.Cli.Core.Interactions;
+using LlmTornado.Cli.Rendering;
+using LlmTornado.Common;
 
 namespace LlmTornado.Cli;
 
 /// <summary>
-/// Centralized console output with color coding, streaming support, and formatted prompts.
+/// Centralized console output: streamed markdown answers, tool-call status lines, and formatted
+/// prompts. Streaming goes through <see cref="StreamSession"/>; styles are re-applied on every
+/// write, so interleaved output can never bleed colors into each other.
 /// </summary>
 internal sealed class ConsoleRenderer
 {
     private static readonly object Lock = new();
-    private static bool _isStreaming;
-    private static StreamTokenType _streamTokenType = StreamTokenType.None;
+    private static IStyledWriter _styledWriter;
+    private static ToolCallPresenter _toolPresenter;
+    private static StreamSession _session;
+    private static Func<string, string?>? _toolServerLookup;
 
-    private enum StreamTokenType
+    static ConsoleRenderer()
     {
-        None,
-        Output,
-        Reasoning,
-        ToolArguments,
+        (_styledWriter, _toolPresenter, _session) = CreateBackend(AnsiSupport.Detect());
+    }
+
+    /// <summary>
+    /// Configures the styled-output backend for the detected terminal capabilities.
+    /// Called once at startup. <paramref name="toolServerLookup"/> resolves a tool name to the
+    /// MCP server it came from (for the server badge on tool status lines).
+    /// </summary>
+    public static void InitializeRendering(RenderCapabilities capabilities, Func<string, string?>? toolServerLookup = null)
+    {
+        lock (Lock)
+        {
+            _toolServerLookup = toolServerLookup;
+            _toolPresenter.Dispose();
+            (_styledWriter, _toolPresenter, _session) = CreateBackend(capabilities);
+        }
+    }
+
+    private static (IStyledWriter, ToolCallPresenter, StreamSession) CreateBackend(RenderCapabilities capabilities)
+    {
+        IStyledWriter writer = StyledWriterFactory.Create(capabilities);
+        ToolCallPresenter presenter = new(
+            Lock,
+            writer,
+            SafeWidth,
+            name => _toolServerLookup?.Invoke(name),
+            interactive: capabilities != RenderCapabilities.Plain);
+        StreamSession session = new(writer, presenter, SafeWidth);
+        return (writer, presenter, session);
     }
 
     // ─── Banner ───
@@ -51,58 +83,53 @@ internal sealed class ConsoleRenderer
 
     public static void WriteStreamingToken(string? token)
     {
-        if (token is null) return;
+        if (string.IsNullOrEmpty(token)) return;
 
         lock (Lock)
         {
-            if (!_isStreaming || _streamTokenType != StreamTokenType.Output)
-            {
-                _isStreaming = true;
-                Console.ForegroundColor = ConsoleColor.White;
-                _streamTokenType = StreamTokenType.Output;
-            }
-            Console.Write(token);
+            _session.PushOutput(token);
         }
     }
 
     public static void WriteReasoningToken(string? token)
     {
-        if (token is null) return;
+        if (string.IsNullOrEmpty(token)) return;
 
         lock (Lock)
         {
-            if (!_isStreaming || _streamTokenType != StreamTokenType.Reasoning)
-            {
-                _isStreaming = true;
-                Console.ForegroundColor = ConsoleColor.Gray;
-                _streamTokenType = StreamTokenType.Reasoning;
-            }
-            Console.Write(token);
+            _session.PushReasoning(token);
         }
     }
 
+    /// <summary>
+    /// The model is streaming argument JSON for an upcoming tool call. The raw deltas are not
+    /// echoed; a transient "preparing…" status line is shown instead.
+    /// </summary>
     public static void WriteToolCallArgumentDelta(string? toolName, string? delta)
     {
         if (string.IsNullOrEmpty(delta)) return;
 
         lock (Lock)
         {
-            if (!_isStreaming || _streamTokenType != StreamTokenType.ToolArguments)
-            {
-                if (_isStreaming)
-                {
-                    Console.ResetColor();
-                    Console.WriteLine();
-                }
+            _session.ToolDrafting(toolName);
+        }
+    }
 
-                _isStreaming = true;
-                _streamTokenType = StreamTokenType.ToolArguments;
-                Console.ForegroundColor = ConsoleColor.DarkYellow;
-                Console.WriteLine($"[drafting tool call: {toolName ?? "tool"}]");
-                Console.ForegroundColor = ConsoleColor.DarkGray;
-            }
+    /// <summary>A tool is about to run: show its status line (⏺ name(args) + spinner).</summary>
+    public static void OnToolInvoked(FunctionCall call)
+    {
+        lock (Lock)
+        {
+            _session.ToolInvoked(call);
+        }
+    }
 
-            Console.Write(delta);
+    /// <summary>A tool finished: show the result preview line (⎿ preview (duration)).</summary>
+    public static void OnToolCompleted(FunctionCall call, FunctionResult? result)
+    {
+        lock (Lock)
+        {
+            _session.ToolCompleted(call, result);
         }
     }
 
@@ -110,13 +137,7 @@ internal sealed class ConsoleRenderer
     {
         lock (Lock)
         {
-            if (_isStreaming)
-            {
-                _isStreaming = false;
-                _streamTokenType = StreamTokenType.None;
-                Console.ResetColor();
-                Console.WriteLine();
-            }
+            _session.End();
         }
     }
 
@@ -126,13 +147,7 @@ internal sealed class ConsoleRenderer
     {
         lock (Lock)
         {
-            if (_isStreaming)
-            {
-                Console.ResetColor();
-                Console.WriteLine();
-                _isStreaming = false;
-                _streamTokenType = StreamTokenType.None;
-            }
+            _session.BeginNotice();
 
             Console.WriteLine();
             Console.ForegroundColor = ConsoleColor.Yellow;
@@ -158,7 +173,8 @@ internal sealed class ConsoleRenderer
                 {
                     foreach (string wrapped in WrapConsoleLine(line.TrimEnd('\r'), contentWidth))
                     {
-                        Console.WriteLine($"│ {wrapped.PadRight(contentWidth)} │");
+                        int pad = Math.Max(0, contentWidth - DisplayWidth.Measure(wrapped));
+                        Console.WriteLine($"│ {wrapped}{new string(' ', pad)} │");
                     }
                 }
 
@@ -201,11 +217,14 @@ internal sealed class ConsoleRenderer
         }
 
         string remaining = line;
-        while (remaining.Length > width)
+        while (DisplayWidth.Measure(remaining) > width)
         {
-            int breakAt = remaining.LastIndexOf(' ', width);
+            // Find the widest prefix that fits (in display columns, not chars), preferring
+            // to break at the last space inside it.
+            string prefix = DisplayWidth.TruncateToWidth(remaining, width);
+            int breakAt = prefix.LastIndexOf(' ');
             if (breakAt <= 0)
-                breakAt = width;
+                breakAt = prefix.Length;
 
             yield return remaining[..breakAt];
             remaining = remaining[breakAt..].TrimStart();
@@ -218,13 +237,7 @@ internal sealed class ConsoleRenderer
     {
         lock (Lock)
         {
-            if (_isStreaming)
-            {
-                Console.ResetColor();
-                Console.WriteLine();
-                _isStreaming = false;
-                _streamTokenType = StreamTokenType.None;
-            }
+            _session.BeginNotice();
 
             Console.WriteLine();
             Console.ForegroundColor = ConsoleColor.Cyan;
@@ -454,7 +467,10 @@ internal sealed class ConsoleRenderer
     {
         // Leave the last column untouched so writing the final char can't trigger an auto-wrap/scroll.
         int max = Math.Max(1, width - 1);
-        text = text.Length > max ? text[..(max - 1)] + "…" : text.PadRight(max);
+        int measured = DisplayWidth.Measure(text);
+        text = measured > max
+            ? DisplayWidth.TruncateToWidth(text, max - 1) + "…"
+            : text + new string(' ', max - measured);
 
         try { Console.SetCursorPosition(0, row); } catch { /* ignore */ }
         if (color is not null) Console.ForegroundColor = color.Value;
@@ -519,6 +535,7 @@ internal sealed class ConsoleRenderer
     {
         lock (Lock)
         {
+            _session.BeginNotice();
             Console.ForegroundColor = ConsoleColor.DarkGreen;
             Console.WriteLine($"  ✓ [auto-approved] {toolName}");
             Console.ResetColor();
@@ -529,6 +546,7 @@ internal sealed class ConsoleRenderer
     {
         lock (Lock)
         {
+            _session.BeginNotice();
             Console.ForegroundColor = ConsoleColor.DarkRed;
             Console.WriteLine($"  ✗ [auto-denied] {toolName}");
             Console.ResetColor();
@@ -537,45 +555,33 @@ internal sealed class ConsoleRenderer
 
     // ─── Status Messages ───
 
-    public static void WriteInfo(string message)
+    /// <summary>
+    /// Prepares the console for an out-of-band message: commits any open tool status line and
+    /// finishes any partial streamed line so the notice starts at column 0. Streaming resumes
+    /// cleanly afterwards because styles are re-applied on every write.
+    /// </summary>
+    private static void WriteNotice(string message, TextStyle style)
     {
         lock (Lock)
         {
-            Console.ForegroundColor = ConsoleColor.DarkGray;
-            Console.WriteLine(message);
-            Console.ResetColor();
+            _session.BeginNotice();
+            _styledWriter.Write(message, style);
+            _styledWriter.WriteLine();
+            _styledWriter.Reset();
         }
     }
 
-    public static void WriteError(string message)
-    {
-        lock (Lock)
-        {
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine(message);
-            Console.ResetColor();
-        }
-    }
+    public static void WriteInfo(string message) =>
+        WriteNotice(message, new TextStyle(StyleFlags.Dim, ConsoleColor.DarkGray));
 
-    public static void WriteWarning(string message)
-    {
-        lock (Lock)
-        {
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine(message);
-            Console.ResetColor();
-        }
-    }
+    public static void WriteError(string message) =>
+        WriteNotice(message, new TextStyle(StyleFlags.None, ConsoleColor.Red));
 
-    public static void WriteSuccess(string message)
-    {
-        lock (Lock)
-        {
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine(message);
-            Console.ResetColor();
-        }
-    }
+    public static void WriteWarning(string message) =>
+        WriteNotice(message, new TextStyle(StyleFlags.None, ConsoleColor.Yellow));
+
+    public static void WriteSuccess(string message) =>
+        WriteNotice(message, new TextStyle(StyleFlags.None, ConsoleColor.Green));
 
     // ─── Tool Optimization ───
 
