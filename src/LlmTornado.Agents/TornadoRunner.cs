@@ -228,7 +228,7 @@ public class TornadoRunner
                 }
 
                 turns++;
-                chat = await GetNewResponse(agent, chat, runnerOptions, streaming, runnerCallback, toolPermissionRequest);
+                chat = await GetNewResponse(agent, chat, runnerOptions, streaming, runnerCallback, toolPermissionRequest, cancellationToken);
             } while (GotToolCall(chat) && !singleTurn);
         }
         catch (Exception ex)
@@ -547,24 +547,25 @@ public class TornadoRunner
     /// <param name="toolPermissionRequest">Request Tool permissions</param>
     /// <returns></returns>
     private static async Task<Conversation> GetNewResponse(
-        TornadoAgent agent, 
+        TornadoAgent agent,
         Conversation chat,
         TornadoRunnerOptions runnerOptions,
         bool Streaming = false,
-        Func<AgentRunnerEvents, ValueTask>? runnerCallback = null, 
-        Func<string, ValueTask<bool>>? toolPermissionRequest = null
+        Func<AgentRunnerEvents, ValueTask>? runnerCallback = null,
+        Func<string, ValueTask<bool>>? toolPermissionRequest = null,
+        CancellationToken cancellationToken = default
         )
     {
             // we handle this ourselves
             chat.RequestParameters.InvokeClrToolsAutomatically = false;
-        
+
             RefreshToolsForNextTurn(agent, chat);
 
             chat = await CheckForToolCallsAndHandle(chat, agent, runnerOptions, runnerCallback, toolPermissionRequest);
         try{
             if (Streaming && runnerCallback != null)
             {
-                return await HandleStreaming(agent, chat, runnerOptions, runnerCallback, toolPermissionRequest);
+                return await HandleStreaming(agent, chat, runnerOptions, runnerCallback, toolPermissionRequest, cancellationToken);
             }
             
             RestDataOrException<ChatRichResponse> response = await chat.GetResponseRichSafe(async functions =>
@@ -592,9 +593,9 @@ public class TornadoRunner
 
                 if (tasks.Count > 0)
                 {
-                    await Task.WhenAll(tasks).ConfigureAwait(false);   
+                    await Task.WhenAll(tasks).ConfigureAwait(false);
                 }
-            });
+            }, cancellationToken);
 
 
             if (response.Exception != null)
@@ -638,7 +639,7 @@ public class TornadoRunner
     }
 
     //[consideration] Need to massively improve this to handle all the streaming events
-    private static async Task<Conversation> HandleStreaming(TornadoAgent agent, Conversation chat, TornadoRunnerOptions runnerOptions, Func<AgentRunnerEvents, ValueTask>? runnerCallback = null, Func<string, ValueTask<bool>>? toolPermissionRequest = null)
+    private static async Task<Conversation> HandleStreaming(TornadoAgent agent, Conversation chat, TornadoRunnerOptions runnerOptions, Func<AgentRunnerEvents, ValueTask>? runnerCallback = null, Func<string, ValueTask<bool>>? toolPermissionRequest = null, CancellationToken cancellationToken = default)
     {
         //Create Open response
         await chat.StreamResponseRich(new ChatStreamEventHandler
@@ -749,7 +750,7 @@ public class TornadoRunner
             {
                 return Threading.ValueTaskCompleted;
             }
-        });
+        }, cancellationToken);
 
         if (runnerCallback is not null)
         {

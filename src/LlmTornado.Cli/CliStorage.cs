@@ -18,6 +18,7 @@ internal static class CliStorage
     public static string DatabasePath => Path.Combine(RootDirectory, "conversations.db");
     public static string AttachmentsDirectory => Path.Combine(RootDirectory, "attachments");
     public static string ContextDumpsDirectory => Path.Combine(RootDirectory, "context-dumps");
+    public static string InputHistoryPath => Path.Combine(RootDirectory, "input-history.txt");
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {

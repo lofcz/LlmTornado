@@ -1,6 +1,7 @@
 using System.Text;
 using LlmTornado.Agents.DataModels;
 using LlmTornado.Chat;
+using LlmTornado.Chat.Models;
 using LlmTornado.Cli.Core;
 using LlmTornado.Cli.Core.Agents;
 using LlmTornado.Cli.Core.Input;
@@ -13,6 +14,7 @@ using LlmTornado.Cli.Commands;
 using LlmTornado.Cli.Core.Memory;
 using LlmTornado.Cli.Core.Storage;
 using LlmTornado.Cli.Core.State;
+using LlmTornado.Cli.Core.Telemetry;
 using LlmTornado.Cli.Rendering;
 using LlmTornado.Code;
 
@@ -27,6 +29,7 @@ class Program
     private static CliAgentBuilder? _agentBuilder;
     private static AutoLoopController? _autoLoopController;
     private static bool _showThinking = true;
+    private static readonly SessionTelemetry _sessionTelemetry = new();
 
     static async Task<int> Main(string[] args)
     {
@@ -190,6 +193,9 @@ class Program
             providerResult.ActiveModel.ContextTokens,
             _conversationStore,
             compressionContextTokenCap: settings.CompressionContextTokenCap);
+        _memoryManager.ConfigureCompressionThresholds(
+            settings.CompressionTriggerUtilization,
+            settings.CompressionTargetUtilization);
 
         if (_memoryManager.Messages.Count > 0)
         {
@@ -202,6 +208,17 @@ class Program
             ConsoleRenderer.WriteInfo($"[context trimmed: {dropped} message(s) dropped to fit the token budget]");
 
         // ─── Step 8: Build Agent ───
+        // Local models: keep tool schemas stable across turns so the server-side prompt cache
+        // survives — an optimizer-swapped tool set changes the prompt prefix every reload.
+        // Session-only decision (no settings mutation); /tools optimize on re-enables it.
+        ChatModel? optimizerModel = providerResult.OptimizerModel;
+        if (providerResult.ActiveModel.Provider == LLmProviders.Custom && optimizerModel is not null && settings.ToolOptimizerEnabled)
+        {
+            optimizerModel = null;
+            ConsoleRenderer.WriteInfo(
+                "[tool optimizer off for local model — stable tool schemas keep the prompt cache warm; /tools optimize on to override]");
+        }
+
         _agentBuilder = new CliAgentBuilder(
             providerResult.Api,
             providerResult.ActiveModel,
@@ -211,7 +228,7 @@ class Program
             _memoryManager,
             agentManager,
             settings,
-            providerResult.OptimizerModel,
+            optimizerModel,
             _agentStateStore);
 
         Func<ChatRuntimeEvents, ValueTask> runtimeEventHandler = HandleRuntimeEvent;
@@ -247,6 +264,7 @@ class Program
         dispatcher.Register(new McpCommand(_mcpLoader, _agentBuilder, settings, runtimeEventHandler));
         dispatcher.Register(new CdCommand(_agentBuilder, agentManager, skillManager, _mcpLoader, settings, runtimeEventHandler));
         dispatcher.Register(new ThinkingCommand(settings, () => _showThinking, value => _showThinking = value));
+        dispatcher.Register(new ReasoningCommand(settings, effort => _agentBuilder!.SetReasoningEffort(effort)));
         dispatcher.Register(new TimestampCommand(settings,
             () => MessageTimestampPrefixer.Enabled,
             value => MessageTimestampPrefixer.Enabled = value));
@@ -285,7 +303,9 @@ class Program
         LineEditor editor = new(
             dispatcher.Commands,
             partial => fileProvider.Suggest(
-                builder.WorkingDirectory ?? Directory.GetCurrentDirectory(), partial));
+                builder.WorkingDirectory ?? Directory.GetCurrentDirectory(), partial),
+            historySeed: PersistentInputHistory.Load(CliStorage.InputHistoryPath),
+            historySink: entry => PersistentInputHistory.Append(CliStorage.InputHistoryPath, entry));
 
         while (true)
         {
@@ -312,55 +332,7 @@ class Program
             // Chat message
             try
             {
-                // Parse input for inline file references (@path/to/file)
-                ParsedInput parsed = InputParser.Parse(input, builder.WorkingDirectory);
-                FileAttachmentResult attachResult = FileAttachmentResolver.Resolve(parsed);
-
-                // Report attached files
-                foreach (ResolvedAttachment att in attachResult.Attachments)
-                {
-                    ConsoleRenderer.WriteInfo($"  [attached: {att.FileName} ({att.MimeType}, {att.FormattedSize})]");
-                }
-
-                // Report any file errors
-                foreach (string err in attachResult.Errors)
-                {
-                    ConsoleRenderer.WriteError($"  {err}");
-                }
-
-                ChatMessage userMessage = attachResult.Message;
-                int currentTokens = memory.GetMessagesForAgent().Sum(CompressionStrategy.EstimateTokens)
-                                    + CompressionStrategy.EstimateTokens(userMessage);
-                int contextUsedPercent = memory.EffectiveCompressionContextTokens > 0
-                    ? (int)Math.Ceiling(currentTokens * 100.0 / memory.EffectiveCompressionContextTokens)
-                    : 0;
-                MessageTimestampPrefixer.Prefix(
-                    userMessage,
-                    "user",
-                    contextUsedPercent: contextUsedPercent);
-
-                // Optimize tools once for this built agent/tool catalog if needed. The selected set stays
-                // active across turns; the model can call select_tools later if it needs a different set.
-                if (builder.NeedsOptimization)
-                {
-                    try
-                    {
-                        await builder.OptimizeToolsForTurn(input);
-                    }
-                    catch (Exception ex)
-                    {
-                        ConsoleRenderer.WriteToolOptimizationSkipped(
-                            builder.TotalToolCount, ex.Message);
-                    }
-                }
-
-                    // The managed runtime config records the user message + full response (including tool
-                    // messages) into memory, then runs compression/budget enforcement and persists — all
-                    // inside InvokeAsync, so the next request reflects the compressed canonical set.
-                await runtime.InvokeAsync(userMessage);
-                ConsoleRenderer.EndStreamingResponse();
-                if (builder.ConversationConfig?.LastTurnCompressed == true)
-                    ConsoleRenderer.WriteInfo("[context compressed]");
+                await RunChatTurnAsync(input, runtime, memory, builder);
             }
             catch (OperationCanceledException)
             {
@@ -409,8 +381,13 @@ class Program
         }
 
         ChatMessage userMessage = attachResult.Message;
-        int currentTokens = memory.GetMessagesForAgent().Sum(CompressionStrategy.EstimateTokens)
-                            + CompressionStrategy.EstimateTokens(userMessage);
+
+        // Prefer the real context size (last request's prompt + its completion, both now history)
+        // over the chars/4 estimate; fall back to the estimate until real usage arrives.
+        int newMessageTokens = CompressionStrategy.EstimateTokens(userMessage);
+        int currentTokens = _sessionTelemetry.EstimatedNextPromptTokens is int realTokens
+            ? realTokens + newMessageTokens
+            : memory.GetMessagesForAgent().Sum(CompressionStrategy.EstimateTokens) + newMessageTokens;
         int contextUsedPercent = memory.EffectiveCompressionContextTokens > 0
             ? (int)Math.Ceiling(currentTokens * 100.0 / memory.EffectiveCompressionContextTokens)
             : 0;
@@ -434,12 +411,55 @@ class Program
             }
         }
 
+        _sessionTelemetry.BeginTurn();
+
         // The managed runtime config records the user message and full response into memory, then
-        // runs compression/budget enforcement and persists inside InvokeAsync.
-        await runtime.InvokeAsync(userMessage);
+        // runs compression/budget enforcement and persists inside InvokeAsync. Esc interrupts the
+        // turn (mid-stream) while keeping the session and any partial output.
+        await TurnInterruptWatcher.WatchAsync(
+            runtime.InvokeAsync(userMessage),
+            () => runtime.CancelExecution());
         ConsoleRenderer.EndStreamingResponse();
         if (builder.ConversationConfig?.LastTurnCompressed == true)
+        {
+            _sessionTelemetry.InvalidateUsage();
             ConsoleRenderer.WriteInfo("[context compressed]");
+        }
+
+        WriteTurnStatusLine(memory);
+    }
+
+    /// <summary>
+    /// One dim line after each turn: context utilization (real when the provider reports usage,
+    /// ~estimated otherwise) and this turn's output/reasoning tokens.
+    /// </summary>
+    private static void WriteTurnStatusLine(ConversationMemoryManager memory)
+    {
+        int window = memory.EffectiveCompressionContextTokens;
+        if (window <= 0)
+            return;
+
+        string marker;
+        int contextTokens;
+        if (_sessionTelemetry.EstimatedNextPromptTokens is int real)
+        {
+            marker = "";
+            contextTokens = real;
+        }
+        else
+        {
+            marker = "~";
+            contextTokens = memory.GetMessagesForAgent().Sum(CompressionStrategy.EstimateTokens);
+        }
+
+        int percent = (int)Math.Ceiling(contextTokens * 100.0 / window);
+        string status = $"ctx {marker}{percent}% ({contextTokens:N0}/{window:N0})";
+        if (_sessionTelemetry.TurnCompletionTokens > 0)
+            status += $" · out {_sessionTelemetry.TurnCompletionTokens:N0}";
+        if (_sessionTelemetry.TurnReasoningTokens > 0)
+            status += $" · reasoning {_sessionTelemetry.TurnReasoningTokens:N0}";
+
+        ConsoleRenderer.WriteDimStatus(status);
     }
 
     private static ValueTask HandleRuntimeEvent(ChatRuntimeEvents evt)
@@ -469,9 +489,34 @@ class Program
             {
                 ConsoleRenderer.OnToolCompleted(toolCompletedEvt.ToolCall, toolCompletedEvt.ToolResult);
             }
+            else if (runnerEvt.AgentRunnerEvent is AgentRunnerRequestPreparedEvent requestPreparedEvt)
+            {
+                _sessionTelemetry.OnRequestPrepared(requestPreparedEvt.Tokens);
+            }
+            else if (runnerEvt.AgentRunnerEvent is AgentRunnerUsageReceivedEvent usageEvt)
+            {
+                _sessionTelemetry.OnUsageReceived(usageEvt.Usage);
+                _memoryManager?.ReportActualUsage(usageEvt.Usage.PromptTokens, usageEvt.Usage.CompletionTokens);
+            }
+            else if (runnerEvt.AgentRunnerEvent is AgentRunnerCancelledEvent)
+            {
+                ConsoleRenderer.EndStreamingResponse();
+                ConsoleRenderer.WriteInfo("[interrupted — partial response kept]");
+            }
+            else if (runnerEvt.AgentRunnerEvent is AgentRunnerMaxTurnsReachedEvent)
+            {
+                ConsoleRenderer.WriteWarning("[agent stopped: maximum turns reached]");
+            }
+            else if (runnerEvt.AgentRunnerEvent is AgentRunnerMaxTokensReachedEvent)
+            {
+                ConsoleRenderer.WriteWarning("[agent stopped: context token limit reached — /context compress can free space]");
+            }
             else if (runnerEvt.AgentRunnerEvent is AgentRunnerErrorEvent errorEvt)
             {
-                ConsoleRenderer.WriteError($"\n[Agent error: {errorEvt.ErrorMessage}]");
+                // A user interrupt surfaces as an OCE inside the runner before the Cancelled
+                // event fires; don't paint it as a scary error.
+                if (errorEvt.Exception is not OperationCanceledException)
+                    ConsoleRenderer.WriteError($"\n[Agent error: {errorEvt.ErrorMessage}]");
             }
         }
         else if (evt is ChatRuntimeErrorEvent runtimeError)

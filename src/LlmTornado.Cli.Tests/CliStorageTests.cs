@@ -118,7 +118,7 @@ public class CliStorageTests
             TerminalDirectoryWhitelist = ["src"],
             AllowedCommands = ["dotnet", "npm"],
             BlockedCommands = ["rm"],
-            MaxTurnsBeforeSummary = 10,
+            CompressionContextTokenCap = 16000,
         };
 
         CliStorage.SaveJson(path, settings);
@@ -135,7 +135,7 @@ public class CliStorageTests
         Assert.That(loaded.TerminalDirectoryWhitelist, Does.Contain("src"));
         Assert.That(loaded.AllowedCommands, Does.Contain("dotnet"));
         Assert.That(loaded.BlockedCommands, Does.Contain("rm"));
-        Assert.That(loaded.MaxTurnsBeforeSummary, Is.EqualTo(10));
+        Assert.That(loaded.CompressionContextTokenCap, Is.EqualTo(16000));
     }
 
     [Test]
@@ -152,14 +152,14 @@ public class CliStorageTests
         Assert.That(settings.TerminalDirectoryWhitelist, Is.Empty);
         Assert.That(settings.AllowedCommands, Is.Empty);
         Assert.That(settings.BlockedCommands, Is.Empty);
-        Assert.That(settings.MaxTurnsBeforeSummary, Is.EqualTo(0));
+        Assert.That(settings.CompressionContextTokenCap, Is.Null);
     }
 
     [Test]
     public void CliSettings_JsonPropertyNames_AreCamelSnakeCase()
     {
         string path = Path.Combine(_tempDir, "props.json");
-        AgentSettings settings = new() { ActiveModel = "test", MaxTurnsBeforeSummary = 5 };
+        AgentSettings settings = new() { ActiveModel = "test" };
         CliStorage.SaveJson(path, settings);
 
         string json = File.ReadAllText(path);
@@ -170,7 +170,6 @@ public class CliStorageTests
         Assert.That(json, Does.Contain("terminal_directory_whitelist"));
         Assert.That(json, Does.Contain("allowed_commands"));
         Assert.That(json, Does.Contain("blocked_commands"));
-        Assert.That(json, Does.Contain("max_turns_before_summary"));
     }
 
     #endregion

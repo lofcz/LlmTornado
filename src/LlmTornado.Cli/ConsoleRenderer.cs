@@ -583,6 +583,10 @@ internal sealed class ConsoleRenderer
     public static void WriteSuccess(string message) =>
         WriteNotice(message, new TextStyle(StyleFlags.None, ConsoleColor.Green));
 
+    /// <summary>One-line dim status footer (context/token gauge after each turn).</summary>
+    public static void WriteDimStatus(string message) =>
+        WriteNotice(message, new TextStyle(StyleFlags.Dim, ConsoleColor.DarkGray));
+
     // ─── Tool Optimization ───
 
     public static void WriteToolOptimization(int totalCount, int selectedCount)

@@ -18,16 +18,21 @@ namespace LlmTornado.Cli.Core.Memory;
 public sealed class ManagedConversationRuntimeConfiguration : SingletonRuntimeConfiguration
 {
     private readonly ConversationMemoryManager _memory;
+    private readonly Func<ChatMessage>? _environmentMessageFactory;
 
     /// <summary>
     /// True if the most recent turn triggered compression and/or a budget trim. The host can surface a notice.
     /// </summary>
     public bool LastTurnCompressed { get; private set; }
 
-    public ManagedConversationRuntimeConfiguration(TornadoAgent agent, ConversationMemoryManager memory)
+    public ManagedConversationRuntimeConfiguration(
+        TornadoAgent agent,
+        ConversationMemoryManager memory,
+        Func<ChatMessage>? environmentMessageFactory = null)
         : base(agent)
     {
         _memory = memory;
+        _environmentMessageFactory = environmentMessageFactory;
 
         // Persistence live from the first turn (fixes the "no conversation id at startup" gap).
         _memory.EnsureActiveConversation();
@@ -79,12 +84,27 @@ public sealed class ManagedConversationRuntimeConfiguration : SingletonRuntimeCo
     }
 
     /// <summary>
-    /// Replace the runtime conversation with the current (compressed) memory set.
+    /// Replace the runtime conversation with the current (compressed) memory set, pinning a fresh
+    /// environment message first. Stale env messages from persisted history are dropped so a
+    /// resumed or rebuilt session never carries two (or an outdated) environment block.
     /// </summary>
     private void RehydrateConversation()
     {
         Conversation.Clear();
+
+        if (_environmentMessageFactory is not null)
+            Conversation.AppendMessage(_environmentMessageFactory());
+
         foreach (ChatMessage msg in _memory.GetMessagesForAgent())
+        {
+            if (_environmentMessageFactory is not null && IsEnvironmentMessage(msg))
+                continue;
             Conversation.AppendMessage(msg);
+        }
     }
+
+    private static bool IsEnvironmentMessage(ChatMessage msg) =>
+        msg.Role == ChatMessageRoles.User
+        && msg.Content is not null
+        && msg.Content.StartsWith(AgentBuilder.EnvironmentTag, StringComparison.Ordinal);
 }

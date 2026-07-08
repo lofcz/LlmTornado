@@ -37,15 +37,40 @@ public sealed class AgentSettings
     [JsonPropertyName("mcp_config_path")]
     public string? McpConfigPath { get; set; }
 
-    [JsonPropertyName("max_turns_before_summary")]
-    public int MaxTurnsBeforeSummary { get; set; }
-
     /// <summary>
     /// Optional absolute cap for the context window used by compression/budget enforcement.
     /// Null = use the active model's full context window.
     /// </summary>
     [JsonPropertyName("compression_context_token_cap")]
     public int? CompressionContextTokenCap { get; set; }
+
+    /// <summary>
+    /// Context utilization (0..1) at which compression triggers. Null = built-in default (0.80).
+    /// Each compression rewrites history (invalidating any server-side prompt cache), so higher =
+    /// rarer rewrites.
+    /// </summary>
+    [JsonPropertyName("compression_trigger_utilization")]
+    public double? CompressionTriggerUtilization { get; set; }
+
+    /// <summary>
+    /// Target context utilization (0..1) after compression. Null = built-in default (0.40).
+    /// </summary>
+    [JsonPropertyName("compression_target_utilization")]
+    public double? CompressionTargetUtilization { get; set; }
+
+    /// <summary>
+    /// Whether large tool results are truncated (head + tail) before entering the context.
+    /// Default: true — protects small local-model windows from a single huge read/grep result.
+    /// </summary>
+    [JsonPropertyName("tool_result_truncation")]
+    public bool ToolResultTruncationEnabled { get; set; } = true;
+
+    /// <summary>
+    /// Maximum estimated tokens a single tool result may occupy before truncation.
+    /// The effective cap is min(this, context window / 8). Default: 4000.
+    /// </summary>
+    [JsonPropertyName("tool_result_max_tokens")]
+    public int ToolResultMaxTokens { get; set; } = 4000;
 
     /// <summary>
     /// Currently selected agent persona name. Null = default (no persona).

@@ -4,6 +4,7 @@ using LlmTornado.Agents;
 using LlmTornado.Agents.ChatRuntime;
 using LlmTornado.Agents.ChatRuntime.RuntimeConfigurations;
 using LlmTornado.Agents.DataModels;
+using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Cli.Core.Agents;
 using LlmTornado.Cli.Core.Interactions;
@@ -135,6 +136,22 @@ public sealed class AgentBuilder
         // Apply reasoning effort if configured
         ApplyReasoningEffort(_agent);
 
+        // Cap tool-result size before it enters the context: one huge read/grep result would
+        // otherwise blow a small local window and force an immediate compression rewrite.
+        // The cap is re-read per call so /context cap and model switches apply live.
+        if (_settings.ToolResultTruncationEnabled)
+        {
+            ToolResultTruncator truncator = new(
+                maxTokensProvider: () =>
+                {
+                    int window = _memoryManager?.EffectiveCompressionContextTokens
+                                 ?? _activeModel.ContextTokens ?? 128_000;
+                    return Math.Min(Math.Max(1, _settings.ToolResultMaxTokens), Math.Max(512, window / 8));
+                },
+                exemptTools: ["select_tools", "list_all_tools"]);
+            _agent.ToolResultProcessor = truncator.Process;
+        }
+
         // Add tools
         foreach (Tool tool in allTools)
         {
@@ -163,7 +180,7 @@ public sealed class AgentBuilder
         // conversation lifecycle (sync → compress → budget → persist) is owned in one place; otherwise
         // fall back to the plain singleton config.
         SingletonRuntimeConfiguration runtimeConfig = _memoryManager is not null
-            ? new Memory.ManagedConversationRuntimeConfiguration(_agent, _memoryManager)
+            ? new Memory.ManagedConversationRuntimeConfiguration(_agent, _memoryManager, BuildEnvironmentMessage)
             : new SingletonRuntimeConfiguration(_agent);
         runtimeConfig.OnRuntimeEvent = onRuntimeEvent;
         runtimeConfig.OnRuntimeRequestEvent = _toolApproval.HandleToolPermissionRequest;
@@ -171,6 +188,17 @@ public sealed class AgentBuilder
         // The CLI is interactive (the user can cancel at any time), so don't cap the agent loop at the
         // library default of 10 turns — let it run as long as the task needs.
         runtimeConfig.MaxTurns = int.MaxValue;
+
+        // Brake a runaway tool loop at the model's real context window (where the provider would
+        // hard-fail anyway) instead of the library's unreachable 2M default; never throw — the
+        // MaxTokensReached/Cancelled events let the host end the turn gracefully.
+        runtimeConfig.RunnerOptions = new TornadoRunnerOptions
+        {
+            ThrowOnCancelled = false,
+            ThrowOnMaxTurnsExceeded = false,
+            ThrowOnTokenLimitExceeded = false,
+            TokenLimit = _activeModel.ContextTokens is int contextWindow and > 0 ? contextWindow : 2_000_000,
+        };
 
         _runtime = new ChatRuntime(runtimeConfig);
         return _runtime;
@@ -351,6 +379,17 @@ public sealed class AgentBuilder
     }
 
     /// <summary>
+    /// Update the reasoning effort setting and apply it to the live agent (no rebuild needed —
+    /// it's a per-request option).
+    /// </summary>
+    public void SetReasoningEffort(string? effort)
+    {
+        _settings.ReasoningEffort = effort;
+        if (_agent is not null)
+            ApplyReasoningEffort(_agent);
+    }
+
+    /// <summary>
     /// Parse and apply the reasoning effort from settings to the agent's request options.
     /// </summary>
     private void ApplyReasoningEffort(TornadoAgent agent)
@@ -429,9 +468,30 @@ public sealed class AgentBuilder
             sb.AppendLine();
         }
 
-        string cwd = WorkingDirectory ?? Environment.CurrentDirectory;
-        sb.AppendLine($"The user's current working directory is: {cwd}");
+        // Volatile facts (cwd, date) deliberately live in the pinned <env> message, not here:
+        // a byte-stable system prompt is the anchor of the server-side prompt cache.
+        sb.AppendLine("Session environment details (working directory, date) are provided in the <env> message.");
         return sb.ToString();
+    }
+
+    /// <summary>Marker that opens the pinned environment message.</summary>
+    internal const string EnvironmentTag = "<env>";
+
+    /// <summary>
+    /// The pinned first message carrying volatile session facts. Kept out of the system prompt so
+    /// the prompt-cache prefix stays byte-identical across turns; regenerated only on rebuilds
+    /// (/cd, model/skill/agent switches).
+    /// </summary>
+    internal ChatMessage BuildEnvironmentMessage()
+    {
+        string cwd = WorkingDirectory ?? Environment.CurrentDirectory;
+        string content =
+            $"{EnvironmentTag}\n" +
+            $"working_directory: {cwd}\n" +
+            $"platform: {Environment.OSVersion.Platform} ({System.Runtime.InteropServices.RuntimeInformation.OSDescription})\n" +
+            $"date: {DateTime.Now:yyyy-MM-dd}\n" +
+            "</env>";
+        return new ChatMessage(ChatMessageRoles.User, content);
     }
 
     private List<Tool> CollectTools()

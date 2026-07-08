@@ -11,9 +11,27 @@ internal sealed class CommandHistoryNavigator
     private string? _draft;
 
     internal CommandHistoryNavigator(int maxEntries = 1000)
+        : this([], maxEntries)
+    {
+    }
+
+    internal CommandHistoryNavigator(IEnumerable<string> seed, int maxEntries = 1000)
     {
         _maxEntries = Math.Max(1, maxEntries);
+        foreach (string entry in seed)
+        {
+            string trimmed = entry.Trim();
+            if (trimmed.Length == 0 || (_entries.Count > 0 && _entries[^1] == trimmed))
+                continue;
+            _entries.Add(trimmed);
+        }
+
+        if (_entries.Count > _maxEntries)
+            _entries.RemoveRange(0, _entries.Count - _maxEntries);
     }
+
+    /// <summary>Raised when a new (non-duplicate) entry is recorded; used to persist history to disk.</summary>
+    internal event Action<string>? EntryAdded;
 
     internal IReadOnlyList<string> Entries => _entries;
 
@@ -35,6 +53,8 @@ internal sealed class CommandHistoryNavigator
 
             if (_entries.Count > _maxEntries)
                 _entries.RemoveAt(0);
+
+            EntryAdded?.Invoke(command);
         }
 
         ResetNavigation();

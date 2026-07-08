@@ -32,6 +32,11 @@ public class SingletonRuntimeConfiguration : IRuntimeConfiguration
     public int MaxTurns { get; set; } = 10;
 
     /// <summary>
+    /// Optional runner options (token limit, throw behaviors) forwarded to <see cref="TornadoAgent.Run"/>.
+    /// </summary>
+    public TornadoRunnerOptions? RunnerOptions { get; set; }
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="SequentialRuntimeConfiguration"/> class with the specified agents.
     /// </summary>
     /// <param name="agents">Agents to run in order</param>
@@ -54,6 +59,12 @@ public class SingletonRuntimeConfiguration : IRuntimeConfiguration
 
     public virtual async ValueTask<ChatMessage> AddToChatAsync(ChatMessage message, CancellationToken cancellationToken = default)
     {
+        // Re-arm after a prior CancelRuntime(); a spent CTS would otherwise pre-cancel every later turn.
+        if (cts.IsCancellationRequested)
+            cts = new CancellationTokenSource();
+
+        using CancellationTokenSource linked = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, cancellationToken);
+
         OnRuntimeEvent?.Invoke(new ChatRuntimeStartedEvent(Runtime.Id));
 
         Conversation.AppendMessage(message);
@@ -68,7 +79,8 @@ public class SingletonRuntimeConfiguration : IRuntimeConfiguration
                 return Threading.ValueTaskCompleted;
             },
             toolPermissionHandle: OnRuntimeRequestEvent,
-            cancellationToken: cancellationToken
+            runnerOptions: RunnerOptions,
+            cancellationToken: linked.Token
             );
 
         OnRuntimeEvent?.Invoke(new ChatRuntimeCompletedEvent(Runtime.Id));

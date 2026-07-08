@@ -111,4 +111,7 @@ internal sealed class CliAgentBuilder
 
     public void SetMaxTools(int maxTools, ChatModel? optimizerModel = null)
         => _inner.SetMaxTools(maxTools, optimizerModel);
+
+    public void SetReasoningEffort(string? effort)
+        => _inner.SetReasoningEffort(effort);
 }

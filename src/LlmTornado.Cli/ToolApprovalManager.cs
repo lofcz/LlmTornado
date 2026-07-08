@@ -53,6 +53,9 @@ internal sealed class ToolApprovalManager : IToolApproval, IUserInteractionHandl
 
     private ValueTask<bool> PromptForApproval(string toolName, string requestMessage)
     {
+        // Own stdin for the duration of the prompt so the Esc-to-interrupt watcher doesn't steal keys.
+        using IDisposable inputScope = Input.ConsoleInputGate.Suspend();
+
         _renderer.WriteToolApprovalPrompt(requestMessage);
 
         while (true)
@@ -89,6 +92,8 @@ internal sealed class ToolApprovalManager : IToolApproval, IUserInteractionHandl
 
     public ValueTask<AskQuestionsInteractionResponse> AskQuestionsAsync(AskQuestionsInteractionRequest request, CancellationToken cancellationToken = default)
     {
+        using IDisposable inputScope = Input.ConsoleInputGate.Suspend();
+
         _renderer.WriteQuestionWorkflowStart(request);
 
         AskQuestionsInteractionResponse response = new();

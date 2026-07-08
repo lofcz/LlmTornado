@@ -26,6 +26,14 @@ public sealed class ConversationMemoryManager
     private int _modelContextWindowTokens;
     private int? _compressionContextTokenCap;
 
+    // Real token accounting: the provider-reported usage of the turn's final request replaces the
+    // chars/4 guess as the context-size baseline. Reported mid-turn, sealed at the SyncFrom point
+    // (when _messages matches exactly what that request + its completion contained), and dropped
+    // whenever history is rewritten.
+    private int? _pendingActualTokens;
+    private int? _actualTokensAtSync;
+    private int _messageCountAtSync;
+
     /// <summary>
     /// Hard ceiling for the request payload as a fraction of the model context window.
     /// Applied after summarization as a deterministic safety net.
@@ -111,6 +119,43 @@ public sealed class ConversationMemoryManager
         }
     }
 
+    /// <summary>
+    /// Record real usage from a model response (fires per request in the tool loop; the last one
+    /// wins). Prompt + completion together describe the history after that response is appended.
+    /// </summary>
+    public void ReportActualUsage(int promptTokens, int completionTokens)
+    {
+        if (promptTokens > 0)
+            _pendingActualTokens = promptTokens + completionTokens;
+    }
+
+    /// <summary>
+    /// Best available token count for the current history: the real provider figure (sealed at the
+    /// last sync) plus estimates for any messages appended since; falls back to the chars/4
+    /// estimate when no real usage has been observed.
+    /// </summary>
+    public int EstimateCurrentTokens()
+    {
+        if (_actualTokensAtSync is int real && _messages.Count >= _messageCountAtSync)
+        {
+            int tail = 0;
+            for (int i = _messageCountAtSync; i < _messages.Count; i++)
+                tail += CompressionStrategy.EstimateTokens(_messages[i]);
+            return real + tail;
+        }
+
+        return _messages.Sum(CompressionStrategy.EstimateTokens);
+    }
+
+    /// <summary>True when <see cref="EstimateCurrentTokens"/> is backed by provider-reported usage.</summary>
+    public bool HasActualTokenCount => _actualTokensAtSync is not null;
+
+    private void InvalidateActualTokens()
+    {
+        _pendingActualTokens = null;
+        _actualTokensAtSync = null;
+    }
+
     public void AddMessage(ChatMessage message)
     {
         _messages.Add(message);
@@ -136,7 +181,8 @@ public sealed class ConversationMemoryManager
     {
         bool changed = false;
 
-        CompressionAnalysis analysis = _compressionStrategy.Analyze(_messages, _metadataTracker);
+        CompressionAnalysis analysis = _compressionStrategy.Analyze(
+            _messages, _metadataTracker, HasActualTokenCount ? EstimateCurrentTokens() : null);
         if (analysis.ShouldCompress)
         {
             int messageCountBefore = _messages.Count;
@@ -170,7 +216,11 @@ public sealed class ConversationMemoryManager
             changed = true;
 
         if (changed)
+        {
+            // History was rewritten: the sealed provider figure no longer describes the payload.
+            InvalidateActualTokens();
             PersistFull();
+        }
 
         return changed;
     }
@@ -190,6 +240,15 @@ public sealed class ConversationMemoryManager
         // across turns and the compression strategy does not re-summarize them.
         foreach (ChatMessage msg in _messages)
             _metadataTracker.Track(msg);
+
+        // Seal the turn's real usage against this exact message set: the last usage event covered
+        // the final request plus its completion, which is precisely what was just synced in.
+        if (_pendingActualTokens is int pending)
+        {
+            _actualTokensAtSync = pending;
+            _messageCountAtSync = _messages.Count;
+            _pendingActualTokens = null;
+        }
 
         PersistFull();
     }
@@ -232,7 +291,9 @@ public sealed class ConversationMemoryManager
 
         int budget = Math.Max(2048, (int)(_compressionStrategy.ContextWindowTokens * HardBudgetFraction));
 
-        int total = _messages.Sum(CompressionStrategy.EstimateTokens);
+        // Trigger on the best available total (real when we have it); the keep-set below still
+        // fills by per-message estimates, which is the only granularity available.
+        int total = EstimateCurrentTokens();
         if (total <= budget)
             return false;
 
@@ -277,6 +338,7 @@ public sealed class ConversationMemoryManager
     {
         _messages.Clear();
         _metadataTracker.Clear();
+        InvalidateActualTokens();
 
         if (_store is not null)
         {
@@ -292,6 +354,8 @@ public sealed class ConversationMemoryManager
 
     public void LoadConversation(string conversationId)
     {
+        InvalidateActualTokens();
+
         if (_store is not null)
         {
             _conversationId = conversationId;
@@ -310,6 +374,7 @@ public sealed class ConversationMemoryManager
 
     public void LoadConversation(List<ChatMessage> messages)
     {
+        InvalidateActualTokens();
         _messages = [.. messages];
         _metadataTracker.Clear();
         foreach (ChatMessage msg in _messages)
@@ -322,6 +387,17 @@ public sealed class ConversationMemoryManager
         _summarizer.UpdateModel(model);
         _modelContextWindowTokens = contextWindowTokens ?? 128_000;
         ApplyEffectiveContextWindow();
+    }
+
+    /// <summary>
+    /// Override the compression trigger/target utilizations (values outside (0, 1] are ignored).
+    /// </summary>
+    public void ConfigureCompressionThresholds(double? triggerUtilization, double? targetUtilization)
+    {
+        if (triggerUtilization is > 0 and <= 1)
+            _compressionStrategy.UncompressedThreshold = triggerUtilization.Value;
+        if (targetUtilization is > 0 and <= 1)
+            _compressionStrategy.TargetUtilization = targetUtilization.Value;
     }
 
     /// <summary>

@@ -59,6 +59,37 @@ public class CliAgentBuilderTests
     }
 
     [Test]
+    public async Task Build_SystemPromptIsStable_EnvMessageCarriesCwd()
+    {
+        // No API key needed: nothing here touches the network.
+        TornadoApi api = new(new Uri("http://127.0.0.1:9"), "unused");
+        ChatModel model = new("local-model", LLmProviders.Custom);
+        AgentSettings settings = new();
+        SkillManager skillManager = new(settings, new NoOpPersistence());
+        skillManager.LoadSkills(_tempDir);
+        McpConfigLoader mcpLoader = new();
+        ConsoleRenderer renderer = new();
+        ToolApprovalManager toolApproval = new(renderer);
+        ConversationMemoryManager memoryManager = new(api, model, model.ContextTokens);
+        AgentDefinitionManager agentManager = new(settings, new NoOpPersistence());
+
+        CliAgentBuilder builder = new(api, model, skillManager, mcpLoader, toolApproval, memoryManager, agentManager, settings, null);
+        builder.Build();
+
+        // KV-cache invariant: the system prompt must not embed the (volatile) working directory —
+        // that lives in the pinned <env> message at position 0 of the conversation.
+        string cwd = builder.WorkingDirectory;
+        Assert.That(builder.Agent.Instructions, Does.Not.Contain(cwd));
+
+        List<ChatMessage> messages = builder.ConversationConfig!.GetMessages();
+        Assert.That(messages, Is.Not.Empty);
+        Assert.That(messages[0].Content, Does.StartWith("<env>"));
+        Assert.That(messages[0].Content, Does.Contain(cwd));
+
+        await mcpLoader.DisposeAsync();
+    }
+
+    [Test]
     public async Task Build_Includes_BuiltIn_Tools()
     {
         string? key = TestHelpers.GetOpenAiKey();

@@ -49,14 +49,19 @@ internal sealed class LineEditor
     private readonly Func<string, IReadOnlyList<string>> _fileSuggester;
 
     // Persists across REPL iterations because the editor is constructed once and reused.
-    private readonly CommandHistoryNavigator _history = new();
+    private readonly CommandHistoryNavigator _history;
 
     public LineEditor(
         IReadOnlyDictionary<string, ICliCommand> commands,
-        Func<string, IReadOnlyList<string>> fileSuggester)
+        Func<string, IReadOnlyList<string>> fileSuggester,
+        IEnumerable<string>? historySeed = null,
+        Action<string>? historySink = null)
     {
         _commands = commands;
         _fileSuggester = fileSuggester;
+        _history = new CommandHistoryNavigator(historySeed ?? []);
+        if (historySink is not null)
+            _history.EntryAdded += historySink;
     }
 
     /// <summary>

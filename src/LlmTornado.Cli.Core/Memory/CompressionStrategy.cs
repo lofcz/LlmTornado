@@ -38,11 +38,21 @@ public sealed class CompressionStrategy
 {
     private int _contextWindowTokens;
 
-    public double UncompressedThreshold { get; set; } = 0.60;
-    public double ReCompressionThreshold { get; set; } = 0.80;
+    // Defaults tuned for KV-cache friendliness on local models: every compression rewrites history
+    // and forces the server to re-prefill the whole prompt, so compress rarely and reclaim a lot
+    // each time (0.80 trigger → 0.40 target) instead of nibbling frequently.
+    public double UncompressedThreshold { get; set; } = 0.80;
+    public double ReCompressionThreshold { get; set; } = 0.85;
     public double TargetUtilization { get; set; } = 0.40;
     public double ReCompressionTarget { get; set; } = 0.20;
     public int LargeMessageThreshold { get; set; } = 10_000;
+
+    /// <summary>
+    /// A single oversized message only triggers compression once overall utilization crosses this
+    /// floor — with tool-result truncation in place, a lone large message in an otherwise small
+    /// context is not worth a full history rewrite.
+    /// </summary>
+    public double LargeMessageUtilizationFloor { get; set; } = 0.50;
 
     public CompressionStrategy(int contextWindowTokens)
     {
@@ -54,9 +64,17 @@ public sealed class CompressionStrategy
     /// <summary> Effective context window size in tokens (floored at 4096). </summary>
     public int ContextWindowTokens => _contextWindowTokens;
 
+    /// <param name="messages">Current history.</param>
+    /// <param name="metadata">Compression-state tracker.</param>
+    /// <param name="actualTotalTokens">
+    /// Provider-reported total for the current history, when available. More reliable than the
+    /// chars/4 estimate (which misses tool schemas and tokenizer density), so it participates in
+    /// the trigger decision and overrides the reported total/utilization.
+    /// </param>
     public CompressionAnalysis Analyze(
         List<ChatMessage> messages,
-        MessageMetadataTracker metadata)
+        MessageMetadataTracker metadata,
+        int? actualTotalTokens = null)
     {
         int systemTokens = 0;
         int uncompressedTokens = 0;
@@ -92,15 +110,21 @@ public sealed class CompressionStrategy
         }
 
         int totalTokens = systemTokens + uncompressedTokens + compressedTokens;
+        if (actualTotalTokens is int actual && actual > totalTokens)
+            totalTokens = actual;
+
         double utilization = (double)totalTokens / _contextWindowTokens;
         double uncompressedUtil = (double)uncompressedTokens / _contextWindowTokens;
         double compressedUtil = (double)(compressedTokens + systemTokens) / _contextWindowTokens;
 
-        bool shouldCompress = largeMessages.Count > 0
-            || uncompressedUtil >= UncompressedThreshold
-            || compressedUtil >= ReCompressionThreshold;
+        bool largeMessageTrigger = largeMessages.Count > 0 && utilization >= LargeMessageUtilizationFloor;
 
-        bool isReCompression = largeMessages.Count == 0
+        bool shouldCompress = largeMessageTrigger
+            || uncompressedUtil >= UncompressedThreshold
+            || compressedUtil >= ReCompressionThreshold
+            || utilization >= UncompressedThreshold;
+
+        bool isReCompression = !largeMessageTrigger
             && uncompressedUtil < UncompressedThreshold
             && compressedUtil >= ReCompressionThreshold;
 
