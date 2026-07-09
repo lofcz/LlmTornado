@@ -23,7 +23,7 @@ namespace LlmTornado.Cli.Core;
 /// </summary>
 public sealed class AgentBuilder
 {
-    private readonly TornadoApi _api;
+    private TornadoApi _api;
     private readonly SkillManager _skillManager;
     private readonly McpConfigLoader _mcpLoader;
     private readonly IToolApproval _toolApproval;
@@ -33,6 +33,7 @@ public sealed class AgentBuilder
     private readonly List<Tool>? _additionalTools;
     private readonly Memory.ConversationMemoryManager? _memoryManager;
     private readonly IAgentStateStore? _agentStateStore;
+    private ChatModel? _optimizerModel;
 
     private ChatModel _activeModel;
     private TornadoAgent? _agent;
@@ -103,6 +104,7 @@ public sealed class AgentBuilder
         _additionalTools = additionalTools;
         _memoryManager = memoryManager;
         _agentStateStore = agentStateStore;
+        _optimizerModel = optimizerModel;
 
         if (toolOptimizer is not null)
         {
@@ -207,6 +209,24 @@ public sealed class AgentBuilder
     public ChatRuntime SetModel(ChatModel model, Func<ChatRuntimeEvents, ValueTask>? onRuntimeEvent = null)
     {
         _activeModel = model;
+        return Build(onRuntimeEvent);
+    }
+
+    /// <summary>
+    /// Switch model and the <see cref="TornadoApi"/> used to call it (required when moving between
+    /// OpenAI-compat endpoints that each need their own Custom BaseUrl).
+    /// </summary>
+    public ChatRuntime SetModel(ChatModel model, TornadoApi api, Func<ChatRuntimeEvents, ValueTask>? onRuntimeEvent = null)
+    {
+        _activeModel = model;
+        if (!ReferenceEquals(_api, api))
+        {
+            _api = api;
+            // Rebuild optimizer against the new api if it was active.
+            if (_toolOptimizer is not null && _settings.ToolOptimizerEnabled && _optimizerModel is not null)
+                _toolOptimizer = new ToolOptimizer(_api, _optimizerModel, _settings.MaxTools);
+        }
+
         return Build(onRuntimeEvent);
     }
 

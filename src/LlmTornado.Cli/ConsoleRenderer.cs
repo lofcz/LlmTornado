@@ -624,7 +624,10 @@ internal sealed class ConsoleRenderer
                 Console.ForegroundColor = ConsoleColor.Green;
                 Console.Write("  ✓ ");
                 Console.ForegroundColor = ConsoleColor.White;
-                Console.Write($"{provider.Provider}");
+                string label = provider.EndpointName is not null
+                    ? $"{provider.Provider} [{provider.EndpointName}]"
+                    : provider.Provider.ToString();
+                Console.Write(label);
                 Console.ForegroundColor = ConsoleColor.DarkGray;
                 Console.WriteLine($" — {provider.Models.Count} models");
             }

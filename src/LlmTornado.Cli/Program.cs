@@ -72,7 +72,13 @@ class Program
 
         // ─── Step 3: Provider Detection ───
         ConsoleRenderer.WriteInfo("Detecting providers...");
-        ProviderDetectionResult? providerResult = ProviderDetector.Detect();
+        List<OpenAiCompatEndpoint> openAiCompatEndpoints = OpenAiCompatEndpoint.Merge(
+            settings.OpenAiCompatEndpoints,
+            OpenAiCompatEndpoint.ParseEnv(Environment.GetEnvironmentVariable("TORNADO_OPENAI_COMPAT")));
+
+        ProviderDetectionResult? providerResult = ProviderDetector.Detect(
+            openAiCompatEndpoints,
+            warning => ConsoleRenderer.WriteWarning(warning));
         if (providerResult is null)
         {
             ConsoleRenderer.WriteError(
@@ -84,43 +90,65 @@ class Program
             ConsoleRenderer.WriteError(
                 "  PERPLEXITY_API_KEY, OPENROUTER_API_KEY, DEEPINFRA_API_KEY, VOYAGE_API_KEY");
             ConsoleRenderer.WriteError(
-                "  ...or run a local Ollama server (set OLLAMA_HOST, default http://localhost:11434).");
+                "  ...or run a local Ollama server (set OLLAMA_HOST, default http://localhost:11434)");
+            ConsoleRenderer.WriteError(
+                "  ...or configure an OpenAI-compatible endpoint via /endpoint add or TORNADO_OPENAI_COMPAT.");
             return 1;
         }
 
-        // Apply saved model preference
+        // Apply saved model preference (supports bare name or endpoint/model)
         if (settings.ActiveModel is not null)
         {
-            Chat.Models.ChatModel? savedModel = providerResult.AllModels
-                .FirstOrDefault(m => m.Name == settings.ActiveModel);
+            Chat.Models.ChatModel? savedModel = providerResult.ResolveModel(settings.ActiveModel, out _);
             if (savedModel is not null)
                 providerResult.ActiveModel = savedModel;
         }
 
+        DetectedProvider? activeOwner = providerResult.FindOwner(providerResult.ActiveModel);
         if (providerResult.ActiveModel.Provider == LLmProviders.Custom)
         {
-            string ollamaHost = OllamaContextInspector.ResolveHost(Environment.GetEnvironmentVariable("OLLAMA_HOST"));
-            int? runtimeContext = await OllamaContextInspector.TryGetRuntimeContextTokens(providerResult.ActiveModel.Name, ollamaHost);
-            int? modelCardContext = runtimeContext is > 0
-                ? null
-                : await OllamaContextInspector.TryGetModelCardContextTokens(providerResult.ActiveModel.Name, ollamaHost);
-            int? detectedContext = runtimeContext ?? modelCardContext;
-
-            if (detectedContext is > 0)
+            if (activeOwner?.EndpointName is null or "ollama")
             {
+                string ollamaHost = OllamaContextInspector.ResolveHost(Environment.GetEnvironmentVariable("OLLAMA_HOST"));
+                int? runtimeContext = await OllamaContextInspector.TryGetRuntimeContextTokens(providerResult.ActiveModel.Name, ollamaHost);
+                int? modelCardContext = runtimeContext is > 0
+                    ? null
+                    : await OllamaContextInspector.TryGetModelCardContextTokens(providerResult.ActiveModel.Name, ollamaHost);
+                int? detectedContext = runtimeContext ?? modelCardContext;
+
+                if (detectedContext is > 0)
+                {
+                    providerResult.ActiveModel = new Chat.Models.ChatModel(
+                        providerResult.ActiveModel.Name,
+                        providerResult.ActiveModel.Provider,
+                        detectedContext.Value);
+
+                    string sourceLabel = runtimeContext is > 0 ? "runtime" : "model metadata";
+                    ConsoleRenderer.WriteInfo(
+                        $"Detected Ollama context ({sourceLabel}): {detectedContext:N0} tokens for {providerResult.ActiveModel.Name}");
+                }
+                else if (providerResult.ActiveModel.ContextTokens is null)
+                {
+                    int fallback = OpenAiCompatProber.ResolveContextTokens(
+                        null, activeOwner?.DefaultContextTokens, settings.CompressionContextTokenCap);
+                    providerResult.ActiveModel = new Chat.Models.ChatModel(
+                        providerResult.ActiveModel.Name,
+                        providerResult.ActiveModel.Provider,
+                        fallback);
+                    ConsoleRenderer.WriteInfo(
+                        $"Could not detect Ollama context size; assuming {fallback:N0} tokens.");
+                }
+            }
+            else if (providerResult.ActiveModel.ContextTokens is null)
+            {
+                int resolved = OpenAiCompatProber.ResolveContextTokens(
+                    null, activeOwner?.DefaultContextTokens, settings.CompressionContextTokenCap);
                 providerResult.ActiveModel = new Chat.Models.ChatModel(
                     providerResult.ActiveModel.Name,
                     providerResult.ActiveModel.Provider,
-                    detectedContext.Value);
-
-                string sourceLabel = runtimeContext is > 0 ? "runtime" : "model metadata";
+                    resolved);
                 ConsoleRenderer.WriteInfo(
-                    $"Detected Ollama context ({sourceLabel}): {detectedContext:N0} tokens for {providerResult.ActiveModel.Name}");
-            }
-            else
-            {
-                ConsoleRenderer.WriteInfo(
-                    "Could not detect Ollama context size for the active model; using default compression budget.");
+                    $"Context window unknown for [{activeOwner?.EndpointName}] {providerResult.ActiveModel.Name}; assuming {resolved:N0} tokens.");
             }
         }
 
@@ -187,8 +215,9 @@ class Program
         // ─── Step 7: Conversation Memory (SQLite) ───
         _conversationStore = new SqliteConversationStore(CliStorage.DatabasePath, CliStorage.AttachmentsDirectory);
         _agentStateStore = new SqliteAgentStateStore(CliStorage.DatabasePath);
+        TornadoApi activeApi = providerResult.GetApiForModel(providerResult.ActiveModel);
         _memoryManager = new ConversationMemoryManager(
-            providerResult.Api,
+            activeApi,
             providerResult.ActiveModel,
             providerResult.ActiveModel.ContextTokens,
             _conversationStore,
@@ -220,7 +249,7 @@ class Program
         }
 
         _agentBuilder = new CliAgentBuilder(
-            providerResult.Api,
+            activeApi,
             providerResult.ActiveModel,
             skillManager,
             _mcpLoader,
@@ -247,7 +276,8 @@ class Program
         CommandDispatcher dispatcher = new();
         _autoLoopController = new AutoLoopController();
         dispatcher.Register(new HelpCommand(dispatcher));
-        dispatcher.Register(new ModelCommand(providerResult, _agentBuilder, runtimeEventHandler));
+        dispatcher.Register(new ModelCommand(providerResult, _agentBuilder, runtimeEventHandler, settings));
+        dispatcher.Register(new EndpointCommand(settings, providerResult, _agentBuilder, runtimeEventHandler));
         dispatcher.Register(new SkillCommand(
             skillManager, _agentBuilder, settings, providerResult, toolApproval, runtimeEventHandler));
         dispatcher.Register(new AgentCommand(

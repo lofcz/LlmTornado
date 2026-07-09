@@ -64,8 +64,11 @@ public sealed class ConversationMemoryManager
         int? compressionContextTokenCap = null)
     {
         _conversationPath = conversationPath;
-        _modelContextWindowTokens = contextWindowTokens ?? 128_000;
         _compressionContextTokenCap = compressionContextTokenCap is > 0 ? compressionContextTokenCap : null;
+        // Prefer explicit window; else compression cap; else conservative 8k (never silent 128k for local models).
+        _modelContextWindowTokens = contextWindowTokens is > 0
+            ? contextWindowTokens.Value
+            : _compressionContextTokenCap ?? 8192;
         _compressionStrategy = new CompressionStrategy(GetEffectiveContextWindowTokens());
         _summarizer = new MessageSummarizer(api, model);
         _metadataTracker = new MessageMetadataTracker();
@@ -100,8 +103,11 @@ public sealed class ConversationMemoryManager
     {
         _store = store;
         _conversationId = conversationId;
-        _modelContextWindowTokens = contextWindowTokens ?? 128_000;
         _compressionContextTokenCap = compressionContextTokenCap is > 0 ? compressionContextTokenCap : null;
+        // Prefer explicit window; else compression cap; else conservative 8k (never silent 128k for local models).
+        _modelContextWindowTokens = contextWindowTokens is > 0
+            ? contextWindowTokens.Value
+            : _compressionContextTokenCap ?? 8192;
         _compressionStrategy = new CompressionStrategy(GetEffectiveContextWindowTokens());
         _summarizer = new MessageSummarizer(api, model);
         _metadataTracker = new MessageMetadataTracker();
@@ -385,9 +391,21 @@ public sealed class ConversationMemoryManager
     public void UpdateModel(ChatModel model, int? contextWindowTokens)
     {
         _summarizer.UpdateModel(model);
-        _modelContextWindowTokens = contextWindowTokens ?? 128_000;
+        // Prefer an explicit window; fall back to the compression cap, then a conservative 8k
+        // for unknown local/compat models (never the library's 128k default).
+        _modelContextWindowTokens = contextWindowTokens is > 0
+            ? contextWindowTokens.Value
+            : _compressionContextTokenCap is > 0
+                ? _compressionContextTokenCap.Value
+                : 8192;
         ApplyEffectiveContextWindow();
     }
+
+    /// <summary>
+    /// Point the summarizer at a different <see cref="TornadoApi"/> (e.g. after switching to a
+    /// model on another OpenAI-compat endpoint).
+    /// </summary>
+    public void UpdateApi(TornadoApi api) => _summarizer.UpdateApi(api);
 
     /// <summary>
     /// Override the compression trigger/target utilizations (values outside (0, 1] are ignored).

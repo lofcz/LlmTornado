@@ -77,6 +77,13 @@ internal sealed class CliAgentBuilder
         return _inner.SetModel(model, onRuntimeEvent);
     }
 
+    public ChatRuntime SetModel(ChatModel model, TornadoApi api, Func<ChatRuntimeEvents, ValueTask>? onRuntimeEvent = null)
+    {
+        _memoryManager.UpdateApi(api);
+        _memoryManager.UpdateModel(model, model.ContextTokens);
+        return _inner.SetModel(model, api, onRuntimeEvent);
+    }
+
     public ChatRuntime RebuildForSkillChange(Func<ChatRuntimeEvents, ValueTask>? onRuntimeEvent = null)
     {
         return _inner.RebuildForSkillChange(onRuntimeEvent);

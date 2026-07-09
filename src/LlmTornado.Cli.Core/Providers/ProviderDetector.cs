@@ -44,10 +44,20 @@ public static class ProviderDetector
     /// </summary>
     private const string DefaultOllamaHost = "http://localhost:11434";
 
-    public static ProviderDetectionResult? Detect()
+    /// <summary>
+    /// Detect cloud providers from env vars, Ollama from <c>OLLAMA_HOST</c>, and any configured
+    /// OpenAI-compatible endpoints (LM Studio / llama.cpp / vLLM).
+    /// </summary>
+    /// <param name="openAiCompatEndpoints">
+    /// Merged settings+env OpenAI-compat endpoints. Each reachable endpoint becomes its own
+    /// Custom provider with a dedicated <see cref="TornadoApi"/> (one BaseUrl per api).
+    /// </param>
+    /// <param name="warnings">Optional sink for probe warnings (unreachable endpoints, empty lists).</param>
+    public static ProviderDetectionResult? Detect(
+        IReadOnlyList<OpenAiCompatEndpoint>? openAiCompatEndpoints = null,
+        Action<string>? warnings = null)
     {
         List<DetectedProvider> detected = [];
-        string? ollamaHost = null;
 
         foreach ((string envVar, LLmProviders provider) in ProviderEnvVars)
         {
@@ -73,33 +83,76 @@ public static class ProviderDetector
         }
 
         // Local (self-hosted) Ollama, via LLmProviders.Custom. Models are user-installed, so
-        // discover them from the running server rather than a hardcoded list.
+        // discover them from the running server rather than a hardcoded list. Ollama is the first
+        // auto-registered Custom endpoint and keeps its native /api/tags probe + context inspector.
         string host = NormalizeHost(Environment.GetEnvironmentVariable("OLLAMA_HOST") ?? DefaultOllamaHost);
         List<ChatModel> ollamaModels = GetOllamaModels(host);
         if (ollamaModels.Count > 0)
         {
-            ollamaHost = host;
+            TornadoApi ollamaApi = new(new Uri(host.TrimEnd('/') + "/"), string.Empty, LLmProviders.Custom);
             detected.Add(new DetectedProvider
             {
                 Provider = LLmProviders.Custom,
                 ApiKey = string.Empty,
                 Models = ollamaModels,
                 DefaultModel = ollamaModels[0],
+                EndpointName = "ollama",
+                DedicatedApi = ollamaApi,
             });
+        }
+
+        // User-configured OpenAI-compatible endpoints (LM Studio, llama.cpp server, vLLM, …).
+        if (openAiCompatEndpoints is { Count: > 0 })
+        {
+            foreach (OpenAiCompatEndpoint endpoint in openAiCompatEndpoints)
+            {
+                // Don't double-register if the user named something "ollama" while Ollama is already up.
+                if (detected.Any(d =>
+                        d.EndpointName is not null &&
+                        d.EndpointName.Equals(endpoint.Name, StringComparison.OrdinalIgnoreCase)))
+                {
+                    warnings?.Invoke($"Skipping OpenAI-compat endpoint '{endpoint.Name}' — name already registered.");
+                    continue;
+                }
+
+                List<ChatModel> models = OpenAiCompatProber.ProbeModels(endpoint, out string? warning);
+                if (warning is not null)
+                    warnings?.Invoke(warning);
+
+                if (models.Count == 0)
+                    continue;
+
+                TornadoApi dedicated = OpenAiCompatProber.CreateApi(endpoint);
+                detected.Add(new DetectedProvider
+                {
+                    Provider = LLmProviders.Custom,
+                    ApiKey = endpoint.ApiKey ?? string.Empty,
+                    Models = models,
+                    DefaultModel = models[0],
+                    EndpointName = endpoint.Name,
+                    DedicatedApi = dedicated,
+                    DefaultContextTokens = endpoint.ContextTokens is > 0 ? endpoint.ContextTokens : null,
+                });
+            }
         }
 
         if (detected.Count == 0)
             return null;
 
-        List<ProviderAuthentication> providerAuths = detected
-            .Select(p => p.Provider == LLmProviders.Custom
-                ? new ProviderAuthentication(p.Provider, p.ApiKey) { BaseUrl = ollamaHost }
-                : new ProviderAuthentication(p.Provider, p.ApiKey))
+        // Shared multi-auth api for cloud providers only. Custom endpoints each have DedicatedApi
+        // because TornadoApi can only hold one Custom BaseUrl.
+        List<ProviderAuthentication> cloudAuths = detected
+            .Where(p => p.Provider != LLmProviders.Custom)
+            .Select(p => new ProviderAuthentication(p.Provider, p.ApiKey))
             .ToList();
 
-        TornadoApi api = new(providerAuths);
+        // Prefer a cloud api as the "primary" Api; if only Custom endpoints exist, use the first
+        // dedicated one so callers that still read result.Api keep working.
+        TornadoApi api = cloudAuths.Count > 0
+            ? new TornadoApi(cloudAuths)
+            : detected.First(p => p.DedicatedApi is not null).DedicatedApi!;
 
-        // Pick active model based on priority
+        // Pick active model based on priority (cloud first, then first Custom endpoint).
         ChatModel activeModel = detected[0].DefaultModel;
         foreach (LLmProviders priority in DefaultPriority)
         {

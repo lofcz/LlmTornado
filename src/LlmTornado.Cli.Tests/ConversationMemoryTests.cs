@@ -56,7 +56,7 @@ public class ConversationMemoryTests
         CompressionStrategy strategy = new(128_000);
         MessageMetadataTracker tracker = new();
 
-        // ~25 tokens each (100 chars / 4), 10 messages = 250 tokens → way under 60% of 128k
+        // ~25 tokens each (100 chars / 4), 10 messages = 250 tokens → way under 80% of 128k
         List<ChatMessage> messages = TestHelpers.MakeMessages(10, 100);
         foreach (ChatMessage m in messages)
             tracker.Track(m);
@@ -75,7 +75,7 @@ public class ConversationMemoryTests
         MessageMetadataTracker tracker = new();
 
         // 40 messages × 600 chars = 24000 chars → 6000 tokens → 150% of 4096 window
-        // uncompressedUtil = 6000/4096 ≈ 1.46 > 0.60 threshold
+        // uncompressedUtil = 6000/4096 ≈ 1.46 > 0.80 threshold
         List<ChatMessage> messages = TestHelpers.MakeMessages(40, 600);
         foreach (ChatMessage m in messages)
             tracker.Track(m);
@@ -91,14 +91,17 @@ public class ConversationMemoryTests
         CompressionStrategy strategy = new(128_000);
         MessageMetadataTracker tracker = new();
 
-        // One giant message > LargeMessageThreshold (10k tokens → 40k chars)
+        // One giant message > LargeMessageThreshold (10k tokens → 40k chars).
+        // Detection still happens, but compression is gated by LargeMessageUtilizationFloor
+        // (~0.50). At ~11k/128k util this must NOT trigger a full rewrite.
         List<ChatMessage> messages = [new ChatMessage(ChatMessageRoles.User, new string('x', 45_000))];
         foreach (ChatMessage m in messages)
             tracker.Track(m);
 
         CompressionAnalysis analysis = strategy.Analyze(messages, tracker);
-        Assert.That(analysis.ShouldCompress, Is.True);
         Assert.That(analysis.LargeMessageIndices, Has.Count.EqualTo(1));
+        Assert.That(analysis.ShouldCompress, Is.False);
+        Assert.That(analysis.Utilization, Is.LessThan(strategy.LargeMessageUtilizationFloor));
     }
 
     [Test]

@@ -131,4 +131,11 @@ public sealed class AgentSettings
     /// </summary>
     [JsonPropertyName("show_timestamps")]
     public bool ShowTimestamps { get; set; } = true;
+
+    /// <summary>
+    /// User-configured OpenAI-compatible endpoints (LM Studio, llama.cpp, vLLM, …).
+    /// Merged with <c>TORNADO_OPENAI_COMPAT</c> env entries; settings win by name.
+    /// </summary>
+    [JsonPropertyName("openai_compat_endpoints")]
+    public List<Providers.OpenAiCompatEndpoint>? OpenAiCompatEndpoints { get; set; }
 }

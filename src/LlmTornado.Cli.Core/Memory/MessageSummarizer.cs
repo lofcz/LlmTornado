@@ -10,7 +10,7 @@ namespace LlmTornado.Cli.Core.Memory;
 /// </summary>
 public sealed class MessageSummarizer
 {
-    private readonly TornadoApi _api;
+    private TornadoApi _api;
     private ChatModel _model;
 
     public MessageSummarizer(TornadoApi api, ChatModel model)
@@ -20,6 +20,8 @@ public sealed class MessageSummarizer
     }
 
     public void UpdateModel(ChatModel model) => _model = model;
+
+    public void UpdateApi(TornadoApi api) => _api = api;
 
     /// <summary>
     /// Compress messages by summarizing older turns while keeping recent ones.
