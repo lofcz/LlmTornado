@@ -270,8 +270,13 @@ public class McpConfigTests
         File.WriteAllText(configPath, """{"mcpServers":{}}""");
 
         McpConfigLoader loader = new();
-        loader.Configure(new AgentSettings { DisabledMcpServers = [BuiltInMcpServerCatalog.DesktopCommanderServerName] },
-            McpSessionPolicy.FromSettings(new AgentSettings(), _tempDir));
+        // Desktop Commander is opt-in (builtin_desktop_commander); enable it here to cover
+        // the disable-list path still producing a status row.
+        loader.Configure(new AgentSettings
+        {
+            BuiltInDesktopCommanderEnabled = true,
+            DisabledMcpServers = [BuiltInMcpServerCatalog.DesktopCommanderServerName],
+        }, McpSessionPolicy.FromSettings(new AgentSettings(), _tempDir));
         await loader.LoadAsync(configPath);
 
         Assert.That(loader.AllTools, Is.Empty);
@@ -279,6 +284,22 @@ public class McpConfigTests
         Assert.That(loader.ServerStatuses[0].Name, Is.EqualTo(BuiltInMcpServerCatalog.DesktopCommanderServerName));
         Assert.That(loader.ServerStatuses[0].Source, Is.EqualTo(McpServerSource.BuiltIn));
         Assert.That(loader.ServerStatuses[0].Enabled, Is.False);
+        await loader.DisposeAsync();
+    }
+
+    [Test]
+    public async Task McpConfigLoader_LoadAsync_DesktopCommander_SkippedByDefault()
+    {
+        string configPath = Path.Combine(_tempDir, "empty-mcp2.json");
+        File.WriteAllText(configPath, """{"mcpServers":{}}""");
+
+        McpConfigLoader loader = new();
+        loader.Configure(new AgentSettings(), McpSessionPolicy.FromSettings(new AgentSettings(), _tempDir));
+        await loader.LoadAsync(configPath);
+
+        // builtin_desktop_commander defaults to false: no server row, no npx launch attempt.
+        Assert.That(loader.AllTools, Is.Empty);
+        Assert.That(loader.ServerStatuses, Is.Empty);
         await loader.DisposeAsync();
     }
 
@@ -305,8 +326,11 @@ public class McpConfigTests
         File.WriteAllText(configPath, """{"servers":[{"name":"legacy","command":"npx"}]}""");
 
         McpConfigLoader loader = new();
-        loader.Configure(new AgentSettings { DisabledMcpServers = [BuiltInMcpServerCatalog.DesktopCommanderServerName] },
-            McpSessionPolicy.FromSettings(new AgentSettings(), _tempDir));
+        loader.Configure(new AgentSettings
+        {
+            BuiltInDesktopCommanderEnabled = true,
+            DisabledMcpServers = [BuiltInMcpServerCatalog.DesktopCommanderServerName],
+        }, McpSessionPolicy.FromSettings(new AgentSettings(), _tempDir));
 
         await loader.LoadAsync(configPath);
 

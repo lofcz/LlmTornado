@@ -222,6 +222,18 @@ public sealed class SqliteConversationStore : IDisposable
     // ───────────────────────────────────────────────
 
     /// <summary>
+    /// Id of the most recently updated conversation, or null when the store is empty.
+    /// Used by --continue / auto-resume.
+    /// </summary>
+    public string? GetMostRecentConversationId()
+    {
+        SqliteConnection conn = _db.GetConnection();
+        using SqliteCommand cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT id FROM conversations ORDER BY updated_at DESC LIMIT 1";
+        return cmd.ExecuteScalar() as string;
+    }
+
+    /// <summary>
     /// List all saved conversations, ordered by most recently updated.
     /// </summary>
     public List<ConversationMetadata> List()

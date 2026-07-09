@@ -63,6 +63,14 @@ class Program
         ConsoleRenderer.WriteBanner();
         CliStorage.Initialize();
 
+        // CLI args: --continue resumes the most recent conversation, --resume <id> a specific one.
+        bool continueLast = args.Contains("--continue", StringComparer.OrdinalIgnoreCase)
+                         || args.Contains("-c", StringComparer.Ordinal);
+        string? resumeId = null;
+        int resumeIndex = Array.FindIndex(args, a => a.Equals("--resume", StringComparison.OrdinalIgnoreCase));
+        if (resumeIndex >= 0 && resumeIndex + 1 < args.Length)
+            resumeId = args[resumeIndex + 1];
+
         // ─── Step 2: Settings ───
         AgentSettings settings = CliStorage.LoadJson<AgentSettings>(CliStorage.SettingsPath)
                               ?? new AgentSettings();
@@ -216,20 +224,31 @@ class Program
         _conversationStore = new SqliteConversationStore(CliStorage.DatabasePath, CliStorage.AttachmentsDirectory);
         _agentStateStore = new SqliteAgentStateStore(CliStorage.DatabasePath);
         TornadoApi activeApi = providerResult.GetApiForModel(providerResult.ActiveModel);
+
+        // Resume: explicit --resume <id> wins, then --continue / auto_resume (most recent).
+        string? startConversationId = resumeId;
+        if (startConversationId is null && (continueLast || settings.AutoResume))
+            startConversationId = _conversationStore.GetMostRecentConversationId();
+
         _memoryManager = new ConversationMemoryManager(
             activeApi,
             providerResult.ActiveModel,
             providerResult.ActiveModel.ContextTokens,
             _conversationStore,
+            conversationId: startConversationId,
             compressionContextTokenCap: settings.CompressionContextTokenCap);
         _memoryManager.ConfigureCompressionThresholds(
             settings.CompressionTriggerUtilization,
             settings.CompressionTargetUtilization);
 
-        if (_memoryManager.Messages.Count > 0)
+        if (startConversationId is not null && _memoryManager.Messages.Count == 0)
+        {
+            ConsoleRenderer.WriteWarning($"Conversation '{startConversationId}' not found — starting fresh.");
+        }
+        else if (_memoryManager.Messages.Count > 0)
         {
             ConsoleRenderer.WriteInfo(
-                $"Resuming previous conversation ({_memoryManager.Messages.Count} messages).");
+                $"Resuming conversation {_memoryManager.ConversationId} ({_memoryManager.Messages.Count} messages).");
         }
 
         // Surface hard-budget trims so context loss is never silent.
@@ -284,7 +303,13 @@ class Program
             agentManager, skillManager, _agentBuilder,
             settings, providerResult, toolApproval, runtimeEventHandler));
         dispatcher.Register(new ConversationCommand(_memoryManager, _conversationStore, _agentBuilder));
-        dispatcher.Register(new ContextCommand(_memoryManager, _conversationStore, CliStorage.ContextDumpsDirectory, settings, persistence));
+        dispatcher.Register(new ContextCommand(_memoryManager, _conversationStore, CliStorage.ContextDumpsDirectory, settings, persistence, _sessionTelemetry));
+        dispatcher.Register(new ResumeCommand(_conversationStore, _memoryManager, _agentBuilder));
+        dispatcher.Register(new ConfigCommand(
+            settings,
+            applySamplingOptions: () => _agentBuilder!.ApplySamplingOptions(),
+            rebuildAgent: () => _agentBuilder!.Build(runtimeEventHandler),
+            modelInfo: () => (_agentBuilder!.ActiveModel.Name, _agentBuilder!.ActiveModel.ContextTokens)));
         dispatcher.Register(new ToolsCommand(toolApproval, _agentBuilder, settings, providerResult));
         dispatcher.Register(new MaxToolsCommand(
             settings,

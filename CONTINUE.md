@@ -34,12 +34,24 @@
 - `Program.cs`: merges endpoints at startup (line ~75), resolves context tokens via prober, `GetApiForModel` for the active model, registers EndpointCommand.
 - Tests: `OpenAiCompatEndpointTests.cs` (17 tests).
 
-## NEXT STEP
-Commit phases 1-3 if desired, then Phase 4 — auto-resume, /config, /context stats.
+## DONE — Phase 4 (complete, tests green)
+- `SqliteConversationStore.GetMostRecentConversationId()`; `--continue`/`-c`/`--resume <id>` args in `Program.RunAsync` + `auto_resume` setting feed `conversationId` into the memory-manager ctor (missing id → warning + fresh start).
+- `Commands/ResumeCommand.cs` (new): `/resume` numbered picker over 10 most recent (stdin gated via `ConsoleInputGate.Suspend`), `/resume <id>` direct; loads via `ConversationConfig.LoadConversation`.
+- `Commands/ConfigCommand.cs` (new, delegate-injected for testability): `/config` effective table; `temperature <0..2|off>`, `max-output-tokens <n|off>`, `system-prompt <path|off>` (rebuilds agent). Settings keys `temperature`, `max_output_tokens`, `system_prompt_file`, `auto_resume`.
+- `AgentBuilder`: `ApplySamplingOptions()` (Options.Temperature/MaxTokens, applied in Build + live), `ReadSystemPromptFile()` replaces persona layer only.
+- `/context stats` shows measured vs estimated tokens, last-turn request/output/reasoning counts, compression events (SessionTelemetry param on ContextCommand).
+- Tests: `Phase4SessionTests.cs` (recency queries + 12 ConfigCommand cases).
 
-## REMAINING PHASES (per plan file — read it for details)
-- **Phase 4** (task #10): auto-resume (`SqliteConversationStore.GetMostRecentConversationId`/`ListRecent`, `--continue`/`--resume` args, `/resume` picker via WizardSupport, `auto_resume` setting); `/config` command (temperature/max_output_tokens/system_prompt_file, apply in AgentBuilder.Build next to ApplyReasoningEffort); `/context stats` shows SessionTelemetry real numbers.
-- **Phase 5** (task #11): native tools `Cli.Core/Tools/Native/` (read_file/write_file/edit_file/glob/grep/list_dir/shell) under existing `McpSessionPolicy` checks; registered before MCP in `CollectTools` + name-dedup (first wins); settings `native_tools` (true), `builtin_desktop_commander` (false → `BuiltInMcpServerCatalog` consults it), `auto_approve_native_read_tools` (true, via `PreApproveSkillTools`); ≤4-line system-prompt blurb.
+## DONE — Phase 5 (complete, tests green: 494 passed / 1 skipped)
+- `Cli.Core/Tools/Native/NativeToolkit.cs` (new): `read_file` (numbered lines, offset/limit, 2000-line cap), `write_file`, `edit_file` (unique-match or replace_all), `glob` (hand-rolled `GlobToRegex`, skips .git/node_modules/bin/obj, 20k-file walk cap), `grep` (regex w/ 2s timeout, binary sniff, glob filter, max_results), `list_dir`, `shell` (cmd.exe /c | /bin/sh -c, async pipe readers, kill-tree on timeout, 30k output cap). All paths through `McpSessionPolicy` (`NativeToolContext` resolves cwd/policy per call).
+- Registration: in `CollectTools` before MCP tools + generic name-dedup (first wins) at the end; read-only tools pre-approved when `auto_approve_native_read_tools` (default true); ≤3-line system-prompt blurb when enabled.
+- Desktop Commander now **opt-in**: `builtin_desktop_commander` (default false) gates the built-in server in `McpConfigLoader.LoadMergedAsync` (name stays reserved). Settings key `native_tools` (default true).
+- Tests: `NativeToolkitTests.cs` (24: round-trips, edit errors, glob/grep behavior, policy denials, shell exec/exit-code/timeout, GlobToRegex cases), `NativeToolRegistrationTests.cs` (4: default/disabled registration, dedup shadowing, prompt blurb); 2 pre-existing McpConfig tests updated for the opt-in default + new skipped-by-default test.
 
-## Verification per phase (from plan)
-Esc mid-stream works; ctx % matches server-reported prompt tokens; truncation marker on big tool results; `/endpoint add lmstudio http://localhost:1234/v1` → `/model` lists; `--continue` restores; native tools work with Desktop Commander disabled (no npx). Full suite must stay green.
+## STATUS: ALL 5 PHASES COMPLETE
+Full suite: 494 passed / 1 skipped. Live smoke test verified: provider detection with `[ollama]` endpoint grouping, no npx launch by default, `/config`, `/endpoint list`, `/reasoning` working.
+
+Remaining manual verification (needs interactive terminal + local model):
+- Esc mid-stream on a real streaming response (watcher + re-armed cts)
+- ctx % status line vs server-reported prompt tokens; llama.cpp `prompt eval count` staying ≈ new-tokens-only across turns (prefix cache)
+- `--continue` restores last conversation; native read_file/edit_file/shell through approval prompts

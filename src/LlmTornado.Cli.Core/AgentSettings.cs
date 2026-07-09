@@ -119,6 +119,53 @@ public sealed class AgentSettings
     public string? ReasoningEffort { get; set; }
 
     /// <summary>
+    /// Automatically resume the most recent conversation on startup (equivalent to --continue).
+    /// Default: false — a fresh conversation per run, matching industry CLIs.
+    /// </summary>
+    [JsonPropertyName("auto_resume")]
+    public bool AutoResume { get; set; }
+
+    /// <summary>
+    /// Register the built-in C#-native file/shell tools (read_file, write_file, edit_file, glob,
+    /// grep, list_dir, shell). Default: true — the agent works offline without Node/npx.
+    /// </summary>
+    [JsonPropertyName("native_tools")]
+    public bool NativeToolsEnabled { get; set; } = true;
+
+    /// <summary>
+    /// Launch the built-in Desktop Commander MCP server (requires Node/npx). Default: false —
+    /// opt-in now that native tools cover file/shell work; enable for its richer process tools.
+    /// </summary>
+    [JsonPropertyName("builtin_desktop_commander")]
+    public bool BuiltInDesktopCommanderEnabled { get; set; }
+
+    /// <summary>
+    /// Pre-approve the read-only native tools (read_file, glob, grep, list_dir) so they don't
+    /// prompt. Writes and shell always go through approval. Default: true.
+    /// </summary>
+    [JsonPropertyName("auto_approve_native_read_tools")]
+    public bool AutoApproveNativeReadTools { get; set; } = true;
+
+    /// <summary>
+    /// Sampling temperature sent with every request. Null = provider/model default.
+    /// </summary>
+    [JsonPropertyName("temperature")]
+    public double? Temperature { get; set; }
+
+    /// <summary>
+    /// Maximum output tokens per response. Null = provider/model default.
+    /// </summary>
+    [JsonPropertyName("max_output_tokens")]
+    public int? MaxOutputTokens { get; set; }
+
+    /// <summary>
+    /// Path to a file whose content replaces the default persona block of the system prompt.
+    /// Skills/tools layers are still appended (they are functionally required). Null = default.
+    /// </summary>
+    [JsonPropertyName("system_prompt_file")]
+    public string? SystemPromptFile { get; set; }
+
+    /// <summary>
     /// Whether streamed reasoning/thinking tokens should be shown in CLI output.
     /// Default: true.
     /// </summary>

@@ -121,4 +121,7 @@ internal sealed class CliAgentBuilder
 
     public void SetReasoningEffort(string? effort)
         => _inner.SetReasoningEffort(effort);
+
+    public void ApplySamplingOptions()
+        => _inner.ApplySamplingOptions();
 }

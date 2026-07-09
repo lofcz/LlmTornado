@@ -135,8 +135,9 @@ public sealed class AgentBuilder
             instructions: systemPrompt,
             streaming: true);
 
-        // Apply reasoning effort if configured
+        // Apply reasoning effort and sampling options if configured
         ApplyReasoningEffort(_agent);
+        ApplySamplingOptions(_agent);
 
         // Cap tool-result size before it enters the context: one huge read/grep result would
         // otherwise blow a small local window and force an immediate compression rewrite.
@@ -177,6 +178,10 @@ public sealed class AgentBuilder
             if (skill.AllowedTools.Count > 0)
                 _toolApproval.PreApproveSkillTools(skill.AllowedTools);
         }
+
+        // Pre-approve the read-only native tools; writes and shell still prompt.
+        if (_settings.NativeToolsEnabled && _settings.AutoApproveNativeReadTools)
+            _toolApproval.PreApproveSkillTools(Tools.Native.NativeToolkit.ReadOnlyToolNames);
 
         // Create runtime. When a memory manager is supplied (CLI), use the managed config so the
         // conversation lifecycle (sync → compress → budget → persist) is owned in one place; otherwise
@@ -410,6 +415,42 @@ public sealed class AgentBuilder
     }
 
     /// <summary>
+    /// Re-apply temperature / max output tokens from settings to the live agent (no rebuild —
+    /// per-request options). Used by /config after mutating settings.
+    /// </summary>
+    public void ApplySamplingOptions()
+    {
+        if (_agent is not null)
+            ApplySamplingOptions(_agent);
+    }
+
+    private void ApplySamplingOptions(TornadoAgent agent)
+    {
+        agent.Options.Temperature = _settings.Temperature;
+        agent.Options.MaxTokens = _settings.MaxOutputTokens;
+    }
+
+    /// <summary>
+    /// Content of the configured system-prompt override file, or null when unset/unreadable.
+    /// Unreadable files are ignored (with the default prompt as fallback) rather than fatal.
+    /// </summary>
+    private string? ReadSystemPromptFile()
+    {
+        if (string.IsNullOrWhiteSpace(_settings.SystemPromptFile))
+            return null;
+
+        try
+        {
+            string path = Path.GetFullPath(_settings.SystemPromptFile);
+            return File.Exists(path) ? File.ReadAllText(path) : null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
     /// Parse and apply the reasoning effort from settings to the agent's request options.
     /// </summary>
     private void ApplyReasoningEffort(TornadoAgent agent)
@@ -440,17 +481,27 @@ public sealed class AgentBuilder
     {
         StringBuilder sb = new();
 
-        // Layer 1: Agent instructions (persona + project context)
-        string agentInstructions = _agentManager.BuildInstructionsBlock();
-        if (!string.IsNullOrEmpty(agentInstructions))
+        // Layer 1: Agent instructions (persona + project context). A user-supplied prompt file
+        // replaces this layer only; skills/tools layers below are functionally required and stay.
+        string? promptFileContent = ReadSystemPromptFile();
+        if (promptFileContent is not null)
         {
-            sb.Append(agentInstructions);
+            sb.AppendLine(promptFileContent.TrimEnd());
+            sb.AppendLine();
         }
         else
         {
-            sb.AppendLine("You are a helpful assistant with access to skills and tools.");
-            sb.AppendLine("You can activate skills to gain specialized knowledge and capabilities.");
-            sb.AppendLine();
+            string agentInstructions = _agentManager.BuildInstructionsBlock();
+            if (!string.IsNullOrEmpty(agentInstructions))
+            {
+                sb.Append(agentInstructions);
+            }
+            else
+            {
+                sb.AppendLine("You are a helpful assistant with access to skills and tools.");
+                sb.AppendLine("You can activate skills to gain specialized knowledge and capabilities.");
+                sb.AppendLine();
+            }
         }
 
         // Layer 2: Skills catalog
@@ -485,6 +536,13 @@ public sealed class AgentBuilder
             sb.AppendLine("Use `memory` for durable notes, user/project preferences, and facts worth retaining:");
             sb.AppendLine("action=recall for semantic/hybrid recall (keep max_tokens small), action=search for exact keyword lookup, action=store to save.");
             sb.AppendLine("Use `state` for current task state and `state_snapshot` for checkpoints and restoring past state.");
+            sb.AppendLine();
+        }
+
+        if (_settings.NativeToolsEnabled)
+        {
+            sb.AppendLine("You have native file and shell tools: read_file, write_file, edit_file, glob, grep, list_dir, shell.");
+            sb.AppendLine("Prefer them for local file work. Paths may be relative to the working directory.");
             sb.AppendLine();
         }
 
@@ -534,6 +592,17 @@ public sealed class AgentBuilder
         if (_agentStateStore is not null)
             tools.AddRange(BuildAgentStateTools());
 
+        // Native file/shell tools — registered before MCP so they win the name dedup below
+        // (e.g. a still-enabled Desktop Commander also exposes read_file/write_file).
+        if (_settings.NativeToolsEnabled)
+        {
+            tools.AddRange(Tools.Native.NativeToolkit.Build(new Tools.Native.NativeToolContext
+            {
+                GetWorkingDirectory = () => WorkingDirectory ?? Environment.CurrentDirectory,
+                Settings = _settings,
+            }));
+        }
+
         // Script tools from enabled skills (gated by approval system)
         List<Skill> enabledSkills = _skillManager.GetEnabledSkills();
         tools.AddRange(ScriptToolBuilder.BuildScriptTools(enabledSkills, _toolApproval));
@@ -546,11 +615,25 @@ public sealed class AgentBuilder
             tools.AddRange(_additionalTools);
 
         // Filter by active agent persona's tool curation
-        return tools.Where(t =>
+        List<Tool> allowed = tools.Where(t =>
         {
             string? name = t.Function?.Name;
             return name is null || _agentManager.IsToolAllowed(name);
         }).ToList();
+
+        // Name dedup: first registration wins, deterministically. Duplicate names would
+        // otherwise produce an ambiguous schema for the model and a KeyNotFound at dispatch.
+        HashSet<string> seenNames = new(StringComparer.OrdinalIgnoreCase);
+        List<Tool> deduped = [];
+        foreach (Tool tool in allowed)
+        {
+            string name = tool.ResolvedName;
+            if (!string.IsNullOrEmpty(name) && !seenNames.Add(name))
+                continue;
+            deduped.Add(tool);
+        }
+
+        return deduped;
     }
 
     private Tool BuildLoadSkillTool()

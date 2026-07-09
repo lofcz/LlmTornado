@@ -1,6 +1,7 @@
 using LlmTornado.Cli.Core.Memory;
 using LlmTornado.Cli.Core.Storage;
 using LlmTornado.Cli.Core;
+using LlmTornado.Cli.Core.Telemetry;
 
 namespace LlmTornado.Cli.Commands;
 
@@ -11,6 +12,7 @@ internal sealed class ContextCommand : ICliCommand
     private readonly string _defaultExportDirectory;
     private readonly AgentSettings _settings;
     private readonly ISettingsPersistence _persistence;
+    private readonly SessionTelemetry? _telemetry;
 
     public string Name => "context";
     public string Description => "Inspect or export the active model context";
@@ -21,13 +23,15 @@ internal sealed class ContextCommand : ICliCommand
         SqliteConversationStore store,
         string defaultExportDirectory,
         AgentSettings? settings = null,
-        ISettingsPersistence? persistence = null)
+        ISettingsPersistence? persistence = null,
+        SessionTelemetry? telemetry = null)
     {
         _memoryManager = memoryManager;
         _store = store;
         _defaultExportDirectory = defaultExportDirectory;
         _settings = settings ?? new AgentSettings();
         _persistence = persistence ?? NoOpSettingsPersistence.Instance;
+        _telemetry = telemetry;
     }
 
     public async Task<bool> ExecuteAsync(string[] args)
@@ -68,7 +72,28 @@ internal sealed class ContextCommand : ICliCommand
         List<Chat.ChatMessage> messages = _memoryManager.GetMessagesForAgent();
         int tokens = messages.Sum(CompressionStrategy.EstimateTokens);
         ConsoleRenderer.WriteInfo($"Context messages: {messages.Count}");
-        ConsoleRenderer.WriteInfo($"Estimated tokens: {tokens}");
+        if (_telemetry?.EstimatedNextPromptTokens is int real)
+        {
+            ConsoleRenderer.WriteInfo($"Context tokens: {real:N0} (measured — last prompt + completion)");
+            ConsoleRenderer.WriteInfo($"Estimated tokens: {tokens:N0} (chars/4, for comparison)");
+        }
+        else
+        {
+            ConsoleRenderer.WriteInfo($"Estimated tokens: {tokens:N0} (~chars/4; no provider usage yet)");
+        }
+
+        if (_telemetry is not null)
+        {
+            if (_telemetry.TurnRequestCount > 0)
+            {
+                ConsoleRenderer.WriteInfo(
+                    $"Last turn: {_telemetry.TurnRequestCount} request(s), out {_telemetry.TurnCompletionTokens:N0}"
+                    + (_telemetry.TurnReasoningTokens > 0 ? $", reasoning {_telemetry.TurnReasoningTokens:N0}" : ""));
+            }
+
+            if (_telemetry.CompressionEvents > 0)
+                ConsoleRenderer.WriteInfo($"Compression events this session: {_telemetry.CompressionEvents}");
+        }
         ConsoleRenderer.WriteInfo($"Compression context window: {_memoryManager.EffectiveCompressionContextTokens:N0}");
         ConsoleRenderer.WriteInfo(_memoryManager.CompressionContextTokenCap is > 0
             ? $"Compression cap: {_memoryManager.CompressionContextTokenCap.Value:N0}"

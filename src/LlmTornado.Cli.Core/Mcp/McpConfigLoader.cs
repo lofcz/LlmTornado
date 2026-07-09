@@ -184,7 +184,15 @@ public sealed partial class McpConfigLoader : IAsyncDisposable
 
         foreach (BuiltInMcpServerDefinition builtIn in BuiltInMcpServerCatalog.GetDefinitions(_sessionPolicy?.WorkingDirectory))
         {
+            // Desktop Commander is opt-in now that native tools cover file/shell work
+            // (it needs Node/npx at runtime). The name stays reserved either way.
             reservedNames.Add(builtIn.Name);
+            if (builtIn.Name == BuiltInMcpServerCatalog.DesktopCommanderServerName
+                && !_settings.BuiltInDesktopCommanderEnabled)
+            {
+                continue;
+            }
+
             merged[builtIn.Name] = (CloneEntry(builtIn.Entry), McpServerSource.BuiltIn);
         }
 
