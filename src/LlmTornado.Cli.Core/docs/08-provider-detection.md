@@ -70,27 +70,27 @@ When multiple providers are detected, the **active model** is chosen by this pri
 
 ```mermaid
 graph LR
-    A["1. Anthropic<br/>Claude 4.6 Opus"] --> B["2. OpenAI<br/>GPT-5.2"]
-    B --> C["3. Google<br/>Gemini 3 Pro Preview"]
-    C --> D["4. xAI<br/>Grok 4"]
-    D --> E["5. DeepSeek<br/>Chat"]
+    A["1. Anthropic<br/>Claude Fable 5"] --> B["2. OpenAI<br/>GPT-5.6"]
+    B --> C["3. Google<br/>Gemini Pro Latest"]
+    C --> D["4. xAI<br/>Grok 4.5"]
+    D --> E["5. DeepSeek<br/>Reasoner"]
     E --> F["6. Groq<br/>Llama 4 Maverick"]
-    F --> G["7. Mistral<br/>Mistral Medium"]
+    F --> G["7. Mistral<br/>Devstral 2512"]
 ```
 
 ### Default Models per Provider
 
 | Provider | Default Model |
 |----------|--------------|
-| Anthropic | Claude 4.6 Opus |
-| OpenAI | GPT-5.2 |
-| Google | Gemini 3 Pro Preview |
-| xAI | Grok 4 |
-| DeepSeek | Chat |
+| Anthropic | Claude Fable 5 |
+| OpenAI | GPT-5.6 |
+| Google | Gemini Pro Latest |
+| xAI | Grok 4.5 |
+| DeepSeek | Reasoner |
 | Groq | Llama 4 Maverick |
-| Mistral | Mistral Medium 2508 |
-| Cohere | Command A 0325 |
-| Perplexity | Sonar Pro |
+| Mistral | Devstral 2512 |
+| Cohere | Command A Reasoning 2508 |
+| Perplexity | Sonar Reasoning Pro |
 
 ## Optimizer Model Selection
 
@@ -98,12 +98,12 @@ The optimizer model is used for internal tasks like tool optimization (see [09-t
 
 ```mermaid
 graph LR
-    A["1. Google<br/>Gemini 2.5 Flash"] --> B["2. OpenAI<br/>O4 Mini"]
-    B --> C["3. Anthropic<br/>Claude 4 Sonnet"]
-    C --> D["4. Groq<br/>Llama 4 Scout"]
+    A["1. Google<br/>Gemini Flash Lite Latest"] --> B["2. OpenAI<br/>GPT-5.6 Luna"]
+    B --> C["3. Anthropic<br/>Claude Sonnet 5"]
+    C --> D["4. Groq<br/>GPT-OSS 120B"]
     D --> E["5. DeepSeek<br/>Chat"]
-    E --> F["6. Mistral<br/>Mistral Large"]
-    F --> G["7. xAI<br/>Grok 4.1 Fast"]
+    E --> F["6. Mistral<br/>Ministral 14B"]
+    F --> G["7. xAI<br/>Grok 4.1 Fast Non-Reasoning"]
 ```
 
 **Fallback**: If none of the priority providers are available, the first detected provider's default model is used.
@@ -115,37 +115,43 @@ Each detected provider exposes a curated list of models the user can switch to a
 ```mermaid
 graph TD
     subgraph "OpenAI"
-        OA1["GPT-5.2"]
-        OA2["GPT-5.2 Pro"]
-        OA3["GPT-5.1"]
-        OA4["GPT-5.1 Codex Max"]
-        OA5["O4 Mini"]
-        OA6["O3"]
+        OA1["GPT-5.6"]
+        OA2["GPT-5.6 Sol"]
+        OA3["GPT-5.6 Terra"]
+        OA4["GPT-5.6 Luna"]
+        OA5["GPT-5.5"]
+        OA6["GPT-5.4"]
+        OA7["GPT-5.3 Codex"]
     end
 
     subgraph "Anthropic"
-        AN1["Claude 4.6 Opus"]
-        AN2["Claude 4.5 Opus"]
-        AN3["Claude 4.5 Sonnet"]
-        AN4["Claude 4 Sonnet"]
+        AN1["Claude Fable 5"]
+        AN2["Claude Sonnet 5"]
+        AN3["Claude Opus 4.8"]
+        AN4["Claude Sonnet 4.6"]
+        AN5["Claude Haiku 4.5"]
     end
 
     subgraph "Google"
-        GO1["Gemini 3 Pro Preview"]
-        GO2["Gemini 3 Flash Preview"]
-        GO3["Gemini 2.5 Pro"]
-        GO4["Gemini 2.5 Flash"]
+        GO1["Gemini Pro Latest"]
+        GO2["Gemini 3.5 Flash"]
+        GO3["Gemini Flash Lite Latest"]
+        GO4["Gemini 3.1 Flash Lite"]
+        GO5["Gemini 2.5 Pro"]
+        GO6["Gemini 2.5 Flash"]
     end
 
     subgraph "xAI"
-        XA1["Grok 4"]
-        XA2["Grok 4 Fast Reasoning"]
+        XA1["Grok 4.5"]
+        XA2["Grok Build 0.1"]
         XA3["Grok 4.1 Fast Reasoning"]
+        XA4["Grok 4"]
+        XA5["Grok 4 Fast Reasoning"]
     end
 
     subgraph "DeepSeek"
-        DS1["Chat"]
-        DS2["Reasoner"]
+        DS1["Reasoner"]
+        DS2["Chat"]
     end
 
     subgraph "Groq"
@@ -160,9 +166,9 @@ graph TD
 
 | Provider | Models |
 |----------|--------|
-| **Mistral** | Mistral Medium 2508, Magistral Medium 2509, Mistral Large 2512 |
-| **Cohere** | Command A 0325, Command A Reasoning 2508, Command A Vision 2507 |
-| **Perplexity** | Sonar Pro, Sonar Default, Sonar Deep Research |
+| **Mistral** | Devstral 2512, Mistral Medium 2508, Magistral Medium 2509, Mistral Large 2512 |
+| **Cohere** | Command A Reasoning 2508, Command A 0325, Command A Vision 2507 |
+| **Perplexity** | Sonar Reasoning Pro, Sonar Pro, Sonar Deep Research, Sonar Default |
 
 </details>
 

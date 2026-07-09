@@ -180,9 +180,9 @@ public static class ProviderDetector
     /// </summary>
     private static readonly (LLmProviders Provider, Func<ChatModel> Model)[] OptimizerModelPriority =
     [
-        (LLmProviders.Google, () => ChatModel.Google.Gemini.Gemini31FlashLite),
-        (LLmProviders.OpenAi, () => ChatModel.OpenAi.Gpt54.V54Mini),
-        (LLmProviders.Anthropic, () => ChatModel.Anthropic.Claude46.Sonnet),
+        (LLmProviders.Google, () => ChatModel.Google.Gemini.GeminiFlashLiteLatest),
+        (LLmProviders.OpenAi, () => ChatModel.OpenAi.Gpt56.V56Luna),
+        (LLmProviders.Anthropic, () => ChatModel.Anthropic.Claude5.Sonnet),
         (LLmProviders.Groq, () => ChatModel.Groq.OpenAi.GptOss120B),
         (LLmProviders.DeepSeek, () => ChatModel.DeepSeek.Models.Chat),
         (LLmProviders.Mistral, () => ChatModel.Mistral.Free.Ministral14b2512),
@@ -206,15 +206,15 @@ public static class ProviderDetector
 
     private static ChatModel? GetDefaultModel(LLmProviders provider) => provider switch
     {
-        LLmProviders.Anthropic => ChatModel.Anthropic.Claude48.Opus,
-        LLmProviders.OpenAi => ChatModel.OpenAi.Gpt55.V55,
+        LLmProviders.Anthropic => ChatModel.Anthropic.Claude5.Fable,
+        LLmProviders.OpenAi => ChatModel.OpenAi.Gpt56.V56,
         LLmProviders.Google => ChatModel.Google.Gemini.GeminiProLatest,
-        LLmProviders.XAi => ChatModel.XAi.Grok41.V41FastReasoning,
+        LLmProviders.XAi => ChatModel.XAi.Grok45.V45,
         LLmProviders.DeepSeek => ChatModel.DeepSeek.Models.Reasoner,
-        LLmProviders.Groq => ChatModel.Groq.Meta.Llama3370BVersatile,
-        LLmProviders.Mistral => ChatModel.Mistral.Premier.MistralSaba,
-        LLmProviders.Cohere => ChatModel.Cohere.Aya.Expanse32B,
-        LLmProviders.Perplexity => ChatModel.Perplexity.Sonar.Reasoning,
+        LLmProviders.Groq => ChatModel.Groq.Meta.Llama4Maverick,
+        LLmProviders.Mistral => ChatModel.Mistral.Premier.Devstral2512,
+        LLmProviders.Cohere => ChatModel.Cohere.Command.AReasoning2508,
+        LLmProviders.Perplexity => ChatModel.Perplexity.Sonar.ReasoningPro,
         _ => null,
     };
 
@@ -222,34 +222,43 @@ public static class ProviderDetector
     {
         LLmProviders.OpenAi =>
         [
-            ChatModel.OpenAi.Gpt54.V54,
+            ChatModel.OpenAi.Gpt56.V56,
+            ChatModel.OpenAi.Gpt56.V56Sol,
+            ChatModel.OpenAi.Gpt56.V56Terra,
+            ChatModel.OpenAi.Gpt56.V56Luna,
             ChatModel.OpenAi.Gpt55.V55,
+            ChatModel.OpenAi.Gpt54.V54,
             ChatModel.OpenAi.Codex.Gpt53Codex,
         ],
         LLmProviders.Anthropic =>
         [
+            ChatModel.Anthropic.Claude5.Fable,
+            ChatModel.Anthropic.Claude5.Sonnet,
             ChatModel.Anthropic.Claude48.Opus,
             ChatModel.Anthropic.Claude46.Sonnet,
-            ChatModel.Anthropic.Claude45.Haiku251001
+            ChatModel.Anthropic.Claude45.Haiku251001,
         ],
         LLmProviders.Google =>
         [
-            ChatModel.Google.Gemini.Gemini35Flash,
-            ChatModel.Google.Gemini.Gemini31FlashLite,
             ChatModel.Google.Gemini.GeminiProLatest,
+            ChatModel.Google.Gemini.Gemini35Flash,
+            ChatModel.Google.Gemini.GeminiFlashLiteLatest,
+            ChatModel.Google.Gemini.Gemini31FlashLite,
             ChatModel.Google.Gemini.Gemini25Pro,
             ChatModel.Google.Gemini.Gemini25Flash,
         ],
         LLmProviders.XAi =>
         [
+            ChatModel.XAi.Grok45.V45,
+            ChatModel.XAi.GrokBuild.V01,
+            ChatModel.XAi.Grok41.V41FastReasoning,
             ChatModel.XAi.Grok4.V4,
             ChatModel.XAi.Grok4.V4FastReasoning,
-            ChatModel.XAi.Grok41.V41FastReasoning,
         ],
         LLmProviders.DeepSeek =>
         [
-            ChatModel.DeepSeek.Models.Chat,
             ChatModel.DeepSeek.Models.Reasoner,
+            ChatModel.DeepSeek.Models.Chat,
         ],
         LLmProviders.Groq =>
         [
@@ -259,21 +268,23 @@ public static class ProviderDetector
         ],
         LLmProviders.Mistral =>
         [
+            ChatModel.Mistral.Premier.Devstral2512,
             ChatModel.Mistral.Premier.MistralMedium2508,
             ChatModel.Mistral.Premier.MagistralMedium2509,
             ChatModel.Mistral.Free.MistralLarge2512,
         ],
         LLmProviders.Cohere =>
         [
-            ChatModel.Cohere.Command.A0325,
             ChatModel.Cohere.Command.AReasoning2508,
+            ChatModel.Cohere.Command.A0325,
             ChatModel.Cohere.Command.AVision2507,
         ],
         LLmProviders.Perplexity =>
         [
+            ChatModel.Perplexity.Sonar.ReasoningPro,
             ChatModel.Perplexity.Sonar.Pro,
-            ChatModel.Perplexity.Sonar.Default,
             ChatModel.Perplexity.Sonar.DeepResearch,
+            ChatModel.Perplexity.Sonar.Default,
         ],
         _ => [],
     };

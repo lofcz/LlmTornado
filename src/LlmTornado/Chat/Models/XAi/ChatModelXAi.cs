@@ -19,6 +19,16 @@ public class ChatModelXAi : BaseVendorModelProvider
     public readonly ChatModelXAiGrokCode GrokCode = new ChatModelXAiGrokCode();
     
     /// <summary>
+    /// Grok Build models.
+    /// </summary>
+    public readonly ChatModelXAiGrokBuild GrokBuild = new ChatModelXAiGrokBuild();
+    
+    /// <summary>
+    /// Grok 4.5 models.
+    /// </summary>
+    public readonly ChatModelXAiGrok45 Grok45 = new ChatModelXAiGrok45();
+    
+    /// <summary>
     /// Grok 4.1 models.
     /// </summary>
     public readonly ChatModelXAiGrok41 Grok41 = new ChatModelXAiGrok41();
@@ -72,7 +82,7 @@ public class ChatModelXAi : BaseVendorModelProvider
     /// </summary>
     public static List<IModel> ModelsAll => LazyModelsAll.Value;
 
-    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [..ChatModelXAiGrok.ModelsAll, ..ChatModelXAiGrok3.ModelsAll, ..ChatModelXAiGrok4.ModelsAll, ..ChatModelXAiGrok41.ModelsAll, ..ChatModelXAiGrokCode.ModelsAll]);
+    private static readonly Lazy<List<IModel>> LazyModelsAll = new Lazy<List<IModel>>(() => [..ChatModelXAiGrok.ModelsAll, ..ChatModelXAiGrok3.ModelsAll, ..ChatModelXAiGrok4.ModelsAll, ..ChatModelXAiGrok41.ModelsAll, ..ChatModelXAiGrok45.ModelsAll, ..ChatModelXAiGrokBuild.ModelsAll, ..ChatModelXAiGrokCode.ModelsAll]);
     
     internal ChatModelXAi()
     {

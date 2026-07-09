@@ -101,4 +101,74 @@ public class ProviderDetectorTests
     }
 
     #endregion
+
+    #region Newest Model Defaults
+
+    [Test]
+    public void GetModelsForProvider_OpenAi_Includes_Gpt56_Family()
+    {
+        List<ChatModel> models = ProviderDetector.GetModelsForProvider(LLmProviders.OpenAi);
+
+        Assert.That(models.Select(m => m.Name), Does.Contain("gpt-5.6"));
+        Assert.That(models.Select(m => m.Name), Does.Contain("gpt-5.6-sol"));
+        Assert.That(models.Select(m => m.Name), Does.Contain("gpt-5.6-terra"));
+        Assert.That(models.Select(m => m.Name), Does.Contain("gpt-5.6-luna"));
+        Assert.That(models[0].Name, Is.EqualTo("gpt-5.6"));
+    }
+
+    [Test]
+    public void GetModelsForProvider_XAi_Includes_Grok45_And_GrokBuild()
+    {
+        List<ChatModel> models = ProviderDetector.GetModelsForProvider(LLmProviders.XAi);
+
+        Assert.That(models.Select(m => m.Name), Does.Contain("grok-4.5"));
+        Assert.That(models.Select(m => m.Name), Does.Contain("grok-build-0.1"));
+        Assert.That(models[0].Name, Is.EqualTo("grok-4.5"));
+    }
+
+    [Test]
+    public void GetModelsForProvider_Anthropic_Includes_Claude5()
+    {
+        List<ChatModel> models = ProviderDetector.GetModelsForProvider(LLmProviders.Anthropic);
+
+        Assert.That(models.Select(m => m.Name), Does.Contain("claude-fable-5"));
+        Assert.That(models.Select(m => m.Name), Does.Contain("claude-sonnet-5"));
+        Assert.That(models[0].Name, Is.EqualTo("claude-fable-5"));
+    }
+
+    [Test]
+    public void DetectedProvider_OpenAi_Defaults_To_Gpt56()
+    {
+        string? key = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
+        if (key is null)
+        {
+            Assert.Ignore("OPENAI_API_KEY not set.");
+            return;
+        }
+
+        ProviderDetectionResult? result = ProviderDetector.Detect();
+        Assert.That(result, Is.Not.Null);
+
+        DetectedProvider openAi = result!.Providers.First(p => p.Provider == LLmProviders.OpenAi);
+        Assert.That(openAi.DefaultModel.Name, Is.EqualTo("gpt-5.6"));
+    }
+
+    [Test]
+    public void DetectedProvider_Anthropic_Defaults_To_ClaudeFable5()
+    {
+        string? key = Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY");
+        if (key is null)
+        {
+            Assert.Ignore("ANTHROPIC_API_KEY not set.");
+            return;
+        }
+
+        ProviderDetectionResult? result = ProviderDetector.Detect();
+        Assert.That(result, Is.Not.Null);
+
+        DetectedProvider anthropic = result!.Providers.First(p => p.Provider == LLmProviders.Anthropic);
+        Assert.That(anthropic.DefaultModel.Name, Is.EqualTo("claude-fable-5"));
+    }
+
+    #endregion
 }
