@@ -90,13 +90,13 @@ public enum ResponseReasoningEfforts
     High,
     
     /// <summary>
-    /// Extra high reasoning effort. Available for GPT-5.2, GPT-5.2-Codex, GPT-5.3-Codex, GPT-5.4, GPT-5.5, GPT-5.6, and GPT-5.1-Codex-Max.
+    /// Extra high reasoning effort. Available for GPT-5.6, GPT-5.5, GPT-5.2, GPT-5.2-Codex, GPT-5.3-Codex, GPT-5.4, and GPT-5.1-Codex-Max.
     /// </summary>
     [EnumMember(Value = "xhigh")]
     XHigh,
-
+    
     /// <summary>
-    /// Maximum reasoning effort with no constraints on token spending. Available for GPT-5.6 and Claude Opus 4.6+.
+    /// Maximum reasoning effort. Available for GPT-5.6 models.
     /// </summary>
     [EnumMember(Value = "max")]
     Max

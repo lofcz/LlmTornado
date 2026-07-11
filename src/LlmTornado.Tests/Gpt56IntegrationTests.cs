@@ -1,4 +1,4 @@
-﻿using LlmTornado.Chat;
+using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Code;
 using LlmTornado.Common;
@@ -128,16 +128,16 @@ public class Gpt56IntegrationTests
     [Explicit("Requires API key and makes real API calls")]
     public async Task Gpt56_ChatCompletion_ReturnsResponse()
     {
-        ChatResult result = await _api!.Chat.CreateChatCompletion(new ChatRequest
+        ChatResult? result = await _api!.Chat.CreateChatCompletion(new ChatRequest
         {
             Model = ChatModel.OpenAi.Gpt56.V56Luna,
-            Messages = [new ChatMessage(ChatMessageRoles.User, "Reply with the single word: pong")],
+            Messages = [new ChatMessage(ChatMessageRoles.User, "Reply with exactly: GPT-5.6 OK")],
             ReasoningEffort = ChatReasoningEfforts.None,
             MaxTokens = 32
         });
 
-        Assert.That(result.Choices, Is.Not.Null.And.Not.Empty);
-        Assert.That(result.Choices![0].Message?.Content, Is.Not.Null.And.Not.Empty);
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result!.Choices, Is.Not.Empty);
+        Assert.That(result.Choices![0].Message?.Content, Does.Contain("GPT-5.6 OK").IgnoreCase);
     }
 }
-

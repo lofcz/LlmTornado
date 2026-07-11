@@ -1,5 +1,4 @@
-﻿using LlmTornado.Chat.Models;
-using LlmTornado.Code.Models;
+using LlmTornado.Chat.Models;
 
 namespace LlmTornado.Tests;
 
@@ -37,7 +36,6 @@ public class Grok45IntegrationTests
     public void GrokCode_RemainsRegistered()
     {
         Assert.That(ChatModel.XAi.GrokCode.Fast1.Name, Is.EqualTo("grok-code-fast-1"));
-        Assert.That(ChatModel.XAi.AllModels, Does.Contain((IModel)ChatModel.XAi.GrokCode.Fast1));
+        Assert.That(ChatModel.XAi.AllModels, Does.Contain(ChatModel.XAi.GrokCode.Fast1));
     }
 }
-

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using LlmTornado.Code;
 using LlmTornado.Code.Models;
@@ -93,4 +93,3 @@ public class ChatModelOpenAiGpt56 : IVendorModelClassProvider
         
     }
 }
-

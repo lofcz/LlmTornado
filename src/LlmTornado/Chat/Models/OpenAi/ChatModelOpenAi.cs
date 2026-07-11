@@ -193,7 +193,7 @@ public class ChatModelOpenAi : BaseVendorModelProvider
     ]);
 
     /// <summary>
-    /// GPT-5.4 / GPT-5.6 models that support built-in computer use through the Responses API.
+    /// Models that support built-in computer use through the Responses API.
     /// </summary>
     internal static HashSet<IModel> ComputerUseModelsAllSet => LazyComputerUseModelsAllSet.Value;
 
@@ -203,7 +203,7 @@ public class ChatModelOpenAi : BaseVendorModelProvider
     ]);
 
     /// <summary>
-    /// GPT-5.4 / GPT-5.6 models that support tool search through the Responses API.
+    /// Models that support tool search through the Responses API.
     /// </summary>
     internal static HashSet<IModel> ToolSearchModelsAllSet => LazyToolSearchModelsAllSet.Value;
 
@@ -213,7 +213,7 @@ public class ChatModelOpenAi : BaseVendorModelProvider
     ]);
 
     /// <summary>
-    /// GPT-5.4 / GPT-5.6 models that support server-side compaction through the Responses API.
+    /// Models that support server-side compaction through the Responses API.
     /// </summary>
     internal static HashSet<IModel> CompactionModelsAllSet => LazyCompactionModelsAllSet.Value;
 
@@ -249,9 +249,9 @@ public class ChatModelOpenAi : BaseVendorModelProvider
     
     /// <summary>
     /// Determines whether sampling parameters (temperature, top_p, logprobs) should be cleared for GPT-5.x models.
-    /// GPT-5.5 and GPT-5.4 parameter compatibility:
+    /// GPT-5.6, GPT-5.5, and GPT-5.4 parameter compatibility:
     /// - Older GPT-5 models (gpt-5, gpt-5-mini, gpt-5-nano) never support these parameters
-    /// - GPT-5.5 and GPT-5.4 only support these when reasoning effort is none, while their pro variants never support them
+    /// - GPT-5.6, GPT-5.5, and GPT-5.4 only support these when reasoning effort is none, while GPT-5.5/5.4 pro variants never support them
     /// - GPT-5.3-Codex and GPT-5.2-Codex never support these because they only expose reasoning modes low, medium, high, and xhigh
     /// - GPT-5.2 and GPT-5.1 only support these when reasoning effort is none
     /// </summary>
