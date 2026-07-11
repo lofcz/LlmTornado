@@ -396,6 +396,52 @@ public class ChatModel : ModelBase
         return null;
     }
 
+    /// <summary>
+    /// Returns the latest model of the given performance tier for the given provider,
+    /// or null when the provider has no latest-tier mapping yet.
+    /// </summary>
+    /// <param name="provider">The provider to get the latest model for.</param>
+    /// <param name="performance">The performance tier.</param>
+    public static ChatModel? GetLatest(LLmProviders provider, ChatModelPerformance performance)
+    {
+        return provider switch
+        {
+            LLmProviders.OpenAi => performance switch
+            {
+                ChatModelPerformance.Max => ChatModelOpenAiLatest.ModelMax,
+                ChatModelPerformance.Large => ChatModelOpenAiLatest.ModelLarge,
+                ChatModelPerformance.Medium => ChatModelOpenAiLatest.ModelMedium,
+                ChatModelPerformance.Small => ChatModelOpenAiLatest.ModelSmall,
+                _ => null
+            },
+            LLmProviders.Anthropic => performance switch
+            {
+                ChatModelPerformance.Max => ChatModelAnthropicLatest.ModelMax,
+                ChatModelPerformance.Large => ChatModelAnthropicLatest.ModelLarge,
+                ChatModelPerformance.Medium => ChatModelAnthropicLatest.ModelMedium,
+                ChatModelPerformance.Small => ChatModelAnthropicLatest.ModelSmall,
+                _ => null
+            },
+            LLmProviders.Google => performance switch
+            {
+                ChatModelPerformance.Max => ChatModelGoogleLatest.ModelMax,
+                ChatModelPerformance.Large => ChatModelGoogleLatest.ModelLarge,
+                ChatModelPerformance.Medium => ChatModelGoogleLatest.ModelMedium,
+                ChatModelPerformance.Small => ChatModelGoogleLatest.ModelSmall,
+                _ => null
+            },
+            LLmProviders.XAi => performance switch
+            {
+                ChatModelPerformance.Max => ChatModelXAiLatest.ModelMax,
+                ChatModelPerformance.Large => ChatModelXAiLatest.ModelLarge,
+                ChatModelPerformance.Medium => ChatModelXAiLatest.ModelMedium,
+                ChatModelPerformance.Small => ChatModelXAiLatest.ModelSmall,
+                _ => null
+            },
+            _ => null
+        };
+    }
+
     internal static ChatModel? ResolveModel(LLmProviders provider, string modelName)
     {
         if (modelsByProviderName.Value.TryGetValue(provider, out ChatModelVendorMap? map))

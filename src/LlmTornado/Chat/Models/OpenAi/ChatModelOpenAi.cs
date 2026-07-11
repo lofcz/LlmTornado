@@ -13,7 +13,12 @@ public class ChatModelOpenAi : BaseVendorModelProvider
 {
     /// <inheritdoc cref="BaseVendorModelProvider.Provider"/>
     public override LLmProviders Provider => LLmProviders.OpenAi;
-    
+
+    /// <summary>
+    /// Latest models by performance tier (Max/Large/Medium/Small). Pointers repointed as newer models release.
+    /// </summary>
+    public readonly ChatModelOpenAiLatest Latest = new ChatModelOpenAiLatest();
+
     /// <summary>
     /// GPT 3.5 (Turbo) models.
     /// </summary>

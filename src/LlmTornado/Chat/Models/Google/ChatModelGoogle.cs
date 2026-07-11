@@ -13,7 +13,12 @@ public class ChatModelGoogle : BaseVendorModelProvider
 {
     /// <inheritdoc cref="BaseVendorModelProvider.Provider"/>
     public override LLmProviders Provider => LLmProviders.Google;
-    
+
+    /// <summary>
+    /// Latest models by performance tier (Max/Large/Medium/Small). Pointers repointed as newer models release.
+    /// </summary>
+    public readonly ChatModelGoogleLatest Latest = new ChatModelGoogleLatest();
+
     /// <summary>
     /// Gemini models.
     /// </summary>

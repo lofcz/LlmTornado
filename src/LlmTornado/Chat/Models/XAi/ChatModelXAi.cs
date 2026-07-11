@@ -12,7 +12,12 @@ public class ChatModelXAi : BaseVendorModelProvider
 {
     /// <inheritdoc cref="BaseVendorModelProvider.Provider"/>
     public override LLmProviders Provider => LLmProviders.XAi;
-    
+
+    /// <summary>
+    /// Latest models by performance tier (Max/Large/Medium/Small). Pointers repointed as newer models release.
+    /// </summary>
+    public readonly ChatModelXAiLatest Latest = new ChatModelXAiLatest();
+
     /// <summary>
     /// Grok Build models.
     /// </summary>

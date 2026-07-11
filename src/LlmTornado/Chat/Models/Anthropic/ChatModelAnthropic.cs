@@ -12,6 +12,11 @@ namespace LlmTornado.Chat.Models;
 public class ChatModelAnthropic : BaseVendorModelProvider
 {
     /// <summary>
+    /// Latest models by performance tier (Max/Large/Medium/Small). Pointers repointed as newer models release.
+    /// </summary>
+    public readonly ChatModelAnthropicLatest Latest = new ChatModelAnthropicLatest();
+
+    /// <summary>
     /// Claude 3 models.
     /// </summary>
     public readonly ChatModelAnthropicClaude3 Claude3 = new ChatModelAnthropicClaude3();
