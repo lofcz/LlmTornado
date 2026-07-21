@@ -543,9 +543,22 @@ internal class VendorGoogleChatRequestMessagePart
         }
         else if (Text is not null)
         {
-            part.Type = ChatMessageTypes.Text;
-            part.Text = Text;
-            sb.Append(Text);
+            if (Thought ?? false)
+            {
+                part.Type = ChatMessageTypes.Reasoning;
+                part.Reasoning = new ChatMessageReasoningData
+                {
+                    Provider = LLmProviders.Google,
+                    Content = Text,
+                    Signature = ThoughtSignature
+                };
+            }
+            else
+            {
+                part.Type = ChatMessageTypes.Text;
+                part.Text = Text;
+                sb.Append(Text);
+            }
         }
         else if (InlineData is not null)
         {
