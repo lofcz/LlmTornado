@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -36,6 +36,7 @@ using LlmTornado.ManagedAgents.Anthropic;
 using LlmTornado.RateLimits;
 using LlmTornado.Common;
 using LlmTornado.Compaction;
+using LlmTornado.Codex;
 
 namespace LlmTornado;
 
@@ -85,6 +86,7 @@ public class TornadoApi
     private readonly Lazy<AnthropicManagedAgentEnvironmentsEndpoint> anthropicManagedAgentEnvironments;
     private readonly Lazy<RateLimitsEndpoint> rateLimits;
     private readonly Lazy<CompactionEndpoint> compaction;
+    private readonly Lazy<CodexEndpoint> codex;
 
     /// <summary>
     ///     If true, the API will throw exceptions for non-200 responses.
@@ -142,6 +144,7 @@ public class TornadoApi
         live = new Lazy<LiveEndpoint>(() => new LiveEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
         rateLimits = new Lazy<RateLimitsEndpoint>(() => new RateLimitsEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
         compaction = new Lazy<CompactionEndpoint>(() => new CompactionEndpoint(this), LazyThreadSafetyMode.ExecutionAndPublication);
+        codex = new Lazy<CodexEndpoint>(() => new CodexEndpoint(), LazyThreadSafetyMode.ExecutionAndPublication);
     }
 
     /// <summary>
@@ -612,6 +615,11 @@ public class TornadoApi
     ///     OpenAI Realtime API (GA): client secrets, legacy sessions, and WebSocket voice/translation/transcription.
     /// </summary>
     public RealtimeEndpoint Realtime => realtime.Value;
+
+    /// <summary>
+    ///     OpenAI Codex integration for ChatGPT subscription authentication, models, and text turns.
+    /// </summary>
+    public CodexEndpoint Codex => codex.Value;
 
     /// <summary>
     ///     Anthropic Compaction API for server-side context summarization (beta).
