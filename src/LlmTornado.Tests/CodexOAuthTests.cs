@@ -96,6 +96,7 @@ public class CodexOAuthTests
         int refreshRequests = 0;
         string? modelAuthorization = null;
         string? modelAccount = null;
+        string? catalogClientVersion = null;
         RecordingHandler handler = new RecordingHandler(async request =>
         {
             if (request.RequestUri?.AbsolutePath.EndsWith("/oauth/token", StringComparison.Ordinal) == true)
@@ -117,6 +118,9 @@ public class CodexOAuthTests
             modelAccount = request.Headers.TryGetValues("ChatGPT-Account-ID", out IEnumerable<string>? values)
                 ? values.Single()
                 : null;
+            Dictionary<string, string> catalogQuery =
+                CodexOAuthProtocol.ParseQuery(request.RequestUri?.Query ?? string.Empty);
+            catalogQuery.TryGetValue("client_version", out catalogClientVersion);
             return JsonResponse(new JObject
             {
                 ["models"] = new JArray
@@ -142,14 +146,50 @@ public class CodexOAuthTests
             Assert.That(refreshRequests, Is.EqualTo(1));
             Assert.That(modelAuthorization, Does.StartWith("Bearer "));
             Assert.That(modelAccount, Is.EqualTo("account-1"));
+            Assert.That(catalogClientVersion, Is.EqualTo(CodexOAuthOptions.DefaultCodexProtocolVersion));
+            Assert.That(catalogClientVersion, Is.Not.EqualTo("1.2.3"));
             Assert.That(models.Select(model => model.Model), Is.EqualTo(new[] { "gpt-5.4", "gpt-5.3-codex" }));
             Assert.That(
                 models[0].SupportedReasoningEfforts.Select(effort => effort.ReasoningEffort),
                 Is.EqualTo(new[] { "low", "medium", "high" }));
+            Assert.That(
+                models[0].ServiceTiers.Select(serviceTier => serviceTier.Id),
+                Is.EqualTo(new[] { "priority", "future-tier" }));
+            Assert.That(models[0].DefaultServiceTier, Is.EqualTo("priority"));
         });
 
         CodexOAuthCredentials? saved = await store.LoadAsync();
         Assert.That(saved?.RefreshToken, Is.EqualTo("refresh-new"));
+    }
+
+    [Test]
+    public async Task ListModels_UsesConfiguredCodexProtocolVersion()
+    {
+        CodexOAuthMemoryCredentialStore store = new CodexOAuthMemoryCredentialStore(
+            Credentials(
+                Jwt(new JObject { ["exp"] = DateTimeOffset.UtcNow.AddHours(1).ToUnixTimeSeconds() }),
+                "refresh-1",
+                DateTimeOffset.UtcNow.AddHours(1)));
+        string? catalogClientVersion = null;
+        RecordingHandler handler = new RecordingHandler(request =>
+        {
+            Dictionary<string, string> query =
+                CodexOAuthProtocol.ParseQuery(request.RequestUri?.Query ?? string.Empty);
+            query.TryGetValue("client_version", out catalogClientVersion);
+            return Task.FromResult(JsonResponse(new JObject { ["models"] = new JArray() }));
+        });
+
+        await using CodexOAuthSession session = await new TornadoApi().Codex.ConnectOAuthAsync(
+            new CodexOAuthOptions
+            {
+                CredentialStore = store,
+                HttpClient = new HttpClient(handler),
+                ClientVersion = "1.2.3",
+                CodexProtocolVersion = "0.147.1-test"
+            });
+        await session.ListModelsAsync();
+
+        Assert.That(catalogClientVersion, Is.EqualTo("0.147.1-test"));
     }
 
     [Test]
@@ -210,6 +250,7 @@ public class CodexOAuthTests
         CodexOAuthTurnResult first = await thread.RunAsync("First", new CodexOAuthTurnOptions
         {
             ReasoningEffort = "high",
+            ServiceTier = "priority",
             OnTextDelta = delta =>
             {
                 deltas.Add(delta.Delta);
@@ -228,6 +269,7 @@ public class CodexOAuthTests
             Assert.That(payloads[0]["input"]?[1]?["content"]?[0]?["type"]?.Value<string>(), Is.EqualTo("input_text"));
             Assert.That(payloads[0].ToString(Formatting.None), Does.Not.Contain("image"));
             Assert.That(payloads[0]["include"]?[0]?.Value<string>(), Is.EqualTo("reasoning.encrypted_content"));
+            Assert.That(payloads[0].Value<string>("service_tier"), Is.EqualTo("priority"));
             Assert.That(payloads[1].Property("previous_response_id"), Is.Null);
             Assert.That(payloads[1]["input"]?.Count(), Is.EqualTo(5));
             Assert.That(payloads[1]["input"]?[2]?["encrypted_content"]?.Value<string>(), Is.EqualTo("encrypted-1"));
@@ -342,11 +384,23 @@ public class CodexOAuthTests
             ["supported_in_api"] = true,
             ["is_default"] = isDefault,
             ["default_reasoning_level"] = efforts.First(),
+            ["default_service_tier"] = "priority",
             ["supported_reasoning_levels"] = new JArray(efforts.Select(effort => new JObject
             {
                 ["effort"] = effort,
                 ["description"] = effort
             })),
+            ["service_tiers"] = new JArray(new JObject
+            {
+                ["id"] = "priority",
+                ["name"] = "Fast",
+                ["description"] = "1.5x speed"
+            }, new JObject
+            {
+                ["id"] = "future-tier",
+                ["name"] = "Future",
+                ["description"] = "Future catalog value"
+            }),
             ["input_modalities"] = new JArray("text")
         };
 

@@ -260,6 +260,30 @@ public sealed class CodexReasoningEffort
 }
 
 /// <summary>
+/// A service tier advertised for a Codex model.
+/// </summary>
+public sealed class CodexServiceTier
+{
+    /// <summary>
+    /// Service-tier identifier sent with a turn request.
+    /// </summary>
+    [JsonProperty("id")]
+    public string Id { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Human-readable service-tier name.
+    /// </summary>
+    [JsonProperty("name")]
+    public string DisplayName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Human-readable service-tier description.
+    /// </summary>
+    [JsonProperty("description")]
+    public string Description { get; set; } = string.Empty;
+}
+
+/// <summary>
 /// A model advertised by the authenticated Codex app-server.
 /// </summary>
 public sealed class CodexModel
@@ -317,6 +341,18 @@ public sealed class CodexModel
     /// </summary>
     [JsonProperty("supportedReasoningEfforts")]
     public List<CodexReasoningEffort> SupportedReasoningEfforts { get; set; } = [];
+
+    /// <summary>
+    /// Service tiers supported by this model.
+    /// </summary>
+    [JsonProperty("serviceTiers")]
+    public List<CodexServiceTier> ServiceTiers { get; set; } = [];
+
+    /// <summary>
+    /// Catalog default service-tier identifier for this model.
+    /// </summary>
+    [JsonProperty("defaultServiceTier")]
+    public string DefaultServiceTier { get; set; } = string.Empty;
 
     /// <summary>
     /// Input modalities advertised by the model.
@@ -385,6 +421,11 @@ public sealed class CodexTurnOptions
     /// Optional reasoning effort advertised by the selected model.
     /// </summary>
     public string? ReasoningEffort { get; set; }
+
+    /// <summary>
+    /// Optional service tier advertised by the selected model.
+    /// </summary>
+    public string? ServiceTier { get; set; }
 
     /// <summary>
     /// Receives streamed assistant text deltas.

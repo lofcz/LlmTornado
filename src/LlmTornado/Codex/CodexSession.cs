@@ -213,6 +213,7 @@ public sealed class CodexSession : IDisposable, IAsyncDisposable
         };
         AddIfNotNull(parameters, "model", options.Model);
         AddIfNotNull(parameters, "effort", options.ReasoningEffort);
+        AddIfNotNull(parameters, "serviceTier", options.ServiceTier);
 
         JToken response = await RequestAsync("turn/start", parameters, cancellationToken).ConfigureAwait(false);
         JObject initialTurn = response["turn"] as JObject

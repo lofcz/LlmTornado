@@ -31,6 +31,10 @@ public class CodexTests
         Assert.That(
             models[0].SupportedReasoningEfforts.Select(x => x.ReasoningEffort),
             Is.EqualTo(new[] { "low", "medium", "high" }));
+        Assert.That(
+            models[0].ServiceTiers.Select(x => x.Id),
+            Is.EqualTo(new[] { "priority", "future-tier" }));
+        Assert.That(models[0].DefaultServiceTier, Is.EqualTo("priority"));
 
         CodexThread thread = await session.StartThreadAsync(new CodexThreadOptions
         {
@@ -41,6 +45,7 @@ public class CodexTests
         CodexTurnResult turn = await thread.RunAsync("Reply briefly.", new CodexTurnOptions
         {
             ReasoningEffort = "high",
+            ServiceTier = "priority",
             OnTextDelta = delta =>
             {
                 deltas.Add(delta.Delta);
@@ -55,6 +60,7 @@ public class CodexTests
         JObject turnRequest = transport.Messages.Single(message => message.Value<string>("method") == "turn/start");
         Assert.That(turnRequest["params"]?["input"]?.Count(), Is.EqualTo(1));
         Assert.That(turnRequest["params"]?["input"]?[0]?["type"]?.Value<string>(), Is.EqualTo("text"));
+        Assert.That(turnRequest["params"]?["serviceTier"]?.Value<string>(), Is.EqualTo("priority"));
         Assert.That(transport.Messages.Any(message => message.Value<string>("method")?.Contains("image") == true), Is.False);
     }
 
@@ -285,11 +291,23 @@ public class CodexTests
                 ["hidden"] = false,
                 ["isDefault"] = isDefault,
                 ["defaultReasoningEffort"] = efforts[0],
+                ["defaultServiceTier"] = "priority",
                 ["supportedReasoningEfforts"] = new JArray(efforts.Select(effort => new JObject
                 {
                     ["reasoningEffort"] = effort,
                     ["description"] = effort
                 })),
+                ["serviceTiers"] = new JArray(new JObject
+                {
+                    ["id"] = "priority",
+                    ["name"] = "Fast",
+                    ["description"] = "1.5x speed"
+                }, new JObject
+                {
+                    ["id"] = "future-tier",
+                    ["name"] = "Future",
+                    ["description"] = "Future catalog value"
+                }),
                 ["inputModalities"] = new JArray("text")
             };
         }

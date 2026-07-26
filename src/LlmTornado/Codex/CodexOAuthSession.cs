@@ -41,12 +41,18 @@ public sealed class CodexOAuthSession : IDisposable, IAsyncDisposable
         ClientVersion = options.ClientVersion
                         ?? typeof(CodexOAuthSession).Assembly.GetName().Version?.ToString()
                         ?? "0.0.0";
+        CodexProtocolVersion = options.CodexProtocolVersion;
     }
 
     /// <summary>
     /// Client version sent to the Codex backend.
     /// </summary>
     public string ClientVersion { get; }
+
+    /// <summary>
+    /// Codex protocol version sent to the subscription model catalog.
+    /// </summary>
+    public string CodexProtocolVersion { get; }
 
     internal static async Task<CodexOAuthSession> ConnectAsync(
         CodexOAuthOptions options,
@@ -60,6 +66,11 @@ public sealed class CodexOAuthSession : IDisposable, IAsyncDisposable
         if (options.CredentialStore is null)
         {
             throw new ArgumentNullException(nameof(options.CredentialStore));
+        }
+
+        if (string.IsNullOrWhiteSpace(options.CodexProtocolVersion))
+        {
+            throw new ArgumentException("Codex protocol version cannot be empty.", nameof(options));
         }
 
         CodexOAuthCredentials? credentials =
@@ -140,7 +151,7 @@ public sealed class CodexOAuthSession : IDisposable, IAsyncDisposable
         ThrowIfDisposed();
         Uri modelsUri = CodexOAuthProtocol.GetApiEndpoint(
             options,
-            $"models?client_version={Uri.EscapeDataString(ClientVersion)}");
+            $"models?client_version={Uri.EscapeDataString(CodexProtocolVersion)}");
 
         using HttpResponseMessage response = await SendAuthenticatedAsync(
             () => new HttpRequestMessage(HttpMethod.Get, modelsUri),
@@ -184,6 +195,7 @@ public sealed class CodexOAuthSession : IDisposable, IAsyncDisposable
                 Hidden = hidden,
                 IsDefault = source.Value<bool?>("is_default") ?? false,
                 DefaultReasoningEffort = source.Value<string>("default_reasoning_level") ?? string.Empty,
+                DefaultServiceTier = source.Value<string>("default_service_tier") ?? string.Empty,
                 SupportsPersonality = source.Value<bool?>("supports_personality") ?? false,
                 InputModalities = source["input_modalities"]?.Values<string>().ToList() ?? []
             };
@@ -196,6 +208,19 @@ public sealed class CodexOAuthSession : IDisposable, IAsyncDisposable
                     {
                         ReasoningEffort = effort.Value<string>("effort") ?? string.Empty,
                         Description = effort.Value<string>("description") ?? string.Empty
+                    });
+                }
+            }
+
+            if (source["service_tiers"] is JArray serviceTiers)
+            {
+                foreach (JObject serviceTier in serviceTiers.OfType<JObject>())
+                {
+                    model.ServiceTiers.Add(new CodexServiceTier
+                    {
+                        Id = serviceTier.Value<string>("id") ?? string.Empty,
+                        DisplayName = serviceTier.Value<string>("name") ?? string.Empty,
+                        Description = serviceTier.Value<string>("description") ?? string.Empty
                     });
                 }
             }
@@ -318,6 +343,11 @@ public sealed class CodexOAuthSession : IDisposable, IAsyncDisposable
                 ["effort"] = turnOptions.ReasoningEffort,
                 ["summary"] = "auto"
             };
+        }
+
+        if (!string.IsNullOrWhiteSpace(turnOptions.ServiceTier))
+        {
+            payload["service_tier"] = turnOptions.ServiceTier;
         }
 
         Uri responsesUri = CodexOAuthProtocol.GetApiEndpoint(options, "responses");

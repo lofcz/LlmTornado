@@ -131,76 +131,7 @@ foreach (ChatModel model in models)
 
 ### OpenAI API keys and Codex subscriptions
 
-OpenAI API access continues to use an API key and supports the normal text and image endpoints:
-
-```csharp
-TornadoApi api = new TornadoApi(LLmProviders.OpenAi, Environment.GetEnvironmentVariable("OPENAI_API_KEY")!);
-string? response = await api.Chat.CreateConversation(ChatModel.OpenAi.Gpt5.Mini)
-    .AppendUserInput("Summarize this text.")
-    .GetResponse();
-```
-
-ChatGPT Plus, Pro, Business, Edu, and Enterprise Codex access has its own model catalog and text-only thread API; it does not expose Tornado's image-generation endpoints.
-
-The official local Codex app-server can own login, token persistence, refresh, and agent execution:
-
-```csharp
-TornadoApi api = new TornadoApi();
-await using CodexSession codex = await api.Codex.ConnectAsync();
-
-CodexAccountResult account = await codex.GetAccountAsync();
-if (account.Account is null)
-{
-    CodexBrowserLogin login = await codex.StartBrowserLoginAsync();
-    Process.Start(new ProcessStartInfo(login.AuthorizationUrl.AbsoluteUri) { UseShellExecute = true });
-
-    CodexLoginResult loginResult = await login.WaitAsync();
-    if (!loginResult.Success)
-    {
-        throw new InvalidOperationException(loginResult.Error);
-    }
-}
-
-IReadOnlyList<CodexModel> models = await codex.ListModelsAsync();
-CodexModel model = models.First(x => x.IsDefault);
-CodexThread thread = await codex.StartThreadAsync(new CodexThreadOptions { Model = model.Model });
-CodexTurnResult turn = await thread.RunAsync("Explain the current project in three sentences.");
-
-Console.WriteLine(turn.FinalResponse);
-```
-
-The Codex executable must be installed and available on `PATH`, or supplied through `CodexAppServerOptions.ExecutablePath`. Codex owns OAuth token storage and refresh; LLMTornado never receives or persists the ChatGPT refresh token.
-
-Alternatively, LLMTornado can perform browser OAuth and token refresh directly without a Codex installation:
-
-```csharp
-TornadoApi api = new TornadoApi();
-await using CodexOAuthSession codex = await api.Codex.ConnectOAuthAsync();
-
-CodexAccountResult account = await codex.GetAccountAsync();
-if (account.Account is null)
-{
-    CodexOAuthBrowserLogin login = await codex.StartBrowserLoginAsync();
-    Process.Start(new ProcessStartInfo(login.AuthorizationUrl.AbsoluteUri) { UseShellExecute = true });
-
-    CodexOAuthLoginResult loginResult = await login.WaitAsync();
-    if (!loginResult.Success)
-    {
-        throw new InvalidOperationException(loginResult.Error);
-    }
-}
-
-IReadOnlyList<CodexModel> models = await codex.ListModelsAsync();
-CodexOAuthThread thread = await codex.StartThreadAsync(new CodexOAuthThreadOptions
-{
-    Model = models.First(x => x.IsDefault).Model
-});
-CodexOAuthTurnResult turn = await thread.RunAsync("Explain the current project in three sentences.");
-
-Console.WriteLine(turn.FinalResponse);
-```
-
-The direct variant uses OAuth2 PKCE with an `auth.openai.com` browser callback. Rotating refresh tokens are stored through `ICodexOAuthCredentialStore`; the default file store writes to the current user's local application data, and applications can provide a different store.
+OpenAI API keys continue to support normal text and image models, while ChatGPT subscription access for Codex is explained in the [Codex guide](src/LlmTornado/Codex/README.md).
 
 ## ❄️ Vendor Extensions
 

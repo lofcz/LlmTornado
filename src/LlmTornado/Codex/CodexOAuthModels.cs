@@ -15,6 +15,11 @@ namespace LlmTornado.Codex;
 public sealed class CodexOAuthOptions
 {
     /// <summary>
+    /// Codex protocol version used when the caller does not provide an override.
+    /// </summary>
+    public const string DefaultCodexProtocolVersion = "0.146.0";
+
+    /// <summary>
     /// OpenAI OAuth issuer.
     /// </summary>
     public Uri Issuer { get; set; } = new Uri("https://auth.openai.com");
@@ -46,9 +51,15 @@ public sealed class CodexOAuthOptions
     public string Originator { get; set; } = "llmtornado";
 
     /// <summary>
-    /// Client version sent to the model catalog and Codex backend.
+    /// Client version sent in Codex backend headers and the user agent.
     /// </summary>
     public string? ClientVersion { get; set; }
+
+    /// <summary>
+    /// Codex protocol version sent as <c>client_version</c> to the subscription model catalog.
+    /// This is independent of the LLMTornado package version.
+    /// </summary>
+    public string CodexProtocolVersion { get; set; } = DefaultCodexProtocolVersion;
 
     /// <summary>
     /// How early an access token is refreshed before its expiry.
@@ -367,6 +378,11 @@ public sealed class CodexOAuthTurnOptions
     /// Optional reasoning effort advertised by the selected model.
     /// </summary>
     public string? ReasoningEffort { get; set; }
+
+    /// <summary>
+    /// Optional service tier advertised by the selected model.
+    /// </summary>
+    public string? ServiceTier { get; set; }
 
     /// <summary>
     /// Receives streamed assistant text deltas.
