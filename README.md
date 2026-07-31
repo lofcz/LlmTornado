@@ -129,6 +129,10 @@ foreach (ChatModel model in models)
 
 💡 Instead of passing in a strongly typed model, you can pass a string instead: `await api.Chat.CreateConversation("gpt-5-mini")`, Tornado will automatically resolve the provider.
 
+### OpenAI API keys and Codex subscriptions
+
+OpenAI API keys continue to support normal text and image models, while ChatGPT subscription access for Codex is explained in the [Codex guide](src/LlmTornado/Codex/README.md).
+
 ## ❄️ Vendor Extensions
 
 Tornado has a powerful concept of `VendorExtensions` which can be applied to various endpoints and are strongly typed. Many Providers offer unique/niche APIs, often enabling use cases otherwise unavailable. For example, let's set a reasoning budget for Anthropic's Claude 3.7:
