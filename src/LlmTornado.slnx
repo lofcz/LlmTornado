@@ -38,9 +38,6 @@
     <Project Path="LlmTornado.Internal.Press/LlmTornado.Internal.Press.csproj" />
     <Project Path="LlmTornado.Internal.ProviderGenerator/LlmTornado.Internal.ProviderGenerator.csproj" />
   </Folder>
-  <Project Path="LlmTornado.Cli/LlmTornado.Cli.csproj" />
-  <Project Path="LlmTornado.Cli.Core/LlmTornado.Cli.Core.csproj" />
-  <Project Path="LlmTornado.Cli.Tests/LlmTornado.Cli.Tests.csproj" />
   <Project Path="LlmTornado.Contrib/LlmTornado.Contrib.csproj" />
   <Project Path="LlmTornado.Demo/LlmTornado.Demo.csproj" />
   <Project Path="LlmTornado.Docs/LlmTornado.Docs.csproj" />
