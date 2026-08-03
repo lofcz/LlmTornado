@@ -159,7 +159,14 @@ public class ChatModelOpenAi : BaseVendorModelProvider
     internal static HashSet<IModel> TempIncompatibleModels => LazyTempIncompatibleModels.Value;
 
     private static readonly Lazy<HashSet<IModel>> LazyTempIncompatibleModels = new Lazy<HashSet<IModel>>(() => [
-        ..WebSearchCompatibleModelsAll.Concat(ChatModelOpenAiO3.ModelsAll).Concat(ChatModelOpenAiO4.ModelsAll).Concat(ChatModelOpenAiGpt5.ModelsAll)
+        // Web-search / o-series / GPT-5 models that never accept temperature.
+        // Conditionally supported models (GPT-5.1/5.2/5.4/5.5/5.6) are excluded so
+        // ChatRequest can keep temperature when reasoning_effort is "none".
+        ..WebSearchCompatibleModelsAll
+            .Concat(ChatModelOpenAiO3.ModelsAll)
+            .Concat(ChatModelOpenAiO4.ModelsAll)
+            .Concat(ChatModelOpenAiGpt5.ModelsAll)
+            .Where(m => !SamplingParamsConditionallySupported.Contains(m))
     ]);
 
     /// <summary>

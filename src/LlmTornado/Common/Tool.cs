@@ -926,7 +926,7 @@ public class Tool
 
     internal static string NormalizeName(string name)
     {
-        return name.Replace(" ", "_").Trim();
+        return System.Text.RegularExpressions.Regex.Replace(name.Replace(" ", "_").Trim(), @"[^a-zA-Z0-9_-]", "_");
     }
 }
 

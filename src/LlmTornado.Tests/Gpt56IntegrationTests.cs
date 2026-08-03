@@ -8,7 +8,7 @@ using Newtonsoft.Json.Linq;
 namespace LlmTornado.Tests;
 
 /// <summary>
-/// Integration and serialization tests for GPT-5.6 Sol/Terra/Luna.
+/// Integration and serialization tests for GPT-5.6 Sol/Terra/Luna (Jul 9, 2026 release).
 /// </summary>
 [TestFixture]
 [Category("Integration")]
@@ -53,15 +53,15 @@ public class Gpt56IntegrationTests
     }
 
     [Test]
-    public void Gpt56_ChatCompletion_ClearsSamplingParamsWhenReasoningIsSet()
+    public void Gpt56_SamplingParams_ClearedWhenReasoningIsNotNone()
     {
         ChatRequest request = new ChatRequest
         {
             Model = ChatModel.OpenAi.Gpt56.V56Sol,
             Messages = [new ChatMessage(ChatMessageRoles.User, "Hello")],
-            ReasoningEffort = ChatReasoningEfforts.Medium,
-            Temperature = 0.5,
-            TopP = 0.9
+            Temperature = 0.7,
+            TopP = 0.9,
+            ReasoningEffort = ChatReasoningEfforts.Medium
         };
 
         TornadoRequestContent serialized = request.Serialize(_provider!);
@@ -73,15 +73,15 @@ public class Gpt56IntegrationTests
     }
 
     [Test]
-    public void Gpt56_ChatCompletion_KeepsSamplingParamsWhenReasoningIsNone()
+    public void Gpt56_SamplingParams_KeptWhenReasoningIsNone()
     {
         ChatRequest request = new ChatRequest
         {
             Model = ChatModel.OpenAi.Gpt56.V56Terra,
             Messages = [new ChatMessage(ChatMessageRoles.User, "Hello")],
-            ReasoningEffort = ChatReasoningEfforts.None,
             Temperature = 0.7,
-            TopP = 0.9
+            TopP = 0.9,
+            ReasoningEffort = ChatReasoningEfforts.None
         };
 
         TornadoRequestContent serialized = request.Serialize(_provider!);
@@ -115,7 +115,7 @@ public class Gpt56IntegrationTests
         {
             Model = ChatModel.OpenAi.Gpt56.V56Sol,
             InputString = "Hello",
-            Reasoning = new ReasoningConfiguration { Effort = ResponseReasoningEfforts.Max }
+            Reasoning = new ReasoningConfiguration(ResponseReasoningEfforts.Max)
         };
 
         TornadoRequestContent serialized = request.Serialize(_provider!);

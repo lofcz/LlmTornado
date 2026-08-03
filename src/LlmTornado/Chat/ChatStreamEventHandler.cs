@@ -58,6 +58,12 @@ public class ChatStreamEventHandler
     ///     If this field is empty once control is returned to the API, the tool call is considered to be failed with no data returned.
     /// </summary>
     public Func<List<FunctionCall>, ValueTask>? FunctionCallHandler { get; set; }
+
+    /// <summary>
+    ///     Called while a streamed function call is being assembled. This fires before
+    ///     <see cref="FunctionCallHandler"/> and is intended for progress/UI updates.
+    /// </summary>
+    public Func<FunctionCallStreamUpdate, ValueTask>? FunctionCallDeltaHandler { get; set; }
     
     /// <summary>
     ///     Called when one or more custom tools are to be executed. Execute the tools and return the responses in <see cref="ChatFunctions.CustomToolCall.Result"/>.
@@ -123,4 +129,17 @@ public class ChatStreamEventHandler
     ///     The ID of the message that will be appended to the conversation, if null a random GUID is used.
     /// </summary>
     public Guid? MessageId { get; set; }
+}
+
+/// <summary>
+/// Incremental function-call argument data observed during a streamed response.
+/// </summary>
+public sealed class FunctionCallStreamUpdate
+{
+    public string? Name { get; init; }
+    public string? ArgumentsDelta { get; init; }
+    public string? ArgumentsSnapshot { get; init; }
+    public string? CallId { get; init; }
+    public int? Index { get; init; }
+    public bool IsComplete { get; init; }
 }

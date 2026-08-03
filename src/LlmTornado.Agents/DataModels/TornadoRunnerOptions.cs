@@ -25,7 +25,7 @@ public class TornadoRunnerOptions
     /// <summary>
     /// Set the system message at the start of the conversation instead of the end. 
     /// </summary>
-    public bool SystemMessageAtStart { get; set; } = false;
+    public bool SystemMessageAtStart { get; set; } = true;
 
     /// <summary>
     /// Throw error on API expection or just log and continue. Default is false to avoid stopping the agent run due to transient API errors.

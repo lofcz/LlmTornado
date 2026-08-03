@@ -26,7 +26,8 @@ public class AgentsDemo : DemoBase
     [TornadoTest]
     public static async Task BasicTornadoAgentRun()
     {
-        TornadoAgent agent = new TornadoAgent(Program.Connect(), ChatModel.OpenAi.Gpt41.V41Mini, instructions:"You are a useful assistant.");
+        TornadoAgent agent = new TornadoAgent(Program.Connect(), 
+        ChatModel.OpenAi.Gpt41.V41Mini, instructions:"You are a useful assistant.");
 
         Conversation result = await agent.Run("What is 2+2?");
 

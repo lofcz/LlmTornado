@@ -15,6 +15,7 @@ public enum AgentRunnerEventTypes
 {
     Started,
     Completed,
+    RequestPrepared,
     Error,
     Cancelled,
     ToolInvoked,
@@ -98,6 +99,19 @@ public class AgentRunnerCompletedEvent : AgentRunnerEvents
     public AgentRunnerCompletedEvent(Conversation conversation)
     {
         EventType = AgentRunnerEventTypes.Completed;
+        Timestamp = DateTime.UtcNow;
+        InternalConversation = conversation;
+    }
+}
+
+public class AgentRunnerRequestPreparedEvent : AgentRunnerEvents
+{
+    public AgentRequestTokenTelemetry Tokens { get; }
+
+    public AgentRunnerRequestPreparedEvent(AgentRequestTokenTelemetry tokens, Conversation conversation)
+    {
+        EventType = AgentRunnerEventTypes.RequestPrepared;
+        Tokens = tokens;
         Timestamp = DateTime.UtcNow;
         InternalConversation = conversation;
     }
@@ -268,18 +282,27 @@ public class  AgentRunnerMaxTurnsReachedEvent : AgentRunnerEvents
 /// </summary>
 public class AgentRunnerUsageReceivedEvent : AgentRunnerEvents
 {
-    public int TokenUsageAmount { get; private set; }
-    public int InputTokens { get; private set; }
-    public int OutputTokens { get; private set; }
+    public AgentUsageTelemetry Usage { get; }
+    public int TokenUsageAmount => Usage.TotalTokens;
+    public int InputTokens => Usage.PromptTokens;
+    public int OutputTokens => Usage.CompletionTokens;
 
-    public AgentRunnerUsageReceivedEvent(int inTokens, int outTokens, int totalTokens, Conversation conversation)
+    public AgentRunnerUsageReceivedEvent(ChatUsage? usage, Conversation conversation)
     {
         EventType = AgentRunnerEventTypes.UsageReceived;
         Timestamp = DateTime.UtcNow;
-        TokenUsageAmount = totalTokens;
-        InputTokens = inTokens;
-        OutputTokens = outTokens;
+        Usage = AgentUsageTelemetry.FromChatUsage(usage);
         InternalConversation = conversation;
+    }
+
+    public AgentRunnerUsageReceivedEvent(int inTokens, int outTokens, int totalTokens, Conversation conversation)
+        : this(new ChatUsage(Code.LLmProviders.Unknown)
+        {
+            PromptTokens = inTokens,
+            CompletionTokens = outTokens,
+            TotalTokens = totalTokens
+        }, conversation)
+    {
     }
 }
 

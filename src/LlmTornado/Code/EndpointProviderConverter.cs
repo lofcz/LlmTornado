@@ -72,6 +72,18 @@ internal static class EndpointProviderConverter
             {
                 UrlResolver = (endpoint, url, ctx) => $"{string.Format(api.ApiUrlFormat ?? "https://api.minimax.io/{0}/{1}", api.ResolveApiVersion(), OpenAiEndpointProvider.GetEndpointUrlFragment(endpoint, LLmProviders.MiniMax))}{url}"
             },
+            LLmProviders.Custom => new OpenAiEndpointProvider(LLmProviders.Custom)
+            {
+                UrlResolver = (endpoint, url, ctx) =>
+                {
+                    string baseFormat = api.ApiUrlFormat
+                        ?? (api.Authentications.TryGetValue(LLmProviders.Custom, out ProviderAuthentication? a)
+                                && !string.IsNullOrWhiteSpace(a.BaseUrl)
+                            ? $"{a.BaseUrl!.TrimEnd('/')}/{{0}}/{{1}}"
+                            : "http://localhost:11434/{0}/{1}");
+                    return $"{string.Format(baseFormat, api.ResolveApiVersion(), OpenAiEndpointProvider.GetEndpointUrlFragment(endpoint, LLmProviders.Custom))}{url}";
+                }
+            },
             _ => new OpenAiEndpointProvider()
         };
 

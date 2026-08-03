@@ -4,6 +4,7 @@ using LlmTornado.Chat.Models;
 using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using LlmTornado.Common;
+using LlmTornado.Agents.Utility;
 
 namespace LlmTornado.Agents;
 
@@ -106,6 +107,18 @@ public class TornadoRunner
         {
             runnerOptions ??= new TornadoRunnerOptions();
             Conversation conversation = SetupConversation(agent, input, messagesToAppend, responseId, runnerOptions, cancellationToken);
+
+            if (runnerCallback is not null)
+            {
+                AgentRequestTokenTelemetry telemetry = await AgentTokenTelemetryCalculator.CalculatePreflightAsync(
+                    agent,
+                    conversation,
+                    messagesToAppend,
+                    responseId,
+                    cancellationToken).ConfigureAwait(false);
+
+                await runnerCallback.Invoke(new AgentRunnerRequestPreparedEvent(telemetry, conversation));
+            }
         
             // check if the input triggers a guardrail to stop the agent from continuing
             await CheckInputGuardrail(agent, conversation, input, runnerOptions, guardRail, runnerCallback);
@@ -215,7 +228,7 @@ public class TornadoRunner
                 }
 
                 turns++;
-                chat = await GetNewResponse(agent, chat, runnerOptions, streaming, runnerCallback, toolPermissionRequest);
+                chat = await GetNewResponse(agent, chat, runnerOptions, streaming, runnerCallback, toolPermissionRequest, cancellationToken);
             } while (GotToolCall(chat) && !singleTurn);
         }
         catch (Exception ex)
@@ -258,7 +271,7 @@ public class TornadoRunner
         //Set the cancellation token for the agent client
         chat.RequestParameters.CancellationToken = cancellationToken;
 
-        bool sysMesageAtStart = runnerOptions?.SystemMessageAtStart ?? false; // Default false for system message at the end.
+        bool sysMesageAtStart = runnerOptions?.SystemMessageAtStart ?? true; // Default true for system message at the start.
 
         if (sysMesageAtStart)
         {
@@ -534,24 +547,25 @@ public class TornadoRunner
     /// <param name="toolPermissionRequest">Request Tool permissions</param>
     /// <returns></returns>
     private static async Task<Conversation> GetNewResponse(
-        TornadoAgent agent, 
+        TornadoAgent agent,
         Conversation chat,
         TornadoRunnerOptions runnerOptions,
         bool Streaming = false,
-        Func<AgentRunnerEvents, ValueTask>? runnerCallback = null, 
-        Func<string, ValueTask<bool>>? toolPermissionRequest = null
+        Func<AgentRunnerEvents, ValueTask>? runnerCallback = null,
+        Func<string, ValueTask<bool>>? toolPermissionRequest = null,
+        CancellationToken cancellationToken = default
         )
     {
             // we handle this ourselves
             chat.RequestParameters.InvokeClrToolsAutomatically = false;
-        
+
             RefreshToolsForNextTurn(agent, chat);
 
             chat = await CheckForToolCallsAndHandle(chat, agent, runnerOptions, runnerCallback, toolPermissionRequest);
         try{
             if (Streaming && runnerCallback != null)
             {
-                return await HandleStreaming(agent, chat, runnerOptions, runnerCallback, toolPermissionRequest);
+                return await HandleStreaming(agent, chat, runnerOptions, runnerCallback, toolPermissionRequest, cancellationToken);
             }
             
             RestDataOrException<ChatRichResponse> response = await chat.GetResponseRichSafe(async functions =>
@@ -579,9 +593,9 @@ public class TornadoRunner
 
                 if (tasks.Count > 0)
                 {
-                    await Task.WhenAll(tasks).ConfigureAwait(false);   
+                    await Task.WhenAll(tasks).ConfigureAwait(false);
                 }
-            });
+            }, cancellationToken);
 
 
             if (response.Exception != null)
@@ -603,7 +617,7 @@ public class TornadoRunner
 
             if (runnerCallback is not null && response is { Exception: null })
             {
-                await runnerCallback.Invoke(new AgentRunnerUsageReceivedEvent(response.Data?.Usage?.PromptTokens ?? 0, response.Data?.Usage?.CompletionTokens ?? 0, response.Data?.Usage?.TotalTokens ?? 0, chat));
+                await runnerCallback.Invoke(new AgentRunnerUsageReceivedEvent(response.Data?.Usage, chat));
             }
         }
         catch (Exception ex)
@@ -625,7 +639,7 @@ public class TornadoRunner
     }
 
     //[consideration] Need to massively improve this to handle all the streaming events
-    private static async Task<Conversation> HandleStreaming(TornadoAgent agent, Conversation chat, TornadoRunnerOptions runnerOptions, Func<AgentRunnerEvents, ValueTask>? runnerCallback = null, Func<string, ValueTask<bool>>? toolPermissionRequest = null)
+    private static async Task<Conversation> HandleStreaming(TornadoAgent agent, Conversation chat, TornadoRunnerOptions runnerOptions, Func<AgentRunnerEvents, ValueTask>? runnerCallback = null, Func<string, ValueTask<bool>>? toolPermissionRequest = null, CancellationToken cancellationToken = default)
     {
         //Create Open response
         await chat.StreamResponseRich(new ChatStreamEventHandler
@@ -647,6 +661,22 @@ public class TornadoRunner
                 if (runnerCallback is not null)
                 {
                     await runnerCallback.Invoke(new AgentRunnerStreamingEvent(new ModelStreamingReasoningPartAddedEvent(1, 1, 1, reasoningText: reasoning.Content ?? string.Empty), chat));
+                }
+            },
+            FunctionCallDeltaHandler = async (update) =>
+            {
+                if (runnerCallback is not null)
+                {
+                    await runnerCallback.Invoke(new AgentRunnerStreamingEvent(
+                        new ModelStreamingFunctionCallDeltaEvent(
+                            1,
+                            update.Name,
+                            update.ArgumentsDelta,
+                            update.ArgumentsSnapshot,
+                            update.CallId,
+                            update.Index,
+                            update.IsComplete),
+                        chat));
                 }
             },
             BlockFinishedHandler = (message) =>
@@ -709,7 +739,7 @@ public class TornadoRunner
             {
                 if (runnerCallback is not null)
                 {
-                    await runnerCallback.Invoke(new AgentRunnerUsageReceivedEvent(usage.PromptTokens, usage.CompletionTokens, usage.TotalTokens, chat));   
+                    await runnerCallback.Invoke(new AgentRunnerUsageReceivedEvent(usage, chat));   
                 }
             },
             OutboundHttpRequestHandler = (http) =>
@@ -720,7 +750,7 @@ public class TornadoRunner
             {
                 return Threading.ValueTaskCompleted;
             }
-        });
+        }, cancellationToken);
 
         if (runnerCallback is not null)
         {

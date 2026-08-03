@@ -55,7 +55,8 @@ public static class ChatModelAnthropicHelper
         }
 
         return modelName.StartsWith(Opus47ModelId, StringComparison.OrdinalIgnoreCase)
-            || modelName.StartsWith(Opus48ModelId, StringComparison.OrdinalIgnoreCase);
+            || modelName.StartsWith(Opus48ModelId, StringComparison.OrdinalIgnoreCase)
+            || IsClaude5Model(modelName);
     }
 
     /// <summary>

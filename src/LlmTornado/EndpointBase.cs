@@ -391,12 +391,12 @@ public abstract class EndpointBase
 
             if (auth is not null)
             {
-                if (auth.ApiKey is not null && resultAsString.Contains(auth.ApiKey))
+                if (!string.IsNullOrEmpty(auth.ApiKey) && resultAsString.Contains(auth.ApiKey))
                 {
                     resultAsString = resultAsString.Replace(auth.ApiKey, "[API KEY REDACTED FOR SECURITY]");
                 }
 
-                if (auth.Organization is not null && resultAsString.Contains(auth.Organization))
+                if (!string.IsNullOrEmpty(auth.Organization) && resultAsString.Contains(auth.Organization))
                 {
                     resultAsString = resultAsString.Replace(auth.Organization, "[ORGANIZATION REDACTED FOR SECURITY]");
                 }
@@ -480,12 +480,12 @@ public abstract class EndpointBase
             if (auth is not null)
             {
                 // Optimize: only perform Replace if the value is actually present (avoids unnecessary string allocation)
-                if (auth.ApiKey is not null && resultAsString.Contains(auth.ApiKey))
+                if (!string.IsNullOrEmpty(auth.ApiKey) && resultAsString.Contains(auth.ApiKey))
                 {
                     resultAsString = resultAsString.Replace(auth.ApiKey, "[API KEY REDACTED FOR SECURITY]");
                 }
 
-                if (auth.Organization is not null && resultAsString.Contains(auth.Organization))
+                if (!string.IsNullOrEmpty(auth.Organization) && resultAsString.Contains(auth.Organization))
                 {
                     resultAsString = resultAsString.Replace(auth.Organization, "[ORGANIZATION REDACTED FOR SECURITY]");
                 }
