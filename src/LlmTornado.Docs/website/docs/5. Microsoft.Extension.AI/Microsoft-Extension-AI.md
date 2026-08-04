@@ -170,6 +170,6 @@ public class ChatServiceTests
 
 ## Related Topics
 
-- [Chat Basics](../1.%20LlmTornado/1.%20Chat/1.%20basics.md)
-- [Agent Basics](../2.%20Agents/1.%20Getting-Started.md)
+- [Chat Basics](/llmtornado/chat/basics)
+- [Agent Basics](/agents/getting-started)
 - [Microsoft.Extensions.AI Documentation](https://learn.microsoft.com/en-us/dotnet/ai/)

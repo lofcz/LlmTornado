@@ -6,7 +6,7 @@ The Model Context Protocol (MCP) is an open standard that enables seamless integ
 
 ## Quick Start
 
- Please see [https://github.com/GongRzhe/Gmail-MCP-Server](gmail-mcp-server) for more details on setting up OAuth
+See the [Gmail MCP Server](https://github.com/GongRzhe/Gmail-MCP-Server) for provider-specific OAuth setup.
 
 ```csharp
 
@@ -131,7 +131,7 @@ public class MCPServer
 
 ## Related Topics
 
-- [Function Calling](../1.%20LlmTornado/1.%20Chat/4.%20functions.md) - Learn about LlmTornado's function calling system
-- [Tornado Agent Tools](../2.%20Agents/2.%20Tornado-Agent/4.%20Tools/3.%20MCP%20Tools.md) - Using MCP tools with agents
+- [Function Calling](/llmtornado/chat/functions) - Learn about LlmTornado's function calling system
+- [Tornado Agent Tools](/agents/tornado-agent/tools/mcp-tools) - Using MCP tools with agents
 - [Official MCP Documentation](https://modelcontextprotocol.io/) - Learn more about the MCP standard
 - [MCP .NET SDK](https://github.com/modelcontextprotocol/dotnet-sdk) - Official .NET SDK for MCP

@@ -6,7 +6,7 @@ export default defineConfig({
   title: "LlmTornado",
   description: "LlmTornado Documentation",
   appearance: 'force-dark',
-  ignoreDeadLinks: true,
+  ignoreDeadLinks: false,
   cleanUrls: true,
   rewrites: (id) => {
     // Remove numeric prefixes completely from URLs
@@ -28,6 +28,8 @@ export default defineConfig({
   themeConfig: {
     nav: [
       { text: 'Guide', link: '/getting-started' },
+      { text: 'Responses', link: '/llmtornado/responses/overview' },
+      { text: 'GitHub', link: 'https://github.com/lofcz/LlmTornado' },
       { text: 'Playground', link: '/playground/', target: '_blank' }
     ],
 
