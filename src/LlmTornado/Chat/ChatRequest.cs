@@ -722,6 +722,10 @@ public class ChatRequest : IModelRequest, ISerializableRequest, IHeaderProvider
 		{
 			// Self-hosted / OpenAI-compatible endpoints (Ollama, vLLM, KoboldCpp, ...).
 			LLmProviders.Custom, (x, y, z, a) => PreparePayload(x, x, y, z, GetSerializer(EndpointBase.NullSettings, a))
+		},
+		{
+			// LiteLLM AI gateway (OpenAI-compatible proxy for 100+ providers).
+			LLmProviders.LiteLlm, (x, y, z, a) => PreparePayload(x, x, y, z, GetSerializer(EndpointBase.NullSettings, a))
 		}
 	};
 
@@ -979,7 +983,8 @@ public class ChatRequest : IModelRequest, ISerializableRequest, IHeaderProvider
             LLmProviders.XAi,
             LLmProviders.OpenRouter,
             LLmProviders.Requesty,
-            LLmProviders.DeepInfra
+            LLmProviders.DeepInfra,
+            LLmProviders.LiteLlm
         ];
         
         public override void WriteJson(JsonWriter writer, IList<ChatMessage>? value, JsonSerializer serializer)

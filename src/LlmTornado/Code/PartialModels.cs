@@ -1752,6 +1752,10 @@ public enum LLmProviders
     /// </summary>
     MiniMax,
     /// <summary>
+    /// LiteLLM AI gateway (OpenAI-compatible proxy for 100+ providers).
+    /// </summary>
+    LiteLlm,
+    /// <summary>
     /// Internal value.
     /// </summary>
     Length

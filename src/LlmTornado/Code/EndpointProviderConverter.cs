@@ -72,6 +72,20 @@ internal static class EndpointProviderConverter
             {
                 UrlResolver = (endpoint, url, ctx) => $"{string.Format(api.ApiUrlFormat ?? "https://api.minimax.io/{0}/{1}", api.ResolveApiVersion(), OpenAiEndpointProvider.GetEndpointUrlFragment(endpoint, LLmProviders.MiniMax))}{url}"
             },
+            LLmProviders.LiteLlm => new OpenAiEndpointProvider(LLmProviders.LiteLlm)
+            {
+                UrlResolver = (endpoint, url, ctx) =>
+                {
+                    // LiteLLM proxies are self-hosted, so honor a per-auth BaseUrl (like Custom),
+                    // defaulting to the standard local LiteLLM proxy endpoint.
+                    string baseFormat = api.ApiUrlFormat
+                        ?? (api.Authentications.TryGetValue(LLmProviders.LiteLlm, out ProviderAuthentication? a)
+                                && !string.IsNullOrWhiteSpace(a.BaseUrl)
+                            ? $"{a.BaseUrl!.TrimEnd('/')}/{{0}}/{{1}}"
+                            : "http://localhost:4000/{0}/{1}");
+                    return $"{string.Format(baseFormat, api.ResolveApiVersion(), OpenAiEndpointProvider.GetEndpointUrlFragment(endpoint, LLmProviders.LiteLlm))}{url}";
+                }
+            },
             LLmProviders.Custom => new OpenAiEndpointProvider(LLmProviders.Custom)
             {
                 UrlResolver = (endpoint, url, ctx) =>
