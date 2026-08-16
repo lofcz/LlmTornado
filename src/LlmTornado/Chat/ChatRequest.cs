@@ -1179,6 +1179,7 @@ public class ChatRequest : IModelRequest, ISerializableRequest, IHeaderProvider
 	                        ChatMessageTypes.Image => "image_url",
 	                        ChatMessageTypes.Audio => part.Audio?.Url is not null ? "audio_url" : "input_audio",
                             ChatMessageTypes.Video => "video_url",
+	                        ChatMessageTypes.Document => "file",
 	                        ChatMessageTypes.FileLink => "file",
                             _ => "text"
                         };
@@ -1273,6 +1274,32 @@ public class ChatRequest : IModelRequest, ISerializableRequest, IHeaderProvider
                                 writer.WriteEndObject();
                                 break;
                             }
+	                        case ChatMessageTypes.Document:
+	                        {
+	                        writer.WritePropertyName("file");
+	                        writer.WriteStartObject();
+
+	                        if (part.Document?.Base64 is not null)
+	                        {
+	                            writer.WritePropertyName("file_data");
+	                            writer.WriteValue(part.Document.Base64);
+	                        }
+	                        else if (part.Document?.Uri is not null)
+	                        {
+	                            writer.WritePropertyName("file_url");
+	                            writer.WriteValue(part.Document.Uri.ToString());
+
+	                            string? fileName = Path.GetFileName(part.Document.Uri.AbsolutePath);
+	                            if (!string.IsNullOrWhiteSpace(fileName))
+	                            {
+	                                writer.WritePropertyName("filename");
+	                                writer.WriteValue(fileName);
+	                            }
+	                        }
+
+	                        writer.WriteEndObject();
+	                        break;
+	                        }
 	                        case ChatMessageTypes.FileLink:
 	                        {
 		                        writer.WritePropertyName("file");
