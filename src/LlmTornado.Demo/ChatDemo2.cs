@@ -802,6 +802,24 @@ public partial class ChatDemo : DemoBase
     }
 
     [TornadoTest]
+    public static async Task LiteLLMChat()
+    {
+        // Talks to a local LiteLLM proxy (default http://localhost:4000). The model
+        // name is whatever alias the proxy routes; set BaseUrl on the auth for a
+        // remote proxy.
+        Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest
+        {
+            Model = new ChatModel("gpt-4o-mini", LLmProviders.LiteLlm)
+        });
+
+        chat.AppendUserInput("2+2=?");
+        string? str = await chat.GetResponse();
+
+        Console.WriteLine("LiteLLM:");
+        Console.WriteLine(str);
+    }
+
+    [TornadoTest]
     public static async Task AnthropicSearchResultsStream()
     {
         Conversation chat = Program.Connect().Chat.CreateConversation(new ChatRequest

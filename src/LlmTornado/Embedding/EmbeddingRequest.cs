@@ -274,6 +274,7 @@ public class EmbeddingRequest
 			LLmProviders.Voyage => PreparePayload(new VendorVoyageEmbeddingRequest(this, provider), this, provider, EndpointBase.NullSettings),
 			LLmProviders.OpenRouter => PreparePayload(new VendorOpenAiEmbeddingRequest(this, provider), this, provider, EndpointBase.NullSettings),
 			LLmProviders.Requesty => PreparePayload(new VendorOpenAiEmbeddingRequest(this, provider), this, provider, EndpointBase.NullSettings),
+			LLmProviders.LiteLlm => PreparePayload(new VendorOpenAiEmbeddingRequest(this, provider), this, provider, EndpointBase.NullSettings),
 			_ => string.Empty
 		};
 		
