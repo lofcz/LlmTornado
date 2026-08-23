@@ -34,6 +34,19 @@ Conversation result = await agent.RunAsync("Did mom respond?");
 Console.WriteLine(result.Messages.Last().Content);
 ```
 
+### Optional Parallel Search MCP
+
+To give an agent web search and URL-fetching tools, you can explicitly opt in to the free Parallel Search MCP endpoint. It does not require a Parallel account or API key. When you use these tools, user-provided search objectives, search queries, and requested URLs are sent to Parallel. See the [Parallel Search MCP documentation](https://docs.parallel.ai/integrations/mcp/search-mcp) for details.
+
+```csharp
+MCPServer searchServer = new MCPServer(
+    serverLabel: "parallel-search",
+    serverUrl: "https://search.parallel.ai/mcp");
+
+await searchServer.InitializeAsync();
+agent.AddMcpTools(searchServer.AllowedTornadoTools.ToArray());
+```
+
 ## Best Practices
 
 ### Connection Management
