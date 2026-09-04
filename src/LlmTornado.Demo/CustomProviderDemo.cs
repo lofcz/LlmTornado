@@ -30,4 +30,18 @@ public class CustomProviderDemo : DemoBase
             .AppendUserInput("Why is the sky blue?")
             .StreamResponse(Console.Write);
     }
+    
+    /// <summary>
+    /// llmman (https://github.com/llmmanorg/llmman) serves the Ollama API on port 17434, so only the URI differs.
+    /// </summary>
+    [Flaky("requires llmman")]
+    [TornadoTest]
+    public static async Task LlmmanStreaming()
+    {
+        TornadoApi api = new TornadoApi(new Uri("http://localhost:17434"));
+        
+        await api.Chat.CreateConversation(new ChatModel("gemma4"))
+            .AppendUserInput("Why is the sky blue?")
+            .StreamResponse(Console.Write);
+    }
 }

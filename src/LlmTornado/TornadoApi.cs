@@ -150,6 +150,7 @@ public class TornadoApi
     /// <summary>
     ///     Creates a new Tornado API for self-hosted / custom providers, such as Ollama and vLLM.<br/>
     ///     For Ollama use "http://localhost:11434" (by default).
+    ///     For llmman use "http://localhost:17434" (by default).
     ///     For vLLM use "http://localhost:8000" (by default).
     /// </summary>
     /// <param name="serverUri">Uri of the server. Tokens {0} and {1} are available for endpoint and action respectively. If provided values doesn't use neither, format /{0}/{1} is used automatically.</param>
@@ -168,6 +169,7 @@ public class TornadoApi
     /// <summary>
     ///     Creates a new Tornado API for self-hosted / custom providers, such as Ollama and vLLM.<br/>
     ///     For Ollama use "http://localhost:11434" (by default).
+    ///     For llmman use "http://localhost:17434" (by default).
     ///     For vLLM use "http://localhost:8000" (by default).
     /// </summary>
     /// <param name="serverUri">Uri of the server. Tokens {0} and {1} are available for endpoint and action respectively. If provided values doesn't use neither, format /{0}/{1} is used automatically.</param>

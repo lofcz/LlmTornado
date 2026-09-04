@@ -304,6 +304,36 @@ await foreach (var chunk in conversation.StreamResponse())
         ]
       },
       {
+        id: 'llmman',
+        name: 'llmman',
+        type: 'local',
+        category: 'local',
+        icon: '📦',
+        description: 'Local model runner serving the Ollama API (plus OpenAI- and Anthropic-compatible ones) on port 17434',
+        features: ['Privacy', 'Offline', 'OCI Artifacts', 'Hugging Face'],
+        code: `// Connect to llmman (default port 17434)
+var api = new TornadoApi(new Uri("http://localhost:17434"));
+
+// Create conversation with a local model
+var conversation = api.Chat.CreateConversation(new ChatModel("gemma4"));
+
+// Stream response to console
+await foreach (var chunk in conversation.StreamResponse())
+{
+    Console.Write(chunk.Content);
+}`,
+        additionalInfo: [
+          {
+            title: 'Installation',
+            content: 'Install llmman from github.com/llmmanorg/llmman, then: llmman serve && llmman pull gemma4'
+          },
+          {
+            title: 'Available Models',
+            content: 'Pulls models as OCI artifacts (Docker Hub, GHCR, quay, ...) or from Hugging Face (hf.co/org/model); served by llama.cpp, vLLM, or mlx-lm'
+          }
+        ]
+      },
+      {
         id: 'vllm',
         name: 'vLLM',
         type: 'local',
